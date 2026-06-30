@@ -1,5 +1,9 @@
 /.vs/
 x64/
+!ThirdParty/
+!ThirdParty/fmod_2_03_12/
+!ThirdParty/fmod_2_03_12/lib/
+!ThirdParty/fmod_2_03_12/lib/x64/
 
 /EngineSDK/
 
