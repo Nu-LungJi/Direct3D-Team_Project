@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="98.Default">
+      <UniqueIdentifier>{5d1c42fb-8454-4b98-9676-a9a0ee5a36b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="99.Defines">
+      <UniqueIdentifier>{a244368f-3a25-4ded-865c-53d0f9b18698}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject">
+      <UniqueIdentifier>{3dc0c1d8-cc5e-43aa-968b-c177d5418826}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level">
+      <UniqueIdentifier>{b8152acc-83b8-4783-abe8-1406555c22ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MainApp">
+      <UniqueIdentifier>{99a54153-9023-45de-a6b3-94ebef2ebf9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{495a737e-964c-49de-afc9-a3872c4fb13e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Logo">
+      <UniqueIdentifier>{b0ab3c35-6c61-4233-a5ce-0aac6fd25753}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Loading">
+      <UniqueIdentifier>{3c475e19-0885-477f-ba87-adbe759c4483}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Playground">
+      <UniqueIdentifier>{779d041a-2c8b-4d6c-8e8c-258f3d8e482a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\BackGround">
+      <UniqueIdentifier>{8ce28b08-2903-4259-9bbc-097f5cf7c773}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain">
+      <UniqueIdentifier>{0b5749ea-64b5-41e5-93a1-dca026d8286b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Buffer">
+      <UniqueIdentifier>{314c6dc0-716a-40bc-b990-a48202075419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles">
+      <UniqueIdentifier>{3bc87184-653e-491d-b276-19a3f34bc557}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="SampleClient.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Level_Defines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Client_Defines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MainApp.h">
+      <Filter>MainApp</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelLoading.h">
+      <Filter>Level\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelLogo.h">
+      <Filter>Level\Logo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelPlayground.h">
+      <Filter>Level\Playground</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BackGround.h">
+      <Filter>GameObject\BackGround</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Terrain.h">
+      <Filter>GameObject\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Client_Resources.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResTerrainVIBuffer.h">
+      <Filter>Resource\Buffer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="SampleClient.ico">
+      <Filter>98.Default</Filter>
+    </Image>
+    <Image Include="small.ico">
+      <Filter>98.Default</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="SampleClient.rc">
+      <Filter>98.Default</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SampleClient.cpp">
+      <Filter>98.Default</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MainApp.cpp">
+      <Filter>MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>98.Default</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLoading.cpp">
+      <Filter>Level\Loading</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLogo.cpp">
+      <Filter>Level\Logo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelPlayground.cpp">
+      <Filter>Level\Playground</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BackGround.cpp">
+      <Filter>GameObject\BackGround</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Terrain.cpp">
+      <Filter>GameObject\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
+      <Filter>Resource\Buffer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\..\MyResource\SampleClient\Shader\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>

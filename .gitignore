@@ -1,0 +1,11 @@
+/.vs/
+x64/
+
+/EngineSDK/
+
+**/Bin/
+
+imgui.ini
+
+
+/vcpkg_installed
