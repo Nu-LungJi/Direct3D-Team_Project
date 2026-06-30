@@ -3,6 +3,7 @@
 #include "LevelLoading.h"
 #include "GameInstance.h"
 #include "Resources.h"
+#include "Client_Resources.h"
 #include "LevelLogo.h"
 #include "BackGround.h"
 #include "LevelPlayground.h"
@@ -110,8 +111,29 @@ void CLevelLoading::ThreadStart()
 	break;
 	case LEVEL::PLAYGROUND:
 	{
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
+
+		
+
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
 			{
+
+				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+				{
+					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
+					{
+						//MSG_BOX("");
+						return false;
+					}
+				}
+
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
 				{
 					return false;
