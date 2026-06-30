@@ -3,6 +3,7 @@
 #include "MainApp.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Resources.h"
 
 
 NS_USING(Client)
@@ -44,7 +45,26 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PLAYGROUND));
 		});
 
+	// TODO   SampleClinet  초기 이니셜라이즈
+	{
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
 
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+	}
 
 
 	return S_OK;

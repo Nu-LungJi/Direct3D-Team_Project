@@ -18,25 +18,29 @@ CTerrain::~CTerrain()
 
 HRESULT CTerrain::InitializePrototype(void* pArg)
 {
-	m_pResTerrainVIBuffer = CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp");
-	if (FAILED(m_pResTerrainVIBuffer->Load(CResTerrainVIBuffer::DESC{})))
+	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain");
+	//m_pResTerrainVIBuffer = CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp");
+	if (!m_pResTerrainVIBuffer)
 	{
 		return E_FAIL;
 	}
 
-	m_pResTerrainTexture2D = CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds");
-	if (FAILED(m_pResTerrainTexture2D->Load()))
+	//"SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0"
+	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0");
+	//m_pResTerrainTexture2D = CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds");
+	if (!m_pResTerrainTexture2D)
 	{
 		return E_FAIL;
 	}
 
-	m_pResVertexShader = CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX");
+	//m_pResVertexShader = CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
 	{
 		return E_FAIL;
 	}
-
-	m_pResPixelShader = CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX");
+	//m_pResPixelShader = CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;
