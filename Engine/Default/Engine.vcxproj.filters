@@ -187,11 +187,23 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{85f4ad7c-9f7e-4f61-a4b1-ec5ff04c84f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="BeHavior">
-      <UniqueIdentifier>{eeb87804-96a4-445d-b56d-cd299f59d99a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ShaderFiles\PostProcess">
       <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior">
+      <UniqueIdentifier>{eeb87804-96a4-445d-b56d-cd299f59d99a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Root">
+      <UniqueIdentifier>{778c404a-02df-4df7-8ba6-c39c86543c21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Root\Composite">
+      <UniqueIdentifier>{4f83284b-9c4b-4ed3-bd92-b3e09161a9d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Root\Composite\CompositeNode">
+      <UniqueIdentifier>{bb4102c8-dfc5-48a9-ba4b-088bcfd0c1d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\ActionNode">
+      <UniqueIdentifier>{34a81dda-27be-4b5f-987d-0d8910cb8c11}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -450,8 +462,23 @@
     <ClInclude Include="..\Public\Engine_Struct_Vertex.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTSelector.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTSecqunce.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComBeHavior.h">
+      <Filter>Component\BeHavior</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\BTRoot.h">
-      <Filter>BeHavior</Filter>
+      <Filter>Component\BeHavior\Root</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTComposite.h">
+      <Filter>Component\BeHavior\Root\Composite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTActionNode.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -695,8 +722,23 @@
     <ClCompile Include="..\Private\UICamera.cpp">
       <Filter>GameObject\Camera\UICamera</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTSecqunce.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTSelector.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComBeHavior.cpp">
+      <Filter>Component\BeHavior</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\BTRoot.cpp">
-      <Filter>BeHavior</Filter>
+      <Filter>Component\BeHavior\Root</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTComposite.cpp">
+      <Filter>Component\BeHavior\Root\Composite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTActionNode.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

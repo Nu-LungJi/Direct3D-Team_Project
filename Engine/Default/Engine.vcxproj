@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -224,7 +224,12 @@ call CopyClient.bat</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BaseApp.h" />
+    <ClInclude Include="..\Public\BTActionNode.h" />
+    <ClInclude Include="..\Public\BTComposite.h" />
+    <ClInclude Include="..\public\ComBeHavior.h" />
     <ClInclude Include="..\public\BTRoot.h" />
+    <ClInclude Include="..\public\BTSecqunce.h" />
+    <ClInclude Include="..\public\BTSelector.h" />
     <ClInclude Include="..\Public\CameraManager.h" />
     <ClInclude Include="..\Public\CameraObject.h" />
     <ClInclude Include="..\Public\CollBox.h" />
@@ -360,7 +365,12 @@ call CopyClient.bat</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\Private\BaseApp.cpp" />
+    <ClCompile Include="..\Private\BTActionNode.cpp" />
+    <ClCompile Include="..\Private\BTComposite.cpp" />
+    <ClCompile Include="..\private\ComBeHavior.cpp" />
     <ClCompile Include="..\private\BTRoot.cpp" />
+    <ClCompile Include="..\private\BTSecqunce.cpp" />
+    <ClCompile Include="..\private\BTSelector.cpp" />
     <ClCompile Include="..\Private\CameraManager.cpp" />
     <ClCompile Include="..\Private\CameraObject.cpp" />
     <ClCompile Include="..\Private\CollBox.cpp" />

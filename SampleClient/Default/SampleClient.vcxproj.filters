@@ -43,6 +43,9 @@
     <Filter Include="GameObject\Monsters">
       <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monsters\GoblineBT">
+      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -90,6 +93,9 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Gobline.h">
+      <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -131,6 +137,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Gobline.cpp">
+      <Filter>GameObject\Monsters</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
