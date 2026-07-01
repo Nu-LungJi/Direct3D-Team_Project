@@ -40,6 +40,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{3bc87184-653e-491d-b276-19a3f34bc557}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monsters">
+      <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
