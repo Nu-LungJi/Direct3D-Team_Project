@@ -303,7 +303,7 @@ void CColliderManager::ClearColliderGroup()
 HRESULT CColliderManager::Initialize()
 {
     if (auto res = E::CGameInstance::Get()
-        .AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_ColliderDbg", "./Resources/Engine/Shader/Collider/Collider.hlsl"))
+        .AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_ColliderDbg", "./ShaderFiles/Collider/Collider.hlsl"))
     {
         if (FAILED(res->Load()))
         {
@@ -312,7 +312,7 @@ HRESULT CColliderManager::Initialize()
         m_pDbgVShader = res;
     }
     if (auto res = E::CGameInstance::Get()
-        .AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_ColliderDbg", "./Resources/Engine/Shader/Collider/Collider.hlsl"))
+        .AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_ColliderDbg", "./ShaderFiles/Collider/Collider.hlsl"))
     {
         if (FAILED(res->Load()))
         {
