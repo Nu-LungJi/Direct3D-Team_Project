@@ -7,6 +7,7 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 #include "Terrain.h"
+#include "Particle.h"
 
 
 NS_USING(Client)
@@ -36,7 +37,17 @@ HRESULT CLevelPlayground::Initialize()
 		}
 	}
 
+	// Particle //문제있는 코드. 접근금지
+	if(false){
+		CParticle::GAMEOBJECT_DESC Desc{};
+		Desc.sObjectTag = "Particle";
 
+		if (auto particle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle",
+			"01_Particle", &Desc))
+		{
+			int x = 0;
+		}
+	}
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;

@@ -8,6 +8,7 @@
 #include "BackGround.h"
 #include "LevelPlayground.h"
 #include "Terrain.h"
+#include "Particle.h"
 
 NS_USING(Client)
 
@@ -138,7 +139,10 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
-
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
+				{
+					return false;
+				}
 
 
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));

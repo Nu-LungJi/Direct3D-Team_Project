@@ -409,6 +409,13 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Particle", "./Resources/Engine/Shader/Particle/Shader_Particle_Compute.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 
 
 

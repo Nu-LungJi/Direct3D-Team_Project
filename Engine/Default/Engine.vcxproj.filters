@@ -190,6 +190,15 @@
     <Filter Include="ShaderFiles\PostProcess">
       <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particle">
+      <UniqueIdentifier>{589fcc85-1017-4ac2-af22-a72a33cda30d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle\Manager">
+      <UniqueIdentifier>{c1fa7139-e2b8-42e3-af1a-6f6586237a79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Buffer\StructuredBuffer">
+      <UniqueIdentifier>{597ecc2e-6e12-4bca-a731-710e41604dc9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -447,6 +456,12 @@
     <ClInclude Include="..\Public\Engine_Struct_Vertex.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ParticleManager.h">
+      <Filter>Particle\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResStructuredBuffer.h">
+      <Filter>Resource\Buffer\StructuredBuffer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -689,6 +704,12 @@
     <ClCompile Include="..\Private\UICamera.cpp">
       <Filter>GameObject\Camera\UICamera</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\ParticleManager.cpp">
+      <Filter>Particle\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResStructuredBuffer.cpp">
+      <Filter>Resource\Buffer\StructuredBuffer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
@@ -698,6 +719,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\SampleClient\Bin\Resources\Engine\Shader\Particle\Shader_Particle_Compute.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

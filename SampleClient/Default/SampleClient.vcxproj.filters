@@ -87,6 +87,7 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Particle.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -129,10 +130,46 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Particle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\SampleClient\Shader\Shader_VtxNorTex.hlsl">
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxTex.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Cell.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Deferred.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxAnimMesh.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxCube.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxInstance_Particle_Point.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxInstance_Particle_Rect.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxMesh.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Structured_Particle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Particle_Compute.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Bin\Resources\SampleClient\Shader\Engine_Shader_Defines.hlsli">
+      <Filter>ShaderFiles</Filter>
+    </None>
   </ItemGroup>
 </Project>
