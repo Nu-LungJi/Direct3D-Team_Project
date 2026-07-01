@@ -17,6 +17,7 @@
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
 #include "UICamera.h"
+#include "ComBeHavior.h"
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -540,11 +541,15 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-
 	if (AddPrototype("CAMERAS", "Prototype_GameObject_UICamera", CUICamera::Create()))
 	{
 		return E_FAIL;
 	}
+	if (AddPrototype("BEHAVIOR", "Prototype_GameObject_BeHavior", CComBeHavior::Create()))
+	{
+		return E_FAIL;
+	}
+
 
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
