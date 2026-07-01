@@ -51,7 +51,7 @@ using namespace Microsoft::WRL;
 #include "Engine_Template.h"
 #include "Engine_Macro.h"
 #include "Engine_Tag.h"
-
+#include "Engine_Assimp_Enum.h"
 #include "Engine_Base.h"
 namespace E = Engine;
 

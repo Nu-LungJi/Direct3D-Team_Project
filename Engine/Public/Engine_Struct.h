@@ -74,6 +74,13 @@ namespace Engine
 		_float2 Pos;
 		_float2 Scale;
 	} UI_DESC;
+	typedef struct tagKeyFrame
+	{
+		XMFLOAT3	vScale;
+		XMFLOAT4	vRotation;
+		XMFLOAT3	vTranslation;
+		float		fTrackPosition;
+	}KEYFRAME;
 
 	
 

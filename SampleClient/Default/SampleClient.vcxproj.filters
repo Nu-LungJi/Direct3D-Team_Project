@@ -49,6 +49,9 @@
     <Filter Include="Level\UiEditor">
       <UniqueIdentifier>{4dbab323-49ba-4254-9b54-55ad74f1e917}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestModel">
+      <UniqueIdentifier>{82e6f5e6-d781-49af-b141-9ac4fb7e508a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -95,6 +98,9 @@
     </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TestModel.h">
+      <Filter>GameObject\TestModel</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
@@ -147,6 +153,10 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\TestModel.cpp">
+      <Filter>GameObject\TestModel</Filter>
+    </ClCompile>
+  
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>
     </ClCompile>
