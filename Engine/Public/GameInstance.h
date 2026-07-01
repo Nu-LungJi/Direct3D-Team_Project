@@ -4,7 +4,6 @@
 #include "WorkerManager.h"
 #include "GameObjectManager.h"
 #include "CameraManager.h"
-#include "ShaderManager.h"
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -226,16 +225,6 @@ public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 #pragma endregion
 
-
-#pragma region SHADER_MANAGER
-public:
-	template<typename T>
-	HRESULT Bind_ConstantBuffer(T _Argument, SPtr<CResCBuffer> _Buffer) const
-	{
-		return m_pShaderManager->Bind_ConstantBuffer<T>(_Argument, _Buffer);
-	}
-#pragma endregion
-
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -266,7 +255,6 @@ private:
 	UPtr<CCameraManager> m_pCameraManager{};
 	UPtr<CColliderManager> m_pColliderManager{};
 	UPtr<CRenderer> m_pRenderer{};
-	UPtr<CShaderManager> m_pShaderManager{};
 	//UPtr<CLightManager> m_pLightManager{};
 	//UPtr<CVoxelManager> m_pVoxelManager{};
 	//UPtr<CVoxelManager2> m_pVoxelManager2{};

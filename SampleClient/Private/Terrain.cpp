@@ -112,7 +112,7 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
 	ID3D11Buffer* vertexBuffers[] = {
-		viBuffer->GetVertexBuffer().Get()
+			viBuffer->GetVertexBuffer().Get()
 	};
 	uint32_t strides[] = {
 		viBuffer->GetVertexStride()

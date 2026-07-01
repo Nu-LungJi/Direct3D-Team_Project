@@ -25,8 +25,6 @@ private:
 	HRESULT InitializeTargetDiffuse();
 	HRESULT InitializeTargetNormal();
 
-	HRESULT InitilizePostProcess();
-
 public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 	HRESULT Draw();
@@ -53,7 +51,7 @@ private:
 
 	//SPtr<CResDynamicTexture2D> m_pResDynTex
 
-	SPtr<CResDynamicTexture2D> m_pFilteredTex2D{}; // PostProcess
+
 
 
 private:
@@ -78,18 +76,11 @@ private:
 	SPtr<CResPixelShader> m_pFullscreenPS{};
 	SPtr<CResVIBuffer> m_pFullscreenVIBuffer{};
 
-	SPtr<CResPixelShader>	m_pPostProcessPS{};
-
 private:
 
-private:	// PostProcess Variable
-	_float m_pDistortionIntensity	{ 0.f };
-	_float m_pChromaticIntensity	{ 0.f };
-	_float m_pVignetteIntensity		{ 0.f };
-	_float m_pVignetteSmoothness	{ 0.f };
+private:
+	//_float4 m_SSAOOffsets[14]{};
 
-	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	m_pTestTexture = { nullptr };
 
 private:
 	HRESULT DrawFullscreen();
@@ -100,11 +91,7 @@ private:
 	HRESULT RenderBlend(const RENDER_CTX& ctx);
 	HRESULT RenderSkybox(const RENDER_CTX& ctx);
 	HRESULT RenderCollider(const RENDER_CTX& ctx);
-	HRESULT RenderPostProcess(const RENDER_CTX& ctx);
 	HRESULT RenderUI(const RENDER_CTX& ctx);
-
-private:
-	VOID	PostProcessGUI();
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

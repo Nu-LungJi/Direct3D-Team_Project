@@ -106,6 +106,7 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
+
 	}
 	break;
 	case LEVEL::PLAYGROUND:
