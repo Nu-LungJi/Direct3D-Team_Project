@@ -187,6 +187,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{85f4ad7c-9f7e-4f61-a4b1-ec5ff04c84f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BeHavior">
+      <UniqueIdentifier>{eeb87804-96a4-445d-b56d-cd299f59d99a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -444,6 +447,9 @@
     <ClInclude Include="..\Public\Engine_Struct_Vertex.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTRoot.h">
+      <Filter>BeHavior</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -685,6 +691,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\UICamera.cpp">
       <Filter>GameObject\Camera\UICamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRoot.cpp">
+      <Filter>BeHavior</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
