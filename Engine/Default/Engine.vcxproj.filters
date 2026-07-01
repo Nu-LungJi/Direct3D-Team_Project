@@ -184,11 +184,17 @@
     <Filter Include="GameObject\Camera\UICamera">
       <UniqueIdentifier>{7b11d538-0c52-4c53-b765-ceff8b82410a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles">
+    <Filter Include="Shader">
       <UniqueIdentifier>{85f4ad7c-9f7e-4f61-a4b1-ec5ff04c84f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles\PostProcess">
+    <Filter Include="Shader\PostProcess">
       <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\ShaderHeader">
+      <UniqueIdentifier>{bf06ea4f-5bb8-4628-a2d5-3426132e3756}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Manager">
+      <UniqueIdentifier>{24bcdb04-7c79-4fa7-88af-7d84f2bc259a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -447,6 +453,9 @@
     <ClInclude Include="..\Public\Engine_Struct_Vertex.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShaderManager.h">
+      <Filter>Shader\Manager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -689,16 +698,27 @@
     <ClCompile Include="..\Private\UICamera.cpp">
       <Filter>GameObject\Camera\UICamera</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShaderManager.cpp">
+      <Filter>Shader\Manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\..\JUSIN_160_FINAL_TEAM_RESOURCE\Engine\Shader\ShaderDefines.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
-      <Filter>ShaderFiles</Filter>
+      <Filter>Shader</Filter>
     </FxCompile>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\PostProcess\PS_PostProcess_Filter.hlsl">
+      <Filter>Shader\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\ShaderDefines.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Bin\Resources\Engine\Shader\ShaderHeader\SH_SamplerState.hlsli">
+      <Filter>Shader\ShaderHeader</Filter>
+    </None>
   </ItemGroup>
 </Project>
