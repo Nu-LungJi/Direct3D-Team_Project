@@ -40,6 +40,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{3bc87184-653e-491d-b276-19a3f34bc557}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestModel">
+      <UniqueIdentifier>{82e6f5e6-d781-49af-b141-9ac4fb7e508a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -87,6 +90,9 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TestModel.h">
+      <Filter>GameObject\TestModel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -129,10 +135,8 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\SampleClient\Shader\Shader_VtxNorTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
+    <ClCompile Include="..\Private\TestModel.cpp">
+      <Filter>GameObject\TestModel</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

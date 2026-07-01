@@ -12,6 +12,7 @@ namespace Engine
 		SHADOW = 1 << 1,
 	};
 	enum class STATE { RIGHT, UP, LOOK, POSITION, END };
+	enum class MODEL { NONANIM, ANIM, END };
 	//enum class VSYNC{ OFF, ON };
 
 

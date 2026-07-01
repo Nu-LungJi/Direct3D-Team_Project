@@ -17,6 +17,7 @@
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
 #include "UICamera.h"
+
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -29,6 +30,8 @@ CGameInstance::~CGameInstance()
 
 HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID3D11Device>& ppDevice, ComPtr<ID3D11DeviceContext>& ppContext)
 {
+
+
 	m_hWnd = EngineDesc.hWnd;
 	m_vClientScreenSize.x = (float)EngineDesc.iWinSizeX;
 	m_vClientScreenSize.y = (float)EngineDesc.iWinSizeY;
@@ -519,7 +522,63 @@ HRESULT CGameInstance::InitializeResources()
 		res->Load(depthDesc);
 	}
 
-	
+	// Test Model Load
+	{
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./Resources/Engine/Shader/TestModel/Shader_VtxMesh.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi", "./Resources/Engine/Shader/TestModel/Shader_VtxMesh.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./Resources/Engine/Shader/TestModel/Shader_VtxAnimMesh.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+			//	return E_FAIL;
+			}
+		}
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim", "./Resources/Engine/Shader/TestModel/Shader_VtxAnimMesh.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
+
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+
+			E::CResTestModel::DESC pDesc{};
+			pDesc.eModelType = MODEL::ANIM;
+			pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
+
+		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.FBX"))) {
+
+		//	E::CResTestModel::DESC pDesc{};
+		//	pDesc.eModelType = MODEL::NONANIM;
+		//	pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+		//	if (FAILED(res->Load(pDesc)))
+		//	{
+		//		return E_FAIL;
+		//	}
+		//}
+	}
 
 	return S_OK;
 }

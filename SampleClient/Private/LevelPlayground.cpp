@@ -7,6 +7,7 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 #include "Terrain.h"
+#include "TestModel.h"
 
 
 NS_USING(Client)
@@ -34,6 +35,20 @@ HRESULT CLevelPlayground::Initialize()
 		{
 			int x = 0;
 		}
+	}
+
+	{
+		{
+			CTestModel::DESC Desc{};
+			Desc.sObjectTag = "TestModel";
+
+			if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
+				"02_TestModel", &Desc))
+			{
+				int x = 0;
+			}
+		}
+
 	}
 
 

@@ -237,6 +237,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\Component.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
+    <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
     <ClInclude Include="..\Public\Engine_Base.h" />
     <ClInclude Include="..\Public\Engine_Defines.h" />
     <ClInclude Include="..\Public\Engine_Enum.h" />
@@ -278,6 +279,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ResGeometryShader.h" />
     <ClInclude Include="..\Public\ResGeoShaderStreamOut.h" />
     <ClInclude Include="..\Public\ResJson.h" />
+    <ClInclude Include="..\Public\ResModel.h" />
     <ClInclude Include="..\Public\ResOffscreenTexture.h" />
     <ClInclude Include="..\Public\Resource.h" />
     <ClInclude Include="..\Public\ResourceManager.h" />
@@ -292,6 +294,12 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ResShader.h" />
     <ClInclude Include="..\Public\ResTessDomainShader.h" />
     <ClInclude Include="..\Public\ResTessHullShader.h" />
+    <ClInclude Include="..\Public\ResTestModel.h" />
+    <ClInclude Include="..\Public\ResTestModelAnim.h" />
+    <ClInclude Include="..\Public\ResTestModelBone.h" />
+    <ClInclude Include="..\Public\ResTestModelChanel.h" />
+    <ClInclude Include="..\Public\ResTestModelMaterial.h" />
+    <ClInclude Include="..\Public\ResTestModelMesh.h" />
     <ClInclude Include="..\Public\ResTexture.h" />
     <ClInclude Include="..\Public\ResTexture2D.h" />
     <ClInclude Include="..\Public\ResTexture2DArray.h" />
@@ -399,6 +407,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResGeometryShader.cpp" />
     <ClCompile Include="..\Private\ResGeoShaderStreamOut.cpp" />
     <ClCompile Include="..\Private\ResJson.cpp" />
+    <ClCompile Include="..\Private\ResModel.cpp" />
     <ClCompile Include="..\Private\ResOffscreenTexture.cpp" />
     <ClCompile Include="..\Private\Resource.cpp" />
     <ClCompile Include="..\Private\ResourceManager.cpp" />
@@ -412,6 +421,12 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResShader.cpp" />
     <ClCompile Include="..\Private\ResTessDomainShader.cpp" />
     <ClCompile Include="..\Private\ResTessHullShader.cpp" />
+    <ClCompile Include="..\Private\ResTestModel.cpp" />
+    <ClCompile Include="..\Private\ResTestModelAnim.cpp" />
+    <ClCompile Include="..\Private\ResTestModelBone.cpp" />
+    <ClCompile Include="..\Private\ResTestModelChanel.cpp" />
+    <ClCompile Include="..\Private\ResTestModelMaterial.cpp" />
+    <ClCompile Include="..\Private\ResTestModelMesh.cpp" />
     <ClCompile Include="..\Private\ResTexture.cpp" />
     <ClCompile Include="..\Private\ResTexture2D.cpp" />
     <ClCompile Include="..\Private\ResTexture2DArray.cpp" />
@@ -435,15 +450,23 @@ call CopyClient.bat</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\..\JUSIN_160_FINAL_TEAM_RESOURCE\Engine\Shader\ShaderDefines.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
     <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\ShaderDefines.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxAnimMesh.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxMesh.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
