@@ -238,6 +238,15 @@
     <Filter Include="ShaderFiles\TestModel">
       <UniqueIdentifier>{b6dc28e4-3ac0-46a4-aaaa-86b4544f3676}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shader\PostProcess">
+      <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\ShaderHeader">
+      <UniqueIdentifier>{bf06ea4f-5bb8-4628-a2d5-3426132e3756}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Manager">
+      <UniqueIdentifier>{24bcdb04-7c79-4fa7-88af-7d84f2bc259a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -856,5 +865,10 @@
     <ClCompile Include="..\Private\UIManager.cpp">
       <Filter>GameObject\UI\UITool</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Bin\Resources\Engine\Shader\ShaderHeader\SH_SamplerState.hlsli">
+      <Filter>Shader\ShaderHeader</Filter>
+    </None>
   </ItemGroup>
 </Project>

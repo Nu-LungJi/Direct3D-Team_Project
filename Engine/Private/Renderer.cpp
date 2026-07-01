@@ -17,8 +17,10 @@ CRenderer::~CRenderer()
 void CRenderer::UpdateGUI()
 {
     ImGui::Begin("Renderer");
-    
+
     ImGui::End();
+
+    PostProcessGUI();
 }
 
 HRESULT CRenderer::Initialize()
@@ -51,6 +53,10 @@ HRESULT CRenderer::Initialize()
         return E_FAIL;
     }
 
+    if (FAILED(InitilizePostProcess()))
+    {
+        return E_FAIL;
+    }
     
     return S_OK;
 }
@@ -108,6 +114,53 @@ HRESULT CRenderer::InitializeOffscreen()
             }
             m_pOffScreenTex2D = res;
         }
+        if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, "DynTex2D_PostProcess", E::CResDynamicTexture2D::Create()))
+        {
+            //typedef struct tagDesc {
+            //	D3D11_TEXTURE2D_DESC texDesc{};
+            //	D3D11_SUBRESOURCE_DATA texSubResource{};
+            //}DESC;
+
+            //typedef struct D3D11_TEXTURE2D_DESC
+            //{
+            //	UINT Width;
+            //	UINT Height;
+            //	UINT MipLevels;
+            //	UINT ArraySize;
+            //	DXGI_FORMAT Format;
+            //	DXGI_SAMPLE_DESC SampleDesc;
+            //	D3D11_USAGE Usage;
+            //	UINT BindFlags;
+            //	UINT CPUAccessFlags;
+            //	UINT MiscFlags;
+            //} 	D3D11_TEXTURE2D_DESC;
+            CResDynamicTexture2D::DESC Desc{};
+            Desc.texDesc = {
+                .Width = (UINT)vClientScreenSize.x,
+                .Height = (UINT)vClientScreenSize.y,
+                .MipLevels = 1,
+                .ArraySize = 1,
+                .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+                .SampleDesc = {.Count = 1, .Quality = 0 },
+                .Usage = D3D11_USAGE_DEFAULT,
+                .BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                .CPUAccessFlags = 0,
+                .MiscFlags = 0
+            };
+            if (FAILED(res->Load(Desc)))
+            {
+                return E_FAIL;
+            }
+            if (FAILED(res->CreateSRV()))
+            {
+                return E_FAIL;
+            }
+            if (FAILED(res->CreateRTV()))
+            {
+                return E_FAIL;
+            }
+            m_pFilteredTex2D = res;
+        }
     }
 
     {
@@ -127,7 +180,7 @@ HRESULT CRenderer::InitializeOffscreen()
             }
             m_pOffScreenPixelShader = res;
         }
-    }
+    } 
 
     return S_OK;
 }
@@ -226,6 +279,7 @@ HRESULT CRenderer::InitializeFullscreen()
     m_pFullscreenVS = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullscreenQuad");
     m_pFullscreenPS= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_FullscreenQuad");
     m_pFullscreenVIBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResVIBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_FullscreenTex");
+
     return S_OK;
 }
 
@@ -344,6 +398,42 @@ HRESULT CRenderer::InitializeTargetNormal()
     return S_OK;
 }
 
+HRESULT CRenderer::InitilizePostProcess(){
+
+    // PixelShader Create
+    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./Resources/Engine/Shader/PostProcess/PS_PostProcess_Filter.hlsl"))
+    {
+        if (FAILED(res->Load()))    return E_FAIL;
+    }
+
+    // PixelShader Create
+    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./Resources/Engine/Shader/PostProcess/PS_PostProcess_Filter.hlsl"))
+    {
+        if (FAILED(res->Load()))    return E_FAIL;
+    }
+
+    // PostProcess ConstantBuffer Create
+    if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess", E::CResCBuffer::Create()))
+    {
+        if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(POSTPROCESS) })))    return E_FAIL;
+    }
+
+    // LUT Texture Create
+    if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.png", nullptr, m_pLUTTexture.GetAddressOf()))) {
+        MSG_BOX("Cannot Create LUT Texture File.");
+        assert(0);
+    }
+    if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/T_Tile_30018.png", nullptr, m_pTestTexture.GetAddressOf()))) {
+        MSG_BOX("Cannot Create LUT Texture File.");
+        assert(0);
+    }
+    
+
+    m_pPostProcessPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
+
+    return S_OK;
+}
+
 
 HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
@@ -432,8 +522,6 @@ HRESULT CRenderer::Draw()
         m_pContext->ClearRenderTargetView(pRTVs[1], reinterpret_cast<const float*>(&clearColor));
         m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-
-
         {
             auto pGameCam = CGameInstance::Get().GetActiveCamera();
             if (!pGameCam)
@@ -497,7 +585,7 @@ HRESULT CRenderer::Draw()
             return E_FAIL;
         }
 
-
+        
         //UI
         {
             {
@@ -544,7 +632,7 @@ HRESULT CRenderer::Draw()
             m_pContext->OMSetRenderTargets(2, pRTVs, nullptr);
         }
     }
-
+    
     // offscreen combined 
     {
         ID3D11RenderTargetView* pRTVs[1] = { m_pOffScreenTex2D->GetRTV().Get() };
@@ -573,10 +661,10 @@ HRESULT CRenderer::Draw()
         uint32_t offsets[] = {
             0
         };
+
         m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
         m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
         m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
 
         {
             ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDiffuse->GetSRV().Get() };
@@ -597,26 +685,42 @@ HRESULT CRenderer::Draw()
             m_pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
         }
 
+        // Draw On OffScreen
         m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
+        // Unbind Shader Resource : Diffuse
         {
             ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
             m_pContext->PSSetShaderResources(0, 1, pNullSRVs);
         }
+        // Unbind Shader Resource : Normal
         {
             ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
             m_pContext->PSSetShaderResources(1, 1, pNullSRVs);
         }
-        // unbinding shadow map
+        // Unbind Shader Resource : Shadow
         {
             ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
             m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
         }
+
+
+        
     }
     
+    {
+        ID3D11RenderTargetView* pRTVs[3] = { nullptr,nullptr,nullptr };
+        m_pContext->OMSetRenderTargets(3, pRTVs, nullptr);
+    }
+
+    // PostProcess
+    if (FAILED(RenderPostProcess(ctx)))
+    {
+        return E_FAIL;
+    }
 
     {
-        m_pLastTex2DBeforeFullScreenDraw = m_pOffScreenTex2D;
+        m_pLastTex2DBeforeFullScreenDraw = m_pFilteredTex2D;
     }
 
     // draw fullscreen
@@ -758,6 +862,41 @@ HRESULT CRenderer::RenderCollider(const RENDER_CTX& ctx)
     return S_OK;
 }
 
+HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
+    ID3D11RenderTargetView* pRTVs[1] = { m_pFilteredTex2D->GetRTV().Get() };
+    m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+    m_pContext->RSSetViewports(1, &m_pBackBufferVP->GetViewPort());
+
+    auto pCbPostProcess = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess");
+    
+    D3D11_MAPPED_SUBRESOURCE MRES;
+    if (SUCCEEDED(m_pContext->Map(pCbPostProcess->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+    {
+        POSTPROCESS CBPP{};
+        CBPP.DistortionIntensity   = m_pDistortionIntensity;
+        CBPP.ChromaticIntensity    = m_pChromaticIntensity;
+        CBPP.VignetteIntensity     = m_pVignetteIntensity;
+        CBPP.VignetteSmoothness    = m_pVignetteSmoothness;
+    
+        memcpy(MRES.pData, &CBPP, sizeof(POSTPROCESS));
+        m_pContext->Unmap(pCbPostProcess->GetCBuffer().Get(), 0);
+    }
+    
+    m_pContext->PSSetShader(m_pPostProcessPS->GetPixelShader().Get(), nullptr, 0);
+    
+    m_pContext->PSSetConstantBuffers(0, 1, pCbPostProcess->GetCBuffer().GetAddressOf());
+    m_pContext->PSSetShaderResources(0, 1, m_pOffScreenTex2D->GetSRV().GetAddressOf());       // Combined Texture
+    m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());                     // LUT Texture
+    
+    m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+    
+    ID3D11ShaderResourceView* NullSRV[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, NullSRV);
+    m_pContext->PSSetShaderResources(1, 1, NullSRV);
+
+    return S_OK;
+}
+
 HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
 {
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI)])
@@ -776,6 +915,18 @@ HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
 }
 
 
+VOID CRenderer::PostProcessGUI() {
+#ifdef _DEBUG
+    ImGui::Begin("PostProcess");
+
+    ImGui::InputFloat("DistortionIntensity", &m_pDistortionIntensity);
+    ImGui::InputFloat("ChromaticIntensity", &m_pChromaticIntensity);
+    ImGui::InputFloat("VignetteIntensity", &m_pVignetteIntensity);
+    ImGui::InputFloat("VignetteSmoothness", &m_pVignetteSmoothness);
+
+    ImGui::End();
+#endif // _DEBUG
+}
 
 UPtr<CRenderer> CRenderer::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {
