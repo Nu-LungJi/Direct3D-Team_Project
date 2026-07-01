@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 
 #include "MainApp.h"
 #include "GameInstance.h"
@@ -45,9 +45,14 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PLAYGROUND));
 		});
 
-	// TODO   SampleClinet  ÃÊ±â ÀÌ´Ï¼È¶óÀÌÁî
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_UIEditor", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::UIEDITOR));
+		});
+
+	// TODO   SampleClinet  ì´ˆê¸° ì´ë‹ˆì…œë¼ì´ì¦ˆ
 	{
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -56,7 +61,7 @@ HRESULT CMainApp::Initialize()
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -64,6 +69,24 @@ HRESULT CMainApp::Initialize()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+
 	}
 
 

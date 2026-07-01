@@ -37,8 +37,23 @@
     <Filter Include="Resource\Buffer">
       <UniqueIdentifier>{314c6dc0-716a-40bc-b990-a48202075419}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monsters">
+      <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monsters\BT">
+      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI">
+      <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\UiEditor">
+      <UniqueIdentifier>{4dbab323-49ba-4254-9b54-55ad74f1e917}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestModel">
+      <UniqueIdentifier>{82e6f5e6-d781-49af-b141-9ac4fb7e508a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ShaderFiles">
-      <UniqueIdentifier>{3bc87184-653e-491d-b276-19a3f34bc557}</UniqueIdentifier>
+      <UniqueIdentifier>{095b09c3-adbb-42a6-be96-c9e009c52131}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -87,6 +102,19 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Particle.h" />
+    <ClInclude Include="..\Public\TestModel.h">
+      <Filter>GameObject\TestModel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Gobline.h">
+      <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CTexUI.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditor.h">
+      <Filter>Level\UiEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -129,9 +157,24 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Particle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\SampleClient\Shader\Shader_VtxNorTex.hlsl">
+    <ClCompile Include="..\Private\TestModel.cpp">
+      <Filter>GameObject\TestModel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Gobline.cpp">
+      <Filter>GameObject\Monsters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CTexUI.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelUIEditor.cpp">
+      <Filter>Level\UiEditor</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

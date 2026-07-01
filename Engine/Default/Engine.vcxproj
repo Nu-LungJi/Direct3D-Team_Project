@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -224,6 +224,12 @@ call CopyClient.bat</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BaseApp.h" />
+    <ClInclude Include="..\Public\BTActionNode.h" />
+    <ClInclude Include="..\Public\BTComposite.h" />
+    <ClInclude Include="..\public\ComBeHavior.h" />
+    <ClInclude Include="..\public\BTRoot.h" />
+    <ClInclude Include="..\public\BTSecqunce.h" />
+    <ClInclude Include="..\public\BTSelector.h" />
     <ClInclude Include="..\Public\CameraManager.h" />
     <ClInclude Include="..\Public\CameraObject.h" />
     <ClInclude Include="..\Public\CollBox.h" />
@@ -237,6 +243,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\Component.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
+    <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
     <ClInclude Include="..\Public\Engine_Base.h" />
     <ClInclude Include="..\Public\Engine_Defines.h" />
     <ClInclude Include="..\Public\Engine_Enum.h" />
@@ -260,6 +267,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
+    <ClInclude Include="..\public\ParticleManager.h" />
     <ClInclude Include="..\Public\Prototype.h" />
     <ClInclude Include="..\Public\PrototypeManager.h" />
     <ClInclude Include="..\Public\Renderer.h" />
@@ -278,6 +286,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ResGeometryShader.h" />
     <ClInclude Include="..\Public\ResGeoShaderStreamOut.h" />
     <ClInclude Include="..\Public\ResJson.h" />
+    <ClInclude Include="..\Public\ResModel.h" />
     <ClInclude Include="..\Public\ResOffscreenTexture.h" />
     <ClInclude Include="..\Public\Resource.h" />
     <ClInclude Include="..\Public\ResourceManager.h" />
@@ -292,6 +301,12 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ResShader.h" />
     <ClInclude Include="..\Public\ResTessDomainShader.h" />
     <ClInclude Include="..\Public\ResTessHullShader.h" />
+    <ClInclude Include="..\Public\ResTestModel.h" />
+    <ClInclude Include="..\Public\ResTestModelAnim.h" />
+    <ClInclude Include="..\Public\ResTestModelBone.h" />
+    <ClInclude Include="..\Public\ResTestModelChanel.h" />
+    <ClInclude Include="..\Public\ResTestModelMaterial.h" />
+    <ClInclude Include="..\Public\ResTestModelMesh.h" />
     <ClInclude Include="..\Public\ResTexture.h" />
     <ClInclude Include="..\Public\ResTexture2D.h" />
     <ClInclude Include="..\Public\ResTexture2DArray.h" />
@@ -302,10 +317,12 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ShaderManager.h" />
     <ClInclude Include="..\Public\Slot.h" />
     <ClInclude Include="..\Public\SoundManager.h" />
+    <ClInclude Include="..\public\ResStructuredBuffer.h" />
     <ClInclude Include="..\Public\TimeProvider.h" />
     <ClInclude Include="..\Public\Timer.h" />
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
+    <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -360,6 +377,12 @@ call CopyClient.bat</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\Private\BaseApp.cpp" />
+    <ClCompile Include="..\Private\BTActionNode.cpp" />
+    <ClCompile Include="..\Private\BTComposite.cpp" />
+    <ClCompile Include="..\private\ComBeHavior.cpp" />
+    <ClCompile Include="..\private\BTRoot.cpp" />
+    <ClCompile Include="..\private\BTSecqunce.cpp" />
+    <ClCompile Include="..\private\BTSelector.cpp" />
     <ClCompile Include="..\Private\CameraManager.cpp" />
     <ClCompile Include="..\Private\CameraObject.cpp" />
     <ClCompile Include="..\Private\CollBox.cpp" />
@@ -382,6 +405,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ImguiManager.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
     <ClCompile Include="..\Private\LevelManager.cpp" />
+    <ClCompile Include="..\private\ParticleManager.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />
     <ClCompile Include="..\Private\Renderer.cpp" />
@@ -400,6 +424,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResGeometryShader.cpp" />
     <ClCompile Include="..\Private\ResGeoShaderStreamOut.cpp" />
     <ClCompile Include="..\Private\ResJson.cpp" />
+    <ClCompile Include="..\Private\ResModel.cpp" />
     <ClCompile Include="..\Private\ResOffscreenTexture.cpp" />
     <ClCompile Include="..\Private\Resource.cpp" />
     <ClCompile Include="..\Private\ResourceManager.cpp" />
@@ -413,6 +438,12 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResShader.cpp" />
     <ClCompile Include="..\Private\ResTessDomainShader.cpp" />
     <ClCompile Include="..\Private\ResTessHullShader.cpp" />
+    <ClCompile Include="..\Private\ResTestModel.cpp" />
+    <ClCompile Include="..\Private\ResTestModelAnim.cpp" />
+    <ClCompile Include="..\Private\ResTestModelBone.cpp" />
+    <ClCompile Include="..\Private\ResTestModelChanel.cpp" />
+    <ClCompile Include="..\Private\ResTestModelMaterial.cpp" />
+    <ClCompile Include="..\Private\ResTestModelMesh.cpp" />
     <ClCompile Include="..\Private\ResTexture.cpp" />
     <ClCompile Include="..\Private\ResTexture2D.cpp" />
     <ClCompile Include="..\Private\ResTexture2DArray.cpp" />
@@ -422,10 +453,12 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResViewPort.cpp" />
     <ClCompile Include="..\Private\ShaderManager.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
+    <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
     <ClCompile Include="..\Private\TimeProvider.cpp" />
     <ClCompile Include="..\Private\Timer.cpp" />
     <ClCompile Include="..\Private\UICamera.cpp" />
     <ClCompile Include="..\Private\UIObject.cpp" />
+    <ClCompile Include="..\Private\UIManager.cpp" />
     <ClCompile Include="..\Private\WorkerManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -437,29 +470,28 @@ call CopyClient.bat</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
+    <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\PostProcess\PS_PostProcess_Filter.hlsl">
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\ShaderDefines.hlsl">
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
+    <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Bin\Resources\Engine\Shader\ShaderHeader\SH_SamplerState.hlsli" />
+    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -8,6 +8,9 @@
 #include "BackGround.h"
 #include "LevelPlayground.h"
 #include "Terrain.h"
+#include "Particle.h"
+#include "TestModel.h"
+#include "LevelUIEditor.h"
 
 NS_USING(Client)
 
@@ -74,6 +77,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::PLAYGROUND:
 		pNewLevel = CLevelPlayground::Create();
 		break;
+	case LEVEL::UIEDITOR:
+		pNewLevel = CLevelUIEditor::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -119,6 +125,8 @@ void CLevelLoading::ThreadStart()
 			}
 		}
 
+
+
 		
 
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
@@ -137,7 +145,14 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
-
+				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
+				//{
+				//	return false;
+				//}
+				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel", CTestModel::Create())))
+				//{
+				//	return false;
+				//}
 
 
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -146,6 +161,29 @@ void CLevelLoading::ThreadStart()
 
 	}
 	break;
+	case LEVEL::UIEDITOR:
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create("./Resources/SampleClient/Textures/T_Map_OverlandPaper_D.png")))
+		{
+			res->Load();
+		}
+		
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
+			{
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_BackGround", CBackGround::Create())))
+				{
+					return false;
+				}
+
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				return  true;
+			});
+
+	
+		break;
 	default:
 		m_bLoadEnd = true;
 		break;

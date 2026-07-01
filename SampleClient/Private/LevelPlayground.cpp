@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "LevelPlayground.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
@@ -7,6 +7,8 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 #include "Terrain.h"
+#include "Particle.h"
+#include "TestModel.h"
 
 
 NS_USING(Client)
@@ -36,7 +38,33 @@ HRESULT CLevelPlayground::Initialize()
 		}
 	}
 
+	{
+		//제거함 일단 오류나서
+		if(false)
+		{
+			CTestModel::DESC Desc{};
+			Desc.sObjectTag = "TestModel";
 
+			if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
+				"02_TestModel", &Desc))
+			{
+				int x = 0;
+			}
+		}
+
+	}
+
+	// Particle //문제있는 코드. 접근금지
+	if(false){
+		CParticle::GAMEOBJECT_DESC Desc{};
+		Desc.sObjectTag = "Particle";
+
+		if (auto particle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle",
+			"01_Particle", &Desc))
+		{
+			int x = 0;
+		}
+	}
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;

@@ -10,3 +10,9 @@ if "$(Configuration)" == "Release" (
 ) else (
     xcopy /y/I /d .\vcpkg_installed\x64-windows\x64-windows\debug\bin\*.dll .\SampleClient\Bin\
 )
+
+//1. 첫 번째 폴더의 내용을 대상 폴더로 복사
+xcopy /y /i /d /e .\SampleClient\ShaderFiles\*.* .\SampleClient\Bin\ShaderFiles\
+
+// 2. 두 번째 폴더의 내용을 같은 대상 폴더로 복사 (이미 있는 폴더는 병합됨)
+xcopy /y /i /d /e .\Engine\ShaderFiles\*.* .\SampleClient\Bin\ShaderFiles\
