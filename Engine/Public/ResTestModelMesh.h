@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "ResVIBuffer.h"
 struct aiMesh;
@@ -45,9 +45,9 @@ private:
 
 private:
 	uint32_t		m_iMaterialIndex = {};
-	uint32_t		m_iNumBones = {}; /* ÀÌ ¸Ş½Ã°¡ ÀÌ¿ëÇÏ´Â »ÀÀÇ °¹¼ö. */
+	uint32_t		m_iNumBones = {}; /* ì´ ë©”ì‹œê°€ ì´ìš©í•˜ëŠ” ë¼ˆì˜ ê°¯ìˆ˜. */
 
-	/*  ÀÌ ¸Ş½Ã¿¡ ¿µÇâÀ» ÁÖ´Â »ÀµéÀÇ ÀüÃ¼»À±âÁØÀÇ ÀÎµ¦½º */
+	/*  ì´ ë©”ì‹œì— ì˜í–¥ì„ ì£¼ëŠ” ë¼ˆë“¤ì˜ ì „ì²´ë¼ˆê¸°ì¤€ì˜ ì¸ë±ìŠ¤ */
 	_char				m_szName[MAX_PATH] = {};
 	std::vector<uint32_t>	m_BoneIndices;
 	std::vector<_float4x4>	m_BoneMatrices;

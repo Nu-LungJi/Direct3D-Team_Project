@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "LevelUIEditor.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
@@ -132,14 +132,14 @@ void CLevelUIEditor::UpdateGUI()
 
 	if (ImGui::ImageButton((ImTextureID)srv->GetSRV().Get(), ImVec2(100, 100)))
 	{
-		// ¹öÆ° Å¬¸¯
+		// ë²„íŠ¼ í´ë¦­
 	}
 
 	ImGui::SameLine();
 
 	if (ImGui::ImageButton((ImTextureID)srv2->GetSRV().Get(), ImVec2(100, 100)))
 	{
-		// ¹öÆ° Å¬¸¯
+		// ë²„íŠ¼ í´ë¦­
 	}
 
 	ImGui::End();

@@ -1,4 +1,4 @@
-#include "pch.h"
+Ôªø#include "pch.h"
 
 #include "MainApp.h"
 #include "GameInstance.h"
@@ -50,7 +50,7 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::UIEDITOR));
 		});
 
-	// TODO   SampleClinet  √ ±‚ ¿Ã¥œº»∂Û¿Ã¡Ó
+	// TODO   SampleClinet  Ï¥àÍ∏∞ Ïù¥ÎãàÏÖúÎùºÏù¥Ï¶à
 	{
 		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
 		{

@@ -1,4 +1,4 @@
-
+ï»¿
 #pragma once
 
 #include "Resource.h"
@@ -6,7 +6,7 @@
 #include "ResTestModelMesh.h"
 #include "ResTestModelMaterial.h"
 #include "ResTestModelAnim.h"
-// Assimp Àü¹æ¼±¾ð
+// Assimp ì „ë°©ì„ ì–¸
 struct aiScene;
 
 namespace Assimp

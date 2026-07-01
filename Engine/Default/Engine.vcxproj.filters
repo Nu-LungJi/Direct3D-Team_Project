@@ -195,7 +195,7 @@
     </Filter>
     <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\ActionNode">
       <UniqueIdentifier>{34a81dda-27be-4b5f-987d-0d8910cb8c11}</UniqueIdentifier>
-	</Filter>
+    </Filter>
     <Filter Include="GameObject\UI\UITool">
       <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
     </Filter>
@@ -235,17 +235,8 @@
     <Filter Include="Worker">
       <UniqueIdentifier>{4b54a874-7f22-406a-87ee-4ab1ddb1f1ec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles\TestModel">
-      <UniqueIdentifier>{b6dc28e4-3ac0-46a4-aaaa-86b4544f3676}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shader\PostProcess">
-      <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shader\ShaderHeader">
-      <UniqueIdentifier>{bf06ea4f-5bb8-4628-a2d5-3426132e3756}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shader\Manager">
-      <UniqueIdentifier>{24bcdb04-7c79-4fa7-88af-7d84f2bc259a}</UniqueIdentifier>
+    <Filter Include="ShaderManager">
+      <UniqueIdentifier>{8c4a927c-c056-4793-822a-c8e18c8ed7cd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -555,6 +546,9 @@
     <ClInclude Include="..\Public\UIManager.h">
       <Filter>GameObject\UI\UITool</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShaderManager.h">
+      <Filter>ShaderManager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -824,26 +818,11 @@
     <ClCompile Include="..\Private\ResTestModelMaterial.cpp">
       <Filter>Resource\TestModel\Material</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShaderManager.cpp">
+      <Filter>ShaderManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxMesh.hlsl">
-      <Filter>ShaderFiles\TestModel</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxAnimMesh.hlsl">
-      <Filter>ShaderFiles\TestModel</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\ShaderDefines.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\SampleClient\Bin\Resources\Engine\Shader\Particle\Shader_Particle_Compute.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <ClCompile Include="..\private\BTSecqunce.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
     </ClCompile>
@@ -865,10 +844,16 @@
     <ClCompile Include="..\Private\UIManager.cpp">
       <Filter>GameObject\UI\UITool</Filter>
     </ClCompile>
+    <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl" />
+    <FxCompile Include="..\..\SampleClient\Bin\Resources\Engine\Shader\Particle\Shader_Particle_Compute.hlsl" />
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl" />
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\ShaderDefines.hlsl" />
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxAnimMesh.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Bin\Resources\Engine\Shader\ShaderHeader\SH_SamplerState.hlsli">
-      <Filter>Shader\ShaderHeader</Filter>
-    </None>
+    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxMesh.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Bin\Resources\Engine\Shader\ShaderHeader\SH_SamplerState.hlsli" />
   </ItemGroup>
 </Project>

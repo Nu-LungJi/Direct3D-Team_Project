@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Resource.h"
 struct aiAnimation;
@@ -27,12 +27,12 @@ public:
 	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResTestModelBone>>& Bones, _bool isLoop);
 
 private:
-	/* ÀÌ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ÃÑ ±æÀÌ. */
+	/* ì´ ì• ë‹ˆë©”ì´ì…˜ì˜ ì´ ê¸¸ì´. */
 	_float				m_fDuration = {};
 	_float				m_fTickPerSecond = {};
 	_float				m_fCurrentTrackPosition = {};
 
-	/* ÄÁÆ®·ÑÇØ¾ßÇÏ´Â »ÀÀÇ °¹¼ö */
+	/* ì»¨íŠ¸ë¡¤í•´ì•¼í•˜ëŠ” ë¼ˆì˜ ê°¯ìˆ˜ */
 	uint32_t							m_iNumChannels = {};
 	std::vector<SPtr<CResTestModelChanel>>	m_Channels;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;

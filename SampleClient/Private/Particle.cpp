@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "Particle.h"
 #include "GameInstance.h"
 #include "Resources.h"
@@ -23,31 +23,31 @@ HRESULT CParticle::Initialize(void* pArg)
     m_iNumElements = 1000;
     m_RenderPassFlags = ETOUI(RENDERPASS::DEFAULT);
 
-    // 1. °è»ê ¼ÎÀÌ´õ¿ë ÅØ½ºÃÄ/»ùÇÃ·¯ ¹× ¼ÎÀÌ´õ ¸®¼Ò½º ·Îµå
-    // (±âÁ¸ÀÇ VS, PS ¿Ü¿¡ Compute ShaderÀÎ "CS_DropBlock"À» Ãß°¡·Î ·ÎµåÇØµÓ´Ï´Ù.)
+    // 1. ê³„ì‚° ì…°ì´ë”ìš© í…ìŠ¤ì³/ìƒ˜í”ŒëŸ¬ ë° ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë¡œë“œ
+    // (ê¸°ì¡´ì˜ VS, PS ì™¸ì— Compute Shaderì¸ "CS_DropBlock"ì„ ì¶”ê°€ë¡œ ë¡œë“œí•´ë‘¡ë‹ˆë‹¤.)
 
-    // 2. StructuredBuffer »ı¼º (±âÁ¸ DynamicBuffer ´ë½Å »ç¿ë)
-    // ÀÌ ¹öÆÛ´Â ±¸Á¶Ã¼ ¹è¿­ ÇüÅÂ·Î GPU ³»ºÎ¿¡¼­ Á÷Á¢ ÀĞ°í ¾²±â(UAV)°¡ °¡´ÉÇØ¾ß ÇÕ´Ï´Ù.
+    // 2. StructuredBuffer ìƒì„± (ê¸°ì¡´ DynamicBuffer ëŒ€ì‹  ì‚¬ìš©)
+    // ì´ ë²„í¼ëŠ” êµ¬ì¡°ì²´ ë°°ì—´ í˜•íƒœë¡œ GPU ë‚´ë¶€ì—ì„œ ì§ì ‘ ì½ê³  ì“°ê¸°(UAV)ê°€ ê°€ëŠ¥í•´ì•¼ í•©ë‹ˆë‹¤.
 
     std::vector<PARTICLE> initParticles(m_iNumElements);
 
-    // 2. ·£´ı ÀåÄ¡³ª Æ¯Á¤ ±ÔÄ¢À» ÀÌ¿ëÇØ ÃÊ±â µ¥ÀÌÅÍ Á¤ÀÇ
+    // 2. ëœë¤ ì¥ì¹˜ë‚˜ íŠ¹ì • ê·œì¹™ì„ ì´ìš©í•´ ì´ˆê¸° ë°ì´í„° ì •ì˜
     for (size_t i = 0; i < m_iNumElements; ++i)
     {
-        // ¿¹: ¿øÁ¡¿¡¼­ ºĞ¼öÃ³·³ »ç¹æÀ¸·Î Æ¢´Â ÆÄÆ¼Å¬ ¼¼ÆÃ
+        // ì˜ˆ: ì›ì ì—ì„œ ë¶„ìˆ˜ì²˜ëŸ¼ ì‚¬ë°©ìœ¼ë¡œ íŠ€ëŠ” íŒŒí‹°í´ ì„¸íŒ…
         initParticles[i].position = _float3(0.f, 0.f, 0.f);
 
-        // ¼Óµµ´Â »ç¹æÀ¸·Î ¹«ÀÛÀ§ (-5.0 ~ 5.0)
+        // ì†ë„ëŠ” ì‚¬ë°©ìœ¼ë¡œ ë¬´ì‘ìœ„ (-5.0 ~ 5.0)
         initParticles[i].velocity = _float3(
             ((rand() % 100) / 10.f) - 5.f,
-            ((rand() % 100) / 10.f) + 5.f, // À§ÂÊÀ¸·Î ´õ Àß Æ¢°Ô
+            ((rand() % 100) / 10.f) + 5.f, // ìœ„ìª½ìœ¼ë¡œ ë” ì˜ íŠ€ê²Œ
             ((rand() % 100) / 10.f) - 5.f
         );
 
-        float randomLife = ((rand() % 100) / 50.f) + 1.f; // 1.0 ~ 3.0ÃÊ
+        float randomLife = ((rand() % 100) / 50.f) + 1.f; // 1.0 ~ 3.0ì´ˆ
         initParticles[i].life = randomLife;
         initParticles[i].maxLife = randomLife;
-        initParticles[i].color = _float4(1.f, 0.5f, 0.f, 1.f); // ÁÖÈ²»ö ºÒ²É
+        initParticles[i].color = _float4(1.f, 0.5f, 0.f, 1.f); // ì£¼í™©ìƒ‰ ë¶ˆê½ƒ
         initParticles[i].size = 0.5f;
         initParticles[i].alive = true;
         initParticles[i].loop = false;
@@ -60,8 +60,8 @@ HRESULT CParticle::Initialize(void* pArg)
         Desc.iNumElements = m_iNumElements;
         Desc.iStructureByteStride = sizeof(PARTICLE);
         Desc.pInitialData = initParticles.data();
-        // ÆÁ: Compute Shader°¡ ¾²°í(UAV), Vertex Shader°¡ ÀĞ¾î¾ß(SRV) ÇÏ¹Ç·Î 
-        // ¼ÎÀÌ´õ °áÇÕ ÇÃ·¡±×(BindFlags)¸¦ ÀûÀıÈ÷ ¼³Á¤ÇÏ¿© ¿£ÁøÀÇ Buffer Å¬·¡½º¸¦ È£ÃâÇØ¾ß ÇÕ´Ï´Ù.
+        // íŒ: Compute Shaderê°€ ì“°ê³ (UAV), Vertex Shaderê°€ ì½ì–´ì•¼(SRV) í•˜ë¯€ë¡œ 
+        // ì…°ì´ë” ê²°í•© í”Œë˜ê·¸(BindFlags)ë¥¼ ì ì ˆíˆ ì„¤ì •í•˜ì—¬ ì—”ì§„ì˜ Buffer í´ë˜ìŠ¤ë¥¼ í˜¸ì¶œí•´ì•¼ í•©ë‹ˆë‹¤.
         if (FAILED(res->Load(Desc)))
         {
             return E_FAIL;
@@ -113,9 +113,9 @@ HRESULT CParticle::Initialize(void* pArg)
     {
         return E_FAIL;
     }
-    // ÃÊ±â ÆÄÆ¼Å¬ µ¥ÀÌÅÍ(À§Ä¡, ¼ö¸í µî)¸¦ ÃÖÃÊ 1È¸ »ı¼ºÇÏ¿© 
-    // m_pParticleStructuredBuffer¿¡ ¼­ºê¸®¼Ò½º µ¥ÀÌÅÍ·Î Ã³À½ ÇÑ ¹ø¸¸ Ã¤¿öÁİ´Ï´Ù.
-    // (¸Å ÇÁ·¹ÀÓ Map/UnmapÀ» ÇÏÁö ¾Ê±â À§ÇÔ)
+    // ì´ˆê¸° íŒŒí‹°í´ ë°ì´í„°(ìœ„ì¹˜, ìˆ˜ëª… ë“±)ë¥¼ ìµœì´ˆ 1íšŒ ìƒì„±í•˜ì—¬ 
+    // m_pParticleStructuredBufferì— ì„œë¸Œë¦¬ì†ŒìŠ¤ ë°ì´í„°ë¡œ ì²˜ìŒ í•œ ë²ˆë§Œ ì±„ì›Œì¤ë‹ˆë‹¤.
+    // (ë§¤ í”„ë ˆì„ Map/Unmapì„ í•˜ì§€ ì•Šê¸° ìœ„í•¨)
 
     return S_OK;
 }
@@ -133,11 +133,11 @@ void CParticle::Update(E::_float fTimeDelta)
         CB_ParticleUpdate cb{};
         cb.g_fTimeDelta = fTimeDelta;
         cb.g_iNumInstances = m_iNumElements;
-        cb.g_iBehaviorType = 3; // ¿¹: Blood ¶Ç´Â Drop µî ¹øÈ£ ÁöÁ¤
+        cb.g_iBehaviorType = 3; // ì˜ˆ: Blood ë˜ëŠ” Drop ë“± ë²ˆí˜¸ ì§€ì •
 
         if (SUCCEEDED(m_pComCBuffer->MapDiscard(pContext.Get(), &cb, sizeof(cb))))
         {
-            // Compute Shader ¿¬»ê¿ëÀÌ¹Ç·Î CS¿¡ ¹ÙÀÎµùÇÕ´Ï´Ù.
+            // Compute Shader ì—°ì‚°ìš©ì´ë¯€ë¡œ CSì— ë°”ì¸ë”©í•©ë‹ˆë‹¤.
             pContext->CSSetConstantBuffers(0, 1, m_pComCBuffer->GetAdressOfBuffer());
             pContext->VSSetConstantBuffers(0, 1, m_pComCBuffer->GetAdressOfBuffer());
             pContext->PSSetConstantBuffers(0, 1, m_pComCBuffer->GetAdressOfBuffer());
@@ -147,18 +147,18 @@ void CParticle::Update(E::_float fTimeDelta)
 
 
 
-    // 2. Compute Shader¿¡ ¾²±â ¹öÆÛ(UAV) ¹ÙÀÎµù
+    // 2. Compute Shaderì— ì“°ê¸° ë²„í¼(UAV) ë°”ì¸ë”©
     ID3D11UnorderedAccessView* pUAV = m_pParticleStructuredBuffer->GetUAV().Get();
     pContext->CSSetUnorderedAccessViews(0, 1, &pUAV, nullptr);
 
-    // 3. Compute Shader ¹ÙÀÎµù ¹× ½ÇÇà
+    // 3. Compute Shader ë°”ì¸ë”© ë° ì‹¤í–‰
     pContext->CSSetShader(m_pResComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-    // ½º·¹µå ±×·ì ½ÇÇà (½º·¹µå 256°³´ç 1±×·ì)
+    // ìŠ¤ë ˆë“œ ê·¸ë£¹ ì‹¤í–‰ (ìŠ¤ë ˆë“œ 256ê°œë‹¹ 1ê·¸ë£¹)
     uint32_t groupX = (m_iNumElements + 255) / 256;
     pContext->Dispatch(groupX, 1, 1);
 
-    // 4. ¿¬»ê ¿Ï·á ÈÄ ÀÚ¿ø ÇØÁ¦ (ÆÄÀÌÇÁ¶óÀÎ ²¿ÀÓ ¹æÁö)
+    // 4. ì—°ì‚° ì™„ë£Œ í›„ ìì› í•´ì œ (íŒŒì´í”„ë¼ì¸ ê¼¬ì„ ë°©ì§€)
 
     ID3D11Buffer* nullCBuffer[] = { nullptr };
     ID3D11UnorderedAccessView* nullUAV[] = { nullptr };
@@ -197,7 +197,7 @@ HRESULT CParticle::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 
     pContext->DrawInstanced(4, m_iNumElements, 0, 0);
 
-    // ·»´õ¸µ Á¾·á ÈÄ ¸®¼Ò½º ÇØÁ¦
+    // ë Œë”ë§ ì¢…ë£Œ í›„ ë¦¬ì†ŒìŠ¤ í•´ì œ
     ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     pContext->VSSetShaderResources(0, 1, nullSRV);
 

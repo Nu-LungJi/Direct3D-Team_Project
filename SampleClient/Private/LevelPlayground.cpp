@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "LevelPlayground.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
@@ -39,7 +39,7 @@ HRESULT CLevelPlayground::Initialize()
 	}
 
 	{
-		//Á¦°ÅÇÔ ÀÏ´Ü ¿À·ù³ª¼­
+		//ì œê±°í•¨ ì¼ë‹¨ ì˜¤ë¥˜ë‚˜ì„œ
 		if(false)
 		{
 			CTestModel::DESC Desc{};
@@ -54,7 +54,7 @@ HRESULT CLevelPlayground::Initialize()
 
 	}
 
-	// Particle //¹®Á¦ÀÖ´Â ÄÚµå. Á¢±Ù±İÁö
+	// Particle //ë¬¸ì œìˆëŠ” ì½”ë“œ. ì ‘ê·¼ê¸ˆì§€
 	if(false){
 		CParticle::GAMEOBJECT_DESC Desc{};
 		Desc.sObjectTag = "Particle";

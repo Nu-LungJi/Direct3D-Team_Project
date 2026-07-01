@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
 
@@ -18,7 +18,7 @@ class  CParticle : public CGameObject
 public:
 	DECLARE_DERIVED_TYPE(CParticle, CGameObject);
 
-	// ¼ÎÀÌ´õ¿Í µ¥ÀÌÅÍ ÁÖÆÄ¼ö¸¦ ¸ÂÃß±â À§ÇÑ »ó¼ö ¹öÆÛ ±¸Á¶Ã¼ (À¯Áö)
+	// ì…°ì´ë”ì™€ ë°ì´í„° ì£¼íŒŒìˆ˜ë¥¼ ë§ì¶”ê¸° ìœ„í•œ ìƒìˆ˜ ë²„í¼ êµ¬ì¡°ì²´ (ìœ ì§€)
 	struct CB_ParticleUpdate
 	{
 		float    g_fTimeDelta;

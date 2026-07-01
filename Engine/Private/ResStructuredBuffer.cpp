@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "ResStructuredBuffer.h"
 #include "GameInstance.h"
 
@@ -31,16 +31,16 @@ HRESULT CResStructuredBuffer::Load(const std::any& arg)
     }
     m_eState = STATE::LOADING;
 
-    //ID3D11Buffer »ı¼ºÀ» À§ÇÑ ±¸Á¶È­ ¹öÆÛ °íÀ¯ Desc ¼³Á¤
+    //ID3D11Buffer ìƒì„±ì„ ìœ„í•œ êµ¬ì¡°í™” ë²„í¼ ê³ ìœ  Desc ì„¤ì •
     D3D11_BUFFER_DESC bufferDesc{};
     bufferDesc.ByteWidth = argDesc->iNumElements * argDesc->iStructureByteStride;
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT; // GPU ³»ºÎ Àü¿ë (°è»ê ¼ÎÀÌ´õ ¾²±â/ÀĞ±â)
+    bufferDesc.Usage = D3D11_USAGE_DEFAULT; // GPU ë‚´ë¶€ ì „ìš© (ê³„ì‚° ì…°ì´ë” ì“°ê¸°/ì½ê¸°)
     bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
     bufferDesc.CPUAccessFlags = 0;
     bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED; 
     bufferDesc.StructureByteStride = argDesc->iStructureByteStride;    
 
-    // ÃÊ±â µ¥ÀÌÅÍ ¼¼ÆÃ Ã³¸® (DynamicBuffer¿Í µ¿ÀÏÇÑ ¹æ½Ä Àû¿ë)
+    // ì´ˆê¸° ë°ì´í„° ì„¸íŒ… ì²˜ë¦¬ (DynamicBufferì™€ ë™ì¼í•œ ë°©ì‹ ì ìš©)
     D3D11_SUBRESOURCE_DATA subData{};
     D3D11_SUBRESOURCE_DATA* pSubData = nullptr;
     if (argDesc->pInitialData != nullptr)
@@ -49,13 +49,13 @@ HRESULT CResStructuredBuffer::Load(const std::any& arg)
         pSubData = &subData;
     }
 
-    // ¹öÆÛ »ı¼º
+    // ë²„í¼ ìƒì„±
     if (FAILED(m_pDevice->CreateBuffer(&bufferDesc, pSubData, m_pBuffer.GetAddressOf())))
     {
         return E_FAIL;
     }
 
-    //  ¼ÎÀÌ´õ ¸®¼Ò½º ºä »ı¼º (Á¤Á¡ ¼ÎÀÌ´õ(VS) ÀĞ±â¿ë SRV)
+    //  ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·° ìƒì„± (ì •ì  ì…°ì´ë”(VS) ì½ê¸°ìš© SRV)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
     srvDesc.Format = DXGI_FORMAT_UNKNOWN;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
@@ -67,7 +67,7 @@ HRESULT CResStructuredBuffer::Load(const std::any& arg)
         return E_FAIL;
     }
 
-    //  ¼ø¼­ ¾ø´Â ¾×¼¼½º ºä »ı¼º (°è»ê ¼ÎÀÌ´õ(CS) ¾²±â¿ë UAV)
+    //  ìˆœì„œ ì—†ëŠ” ì•¡ì„¸ìŠ¤ ë·° ìƒì„± (ê³„ì‚° ì…°ì´ë”(CS) ì“°ê¸°ìš© UAV)
     D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
     uavDesc.Format = DXGI_FORMAT_UNKNOWN; 
     uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
@@ -95,6 +95,6 @@ HRESULT CResStructuredBuffer::Unload(const std::any& arg)
 
 SPtr<CResStructuredBuffer> CResStructuredBuffer::Create()
 {
-    // ±âÁ¸ ÆÑÅä¸®¿Í ¿ÏÀüÈ÷ µ¿ÀÏÇÏ°Ô ±×·¡ÇÈ µğ¹ÙÀÌ½º¿Í ÄÁÅØ½ºÆ® ÁÖÀÔ
+    // ê¸°ì¡´ íŒ©í† ë¦¬ì™€ ì™„ì „íˆ ë™ì¼í•˜ê²Œ ê·¸ë˜í”½ ë””ë°”ì´ìŠ¤ì™€ ì»¨í…ìŠ¤íŠ¸ ì£¼ì…
     return ToSPtr(new CResStructuredBuffer{ CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext() });
 }

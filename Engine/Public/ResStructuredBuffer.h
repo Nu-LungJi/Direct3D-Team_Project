@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "Resource.h"
 NS_BEGIN(Engine)
 
@@ -9,9 +9,9 @@ public:
 public:
 	typedef struct tagDesc
 	{
-		uint32_t iNumElements = 0;          // ÆÄÆ¼Å¬ ÃÖ´ë °³¼ö (¿¹: 1000)
-		uint32_t iStructureByteStride = 0;  // ±¸Á¶Ã¼ 1°³ÀÇ Å©±â (sizeof(VTX_DROP_BLOCK_INSTANCED_DATA))
-		void* pInitialData = nullptr;    // ÃÊ±â µ¥ÀÌÅÍ ¹è¿­ Æ÷ÀÎÅÍ (»ı·« ½Ã nullptr)
+		uint32_t iNumElements = 0;          // íŒŒí‹°í´ ìµœëŒ€ ê°œìˆ˜ (ì˜ˆ: 1000)
+		uint32_t iStructureByteStride = 0;  // êµ¬ì¡°ì²´ 1ê°œì˜ í¬ê¸° (sizeof(VTX_DROP_BLOCK_INSTANCED_DATA))
+		void* pInitialData = nullptr;    // ì´ˆê¸° ë°ì´í„° ë°°ì—´ í¬ì¸í„° (ìƒëµ ì‹œ nullptr)
 	} DESC;
 private:
 	explicit CResStructuredBuffer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

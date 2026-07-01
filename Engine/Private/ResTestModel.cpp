@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "ResTestModel.h"
 #include "ResTestModelMesh.h"
 #include "ResTestModelBone.h"
@@ -221,7 +221,7 @@ _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 {
 	_bool           isFinished = { false };
 
-	/* »ÀµéÀÇ m_TransformationMatrix¸¦ °»½ÅÇØÁØ´Ù. */
+	/* ë¼ˆë“¤ì˜ m_TransformationMatrixë¥¼ ê°±ì‹ í•´ì¤€ë‹¤. */
 	isFinished = m_Animations[m_iCurrentAnimIndex]->Update_TransformationMatrices(fTimeDelta, m_Bones, m_isAnimLoop);
 
 	for (auto& pBone : m_Bones)

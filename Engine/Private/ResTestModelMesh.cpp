@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "ResTestModelMesh.h"
 #include "ResTestModelBone.h"
 #ifdef _DEBUG
@@ -278,7 +278,7 @@ HRESULT CResTestModelMesh::Ready_AnimMesh(CResTestModel* pModel, const aiMesh* p
 
         m_BoneIndices.push_back(iBoneIndex);
 
-        /* pAIBone->mNumWeights : ÀÌ »À°¡ ¿µÇâÀ» ÁÖ´Â Á¤Á¡ÀÇ °¹¼ö */
+        /* pAIBone->mNumWeights : ì´ ë¼ˆê°€ ì˜í–¥ì„ ì£¼ëŠ” ì •ì ì˜ ê°¯ìˆ˜ */
         for (size_t j = 0; j < pAIBone->mNumWeights; j++)
         {
             if (0 == pVertices[pAIBone->mWeights[j].mVertexId].vBlendWeights.x)

@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 #include "BTRoot.h"
 
-//¼¿·ºÅÍ ½ÃÄö½º¿ëµµ
+//ì…€ë ‰í„° ì‹œí€€ìŠ¤ìš©ë„
 NS_BEGIN(Engine)
 
 class  CBTComposite : public CBTRoot

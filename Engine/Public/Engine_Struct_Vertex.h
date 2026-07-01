@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 namespace Engine
 {
 	typedef struct tagVertexCol
@@ -59,7 +59,7 @@ namespace Engine
 	}VTX_FIRE_INSTANCED_DATA;
 
 
-	/* ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ¾ø´Â ¸Ş½Ã¿ë Á¤Á¡. */
+	/* ì• ë‹ˆë©”ì´ì…˜ì´ ì—†ëŠ” ë©”ì‹œìš© ì •ì . */
 	typedef struct tagVertexMesh
 	{
 		XMFLOAT3	vPosition;
@@ -79,7 +79,7 @@ namespace Engine
 		};
 	}VTXMESH;
 
-	/* ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ÀÖ´Â ¸Ş½Ã¿ë Á¤Á¡. */
+	/* ì• ë‹ˆë©”ì´ì…˜ì´ ìˆëŠ” ë©”ì‹œìš© ì •ì . */
 	typedef struct tagVertexAnimMesh
 	{
 		XMFLOAT3	vPosition;

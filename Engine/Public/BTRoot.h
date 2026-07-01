@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "Engine_Defines.h"
 
 enum class EVALUATE { SUCCESS, FAILED, RUN };
-//�Ѹ�
+//뿌리
 NS_BEGIN(Engine)
 class  CBTRoot : public CEngineBase
 {

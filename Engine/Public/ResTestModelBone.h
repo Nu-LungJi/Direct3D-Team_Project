@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Resource.h"
 struct aiNode;
@@ -44,8 +44,8 @@ public:
 	}
 private:
 	_char			m_szName[MAX_PATH] = {  };
-	_float4x4		m_TransformationMatrix = { }; /* ÀÌ »À¸¸ÀÇ »óÅÂÇà·Ä */
-	_float4x4		m_CombinedTransformationMatrix = {}; /* ºÎ¸ğ »ÀÀÇ »óÅÂ¸¦ Æ÷ÇÔÇÑ ÃÖÁ¾ Çà·Ä */
+	_float4x4		m_TransformationMatrix = { }; /* ì´ ë¼ˆë§Œì˜ ìƒíƒœí–‰ë ¬ */
+	_float4x4		m_CombinedTransformationMatrix = {}; /* ë¶€ëª¨ ë¼ˆì˜ ìƒíƒœë¥¼ í¬í•¨í•œ ìµœì¢… í–‰ë ¬ */
 	int32_t			m_iParentBoneIndex = { -1 };
 
 public:
