@@ -267,6 +267,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
+    <ClInclude Include="..\public\ParticleManager.h" />
     <ClInclude Include="..\Public\Prototype.h" />
     <ClInclude Include="..\Public\PrototypeManager.h" />
     <ClInclude Include="..\Public\Renderer.h" />
@@ -315,6 +316,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ResViewPort.h" />
     <ClInclude Include="..\Public\Slot.h" />
     <ClInclude Include="..\Public\SoundManager.h" />
+    <ClInclude Include="..\public\ResStructuredBuffer.h" />
     <ClInclude Include="..\Public\TimeProvider.h" />
     <ClInclude Include="..\Public\Timer.h" />
     <ClInclude Include="..\Public\UICamera.h" />
@@ -402,6 +404,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ImguiManager.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
     <ClCompile Include="..\Private\LevelManager.cpp" />
+    <ClCompile Include="..\private\ParticleManager.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />
     <ClCompile Include="..\Private\Renderer.cpp" />
@@ -448,6 +451,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResVIBuffer.cpp" />
     <ClCompile Include="..\Private\ResViewPort.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
+    <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
     <ClCompile Include="..\Private\TimeProvider.cpp" />
     <ClCompile Include="..\Private\Timer.cpp" />
     <ClCompile Include="..\Private\UICamera.cpp" />
@@ -465,6 +469,10 @@ call CopyClient.bat</Command>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\..\SampleClient\Bin\Resources\Engine\Shader\Particle\Shader_Particle_Compute.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

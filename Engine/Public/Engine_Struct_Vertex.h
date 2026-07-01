@@ -40,6 +40,24 @@ namespace Engine
 		uint32_t flag;
 	} VTX_POINT_PARTICLE;
 
+	typedef struct tagParticle {
+		_float3 position;
+		_float3 velocity;
+		_float life;
+		_float maxLife;
+		_float4 color;
+		_float size;
+		_bool alive;
+		_bool loop;
+	}PARTICLE;
+	typedef struct tagFireInstancedData
+	{
+		_float4x4 matWorld{};
+		uint32_t   texIndexs[6]{};
+		uint32_t   light{ 0xFF };
+		_float4 vColor{ 1.f, 1.f, 1.f, 1.f };
+	}VTX_FIRE_INSTANCED_DATA;
+
 
 	/* 애니메이션이 없는 메시용 정점. */
 	typedef struct tagVertexMesh

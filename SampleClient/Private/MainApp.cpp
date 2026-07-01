@@ -69,6 +69,24 @@ HRESULT CMainApp::Initialize()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_Structured_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_PARTICLE_TEX", CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_Structured_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+
 	}
 
 

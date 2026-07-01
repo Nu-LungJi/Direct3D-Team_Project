@@ -412,6 +412,13 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Particle", "./Resources/Engine/Shader/Particle/Shader_Particle_Compute.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 
 
 
@@ -523,6 +530,8 @@ HRESULT CGameInstance::InitializeResources()
 	}
 
 	// Test Model Load
+	// 오류나서 제거
+	if(false)
 	{
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./Resources/Engine/Shader/TestModel/Shader_VtxMesh.hlsl"))
 		{

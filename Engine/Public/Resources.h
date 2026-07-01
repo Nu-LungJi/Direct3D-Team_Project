@@ -7,7 +7,8 @@
 #include "ResQuadColBuffer.h"
 #include "ResQuadFullscreenTexBuffer.h"
 #include "ResQuadTexBuffer.h"
-
+#include "ResStructuredBuffer.h"
+#include "ComConstantBuffer.h"
 #include "ResFmodSound.h"
 
 #include "ResJson.h"
