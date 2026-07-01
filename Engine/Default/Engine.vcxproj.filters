@@ -187,9 +187,6 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{85f4ad7c-9f7e-4f61-a4b1-ec5ff04c84f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles\PostProcess">
-      <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -694,10 +691,10 @@
     <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\..\JUSIN_160_FINAL_TEAM_RESOURCE\Engine\Shader\ShaderDefines.hlsl">
+    <FxCompile Include="..\..\..\MyResource\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
+    <FxCompile Include="..\..\..\JUSIN_160_FINAL_TEAM_RESOURCE\Engine\Shader\ShaderDefines.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
