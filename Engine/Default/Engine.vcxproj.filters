@@ -238,6 +238,9 @@
     <Filter Include="ShaderManager">
       <UniqueIdentifier>{8c4a927c-c056-4793-822a-c8e18c8ed7cd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles">
+      <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -844,16 +847,24 @@
     <ClCompile Include="..\Private\UIManager.cpp">
       <Filter>GameObject\UI\UITool</Filter>
     </ClCompile>
-    <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl" />
-    <FxCompile Include="..\..\SampleClient\Bin\Resources\Engine\Shader\Particle\Shader_Particle_Compute.hlsl" />
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl" />
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\ShaderDefines.hlsl" />
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxAnimMesh.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\TestModel\Shader_VtxMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Bin\Resources\Engine\Shader\ShaderHeader\SH_SamplerState.hlsli" />
+    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
+      <Filter>ShaderFiles</Filter>
+    </None>
   </ItemGroup>
 </Project>

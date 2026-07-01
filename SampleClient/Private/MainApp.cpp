@@ -52,7 +52,7 @@ HRESULT CMainApp::Initialize()
 
 	// TODO   SampleClinet  초기 이니셜라이즈
 	{
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -61,7 +61,7 @@ HRESULT CMainApp::Initialize()
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -69,7 +69,7 @@ HRESULT CMainApp::Initialize()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_Structured_Particle.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -78,7 +78,7 @@ HRESULT CMainApp::Initialize()
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_PARTICLE_TEX", CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_Structured_Particle.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{

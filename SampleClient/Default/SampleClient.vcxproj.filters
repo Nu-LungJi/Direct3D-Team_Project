@@ -42,7 +42,7 @@
     </Filter>
     <Filter Include="GameObject\Monsters\BT">
       <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
-	</Filter>
+    </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
     </Filter>
@@ -51,6 +51,9 @@
     </Filter>
     <Filter Include="GameObject\TestModel">
       <UniqueIdentifier>{82e6f5e6-d781-49af-b141-9ac4fb7e508a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles">
+      <UniqueIdentifier>{095b09c3-adbb-42a6-be96-c9e009c52131}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -157,43 +160,9 @@
     <ClCompile Include="..\Private\Particle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Cell.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Deferred.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxAnimMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxCube.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxInstance_Particle_Point.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxInstance_Particle_Rect.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_VtxNorTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Structured_Particle.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\SampleClient\Shader\Shader_Particle_Compute.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <ClCompile Include="..\Private\TestModel.cpp">
       <Filter>GameObject\TestModel</Filter>
     </ClCompile>
-  
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>
     </ClCompile>
@@ -205,8 +174,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Bin\Resources\SampleClient\Shader\Engine_Shader_Defines.hlsli">
+    <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
       <Filter>ShaderFiles</Filter>
-    </None>
+    </FxCompile>
   </ItemGroup>
 </Project>

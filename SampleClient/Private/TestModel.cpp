@@ -27,13 +27,13 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 
 
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
-	//m_pResVertexShader = CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
+	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
 	{
 		return E_FAIL;
 	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
-	//m_pResPixelShader = CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
+	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;

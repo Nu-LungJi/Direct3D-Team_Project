@@ -34,13 +34,13 @@ HRESULT CTerrain::InitializePrototype(void* pArg)
 	}
 
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX");
-	//m_pResVertexShader = CResVertexShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
+	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
 	{
 		return E_FAIL;
 	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX");
-	//m_pResPixelShader = CResPixelShader::Create("./Resources/SampleClient/Shader/Shader_VtxNorTex.hlsl");
+	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;
