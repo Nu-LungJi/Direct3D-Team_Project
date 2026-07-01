@@ -69,7 +69,7 @@ void CLevelManager::UpdateGUI()
 	ImGui::End();
 
 
-	//m_pCurrentLevel->UpdateGUI();
+	m_pCurrentLevel->UpdateGUI();
 }
 
 void CLevelManager::FrameStart(_float fTimeDelta)

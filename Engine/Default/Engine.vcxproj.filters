@@ -190,6 +190,9 @@
     <Filter Include="ShaderFiles\PostProcess">
       <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\UITool">
+      <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -447,6 +450,9 @@
     <ClInclude Include="..\Public\Engine_Struct_Vertex.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\UIManager.h">
+      <Filter>GameObject\UI\UITool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -688,6 +694,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\UICamera.cpp">
       <Filter>GameObject\Camera\UICamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIManager.cpp">
+      <Filter>GameObject\UI\UITool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
