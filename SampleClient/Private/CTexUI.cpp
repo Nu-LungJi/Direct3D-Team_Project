@@ -1,23 +1,23 @@
-
 #include "pch.h"
-#include "BackGround.h"
+#include "CTexUI.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
 
 NS_USING(Client)
 
-CBackGround::CBackGround()
+CTexUI::CTexUI()
+{
+
+}
+
+CTexUI::~CTexUI()
 {
 }
 
-
-CBackGround::~CBackGround()
+HRESULT CTexUI::Initialize(void* pArg)
 {
-}
 
-HRESULT CBackGround::Initialize(void* pArg)
-{
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
 	pDesc->fSizeX = g_iWinSizeX;
 	pDesc->fSizeY = 200.f;
@@ -31,21 +31,22 @@ HRESULT CBackGround::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CBackGround::PriorityUpdate(E::_float fTimeDelta)
+void CTexUI::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CBackGround::Update(E::_float fTimeDelta)
+void CTexUI::Update(E::_float fTimeDelta)
 {
+
 }
 
-void CBackGround::LateUpdate(E::_float fTimeDelta)
+void CTexUI::LateUpdate(E::_float fTimeDelta)
 {
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
 
-HRESULT CBackGround::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
@@ -77,7 +78,7 @@ HRESULT CBackGround::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 			D3D11_MAPPED_SUBRESOURCE mappedSubResource;
 			if (SUCCEEDED(pContext->Map(pCbPerObject->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
 			{
-				
+
 				E::CB_PER_OBJECT cbPerObject{};
 				cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
 				XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
@@ -104,23 +105,23 @@ HRESULT CBackGround::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 	return S_OK;
 }
 
-E::UPtr<CBackGround> CBackGround::Create()
+E::UPtr<CTexUI> CTexUI::Create()
 {
-	auto pInstance = E::ToUPtr(new CBackGround{});
+	auto pInstance = E::ToUPtr(new CTexUI{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CBackGround");
+		MSG_BOX("Failed to Created : CTexUI");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CBackGround::Clone(void* pArg)
+E::UPtr<E::CPrototype> CTexUI::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CBackGround{ *this });
+	auto	pInstance = E::ToUPtr(new CTexUI{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CBackGround");
+		MSG_BOX("Failed to Cloned : CTexUI");
 		return nullptr;
 	}
 

@@ -68,7 +68,12 @@ namespace Engine
 		_float _pad{};
 	} SPOT_LIGHT;
 
-
+	typedef struct tagUiDesc
+	{
+		_string name;
+		_float2 Pos;
+		_float2 Scale;
+	} UI_DESC;
 
 	
 

@@ -40,6 +40,12 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{3bc87184-653e-491d-b276-19a3f34bc557}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI">
+      <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\UiEditor">
+      <UniqueIdentifier>{4dbab323-49ba-4254-9b54-55ad74f1e917}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -87,6 +93,12 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\CTexUI.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditor.h">
+      <Filter>Level\UiEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -128,6 +140,12 @@
     </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CTexUI.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelUIEditor.cpp">
+      <Filter>Level\UiEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
