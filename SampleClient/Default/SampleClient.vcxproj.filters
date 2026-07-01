@@ -37,9 +37,6 @@
     <Filter Include="Resource\Buffer">
       <UniqueIdentifier>{314c6dc0-716a-40bc-b990-a48202075419}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles">
-      <UniqueIdentifier>{3bc87184-653e-491d-b276-19a3f34bc557}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
     </Filter>
@@ -147,10 +144,5 @@
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\SampleClient\Shader\Shader_VtxNorTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
   </ItemGroup>
 </Project>
