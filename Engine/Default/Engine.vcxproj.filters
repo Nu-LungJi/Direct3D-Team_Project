@@ -184,12 +184,6 @@
     <Filter Include="GameObject\Camera\UICamera">
       <UniqueIdentifier>{7b11d538-0c52-4c53-b765-ceff8b82410a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles">
-      <UniqueIdentifier>{85f4ad7c-9f7e-4f61-a4b1-ec5ff04c84f2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ShaderFiles\PostProcess">
-      <UniqueIdentifier>{0b6bbb86-1dde-4170-8da5-5af88a103b1e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\BeHavior">
       <UniqueIdentifier>{eeb87804-96a4-445d-b56d-cd299f59d99a}</UniqueIdentifier>
     </Filter>
@@ -740,16 +734,5 @@
     <ClCompile Include="..\Private\BTActionNode.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="..\..\..\MyResource\Engine\Shader\Shader_Deferred_Combined_Offscreen.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\..\JUSIN_160_FINAL_TEAM_RESOURCE\Engine\Shader\ShaderDefines.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\Bin\Resources\Engine\Shader\FullscreenQuad\FullscreenQuad.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
   </ItemGroup>
 </Project>
