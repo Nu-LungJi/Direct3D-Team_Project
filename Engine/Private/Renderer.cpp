@@ -164,7 +164,7 @@ HRESULT CRenderer::InitializeOffscreen()
     }
 
     {
-        if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_OffscreenCombined", "./Resources/Engine/Shader/Shader_Deferred_Combined_Offscreen.hlsl"))
+        if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_OffscreenCombined", "./ShaderFiles/Shader_Deferred_Combined_Offscreen.hlsl"))
         {
             if (FAILED(res->Load()))
             {
@@ -172,7 +172,7 @@ HRESULT CRenderer::InitializeOffscreen()
             }
             m_pOffScreenVertexShader = res;
         }
-        if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_OffscreenCombined", "./Resources/Engine/Shader/Shader_Deferred_Combined_Offscreen.hlsl"))
+        if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_OffscreenCombined", "./ShaderFiles/Shader_Deferred_Combined_Offscreen.hlsl"))
         {
             if (FAILED(res->Load()))
             {
@@ -262,14 +262,14 @@ HRESULT CRenderer::InitializeFullscreen()
         }
     }
 
-    if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullscreenQuad", "./Resources/Engine/Shader/FullscreenQuad/FullscreenQuad.hlsl"))
+    if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullscreenQuad", "./ShaderFiles/FullscreenQuad/FullscreenQuad.hlsl"))
     {
         if (FAILED(res->Load()))
         {
             return E_FAIL;
         }
     }
-    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_FullscreenQuad", "./Resources/Engine/Shader/FullscreenQuad/FullscreenQuad.hlsl"))
+    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_FullscreenQuad", "./ShaderFiles/FullscreenQuad/FullscreenQuad.hlsl"))
     {
         if (FAILED(res->Load()))
         {
@@ -401,13 +401,13 @@ HRESULT CRenderer::InitializeTargetNormal()
 HRESULT CRenderer::InitilizePostProcess(){
 
     // PixelShader Create
-    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./Resources/Engine/Shader/PostProcess/PS_PostProcess_Filter.hlsl"))
+    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
     {
         if (FAILED(res->Load()))    return E_FAIL;
     }
 
     // PixelShader Create
-    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./Resources/Engine/Shader/PostProcess/PS_PostProcess_Filter.hlsl"))
+    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
     {
         if (FAILED(res->Load()))    return E_FAIL;
     }

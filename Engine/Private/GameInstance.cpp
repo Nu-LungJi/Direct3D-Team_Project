@@ -383,43 +383,43 @@ HRESULT CGameInstance::InitializeResources()
 
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
-
-	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./Resources/Engine/Shader/QuadTex/QuadTex.hlsl"))
+	//./ShaderFiles
+	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex", "./Resources/Engine/Shader/QuadTex/QuadTex.hlsl"))
+	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadCol", "./Resources/Engine/Shader/QuadCol/QuadCol.hlsl"))
+	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadCol", "./ShaderFiles/QuadCol/QuadCol.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadCol", "./Resources/Engine/Shader/QuadCol/QuadCol.hlsl"))
+	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadCol", "./ShaderFiles/QuadCol/QuadCol.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter", "./Resources/Engine/Shader/PostProcess/PS_PostProcess_Filter.hlsl"))
+	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Particle", "./Resources/Engine/Shader/Particle/Shader_Particle_Compute.hlsl"))
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Particle", "./ShaderFiles/Particle/Shader_Particle_Compute.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -540,14 +540,14 @@ HRESULT CGameInstance::InitializeResources()
 	// 오류나서 제거
 	if(false)
 	{
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./Resources/Engine/Shader/TestModel/Shader_VtxMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi", "./Resources/Engine/Shader/TestModel/Shader_VtxMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -555,14 +555,14 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./Resources/Engine/Shader/TestModel/Shader_VtxAnimMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim", "./Resources/Engine/Shader/TestModel/Shader_VtxAnimMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
