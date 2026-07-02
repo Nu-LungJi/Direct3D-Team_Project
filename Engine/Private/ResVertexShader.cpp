@@ -23,6 +23,7 @@ HRESULT CResVertexShader::Load(const std::any& arg)
 	if (FAILED(m_pDevice->CreateVertexShader(m_pBlob->GetBufferPointer(),
 		m_pBlob->GetBufferSize(), nullptr, &m_pVertexShader)))
 	{
+        MSG_BOX_STR(_wstring{ L"CreateVertexShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
@@ -128,6 +129,7 @@ HRESULT CResVertexShader::Load(const std::any& arg)
 
 		if (FAILED(hr))
 		{
+            MSG_BOX_STR(_wstring{ L"CreateVertexShader Create InputLayout Faield Path:" + StringToWString(m_sPath) }.c_str());
 			m_eState = STATE::LOADFAIL;
 			return E_FAIL;
 		}
