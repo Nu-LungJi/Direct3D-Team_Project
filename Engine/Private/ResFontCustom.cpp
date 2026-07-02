@@ -16,6 +16,7 @@ HRESULT CResFontCustom::Load(const std::any& arg)
 		m_pFont = std::make_unique<SpriteFont>(m_pDevice.Get(), StringToWString(m_sPath).c_str());
 		if (!m_pFont)
 		{
+			MSG_BOX_STR(_wstring{ L"CResFontCustom Faield Path:" + StringToWString(m_sPath) }.c_str());
 			m_eState = STATE::LOADFAIL;
 			return E_FAIL;
 		}
