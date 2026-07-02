@@ -158,9 +158,9 @@ PS_OUT PSMain(PS_IN IN)
     float3 FinalColor = ChromaticAberration(DistortedCoord);
     
     // ToneMapping
-    //FinalColor = ToneMap_ACESFilm(FinalColor);
-    FinalColor = ToneMap_Reinhard(FinalColor);
-    //FinalColor = ToneMap_AGXFilm(FinalColor);
+    FinalColor = ToneMap_ACESFilm(FinalColor);
+    //FinalColor = ToneMap_Reinhard(FinalColor);
+    //FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
     
     // LUT ColorGrading
     FinalColor = LUT_Filtering(FinalColor);

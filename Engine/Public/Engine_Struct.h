@@ -68,6 +68,22 @@ namespace Engine
 		_float _pad{};
 	} SPOT_LIGHT;
 
+	typedef struct tagDynamicLight {
+		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
+
+		_float3  LightDirection;
+		_float3  LightColor;
+		_float   LightIntensity;
+		_float   LightRange;
+
+		_float3  Position;
+
+		_float   InnerAttanuation;
+		_float   OuterAttanuation;
+
+		_float2  LightPadding;
+	} DYNAMIC_LIGHT;
+
 	typedef struct tagPostProcess
 	{
 		_float DistortionIntensity;  // 왜곡 강도

@@ -10,5 +10,6 @@ namespace Client
 		PLAYGROUND,
 		UIEDITOR,
 		ANIMEDITOR,
+		LIGHTMAP
 	};
 }

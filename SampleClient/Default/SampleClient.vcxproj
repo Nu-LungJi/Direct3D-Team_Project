@@ -182,6 +182,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\CTexUI.h" />
     <ClInclude Include="..\public\Goblin.h" />
     <ClInclude Include="..\public\Gobline.h" />
+    <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\Public\LevelLoading.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -216,6 +217,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\private\Goblin.cpp" />
     <ClCompile Include="..\private\Gobline.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp" />
+    <ClCompile Include="..\Private\LevelLightMap.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>

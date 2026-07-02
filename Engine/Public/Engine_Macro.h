@@ -71,3 +71,5 @@
 //		}
 
 #define IMGUI_ENABLE
+
+#define MAX_LIGHT_COUNT 8
