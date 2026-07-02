@@ -526,6 +526,7 @@ HRESULT CRenderer::Draw()
             auto pGameCam = CGameInstance::Get().GetActiveCamera();
             if (!pGameCam)
             {
+                //MSG_BOX("Renderer Draw(), Activated Camera is Null");
                 return S_OK;
             }
             ctx.matProj = pGameCam->GetProj();
@@ -588,12 +589,8 @@ HRESULT CRenderer::Draw()
         
         //UI
         {
+            if (auto pUICame = CGameInstance::Get().GetCamera("UI"))
             {
-                auto pUICame = CGameInstance::Get().GetCamera("UI");
-                if (!pUICame)
-                {
-                    return S_OK;
-                }
                 {
                     ctx.matProj = pUICame->GetProj();
                     ctx.matView = pUICame->GetView();
@@ -618,11 +615,10 @@ HRESULT CRenderer::Draw()
                     m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
                     m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
                 }
-            }
-
-            if (FAILED(RenderUI(ctx)))
-            {
-                return E_FAIL;
+                if (FAILED(RenderUI(ctx)))
+                {
+                    return E_FAIL;
+                }
             }
         }
 

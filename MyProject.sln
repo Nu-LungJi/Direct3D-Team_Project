@@ -9,6 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client", "Client\Default\Cl
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleClient", "SampleClient\Default\SampleClient.vcxproj", "{BBFBD721-094E-4036-A10A-275FE16E11C2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{ECBDF637-E268-4652-959A-B4065884083B} = {ECBDF637-E268-4652-959A-B4065884083B}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Default\Engine.vcxproj", "{ECBDF637-E268-4652-959A-B4065884083B}"
 EndProject
