@@ -2,9 +2,9 @@
 #include "TestModel.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "ComModelInstance.h"
 #include "Resources.h"
 #include "GameInstance.h"
-
 NS_USING(Client)
 
 CTestModel::CTestModel()
@@ -16,13 +16,18 @@ CTestModel::~CTestModel()
 {
 }
 
+void CTestModel::UpdateGUI()
+{
+	CGameObject::UpdateGUI();
+	if (ImGui::Button("z"))
+	{
+
+	}
+}
+
 HRESULT CTestModel::InitializePrototype(void* pArg)
 {
-	m_pResTestModel = CGameInstance::Get().GetResourceFirst<CResTestModel>("TEST", "Model_Resource");
-	if (!m_pResTestModel)
-	{
-		return E_FAIL;
-	}
+
 
 
 
@@ -64,6 +69,16 @@ HRESULT CTestModel::Initialize(void* pArg)
 		};
 	}
 
+	{
+		CComModelInstance::DESC Desc{};
+		Desc.pModel = CGameInstance::Get().GetResourceFirst<CResTestModel>("TEST", "Model_Resource");
+
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
+		{
+			return E_FAIL;
+		};
+	}
+
 
 	return S_OK;
 }
@@ -74,7 +89,7 @@ void CTestModel::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestModel::Update(E::_float fTimeDelta)
 {
-	m_pResTestModel->Play_Animation(fTimeDelta);
+	m_pComModelInstance->GetModel()->Play_Animation(fTimeDelta);
 }
 
 void CTestModel::LateUpdate(E::_float fTimeDelta)
@@ -106,11 +121,13 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
 
-	uint32_t	iNumMeshes = m_pResTestModel->Get_NumMeshes();
 
 
+	auto pModel = m_pComModelInstance->GetModel(); 
+
+	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
 	for (uint32_t i = 0; i < iNumMeshes; ++i) {
-		const auto& viBuffer = m_pResTestModel->GetMeshes()[i];
+		const auto& viBuffer = pModel->GetMeshes()[i];
 
 
 		ID3D11Buffer* vertexBuffers[] = {
@@ -132,12 +149,12 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		//}
 
 		{
-			m_pResTestModel->Bind_Materials(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+			m_pComModelInstance->Bind_Materials(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
 		
 		}
 
 		{
-			m_pResTestModel->Bind_BoneMatrices(i);
+			m_pComModelInstance->Bind_BoneMatrices(i);
 		}
 
 		{

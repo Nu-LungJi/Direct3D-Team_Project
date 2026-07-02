@@ -18,6 +18,7 @@
 #include "FlyCamera.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
+#include "ComModelInstance.h"
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -538,7 +539,7 @@ HRESULT CGameInstance::InitializeResources()
 
 	// Test Model Load
 	// 오류나서 제거
-	if(false)
+	if(true)
 	{
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
@@ -571,17 +572,17 @@ HRESULT CGameInstance::InitializeResources()
 		}
 
 
-		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
 
-		//	E::CResTestModel::DESC pDesc{};
-		//	pDesc.eModelType = MODEL::ANIM;
-		//	pDesc.PreTransformMatrix = XMMatrixIdentity();
+			E::CResTestModel::DESC pDesc{};
+			pDesc.eModelType = MODEL::ANIM;
+			pDesc.PreTransformMatrix = XMMatrixIdentity();
 
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
 
 		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.FBX"))) {
 
@@ -607,6 +608,11 @@ HRESULT CGameInstance::InitializePrototype()
 	}
 
 	if (AddPrototype("PERMANENT", "Prototype_Component_ConstantBuffer", CComConstantBuffer::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (AddPrototype("PERMANENT", "Prototype_Component_ModelInstance", CComModelInstance::Create()))
 	{
 		return E_FAIL;
 	}

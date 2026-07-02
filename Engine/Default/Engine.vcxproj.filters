@@ -241,6 +241,18 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\Model\ComModelInstance">
+      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimMontage">
+      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimator">
+      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AnimationEditor">
+      <UniqueIdentifier>{5068b7e8-6054-49e9-b16c-65ba14323f27}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -552,6 +564,18 @@
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ComModelInstance.h">
+      <Filter>Component\Model\ComModelInstance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComAnimator.h">
+      <Filter>Component\Model\ComAnimator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComAnimMontage.h">
+      <Filter>Component\Model\ComAnimMontage</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\AnimEdit_Manager.h">
+      <Filter>AnimationEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -823,6 +847,18 @@
     </ClCompile>
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComModelInstance.cpp">
+      <Filter>Component\Model\ComModelInstance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComAnimator.cpp">
+      <Filter>Component\Model\ComAnimator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComAnimMontage.cpp">
+      <Filter>Component\Model\ComAnimMontage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\AnimEdit_Manager.cpp">
+      <Filter>AnimationEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

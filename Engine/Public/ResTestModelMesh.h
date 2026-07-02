@@ -26,20 +26,21 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
-
-public:
-	HRESULT Bind_BoneMatrices(const std::vector<SPtr< CResTestModelBone>>& Bones);
-
-
+	
 private:
 	HRESULT Ready_NonAnimMesh(const aiMesh* pAIMesh, _fmatrix PreTransformMatrix);
 	HRESULT	Ready_AnimMesh(class CResTestModel* pModel, const aiMesh* pAIMesh);
 
 
 public:
-	uint32_t Get_MaterialIndex() const {
-		return m_iMaterialIndex;
-	}
+	uint32_t Get_MaterialIndex() const {return m_iMaterialIndex;}
+	uint32_t Get_BoneIndex() const {return m_iNumBones;}
+
+public:
+	std::vector<uint32_t>& GetBoneIndices() { return m_BoneIndices; }
+	std::vector<_float4x4>& GetBoneMatrices() { return m_BoneMatrices; }
+	std::vector<_float4x4>& GetOffsetMatrices() { return m_OffsetMatrices; }
+	ComPtr<ID3D11Buffer> GetCBBones() { return m_pCBBones; }
 private:
 	ComPtr<ID3D11Buffer> m_pCBBones;
 
