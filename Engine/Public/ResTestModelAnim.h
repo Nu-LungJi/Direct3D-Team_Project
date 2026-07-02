@@ -26,6 +26,19 @@ public:
 
 	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResTestModelBone>>& Bones, _bool isLoop);
 
+
+public:
+	_float  GetDuration() const { return m_fDuration; }
+	_float  GetTickPerSecond() const { return m_fTickPerSecond; }
+	_float  GetCurrentTrackPosition() const { return m_fCurrentTrackPosition; }
+
+	void    SetDuration(_float fDuration) { m_fDuration = fDuration; }
+	void    SetTickPerSecond(_float fTickPerSecond) { m_fTickPerSecond = fTickPerSecond; }
+	void    SetCurrentTrackPosition(_float fCurrentTrackPosition) { m_fCurrentTrackPosition = fCurrentTrackPosition; }
+
+
+
+
 private:
 	/* 이 애니메이션의 총 길이. */
 	_float				m_fDuration = {};

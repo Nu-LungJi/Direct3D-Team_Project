@@ -142,48 +142,6 @@ HRESULT CResTestModelMesh::Unload(const std::any& arg)
 	return S_OK;
 }
 
-HRESULT CResTestModelMesh::Bind_BoneMatrices(const std::vector<SPtr<CResTestModelBone>>& Bones)
-{
-    for (size_t i = 0; i < m_iNumBones; i++)
-    {
-        XMStoreFloat4x4(&m_BoneMatrices[i],
-            XMLoadFloat4x4(&m_OffsetMatrices[i]) * Bones[m_BoneIndices[i]]->Get_CombinedTransformationMatrix());
-    }
-    if (!m_BoneMatrices.empty())
-    {
-        auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
-
-        D3D11_MAPPED_SUBRESOURCE MappedResource{};
-
-        if (FAILED(pContext->Map(m_pCBBones.Get(),0, D3D11_MAP_WRITE_DISCARD,0,&MappedResource)))
-        {
-            return E_FAIL;
-        }
-
-        _float4x4* pBoneMatrices = reinterpret_cast<_float4x4*>(MappedResource.pData);
-
-        for (uint32_t i = 0; i < 512; ++i)
-        {
-            XMStoreFloat4x4( &pBoneMatrices[i],XMMatrixIdentity());
-        }
-
-        const uint32_t iBoneCount = static_cast<uint32_t>(std::min<size_t>(m_BoneMatrices.size(), 512));
-
-        memcpy(pBoneMatrices,m_BoneMatrices.data(),sizeof(_float4x4) * iBoneCount );
-
-        pContext->Unmap(m_pCBBones.Get(), 0);
-
-        ID3D11Buffer* pCBBones = m_pCBBones.Get();
-
-        pContext->VSSetConstantBuffers(2,1,&pCBBones);
-    }
-
- 
-
-    return S_OK;
-
-}
-
 HRESULT CResTestModelMesh::Ready_NonAnimMesh(const aiMesh* pAIMesh, _fmatrix PreTransformMatrix)
 {
     m_iVertexStride = sizeof(VTXMESH);

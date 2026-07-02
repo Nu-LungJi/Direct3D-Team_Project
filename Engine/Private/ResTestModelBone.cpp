@@ -84,6 +84,7 @@ void CResTestModelBone::Update_CombinedTransformationMatrix(const std::vector<SP
 }
 
 
+
 SPtr<CResTestModelBone> CResTestModelBone::Create(const _string& sPath)
 {
 	return ToSPtr(new CResTestModelBone{ sPath });

@@ -26,7 +26,9 @@ public:
 public:
 	std::vector<SPtr<CResTexture2D>>* GetTextures() { return m_Materials; }
 	uint32_t GetMaterialSize() const { return ENG_AI_TEXTURE_TYPE_MAX ; }
-	HRESULT Bind_ShaderResource( AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
+	
+
+
 private:
 	std::vector<SPtr<CResTexture2D>>			m_Materials[ENG_AI_TEXTURE_TYPE_MAX];
 public:

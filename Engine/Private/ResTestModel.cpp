@@ -159,6 +159,8 @@ HRESULT CResTestModel::Ready_Meshes()
 
 		m_Meshes.push_back(pAIMesh);
 	}
+
+	return S_OK;
 }
 
 HRESULT CResTestModel::Ready_Animation()
@@ -216,7 +218,6 @@ const _float4x4* CResTestModel::Get_BoneMatrixPtr(const _char* pBoneName)
 	return (*iter)->Get_CombinedTransformationMatrixPtr();
 }
 
-
 _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 {
 	_bool           isFinished = { false };
@@ -231,22 +232,8 @@ _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 
 	return isFinished;
 
+
 }
-
-HRESULT CResTestModel::Bind_BoneMatrices( uint32_t iMeshIndex)
-{
-	return m_Meshes[iMeshIndex]->Bind_BoneMatrices(m_Bones);
-}
-
-HRESULT CResTestModel::Bind_Materials(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
-{
-	return m_Materials[m_Meshes[iMeshIndex]->Get_MaterialIndex()]->Bind_ShaderResource(eMaterialType, iTextureIndex);
-}
-
-
-
-
-
 
 SPtr<CResTestModel> CResTestModel::Create(const _string& sPath)
 {
