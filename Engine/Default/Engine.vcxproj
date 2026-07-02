@@ -162,6 +162,9 @@
       <Command>cd /d $(SolutionDir)
 call CopyClient.bat</Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -189,6 +192,9 @@ call CopyClient.bat</Command>
       <Command>cd /d $(SolutionDir)
 call CopyClient.bat</Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
@@ -470,28 +476,13 @@ call CopyClient.bat</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl" />
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl" />
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </None>
+    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
