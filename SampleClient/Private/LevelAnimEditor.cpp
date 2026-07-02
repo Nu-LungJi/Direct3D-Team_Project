@@ -28,7 +28,7 @@ HRESULT CLevelAnimEditor::Initialize()
 		Desc.sObjectTag = "TestModel";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestModel",
-			"02_TestModel", &Desc))
+			"TestModelLayer", &Desc))
 		{
 			int x = 0;
 		}
@@ -76,6 +76,7 @@ HRESULT CLevelAnimEditor::Initialize()
 		}
 	}
 
+	CGameInstance::Get().SetupTestModel();;
 	return S_OK;
 }
 
@@ -108,6 +109,8 @@ void CLevelAnimEditor::FrameStart(E::_float fTimeDelta)
 {
 
 }
+
+
 
 Engine::UPtr<CLevelAnimEditor> CLevelAnimEditor::Create()
 {

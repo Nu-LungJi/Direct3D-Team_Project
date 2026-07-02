@@ -218,9 +218,6 @@ const _float4x4* CResTestModel::Get_BoneMatrixPtr(const _char* pBoneName)
 	return (*iter)->Get_CombinedTransformationMatrixPtr();
 }
 
-
-
-
 _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 {
 	_bool           isFinished = { false };
@@ -237,10 +234,6 @@ _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 
 
 }
-
-
-
-
 
 SPtr<CResTestModel> CResTestModel::Create(const _string& sPath)
 {

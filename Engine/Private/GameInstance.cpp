@@ -18,7 +18,10 @@
 #include "FlyCamera.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
+#include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
+#include "ComAnimator.h"
+
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -132,6 +135,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
+	if(m_pAnimEdit_Manager == nullptr)
+	{
+		return E_FAIL;
+	}	
+
 	//m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
 	//if (m_pLightManager == nullptr)
 	//{
@@ -160,6 +169,8 @@ void CGameInstance::UpdateGUI()
 	m_pPrototypeManager->UpdateGUI();
 
 	m_pGameObjectManager->UpdateGUI();
+
+	m_pAnimEdit_Manager->UpdateGUI();
 
 	m_pWorkerManager->UpdateGUI();
 
@@ -224,6 +235,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 
 	//m_pParticleManager->Update(fTimeDelta);
+	m_pAnimEdit_Manager->Update(fTimeDelta);
 
 
 	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
@@ -251,6 +263,7 @@ void CGameInstance::Release_Engine()
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
+	m_pAnimEdit_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
@@ -263,7 +276,6 @@ void CGameInstance::Release_Engine()
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pResourceManager.reset();
-
 	m_pGraphicDevice.reset();
 }
 
@@ -613,6 +625,10 @@ HRESULT CGameInstance::InitializePrototype()
 	}
 
 	if (AddPrototype("PERMANENT", "Prototype_Component_ModelInstance", CComModelInstance::Create()))
+	{
+		return E_FAIL;
+	}
+	if (AddPrototype("PERMANENT", "Prototype_Component_Animator", CComAnimator::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1029,5 +1045,11 @@ HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& han
 HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
 	return m_pRenderer->AddRenderObject(eRenderGroup, pRenderObject);
+}
+#pragma endregion
+
+#pragma region ANIMEDIT_MANAGER
+HRESULT CGameInstance::SetupTestModel() {
+	return m_pAnimEdit_Manager->SetupTestModel();
 }
 #pragma endregion

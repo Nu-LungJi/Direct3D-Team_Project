@@ -6,6 +6,8 @@
 NS_BEGIN(Engine)
 class CComModelInstance;
 class CComAnimMontage;
+class CResTestModelAnim;
+
 
 class ENGINE_DLL CComAnimator : public CComponent
 {
@@ -14,6 +16,12 @@ public:
 	{
 		CComModelInstance* _pModelInstance;
 	}DESC;
+
+public:
+	enum ANIMTYPE{
+		ANIM, MONTAGE
+	};
+
 public:
 	DECLARE_DERIVED_TYPE(CComAnimator, CComponent)
 
@@ -28,21 +36,29 @@ private:
 public:
 	HRESULT Update(_float fTimeDelta);
 
-	HRESULT Play_AnimationMontage(const std::string& strAnimMontageName);
+	HRESULT Play_AnimationMontage(_float fTimeDelta, const std::string& strAnimMontageName);
 	 
 
 public:
 	HRESULT AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum);
 	HRESULT AnimEditor_Play_AnimMontage(_float fTimeDelta, const std::string& strAnimMontageName);
 
+public:
+	uint32_t GetAnimationTYPE() const { return ETOUI(m_iPlayAnimationType); }
+	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }	
 
-
+	uint32_t GetPlayAnimIndex() const { return m_iPlayAnimIndex; }
+	void SetPlayAnimIndex(uint32_t iIndex) { m_iPlayAnimIndex = iIndex; }
 
 private:
 	CComModelInstance* m_pModelInstance;
 	std::unordered_map <std::string, CComAnimMontage*> m_mapAnimMontages;
 
-
+private:
+	ANIMTYPE		m_iPlayAnimationType{ ANIMTYPE::ANIM };
+	uint32_t		m_iPlayAnimationNum{ 0 };
+	uint32_t		m_iPlayAnimIndex{ 0 };
+	uint32_t		m_iPlayAnimMonatgueIndex{ 0 };
 public:
 	static UPtr<CComAnimator> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

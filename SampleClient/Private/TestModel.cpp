@@ -3,6 +3,7 @@
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
+#include "ComAnimator.h"
 #include "Resources.h"
 #include "GameInstance.h"
 NS_USING(Client)
@@ -19,10 +20,7 @@ CTestModel::~CTestModel()
 void CTestModel::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
-	if (ImGui::Button("z"))
-	{
 
-	}
 }
 
 HRESULT CTestModel::InitializePrototype(void* pArg)
@@ -79,6 +77,16 @@ HRESULT CTestModel::Initialize(void* pArg)
 		};
 	}
 
+	{
+		CComAnimator::DESC DescAnim{};
+		DescAnim._pModelInstance = GetComponent<CComModelInstance>("ComCModelIntance");
+
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
+		{
+			return E_FAIL;
+		};
+	}
+
 
 	return S_OK;
 }
@@ -89,7 +97,7 @@ void CTestModel::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestModel::Update(E::_float fTimeDelta)
 {
-	m_pComModelInstance->GetModel()->Play_Animation(fTimeDelta);
+	m_pModelAnimator->Update(fTimeDelta);
 }
 
 void CTestModel::LateUpdate(E::_float fTimeDelta)

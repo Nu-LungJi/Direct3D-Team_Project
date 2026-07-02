@@ -37,11 +37,21 @@ HRESULT CComAnimator::Initialize(void* pArg)
 
 HRESULT CComAnimator::Update(_float fTimeDelta)
 {
+    switch (m_iPlayAnimationType) {
+    case ANIMTYPE::MONTAGE: {
+        Play_AnimationMontage(fTimeDelta, "");
+        }
+        break;
+    case ANIMTYPE::ANIM: {
+		AnimEditor_Play_AnimResource(fTimeDelta, m_iPlayAnimIndex);
+        }
+        break;
+    }
 
     return S_OK;
 }
 
-HRESULT CComAnimator::Play_AnimationMontage(const std::string& strAnimMontageName)
+HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, const std::string& strAnimMontageName)
 {
     return S_OK;
 }
@@ -71,10 +81,6 @@ HRESULT CComAnimator::AnimEditor_Play_AnimMontage(_float fTimeDelta, const std::
 {
     return S_OK;
 }
-
-
-
-
 
 UPtr<CComAnimator> CComAnimator::Create()
 {

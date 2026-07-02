@@ -18,6 +18,8 @@ public:
 	void UpdateGUI() override;
 	void FrameStart(_float fTimeDelta) override;
 
+
+
 public:
 	static UPtr<CLevelAnimEditor> Create();
 

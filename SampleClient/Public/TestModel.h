@@ -9,6 +9,7 @@ class CResPixelShader;
 class CResSamplerState;
 class CResTestModel;
 class CComModelInstance;
+class CComAnimator;
 NS_END
 
 NS_BEGIN(Client)
@@ -38,6 +39,7 @@ public:
 
 private:
 	CComModelInstance*   m_pComModelInstance{};
+	CComAnimator*		 m_pModelAnimator{};
 
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
