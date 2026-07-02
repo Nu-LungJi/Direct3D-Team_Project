@@ -21,6 +21,7 @@ class CPrototype;
 class CColliderManager;
 class CCollider;
 class CRenderer;
+class CAnimEdit_Manager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -236,6 +237,11 @@ public:
 	}
 #pragma endregion
 
+#pragma region ANIM_MANAGER
+public:
+	HRESULT SetupTestModel();
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -273,6 +279,7 @@ private:
 	//UPtr<CVoxelManager3> m_pVoxelManager3{};
 	//UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
+	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
 

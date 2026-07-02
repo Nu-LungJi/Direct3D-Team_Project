@@ -59,6 +59,8 @@ namespace E = Engine;
 //#include "ExStruct.h"
 
 //#include "tracy/Tracy.hpp"
+#include "tracy/Tracy.hpp"
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <ImGuizmo.h>

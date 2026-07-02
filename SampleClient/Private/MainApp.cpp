@@ -50,6 +50,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::UIEDITOR));
 		});
 
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_ANIMEditor", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::ANIMEDITOR));
+		});
+
 	// TODO   SampleClinet  초기 이니셜라이즈
 	{
 		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))

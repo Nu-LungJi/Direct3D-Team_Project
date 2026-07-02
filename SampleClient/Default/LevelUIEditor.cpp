@@ -143,7 +143,7 @@ void CLevelUIEditor::UpdateGUI()
 	}
 
 	ImGui::End();
-}
+}  
 
 void CLevelUIEditor::FrameStart(E::_float fTimeDelta)
 {

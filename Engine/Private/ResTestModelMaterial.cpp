@@ -124,17 +124,7 @@ HRESULT CResTestModelMaterial::Unload(const std::any& arg)
 	return S_OK;
 }
 
-HRESULT CResTestModelMaterial::Bind_ShaderResource( AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
-{
 
-
-	if (m_Materials[eMaterialType][iTextureIndex] == nullptr)
-		return S_OK;
-	CGameInstance::Get().GetGraphicDeviceContext()->PSSetShaderResources(eMaterialType, 1, m_Materials[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
-
-
-	return S_OK;
-}
 
 SPtr<CResTestModelMaterial> CResTestModelMaterial::Create(const _string& sPath)
 {

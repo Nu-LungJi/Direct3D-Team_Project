@@ -26,6 +26,7 @@ HRESULT CResFmodSound::Load(const std::any& arg)
 
     if (FAILED(CGameInstance::Get().CreateSound(m_sPath, &m_pFmodSound)))
     {
+        MSG_BOX_STR(_wstring{ L"CResFmodSound Faield Path:" + StringToWString(m_sPath) }.c_str());
         m_eState = STATE::LOADFAIL;
         //std::wstring msg = L"CResFmodSound Load Failed, Path: " + m_sPath;
         //MSG_BOX_STR(msg.c_str());
