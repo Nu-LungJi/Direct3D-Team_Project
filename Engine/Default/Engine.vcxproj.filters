@@ -256,6 +256,12 @@
     <Filter Include="AnimationEditor">
       <UniqueIdentifier>{5068b7e8-6054-49e9-b16c-65ba14323f27}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImGui\imguiNode">
+      <UniqueIdentifier>{f6e1fdd5-8097-4129-ac35-c16f95a426fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\NodeEditor">
+      <UniqueIdentifier>{e03910e5-6429-4dec-a18a-068d40361ec5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -579,6 +585,9 @@
     <ClInclude Include="..\Public\AnimEdit_Manager.h">
       <Filter>AnimationEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\NodeEditor.h">
+      <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -604,27 +613,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\ImguiManager.cpp">
       <Filter>ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_tables.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_widgets.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_demo.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_draw.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_dx11.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_win32.cpp">
-      <Filter>ImGui\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\ImGuizmo-1.83\GraphEditor.cpp">
       <Filter>ImGui\imguizmo</Filter>
@@ -865,6 +853,42 @@
     </ClCompile>
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp">
       <Filter>AnimationEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\crude_json.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_canvas.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_node_editor.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_node_editor_api.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\NodeEditor.cpp">
+      <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_dx11.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_win32.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_tables.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_widgets.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_demo.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_draw.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
+      <Filter>ImGui\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

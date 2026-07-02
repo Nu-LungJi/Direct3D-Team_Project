@@ -121,6 +121,9 @@
     <ClInclude Include="..\Public\LevelAnimEditor.h">
       <Filter>Level\AnimationEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Goblin.h">
+      <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -166,6 +169,9 @@
     <ClCompile Include="..\Private\Particle.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp">
       <Filter>Level\AnimationEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Goblin.cpp">
+      <Filter>GameObject\Monsters</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
