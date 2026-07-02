@@ -13,7 +13,8 @@ private:
 	~CRenderer() override;
 
 public:
-	void UpdateGUI();
+	VOID	 UpdateGUI();
+	VOID	 PostProcessGUI();
 
 public:
 	HRESULT Initialize();
@@ -104,7 +105,7 @@ private:
 	HRESULT RenderUI(const RENDER_CTX& ctx);
 
 private:
-	VOID	PostProcessGUI();
+	_bool	ApplyFilter = { false };		// 필터 적용 ON-OFF
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

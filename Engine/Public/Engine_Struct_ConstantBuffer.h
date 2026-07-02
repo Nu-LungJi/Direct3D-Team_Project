@@ -38,4 +38,21 @@ namespace Engine
 		_float2  rectSizePx{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
+
+	typedef struct tagConstantBufferObjectPBR
+	{
+		_float3  AlbedoValue;
+		_float   RoughnessValue;
+		_float   MetallicValue;
+		_float3  Padding;
+	} CB_OBJECT_PBR;
+	static_assert(sizeof(CB_OBJECT_PBR) % 16 == 0);
+
+	typedef struct tagConstantBufferLight
+	{
+		DYNAMIC_LIGHT AffectedLight[MAX_LIGHT_COUNT];
+		int           g_iLightCount;
+		XMFLOAT3      g_LightPadding;
+	} CB_LIGHT;
+	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 }

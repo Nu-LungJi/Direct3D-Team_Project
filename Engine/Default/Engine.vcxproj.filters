@@ -247,6 +247,15 @@
     <Filter Include="ShaderFiles\PBR">
       <UniqueIdentifier>{c32867ef-b809-4772-8df2-1fc6fb47d2b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Light">
+      <UniqueIdentifier>{9b4bff0c-7aff-4a33-bbfa-dbc8a79bb31a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Light\LightManager">
+      <UniqueIdentifier>{d7857738-565d-4c8e-a809-69cd550d51f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Light\Light">
+      <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -558,6 +567,12 @@
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LightManager.h">
+      <Filter>Light\LightManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Light.h">
+      <Filter>Light\Light</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -829,6 +844,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightManager.cpp">
+      <Filter>Light\LightManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Light.cpp">
+      <Filter>Light\Light</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

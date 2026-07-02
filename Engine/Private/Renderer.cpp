@@ -720,7 +720,7 @@ HRESULT CRenderer::Draw()
     }
 
     {
-        m_pLastTex2DBeforeFullScreenDraw = m_pFilteredTex2D;
+        m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pFilteredTex2D : m_pOffScreenTex2D;
     }
 
     // draw fullscreen
@@ -868,32 +868,32 @@ HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
     m_pContext->RSSetViewports(1, &m_pBackBufferVP->GetViewPort());
 
     auto pCbPostProcess = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess");
-    
+
     D3D11_MAPPED_SUBRESOURCE MRES;
     if (SUCCEEDED(m_pContext->Map(pCbPostProcess->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
     {
         POSTPROCESS CBPP{};
-        CBPP.DistortionIntensity   = m_pDistortionIntensity;
-        CBPP.ChromaticIntensity    = m_pChromaticIntensity;
-        CBPP.VignetteIntensity     = m_pVignetteIntensity;
-        CBPP.VignetteSmoothness    = m_pVignetteSmoothness;
-    
+        CBPP.DistortionIntensity = m_pDistortionIntensity;
+        CBPP.ChromaticIntensity = m_pChromaticIntensity;
+        CBPP.VignetteIntensity = m_pVignetteIntensity;
+        CBPP.VignetteSmoothness = m_pVignetteSmoothness;
+
         memcpy(MRES.pData, &CBPP, sizeof(POSTPROCESS));
         m_pContext->Unmap(pCbPostProcess->GetCBuffer().Get(), 0);
     }
-    
+
     m_pContext->PSSetShader(m_pPostProcessPS->GetPixelShader().Get(), nullptr, 0);
-    
+
     m_pContext->PSSetConstantBuffers(0, 1, pCbPostProcess->GetCBuffer().GetAddressOf());
     m_pContext->PSSetShaderResources(0, 1, m_pOffScreenTex2D->GetSRV().GetAddressOf());       // Combined Texture
     m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());                     // LUT Texture
-    
+
     m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
-    
+
     ID3D11ShaderResourceView* NullSRV[1] = { nullptr };
     m_pContext->PSSetShaderResources(0, 1, NullSRV);
     m_pContext->PSSetShaderResources(1, 1, NullSRV);
-
+    
     return S_OK;
 }
 
@@ -918,6 +918,10 @@ HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
 VOID CRenderer::PostProcessGUI() {
 #ifdef _DEBUG
     ImGui::Begin("PostProcess");
+
+    if (ApplyFilter ? ImGui::Button("PostProcess ON") : ImGui::Button("PostProcess OFF")) {
+        ApplyFilter = !ApplyFilter;
+    }
 
     ImGui::InputFloat("DistortionIntensity", &m_pDistortionIntensity);
     ImGui::InputFloat("ChromaticIntensity", &m_pChromaticIntensity);

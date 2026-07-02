@@ -15,6 +15,5 @@ namespace Engine
 	enum class MODEL { NONANIM, ANIM, END };
 	//enum class VSYNC{ OFF, ON };
 
-
-
+	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
 }

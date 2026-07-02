@@ -1,4 +1,6 @@
 
+const static float PI = 3.14159265359f;
+
 struct DirectionalLight
 {
     float4 ambient;
@@ -37,6 +39,22 @@ struct SpotLight
     float _pad;
 };
 
+struct DynamicLight
+{
+    uint    LightType;      // Directional, Point, SpotLight
+    
+    float3  LightDirection;
+    float3  LightColor;
+    float   LightIntensity;
+    float   LightRange;
+    
+    float3  Position;
+    
+    float   InnerAttanuation;
+    float   OuterAttanuation;
+    
+    float2  LightPadding;
+};
 struct Material
 {
     float4 ambient;
@@ -44,9 +62,6 @@ struct Material
     float4 specular;
     float4 reflect;
 };
-
-
-
 
 
 // 1. 오브젝트당 n회 갱신 (슬롯 b0)
