@@ -16,7 +16,8 @@ class ENGINE_DLL CComModelInstance : public CComponent
 public:
 	typedef struct tagDesc : CComponent::DESC
 	{
-		SPtr<CResTestModel>	pModel;
+		StringID sGroupTag;
+		StringID sResTag;
 	}DESC;
 public:
 	DECLARE_DERIVED_TYPE(CComModelInstance, CComponent)
@@ -33,8 +34,8 @@ private:
 	
 
 public:
-	HRESULT	Bind_BoneMatrices(uint32_t iMeshIndex);
-	HRESULT Bind_Materials(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
+	HRESULT	Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex);
+	HRESULT Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 public:
 	SPtr<CResTestModel> GetModel() { return m_pModel; }	
 

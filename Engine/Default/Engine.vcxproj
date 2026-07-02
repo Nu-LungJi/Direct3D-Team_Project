@@ -520,6 +520,8 @@ call CopyClient.bat</Command>
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl" />
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli" />

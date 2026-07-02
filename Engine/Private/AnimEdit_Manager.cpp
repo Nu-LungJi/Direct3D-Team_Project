@@ -52,6 +52,8 @@ void CAnimEdit_Manager::Update(_float fTimeDelta)
 void CAnimEdit_Manager::IMGUI_Select_AnimType()
 {
     auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if(pSampleObj == nullptr)
+		return; 
 
     auto pComAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
 
@@ -130,6 +132,10 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
 void CAnimEdit_Manager::IMGUI_Slider_Animation()
 {
     auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+	if (pSampleObj == nullptr)
+		return;
+
+
 
     auto pComModelInstance =
         pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");

@@ -14,7 +14,8 @@ class ENGINE_DLL CComAnimator : public CComponent
 public:
 	typedef struct tagDesc : CComponent::DESC
 	{
-		CComModelInstance* _pModelInstance;
+		std::string_view  sComTag;
+	
 	}DESC;
 
 public:
@@ -55,6 +56,7 @@ private:
 	std::unordered_map <std::string, CComAnimMontage*> m_mapAnimMontages;
 
 private:
+	_string			m_Comtag;
 	ANIMTYPE		m_iPlayAnimationType{ ANIMTYPE::ANIM };
 	uint32_t		m_iPlayAnimationNum{ 0 };
 	uint32_t		m_iPlayAnimIndex{ 0 };

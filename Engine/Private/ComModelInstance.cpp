@@ -29,13 +29,17 @@ HRESULT CComModelInstance::Initialize(void* pArg)
 
     if (pArg != nullptr) {
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
-        m_pModel = pDesc->pModel;
+        m_pModel = CGameInstance::Get().GetResourceFirst<CResTestModel>(pDesc->sGroupTag, pDesc->sResTag);
+        if (m_pModel == nullptr)
+        {
+			return E_FAIL;
+        }
     }
 	
     return S_OK;
 }
 
-HRESULT CComModelInstance::Bind_BoneMatrices(uint32_t iMeshIndex)
+HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex)
 {
     auto& pMesh = m_pModel->GetMeshes()[iMeshIndex];
 	auto& Bones = m_pModel->GetBones();
@@ -53,7 +57,6 @@ HRESULT CComModelInstance::Bind_BoneMatrices(uint32_t iMeshIndex)
 
     if (!BoneMatrices.empty())
     {
-        auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 
         D3D11_MAPPED_SUBRESOURCE MappedResource{};
 
@@ -88,7 +91,7 @@ HRESULT CComModelInstance::Bind_BoneMatrices(uint32_t iMeshIndex)
 }
 
 
-HRESULT CComModelInstance::Bind_Materials(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
+HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
 {
 	auto Materials = m_pModel->GetMaterials();
 	auto Mesh = m_pModel->GetMeshes();
@@ -98,7 +101,7 @@ HRESULT CComModelInstance::Bind_Materials(uint32_t iMeshIndex, AI_TEXTURE_TYPE e
     if (Textures[eMaterialType][iTextureIndex] == nullptr)
         return S_OK;
 
-    CGameInstance::Get().GetGraphicDeviceContext()->PSSetShaderResources(eMaterialType, 1, Textures[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
+    pContext->PSSetShaderResources(eMaterialType, 1, Textures[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
 
 
     return S_OK;

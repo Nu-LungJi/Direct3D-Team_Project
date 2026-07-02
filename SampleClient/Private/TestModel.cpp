@@ -69,7 +69,8 @@ HRESULT CTestModel::Initialize(void* pArg)
 
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.pModel = CGameInstance::Get().GetResourceFirst<CResTestModel>("TEST", "Model_Resource");
+		Desc.sGroupTag = "TEST";
+		Desc.sResTag = "Model_Resource";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -79,8 +80,8 @@ HRESULT CTestModel::Initialize(void* pArg)
 
 	{
 		CComAnimator::DESC DescAnim{};
-		DescAnim._pModelInstance = GetComponent<CComModelInstance>("ComCModelIntance");
-
+		DescAnim.sComTag = "ComCModelIntance";
+	
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
 		{
 			return E_FAIL;
@@ -157,12 +158,12 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		//}
 
 		{
-			m_pComModelInstance->Bind_Materials(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
 		
 		}
 
 		{
-			m_pComModelInstance->Bind_BoneMatrices(i);
+			m_pComModelInstance->Bind_BoneMatrices(pContext, i);
 		}
 
 		{

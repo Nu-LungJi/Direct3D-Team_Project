@@ -28,7 +28,8 @@ HRESULT CComAnimator::Initialize(void* pArg)
     if (pArg != nullptr) {
         CComAnimator::DESC* pDesc = reinterpret_cast<CComAnimator::DESC*>(pArg);
            
-		m_pModelInstance = pDesc->_pModelInstance;
+        m_Comtag = pDesc->sComTag;
+    
     }
 
 
@@ -60,17 +61,26 @@ HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, const std::string
 HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum)
 {
 
-    auto& pAnim = m_pModelInstance->GetModel()->GetAnimations();
-    auto& m_PreTransformMatrix = m_pModelInstance->GetModel()->Get_PreTransformMatrix();
+
+
+	auto pModel = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag)->GetModel();
+    
+    if(pModel == nullptr)
+		return E_FAIL;
+    
+
+
+    auto& pAnim = pModel->GetAnimations();
+    auto& m_PreTransformMatrix = pModel->Get_PreTransformMatrix();
 
     _bool           isFinished = { false };
 
     /* 뼈들의 m_TransformationMatrix를 갱신해준다. */
-    isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, m_pModelInstance->GetModel()->GetBones(), true);
+    isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), true);
 
-    for (auto& pBone : m_pModelInstance->GetModel()->GetBones())
+    for (auto& pBone : pModel->GetBones())
     {
-        pBone->Update_CombinedTransformationMatrix(m_pModelInstance->GetModel()->GetBones(), XMLoadFloat4x4(&m_PreTransformMatrix));
+        pBone->Update_CombinedTransformationMatrix(pModel->GetBones(), XMLoadFloat4x4(&m_PreTransformMatrix));
     }
 
     return isFinished;
