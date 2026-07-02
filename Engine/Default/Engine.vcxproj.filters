@@ -241,6 +241,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tracy">
+      <UniqueIdentifier>{e02f4b44-ac4b-4c18-9468-0d92e7afed7a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ShaderFiles\ShaderHeader">
       <UniqueIdentifier>{d77b96f9-a136-4e98-99f4-f8e028b0a6b7}</UniqueIdentifier>
     </Filter>
@@ -845,6 +848,9 @@
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\tracy-0.13.1\public\TracyClient.cpp">
+      <Filter>Tracy</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\LightManager.cpp">
       <Filter>Light\LightManager</Filter>
     </ClCompile>
@@ -876,6 +882,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>

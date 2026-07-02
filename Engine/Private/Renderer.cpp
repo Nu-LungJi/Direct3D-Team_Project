@@ -447,6 +447,8 @@ HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRende
 
 HRESULT CRenderer::Draw()
 {
+    ZoneScopedN("Draw");
+
     RENDER_CTX ctx{};
 
     CCameraObject* pShadowCamera{};
@@ -526,6 +528,7 @@ HRESULT CRenderer::Draw()
             auto pGameCam = CGameInstance::Get().GetActiveCamera();
             if (!pGameCam)
             {
+                //MSG_BOX("Renderer Draw(), Activated Camera is Null");
                 return S_OK;
             }
             ctx.matProj = pGameCam->GetProj();
@@ -588,12 +591,8 @@ HRESULT CRenderer::Draw()
         
         //UI
         {
+            if (auto pUICame = CGameInstance::Get().GetCamera("UI"))
             {
-                auto pUICame = CGameInstance::Get().GetCamera("UI");
-                if (!pUICame)
-                {
-                    return S_OK;
-                }
                 {
                     ctx.matProj = pUICame->GetProj();
                     ctx.matView = pUICame->GetView();
@@ -618,11 +617,10 @@ HRESULT CRenderer::Draw()
                     m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
                     m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
                 }
-            }
-
-            if (FAILED(RenderUI(ctx)))
-            {
-                return E_FAIL;
+                if (FAILED(RenderUI(ctx)))
+                {
+                    return E_FAIL;
+                }
             }
         }
 
@@ -744,6 +742,7 @@ void CRenderer::FrameEnd()
 
 HRESULT CRenderer::DrawFullscreen()
 {
+    ZoneScopedN("DrawFullscreen");
     ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pBackBufferRTV.Get() };
     m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, nullptr);
 
@@ -799,6 +798,7 @@ HRESULT CRenderer::DrawFullscreen()
 
 HRESULT CRenderer::RenderPriority(const RENDER_CTX& ctx)
 {
+    ZoneScopedN("RenderPriority");
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::PRIORITY)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
@@ -812,6 +812,7 @@ HRESULT CRenderer::RenderPriority(const RENDER_CTX& ctx)
 
 HRESULT CRenderer::RenderNonBlend(const RENDER_CTX& ctx)
 {
+    ZoneScopedN("RenderNonBlend");
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::NONBLEND)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
@@ -825,6 +826,7 @@ HRESULT CRenderer::RenderNonBlend(const RENDER_CTX& ctx)
 
 HRESULT CRenderer::RenderBlend(const RENDER_CTX& ctx)
 {
+    ZoneScopedN("RenderBlend");
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::BLEND)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
@@ -838,6 +840,7 @@ HRESULT CRenderer::RenderBlend(const RENDER_CTX& ctx)
 
 HRESULT CRenderer::RenderSkybox(const RENDER_CTX& ctx)
 {
+    ZoneScopedN("RenderSkybox");
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::SKYBOX)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
@@ -851,6 +854,7 @@ HRESULT CRenderer::RenderSkybox(const RENDER_CTX& ctx)
 
 HRESULT CRenderer::RenderCollider(const RENDER_CTX& ctx)
 {
+    ZoneScopedN("RenderCollider");
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::COLLIDER)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))

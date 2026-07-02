@@ -143,7 +143,7 @@ HRESULT CResTexture2D::Load(const std::any& arg)
     if (FAILED(hr))
     {
         m_eState = STATE::LOADFAIL;
-        MSG_BOX("CreateTextureFromFile Faield");
+        MSG_BOX_STR(_wstring{ L"CreateTextureFromFile Faield Path:" + StringToWString(m_sPath) }.c_str());
         return E_FAIL;
     }
 
@@ -153,7 +153,8 @@ HRESULT CResTexture2D::Load(const std::any& arg)
     if (FAILED(hr))
     {
         m_eState = STATE::LOADFAIL;
-        MSG_BOX("CreateWICTextureFromFile Faield");
+        //MSG_BOX("CreateWICTextureFromFile Faield");
+        MSG_BOX_STR(_wstring{ L"QueryInterface(__uuidof(ID3D11Texture2D) Faield Path:" + StringToWString(m_sPath) }.c_str());
         return E_FAIL;
     }
     //m_pContext->GenerateMips(m_pSRV.Get());

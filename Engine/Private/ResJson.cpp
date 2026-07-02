@@ -20,6 +20,7 @@ HRESULT CResJson::Load(const std::any& arg)
 	std::ifstream file(m_sPath);
 	if (!file.is_open())
 	{
+		MSG_BOX_STR(_wstring{ L"CResJson Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		//std::wstring msg = L"CAssetJson Load Failed, Path: " + m_sPath;
 		//MSG_BOX_STR(msg.c_str());

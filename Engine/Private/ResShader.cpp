@@ -41,6 +41,8 @@ HRESULT CResShader::CompileShader()
     {
         if (m_pErrorBlob)
         {
+            MSG_BOX_STR(_wstring{ L"CompileShader Faield Path:" + StringToWString(m_sPath) }.c_str());
+
             const char* err = (const char*)m_pErrorBlob->GetBufferPointer();
             std::string str = err;
             MSG_BOX_STR(StringToWString(str).c_str());
@@ -48,6 +50,7 @@ HRESULT CResShader::CompileShader()
         }
         else
         {
+            MSG_BOX_STR(_wstring{ L"CompileShader Faield With No ErrorBlob Path:" + StringToWString(m_sPath) }.c_str());
             MSG_BOX("CompileShader FAILED");
         }
         return E_FAIL;

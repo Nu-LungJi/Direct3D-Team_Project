@@ -16,6 +16,7 @@ HRESULT CResGeometryShader::Load(const std::any& arg)
 	if (FAILED(m_pDevice->CreateGeometryShader(m_pBlob->GetBufferPointer(),
 		m_pBlob->GetBufferSize(), nullptr, &m_pGeometryShader)))
 	{
+		MSG_BOX_STR(_wstring{ L"CResGeometryShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
