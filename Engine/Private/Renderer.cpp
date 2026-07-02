@@ -406,12 +406,6 @@ HRESULT CRenderer::InitilizePostProcess(){
         if (FAILED(res->Load()))    return E_FAIL;
     }
 
-    // PixelShader Create
-    if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
-    {
-        if (FAILED(res->Load()))    return E_FAIL;
-    }
-
     // PostProcess ConstantBuffer Create
     if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess", E::CResCBuffer::Create()))
     {
@@ -419,21 +413,15 @@ HRESULT CRenderer::InitilizePostProcess(){
     }
 
     // LUT Texture Create
-    if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.png", nullptr, m_pLUTTexture.GetAddressOf()))) {
-        MSG_BOX("Cannot Create LUT Texture File.");
-        assert(0);
+    if (auto res = E::CGameInstance::Get().AddResource("ENGINE", "TEX_LUT", E::CResTexture2D::Create("./Resources/Engine/Texture/PostProcess/LUT_Fuji.png")))
+    {
+        if (FAILED(res->Load()))    return E_FAIL;
     }
-    if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/T_Tile_30018.png", nullptr, m_pTestTexture.GetAddressOf()))) {
-        MSG_BOX("Cannot Create LUT Texture File.");
-        assert(0);
-    }
-    
-
-    m_pPostProcessPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
+    m_pLUTTexture       = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("ENGINE", "TEX_LUT")->GetSRV();
+    m_pPostProcessPS    = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
 
     return S_OK;
 }
-
 
 HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
@@ -889,8 +877,8 @@ HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
     m_pContext->PSSetShader(m_pPostProcessPS->GetPixelShader().Get(), nullptr, 0);
 
     m_pContext->PSSetConstantBuffers(0, 1, pCbPostProcess->GetCBuffer().GetAddressOf());
-    m_pContext->PSSetShaderResources(0, 1, m_pOffScreenTex2D->GetSRV().GetAddressOf());       // Combined Texture
-    m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());                     // LUT Texture
+    m_pContext->PSSetShaderResources(0, 1, m_pOffScreenTex2D->GetSRV().GetAddressOf());    // Combined Texture
+    m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());                  // LUT Texture
 
     m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
 

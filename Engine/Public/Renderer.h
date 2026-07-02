@@ -90,7 +90,6 @@ private:	// PostProcess Variable
 	_float m_pVignetteSmoothness	{ 0.f };
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	m_pTestTexture = { nullptr };
 
 private:
 	HRESULT DrawFullscreen();

@@ -111,5 +111,5 @@ cbuffer CB_PER_UI : register(b7)
     float2 g_ui_rectSizePx;
 };
 
-Texture2D gShadowMap : register(t4);
+
 SamplerComparisonState gShadowSampler : register(s4);

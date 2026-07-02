@@ -259,6 +259,12 @@
     <Filter Include="Light\Light">
       <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\PostProcess">
+      <UniqueIdentifier>{6333958a-0ae9-43c0-be71-e225845411eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\DeferredRendering">
+      <UniqueIdentifier>{e1969c45-06ce-4472-8db8-e28ba8c9d171}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -891,9 +897,6 @@
     <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\PBR\VS_PBR.hlsl">
       <Filter>ShaderFiles\PBR</Filter>
     </FxCompile>
@@ -902,6 +905,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <Filter>ShaderFiles\ShaderHeader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
+      <Filter>ShaderFiles\DeferredRendering</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
