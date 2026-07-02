@@ -14,6 +14,12 @@ public:
 
 	VOID	Bind_EnviromentLight();
 	VOID	Bind_DynamicLight();
+	
+	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+
+	VOID	Clear_DynamicLightList() { m_LightList.clear(); }
 
 private:
 	ComPtr<ID3D11Device>		m_pDevice = { nullptr };

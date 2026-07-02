@@ -20,8 +20,7 @@ struct VS_OUT
 VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out;
-    
-    Out.vPosition = mul(vector(In.vPosition, 1.f), mul(mul(g_matWorld, g_matView), g_matProj));
+    Out.vPosition = float4(In.vPosition.xy, 1.0f, 1.0f);
     Out.vTexcoord = In.vTexcoord;
     
     return Out;
@@ -49,7 +48,7 @@ PS_OUT_BACKBUFFER PS_MAIN_DEBUG(PS_IN In)
 {
     PS_OUT_BACKBUFFER Out;
     
-    Out.vBackBuffer = g_DiffuseTexture.Sample(, In.vTexcoord);
+    Out.vBackBuffer = g_DiffuseTexture.Sample(SamplerWrap, In.vTexcoord);
     
     return Out;
 }

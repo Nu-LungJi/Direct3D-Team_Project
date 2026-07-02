@@ -16,7 +16,7 @@ VS_OUT VS_MAIN(VS_IN In)
 {
     VS_OUT Out;
     
-    Out.vPosition = mul(vector(In.vPosition, 1.f), mul(mul(g_matWorld, g_matView), g_matProj));
+    Out.vPosition = float4(In.vPosition.xy, 1.0f, 1.0f);
     Out.vTexcoord = In.vTexcoord;
     
     return Out;

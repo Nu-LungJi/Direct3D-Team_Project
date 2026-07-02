@@ -58,6 +58,12 @@
     <Filter Include="Level\AnimationEditor">
       <UniqueIdentifier>{d486366a-4131-4b07-a031-02013c347cf9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\LightObject">
+      <UniqueIdentifier>{98bcf28d-edd4-4704-8ce8-35b7fc63e936}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\LightMap">
+      <UniqueIdentifier>{37b33ef4-4bec-4844-b162-9856de0a2ebc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -124,6 +130,9 @@
     <ClInclude Include="..\public\Goblin.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LevelLightMap.h">
+      <Filter>Level\LightMap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -172,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Goblin.cpp">
       <Filter>GameObject\Monsters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLightMap.cpp">
+      <Filter>Level\LightMap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -21,6 +21,7 @@
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
+#include "Light.h"
 
 NS_USING(Engine)
 
@@ -676,7 +677,10 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-
+	if (AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))
+	{
+		return E_FAIL;
+	}
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;

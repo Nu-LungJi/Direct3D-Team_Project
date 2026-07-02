@@ -268,15 +268,6 @@
     <Filter Include="ShaderFiles\PBR">
       <UniqueIdentifier>{c32867ef-b809-4772-8df2-1fc6fb47d2b1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Light">
-      <UniqueIdentifier>{9b4bff0c-7aff-4a33-bbfa-dbc8a79bb31a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Light\LightManager">
-      <UniqueIdentifier>{d7857738-565d-4c8e-a809-69cd550d51f5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Light\Light">
-      <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ShaderFiles\PostProcess">
       <UniqueIdentifier>{6333958a-0ae9-43c0-be71-e225845411eb}</UniqueIdentifier>
     </Filter>
@@ -285,6 +276,15 @@
     </Filter>
     <Filter Include="ShaderFiles\TestModel">
       <UniqueIdentifier>{b6b2669a-5f7d-4f5d-8f43-d61f06a7274f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Light">
+      <UniqueIdentifier>{9b4bff0c-7aff-4a33-bbfa-dbc8a79bb31a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Light\LightManager">
+      <UniqueIdentifier>{d7857738-565d-4c8e-a809-69cd550d51f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Light\Light">
+      <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -613,10 +613,10 @@
       <Filter>Component\BeHavior\NodeEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LightManager.h">
-      <Filter>Light\LightManager</Filter>
+      <Filter>GameObject\Light\LightManager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Light.h">
-      <Filter>Light\Light</Filter>
+      <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -915,10 +915,16 @@
       <Filter>ImGui\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LightManager.cpp">
-      <Filter>Light\LightManager</Filter>
+      <Filter>GameObject\Light\LightManager</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Light.cpp">
-      <Filter>Light\Light</Filter>
+      <Filter>GameObject\Light\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComModelInstance.cpp">
+      <Filter>Component\Model\ComModelInstance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\NodeEditor.cpp">
+      <Filter>Component\BeHavior\NodeEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

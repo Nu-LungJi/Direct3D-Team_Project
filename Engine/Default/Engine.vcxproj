@@ -471,6 +471,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\CollSphere.cpp" />
     <ClCompile Include="..\Private\ComCollider.cpp" />
     <ClCompile Include="..\Private\ComConstantBuffer.cpp" />
+    <ClCompile Include="..\Private\ComModelInstance.cpp" />
     <ClCompile Include="..\Private\Component.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />
@@ -485,6 +486,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
     <ClCompile Include="..\Private\LightManager.cpp" />
+    <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\ParticleManager.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />

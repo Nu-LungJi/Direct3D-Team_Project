@@ -413,11 +413,10 @@ HRESULT CRenderer::InitilizePostProcess(){
     }
 
     // LUT Texture Create
-    if (auto res = E::CGameInstance::Get().AddResource("ENGINE", "TEX_LUT", E::CResTexture2D::Create("./Resources/Engine/Texture/PostProcess/LUT_Fuji.png")))
-    {
-        if (FAILED(res->Load()))    return E_FAIL;
+    if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.png", nullptr, m_pLUTTexture.GetAddressOf()))) {
+        MSG_BOX("Cannot Create LUT Texture File.");
+        assert(0);
     }
-    m_pLUTTexture       = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("ENGINE", "TEX_LUT")->GetSRV();
     m_pPostProcessPS    = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
 
     return S_OK;
@@ -576,7 +575,6 @@ HRESULT CRenderer::Draw()
             return E_FAIL;
         }
 
-        
         //UI
         {
             if (auto pUICame = CGameInstance::Get().GetCamera("UI"))

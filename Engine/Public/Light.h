@@ -6,7 +6,14 @@
 NS_BEGIN(Engine)
 
 class ENGINE_DLL CLight final : public CGameObject {
+private:
+	CLight();
+	~CLight() override;
+public:
+	typedef struct tagLightDesc : public CGameObject::GAMEOBJECT_DESC
+	{
 
+	}DESC;
 public:
 	DECLARE_DERIVED_TYPE(CLight, CGameObject)
 
@@ -36,19 +43,29 @@ public:
 	_float			Get_LightOuterAttenuation()						{ return m_fOuterAttanuation;			}
 
 private:
-	LIGHT_TYPE		m_LightType;
+	LIGHT_TYPE		m_LightType{LIGHT_TYPE::DIRECTIONAL};
 
-	_float3			m_fLightDirection;
-	_float3			m_fLightColor;
-	_float			m_fLightIntensity;
-	_float			m_fLightRange;
+	_float3			m_fLightDirection{};
+	_float3			m_fLightColor{};
+	_float			m_fLightIntensity{};
+	_float			m_fLightRange{};
 
-	_float3			m_fPosition;
+	_float3			m_fPosition{};
 
-	_float			m_fInnerAttanuation;
-	_float			m_fOuterAttanuation;
+	_float			m_fInnerAttanuation{};
+	_float			m_fOuterAttanuation{};
 
 public:
-	static SPtr<CLight> Create();
+	void UpdateGUI() override;
+public:
+	HRESULT Initialize(void* pArg) override;
+	void PriorityUpdate(E::_float fTimeDelta) override;
+	void Update(E::_float fTimeDelta) override;
+	void LateUpdate(E::_float fTimeDelta) override;
+
+public:
+	static UPtr<CLight> Create();
+	UPtr<CPrototype> Clone(void* pArg) override;
 };
 NS_END
+
