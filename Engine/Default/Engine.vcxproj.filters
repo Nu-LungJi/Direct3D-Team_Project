@@ -283,6 +283,9 @@
     <Filter Include="ShaderFiles\DeferredRendering">
       <UniqueIdentifier>{e1969c45-06ce-4472-8db8-e28ba8c9d171}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\TestModel">
+      <UniqueIdentifier>{b6b2669a-5f7d-4f5d-8f43-d61f06a7274f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -869,9 +872,6 @@
     <ClCompile Include="..\..\ThirdParty\tracy-0.13.1\public\TracyClient.cpp">
       <Filter>Tracy</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\ComModelInstance.cpp">
-      <Filter>Component\Model\ComModelInstance</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\ComAnimator.cpp">
       <Filter>Component\Model\ComAnimator</Filter>
     </ClCompile>
@@ -892,9 +892,6 @@
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_node_editor_api.cpp">
       <Filter>ImGui\imguiNode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\NodeEditor.cpp">
-      <Filter>Component\BeHavior\NodeEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_dx11.cpp">
       <Filter>ImGui\imgui</Filter>
@@ -972,11 +969,11 @@
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
       <Filter>ShaderFiles\DeferredRendering</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
