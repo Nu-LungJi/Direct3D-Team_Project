@@ -11,6 +11,7 @@
 #include "Particle.h"
 #include "TestModel.h"
 #include "LevelUIEditor.h"
+#include "LevelAnimEditor.h"
 
 NS_USING(Client)
 
@@ -79,6 +80,9 @@ HRESULT CLevelLoading::LoadEnd()
 		break;
 	case LEVEL::UIEDITOR:
 		pNewLevel = CLevelUIEditor::Create();
+		break;
+	case LEVEL::ANIMEDITOR:
+		pNewLevel = CLevelAnimEditor::Create();
 		break;
 	}
 	assert(pNewLevel);
@@ -183,6 +187,23 @@ void CLevelLoading::ThreadStart()
 			});
 
 	
+		break;
+	case LEVEL::ANIMEDITOR:
+	{
+
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
+			{
+		
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_TestModel", CTestModel::Create())))
+				{
+					return false;
+				}
+
+
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				return  true;
+			});
+	}
 		break;
 	default:
 		m_bLoadEnd = true;

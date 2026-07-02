@@ -9,5 +9,6 @@ namespace Client
 		LOGO,
 		PLAYGROUND,
 		UIEDITOR,
+		ANIMEDITOR,
 	};
 }

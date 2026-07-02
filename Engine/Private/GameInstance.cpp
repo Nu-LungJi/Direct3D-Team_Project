@@ -18,6 +18,10 @@
 #include "FlyCamera.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
+#include "AnimEdit_Manager.h"
+#include "ComModelInstance.h"
+#include "ComAnimator.h"
+
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -131,6 +135,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
+	if(m_pAnimEdit_Manager == nullptr)
+	{
+		return E_FAIL;
+	}	
+
 	//m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
 	//if (m_pLightManager == nullptr)
 	//{
@@ -169,6 +179,8 @@ void CGameInstance::UpdateGUI()
 	}
 	
 
+	m_pAnimEdit_Manager->UpdateGUI();
+
 	m_pWorkerManager->UpdateGUI();
 
 	m_pResourceManager->UpdateGUI();
@@ -189,6 +201,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSoundManager->UpdateGUI();
 
+	m_pImguiManager->Update_ImguiNodeEditor();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -242,6 +255,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 
 	//m_pParticleManager->Update(fTimeDelta);
+	m_pAnimEdit_Manager->Update(fTimeDelta);
 
 
 	{
@@ -283,6 +297,7 @@ void CGameInstance::Release_Engine()
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
+	m_pAnimEdit_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
@@ -295,7 +310,6 @@ void CGameInstance::Release_Engine()
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pResourceManager.reset();
-
 	m_pGraphicDevice.reset();
 }
 
@@ -567,7 +581,7 @@ HRESULT CGameInstance::InitializeResources()
 
 	// Test Model Load
 	// 오류나서 제거
-	if(false)
+	if(true)
 	{
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
@@ -600,17 +614,17 @@ HRESULT CGameInstance::InitializeResources()
 		}
 
 
-		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
 
-		//	E::CResTestModel::DESC pDesc{};
-		//	pDesc.eModelType = MODEL::ANIM;
-		//	pDesc.PreTransformMatrix = XMMatrixIdentity();
+			E::CResTestModel::DESC pDesc{};
+			pDesc.eModelType = MODEL::ANIM;
+			pDesc.PreTransformMatrix = XMMatrixIdentity();
 
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
 
 		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.FBX"))) {
 
@@ -636,6 +650,15 @@ HRESULT CGameInstance::InitializePrototype()
 	}
 
 	if (AddPrototype("PERMANENT", "Prototype_Component_ConstantBuffer", CComConstantBuffer::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (AddPrototype("PERMANENT", "Prototype_Component_ModelInstance", CComModelInstance::Create()))
+	{
+		return E_FAIL;
+	}
+	if (AddPrototype("PERMANENT", "Prototype_Component_Animator", CComAnimator::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1053,5 +1076,11 @@ HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& han
 HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
 	return m_pRenderer->AddRenderObject(eRenderGroup, pRenderObject);
+}
+#pragma endregion
+
+#pragma region ANIMEDIT_MANAGER
+HRESULT CGameInstance::SetupTestModel() {
+	return m_pAnimEdit_Manager->SetupTestModel();
 }
 #pragma endregion
