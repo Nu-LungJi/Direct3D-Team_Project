@@ -241,6 +241,12 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\ShaderHeader">
+      <UniqueIdentifier>{d77b96f9-a136-4e98-99f4-f8e028b0a6b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\PBR">
+      <UniqueIdentifier>{c32867ef-b809-4772-8df2-1fc6fb47d2b1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -852,19 +858,25 @@
     <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PBR\VS_PBR.hlsl">
+      <Filter>ShaderFiles\PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PBR\PS_PBR.hlsl">
+      <Filter>ShaderFiles\PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
+      <Filter>ShaderFiles\ShaderHeader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
-      <Filter>ShaderFiles</Filter>
+      <Filter>ShaderFiles\ShaderHeader</Filter>
     </None>
   </ItemGroup>
 </Project>
