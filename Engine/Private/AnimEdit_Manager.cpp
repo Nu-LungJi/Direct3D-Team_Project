@@ -184,10 +184,14 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
 
     ImGui::PushItemWidth(-1.f);
 
+
     if (ImGui::SliderFloat("##AnimTimeline",&fCurrentPos,0.f,fDuration, "%.3f"))
     {
         pAnim->SetCurrentTrackPosition(fCurrentPos);
+        
     }
+
+
 
     ImGui::PopItemWidth();
 
