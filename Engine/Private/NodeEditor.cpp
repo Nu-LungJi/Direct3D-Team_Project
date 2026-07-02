@@ -7,17 +7,17 @@ CNodeEditor::CNodeEditor()
 
 CNodeEditor::~CNodeEditor()
 {
-	NodeEditor::DestroyEditor(m_pNodeContext);
+	ax::NodeEditor::DestroyEditor(m_pNodeContext);
 }
 
-using namespace ax;
+//using namespace ax;
 HRESULT CNodeEditor::Initialize()
 {
-	NodeEditor::Config config;
+	ax::NodeEditor::Config config;
 	config.SettingsFile = nullptr;
 
 
-	m_pNodeContext = NodeEditor::CreateEditor(&config);
+	m_pNodeContext = ax::NodeEditor::CreateEditor(&config);
 
 	if (nullptr == m_pNodeContext)
 		return E_FAIL;

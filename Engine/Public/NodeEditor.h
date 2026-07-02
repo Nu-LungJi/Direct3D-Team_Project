@@ -2,7 +2,7 @@
 #include "GameObject.h"
 
 NS_BEGIN(Engine)
-using namespace ax;
+//using namespace ax;
 
 class CNodeEditor : public CEngineBase
 {
@@ -37,7 +37,7 @@ private:
 	void	Draw_NodeLine(_float2 iStartnode, _float2 iEndNode,_bool bMouse = false);
 	_bool	ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radius);
 private:
-	NodeEditor::EditorContext* m_pNodeContext{ nullptr };
+	ax::NodeEditor::EditorContext* m_pNodeContext{ nullptr };
 	std::vector<GUINODE>		m_Nodes;
 	std::vector<GUINODE_LINK>	m_NodesLink;
 	
