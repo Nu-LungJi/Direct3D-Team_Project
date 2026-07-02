@@ -7,6 +7,10 @@ CLightManager::~CLightManager()	{}
 
 HRESULT CLightManager::Initialize_LightManager(){
 
+    if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light", E::CResCBuffer::Create()))
+    {
+        if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(POSTPROCESS) })))    return E_FAIL;
+    }
 	return S_OK;
 }
 
@@ -33,9 +37,9 @@ VOID CLightManager::Render_SceneLight(){
     }
     LightBuffer.g_iLightCount = LightCount;
 
+    auto LightBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light");
 
-    
-    //m_pContext->PSSetConstantBuffers(4, 1, &LightBuffer);
+    m_pContext->PSSetConstantBuffers(4, 1, &LightBuffer);
 }
 
 UPtr<CLightManager> CLightManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) {

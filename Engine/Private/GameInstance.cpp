@@ -318,15 +318,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	// PBR
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light", E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LIGHT) })))
-		{
-			return E_FAIL;
-		}
-	}
-
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
 		res->Load(D3D11_SAMPLER_DESC{
