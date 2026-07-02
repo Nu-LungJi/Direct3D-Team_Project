@@ -115,6 +115,9 @@
     <ClInclude Include="..\Public\LevelUIEditor.h">
       <Filter>Level\UiEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Goblin.h">
+      <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -158,6 +161,9 @@
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Particle.cpp" />
+    <ClCompile Include="..\private\Goblin.cpp">
+      <Filter>GameObject\Monsters</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">

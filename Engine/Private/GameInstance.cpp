@@ -180,6 +180,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSoundManager->UpdateGUI();
 
+	m_pImguiManager->Update_ImguiNodeEditor();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
