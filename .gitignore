@@ -13,4 +13,4 @@ imgui.ini
 
 
 /vcpkg_installed
-/ThirdParty/imgui-node-editor-0.9.3
+!/ThirdParty/imgui-node-editor-0.9.3
