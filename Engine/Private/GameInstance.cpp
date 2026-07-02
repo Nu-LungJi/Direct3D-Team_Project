@@ -156,9 +156,18 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 void CGameInstance::UpdateGUI()
 {
-	m_pPrototypeManager->UpdateGUI();
+	ZoneScopedN("UpdateGUI");
 
-	m_pGameObjectManager->UpdateGUI();
+	{
+		ZoneScopedN("PrototypeManager_UpdateGUI");
+		m_pPrototypeManager->UpdateGUI();
+	}
+
+	{
+		ZoneScopedN("GameObjectManager_UpdateGUI");
+		m_pGameObjectManager->UpdateGUI();
+	}
+	
 
 	m_pWorkerManager->UpdateGUI();
 
@@ -199,37 +208,61 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
-	m_pDInputManager->Update_InputDev();
-
-	if (CGameInstance::Get().KeyDown(DIK_TAB))
 	{
+		ZoneScopedN("InputManager_Update");
+		m_pDInputManager->Update_InputDev();
+	}
+	
+	// TODO: 마우스 가두기 함수화하기
+	{
+		if (CGameInstance::Get().KeyDown(DIK_TAB))
+		{
 
-		m_bMouseFix = !m_bMouseFix;
-		if (!m_bMouseFix)
-		{
-			ShowCursor(TRUE);
+			m_bMouseFix = !m_bMouseFix;
+			if (!m_bMouseFix)
+			{
+				ShowCursor(TRUE);
+			}
+			else
+			{
+				ShowCursor(FALSE);
+			}
 		}
-		else
+		if (m_bMouseFix)
 		{
-			ShowCursor(FALSE);
+			MouseFix();
 		}
 	}
-	if (m_bMouseFix)
-	{
-		MouseFix();
-	}
 
-	m_pSoundManager->Update();
+	{
+		ZoneScopedN("SoundManager_Update");
+		m_pSoundManager->Update();
+	}
+	
 
 
 	//m_pParticleManager->Update(fTimeDelta);
 
 
-	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
-	m_pGameObjectManager->Update(fTimeDelta);
-	m_pGameObjectManager->LateUpdate(fTimeDelta);
+	{
+		ZoneScopedN("GameObjectManager_PriorityUpdate");
+		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	}
 
-	m_pLevelManager->Update(fTimeDelta);
+	{
+		ZoneScopedN("GameObjectManager_Update");
+		m_pGameObjectManager->Update(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("GameObjectManager_LateUpdate");
+		m_pGameObjectManager->LateUpdate(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("LevelManager_Update");
+		m_pLevelManager->Update(fTimeDelta);
+	}
 }
 
 HRESULT CGameInstance::Draw()
@@ -741,6 +774,7 @@ HRESULT CGameInstance::ClearDepthStencilView()
 
 HRESULT CGameInstance::Present()
 {
+	ZoneScopedN("Present");
 	return m_pGraphicDevice->Present();
 }
 #pragma endregion
