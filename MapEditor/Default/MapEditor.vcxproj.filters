@@ -25,6 +25,18 @@
     <Filter Include="GameObject">
       <UniqueIdentifier>{d3664898-98d7-4386-9e31-2b708d886e0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUIWindow">
+      <UniqueIdentifier>{51a364df-2f13-4802-8afd-af15efd4f800}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI">
+      <UniqueIdentifier>{18ce9d3b-230c-4e6b-8301-a4dd84d78150}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\Hierarchy">
+      <UniqueIdentifier>{9eb788a8-fcbd-4e50-9156-3590b5c22c27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\Inspector">
+      <UniqueIdentifier>{5bf757a3-d438-461a-b54a-e0a3dccfad8a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -63,6 +75,18 @@
     <ClInclude Include="..\Public\TestGuizmo.h">
       <Filter>GameObject</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\GUIWindow.h">
+      <Filter>GUIWindow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Hierarchy.h">
+      <Filter>GUIWindow\MapEditorGUI\Hierarchy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Inspector.h">
+      <Filter>GUIWindow\MapEditorGUI\Inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapEditorGUI.h">
+      <Filter>GUIWindow\MapEditorGUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -98,6 +122,18 @@
     </ClCompile>
     <ClCompile Include="..\Private\TestGuizmo.cpp">
       <Filter>GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GUIWindow.cpp">
+      <Filter>GUIWindow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Hierarchy.cpp">
+      <Filter>GUIWindow\MapEditorGUI\Hierarchy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Inspector.cpp">
+      <Filter>GUIWindow\MapEditorGUI\Inspector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapEditorGUI.cpp">
+      <Filter>GUIWindow\MapEditorGUI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

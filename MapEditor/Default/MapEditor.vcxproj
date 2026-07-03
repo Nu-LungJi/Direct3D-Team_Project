@@ -155,6 +155,10 @@ call CopyMapEditor.bat</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\Client_Defines.h" />
+    <ClInclude Include="..\Public\GUIWindow.h" />
+    <ClInclude Include="..\Public\Hierarchy.h" />
+    <ClInclude Include="..\Public\Inspector.h" />
+    <ClInclude Include="..\Public\MapEditorGUI.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
@@ -168,6 +172,10 @@ call CopyMapEditor.bat</Command>
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Private\GUIWindow.cpp" />
+    <ClCompile Include="..\Private\Hierarchy.cpp" />
+    <ClCompile Include="..\Private\Inspector.cpp" />
+    <ClCompile Include="..\Private\MapEditorGUI.cpp" />
     <ClCompile Include="..\Private\TestGuizmo.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
     <ClCompile Include="..\Private\LevelLogo.cpp" />

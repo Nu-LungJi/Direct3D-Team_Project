@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "Level.h"
 #include "Handle.h"
+#include "MapEditorGUI.h"
 
 NS_BEGIN(Client)
 
@@ -26,6 +27,7 @@ private:
 
 private:
 	Engine::CHandle m_SelectedObject{};
+	Engine::UPtr<CMapEditorGUI> m_pMapEditorGUI{};
 };
 
 NS_END
