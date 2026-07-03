@@ -6,8 +6,55 @@
 #include "ResCBuffer.h"
 #include "UiCamera.h"
 
-
 NS_USING(Client)
+
+namespace
+{
+	ImGuizmo::OPERATION g_GizmoOperation = ImGuizmo::TRANSLATE;
+	ImGuizmo::MODE g_GizmoMode = ImGuizmo::WORLD;
+	E::_float4x4 g_GizmoMatrix{};
+	bool g_GizmoMatrixInitialized = false;
+
+	void InitializeGizmoMatrix()
+	{
+		if (!g_GizmoMatrixInitialized)
+		{
+			XMStoreFloat4x4(&g_GizmoMatrix, XMMatrixIdentity());
+			g_GizmoMatrixInitialized = true;
+		}
+	}
+
+	void DrawGizmoToolbar()
+	{
+		if (ImGui::RadioButton("Translate", g_GizmoOperation == ImGuizmo::TRANSLATE))
+		{
+			g_GizmoOperation = ImGuizmo::TRANSLATE;
+		}
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Rotate", g_GizmoOperation == ImGuizmo::ROTATE))
+		{
+			g_GizmoOperation = ImGuizmo::ROTATE;
+		}
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Scale", g_GizmoOperation == ImGuizmo::SCALE))
+		{
+			g_GizmoOperation = ImGuizmo::SCALE;
+		}
+
+		if (g_GizmoOperation != ImGuizmo::SCALE)
+		{
+			if (ImGui::RadioButton("Local", g_GizmoMode == ImGuizmo::LOCAL))
+			{
+				g_GizmoMode = ImGuizmo::LOCAL;
+			}
+			ImGui::SameLine();
+			if (ImGui::RadioButton("World", g_GizmoMode == ImGuizmo::WORLD))
+			{
+				g_GizmoMode = ImGuizmo::WORLD;
+			}
+		}
+	}
+}
 
 CLevelMapEditor::CLevelMapEditor()
 
@@ -89,11 +136,32 @@ HRESULT CLevelMapEditor::Render()
 
 void CLevelMapEditor::UpdateGUI()
 {
-	ImGui::Begin("LEVEL: CLevel_MapEditor");
+	InitializeGizmoMatrix();
+	ImGuizmo::BeginFrame();
 
-
-
+	ImGui::Begin("MapEditor Tools");
+	DrawGizmoToolbar();
 	ImGui::End();
+
+	auto pActiveCamera = E::CGameInstance::Get().GetActiveCamera();
+	if (pActiveCamera == nullptr)
+	{
+		return;
+	}
+
+	E::_float4x4 view{};
+	E::_float4x4 proj{};
+	XMStoreFloat4x4(&view, pActiveCamera->GetView());
+	XMStoreFloat4x4(&proj, pActiveCamera->GetProj());
+
+	ImGuiViewport* pViewport = ImGui::GetMainViewport();
+	const ImVec2 viewportPos = pViewport->Pos;
+	const ImVec2 viewportSize = pViewport->Size;
+
+	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
+	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
+	ImGuizmo::Manipulate(&view._11, &proj._11, g_GizmoOperation, g_GizmoMode, &g_GizmoMatrix._11);
 }
 
 void CLevelMapEditor::FrameStart(E::_float fTimeDelta)

@@ -721,6 +721,11 @@ void CGameInstance::ImguiSetActive(_bool bActive)
 {
 	m_pImguiManager->Set_Active(bActive);
 }
+
+void CGameInstance::ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports)
+{
+	m_pImguiManager->EnableDocking(bEnableDocking, bEnableViewports);
+}
 #pragma endregion
 
 

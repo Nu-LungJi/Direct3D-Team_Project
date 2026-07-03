@@ -54,6 +54,7 @@ public:
 	_bool ImguiWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	_bool ImguiGetActive() const;
 	void ImguiSetActive(_bool bActive);
+	void ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports);
 #pragma endregion
 
 
