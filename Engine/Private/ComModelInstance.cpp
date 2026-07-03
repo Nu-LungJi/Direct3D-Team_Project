@@ -2,9 +2,9 @@
 #include "GameInstance.h"
 #include "ComModelInstance.h"
 #include "ResTestModelBone.h"
-#include "ResTestModelMesh.h"
-#include "ResTestModelMaterial.h"
-
+#include "ResModelMesh.h"
+#include "ResModelMaterial.h"
+#include "ResModel.h"
 NS_USING(Engine)
 
 
@@ -29,7 +29,7 @@ HRESULT CComModelInstance::Initialize(void* pArg)
 
     if (pArg != nullptr) {
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
-        m_pModel = CGameInstance::Get().GetResourceFirst<CResTestModel>(pDesc->sGroupTag, pDesc->sResTag);
+        m_pModel = CGameInstance::Get().GetResourceFirst<CResModel>(pDesc->sGroupTag, pDesc->sResTag);
         if (m_pModel == nullptr)
         {
 			return E_FAIL;

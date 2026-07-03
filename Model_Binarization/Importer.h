@@ -62,5 +62,11 @@ public:
 	std::vector<std::shared_ptr<CMesh>> Meshes;
 	std::vector<std::shared_ptr<CMaterial>> Materials;
 	//std::vector<std::shared_ptr<CAnimation>> Animations;
+
+	std::vector<char> meshBuffer;
+	std::vector<char> materialBuffer;
+	std::vector<char> boneBuffer;
+	std::vector<char> animBuffer;
+
 };
 

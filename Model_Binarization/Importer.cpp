@@ -73,6 +73,8 @@ HRESULT CImporter::AssimpFBX(const std::string& fbxFileName)
     m_index = 0;
     {
         Assimp::Importer importer;
+        importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, true);      // FBX 파일의 계층 구조를 원본 그대로 유지시킴.
+        importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.025f);      // 모델을 import할 때, 배율을 지정.
 
         const aiScene* pScene =importer.ReadFile(fbxFileName, aiProcess_ConvertToLeftHanded);
 
@@ -90,6 +92,9 @@ HRESULT CImporter::AssimpFBX(const std::string& fbxFileName)
             }
         }
     }
+
+
+
     uint32_t iFlag = 0;
     iFlag |= aiProcess_ConvertToLeftHanded;                        // DirectX 왼손 좌표계 표준화
     iFlag |= aiProcess_PopulateArmatureData;                     // 애니메이션 최적화(본-노드 사이의 연산 단순화)
@@ -181,78 +186,95 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
         return E_FAIL;
     }
 
+    auto pushMesh = [&](const void* data, size_t size)
+        {
+            size_t old = meshBuffer.size();
+            meshBuffer.resize(old + size);
+            memcpy(meshBuffer.data() + old, data, size);
+        };
+
     //---------------------------------------------------FILEHEADER-------------------------------------------------------------------//
     MODEL_FILE_HEADER MFH;
     MFH.bHasBone = false;
     MFH.bHasAnimation = false;
     MFH.MeshCount = (uint32_t)Meshes.size();
     MFH.AnimationCount = 0;
+    MFH.MaterialCount = (uint32_t)Materials.size();
     MFH.BoneCount = (uint32_t)Bones.size();
     file.write((char*)&MFH, sizeof(MFH));
 
     //---------------------------------------------------------MESH-------------------------------------------------------------------//
-    ChunkHeader chMesh;
-    chMesh.type = ChunkType::CHUNK_MESH;
-    // ChunkHeader 쓰기
-    file.write((char*)&chMesh, sizeof(chMesh));
     for (auto& mesh : Meshes)
     {
-        // MaterialIndex
+        uint32_t nameLen = (uint32_t)mesh->m_name.size();
+        pushMesh(&nameLen, sizeof(uint32_t));
+
+        pushMesh(mesh->m_name.data(), nameLen);
+        
         uint32_t vMaterialIndex = mesh->m_materialIndex;
-        file.write((char*)&vMaterialIndex, sizeof(uint32_t));
+        pushMesh(&vMaterialIndex, sizeof(uint32_t));
 
-        // Vertex Count
         uint32_t vCount = mesh->m_vertices->size();
-        file.write((char*)&vCount, sizeof(uint32_t));
+        pushMesh(&vCount, sizeof(uint32_t));
 
-        // Index Count
         uint32_t iCount = mesh->m_indices->size();
-        file.write((char*)&iCount, sizeof(uint32_t));
+        pushMesh(&iCount, sizeof(uint32_t));
 
-        // Vertex 데이터
-        file.write((char*)mesh->m_vertices->data(), sizeof(VTXMESH) * vCount);
-
-        // Index 데이터
-        file.write((char*)mesh->m_indices->data(), sizeof(uint32_t) * iCount);
+        pushMesh(mesh->m_vertices->data(), sizeof(VTXMESH) * vCount);
+        pushMesh(mesh->m_indices->data(), sizeof(uint32_t) * iCount);
     }
-    //--------------------------------------------------------Material-------------------------------------------------------------------//
-    
-    ChunkHeader chMaterial;
-    chMaterial.type = ChunkType::CHUNK_MATERIAL;
 
-    file.write((char*)&chMaterial, sizeof(chMaterial));
+    ChunkHeader chMesh;
+    chMesh.type = ChunkType::CHUNK_MESH;
+    chMesh.size = (uint32_t)meshBuffer.size();
+
+    file.write((char*)&chMesh, sizeof(chMesh));
+    file.write(meshBuffer.data(), meshBuffer.size());
+
+    //--------------------------------------------------------Material-------------------------------------------------------------------//
+    auto pushMaterial = [&](const void* data, size_t size)
+        {
+            size_t old = materialBuffer.size();
+            materialBuffer.resize(old + size);
+            memcpy(materialBuffer.data() + old, data, size);
+        };
 
     for (auto& mat : Materials)
-    {  // material번호, 텍스쳐 총 타입 카운트, 해당 종류 텍스쳐 카운트, 텍스쳐들 정보
-        file.write((char*)&mat->m_materialNum, sizeof(uint32_t));
+    {
+        uint32_t materialNum = mat->m_materialNum;
+        pushMaterial(&materialNum, sizeof(uint32_t));
 
-        uint32_t textureTypeCount = mat->m_textures.size();
-        file.write((char*)&textureTypeCount, sizeof(uint32_t));
+        uint32_t textureTypeCount = (uint32_t)mat->m_textures.size();
+        pushMaterial(&textureTypeCount, sizeof(uint32_t));
 
         for (auto& texs : mat->m_textures)
         {
-            uint32_t textureCount = texs.size();
-            file.write((char*)&textureCount, sizeof(uint32_t));
+            uint32_t textureCount = (uint32_t)texs.size();
+            pushMaterial(&textureCount, sizeof(uint32_t));
 
-            for (auto& tex : texs) {
-                file.write((char*)&tex.m_textureType, sizeof(uint32_t));
-                file.write((char*)&tex.m_textureNum, sizeof(uint32_t));
+            for (auto& tex : texs)
+            {
+                pushMaterial(&tex.m_textureType, sizeof(uint32_t));
 
                 uint32_t len;
 
+                len = (uint32_t)tex.File.size();
+                pushMaterial(&len, sizeof(uint32_t));
+                pushMaterial(tex.File.c_str(), len);
 
-                len = tex.File.size();
-                file.write((char*)&len, sizeof(uint32_t));
-                file.write(tex.File.c_str(), len);
-
-
-                len = tex.Ext.size();
-                file.write((char*)&len, sizeof(uint32_t));
-                file.write(tex.Ext.c_str(), len);
+                len = (uint32_t)tex.Ext.size();
+                pushMaterial(&len, sizeof(uint32_t));
+                pushMaterial(tex.Ext.c_str(), len);
             }
         }
     }
 
+    ChunkHeader chMaterial;
+    chMaterial.type = ChunkType::CHUNK_MATERIAL;
+    chMaterial.size = (uint32_t)meshBuffer.size();
+
+    file.write((char*)&chMaterial, sizeof(chMaterial));
+    file.write(materialBuffer.data(), materialBuffer.size());
 
     file.close();
     return S_OK;

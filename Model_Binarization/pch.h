@@ -31,12 +31,13 @@ enum MATERIALTYPE {
 typedef struct ChunkHeader
 {
 	uint32_t type;
+	uint32_t size;
+
 }CHUCKHEADER;
 
 enum ChunkType { CHUNK_MESH, CHUNK_MATERIAL, CHUNK_TEXTURE, CHUNK_BONE, CHUNK_ANIM };
 struct MODEL_FILE_HEADER
 {
-
 	bool bHasBone;
 	bool bHasAnimation;
 
@@ -44,6 +45,8 @@ struct MODEL_FILE_HEADER
 	uint32_t MaterialCount;
 	uint32_t AnimationCount;
 	uint32_t BoneCount;
+
+
 };
 
 

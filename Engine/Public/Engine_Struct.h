@@ -142,4 +142,26 @@ namespace Engine
 		NODETYPE eType = NODETYPE::END;
 	}GUICURRENT_NODE;
 
+
+
+	typedef struct ChunkHeader
+	{
+		uint32_t type;
+		uint32_t size;
+	}CHUCKHEADER;
+
+	typedef struct MODEL_FILE_HEADER
+	{
+		bool bHasBone;
+		bool bHasAnimation;
+
+		uint32_t MeshCount;
+		uint32_t MaterialCount;
+		uint32_t AnimationCount;
+		uint32_t BoneCount;
+
+	}MODEL_FILE_HEADER;
+
+
+
 }

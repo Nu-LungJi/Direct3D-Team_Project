@@ -3,6 +3,7 @@
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
 #include "ResTestModelAnim.h"
+#include "ResModel.h"
 NS_USING(Engine)
 
 

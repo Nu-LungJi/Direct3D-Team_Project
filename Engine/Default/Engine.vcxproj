@@ -305,6 +305,8 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\ResGeometryShader.h" />
     <ClInclude Include="..\Public\ResGeoShaderStreamOut.h" />
     <ClInclude Include="..\Public\ResJson.h" />
+    <ClInclude Include="..\Public\ResModelMaterial.h" />
+    <ClInclude Include="..\Public\ResModelMesh.h" />
     <ClInclude Include="..\Public\ResModel.h" />
     <ClInclude Include="..\Public\ResOffscreenTexture.h" />
     <ClInclude Include="..\Public\Resource.h" />
@@ -506,6 +508,8 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\ResGeometryShader.cpp" />
     <ClCompile Include="..\Private\ResGeoShaderStreamOut.cpp" />
     <ClCompile Include="..\Private\ResJson.cpp" />
+    <ClCompile Include="..\Private\ResModelMaterial.cpp" />
+    <ClCompile Include="..\Private\ResModelMesh.cpp" />
     <ClCompile Include="..\Private\ResModel.cpp" />
     <ClCompile Include="..\Private\ResOffscreenTexture.cpp" />
     <ClCompile Include="..\Private\Resource.cpp" />

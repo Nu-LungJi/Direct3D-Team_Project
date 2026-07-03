@@ -3,7 +3,7 @@
 #include  "GameObject.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
-
+#include "ResModel.h"
 NS_USING(Engine)
 
 

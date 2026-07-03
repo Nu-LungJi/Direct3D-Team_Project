@@ -57,7 +57,7 @@ HRESULT CResTestModel::Load(const std::any& arg)
 
 		uint32_t        iFlag = { aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast };
 
-		if (MODEL::NONANIM == m_eModelType)
+		if (MODEL::STATIC == m_eModelType)
 			iFlag |= aiProcess_PreTransformVertices;
 
 		m_pAIScene = m_Importer->ReadFile(m_sPath.c_str(), iFlag);

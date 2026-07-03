@@ -286,6 +286,12 @@
     <Filter Include="GameObject\Light\Light">
       <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource\Model\Mesh">
+      <UniqueIdentifier>{2529e691-5e3c-4d3d-a5c7-36938f85e568}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Material">
+      <UniqueIdentifier>{a9a0ccd1-a8fb-426a-894f-42bd47e35abd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -618,6 +624,12 @@
     <ClInclude Include="..\Public\Light.h">
       <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ResModelMesh.h">
+      <Filter>Resource\Model\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelMaterial.h">
+      <Filter>Resource\Model\Material</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -925,6 +937,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\NodeEditor.cpp">
       <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelMesh.cpp">
+      <Filter>Resource\Model\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelMaterial.cpp">
+      <Filter>Resource\Model\Material</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
