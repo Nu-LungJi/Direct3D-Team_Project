@@ -721,6 +721,11 @@ void CGameInstance::ImguiSetActive(_bool bActive)
 {
 	m_pImguiManager->Set_Active(bActive);
 }
+
+void CGameInstance::ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports)
+{
+	m_pImguiManager->EnableDocking(bEnableDocking, bEnableViewports);
+}
 #pragma endregion
 
 
@@ -961,6 +966,12 @@ const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view s
 {
 	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
 }
+
+const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
+{
+	return m_pGameObjectManager->GetLayers();
+}
+
 void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
 {
 	return m_pGameObjectManager->DelLayer(sLayerName);
