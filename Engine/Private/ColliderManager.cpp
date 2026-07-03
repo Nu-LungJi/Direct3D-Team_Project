@@ -142,7 +142,7 @@ HRESULT CColliderManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX
         {
             switch (pCollider->GetCollType())
             {
-            case CCollider::CollType::Box:
+            case CollType::Box:
             {
                 _float3 corners[BoundingBox::CORNER_COUNT];
                 static_cast<const CCollBox*>(pCollider)->GetBoundingBox().GetCorners(corners);
@@ -162,7 +162,7 @@ HRESULT CColliderManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX
                 }
             }
             break;
-            case CCollider::CollType::OrientedBox:
+            case CollType::OrientedBox:
             {
                 _float3 corners[BoundingOrientedBox::CORNER_COUNT];
                 static_cast<const CCollOrientedBox*>(pCollider)->GetBoundingOrientedBox().GetCorners(corners);
@@ -181,7 +181,7 @@ HRESULT CColliderManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX
                 }
             }
             break;
-            case CCollider::CollType::Frustum:
+            case CollType::Frustum:
             {
                 _float3 corners[BoundingFrustum::CORNER_COUNT];
                 static_cast<const CCollFrustum*>(pCollider)->GetBoundingFrustum().GetCorners(corners);
@@ -200,7 +200,7 @@ HRESULT CColliderManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX
                 }
             }
             break;
-            case CCollider::CollType::Sphere:
+            case CollType::Sphere:
             {
                 _float3 corners[CCollSphere::CornerCnt];
                 static_cast<const CCollSphere*>(pCollider)->GetCorners(corners);

@@ -11,6 +11,8 @@ public:
 
 public:
 	const BoundingFrustum& GetBoundingFrustum() const { return m_BoundingFrustumWorld; }
+	const BoundingFrustum& GetLocalBoundingFrustum() const { return m_BoundingFrustumLocal; }
+	void SetLocalFrustum(_fmatrix mat) { m_BoundingFrustumLocal = BoundingFrustum{ mat }; }
 
 private:
 	explicit CCollFrustum();

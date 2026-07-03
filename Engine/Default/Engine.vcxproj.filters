@@ -286,6 +286,9 @@
     <Filter Include="GameObject\Light\Light">
       <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Renderer\MyGFSDK_SSAO">
+      <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -618,6 +621,9 @@
     <ClInclude Include="..\Public\Light.h">
       <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MyGFSDK_SSAO.h">
+      <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -925,6 +931,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\NodeEditor.cpp">
       <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
+      <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

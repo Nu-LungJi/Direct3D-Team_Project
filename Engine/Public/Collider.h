@@ -9,7 +9,6 @@ public:
 	DECLARE_DERIVED_TYPE(CCollider, CEngineBase)
 
 public:
-	enum class CollType { Box,OrientedBox,Sphere,Frustum };
 	CollType GetCollType() const { return m_eCollType; }
 
 public:
@@ -54,6 +53,7 @@ protected:
 public:
 	virtual _bool Intersect(const CCollider& collider) const = 0;
 	virtual void Transform(_fmatrix wordMatrix) = 0;
+	//virtual void LocalTransform(_fmatrix wordMatrix) {};
 
 protected:
 	const CollType m_eCollType{};

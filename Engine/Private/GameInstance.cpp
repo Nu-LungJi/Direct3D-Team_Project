@@ -22,6 +22,7 @@
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Light.h"
+#include "ComCollider.h"
 
 NS_USING(Engine)
 
@@ -283,6 +284,10 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LightManager_Update");
 		m_pLightManager->Update(fTimeDelta);
 	}
+}
+
+
+	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
 HRESULT CGameInstance::Draw()
@@ -701,6 +706,11 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
+	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;
@@ -739,6 +749,11 @@ _bool CGameInstance::ImguiGetActive() const
 void CGameInstance::ImguiSetActive(_bool bActive)
 {
 	m_pImguiManager->Set_Active(bActive);
+}
+
+void CGameInstance::ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports)
+{
+	m_pImguiManager->EnableDocking(bEnableDocking, bEnableViewports);
 }
 #pragma endregion
 
@@ -980,6 +995,12 @@ const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view s
 {
 	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
 }
+
+const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
+{
+	return m_pGameObjectManager->GetLayers();
+}
+
 void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
 {
 	return m_pGameObjectManager->DelLayer(sLayerName);

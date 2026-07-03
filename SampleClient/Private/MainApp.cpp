@@ -60,6 +60,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LIGHTMAP));
 		});
 
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_Collider", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::COLLIDER));
+		});
+
 	// TODO   SampleClinet  초기 이니셜라이즈
 	{
 		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))

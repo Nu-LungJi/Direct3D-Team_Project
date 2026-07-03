@@ -13,6 +13,8 @@
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
 #include "LevelLightMap.h"
+#include "LevelCollider.h"
+#include "TestCollider.h"
 #include "LightObject.h"
 
 NS_USING(Client)
@@ -85,6 +87,9 @@ HRESULT CLevelLoading::LoadEnd()
 		break;
 	case LEVEL::ANIMEDITOR:
 		pNewLevel = CLevelAnimEditor::Create();
+		break;
+	case LEVEL::COLLIDER:
+		pNewLevel = CLevelCollider::Create();
 		break;
 	case LEVEL::LIGHTMAP:
 		pNewLevel = CLevelLightMap::Create();
@@ -210,6 +215,19 @@ void CLevelLoading::ThreadStart()
 			});
 	}
 		break;
+	case LEVEL::COLLIDER:
+	{
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_COLLIDER", [this]()
+			{
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider", CTestCollider::Create())))
+				{
+					return false;
+				}
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				return  true;
+			});
+	}
+	break;
 	case LEVEL::LIGHTMAP:
 	{
 		//"LIGHT", "Prototype_GameObject_TestModel"

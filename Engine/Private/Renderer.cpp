@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
+#include "MyGFSDK_SSAO.h"
 
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -28,6 +29,11 @@ HRESULT CRenderer::Initialize()
     m_pBackBufferDSV = CGameInstance::Get().GetBackBufferDSV();
     m_pBackBufferRTV = CGameInstance::Get().GetBackBufferRTV();
     m_pBackBufferVP = CGameInstance::Get().GetResourceFirst<CResViewPort>(TAG_RES_GRP_PERMANENT_VP, "VP_BackBuffer");
+
+    if (FAILED(InitializeGFSDK_SSAO()))
+    {
+        return E_FAIL;
+    }
 
     if (FAILED(InitializeOffscreen()))
     {
@@ -374,8 +380,24 @@ HRESULT CRenderer::InitilizePostProcess(){
         MSG_BOX("Cannot Create LUT Texture File.");
         assert(0);
     }
-    m_pPostProcessPS    = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
+    //if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/T_Tile_30018.png", nullptr, m_pTestTexture.GetAddressOf()))) {
+    //    MSG_BOX("Cannot Create LUT Texture File.");
+    //    assert(0);
+    //}
+    
 
+    m_pPostProcessPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
+
+    return S_OK;
+}
+
+HRESULT CRenderer::InitializeGFSDK_SSAO()
+{
+    m_pGFSDK_SSAO = CMyGFSDK_SSAO::Create();
+    if (!m_pGFSDK_SSAO)
+    {
+        return E_FAIL;
+    }
     return S_OK;
 }
 
