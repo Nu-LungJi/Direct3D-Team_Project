@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="99.Defines">
+      <UniqueIdentifier>{d7495985-3c12-46a1-9103-ab879aa35a1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="98.Default">
+      <UniqueIdentifier>{d17f24ac-7ff8-4bfe-829e-a9a3ec5ef322}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MainApp">
+      <UniqueIdentifier>{95e95408-2338-43ee-8011-b97b656c5340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level">
+      <UniqueIdentifier>{9b9e55eb-976f-4ef8-ac73-e5c7d9e4b844}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Loading">
+      <UniqueIdentifier>{13b6b791-5052-43b3-a58a-c1d89323acf4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Logo">
+      <UniqueIdentifier>{e56a889c-81b1-4c37-a1c4-46bfc0d6e907}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="MapEditor.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Client_Defines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Level_Defines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MainApp.h">
+      <Filter>MainApp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelLoading.h">
+      <Filter>Level\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelLogo.h">
+      <Filter>Level\Logo</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="MapEditor.ico">
+      <Filter>98.Default</Filter>
+    </Image>
+    <Image Include="small.ico">
+      <Filter>98.Default</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MapEditor.rc">
+      <Filter>98.Default</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MapEditor.cpp">
+      <Filter>98.Default</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>98.Default</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MainApp.cpp">
+      <Filter>MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLoading.cpp">
+      <Filter>Level\Loading</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLogo.cpp">
+      <Filter>Level\Logo</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
