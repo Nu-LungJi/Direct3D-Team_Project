@@ -5,10 +5,28 @@
     <ClCompile Include="Importer.cpp">
       <Filter>Importer</Filter>
     </ClCompile>
+    <ClCompile Include="Bone.cpp">
+      <Filter>Bone</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Mesh</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Importer">
       <UniqueIdentifier>{6470ca87-8ae8-4122-b84c-e6e09e9406d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Bone">
+      <UniqueIdentifier>{46f88caf-df0b-4d47-95b5-ea9e7eb3da8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Material">
+      <UniqueIdentifier>{1f2389a3-6746-4666-8ca3-9ff184c24178}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mesh">
+      <UniqueIdentifier>{d4b5fb62-896d-4669-a593-c41e960a178d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -16,5 +34,14 @@
       <Filter>Importer</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Bone.h">
+      <Filter>Bone</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Mesh</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

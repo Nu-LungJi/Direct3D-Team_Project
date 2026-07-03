@@ -1,6 +1,8 @@
 #pragma once
 #include "pch.h"
-
+#include "Bone.h"
+#include "Mesh.h"
+#include "Material.h"
 
 class CImporter
 {
@@ -20,6 +22,45 @@ public:
 
 
 	HRESULT ImportFBXFolder(const std::string& strLevelName,const std::string& strSourceFolder);
+	HRESULT AssimpFBX(const std::string& fbxFileName);
+	
+	
+	HRESULT	ExportFBX(const std::string& outpath);
+	HRESULT ExportStatic(const std::string& outpath);
 
+
+
+public:
+	HRESULT Ready_Bones(const aiNode* pAINode, int32_t iParentBoneIndex);
+
+	HRESULT Ready_Mesh(const aiScene* scene, bool _bHasBone);
+	void ProcessNonAnimMesh(aiMesh* mesh, const aiScene* scene);
+	void ProcessNonAnimNode(aiNode* node, const aiScene* scene);
+	void ProcessAnimMesh(aiMesh* mesh, const aiScene* scene, std::string name);
+	void ProcessAnimNode(aiNode* node, const aiScene* scene);
+
+	HRESULT Ready_Material(const aiScene* scene);
+	void	Load_Material(aiMaterial* material, uint32_t materialNum);
+
+
+
+
+
+
+public:
+	int32_t Get_BoneIndex(const char* pBoneName);
+
+
+public:
+	void Clear();
+public:
+	int m_index{ 0 };
+	int32_t m_iBoneIndex{ -1 };
+	bool m_bHasAnimation = false;
+	bool m_bHasBone = false;
+	std::vector<std::shared_ptr<CBone>> Bones;
+	std::vector<std::shared_ptr<CMesh>> Meshes;
+	std::vector<std::shared_ptr<CMaterial>> Materials;
+	//std::vector<std::shared_ptr<CAnimation>> Animations;
 };
 
