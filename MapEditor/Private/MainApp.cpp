@@ -40,6 +40,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
 		});
 
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_MAPEDITOR", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::MAPEDITOR));
+		});
+
 
 
 	return S_OK;

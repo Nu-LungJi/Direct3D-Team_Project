@@ -4,6 +4,7 @@
 #include "GameInstance.h"
 #include "Resources.h"
 #include "LevelLogo.h"
+#include "LevelMapEditor.h"
 #include "Particle.h"
 
 NS_USING(Client)
@@ -68,6 +69,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::LOGO:
 		pNewLevel = CLevelLogo::Create();
 		break;
+	case LEVEL::MAPEDITOR:
+		pNewLevel = CLevelMapEditor::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -100,6 +104,19 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
+	}
+	break;
+	case LEVEL::MAPEDITOR:
+	{
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
+			{
+				return true;
+			});
+
+		//if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
+		//{
+		//	res->Load();
+		//}
 	}
 	break;
 	default:

@@ -7,5 +7,6 @@ namespace Client
 	enum class LEVEL {
 		LOADING,
 		LOGO,
+		MAPEDITOR,
 	};
 }

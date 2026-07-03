@@ -19,6 +19,9 @@
     <Filter Include="Level\Logo">
       <UniqueIdentifier>{e56a889c-81b1-4c37-a1c4-46bfc0d6e907}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\MapEditor">
+      <UniqueIdentifier>{f4a18bfa-545c-4dbc-b259-c84bd882e6bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -51,6 +54,9 @@
     <ClInclude Include="..\Public\LevelLogo.h">
       <Filter>Level\Logo</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LevelMapEditor.h">
+      <Filter>Level\MapEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -80,6 +86,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LevelLogo.cpp">
       <Filter>Level\Logo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelMapEditor.cpp">
+      <Filter>Level\MapEditor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
