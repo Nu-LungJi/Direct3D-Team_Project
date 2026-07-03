@@ -644,9 +644,6 @@ HRESULT CRenderer::Draw()
             ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
             m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
         }
-
-
-        
     }
     
     {

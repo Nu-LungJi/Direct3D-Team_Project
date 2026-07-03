@@ -55,31 +55,109 @@ void CLight::UpdateGUI()
         ImGui::DragFloat("Outer Attenuation", &m_fOuterAttanuation, 0.05f, 0.0f, 180.0f, "%.2f");
     }
 }
-
+HRESULT CLight::InitializePrototype(void* pArg) {
+    m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
+    if (FAILED(m_pResVertexShader->Load()))
+    {
+        return E_FAIL;
+    }
+    m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex");
+    if (FAILED(m_pResPixelShader->Load()))
+    {
+        return E_FAIL;
+    }
+    m_pResLightTexBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
+    if (!m_pResLightTexBuffer)
+    {
+        return E_FAIL;
+    }
+    if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_LightIcon", CResTexture2D::Create("./Resources/Engine/Texture/HDE.png")))
+    {
+        res->Load();
+    }
+    m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+    if (!m_pResSamplerState)
+    {
+        return E_FAIL;
+    }
+}
 HRESULT CLight::Initialize(void* pArg)
 {
     if (FAILED(CGameObject::Initialize(pArg)))
     {
         return E_FAIL;
     }
+    {
+        CComConstantBuffer::DESC Desc{};
+        Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+        if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
+        {
+            return E_FAIL;
+        };
+    }
+
+    m_pResLightTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_LightIcon");
+    
 	return S_OK;
 }
 
-void CLight::PriorityUpdate(E::_float fTimeDelta)
-{
-}
+void CLight::PriorityUpdate(E::_float fTimeDelta) {
 
-void CLight::Update(E::_float fTimeDelta)
-{
 }
+void CLight::Update(E::_float fTimeDelta) {
 
-void CLight::LateUpdate(E::_float fTimeDelta)
-{
+}
+void CLight::LateUpdate(E::_float fTimeDelta) {
+    CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+}
+HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+#ifdef _DEBUG
+    {
+        E::CB_PER_OBJECT cbPerObject{};
+        cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+        XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+        if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))            return S_OK;
+
+        pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+        pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+    }
+
+    pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
+    pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+    pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+    ID3D11Buffer* vertexBuffers[] = {
+        m_pResLightTexBuffer->GetVertexBuffer().Get()
+    };
+    uint32_t strides[] = {
+        m_pResLightTexBuffer->GetVertexStride()
+    };
+    uint32_t offsets[] = {
+        0
+    };
+    pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+    pContext->IASetIndexBuffer(m_pResLightTexBuffer->GetIndexBuffer().Get(), m_pResLightTexBuffer->GetIndexFormat(), 0);
+    pContext->IASetPrimitiveTopology(m_pResLightTexBuffer->GetPrimitiveType());
+    {
+        pContext->PSSetShaderResources(0, 1, m_pResLightTexture2D->GetSRV().GetAddressOf());
+    }
+    {
+        const auto& sampler = m_pResSamplerState;
+        pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
+    }
+    {
+        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+        pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+    }
+    pContext->DrawIndexed(m_pResLightTexBuffer->GetNumIndices(), 0, 0);
+#endif 
+
+    return S_OK;
 }
 UPtr<CLight> CLight::Create()
 {
     auto pInstance = ToUPtr(new CLight{});
-    if (FAILED(pInstance->InitializePrototype()))
+    if (FAILED(pInstance->InitializePrototype(nullptr)))
     {
         MSG_BOX("Failed to Create: CLight");
         return nullptr;

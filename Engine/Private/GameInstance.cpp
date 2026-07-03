@@ -278,6 +278,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
+
+	{
+		ZoneScopedN("LightManager_Update");
+		m_pLightManager->Update(fTimeDelta);
+	}
 }
 
 HRESULT CGameInstance::Draw()

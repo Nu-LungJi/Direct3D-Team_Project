@@ -11,6 +11,7 @@ private:
 
 public:
 	HRESULT	Initialize_LightManager();
+	VOID	Update(_float fTimeDelta);
 	VOID	UpdateGUI();
 
 	VOID	Bind_EnviromentLight();
@@ -20,13 +21,13 @@ public:
 	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
 	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 
-	VOID	Clear_DynamicLightList() { m_LightList.clear(); }
+	VOID	Clear_DynamicLightList() { m_LightHandleList.clear(); }
 
 private:
-	ComPtr<ID3D11Device>		m_pDevice = { nullptr };
-	ComPtr<ID3D11DeviceContext> m_pContext = { nullptr };
+	ComPtr<ID3D11Device>				m_pDevice		= { nullptr };
+	ComPtr<ID3D11DeviceContext>			m_pContext		= { nullptr };
 
-	std::vector<SPtr<CLight>>	m_LightList;
+	std::vector<CHandle>				m_LightHandleList;
 
 	ComPtr<ID3D11ShaderResourceView>	m_IrridianceSRV	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_PreFilterSRV	= { nullptr };

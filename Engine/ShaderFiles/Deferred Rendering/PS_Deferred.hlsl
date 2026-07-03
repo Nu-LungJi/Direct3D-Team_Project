@@ -7,9 +7,9 @@ Texture2D g_ShadowMap       : register(t4);
 
 struct PS_IN
 {
-    float3 Position : POSITION;
+    float4 Position : SV_POSITION;
     float2 TexCoord : TEXCOORD0;
-    float3 Normal : NORMAL;
+    float4 Normal   : NORMAL;
 };
 
 struct PS_OUT

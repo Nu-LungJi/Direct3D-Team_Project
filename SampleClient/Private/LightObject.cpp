@@ -26,12 +26,10 @@ HRESULT CLightObject::InitializePrototype(void* pArg) {
 	m_pResSamplerState	= CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	if (!m_pResSamplerState)				return E_FAIL;
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResTestModel>("LOBJ", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.fbx"))) {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResTestModel>("LOBJ", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/LightObject/LightObject.fbx"))) {
 		E::CResTestModel::DESC pDesc = { MODEL::NONANIM, XMMatrixIdentity() };
 		if (FAILED(res->Load(pDesc)))	return E_FAIL;
 	}
-
-	CGameInstance::Get().Add_DirectionalLight({ 0.f, 10.f, 0.f }, {1.f, 1.f, 1.f}, 10.f);
 
 	return S_OK;
 }
@@ -68,6 +66,9 @@ HRESULT CLightObject::Initialize(void* pArg) {
 		};
 	}
 
+	m_pComTransform->SetScale(XMVectorSet(100.f, 100.f, 100.f, 1.f));
+	m_pComTransform->SetRotation(XMVectorSet(1.f, 0.f, 0.f, 1.f), 90.f);
+	m_pComTransform->SetPosition(XMVectorSet(1.f, 3.f, 0.f, 1.f));
 	return S_OK;
 }
 
@@ -75,7 +76,7 @@ void CLightObject::PriorityUpdate(E::_float fTimeDelta) {
 
 }
 void CLightObject::Update(E::_float fTimeDelta) {
-	//m_pModelAnimator->Update(fTimeDelta);
+
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
@@ -88,10 +89,8 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 		E::CB_PER_OBJECT cbPerObject{};
 		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
 		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
-		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
-		{
-			return E_FAIL;
-		}
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
+
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
@@ -124,17 +123,17 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 		{
 			//m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
 			SPtr<CResTexture2D> DiffuseTexture	= m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-			//SPtr<CResTexture2D> NormalTexture	= m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
-			//SPtr<CResTexture2D> MetallicTexture = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0);
+			SPtr<CResTexture2D> NormalTexture	= m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
+			SPtr<CResTexture2D> MetallicTexture = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0);
 			
 			pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
-			//pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
-			//pContext->PSSetShaderResources(3, 1, MetallicTexture->GetSRV().GetAddressOf());
+			pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
+			pContext->PSSetShaderResources(3, 1, MetallicTexture->GetSRV().GetAddressOf());
 		}
 
 		{
 			CGameInstance::Get().Bind_DynamicLight();
-			//m_pComModelInstance->Bind_BoneMatrices(pContext, i);
+			m_pComModelInstance->Bind_BoneMatrices(pContext, i);
 		}
 		{
 			auto PBRConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PBR");
@@ -164,6 +163,13 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
+
+	ID3D11ShaderResourceView* pNULLSRV01[1] = { nullptr };
+	pContext->PSSetShaderResources(0, 1, pNULLSRV01);
+	ID3D11ShaderResourceView* pNULLSRV02[1] = { nullptr };
+	pContext->PSSetShaderResources(1, 1, pNULLSRV02);
+	ID3D11ShaderResourceView* pNULLSRV03[1] = { nullptr };
+	pContext->PSSetShaderResources(3, 1, pNULLSRV03);
 
 	return S_OK;
 }

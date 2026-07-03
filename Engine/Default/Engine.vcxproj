@@ -163,8 +163,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>cd /d $(SolutionDir)
-call CopySampleClient.bat</Command>
+      <Command>cd /d $(SolutionDir)</Command>
     </PostBuildEvent>
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>
@@ -195,8 +194,7 @@ call CopySampleClient.bat</Command>
       <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>cd /d $(SolutionDir)
-call CopySampleClient.bat</Command>
+      <Command>cd /d $(SolutionDir)</Command>
     </PostBuildEvent>
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>

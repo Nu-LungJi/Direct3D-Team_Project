@@ -35,11 +35,11 @@ HRESULT CLevelLightMap::Initialize()
 			return E_FAIL;
 		}
 	}
-	{
-		CLightObject::DESC LDesc{};
-		LDesc.sObjectTag = "LightObject";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
-	}
+	//{
+	//	CLightObject::DESC LDesc{};
+	//	LDesc.sObjectTag = "LightObject";
+	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
+	//}
 	{
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
@@ -72,6 +72,8 @@ HRESULT CLevelLightMap::Initialize()
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+
+	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -113,5 +115,9 @@ Engine::UPtr<CLevelLightMap> CLevelLightMap::Create()
 
 void CLevelLightMap::Free()
 {
+	E::CGameInstance::Get().DelPrototype("LIGHT");
+	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_TEX");
+	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_BUFFER");
+	E::CGameInstance::Get().DelResource("LOBJ", "Model_Resource");
 	CLevel::Free();
 }

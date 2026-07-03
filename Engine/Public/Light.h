@@ -2,6 +2,12 @@
 #include "Engine_Defines.h"
 #include "ResCBuffer.h"
 #include "GameObject.h"
+#include "ComConstantBuffer.h"
+#include "ResVertexShader.h"
+#include "ResPixelShader.h"
+#include "ResQuadTexBuffer.h"
+#include "ResTexture2D.h"
+#include "ResSamplerState.h"
 
 NS_BEGIN(Engine)
 
@@ -55,13 +61,24 @@ private:
 	_float			m_fInnerAttanuation{};
 	_float			m_fOuterAttanuation{};
 
+	SPtr<CResVertexShader>	m_pResVertexShader		{	};
+	SPtr<CResPixelShader>	m_pResPixelShader		{	};
+	SPtr<CResQuadTexBuffer>	m_pResLightTexBuffer	{	};
+	SPtr<CResTexture2D>		m_pResLightTexture2D	{	};
+	SPtr<CResSamplerState>	m_pResSamplerState		{	};
+
+	CComConstantBuffer*	m_pComCBufferPerObject	{  };
+
 public:
 	void UpdateGUI() override;
+
 public:
+	HRESULT InitializePrototype(void* pArg) override;
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
+	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
 
 public:
 	static UPtr<CLight> Create();

@@ -2,30 +2,38 @@
 
 struct VS_IN
 {
-    float3 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
+    float3 Position : POSITION; 
     float3 Normal   : NORMAL;
     float3 Tangent  : TANGENT;
+    float3 BiNormal : BINORMAL;
+    float2 TexCoord : TEXCOORD0;
 };
 struct VS_OUT
 {
-    float4 Position : SV_Position;
-    float3 WorldPos : POSITION;
+    float4 Position : SV_POSITION;
+    float4 Normal   : NORMAL;
+    float4 Tangent  : TANGENT;
+    float4 BiNormal : BINORMAL;
     float2 TexCoord : TEXCOORD0;
-    float3 Normal   : NORMAL;
-    float3 Tangent  : TANGENT;
+    float4 WorldPos : TEXCOORD1;
+    float4 ProjPos  : TEXCOORD2;
 };
 
 VS_OUT VSMain(VS_IN IN)
 {
     VS_OUT OUT;
+    float4x4 matWV, matWVP;
     
-    //OUT.Position    = mul(float4(IN.Position, 1.f), g_matWVP);
-    OUT.Position = float4(IN.Position.xy, 1.0f, 1.0f);
+    matWV = mul(g_matWorld, g_matView);
+    matWVP = mul(matWV, g_matProj);
+    
+    OUT.Position    = mul(float4(IN.Position, 1.f), g_matWVP);
     OUT.TexCoord    = IN.TexCoord;
-    OUT.Normal      = normalize(mul(float4(IN.Normal, 0.0), g_matWorld).xyz);
-    OUT.Tangent     = normalize(mul(float4(IN.Tangent, 0.0), g_matWorld).xyz);
-    OUT.WorldPos    = mul(float4(IN.Position, 1.f), g_matWorld).xyz;
+    OUT.Normal      = float4(normalize(mul(IN.Normal, (float3x3) g_matWorld)), 0.0f);
+    OUT.Tangent     = normalize(mul(float4(IN.Tangent, 0.f), g_matWorld));
+    OUT.BiNormal    = normalize(mul(float4(IN.BiNormal, 0.f), g_matWorld));
+    OUT.WorldPos    = mul(float4(IN.Position, 1.f), g_matWorld);
+    OUT.ProjPos     = OUT.Position;
     
     return OUT;
 }

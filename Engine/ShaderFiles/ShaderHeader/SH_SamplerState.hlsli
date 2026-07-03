@@ -3,7 +3,6 @@ SamplerState SamplerWrap
     Filter = MIN_MAG_MIP_LINEAR;
     AddressU = Wrap;
     AddressV = Wrap;
-    AddressW = Wrap;
 };
 SamplerState SamplerMirror
 {
