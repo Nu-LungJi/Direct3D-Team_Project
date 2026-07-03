@@ -5,6 +5,7 @@ x64/
 !ThirdParty/fmod_2_03_12/lib/
 !ThirdParty/fmod_2_03_12/lib/x64/
 !ThirdParty/tracy-0.13.1/
+!ThirdParty/HBAOPlus-3.1.0/lib/
 /EngineSDK/
 
 **/Bin/

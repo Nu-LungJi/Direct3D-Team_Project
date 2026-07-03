@@ -262,6 +262,9 @@
     <Filter Include="Component\BeHavior\NodeEditor">
       <UniqueIdentifier>{e03910e5-6429-4dec-a18a-068d40361ec5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Renderer\MyGFSDK_SSAO">
+      <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -588,6 +591,9 @@
     <ClInclude Include="..\public\NodeEditor.h">
       <Filter>Component\BeHavior\NodeEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MyGFSDK_SSAO.h">
+      <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -889,6 +895,9 @@
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
       <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
+      <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
