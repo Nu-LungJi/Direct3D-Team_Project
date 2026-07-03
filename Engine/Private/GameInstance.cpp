@@ -22,6 +22,7 @@
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Light.h"
+#include "ComCollider.h"
 
 NS_USING(Engine)
 
@@ -278,6 +279,9 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
+
+
+	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
 HRESULT CGameInstance::Draw()
@@ -682,6 +686,11 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
+	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;

@@ -14,6 +14,7 @@ namespace Engine
 	enum class STATE { RIGHT, UP, LOOK, POSITION, END };
 	enum class MODEL { NONANIM, ANIM, END };
 	enum class NODETYPE {START,NODE_END ,END};
+	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
 
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };

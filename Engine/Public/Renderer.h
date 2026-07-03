@@ -6,6 +6,8 @@ class CGameObject;
 class CResOffscreenTexture;
 class CResDynamicTexture2D;
 
+class CMyGFSDK_SSAO;
+
 class CRenderer final : public CEngineBase
 {
 private:
@@ -27,6 +29,7 @@ private:
 	HRESULT InitializeTargetNormal();
 
 	HRESULT InitilizePostProcess();
+	HRESULT InitializeGFSDK_SSAO();
 
 public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
@@ -90,6 +93,9 @@ private:	// PostProcess Variable
 	_float m_pVignetteSmoothness	{ 0.f };
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
+
+private:
+	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
 
 private:
 	HRESULT DrawFullscreen();
