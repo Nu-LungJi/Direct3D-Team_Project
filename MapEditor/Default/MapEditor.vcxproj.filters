@@ -22,6 +22,9 @@
     <Filter Include="Level\MapEditor">
       <UniqueIdentifier>{f4a18bfa-545c-4dbc-b259-c84bd882e6bf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject">
+      <UniqueIdentifier>{d3664898-98d7-4386-9e31-2b708d886e0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -57,6 +60,9 @@
     <ClInclude Include="..\Public\LevelMapEditor.h">
       <Filter>Level\MapEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TestGuizmo.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -89,6 +95,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LevelMapEditor.cpp">
       <Filter>Level\MapEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TestGuizmo.cpp">
+      <Filter>GameObject</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

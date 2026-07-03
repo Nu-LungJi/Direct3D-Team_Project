@@ -7,6 +7,8 @@
 #include "LevelMapEditor.h"
 #include "Particle.h"
 
+#include "TestGuizmo.h"
+
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -110,6 +112,12 @@ void CLevelLoading::ThreadStart()
 	{
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
 			{
+				//TestGuizmo
+				if (FAILED(CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_TestGuizmo", CTestGuizmo::Create())))
+				{
+					return false;
+				}
+
 				return true;
 			});
 

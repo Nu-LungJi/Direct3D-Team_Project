@@ -1,6 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "Level.h"
+#include "Handle.h"
 
 NS_BEGIN(Client)
 
@@ -22,6 +23,9 @@ public:
 
 private:
 	void Free() override;
+
+private:
+	Engine::CHandle m_SelectedObject{};
 };
 
 NS_END
