@@ -614,12 +614,13 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-
-		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+	
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource",
+			CResTestModel::Create("./Resources/SampleClient/Models/LightObject/HorseStatue.fbx"))) {
 
 			E::CResTestModel::DESC pDesc{};
-			pDesc.eModelType = MODEL::ANIM;
-			pDesc.PreTransformMatrix = XMMatrixIdentity();
+			pDesc.eModelType = MODEL::NONANIM;
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.00001f, 0.00001f, 0.00001f);
 
 			if (FAILED(res->Load(pDesc)))
 			{
