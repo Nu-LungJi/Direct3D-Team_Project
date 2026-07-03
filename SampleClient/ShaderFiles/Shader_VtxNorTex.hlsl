@@ -1,4 +1,4 @@
-#include "./ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
 Texture2D gDiffuseTexture : register(t0);
 SamplerState gSamLinearWrap : register(s0);

@@ -21,6 +21,7 @@
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
+#include "Light.h"
 
 NS_USING(Engine)
 
@@ -201,6 +202,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSoundManager->UpdateGUI();
 
+	m_pImguiManager->Update_ImguiNodeEditor();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -356,9 +358,6 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-
-
-
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_UI) })))
@@ -366,7 +365,6 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-
 
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
@@ -679,7 +677,10 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-
+	if (AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))
+	{
+		return E_FAIL;
+	}
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;

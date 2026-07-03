@@ -43,13 +43,13 @@ using namespace Microsoft::WRL;
 #pragma warning(disable: 26813)
 
 #include "Engine_Typedef.h"
+#include "Engine_Macro.h"
 #include "Engine_Enum.h"
 #include "Engine_Struct.h"
 #include "Engine_Struct_Vertex.h"
 #include "Engine_Struct_ConstantBuffer.h"
 #include "Engine_Function.h"
 #include "Engine_Template.h"
-#include "Engine_Macro.h"
 #include "Engine_Tag.h"
 #include "Engine_Assimp_Enum.h"
 #include "Engine_Base.h"
@@ -58,11 +58,13 @@ namespace E = Engine;
 // for study
 //#include "ExStruct.h"
 
+//#include "tracy/Tracy.hpp"
 #include "tracy/Tracy.hpp"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <ImGuizmo.h>
-
+#include <imgui_node_editor.h>
 #include <nlohmann/json.hpp>
 
 
