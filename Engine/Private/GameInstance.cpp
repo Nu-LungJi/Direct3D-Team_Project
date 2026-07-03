@@ -284,7 +284,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LightManager_Update");
 		m_pLightManager->Update(fTimeDelta);
 	}
-}
+
 
 
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
