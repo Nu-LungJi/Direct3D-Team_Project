@@ -182,6 +182,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\CTexUI.h" />
     <ClInclude Include="..\public\Goblin.h" />
     <ClInclude Include="..\public\Gobline.h" />
+    <ClInclude Include="..\public\LevelCollider.h" />
     <ClInclude Include="..\Public\LevelLoading.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -200,6 +201,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
+    <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -216,6 +218,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\private\Goblin.cpp" />
     <ClCompile Include="..\private\Gobline.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp" />
+    <ClCompile Include="..\private\LevelCollider.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -232,6 +235,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\Particle.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
+    <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">

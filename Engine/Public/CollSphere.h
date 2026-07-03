@@ -15,6 +15,8 @@ private:
 
 public:
 	const BoundingSphere& GetBoundingSphere() const { return m_BoundingSphereWorld; }
+	const BoundingSphere& GetLocalBoundingSphere() const { return m_BoundingSphereLocal; }
+	void SetLocalBoundingSphere(const _float3 vCenter, _float fRadius) { m_BoundingSphereLocal = BoundingSphere{ vCenter, fRadius  }; }
 
 public:
 	static constexpr uint32_t SliceCnt = 16;
