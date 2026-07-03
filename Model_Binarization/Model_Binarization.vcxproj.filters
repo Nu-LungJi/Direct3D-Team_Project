@@ -2,5 +2,19 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Importer.cpp">
+      <Filter>Importer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Importer">
+      <UniqueIdentifier>{6470ca87-8ae8-4122-b84c-e6e09e9406d2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Importer.h">
+      <Filter>Importer</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h" />
   </ItemGroup>
 </Project>

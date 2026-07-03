@@ -109,6 +109,22 @@ _bool CResTestModelAnim::Update_TransformationMatrices(_float fTimeDelta, const 
 
 }
 
+void CResTestModelAnim::SetCurrentTrackPosition(float fPos)
+{
+	m_fCurrentTrackPosition = fPos;
+
+	RebuildCurrentKeyFrameIndices();
+}
+
+void CResTestModelAnim::RebuildCurrentKeyFrameIndices()
+{
+	for (uint32_t i = 0; i < m_iNumChannels; ++i)
+	{
+		m_CurrentKeyFrameIndices[i] =
+			m_Channels[i]->FindKeyFrameIndex(
+				m_fCurrentTrackPosition);
+	}
+}
 
 SPtr<CResTestModelAnim> CResTestModelAnim::Create(const _string& sPath)
 {
