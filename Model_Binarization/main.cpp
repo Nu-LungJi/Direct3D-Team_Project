@@ -1,13 +1,14 @@
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <assimp/Importer.hpp>
-#include <nlohmann/json.hpp>
+#include "pch.h"
+#include "Importer.h"
+
 
 using namespace std;
 
 int main()
 {
-	cout << "Hello Model Binarization Project" << endl;
+	shared_ptr<CImporter> import = make_shared<CImporter>();
+
+//    import->ImportFBXFolder("LevelAnimEditor","./Resources/Fbx/LevelAnimEditor/Static");
+    import->ImportFBXFolder("LevelAnimEditor","./Resources/Fbx/LevelAnimEditor/Skeletal");
 	return 0;
 }

@@ -55,6 +55,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::ANIMEDITOR));
 		});
 
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_LightMap", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LIGHTMAP));
+		});
+
 	CGameInstance::Get().RegisterLevelChangeFunc("TO_Collider", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::COLLIDER));

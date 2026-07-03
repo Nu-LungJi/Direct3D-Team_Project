@@ -17,6 +17,5 @@ namespace Engine
 	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
 
-
-
+	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
 }

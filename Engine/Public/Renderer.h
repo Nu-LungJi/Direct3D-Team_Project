@@ -15,7 +15,8 @@ private:
 	~CRenderer() override;
 
 public:
-	void UpdateGUI();
+	VOID	 UpdateGUI();
+	VOID	 PostProcessGUI();
 
 public:
 	HRESULT Initialize();
@@ -92,7 +93,6 @@ private:	// PostProcess Variable
 	_float m_pVignetteSmoothness	{ 0.f };
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	m_pTestTexture = { nullptr };
 
 private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
@@ -110,7 +110,7 @@ private:
 	HRESULT RenderUI(const RENDER_CTX& ctx);
 
 private:
-	VOID	PostProcessGUI();
+	_bool	ApplyFilter = { false };		// 필터 적용 ON-OFF
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

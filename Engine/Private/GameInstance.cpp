@@ -21,6 +21,7 @@
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
+#include "Light.h"
 #include "ComCollider.h"
 
 NS_USING(Engine)
@@ -361,9 +362,6 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-
-
-
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_UI) })))
@@ -371,7 +369,6 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-
 
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
@@ -621,12 +618,13 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-
-		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+	
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource",
+			CResTestModel::Create("./Resources/SampleClient/Models/LightObject/HorseStatue.fbx"))) {
 
 			E::CResTestModel::DESC pDesc{};
-			pDesc.eModelType = MODEL::ANIM;
-			pDesc.PreTransformMatrix = XMMatrixIdentity();
+			pDesc.eModelType = MODEL::NONANIM;
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.00001f, 0.00001f, 0.00001f);
 
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -684,6 +682,10 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
+	if (AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))
+	{
+		return E_FAIL;
+	}
 	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
 	{
 		return E_FAIL;
@@ -727,6 +729,11 @@ _bool CGameInstance::ImguiGetActive() const
 void CGameInstance::ImguiSetActive(_bool bActive)
 {
 	m_pImguiManager->Set_Active(bActive);
+}
+
+void CGameInstance::ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports)
+{
+	m_pImguiManager->EnableDocking(bEnableDocking, bEnableViewports);
 }
 #pragma endregion
 
@@ -968,6 +975,12 @@ const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view s
 {
 	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
 }
+
+const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
+{
+	return m_pGameObjectManager->GetLayers();
+}
+
 void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
 {
 	return m_pGameObjectManager->DelLayer(sLayerName);

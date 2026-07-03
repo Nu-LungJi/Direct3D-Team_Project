@@ -28,6 +28,8 @@ public:
 
 	void Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResTestModelBone>>& Bones);
 
+	uint32_t FindKeyFrameIndex(float fTrackPos);
+
 
 private:
 	char				m_szName[MAX_PATH] = {};
