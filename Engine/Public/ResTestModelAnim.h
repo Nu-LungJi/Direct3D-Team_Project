@@ -25,7 +25,7 @@ public:
 	HRESULT Unload(const std::any& arg = {}) override;
 
 	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResTestModelBone>>& Bones, _bool isLoop);
-
+	void RebuildCurrentKeyFrameIndices();
 
 public:
 	_float  GetDuration() const { return m_fDuration; }
@@ -34,7 +34,7 @@ public:
 
 	void    SetDuration(_float fDuration) { m_fDuration = fDuration; }
 	void    SetTickPerSecond(_float fTickPerSecond) { m_fTickPerSecond = fTickPerSecond; }
-	void    SetCurrentTrackPosition(_float fCurrentTrackPosition) { m_fCurrentTrackPosition = fCurrentTrackPosition; }
+	void    SetCurrentTrackPosition(_float fCurrentTrackPosition);
 
 
 
@@ -54,6 +54,7 @@ private:
 
 
 public:
+
 	static SPtr<CResTestModelAnim> Create(const _string& sPath = {});
 };
 

@@ -146,6 +146,10 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
     if (nullptr == pComAnimator)
         return;
 
+
+    if (pComModelInstance->GetModel()->GetAnimations().size() == 0)
+        return;
+
     auto pAnim = pComModelInstance->GetModel()->GetAnimations()[pComAnimator->GetPlayAnimIndex()];
 
     if (nullptr == pAnim)
@@ -184,10 +188,14 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
 
     ImGui::PushItemWidth(-1.f);
 
+
     if (ImGui::SliderFloat("##AnimTimeline",&fCurrentPos,0.f,fDuration, "%.3f"))
     {
         pAnim->SetCurrentTrackPosition(fCurrentPos);
+        
     }
+
+
 
     ImGui::PopItemWidth();
 
@@ -205,7 +213,7 @@ void CAnimEdit_Manager::UpdateGUI()
     if (m_hTestModel.GetIndex() != 0)
         return;
 
-	IMGUI_Select_AnimType();
+	//IMGUI_Select_AnimType();
     IMGUI_Slider_Animation();
 }
 

@@ -44,6 +44,7 @@ public:
 	HRESULT AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum);
 	HRESULT AnimEditor_Play_AnimMontage(_float fTimeDelta, const std::string& strAnimMontageName);
 
+
 public:
 	uint32_t GetAnimationTYPE() const { return ETOUI(m_iPlayAnimationType); }
 	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }	
@@ -61,6 +62,7 @@ private:
 	uint32_t		m_iPlayAnimationNum{ 0 };
 	uint32_t		m_iPlayAnimIndex{ 0 };
 	uint32_t		m_iPlayAnimMonatgueIndex{ 0 };
+
 public:
 	static UPtr<CComAnimator> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
