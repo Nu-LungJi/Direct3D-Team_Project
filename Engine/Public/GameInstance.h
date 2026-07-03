@@ -165,6 +165,7 @@ public:
 	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg = nullptr);
 	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName) const;
 	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg);
+	const std::vector<std::pair<std::string, std::vector<CHandle>>>& GetGameObjectLayers() const;
 	void DelGameObjectLayer(std::string_view sLayerName);
 
 	//std::optional<CHandle> GetFreeHandle() const;

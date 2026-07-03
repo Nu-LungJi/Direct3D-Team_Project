@@ -269,27 +269,43 @@ void CLevelMapEditor::UpdateGUI()
 
 	ImGui::Separator();
 	ImGui::TextDisabled("Hierarchy");
-	if (const auto* pLayer = E::CGameInstance::Get().GetGameObjectLayer("00_OBJECTS"))
+	ImGui::BeginChild("##ObjectList", ImVec2(0.f, 156.f), true);
 	{
-		ImGui::BeginChild("##ObjectList", ImVec2(0.f, 124.f), true);
-		for (const auto& handle : *pLayer)
+		const auto& layers = E::CGameInstance::Get().GetGameObjectLayers();
+		for (const auto& [layerName, handles] : layers)
 		{
-			auto* pObject = E::CGameInstance::Get().GetGameObjectByHandle(handle);
-			if (pObject == nullptr)
-			{
-				continue;
-			}
+			ImGui::PushID(layerName.c_str());
+			const bool bOpen = ImGui::TreeNodeEx(
+				layerName.c_str(),
+				ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth,
+				"%s (%zu)",
+				layerName.c_str(),
+				handles.size());
 
-			const bool bSelected = (handle == m_SelectedObject);
-			ImGui::PushID(static_cast<int>(handle.GetIndex()));
-			if (ImGui::Selectable(pObject->GetObjectTag().data(), bSelected))
+			if (bOpen)
 			{
-				m_SelectedObject = handle;
+				for (const auto& handle : handles)
+				{
+					auto* pObject = E::CGameInstance::Get().GetGameObjectByHandle(handle);
+					if (pObject == nullptr)
+					{
+						continue;
+					}
+
+					const bool bSelected = (handle == m_SelectedObject);
+					ImGui::PushID(static_cast<int>(handle.GetIndex()));
+					if (ImGui::Selectable(pObject->GetObjectTag().data(), bSelected))
+					{
+						m_SelectedObject = handle;
+					}
+					ImGui::PopID();
+				}
+				ImGui::TreePop();
 			}
 			ImGui::PopID();
 		}
-		ImGui::EndChild();
 	}
+	ImGui::EndChild();
 
 	ImGui::Separator();
 	ImGui::TextDisabled("Inspector");
