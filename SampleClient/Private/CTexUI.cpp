@@ -17,13 +17,8 @@ CTexUI::~CTexUI()
 
 HRESULT CTexUI::Initialize(void* pArg)
 {
-
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
-	pDesc->fSizeX = g_iWinSizeX;
-	pDesc->fSizeY = 200.f;
-
-	pDesc->fX = g_iWinSizeX * 0.5f;
-	pDesc->fY = g_iWinSizeY - pDesc->fSizeY * 0.5f;
+	m_sRestag	= pDesc->ResTag;
 
 	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
@@ -37,7 +32,17 @@ void CTexUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CTexUI::Update(E::_float fTimeDelta)
 {
+	CUIObject::Update(fTimeDelta);
 
+	if (m_bMouseTracking)
+	{
+		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+		m_fX = mousePos.x;
+		m_fY = mousePos.y;
+		CalcUICoord();
+	}
+
+	m_sRestag;
 }
 
 void CTexUI::LateUpdate(E::_float fTimeDelta)
@@ -48,6 +53,8 @@ void CTexUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	std::string currentLevel = "LEVEL_UIEDITOR";
+
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
 	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex");
@@ -90,8 +97,9 @@ HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
+
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_LOGO", "TEX_SHM");
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_sRestag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 
 		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);

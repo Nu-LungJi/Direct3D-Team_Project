@@ -11,6 +11,7 @@
 #include "Particle.h"
 #include "TestModel.h"
 #include "LevelUIEditor.h"
+#include "CTexUI.h"
 
 NS_USING(Client)
 
@@ -166,7 +167,7 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create("./Resources/SampleClient/Textures/T_Map_OverlandPaper_D.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/T_Map_OverlandPaper_D.png")))
 		{
 			res->Load();
 		}
@@ -174,6 +175,11 @@ void CLevelLoading::ThreadStart()
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
 			{
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_BackGround", CBackGround::Create())))
+				{
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", CTexUI::Create())))
 				{
 					return false;
 				}

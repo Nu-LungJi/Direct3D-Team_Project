@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
+#include "UIObject.h"
 
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -899,7 +900,17 @@ HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
 
 HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
 {
-    for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI)])
+    auto& renderList = m_RenderObject[ETOUI(RENDERGROUP::UI)];
+
+    std::sort(renderList.begin(), renderList.end(),
+        [](const IRenderable* lhs, const IRenderable* rhs)
+        {
+            const CUIObject* l = static_cast<const CUIObject*>(lhs);
+            const CUIObject* r = static_cast<const CUIObject*>(rhs);
+            return l->GetWeight() > r->GetWeight();
+        });
+
+    for (auto* pRenderObject : renderList)
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
         {

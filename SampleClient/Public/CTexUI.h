@@ -21,6 +21,17 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 public:
+	std::string Get_ResTag() { return m_sRestag; }
+	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
+private:
+	std::string m_sRestag;
+	_bool m_bMouseTracking{};
+
+private:
+	// Ω¶¿Ã¥ı
+	bool m_bOutline{};
+
+public:
 	static E::UPtr<CTexUI> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 

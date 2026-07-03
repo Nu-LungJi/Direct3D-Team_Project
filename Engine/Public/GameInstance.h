@@ -240,6 +240,11 @@ public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
 	_bool GetMouseFix() const { return m_bMouseFix; }
+
+	_float2 GetMousePos() {
+		POINT pt; GetCursorPos(&pt); ScreenToClient(m_hWnd, &pt);
+		return { (float)pt.x, (float)pt.y };
+	}
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
 	HWND m_hWnd{};

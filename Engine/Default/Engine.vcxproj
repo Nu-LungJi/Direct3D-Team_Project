@@ -323,6 +323,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
     <ClInclude Include="..\Public\UIManager.h" />
+    <ClInclude Include="..\Public\UIPrefab.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -468,6 +469,7 @@ call CopyClient.bat</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="UIPrefab.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">

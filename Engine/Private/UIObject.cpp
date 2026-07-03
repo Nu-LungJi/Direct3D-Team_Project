@@ -34,6 +34,9 @@ HRESULT CUIObject::Initialize(void* pArg)
 	m_fY = pDesc->fY;
 	m_fSizeX = pDesc->fSizeX;
 	m_fSizeY = pDesc->fSizeY;
+	m_fAlpha = pDesc->fAlpha;
+	m_iWeight = pDesc->ResWeight;
+	strcpy_s(m_cName, pDesc->sObjectTag.c_str());
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
