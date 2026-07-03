@@ -552,6 +552,9 @@ call CopySampleClient.bat</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>

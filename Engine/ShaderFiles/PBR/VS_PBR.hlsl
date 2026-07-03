@@ -20,7 +20,8 @@ VS_OUT VSMain(VS_IN IN)
 {
     VS_OUT OUT;
     
-    OUT.Position    = mul(float4(IN.Position, 1.f), g_matWVP);
+    //OUT.Position    = mul(float4(IN.Position, 1.f), g_matWVP);
+    OUT.Position = float4(IN.Position.xy, 1.0f, 1.0f);
     OUT.TexCoord    = IN.TexCoord;
     OUT.Normal      = normalize(mul(float4(IN.Normal, 0.0), g_matWorld).xyz);
     OUT.Tangent     = normalize(mul(float4(IN.Tangent, 0.0), g_matWorld).xyz);

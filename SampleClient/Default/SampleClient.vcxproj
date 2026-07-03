@@ -194,6 +194,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\public\LevelPlayground.h" />
     <ClInclude Include="..\Public\LevelUIEditor.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
+    <ClInclude Include="..\Public\LightObject.h" />
     <ClInclude Include="..\Public\MainApp.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -227,6 +228,7 @@ call CopySampleClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\LevelPlayground.cpp" />
+    <ClCompile Include="..\Private\LightObject.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -250,6 +252,7 @@ call CopySampleClient.bat</Command>
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>

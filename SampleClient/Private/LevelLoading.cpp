@@ -13,6 +13,7 @@
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
 #include "LevelLightMap.h"
+#include "LightObject.h"
 
 NS_USING(Client)
 
@@ -230,6 +231,14 @@ void CLevelLoading::ThreadStart()
 					}
 				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Terrain", CTerrain::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_TestModel", CTestModel::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
 				{
 					return false;
 				}

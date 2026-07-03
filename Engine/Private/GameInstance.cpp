@@ -142,11 +142,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}	
 
-	//m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
-	//if (m_pLightManager == nullptr)
-	//{
-	//	return E_FAIL;
-	//}
+	m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
+	if (m_pLightManager == nullptr)
+	{
+		return E_FAIL;
+	}
 
 
 	//m_pParticleManager = CParticleManager::Create(ppDevice.Get(), ppContext.Get());
@@ -195,7 +195,7 @@ void CGameInstance::UpdateGUI()
 
 	//m_pParticleManager->UpdateGUI();
 
-	//m_pLightManager->UpdateGUI();
+	m_pLightManager->UpdateGUI();
 
 
 	m_pRenderer->UpdateGUI();
@@ -304,7 +304,7 @@ void CGameInstance::Release_Engine()
 	m_pColliderManager.reset();
 	//m_pParticleManager.reset();
 	m_pWorkerManager.reset();
-	//m_pLightManager.reset();
+	m_pLightManager.reset();
 	m_pCameraManager.reset();
 	m_pPrototypeManager.reset();
 	m_pGameObjectManager.reset();
@@ -613,12 +613,26 @@ HRESULT CGameInstance::InitializeResources()
 				return E_FAIL;
 			}
 		}
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR", "../../Engine/ShaderFiles/PBR/VS_PBR.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR", "../../Engine/ShaderFiles/PBR/PS_PBR.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
 
 
-		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.fbx"))) {
 
 			E::CResTestModel::DESC pDesc{};
-			pDesc.eModelType = MODEL::ANIM;
+			pDesc.eModelType = MODEL::NONANIM;
 			pDesc.PreTransformMatrix = XMMatrixIdentity();
 
 			if (FAILED(res->Load(pDesc)))
@@ -1087,4 +1101,24 @@ HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pR
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
 }
+#pragma endregion
+
+#pragma region LIGHT_MANAGER
+VOID	CGameInstance::Bind_EnviromentLight() {
+	m_pLightManager->Bind_EnviromentLight();
+}
+VOID	CGameInstance::Bind_DynamicLight() {
+	m_pLightManager->Bind_DynamicLight();
+}
+
+VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
+	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
+}
+VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range) {
+	m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _Range);
+}
+VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
+	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
+}
+
 #pragma endregion

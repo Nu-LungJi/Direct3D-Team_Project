@@ -237,6 +237,11 @@ PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT OUT;
     
+    OUT.Diffuse = AlbedoMap.Sample(SamplerClamp, IN.TexCoord);
+    
+    return OUT;
+    
+    
     float3 WorldNormal = Compute_WorldNormal(IN);
     float3 V = normalize(g_vCamPos - IN.WorldPos);
     float  R = reflect(-V, WorldNormal);

@@ -11,6 +11,7 @@ private:
 
 public:
 	HRESULT	Initialize_LightManager();
+	VOID	UpdateGUI();
 
 	VOID	Bind_EnviromentLight();
 	VOID	Bind_DynamicLight();

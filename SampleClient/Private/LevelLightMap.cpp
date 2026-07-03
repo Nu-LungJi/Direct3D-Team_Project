@@ -9,6 +9,8 @@
 #include "BackGround.h"
 #include "Light.h"
 #include "Terrain.h"
+#include "TestModel.h"
+#include "LightObject.h"
 
 NS_USING(Client)
 
@@ -34,11 +36,16 @@ HRESULT CLevelLightMap::Initialize()
 		}
 	}
 	{
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject";
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
+	}
+	{
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
 
 		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_Terrain",
-			"01_Terrain", &Desc)))
+			"02_Terrain", &Desc)))
 		{
 			return E_FAIL;
 		}

@@ -21,6 +21,10 @@ HRESULT CLightManager::Initialize_LightManager(){
 	return S_OK;
 }
 
+VOID CLightManager::UpdateGUI() {
+
+}
+
 VOID CLightManager::Bind_EnviromentLight(){
     //m_pContext->PSSetShaderResources(4, 1, &m_IrridianceSRV);
     //m_pContext->PSSetShaderResources(5, 1, &m_PreFilterSRV);
@@ -78,7 +82,7 @@ VOID CLightManager::Bind_DynamicLight(){
     //        memcpy(MRES.pData, &CBOPBR, sizeof(CB_OBJECT_PBR));
     //        m_pContext->Unmap(PBRConstantBuffer->GetCBuffer().Get(), 0);
     //    }
-    //    m_pContext->PSSetConstantBuffers(3, 1, LightConstantBuffer->GetCBuffer().GetAddressOf());
+    //    m_pContext->PSSetConstantBuffers(3, 1, PBRConstantBuffer->GetCBuffer().GetAddressOf());
     //
     //    m_pContext->PSSetShaderResources(0, 1, &AlbedoSRV);
     //    m_pContext->PSSetShaderResources(1, 1, &NormalSRV);

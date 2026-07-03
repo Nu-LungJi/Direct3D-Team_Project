@@ -133,6 +133,9 @@
     <ClInclude Include="..\Public\LevelLightMap.h">
       <Filter>Level\LightMap</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LightObject.h">
+      <Filter>GameObject\LightObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -185,6 +188,9 @@
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\LightObject.cpp">
+      <Filter>GameObject\LightObject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">
@@ -202,6 +208,9 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
