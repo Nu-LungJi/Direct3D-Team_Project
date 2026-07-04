@@ -38,4 +38,47 @@ namespace Engine
 		_float2  rectSizePx{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
+
+	typedef struct tagConstantBufferObjectPBR
+	{
+		_float3  AlbedoValue;
+		_float   RoughnessValue;
+		_float   MetallicValue;
+		_float3  Padding;
+	} CB_OBJECT_PBR;
+	static_assert(sizeof(CB_OBJECT_PBR) % 16 == 0);
+
+	typedef struct tagConstantBufferLight
+	{
+		DYNAMIC_LIGHT AffectedLight[MAX_LIGHT_COUNT];
+		int           g_iLightCount;
+		XMFLOAT3      g_LightPadding;
+	} CB_LIGHT;
+	static_assert(sizeof(CB_LIGHT) % 16 == 0);
+
+	typedef struct CB_ParticleUpdate
+	{
+		float    g_fTimeDelta;
+		uint32_t g_iNumInstances;
+		uint32_t g_iBehaviorType;
+		float    g_fPadding;
+	}CB_PER_PARTICLE;;
+	static_assert(sizeof(CB_PER_PARTICLE) % 16 == 0);
+
+	typedef struct CB_ParticleSpawn
+	{
+		uint32_t    g_iSpawnCount;
+		_float3     pad;
+		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
+	}CB_PARTICLE_SPAWN;
+	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
+
+	typedef struct CB_RibbonParticle
+	{
+		uint32_t    g_iSpawnCount;
+		_float3     pad;
+		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
+	}CB_RIBBON_PARTICLE;
+	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
+
 }

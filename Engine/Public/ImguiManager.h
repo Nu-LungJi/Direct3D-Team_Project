@@ -17,11 +17,17 @@ public:
 	void Update_Imgui();
 	void Render_Imgui();
 
+	void Update_ImguiNodeEditor();
+	void EnableDocking(_bool bEnableDocking, _bool bEnableViewports);
+
 	_bool WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 	_bool m_bActive{ true };
 	_bool m_bNewFrame{ false };
+	_bool m_bViewportsEnabled{ false };
+	_bool m_bViewportsAvailable{ false };
+	ID3D11DeviceContext* m_pContext{ nullptr };
 
 	UPtr<class CNodeEditor>		m_pNodeEditor{ nullptr };
 public:

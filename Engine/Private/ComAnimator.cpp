@@ -38,6 +38,7 @@ HRESULT CComAnimator::Initialize(void* pArg)
 
 HRESULT CComAnimator::Update(_float fTimeDelta)
 {
+  
     switch (m_iPlayAnimationType) {
     case ANIMTYPE::MONTAGE: {
         Play_AnimationMontage(fTimeDelta, "");

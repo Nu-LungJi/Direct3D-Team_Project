@@ -6,6 +6,8 @@ class CGameObject;
 class CResOffscreenTexture;
 class CResDynamicTexture2D;
 
+class CMyGFSDK_SSAO;
+
 class CRenderer final : public CEngineBase
 {
 private:
@@ -13,7 +15,8 @@ private:
 	~CRenderer() override;
 
 public:
-	void UpdateGUI();
+	VOID	 UpdateGUI();
+	VOID	 PostProcessGUI();
 
 public:
 	HRESULT Initialize();
@@ -26,6 +29,7 @@ private:
 	HRESULT InitializeTargetNormal();
 
 	HRESULT InitilizePostProcess();
+	HRESULT InitializeGFSDK_SSAO();
 
 public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
@@ -89,7 +93,9 @@ private:	// PostProcess Variable
 	_float m_pVignetteSmoothness	{ 0.f };
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	m_pTestTexture = { nullptr };
+
+private:
+	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
 
 private:
 	HRESULT DrawFullscreen();
@@ -100,11 +106,12 @@ private:
 	HRESULT RenderBlend(const RENDER_CTX& ctx);
 	HRESULT RenderSkybox(const RENDER_CTX& ctx);
 	HRESULT RenderCollider(const RENDER_CTX& ctx);
+	HRESULT RenderParticle(const RENDER_CTX& ctx);
 	HRESULT RenderPostProcess(const RENDER_CTX& ctx);
 	HRESULT RenderUI(const RENDER_CTX& ctx);
 
 private:
-	VOID	PostProcessGUI();
+	_bool	ApplyFilter = { false };		// 필터 적용 ON-OFF
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

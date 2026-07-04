@@ -73,8 +73,15 @@ HRESULT CResStructuredBuffer::Load(const std::any& arg)
     uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
     uavDesc.Buffer.FirstElement = 0;
     uavDesc.Buffer.NumElements = argDesc->iNumElements;
-    uavDesc.Buffer.Flags = 0;
-
+    if (argDesc->bAppendConsume)
+    {
+        // Append / Consume 기능을 활성화하기 위한 플래그
+        uavDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
+    }
+    else
+    {
+        uavDesc.Buffer.Flags = 0; // 일반 RWStructuredBuffer
+    }
     if (FAILED(m_pDevice->CreateUnorderedAccessView(m_pBuffer.Get(), &uavDesc, m_pUAV.GetAddressOf())))
     {
         return E_FAIL;

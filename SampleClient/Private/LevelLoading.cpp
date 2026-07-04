@@ -12,6 +12,11 @@
 #include "TestModel.h"
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
+#include "LevelLightMap.h"
+#include "LevelCollider.h"
+#include "TestCollider.h"
+#include "LightObject.h"
+
 #include "Gobline.h"
 NS_USING(Client)
 
@@ -84,6 +89,12 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::ANIMEDITOR:
 		pNewLevel = CLevelAnimEditor::Create();
 		break;
+	case LEVEL::COLLIDER:
+		pNewLevel = CLevelCollider::Create();
+		break;
+	case LEVEL::LIGHTMAP:
+		pNewLevel = CLevelLightMap::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -131,7 +142,7 @@ void CLevelLoading::ThreadStart()
 
 
 
-		
+
 
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
 			{
@@ -155,11 +166,11 @@ void CLevelLoading::ThreadStart()
 				}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
 				//{
-				//	return false;
+				//   return false;
 				//}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel", CTestModel::Create())))
 				//{
-				//	return false;
+				//   return false;
 				//}
 
 
@@ -209,6 +220,65 @@ void CLevelLoading::ThreadStart()
 			});
 	}
 		break;
+	case LEVEL::COLLIDER:
+	{
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_COLLIDER", [this]()
+			{
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider", CTestCollider::Create())))
+				{
+					return false;
+				}
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				return  true;
+			});
+	}
+	break;
+	case LEVEL::LIGHTMAP:
+	{
+		//"LIGHT", "Prototype_GameObject_TestModel"
+		//"LIGHT", "Prototype_GameObject_Terrain"
+		//"SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0" p
+		//"LIGHT", "Prototype_GameObject_LightObject"
+		//"SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain"
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		{
+			int a = 0;
+			//return false;
+		}
+
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LIGHTMAP", [this]()
+			{
+				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+				{
+					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
+					{
+						//MSG_BOX("");
+						return false;
+					}
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Terrain", CTerrain::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_TestModel", CTestModel::Create())))
+				{
+					return false;
+				}
+				
+				return  true;
+			});
+	}
+	break;
 	default:
 		m_bLoadEnd = true;
 		break;

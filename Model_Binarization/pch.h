@@ -1,0 +1,17 @@
+#pragma once
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <assimp/Importer.hpp>
+#include <nlohmann/json.hpp>
+#include  <any>
+#include <vector>
+#include <list>
+#include <map>
+#include <algorithm>
+#include <functional>
+#include <string>
+#include <unordered_map>
+#include <ctime>
+#include <memory>
+#include <wrl/client.h>

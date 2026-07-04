@@ -5,6 +5,7 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "LightManager.h"
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -23,6 +24,7 @@ class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
 class CNodeEditor;
+class CParticleManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -55,6 +57,7 @@ public:
 	_bool ImguiWinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	_bool ImguiGetActive() const;
 	void ImguiSetActive(_bool bActive);
+	void ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports);
 #pragma endregion
 
 
@@ -165,6 +168,7 @@ public:
 	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg = nullptr);
 	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName) const;
 	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg);
+	const std::vector<std::pair<std::string, std::vector<CHandle>>>& GetGameObjectLayers() const;
 	void DelGameObjectLayer(std::string_view sLayerName);
 
 	//std::optional<CHandle> GetFreeHandle() const;
@@ -238,13 +242,33 @@ public:
 	}
 #pragma endregion
 
+#pragma region LIGHT_MANAGER
+public:
+	VOID	Bind_EnviromentLight();
+	VOID	Bind_DynamicLight();
+
+	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+#pragma endregion
+
 #pragma region ANIM_MANAGER
+#pragma region PARTICLE_MANAGER
 public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
 #pragma region NODE_EDITOR
 	HRESULT	   OpenBeHavior(CHandle Handle);
+#pragma endregion
+
+public:
+	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+		_bool bLoop = false, _float fSpawnInterval = 0.1f);
+
+	HRESULT Add_Particle(UPtr<class CParticle> particle);
+
+	HRESULT SpawnRibbon(const _float4& start, const _float4& end);
 #pragma endregion
 
 public:
@@ -278,11 +302,11 @@ private:
 	UPtr<CColliderManager> m_pColliderManager{};
 	UPtr<CRenderer> m_pRenderer{};
 	UPtr<CShaderManager> m_pShaderManager{};
-	//UPtr<CLightManager> m_pLightManager{};
+	UPtr<CLightManager> m_pLightManager{};
 	//UPtr<CVoxelManager> m_pVoxelManager{};
 	//UPtr<CVoxelManager2> m_pVoxelManager2{};
 	//UPtr<CVoxelManager3> m_pVoxelManager3{};
-	//UPtr<CParticleManager> m_pParticleManager{};
+	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};

@@ -68,6 +68,22 @@ namespace Engine
 		_float _pad{};
 	} SPOT_LIGHT;
 
+	typedef struct tagDynamicLight {
+		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
+
+		_float3  LightDirection;
+		_float3  LightColor;
+		_float   LightIntensity;
+		_float   LightRange;
+
+		_float3  Position;
+
+		_float   InnerAttanuation;
+		_float   OuterAttanuation;
+
+		_float2  LightPadding;
+	} DYNAMIC_LIGHT;
+
 	typedef struct tagPostProcess
 	{
 		_float DistortionIntensity;  // 왜곡 강도
@@ -146,7 +162,21 @@ namespace Engine
 			SlotEnd.resize(iEnd);
 		}
 	}GUINODE_LINK;
+	typedef struct tagParticleSpawnData
+	{
+		_float3 position;
+		_float3 velocity;
+		_float  life;
+		_float  size;
+		_float4 color;
+	}PARTICLE_SPAWN_DATA;
 
+	typedef struct tagParticleEmitRequest
+	{
+		uint32_t count;
+		_bool    bLoop;
+		_float   fSpawnInterval;
+	} PARTICLE_EMIT_REQUEST;
 	typedef struct tagimguiCurrentNode
 	{
 		tagimguiCurrentNode() = default;
@@ -163,5 +193,11 @@ namespace Engine
 		
 		NODETYPE eType = NODETYPE::END;
 	}GUICURRENT_NODE;
+	typedef struct tagBeamVertex
+	{
+		_float3 vPosition;
+		_float2 vUV;
+	}BEAM_VERTEX;
+
 	///////NodeEditor용
 }
