@@ -42,6 +42,8 @@ public:
 	std::vector<_float4x4>& GetOffsetMatrices() { return m_OffsetMatrices; }
 	ComPtr<ID3D11Buffer> GetCBBones() { return m_pCBBones; }
 private:
+
+private:
 	ComPtr<ID3D11Buffer> m_pCBBones;
 
 private:
@@ -53,6 +55,7 @@ private:
 	std::vector<uint32_t>	m_BoneIndices;
 	std::vector<_float4x4>	m_BoneMatrices;
 	std::vector<_float4x4>	m_OffsetMatrices;
+
 
 public:
 	static SPtr<CResModelMesh> Create();

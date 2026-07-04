@@ -34,6 +34,7 @@ HRESULT CResModelMesh::Load(const std::any& arg)
     auto& PreTransformMatrix = descArg->PreTransformMatrix;
     
 
+
     {
         HRESULT     hr = MODEL::STATIC == eType ? Ready_NonAnimMesh(ptr, PreTransformMatrix) : Ready_AnimMesh(pModel, ptr);
 
@@ -74,29 +75,37 @@ HRESULT CResModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransformMat
 
     uint32_t nameLen = *(uint32_t*)pPoint;
     pPoint += sizeof(uint32_t);
+  
+
 
     std::string name;
     name.resize(nameLen);
 
     memcpy(name.data(), pPoint, nameLen);
     pPoint += nameLen;
+ 
 
     uint32_t materialIndex = *(uint32_t*)pPoint;
     pPoint += sizeof(uint32_t);
 
+
     uint32_t vCount = *(uint32_t*)pPoint;
     pPoint += sizeof(uint32_t);
 
+
     uint32_t iCount = *(uint32_t*)pPoint;
     pPoint += sizeof(uint32_t);
+
 
     vertexes->resize(vCount);
     memcpy(vertexes->data(), pPoint, sizeof(VTXMESH) * vCount);
     pPoint += sizeof(VTXMESH) * vCount;
 
+
     indices->resize(iCount);
     memcpy(indices->data(), pPoint, sizeof(uint32_t) * iCount);
     pPoint += sizeof(uint32_t) * iCount;
+
 
 
     strcpy_s(m_szName, name.c_str());

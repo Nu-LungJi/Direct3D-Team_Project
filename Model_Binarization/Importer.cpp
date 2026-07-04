@@ -206,6 +206,22 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
     //---------------------------------------------------------MESH-------------------------------------------------------------------//
     for (auto& mesh : Meshes)
     {
+        uint32_t snameLen = (uint32_t)mesh->m_name.size();
+        uint32_t svCount = (uint32_t)mesh->m_vertices->size();
+        uint32_t siCount = (uint32_t)mesh->m_indices->size();
+
+        uint32_t meshSize =
+            sizeof(uint32_t) + snameLen +                    // nameLen + name
+            sizeof(uint32_t) +                              // materialIndex
+            sizeof(uint32_t) +                              // vCount
+            sizeof(uint32_t) +                              // iCount
+            sizeof(VTXMESH) * svCount +                      // vertices
+            sizeof(uint32_t) * siCount;                      // indices
+
+        // Mesh 크기 먼저 기록
+        pushMesh(&meshSize, sizeof(uint32_t));
+
+
         uint32_t nameLen = (uint32_t)mesh->m_name.size();
         pushMesh(&nameLen, sizeof(uint32_t));
 
@@ -241,6 +257,35 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
 
     for (auto& mat : Materials)
     {
+        uint32_t materialSize = 0;
+
+        // materialNum
+        materialSize += sizeof(uint32_t);
+
+        // textureTypeCount
+        materialSize += sizeof(uint32_t);
+
+        for (auto& texs : mat->m_textures)
+        {
+            // textureCount
+            materialSize += sizeof(uint32_t);
+
+            for (auto& tex : texs)
+            {
+                materialSize += sizeof(uint32_t); // m_textureType
+
+                materialSize += sizeof(uint32_t); // File length
+                materialSize += (uint32_t)tex.File.size();
+
+                materialSize += sizeof(uint32_t); // Ext length
+                materialSize += (uint32_t)tex.Ext.size();
+            }
+        }
+
+        // Material 크기 먼저 기록
+        pushMaterial(&materialSize, sizeof(uint32_t));
+
+
         uint32_t materialNum = mat->m_materialNum;
         pushMaterial(&materialNum, sizeof(uint32_t));
 
@@ -271,7 +316,7 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
 
     ChunkHeader chMaterial;
     chMaterial.type = ChunkType::CHUNK_MATERIAL;
-    chMaterial.size = (uint32_t)meshBuffer.size();
+    chMaterial.size = (uint32_t)materialBuffer.size();
 
     file.write((char*)&chMaterial, sizeof(chMaterial));
     file.write(materialBuffer.data(), materialBuffer.size());

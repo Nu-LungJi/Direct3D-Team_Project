@@ -36,15 +36,20 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 
 		_splitpath_s(strModelFilePath.c_str(), szDrive, MAX_PATH, szDir, MAX_PATH, nullptr, 0, nullptr, 0);
 
+		m_iMaterialTypeNum = *(uint32_t*)pPoint;
+		pPoint += sizeof(uint32_t);
+
 
 		uint32_t textureTypeCount = *(uint32_t*)pPoint;
 		pPoint += sizeof(uint32_t);
+
 
 
 		for (size_t i = 0; i < textureTypeCount; i++)
 		{
 			uint32_t textureCount = *(uint32_t*)pPoint;
 			pPoint += sizeof(uint32_t);
+
 	
 			for (size_t j = 0; j < textureCount; j++)
 			{
@@ -56,16 +61,20 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 
 
 
+
 				uint32_t len = *(uint32_t*)pPoint;
 				pPoint += sizeof(uint32_t);
+
 
 				std::string file;
 				file.resize(len);
 				memcpy(file.data(), pPoint, len);
 				pPoint += len;
 
+
 				uint32_t extLen = *(uint32_t*)pPoint;
 				pPoint += sizeof(uint32_t);
+
 
 				std::string ext;
 				ext.resize(extLen);

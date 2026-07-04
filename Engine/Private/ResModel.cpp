@@ -177,16 +177,20 @@ HRESULT CResModel::Ready_Materials(const _string& strModelFilePath, _char* ptr)
 	m_Materials.resize(m_iNumMaterials);
 	for (size_t i = 0; i < m_iNumMaterials; i++)
 	{
-		auto  pMaterial = CResModelMaterial::Create(strModelFilePath);
 
-		uint32_t _materialNum = *(uint32_t*)ptr;
+		uint32_t consumed = *(uint32_t*)ptr;
 		ptr += sizeof(uint32_t);
+
+		auto  pMaterial = CResModelMaterial::Create(strModelFilePath);
 
 		if (FAILED(pMaterial->Load(CResModelMaterial::DESC{ .ptr = ptr }))) {
 			return E_FAIL;
 		}
 
-		m_Materials[_materialNum] = (pMaterial);
+		m_Materials[pMaterial->GetMaterialTypeNum()] = (pMaterial);
+
+
+		ptr += consumed;
 	}
 
 	return S_OK;
@@ -197,8 +201,13 @@ HRESULT CResModel::Ready_Meshes(_char* ptr)
 
 	for (size_t i = 0; i < m_iNumMeshes; i++)
 	{
-		auto    pAIMesh = CResModelMesh::Create();
-		if (nullptr == pAIMesh)
+	
+		uint32_t consumed = *(uint32_t*)ptr;
+		ptr += sizeof(uint32_t);
+
+
+		auto    pMesh = CResModelMesh::Create();
+		if (nullptr == pMesh)
 			return E_FAIL;
 
 		E::CResModelMesh::DESC pDesc{};
@@ -206,11 +215,14 @@ HRESULT CResModel::Ready_Meshes(_char* ptr)
 		pDesc.ptr = ptr;
 		pDesc.pModel = this;
 		pDesc.PreTransformMatrix = XMLoadFloat4x4(&m_PreTransformMatrix);
-		if (FAILED(pAIMesh->Load(pDesc))) {
+	
+		if (FAILED(pMesh->Load(pDesc))) {
 			return E_FAIL;
 		}
 
-		m_Meshes.push_back(pAIMesh);
+		m_Meshes.push_back(pMesh);
+
+		ptr += consumed;
 	}
 
 	return S_OK;
