@@ -23,6 +23,7 @@
 #include "ComAnimator.h"
 #include "Light.h"
 #include "ComCollider.h"
+#include "MapMeshObject.h"
 
 NS_USING(Engine)
 
@@ -687,6 +688,11 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (AddPrototype("PERMANENT", "Prototype_GameObject_MapMeshObject", CMapMeshObject::Create()))
 	{
 		return E_FAIL;
 	}

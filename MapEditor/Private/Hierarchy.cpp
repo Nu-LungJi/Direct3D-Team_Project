@@ -1,8 +1,38 @@
 #include "pch.h"
 #include "Hierarchy.h"
 #include "GameInstance.h"
+#include "MapMeshObject.h"
 
 NS_USING(Client)
+
+namespace
+{
+	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject)
+	{
+		if (pSelectedObject == nullptr)
+		{
+			return;
+		}
+
+		static uint32_t s_iObjectIndex = 1;
+
+		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
+		Desc.sObjectTag = "MapMesh_" + std::to_string(s_iObjectIndex++);
+		Desc.modelGroupTag = "TEST";
+		Desc.modelResTag = "Model_Resource";
+		Desc.protoGroupTag = "PERMANENT";
+		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
+
+		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
+			Desc.protoGroupTag,
+			Desc.prototypeTag,
+			"00_OBJECTS",
+			&Desc))
+		{
+			*pSelectedObject = hObject.value();
+		}
+	}
+}
 
 CHierarchy::CHierarchy()
 {
@@ -15,6 +45,16 @@ CHierarchy::~CHierarchy()
 void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 {
 	ImGui::TextDisabled("Hierarchy");
+
+	if (ImGui::Button("Add Map Mesh", ImVec2(120.f, 0.f)))
+	{
+		AddDefaultMapMeshObject(GetSelectedHandle());
+	}
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("Add TEST / Model_Resource to 00_OBJECTS");
+	}
+
 	ImGui::BeginChild("##ObjectList", ImVec2(0.f, 156.f), true);
 
 	if (auto* pSelectedObject = GetSelectedHandle())

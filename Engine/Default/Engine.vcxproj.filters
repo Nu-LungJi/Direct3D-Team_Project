@@ -289,6 +289,9 @@
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\MapMeshObject">
+      <UniqueIdentifier>{771de9b5-bb1c-4900-8366-21c558f64744}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -624,6 +627,9 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshObject.h">
+      <Filter>GameObject\MapMeshObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -934,6 +940,9 @@
     </ClCompile>
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshObject.cpp">
+      <Filter>GameObject\MapMeshObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
