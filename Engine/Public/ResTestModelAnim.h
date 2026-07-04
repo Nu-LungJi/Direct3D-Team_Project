@@ -25,6 +25,19 @@ public:
 	HRESULT Unload(const std::any& arg = {}) override;
 
 	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResTestModelBone>>& Bones, _bool isLoop);
+	void RebuildCurrentKeyFrameIndices();
+
+public:
+	_float  GetDuration() const { return m_fDuration; }
+	_float  GetTickPerSecond() const { return m_fTickPerSecond; }
+	_float  GetCurrentTrackPosition() const { return m_fCurrentTrackPosition; }
+
+	void    SetDuration(_float fDuration) { m_fDuration = fDuration; }
+	void    SetTickPerSecond(_float fTickPerSecond) { m_fTickPerSecond = fTickPerSecond; }
+	void    SetCurrentTrackPosition(_float fCurrentTrackPosition);
+
+
+
 
 private:
 	/* 이 애니메이션의 총 길이. */
@@ -41,6 +54,7 @@ private:
 
 
 public:
+
 	static SPtr<CResTestModelAnim> Create(const _string& sPath = {});
 };
 

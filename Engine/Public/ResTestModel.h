@@ -48,17 +48,19 @@ public:
 
 	const _float4x4* Get_BoneMatrixPtr(const _char* pBoneName);
 
+	const _float4x4& Get_PreTransformMatrix() { return m_PreTransformMatrix; }
+
+
+
 	_bool Play_Animation(_float fTimeDelta);
 
-public:
-	HRESULT Bind_BoneMatrices( uint32_t iMeshIndex);
-	HRESULT Bind_Materials( uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 
 
 public:
 	std::vector<SPtr<CResTestModelMesh>>& GetMeshes() { return m_Meshes; }
 	std::vector<SPtr<CResTestModelMaterial>>& GetMaterials() { return m_Materials; }
 	std::vector<SPtr<CResTestModelAnim>>& GetAnimations() { return m_Animations; }
+	std::vector<SPtr<CResTestModelBone>>& GetBones() { return m_Bones; }
 
 
 protected:

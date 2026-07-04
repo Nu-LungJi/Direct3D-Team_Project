@@ -155,6 +155,20 @@ void CResTestModelChanel::Update_TransformationMatrix(uint32_t& iCurrentKeyFrame
     Bones[m_iBoneIndex]->Set_TransformationMatrix(TransformationMatrix);
 }
 
+uint32_t CResTestModelChanel::FindKeyFrameIndex(float fTrackPos)
+{
+    if (m_KeyFrames.size() < 2)
+        return 0;
+
+    for (uint32_t i = 0; i < m_KeyFrames.size() - 1; ++i)
+    {
+        if (fTrackPos < m_KeyFrames[i + 1].fTrackPosition)
+            return i;
+    }
+
+    return static_cast<uint32_t>(m_KeyFrames.size() - 2);
+}
+
 
 SPtr<CResTestModelChanel> CResTestModelChanel::Create(const _string& sPath)
 {

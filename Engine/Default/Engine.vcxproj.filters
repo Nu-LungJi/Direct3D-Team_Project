@@ -241,6 +241,54 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tracy">
+      <UniqueIdentifier>{e02f4b44-ac4b-4c18-9468-0d92e7afed7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComModelInstance">
+      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimMontage">
+      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimator">
+      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AnimationEditor">
+      <UniqueIdentifier>{5068b7e8-6054-49e9-b16c-65ba14323f27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImGui\imguiNode">
+      <UniqueIdentifier>{f6e1fdd5-8097-4129-ac35-c16f95a426fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\NodeEditor">
+      <UniqueIdentifier>{e03910e5-6429-4dec-a18a-068d40361ec5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\ShaderHeader">
+      <UniqueIdentifier>{d77b96f9-a136-4e98-99f4-f8e028b0a6b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\PBR">
+      <UniqueIdentifier>{c32867ef-b809-4772-8df2-1fc6fb47d2b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\PostProcess">
+      <UniqueIdentifier>{6333958a-0ae9-43c0-be71-e225845411eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\DeferredRendering">
+      <UniqueIdentifier>{e1969c45-06ce-4472-8db8-e28ba8c9d171}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\TestModel">
+      <UniqueIdentifier>{b6b2669a-5f7d-4f5d-8f43-d61f06a7274f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Light">
+      <UniqueIdentifier>{9b4bff0c-7aff-4a33-bbfa-dbc8a79bb31a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Light\LightManager">
+      <UniqueIdentifier>{d7857738-565d-4c8e-a809-69cd550d51f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Light\Light">
+      <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\MyGFSDK_SSAO">
+      <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resource\Buffer\InstanceBuffer">
       <UniqueIdentifier>{c6f96c4d-a6c1-4ed5-8f61-31cd10d721d3}</UniqueIdentifier>
     </Filter>
@@ -558,6 +606,30 @@
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ComModelInstance.h">
+      <Filter>Component\Model\ComModelInstance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComAnimator.h">
+      <Filter>Component\Model\ComAnimator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComAnimMontage.h">
+      <Filter>Component\Model\ComAnimMontage</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\AnimEdit_Manager.h">
+      <Filter>AnimationEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\NodeEditor.h">
+      <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightManager.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Light.h">
+      <Filter>GameObject\Light\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyGFSDK_SSAO.h">
+      <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Particle_CPU.h">
       <Filter>Particle</Filter>
     </ClInclude>
@@ -595,27 +667,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\ImguiManager.cpp">
       <Filter>ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_tables.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_widgets.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_demo.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_draw.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_dx11.cpp">
-      <Filter>ImGui\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_win32.cpp">
-      <Filter>ImGui\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\ImGuizmo-1.83\GraphEditor.cpp">
       <Filter>ImGui\imguizmo</Filter>
@@ -842,6 +893,66 @@
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\tracy-0.13.1\public\TracyClient.cpp">
+      <Filter>Tracy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComAnimator.cpp">
+      <Filter>Component\Model\ComAnimator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComAnimMontage.cpp">
+      <Filter>Component\Model\ComAnimMontage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\AnimEdit_Manager.cpp">
+      <Filter>AnimationEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\crude_json.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_canvas.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_node_editor.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-node-editor-0.9.3\imgui_node_editor_api.cpp">
+      <Filter>ImGui\imguiNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_dx11.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_impl_win32.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_tables.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_widgets.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_demo.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui_draw.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
+      <Filter>ImGui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightManager.cpp">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Light.cpp">
+      <Filter>GameObject\Light\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComModelInstance.cpp">
+      <Filter>Component\Model\ComModelInstance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\NodeEditor.cpp">
+      <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
+      <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\Particle_CPU.cpp">
       <Filter>Particle</Filter>
     </ClCompile>
@@ -879,16 +990,40 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
+    <FxCompile Include="..\ShaderFiles\Shader_Deferred_Combined_Offscreen.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PBR\VS_PBR.hlsl">
+      <Filter>ShaderFiles\PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PBR\PS_PBR.hlsl">
+      <Filter>ShaderFiles\PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
+      <Filter>ShaderFiles\ShaderHeader</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
+      <Filter>ShaderFiles\DeferredRendering</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
+      <Filter>ShaderFiles\DeferredRendering</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Compute.hlsl">
@@ -906,7 +1041,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
-      <Filter>ShaderFiles</Filter>
+      <Filter>ShaderFiles\ShaderHeader</Filter>
     </None>
   </ItemGroup>
 </Project>

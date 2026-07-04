@@ -98,6 +98,10 @@ HRESULT CWorkerManager::Initialize(uint32_t iThreadCount)
         WORKER worker{};
         worker.thread = std::thread([this, i]()
             {
+                char threadName[32];
+                sprintf_s(threadName, "Worker-%d", i);
+                tracy::SetThreadName(threadName);
+
                 while (true)
                 {
                     WORKER_TASK task{};
@@ -128,7 +132,13 @@ HRESULT CWorkerManager::Initialize(uint32_t iThreadCount)
                         m_Tasks.pop_front();
                     }
                     m_Workers[i].sTaskName = task.sTaskName;
-                    task.func();
+                    {
+                        ZoneScopedN("WorkerTaskExecution");
+                        if (!task.sTaskName.empty()) {
+                            TracyMessage(task.sTaskName.c_str(), task.sTaskName.size());
+                        }
+                        task.func();
+                    }
                     m_Workers[i].sTaskName.clear();
                 }
             });

@@ -18,6 +18,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
     auto argDesc = std::any_cast<DESC>(&arg);
     if (!argDesc)
     {
+        MSG_BOX_STR(_wstring{ L"CResTexture2DArray NoDesc Faield Path:" + StringToWString(m_sPath) }.c_str());
         return E_FAIL;
     }
 
@@ -32,6 +33,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
     if (!resources || resources->empty())
     {
         m_eState = STATE::LOADFAIL;
+        MSG_BOX_STR(_wstring{ L"CResTexture2DArray No resources Faield Path:" + StringToWString(m_sPath) }.c_str());
         return E_FAIL;
     }
 
@@ -41,6 +43,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
         if (!resource->IsA(CResTexture2D::StaticType))
         {
             m_eState = STATE::LOADFAIL;
+            MSG_BOX_STR(_wstring{ L"CResTexture2DArray CResTexture2D IsA Faield Path:" + StringToWString(m_sPath) }.c_str());
             return E_FAIL;
         }
         textures.push_back(std::static_pointer_cast<CResTexture2D>(resource));
@@ -68,7 +71,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
             d.Format != desc.Format ||
             d.MipLevels != desc.MipLevels)
         {
-            MSG_BOX("ARRAY COND FAIL");
+            MSG_BOX_STR(_wstring{ L"CResTexture2DArray CResTexture2D Compare Formats Faield Path:" + StringToWString(m_sPath) }.c_str());
             m_eState = STATE::LOADFAIL;
             return E_FAIL;
         }
@@ -77,6 +80,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
     // Array 텍스처 생성
     if (FAILED(m_pDevice->CreateTexture2D(&desc, nullptr, m_pTextureArray.GetAddressOf())))
     {
+        MSG_BOX_STR(_wstring{ L"CResTexture2DArray Create Faield Path:" + StringToWString(m_sPath) }.c_str());
         m_eState = STATE::LOADFAIL;
         return E_FAIL;
     }
@@ -113,6 +117,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
         m_pSRV.GetAddressOf()
     )))
     {
+        MSG_BOX_STR(_wstring{ L"CResTexture2DArray Create SRV Faield Path:" + StringToWString(m_sPath) }.c_str());
         m_eState = STATE::LOADFAIL;
         return E_FAIL;
     }

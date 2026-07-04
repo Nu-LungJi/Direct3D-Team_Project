@@ -8,6 +8,8 @@ class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
 class CResTestModel;
+class CComModelInstance;
+class CComAnimator;
 NS_END
 
 NS_BEGIN(Client)
@@ -26,6 +28,8 @@ private:
 	~CTestModel() override;
 
 public:
+	 void UpdateGUI() override;
+public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
@@ -34,9 +38,18 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
-	SPtr<CResTestModel> m_pResTestModel{};
+	CComModelInstance*   m_pComModelInstance{};
+	CComAnimator*		 m_pModelAnimator{};
+
+	// nonAnim
+	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
+	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
+	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
+
+
+
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 

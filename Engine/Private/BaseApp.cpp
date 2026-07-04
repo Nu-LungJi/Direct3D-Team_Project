@@ -27,7 +27,10 @@ HRESULT CBaseApp::Loop()
 
 		float fDeltaTime = std::min(fCurrTime, MAX_DELTA);
 
-		FrameStart(fDeltaTime);
+		{
+			ZoneScopedN("FrameStart");
+			FrameStart(fDeltaTime);
+		}
 
 		//m_FixedUpdateTimer.AppendCurrTime(fDeltaTime);
 		//if (m_FixedUpdateTimer.Get_JustFinished())
@@ -44,7 +47,10 @@ HRESULT CBaseApp::Loop()
 		//	m_FixedUpdateTimer.Reset(fFixedCurrTime);
 		//}
 
-		Update(fDeltaTime);
+		{
+			ZoneScopedN("Update"); 
+			Update(fDeltaTime);
+		}
 
 
 
@@ -59,8 +65,14 @@ HRESULT CBaseApp::Loop()
 			MSG_BOX("CMainApp::Render FAILED");
 			return E_FAIL;
 		}
+		
 
-		FrameEnd(fDeltaTime);
+		{
+			ZoneScopedN("FrameEnd");
+			FrameEnd(fDeltaTime);
+		}
+
+		FrameMark;
 	}
 
 	m_MeasureTimer.AppendCurrTime(fPerfTime);
@@ -115,6 +127,7 @@ void CBaseApp::Update(_float fTimeDelta)
 
 HRESULT CBaseApp::Render(_float fInterpolation)
 {
+	ZoneScopedN("Render");
 	if (FAILED(Engine::CGameInstance::Get().Draw()))
 	{
 		return E_FAIL;

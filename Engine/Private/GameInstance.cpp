@@ -18,6 +18,12 @@
 #include "FlyCamera.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
+#include "AnimEdit_Manager.h"
+#include "ComModelInstance.h"
+#include "ComAnimator.h"
+#include "Light.h"
+#include "ComCollider.h"
+
 #include "ParticleManager.h"
 #include "Particle.h"
 NS_USING(Engine)
@@ -133,13 +139,24 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-	//m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
-	//if (m_pLightManager == nullptr)
+	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
+	if(m_pAnimEdit_Manager == nullptr)
+	{
+		return E_FAIL;
+	}	
+
+	m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
+	if (m_pLightManager == nullptr)
+	{
+		return E_FAIL;
+	}
+
+
+	//m_pParticleManager = CParticleManager::Create(ppDevice.Get(), ppContext.Get());
+	//if (m_pParticleManager == nullptr)
 	//{
 	//	return E_FAIL;
 	//}
-
-
 	m_pParticleManager = CParticleManager::Create();
 	if (m_pParticleManager == nullptr)
 	{
@@ -158,9 +175,20 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 void CGameInstance::UpdateGUI()
 {
-	m_pPrototypeManager->UpdateGUI();
+	ZoneScopedN("UpdateGUI");
 
-	m_pGameObjectManager->UpdateGUI();
+	{
+		ZoneScopedN("PrototypeManager_UpdateGUI");
+		m_pPrototypeManager->UpdateGUI();
+	}
+
+	{
+		ZoneScopedN("GameObjectManager_UpdateGUI");
+		m_pGameObjectManager->UpdateGUI();
+	}
+	
+
+	m_pAnimEdit_Manager->UpdateGUI();
 
 	m_pWorkerManager->UpdateGUI();
 
@@ -175,13 +203,14 @@ void CGameInstance::UpdateGUI()
 
 	m_pParticleManager->UpdateGUI();
 
-	//m_pLightManager->UpdateGUI();
+	m_pLightManager->UpdateGUI();
 
 
 	m_pRenderer->UpdateGUI();
 
 	m_pSoundManager->UpdateGUI();
 
+	m_pImguiManager->Update_ImguiNodeEditor();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -201,38 +230,79 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
-	m_pDInputManager->Update_InputDev();
-
-	if (CGameInstance::Get().KeyDown(DIK_TAB))
 	{
+		ZoneScopedN("InputManager_Update");
+		m_pDInputManager->Update_InputDev();
+	}
+	
+	// TODO: 마우스 가두기 함수화하기
+	{
+		if (CGameInstance::Get().KeyDown(DIK_TAB))
+		{
 
-		m_bMouseFix = !m_bMouseFix;
-		if (!m_bMouseFix)
-		{
-			ShowCursor(TRUE);
+			m_bMouseFix = !m_bMouseFix;
+			if (!m_bMouseFix)
+			{
+				ShowCursor(TRUE);
+			}
+			else
+			{
+				ShowCursor(FALSE);
+			}
 		}
-		else
+		if (m_bMouseFix)
 		{
-			ShowCursor(FALSE);
+			MouseFix();
 		}
 	}
-	if (m_bMouseFix)
+
 	{
-		MouseFix();
+		ZoneScopedN("SoundManager_Update");
+		m_pSoundManager->Update();
 	}
+	
 
-	m_pSoundManager->Update();
 
-
+	//m_pParticleManager->Update(fTimeDelta);
+	m_pAnimEdit_Manager->Update(fTimeDelta);
 	m_pParticleManager->Update(fTimeDelta);
 
 
+	{
+		ZoneScopedN("GameObjectManager_PriorityUpdate");
+		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("GameObjectManager_Update");
+		m_pGameObjectManager->Update(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("GameObjectManager_LateUpdate");
+		m_pGameObjectManager->LateUpdate(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("LevelManager_Update");
+		m_pLevelManager->Update(fTimeDelta);
+	}
 	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
 	m_pGameObjectManager->Update(fTimeDelta);
 	m_pGameObjectManager->LateUpdate(fTimeDelta);
 	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
 	m_pLevelManager->Update(fTimeDelta);
+
+	{
+		ZoneScopedN("LightManager_Update");
+		m_pLightManager->Update(fTimeDelta);
+	}
+
+
+
+	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
+
 
 HRESULT CGameInstance::Draw()
 {
@@ -252,19 +322,19 @@ void CGameInstance::Release_Engine()
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
+	m_pAnimEdit_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
 	m_pParticleManager.reset();
 	m_pWorkerManager.reset();
-	//m_pLightManager.reset();
+	m_pLightManager.reset();
 	m_pCameraManager.reset();
 	m_pPrototypeManager.reset();
 	m_pGameObjectManager.reset();
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pResourceManager.reset();
-
 	m_pGraphicDevice.reset();
 }
 
@@ -353,7 +423,6 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-
 
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
@@ -601,7 +670,7 @@ HRESULT CGameInstance::InitializeResources()
 
 	// Test Model Load
 	// 오류나서 제거
-	if(false)
+	if(true)
 	{
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
@@ -632,19 +701,34 @@ HRESULT CGameInstance::InitializeResources()
 				return E_FAIL;
 			}
 		}
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR", "../../Engine/ShaderFiles/PBR/VS_PBR.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR", "../../Engine/ShaderFiles/PBR/PS_PBR.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
 
+	
+		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource",
+			CResTestModel::Create("./Resources/SampleClient/Models/LightObject/HorseStatue.fbx"))) {
 
-		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+			E::CResTestModel::DESC pDesc{};
+			pDesc.eModelType = MODEL::NONANIM;
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.00001f, 0.00001f, 0.00001f);
 
-		//	E::CResTestModel::DESC pDesc{};
-		//	pDesc.eModelType = MODEL::ANIM;
-		//	pDesc.PreTransformMatrix = XMMatrixIdentity();
-
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
 
 		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.FBX"))) {
 
@@ -674,6 +758,15 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
+	if (AddPrototype("PERMANENT", "Prototype_Component_ModelInstance", CComModelInstance::Create()))
+	{
+		return E_FAIL;
+	}
+	if (AddPrototype("PERMANENT", "Prototype_Component_Animator", CComAnimator::Create()))
+	{
+		return E_FAIL;
+	}
+
 
 	if (AddPrototype("CAMERAS", "Prototype_GameObject_FlyCamera", CFlyCamera::Create()))
 	{
@@ -688,6 +781,14 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
+	if (AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))
+	{
+		return E_FAIL;
+	}
+	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
 
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
@@ -727,6 +828,11 @@ _bool CGameInstance::ImguiGetActive() const
 void CGameInstance::ImguiSetActive(_bool bActive)
 {
 	m_pImguiManager->Set_Active(bActive);
+}
+
+void CGameInstance::ImguiEnableDocking(_bool bEnableDocking, _bool bEnableViewports)
+{
+	m_pImguiManager->EnableDocking(bEnableDocking, bEnableViewports);
 }
 #pragma endregion
 
@@ -805,6 +911,7 @@ HRESULT CGameInstance::ClearDepthStencilView()
 
 HRESULT CGameInstance::Present()
 {
+	ZoneScopedN("Present");
 	return m_pGraphicDevice->Present();
 }
 #pragma endregion
@@ -967,6 +1074,12 @@ const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view s
 {
 	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
 }
+
+const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
+{
+	return m_pGameObjectManager->GetLayers();
+}
+
 void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
 {
 	return m_pGameObjectManager->DelLayer(sLayerName);
@@ -1088,4 +1201,30 @@ HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pR
 {
 	return m_pRenderer->AddRenderObject(eRenderGroup, pRenderObject);
 }
+#pragma endregion
+
+#pragma region ANIMEDIT_MANAGER
+HRESULT CGameInstance::SetupTestModel() {
+	return m_pAnimEdit_Manager->SetupTestModel();
+}
+#pragma endregion
+
+#pragma region LIGHT_MANAGER
+VOID	CGameInstance::Bind_EnviromentLight() {
+	m_pLightManager->Bind_EnviromentLight();
+}
+VOID	CGameInstance::Bind_DynamicLight() {
+	m_pLightManager->Bind_DynamicLight();
+}
+
+VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
+	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
+}
+VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range) {
+	m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _Range);
+}
+VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
+	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
+}
+
 #pragma endregion

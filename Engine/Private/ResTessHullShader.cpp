@@ -16,6 +16,7 @@ HRESULT CResTessHullShader::Load(const std::any& arg)
 	if (FAILED(m_pDevice->CreateHullShader(m_pBlob->GetBufferPointer(),
 		m_pBlob->GetBufferSize(), nullptr, &m_pTessHullShader)))
 	{
+		MSG_BOX_STR(_wstring{ L"CResTessHullShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}

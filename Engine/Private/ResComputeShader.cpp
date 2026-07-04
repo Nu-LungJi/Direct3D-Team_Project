@@ -16,6 +16,7 @@ HRESULT CResComputeShader::Load(const std::any& arg)
 	if (FAILED(m_pDevice->CreateComputeShader(m_pBlob->GetBufferPointer(),
 		m_pBlob->GetBufferSize(), nullptr, &m_pComputeShader)))
 	{
+		MSG_BOX_STR(_wstring{ L"CResComputeShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}

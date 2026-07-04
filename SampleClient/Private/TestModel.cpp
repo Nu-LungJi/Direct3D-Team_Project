@@ -2,9 +2,10 @@
 #include "TestModel.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "ComModelInstance.h"
+#include "ComAnimator.h"
 #include "Resources.h"
 #include "GameInstance.h"
-
 NS_USING(Client)
 
 CTestModel::CTestModel()
@@ -16,15 +17,27 @@ CTestModel::~CTestModel()
 {
 }
 
+void CTestModel::UpdateGUI()
+{
+	CGameObject::UpdateGUI();
+
+}
+
 HRESULT CTestModel::InitializePrototype(void* pArg)
 {
-	m_pResTestModel = CGameInstance::Get().GetResourceFirst<CResTestModel>("TEST", "Model_Resource");
-	if (!m_pResTestModel)
+
+	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi");
+	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
+	if (FAILED(m_pResVertexNonAnimShader->Load()))
 	{
 		return E_FAIL;
 	}
-
-
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi");
+	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
+	if (FAILED(m_pResPixelNonAnimShader->Load()))
+	{
+		return E_FAIL;
+	}
 
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
 	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
@@ -38,6 +51,7 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
+
 
 	m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	if (!m_pResSamplerState)
@@ -64,6 +78,28 @@ HRESULT CTestModel::Initialize(void* pArg)
 		};
 	}
 
+	{
+		CComModelInstance::DESC Desc{};
+		Desc.sGroupTag = "TEST";
+		Desc.sResTag = "Model_Resource";
+
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
+		CComAnimator::DESC DescAnim{};
+		DescAnim.sComTag = "ComCModelIntance";
+	
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	
 
 	return S_OK;
 }
@@ -74,7 +110,9 @@ void CTestModel::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestModel::Update(E::_float fTimeDelta)
 {
-	m_pResTestModel->Play_Animation(fTimeDelta);
+
+	if(m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
+		m_pModelAnimator->Update(fTimeDelta);
 }
 
 void CTestModel::LateUpdate(E::_float fTimeDelta)
@@ -96,21 +134,35 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
-	const auto& vs = m_pResVertexShader;
-	const auto& ps = m_pResPixelShader;
+
+
+
 	
-	
+	const auto& vs =
+		!m_pComModelInstance->GetModel()->GetAnimations().empty()
+		? m_pResVertexShader
+		: m_pResVertexNonAnimShader;
+
+	const auto& ps =
+		!m_pComModelInstance->GetModel()->GetAnimations().empty()
+		? m_pResPixelShader
+		: m_pResPixelNonAnimShader;
+
+
+
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
 
-	uint32_t	iNumMeshes = m_pResTestModel->Get_NumMeshes();
 
 
+	auto pModel = m_pComModelInstance->GetModel(); 
+
+	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
 	for (uint32_t i = 0; i < iNumMeshes; ++i) {
-		const auto& viBuffer = m_pResTestModel->GetMeshes()[i];
+		const auto& viBuffer = pModel->GetMeshes()[i];
 
 
 		ID3D11Buffer* vertexBuffers[] = {
@@ -132,12 +184,14 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		//}
 
 		{
-			m_pResTestModel->Bind_Materials(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
 		
 		}
 
 		{
-			m_pResTestModel->Bind_BoneMatrices(i);
+			if(!m_pComModelInstance->GetModel()->GetAnimations().empty())
+				m_pComModelInstance->Bind_BoneMatrices(pContext, i);
+
 		}
 
 		{

@@ -56,9 +56,19 @@ HRESULT CResTestModel::Load(const std::any& arg)
 	{
 
 		uint32_t        iFlag = { aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast };
-
 		if (MODEL::NONANIM == m_eModelType)
 			iFlag |= aiProcess_PreTransformVertices;
+
+		iFlag |= aiProcess_PopulateArmatureData;							// 애니메이션 최적화(본-노드 사이의 연산 단순화)
+		iFlag |= aiProcess_GlobalScale;										// Blender 편집 크기와 DirectX에서의 크기를 동기화
+		iFlag |= aiProcess_OptimizeMeshes;									// 너무 잘게 쪼개진 메쉬 통합시켜 DrawCall 낮춤.
+		iFlag |= aiProcess_ImproveCacheLocality;							// 캐시 히트율을 증가 시킴. (데이터 순서를 재배치)
+
+		//GraphicsFlags |= aiProcessPreset_TargetRealtime_Quality;
+		//GraphicsFlags |= aiProcessPreset_TargetRealtime_MaxQuality;
+
+		m_Importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, true);	// FBX 파일의 계층 구조를 원본 그대로 유지시킴.
+		//m_Importer->SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.25f);		// 모델을 import할 때, 배율을 지정.
 
 		m_pAIScene = m_Importer->ReadFile(m_sPath.c_str(), iFlag);
 		if (nullptr == m_pAIScene)
@@ -76,8 +86,6 @@ HRESULT CResTestModel::Load(const std::any& arg)
 
 		if (FAILED(Ready_Animation()))
 			return E_FAIL;
-
-
 	}
 
 	m_eState = STATE::LOADED;
@@ -159,6 +167,8 @@ HRESULT CResTestModel::Ready_Meshes()
 
 		m_Meshes.push_back(pAIMesh);
 	}
+
+	return S_OK;
 }
 
 HRESULT CResTestModel::Ready_Animation()
@@ -216,7 +226,6 @@ const _float4x4* CResTestModel::Get_BoneMatrixPtr(const _char* pBoneName)
 	return (*iter)->Get_CombinedTransformationMatrixPtr();
 }
 
-
 _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 {
 	_bool           isFinished = { false };
@@ -231,22 +240,8 @@ _bool  CResTestModel::Play_Animation(_float fTimeDelta)
 
 	return isFinished;
 
+
 }
-
-HRESULT CResTestModel::Bind_BoneMatrices( uint32_t iMeshIndex)
-{
-	return m_Meshes[iMeshIndex]->Bind_BoneMatrices(m_Bones);
-}
-
-HRESULT CResTestModel::Bind_Materials(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
-{
-	return m_Materials[m_Meshes[iMeshIndex]->Get_MaterialIndex()]->Bind_ShaderResource(eMaterialType, iTextureIndex);
-}
-
-
-
-
-
 
 SPtr<CResTestModel> CResTestModel::Create(const _string& sPath)
 {
