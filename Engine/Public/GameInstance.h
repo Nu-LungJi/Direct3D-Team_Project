@@ -22,6 +22,7 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
+class CNodeEditor;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -242,6 +243,10 @@ public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
+#pragma region NODE_EDITOR
+	HRESULT	   OpenBeHavior(CHandle Handle);
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -280,6 +285,7 @@ private:
 	//UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CNodeEditor>		m_pNodeEditor{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
 

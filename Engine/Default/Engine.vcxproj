@@ -164,7 +164,7 @@
     </Link>
     <PostBuildEvent>
       <Command>cd /d $(SolutionDir)
-call CopySampleClient.bat</Command>
+call CopyClient.bat</Command>
     </PostBuildEvent>
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>
@@ -196,7 +196,7 @@ call CopySampleClient.bat</Command>
     </Link>
     <PostBuildEvent>
       <Command>cd /d $(SolutionDir)
-call CopySampleClient.bat</Command>
+call CopyClient.bat</Command>
     </PostBuildEvent>
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>

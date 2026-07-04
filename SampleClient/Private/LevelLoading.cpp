@@ -12,7 +12,7 @@
 #include "TestModel.h"
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
-
+#include "Gobline.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -146,6 +146,10 @@ void CLevelLoading::ThreadStart()
 				}
 
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
 				{
 					return false;
 				}

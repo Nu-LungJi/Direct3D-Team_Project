@@ -17,8 +17,6 @@ public:
 	void Update_Imgui();
 	void Render_Imgui();
 
-	void Update_ImguiNodeEditor();
-
 	_bool WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:

@@ -67,10 +67,6 @@ void CImguiManager::Render_Imgui()
 	}
 }
 
-void CImguiManager::Update_ImguiNodeEditor()
-{
-	m_pNodeEditor->UpdateGUI();
-}
 
 _bool CImguiManager::WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {

@@ -21,7 +21,7 @@
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
-
+#include "NodeEditor.h"
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -160,7 +160,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-
+	m_pNodeEditor = CNodeEditor::Create();
+	if (m_pNodeEditor == nullptr)
+	{
+		return E_FAIL;
+	}
     return S_OK;
 }
 
@@ -201,7 +205,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSoundManager->UpdateGUI();
 
-	m_pImguiManager->Update_ImguiNodeEditor();
+	m_pNodeEditor->NodeEditorUpdate();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -675,7 +679,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-	if (AddPrototype("BEHAVIOR", "Prototype_GameObject_BeHavior", CComBeHavior::Create()))
+	if (AddPrototype("BEHAVIOR", "Prototype_Component_BeHavior", CComBeHavior::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1086,5 +1090,12 @@ HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pR
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
+}
+#pragma endregion
+
+#pragma region NODE_EDITOR
+HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
+{
+	return m_pNodeEditor->OpenBeHavior(Handle);
 }
 #pragma endregion
