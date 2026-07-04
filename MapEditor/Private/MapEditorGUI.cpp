@@ -65,11 +65,14 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	if (ImGui::Button("Level Save", ImVec2(112.f, 0.f)))
 	{
+		CGameInstance::Get().SaveMap("./Resources/Engine/MapSaved/");
 		ImGui::OpenPopup("SaveCheck");
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Level Load", ImVec2(112.f, 0.f)))
 	{
+		CGameInstance::Get().LoadMap("./Resources/Engine/MapSaved/", true);
+		AddCamera();
 		ImGui::OpenPopup("LoadCheck");
 	}
 
@@ -202,5 +205,51 @@ void CMapEditorGUI::RenderGizmo()
 	if (ImGuizmo::Manipulate(&view._11, &proj._11, m_GizmoOperation, m_GizmoMode, &gizmoMatrix._11))
 	{
 		ApplyMatrixToTransform(selectedTransform, gizmoMatrix);
+	}
+}
+
+void CMapEditorGUI::AddCamera()
+{
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+		Desc.vAt = { 0.f, 0.f, 0.f };
+		Desc.vEye = { 0.f, 0.f, -5.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fFovY = 75.f;
+		Desc.fNear = 0.1f;
+		Desc.fFar = 100.f;
+		Desc.sObjectTag = "FlyCam";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
+			{
+				MSG_BOX("MSG_BOX_123");
+			}
+			E::CGameInstance::Get().SetActiveCamera("FLY");
+		}
+	}
+
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+		Desc.fNear = 0.f;
+		Desc.fFar = 1.f;
+		Desc.fWidth = g_iWinSizeX;
+		Desc.fHeight = g_iWinSizeY;
+		Desc.sObjectTag = "UICam";
+		Desc.vEye = { 0.f, 0.f, -0.1f };
+
+		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+			{
+				MSG_BOX("MSG_BOX_123_");
+			}
+			//E::CGameInstance::Get().SetActiveUICamera("UI");
+		}
 	}
 }

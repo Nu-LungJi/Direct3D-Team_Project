@@ -24,6 +24,7 @@
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
+#include "MapManager.h"
 
 NS_USING(Engine)
 
@@ -159,6 +160,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pFontManager = CFontManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pFontManager == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pMapManager = CMapManager::Create();
+	if (m_pMapManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -316,6 +323,7 @@ void CGameInstance::Release_Engine()
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pResourceManager.reset();
+	m_pMapManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -1113,5 +1121,16 @@ HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pR
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
+}
+#pragma endregion
+
+#pragma region MAP_MANAGER
+HRESULT CGameInstance::SaveMap(const std::string& path)
+{
+	return m_pMapManager->SaveMap(path);
+}
+HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
+{
+	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
 #pragma endregion

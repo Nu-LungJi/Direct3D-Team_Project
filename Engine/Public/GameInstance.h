@@ -22,6 +22,7 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
+class CMapManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -244,6 +245,12 @@ public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
+#pragma region MAP_MANAGER
+public:
+	HRESULT SaveMap(const std::string& path);
+	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -283,6 +290,7 @@ private:
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
+	UPtr<CMapManager> m_pMapManager{};
 };
 
 NS_END

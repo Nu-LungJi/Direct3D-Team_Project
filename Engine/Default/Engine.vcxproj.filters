@@ -630,6 +630,9 @@
     <ClInclude Include="..\Public\MapMeshObject.h">
       <Filter>GameObject\MapMeshObject</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -943,6 +946,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\MapMeshObject.cpp">
       <Filter>GameObject\MapMeshObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapManager.cpp">
+      <Filter>GameObject\Manager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

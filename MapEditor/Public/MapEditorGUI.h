@@ -23,6 +23,7 @@ public:
 private:
 	void DrawGizmoToolbar();
 	void RenderGizmo();
+	void AddCamera();
 
 private:
 	E::UPtr<CHierarchy> m_pHierarchy{};
