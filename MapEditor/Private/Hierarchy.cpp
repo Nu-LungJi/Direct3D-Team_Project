@@ -7,7 +7,7 @@ NS_USING(Client)
 
 namespace
 {
-	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject)
+	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject, const std::string& strLayerTag)
 	{
 		if (pSelectedObject == nullptr)
 		{
@@ -26,7 +26,7 @@ namespace
 		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
 			Desc.protoGroupTag,
 			Desc.prototypeTag,
-			"00_OBJECTS",
+			strLayerTag,
 			&Desc))
 		{
 			*pSelectedObject = hObject.value();
@@ -46,10 +46,10 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 {
 	ImGui::TextDisabled("Hierarchy");
 
-	if (ImGui::Button("Add Map Mesh", ImVec2(120.f, 0.f)))
-	{
-		AddDefaultMapMeshObject(GetSelectedHandle());
-	}
+	//if (ImGui::Button("Add Map Mesh", ImVec2(120.f, 0.f)))
+	//{
+	//	AddDefaultMapMeshObject(GetSelectedHandle());
+	//}
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::SetTooltip("Add TEST / Model_Resource to 00_OBJECTS");
@@ -70,6 +70,17 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 				layerName.c_str(),
 				handles.size());
 
+			// --- 우클릭 오브젝트 추가 로직 ---
+			// BeginPopupContextItem은 바로 직전에 호출된 위젯(TreeNode)을 대상으로 우클릭을 감지
+			if (ImGui::BeginPopupContextItem())
+			{
+				if (ImGui::MenuItem("Create MapMeshObject"))
+				{
+					AddDefaultMapMeshObject(GetSelectedHandle(), layerName);
+				}
+				ImGui::EndPopup();
+			}
+
 			if (bOpen)
 			{
 				for (const auto& handle : handles)
@@ -87,6 +98,17 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 						*pSelectedObject = handle;
 					}
 					ImGui::PopID();
+
+					// --- 우클릭 삭제 로직 ---
+					// BeginPopupContextItem은 바로 직전에 호출된 위젯(TreeNode)을 대상으로 우클릭을 감지
+					if (ImGui::BeginPopupContextItem())
+					{
+						if (ImGui::MenuItem("Delete Object"))
+						{
+							pObject->SetPendingDestroyCascade(true);
+						}
+						ImGui::EndPopup();
+					}
 				}
 				ImGui::TreePop();
 			}
