@@ -62,7 +62,7 @@ HRESULT CLevelLogo::Initialize()
 		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
 		Desc.fNear = 0.f;
 		Desc.fFar = 1.f;
-		Desc.fWidth = g_iWinSizeX;
+		Desc.fWidth = g_iWinSizeX;	
 		Desc.fHeight = g_iWinSizeY;
 		Desc.sObjectTag = "UICam";
 		Desc.vEye = { 0.f, 0.f, -0.1f };

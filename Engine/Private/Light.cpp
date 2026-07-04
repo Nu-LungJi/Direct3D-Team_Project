@@ -91,7 +91,6 @@ void CLight::PriorityUpdate(E::_float fTimeDelta) {
 }
 void CLight::Update(E::_float fTimeDelta) {
     m_pComTransform->Update();
-
 #ifdef _DEBUG       
     auto CurrentCamera = CGameInstance::Get().GetActiveCamera();
     if (nullptr == CurrentCamera) return;

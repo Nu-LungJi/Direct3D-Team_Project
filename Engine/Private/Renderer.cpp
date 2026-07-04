@@ -6,14 +6,8 @@
 #include "MyGFSDK_SSAO.h"
 
 NS_USING(Engine)
-CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
-    : m_pDevice{ pDevice }
-    , m_pContext{ pContext }
-{
-}
-CRenderer::~CRenderer()
-{
-}
+CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice } , m_pContext{ pContext } { }
+CRenderer::~CRenderer() {   }
 
 void CRenderer::UpdateGUI()
 {
@@ -28,7 +22,7 @@ HRESULT CRenderer::Initialize()
 {
     m_pBackBufferDSV = CGameInstance::Get().GetBackBufferDSV();
     m_pBackBufferRTV = CGameInstance::Get().GetBackBufferRTV();
-    m_pBackBufferVP = CGameInstance::Get().GetResourceFirst<CResViewPort>(TAG_RES_GRP_PERMANENT_VP, "VP_BackBuffer");
+    m_pBackBufferVP  = CGameInstance::Get().GetResourceFirst<CResViewPort>(TAG_RES_GRP_PERMANENT_VP, "VP_BackBuffer");
 
     if (FAILED(InitializeGFSDK_SSAO()))
     {
@@ -102,40 +96,11 @@ HRESULT CRenderer::InitializeOffscreen()
             }
             m_pOffScreenTex2D = res;
         }
-        if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, "DynTex2D_PostProcess", E::CResDynamicTexture2D::Create()))
-        {
-            CResDynamicTexture2D::DESC Desc{};
-            Desc.texDesc = {
-                .Width = (UINT)vClientScreenSize.x,
-                .Height = (UINT)vClientScreenSize.y,
-                .MipLevels = 1,
-                .ArraySize = 1,
-                .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-                .SampleDesc = {.Count = 1, .Quality = 0 },
-                .Usage = D3D11_USAGE_DEFAULT,
-                .BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                .CPUAccessFlags = 0,
-                .MiscFlags = 0
-            };
-            if (FAILED(res->Load(Desc)))
-            {
-                return E_FAIL;
-            }
-            if (FAILED(res->CreateSRV()))
-            {
-                return E_FAIL;
-            }
-            if (FAILED(res->CreateRTV()))
-            {
-                return E_FAIL;
-            }
-            m_pFilteredTex2D = res;
-        }
+        
     }
 
     {
         if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_OffscreenCombined", "./ShaderFiles/Deferred Rendering/VS_Deferred.hlsl"))
-        //if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_OffscreenCombined", "./ShaderFiles/Shader_Deferred_Combined_Offscreen.hlsl"))
         {
             if (FAILED(res->Load()))
             {
@@ -144,7 +109,6 @@ HRESULT CRenderer::InitializeOffscreen()
             m_pOffScreenVertexShader = res;
         }
         if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_OffscreenCombined", "./ShaderFiles/Deferred Rendering/PS_Deferred.hlsl"))
-        //if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_OffscreenCombined", "./ShaderFiles/Shader_Deferred_Combined_Offscreen.hlsl"))
         {
             if (FAILED(res->Load()))
             {
@@ -159,8 +123,8 @@ HRESULT CRenderer::InitializeOffscreen()
 
 HRESULT CRenderer::InitializeShadow()
 {
-    UINT iShadowWidth = 2048 * 2;
-    UINT iShadowHeight = 2048 * 2;
+    UINT iShadowWidth   = 2048 * 2;
+    UINT iShadowHeight  = 2048 * 2;
 
     if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, "DynTex2D_Shadow", E::CResDynamicTexture2D::Create()))
     {
@@ -254,24 +218,6 @@ HRESULT CRenderer::InitializeTargetDiffuse()
 
         if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, "DynTex2D_Target_Diffuse", E::CResDynamicTexture2D::Create()))
         {
-            //typedef struct tagDesc {
-            //	D3D11_TEXTURE2D_DESC texDesc{};
-            //	D3D11_SUBRESOURCE_DATA texSubResource{};
-            //}DESC;
-
-            //typedef struct D3D11_TEXTURE2D_DESC
-            //{
-            //	UINT Width;
-            //	UINT Height;
-            //	UINT MipLevels;
-            //	UINT ArraySize;
-            //	DXGI_FORMAT Format;
-            //	DXGI_SAMPLE_DESC SampleDesc;
-            //	D3D11_USAGE Usage;
-            //	UINT BindFlags;
-            //	UINT CPUAccessFlags;
-            //	UINT MiscFlags;
-            //} 	D3D11_TEXTURE2D_DESC;
             CResDynamicTexture2D::DESC Desc{};
             Desc.texDesc = {
                 .Width = (UINT)vClientScreenSize.x,
@@ -290,7 +236,7 @@ HRESULT CRenderer::InitializeTargetDiffuse()
                 return E_FAIL;
             }
             if (FAILED(res->CreateSRV()))
-            {
+            {    
                 return E_FAIL;
             }
             if (FAILED(res->CreateRTV()))
@@ -312,24 +258,6 @@ HRESULT CRenderer::InitializeTargetNormal()
 
         if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, "DynTex2D_Target_Normal", E::CResDynamicTexture2D::Create()))
         {
-            //typedef struct tagDesc {
-            //	D3D11_TEXTURE2D_DESC texDesc{};
-            //	D3D11_SUBRESOURCE_DATA texSubResource{};
-            //}DESC;
-
-            //typedef struct D3D11_TEXTURE2D_DESC
-            //{
-            //	UINT Width;
-            //	UINT Height;
-            //	UINT MipLevels;
-            //	UINT ArraySize;
-            //	DXGI_FORMAT Format;
-            //	DXGI_SAMPLE_DESC SampleDesc;
-            //	D3D11_USAGE Usage;
-            //	UINT BindFlags;
-            //	UINT CPUAccessFlags;
-            //	UINT MiscFlags;
-            //} 	D3D11_TEXTURE2D_DESC;
             CResDynamicTexture2D::DESC Desc{};
             Desc.texDesc = {
                 .Width = (UINT)vClientScreenSize.x,
@@ -362,6 +290,40 @@ HRESULT CRenderer::InitializeTargetNormal()
 }
 
 HRESULT CRenderer::InitilizePostProcess(){
+    // PostProcess
+    {
+        auto vClientScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+        if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, "DynTex2D_PostProcess", E::CResDynamicTexture2D::Create()))
+        {
+            CResDynamicTexture2D::DESC Desc{};
+            Desc.texDesc = {
+                .Width = (UINT)vClientScreenSize.x,
+                .Height = (UINT)vClientScreenSize.y,
+                .MipLevels = 1,
+                .ArraySize = 1,
+                .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+                .SampleDesc = {.Count = 1, .Quality = 0 },
+                .Usage = D3D11_USAGE_DEFAULT,
+                .BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                .CPUAccessFlags = 0,
+                .MiscFlags = 0
+            };
+            if (FAILED(res->Load(Desc)))
+            {
+                return E_FAIL;
+            }
+            if (FAILED(res->CreateSRV()))
+            {
+                return E_FAIL;
+            }
+            if (FAILED(res->CreateRTV()))
+            {
+                return E_FAIL;
+            }
+            m_pFilteredTex2D = res;
+        }
+    }
 
     // PixelShader Create
     if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
@@ -380,12 +342,7 @@ HRESULT CRenderer::InitilizePostProcess(){
         MSG_BOX("Cannot Create LUT Texture File.");
         assert(0);
     }
-    //if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/T_Tile_30018.png", nullptr, m_pTestTexture.GetAddressOf()))) {
-    //    MSG_BOX("Cannot Create LUT Texture File.");
-    //    assert(0);
-    //}
     
-
     m_pPostProcessPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess");
 
     return S_OK;
@@ -419,22 +376,24 @@ HRESULT CRenderer::Draw()
 
     CCameraObject* pShadowCamera{};
     _bool bApplyShadow = false;
-    bApplyShadow = false;
+
     if (bApplyShadow)
     {
         //draw shadow texture
         {
-            // unbinding shadow map
+            // UnBind Shadow Map
             {
                 ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
                 m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
             }
 
-
-            ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-            m_pContext->OMSetRenderTargets(1, pRTVs, m_pShadowTex2D->GetDSV().Get());
-            m_pContext->ClearDepthStencilView(m_pShadowTex2D->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-            m_pContext->RSSetViewports(1, &m_pShadowVP->GetViewPort());
+            // RenderTarget/DepthStencil Setting + ViewPort Setting
+            {
+                ID3D11RenderTargetView* pRTVs[1] = { nullptr };
+                m_pContext->OMSetRenderTargets(1, pRTVs, m_pShadowTex2D->GetDSV().Get());
+                m_pContext->ClearDepthStencilView(m_pShadowTex2D->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
+                m_pContext->RSSetViewports(1, &m_pShadowVP->GetViewPort());
+            }
 
             ctx.pass = RENDERPASS::SHADOW;
 
@@ -862,6 +821,7 @@ HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
 
 HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
 {
+
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
