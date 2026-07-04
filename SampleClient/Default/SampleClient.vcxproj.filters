@@ -155,6 +155,9 @@
     </ClInclude>
     <ClInclude Include="..\public\Particle_Ribbon.h">
       <Filter>Particles</Filter>
+	</ClInclude>
+	<ClInclude Include="..\public\BTMove.h">
+      <Filter>GameObject\Monsters\BT</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -204,8 +207,8 @@
     <ClCompile Include="..\Private\LevelAnimEditor.cpp">
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\Goblin.cpp">
-      <Filter>GameObject\Monsters</Filter>
+    <ClCompile Include="..\private\BTMove.cpp">
+      <Filter>GameObject\Monsters\BT</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>

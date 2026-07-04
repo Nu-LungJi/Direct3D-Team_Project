@@ -14,7 +14,7 @@ public:
 
 	}ACTION_NODE_DESC;
 
-private:
+protected:
 	explicit CBTActionNode();
 	explicit CBTActionNode(const CBTActionNode& Prototype);
 	~CBTActionNode();

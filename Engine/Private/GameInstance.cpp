@@ -21,6 +21,7 @@
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
+#include "NodeEditor.h"
 #include "Light.h"
 #include "ComCollider.h"
 
@@ -169,7 +170,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-
+	m_pNodeEditor = CNodeEditor::Create();
+	if (m_pNodeEditor == nullptr)
+	{
+		return E_FAIL;
+	}
     return S_OK;
 }
 
@@ -210,7 +215,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSoundManager->UpdateGUI();
 
-	m_pImguiManager->Update_ImguiNodeEditor();
+	m_pNodeEditor->NodeEditorUpdate();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -776,7 +781,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-	if (AddPrototype("BEHAVIOR", "Prototype_GameObject_BeHavior", CComBeHavior::Create()))
+	if (AddPrototype("BEHAVIOR", "Prototype_Component_BeHavior", CComBeHavior::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1227,4 +1232,12 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
 }
 
+#pragma endregion
+#pragma endregion
+
+#pragma region NODE_EDITOR
+HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
+{
+	return m_pNodeEditor->OpenBeHavior(Handle);
+}
 #pragma endregion
