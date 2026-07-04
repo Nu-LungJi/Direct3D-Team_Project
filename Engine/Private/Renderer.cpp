@@ -470,8 +470,6 @@ HRESULT CRenderer::Draw()
                     {
                         return E_FAIL;
                     }
-
-
                 }
             }
         }

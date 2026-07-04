@@ -77,7 +77,7 @@ HRESULT CLight::Initialize(void* pArg)
         if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComCollider_Frustum", &Desc, &m_pComColliderFrustum)))  return E_FAIL;
     }
 
-#ifdef _DEBUG       // DEBUG : Light Position Icon
+#ifdef _DEBUG       // DEBUG : Light Center Icon
     m_pResDirectionalLightTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_DirectionalLight");
     m_pResPointLightTexture2D       = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_PointLight");
     m_pResSpotLightTexture2D        = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_SpotLight");
@@ -104,11 +104,12 @@ void CLight::Update(E::_float fTimeDelta) {
     else {
         Debug_RenderFlag = true;
     }
-
+    XMVECTOR LightPosition = m_pComTransform->GetLoadedPostion();
     // DEBUG : Light Range Line
     if (m_LightType == LIGHT_TYPE::SPOTLIGHT) {
         CGameInstance::Get().AddColliderGroup("Collider_DEBUG", m_pComColliderFrustum->Get());
-        m_pComColliderFrustum->Get()->Transform(XMLoadFloat4x4(m_pComTransform->GetWorldMatrix()));
+        XMMatrixLookAtLH(LightPosition, m_pComTransform->GetState(STATE::LOOK), m_pComTransform->GetState(STATE::UP));
+        m_pComColliderFrustum->Get()->Transform(XMMatrixLookAtLH(LightPosition, m_pComTransform->GetState(STATE::LOOK), m_pComTransform->GetState(STATE::UP)));
     }
     else if (m_LightType == LIGHT_TYPE::POINT){
         CGameInstance::Get().AddColliderGroup("Collider_DEBUG", m_pComColliderSphere->Get());
