@@ -5,6 +5,7 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "MapManager.h"
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -22,7 +23,6 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
-class CMapManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -80,6 +80,7 @@ public:
 	}
 	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
 	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const;
+	const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& GetResources() const;
 	HRESULT LoadResource(const StringID& sGroupTag);
 	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
 	HRESULT UnLoadResource(const StringID& sGroupTag);
@@ -249,6 +250,12 @@ public:
 public:
 	HRESULT SaveMap(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
+	void RebuildMapChunks();
+	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
+	const _float3& GetMapChunkSize() const;
+#ifdef _DEBUG
+	void SetDebugDrawMapChunk(_bool draw);
+#endif
 #pragma endregion
 
 public:

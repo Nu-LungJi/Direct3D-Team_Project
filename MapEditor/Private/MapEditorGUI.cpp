@@ -109,6 +109,8 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::PopStyleVar(2);
 	ImGui::End();
 
+	m_pResourceGUI->UpdateGUI(fTimeDelta);
+	m_pMapChunkGUI->UpdateGUI(fTimeDelta);
 	RenderGizmo();
 }
 
@@ -129,6 +131,18 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 	pInstance->m_pInspector = CInspector::Create(pSelectedObject);
 	if (pInstance->m_pInspector == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pResourceGUI = CResourceGUI::Create(pSelectedObject);
+	if (pInstance->m_pResourceGUI == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pMapChunkGUI = CMapChunkGUI::Create(pSelectedObject);
+	if (pInstance->m_pMapChunkGUI == nullptr)
 	{
 		return nullptr;
 	}

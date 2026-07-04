@@ -292,6 +292,9 @@
     <Filter Include="GameObject\MapMeshObject">
       <UniqueIdentifier>{771de9b5-bb1c-4900-8366-21c558f64744}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DebugDraw">
+      <UniqueIdentifier>{766f1db3-e511-4caf-a8bc-c189164d5b76}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -633,6 +636,9 @@
     <ClInclude Include="..\Public\MapManager.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\DebugDraw.h">
+      <Filter>DebugDraw</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -949,6 +955,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\MapManager.cpp">
       <Filter>GameObject\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\DebugDraw.cpp">
+      <Filter>DebugDraw</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

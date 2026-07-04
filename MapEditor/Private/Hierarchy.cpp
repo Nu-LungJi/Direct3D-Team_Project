@@ -90,10 +90,6 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 {
 	ImGui::TextDisabled("Hierarchy");
 
-	//if (ImGui::Button("Add Map Mesh", ImVec2(120.f, 0.f)))
-	//{
-	//	AddDefaultMapMeshObject(GetSelectedHandle());
-	//}
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::SetTooltip("Add TEST / Model_Resource to 00_OBJECTS");

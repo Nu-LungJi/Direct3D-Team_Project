@@ -298,6 +298,10 @@ HRESULT CGameInstance::Draw()
 	{
 		return E_FAIL;
 	}
+
+#ifdef _DEBUG
+	m_pMapManager->RenderDebugMapChunk();
+#endif
     return S_OK;
 }
 
@@ -769,6 +773,10 @@ const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* CGameInstance:
 {
 	return m_pResourceManager->GetResource(sGroupTag);
 }
+const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& CGameInstance::GetResources() const
+{
+	return m_pResourceManager->GetResources();
+}
 HRESULT CGameInstance::LoadResource(const StringID& sGroupTag)
 {
 	return m_pResourceManager->LoadResource(sGroupTag);
@@ -1133,4 +1141,22 @@ HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
+void CGameInstance::RebuildMapChunks()
+{
+	m_pMapManager->RebuildChunks();
+}
+const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
+{
+	return m_pMapManager->GetChunks();
+}
+const _float3& CGameInstance::GetMapChunkSize() const
+{
+	return m_pMapManager->GetChunkSize();
+}
+#ifdef _DEBUG
+void CGameInstance::SetDebugDrawMapChunk(_bool draw)
+{
+	return m_pMapManager->SetDebugDrawMapChunk(draw);
+}
+#endif
 #pragma endregion

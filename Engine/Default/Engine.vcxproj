@@ -256,6 +256,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ComConstantBuffer.h" />
     <ClInclude Include="..\Public\Component.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
+    <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
     <ClInclude Include="..\Public\Engine_Base.h" />
@@ -476,6 +477,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ComModelInstance.cpp" />
     <ClCompile Include="..\Private\Component.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
+    <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />
     <ClCompile Include="..\Private\FlyCamera.cpp" />
     <ClCompile Include="..\Private\FontManager.cpp" />

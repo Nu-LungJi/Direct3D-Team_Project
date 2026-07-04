@@ -2,6 +2,8 @@
 #include "GUIWindow.h"
 #include "Hierarchy.h"
 #include "Inspector.h"
+#include "ResourceGUI.h"
+#include "MapChunkGUI.h"
 
 NS_BEGIN(Client)
 
@@ -28,6 +30,8 @@ private:
 private:
 	E::UPtr<CHierarchy> m_pHierarchy{};
 	E::UPtr<CInspector> m_pInspector{};
+	E::UPtr<CResourceGUI> m_pResourceGUI{};
+	E::UPtr<CMapChunkGUI> m_pMapChunkGUI{};
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
 };
