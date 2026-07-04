@@ -26,33 +26,68 @@ public:
 
 public:
 	HRESULT Initialize(void* pArg) override;
+	virtual void Update(_float fTimeDelta);
+	virtual void LateUpdate(_float fTimeDelta);
 
 public:
 	_float2 GetOrigin() const { return { m_fX , m_fY }; }
 	_float2 GetSize() const { return{ m_fSizeX , m_fSizeY }; }
-	void SetOrigin(_float2 f) { m_fX = f.x; m_fY = f.y; CalcUICoord(); }
-	void SetSize(_float2 f) { m_fSizeX = f.x; m_fSizeY = f.y; CalcUICoord(); }
+	void SetOrigin(_float2 f) { m_fX = f.x; m_fY = f.y;   CalcUICoord(); }
+	void SetSize(_float2 f) { m_fSizeX = f.x ; m_fSizeY = f.y; CalcUICoord();}
 	void SetAlpha(_float fAlpha) { m_fAlpha = fAlpha; }
 	_float GetAlpha() { return m_fAlpha; }
 
-	uint32_t	GetWeight() const { return m_iWeight; }
-	void		SetWeight(uint32_t weight) { m_iWeight = weight; }
+	int			GetWeight() const { return m_iWeight; }
+	void		SetWeight(int weight) { m_iWeight = weight; }
 
 	const char* GetName()				{ return m_cName; }
 	void		SetName(_string name)	{ strcpy_s(m_cName, name.c_str()); }
 
+	void SetLocalPos(_float2 localPos) { m_fLocalX = localPos.x; m_fLocalY = localPos.y;     CalcUICoord();};
+	void SetWorldPos(_float2 worldPos) { m_fX = worldPos.x; m_fY = worldPos.y;     CalcUICoord();}
+
+	_float2 GetLocalPos() { _float2 localPos = { m_fLocalX , m_fLocalY }; return localPos; }
+	_float2 GetWorldPos() { _float2 worldPos = { m_fX , m_fY }; return worldPos; }
+
+	void SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
+	std::optional<CHandle>  GetParent() { return m_pParent; }
+	void AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
+	const std::vector<CHandle>& GetChildren() const { return m_vChildren; }
+
+	_float GetLocalX() { return m_fLocalX; };
+	_float GetLocalY() { return m_fLocalY; };
+	_float GetWidthRatioX() { return m_fWidthRatioX; };
+	_float GetWidthRatioY() { return m_fWidthRatioY; };
+	_float GetAlphaRatio() { return m_fAlphaRatio; };
+	int GetWeightOffset() { return m_iWeightOffset; };
+
+	void SetLocalX(_float x) { m_fLocalX = x; };
+	void SetLocalY(_float y) { m_fLocalY = y; };
+	void SetWidthRatioX(_float widthX) { m_fWidthRatioX = widthX; };
+	void SetWidthRatioY(_float widthY) { m_fWidthRatioY = widthY; };
+	void SetAlphaRatio(_float alphaRatio) { m_fAlphaRatio = alphaRatio; };
+	void SetWeightOffset(int weightOffset) { m_iWeightOffset = weightOffset; };
+
+	uint32_t GetUIType() { return m_UIType; }
+	void SetUIType(uint32_t uiType) { m_UIType = uiType; }
+
+public:
+	void DeleteChild(CHandle childHandle);
 protected:
 	void CalcUICoord();
 
 protected:
 	_float m_fX{}, m_fY{}, m_fSizeX{}, m_fSizeY{}, m_fAlpha{};
-	uint32_t m_iWeight{};
+	int m_iWeight{};
 	char m_cName[256] = "";
+	uint32_t m_UIType{};
 
+	_float m_fLocalX{0}, m_fLocalY{0}, m_fWidthRatioX{1}, m_fWidthRatioY{1}, m_fAlphaRatio{1};
+	int m_iWeightOffset{0};
 protected:
-	SPtr<CUIObject> m_pParent = nullptr;
+	std::optional<CHandle> m_pParent = std::nullopt;
 
-	std::vector<SPtr<CUIObject>> m_vChildren;
+	std::vector<CHandle> m_vChildren;
 };
 
 NS_END

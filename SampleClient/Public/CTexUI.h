@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "UIObject.h"
 #include "Client_Defines.h"
@@ -22,13 +22,14 @@ public:
 
 public:
 	std::string Get_ResTag() { return m_sRestag; }
+	void Set_ResTag(std::string tag) { m_sRestag = tag; }
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
 private:
 	std::string m_sRestag;
 	_bool m_bMouseTracking{};
 
 private:
-	// ½¦ÀÌ´õ
+	// ì‰ì´ë”
 	bool m_bOutline{};
 
 public:

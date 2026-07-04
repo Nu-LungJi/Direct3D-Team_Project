@@ -41,8 +41,6 @@ void CTexUI::Update(E::_float fTimeDelta)
 		m_fY = mousePos.y;
 		CalcUICoord();
 	}
-
-	m_sRestag;
 }
 
 void CTexUI::LateUpdate(E::_float fTimeDelta)

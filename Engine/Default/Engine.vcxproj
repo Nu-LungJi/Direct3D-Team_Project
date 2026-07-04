@@ -268,6 +268,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\ParticleManager.h" />
+    <ClInclude Include="..\Public\PrefabManager.h" />
     <ClInclude Include="..\Public\Prototype.h" />
     <ClInclude Include="..\Public\PrototypeManager.h" />
     <ClInclude Include="..\Public\Renderer.h" />
@@ -324,6 +325,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\UIObject.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UIPrefab.h" />
+    <ClInclude Include="..\Public\UIPrefabNode.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -460,6 +462,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\UICamera.cpp" />
     <ClCompile Include="..\Private\UIObject.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
+    <ClCompile Include="..\Private\UIPrefabNode.cpp" />
     <ClCompile Include="..\Private\WorkerManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -469,6 +472,7 @@ call CopyClient.bat</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PrefabManager.cpp" />
     <ClCompile Include="UIPrefab.cpp" />
   </ItemGroup>
   <ItemGroup>

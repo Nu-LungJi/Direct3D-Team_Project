@@ -46,6 +46,34 @@ HRESULT CUIObject::Initialize(void* pArg)
 	return S_OK;
 }
 
+void CUIObject::Update(_float fTimeDelta)
+{
+	if (std::nullopt != m_pParent)
+	{
+		CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_pParent);
+
+		m_fX = parentUI->GetOrigin().x + m_fLocalX;
+		m_fY = parentUI->GetOrigin().y + m_fLocalY;
+		m_fSizeX = parentUI->GetSize().x * m_fWidthRatioX;
+		m_fSizeY = parentUI->GetSize().y * m_fWidthRatioY;
+		m_fAlpha = parentUI->GetAlpha() * m_fAlphaRatio;
+		m_iWeight = parentUI->GetWeight() + m_iWeightOffset;
+
+		CalcUICoord();
+	}
+}
+
+void CUIObject::LateUpdate(_float fTimeDelta)
+{
+}
+
+void CUIObject::DeleteChild(CHandle childHandle)
+{
+	m_vChildren.erase(
+		std::remove(m_vChildren.begin(), m_vChildren.end(), childHandle),
+		m_vChildren.end());
+}
+
 void CUIObject::CalcUICoord()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
