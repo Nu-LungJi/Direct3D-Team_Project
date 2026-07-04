@@ -61,6 +61,16 @@ void CFlyCamera::PriorityUpdate(E::_float fTimeDelta)
             GetTransform().GoRight(fTimeDelta * 10.f);
         }
 
+        if (CGameInstance::Get().KeyPressing(DIK_Q))
+        {
+            GetTransform().GoUp(fTimeDelta * 10.f);
+        }
+
+        if (CGameInstance::Get().KeyPressing(DIK_E))
+        {
+            GetTransform().GoDown(fTimeDelta * 10.f);
+        }
+
         if (CGameInstance::Get().GetMouseFix())
         {
             if (auto a = CGameInstance::Get().MouseMove(MOUSEMOVESTATE::X))

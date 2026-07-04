@@ -124,6 +124,16 @@ void CComTransform::GoRight(_float fDist)
     SetPosition(GetLoadedPostion() + GetState(STATE::RIGHT) * fDist);
 }
 
+void CComTransform::GoUp(_float fDist)
+{
+    SetPosition(GetLoadedPostion() + GetState(STATE::UP) * fDist);
+}
+
+void CComTransform::GoDown(_float fDist)
+{
+    SetPosition(GetLoadedPostion() - GetState(STATE::UP) * fDist);
+}
+
 void CComTransform::LookAt(_fvector vAt, _fvector vWorldUp)
 {
     //_vector vLook = vAt - GetState(STATE::POSITION);

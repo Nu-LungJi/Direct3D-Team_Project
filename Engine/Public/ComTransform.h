@@ -231,6 +231,8 @@ public:
 	void GoBackward(_float fDist);
 	void GoLeft(_float fDist);
 	void GoRight(_float fDist);
+	void GoUp(_float fDist);
+	void GoDown(_float fDist);
 
 	void LookAt(_fvector vAt, _fvector vWorldUp = { 0.f, 1.f, 0.f, 0.f });
 	void Chase(_fvector vGoal, _float fDist, _float fLimit = 0.f);
