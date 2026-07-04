@@ -94,6 +94,8 @@ bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout floa
     // Point Light PBR
     else if (_Light.LightType == LIGHT_POINT)
     {
+        float MinimumDistance = 1.f;
+        
         float3 LightVector = _Light.Position - _WorldPosition;
         float Distance = length(LightVector);
         
@@ -111,6 +113,8 @@ bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout floa
     // SpotLight Light PBR
     else if (_Light.LightType == LIGHT_SPOTLIGHT)
     {
+        float MinimumDistance = 1.f;
+        
         float3 LightVector = _Light.Position - _WorldPosition;
         float Distance = length(LightVector);
         
@@ -258,36 +262,36 @@ PS_OUT PSMain(PS_IN IN)
     float3  MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
     
     float3  LightAccumulation = float3(0.f, 0.f, 0.f);
-
+    
     // Multiple Light Process
     [unroll(MAX_LIGHT_COUNT)]
     for (int i = 0; i < g_iLightCount; ++i)
     {
         float3 L, Radiance;
-        
-        [branch]
+    
+    [branch]
         if (!Compute_DynamicLight(AffectedLight[i], IN.WorldPos.xyz, L, Radiance))
             continue;
-        
+    
         float RawNDL = dot(WorldNormal, L);
-       
-        [branch]
+    
+    [branch]
         if (RawNDL > 0.f)
         {
             float NDL = clamp(RawNDL, 0.f, 1.f);
-            
-            float3  H = normalize(V + L);
-            float   D = DistributionGGX(WorldNormal, H, Roughness);
-            float3  F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
         
-            float   V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
-        
-            float3  Specular = D * F * V_Spec;
-        
-            float3  kS = F;
-            float3  kD = (1.0 - kS) * (1.0 - Metallic);
-            float3  Diffuse = kD * Albedo / PI;
-        
+            float3 H = normalize(V + L);
+            float D = DistributionGGX(WorldNormal, H, Roughness);
+            float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+    
+            float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
+    
+            float3 Specular = D * F * V_Spec;
+    
+            float3 kS = F;
+            float3 kD = (1.0 - kS) * (1.0 - Metallic);
+            float3 Diffuse = kD * Albedo / PI;
+    
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
         }
     }
@@ -298,6 +302,8 @@ PS_OUT PSMain(PS_IN IN)
     //Ambient *= Occlusion * Occlusion;
     //LightAccumulation += Ambient;
     //LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
+    
+   
     
     OUT.Diffuse = float4(LightAccumulation, 1.f);
     OUT.Normal = vector(WorldNormal.xyz * 0.5f + 0.5f, 0.f);

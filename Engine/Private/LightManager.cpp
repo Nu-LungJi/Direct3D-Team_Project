@@ -76,9 +76,9 @@ VOID CLightManager::UpdateGUI() {
             }
             std::string lightName = "Light" + std::to_string(i);
             LIGHT_TYPE type = LightObject->Get_LightType();
-            if (type == LIGHT_TYPE::DIRECTIONAL) lightName += " [Directional]";
-            else if (type == LIGHT_TYPE::POINT)  lightName += " [Point]";
-            else                                 lightName += " [Spot]";
+            if      (type == LIGHT_TYPE::DIRECTIONAL)    lightName += " [Directional]";
+            else if (type == LIGHT_TYPE::POINT)          lightName += " [Point]";
+            else                                         lightName += " [Spot]";
 
             const bool isSelected = (selectedLightIdx == i);
             if (ImGui::Selectable(lightName.c_str(), isSelected))
@@ -118,8 +118,6 @@ VOID CLightManager::UpdateGUI() {
         pSelectedLight->Set_LightType(static_cast<LIGHT_TYPE>(currentTypeIdx));
     }
 
-    // 공통 속성: 색상 및 강도
-    // ColorEdit3는 float[3] 배열을 요구하므로 &color.x 형태로 전달합니다.
     if (ImGui::ColorEdit3("Color", &color.x))
     {
         pSelectedLight->Set_LightColor(color);
@@ -168,11 +166,7 @@ VOID CLightManager::UpdateGUI() {
     ImGui::End();
 }
 VOID CLightManager::Update(_float fTimeDelta){
-    for (auto& LightHandle : m_LightHandleList) {
-        auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
-        LightOBJ->Update(fTimeDelta);
-        LightOBJ->LateUpdate(fTimeDelta);
-    }
+
 }
 VOID CLightManager::Bind_EnviromentLight(){
     //m_pContext->PSSetShaderResources(4, 1, &m_IrridianceSRV);
@@ -198,8 +192,8 @@ VOID CLightManager::Bind_DynamicLight(){
         LightBuffer.AffectedLight[LightCount].LightIntensity    = LightOBJ->Get_LightIntensity();
         LightBuffer.AffectedLight[LightCount].LightRange        = LightOBJ->Get_LightRange();
         LightBuffer.AffectedLight[LightCount].Position          = LightOBJ->Get_LightPosition();
-        LightBuffer.AffectedLight[LightCount].InnerAttanuation  = LightOBJ->Get_LightInnerAttenuation();
-        LightBuffer.AffectedLight[LightCount].OuterAttanuation  = LightOBJ->Get_LightOuterAttenuation();
+        LightBuffer.AffectedLight[LightCount].InnerAttanuation  = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+        LightBuffer.AffectedLight[LightCount].OuterAttanuation  = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
     
         LightCount++;
     }
@@ -216,42 +210,6 @@ VOID CLightManager::Bind_DynamicLight(){
     }
 
     m_pContext->PSSetConstantBuffers(4, 1, LightConstantBuffer->GetCBuffer().GetAddressOf());
-
-    // Model Loader
-    //{
-    //    auto PBRConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PBR");
-    //    D3D11_MAPPED_SUBRESOURCE MRES;
-    //    if (SUCCEEDED(m_pContext->Map(PBRConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-    //    {
-    //        CB_OBJECT_PBR   CBOPBR;
-    //
-    //        CBOPBR.AlbedoValue = ;
-    //        CBOPBR.RoughnessValue = ;
-    //        CBOPBR.MetallicValue = ;
-    //
-    //        memcpy(MRES.pData, &CBOPBR, sizeof(CB_OBJECT_PBR));
-    //        m_pContext->Unmap(PBRConstantBuffer->GetCBuffer().Get(), 0);
-    //    }
-    //    m_pContext->PSSetConstantBuffers(3, 1, PBRConstantBuffer->GetCBuffer().GetAddressOf());
-    //
-    //    m_pContext->PSSetShaderResources(0, 1, &AlbedoSRV);
-    //    m_pContext->PSSetShaderResources(1, 1, &NormalSRV);
-    //    m_pContext->PSSetShaderResources(2, 1, &RoughnessSRV);
-    //    m_pContext->PSSetShaderResources(3, 1, &MetallicSRV);
-    //
-    //    // Draw On Model Buffer
-    //    m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
-    //
-    //    ID3D11ShaderResourceView* NullSRV[1] = { nullptr };
-    // 
-    //    m_pContext->PSSetShaderResources(0, 1, NullSRV);
-    //    m_pContext->PSSetShaderResources(1, 1, NullSRV);
-    //    m_pContext->PSSetShaderResources(2, 1, NullSRV);
-    //    m_pContext->PSSetShaderResources(3, 1, NullSRV);
-    //    m_pContext->PSSetShaderResources(4, 1, NullSRV);
-    //    m_pContext->PSSetShaderResources(5, 1, NullSRV);
-    //    m_pContext->PSSetShaderResources(6, 1, NullSRV);
-    //}
 }
 
 VOID CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
@@ -271,7 +229,6 @@ VOID CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _
 
     m_LightHandleList.push_back(LightHandle.value());
 }
-
 VOID CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range) {
     CLight::DESC LDesc{};
     if      (m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00"  + m_LightHandleList.size();
@@ -292,7 +249,6 @@ VOID CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _
 
     m_LightHandleList.push_back(LightHandle.value());
 }
-
 VOID CLightManager::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
     CLight::DESC LDesc{};
     if      (m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00"  + m_LightHandleList.size();

@@ -261,10 +261,6 @@ void CLevelLoading::ThreadStart()
 					}
 				}
 
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create())))
-				{
-					return false;
-				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Terrain", CTerrain::Create())))
 				{
 					return false;

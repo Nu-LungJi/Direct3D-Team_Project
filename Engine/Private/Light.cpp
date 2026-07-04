@@ -33,15 +33,24 @@ HRESULT CLight::InitializePrototype(void* pArg) {
     {
         return E_FAIL;
     }
-    if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_LightIcon", CResTexture2D::Create("./Resources/Engine/Texture/HDE.png")))
-    {
-        res->Load();
-    }
     m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
     if (!m_pResSamplerState)
     {
         return E_FAIL;
     }
+
+#ifdef _DEBUG
+    if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_Icon_DirectionalLight", CResTexture2D::Create("./Resources/Engine/Texture/Debugging/Icon_DirectionalLight.png"))) {
+        res->Load();
+    }
+    if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_Icon_PointLight", CResTexture2D::Create("./Resources/Engine/Texture/Debugging/Icon_PointLight.png"))){
+        res->Load();
+    }
+    if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_Icon_SpotLight", CResTexture2D::Create("./Resources/Engine/Texture/Debugging/Icon_SpotLight.png"))) {
+        res->Load();
+    } 
+#endif
+    
 }
 HRESULT CLight::Initialize(void* pArg)
 {
@@ -67,7 +76,12 @@ HRESULT CLight::Initialize(void* pArg)
         Desc.eCollType = CollType::Frustum;
         if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComCollider_Frustum", &Desc, &m_pComColliderFrustum)))  return E_FAIL;
     }
-    m_pResLightTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_LightIcon");
+
+#ifdef _DEBUG       // DEBUG : Light Position Icon
+    m_pResDirectionalLightTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_DirectionalLight");
+    m_pResPointLightTexture2D       = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_PointLight");
+    m_pResSpotLightTexture2D        = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_SpotLight");
+#endif
 
 	return S_OK;
 }
@@ -77,22 +91,52 @@ void CLight::PriorityUpdate(E::_float fTimeDelta) {
 }
 void CLight::Update(E::_float fTimeDelta) {
     m_pComTransform->Update();
-    if (m_LightType == LIGHT_TYPE::DIRECTIONAL) {
 
+#ifdef _DEBUG       
+    auto CurrentCamera = CGameInstance::Get().GetActiveCamera();
+    if (nullptr == CurrentCamera) return;
+
+    // DEBUG : Render By Distance
+    if (XMVectorGetX(XMVector3Length(CurrentCamera->GetTransform().GetLoadedPostion() - m_pComTransform->GetLoadedPostion())) > 20.f) {
+        Debug_RenderFlag = false;
+        return;
     }
-    else if (m_LightType == LIGHT_TYPE::SPOTLIGHT) {
+    else {
+        Debug_RenderFlag = true;
+    }
+
+    // DEBUG : Light Range Line
+    if (m_LightType == LIGHT_TYPE::SPOTLIGHT) {
         CGameInstance::Get().AddColliderGroup("Collider_DEBUG", m_pComColliderFrustum->Get());
         m_pComColliderFrustum->Get()->Transform(XMLoadFloat4x4(m_pComTransform->GetWorldMatrix()));
     }
-    else {
+    else if (m_LightType == LIGHT_TYPE::POINT){
         CGameInstance::Get().AddColliderGroup("Collider_DEBUG", m_pComColliderSphere->Get());
         XMFLOAT3 Position = m_pComTransform->GetPosition();
         m_pComColliderSphere->Get()->Transform(XMMatrixTranslation(Position.x, Position.y, Position.z));
     }
-    
+
+    // DEBUG : Debug Icon BillBoard
+    XMVECTOR determinant;
+    XMMATRIX CameraInvViewMat = XMMatrixInverse(&determinant, CurrentCamera->GetView());
+
+    CameraInvViewMat.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+    XMMATRIX CameraTransMat = XMMatrixTranslationFromVector(XMLoadFloat3(&m_pComTransform->GetPosition()));
+    XMMATRIX BBDMat = CameraInvViewMat * CameraTransMat;
+
+    m_pComTransform->SetState(STATE::RIGHT, BBDMat.r[0]);
+    m_pComTransform->SetState(STATE::UP, BBDMat.r[1]);
+    m_pComTransform->SetState(STATE::LOOK, BBDMat.r[2]);
+    m_pComTransform->SetState(STATE::POSITION, BBDMat.r[3]);
+
+#endif
+
 }
 void CLight::LateUpdate(E::_float fTimeDelta) {
-    CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+#ifdef _DEBUG     
+    if (Debug_RenderFlag)
+#endif
+        CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 #ifdef _DEBUG
@@ -122,8 +166,17 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
     pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
     pContext->IASetIndexBuffer(m_pResLightTexBuffer->GetIndexBuffer().Get(), m_pResLightTexBuffer->GetIndexFormat(), 0);
     pContext->IASetPrimitiveTopology(m_pResLightTexBuffer->GetPrimitiveType());
-    {
-        pContext->PSSetShaderResources(0, 1, m_pResLightTexture2D->GetSRV().GetAddressOf());
+
+    {   // DEBUG : Light Position Icon
+        if      (m_LightType == LIGHT_TYPE::DIRECTIONAL) {
+            pContext->PSSetShaderResources(0, 1, m_pResDirectionalLightTexture2D->GetSRV().GetAddressOf());
+        }
+        else if (m_LightType == LIGHT_TYPE::POINT) {
+            pContext->PSSetShaderResources(0, 1, m_pResPointLightTexture2D->GetSRV().GetAddressOf());
+        }
+        else if (m_LightType == LIGHT_TYPE::SPOTLIGHT) {
+            pContext->PSSetShaderResources(0, 1, m_pResSpotLightTexture2D->GetSRV().GetAddressOf());
+        }
     }
     {
         const auto& sampler = m_pResSamplerState;
@@ -146,20 +199,17 @@ VOID CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
 UPtr<CLight> CLight::Create()
 {
     auto pInstance = ToUPtr(new CLight{});
-    if (FAILED(pInstance->InitializePrototype(nullptr)))
-    {
+    if (FAILED(pInstance->InitializePrototype(nullptr)))    {
         MSG_BOX("Failed to Create: CLight");
         return nullptr;
     }
 
     return pInstance;
 }
-
 UPtr<CPrototype> CLight::Clone(void* pArg)
 {
     auto pInstance = ToUPtr(new CLight{ *this });
-    if (FAILED(pInstance->Initialize(pArg)))
-    {
+    if (FAILED(pInstance->Initialize(pArg)))    {
         MSG_BOX("Failed to Cloned: CLight");
         return nullptr;
     }

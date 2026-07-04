@@ -59,19 +59,27 @@ private:
 
 	_float3			m_fPosition{};
 
-	_float			m_fInnerAttanuation{};
-	_float			m_fOuterAttanuation{};
+	_float			m_fInnerAttanuation = { 20.f };
+	_float			m_fOuterAttanuation = { 30.f };
 
 	SPtr<CResVertexShader>	m_pResVertexShader		{	};
 	SPtr<CResPixelShader>	m_pResPixelShader		{	};
 	SPtr<CResQuadTexBuffer>	m_pResLightTexBuffer	{	};
-	SPtr<CResTexture2D>		m_pResLightTexture2D	{	};
+
 	SPtr<CResSamplerState>	m_pResSamplerState		{	};
 
 	CComConstantBuffer*	m_pComCBufferPerObject	{  };
 
 	CComCollider*		m_pComColliderSphere{};
 	CComCollider*		m_pComColliderFrustum{};
+
+#ifdef _DEBUG	// Light 위치 나타내는 용 아이콘 텍스쳐
+	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D	{	};
+	SPtr<CResTexture2D>		m_pResPointLightTexture2D		{	};
+	SPtr<CResTexture2D>		m_pResSpotLightTexture2D		{	};
+
+	_bool	Debug_RenderFlag = { true };
+#endif
 
 public:
 	void UpdateGUI() override;
