@@ -25,10 +25,10 @@ HRESULT CResQuadTexBuffer::Load(const std::any& arg)
         constexpr uint32_t iNumVertices = 4;
         VTX_TEX vertices[iNumVertices] =
         {
-            {_float3{-0.5f, 0.5f, 0.f},  _float2{0.f, 0.f}},
-            {_float3{0.5f, 0.5f, 0.f},   _float2{1.f, 0.f}},
-            {_float3{0.5f, -0.5f, 0.f},  _float2{1.f, 1.f}},
-            {_float3{-0.5f, -0.5f, 0.f}, _float2{0.f, 1.f}}
+            {_float3{-0.5f,  0.5f, 0.f},    _float2{0.f, 0.f}},
+            {_float3{ 0.5f,  0.5f, 0.f},    _float2{1.f, 0.f}},
+            {_float3{ 0.5f, -0.5f, 0.f},    _float2{1.f, 1.f}},
+            {_float3{-0.5f, -0.5f, 0.f},    _float2{0.f, 1.f}}
         };
         D3D11_SUBRESOURCE_DATA vertexInitialData{};
         vertexInitialData.pSysMem = vertices;

@@ -5,27 +5,6 @@ Texture2D g_DiffuseTexture  : register(t0);
 Texture2D g_NormalTexture   : register(t1);
 Texture2D g_ShadowMap       : register(t4);
 
-struct VS_IN
-{
-    float3 vPosition : POSITION;    
-    float2 vTexcoord : TEXCOORD0;    
-};
-
-struct VS_OUT
-{
-    float4 vPosition : SV_POSITION;
-    float2 vTexcoord : TEXCOORD0;
-};
-
-VS_OUT VSMain(VS_IN In)
-{
-    VS_OUT Out;
-    Out.vPosition = float4(In.vPosition.xy, 1.0f, 1.0f);
-    Out.vTexcoord = In.vTexcoord;
-    
-    return Out;
-}
-
 struct PS_IN
 {
     float4 vPosition : SV_POSITION;

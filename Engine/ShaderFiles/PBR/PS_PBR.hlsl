@@ -37,16 +37,21 @@ cbuffer CB_LIGHT_BUFFER  : register(b4)
 
 struct PS_IN
 {
-    float4 Position : SV_Position;
-    float3 WorldPos : POSITION;
+    float4 Position : SV_POSITION;
+    float4 Normal   : NORMAL;
+    float4 Tangent  : TANGENT;
+    float4 BiNormal : BINORMAL;
     float2 TexCoord : TEXCOORD0;
-    float3 Normal   : NORMAL;
-    float3 Tangent  : TANGENT;
+    float4 WorldPos : TEXCOORD1;
+    float4 ProjPos  : TEXCOORD2;
 };
 
 struct PS_OUT
 {
-    float4 Diffuse : SV_TARGET0;
+    vector Diffuse : SV_TARGET0;
+    vector Normal  : SV_TARGET1;
+    vector Depth   : SV_TARGET2;
+    vector Pick    : SV_TARGET3;
 };
 
 float3x3    Make_TBNMatrix(float3 _Normal, float3 _Tangent)
@@ -62,16 +67,22 @@ float3x3    Make_TBNMatrix(float3 _Normal, float3 _Tangent)
 }
 float3      Compute_WorldNormal(PS_IN IN)
 {
-    float3x3 TBN = Make_TBNMatrix(IN.Normal, IN.Tangent);
+    float3 LocalNormal = NormalMap.Sample(SamplerWrap, IN.TexCoord).rgb;
+    LocalNormal = normalize(LocalNormal * 2.f - 1.f);
+    float3x3 TBN = Make_TBNMatrix(IN.Normal.xyz, IN.Tangent.xyz);
 
-    float3 Normal = NormalMap.Sample(SamplerWrap, IN.TexCoord).rgb;
+    float3 N = normalize(IN.Normal.xyz);
+    float3 T = normalize(IN.Tangent.xyz);
     
-    Normal = Normal * 2.f - 1.f;
+    T = normalize(T - dot(T, N) * N);
+    float3 B = normalize(cross(N, T)); // 혹은 IN.BiNormal.xyz 사용
     
-    return normalize(mul(Normal, TBN));
+    float3 worldNormal = LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N;
+
+    return normalize(worldNormal);
 }
 
-bool        Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, out float3 L, out float3 Radiance) {
+bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout float3 L, inout float3 Radiance) {
     // Directional Light PBR
     [branch]
     if      (_Light.LightType == LIGHT_DIRECTIONAL)
@@ -83,12 +94,14 @@ bool        Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, out
     // Point Light PBR
     else if (_Light.LightType == LIGHT_POINT)
     {
+        float MinimumDistance = 1.f;
+        
         float3 LightVector = _Light.Position - _WorldPosition;
         float Distance = length(LightVector);
         
         if (Distance > _Light.LightRange) return false;
 
-        float Attenuation = 1.f / (Distance * Distance + 1.f);
+        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
         float DistanceByRange = Distance / _Light.LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
         
@@ -100,13 +113,15 @@ bool        Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, out
     // SpotLight Light PBR
     else if (_Light.LightType == LIGHT_SPOTLIGHT)
     {
+        float MinimumDistance = 1.f;
+        
         float3 LightVector = _Light.Position - _WorldPosition;
         float Distance = length(LightVector);
         
         if (Distance > _Light.LightRange) return false;
         
         // Decrease By Distance
-        float Attenuation = 1.f / (Distance * Distance + 1.f);
+        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
         float DistanceByRange = Distance / _Light.LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
         float DistanceFade = Attenuation * Window * Window;
@@ -175,21 +190,17 @@ float       VisibilitySmithJointGGX(float NdotV, float NdotL, float roughness)
     float a = roughness * roughness;
     float a2 = a * a;
     
-    float lambdaV = NdotL * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
-    float lambdaL = NdotV * sqrt((-NdotL * a2 + NdotL) * NdotL + a2);
+    float lambdaV = NdotL * sqrt(max((-NdotV * a2 + NdotV) * NdotV + a2, 0.001f));
+    float lambdaL = NdotV * sqrt(max((-NdotL * a2 + NdotL) * NdotL + a2, 0.001f));
     
-    float Denom = lambdaV + lambdaL;
-    
-    if (Denom > 0.0)
-    {
-        return 0.5 / Denom;
-    }
-    return 0.0;
+    float  Denom = lambdaV + lambdaL;
+    return Denom > 0.0f ? 0.5f / Denom : 0.0f;
 }
 
 float3      FresnelSchlick(float CTH, float3 MBR)
 {
-    return MBR + (1.0 - MBR) * pow(clamp(1.0 - CTH, 0.0, 1.0), 5.0);
+    float ClampCTH = clamp(CTH, 0.0f, 1.0f);
+    return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
 //float3      FresnelSchlickRoughness(float CTH, float3 MBR, float roughness)
 //{
@@ -236,9 +247,9 @@ float3      Compute_IBL(float3 N, float3 V, float3 albedo, float _Roughness, flo
 PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT OUT;
-    
+      
     float3 WorldNormal = Compute_WorldNormal(IN);
-    float3 V = normalize(g_vCamPos - IN.WorldPos);
+    float3 V = normalize(g_vCamPos - IN.WorldPos.xyz);
     float  R = reflect(-V, WorldNormal);
 
     float  NDV = max(dot(WorldNormal, V), 0.f);
@@ -251,44 +262,53 @@ PS_OUT PSMain(PS_IN IN)
     float3  MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
     
     float3  LightAccumulation = float3(0.f, 0.f, 0.f);
-
+    
     // Multiple Light Process
     [unroll(MAX_LIGHT_COUNT)]
     for (int i = 0; i < g_iLightCount; ++i)
     {
         float3 L, Radiance;
-        
-        [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], IN.WorldPos, L, Radiance))    continue;
-        
-        float NDL = max(dot(WorldNormal, L), 0.f);
-        
-        [branch]
-        if (NDL > 0.f)
+    
+    [branch]
+        if (!Compute_DynamicLight(AffectedLight[i], IN.WorldPos.xyz, L, Radiance))
+            continue;
+    
+        float RawNDL = dot(WorldNormal, L);
+    
+    [branch]
+        if (RawNDL > 0.f)
         {
-            float3  H = normalize(V + L);
-            float   D = DistributionGGX(WorldNormal, H, Roughness);
-            float3  F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+            float NDL = clamp(RawNDL, 0.f, 1.f);
         
-            float   V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
-        
-            float3  Specular = D * F * V_Spec;
-        
-            float3  kS = F;
-            float3  kD = (1.0 - kS) * (1.0 - Metallic);
-            float3  Diffuse = kD * Albedo / PI;
-        
+            float3 H = normalize(V + L);
+            float D = DistributionGGX(WorldNormal, H, Roughness);
+            float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+    
+            float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
+    
+            float3 Specular = D * F * V_Spec;
+    
+            float3 kS = F;
+            float3 kD = (1.0 - kS) * (1.0 - Metallic);
+            float3 Diffuse = kD * Albedo / PI;
+    
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
         }
     }
-    
+
     // Enviroment Light Process
-    float3  Ambient  = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-    float   Occlusion = clamp(1.0f + dot(R, WorldNormal), 0.0f, 1.0f);
-    Ambient *= Occlusion * Occlusion;
-    LightAccumulation += Ambient;
+    //float3  Ambient  = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
+    //float   Occlusion = clamp(1.0f + dot(R, WorldNormal), 0.0f, 1.0f);
+    //Ambient *= Occlusion * Occlusion;
+    //LightAccumulation += Ambient;
+    //LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
+    
+   
     
     OUT.Diffuse = float4(LightAccumulation, 1.f);
+    OUT.Normal = vector(WorldNormal.xyz * 0.5f + 0.5f, 0.f);
+    OUT.Depth = float4(IN.ProjPos.z / IN.ProjPos.w, IN.ProjPos.w / 1000.f, 0.f, 0.f);
+    OUT.Pick = vector(IN.WorldPos.xyz, 1.f);
     
     return OUT;
 }

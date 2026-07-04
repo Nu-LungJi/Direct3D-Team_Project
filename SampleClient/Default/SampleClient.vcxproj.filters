@@ -139,6 +139,9 @@
     <ClInclude Include="..\Public\LevelLightMap.h">
       <Filter>Level\LightMap</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LightObject.h">
+      <Filter>GameObject\LightObject</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\LevelCollider.h">
       <Filter>Level\Collider</Filter>
     </ClInclude>
@@ -197,6 +200,9 @@
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\LightObject.cpp">
+      <Filter>GameObject\LightObject</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\LevelCollider.cpp">
       <Filter>Level\Collider</Filter>
     </ClCompile>
@@ -220,6 +226,12 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

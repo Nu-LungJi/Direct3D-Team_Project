@@ -553,6 +553,9 @@ call CopyClient.bat</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
@@ -582,6 +585,7 @@ call CopyClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl" />
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

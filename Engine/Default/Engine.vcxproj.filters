@@ -990,6 +990,12 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
+      <Filter>ShaderFiles\DeferredRendering</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">

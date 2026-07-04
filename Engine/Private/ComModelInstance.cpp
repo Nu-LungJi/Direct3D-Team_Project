@@ -109,7 +109,14 @@ HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_
 
 }
 
+// 모델의 단일 텍스쳐 반환
+SPtr<CResTexture2D> CComModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
+    auto Materials = m_pModel->GetMaterials();
+    auto Mesh = m_pModel->GetMeshes();
+    auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
 
+    return Textures[eMaterialType][iTextureIndex];
+}
 
 UPtr<CComModelInstance> CComModelInstance::Create()
 {

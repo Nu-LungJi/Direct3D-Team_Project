@@ -9,6 +9,8 @@
 #include "BackGround.h"
 #include "Light.h"
 #include "Terrain.h"
+#include "TestModel.h"
+#include "LightObject.h"
 
 NS_USING(Client)
 
@@ -25,20 +27,16 @@ HRESULT CLevelLightMap::Initialize()
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
 	{
-		CLight::DESC LDesc{};
-		LDesc.sObjectTag = "Light";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_Light",
-			"00_LIGHTS", &LDesc)))
-		{
-			return E_FAIL;
-		}
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject";
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
 	}
 	{
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
 
 		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_Terrain",
-			"01_Terrain", &Desc)))
+			"02_Terrain", &Desc)))
 		{
 			return E_FAIL;
 		}
@@ -65,6 +63,8 @@ HRESULT CLevelLightMap::Initialize()
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -106,5 +106,9 @@ Engine::UPtr<CLevelLightMap> CLevelLightMap::Create()
 
 void CLevelLightMap::Free()
 {
+	E::CGameInstance::Get().DelPrototype("LIGHT");
+	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_TEX");
+	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_BUFFER");
+	E::CGameInstance::Get().DelResource("LOBJ", "Model_Resource");
 	CLevel::Free();
 }

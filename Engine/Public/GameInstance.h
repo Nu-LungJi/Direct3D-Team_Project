@@ -5,6 +5,7 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "LightManager.h"
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -239,6 +240,16 @@ public:
 	}
 #pragma endregion
 
+#pragma region LIGHT_MANAGER
+public:
+	VOID	Bind_EnviromentLight();
+	VOID	Bind_DynamicLight();
+
+	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+#pragma endregion
+
 #pragma region ANIM_MANAGER
 public:
 	HRESULT SetupTestModel();
@@ -275,7 +286,7 @@ private:
 	UPtr<CColliderManager> m_pColliderManager{};
 	UPtr<CRenderer> m_pRenderer{};
 	UPtr<CShaderManager> m_pShaderManager{};
-	//UPtr<CLightManager> m_pLightManager{};
+	UPtr<CLightManager> m_pLightManager{};
 	//UPtr<CVoxelManager> m_pVoxelManager{};
 	//UPtr<CVoxelManager2> m_pVoxelManager2{};
 	//UPtr<CVoxelManager3> m_pVoxelManager3{};
