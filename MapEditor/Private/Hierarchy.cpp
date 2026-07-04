@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "Hierarchy.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
@@ -7,6 +7,10 @@ NS_USING(Client)
 
 namespace
 {
+	E::CHandle g_RenameTarget{};
+	char g_RenameBuffer[128]{};
+	bool g_bOpenRenamePopup = false;
+
 	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject, const std::string& strLayerTag)
 	{
 		if (pSelectedObject == nullptr)
@@ -30,6 +34,46 @@ namespace
 			&Desc))
 		{
 			*pSelectedObject = hObject.value();
+		}
+	}
+	void OpenRenamePopup(const E::CHandle& handle, std::string_view objectTag)
+	{
+		g_RenameTarget = handle;
+		g_bOpenRenamePopup = true;
+
+		const size_t copyLength = std::min(objectTag.size(), sizeof(g_RenameBuffer) - 1);
+		std::memset(g_RenameBuffer, 0, sizeof(g_RenameBuffer));
+		std::memcpy(g_RenameBuffer, objectTag.data(), copyLength);
+	}
+
+	void DrawRenamePopup()
+	{
+		if (g_bOpenRenamePopup)
+		{
+			ImGui::OpenPopup("Rename Object");
+			g_bOpenRenamePopup = false;
+		}
+
+		if (ImGui::BeginPopupModal("Rename Object", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::InputText("Name", g_RenameBuffer, sizeof(g_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::Separator();
+
+			if (ImGui::Button("OK", ImVec2(90.f, 0.f)))
+			{
+				if (auto* pObject = E::CGameInstance::Get().GetGameObjectByHandle(g_RenameTarget))
+				{
+					pObject->SetObjectTag(g_RenameBuffer);
+				}
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(90.f, 0.f)))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
 		}
 	}
 }
@@ -70,8 +114,8 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 				layerName.c_str(),
 				handles.size());
 
-			// --- ¿ìÅ¬¸¯ ¿ÀºêÁ§Æ® Ãß°¡ ·ÎÁ÷ ---
-			// BeginPopupContextItemÀº ¹Ù·Î Á÷Àü¿¡ È£ÃâµÈ À§Á¬(TreeNode)À» ´ë»óÀ¸·Î ¿ìÅ¬¸¯À» °¨Áö
+			// --- ìš°í´ë¦­ ì˜¤ë¸Œì íŠ¸ ì¶”ê°€ ë¡œì§ ---
+			// BeginPopupContextItemì€ ë°”ë¡œ ì§ì „ì— í˜¸ì¶œëœ ìœ„ì ¯(TreeNode)ì„ ëŒ€ìƒìœ¼ë¡œ ìš°í´ë¦­ì„ ê°ì§€
 			if (ImGui::BeginPopupContextItem())
 			{
 				if (ImGui::MenuItem("Create MapMeshObject"))
@@ -99,10 +143,14 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 					}
 					ImGui::PopID();
 
-					// --- ¿ìÅ¬¸¯ »èÁ¦ ·ÎÁ÷ ---
-					// BeginPopupContextItemÀº ¹Ù·Î Á÷Àü¿¡ È£ÃâµÈ À§Á¬(TreeNode)À» ´ë»óÀ¸·Î ¿ìÅ¬¸¯À» °¨Áö
+					// --- ìš°í´ë¦­ ì‚­ì œ ë¡œì§ ---
+					// BeginPopupContextItemì€ ë°”ë¡œ ì§ì „ì— í˜¸ì¶œëœ ìœ„ì ¯(TreeNode)ì„ ëŒ€ìƒìœ¼ë¡œ ìš°í´ë¦­ì„ ê°ì§€
 					if (ImGui::BeginPopupContextItem())
 					{
+						if (ImGui::MenuItem("Rename Object"))
+						{
+							OpenRenamePopup(handle, pObject->GetObjectTag());
+						}
 						if (ImGui::MenuItem("Delete Object"))
 						{
 							pObject->SetPendingDestroyCascade(true);
@@ -117,6 +165,7 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 	}
 
 	ImGui::EndChild();
+	DrawRenamePopup();
 }
 
 E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject)
@@ -130,3 +179,4 @@ E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject)
 
 	return pInstance;
 }
+
