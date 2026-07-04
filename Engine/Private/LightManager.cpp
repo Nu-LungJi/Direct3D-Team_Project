@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "LightManager.h"
 #include "GameInstance.h"
+#include "ComCollider.h"
+#include "CollSphere.h"
+#include "CollFrustum.h"
 
 CLightManager::CLightManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice(pDevice), m_pContext(pContext) {}
 CLightManager::~CLightManager()	{}
@@ -41,10 +44,38 @@ VOID CLightManager::UpdateGUI() {
     ImGui::Text("Light List");
     if (ImGui::BeginListBox("##Lights", ImVec2(-FLT_MIN, 100)))
     {
-        for (int i = 0; i < static_cast<int>(m_LightHandleList.size()); ++i)
-        {\
-            std::string lightName = "Light " + std::to_string(i);
-            LIGHT_TYPE type = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[i])->Get_LightType();
+        int i = 0;
+        for (auto iter = m_LightHandleList.begin(); iter != m_LightHandleList.end();)
+        {
+            auto LightObject = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(*iter);
+            if (nullptr == LightObject) {
+                iter = m_LightHandleList.erase(iter);
+                continue;
+            }
+            auto pComCollider = LightObject->GetComponent<CComCollider>("ComCollider_Sphere");
+            if (pComCollider)
+            {
+                auto ColliderType = pComCollider->Get()->GetCollType();
+
+                if      (ColliderType == CollType::Sphere)  {
+                    static_cast<CCollSphere*>((pComCollider->Get()))->SetLocalBoundingSphere({}, LightObject->Get_LightRange());
+                }
+            }
+            auto pComCollider_FR = LightObject->GetComponent<CComCollider>("ComCollider_Frustum");
+            if (pComCollider_FR)
+            {
+                auto ColliderType = pComCollider->Get()->GetCollType();
+
+                if (ColliderType == CollType::Frustum) {
+                    auto LightPos = LightObject->Get_LightPosition();
+                    static_cast<CCollFrustum*>((pComCollider->Get()))->SetLocalFrustum(
+                        XMMatrixLookAtLH(XMLoadFloat3(&LightPos),
+                            LightObject->GetComponent<CComTransform>("Com_Transform")->GetState(STATE::LOOK),
+                            LightObject->GetComponent<CComTransform>("Com_Transform")->GetState(STATE::UP)));
+                }
+            }
+            std::string lightName = "Light" + std::to_string(i);
+            LIGHT_TYPE type = LightObject->Get_LightType();
             if (type == LIGHT_TYPE::DIRECTIONAL) lightName += " [Directional]";
             else if (type == LIGHT_TYPE::POINT)  lightName += " [Point]";
             else                                 lightName += " [Spot]";
@@ -57,6 +88,9 @@ VOID CLightManager::UpdateGUI() {
 
             if (isSelected)
                 ImGui::SetItemDefaultFocus();
+
+            i++;
+            iter++;
         }
         ImGui::EndListBox();
     }
@@ -77,10 +111,7 @@ VOID CLightManager::UpdateGUI() {
     float innerAttn = pSelectedLight->Get_LightInnerAttenuation();
     float outerAttn = pSelectedLight->Get_LightOuterAttenuation();
 
-    // --- GUI 컨트롤 배치 및 Setter로 값 반영 ---
-
-    // 라이트 타입 변경 (Combo)
-    const char* lightTypeNames[] = { "Directional", "Point", "Spot" }; // 실제 enum 순서에 맞게 배치하세요
+    const char* lightTypeNames[] = { "Directional", "Point", "Spot" };
     int currentTypeIdx = static_cast<int>(lightType);
     if (ImGui::Combo("Light Type", &currentTypeIdx, lightTypeNames, IM_ARRAYSIZE(lightTypeNames)))
     {
@@ -139,6 +170,7 @@ VOID CLightManager::UpdateGUI() {
 VOID CLightManager::Update(_float fTimeDelta){
     for (auto& LightHandle : m_LightHandleList) {
         auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
+        LightOBJ->Update(fTimeDelta);
         LightOBJ->LateUpdate(fTimeDelta);
     }
 }

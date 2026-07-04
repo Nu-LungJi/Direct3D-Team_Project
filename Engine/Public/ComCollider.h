@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Component.h"
-
+#include "Collider.h"
 NS_BEGIN(Engine)
-class CCollider;
 class ENGINE_DLL CComCollider : public CComponent
 {
 public:

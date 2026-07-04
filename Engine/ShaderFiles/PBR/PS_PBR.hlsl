@@ -293,10 +293,10 @@ PS_OUT PSMain(PS_IN IN)
     }
 
     // Enviroment Light Process
-    float3  Ambient  = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-    float   Occlusion = clamp(1.0f + dot(R, WorldNormal), 0.0f, 1.0f);
-    Ambient *= Occlusion * Occlusion;
-    LightAccumulation += Ambient;
+    //float3  Ambient  = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
+    //float   Occlusion = clamp(1.0f + dot(R, WorldNormal), 0.0f, 1.0f);
+    //Ambient *= Occlusion * Occlusion;
+    //LightAccumulation += Ambient;
     //LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
     
     OUT.Diffuse = float4(LightAccumulation, 1.f);

@@ -35,11 +35,11 @@ HRESULT CLevelLightMap::Initialize()
 			return E_FAIL;
 		}
 	}
-	//{
-	//	CLightObject::DESC LDesc{};
-	//	LDesc.sObjectTag = "LightObject";
-	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
-	//}
+	{
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject";
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
+	}
 	{
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
