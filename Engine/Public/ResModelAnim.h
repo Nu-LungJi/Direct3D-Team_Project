@@ -14,6 +14,7 @@ public:
 public:
 	typedef struct tagDesc {
 		CResModel* pModel;
+		std::string& path;
 	}DESC;
 private:
 	explicit CResModelAnim(const _string& sPath);
@@ -39,6 +40,8 @@ public:
 
 
 private:
+	std::string			m_AnimName;
+
 	/* 이 애니메이션의 총 길이. */
 	_float				m_fDuration = {};
 	_float				m_fTickPerSecond = {};

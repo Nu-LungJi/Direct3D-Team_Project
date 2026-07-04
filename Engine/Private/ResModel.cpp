@@ -108,7 +108,9 @@ HRESULT CResModel::Load(const std::any& arg)
 			}
 		};
 	
-
+		if (FAILED(Ready_Animation())) {
+			return E_FAIL;
+		}
 
 	}
 
@@ -206,23 +208,51 @@ HRESULT CResModel::Ready_Meshes(_char* ptr)
 
 HRESULT CResModel::Ready_Animation()
 {
-	//m_iNumAnimations = m_pAIScene->mNumAnimations;
 
-	//for (size_t i = 0; i < m_iNumAnimations; i++)
-	//{
-	//	auto pAnimation = CResTestModelAnim::Create();
-	//	if (nullptr == pAnimation)
-	//		return E_FAIL;
+	std::filesystem::path modelPath(m_sPath);
 
-	//	if (FAILED(pAnimation->Load(CResTestModelAnim::DESC{ .pAIAnimation = m_pAIScene->mAnimations[i] ,.pModel = this })))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//	m_Animations.push_back(pAnimation);
-	//}
+
+	std::filesystem::path folderPath = modelPath.parent_path();
+
+	for (const auto& entry : std::filesystem::directory_iterator(folderPath))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		const auto& path = entry.path();
+
+		std::string fileName = path.filename().string();
+
+		if (fileName.rfind("AN_", 0) != 0)
+			continue;
+
+		std::string animPath = path.string();
+
+		auto pAnimation = CResModelAnim::Create();
+		if (nullptr == pAnimation) {
+			return E_FAIL;
+		}
+				
+
+		if (FAILED(pAnimation->Load(CResModelAnim::DESC{.pModel = this, .path = animPath }))){
+				return E_FAIL;
+		}
+
+
+		m_Animations.push_back(pAnimation);
+	
+	}
+
+
+
+
+
+
 
 	return S_OK;
 }
+
+
 
 int32_t CResModel::Get_BoneIndex(const _char* pBoneName)
 {
@@ -257,23 +287,6 @@ const _float4x4* CResModel::Get_BoneMatrixPtr(const _char* pBoneName)
 		return nullptr;
 
 	return (*iter)->Get_CombinedTransformationMatrixPtr();
-}
-
-_bool  CResModel::Play_Animation(_float fTimeDelta)
-{
-	_bool           isFinished = { false };
-
-	/* 뼈들의 m_TransformationMatrix를 갱신해준다. */
-	isFinished = m_Animations[m_iCurrentAnimIndex]->Update_TransformationMatrices(fTimeDelta, m_Bones, m_isAnimLoop);
-
-	for (auto& pBone : m_Bones)
-	{
-		pBone->Update_CombinedTransformationMatrix(m_Bones, XMLoadFloat4x4(&m_PreTransformMatrix));
-	}
-
-	return isFinished;
-
-
 }
 
 SPtr<CResModel> CResModel::Create(const _string& sPath)

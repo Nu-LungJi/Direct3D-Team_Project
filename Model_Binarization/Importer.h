@@ -3,6 +3,7 @@
 #include "Bone.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "Animation.h"
 
 class CImporter
 {
@@ -27,13 +28,13 @@ public:
 	
 	HRESULT	ExportFBX(const std::string& outpath);
 	HRESULT ExportStatic(const std::string& outpath);
-
 	HRESULT ExportSkeletal(const std::string& outpath);
-
+	HRESULT ExportAnimation(const std::string& outpath);
 
 
 public:
 	HRESULT Ready_Bones(const aiNode* pAINode, int32_t iParentBoneIndex);
+
 
 	HRESULT Ready_Mesh(const aiScene* scene, bool _bHasBone);
 
@@ -46,8 +47,9 @@ public:
 	void	Load_Material(aiMaterial* material, uint32_t materialNum);
 
 	
-
-
+	HRESULT Ready_Animation(const aiScene* scene);
+	HRESULT Load_Animaion(uint32_t iAnimaionCount, const aiAnimation* pAIAnimation);
+	HRESULT Load_Channel(CHANNELDATA& ChannelData, const aiNodeAnim* pAIChannel);
 
 
 public:
@@ -61,10 +63,13 @@ public:
 	int32_t m_iBoneIndex{ -1 };
 	bool m_bHasAnimation = false;
 	bool m_bHasBone = false;
+	string			fileParentName; 
+
+
 	std::vector<std::shared_ptr<CBone>> Bones;
 	std::vector<std::shared_ptr<CMesh>> Meshes;
 	std::vector<std::shared_ptr<CMaterial>> Materials;
-	//std::vector<std::shared_ptr<CAnimation>> Animations;
+	std::vector<std::shared_ptr<CAnimation>> Animations;
 
 	std::vector<char> meshBuffer;
 	std::vector<char> materialBuffer;

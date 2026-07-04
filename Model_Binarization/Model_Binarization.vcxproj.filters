@@ -14,6 +14,9 @@
     <ClCompile Include="Mesh.cpp">
       <Filter>Mesh</Filter>
     </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>Animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Importer">
@@ -27,6 +30,9 @@
     </Filter>
     <Filter Include="Mesh">
       <UniqueIdentifier>{d4b5fb62-896d-4669-a593-c41e960a178d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Animation">
+      <UniqueIdentifier>{23359fd2-e4de-44eb-95f4-6f2de99ede0d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +48,9 @@
     </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>Animation</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

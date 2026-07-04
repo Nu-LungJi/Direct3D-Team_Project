@@ -27,32 +27,77 @@ HRESULT CResModelAnim::Load(const std::any& arg)
 		return S_OK;
 	}
 	m_eState = STATE::LOADING;
-	//auto& pAIAnimation = descArg->pAIAnimation;
-	//auto& pModel = descArg->pModel;
-	//{
-	//	m_fDuration = pAIAnimation->mDuration;
 
-	//	m_fTickPerSecond = pAIAnimation->mTicksPerSecond;
+	auto& pPath = descArg->path;
+	auto& pModel = descArg->pModel;
+	{
 
-	//	m_iNumChannels = pAIAnimation->mNumChannels;
-
-	//	m_CurrentKeyFrameIndices.resize(m_iNumChannels);
-
-	//	for (size_t i = 0; i < m_iNumChannels; i++)
-	//	{
-
-	//		auto    pChannel = CResTestModelChanel::Create();
-	//		if (nullptr == pChannel)
-	//			return E_FAIL;
-
-	//		if (FAILED(pChannel->Load(CResTestModelChanel::DESC{ .pAIChannel = pAIAnimation->mChannels[i], .pModel = pModel }))) {
-	//			return E_FAIL;
-	//		}
+		std::ifstream file(pPath, std::ios::binary | std::ios::ate);
 
 
-	//		m_Channels.push_back(pChannel);
-	//	}
-	//}
+		if (!file.is_open())
+		{
+			return E_FAIL;
+		}
+
+		file.seekg(0, std::ios::end);
+		size_t size = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		std::shared_ptr<char[]> buffer = std::make_shared<char[]>(size);
+		file.read(buffer.get(), size);
+
+		file.close();
+
+		char* ptr = buffer.get();
+
+		MODEL_FILE_HEADER* fh = (MODEL_FILE_HEADER*)ptr;
+		ptr += sizeof(MODEL_FILE_HEADER);
+
+		ChunkHeader* chAnim = (ChunkHeader*)ptr;
+		ptr += sizeof(ChunkHeader);
+
+
+		uint32_t m_iNumMeshes = fh->MeshCount;
+		uint32_t m_iAnimCnt = fh->AnimationCount;
+		uint32_t m_iNumMaterials = fh->MaterialCount;
+		uint32_t m_iNumBones = fh->BoneCount;
+
+		m_fDuration = *(_float*)ptr;
+		ptr += sizeof(_float);
+
+		m_fTickPerSecond = *(_float*)ptr;
+		ptr += sizeof(_float);
+
+		m_iNumChannels = *(uint32_t*)ptr;
+		ptr += sizeof(uint32_t);
+
+
+		m_CurrentKeyFrameIndices.resize(m_iNumChannels);
+
+		for (size_t i = 0; i < m_iNumChannels; i++)
+		{
+
+			uint32_t size = *(uint32_t*)ptr;
+			ptr += sizeof(uint32_t);
+		
+
+			auto    pChannel = CResModelChanel::Create();
+			if (nullptr == pChannel)
+				return E_FAIL;
+
+			if (FAILED(pChannel->Load(CResModelChanel::DESC{ .ptr = ptr,.pModel = pModel }))) {
+				return E_FAIL;
+			}
+
+
+			m_Channels.push_back(pChannel);
+
+			ptr += size;
+
+
+		}
+	}
 
 	m_eState = STATE::LOADED;
 	return S_OK;

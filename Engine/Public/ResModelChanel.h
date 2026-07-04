@@ -13,7 +13,7 @@ public:
 	DECLARE_DERIVED_TYPE(CResModelChanel, CResource)
 public:
 	typedef struct tagDesc {
-
+		_char* ptr;
 		CResModel* pModel;
 	}DESC;
 private:

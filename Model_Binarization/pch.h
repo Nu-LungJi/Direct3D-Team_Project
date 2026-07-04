@@ -21,6 +21,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 using namespace DirectX;
+using namespace std;
 
 enum MATERIALTYPE {
 	NONE = 0, DIFFUSE = 1, SPECULAR = 2, AMBIENT = 3, EMISSIVE = 4, HEIGHT = 5, NORMALS = 6, SHININESS = 7, OPACITY = 8, DISPLACEMENT = 9, LIGHTMAP = 10, REFLECTION = 11, BASE_COLOR = 12,
@@ -45,10 +46,10 @@ struct MODEL_FILE_HEADER
 	uint32_t MaterialCount;
 	uint32_t AnimationCount;
 	uint32_t BoneCount;
-
+};
+struct ANIMATION_FILE_HEADER {
 
 };
-
 
 
 
@@ -102,3 +103,23 @@ typedef struct tagVertexAnimMesh
 
 }VTXANIMMESH;
 
+typedef struct tagKeyFrame {
+	XMFLOAT3  vScale;
+	XMFLOAT4  vRotation;
+	XMFLOAT3  vTranslation;
+	float	  fTrackPosition;
+}KEYFRAME;
+
+typedef struct tagChannel {
+	int32_t BoneIndex;
+	uint32_t KeyFrameCount;
+	shared_ptr<vector<KEYFRAME>> KeyFrames;
+}CHANNELDATA;
+
+typedef struct tagAnimation {
+	string sAnimName;
+	float AnimationDuration;
+	float AnimtaionTickPerSecond;
+	uint32_t ChannelCount;
+	shared_ptr<vector<CHANNELDATA>> Channels;
+}ANIMATIONDATA;

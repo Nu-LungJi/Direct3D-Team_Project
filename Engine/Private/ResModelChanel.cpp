@@ -29,55 +29,51 @@ HRESULT CResModelChanel::Load(const std::any& arg)
         return S_OK;
     }
     m_eState = STATE::LOADING;
+    auto& pModel = descArg->pModel;
+    auto pPoint = descArg->ptr;
+    {
 
-    //auto& pModel = descArg->pModel;
-    //auto& pAIChannel = descArg->pAIChannel;
-    //{
-    //    m_iBoneIndex = pModel->Get_BoneIndex(pAIChannel->mNodeName.C_Str());
-    //    if (-1 == m_iBoneIndex)
-    //        return E_FAIL;
+        m_iBoneIndex = *(uint32_t*)pPoint;
+        pPoint += sizeof(uint32_t);
 
-    //    m_iNumKeyFrames = std::max(pAIChannel->mNumScalingKeys, pAIChannel->mNumRotationKeys);
-    //    m_iNumKeyFrames = std::max(m_iNumKeyFrames, pAIChannel->mNumPositionKeys);
 
-    //    _float3     vScale = {};
-    //    _float4     vRotation = {};
-    //    _float3     vTranslation = {};
+        if (-1 == m_iBoneIndex)
+            return E_FAIL;
 
-    //    for (size_t i = 0; i < m_iNumKeyFrames; i++)
-    //    {
-    //        KEYFRAME            KeyFrame = {};
+        m_iNumKeyFrames = *(uint32_t*)pPoint;
+        pPoint += sizeof(uint32_t);
 
-    //        if (i < pAIChannel->mNumScalingKeys)
-    //        {
-    //            memcpy(&vScale, &pAIChannel->mScalingKeys[i].mValue, sizeof vScale);
-    //            KeyFrame.fTrackPosition = pAIChannel->mScalingKeys[i].mTime;
-    //        }
 
-    //        if (i < pAIChannel->mNumRotationKeys)
-    //        {
-    //            // memcpy(&vRotation, &pAIChannel->mRotationKeys[i].mValue, sizeof vRotation);
-    //            vRotation.x = pAIChannel->mRotationKeys[i].mValue.x;
-    //            vRotation.y = pAIChannel->mRotationKeys[i].mValue.y;
-    //            vRotation.z = pAIChannel->mRotationKeys[i].mValue.z;
-    //            vRotation.w = pAIChannel->mRotationKeys[i].mValue.w;
-    //            KeyFrame.fTrackPosition = pAIChannel->mRotationKeys[i].mTime;
-    //        }
+        _float3     vScale = {};
+        _float4     vRotation = {};
+        _float3     vTranslation = {};
 
-    //        if (i < pAIChannel->mNumPositionKeys)
-    //        {
-    //            memcpy(&vTranslation, &pAIChannel->mPositionKeys[i].mValue, sizeof vTranslation);
-    //            KeyFrame.fTrackPosition = pAIChannel->mPositionKeys[i].mTime;
-    //        }
+        for (size_t i = 0; i < m_iNumKeyFrames; i++)
+        {
+            KEYFRAME            KeyFrame = {};
 
-    //        KeyFrame.vScale = vScale;
-    //        KeyFrame.vRotation = vRotation;
-    //        KeyFrame.vTranslation = vTranslation;
+            KeyFrame.vScale = *(XMFLOAT3*)pPoint;
+            pPoint += sizeof(XMFLOAT3);
 
-    //        m_KeyFrames.push_back(KeyFrame);
-    //    }
 
-    //}
+            KeyFrame.vRotation = *(XMFLOAT4*)pPoint;
+            pPoint += sizeof(XMFLOAT4);
+
+
+            KeyFrame.vTranslation = *(XMFLOAT3*)pPoint;
+            pPoint += sizeof(XMFLOAT3);
+
+
+            KeyFrame.fTrackPosition = *(_float*)pPoint;
+            pPoint += sizeof(_float);
+
+
+    
+
+            m_KeyFrames.push_back(KeyFrame);
+        }
+
+    }
 
     m_eState = STATE::LOADED;
     return S_OK;

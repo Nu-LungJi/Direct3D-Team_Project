@@ -44,10 +44,6 @@ public:
 
 
 
-	_bool Play_Animation(_float fTimeDelta);
-
-
-
 public:
 	std::vector<SPtr<CResModelMesh>>& GetMeshes() { return m_Meshes; }
 	std::vector<SPtr<CResModelMaterial>>& GetMaterials() { return m_Materials; }
