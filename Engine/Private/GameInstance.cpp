@@ -24,6 +24,8 @@
 #include "Light.h"
 #include "ComCollider.h"
 
+#include "ParticleManager.h"
+#include "Particle.h"
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -155,6 +157,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	//{
 	//	return E_FAIL;
 	//}
+	m_pParticleManager = CParticleManager::Create();
+	if (m_pParticleManager == nullptr)
+	{
+		return E_FAIL;
+	}
 
 	m_pFontManager = CFontManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pFontManager == nullptr)
@@ -194,7 +201,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pColliderManager->UpdateGUI();
 
-	//m_pParticleManager->UpdateGUI();
+	m_pParticleManager->UpdateGUI();
 
 	m_pLightManager->UpdateGUI();
 
@@ -258,6 +265,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	//m_pParticleManager->Update(fTimeDelta);
 	m_pAnimEdit_Manager->Update(fTimeDelta);
+	m_pParticleManager->Update(fTimeDelta);
 
 
 	{
@@ -279,6 +287,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
+	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	m_pGameObjectManager->Update(fTimeDelta);
+	m_pGameObjectManager->LateUpdate(fTimeDelta);
+	
+	m_pLevelManager->Update(fTimeDelta);
 
 	{
 		ZoneScopedN("LightManager_Update");
@@ -286,9 +299,10 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	}
 
 
-
+	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
+
 
 HRESULT CGameInstance::Draw()
 {
@@ -312,7 +326,7 @@ void CGameInstance::Release_Engine()
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
-	//m_pParticleManager.reset();
+	m_pParticleManager.reset();
 	m_pWorkerManager.reset();
 	m_pLightManager.reset();
 	m_pCameraManager.reset();
@@ -339,6 +353,24 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 	m_pRenderer->FrameEnd();
 	m_pColliderManager->FrameEnd();
 }
+
+
+#pragma region PARTICLE_MANAGER
+HRESULT CGameInstance::Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+	_bool bLoop, _float fSpawnInterval)
+{
+	return m_pParticleManager->Spawn(type, count, pSpawnData, bLoop, fSpawnInterval);
+}
+HRESULT CGameInstance::Add_Particle(UPtr<CParticle> particle)
+{
+	return m_pParticleManager->Add_Particle(std::move(particle));
+}
+HRESULT CGameInstance::SpawnRibbon(const _float4& start, const _float4& end)
+{
+	return m_pParticleManager->SpawnRibbon(start, end);
+}
+#pragma endregion
+
 
 void CGameInstance::MouseFix() const
 {
@@ -368,6 +400,22 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PARTICLE, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_PARTICLE) })))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_SPAWN_PARTICLE, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PARTICLE_SPAWN) })))
+		{
+			return E_FAIL;
+		}
+	}
+
+
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_UI) })))
@@ -434,7 +482,7 @@ HRESULT CGameInstance::InitializeResources()
 		{
 			return E_FAIL;
 		}
-
+	
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
 	//./ShaderFiles
@@ -473,13 +521,28 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Particle", "./ShaderFiles/Particle/Shader_Particle_Compute.hlsl"))
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_UpdateParticle", "./ShaderFiles/Particle/Shader_Particle_Compute.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_SpawnParticle", "./ShaderFiles/Particle/Shader_Particle_Spawn_Compute.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_InitParticle", "./ShaderFiles/Particle/Shader_CS_Init.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
 
 
 
@@ -576,6 +639,21 @@ HRESULT CGameInstance::InitializeResources()
 		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
 		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		res->Load(blendDesc);
+	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
 		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 		res->Load(blendDesc);
@@ -688,6 +766,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
+
 
 	if (AddPrototype("CAMERAS", "Prototype_GameObject_FlyCamera", CFlyCamera::Create()))
 	{

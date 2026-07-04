@@ -131,7 +131,21 @@ namespace Engine
 		}
 
 	}GUINODE_LINK;
+	typedef struct tagParticleSpawnData
+	{
+		_float3 position;
+		_float3 velocity;
+		_float  life;
+		_float  size;
+		_float4 color;
+	}PARTICLE_SPAWN_DATA;
 
+	typedef struct tagParticleEmitRequest
+	{
+		uint32_t count;
+		_bool    bLoop;
+		_float   fSpawnInterval;
+	} PARTICLE_EMIT_REQUEST;
 	typedef struct tagimguiCurrentNode
 	{
 		GUINODE* pCurrentNode{ nullptr };
@@ -141,5 +155,10 @@ namespace Engine
 
 		NODETYPE eType = NODETYPE::END;
 	}GUICURRENT_NODE;
+	typedef struct tagBeamVertex
+	{
+		_float3 vPosition;
+		_float2 vUV;
+	}BEAM_VERTEX;
 
 }

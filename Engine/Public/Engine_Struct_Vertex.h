@@ -42,13 +42,15 @@ namespace Engine
 
 	typedef struct tagParticle {
 		_float3 position;
+		_float  pad1;
 		_float3 velocity;
 		_float life;
 		_float maxLife;
-		_float4 color;
 		_float size;
-		_bool alive;
-		_bool loop;
+		uint32_t alive;
+		uint32_t loop;
+		_float4 color;
+		uint32_t texIndex;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{

@@ -236,6 +236,7 @@ call CopyClient.bat</Command>
   <ItemGroup>
     <ClInclude Include="..\Public\AnimEdit_Manager.h" />
     <ClInclude Include="..\Public\BaseApp.h" />
+    <ClInclude Include="..\public\Beam_CPU.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\Public\ComAnimMontage.h" />
@@ -286,7 +287,10 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\LightManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
+    <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\ParticleManager.h" />
+    <ClInclude Include="..\public\Particle_CPU.h" />
+    <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\Public\Prototype.h" />
     <ClInclude Include="..\Public\PrototypeManager.h" />
     <ClInclude Include="..\Public\Renderer.h" />
@@ -453,6 +457,7 @@ call CopyClient.bat</Command>
     </ClCompile>
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp" />
     <ClCompile Include="..\Private\BaseApp.cpp" />
+    <ClCompile Include="..\private\Beam_CPU.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\Private\ComAnimMontage.cpp" />
@@ -488,7 +493,10 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\LightManager.cpp" />
     <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp" />
+    <ClCompile Include="..\Private\Particle.cpp" />
     <ClCompile Include="..\private\ParticleManager.cpp" />
+    <ClCompile Include="..\private\Particle_CPU.cpp" />
+    <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />
     <ClCompile Include="..\Private\Renderer.cpp" />
@@ -578,6 +586,22 @@ call CopyClient.bat</Command>
       </AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_FixArgs.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Compute.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Spawn_Compute.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

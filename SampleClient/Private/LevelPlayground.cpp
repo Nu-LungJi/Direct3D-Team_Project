@@ -39,7 +39,6 @@ HRESULT CLevelPlayground::Initialize()
 	}
 
 	{
-		//제거함 일단 오류나서
 		if(false)
 		{
 			CTestModel::DESC Desc{};
@@ -54,17 +53,7 @@ HRESULT CLevelPlayground::Initialize()
 
 	}
 
-	// Particle //문제있는 코드. 접근금지
-	if(false){
-		CParticle::GAMEOBJECT_DESC Desc{};
-		Desc.sObjectTag = "Particle";
 
-		if (auto particle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle",
-			"01_Particle", &Desc))
-		{
-			int x = 0;
-		}
-	}
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
