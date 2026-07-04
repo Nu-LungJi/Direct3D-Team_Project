@@ -67,22 +67,6 @@ EVALUATE CBTSecqunce::Evaluate()
 	return e;
 }
 
-
-//HRESULT CBTSecqunce::Add_ActioNode(UPtr<CBTRoot> pActionNode)
-//{
-//    _string tagName = pActionNode->Get_NodeInfo().NodeName;
-//    if (Find_Node(tagName) == -1)
-//        return E_FAIL;
-//
-//    int32_t iIndex = m_Actions.size();
-//
-//    m_Actions.push_back(std::move(pActionNode));
-//
-//    m_NodeHandles[tagName] = iIndex;
-//
-//    return S_OK;
-//}
-
 UPtr<CBTSecqunce> CBTSecqunce::Create(void* pArg)
 {
     auto pInstance =ToUPtr(new CBTSecqunce());

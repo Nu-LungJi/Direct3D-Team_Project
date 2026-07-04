@@ -124,7 +124,7 @@ namespace Engine
 		tagimguinode() = default;
 		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, const _float2& pos, float value, const _float4& color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
 		_float2 GetStartSlotPos() const  { return _float2(vPos.x + vSize.x, vPos.y + vSize.y);}
-		_float2 GetEndSlotPos(int slot_no  ,int32_t iMaxCnt) const { return  _float2(vPos.x, vPos.y + vSize.y * ((float)slot_no + 1) / ((float)iMaxCnt + 1)); }
+		_float2 GetEndSlotPos(int slot_no  ,int32_t iMaxCnt) const { return  _float2(vPos.x, vPos.y + vSize.y * ((float)slot_no + 1) / ((float)iMaxCnt )); }
 		DEST_NODE Get_DestInfo() {
 			DEST_NODE Dst{};
 			Dst.DestName = Name;
@@ -137,7 +137,7 @@ namespace Engine
 	typedef struct tagimguinodelink
 	{//이거다 이거
 		int32_t					iStartIdx{ -1 };
-		DEST_NODE				SlotStart{};
+		DEST_NODE				ParentNode;
 		std::vector<DEST_NODE>  SlotEnd{};
 		
 		tagimguinodelink() = default;

@@ -57,40 +57,6 @@ HRESULT CBTSelector::Late_Update(_float fTimeDelta)
     return S_OK;
 }
 
-//HRESULT		CBTSelector::Add_Secqunce(const _string& strSequenceName)
-//{
-//    if (Find_Node(strSequenceName) == -1)
-//        return E_FAIL;
-//
-//    return E_FAIL;
-//}
-//
-//HRESULT CBTSelector::Add_ActionNode(int32_t iSequenceIndex, UPtr<CBTRoot> pActionNode)
-//{
-//    auto pSequence = Cast<CBTSecqunce>(m_Actions[iSequenceIndex].get());
-//    
-//    pSequence->Add_ActioNode(move(pActionNode));
-//    
-//    return S_OK;
-//}
-//
-//HRESULT CBTSelector::Add_Selector(const _string& strSelectoreName)
-//{
-//
-//    CBTRoot::BTROOT_DESC Desc;
-//
-//    Desc.m_GuiNode.Name = strSelectoreName;
-//    auto pSelector = CBTSelector::Create(&Desc);
-//
-//    if (nullptr == pSelector) return E_FAIL;
-//
-//    m_Actions.push_back(std::move(pSelector));
-//
-//    int32_t iIndex = m_Actions.size();
-//    m_NodeHandles[strSelectoreName] = iIndex;
-//    return S_OK;
-//}
-
 EVALUATE CBTSelector::Evaluate()
 {
 	return EVALUATE();

@@ -54,7 +54,6 @@ private:
 	std::vector<UPtr<class CBTRoot>>					m_BTNodesTmp;
 
 
-	class CBTRoot*										m_pParentTmp{ nullptr };
 	class CComBeHavior*									m_pBeHavior{ nullptr };
 	ImDrawList*											m_pDrawList{ nullptr };
 	GUICURRENT_NODE										m_CurrentNode;

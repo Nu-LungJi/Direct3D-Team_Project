@@ -26,8 +26,6 @@ public:
 	virtual EVALUATE	Evaluate()override;
 
 public:
-	//HRESULT		Add_ActioNode(UPtr<CBTRoot> pActionNode);
-public:
 	static  UPtr<CBTSecqunce> Create(void* pArg);
 
 };

@@ -32,13 +32,9 @@ public:
 	
 public:
 	HRESULT		Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
-	int32_t		Find_Node(const _string& strNodeName);
-	CBTRoot*	Find_AllNodePtr(const _string& strNodeName);
-	CBTRoot*	Find_Src(int32_t iIndex) { if(iIndex >= m_Actions.size()) return nullptr;  return m_Actions[iIndex].get(); }
 protected:
 	NODE_VALUE				m_NodeValue{};
 
 	std::vector<UPtr<CBTRoot>>			  m_Actions;
-	std::map<_string, int32_t>			  m_NodeHandles;
 };
 NS_END
