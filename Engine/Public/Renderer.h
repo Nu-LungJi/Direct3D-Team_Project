@@ -47,18 +47,15 @@ private:
 	std::array<std::vector<IRenderable*>, ETOUI(RENDERGROUP::END)> m_RenderObject{};
 
 private:
-	SPtr<CResDynamicTexture2D> m_pOffScreenTex2D{}; // combined
-	SPtr<CResVertexShader> m_pOffScreenVertexShader{};
-	SPtr<CResPixelShader> m_pOffScreenPixelShader{};
-
-
-	SPtr<CResDynamicTexture2D> m_pResDynTexTargetDiffuse{};
-	SPtr<CResDynamicTexture2D> m_pResDynTexTargetNormal{};
-
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetDiffuse{};		// Diffuse
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetNormal{};			// Normal
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
+	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
+	
 	//SPtr<CResDynamicTexture2D> m_pResDynTex
 
-	SPtr<CResDynamicTexture2D> m_pFilteredTex2D{}; // PostProcess
-
+	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
+	SPtr<CResPixelShader>		m_pOffScreenPixelShader{};
 
 private:
 	SPtr<CResDynamicTexture2D> m_pShadowTex2D{};
@@ -84,8 +81,6 @@ private:
 
 	SPtr<CResPixelShader>	m_pPostProcessPS{};
 
-private:
-
 private:	// PostProcess Variable
 	_float m_pDistortionIntensity	{ 0.f };
 	_float m_pChromaticIntensity	{ 0.f };
@@ -98,7 +93,26 @@ private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
 
 private:
-	HRESULT DrawFullscreen();
+	HRESULT Render_ShadowMap(RENDER_CTX& ctx);
+	HRESULT	Render_DiffuseNormal(RENDER_CTX& ctx);
+	HRESULT Render_OffScreen(RENDER_CTX& ctx);
+
+	HRESULT Render_FullScreen();
+
+#ifdef _DEBUG
+	HRESULT Initialize_Debugging();
+	HRESULT	Render_Debugging(const RENDER_CTX& ctx);
+
+private:
+	XMFLOAT4X4					m_fDebugWorldMatrix[8];
+	SPtr<CResVertexShader>		m_pDebugVertexShader = { nullptr };
+	SPtr<CResPixelShader>		m_pDebugPixelShader  = { nullptr };
+	SPtr<CResQuadTexBuffer>		m_pDebugBuffer		 = { nullptr };
+	
+	std::vector<SPtr<CResDynamicTexture2D>>	m_pResDynTexTargetList;
+
+	_bool						m_bRenderable = { false };
+#endif
 
 private:
 	HRESULT RenderPriority(const RENDER_CTX& ctx);
@@ -110,6 +124,9 @@ private:
 	HRESULT RenderPostProcess(const RENDER_CTX& ctx);
 	HRESULT RenderUI(const RENDER_CTX& ctx);
 
+	
+	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam, CCameraObject* _ShadowCam);
+	
 private:
 	_bool	ApplyFilter = { false };		// 필터 적용 ON-OFF
 

@@ -1,7 +1,7 @@
+#include "../ShaderHeader/SH_SamplerState.hlsli"
 #include "../ShaderDefines.hlsl"
 
 Texture2D tex : register(t0);
-SamplerState samp : register(s0);
 
 struct VS_IN
 {
@@ -27,7 +27,11 @@ PS_IN VSMain(VS_IN vin)
 // Pixel Shader
 float4 PSMain(PS_IN input) : SV_Target
 {
-    float4 texColor = tex.Sample(samp, input.uv);
+    float4 texColor = tex.Sample(SamplerWrap, input.uv);
     if (texColor.a == 0.0f) discard;
     return texColor;
+}
+float4 PSMain_NonAlpha(PS_IN input) : SV_Target
+{
+    return tex.Sample(SamplerWrap, input.uv);
 }

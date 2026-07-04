@@ -33,6 +33,7 @@ HRESULT CRenderer::Initialize()
     {
         return E_FAIL;
     }
+
     if (FAILED(InitializeShadow()))
     {
         return E_FAIL;
@@ -57,7 +58,30 @@ HRESULT CRenderer::Initialize()
     {
         return E_FAIL;
     }
-    
+
+#ifdef _DEBUG
+    m_pDebugBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
+    if (!m_pDebugBuffer)
+    {
+        return E_FAIL;
+    }
+    m_pDebugVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
+    if (FAILED(m_pDebugVertexShader->Load()))
+    {
+        return E_FAIL;
+    }
+    m_pDebugPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex");
+    if (FAILED(m_pDebugPixelShader->Load(CResShader::DESC{.sEntryPoint = "PSMain_NonAlpha", .sTarget = "ps_5_0"})))
+    {
+        return E_FAIL;
+    }
+
+    if (FAILED(Initialize_Debugging()))
+    {
+        return E_FAIL;
+    }
+#endif
+
     return S_OK;
 }
 
@@ -321,7 +345,7 @@ HRESULT CRenderer::InitilizePostProcess(){
             {
                 return E_FAIL;
             }
-            m_pFilteredTex2D = res;
+            m_pResDynTexTargetPostProcess = res;
         }
     }
 
@@ -368,75 +392,102 @@ HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRende
     return S_OK;
 }
 
-HRESULT CRenderer::Draw()
-{
+HRESULT CRenderer::Draw() {
     ZoneScopedN("Draw");
 
     RENDER_CTX ctx{};
 
-    CCameraObject* pShadowCamera{};
     _bool bApplyShadow = false;
-
     if (bApplyShadow)
-    {
-        //draw shadow texture
-        {
-            // UnBind Shadow Map
-            {
-                ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
-                m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
-            }
-
-            // RenderTarget/DepthStencil Setting + ViewPort Setting
-            {
-                ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-                m_pContext->OMSetRenderTargets(1, pRTVs, m_pShadowTex2D->GetDSV().Get());
-                m_pContext->ClearDepthStencilView(m_pShadowTex2D->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-                m_pContext->RSSetViewports(1, &m_pShadowVP->GetViewPort());
-            }
-
-            ctx.pass = RENDERPASS::SHADOW;
-
-            {
-                pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
-                if (pShadowCamera)
-                {
-                    ctx.matProj = pShadowCamera->GetProj();
-                    ctx.matView = pShadowCamera->GetView();
-                    ctx.matViewProj = ctx.matView * ctx.matProj;
-                    ctx.eye = pShadowCamera->GetTransform().GetLoadedPostion();
-
-                    auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
-                    D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-                    if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-                    {
-                        CB_PER_PASS cbPerPass{};
-                        XMStoreFloat4x4(&cbPerPass.matProj, pShadowCamera->GetProj());
-                        XMStoreFloat4x4(&cbPerPass.matView, pShadowCamera->GetView());
-                        XMStoreFloat4x4(&cbPerPass.matViewProj, pShadowCamera->GetView() * pShadowCamera->GetProj());
-                        XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, pShadowCamera->GetView()));
-                        XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
-                        cbPerPass.vCamPos = pShadowCamera->GetTransform().GetPosition();
-
-                        memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
-                        m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-                    }
-                    m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-                    m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-                    m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-
-                    if (FAILED(RenderNonBlend(ctx)))
-                    {
-                        return E_FAIL;
-                    }
-                }
-            }
-        }
-    } // bApplyShadow
+        if (FAILED(Render_ShadowMap(ctx)))  return E_FAIL;
 
     // MRT Draw
+    
+    // Diffuse + Normal
+    if (FAILED(Render_DiffuseNormal(ctx)))  return E_FAIL;
+    
+    // Combined
+    if (FAILED(Render_OffScreen(ctx)))      return E_FAIL;
+
+    // PostProcess
+    if (FAILED(RenderPostProcess(ctx)))     return E_FAIL;
+
     {
-        // Diffuse + Normal + TODO
+        m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
+    }
+
+    // FullScreen : Final
+    if (FAILED(Render_FullScreen()))           return E_FAIL;
+
+#ifdef _DEBUG
+    if (FAILED(Render_Debugging(ctx)))     return E_FAIL;
+#endif
+
+    return S_OK;
+}
+
+void CRenderer::FrameEnd()
+{
+    for (auto& vecRenderables : m_RenderObject)
+    {
+        vecRenderables.clear();
+    }
+}
+
+HRESULT CRenderer::Render_ShadowMap(RENDER_CTX& ctx){
+    // UnBind Shadow Map
+    {
+        ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
+        m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
+    }
+
+    // RenderTarget/DepthStencil Setting + ViewPort Setting
+    {
+        ID3D11RenderTargetView* pRTVs[1] = { nullptr };
+        m_pContext->OMSetRenderTargets(1, pRTVs, m_pShadowTex2D->GetDSV().Get());
+        m_pContext->ClearDepthStencilView(m_pShadowTex2D->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
+        m_pContext->RSSetViewports(1, &m_pShadowVP->GetViewPort());
+    }
+
+    ctx.pass = RENDERPASS::SHADOW;
+
+    {
+        auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
+        if (nullptr != pShadowCamera)
+        {
+            ctx.matProj = pShadowCamera->GetProj();
+            ctx.matView = pShadowCamera->GetView();
+            ctx.matViewProj = ctx.matView * ctx.matProj;
+            ctx.eye = pShadowCamera->GetTransform().GetLoadedPostion();
+
+            auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
+            D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+            if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+            {
+                CB_PER_PASS cbPerPass{};
+                XMStoreFloat4x4(&cbPerPass.matProj, pShadowCamera->GetProj());
+                XMStoreFloat4x4(&cbPerPass.matView, pShadowCamera->GetView());
+                XMStoreFloat4x4(&cbPerPass.matViewProj, pShadowCamera->GetView() * pShadowCamera->GetProj());
+                XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, pShadowCamera->GetView()));
+                XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
+                cbPerPass.vCamPos = pShadowCamera->GetTransform().GetPosition();
+
+                memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
+                m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+            }
+            m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+            m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+            m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+
+            if (FAILED(RenderNonBlend(ctx)))    return E_FAIL;
+        }
+    }
+    
+    return S_OK;
+}
+HRESULT CRenderer::Render_DiffuseNormal(RENDER_CTX& ctx) {
+    ZoneScopedN("Render_DiffuseNormal");
+    {
         ID3D11RenderTargetView* pRTVs[2] = { m_pResDynTexTargetDiffuse->GetRTV().Get(), m_pResDynTexTargetNormal->GetRTV().Get() };
         m_pContext->OMSetRenderTargets(2, pRTVs, m_pBackBufferDSV.Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferVP->GetViewPort());
@@ -447,117 +498,81 @@ HRESULT CRenderer::Draw()
         m_pContext->ClearRenderTargetView(pRTVs[1], reinterpret_cast<const float*>(&clearColor));
         m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-        {
-            auto pGameCam = CGameInstance::Get().GetActiveCamera();
-            if (!pGameCam)
-            {
-                //MSG_BOX("Renderer Draw(), Activated Camera is Null");
-                return S_OK;
-            }
-            ctx.matProj = pGameCam->GetProj();
-            ctx.matView = pGameCam->GetView();
-            ctx.matViewProj = ctx.matView * ctx.matProj;
-            ctx.eye = pGameCam->GetTransform().GetLoadedPostion();
+        auto pGameCam = CGameInstance::Get().GetActiveCamera();
+        if (nullptr == pGameCam)    return S_OK;
 
-            auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
-            D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-            if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-            {
-                CB_PER_PASS cbPerPass{};
-                XMStoreFloat4x4(&cbPerPass.matProj, pGameCam->GetProj());
-                XMStoreFloat4x4(&cbPerPass.matView, pGameCam->GetView());
-                XMStoreFloat4x4(&cbPerPass.matViewProj, pGameCam->GetView() * pGameCam->GetProj());
-                XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, pGameCam->GetView()));
-                XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
-                cbPerPass.vCamPos = pGameCam->GetTransform().GetPosition();
+        ctx.matProj = pGameCam->GetProj();
+        ctx.matView = pGameCam->GetView();
+        ctx.matViewProj = ctx.matView * ctx.matProj;
+        ctx.eye = pGameCam->GetTransform().GetLoadedPostion();
 
-                if (pShadowCamera)
-                {
-                    XMStoreFloat4x4(&cbPerPass.matShadowLightViewProj, pShadowCamera->GetView() * pShadowCamera->GetProj());
-                }
+        auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
 
-
-                memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
-                m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-            }
-            m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-            m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-            m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-
-        }
-
-        if (FAILED(RenderPriority(ctx)))
+        if (FAILED(Bind_CameraAttribute(pGameCam, pShadowCamera)))
         {
             return E_FAIL;
-        }
-
-        if (FAILED(RenderNonBlend(ctx)))
-        {
-            return E_FAIL;
-        }
-
-        if (FAILED(RenderBlend(ctx)))
-        {
-            return E_FAIL;
-        }
-
-        if (FAILED(RenderSkybox(ctx)))
-        {
-            return E_FAIL;
-        }
-
-        if (FAILED(RenderCollider(ctx)))
-        {
-            return E_FAIL;
-        }
-        if (FAILED(RenderParticle(ctx)))
-        {
-            return E_FAIL;
-        }
-
-        //UI
-        {
-            if (auto pUICame = CGameInstance::Get().GetCamera("UI"))
-            {
-                {
-                    ctx.matProj = pUICame->GetProj();
-                    ctx.matView = pUICame->GetView();
-                    ctx.matViewProj = ctx.matView * ctx.matProj;
-                    ctx.eye = pUICame->GetTransform().GetLoadedPostion();
-
-                    auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
-                    D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-                    if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-                    {
-                        CB_PER_PASS cbPerPass{};
-                        XMStoreFloat4x4(&cbPerPass.matProj, pUICame->GetProj());
-                        XMStoreFloat4x4(&cbPerPass.matView, pUICame->GetView());
-                        XMStoreFloat4x4(&cbPerPass.matViewProj, pUICame->GetView() * pUICame->GetProj());
-                        XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, pUICame->GetView()));
-                        //XMStoreFloat4x4(&cbPerFrame.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerFrame.matViewProj)));
-                        cbPerPass.vCamPos = pUICame->GetTransform().GetPosition();
-                        memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
-                        m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-                    }
-                    m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-                    m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-                    m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-                }
-                if (FAILED(RenderUI(ctx)))
-                {
-                    return E_FAIL;
-                }
-            }
-        }
-
-        // unbind rt
-        {
-            ID3D11RenderTargetView* pRTVs[2] = { nullptr, nullptr };
-            m_pContext->OMSetRenderTargets(2, pRTVs, nullptr);
         }
     }
-    
-    // offscreen combined 
+
+    if (FAILED(RenderPriority(ctx)))
+    {
+        return E_FAIL;
+    }
+
+    if (FAILED(RenderNonBlend(ctx)))
+    {
+        return E_FAIL;
+    }
+
+    if (FAILED(RenderBlend(ctx)))
+    {
+        return E_FAIL;
+    }
+
+    if (FAILED(RenderSkybox(ctx)))
+    {
+        return E_FAIL;
+    }
+
+    if (FAILED(RenderCollider(ctx)))
+    {
+        return E_FAIL;
+    }
+    if (FAILED(RenderParticle(ctx)))
+    {
+        return E_FAIL;
+    }
+
+    //UI
+    {
+        auto pUICame = CGameInstance::Get().GetCamera("UI");
+        if (nullptr == pUICame) return S_OK;
+
+        ctx.matProj = pUICame->GetProj();
+        ctx.matView = pUICame->GetView();
+        ctx.matViewProj = ctx.matView * ctx.matProj;
+        ctx.eye = pUICame->GetTransform().GetLoadedPostion();
+
+        if (FAILED(Bind_CameraAttribute(pUICame, nullptr)))
+        {
+            return E_FAIL;
+        }
+        if (FAILED(RenderUI(ctx)))
+        {
+            return E_FAIL;
+        }
+    }
+
+    // UnBind RenderTargets
+    {
+        ID3D11RenderTargetView* pRTVs[2] = { nullptr, nullptr };
+        m_pContext->OMSetRenderTargets(2, pRTVs, nullptr);
+    }
+
+    return S_OK;
+}
+HRESULT CRenderer::Render_OffScreen(RENDER_CTX& ctx) {
+    ZoneScopedN("Render_OffScreen");
     {
         ID3D11RenderTargetView* pRTVs[1] = { m_pOffScreenTex2D->GetRTV().Get() };
         m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
@@ -590,6 +605,7 @@ HRESULT CRenderer::Draw()
         m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
         m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
+        // Bind Shader Resource
         {
             ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDiffuse->GetSRV().Get() };
             m_pContext->PSSetShaderResources(0, 1, pSRVs);
@@ -598,12 +614,12 @@ HRESULT CRenderer::Draw()
             ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetNormal->GetSRV().Get() };
             m_pContext->PSSetShaderResources(1, 1, pSRVs);
         }
-        // binding shadow map
         {
             ID3D11ShaderResourceView* pShadowSRVs[1] = { m_pShadowTex2D->GetSRV().Get() };
             m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
         }
 
+        // Bind PixelShader Sampler
         {
             const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
             m_pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
@@ -627,43 +643,16 @@ HRESULT CRenderer::Draw()
             ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
             m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
         }
-    }
-    
-    {
-        ID3D11RenderTargetView* pRTVs[3] = { nullptr,nullptr,nullptr };
-        m_pContext->OMSetRenderTargets(3, pRTVs, nullptr);
-    }
-
-    // PostProcess
-    if (FAILED(RenderPostProcess(ctx)))
-    {
-        return E_FAIL;
-    }
-
-    {
-        m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pFilteredTex2D : m_pOffScreenTex2D;
-    }
-
-    // draw fullscreen
-    {
-        if (FAILED(DrawFullscreen()))
+        // UnBind RenderTargets
         {
-            return E_FAIL;
+            ID3D11RenderTargetView* pRTVs[3] = { nullptr, nullptr, nullptr };
+            m_pContext->OMSetRenderTargets(3, pRTVs, nullptr);
         }
     }
-
+    
     return S_OK;
 }
-
-void CRenderer::FrameEnd()
-{
-    for (auto& vecRenderables : m_RenderObject)
-    {
-        vecRenderables.clear();
-    }
-}
-
-HRESULT CRenderer::DrawFullscreen()
+HRESULT CRenderer::Render_FullScreen()
 {
     ZoneScopedN("DrawFullscreen");
     ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pBackBufferRTV.Get() };
@@ -813,7 +802,7 @@ HRESULT CRenderer::RenderParticle(const RENDER_CTX& ctx)
 }
 
 HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
-    ID3D11RenderTargetView* pRTVs[1] = { m_pFilteredTex2D->GetRTV().Get() };
+    ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPostProcess->GetRTV().Get() };
     m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
     m_pContext->RSSetViewports(1, &m_pBackBufferVP->GetViewPort());
 
@@ -849,7 +838,6 @@ HRESULT CRenderer::RenderPostProcess(const RENDER_CTX& ctx){
 
 HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
 {
-
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI)])
     {
         if (pRenderObject->HasRenderPass(ctx.pass))
@@ -865,6 +853,32 @@ HRESULT CRenderer::RenderUI(const RENDER_CTX& ctx)
     return S_OK;
 }
 
+HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam, CCameraObject* _ShadowCam) {
+    auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
+    D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+    if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+    {
+        CB_PER_PASS cbPerPass{};
+        XMStoreFloat4x4(&cbPerPass.matProj, _ActiveCam->GetProj());
+        XMStoreFloat4x4(&cbPerPass.matView, _ActiveCam->GetView());
+        XMStoreFloat4x4(&cbPerPass.matViewProj, _ActiveCam->GetView() * _ActiveCam->GetProj());
+        XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, _ActiveCam->GetView()));
+        XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
+        cbPerPass.vCamPos = _ActiveCam->GetTransform().GetPosition();
+
+        if (nullptr != _ShadowCam) {
+            XMStoreFloat4x4(&cbPerPass.matShadowLightViewProj, _ShadowCam->GetView() * _ShadowCam->GetProj());
+        }
+
+        memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
+        m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+    }
+    m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+    m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+    m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+
+    return S_OK;
+}
 
 VOID CRenderer::PostProcessGUI() {
 #ifdef _DEBUG
@@ -882,6 +896,112 @@ VOID CRenderer::PostProcessGUI() {
     ImGui::End();
 #endif // _DEBUG
 }
+
+#ifdef _DEBUG
+HRESULT CRenderer::Initialize_Debugging()
+{
+    uint32_t    iNumView = 4;
+
+    XMFLOAT2	vViewportSize   = { m_pBackBufferVP->GetViewPort().Width , m_pBackBufferVP->GetViewPort().Height };
+    XMFLOAT2    vDebugViewSize  = { vViewportSize.x / 4.f, vViewportSize.y / 4.f };
+    XMMATRIX    mDebugViewScaleMatrix   = XMMatrixScaling(vDebugViewSize.x, vDebugViewSize.y, 1.f);
+
+    XMFLOAT2    vDebugViewStartPoint    = { vDebugViewSize.x * 0.5f - vViewportSize.x * 0.5f, -vDebugViewSize.y * 0.5f + vViewportSize.y * 0.5f };
+
+    for (uint32_t i = 0; i < iNumView; i++)
+    {
+        _float fScreenPosX = vDebugViewStartPoint.x + (static_cast<_float>(i % 2) * vDebugViewSize.x);
+        _float fScreenPosY = vDebugViewStartPoint.y - (static_cast<_float>(i / 2) * vDebugViewSize.y);
+
+        XMStoreFloat4x4(&m_fDebugWorldMatrix[i], mDebugViewScaleMatrix * XMMatrixTranslation(fScreenPosX, fScreenPosY, 0.f));
+    }
+
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetDiffuse);
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetNormal);
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess);
+    m_pResDynTexTargetList.push_back(m_pOffScreenTex2D);
+
+    return S_OK;
+}
+
+HRESULT CRenderer::Render_Debugging(const RENDER_CTX& ctx) {
+    if (CGameInstance::Get().KeyDown(DIK_F3))
+        m_bRenderable = !m_bRenderable;
+
+    if (!m_bRenderable) return S_OK;
+
+    XMFLOAT2	vViewportSize = { m_pBackBufferVP->GetViewPort().Width, m_pBackBufferVP->GetViewPort().Height };
+
+    XMMATRIX    m_WorldMatrix, m_ViewMatrix, m_ProjMatrix;
+    m_ViewMatrix = XMMatrixIdentity();
+    m_ProjMatrix = XMMatrixOrthographicLH(vViewportSize.x, vViewportSize.y, 0.f, 1.f);
+
+    auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
+    D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+    if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+    {
+        CB_PER_PASS cbPerPass{};
+
+        XMStoreFloat4x4(&cbPerPass.matProj, m_ProjMatrix);
+        XMStoreFloat4x4(&cbPerPass.matView, m_ViewMatrix);
+        XMStoreFloat4x4(&cbPerPass.matViewProj, m_ViewMatrix * m_ProjMatrix);
+        XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, m_ViewMatrix));
+        XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
+        cbPerPass.vCamPos = XMFLOAT3(0.f, 0.f, -1.f);
+
+        memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
+        m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+    }
+    auto pPBufferPtr = pCbPerPass->GetCBuffer().GetAddressOf();
+    m_pContext->VSSetConstantBuffers(1, 1, pPBufferPtr);
+    m_pContext->PSSetConstantBuffers(1, 1, pPBufferPtr);
+    m_pContext->GSSetConstantBuffers(1, 1, pPBufferPtr);
+
+    m_pContext->IASetInputLayout(m_pDebugVertexShader->GetInputLayout().Get());
+    m_pContext->VSSetShader(m_pDebugVertexShader->GetVertexShader().Get(), nullptr, 0);
+    m_pContext->PSSetShader(m_pDebugPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+    ID3D11Buffer* vertexBuffers[] = { m_pDebugBuffer->GetVertexBuffer().Get() };
+    uint32_t strides[] = { m_pDebugBuffer->GetVertexStride() };
+    uint32_t offsets[] = { 0 };
+
+    m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+    m_pContext->IASetIndexBuffer(m_pDebugBuffer->GetIndexBuffer().Get(), m_pDebugBuffer->GetIndexFormat(), 0);
+    m_pContext->IASetPrimitiveTopology(m_pDebugBuffer->GetPrimitiveType());
+
+    auto pCbPerObject = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT);
+    D3D11_MAPPED_SUBRESOURCE MRES;
+
+    for (uint32_t IDX = 0; IDX < 8; ++IDX) {
+
+        if (IDX >= m_pResDynTexTargetList.size() || !m_pResDynTexTargetList[IDX])
+            continue;
+
+        m_WorldMatrix = XMLoadFloat4x4(&m_fDebugWorldMatrix[IDX]);
+
+        if (SUCCEEDED(m_pContext->Map(pCbPerObject->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+        {
+            CB_PER_OBJECT cbPerPass{};
+
+            XMStoreFloat4x4(&cbPerPass.matWorld, m_WorldMatrix);
+            XMStoreFloat4x4(&cbPerPass.matWVP, m_WorldMatrix * m_ViewMatrix * m_ProjMatrix);
+
+            memcpy(MRES.pData, &cbPerPass, sizeof(cbPerPass));
+            m_pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
+        }
+        auto pCBufferPtr = pCbPerObject->GetCBuffer().GetAddressOf();
+        m_pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+        m_pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+        m_pContext->GSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+
+        m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetList[IDX]->GetSRV().GetAddressOf());
+
+        m_pContext->DrawIndexed(m_pDebugBuffer->GetNumIndices(), 0, 0);
+    }
+
+    return S_OK;
+}
+#endif
 
 UPtr<CRenderer> CRenderer::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {

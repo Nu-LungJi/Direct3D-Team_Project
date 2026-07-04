@@ -22,10 +22,6 @@ struct VS_OUT
 VS_OUT VSMain(VS_IN IN)
 {
     VS_OUT OUT;
-    float4x4 matWV, matWVP;
-    
-    matWV = mul(g_matWorld, g_matView);
-    matWVP = mul(matWV, g_matProj);
     
     OUT.Position    = mul(float4(IN.Position, 1.f), g_matWVP);
     OUT.TexCoord    = IN.TexCoord;
