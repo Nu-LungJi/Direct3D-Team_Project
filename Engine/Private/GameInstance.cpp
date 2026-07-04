@@ -290,7 +290,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
 	m_pGameObjectManager->Update(fTimeDelta);
 	m_pGameObjectManager->LateUpdate(fTimeDelta);
-	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+	
 	m_pLevelManager->Update(fTimeDelta);
 
 	{
@@ -299,7 +299,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	}
 
 
-
+	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 

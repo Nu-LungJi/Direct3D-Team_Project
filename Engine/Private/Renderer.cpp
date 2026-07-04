@@ -833,6 +833,8 @@ HRESULT CRenderer::RenderCollider(const RENDER_CTX& ctx)
 
 HRESULT CRenderer::RenderParticle(const RENDER_CTX& ctx)
 {
+    //MRT
+    //emissive
     const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
         TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
 
