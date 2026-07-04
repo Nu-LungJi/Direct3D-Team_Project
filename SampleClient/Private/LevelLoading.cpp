@@ -10,6 +10,7 @@
 #include "Terrain.h"
 #include "Particle.h"
 #include "TestModel.h"
+#include "Test_StaticModel.h"
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
 #include "LevelLightMap.h"
@@ -203,6 +204,10 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_TestStaticModel", CTest_StaticModel::Create())))
+				{
+					return false;
+				}
 
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				return  true;

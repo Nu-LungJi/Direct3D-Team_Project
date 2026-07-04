@@ -208,13 +208,57 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
     ImGui::End();
 }
 
+void CAnimEdit_Manager::IMGUI_Select_Animation()
+{
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if (!pSampleObj)
+        return;
+
+    auto pComModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+    auto pComAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+    if (!pComModelInstance || !pComAnimator)
+        return;
+
+    auto& animations = pComModelInstance->GetModel()->GetAnimations();
+
+    ImGui::Begin("Animation List");
+
+    if (ImGui::TreeNode("Animation"))
+    {
+        for (uint32_t i = 0; i < animations.size(); ++i)
+        {
+            auto pAnim = animations[i];
+
+            if (!pAnim)
+                continue;
+
+            bool bSelected =
+                (pComAnimator->GetPlayAnimIndex() == i);
+
+            if (ImGui::Selectable(
+                pAnim->GetAnimName().c_str(),
+                bSelected))
+            {
+                pComAnimator->SetPlayAnimIndex(i);
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::End();
+}
+
 void CAnimEdit_Manager::UpdateGUI()
 {
     if (m_hTestModel.GetIndex() != 0)
         return;
 
-	//IMGUI_Select_AnimType();
+	IMGUI_Select_AnimType();
     IMGUI_Slider_Animation();
+    IMGUI_Select_Animation();
 }
 
 

@@ -29,6 +29,7 @@ public:
 public:
 	void IMGUI_Select_AnimType();
 	void IMGUI_Slider_Animation();
+	void IMGUI_Select_Animation();
 public:
 	void UpdateGUI();
 private:

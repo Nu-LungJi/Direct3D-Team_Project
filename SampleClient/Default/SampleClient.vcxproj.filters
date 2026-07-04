@@ -64,6 +64,12 @@
     <Filter Include="Level\LightMap">
       <UniqueIdentifier>{37b33ef4-4bec-4844-b162-9856de0a2ebc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestModel\Anim">
+      <UniqueIdentifier>{700db935-5561-42f9-9674-79d12cfa287c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestModel\NonAnim">
+      <UniqueIdentifier>{30ad92bc-cfdc-4eb6-bda6-bfee0401f606}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -112,9 +118,6 @@
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Particle.h" />
-    <ClInclude Include="..\Public\TestModel.h">
-      <Filter>GameObject\TestModel</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
@@ -132,6 +135,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\LevelLightMap.h">
       <Filter>Level\LightMap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TestModel.h">
+      <Filter>GameObject\TestModel\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Test_StaticModel.h">
+      <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -185,11 +194,14 @@
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\TestModel.cpp">
+      <Filter>GameObject\TestModel\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Test_StaticModel.cpp">
+      <Filter>GameObject\TestModel\NonAnim</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Private\TestModel.cpp">
-      <Filter>GameObject\TestModel</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>
     </ClCompile>

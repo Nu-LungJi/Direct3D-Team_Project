@@ -304,6 +304,9 @@
     <Filter Include="Resource\Model\Animation\Chanel">
       <UniqueIdentifier>{5501d83f-8f9c-4c60-9920-38d2224d1bfd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\Model\ComStaticModelInstance">
+      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -657,6 +660,9 @@
     <ClInclude Include="..\Public\ResStaticModel.h">
       <Filter>Resource\Model</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ComStaticModelInstance.h">
+      <Filter>Component\Model\ComStaticModelInstance</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -985,6 +991,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\ResStaticModel.cpp">
       <Filter>Resource\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComStaticModelInstance.cpp">
+      <Filter>Component\Model\ComStaticModelInstance</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

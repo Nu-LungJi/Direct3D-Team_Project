@@ -239,6 +239,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\BaseApp.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
+    <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
     <ClInclude Include="..\public\ComBeHavior.h" />
@@ -480,6 +481,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\BaseApp.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
+    <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
     <ClCompile Include="..\private\ComBeHavior.cpp" />

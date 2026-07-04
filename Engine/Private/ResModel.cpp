@@ -238,7 +238,7 @@ HRESULT CResModel::Ready_Animation()
 				return E_FAIL;
 		}
 
-
+		pAnimation->SetAnimName(fileName);
 		m_Animations.push_back(pAnimation);
 	
 	}
