@@ -618,10 +618,10 @@ HRESULT CGameInstance::InitializeResources()
 
 	
 		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
 
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
 			if (FAILED(res->Load(pDesc)))
 			{

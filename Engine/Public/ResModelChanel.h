@@ -3,24 +3,22 @@
 
 #include "Resource.h"
 
-struct aiNodeAnim;
-
 NS_BEGIN(Engine)
 
-class CResTestModel;
+class CResModel;
 class CResModelBone;
-class ENGINE_DLL CResTestModelChanel final : public CResource
+class ENGINE_DLL CResModelChanel final : public CResource
 {
 public:
-	DECLARE_DERIVED_TYPE(CResTestModelChanel, CResource)
+	DECLARE_DERIVED_TYPE(CResModelChanel, CResource)
 public:
 	typedef struct tagDesc {
-		const aiNodeAnim* pAIChannel;
-		CResTestModel* pModel;
+
+		CResModel* pModel;
 	}DESC;
 private:
-	explicit CResTestModelChanel(const _string& sPath);
-	~CResTestModelChanel() override;
+	explicit CResModelChanel(const _string& sPath);
+	~CResModelChanel() override;
 
 public:
 	HRESULT Load(const std::any& arg = {}) override;
@@ -38,7 +36,7 @@ private:
 	std::vector<KEYFRAME>	m_KeyFrames;
 
 public:
-	static SPtr<CResTestModelChanel> Create(const _string& sPath = {});
+	static SPtr<CResModelChanel> Create(const _string& sPath = {});
 };
 
 NS_END

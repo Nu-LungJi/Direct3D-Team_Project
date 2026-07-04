@@ -2,7 +2,7 @@
 #include "GameInstance.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
-#include "ResTestModelAnim.h"
+#include "ResModelAnim.h"
 #include "ResModel.h"
 NS_USING(Engine)
 

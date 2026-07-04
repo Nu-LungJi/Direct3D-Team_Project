@@ -7,8 +7,8 @@
 NS_BEGIN(Engine)
 class CResModelMesh;
 class CResModelMaterial;
-class CResTestModelBone;
-class CResTestModelMaterial;
+class CResModelBone;
+class CResModelMaterial;
 class CResModel;
 
 class ENGINE_DLL CComModelInstance : public CComponent

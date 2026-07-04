@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "GameInstance.h"
 #include "ComModelInstance.h"
-#include "ResTestModelBone.h"
+#include "ResModelBone.h"
 #include "ResModelMesh.h"
 #include "ResModelMaterial.h"
 #include "ResModel.h"

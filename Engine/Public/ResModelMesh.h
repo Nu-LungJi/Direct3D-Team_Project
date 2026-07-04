@@ -28,7 +28,6 @@ public:
 
 
 private:
-	HRESULT Ready_NonAnimMesh( _char* pPoint, _fmatrix PreTransformMatrix);
 	HRESULT	Ready_AnimMesh(class CResModel* pModel, _char* pPoint);
 
 

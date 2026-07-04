@@ -1,20 +1,20 @@
 #include "pch.h"
-#include "ResModelMesh.h"
+#include "ResStaticModelMesh.h"
 
 #include <fstream>
 
 NS_USING(Engine)
 
-CResModelMesh::CResModelMesh(const _string& sPath, ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
+CResStaticModelMesh::CResStaticModelMesh(const _string& sPath, ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
     : CResVIBuffer{ sPath, pDevice,pContext }
 {
 }
 
-CResModelMesh::~CResModelMesh()
+CResStaticModelMesh::~CResStaticModelMesh()
 {
 }
 
-HRESULT CResModelMesh::Load(const std::any& arg)
+HRESULT CResStaticModelMesh::Load(const std::any& arg)
 {
 
     auto descArg = std::any_cast<DESC>(&arg);
@@ -34,44 +34,38 @@ HRESULT CResModelMesh::Load(const std::any& arg)
     auto& PreTransformMatrix = descArg->PreTransformMatrix;
 
     {
-     
-        if (FAILED(Ready_AnimMesh(pModel, ptr)))
+        if (FAILED(Ready_NonAnimMesh(ptr, PreTransformMatrix)))
             return E_FAIL;
-
-        D3D11_BUFFER_DESC BufferDesc{};
-        BufferDesc.ByteWidth = sizeof(_float4x4) * 512;
-        BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-        BufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-        BufferDesc.MiscFlags = 0;
-        BufferDesc.StructureByteStride = 0;
-
-
-        if (FAILED(CGameInstance::Get().GetGraphicDevice()->CreateBuffer(&BufferDesc, nullptr, m_pCBBones.GetAddressOf())))
-        {
-            return E_FAIL;
-        }
-
     }
-   
+
 
     m_eState = STATE::LOADED;
     return S_OK;
 }
 
-HRESULT CResModelMesh::Unload(const std::any& arg)
+HRESULT CResStaticModelMesh::Unload(const std::any& arg)
 {
 
     m_eState = STATE::UNLOAD;
     return S_OK;
 }
 
-
-HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
+HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransformMatrix)
 {
-
-    auto vertexes = std::make_shared<std::vector<VTXANIMMESH>>();
+    auto vertexes = std::make_shared<std::vector<VTXMESH>>();
     auto indices = std::make_shared<std::vector<uint32_t>>();
+
+    uint32_t nameLen = *(uint32_t*)pPoint;
+    pPoint += sizeof(uint32_t);
+
+
+
+    std::string name;
+    name.resize(nameLen);
+
+    memcpy(name.data(), pPoint, nameLen);
+    pPoint += nameLen;
+
 
     uint32_t materialIndex = *(uint32_t*)pPoint;
     pPoint += sizeof(uint32_t);
@@ -86,39 +80,13 @@ HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
 
 
     vertexes->resize(vCount);
-    memcpy(vertexes->data(), pPoint, sizeof(VTXANIMMESH) * vCount);
-    pPoint += sizeof(VTXANIMMESH) * vCount;
+    memcpy(vertexes->data(), pPoint, sizeof(VTXMESH) * vCount);
+    pPoint += sizeof(VTXMESH) * vCount;
 
 
     indices->resize(iCount);
     memcpy(indices->data(), pPoint, sizeof(uint32_t) * iCount);
     pPoint += sizeof(uint32_t) * iCount;
-
-     m_iNumBones = *(uint32_t*)pPoint;
-    pPoint += sizeof(uint32_t);
-
-    uint32_t BoneIndicesCount = *(uint32_t*)pPoint;
-    pPoint += sizeof(uint32_t);
-
-    uint32_t BoneMatricesCount = *(uint32_t*)pPoint;
-    pPoint += sizeof(uint32_t);
-
-    uint32_t OffsetMatricesCount = *(uint32_t*)pPoint;
-    pPoint += sizeof(uint32_t);
-
-    m_BoneIndices.resize(BoneIndicesCount);
-    memcpy(m_BoneIndices.data(), pPoint, sizeof(uint32_t) * BoneIndicesCount);
-    pPoint += sizeof(uint32_t) * BoneIndicesCount;
-
-    m_BoneMatrices.resize(BoneMatricesCount);
-    memcpy(m_BoneMatrices.data(), pPoint, sizeof(_float4x4) * BoneMatricesCount);
-    pPoint += sizeof(_float4x4) * BoneMatricesCount;
-
-    m_OffsetMatrices.resize(OffsetMatricesCount);
-    memcpy(m_OffsetMatrices.data(), pPoint, sizeof(_float4x4) * OffsetMatricesCount);
-    pPoint += sizeof(_float4x4) * OffsetMatricesCount;
-
-
 
     m_iMaterialIndex = materialIndex;
     //m_iNumVertexBuffers = 1;
@@ -130,10 +98,21 @@ HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
     m_ePrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 
+    for (size_t i = 0; i < m_iNumVertices; i++)
+    {
+
+        XMStoreFloat3(&(*vertexes)[i].vPosition, XMVector3TransformCoord(XMLoadFloat3(&(*vertexes)[i].vPosition), PreTransformMatrix));
+
+        XMStoreFloat3(&(*vertexes)[i].vNormal, XMVector3TransformNormal(XMLoadFloat3(&(*vertexes)[i].vNormal), PreTransformMatrix));
+
+
+        //----------------------- 더 추가 할 예정 ----------------------------------------------------------------------------------
+    }
+
     //-------------------------------------------------------------------
-    m_iVertexStride = sizeof(VTXANIMMESH);
+    m_iVertexStride = sizeof(VTXMESH);
     D3D11_BUFFER_DESC           VertexBufferDesc{};
-    VertexBufferDesc.ByteWidth = m_iNumVertices * sizeof(VTXANIMMESH);
+    VertexBufferDesc.ByteWidth = m_iNumVertices * sizeof(VTXMESH);
     VertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
     VertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     VertexBufferDesc.StructureByteStride = m_iVertexStride;
@@ -179,9 +158,11 @@ HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
 
     return S_OK;
 
+
+
 }
 
-SPtr<CResModelMesh> CResModelMesh::Create()
+SPtr<CResStaticModelMesh> CResStaticModelMesh::Create()
 {
-    return ToSPtr(new CResModelMesh{ "",CGameInstance::Get().GetGraphicDevice(),CGameInstance::Get().GetGraphicDeviceContext() });
+    return ToSPtr(new CResStaticModelMesh{ "",CGameInstance::Get().GetGraphicDevice(),CGameInstance::Get().GetGraphicDeviceContext() });
 }
