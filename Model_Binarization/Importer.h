@@ -28,12 +28,15 @@ public:
 	HRESULT	ExportFBX(const std::string& outpath);
 	HRESULT ExportStatic(const std::string& outpath);
 
+	HRESULT ExportSkeletal(const std::string& outpath);
+
 
 
 public:
 	HRESULT Ready_Bones(const aiNode* pAINode, int32_t iParentBoneIndex);
 
 	HRESULT Ready_Mesh(const aiScene* scene, bool _bHasBone);
+
 	void ProcessNonAnimMesh(aiMesh* mesh, const aiScene* scene);
 	void ProcessNonAnimNode(aiNode* node, const aiScene* scene);
 	void ProcessAnimMesh(aiMesh* mesh, const aiScene* scene, std::string name);
@@ -42,7 +45,7 @@ public:
 	HRESULT Ready_Material(const aiScene* scene);
 	void	Load_Material(aiMaterial* material, uint32_t materialNum);
 
-
+	
 
 
 

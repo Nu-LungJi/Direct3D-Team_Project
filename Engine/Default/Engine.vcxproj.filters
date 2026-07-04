@@ -292,6 +292,18 @@
     <Filter Include="Resource\Model\Material">
       <UniqueIdentifier>{a9a0ccd1-a8fb-426a-894f-42bd47e35abd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource\Model\Bone">
+      <UniqueIdentifier>{80be926b-aef1-480b-9d13-375a5022482e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\StaticMesh">
+      <UniqueIdentifier>{7a769126-7605-4c3d-a331-718c47992402}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Animation">
+      <UniqueIdentifier>{0def9701-063f-4df4-8d18-1c408b1e3fcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Animation\Chanel">
+      <UniqueIdentifier>{5501d83f-8f9c-4c60-9920-38d2224d1bfd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -630,6 +642,21 @@
     <ClInclude Include="..\Public\ResModelMaterial.h">
       <Filter>Resource\Model\Material</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ResModelBone.h">
+      <Filter>Resource\Model\Bone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelAnim.h">
+      <Filter>Resource\Model\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelChanel.h">
+      <Filter>Resource\Model\Animation\Chanel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResStaticModelMesh.h">
+      <Filter>Resource\Model\StaticMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResStaticModel.h">
+      <Filter>Resource\Model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -943,6 +970,21 @@
     </ClCompile>
     <ClCompile Include="..\Private\ResModelMaterial.cpp">
       <Filter>Resource\Model\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelBone.cpp">
+      <Filter>Resource\Model\Bone</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelAnim.cpp">
+      <Filter>Resource\Model\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelChanel.cpp">
+      <Filter>Resource\Model\Animation\Chanel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResStaticModelMesh.cpp">
+      <Filter>Resource\Model\StaticMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResStaticModel.cpp">
+      <Filter>Resource\Model</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -150,7 +150,7 @@ HRESULT CImporter::ExportFBX(const std::string& outpath)
         prefix = "SM_";
     else if (!m_bHasBone && m_bHasAnimation)
         prefix = "SMA_";
-    else if (m_bHasBone && !m_bHasAnimation)
+    else if (m_bHasBone && m_bHasAnimation)
         prefix = "SK_";
     else
         prefix = "SKA_";
@@ -167,9 +167,9 @@ HRESULT CImporter::ExportFBX(const std::string& outpath)
     {
         //ExportStaticAnim(finalPath);
     }
-    else if (m_bHasBone && !m_bHasAnimation)
+    else if (m_bHasBone && m_bHasAnimation)
     {
-        //ExportSkeletal(finalPath);
+        ExportSkeletal(finalPath);
     }
     else
     {
@@ -324,7 +324,217 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
     file.close();
     return S_OK;
 }
+HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
+    std::ofstream file(outpath, std::ios::binary);
 
+    if (!file.is_open()) {
+        return E_FAIL;
+    }
+
+    auto pushBone = [&](const void* data, size_t size)
+        {
+            size_t old = boneBuffer.size();
+            boneBuffer.resize(old + size);
+            memcpy(boneBuffer.data() + old, data, size);
+        };
+
+    auto pushMesh = [&](const void* data, size_t size)
+        {
+            size_t old = meshBuffer.size();
+            meshBuffer.resize(old + size);
+            memcpy(meshBuffer.data() + old, data, size);
+        };
+
+    auto pushMaterial = [&](const void* data, size_t size)
+        {
+            size_t old = materialBuffer.size();
+            materialBuffer.resize(old + size);
+            memcpy(materialBuffer.data() + old, data, size);
+        };
+
+
+    //---------------------------------------------------FILEHEADER-------------------------------------------------------------------//
+    MODEL_FILE_HEADER MFH;
+    MFH.bHasBone = true;
+    MFH.bHasAnimation = false;
+    MFH.MeshCount = (uint32_t)Meshes.size();
+    MFH.AnimationCount = 0;
+    MFH.MaterialCount = (uint32_t)Materials.size();
+    MFH.BoneCount = (uint32_t)Bones.size();
+    file.write((char*)&MFH, sizeof(MFH));
+
+    //-------------------------------------------------BONE-----------------------------------------------------------------------------//
+
+    for (auto& bone : Bones)
+    {
+        uint32_t len = (uint32_t)bone->Bone.m_name.size();
+
+        uint32_t boneSize =
+            sizeof(uint32_t) +    // len
+            len +                 // name
+            sizeof(XMFLOAT4X4) +  // transform
+            sizeof(uint32_t);     // parent index
+
+        pushBone(&boneSize, sizeof(uint32_t));
+
+        pushBone(&len, sizeof(uint32_t));
+        pushBone(bone->Bone.m_name.c_str(), len);
+        pushBone(&bone->Bone.m_TransformationMatrix, sizeof(XMFLOAT4X4));
+        pushBone(&bone->Bone.m_patrentBoneIndex, sizeof(uint32_t));
+    }
+
+    ChunkHeader chBone;
+    chBone.type = ChunkType::CHUNK_BONE;
+    chBone.size = (uint32_t)boneBuffer.size();
+    file.write((char*)&chBone, sizeof(chBone));
+    file.write(boneBuffer.data(), boneBuffer.size());
+
+    //---------------------------------------------------------MESH-------------------------------------------------------------------//
+    for (auto& mesh : Meshes)
+    {
+        uint32_t vCount = (uint32_t)mesh->m_animvertices->size();
+        uint32_t iCount = (uint32_t)mesh->m_indices->size();
+
+        uint32_t BoneIndicesCount = (uint32_t)mesh->m_BoneIndices->size();
+        uint32_t BoneMatricesCount = (uint32_t)mesh->m_BoneMatrices->size();
+        uint32_t OffsetMatricesCount = (uint32_t)mesh->m_OffsetMatrices->size();
+
+        uint32_t meshSize =
+            sizeof(uint32_t) +                                         // MaterialIndex
+            sizeof(uint32_t) +                                         // Vertex Count
+            sizeof(uint32_t) +                                         // Index Count
+            sizeof(VTXANIMMESH) * vCount +                             // Vertex Data
+            sizeof(uint32_t) * iCount +                                // Index Data
+            sizeof(uint32_t) +                                         // NumBones
+            sizeof(uint32_t) +                                         // BoneIndices Count
+            sizeof(uint32_t) +                                         // BoneMatrices Count
+            sizeof(uint32_t) +                                         // OffsetMatrices Count
+            sizeof(uint32_t) * BoneIndicesCount +                      // BoneIndices Data
+            sizeof(XMFLOAT4X4) * BoneMatricesCount +                   // BoneMatrices Data
+            sizeof(XMFLOAT4X4) * OffsetMatricesCount;                  // OffsetMatrices Data
+
+        pushMesh(&meshSize, sizeof(uint32_t));
+
+        // MaterialIndex
+         pushMesh(&mesh->m_materialIndex, sizeof(uint32_t));
+
+        // Vertex Count
+        pushMesh(&vCount, sizeof(uint32_t));
+
+        // Index Count
+        pushMesh(&iCount, sizeof(uint32_t));
+
+        // Vertex 데이터
+        pushMesh(mesh->m_animvertices->data(),
+            sizeof(VTXANIMMESH) * vCount);
+
+        // Index 데이터
+        pushMesh(mesh->m_indices->data(),
+            sizeof(uint32_t) * iCount);
+
+        // Mesh가 이용하는 뼈의 개수
+        pushMesh(&mesh->m_iNumBones, sizeof(uint32_t));
+
+        // BoneIndices Count
+        pushMesh(&BoneIndicesCount, sizeof(uint32_t));
+
+        // BoneMatrices Count
+        pushMesh(&BoneMatricesCount, sizeof(uint32_t));
+
+        // OffsetMatrices Count
+        pushMesh(&OffsetMatricesCount, sizeof(uint32_t));
+
+        // BoneIndices 데이터
+        pushMesh(mesh->m_BoneIndices->data(),
+            sizeof(uint32_t) * BoneIndicesCount);
+
+        // BoneMatrices 데이터
+        pushMesh(mesh->m_BoneMatrices->data(),
+            sizeof(XMFLOAT4X4) * BoneMatricesCount);
+
+        // OffsetMatrices 데이터
+        pushMesh(mesh->m_OffsetMatrices->data(),
+            sizeof(XMFLOAT4X4) * OffsetMatricesCount);
+    }
+
+    ChunkHeader chMesh;
+    chMesh.type = ChunkType::CHUNK_MESH;
+    chMesh.size = (uint32_t)meshBuffer.size();
+
+    file.write((char*)&chMesh, sizeof(chMesh));
+    file.write(meshBuffer.data(), meshBuffer.size());
+
+    //--------------------------------------------------------Material-------------------------------------------------------------------//
+
+    for (auto& mat : Materials)
+    {
+        uint32_t materialSize = 0;
+
+        // materialNum
+        materialSize += sizeof(uint32_t);
+
+        // textureTypeCount
+        materialSize += sizeof(uint32_t);
+
+        for (auto& texs : mat->m_textures)
+        {
+            // textureCount
+            materialSize += sizeof(uint32_t);
+
+            for (auto& tex : texs)
+            {
+                materialSize += sizeof(uint32_t); // m_textureType
+
+                materialSize += sizeof(uint32_t); // File length
+                materialSize += (uint32_t)tex.File.size();
+
+                materialSize += sizeof(uint32_t); // Ext length
+                materialSize += (uint32_t)tex.Ext.size();
+            }
+        }
+
+        // Material 크기 먼저 기록
+        pushMaterial(&materialSize, sizeof(uint32_t));
+
+
+        uint32_t materialNum = mat->m_materialNum;
+        pushMaterial(&materialNum, sizeof(uint32_t));
+
+        uint32_t textureTypeCount = (uint32_t)mat->m_textures.size();
+        pushMaterial(&textureTypeCount, sizeof(uint32_t));
+
+        for (auto& texs : mat->m_textures)
+        {
+            uint32_t textureCount = (uint32_t)texs.size();
+            pushMaterial(&textureCount, sizeof(uint32_t));
+
+            for (auto& tex : texs)
+            {
+                pushMaterial(&tex.m_textureType, sizeof(uint32_t));
+
+                uint32_t len;
+
+                len = (uint32_t)tex.File.size();
+                pushMaterial(&len, sizeof(uint32_t));
+                pushMaterial(tex.File.c_str(), len);
+
+                len = (uint32_t)tex.Ext.size();
+                pushMaterial(&len, sizeof(uint32_t));
+                pushMaterial(tex.Ext.c_str(), len);
+            }
+        }
+    }
+
+    ChunkHeader chMaterial;
+    chMaterial.type = ChunkType::CHUNK_MATERIAL;
+    chMaterial.size = (uint32_t)materialBuffer.size();
+
+    file.write((char*)&chMaterial, sizeof(chMaterial));
+    file.write(materialBuffer.data(), materialBuffer.size());
+
+    file.close();
+    return S_OK;
+}
 HRESULT CImporter::Ready_Bones(const aiNode* pAINode, int32_t iParentBoneIndex) {
 
     auto    pBone = std::make_shared<CBone>();
@@ -767,6 +977,9 @@ void CImporter::Clear() {
     Bones.clear();
     Meshes.clear();
     Materials.clear();
+    meshBuffer.clear();
+    boneBuffer.clear();
+    materialBuffer.clear();
 
     m_bHasAnimation = false;
     m_bHasBone = false;

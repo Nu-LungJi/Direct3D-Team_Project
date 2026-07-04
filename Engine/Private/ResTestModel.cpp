@@ -116,6 +116,9 @@ HRESULT CResTestModel::Ready_Bones(const aiNode* pAINode, int32_t iParentBoneInd
 		Ready_Bones(pAINode->mChildren[i], iParentIndex);
 	}
 
+
+
+
 	return S_OK;
 }
 

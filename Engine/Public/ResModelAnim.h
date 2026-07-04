@@ -1,24 +1,23 @@
-ï»¿#pragma once
+#pragma once
 
 #include "Resource.h"
 struct aiAnimation;
 
 
 NS_BEGIN(Engine)
-class CResTestModelChanel;
-class CResTestModel;
-class ENGINE_DLL CResTestModelAnim final : public CResource
+class CResModelChanel;
+class CResModel;
+class ENGINE_DLL CResModelAnim final : public CResource
 {
 public:
-	DECLARE_DERIVED_TYPE(CResTestModelAnim, CResource)
+	DECLARE_DERIVED_TYPE(CResModelAnim, CResource)
 public:
 	typedef struct tagDesc {
-		const aiAnimation* pAIAnimation;
-		CResTestModel* pModel;
+		CResModel* pModel;
 	}DESC;
 private:
-	explicit CResTestModelAnim(const _string& sPath);
-	~CResTestModelAnim() override;
+	explicit CResModelAnim(const _string& sPath);
+	~CResModelAnim() override;
 
 public:
 	HRESULT Load(const std::any& arg = {}) override;
@@ -40,14 +39,14 @@ public:
 
 
 private:
-	/* ì´ ì• ë‹ˆë©”ì´ì…˜ì˜ ì´ ê¸¸ì´. */
+	/* ÀÌ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ÃÑ ±æÀÌ. */
 	_float				m_fDuration = {};
 	_float				m_fTickPerSecond = {};
 	_float				m_fCurrentTrackPosition = {};
 
-	/* ì»¨íŠ¸ë¡¤í•´ì•¼í•˜ëŠ” ë¼ˆì˜ ê°¯ìˆ˜ */
+	/* ÄÁÆ®·ÑÇØ¾ßÇÏ´Â »ÀÀÇ °¹¼ö */
 	uint32_t							m_iNumChannels = {};
-	std::vector<SPtr<CResTestModelChanel>>	m_Channels;
+	std::vector<SPtr<CResModelChanel>>	m_Channels;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;
 
 
@@ -55,7 +54,7 @@ private:
 
 public:
 
-	static SPtr<CResTestModelAnim> Create(const _string& sPath = {});
+	static SPtr<CResModelAnim> Create(const _string& sPath = {});
 };
 
 NS_END

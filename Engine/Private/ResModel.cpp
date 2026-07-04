@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "ResModel.h"
 #include "ResModelMesh.h"
-#include "ResTestModelBone.h"
+#include "ResModelBone.h"
 #include "ResModelMaterial.h"
-#include "ResTestModelAnim.h"
+#include "ResModelAnim.h"
 #include <fstream>
 
 NS_USING(Engine)
@@ -58,78 +58,57 @@ HRESULT CResModel::Load(const std::any& arg)
 		m_iNumMeshes	= fh->MeshCount;
 		m_iAnimCnt		= fh->AnimationCount;
 		m_iNumMaterials = fh->MaterialCount;
-		m_iBoneCnt		= fh->BoneCount;
+		m_iNumBones		= fh->BoneCount;
 
-		if (!fh->bHasBone && !fh->bHasAnimation)
-			m_eModelType = MODEL::STATIC;
-		else if (fh->bHasBone && !fh->bHasAnimation)
-			m_eModelType = MODEL::SKELETAL;
 	
+		char* base = buffer.get();
+		char* end = base + size;
 
-		switch (m_eModelType) {
-		case MODEL::STATIC:
+		while (ptr < end)
 		{
-			char* base = buffer.get();
-			char* end = base + size;
+			CHUCKHEADER* chunk = (CHUCKHEADER*)ptr;
+			ptr += sizeof(CHUCKHEADER);
 
-			while (ptr < end)
+			switch (chunk->type)
 			{
-				CHUCKHEADER* chunk = (CHUCKHEADER*)ptr;
-				ptr += sizeof(CHUCKHEADER);
+			case CHUNCK_TYPE::CHUNK_BONE: {
+				char* BoneData = ptr;
 
-				switch (chunk->type)
-				{
-				case CHUNCK_TYPE::CHUNK_MESH:
-				{
-					char* meshData = ptr;
+				if (FAILED(Ready_Bones(BoneData)))
+					return E_FAIL;
 
-					if (FAILED(Ready_Meshes(meshData)))
-						return E_FAIL;
-
-					ptr += chunk->size;
-				}
-				break;
-
-				case CHUNCK_TYPE::CHUNK_MATERIAL:
-				{
-					char* matData = ptr;
-
-					if (FAILED(Ready_Materials(m_sPath, matData)))
-						return E_FAIL;
-
-					ptr += chunk->size;
-				}
-				break;
-				}
+				ptr += chunk->size;
 			}
-		;
+										break;
+
+			case CHUNCK_TYPE::CHUNK_MESH:
+			{
+				char* meshData = ptr;
+
+				if (FAILED(Ready_Meshes(meshData)))
+					return E_FAIL;
+
+				ptr += chunk->size;
+			}
+			break;
+
+			case CHUNCK_TYPE::CHUNK_MATERIAL:
+			{
+				char* matData = ptr;
+
+				if (FAILED(Ready_Materials(m_sPath, matData)))
+					return E_FAIL;
+
+				ptr += chunk->size;
+			}
+			break;
 
 		
-		}
-			break;
 
-		case MODEL::SKELETAL:
-		{
+			}
+		};
+	
 
-		/*	if (FAILED(Ready_Bones(m_pAIScene->mRootNode, -1)))
-				return E_FAIL;*/
-
-		/*	if (FAILED(Ready_Meshes()))
-				return E_FAIL;
-
-			if (FAILED(Ready_Materials(m_sPath)))
-				return E_FAIL;
-
-			if (FAILED(Ready_Animation()))
-				return E_FAIL;*/
-
-		}
-		break;
-
-		default:
-
-			break;
-		}
 
 	}
 
@@ -144,30 +123,27 @@ HRESULT CResModel::Unload(const std::any& arg)
 	return S_OK;
 }
 
-HRESULT CResModel::Ready_Bones(const aiNode* pAINode, int32_t iParentBoneIndex)
+HRESULT CResModel::Ready_Bones(_char* ptr)
 {
-	/*auto    pBone = CResTestModelBone::Create();
-	if (nullptr == pBone) {
-		m_eState = STATE::LOADFAIL;
-		return E_FAIL;
+	//----------------------------------------------------------------------------
+	for (uint32_t i = 0; i < m_iNumBones; ++i) {
+		uint32_t consumed = *(uint32_t*)ptr;
+		ptr += sizeof(uint32_t);
+
+		auto    pBone = CResModelBone::Create();
+		if (nullptr == pBone)
+			return E_FAIL;
+
+		E::CResModelBone::DESC pDesc{};
+		pDesc.ptr = ptr;
+		if (FAILED(pBone->Load(pDesc))) {
+			return E_FAIL;
+		}
+
+		m_Bones.push_back(pBone);
+
+		ptr += consumed;
 	}
-
-	E::CResTestModelBone::DESC Desc{};
-	Desc.pAINode = pAINode;
-	Desc.iParentIndex = iParentBoneIndex;
-	if (FAILED(pBone->Load(Desc))) {
-		m_eState = STATE::LOADFAIL;
-		return E_FAIL;
-	}
-
-	m_Bones.push_back(pBone);
-
-	int32_t iParentIndex = m_Bones.size() - 1;
-
-	for (uint32_t i = 0; i < pAINode->mNumChildren; ++i)
-	{
-		Ready_Bones(pAINode->mChildren[i], iParentIndex);
-	}*/
 
 	return S_OK;
 }
@@ -228,8 +204,6 @@ HRESULT CResModel::Ready_Meshes(_char* ptr)
 	return S_OK;
 }
 
-
-
 HRESULT CResModel::Ready_Animation()
 {
 	//m_iNumAnimations = m_pAIScene->mNumAnimations;
@@ -253,7 +227,7 @@ HRESULT CResModel::Ready_Animation()
 int32_t CResModel::Get_BoneIndex(const _char* pBoneName)
 {
 	int32_t iBoneIndex = { 0 };
-	auto    iter = find_if(m_Bones.begin(), m_Bones.end(), [&](SPtr<CResTestModelBone> pBone)->_bool
+	auto    iter = find_if(m_Bones.begin(), m_Bones.end(), [&](SPtr<CResModelBone> pBone)->_bool
 		{
 			if (true == pBone->Compare_Name(pBoneName))
 				return true;
@@ -271,7 +245,7 @@ int32_t CResModel::Get_BoneIndex(const _char* pBoneName)
 
 const _float4x4* CResModel::Get_BoneMatrixPtr(const _char* pBoneName)
 {
-	auto    iter = find_if(m_Bones.begin(), m_Bones.end(), [&](SPtr<CResTestModelBone> pBone)->_bool
+	auto    iter = find_if(m_Bones.begin(), m_Bones.end(), [&](SPtr<CResModelBone> pBone)->_bool
 		{
 			if (true == pBone->Compare_Name(pBoneName))
 				return true;

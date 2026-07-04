@@ -305,6 +305,9 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\ResGeometryShader.h" />
     <ClInclude Include="..\Public\ResGeoShaderStreamOut.h" />
     <ClInclude Include="..\Public\ResJson.h" />
+    <ClInclude Include="..\Public\ResModelAnim.h" />
+    <ClInclude Include="..\Public\ResModelBone.h" />
+    <ClInclude Include="..\Public\ResModelChanel.h" />
     <ClInclude Include="..\Public\ResModelMaterial.h" />
     <ClInclude Include="..\Public\ResModelMesh.h" />
     <ClInclude Include="..\Public\ResModel.h" />
@@ -320,14 +323,34 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\ResRasterizerState.h" />
     <ClInclude Include="..\Public\ResSamplerState.h" />
     <ClInclude Include="..\Public\ResShader.h" />
+    <ClInclude Include="..\Public\ResStaticModel.h" />
+    <ClInclude Include="..\Public\ResStaticModelMesh.h" />
     <ClInclude Include="..\Public\ResTessDomainShader.h" />
     <ClInclude Include="..\Public\ResTessHullShader.h" />
-    <ClInclude Include="..\Public\ResTestModel.h" />
-    <ClInclude Include="..\Public\ResTestModelAnim.h" />
-    <ClInclude Include="..\Public\ResTestModelBone.h" />
-    <ClInclude Include="..\Public\ResTestModelChanel.h" />
-    <ClInclude Include="..\Public\ResTestModelMaterial.h" />
-    <ClInclude Include="..\Public\ResTestModelMesh.h" />
+    <ClInclude Include="..\Public\ResTestModel.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResTestModelAnim.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResTestModelBone.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResTestModelChanel.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResTestModelMaterial.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResTestModelMesh.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\Public\ResTexture.h" />
     <ClInclude Include="..\Public\ResTexture2D.h" />
     <ClInclude Include="..\Public\ResTexture2DArray.h" />
@@ -508,6 +531,9 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\ResGeometryShader.cpp" />
     <ClCompile Include="..\Private\ResGeoShaderStreamOut.cpp" />
     <ClCompile Include="..\Private\ResJson.cpp" />
+    <ClCompile Include="..\Private\ResModelAnim.cpp" />
+    <ClCompile Include="..\Private\ResModelBone.cpp" />
+    <ClCompile Include="..\Private\ResModelChanel.cpp" />
     <ClCompile Include="..\Private\ResModelMaterial.cpp" />
     <ClCompile Include="..\Private\ResModelMesh.cpp" />
     <ClCompile Include="..\Private\ResModel.cpp" />
@@ -522,14 +548,34 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\ResRasterizerState.cpp" />
     <ClCompile Include="..\Private\ResSamplerState.cpp" />
     <ClCompile Include="..\Private\ResShader.cpp" />
+    <ClCompile Include="..\Private\ResStaticModel.cpp" />
+    <ClCompile Include="..\Private\ResStaticModelMesh.cpp" />
     <ClCompile Include="..\Private\ResTessDomainShader.cpp" />
     <ClCompile Include="..\Private\ResTessHullShader.cpp" />
-    <ClCompile Include="..\Private\ResTestModel.cpp" />
-    <ClCompile Include="..\Private\ResTestModelAnim.cpp" />
-    <ClCompile Include="..\Private\ResTestModelBone.cpp" />
-    <ClCompile Include="..\Private\ResTestModelChanel.cpp" />
-    <ClCompile Include="..\Private\ResTestModelMaterial.cpp" />
-    <ClCompile Include="..\Private\ResTestModelMesh.cpp" />
+    <ClCompile Include="..\Private\ResTestModel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResTestModelAnim.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResTestModelBone.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResTestModelChanel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResTestModelMaterial.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResTestModelMesh.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\Private\ResTexture.cpp" />
     <ClCompile Include="..\Private\ResTexture2D.cpp" />
     <ClCompile Include="..\Private\ResTexture2DArray.cpp" />

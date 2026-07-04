@@ -2,10 +2,10 @@
 #pragma once
 
 #include "Resource.h"
-#include "ResTestModelBone.h"
+#include "ResModelBone.h"
 #include "ResModelMesh.h"
 #include "ResModelMaterial.h"
-#include "ResTestModelAnim.h"
+#include "ResModelAnim.h"
 
 
 NS_BEGIN(Engine)
@@ -29,7 +29,7 @@ public:
 
 
 private:
-	HRESULT Ready_Bones(const aiNode* pAINode, int32_t iParentBoneIndex);
+	HRESULT Ready_Bones(_char* ptr);
 	HRESULT Ready_Materials(const _string& strModelFilePath, _char* ptr);
 	HRESULT Ready_Meshes(_char* ptr);
 	HRESULT Ready_Animation();
@@ -51,8 +51,8 @@ public:
 public:
 	std::vector<SPtr<CResModelMesh>>& GetMeshes() { return m_Meshes; }
 	std::vector<SPtr<CResModelMaterial>>& GetMaterials() { return m_Materials; }
-	std::vector<SPtr<CResTestModelAnim>>& GetAnimations() { return m_Animations; }
-	std::vector<SPtr<CResTestModelBone>>& GetBones() { return m_Bones; }
+	std::vector<SPtr<CResModelAnim>>& GetAnimations() { return m_Animations; }
+	std::vector<SPtr<CResModelBone>>& GetBones() { return m_Bones; }
 
 
 protected:
@@ -61,10 +61,8 @@ protected:
 
 
 private:
-	uint32_t	m_iMeshCnt{};
 	uint32_t	m_iAnimCnt{};
-	uint32_t	m_iMaterialCnt{};
-	uint32_t	m_iBoneCnt{};
+
 
 private:
 	MODEL						m_eModelType = {};
@@ -74,13 +72,14 @@ private:
 	uint32_t						m_iNumMaterials;
 	std::vector<SPtr<CResModelMaterial>>	m_Materials;
 
-	std::vector<SPtr<CResTestModelBone>>		m_Bones;
-
+	uint32_t						m_iNumBones;
+	std::vector<SPtr<CResModelBone>>		m_Bones;
+	
 
 	_bool							m_isAnimLoop = { true };
 	uint32_t						m_iCurrentAnimIndex = {};
 	uint32_t						m_iNumAnimations = {};
-	std::vector<SPtr<CResTestModelAnim>>	m_Animations;
+	std::vector<SPtr<CResModelAnim>>	m_Animations;
 
 private:
 	_float4x4				m_PreTransformMatrix = {};
