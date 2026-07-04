@@ -55,6 +55,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{095b09c3-adbb-42a6-be96-c9e009c52131}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particles">
+      <UniqueIdentifier>{3d638817-0214-468d-ae71-fc1febda3bd9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -102,7 +105,6 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
@@ -114,6 +116,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\LevelUIEditor.h">
       <Filter>Level\UiEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_Fire_CPU.h">
+      <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_Ribbon.h">
+      <Filter>Particles</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -157,7 +165,12 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Particle.cpp" />
+    <ClCompile Include="..\private\Particle_Fire_CPU.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Particle_Ribbon.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">
@@ -175,6 +188,15 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Particle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

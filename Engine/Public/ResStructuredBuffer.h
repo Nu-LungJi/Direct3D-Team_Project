@@ -12,6 +12,7 @@ public:
 		uint32_t iNumElements = 0;          // 파티클 최대 개수 (예: 1000)
 		uint32_t iStructureByteStride = 0;  // 구조체 1개의 크기 (sizeof(VTX_DROP_BLOCK_INSTANCED_DATA))
 		void* pInitialData = nullptr;    // 초기 데이터 배열 포인터 (생략 시 nullptr)
+		_bool bAppendConsume = false;
 	} DESC;
 private:
 	explicit CResStructuredBuffer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

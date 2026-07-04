@@ -129,7 +129,7 @@ HRESULT CBaseApp::Render(_float fInterpolation)
 
 	if (FAILED(Engine::CGameInstance::Get().Present()))
 	{
-		return E_FAIL;
+			return E_FAIL;
 	}
 
 	return S_OK;

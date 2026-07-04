@@ -127,7 +127,7 @@ void CLevelLoading::ThreadStart()
 
 
 
-		
+
 
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
 			{
@@ -147,11 +147,11 @@ void CLevelLoading::ThreadStart()
 				}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
 				//{
-				//	return false;
+				//   return false;
 				//}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel", CTestModel::Create())))
 				//{
-				//	return false;
+				//   return false;
 				//}
 
 

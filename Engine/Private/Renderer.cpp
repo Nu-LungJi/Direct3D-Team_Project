@@ -584,6 +584,10 @@ HRESULT CRenderer::Draw()
         {
             return E_FAIL;
         }
+        if (FAILED(RenderParticle(ctx)))
+        {
+            return E_FAIL;
+        }
 
         
         //UI
@@ -859,6 +863,28 @@ HRESULT CRenderer::RenderCollider(const RENDER_CTX& ctx)
         }
     }
 
+    return S_OK;
+}
+
+HRESULT CRenderer::RenderParticle(const RENDER_CTX& ctx)
+{
+    const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
+        TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+
+    if (!blendState)
+        return E_FAIL;
+    if (blendState)
+        m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+    for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::PARTICLE)])
+    {
+        if (pRenderObject->HasRenderPass(ctx.pass))
+        {
+            pRenderObject->Render(m_pContext.Get(), ctx);
+        }
+    }
+
+    m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
     return S_OK;
 }
 

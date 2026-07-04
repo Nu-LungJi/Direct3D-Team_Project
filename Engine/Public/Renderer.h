@@ -100,6 +100,7 @@ private:
 	HRESULT RenderBlend(const RENDER_CTX& ctx);
 	HRESULT RenderSkybox(const RENDER_CTX& ctx);
 	HRESULT RenderCollider(const RENDER_CTX& ctx);
+	HRESULT RenderParticle(const RENDER_CTX& ctx);
 	HRESULT RenderPostProcess(const RENDER_CTX& ctx);
 	HRESULT RenderUI(const RENDER_CTX& ctx);
 

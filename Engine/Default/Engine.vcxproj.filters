@@ -241,6 +241,12 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource\Buffer\InstanceBuffer">
+      <UniqueIdentifier>{c6f96c4d-a6c1-4ed5-8f61-31cd10d721d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle\Beam">
+      <UniqueIdentifier>{25baf6d4-8ef0-42f5-a817-5e51b5a77092}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -552,6 +558,18 @@
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Particle_CPU.h">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_GPU.h">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Particle.h">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Beam_CPU.h">
+      <Filter>Particle\Beam</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -824,6 +842,18 @@
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\Particle_CPU.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Particle_GPU.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Particle.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Beam_CPU.cpp">
+      <Filter>Particle\Beam</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -859,6 +889,18 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Filter.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Compute.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Spawn_Compute.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_FixArgs.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

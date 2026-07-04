@@ -191,7 +191,8 @@ call CopySampleClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="..\Public\Particle.h" />
+    <ClInclude Include="..\public\Particle_Fire_CPU.h" />
+    <ClInclude Include="..\public\Particle_Ribbon.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\Public\TestModel.h" />
@@ -221,7 +222,8 @@ call CopySampleClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\Private\Particle.cpp" />
+    <ClCompile Include="..\private\Particle_Fire_CPU.cpp" />
+    <ClCompile Include="..\private\Particle_Ribbon.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
@@ -240,6 +242,18 @@ call CopySampleClient.bat</Command>
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Particle.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

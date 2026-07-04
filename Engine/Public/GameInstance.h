@@ -21,6 +21,7 @@ class CPrototype;
 class CColliderManager;
 class CCollider;
 class CRenderer;
+class CParticleManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -236,6 +237,16 @@ public:
 	}
 #pragma endregion
 
+#pragma region PARTICLE_MANAGER
+public:
+	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+		_bool bLoop = false, _float fSpawnInterval = 0.1f);
+
+	HRESULT Add_Particle(UPtr<class CParticle> particle);
+
+	HRESULT SpawnRibbon(const _float4& start, const _float4& end);
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -271,7 +282,7 @@ private:
 	//UPtr<CVoxelManager> m_pVoxelManager{};
 	//UPtr<CVoxelManager2> m_pVoxelManager2{};
 	//UPtr<CVoxelManager3> m_pVoxelManager3{};
-	//UPtr<CParticleManager> m_pParticleManager{};
+	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
