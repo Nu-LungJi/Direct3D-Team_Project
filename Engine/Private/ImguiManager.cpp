@@ -114,10 +114,6 @@ void CImguiManager::Render_Imgui()
 	}
 }
 
-void CImguiManager::Update_ImguiNodeEditor()
-{
-	m_pNodeEditor->UpdateGUI();
-}
 
 void CImguiManager::EnableDocking(_bool bEnableDocking, _bool bEnableViewports)
 {
