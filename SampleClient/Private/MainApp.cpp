@@ -7,6 +7,7 @@
 #include "Particle_Fire_CPU.h"
 #include "Particle_Ribbon.h"
 #include "BTMove.h"
+#include "BTAnimation.h"
 
 NS_USING(Client)
 
@@ -189,6 +190,8 @@ HRESULT CMainApp::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype("BTMove", CBTMove::Create())))
 		return E_FAIL;
 
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype("BTAnimation", CBTMove::Create())))
+		return E_FAIL;
 	return S_OK;
 }
 

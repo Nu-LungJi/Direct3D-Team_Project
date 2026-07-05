@@ -29,7 +29,7 @@ private:
 	void	   Draw_Link();
 	
 	void	   Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io, class CBTRoot* pCurNode);
-	void	   Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io);
+	_bool	   Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io, UPtr<class CBTRoot>& pCurNode);
 	int32_t    Choice_EndSlot(GUINODE* pNode,   GUINODE_LINK* pLink, const _float& fNode_Radius);
 	int32_t    Choice_StartSlot(GUINODE* pNode,  const _float& fNode_Radius);
 
@@ -38,15 +38,16 @@ private:
 
 private:
 	//기능
-	void	Widget(CBTRoot* pRoot , GUINODE* pNode, GUINODE_LINK* pLink,int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io);
-	void	Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos);
-	_bool	Link_Connect_Check(int32_t iSlot);
-	void	Reset_CurrentNode();
-	void	Draw_NodeLine(_float2 iStartnode, _float2 iEndNode,_bool bMouse = false);
-	_bool	ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radius);
-	void	Recursive_Call_Node(class CBTRoot* pParent);
-	void    Pin(CBTRoot* pNode,_bool bPin);
-	void	Add_NodeToTmp(UPtr<class CBTRoot>& pRoot);
+	void		Widget(CBTRoot* pRoot , GUINODE* pNode, GUINODE_LINK* pLink,int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io);
+	void		ShowWidgetByType(CBTRoot* pRoot);
+	void		Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos);
+	_bool		Link_Connect_Check(int32_t iSlot);
+	void		Reset_CurrentNode();
+	void		Draw_NodeLine(_float2 iStartnode, _float2 iEndNode,_bool bMouse = false);
+	_bool		ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radius);
+	void		Recursive_Call_Node(class CBTRoot* pParent);
+	void		Pin(CBTRoot* pNode,_bool bPin);
+	void		Add_NodeToTmp(UPtr<class CBTRoot>& pRoot);
 private:
 	ax::NodeEditor::EditorContext*						m_pNodeContext{ nullptr };
 	std::vector<GUINODE>								m_Nodes;

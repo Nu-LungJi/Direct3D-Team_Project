@@ -298,9 +298,9 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
-	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
-	m_pGameObjectManager->Update(fTimeDelta);
-	m_pGameObjectManager->LateUpdate(fTimeDelta);
+	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	//m_pGameObjectManager->Update(fTimeDelta);
+	//m_pGameObjectManager->LateUpdate(fTimeDelta);
 	
 	m_pLevelManager->Update(fTimeDelta);
 
@@ -333,6 +333,8 @@ void CGameInstance::Release_Engine()
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
+	m_pNodeEditor.reset();
+	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
@@ -1253,9 +1255,12 @@ HRESULT					CGameInstance::Add_Action_Prototype(const _string& strActionName, UP
 {
 	return m_pActionManager->Add_Action_Prototype(strActionName, std::move(pAction));
 }
-UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos)
+UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos,CHandle Handle)
 {
-	return m_pActionManager->Show_ActioNode_List(iNode, vNodePos);
+	return m_pActionManager->Show_ActioNode_List(iNode, vNodePos, Handle);
 }
-
+void				CGameInstance::Show_Action_NodeWidget(CBTRoot* pNode)
+{
+	m_pActionManager->Show_Action_NodeWidget(pNode);
+}
 #pragma endregion

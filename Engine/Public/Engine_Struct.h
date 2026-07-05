@@ -108,12 +108,14 @@ namespace Engine
 	
 
 	///////BeHavior 아
-	typedef struct tagactionnode
+	typedef struct tagactionvalue
 	{
-		_string NodeName{};
-		_float2  vPos{}, vSize{};
+		tagactionvalue() = default;
+		tagactionvalue(int32_t iAnim, NODE_ACTION ActionType) { iAnim = iAnimIndex, eNodeType = ActionType; }
+		int32_t  iAnimIndex{ -1 };
 		_float   fSpeed{};
-	}ACTION_NODE;
+		NODE_ACTION eNodeType{ NODE_ACTION::END };
+	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{
 		tagdestnode() = default;
@@ -139,8 +141,10 @@ namespace Engine
 		BEHAVIOR    eMyType{};
 		tagimguinode() = default;
 		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, const _float2& pos, float value, const _float4& color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
-		_float2 GetStartSlotPos() const  { return _float2(vPos.x + vSize.x, vPos.y + vSize.y);}
-		_float2 GetEndSlotPos(int slot_no  ,int32_t iMaxCnt) const { return  _float2(vPos.x, vPos.y + vSize.y * ((float)slot_no + 1) / ((float)iMaxCnt )); }
+		_float2 GetStartSlotPos() const  { return _float2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
+		_float2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
+			return _float2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
+		}
 		DEST_NODE Get_DestInfo() {
 			DEST_NODE Dst{};
 			Dst.DestName = Name;
@@ -199,5 +203,4 @@ namespace Engine
 		_float2 vUV;
 	}BEAM_VERTEX;
 
-	///////NodeEditor용
 }

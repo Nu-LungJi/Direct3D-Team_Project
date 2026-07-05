@@ -2,6 +2,7 @@
 #include "BTRoot.h"
 
 NS_BEGIN(Engine)
+
 class ENGINE_DLL CBTActionNode  : public CBTRoot 
 {
 public:
@@ -11,7 +12,7 @@ public:
 public:
 	typedef struct tagcombtactionnode : CBTRoot::BTROOT_DESC
 	{
-
+		ACTION_VALUE Value{};
 	}ACTION_NODE_DESC;
 
 protected:
@@ -25,9 +26,11 @@ public:
 	HRESULT	Update(_float fTimeDelta)		   override;
 	HRESULT	Late_Update(_float fTimeDelta)	   override;
 
-
+	const ACTION_VALUE		Get_Value() { return m_Value; }
 public:
 	virtual EVALUATE		Evaluate() PURE;
+private:
+	ACTION_VALUE			m_Value{};
 public:
 	virtual UPtr<CBTRoot> Clone(void* pArg) PURE;
 };

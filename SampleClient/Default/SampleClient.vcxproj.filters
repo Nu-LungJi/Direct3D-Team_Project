@@ -126,9 +126,6 @@
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Goblin.h">
-      <Filter>GameObject\Monsters</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\CTexUI.h">
       <Filter>GameObject\UI</Filter>
     </ClInclude>
@@ -155,9 +152,15 @@
     </ClInclude>
     <ClInclude Include="..\public\Particle_Ribbon.h">
       <Filter>Particles</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\BTMove.h">
+    </ClInclude>
+    <ClInclude Include="..\public\BTMove.h">
       <Filter>GameObject\Monsters\BT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAnimation.h">
+      <Filter>GameObject\Monsters\BT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Monster.h">
+      <Filter>GameObject\Monsters</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -201,9 +204,6 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Particle.cpp">
-      <Filter>Particles</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\LevelAnimEditor.cpp">
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
@@ -239,6 +239,12 @@
     </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\Monsters\BT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Monster.cpp">
+      <Filter>GameObject\Monsters</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -264,7 +264,8 @@ public:
 
 #pragma region Action_Manager
 	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
-	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos);
+	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
+	void					Show_Action_NodeWidget(CBTRoot* pNode);
 #pragma endregion
 
 public:

@@ -13,10 +13,12 @@ private:
 private:
 	HRESULT					Initialize();
 	UPtr<class CBTRoot>	    Clone_Action(const _string& strActionName, void* pArg);
+private:
+	void					PopupAnimation(class CComAnimator* pAnimator, class  CBTActionNode* pNode);
 public:
-
+	void					Show_Action_NodeWidget(CBTRoot* pNode);
 	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
-	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode,ImVec2 vNodePos);
+	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode,ImVec2 vNodePos, CHandle Handle);
 private:
 	std::map<_string, UPtr<class CBTRoot>>				m_Prototype_Actions;
 

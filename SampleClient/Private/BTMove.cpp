@@ -46,7 +46,7 @@ E::UPtr<E::CBTRoot> CBTMove::Clone(void* pArg)
 	auto	pInstance = E::ToUPtr(new CBTMove{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CBTRoot");
+		MSG_BOX("Failed to Cloned : CBTMove");
 		return nullptr;
 	}
 
