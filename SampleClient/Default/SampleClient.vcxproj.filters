@@ -73,6 +73,12 @@
     <Filter Include="Particles">
       <UniqueIdentifier>{3d638817-0214-468d-ae71-fc1febda3bd9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestModel\Anim">
+      <UniqueIdentifier>{700db935-5561-42f9-9674-79d12cfa287c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestModel\NonAnim">
+      <UniqueIdentifier>{30ad92bc-cfdc-4eb6-bda6-bfee0401f606}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -123,6 +129,7 @@
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
@@ -158,6 +165,12 @@
 	</ClInclude>
 	<ClInclude Include="..\public\BTMove.h">
       <Filter>GameObject\Monsters\BT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TestModel.h">
+      <Filter>GameObject\TestModel\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Test_StaticModel.h">
+      <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -233,6 +246,17 @@
     </ClCompile>
     <ClCompile Include="..\Private\TestModel.cpp">
       <Filter>GameObject\TestModel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TestModel.cpp">
+      <Filter>GameObject\TestModel\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Test_StaticModel.cpp">
+      <Filter>GameObject\TestModel\NonAnim</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\private\Gobline.cpp">
+      <Filter>GameObject\Monsters</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\CTexUI.cpp">
       <Filter>GameObject\UI</Filter>

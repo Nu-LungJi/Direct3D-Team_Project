@@ -20,6 +20,7 @@
 #include "ComBeHavior.h"
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
+#include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
 #include "NodeEditor.h"
 #include "Light.h"
@@ -722,12 +723,11 @@ HRESULT CGameInstance::InitializeResources()
 		}
 
 	
-		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource",
-			CResTestModel::Create("./Resources/SampleClient/Models/LightObject/HorseStatue.fbx"))) {
+		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
+			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
 
-			E::CResTestModel::DESC pDesc{};
-			pDesc.eModelType = MODEL::NONANIM;
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.00001f, 0.00001f, 0.00001f);
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -735,17 +735,19 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.FBX"))) {
+		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
-		//	E::CResTestModel::DESC pDesc{};
-		//	pDesc.eModelType = MODEL::NONANIM;
-		//	pDesc.PreTransformMatrix = XMMatrixIdentity();
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
+
+	
 	}
 
 	return S_OK;
@@ -764,6 +766,10 @@ HRESULT CGameInstance::InitializePrototype()
 	}
 
 	if (AddPrototype("PERMANENT", "Prototype_Component_ModelInstance", CComModelInstance::Create()))
+	{
+		return E_FAIL;
+	}
+	if (AddPrototype("PERMANENT", "Prototype_Component_StaticModelInstance", CComStaticModelInstance::Create()))
 	{
 		return E_FAIL;
 	}

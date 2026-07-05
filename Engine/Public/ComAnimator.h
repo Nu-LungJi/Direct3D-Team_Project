@@ -6,7 +6,7 @@
 NS_BEGIN(Engine)
 class CComModelInstance;
 class CComAnimMontage;
-class CResTestModelAnim;
+class CResModelAnim;
 
 
 class ENGINE_DLL CComAnimator : public CComponent

@@ -65,7 +65,7 @@ HRESULT CResTestModelMesh::Load(const std::any& arg)
         m_ePrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
         #pragma region VERTEX_BUFFER
-                HRESULT     hr = MODEL::NONANIM == eType ?
+                HRESULT     hr = MODEL::STATIC == eType ?
                     Ready_NonAnimMesh(pAIMesh, PreTransformMatrix) : Ready_AnimMesh(pModel, pAIMesh);
 
         if (FAILED(hr))
@@ -144,6 +144,7 @@ HRESULT CResTestModelMesh::Unload(const std::any& arg)
 
 HRESULT CResTestModelMesh::Ready_NonAnimMesh(const aiMesh* pAIMesh, _fmatrix PreTransformMatrix)
 {
+
     m_iVertexStride = sizeof(VTXMESH);
     D3D11_BUFFER_DESC           VertexBufferDesc{};
     VertexBufferDesc.ByteWidth = m_iNumVertices * m_iVertexStride;
