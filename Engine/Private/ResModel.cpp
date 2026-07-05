@@ -248,11 +248,6 @@ HRESULT CResModel::Ready_Animation()
 	}
 
 
-
-
-
-
-
 	return S_OK;
 }
 

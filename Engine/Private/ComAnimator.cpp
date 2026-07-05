@@ -62,9 +62,6 @@ HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, const std::string
 
 HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum)
 {
-
-
-
 	auto pModel = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag)->GetModel();
     
     if(pModel == nullptr)

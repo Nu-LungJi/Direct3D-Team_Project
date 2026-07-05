@@ -199,9 +199,6 @@
     <Filter Include="GameObject\UI\UITool">
       <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model">
-      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
     </Filter>
@@ -243,15 +240,6 @@
     </Filter>
     <Filter Include="Tracy">
       <UniqueIdentifier>{e02f4b44-ac4b-4c18-9468-0d92e7afed7a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComModelInstance">
-      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComAnimMontage">
-      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComAnimator">
-      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
     </Filter>
     <Filter Include="AnimationEditor">
       <UniqueIdentifier>{5068b7e8-6054-49e9-b16c-65ba14323f27}</UniqueIdentifier>
@@ -304,9 +292,6 @@
     <Filter Include="Resource\Model\Animation\Chanel">
       <UniqueIdentifier>{5501d83f-8f9c-4c60-9920-38d2224d1bfd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model\ComStaticModelInstance">
-      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
@@ -315,6 +300,21 @@
     </Filter>
     <Filter Include="Particle\Beam">
       <UniqueIdentifier>{25baf6d4-8ef0-42f5-a817-5e51b5a77092}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model">
+      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComModelInstance">
+      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimMontage">
+      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimator">
+      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComStaticModelInstance">
+      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

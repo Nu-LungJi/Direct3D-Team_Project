@@ -112,6 +112,7 @@ HRESULT CResModelAnim::Unload(const std::any& arg)
 
 _bool CResModelAnim::Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResModelBone>>& Bones, _bool isLoop)
 {
+
 	m_fCurrentTrackPosition += m_fTickPerSecond * fTimeDelta;
 
 	if (m_fCurrentTrackPosition >= m_fDuration)
