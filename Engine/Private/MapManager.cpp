@@ -56,6 +56,30 @@ namespace
 		};
 	}
 
+	std::optional<MAP_MESH_OBJECT_LOAD_DESC> MakeMapMeshLoadDesc(const nlohmann::ordered_json& objectJson)
+	{
+		if (!objectJson.contains("type") || objectJson["type"] != "MapMeshObject")
+			return std::nullopt;
+
+		MAP_MESH_OBJECT_LOAD_DESC desc{};
+		desc.objectTag = objectJson["objectTag"];
+		desc.protoGroup = objectJson.value("protoGroup", "PERMANENT");
+		desc.prototype = objectJson.value("prototype", "Prototype_GameObject_MapMeshObject");
+		desc.modelGroup = objectJson["modelGroup"];
+		desc.model = objectJson["model"];
+		desc.layer = objectJson["layer"];
+
+		const auto& pos = objectJson["position"];
+		const auto& rot = objectJson["rotation"];
+		const auto& scale = objectJson["scale"];
+
+		desc.position = _float3{ pos[0], pos[1], pos[2] };
+		desc.rotation = _float4{ rot[0], rot[1], rot[2], rot[3] };
+		desc.scale = _float3{ scale[0], scale[1], scale[2] };
+
+		return desc;
+	}
+
 	bool HasHandle(const std::vector<CHandle>& handles, const CHandle& target)
 	{
 		return std::find(handles.begin(), handles.end(), target) != handles.end();
@@ -186,6 +210,8 @@ void CMapManager::PriorityUpdate(_float fTimeDelta)
 // (저장해놓은 Chunk들만 작동하기때문에 에디터에서 실시간으로 Rebuild한 Cunk는 심리스의 적용대상이 되지않음)
 void CMapManager::Update(_float fTimeDelta)
 {
+	ProcessLoadedChunkResults();
+
 	if (!m_bChunkStreaming)
 	{
 		return;
@@ -251,7 +277,8 @@ void CMapManager::Update(_float fTimeDelta)
 
 		if (CanAutoLoad(iter->second))
 		{
-			LoadChunk(coord);
+			RequestLoadChunkAsync(coord);
+			//LoadChunk(coord);
 		}
 	}
 }
@@ -287,7 +314,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		if (chunk.loadState == EChunkLoadState::Unloaded && chunk.saveState != EChunkSaveState::Unsaved)
 		{
 			originallyUnloadedChunks.push_back(coord);
-			if (FAILED(LoadChunk(coord)))
+			if (FAILED(RequestLoadChunkAsync(coord)/*LoadChunk(coord)*/))
 			{
 				return E_FAIL;
 			}
@@ -379,7 +406,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 
 		for (const auto& coord : chunkCoords)
 		{
-			if (FAILED(LoadChunk(coord)))
+			if (FAILED(RequestLoadChunkAsync(coord)/*LoadChunk(coord)*/))
 			{
 				return E_FAIL;
 			}
@@ -749,6 +776,130 @@ void CMapManager::DrawBox(const DirectX::BoundingBox& box, DirectX::FXMVECTOR co
 	DX::Draw(_batch.get(), box, color);
 
 	_batch->End();
+}
+HRESULT CMapManager::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord)
+{
+	auto iter = m_Chunks.find(coord);
+	if (iter == m_Chunks.end())
+		return E_FAIL;
+
+	MAPCHUNK& chunk = iter->second;
+
+	if (chunk.loadState == EChunkLoadState::Loaded ||
+		chunk.loadState == EChunkLoadState::Loading)
+	{
+		return S_OK;
+	}
+
+	if (chunk.filePath.empty())
+	{
+		chunk.filePath = (std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string();
+	}
+
+	const std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.filePath;
+
+	// 큐에 넣기 전에 메인스레드에서 Loading으로 바꿔야 중복 요청이 안 들어감
+	chunk.loadState = EChunkLoadState::Loading;
+
+	CGameInstance::Get().WorkerEnqueue("LoadChunk", [this, coord, chunkPath]()
+		{
+			PENDING_CHUNK_LOAD_RESULT result{};
+			result.coord = coord;
+
+			std::ifstream inFile(chunkPath.string());
+			if (!inFile.is_open())
+			{
+				result.hr = E_FAIL;
+			}
+			else
+			{
+				nlohmann::ordered_json chunkJson;
+				inFile >> chunkJson;
+
+				for (const auto& objectJson : chunkJson["objects"])
+				{
+					if (auto desc = MakeMapMeshLoadDesc(objectJson))
+					{
+						result.objects.push_back(std::move(desc.value()));
+					}
+				}
+
+				result.hr = S_OK;
+			}
+
+			{
+				std::lock_guard<std::mutex> lock(m_LoadResultMutex);
+				m_LoadResults.push_back(std::move(result));
+			}
+		});
+
+	return S_OK;
+}
+void CMapManager::ProcessLoadedChunkResults()
+{
+	std::vector<PENDING_CHUNK_LOAD_RESULT> results;
+
+	{
+		std::lock_guard<std::mutex> lock(m_LoadResultMutex);
+		results.swap(m_LoadResults);
+	}
+
+	for (const auto& result : results)
+	{
+		ApplyLoadedChunkResult(result);
+	}
+}
+HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& result)
+{
+	auto iter = m_Chunks.find(result.coord);
+	if (iter == m_Chunks.end())
+		return E_FAIL;
+
+	MAPCHUNK& chunk = iter->second;
+
+	if (FAILED(result.hr))
+	{
+		chunk.loadState = EChunkLoadState::Unloaded;
+		return E_FAIL;
+	}
+
+	chunk.hObjects.clear();
+
+	for (const auto& objectDesc : result.objects)
+	{
+		CMapMeshObject::MAP_MESH_OBJECT_DESC desc{};
+		desc.sObjectTag = objectDesc.objectTag;
+		desc.protoGroupTag = objectDesc.protoGroup;
+		desc.prototypeTag = objectDesc.prototype;
+		desc.modelGroupTag = objectDesc.modelGroup;
+		desc.modelResTag = objectDesc.model;
+
+		auto hObject = CGameInstance::Get().AddGameObjectToLayer(
+			desc.protoGroupTag,
+			desc.prototypeTag,
+			objectDesc.layer,
+			&desc);
+
+		if (!hObject.has_value())
+			continue;
+
+		auto* pObject = CGameInstance::Get().GetGameObjectByHandle(hObject.value());
+		if (pObject == nullptr)
+			continue;
+
+		auto& transform = pObject->GetTransform();
+		transform.SetPosition(objectDesc.position);
+		transform.SetQuaternion(objectDesc.rotation);
+		transform.SetScale(objectDesc.scale);
+
+		chunk.hObjects.push_back(hObject.value());
+	}
+
+	chunk.bounds = MakeChunkBoundingBox(result.coord);
+	chunk.loadState = EChunkLoadState::Loaded;
+	chunk.saveState = EChunkSaveState::Saved;
+
+	return S_OK;
 }
 #endif
 

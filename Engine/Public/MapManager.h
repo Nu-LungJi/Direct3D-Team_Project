@@ -48,6 +48,11 @@ struct tagMapChunkCoordHash
 	}
 };
 
+// 전방선언
+struct MAP_MESH_OBJECT_LOAD_DESC;
+struct PENDING_CHUNK_LOAD_RESULT;
+
+
 class ENGINE_DLL CMapManager : public CEngineBase
 {
 public:
@@ -114,9 +119,19 @@ private:
 private:
 	_bool m_bDebugDrawMapChunk = false;
 #endif
-//public:
-//	void FrameStart();
-//	void FrameEnd();
+
+// -------------------------------Worker---------------------------------------
+public:
+	HRESULT RequestLoadChunkAsync(const MAPCHUNK_COORD& coord); // 워커에게 청크 로딩 요청
+	void ProcessLoadedChunkResults();
+
+private:
+	HRESULT ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& result); // 실제 오브젝트 생성
+
+private:
+	std::mutex m_LoadResultMutex{};
+	std::vector<PENDING_CHUNK_LOAD_RESULT> m_LoadResults{}; //워커가 로딩한 결과모음
+// -------------------------------Worker---------------------------------------
 
 public:
 	static UPtr<CMapManager> Create();
@@ -126,6 +141,28 @@ public:
 
 };
 
+// 워커스레드는 파일읽고, 데이터 포장까지만
+// 실제 월드 반영은 메인스레드가
+struct MAP_MESH_OBJECT_LOAD_DESC
+{
+	std::string objectTag;
+	std::string protoGroup;
+	std::string prototype;
+	std::string modelGroup;
+	std::string model;
+	std::string layer;
+
+	_float3 position{};
+	_float4 rotation{ 0.f, 0.f, 0.f, 1.f };
+	_float3 scale{ 1.f, 1.f, 1.f };
+};
+
+struct PENDING_CHUNK_LOAD_RESULT
+{
+	MAPCHUNK_COORD coord{};
+	HRESULT hr = E_FAIL;
+	std::vector<MAP_MESH_OBJECT_LOAD_DESC> objects{};
+};
 NS_END
 
 
