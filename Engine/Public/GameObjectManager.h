@@ -46,6 +46,7 @@ public:
 	std::optional<CHandle> AddGameObjectToLayer(const StringID& siProtoGroupTag, const StringID& siPrototypeTag, std::string_view sLayerName, void* pArg);
 	const std::vector<CHandle>* GetLayer(std::string_view sLayerName) const;
 	const std::vector<CHandle>* GetLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg) ;
+	const std::vector<std::pair<std::string, std::vector<CHandle>>>& GetLayers() const { return m_Layers; }
 	template<typename T> T* GetFirstGameObjectByLayer(std::string_view sLayerName);
 	void DelLayer(std::string_view sLayerName);
 

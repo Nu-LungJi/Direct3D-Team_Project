@@ -16,7 +16,8 @@ private:
 
 public:
 	const BoundingOrientedBox& GetBoundingOrientedBox() const { return m_BoundingOrientedBoxWorld; }
-
+	const BoundingOrientedBox& GetLocalBoundingOrientedBox() const { return m_BoundingOrientedBoxLocal; }
+	void SetLocalBoundingOrientedBox(const _float3& vCenter, const _float3& vExtents, const _float4& vOrientation) { m_BoundingOrientedBoxLocal = BoundingOrientedBox{ vCenter, vExtents, vOrientation }; }
 public:
 	 void Transform(_fmatrix wordMatrix) override;
 	 _bool Intersect(const CCollider& collider) const override;

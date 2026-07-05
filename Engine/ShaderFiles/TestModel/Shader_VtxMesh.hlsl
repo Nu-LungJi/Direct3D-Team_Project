@@ -58,21 +58,21 @@ VS_OUT VSMain(VS_IN In)
 
 struct PS_IN
 {
-    float4 vPosition : SV_POSITION;
-    float4 vNormal : NORMAL;
-    float4 vTangent : TANGENT;
-    float4 vBinormal : BINORMAL;
-    float2 vTexcoord : TEXCOORD0;
-    float4 vWorldPos : TEXCOORD1;
-    float4 vProjPos : TEXCOORD2;
+    float4 vPosition    : SV_POSITION;
+    float4 vNormal      : NORMAL;
+    float4 vTangent     : TANGENT;
+    float4 vBinormal    : BINORMAL;
+    float2 vTexcoord    : TEXCOORD0;
+    float4 vWorldPos    : TEXCOORD1;
+    float4 vProjPos     : TEXCOORD2;
 };
 
 struct PS_OUT
 {
-    vector vDiffuse : SV_TARGET0;
-    vector vNormal : SV_TARGET1;
-    vector vDepth : SV_TARGET2;
-    vector vPickPos : SV_TARGET3;
+    vector vDiffuse     : SV_TARGET0;
+    vector vNormal      : SV_TARGET1;
+    vector vDepth       : SV_TARGET2;
+    vector vPickPos     : SV_TARGET3;
 };
 
 PS_OUT PSMain(PS_IN In)
@@ -91,7 +91,7 @@ PS_OUT PSMain(PS_IN In)
     
     //vNormal = normalize(mul(vNormal, WorldMatrix));
     
-  
+    
     Out.vDiffuse = vMtrlDiffuse;
     //Out.vNormal = vector(vNormal.xyz * 0.5f + 0.5f, 0.f);
     //Out.vDepth = vector(In.vProjPos.z / In.vProjPos.w, In.vProjPos.w / 1000.f, 0.f, 0.f);

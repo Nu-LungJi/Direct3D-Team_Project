@@ -64,6 +64,15 @@
     <Filter Include="Level\LightMap">
       <UniqueIdentifier>{37b33ef4-4bec-4844-b162-9856de0a2ebc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\Collider">
+      <UniqueIdentifier>{5a89bb20-d6c0-4132-b958-1fe2d603c31e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestCollider">
+      <UniqueIdentifier>{98c5a8e4-2bf9-481e-a667-3fdc3b61dcef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particles">
+      <UniqueIdentifier>{3d638817-0214-468d-ae71-fc1febda3bd9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\TestModel\Anim">
       <UniqueIdentifier>{700db935-5561-42f9-9674-79d12cfa287c}</UniqueIdentifier>
     </Filter>
@@ -84,6 +93,9 @@
     <ClInclude Include="targetver.h">
       <Filter>98.Default</Filter>
     </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>98.Default</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Level_Defines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -92,9 +104,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\MainApp.h">
       <Filter>MainApp</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>98.Default</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelLoading.h">
       <Filter>Level\Loading</Filter>
@@ -117,8 +126,14 @@
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TestModel.h">
+      <Filter>GameObject\TestModel</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\Gobline.h">
+      <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Goblin.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\CTexUI.h">
@@ -130,11 +145,23 @@
     <ClInclude Include="..\Public\LevelAnimEditor.h">
       <Filter>Level\AnimationEditor</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Goblin.h">
-      <Filter>GameObject\Monsters</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\LevelLightMap.h">
       <Filter>Level\LightMap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightObject.h">
+      <Filter>GameObject\LightObject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelCollider.h">
+      <Filter>Level\Collider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestCollider.h">
+      <Filter>GameObject\TestCollider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_Fire_CPU.h">
+      <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_Ribbon.h">
+      <Filter>Particles</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel\Anim</Filter>
@@ -160,11 +187,11 @@
     <ClCompile Include="SampleClient.cpp">
       <Filter>98.Default</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\MainApp.cpp">
-      <Filter>MainApp</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>98.Default</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MainApp.cpp">
+      <Filter>MainApp</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelLoading.cpp">
       <Filter>Level\Loading</Filter>
@@ -184,15 +211,38 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Particle.cpp" />
+    <ClCompile Include="..\Private\Particle.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\LevelAnimEditor.cpp">
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Goblin.cpp">
       <Filter>GameObject\Monsters</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\Gobline.cpp">
+      <Filter>GameObject\Monsters</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightObject.cpp">
+      <Filter>GameObject\LightObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelCollider.cpp">
+      <Filter>Level\Collider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestCollider.cpp">
+      <Filter>GameObject\TestCollider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Particle_Fire_CPU.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Particle_Ribbon.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TestModel.cpp">
+      <Filter>GameObject\TestModel</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\TestModel.cpp">
       <Filter>GameObject\TestModel\Anim</Filter>
@@ -214,6 +264,21 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Particle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

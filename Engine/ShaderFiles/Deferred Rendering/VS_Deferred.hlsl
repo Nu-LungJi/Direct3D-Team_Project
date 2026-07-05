@@ -2,22 +2,25 @@
 
 struct VS_IN
 {
-    float3 vPosition : POSITION;
-    float2 vTexcoord : TEXCOORD0;
+    float3 Position : POSITION;
+    float2 TexCoord : TEXCOORD0;
+    float3 Normal : NORMAL;
 };
 
 struct VS_OUT
 {
-    float4 vPosition : SV_POSITION;
-    float2 vTexcoord : TEXCOORD0;
+    float4 Position : SV_POSITION;
+    float2 TexCoord : TEXCOORD0;
+    float4 Normal : NORMAL;
 };
 
-VS_OUT VS_MAIN(VS_IN In)
+VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out;
     
-    Out.vPosition = float4(In.vPosition.xy, 1.0f, 1.0f);
-    Out.vTexcoord = In.vTexcoord;
+    Out.Position = float4(In.Position.xy, 1.0f, 1.0f);
+    Out.TexCoord = In.TexCoord;
+    Out.Normal = normalize(mul(float4(In.Normal, 1.f), g_matWorld));
     
     return Out;
 }

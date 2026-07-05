@@ -36,6 +36,8 @@ private:
 public:
 	HRESULT	Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex);
 	HRESULT Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
+
+	SPtr<CResTexture2D>	Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 public:
 	SPtr<CResModel> GetModel() { return m_pModel; }	
 

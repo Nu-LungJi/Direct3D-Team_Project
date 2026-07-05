@@ -79,3 +79,7 @@ constexpr static const char* TAG_RES_STATE_SS_SAHDOW = "SS_SHADOW";
 constexpr static const char* TAG_RES_CBUFFER_PASS = "CB_PerPass";
 constexpr static const char* TAG_RES_CBUFFER_OBJECT = "CB_PerObject";
 constexpr static const char* TAG_RES_CBUFFER_MATERIAL = "CB_PerMaterial";
+constexpr static const char* TAG_RES_CBUFFER_PARTICLE = "CB_PerParticle";
+constexpr static const char* TAG_RES_CBUFFER_SPAWN_PARTICLE = "CB_SpawnParticle";
+
+
