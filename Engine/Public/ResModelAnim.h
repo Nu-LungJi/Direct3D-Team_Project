@@ -34,7 +34,7 @@ public:
 
 	void    SetDuration(_float fDuration) { m_fDuration = fDuration; }
 	void    SetTickPerSecond(_float fTickPerSecond) { m_fTickPerSecond = fTickPerSecond; }
-	void    SetCurrentTrackPosition(_float fCurrentTrackPosition);
+	void    SetCurrentTrackPosition(_float fCurrentTrackPosition) ;
 
 	std::string& GetAnimName() { return m_AnimName; }
 	void		 SetAnimName(std::string _name) { m_AnimName = _name; }

@@ -188,8 +188,12 @@ void CGameInstance::UpdateGUI()
 		m_pGameObjectManager->UpdateGUI();
 	}
 	
+	{
+		ZoneScopedN("m_pAnimEdit_Manager_UpdateGUI");
 
-	m_pAnimEdit_Manager->UpdateGUI();
+		m_pAnimEdit_Manager->UpdateGUI();
+	}
+
 
 	m_pWorkerManager->UpdateGUI();
 
@@ -288,9 +292,10 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
-	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
-	m_pGameObjectManager->Update(fTimeDelta);
-	m_pGameObjectManager->LateUpdate(fTimeDelta);
+	
+	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	//m_pGameObjectManager->Update(fTimeDelta);
+	//m_pGameObjectManager->LateUpdate(fTimeDelta);
 	
 	m_pLevelManager->Update(fTimeDelta);
 
@@ -719,7 +724,7 @@ HRESULT CGameInstance::InitializeResources()
 
 	
 		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
+			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/aaaaa/SK_aaaaa.bin"))) {
 
 			E::CResModel::DESC pDesc{};
 			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);

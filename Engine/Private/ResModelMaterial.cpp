@@ -43,14 +43,14 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 		uint32_t textureTypeCount = *(uint32_t*)pPoint;
 		pPoint += sizeof(uint32_t);
 
-
+		
 
 		for (size_t i = 0; i < textureTypeCount; i++)
 		{
 			uint32_t textureCount = *(uint32_t*)pPoint;
 			pPoint += sizeof(uint32_t);
 
-	
+			
 			for (size_t j = 0; j < textureCount; j++)
 			{
 				_char	szFileName[MAX_PATH] = { };
@@ -98,6 +98,14 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				m_Materials[m_textureType].push_back(resTex);
 			}
 		}
+
+
+		auto resTex = CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png");
+		if (FAILED(resTex->Load())) {
+			return E_FAIL;
+		}
+
+		m_Materials[0].push_back(resTex);
 
 
 	}
