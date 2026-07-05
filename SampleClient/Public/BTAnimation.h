@@ -3,14 +3,14 @@
 #include "BTActionNode.h"
 
 NS_BEGIN(Client)
-class CBTMove final : public CBTActionNode
-{ 
+class CBTAnimation final : public CBTActionNode
+{
 public:
-	DECLARE_DERIVED_TYPE(CBTMove, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTAnimation, CBTActionNode)
 private:
-	 CBTMove();
-	 CBTMove(const CBTMove& Prototype);
-	~CBTMove() override;
+	CBTAnimation();
+	CBTAnimation(const CBTAnimation& Prototype);
+	~CBTAnimation() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitializePrototype();
@@ -19,8 +19,7 @@ public:
 	EVALUATE Evaluate() override;
 
 public:
-	static UPtr<CBTMove> Create();
+	static UPtr<CBTAnimation> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END
-

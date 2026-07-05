@@ -35,6 +35,9 @@ HRESULT CBTSecqunce::Update(_float fTimeDelta)
 
     for (size_t i = iIndex; i < m_Actions.size();)
     {
+        if (nullptr == m_Actions[i])
+            continue;
+
         EVALUATE eValuate = m_Actions[i]->Evaluate();
         if (eValuate == EVALUATE::SUCCESS)
             return S_OK;

@@ -7,32 +7,48 @@ CBTMove::CBTMove()
 
 }
 
+CBTMove::CBTMove(const CBTMove& Prototype) : CBTActionNode(Prototype)
+{
+}
+
 CBTMove::~CBTMove()
 {
 }
-HRESULT CBTMove::Initalize(void* pArg)
+HRESULT CBTMove::InitializePrototype()
 {
-	
-	__super::Initalize(pArg);
 
 	return S_OK;
 }
-HRESULT CBTMove::Priority_Update(_float fTimeDelta)
+HRESULT CBTMove::Initalize(void* pArg)
 {
-	return E_NOTIMPL;
-}
 
-HRESULT CBTMove::Update(_float fTimeDelta)
-{
-	return E_NOTIMPL;
-}
+	__super::Initalize(pArg);
 
-HRESULT CBTMove::Late_Update(_float fTimeDelta)
-{
-	return E_NOTIMPL;
+	return S_OK;
 }
 
 EVALUATE CBTMove::Evaluate()
 {
 	return EVALUATE();
+}
+E::UPtr<CBTMove> CBTMove::Create()
+{
+	auto pInstance = E::ToUPtr(new CBTMove{});
+	if (FAILED(pInstance->InitializePrototype()))
+	{
+		MSG_BOX("Failed to Created : CBTMove");
+		return nullptr;
+	}
+	return  pInstance;
+}
+E::UPtr<E::CBTRoot> CBTMove::Clone(void* pArg)
+{
+	auto	pInstance = E::ToUPtr(new CBTMove{ *this });
+	if (FAILED(pInstance->Initalize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CBTMove");
+		return nullptr;
+	}
+
+	return pInstance;
 }

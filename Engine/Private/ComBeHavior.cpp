@@ -23,8 +23,9 @@ HRESULT CComBeHavior::Initialize(void* pArg)
 {
     if (FAILED(__super::Initialize(pArg)))
         return E_FAIL;
-
+    
     CBTRoot::BTROOT_DESC BtRoot{};
+    BtRoot.Handle    = GetGameObject()->GetHandle();
     BtRoot.NodeName = "Main_Selector";
     BtRoot.m_GuiNode = (GUINODE(BEHAVIOR::SELECTOR, m_iNodeID, "Main_Selector", _float2(40, 50), 0.5f, _float4(255, 100, 100, 1)));
     BtRoot.m_GuiLink = (GUINODE_LINK(2));
@@ -76,6 +77,7 @@ void CComBeHavior::UpdateGUI()
     
     if (ImGui::Button("Open BTEditor"))
     {
+        
         CGameInstance::Get().OpenBeHavior(GetGameObject()->GetHandle());
     }
 }

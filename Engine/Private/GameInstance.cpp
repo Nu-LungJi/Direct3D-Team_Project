@@ -23,6 +23,7 @@
 #include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
 #include "NodeEditor.h"
+#include "Action_Manager.h"
 #include "Light.h"
 #include "ComCollider.h"
 
@@ -176,6 +177,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+
+	m_pActionManager = CAction_Manager::Create();
+	if (m_pActionManager == nullptr)
+		return E_FAIL;
+
     return S_OK;
 }
 
@@ -333,6 +339,8 @@ void CGameInstance::Release_Engine()
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
+	m_pNodeEditor.reset();
+	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
@@ -1250,5 +1258,20 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
 {
 	return m_pNodeEditor->OpenBeHavior(Handle);
+}
+#pragma endregion
+
+#pragma region NODE_EDITOR
+HRESULT					CGameInstance::Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction)
+{
+	return m_pActionManager->Add_Action_Prototype(strActionName, std::move(pAction));
+}
+UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos,CHandle Handle)
+{
+	return m_pActionManager->Show_ActioNode_List(iNode, vNodePos, Handle);
+}
+void				CGameInstance::Show_Action_NodeWidget(CBTRoot* pNode)
+{
+	m_pActionManager->Show_Action_NodeWidget(pNode);
 }
 #pragma endregion

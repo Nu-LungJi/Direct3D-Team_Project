@@ -234,6 +234,7 @@ call CopyClient.bat</Command>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\public\Action_Manager.h" />
     <ClInclude Include="..\Public\AnimEdit_Manager.h" />
     <ClInclude Include="..\Public\BaseApp.h" />
     <ClInclude Include="..\public\Beam_CPU.h" />
@@ -258,6 +259,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ComConstantBuffer.h" />
     <ClInclude Include="..\Public\Component.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
+    <ClInclude Include="..\Public\CreatureEditor.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
     <ClInclude Include="..\Public\Engine_Base.h" />
@@ -481,6 +483,7 @@ call CopyClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\private\Action_Manager.cpp" />
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp" />
     <ClCompile Include="..\Private\BaseApp.cpp" />
     <ClCompile Include="..\private\Beam_CPU.cpp" />
@@ -506,6 +509,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ComModelInstance.cpp" />
     <ClCompile Include="..\Private\Component.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
+    <ClCompile Include="..\Private\CreatureEditor.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />
     <ClCompile Include="..\Private\FlyCamera.cpp" />
     <ClCompile Include="..\Private\FontManager.cpp" />
