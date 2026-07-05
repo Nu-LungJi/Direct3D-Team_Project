@@ -8,15 +8,14 @@ class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
 class CResModel;
-class CComModelInstance;
-class CComAnimator;
+class CComStaticModelInstance;
 NS_END
 
 NS_BEGIN(Client)
-class CLightObject final : public CGameObject
+class CTest_StaticModel final : public CGameObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CLightObject, CGameObject)
+	DECLARE_DERIVED_TYPE(CTest_StaticModel, CGameObject)
 
 public:
 	typedef struct tagTerrainDesc : public CGameObject::GAMEOBJECT_DESC
@@ -24,8 +23,8 @@ public:
 	}DESC;
 
 private:
-	CLightObject();
-	~CLightObject() override;
+	CTest_StaticModel();
+	~CTest_StaticModel() override;
 
 public:
 	void UpdateGUI() override;
@@ -38,16 +37,17 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
-	CComModelInstance* m_pComModelInstance{};
-	CComAnimator* m_pModelAnimator{};
+	CComStaticModelInstance* m_pComModelInstance{};
 
-	SPtr<CResPixelShader> m_pResPixelShader{};
-	SPtr<CResVertexShader> m_pResVertexShader{};
+	// nonAnim
+	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
+	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
+
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
 public:
-	static E::UPtr<CLightObject> Create();
+	static E::UPtr<CTest_StaticModel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

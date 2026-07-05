@@ -37,12 +37,23 @@
 #include "ResFont.h"
 #include "ResFontCustom.h"
 
-#include "ResTestModel.h"
-#include "ResTestModelAnim.h"
-#include "ResTestModelMesh.h"
-#include "ResTestModelChanel.h"
-#include "ResTestModelMaterial.h"
-#include "ResTestModelBone.h"
+//#include "ResTestModel.h"
+//#include "ResTestModelAnim.h"
+//#include "ResTestModelMesh.h"
+//#include "ResTestModelChanel.h"
+//#include "ResTestModelMaterial.h"
+//#include "ResTestModelBone.h"
+
+
+#include "ResModel.h"
+#include "ResStaticModel.h"
+#include "ResModelAnim.h"
+#include "ResModelMesh.h"
+#include "ResStaticModelMesh.h"
+#include "ResModelChanel.h"
+#include "ResModelMaterial.h"
+#include "ResModelBone.h"
+
 
 static const char* TAG_RES_GRP_PERMANENT_BUFFER = "PERMANENT_BUFFER";
 static const char* TAG_RES_GRP_PERMANENT_SHADER = "PERMANENT_SHADER";

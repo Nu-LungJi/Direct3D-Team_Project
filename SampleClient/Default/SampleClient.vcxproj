@@ -197,6 +197,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
+    <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -227,6 +228,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
+    <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

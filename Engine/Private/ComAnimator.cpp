@@ -2,7 +2,8 @@
 #include "GameInstance.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
-#include "ResTestModelAnim.h"
+#include "ResModelAnim.h"
+#include "ResModel.h"
 NS_USING(Engine)
 
 
@@ -61,9 +62,6 @@ HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, const std::string
 
 HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum)
 {
-
-
-
 	auto pModel = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag)->GetModel();
     
     if(pModel == nullptr)

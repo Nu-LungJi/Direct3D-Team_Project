@@ -3,7 +3,7 @@
 #include  "GameObject.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
-
+#include "ResModel.h"
 NS_USING(Engine)
 
 
@@ -48,6 +48,54 @@ void CAnimEdit_Manager::Update(_float fTimeDelta)
 
 }
 
+
+uint32_t CAnimEdit_Manager::GetAnimIndex()
+{
+    int m_iSelectedAnimIndex = -1;
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if (pSampleObj == nullptr)
+        return m_iSelectedAnimIndex;
+
+    auto pComModelInstance =
+        pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+    auto pComAnimator =
+        pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+    if (nullptr == pComAnimator)
+        return m_iSelectedAnimIndex;
+
+    if (ImGui::BeginPopupModal("SelectAnimation", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        auto pModel = pComModelInstance->GetModel();
+
+        if (pModel)
+        {
+            auto& anim = pModel->GetAnimations();
+
+            for (uint32_t i = 0; i < anim.size(); ++i)
+            {
+                const std::string& animName = anim[i]->GetAnimName();
+
+                if (ImGui::Selectable(animName.c_str()))
+                {
+                    m_iSelectedAnimIndex = static_cast<int>(i);
+                
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+        }
+
+        if (ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
+    return m_iSelectedAnimIndex;
+}
 
 void CAnimEdit_Manager::IMGUI_Select_AnimType()
 {
@@ -208,13 +256,74 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
     ImGui::End();
 }
 
-void CAnimEdit_Manager::UpdateGUI()
+void CAnimEdit_Manager::IMGUI_Select_Animation()
 {
-    if (m_hTestModel.GetIndex() != 0)
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if (!pSampleObj)
         return;
 
-	//IMGUI_Select_AnimType();
+    auto pComModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+    auto pComAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+    if (!pComModelInstance || !pComAnimator)
+        return;
+
+    auto& animations = pComModelInstance->GetModel()->GetAnimations();
+
+    ImGui::Begin("Animation List");
+
+    if (ImGui::TreeNode("Animation"))
+    {
+        for (uint32_t i = 0; i < animations.size(); ++i)
+        {
+            auto pAnim = animations[i];
+
+            if (!pAnim)
+                continue;
+
+            bool bSelected = (pComAnimator->GetPlayAnimIndex() == i);
+
+            if (ImGui::Selectable( pAnim->GetAnimName().c_str(), bSelected))
+            {
+                pComAnimator->SetPlayAnimIndex(i);
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::End();
+}
+
+void CAnimEdit_Manager::IMGUI_TestGetAnimIndex()
+{
+    ImGui::Begin("Anim Index Test");
+
+    if (ImGui::Button("Select Animation"))
+    {
+        ImGui::OpenPopup("SelectAnimation");
+    }
+
+    uint32_t iIndex = GetAnimIndex();
+
+    if (iIndex != static_cast<uint32_t>(-1))
+    {
+        ImGui::Text("Selected Index : %u", iIndex);
+    }
+
+    ImGui::End();
+
+}
+void CAnimEdit_Manager::UpdateGUI()
+{
+    if (&m_hTestModel == nullptr)
+        return;
+
+	IMGUI_Select_AnimType();
     IMGUI_Slider_Animation();
+    IMGUI_Select_Animation();
+    IMGUI_TestGetAnimIndex();
 }
 
 

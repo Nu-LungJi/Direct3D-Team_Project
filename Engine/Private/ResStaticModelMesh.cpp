@@ -1,0 +1,168 @@
+#include "pch.h"
+#include "ResStaticModelMesh.h"
+
+#include <fstream>
+
+NS_USING(Engine)
+
+CResStaticModelMesh::CResStaticModelMesh(const _string& sPath, ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
+    : CResVIBuffer{ sPath, pDevice,pContext }
+{
+}
+
+CResStaticModelMesh::~CResStaticModelMesh()
+{
+}
+
+HRESULT CResStaticModelMesh::Load(const std::any& arg)
+{
+
+    auto descArg = std::any_cast<DESC>(&arg);
+    if (!descArg)
+    {
+        return E_FAIL;
+    }
+
+    if (m_eState == STATE::LOADED)
+    {
+        return S_OK;
+    }
+    m_eState = STATE::LOADING;
+    auto ptr = descArg->ptr;
+    auto eType = descArg->eType;
+    auto& pModel = descArg->pModel;
+    auto& PreTransformMatrix = descArg->PreTransformMatrix;
+
+    {
+        if (FAILED(Ready_NonAnimMesh(ptr, PreTransformMatrix)))
+            return E_FAIL;
+    }
+
+
+    m_eState = STATE::LOADED;
+    return S_OK;
+}
+
+HRESULT CResStaticModelMesh::Unload(const std::any& arg)
+{
+
+    m_eState = STATE::UNLOAD;
+    return S_OK;
+}
+
+HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransformMatrix)
+{
+    auto vertexes = std::make_shared<std::vector<VTXMESH>>();
+    auto indices = std::make_shared<std::vector<uint32_t>>();
+
+    uint32_t nameLen = *(uint32_t*)pPoint;
+    pPoint += sizeof(uint32_t);
+
+
+
+    std::string name;
+    name.resize(nameLen);
+
+    memcpy(name.data(), pPoint, nameLen);
+    pPoint += nameLen;
+
+
+    uint32_t materialIndex = *(uint32_t*)pPoint;
+    pPoint += sizeof(uint32_t);
+
+
+    uint32_t vCount = *(uint32_t*)pPoint;
+    pPoint += sizeof(uint32_t);
+
+
+    uint32_t iCount = *(uint32_t*)pPoint;
+    pPoint += sizeof(uint32_t);
+
+
+    vertexes->resize(vCount);
+    memcpy(vertexes->data(), pPoint, sizeof(VTXMESH) * vCount);
+    pPoint += sizeof(VTXMESH) * vCount;
+
+
+    indices->resize(iCount);
+    memcpy(indices->data(), pPoint, sizeof(uint32_t) * iCount);
+    pPoint += sizeof(uint32_t) * iCount;
+
+    m_iMaterialIndex = materialIndex;
+    //m_iNumVertexBuffers = 1;
+    m_iNumVertices = vCount;
+
+    m_iNumIndices = (UINT)indices->size();
+    m_iIndexStride = sizeof(uint32_t);
+    m_eIndexFormat = DXGI_FORMAT_R32_UINT;
+    m_ePrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+
+    for (size_t i = 0; i < m_iNumVertices; i++)
+    {
+
+        XMStoreFloat3(&(*vertexes)[i].vPosition, XMVector3TransformCoord(XMLoadFloat3(&(*vertexes)[i].vPosition), PreTransformMatrix));
+
+        XMStoreFloat3(&(*vertexes)[i].vNormal, XMVector3TransformNormal(XMLoadFloat3(&(*vertexes)[i].vNormal), PreTransformMatrix));
+
+
+        //----------------------- 더 추가 할 예정 ----------------------------------------------------------------------------------
+    }
+
+    //-------------------------------------------------------------------
+    m_iVertexStride = sizeof(VTXMESH);
+    D3D11_BUFFER_DESC           VertexBufferDesc{};
+    VertexBufferDesc.ByteWidth = m_iNumVertices * sizeof(VTXMESH);
+    VertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    VertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    VertexBufferDesc.StructureByteStride = m_iVertexStride;
+    VertexBufferDesc.CPUAccessFlags = 0;
+    VertexBufferDesc.MiscFlags = 0;
+
+
+
+    D3D11_SUBRESOURCE_DATA          VertexInitialData{};
+    VertexInitialData.pSysMem = vertexes->data();
+
+    if (FAILED(CreateVertexBuffer(VertexBufferDesc, &VertexInitialData)))
+    {
+        m_eState = STATE::LOADFAIL;
+        return E_FAIL;
+    }
+
+    //-----------------------------------------------------------------------------------
+
+
+    D3D11_BUFFER_DESC           IndexBufferDesc{};
+    IndexBufferDesc.ByteWidth = m_iNumIndices * m_iIndexStride;
+    IndexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    IndexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    IndexBufferDesc.StructureByteStride = m_iIndexStride;
+    IndexBufferDesc.CPUAccessFlags = 0;
+    IndexBufferDesc.MiscFlags = 0;
+
+
+
+
+
+    D3D11_SUBRESOURCE_DATA          IndexInitialData{};
+    IndexInitialData.pSysMem = indices->data();
+
+
+    if (FAILED(CreateIndexBuffer(IndexBufferDesc, &IndexInitialData)))
+    {
+        m_eState = STATE::LOADFAIL;
+        return E_FAIL;
+    }
+
+
+    return S_OK;
+
+
+
+}
+
+SPtr<CResStaticModelMesh> CResStaticModelMesh::Create()
+{
+    return ToSPtr(new CResStaticModelMesh{ "",CGameInstance::Get().GetGraphicDevice(),CGameInstance::Get().GetGraphicDeviceContext() });
+}
