@@ -8,6 +8,7 @@ class CResModelMaterial;
 class CResModelBone;
 class CResModelMaterial;
 class CResStaticModel;
+class CResTexture2D;
 
 class ENGINE_DLL CComStaticModelInstance : public CComponent
 {
@@ -33,6 +34,8 @@ private:
 
 public:
 	HRESULT Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
+	SPtr<CResTexture2D> Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
+
 public:
 	SPtr<CResStaticModel> GetModel() { return m_pModel; }
 

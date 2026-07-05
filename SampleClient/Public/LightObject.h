@@ -7,7 +7,7 @@ class CResTexture2D;
 class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
-class CResTestModel;
+class CResModel;
 class CComModelInstance;
 class CComAnimator;
 NS_END

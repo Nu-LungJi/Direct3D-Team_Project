@@ -169,7 +169,7 @@ HRESULT CImporter::ExportFBX(const std::string& outpath)
     {
         //ExportStaticAnim(finalPath);
     }
-    else if (m_bHasBone && m_bHasAnimation)
+    else if (m_bHasBone )
     {
         ExportSkeletal(finalPath);
     }

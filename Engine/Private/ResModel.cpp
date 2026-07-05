@@ -35,6 +35,10 @@ HRESULT CResModel::Load(const std::any& arg)
 	{	
 		std::ifstream file(m_sPath, std::ios::binary | std::ios::ate);
 
+		if (!std::filesystem::exists(m_sPath))
+		{
+			return E_FAIL;
+		}
 
 		if (!file.is_open())
 		{
