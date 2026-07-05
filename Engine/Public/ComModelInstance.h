@@ -39,7 +39,9 @@ public:
 
 	SPtr<CResTexture2D>	Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 public:
-	SPtr<CResModel> GetModel() { return m_pModel; }	
+	SPtr<CResModel> GetModel() { return m_pModel; }
+	SPtr<const CResModel> GetModel() const { return m_pModel; }
+	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
 
 private:
 	SPtr<CResModel> m_pModel;

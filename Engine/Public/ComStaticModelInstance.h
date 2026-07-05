@@ -38,7 +38,7 @@ public:
 
 public:
 	SPtr<CResStaticModel> GetModel() { return m_pModel; }
-
+	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
 private:
 	SPtr<CResStaticModel> m_pModel;
 public:

@@ -26,6 +26,8 @@
 #include "Action_Manager.h"
 #include "Light.h"
 #include "ComCollider.h"
+#include "MapMeshObject.h"
+#include "MapManager.h"
 
 #include "ParticleManager.h"
 #include "Particle.h"
@@ -172,6 +174,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pMapManager = CMapManager::Create();
+	if (m_pMapManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	m_pNodeEditor = CNodeEditor::Create();
 	if (m_pNodeEditor == nullptr)
 	{
@@ -317,6 +324,9 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 
 	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+
+	m_pMapManager->Update(fTimeDelta);
+
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
@@ -327,6 +337,10 @@ HRESULT CGameInstance::Draw()
 	{
 		return E_FAIL;
 	}
+
+#ifdef _DEBUG
+	m_pMapManager->RenderDebugMapChunk();
+#endif
     return S_OK;
 }
 
@@ -354,6 +368,7 @@ void CGameInstance::Release_Engine()
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pResourceManager.reset();
+	m_pMapManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -814,6 +829,11 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
+	if (AddPrototype("PERMANENT", "Prototype_GameObject_MapMeshObject", CMapMeshObject::Create()))
+	{
+		return E_FAIL;
+	}
+
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;
@@ -877,6 +897,10 @@ const std::vector<SPtr<CResource>>* CGameInstance::GetResource(const StringID& s
 const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* CGameInstance::GetResource(const StringID& sGroupTag) const
 {
 	return m_pResourceManager->GetResource(sGroupTag);
+}
+const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& CGameInstance::GetResources() const
+{
+	return m_pResourceManager->GetResources();
 }
 HRESULT CGameInstance::LoadResource(const StringID& sGroupTag)
 {
@@ -1231,6 +1255,55 @@ HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pR
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
 }
+#pragma endregion
+
+#pragma region MAP_MANAGER
+HRESULT CGameInstance::SaveMap(const std::string& path)
+{
+	return m_pMapManager->SaveMap(path);
+}
+HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
+{
+	return m_pMapManager->LoadMap(path, clearBeforeLoad);
+}
+HRESULT CGameInstance::LoadMapData(const std::string& path)
+{
+	return m_pMapManager->LoadMapData(path);
+}
+HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)
+{
+	return m_pMapManager->LoadChunk(coord);
+}
+HRESULT CGameInstance::UnLoadMapChunk(const MAPCHUNK_COORD& coord)
+{
+	return m_pMapManager->UnLoadChunk(coord);
+}
+void CGameInstance::RebuildMapChunks()
+{
+	m_pMapManager->RebuildChunks();
+}
+const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
+{
+	return m_pMapManager->GetChunks();
+}
+const _float3& CGameInstance::GetMapChunkSize() const
+{
+	return m_pMapManager->GetChunkSize();
+}
+void CGameInstance::SetMapChunkStreaming(_bool enable)
+{
+	m_pMapManager->SetChunkStreaming(enable);
+}
+_bool CGameInstance::IsMapChunkStreaming() const
+{
+	return m_pMapManager->IsChunkStreaming();
+}
+#ifdef _DEBUG
+void CGameInstance::SetDebugDrawMapChunk(_bool draw)
+{
+	return m_pMapManager->SetDebugDrawMapChunk(draw);
+}
+#endif
 #pragma endregion
 
 #pragma region LIGHT_MANAGER

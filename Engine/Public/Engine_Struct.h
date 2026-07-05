@@ -229,4 +229,16 @@ namespace Engine
 
 	///////NodeEditor용
 
+	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
+	typedef struct tagMapChunkCoord
+	{
+		int64_t x = 0;
+		int64_t y = 0;
+		int64_t z = 0;
+
+		bool operator==(const tagMapChunkCoord& rhs) const
+		{
+			return x == rhs.x && y == rhs.y && z == rhs.z;
+		}
+	}MAPCHUNK_COORD;
 }

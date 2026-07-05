@@ -295,6 +295,12 @@
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\MapMeshObject">
+      <UniqueIdentifier>{771de9b5-bb1c-4900-8366-21c558f64744}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DebugDraw">
+      <UniqueIdentifier>{766f1db3-e511-4caf-a8bc-c189164d5b76}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resource\Buffer\InstanceBuffer">
       <UniqueIdentifier>{c6f96c4d-a6c1-4ed5-8f61-31cd10d721d3}</UniqueIdentifier>
     </Filter>
@@ -681,6 +687,15 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshObject.h">
+      <Filter>GameObject\MapMeshObject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\DebugDraw.h">
+      <Filter>DebugDraw</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Particle_CPU.h">
       <Filter>Particle</Filter>
     </ClInclude>
@@ -1033,6 +1048,15 @@
     </ClCompile>
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshObject.cpp">
+      <Filter>GameObject\MapMeshObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapManager.cpp">
+      <Filter>GameObject\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\DebugDraw.cpp">
+      <Filter>DebugDraw</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Particle_CPU.cpp">
       <Filter>Particle</Filter>

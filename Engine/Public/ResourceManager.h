@@ -35,6 +35,8 @@ public:
 	std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) { return _FindResource(sGroupTag, sResTag); };
 	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const { return _FindResource(sGroupTag, sResTag); };
 	std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) { return FindGroup(sGroupTag); };
+	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const { return FindGroup(sGroupTag); };
+	const std::unordered_map<StringID, RESOURCES>& GetResources() const { return m_Resources; }
 	HRESULT LoadResource(const StringID& sGroupTag);
 	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
 	HRESULT UnLoadResource(const StringID& sGroupTag);

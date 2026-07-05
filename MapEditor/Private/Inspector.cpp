@@ -1,11 +1,66 @@
 #include "pch.h"
 #include "Inspector.h"
 #include "ComTransform.h"
+#include "GameInstance.h"
+#include "MapMeshObject.h"
+#include "Resources.h"
 
 NS_USING(Client)
 
 namespace
 {
+	struct ModelResourceGUIItem
+	{
+		std::string groupName{};
+		std::string resourceName{};
+		std::string label{};
+	};
+
+	std::string SafeDbgStr(const E::StringID& id)
+	{
+		const char* text = id.GetDbgStr();
+		return text != nullptr ? text : "<unnamed>";
+	}
+
+	std::vector<ModelResourceGUIItem> CollectModelResourceGUIItems()
+	{
+		std::vector<ModelResourceGUIItem> items{};
+
+		const auto& resourceGroups = E::CGameInstance::Get().GetResources();
+		for (const auto& [groupId, resources] : resourceGroups)
+		{
+			const std::string groupName = SafeDbgStr(groupId);
+			for (const auto& [resourceId, resourceList] : resources)
+			{
+				const std::string resourceName = SafeDbgStr(resourceId);
+
+				const bool hasModelResource = std::any_of(resourceList.begin(), resourceList.end(),
+					[](const E::SPtr<E::CResource>& resource)
+					{
+						return resource != nullptr && resource->IsA(E::CResStaticModel::StaticType);
+					});
+
+				if (!hasModelResource)
+				{
+					continue;
+				}
+
+				ModelResourceGUIItem item{};
+				item.groupName = groupName;
+				item.resourceName = resourceName;
+				item.label = groupName + " / " + resourceName;
+				items.push_back(std::move(item));
+			}
+		}
+
+		std::sort(items.begin(), items.end(), [](const ModelResourceGUIItem& lhs, const ModelResourceGUIItem& rhs)
+			{
+				return lhs.label < rhs.label;
+			});
+
+		return items;
+	}
+
 	bool DrawVec3Control(const char* label, E::_float3& value, const E::_float3& resetValue, float speed)
 	{
 		bool changed = false;
@@ -53,6 +108,41 @@ namespace
 
 		transform.Update();
 	}
+
+	void DrawMapMeshObjectInspector(E::CMapMeshObject& mapMeshObject)
+	{
+		ImGui::TextUnformatted("Model");
+		ImGui::SameLine(82.f);
+		ImGui::Text("%s / %s", mapMeshObject.GetModelResourceGroup().c_str(), mapMeshObject.GetModelResourceTag().c_str());
+
+		const std::string preview = mapMeshObject.GetModelResourceGroup() + " / " + mapMeshObject.GetModelResourceTag();
+		if (ImGui::BeginCombo("Model Resource", preview.c_str()))
+		{
+			const auto modelItems = CollectModelResourceGUIItems();
+			for (const auto& item : modelItems)
+			{
+				const bool bSelected = item.groupName == mapMeshObject.GetModelResourceGroup()
+					&& item.resourceName == mapMeshObject.GetModelResourceTag();
+
+				if (ImGui::Selectable(item.label.c_str(), bSelected))
+				{
+					mapMeshObject.SetModelResource(item.groupName, item.resourceName);
+				}
+
+				if (bSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+
+			if (modelItems.empty())
+			{
+				ImGui::TextDisabled("No CResTestModel resources.");
+			}
+
+			ImGui::EndCombo();
+		}
+	}
 }
 
 CInspector::CInspector()
@@ -88,6 +178,15 @@ void CInspector::UpdateGUI(E::_float fTimeDelta)
 	{
 		DrawSelectedTransform(pSelectedObject->GetTransform());
 	}
+
+	if (auto* pMapMeshObject = E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(*pSelectedHandle))
+	{
+		if (ImGui::CollapsingHeader("MapMeshObject", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			DrawMapMeshObjectInspector(*pMapMeshObject);
+		}
+	}
+
 	ImGui::EndChild();
 }
 
