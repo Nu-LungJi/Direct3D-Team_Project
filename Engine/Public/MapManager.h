@@ -77,7 +77,7 @@ public:
 	HRESULT SaveChunk(const MAPCHUNK_COORD& coord, const std::string& chunkPath); // 청크 단위 저장
 
 	HRESULT LoadMapData(const std::string& path);
-	HRESULT LoadChunk(const MAPCHUNK_COORD& coord);
+	HRESULT LoadChunk(const MAPCHUNK_COORD& coord); // 메인스레드 동기 로드, 저장/툴용
 	HRESULT UnLoadChunk(const MAPCHUNK_COORD& coord);
 
 // ---------------------------------MapChunk-----------------------------------
@@ -122,11 +122,12 @@ private:
 
 // -------------------------------Worker---------------------------------------
 public:
-	HRESULT RequestLoadChunkAsync(const MAPCHUNK_COORD& coord); // 워커에게 청크 로딩 요청
+	HRESULT RequestLoadChunkAsync(const MAPCHUNK_COORD& coord); // 워커에게 청크 로딩 요청 // 스트리밍용 비동기 요청
 	void ProcessLoadedChunkResults();
 
 private:
-	HRESULT ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& result); // 실제 오브젝트 생성
+	HRESULT ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& result); // 실제 오브젝트 생성 // 메인스레드 월드 반영
+	_bool IsChunkInStreamingRange(const MAPCHUNK_COORD& coord); // 나중에 도착한 Chunk로딩 결과가 유효한지 확인하기 위한 함수
 
 private:
 	std::mutex m_LoadResultMutex{};
