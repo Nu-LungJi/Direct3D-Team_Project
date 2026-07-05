@@ -343,6 +343,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\public\ResStructuredBuffer.h" />
     <ClInclude Include="..\Public\TimeProvider.h" />
     <ClInclude Include="..\Public\Timer.h" />
+    <ClInclude Include="..\public\Trail_CPU.h" />
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
     <ClInclude Include="..\Public\UIManager.h" />
@@ -547,6 +548,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
     <ClCompile Include="..\Private\TimeProvider.cpp" />
     <ClCompile Include="..\Private\Timer.cpp" />
+    <ClCompile Include="..\private\Trail_CPU.cpp" />
     <ClCompile Include="..\Private\UICamera.cpp" />
     <ClCompile Include="..\Private\UIObject.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />

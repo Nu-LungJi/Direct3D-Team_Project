@@ -97,7 +97,6 @@ HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_
 	auto Mesh = m_pModel->GetMeshes();
 	auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures(); 
  
-
     if (Textures[eMaterialType][iTextureIndex] == nullptr)
         return S_OK;
 

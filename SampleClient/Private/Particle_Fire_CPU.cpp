@@ -26,7 +26,7 @@ CParticle_Fire_CPU::~CParticle_Fire_CPU()
 HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
 {
     DESC desc{};
-    desc.iMaxParticles = 50;
+    desc.iMaxParticles = 5000;
     desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
     desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };
     desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX" };

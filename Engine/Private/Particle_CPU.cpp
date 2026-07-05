@@ -63,6 +63,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (FAILED(m_pResPixelShader->Load()))
         return E_FAIL;
 
+
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
 

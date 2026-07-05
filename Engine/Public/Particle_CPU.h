@@ -35,6 +35,7 @@ public:
         std::pair<StringID, StringID> VSID;  // 버텍스 쉐이더
         std::pair<StringID, StringID> PSID;  // 픽셀 쉐이더
         PARTICLE_TYPE                  type;
+        MESHORTEXTURE                  whatKind;
     };
 public:
     DECLARE_DERIVED_TYPE(CParticle_CPU, CParticle)

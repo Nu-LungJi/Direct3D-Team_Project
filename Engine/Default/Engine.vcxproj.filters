@@ -295,6 +295,9 @@
     <Filter Include="Particle\Beam">
       <UniqueIdentifier>{25baf6d4-8ef0-42f5-a817-5e51b5a77092}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particle\Trail">
+      <UniqueIdentifier>{fa144d76-945b-4f75-9b1e-e904b23c45de}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -642,6 +645,9 @@
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Trail_CPU.h">
+      <Filter>Particle\Trail</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -964,6 +970,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Trail_CPU.cpp">
+      <Filter>Particle\Trail</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -15,6 +15,8 @@ CBeam_CPU::CBeam_CPU(const CBeam_CPU& rhs)
 
 CBeam_CPU::~CBeam_CPU()
 {
+    m_vecJaggedPoints.clear();   
+     m_vecBeamVertices.clear();
 }
 
 HRESULT CBeam_CPU::Initialize(void* pArg)
@@ -82,13 +84,11 @@ void CBeam_CPU::Update(_float fTimeDelta)
         return;
     }
 
-    // 지그재그 모양은 매 프레임이 아니라 fFlickerInterval마다만 다시 뽑는다
-    // (매 프레임 다시 뽑으면 너무 어지럽게 흔들리고, 실제 번개도 짧은 간격으로 "스냅"하듯 바뀐다)
     m_fFlickerTimer += fTimeDelta;
     if (m_fFlickerTimer >= m_Desc.fFlickerInterval)
     {
         m_fFlickerTimer = 0.f;
-        //RegenerateJaggedPath();
+        RegenerateJaggedPath();
         BuildBeamGeometry();
     }
 }

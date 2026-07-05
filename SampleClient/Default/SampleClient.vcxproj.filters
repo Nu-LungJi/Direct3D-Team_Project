@@ -156,6 +156,9 @@
     <ClInclude Include="..\public\Particle_Ribbon.h">
       <Filter>Particles</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Trail_Example.h">
+      <Filter>Particles</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -198,9 +201,6 @@
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Particle.cpp">
-      <Filter>Particles</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\LevelAnimEditor.cpp">
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
@@ -237,6 +237,9 @@
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\Trail_Example.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
@@ -255,6 +258,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

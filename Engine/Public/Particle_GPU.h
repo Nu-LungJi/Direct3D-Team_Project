@@ -19,10 +19,11 @@ public:
     // 이펙트별로 달라지는 값은 전부 여기로 뺐다 ? 하드코딩 금지.
     struct DESC
     {
-        uint32_t     iMaxParticles ;   // 예전 하드코딩 1000
+        uint32_t     iMaxParticles = 1000;   
         int32_t      iBehaviorType ;      //  (HLSL 쪽 분기 인덱스)
         PARTICLE_TYPE       type;
         std::pair<StringID, StringID> textureID;  // 파티클 텍스처
+
 
     };
 

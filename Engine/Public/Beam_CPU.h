@@ -18,10 +18,10 @@ public:
         _float      fScrollSpeed = 1.f;
 
         // 번개 지그재그(중점 변위) 관련 - 사인파 파라미터를 대체
-        uint32_t    iDisplacementIterations = 5;     // 재귀 횟수. 세그먼트 개수 = 2^iterations
-        _float      fDisplacementAmplitude = 1.5f;  // 첫 반복에서의 최대 좌우 편차
+        uint32_t    iDisplacementIterations = 6;     // 재귀 횟수. 세그먼트 개수 = 2^iterations
+        _float      fDisplacementAmplitude = 2.5f;  // 첫 반복에서의 최대 좌우 편차
         _float      fDisplacementDamping = 0.5f;  // 반복마다 편차가 줄어드는 비율
-        _float      fFlickerInterval = 0.05f; // 이 주기마다 지그재그 모양을 새로 뽑음 (깜빡임 느낌)
+        _float      fFlickerInterval = 0.35f; // 이 주기마다 지그재그 모양을 새로 뽑음 (깜빡임 느낌)
     };
 
 protected:
