@@ -23,6 +23,7 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
+class CNodeEditor;
 class CParticleManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
@@ -257,6 +258,10 @@ public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
+#pragma region NODE_EDITOR
+	HRESULT	   OpenBeHavior(CHandle Handle);
+#pragma endregion
+
 public:
 	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop = false, _float fSpawnInterval = 0.1f);
@@ -304,6 +309,7 @@ private:
 	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CNodeEditor>		m_pNodeEditor{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
 

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ComBeHavior.h"
 #include "BTSelector.h"
-
+#include "BTSecqunce.h"
 CComBeHavior::CComBeHavior()
 {
 }
@@ -19,48 +19,65 @@ HRESULT CComBeHavior::InitializePrototype(void* pArg)
     return S_OK;
 }
 
-HRESULT CComBeHavior::Initalize(void* pArg)
+HRESULT CComBeHavior::Initialize(void* pArg)
 {
-    m_Root = std::move(CBTSelector::Create(pArg));
+    if (FAILED(__super::Initialize(pArg)))
+        return E_FAIL;
+
+    CBTRoot::BTROOT_DESC BtRoot{};
+    BtRoot.NodeName = "Main_Selector";
+    BtRoot.m_GuiNode = (GUINODE(BEHAVIOR::SELECTOR, m_iNodeID, "Main_Selector", _float2(40, 50), 0.5f, _float4(255, 100, 100, 1)));
+    BtRoot.m_GuiLink = (GUINODE_LINK(2));
+   
+    m_Root = std::move(CBTSelector::Create(&BtRoot));
+    m_NodeMap[m_iNodeID++] = m_Root.get();
     return S_OK;
 }
-int32_t CComBeHavior::Find_Secquence(const _string& strSecquenceName)
+CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)
 {
-    auto iter = m_NodeHandles.find(strSecquenceName);
+    auto iter = m_NodeMap.find(iNode);
+   
+    if (iter != m_NodeMap.end())
+        return iter->second;
 
-    if (iter == m_NodeHandles.end())
-        return -1;
-
-    return iter->second;
-}
-HRESULT CComBeHavior::Add_Secqunce(const _string& strSecquenceName)
-{
-    if (Find_Secquence(strSecquenceName) == -1)
-        return E_FAIL;
-
-    uint32_t iIndex = m_NodeHandles.size();
-
-    if(FAILED(m_Root.get()->Add_Secqunce(strSecquenceName)))
-        return E_FAIL;
-
-    m_NodeHandles[strSecquenceName] = iIndex;
-
-}
-HRESULT CComBeHavior::Add_SecqunceToNode(const _string& strSequenceName, UPtr<CBTRoot> pActionNode)
-{
-    int32_t iIndex = Find_Secquence(strSequenceName);
-    if (iIndex == 1) return E_FAIL;
-
-    if(FAILED(m_Root.get()->Add_ActionNode(iIndex, std::move(pActionNode))))
-        return E_FAIL;
-
-    return S_OK;
+    return nullptr;
 }
 
+CBTSelector* CComBeHavior::Get_Selector()
+{
+    return m_Root.get(); 
+}
+
+
+void CComBeHavior::RegistNode(uint32_t iIndex, CBTRoot* pNode)
+{
+    auto iter = m_NodeMap.find(iIndex);
+
+    if (iter == m_NodeMap.end())
+        m_NodeMap[iIndex] = pNode;
+}
+
+void CComBeHavior::UnRegistNode(uint32_t iIndex)
+{
+    auto iter = m_NodeMap.find(iIndex);
+
+    if (iter != m_NodeMap.end())
+        m_NodeMap.erase(iIndex);
+}
 
 void CComBeHavior::Update(_float fTimeDelta)
 {
     m_Root->Update(fTimeDelta);
+}
+void CComBeHavior::UpdateGUI()
+{
+    CComponent::UpdateGUI();
+
+    
+    if (ImGui::Button("Open BTEditor"))
+    {
+        CGameInstance::Get().OpenBeHavior(GetGameObject()->GetHandle());
+    }
 }
 UPtr<CComBeHavior> CComBeHavior::Create()
 {
@@ -76,7 +93,7 @@ UPtr<CComBeHavior> CComBeHavior::Create()
 UPtr<CPrototype> CComBeHavior::Clone(void* pArg)
 {
     auto pInstance = ToUPtr(new CComBeHavior{});
-    if (FAILED(pInstance->Initalize(pArg)))
+    if (FAILED(pInstance->Initialize(pArg)))
     {
         MSG_BOX("Failed to Created : CComBeHavior_Clone");
         return nullptr;
