@@ -75,6 +75,7 @@ HRESULT CNodeEditor::OpenBeHavior(CHandle Handle)
 	return E_FAIL;
 }
 
+
 void CNodeEditor::Show_Editor()
 {
 	if (nullptr == m_pBeHavior) return;
@@ -148,6 +149,8 @@ void CNodeEditor::Show_Editor()
 		}
 		else
 		{
+			if (m_bPopupAction)
+				m_bPopupAction = false;
 			//빈공간 우클릭...
 			if (ImGui::MenuItem("Add_Selector"))
 			{
@@ -161,6 +164,10 @@ void CNodeEditor::Show_Editor()
 				m_pNodeName = "Sequence";
 				m_bPopup = true;
 			}
+			else if (ImGui::MenuItem("Add_Action"))
+			{
+				m_bPopupAction = true;
+			}
 			
 			if (ImGui::MenuItem("Paste", NULL, false, false)) {}
 		}
@@ -171,7 +178,16 @@ void CNodeEditor::Show_Editor()
 	ImVec2 vScene_Pos = ImGui::GetMousePosOnOpeningCurrentPopup() - ImVec2(m_vOffset.x, m_vOffset.y);
 	if (m_bPopup)
 		Add_Node(m_eBTType, m_pNodeName, vScene_Pos);
-
+	if (m_bPopupAction)
+	{
+		auto iter = CGameInstance::Get().Show_ActioNode_List(m_pBeHavior->Get_NodeID(), vScene_Pos);
+		if (iter != nullptr)
+		{
+			Add_NodeToTmp(iter);
+			m_bPopupAction = false;
+		}
+			
+	}
 	ImGui::PopStyleVar();
 
 	//휠로 캔버스 이동
@@ -259,7 +275,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 	GUINODE_LINK* pLink = &pCurNode->Get_GuiNodeLink();
 
 	ImGui::PushID(pNode->iID); // 노드 내부에서 생성되는 widget id 중복방지용
-	Widget(pNode, pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
+	Widget(pCurNode,pNode, pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
 	int32_t iSlot = Choice_StartSlot(pNode,fNode_Slot_Radius);
 
 	if (-1 != iSlot)
@@ -287,22 +303,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 						auto& pSrc = (*(static_cast<CBTComposite*>(pParentNode)->Get_Nodes()))[iParentIndex];
 						pSrc->Get_GuiNodeLink().iStartIdx = -1;
 						pSrc->Get_GuiNodeLink().ParentNode.Reset();
-						m_pBeHavior->UnRegistNode(pSrc->Get_GuiNodeInfo().iID);
-
-						if (m_BTNodesTmp.empty())
-							m_BTNodesTmp.push_back(std::move(pSrc));
-						else
-						{
-							for (size_t i = 0; i < m_BTNodesTmp.size(); ++i)
-							{
-								if (m_BTNodesTmp[i] == nullptr)
-								{
-									m_BTNodesTmp[i] = std::move(pSrc);
-									break;
-								}
-									
-							}
-						}
+						Add_NodeToTmp(pSrc);
 					}
 
 				}
@@ -337,21 +338,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 						pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
 						pSrc->Get_GuiNodeLink().ParentNode.Reset();
 
-						m_pBeHavior->UnRegistNode(pSrc->Get_GuiNodeInfo().iID);
-						if(m_BTNodesTmp.empty())
-							m_BTNodesTmp.push_back(std::move(pSrc));
-						else
-						{
-							for (size_t i = 0; i < m_BTNodesTmp.size(); ++i)
-							{
-								if (m_BTNodesTmp[i] == nullptr)
-								{
-									m_BTNodesTmp[i] = std::move(pSrc);
-									break;
-								}
-									
-							}
-						}
+						Add_NodeToTmp(pSrc);
 					}
 					pCurNode->Get_GuiNodeLink().SlotEnd[iSlot].Reset(); // 연결된 자식 끊기
 					CurNode.eType = NODETYPE::NODE_END; //현재 선택한거
@@ -427,7 +414,7 @@ void CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_ho
 		GUINODE_LINK* pLink = &(*iter)->Get_GuiNodeLink();
 		ImGui::PushID(pNode->iID); // 노드 내부에서 생성되는 widget id 중복방지용
 
-		Widget(pNode,pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
+		Widget((*iter).get(), pNode,pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
 		//동그라미 위에있는지 
 		//현재노드의 동글뱅이 거리랑 가깝냐?
 		int32_t iSlot = Choice_StartSlot(pNode, fNode_Slot_Radius);
@@ -509,7 +496,7 @@ void CNodeEditor::End_Canvas()
 	ImGui::End();
 }
 
-void CNodeEditor::Widget(GUINODE* pNode, GUINODE_LINK* pLink, int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io)
+void CNodeEditor::Widget(CBTRoot* pRoot, GUINODE* pNode, GUINODE_LINK* pLink, int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io)
 {
 	_float2 vMin{};
 	XMStoreFloat2(&vMin, XMLoadFloat2(&m_vOffset) + XMLoadFloat2(&pNode->vPos)); // 캔버스 기준 좌표를 스크린 좌표 기준으로 변환
@@ -521,6 +508,11 @@ void CNodeEditor::Widget(GUINODE* pNode, GUINODE_LINK* pLink, int32_t& iNode_hov
 	//노드 내부으 imgui 위젯 생성	
 	ImGui::BeginGroup();
 	ImGui::Text("%s", pNode->Name.c_str()); //이름..
+	if (pNode->Get_DestInfo().eType == BEHAVIOR::SELECTOR || pNode->Get_DestInfo().eType == BEHAVIOR::SECQUNCE)
+	{
+		if (ImGui::Button("Add Pin"))Pin(pRoot, true);
+		if (ImGui::Button("Del pin"))Pin(pRoot, false);
+	}
 	ImGui::SliderFloat("##value", &pNode->fValue, 0.f, 1.f, "Alpha %2.f"); //알파값 뭐 쓸모가..
 	ImGui::ColorEdit3("##Color", &pNode->vColor.x); //색상 뭐 쓸모가..
 	ImGui::EndGroup();
@@ -616,8 +608,7 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				ImGui::EndPopup();
 				return;
 			}
-				
-			m_BTNodesTmp.push_back(std::move(pNode));
+			Add_NodeToTmp(pNode);
 			ImGui::CloseCurrentPopup();
 		}
 		
@@ -630,7 +621,6 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 		ImGui::EndPopup();
 	}
 
-	//m_BTNodes[ETOUI(BEHAVIOR::SECQUNCE)].push_back());
 }
 
 _bool CNodeEditor::Link_Connect_Check(int32_t iSlot)
@@ -682,9 +672,7 @@ _bool CNodeEditor::ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radiu
 	vScreen = XMLoadFloat2(&m_vOffset) + XMLoadFloat2(&vSlotPos);
 	
 	_float fDist = XMVectorGetX(XMVector2LengthSq(vScreen - vMouse));
-	_bool  bhovered = fDist <= (fNode_Radius +1.f) * (fNode_Radius +1.f);
-	if (bhovered)
-		int32_t i = 0;
+	_bool  bhovered = fDist <= (fNode_Radius +3.f) * (fNode_Radius +3.f);
 	return bhovered;
 }
 
@@ -700,6 +688,7 @@ void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
 	{
 		auto pNode = static_cast<CBTSelector*>(pParent);
 		auto& pNodeArray = (*pNode->Get_Nodes());
+
 		for (size_t i = 0; i < pNodeArray.size(); ++i)
 		{
 			if(nullptr == pNodeArray[i])
@@ -716,6 +705,57 @@ void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
 		}
 	}
 	
+}
+
+void CNodeEditor::Pin(CBTRoot* pNode, _bool bPin)
+{
+	if (bPin)
+	{
+		pNode->Get_GuiNodeLink().SlotEnd.push_back(DEST_NODE());
+		static_cast<CBTComposite*>(pNode)->Get_Nodes()->push_back(nullptr);
+	}
+	else
+	{
+		DEST_NODE pDest = pNode->Get_GuiNodeLink().SlotEnd.back();
+		int32_t   iSlot = pNode->Get_GuiNodeLink().SlotEnd.size() - 1;
+		if (-1 != pDest.iDestNode)
+		{
+			auto& pDestNode = (*(static_cast<CBTComposite*>(pNode)->Get_Nodes()))[iSlot];
+				pDestNode->Get_GuiNodeLink().iStartIdx = -1;
+			if (auto iter = m_pBeHavior->Find_Node(pDest.iDestNode))
+				Add_NodeToTmp(pDestNode);
+		}
+
+		pNode->Get_GuiNodeLink().SlotEnd.pop_back();
+	}
+}
+
+void CNodeEditor::Add_NodeToTmp(UPtr<class CBTRoot>& pRoot)
+{
+	if (nullptr == pRoot)
+	{
+		MSG_BOX("Add Failed To Tmp Node");
+		return;
+	}
+		
+	m_pBeHavior->UnRegistNode(pRoot->Get_GuiNodeInfo().iID);
+
+	if (m_BTNodesTmp.empty())
+		m_BTNodesTmp.push_back(std::move(pRoot));
+	else
+		for (size_t i = 0; i < m_BTNodesTmp.size(); ++i)
+		{
+			if (nullptr == m_BTNodesTmp[i])
+			{
+				m_BTNodesTmp[i] = std::move(pRoot);
+				break;
+			}
+			else
+			{
+				m_BTNodesTmp.push_back(std::move(pRoot));
+				break;
+			}
+		}
 }
 
 

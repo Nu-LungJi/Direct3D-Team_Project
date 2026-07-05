@@ -25,7 +25,7 @@ class CRenderer;
 class CAnimEdit_Manager;
 class CNodeEditor;
 class CParticleManager;
-
+class CAction_Manager;
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
@@ -262,6 +262,11 @@ public:
 	HRESULT	   OpenBeHavior(CHandle Handle);
 #pragma endregion
 
+#pragma region Action_Manager
+	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos);
+#pragma endregion
+
 public:
 	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop = false, _float fSpawnInterval = 0.1f);
@@ -310,6 +315,7 @@ private:
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
+	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
 

@@ -18,23 +18,25 @@ public:
 
 protected:
 	explicit CBTRoot();
-	 ~CBTRoot() override;
-	
+	~CBTRoot() override;
+
 	virtual HRESULT Initalize(void* pArg);
 public:
-	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
-	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
-	virtual HRESULT	Priority_Update(_float fTimeDelta) PURE;
-	virtual HRESULT	Update(_float fTimeDelta)		   PURE;
-	virtual HRESULT	Late_Update(_float fTimeDelta)	   PURE;
+	GUINODE& Get_GuiNodeInfo() { return m_GuiNode; }
+	GUINODE_LINK& Get_GuiNodeLink() { return m_GuiLink; }
+	virtual HRESULT	Priority_Update(_float fTimeDelta) { return S_OK; };
+	virtual HRESULT	Update(_float fTimeDelta) { return S_OK; };
+	virtual HRESULT	Late_Update(_float fTimeDelta) { return S_OK; };
 public:
 	virtual EVALUATE		Evaluate() PURE;
-	const ACTION_NODE&		Get_NodeInfo() { return m_NodeInfo; }
+	const ACTION_NODE& Get_NodeInfo() { return m_NodeInfo; }
 protected:
 	ACTION_NODE							m_NodeInfo;
 	GUINODE								m_GuiNode;
 	GUINODE_LINK						m_GuiLink;
 
+public:
+	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };
 
 NS_END

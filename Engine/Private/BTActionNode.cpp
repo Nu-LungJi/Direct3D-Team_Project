@@ -5,6 +5,10 @@ CBTActionNode::CBTActionNode()
 {
 }
 
+CBTActionNode::CBTActionNode(const CBTActionNode& Prototype) : CBTRoot(Prototype)
+{
+}
+
 
 CBTActionNode::~CBTActionNode()
 {
@@ -18,5 +22,20 @@ HRESULT CBTActionNode::Initalize(void* pArg)
     __super::Initalize(pArg);
     
     return S_OK;
+}
+
+HRESULT CBTActionNode::Priority_Update(_float fTimeDelta)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT CBTActionNode::Update(_float fTimeDelta)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT CBTActionNode::Late_Update(_float fTimeDelta)
+{
+    return E_NOTIMPL;
 }
 

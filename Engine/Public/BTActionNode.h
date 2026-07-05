@@ -20,10 +20,16 @@ protected:
 	~CBTActionNode();
 
 	virtual HRESULT Initalize(void* pArg) override;
+public:
+	HRESULT	Priority_Update(_float fTimeDelta) override;
+	HRESULT	Update(_float fTimeDelta)		   override;
+	HRESULT	Late_Update(_float fTimeDelta)	   override;
+
 
 public:
 	virtual EVALUATE		Evaluate() PURE;
-
+public:
+	virtual UPtr<CBTRoot> Clone(void* pArg) PURE;
 };
 
 NS_END

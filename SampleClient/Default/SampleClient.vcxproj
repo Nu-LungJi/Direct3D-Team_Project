@@ -189,6 +189,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\LightObject.h" />
     <ClInclude Include="..\Public\MainApp.h" />
+    <ClInclude Include="..\public\Monster.h" />
     <ClInclude Include="..\public\Particle_Fire_CPU.h" />
     <ClInclude Include="..\public\Particle_Ribbon.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
@@ -217,6 +218,7 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\private\LevelPlayground.cpp" />
     <ClCompile Include="..\Private\LightObject.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
+    <ClCompile Include="..\private\Monster.cpp" />
     <ClCompile Include="..\private\Particle_Fire_CPU.cpp" />
     <ClCompile Include="..\private\Particle_Ribbon.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />

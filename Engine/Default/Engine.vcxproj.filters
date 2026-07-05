@@ -295,6 +295,12 @@
     <Filter Include="Particle\Beam">
       <UniqueIdentifier>{25baf6d4-8ef0-42f5-a817-5e51b5a77092}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CreatureEditor">
+      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Manager">
+      <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -642,6 +648,12 @@
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\CreatureEditor.h">
+      <Filter>CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Action_Manager.h">
+      <Filter>Component\BeHavior\Manager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -964,6 +976,12 @@
     </ClCompile>
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CreatureEditor.cpp">
+      <Filter>CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Action_Manager.cpp">
+      <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
