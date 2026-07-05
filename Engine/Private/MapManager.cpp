@@ -314,7 +314,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		if (chunk.loadState == EChunkLoadState::Unloaded && chunk.saveState != EChunkSaveState::Unsaved)
 		{
 			originallyUnloadedChunks.push_back(coord);
-			if (FAILED(RequestLoadChunkAsync(coord)/*LoadChunk(coord)*/))
+			if (FAILED(/*RequestLoadChunkAsync(coord)*/LoadChunk(coord))) // 여기서는 동기적으로 Load
 			{
 				return E_FAIL;
 			}
@@ -404,13 +404,14 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			chunkCoords.push_back(coord);
 		}
 
-		for (const auto& coord : chunkCoords)
-		{
-			if (FAILED(RequestLoadChunkAsync(coord)/*LoadChunk(coord)*/))
-			{
-				return E_FAIL;
-			}
-		}
+		// 메타만 Load하고 chunk 로딩은 Update함수에서 스트리밍에게 맡긴다
+		//for (const auto& coord : chunkCoords)
+		//{
+		//	if (FAILED(RequestLoadChunkAsync(coord)/*LoadChunk(coord)*/))
+		//	{
+		//		return E_FAIL;
+		//	}
+		//}
 
 		return S_OK;
 	}
