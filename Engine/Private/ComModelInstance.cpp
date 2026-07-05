@@ -4,6 +4,7 @@
 #include "ResTestModelBone.h"
 #include "ResTestModelMesh.h"
 #include "ResTestModelMaterial.h"
+#include "ResTestModel.h"
 
 NS_USING(Engine)
 
@@ -107,6 +108,18 @@ HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_
     return S_OK;
 
 
+}
+
+HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)
+{
+    auto pModel = CGameInstance::Get().GetResourceFirst<CResTestModel>(sGroupTag, sResTag);
+    if (pModel == nullptr)
+    {
+        return E_FAIL;
+    }
+
+    m_pModel = pModel;
+    return S_OK;
 }
 
 

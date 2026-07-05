@@ -145,7 +145,24 @@ HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 void CMapMeshObject::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
-	ImGui::Text("Model: %s / %s", m_modelResourceGroup.c_str(), m_modelResourceTag.c_str());
+}
+
+HRESULT CMapMeshObject::SetModelResource(const std::string& modelGroupTag, const std::string& modelResTag)
+{
+	if (m_pComModelInstance == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	if (FAILED(m_pComModelInstance->ChangeModel(modelGroupTag, modelResTag)))
+	{
+		return E_FAIL;
+	}
+
+	m_modelResourceGroup = modelGroupTag;
+	m_modelResourceTag = modelResTag;
+
+	return S_OK;
 }
 
 UPtr<CMapMeshObject> CMapMeshObject::Create()

@@ -39,6 +39,7 @@ public:
 public:
 	const std::string& GetModelResourceGroup() const { return m_modelResourceGroup; }
 	const std::string& GetModelResourceTag() const { return m_modelResourceTag; }
+	HRESULT SetModelResource(const std::string& modelGroupTag, const std::string& modelResTag);
 
 private:
 	std::string m_modelResourceGroup{};

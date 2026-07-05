@@ -37,7 +37,9 @@ public:
 	HRESULT	Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex);
 	HRESULT Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 public:
-	SPtr<CResTestModel> GetModel() { return m_pModel; }	
+	SPtr<CResTestModel> GetModel() { return m_pModel; }
+	SPtr<const CResTestModel> GetModel() const { return m_pModel; }
+	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
 
 private:
 	SPtr<CResTestModel> m_pModel;
