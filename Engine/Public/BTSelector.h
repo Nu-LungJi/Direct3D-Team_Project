@@ -22,7 +22,10 @@ public:
 	virtual HRESULT	Update(_float fTimeDelta)		   override;
 	virtual HRESULT	Late_Update(_float fTimeDelta)	   override;
 public:					
-	virtual EVALUATE		Evaluate() override;
+	virtual EVALUATE		Evaluate(_float fTimeDelta) override;
+
+	nlohmann::json				Save_Node()override;
+	HRESULT						Load_json(nlohmann::json& j) override;
 public:
 	static  UPtr<CBTSelector> Create(void* pArg);
 	UPtr<CBTRoot>Clone(void* pArg) {return nullptr;}

@@ -139,6 +139,7 @@ void CNodeEditor::Show_Editor()
 	}
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+	static _bool bTypeCheck{ false };
 	if (ImGui::BeginPopup("context_menu"))
 	{
 		GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
@@ -170,6 +171,7 @@ void CNodeEditor::Show_Editor()
 			}
 			else if (ImGui::MenuItem("Add_Action"))
 			{
+				bTypeCheck = true;
 				m_bPopupAction = true;
 			}
 			
@@ -184,11 +186,30 @@ void CNodeEditor::Show_Editor()
 		Add_Node(m_eBTType, m_pNodeName, vScene_Pos);
 	if (m_bPopupAction)
 	{
-		auto iter = CGameInstance::Get().Show_ActioNode_List(m_pBeHavior->Get_NodeID(), vScene_Pos, m_hTarget);
-		if (iter != nullptr)
+		if (bTypeCheck)
 		{
-			Add_NodeToTmp(iter);
-			m_bPopupAction = false;
+			ImGui::OpenPopup("Select_Type");
+			ImGui::BeginPopup("Select_Type");
+			if (ImGui::MenuItem("Action_Node"))
+			{
+				m_eBTType = BEHAVIOR::ACTION;
+				bTypeCheck = false;
+			}
+			else if (ImGui::MenuItem("Decorator_Node"))
+			{
+				m_eBTType = BEHAVIOR::DECORATOR;
+				bTypeCheck = false;
+			}
+			ImGui::EndPopup();
+		}
+		else
+		{
+			auto iter = CGameInstance::Get().Show_ActioNode_List(m_eBTType, m_pBeHavior->Get_NodeID(), vScene_Pos, m_hTarget);
+			if (iter != nullptr)
+			{
+				Add_NodeToTmp(iter);
+				m_bPopupAction = false;
+			}
 		}
 			
 	}
@@ -616,7 +637,6 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				pNode = CBTSelector::Create(&SequenceDesc);
 			else if(eType == BEHAVIOR::SECQUNCE)
 				pNode = CBTSecqunce::Create(&SequenceDesc);
-
 			if (nullptr == pNode)
 			{
 				ImGui::CloseCurrentPopup();

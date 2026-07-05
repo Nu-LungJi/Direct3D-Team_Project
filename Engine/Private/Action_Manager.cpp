@@ -18,21 +18,9 @@ HRESULT CAction_Manager::Initialize()
 void CAction_Manager::Show_Action_NodeWidget(CBTRoot* pNode)
 {
 	auto pAction = static_cast<CBTActionNode*>(pNode);
-	NODE_ACTION eActionType = pAction->Get_Value().eNodeType;
-	CHandle     Handle = pAction->Get_Handle();
-	
-	if (eActionType == NODE_ACTION::MOVE)
-	{
-		
-	}
-	else if (eActionType == NODE_ACTION::ANIMATION)
-	{
-		if (auto pAnimatior = Cast<CComAnimator>(pAction->Get_Component<CComAnimator>(Handle, "Com_Animation")))
-			PopupAnimation(pAnimatior,pAction);
-	}
-
+	pAction->Update_Gui();
 }
-HRESULT CAction_Manager::Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction)
+HRESULT CAction_Manager::Add_Action_Prototype(BEHAVIOR eType, const _string& strActionName, UPtr<class CBTRoot> pAction)
 {
 	if (nullptr == pAction)
 	{
@@ -40,24 +28,24 @@ HRESULT CAction_Manager::Add_Action_Prototype(const _string& strActionName, UPtr
 		return E_FAIL;
 	}
 
-	auto iter = m_Prototype_Actions.find(strActionName);
+	auto iter = m_Prototype_Actions[ETOUI(eType)].find(strActionName);
 
-	if (iter != m_Prototype_Actions.end())
+	if (iter != m_Prototype_Actions[ETOUI(eType)].end())
 	{
 		MSG_BOX("Create Failed to Action Proto : Is Same class");
 		return E_FAIL;
 	}
 	
-	m_Prototype_Actions[strActionName] = std::move(pAction);
+	m_Prototype_Actions[ETOUI(eType)][strActionName] = std::move(pAction);
 
 	return S_OK;
 }
 
-UPtr<class CBTRoot> CAction_Manager::Clone_Action(const _string& strActionName, void* pArg)
+UPtr<class CBTRoot> CAction_Manager::Clone_Action(BEHAVIOR eType, const _string& strActionName, void* pArg)
 {
-	auto iter = m_Prototype_Actions.find(strActionName);
+	auto iter = m_Prototype_Actions[ETOUI(eType)].find(strActionName);
 
-	if (iter == m_Prototype_Actions.end())
+	if (iter == m_Prototype_Actions[ETOUI(eType)].end())
 	{
 		MSG_BOX("Create Failed Action Clone : Is not Class");
 		return nullptr;
@@ -67,18 +55,9 @@ UPtr<class CBTRoot> CAction_Manager::Clone_Action(const _string& strActionName, 
 	return std::move(pNode);
 }
 
-void CAction_Manager::PopupAnimation(CComAnimator* pAnimator, CBTActionNode* pNode)
-{
-	//int32_t iIndex = -1;
-	//if (iIndex = CGameInstance::Get().)
-	//{
-	//	pNode->Get_Value().iAnimIndex = iIndex;
-	//}
-}
 
-UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
+UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(BEHAVIOR eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
 {
-
 	_char Name[32]{};
 	_char NameBuffer[32]{};
 	UPtr<CBTRoot>  pNode{ nullptr };
@@ -93,7 +72,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(uint32_t& iNode, ImVec2
 		}
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
-		for (auto& iter : m_Prototype_Actions)
+		for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
 		{
 			if (ImGui::Button(iter.first.c_str()))
 			{
@@ -130,11 +109,12 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(uint32_t& iNode, ImVec2
 					uint32_t iNodeCnt = iNode + 1;
 					NodeDesc.Value = ACTION_VALUE(-1,eNode);
 					NodeDesc.Handle = Handle;
-					NodeDesc.m_GuiNode = GUINODE(BEHAVIOR::ACTION, iNode++, FinalName.c_str(), _float2(vNodePos.x, vNodePos.y), 0.5f, _float4(100, 100, 200, 255));
+					NodeDesc.m_GuiNode = GUINODE(eType, iNode++, FinalName.c_str(), _float2(vNodePos.x, vNodePos.y), 0.5f, _float4(100, 100, 200, 255));
 					NodeDesc.m_GuiLink = (GUINODE_LINK(0));
 					ImGui::CloseCurrentPopup();
 					ImGui::EndPopup();
-					return Clone_Action(m_SelectName, &NodeDesc);
+					m_bPopup = false;
+					return Clone_Action(eType,m_SelectName, &NodeDesc);
 				}
 			}
 		}

@@ -1,16 +1,16 @@
-Ôªø#pragma once
+#pragma once
 #include "Client_Defines.h"
 #include "BTActionNode.h"
 
 NS_BEGIN(Client)
-class CBTAnimation final : public CBTActionNode
+class CBTchase final : public CBTActionNode
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTAnimation, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTchase, CBTActionNode)
 private:
-	CBTAnimation();
-	~CBTAnimation() override;
-	// CBTActionNodeÏùÑ(Î•º) ÌÜµÌï¥ ÏÉÅÏÜçÎê®
+	CBTchase();
+	~CBTchase() override;
+	// CBTActionNode¿ª(∏¶) ≈Î«ÿ ªÛº”µ 
 
 	HRESULT InitializePrototype();
 	HRESULT Initalize(void* pArg)override;
@@ -18,7 +18,7 @@ public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
 
 public:
-	static UPtr<CBTAnimation> Create();
+	static UPtr<CBTchase> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END

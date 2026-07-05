@@ -252,7 +252,9 @@ public:
 	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 #pragma endregion
 
-#pragma region ANIM_MANAGER
+#pragma region ANIMATIONEDTIOR_MANAGER
+	int32_t GetAnimIndex(CHandle Handle);
+#pragma endregion
 #pragma region PARTICLE_MANAGER
 public:
 	HRESULT SetupTestModel();
@@ -263,8 +265,8 @@ public:
 #pragma endregion
 
 #pragma region Action_Manager
-	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
-	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
+	HRESULT					Add_Action_Prototype(BEHAVIOR eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(BEHAVIOR eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
 #pragma endregion
 

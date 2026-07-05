@@ -49,23 +49,21 @@ void CAnimEdit_Manager::Update(_float fTimeDelta)
 }
 
 
-uint32_t CAnimEdit_Manager::GetAnimIndex()
+int32_t CAnimEdit_Manager::GetAnimIndex(CHandle Handle)
 {
     int m_iSelectedAnimIndex = -1;
-    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(Handle);
     if (pSampleObj == nullptr)
         return m_iSelectedAnimIndex;
 
     auto pComModelInstance =
         pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
 
-    auto pComAnimator =
-        pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
 
-    if (nullptr == pComAnimator)
+    if (nullptr == pComModelInstance)
         return m_iSelectedAnimIndex;
 
-    if (ImGui::BeginPopupModal("SelectAnimation", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("SelectAnimation", NULL,ImGuiWindowFlags_MenuBar))
     {
         auto pModel = pComModelInstance->GetModel();
 
@@ -81,7 +79,7 @@ uint32_t CAnimEdit_Manager::GetAnimIndex()
                 {
                     m_iSelectedAnimIndex = static_cast<int>(i);
                 
-                    ImGui::CloseCurrentPopup();
+                   // ImGui::CloseCurrentPopup();
                 }
             }
         }
@@ -91,7 +89,7 @@ uint32_t CAnimEdit_Manager::GetAnimIndex()
             ImGui::CloseCurrentPopup();
         }
 
-        ImGui::EndPopup();
+        ImGui::End();
     }
 
     return m_iSelectedAnimIndex;
@@ -298,21 +296,21 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
 
 void CAnimEdit_Manager::IMGUI_TestGetAnimIndex()
 {
-    ImGui::Begin("Anim Index Test");
-
-    if (ImGui::Button("Select Animation"))
-    {
-        ImGui::OpenPopup("SelectAnimation");
-    }
-
-    uint32_t iIndex = GetAnimIndex();
-
-    if (iIndex != static_cast<uint32_t>(-1))
-    {
-        ImGui::Text("Selected Index : %u", iIndex);
-    }
-
-    ImGui::End();
+   //ImGui::Begin("Anim Index Test");
+   //
+   //if (ImGui::Button("Select Animation"))
+   //{
+   //    ImGui::OpenPopup("SelectAnimation");
+   //}
+   //
+   //uint32_t iIndex = GetAnimIndex();
+   //
+   //if (iIndex != static_cast<uint32_t>(-1))
+   //{
+   //    ImGui::Text("Selected Index : %u", iIndex);
+   //}
+   //
+   //ImGui::End();
 
 }
 void CAnimEdit_Manager::UpdateGUI()

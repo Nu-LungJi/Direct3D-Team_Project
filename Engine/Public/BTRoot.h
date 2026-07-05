@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "Engine_Defines.h"
-
+#include "GameInstance.h"
 enum class EVALUATE { SUCCESS, FAILED, RUN };
 //뿌리
 NS_BEGIN(Engine)
@@ -30,9 +30,11 @@ public:
 	virtual HRESULT	Priority_Update(_float fTimeDelta) { return S_OK; };
 	virtual HRESULT	Update(_float fTimeDelta) { return S_OK; };
 	virtual HRESULT	Late_Update(_float fTimeDelta) { return S_OK; };
-
 public:
-	virtual EVALUATE		Evaluate() PURE;
+	virtual nlohmann::json				Save_Node()PURE;
+	virtual HRESULT						Load_json(nlohmann::json& j) PURE;
+public:
+	virtual EVALUATE		Evaluate(_float fTimeDelta) PURE;
 
 protected:
 	GUINODE								m_GuiNode;

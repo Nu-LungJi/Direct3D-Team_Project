@@ -28,7 +28,7 @@ public:
 
 
 public:
-	uint32_t GetAnimIndex();
+	int32_t GetAnimIndex(CHandle Handle);
 public:
 	void IMGUI_Select_AnimType();
 	void IMGUI_Slider_Animation();

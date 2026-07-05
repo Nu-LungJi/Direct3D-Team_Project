@@ -175,6 +175,8 @@ call CopySampleClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
+    <ClInclude Include="..\public\BTchase.h" />
+    <ClInclude Include="..\public\BTDecSearch.h" />
     <ClInclude Include="..\public\BTMove.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
@@ -210,6 +212,8 @@ call CopySampleClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
+    <ClCompile Include="..\private\BTchase.cpp" />
+    <ClCompile Include="..\private\BTDecSearch.cpp" />
     <ClCompile Include="..\private\BTMove.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\private\Gobline.cpp" />

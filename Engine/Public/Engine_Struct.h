@@ -113,8 +113,9 @@ namespace Engine
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim, NODE_ACTION ActionType) { iAnim = iAnimIndex, eNodeType = ActionType; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{};
+		_float   fSpeed{}, fTime{}, fTick{};
 		NODE_ACTION eNodeType{ NODE_ACTION::END };
+
 	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{

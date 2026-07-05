@@ -240,6 +240,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\public\Beam_CPU.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
+    <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
@@ -489,6 +490,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\private\Beam_CPU.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
+    <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />

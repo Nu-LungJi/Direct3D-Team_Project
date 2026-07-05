@@ -33,12 +33,12 @@ HRESULT CBTSecqunce::Update(_float fTimeDelta)
     if (m_NodeValue.bCur)
         iIndex = m_NodeValue.iCurSecquenceIndex;
 
-    for (size_t i = iIndex; i < m_Actions.size();)
+    for (size_t i = iIndex; i < m_Actions.size();++i)
     {
         if (nullptr == m_Actions[i])
             continue;
 
-        EVALUATE eValuate = m_Actions[i]->Evaluate();
+        EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
             return S_OK;
         else if (eValuate == EVALUATE::RUN)
@@ -50,7 +50,7 @@ HRESULT CBTSecqunce::Update(_float fTimeDelta)
         else if (eValuate == EVALUATE::FAILED)
         {
             m_NodeValue.bCur = false;
-            ++i;
+            
         }
 
     }
@@ -64,10 +64,20 @@ HRESULT CBTSecqunce::Late_Update(_float fTimeDelta)
     return S_OK;
 }
 
-EVALUATE CBTSecqunce::Evaluate()
+EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
 {
     EVALUATE e{};
 	return e;
+}
+
+nlohmann::json CBTSecqunce::Save_Node()
+{
+    return nlohmann::json();
+}
+
+HRESULT CBTSecqunce::Load_json(nlohmann::json& j)
+{
+    return E_NOTIMPL;
 }
 
 UPtr<CBTSecqunce> CBTSecqunce::Create(void* pArg)

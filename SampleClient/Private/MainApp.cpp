@@ -187,10 +187,10 @@ HRESULT CMainApp::Initialize()
 
 HRESULT CMainApp::Create_ActionNode()
 {
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype("BTMove", CBTMove::Create())))
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(BEHAVIOR::ACTION,"BTMove", CBTMove::Create())))
 		return E_FAIL;
 
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype("BTAnimation", CBTMove::Create())))
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(BEHAVIOR::ACTION,"BTAnimation", CBTAnimation::Create())))
 		return E_FAIL;
 	return S_OK;
 }

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "BTAnimation.h"
-
+#include "ComAnimator.h" 
 NS_USING(Client)
 
 CBTAnimation::CBTAnimation()
@@ -8,9 +8,6 @@ CBTAnimation::CBTAnimation()
 
 }
 
-CBTAnimation::CBTAnimation(const CBTAnimation& Prototype) : CBTActionNode(Prototype)
-{
-}
 
 CBTAnimation::~CBTAnimation()
 {
@@ -23,12 +20,17 @@ HRESULT CBTAnimation::InitializePrototype()
 HRESULT CBTAnimation::Initalize(void* pArg)
 {
 	__super::Initalize(pArg);
+	
 	return S_OK;
 }
 
-EVALUATE CBTAnimation::Evaluate()
+EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
-	return EVALUATE();
+	auto pAnimator = Cast<CComAnimator>(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
+	if (pAnimator != nullptr && -1 != m_Value.iAnimIndex)
+		pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
+	
+	return EVALUATE::SUCCESS;
 }
 E::UPtr<CBTAnimation> CBTAnimation::Create()
 {

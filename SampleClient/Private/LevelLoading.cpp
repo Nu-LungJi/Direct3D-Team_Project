@@ -161,6 +161,7 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
+
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
 				{
 					return false;

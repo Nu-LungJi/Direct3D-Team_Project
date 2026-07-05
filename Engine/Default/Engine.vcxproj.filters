@@ -322,6 +322,9 @@
     <Filter Include="Component\BeHavior\Manager">
       <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\Decorator">
+      <UniqueIdentifier>{47e93750-d693-43cf-905b-e6410128780a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -699,6 +702,9 @@
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDecorator.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1051,6 +1057,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecorator.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

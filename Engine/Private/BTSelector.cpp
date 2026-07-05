@@ -31,14 +31,16 @@ HRESULT CBTSelector::Update(_float fTimeDelta)
     if (m_NodeValue.bCur)
         iIndex = m_NodeValue.iCurSecquenceIndex;
 
-    for (size_t i = iIndex ; i < m_Actions.size();)
+    for (size_t i = iIndex ; i < m_Actions.size();++i)
     {
         if (nullptr == m_Actions[i])
             continue;
 
-        EVALUATE eValuate = m_Actions[i]->Evaluate();
+        EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
-            return S_OK;
+        {
+
+        }
         else if (eValuate == EVALUATE::RUN)
         {
             m_NodeValue.bCur = true;
@@ -47,7 +49,7 @@ HRESULT CBTSelector::Update(_float fTimeDelta)
         }else if (eValuate == EVALUATE::FAILED)
         {
             m_NodeValue.bCur = false;
-            ++i;
+          
         }
          
     }
@@ -60,9 +62,19 @@ HRESULT CBTSelector::Late_Update(_float fTimeDelta)
     return S_OK;
 }
 
-EVALUATE CBTSelector::Evaluate()
+EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
 	return EVALUATE();
+}
+
+nlohmann::json CBTSelector::Save_Node()
+{
+    return nlohmann::json();
+}
+
+HRESULT CBTSelector::Load_json(nlohmann::json& j)
+{
+    return E_NOTIMPL;
 }
 
 UPtr<CBTSelector> CBTSelector::Create(void* pArg)

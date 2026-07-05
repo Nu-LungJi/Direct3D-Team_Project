@@ -40,9 +40,6 @@
     <Filter Include="GameObject\Monsters">
       <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Monsters\BT">
-      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
     </Filter>
@@ -78,6 +75,12 @@
     </Filter>
     <Filter Include="GameObject\TestModel\NonAnim">
       <UniqueIdentifier>{30ad92bc-cfdc-4eb6-bda6-bfee0401f606}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monsters\BTAction">
+      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monsters\BTDecorator">
+      <UniqueIdentifier>{0f051330-2786-432f-8a2c-59dcb645f58f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -129,7 +132,6 @@
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
@@ -161,7 +163,7 @@
       <Filter>Particles</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTMove.h">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\Monsters\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel\Anim</Filter>
@@ -170,10 +172,16 @@
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\Monsters\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Monster.h">
       <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTchase.h">
+      <Filter>GameObject\Monsters\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecSearch.h">
+      <Filter>GameObject\Monsters\BTDecorator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -221,7 +229,7 @@
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTMove.cpp">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\Monsters\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>
@@ -253,6 +261,12 @@
     <ClCompile Include="..\Private\Test_StaticModel.cpp">
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTchase.cpp">
+      <Filter>GameObject\Monsters\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecSearch.cpp">
+      <Filter>GameObject\Monsters\BTDecorator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\Gobline.cpp">
@@ -265,7 +279,7 @@
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\Monsters\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Monster.cpp">
       <Filter>GameObject\Monsters</Filter>
