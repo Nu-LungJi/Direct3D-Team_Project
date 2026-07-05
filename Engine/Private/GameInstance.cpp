@@ -288,6 +288,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pLevelManager->Update(fTimeDelta);
 	}
 
+	m_pMapManager->Update(fTimeDelta);
 
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
@@ -1141,6 +1142,18 @@ HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
+HRESULT CGameInstance::LoadMapData(const std::string& path)
+{
+	return m_pMapManager->LoadMapData(path);
+}
+HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)
+{
+	return m_pMapManager->LoadChunk(coord);
+}
+HRESULT CGameInstance::UnLoadMapChunk(const MAPCHUNK_COORD& coord)
+{
+	return m_pMapManager->UnLoadChunk(coord);
+}
 void CGameInstance::RebuildMapChunks()
 {
 	m_pMapManager->RebuildChunks();
@@ -1152,6 +1165,14 @@ const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameI
 const _float3& CGameInstance::GetMapChunkSize() const
 {
 	return m_pMapManager->GetChunkSize();
+}
+void CGameInstance::SetMapChunkStreaming(_bool enable)
+{
+	m_pMapManager->SetChunkStreaming(enable);
+}
+_bool CGameInstance::IsMapChunkStreaming() const
+{
+	return m_pMapManager->IsChunkStreaming();
 }
 #ifdef _DEBUG
 void CGameInstance::SetDebugDrawMapChunk(_bool draw)

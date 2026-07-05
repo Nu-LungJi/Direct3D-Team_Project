@@ -250,9 +250,14 @@ public:
 public:
 	HRESULT SaveMap(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
+	HRESULT LoadMapData(const std::string& path);
+	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
+	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
+	void SetMapChunkStreaming(_bool enable);
+	_bool IsMapChunkStreaming() const;
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
 #endif

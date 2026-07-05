@@ -32,6 +32,7 @@ private:
 	E::UPtr<CInspector> m_pInspector{};
 	E::UPtr<CResourceGUI> m_pResourceGUI{};
 	E::UPtr<CMapChunkGUI> m_pMapChunkGUI{};
+	char m_MapName[64] = "LevelA";
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
 };

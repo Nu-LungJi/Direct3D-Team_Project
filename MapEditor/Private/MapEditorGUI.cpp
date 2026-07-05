@@ -6,6 +6,39 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr const char* MAP_SAVE_ROOT = "./Resources/Engine/MapSaved/";
+
+	std::string MakeMapPath(const char* mapName)
+	{
+		std::string cleanName = mapName;
+		if (cleanName.empty())
+		{
+			cleanName = "Default";
+		}
+
+		for (char& ch : cleanName)
+		{
+			switch (ch)
+			{
+			case '/':
+			case '\\':
+			case ':':
+			case '*':
+			case '?':
+			case '"':
+			case '<':
+			case '>':
+			case '|':
+				ch = '_';
+				break;
+			default:
+				break;
+			}
+		}
+
+		return std::string(MAP_SAVE_ROOT) + cleanName + "/";
+	}
+
 	bool DrawModeButton(const char* label, bool selected, const char* tooltip)
 	{
 		if (selected)
@@ -63,15 +96,18 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.f);
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.f, 7.f));
 
+	ImGui::SetNextItemWidth(236.f);
+	ImGui::InputText("Map", m_MapName, sizeof(m_MapName));
+
 	if (ImGui::Button("Level Save", ImVec2(112.f, 0.f)))
 	{
-		CGameInstance::Get().SaveMap("./Resources/Engine/MapSaved/");
+		CGameInstance::Get().SaveMap(MakeMapPath(m_MapName));
 		ImGui::OpenPopup("SaveCheck");
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Level Load", ImVec2(112.f, 0.f)))
 	{
-		CGameInstance::Get().LoadMap("./Resources/Engine/MapSaved/", true);
+		CGameInstance::Get().LoadMap(MakeMapPath(m_MapName), true);
 		AddCamera();
 		ImGui::OpenPopup("LoadCheck");
 	}

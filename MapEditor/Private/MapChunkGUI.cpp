@@ -5,9 +5,72 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr const char* MAP_SAVE_ROOT = "./Resources/Engine/MapSaved/";
+
+	std::string MakeMapPath(const char* mapName)
+	{
+		std::string cleanName = mapName;
+		if (cleanName.empty())
+		{
+			cleanName = "Default";
+		}
+
+		for (char& ch : cleanName)
+		{
+			switch (ch)
+			{
+			case '/':
+			case '\\':
+			case ':':
+			case '*':
+			case '?':
+			case '"':
+			case '<':
+			case '>':
+			case '|':
+				ch = '_';
+				break;
+			default:
+				break;
+			}
+		}
+
+		return std::string(MAP_SAVE_ROOT) + cleanName + "/";
+	}
+
 	std::string CoordToString(const E::MAPCHUNK_COORD& coord)
 	{
 		return "(" + std::to_string(coord.x) + ", " + std::to_string(coord.y) + ", " + std::to_string(coord.z) + ")";
+	}
+
+	const char* LoadStateText(E::EChunkLoadState state)
+	{
+		switch (state)
+		{
+		case E::EChunkLoadState::Unloaded:
+			return "Unloaded";
+		case E::EChunkLoadState::Loading:
+			return "Loading";
+		case E::EChunkLoadState::Loaded:
+			return "Loaded";
+		case E::EChunkLoadState::Unloading:
+			return "Unloading";
+		default:
+			return "Unknown";
+		}
+	}
+
+	const char* SaveStateText(E::EChunkSaveState state)
+	{
+		switch (state)
+		{
+		case E::EChunkSaveState::Unsaved:
+			return "Unsaved";
+		case E::EChunkSaveState::Saved:
+			return "Saved";
+		default:
+			return "Unknown";
+		}
 	}
 
 	ImU32 ChunkColor(const E::MAPCHUNK& chunk, bool selected)
@@ -16,9 +79,9 @@ namespace
 		{
 			return IM_COL32(255, 215, 96, 220);
 		}
-		if (chunk.m_bDirty)
+		if (chunk.saveState == E::EChunkSaveState::Unsaved)
 		{
-			return IM_COL32(90, 170, 255, 170);
+			return IM_COL32(255, 145, 80, 170);
 		}
 		return IM_COL32(120, 150, 170, 140);
 	}
@@ -48,15 +111,34 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::SetNextWindowSize(ImVec2(520.f, 460.f), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Map Chunks");
 
+	ImGui::SetNextItemWidth(180.f);
+	ImGui::InputText("Map", m_MapName, sizeof(m_MapName));
+
 	if (ImGui::Button("Rebuild Chunks", ImVec2(130.f, 0.f)))
 	{
 		E::CGameInstance::Get().RebuildMapChunks();
 	}
 	ImGui::SameLine();
+	if (ImGui::Button("Load Meta", ImVec2(100.f, 0.f)))
+	{
+		E::CGameInstance::Get().LoadMapData(MakeMapPath(m_MapName));
+		m_bHasSelection = false;
+	}
+	ImGui::SameLine();
+#ifdef _DEBUG
 	if (ImGui::Button("DebugDraw Chunks", ImVec2(130.f, 0.f)))
 	{
 		m_bDebugDrawChunk = !m_bDebugDrawChunk;
 		E::CGameInstance::Get().SetDebugDrawMapChunk(m_bDebugDrawChunk);
+	}
+	ImGui::SameLine();
+#endif
+	m_bChunkStreaming = E::CGameInstance::Get().IsMapChunkStreaming();
+	bool chunkStreaming = m_bChunkStreaming;
+	if (ImGui::Checkbox("Streaming", &chunkStreaming))
+	{
+		m_bChunkStreaming = chunkStreaming;
+		E::CGameInstance::Get().SetMapChunkStreaming(m_bChunkStreaming);
 	}
 	ImGui::SameLine();
 	ImGui::Checkbox("Auto", reinterpret_cast<bool*>(&m_bAutoRebuild));
@@ -94,7 +176,19 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 					const auto& chunk = iter->second;
 					ImGui::Text("Selected: %s", CoordToString(chunk.coord).c_str());
 					DrawBoundsText(chunk.bounds);
-					ImGui::Text("Dirty: %s", chunk.m_bDirty ? "true" : "false");
+					ImGui::Text("Load: %s", LoadStateText(chunk.loadState));
+					ImGui::Text("Save: %s", SaveStateText(chunk.saveState));
+					ImGui::Text("File: %s", chunk.filePath.c_str());
+
+					if (ImGui::Button("Load Selected Chunk", ImVec2(160.f, 0.f)))
+					{
+						E::CGameInstance::Get().LoadMapChunk(m_SelectedCoord);
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Unload Selected Chunk", ImVec2(170.f, 0.f)))
+					{
+						E::CGameInstance::Get().UnLoadMapChunk(m_SelectedCoord);
+					}
 
 					if (ImGui::TreeNode("Objects"))
 					{
@@ -179,9 +273,13 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 						}
 						const float x = originX + static_cast<float>(coord.x - minX) * cell;
 						const float y = originY + static_cast<float>(maxZ - coord.z) * cell;
-						const bool selected = m_bHasSelection && coord == m_SelectedCoord;
-						ImU32 color = ChunkColor(chunk, selected);
-						drawList->AddRectFilled(ImVec2(x + 1.f, y + 1.f), ImVec2(x + cell - 1.f, y + cell - 1.f), color);
+				const bool selected = m_bHasSelection && coord == m_SelectedCoord;
+				ImU32 color = ChunkColor(chunk, selected);
+				if (chunk.loadState != E::EChunkLoadState::Loaded)
+				{
+					color = selected ? IM_COL32(255, 215, 96, 150) : IM_COL32(90, 95, 105, 110);
+				}
+				drawList->AddRectFilled(ImVec2(x + 1.f, y + 1.f), ImVec2(x + cell - 1.f, y + cell - 1.f), color);
 						drawList->AddRect(ImVec2(x, y), ImVec2(x + cell, y + cell), IM_COL32(210, 215, 220, selected ? 255 : 90));
 
 						if (cell >= 26.f)

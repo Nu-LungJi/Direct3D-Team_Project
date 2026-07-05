@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifdef _DEBUG
 #include "DebugDraw.h"
@@ -9,12 +9,31 @@
 #include "Engine_Base.h"
 
 NS_BEGIN(Engine)
+
+enum class EChunkLoadState
+{
+	Unloading,  // 언로드 요청 중
+	Unloaded,   // 메타만 있고 월드에는 없음
+	Loading,    // 비동기 로딩 요청 중
+	Loaded,     // 월드에 올라와 있음
+};
+
+enum class EChunkSaveState
+{
+	Unsaved,    // 아직 저장 파일 없음
+	Saved,      // 저장 파일 있음
+};
+
 typedef struct tagMapChunk
 {
 	MAPCHUNK_COORD coord{};
 	std::vector<CHandle> hObjects{};
 	BoundingBox bounds{};
-	_bool m_bDirty = false;
+
+	EChunkLoadState loadState = EChunkLoadState::Unloaded;
+	EChunkSaveState saveState = EChunkSaveState::Unsaved;
+
+	std::string filePath;
 }MAPCHUNK;
 
 struct tagMapChunkCoordHash
@@ -48,34 +67,43 @@ public:
 	void LateUpdate(_float fTimeDelta);
 
 public:
-	HRESULT SaveMap(const std::string& path);
-	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
+	HRESULT SaveMap(const std::string& path); // 메타 + 모든 청크 저장
+	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true); // 메타 + 모든 청크 불러오기
+	HRESULT SaveChunk(const MAPCHUNK_COORD& coord, const std::string& chunkPath); // 청크 단위 저장
+
+	HRESULT LoadMapData(const std::string& path);
+	HRESULT LoadChunk(const MAPCHUNK_COORD& coord);
+	HRESULT UnLoadChunk(const MAPCHUNK_COORD& coord);
 
 // ---------------------------------MapChunk-----------------------------------
 public:
 	void RebuildChunks();
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_vChunkSize; }
+	void SetChunkStreaming(_bool enable) { m_bChunkStreaming = enable; }
+	_bool IsChunkStreaming() const { return m_bChunkStreaming; }
 
 private:
 	_float3 GetChunkCenter(const MAPCHUNK_COORD& coord);
 	BoundingBox MakeChunkBoundingBox(const MAPCHUNK_COORD& coord);
 	MAPCHUNK_COORD WorldToChunkCoord(const _float3& pos) const;
 private:
-	_float3 m_vChunkSize = { 25.f, 25.f, 25.f };
+	_float3 m_vChunkSize = { 50.f, 50.f, 50.f };
+	std::string m_sMapRootPath;
 
 private:
 	std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash> m_Chunks;
+	_bool m_bChunkStreaming = true;
 
 
 // ---------------------------------MapChunk-----------------------------------
 
 #ifdef _DEBUG
 	// Debug Draw
-	// Debug Draw�� ���� ������
-	// static���� ����
+	// Debug Draw를 위한 도구들
+	// static으로 관리
 	static std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> _batch;
-	static std::unique_ptr<BasicEffect> _effect;
+	static std::unique_ptr<DirectX::BasicEffect> _effect;
 	static ComPtr<ID3D11InputLayout> _inputLayout;
 public:
 	HRESULT RenderDebugMapChunk();
@@ -99,4 +127,6 @@ public:
 };
 
 NS_END
+
+
 
