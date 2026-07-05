@@ -199,9 +199,6 @@
     <Filter Include="GameObject\UI\UITool">
       <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model">
-      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
     </Filter>
@@ -244,15 +241,6 @@
     <Filter Include="Tracy">
       <UniqueIdentifier>{e02f4b44-ac4b-4c18-9468-0d92e7afed7a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model\ComModelInstance">
-      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComAnimMontage">
-      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComAnimator">
-      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="AnimationEditor">
       <UniqueIdentifier>{5068b7e8-6054-49e9-b16c-65ba14323f27}</UniqueIdentifier>
     </Filter>
@@ -286,6 +274,24 @@
     <Filter Include="GameObject\Light\Light">
       <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource\Model\Mesh">
+      <UniqueIdentifier>{2529e691-5e3c-4d3d-a5c7-36938f85e568}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Material">
+      <UniqueIdentifier>{a9a0ccd1-a8fb-426a-894f-42bd47e35abd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Bone">
+      <UniqueIdentifier>{80be926b-aef1-480b-9d13-375a5022482e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\StaticMesh">
+      <UniqueIdentifier>{7a769126-7605-4c3d-a331-718c47992402}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Animation">
+      <UniqueIdentifier>{0def9701-063f-4df4-8d18-1c408b1e3fcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Animation\Chanel">
+      <UniqueIdentifier>{5501d83f-8f9c-4c60-9920-38d2224d1bfd}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
@@ -294,6 +300,33 @@
     </Filter>
     <Filter Include="DebugDraw">
       <UniqueIdentifier>{766f1db3-e511-4caf-a8bc-c189164d5b76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Buffer\InstanceBuffer">
+      <UniqueIdentifier>{c6f96c4d-a6c1-4ed5-8f61-31cd10d721d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle\Beam">
+      <UniqueIdentifier>{25baf6d4-8ef0-42f5-a817-5e51b5a77092}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model">
+      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComModelInstance">
+      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimMontage">
+      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimator">
+      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComStaticModelInstance">
+      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CreatureEditor">
+      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Manager">
+      <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -627,6 +660,30 @@
     <ClInclude Include="..\Public\Light.h">
       <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ResModelMesh.h">
+      <Filter>Resource\Model\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelMaterial.h">
+      <Filter>Resource\Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelBone.h">
+      <Filter>Resource\Model\Bone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelAnim.h">
+      <Filter>Resource\Model\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelChanel.h">
+      <Filter>Resource\Model\Animation\Chanel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResStaticModelMesh.h">
+      <Filter>Resource\Model\StaticMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResStaticModel.h">
+      <Filter>Resource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComStaticModelInstance.h">
+      <Filter>Component\Model\ComStaticModelInstance</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClInclude>
@@ -638,6 +695,24 @@
     </ClInclude>
     <ClInclude Include="..\Public\DebugDraw.h">
       <Filter>DebugDraw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_CPU.h">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_GPU.h">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Particle.h">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Beam_CPU.h">
+      <Filter>Particle\Beam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CreatureEditor.h">
+      <Filter>CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Action_Manager.h">
+      <Filter>Component\BeHavior\Manager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -947,6 +1022,30 @@
     <ClCompile Include="..\Private\NodeEditor.cpp">
       <Filter>Component\BeHavior\NodeEditor</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ResModelMesh.cpp">
+      <Filter>Resource\Model\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelMaterial.cpp">
+      <Filter>Resource\Model\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelBone.cpp">
+      <Filter>Resource\Model\Bone</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelAnim.cpp">
+      <Filter>Resource\Model\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelChanel.cpp">
+      <Filter>Resource\Model\Animation\Chanel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResStaticModelMesh.cpp">
+      <Filter>Resource\Model\StaticMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResStaticModel.cpp">
+      <Filter>Resource\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComStaticModelInstance.cpp">
+      <Filter>Component\Model\ComStaticModelInstance</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClCompile>
@@ -958,6 +1057,24 @@
     </ClCompile>
     <ClCompile Include="..\Private\DebugDraw.cpp">
       <Filter>DebugDraw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Particle_CPU.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Particle_GPU.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Particle.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Beam_CPU.cpp">
+      <Filter>Particle\Beam</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CreatureEditor.cpp">
+      <Filter>CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Action_Manager.cpp">
+      <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1013,6 +1130,24 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
+      <Filter>ShaderFiles\DeferredRendering</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Compute.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Spawn_Compute.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_FixArgs.hlsl">
+      <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

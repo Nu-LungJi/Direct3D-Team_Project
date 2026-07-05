@@ -37,7 +37,7 @@ namespace
 				const bool hasModelResource = std::any_of(resourceList.begin(), resourceList.end(),
 					[](const E::SPtr<E::CResource>& resource)
 					{
-						return resource != nullptr && resource->IsA(E::CResTestModel::StaticType);
+						return resource != nullptr && resource->IsA(E::CResStaticModel::StaticType);
 					});
 
 				if (!hasModelResource)

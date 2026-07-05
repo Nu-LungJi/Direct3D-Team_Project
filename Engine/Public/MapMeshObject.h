@@ -4,7 +4,7 @@
 NS_BEGIN(Engine)
 
 class CComConstantBuffer;
-class CComModelInstance;
+class CComStaticModelInstance;
 class CResPixelShader;
 class CResSamplerState;
 class CResVertexShader;
@@ -44,7 +44,7 @@ public:
 private:
 	std::string m_modelResourceGroup{};
 	std::string m_modelResourceTag{};
-	CComModelInstance* m_pComModelInstance{};
+	CComStaticModelInstance* m_pComModelInstance{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};

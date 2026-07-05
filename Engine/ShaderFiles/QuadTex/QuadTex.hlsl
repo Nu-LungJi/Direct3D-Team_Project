@@ -28,5 +28,6 @@ PS_IN VSMain(VS_IN vin)
 float4 PSMain(PS_IN input) : SV_Target
 {
     float4 texColor = tex.Sample(samp, input.uv);
+    if (texColor.a == 0.0f) discard;
     return texColor;
 }

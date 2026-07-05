@@ -15,7 +15,6 @@ HRESULT CBTSelector::Initalize(void* pArg)
 {
     __super::Initalize(pArg);
 
-    m_NodeName = "Main_Selector";
 	return S_OK;
 }
 
@@ -34,6 +33,9 @@ HRESULT CBTSelector::Update(_float fTimeDelta)
 
     for (size_t i = iIndex ; i < m_Actions.size();)
     {
+        if (nullptr == m_Actions[i])
+            continue;
+
         EVALUATE eValuate = m_Actions[i]->Evaluate();
         if (eValuate == EVALUATE::SUCCESS)
             return S_OK;
@@ -55,33 +57,6 @@ HRESULT CBTSelector::Update(_float fTimeDelta)
 HRESULT CBTSelector::Late_Update(_float fTimeDelta)
 {
    
-    return S_OK;
-}
-
-HRESULT		CBTSelector::Add_Secqunce(const _string& strSequenceName)
-{
-    if (Find_Node(strSequenceName) == -1)
-        return E_FAIL;
-
-    int32_t iIndex = m_Actions.size();
-
-    auto pSecqunce = CBTSecqunce::Create(strSequenceName);
-    
-    m_NodeHandles[strSequenceName] = iIndex;
-    return E_FAIL;
-}
-
-HRESULT CBTSelector::Add_ActionNode(int32_t iSequenceIndex, UPtr<CBTRoot> pActionNode)
-{
-    auto pSequence = Cast<CBTSecqunce>(m_Actions[iSequenceIndex].get());
-    
-    pSequence->Add_ActioNode(move(pActionNode));
-    
-    return S_OK;
-}
-
-HRESULT CBTSelector::Add_Selector(const _string& strSelectoreName)
-{
     return S_OK;
 }
 

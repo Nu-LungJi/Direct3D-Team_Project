@@ -46,7 +46,7 @@ namespace
 		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
 		Desc.sObjectTag = "MapMesh_" + std::to_string(s_iObjectIndex++);
 		Desc.modelGroupTag = "TEST";
-		Desc.modelResTag = "Model_Resource";
+		Desc.modelResTag = "Static_Model_Resource";
 		Desc.protoGroupTag = "PERMANENT";
 		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
 

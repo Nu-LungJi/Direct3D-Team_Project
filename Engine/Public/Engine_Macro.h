@@ -70,6 +70,12 @@
 //			return Instance;										\
 //		}
 
+#define NODE_ACTION_M    \
+X(MOVE)					 \
+X(ANIMATION)            \
+X(END)
+
+
 #define IMGUI_ENABLE
 
 #define MAX_LIGHT_COUNT 8

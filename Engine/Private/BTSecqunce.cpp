@@ -11,9 +11,10 @@ CBTSecqunce ::~CBTSecqunce()
 }
 
 
-HRESULT CBTSecqunce::Initalize(const _string& strNodeName)
+HRESULT CBTSecqunce::Initalize(void* pArg)
 {
-    m_NodeName = strNodeName;
+    if (FAILED(__super::Initalize(pArg)))
+        return E_FAIL;
 
 	return S_OK;
 }
@@ -34,6 +35,9 @@ HRESULT CBTSecqunce::Update(_float fTimeDelta)
 
     for (size_t i = iIndex; i < m_Actions.size();)
     {
+        if (nullptr == m_Actions[i])
+            continue;
+
         EVALUATE eValuate = m_Actions[i]->Evaluate();
         if (eValuate == EVALUATE::SUCCESS)
             return S_OK;
@@ -66,26 +70,10 @@ EVALUATE CBTSecqunce::Evaluate()
 	return e;
 }
 
-
-HRESULT CBTSecqunce::Add_ActioNode(UPtr<CBTRoot> pActionNode)
-{
-    _string tagName = pActionNode->Get_NodeName();
-    if (Find_Node(tagName) == -1)
-        return E_FAIL;
-
-    int32_t iIndex = m_Actions.size();
-
-    m_Actions.push_back(std::move(pActionNode));
-
-    m_NodeHandles[tagName] = iIndex;
-
-    return S_OK;
-}
-
-UPtr<CBTSecqunce> CBTSecqunce::Create(const _string& strNodeName)
+UPtr<CBTSecqunce> CBTSecqunce::Create(void* pArg)
 {
     auto pInstance =ToUPtr(new CBTSecqunce());
-    if (FAILED(pInstance->Initalize(strNodeName)))
+    if (FAILED(pInstance->Initalize(pArg)))
     {
         MSG_BOX("Failed to Created : CBTSecqunce");
         return nullptr;

@@ -20,6 +20,7 @@ private:
 private:
 	HRESULT Initialize();
 	//HRESULT ReadyWSClient();
+	HRESULT Create_ActionNode();
 
 public:
 	static Engine::UPtr<CMainApp> Create();

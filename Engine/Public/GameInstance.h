@@ -6,6 +6,7 @@
 #include "CameraManager.h"
 #include "ShaderManager.h"
 #include "MapManager.h"
+#include "LightManager.h"
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -23,7 +24,9 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
-
+class CNodeEditor;
+class CParticleManager;
+class CAction_Manager;
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
@@ -241,9 +244,39 @@ public:
 	}
 #pragma endregion
 
+#pragma region LIGHT_MANAGER
+public:
+	VOID	Bind_EnviromentLight();
+	VOID	Bind_DynamicLight();
+
+	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+#pragma endregion
+
 #pragma region ANIM_MANAGER
+#pragma region PARTICLE_MANAGER
 public:
 	HRESULT SetupTestModel();
+#pragma endregion
+
+#pragma region NODE_EDITOR
+	HRESULT	   OpenBeHavior(CHandle Handle);
+#pragma endregion
+
+#pragma region Action_Manager
+	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
+	void					Show_Action_NodeWidget(CBTRoot* pNode);
+#pragma endregion
+
+public:
+	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+		_bool bLoop = false, _float fSpawnInterval = 0.1f);
+
+	HRESULT Add_Particle(UPtr<class CParticle> particle);
+
+	HRESULT SpawnRibbon(const _float4& start, const _float4& end);
 #pragma endregion
 
 #pragma region MAP_MANAGER
@@ -294,13 +327,15 @@ private:
 	UPtr<CColliderManager> m_pColliderManager{};
 	UPtr<CRenderer> m_pRenderer{};
 	UPtr<CShaderManager> m_pShaderManager{};
-	//UPtr<CLightManager> m_pLightManager{};
+	UPtr<CLightManager> m_pLightManager{};
 	//UPtr<CVoxelManager> m_pVoxelManager{};
 	//UPtr<CVoxelManager2> m_pVoxelManager2{};
 	//UPtr<CVoxelManager3> m_pVoxelManager3{};
-	//UPtr<CParticleManager> m_pParticleManager{};
+	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CNodeEditor>		m_pNodeEditor{};
+	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 	UPtr<CMapManager> m_pMapManager{};
 };

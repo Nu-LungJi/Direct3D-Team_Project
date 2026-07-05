@@ -79,12 +79,12 @@ namespace
 			item.icon = "?";
 			item.color = ImVec4(0.34f, 0.34f, 0.36f, 1.f);
 		}
-		else if (resource->IsA(E::CResTestModel::StaticType) || resource->IsA(E::CResTestModelMesh::StaticType) || resource->IsA(E::CResTestModelMaterial::StaticType) || resource->IsA(E::CResTestModelAnim::StaticType))
+		else if (resource->IsA(E::CResModel::StaticType) || resource->IsA(E::CResModelMesh::StaticType) || resource->IsA(E::CResModelMaterial::StaticType) || resource->IsA(E::CResModelAnim::StaticType))
 		{
 			item.category = "Model";
 			item.icon = "M";
 			item.color = ImVec4(0.25f, 0.45f, 0.80f, 1.f);
-			item.bCanCreateMapMeshObject = resource->IsA(E::CResTestModel::StaticType);
+			item.bCanCreateMapMeshObject = resource->IsA(E::CResModel::StaticType);
 		}
 		else if (resource->IsA(E::CResTexture2D::StaticType) || resource->IsA(E::CResTexture2DArray::StaticType) || resource->IsA(E::CResTextureCubeMap::StaticType) || resource->IsA(E::CResDynamicTexture2D::StaticType) || resource->IsA(E::CResOffscreenTexture::StaticType))
 		{

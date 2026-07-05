@@ -16,7 +16,7 @@ private:
 	explicit CBTSecqunce();
 	~CBTSecqunce() override;
 
-	 HRESULT Initalize(const _string& strNodeName);
+	HRESULT Initalize(void* pArg) override;
 
 public:
 	virtual HRESULT	Priority_Update(_float fTimeDelta) override;
@@ -26,10 +26,8 @@ public:
 	virtual EVALUATE	Evaluate()override;
 
 public:
-	HRESULT		Add_ActioNode(UPtr<CBTRoot> pActionNode);
-public:
-	static  UPtr<CBTSecqunce> Create(const _string& strNodeName );
-
+	static  UPtr<CBTSecqunce> Create(void* pArg);
+	UPtr<CBTRoot>Clone(void* pArg) { return nullptr; };
 };
 
 NS_END
