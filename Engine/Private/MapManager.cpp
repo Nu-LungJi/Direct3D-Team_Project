@@ -866,6 +866,16 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		return E_FAIL;
 	}
 
+	if (m_bChunkStreaming)
+	{
+		// 스트리밍 모드일때, 워커스레드가 뒤늦게 로드해준 Chunk 결과가 지금 카메라 위치를 보고 유효한 결과인지 판단
+		if (IsChunkInStreamingRange(result.coord) == false)
+		{
+			chunk.loadState = EChunkLoadState::Unloaded;
+			return S_OK;
+		}
+	}
+
 	chunk.hObjects.clear();
 
 	for (const auto& objectDesc : result.objects)
@@ -904,7 +914,23 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 
 	return S_OK;
 }
-#endif
+
+_bool CMapManager::IsChunkInStreamingRange(const MAPCHUNK_COORD& coord)
+{
+	const auto pCam = CGameInstance::Get().GetActiveCamera();
+	if (pCam == nullptr)
+		return false;
+
+	const auto& pos = pCam->GetTransform().GetPosition();
+	MAPCHUNK_COORD cameraCoord = WorldToChunkCoord(pos);
+
+	const int64_t dx = std::llabs(cameraCoord.x - coord.x);
+	const int64_t dy = std::llabs(cameraCoord.y - coord.y);
+	const int64_t dz = std::llabs(cameraCoord.z - coord.z);
+
+	// -1, 0, 1 // 현재 카메라 기준 3*3*3 범위
+	return dx <= 1 && dy <= 1 && dz <= 1;
+}
 
 UPtr<CMapManager> CMapManager::Create()
 {
