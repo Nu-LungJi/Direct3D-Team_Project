@@ -15,6 +15,7 @@ public:
 		_float			fX, fY, fSizeX, fSizeY, fAlpha;
 		std::string		ResTag;
 		uint32_t		ResWeight;
+		uint32_t		m_UIType;
 	}UIOBJECT_DESC;
 
 protected:
@@ -71,6 +72,8 @@ public:
 	uint32_t GetUIType() { return m_UIType; }
 	void SetUIType(uint32_t uiType) { m_UIType = uiType; }
 
+	std::string Get_ResTag() { return m_sRestag; }
+	void Set_ResTag(std::string tag) { m_sRestag = tag; }
 public:
 	void DeleteChild(CHandle childHandle);
 protected:
@@ -84,6 +87,8 @@ protected:
 
 	_float m_fLocalX{0}, m_fLocalY{0}, m_fWidthRatioX{1}, m_fWidthRatioY{1}, m_fAlphaRatio{1};
 	int m_iWeightOffset{0};
+
+	std::string m_sRestag;
 protected:
 	std::optional<CHandle> m_pParent = std::nullopt;
 

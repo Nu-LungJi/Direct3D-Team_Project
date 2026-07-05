@@ -9,7 +9,10 @@
 #include "ResTexture2D.h"
 #include "CTexUI.h"
 #include "UIObject.h"
+#include "FlipBook.h"
 #include <fstream>
+
+namespace fs = std::filesystem;
 
 NS_USING(Client)
 
@@ -133,8 +136,6 @@ HRESULT CLevelUIEditor::Initialize()
 				auto* t2 = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUICamera>(uiCam.value());
 			}
 		}
-
-
 	}
 
 	return S_OK;
@@ -142,10 +143,32 @@ HRESULT CLevelUIEditor::Initialize()
 
 void CLevelUIEditor::Update(E::_float fTimeDelta)
 {
+	auto clientSize = CGameInstance::Get().GetClientScreenSize();
+
+	_bool bP = CGameInstance::Get().KeyDown(DIK_P);
 	_bool bC = CGameInstance::Get().KeyPressing(DIK_C);
 	_bool bV = CGameInstance::Get().KeyPressing(DIK_V);
 	_bool bDelete = CGameInstance::Get().KeyDown(DIK_DELETE);
 
+	if (bP)
+	{
+		// debug용 
+		{
+			count++;
+			CFlipBook::UIOBJECT_DESC Desc{};
+			Desc.sObjectTag = "UI_" + std::to_string(count);
+			Desc.fSizeX = 200.f;
+			Desc.fSizeY = 200.f;
+			Desc.fX = clientSize.x * 0.5f;
+			Desc.fY = clientSize.y * 0.5f;
+			Desc.fAlpha = 1.f;
+			Desc.ResTag = "Flipbook_VFX_T_ItemSpark_8x8_D";
+			Desc.ResWeight = count;
+			Desc.m_UIType = ETOUI(UI_TYPE::FLIPBOOK);
+
+			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", "Layer_UI", &Desc);
+		}
+	}
 	if (bV)
 	{
 		if (std::nullopt != m_oSelectHandle)
@@ -188,7 +211,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	{
 		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_oSelectHandle);
 		selectUI->SetSize({ m_fSizeX, m_fSizeY });
-		selectUI->SetAlpha(m_fAlpha);
+		//selectUI->SetAlpha(m_fAlpha);
 	}
 
 	if (std::nullopt != Target_UI)
@@ -217,7 +240,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 HRESULT CLevelUIEditor::Render()
 {
-	return E_NOTIMPL;
+	return S_OK;
 }
 
 void CLevelUIEditor::UpdateGUI()
@@ -263,6 +286,7 @@ void CLevelUIEditor::CreateMode()
 			Desc.fAlpha = m_fAlpha;
 			Desc.ResTag = selectUI->Get_ResTag();
 			Desc.ResWeight = count;
+			Desc.m_UIType = ETOUI(UI_TYPE::TEXUI);
 
 			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", "Layer_UI", &Desc);
 		}
@@ -309,6 +333,8 @@ void CLevelUIEditor::ArrangeMode()
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 	
 	_float2 mousePos = CGameInstance::Get().GetMousePos();
+
+	DrawJsonFileLoader(m_iEditorMode);
 
 	ImGui::Begin("EDITOR_MODE: ARRANGE_MODE");
 
@@ -381,6 +407,10 @@ void CLevelUIEditor::ArrangeMode()
 	ImGui::InputText("Name", m_cName, sizeof(m_cName));
 
 	ImGui::Spacing();
+	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Level");
+	ImGui::Separator();
+
+	ImGui::Spacing();
 	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Images");
 	ImGui::Separator();
 
@@ -411,8 +441,10 @@ void CLevelUIEditor::ArrangeMode()
 				Desc.fSizeY = m_fSizeY;
 				Desc.fX = g_iWinSizeX * 0.5f;
 				Desc.fY = g_iWinSizeY * 0.5f;
-				Desc.fAlpha = m_fAlpha;
+				Desc.fAlpha = m_fAlpha * 0.3f;
 				Desc.ResTag = m_vResTag[i];
+				Desc.m_UIType = ETOUI(UI_TYPE::TEXUI);
+				Desc.ResWeight = 10000;
 
 				m_oSelectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI","Layer_UI_Texture", &Desc);
 				CTexUI* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTexUI>(*m_oSelectHandle);
@@ -433,6 +465,8 @@ void CLevelUIEditor::PrefabMode()
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 
 	_float2 mousePos = CGameInstance::Get().GetMousePos();
+
+	DrawJsonFileLoader(m_iEditorMode);
 
 	ImGui::Begin("EDITOR_MODE: ARRANGE_MODE");
 
@@ -568,7 +602,8 @@ void CLevelUIEditor::PrefabMode()
 				Desc.fSizeY = m_fSizeY;
 				Desc.fX = g_iWinSizeX * 0.5f;
 				Desc.fY = g_iWinSizeY * 0.5f;
-				Desc.fAlpha = m_fAlpha;
+				Desc.fAlpha = m_fAlpha * 0.3f;
+				Desc.m_UIType = ETOUI(UI_TYPE::TEXUI);
 				Desc.ResTag = m_vResTag[i];
 
 				m_oSelectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", "Layer_UI_Texture", &Desc);
@@ -801,7 +836,7 @@ void CLevelUIEditor::PrefabSave()
 
 	for (CHandle handle : uiHandles)
 	{
-		CTexUI* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTexUI>(handle);
+		E::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUIObject>(handle);
 
 		if (pUI == nullptr)
 			continue;
@@ -859,8 +894,12 @@ void CLevelUIEditor::PrefabLoad()
 	}
 }
 
-void CLevelUIEditor::SaveUIRecursive(CTexUI* pUI, nlohmann::ordered_json& obj)
+void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& obj)
 {
+	uint32_t uiType = pUI->GetUIType();
+
+	obj["UiType"] = uiType;
+
 	obj["Name"] = pUI->GetName();
 
 	obj["X"] = pUI->GetWorldPos().x;
@@ -883,15 +922,24 @@ void CLevelUIEditor::SaveUIRecursive(CTexUI* pUI, nlohmann::ordered_json& obj)
 
 	obj["ResTag"] = pUI->Get_ResTag();
 
-	obj["UIType"] = pUI->GetUIType();
+	switch (uiType)
+	{
+	case ETOUI(UI_TYPE::TEXUI):
+		break;
+	case ETOUI(UI_TYPE::FLIPBOOK):
+		obj["CellSize"] = static_cast<CFlipBook*>(pUI)->GetCellSize();
+		obj["TotalFrame"] = static_cast<CFlipBook*>(pUI)->GetTotalFrame();
+		obj["Duration"] = static_cast<CFlipBook*>(pUI)->GetDuration();
+		break;
+	default:
+		break;
+	}
 
 	obj["Children"] = nlohmann::ordered_json::array();
 
-	
-
 	for (CHandle childHandle : pUI->GetChildren())
 	{
-		CTexUI* pChild = E::CGameInstance::Get().GetGameObjectByHandleT<CTexUI>(childHandle);
+		E::CUIObject* pChild = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUIObject>(childHandle);
 
 		if (pChild == nullptr)
 			continue;
@@ -903,19 +951,35 @@ void CLevelUIEditor::SaveUIRecursive(CTexUI* pUI, nlohmann::ordered_json& obj)
 	}
 }
 
-CTexUI* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj, CTexUI* parent)
+E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
 {
-	uint32_t uiType = obj["UIType"];
-
-	CTexUI* pUI = nullptr;
-
+	int uiType = obj["UiType"];
 	count++;
+	E::CUIObject* pUI = nullptr;
 
-	CTexUI::UIOBJECT_DESC Desc{};
-	Desc.sObjectTag = obj["Name"];
+	E::CUIObject::UIOBJECT_DESC Desc{};
+	std::optional<CHandle> uiHandle = std::nullopt;
 
-	std::optional<CHandle> uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", "Layer_UI", &Desc);
-	pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTexUI>(*uiHandle);
+	switch (uiType)
+	{
+	case ETOUI(UI_TYPE::TEXUI):
+		Desc.sObjectTag = obj["Name"];
+
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTexUI>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::FLIPBOOK):
+		Desc.sObjectTag = obj["Name"];
+
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CFlipBook>(*uiHandle);
+		static_cast<CFlipBook*>(pUI)->SetCellSize(obj["CellSize"]);
+		static_cast<CFlipBook*>(pUI)->SetTotalFrame(obj["TotalFrame"]);
+		static_cast<CFlipBook*>(pUI)->SetDuration(obj["Duration"]);
+		break;
+	default:
+		break;
+	}
 
 	if (pUI == nullptr)
 		return nullptr;
@@ -1118,6 +1182,11 @@ void CLevelUIEditor::LocalStateView()
 	selectUI->SetWeightOffset(weightOffset);
 }
 
+void CLevelUIEditor::DrawFileExplorer()
+{
+
+}
+
 void CLevelUIEditor::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 {
 	Engine::CUIObject* targetUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*targetHandle);
@@ -1147,6 +1216,99 @@ void CLevelUIEditor::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 	targetUI->SetPendingDestroyCascade();
 
 	return;
+}
+
+void CLevelUIEditor::RefreshJsonFileList(uint32_t EditorMode)
+{
+	g_JsonFiles.clear();
+
+	switch (EditorMode)
+	{
+	case ETOUI(UiEditorMode::ARRANGE) :
+		g_BasePath = "./Resources/SampleClient/UIData/LevelUI/";
+		break;
+	case ETOUI(UiEditorMode::PREFAB):
+		g_BasePath = "./Resources/SampleClient/UIData/Prefabs/";
+		break;
+	}
+
+	if (!fs::exists(g_BasePath) || !fs::is_directory(g_BasePath))
+		return;
+
+	try
+	{
+		for (const auto& entry : fs::directory_iterator(g_BasePath))
+		{
+			// 오직 일반 파일이면서 확장자가 .json인 것만 수집
+			if (entry.is_regular_file() && entry.path().extension() == ".json")
+			{
+				JsonFileInfo info;
+				info.fileName = entry.path().filename().string();
+				info.fullPath = entry.path().string();
+				g_JsonFiles.push_back(info);
+			}
+		}
+	}
+	catch (const std::exception& e)
+	{
+		// 에러 처리 예시
+	}
+}
+
+void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
+{
+	if (!g_IsFileGridInitialized)
+	{
+		RefreshJsonFileList(EditorMode);
+		g_IsFileGridInitialized = true;
+	}
+
+	ImGui::Begin("JSON 파일 선택기");
+
+	// 파일이 추가되었을 때를 대비한 새로고침 버튼
+	if (ImGui::Button("새로고침 (Refresh)"))
+	{
+		RefreshJsonFileList(EditorMode);
+	}
+
+	ImGui::Separator();
+
+	// 스크롤 가능한 목록 영역 시작
+	ImGui::BeginChild("JsonListArea", ImVec2(0, 0), true);
+
+	if (g_JsonFiles.empty())
+	{
+		ImGui::TextDisabled("경로 내에 JSON 파일이 없습니다.");
+	}
+	else
+	{
+		for (const auto& file : g_JsonFiles)
+		{
+			// 리스트 형태로 파일명을 출력하고, 클릭 감지
+			if (ImGui::Selectable(file.fileName.c_str(), false))
+			{
+				switch (EditorMode)
+				{
+				case ETOUI(UiEditorMode::ARRANGE):
+					strcpy_s(m_cLevelName, sizeof(m_cLevelName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
+					Load();
+					break;
+				case ETOUI(UiEditorMode::PREFAB):
+					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
+					PrefabLoad();
+					break;
+				}
+
+
+
+				// 디버깅용 콘솔 출력
+				printf("로드 대상 파일: %s\n", file.fullPath.c_str());
+			}
+		}
+	}
+
+	ImGui::EndChild();
+	ImGui::End();
 }
 
 Engine::UPtr<CLevelUIEditor> CLevelUIEditor::Create()

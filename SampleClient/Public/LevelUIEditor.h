@@ -1,16 +1,25 @@
-#pragma once
+﻿#pragma once
 
 #include "Client_Defines.h"
 #include "Level.h"
 #include "Handle.h"
 
+NS_BEGIN(Engine)
+class CUIObject;
+NS_END
+
 NS_BEGIN(Client)
 
-class CUIObject;
 class CTexUI;
+class CFlipBook;
 
 class CLevelUIEditor final : public Engine::CLevel
 {
+public:
+	struct JsonFileInfo {
+		std::string fileName; 
+		std::string fullPath; 
+	};
 public:
 	enum class UiEditorMode
 	{
@@ -74,13 +83,22 @@ private:
 	void PrefabSave();
 	void PrefabLoad();
 
-	void SaveUIRecursive(CTexUI* pUI, nlohmann::ordered_json& obj);
-	CTexUI* LoadUIRecursive(const nlohmann::ordered_json& obj, CTexUI* parent);
+	void SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& obj);
+	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 
 	void StateView();
 	void LocalStateView();
+	void DrawFileExplorer();
 
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
+
+	void RefreshJsonFileList(uint32_t EditorMode);
+	void DrawJsonFileLoader(uint32_t EditorMode);
+
+private:
+	std::vector<JsonFileInfo> g_JsonFiles;
+	bool g_IsFileGridInitialized = false; // 최초 1회 로드 체크용
+	const char* g_BasePath = "./Resources/SampleClient/UIData/LevelUI/";
 public:
 	static Engine::UPtr<CLevelUIEditor> Create();
 

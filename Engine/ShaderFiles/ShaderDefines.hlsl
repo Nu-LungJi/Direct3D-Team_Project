@@ -87,13 +87,13 @@ cbuffer CB_BONES : register(b2)
 cbuffer CB_PER_UI : register(b7)
 {
     float2 g_ui_texCoord;
-    float2 g_ui_uvSize; 
+    float2 g_ui_uvSize;
     float4 g_ui_color; 
-    uint g_ui_texIndex; 
-    float2 g_ui_borderUV; 
-    float _pad_perui; 
-    float2 g_ui_borderPx; 
-    float2 g_ui_rectSizePx;
+    //uint g_ui_texIndex; 
+    //float2 g_ui_borderUV; 
+    //float _pad_perui; 
+    //float2 g_ui_borderPx; 
+    //float2 g_ui_rectSizePx;
 };
 
 Texture2D gShadowMap : register(t4);

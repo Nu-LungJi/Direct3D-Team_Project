@@ -31,11 +31,11 @@ namespace Engine
 		_float2  texCoord{};
 		_float2  uvSize{};
 		_float4  color{ 1.f, 1.f, 1.f, 1.f };
-		uint32_t texIndex{};
-		_float2  borderUV{};
-		float    _pad0{};
-		_float2  borderPx{};
-		_float2  rectSizePx{};
+		//uint32_t texIndex{};
+		//_float2  borderUV{};
+		//float    _pad0{};
+		//_float2  borderPx{};
+		//_float2  rectSizePx{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 }

@@ -28,6 +28,22 @@ PS_IN VSMain(VS_IN vin)
 // Pixel Shader
 float4 PSMain(PS_IN input) : SV_Target
 {
-    float4 texColor = tex.Sample(samp, input.uv);
-    return texColor;
+    float2 uv = g_ui_texCoord + input.uv * g_ui_uvSize;
+
+    float4 texColor = tex.Sample(samp, uv);
+
+    if (max(texColor.r, max(texColor.g, texColor.b)) < 0.001f)
+    {
+        discard;
+    }
+
+    float alpha = dot(texColor.rgb, float3(0.299, 0.587, 0.114));
+    alpha = pow(alpha, 0.5);
+
+    if (alpha < 0.001f)
+    {
+        discard;
+    }
+
+    return float4(texColor.rgb, alpha * g_ui_color.a);
 }

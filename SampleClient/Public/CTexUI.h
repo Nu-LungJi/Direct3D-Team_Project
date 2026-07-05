@@ -2,6 +2,11 @@
 
 #include "UIObject.h"
 #include "Client_Defines.h"
+
+NS_BEGIN(Engine)
+class CComConstantBuffer;
+NS_END
+
 NS_BEGIN(Client)
 
 class CTexUI final : public E::CUIObject
@@ -21,16 +26,15 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 public:
-	std::string Get_ResTag() { return m_sRestag; }
-	void Set_ResTag(std::string tag) { m_sRestag = tag; }
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
 private:
-	std::string m_sRestag;
 	_bool m_bMouseTracking{};
 
 private:
 	// 쉐이더
 	bool m_bOutline{};
+
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
 
 public:
 	static E::UPtr<CTexUI> Create();
