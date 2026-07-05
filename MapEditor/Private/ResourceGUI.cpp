@@ -13,10 +13,20 @@ namespace
 		const char* icon{};
 		ImVec4 color{};
 		std::string groupName{};
+		std::string resourceTag{};
 		std::string resourceName{};
 		std::string path{};
 		std::string state{};
+		bool bCanCreateMapMeshObject = false;
 	};
+
+	struct ModelResourceDragPayload
+	{
+		char groupName[128]{};
+		char resourceName[128]{};
+	};
+
+	constexpr const char* PAYLOAD_MODEL_RESOURCE = "MAPEDITOR_MODEL_RESOURCE";
 
 	const char* const CATEGORY_NAMES[] =
 	{
@@ -50,7 +60,8 @@ namespace
 	{
 		ResourceViewItem item{};
 		item.groupName = SafeDbgStr(groupId);
-		item.resourceName = SafeDbgStr(resourceId);
+		item.resourceTag = SafeDbgStr(resourceId);
+		item.resourceName = item.resourceTag;
 		if (count > 1)
 		{
 			item.resourceName += " #" + std::to_string(index);
@@ -73,6 +84,7 @@ namespace
 			item.category = "Model";
 			item.icon = "M";
 			item.color = ImVec4(0.25f, 0.45f, 0.80f, 1.f);
+			item.bCanCreateMapMeshObject = resource->IsA(E::CResTestModel::StaticType);
 		}
 		else if (resource->IsA(E::CResTexture2D::StaticType) || resource->IsA(E::CResTexture2DArray::StaticType) || resource->IsA(E::CResTextureCubeMap::StaticType) || resource->IsA(E::CResDynamicTexture2D::StaticType) || resource->IsA(E::CResOffscreenTexture::StaticType))
 		{
@@ -241,6 +253,17 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(item.color.x * 0.82f, item.color.y * 0.82f, item.color.z * 0.82f, 1.f));
 		ImGui::Button(item.icon, ImVec2(iconSize, iconSize));
 		ImGui::PopStyleColor(3);
+
+		if (item.bCanCreateMapMeshObject && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+		{
+			ModelResourceDragPayload payload{};
+			strcpy_s(payload.groupName, item.groupName.c_str());
+			strcpy_s(payload.resourceName, item.resourceTag.c_str());
+			ImGui::SetDragDropPayload(PAYLOAD_MODEL_RESOURCE, &payload, sizeof(payload));
+			ImGui::Text("Create MapMeshObject");
+			ImGui::Text("%s / %s", payload.groupName, payload.resourceName);
+			ImGui::EndDragDropSource();
+		}
 
 		if (ImGui::IsItemHovered())
 		{

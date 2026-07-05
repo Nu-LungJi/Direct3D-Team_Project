@@ -122,6 +122,16 @@ void CLevelLoading::ThreadStart()
 				return true;
 			});
 
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResTestModel>("TEST", "Model_Resource_Fiona",
+			CResTestModel::Create("./Resources/SampleClient/Models/Fiona/Fiona.fbx"))) {
+
+			E::CResTestModel::DESC pDesc{};
+			pDesc.eModelType = MODEL::ANIM;
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.00001f, 0.00001f, 0.00001f);
+
+			res->Load(pDesc);
+		}
+
 		//if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
 		//{
 		//	res->Load();

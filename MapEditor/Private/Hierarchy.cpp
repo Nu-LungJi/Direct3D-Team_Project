@@ -24,6 +24,14 @@ namespace
 		E::_float3 scale{ 1.f, 1.f, 1.f };
 	};
 
+	struct ModelResourceDragPayload
+	{
+		char groupName[128]{};
+		char resourceName[128]{};
+	};
+
+	constexpr const char* PAYLOAD_MODEL_RESOURCE = "MAPEDITOR_MODEL_RESOURCE";
+
 	MapMeshObjectClipboard g_MapMeshClipboard{};
 
 	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject, const std::string& strLayerTag)
@@ -39,6 +47,32 @@ namespace
 		Desc.sObjectTag = "MapMesh_" + std::to_string(s_iObjectIndex++);
 		Desc.modelGroupTag = "TEST";
 		Desc.modelResTag = "Model_Resource";
+		Desc.protoGroupTag = "PERMANENT";
+		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
+
+		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
+			Desc.protoGroupTag,
+			Desc.prototypeTag,
+			strLayerTag,
+			&Desc))
+		{
+			*pSelectedObject = hObject.value();
+		}
+	}
+
+	void AddMapMeshObjectFromModelResource(E::CHandle* pSelectedObject, const std::string& strLayerTag, const char* modelGroupTag, const char* modelResTag)
+	{
+		if (pSelectedObject == nullptr || modelGroupTag == nullptr || modelResTag == nullptr)
+		{
+			return;
+		}
+
+		static uint32_t s_iDroppedObjectIndex = 1;
+
+		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
+		Desc.sObjectTag = std::string("MapMesh_") + modelResTag + "_" + std::to_string(s_iDroppedObjectIndex++);
+		Desc.modelGroupTag = modelGroupTag;
+		Desc.modelResTag = modelResTag;
 		Desc.protoGroupTag = "PERMANENT";
 		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
 
@@ -240,6 +274,19 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 				"%s (%zu)",
 				layerName.c_str(),
 				handles.size());
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(PAYLOAD_MODEL_RESOURCE))
+				{
+					const auto* modelPayload = static_cast<const ModelResourceDragPayload*>(payload->Data);
+					if (modelPayload != nullptr)
+					{
+						AddMapMeshObjectFromModelResource(GetSelectedHandle(), layerName, modelPayload->groupName, modelPayload->resourceName);
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 
 			// --- 우클릭 오브젝트 추가 로직 ---
 			// BeginPopupContextItem은 바로 직전에 호출된 위젯(TreeNode)을 대상으로 우클릭을 감지
