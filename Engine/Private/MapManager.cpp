@@ -80,18 +80,18 @@ namespace
 		return desc;
 	}
 
-	bool HasHandle(const std::vector<CHandle>& handles, const CHandle& target)
+	_bool HasHandle(const std::vector<CHandle>& handles, const CHandle& target)
 	{
 		return std::find(handles.begin(), handles.end(), target) != handles.end();
 	}
 
-	bool CanAutoUnload(const MAPCHUNK& chunk)
+	_bool CanAutoUnload(const MAPCHUNK& chunk)
 	{
 		return chunk.loadState == EChunkLoadState::Loaded
 			&& chunk.saveState != EChunkSaveState::Unsaved;
 	}
 
-	bool CanAutoLoad(const MAPCHUNK& chunk)
+	_bool CanAutoLoad(const MAPCHUNK& chunk)
 	{
 		return chunk.loadState == EChunkLoadState::Unloaded
 			&& chunk.saveState != EChunkSaveState::Unsaved;
@@ -777,6 +777,8 @@ void CMapManager::DrawBox(const DirectX::BoundingBox& box, DirectX::FXMVECTOR co
 
 	_batch->End();
 }
+#endif
+
 HRESULT CMapManager::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord)
 {
 	auto iter = m_Chunks.find(coord);
