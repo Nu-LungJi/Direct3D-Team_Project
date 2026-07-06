@@ -29,7 +29,19 @@ HRESULT CLevelLightMap::Initialize()
 	{
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc)))	return E_FAIL;
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+		if (!LightObject)	return E_FAIL;
+	}
+	{
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject2";
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
+		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+		if (!LightObject)	return E_FAIL;
+
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(1.f, 10.f, 0.f, 1.f));
 	}
 	{
 		CTerrain::DESC Desc{};
@@ -64,7 +76,7 @@ HRESULT CLevelLightMap::Initialize()
 		}
 	}
 
-	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }

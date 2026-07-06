@@ -53,8 +53,8 @@ struct PS_OUT
 {
     vector vDiffuse : SV_TARGET0;
     vector vNormal : SV_TARGET1;
-//    vector vDepth : SV_TARGET2;
-//    vector vPickPos : SV_TARGET3;
+    vector vSMRO : SV_TARGET2;
+    vector vEmissive : SV_TARGET3;
 };
 
 
@@ -64,13 +64,10 @@ PS_OUT PSMain(PS_IN In)
     
     vector vMtrlDiffuse = gDiffuseTexture.Sample(gSamLinearWrap, In.vTexcoord * 50.f);
     
-    Out.vDiffuse = vMtrlDiffuse;
-    //Out.vNormal = vector(In.vNormal.xyz * 0.5f + 0.5f, 0.f);
-    //Out.vNormal = vector(In.vNormal.xyz , 1.f);
-    Out.vNormal = vector(In.vNormal.xyz * 0.5f + 0.5f, 0.f);
-    //Out.vNormal = float4(1, 0, 0, 1);;
-    //Out.vDepth = vector(In.vProjPos.z / In.vProjPos.w, In.vProjPos.w / 1000.f, 0.f, 0.f);
-    //Out.vPickPos = vector(In.vWorldPos.xyz, 1.f);
+    Out.vDiffuse    = vMtrlDiffuse;
+    Out.vNormal     = float4(In.vNormal.xyz * 0.5f + 0.5f, 0.f);
+    Out.vSMRO       = float4(0.f, 0.f, 0.f, 1.f);
+    Out.vEmissive   = float4(0.f, 0.f, 0.f, 1.f);
     
     return Out;
 }

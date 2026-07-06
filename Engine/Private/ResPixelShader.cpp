@@ -8,8 +8,6 @@ HRESULT CResPixelShader::Load(const std::any& arg)
 {
 	auto desc = std::any_cast<CResShader::DESC>(&arg);
 
-
-
 	m_eState = STATE::LOADING;
 	if (FAILED(CompileShader(desc)))
 	{

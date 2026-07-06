@@ -23,13 +23,17 @@ PS_IN VSMain(VS_IN vin)
     output.uv = vin.uv;
     return output;
 }
+struct PS_OUT
+{
+    vector vDiffuse : SV_TARGET0;
+};
 
 // Pixel Shader
 float4 PSMain(PS_IN input) : SV_Target
 {
-    float4 texColor = tex.Sample(SamplerWrap, input.uv);
-    if (texColor.a == 0.0f) discard;
-    return texColor;
+    float4 TexColor = tex.Sample(SamplerWrap, input.uv);
+    if (TexColor.a == 0.0f)  discard;
+    return TexColor;
 }
 float4 PSMain_NonAlpha(PS_IN input) : SV_Target
 {

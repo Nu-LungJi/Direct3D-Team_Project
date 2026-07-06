@@ -82,7 +82,7 @@ HRESULT CLight::Initialize(void* pArg)
     m_pResPointLightTexture2D       = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_PointLight");
     m_pResSpotLightTexture2D        = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_SpotLight");
 #endif
-
+    
 	return S_OK;
 }
 

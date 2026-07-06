@@ -101,6 +101,7 @@ public:
 	ComPtr<ID3D11DeviceContext> GetGraphicDeviceContext()const;
 	ComPtr<ID3D11RenderTargetView> GetBackBufferRTV() const;
 	ComPtr<ID3D11DepthStencilView> GetBackBufferDSV() const;
+	ComPtr<ID3D11Texture2D> GetBackBufferTexture() const;
 	HRESULT ClearBackBufferView(const _float4* pClearColor);
 	HRESULT ClearDepthStencilView();
 	HRESULT Present();

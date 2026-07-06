@@ -242,7 +242,6 @@ void CLevelLoading::ThreadStart()
 				MSG_BOX("");
 				//return E_FAIL;
 			}
-
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
 		{

@@ -39,14 +39,23 @@ namespace Engine
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 
-	typedef struct tagConstantBufferObjectPBR
+	typedef struct tagConstantBufferObjectMaterial
 	{
-		_float3  AlbedoValue;
-		_float   RoughnessValue;
-		_float   MetallicValue;
+		_float4	 AlbedoColor;
+
+		_float   NormalIntensity;
+		_float   RoughnessIntensity;
+		_float   MetallicIntensity;
+		_float   AmbientIntensity;
+		_float	 SpecularIntensity;
+
+		_float3	 EmissiveColor;
+		_float   EmissiveIntensity;
+
 		_float3  Padding;
-	} CB_OBJECT_PBR;
-	static_assert(sizeof(CB_OBJECT_PBR) % 16 == 0);
+
+	} CB_MATERIAL;
+	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
 
 	typedef struct tagConstantBufferLight
 	{
