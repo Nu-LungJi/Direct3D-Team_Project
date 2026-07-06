@@ -21,6 +21,7 @@ private:
 
 public:
 	void UpdateGUI();
+	void Update();
 
 	void FrameStart();
 	void FrameEnd();

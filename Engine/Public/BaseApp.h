@@ -13,7 +13,8 @@ public:
 	HRESULT Loop();
 
 protected:
-	void UpdateGUI();
+	void UpdateGUI() const;
+	void RenderGUI() const;
 
 protected:
 	virtual void FixedUpdate(_float fTimeDelta);

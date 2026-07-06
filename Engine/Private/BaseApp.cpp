@@ -100,11 +100,15 @@ HRESULT CBaseApp::Loop()
 	return S_OK;
 }
 
-void CBaseApp::UpdateGUI()
+void CBaseApp::UpdateGUI() const
 {
 	Engine::CGameInstance::Get().ImguiNewFrame();
 
 	Engine::CGameInstance::Get().UpdateGUI();
+}
+
+void CBaseApp::RenderGUI() const
+{
 
 	Engine::CGameInstance::Get().ImguiEndFrameAndRender();
 }
@@ -137,7 +141,8 @@ HRESULT CBaseApp::Render(_float fInterpolation)
 #ifdef IMGUI_ENABLE
 	if (Engine::CGameInstance::Get().ImguiGetActive())
 	{
-		UpdateGUI();
+		ZoneScopedN("RenderGUI");
+		RenderGUI();
 	}
 #endif
 
@@ -152,6 +157,12 @@ HRESULT CBaseApp::Render(_float fInterpolation)
 void CBaseApp::FrameStart(_float fTimeDelta)
 {
 	Engine::CGameInstance::Get().FrameStart(fTimeDelta);
+#ifdef IMGUI_ENABLE
+	if (Engine::CGameInstance::Get().ImguiGetActive())
+	{
+		UpdateGUI();
+	}
+#endif
 }
 
 void CBaseApp::FrameEnd(_float fTimeDelta)

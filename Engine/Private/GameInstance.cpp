@@ -304,6 +304,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pLevelManager->Update(fTimeDelta);
 	}
 
+	m_pColliderManager->Update();
+
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
