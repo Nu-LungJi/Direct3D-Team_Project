@@ -906,11 +906,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-
-	if (AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))
-	{
-		return E_FAIL;
-	}
+	
 	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
 	{
 		return E_FAIL;

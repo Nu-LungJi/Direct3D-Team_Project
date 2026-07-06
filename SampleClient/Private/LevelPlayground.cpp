@@ -40,7 +40,8 @@ HRESULT CLevelPlayground::Initialize()
 	{
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
 	}
@@ -54,16 +55,6 @@ HRESULT CLevelPlayground::Initialize()
 		//{
 		//	int x = 0;
 		//}
-	}
-	{
-		CLightObject::DESC LDesc{};
-		LDesc.sObjectTag = "LightObject";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
-		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
-		if (!LightObject)	return E_FAIL;
-	
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(1.f, 10.f, 0.f, 1.f));
 	}
 	{
 		//if(false)
@@ -121,6 +112,7 @@ HRESULT CLevelPlayground::Initialize()
 	//		}
 	//	}
 	//}
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 

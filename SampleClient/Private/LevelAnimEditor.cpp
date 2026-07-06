@@ -89,6 +89,7 @@ HRESULT CLevelAnimEditor::Initialize()
 		}
 	}
 
+
 	CGameInstance::Get().SetupTestModel();;
 	return S_OK;
 }

@@ -30,6 +30,7 @@ HRESULT CLevelLightMap::Initialize()
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject";
 		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
 	}
@@ -37,6 +38,7 @@ HRESULT CLevelLightMap::Initialize()
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject2";
 		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
+		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
 
@@ -75,7 +77,7 @@ HRESULT CLevelLightMap::Initialize()
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
-
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 100.f, 10.f);
 

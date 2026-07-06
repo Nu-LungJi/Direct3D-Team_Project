@@ -109,6 +109,7 @@ HRESULT CLevelLoading::LoadEnd()
 
 void CLevelLoading::ThreadStart()
 {
+
 	switch (m_eNextLevelIndex)
 	{
 	case LEVEL::LOGO:
@@ -140,7 +141,7 @@ void CLevelLoading::ThreadStart()
 				//return E_FAIL;
 			}
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
 		{
 			return;
 		}
@@ -257,7 +258,6 @@ void CLevelLoading::ThreadStart()
 			int a = 0;
 			//return false;
 		}
-
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LIGHTMAP", [this]()
 			{
 				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
