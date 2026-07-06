@@ -24,6 +24,12 @@ public:
 	void Update(_float fTimeDelta);
 	void UpdateGUI();
 
+public:
+	_bool RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
+	_bool RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10)const;
+	_bool OverlapTest();
+	_bool SweepTest();
+
 private:
 	void UpdateDebugRender(_float fTimeDelta);
 

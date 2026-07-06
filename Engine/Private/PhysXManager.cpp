@@ -40,6 +40,109 @@ void CPhysXManager::UpdateGUI()
     ImGui::End();
 }
 
+_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const
+{
+	PxRaycastBuffer hitBuffer;
+
+	physx::PxHitFlags hitFlags = physx::PxHitFlag::eDEFAULT;
+	physx::PxQueryFilterData filterData = physx::PxQueryFilterData();
+
+	_bool bHit = m_pScene->raycast(
+		PxVec3(vOrigin.x, vOrigin.y, vOrigin.z),
+		PxVec3(vNormalizedDir.x, vNormalizedDir.y, vNormalizedDir.z),
+		fMaxDistance,
+		hitBuffer,
+		hitFlags,
+		filterData
+	);
+
+	if (bHit)
+	{
+		const physx::PxRaycastHit& block = hitBuffer.block;
+
+		outResult.bHit = true;
+		outResult.vHitpos = { block.position.x, block.position.y, block.position.z };
+		outResult.vHitNormal = { block.normal.x, block.normal.y, block.normal.z };
+		outResult.fDistance = block.distance;
+
+		if (block.actor && block.actor->userData)
+		{
+			if (auto pComponent = Cast<CComponent>(static_cast<CEngineBase*>(block.actor->userData)))
+			{
+				if (auto pObj = pComponent->GetGameObject())
+				{
+					outResult.pGameObject = pObj;
+				}
+			}
+		}
+		return true;
+	}
+
+	return false;
+}
+
+_bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+{
+	outVecResult.clear();
+	outVecResult.reserve(iMaxHit);
+
+	std::unique_ptr< physx::PxRaycastHit[]> hitArray = std::make_unique< physx::PxRaycastHit[]>(iMaxHit);
+	physx::PxRaycastBuffer hitBuffer(hitArray.get(), iMaxHit);
+	
+	physx::PxHitFlags hitFlags = physx::PxHitFlag::eDEFAULT;
+	physx::PxQueryFilterData filterData = physx::PxQueryFilterData();
+
+	_bool bHit = m_pScene->raycast(
+		PxVec3(vOrigin.x, vOrigin.y, vOrigin.z),
+		PxVec3(vNormalizedDir.x, vNormalizedDir.y, vNormalizedDir.z),
+		fMaxDistance,
+		hitBuffer,
+		hitFlags,
+		filterData
+	);
+
+	if (bHit)
+	{
+		physx::PxU32 nbTouches = hitBuffer.getNbAnyHits();
+		for (physx::PxU32 i = 0; i < nbTouches; ++i)
+		{
+			const physx::PxRaycastHit& hit = hitBuffer.getAnyHit(i);
+
+			if (hit.actor && hit.actor->userData)
+			{
+				if (auto pComponent = Cast<CComponent>(static_cast<CEngineBase*>(hit.actor->userData)))
+				{
+					if (auto pObj = pComponent->GetGameObject())
+					{
+						PHYSIX_RAYCAST_RESULT outResult{};
+						outResult.bHit = true;
+						outResult.vHitpos = { hit.position.x, hit.position.y, hit.position.z };
+						outResult.vHitNormal = { hit.normal.x, hit.normal.y, hit.normal.z };
+						outResult.fDistance = hit.distance;
+						outResult.pGameObject = pObj;
+						outVecResult.push_back(outResult);
+					}
+				}
+			}
+		} // end for
+
+		if (!outVecResult.empty())
+		{
+			// 오름차순
+			std::sort(outVecResult.begin(), outVecResult.end(),
+				[](const PHYSIX_RAYCAST_RESULT& a, const PHYSIX_RAYCAST_RESULT& b) {
+					return a.fDistance < b.fDistance;
+				});
+		}
+
+		return !outVecResult.empty();
+	}
+
+	return false;
+}
+
+
+
 void CPhysXManager::UpdateDebugRender(_float fTimeDelta)
 {
     if (m_bDbgRender)

@@ -10,6 +10,7 @@
 #include "TestPhysXBall.h"
 #include "TestPhysXCapsule.h"
 #include "Resources.h"
+#include "TestPhysXTerrain.h"
 
 NS_USING(Client)
 
@@ -104,6 +105,41 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 					"00_OBJECTS", &Desc)))
 				{
 					//return E_FAIL;
+				}
+			}
+		}
+	}
+
+	if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		if (auto pCam = CGameInstance::Get().GetActiveCamera())
+		{
+			const auto& [ori, Dir] = pCam->GetRay();
+			if(false)
+			{
+				PHYSIX_RAYCAST_RESULT outResult;
+				if (CGameInstance::Get().PxRayCast(ori, Dir, 10.f, outResult))
+				{
+					if (!outResult.pGameObject->IsA(CTestPhysXTerrain::StaticType)
+						&& !outResult.pGameObject->IsA(CTestPhysX::StaticType))
+					{
+						outResult.pGameObject->SetPendingDestroyCascade();
+					}
+				}
+			}
+
+			{
+				std::vector< PHYSIX_RAYCAST_RESULT> vecOutResult{};
+				if (CGameInstance::Get().PxRayCastMultiple(ori, Dir, 10.f, vecOutResult))
+				{
+					for (auto& result : vecOutResult)
+					{
+						if (!result.pGameObject->IsA(CTestPhysXTerrain::StaticType)
+							&& !result.pGameObject->IsA(CTestPhysX::StaticType))
+						{
+							result.pGameObject->SetPendingDestroyCascade();
+						}
+					}
 				}
 			}
 		}
