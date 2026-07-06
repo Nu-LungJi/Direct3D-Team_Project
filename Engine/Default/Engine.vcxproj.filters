@@ -244,7 +244,7 @@
     <Filter Include="GameObject\UI\UIPrefab">
       <UniqueIdentifier>{95b3224a-ec84-44dc-bea3-82786515b1a8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\PrefabManager">
+    <Filter Include="GameObject\UI\UIManager">
       <UniqueIdentifier>{0a583505-4c42-45b5-8ff5-c8a7ae4d942c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -558,14 +558,8 @@
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\UIPrefab.h">
-      <Filter>GameObject\UI\UIPrefab</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\PrefabManager.h">
-      <Filter>GameObject\UI\PrefabManager</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\UIPrefabNode.h">
-      <Filter>GameObject\UI\UIPrefab</Filter>
+    <ClInclude Include="..\Public\UIManger.h">
+      <Filter>GameObject\UI\UIManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -839,14 +833,8 @@
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
-    <ClCompile Include="UIPrefab.cpp">
-      <Filter>GameObject\UI\UIPrefab</Filter>
-    </ClCompile>
-    <ClCompile Include="PrefabManager.cpp">
-      <Filter>GameObject\UI\PrefabManager</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\UIPrefabNode.cpp">
-      <Filter>GameObject\UI\UIPrefab</Filter>
+    <ClCompile Include="UIManager.cpp">
+      <Filter>GameObject\UI\UIManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

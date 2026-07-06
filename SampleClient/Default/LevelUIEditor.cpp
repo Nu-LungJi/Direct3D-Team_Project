@@ -40,14 +40,21 @@ HRESULT CLevelUIEditor::Initialize()
 	m_vResTag.push_back("TEX_SHM");
 	m_vResTag.push_back("TEX_MAP");
 
+	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Flame");
+	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Houses");
+	m_vFlipBookResTag.push_back("Flipbook_VFXSmokeSim_D");
+	m_vFlipBookResTag.push_back("Flipbook_VFX_T_ItemSpark_8x8_D");
+	m_vFlipBookResTag.push_back("Flipbook_VFX_T_PopVFX_8x8_D");
+	m_vFlipBookResTag.push_back("Flipbook_VFX_BlinkingStars");
+
 	if (std::nullopt == Target_UI)
 	{
-		m_fX = clientSize.x * 0.5f;
-		m_fY = clientSize.y * 0.5f;
-		m_fSizeX = 100.f;
-		m_fSizeY = 100.f;
-		m_fAlpha = 1.f;
-		m_iWeight = 0;
+		m_fX		= clientSize.x * 0.5f;
+		m_fY		= clientSize.y * 0.5f;
+		m_fSizeX	= 100.f;
+		m_fSizeY	= 100.f;
+		m_fAlpha	= 1.f;
+		m_iWeight	= 0;
 		strcpy_s(m_cName, "Name");
 	}
 
@@ -222,6 +229,13 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 		selectUI->SetAlpha(m_fAlpha);
 		selectUI->SetWeight(m_iWeight);
 		selectUI->SetName(m_cName);
+
+		if (ETOUI(UI_TYPE::FLIPBOOK) == selectUI->GetUIType())
+		{
+			m_fCellSize = static_cast<CFlipBook*>(selectUI)->GetCellSize();
+			m_fDuration = static_cast<CFlipBook*>(selectUI)->GetDuration();
+			m_iTotalFrame = static_cast<CFlipBook*>(selectUI)->GetTotalFrame();
+		}
 	}
 	switch (m_iButtonMode)
 	{
@@ -253,6 +267,9 @@ void CLevelUIEditor::UpdateGUI()
 		break;
 	case ETOUI(UiEditorMode::PREFAB):
 		PrefabMode();
+		break;
+	case ETOUI(UiEditorMode::FLIPBOOK):
+		FlipbookMode();
 		break;
 	default:
 		break;
@@ -356,12 +373,22 @@ void CLevelUIEditor::ArrangeMode()
 	ImGui::Separator();
 
 	if (ImGui::Button("ARRAGE_MODE"))
+	{
 		m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
-
+		RefreshJsonFileList();
+	}
 	ImGui::SameLine();
-
 	if (ImGui::Button("PREFAB_MODE"))
+	{
 		m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
+		RefreshJsonFileList();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("FLIPBOOK_MODE"))
+	{
+		m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
+		RefreshJsonFileList();
+	}
 
 	ImGui::Spacing();
 	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Target_State");
@@ -488,12 +515,22 @@ void CLevelUIEditor::PrefabMode()
 	ImGui::Separator();
 
 	if (ImGui::Button("ARRAGE_MODE"))
+	{
 		m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
-
+		RefreshJsonFileList();
+	}
 	ImGui::SameLine();
-
 	if (ImGui::Button("PREFAB_MODE"))
+	{
 		m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
+		RefreshJsonFileList();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("FLIPBOOK_MODE"))
+	{
+		m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
+		RefreshJsonFileList();
+	}
 
 	if (std::nullopt != Target_UI)
 	{
@@ -620,6 +657,118 @@ void CLevelUIEditor::PrefabMode()
 	ImGui::End();
 }
 
+void CLevelUIEditor::FlipbookMode()
+{
+	auto clientSize = CGameInstance::Get().GetClientScreenSize();
+
+	_float2 mousePos = CGameInstance::Get().GetMousePos();
+
+	DrawJsonFileLoader(m_iEditorMode);
+
+	ImGui::Begin("EDITOR_MODE: ARRANGE_MODE");
+
+	//if (ImGui::Button("Save"))
+	//	PrefabSave();
+	//
+	//ImGui::SameLine();
+	//
+	//if (ImGui::Button("Load"))
+	//	PrefabLoad();
+
+	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Mode");
+	ImGui::Separator();
+
+	if (ImGui::Button("ARRAGE_MODE"))
+	{
+		m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
+		RefreshJsonFileList();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("PREFAB_MODE"))
+	{
+		m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
+		RefreshJsonFileList();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("FLIPBOOK_MODE"))
+	{
+		m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
+		RefreshJsonFileList();
+	}
+		
+
+	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Save FlipBook");
+	ImGui::Separator();
+
+	ImGui::SetNextItemWidth(100);
+	ImGui::InputText("Save_FlipbookName", m_cPrefabName, sizeof(m_cPrefabName));
+
+	if (ImGui::Button("Save_Flipbook"))
+		PrefabSave();
+
+	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Make FlipBook");
+	ImGui::Separator();
+
+	ImGui::SetNextItemWidth(100);
+	ImGui::InputText("FlipbookName", m_cPrefabName, sizeof(m_cPrefabName));
+
+	if (ImGui::Button("Make_Flipbook"))
+	{
+		FlipBookMake();
+	}
+
+	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Animation_Value");
+	ImGui::Separator();
+
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputFloat("CellSize", &m_fCellSize);
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputFloat("Duration", &m_fDuration);
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputInt("TotalFrame", &m_iTotalFrame);
+
+	if (std::nullopt != Target_UI)
+	{
+		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+
+		static_cast<CFlipBook*>(selectUI)->SetCellSize(m_fCellSize);
+		static_cast<CFlipBook*>(selectUI)->SetDuration(m_fDuration);
+		static_cast<CFlipBook*>(selectUI)->SetTotalFrame(m_iTotalFrame);
+
+		if (std::nullopt != selectUI->GetParent())
+			LocalStateView();
+		else
+			StateView();
+	}
+	else
+		StateView();
+
+	ImGui::Spacing();
+	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Images");
+	ImGui::Separator();
+
+	if (ImGui::BeginTable("TextureTable", 2))
+	{
+		for (size_t i = 0; i < m_vFlipBookResTag.size(); ++i)
+		{
+			ImGui::TableNextColumn();
+
+			ImGui::PushID((int)i);
+
+			const auto& srv = E::CGameInstance::GetConst()
+				.GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_vFlipBookResTag[i]);
+
+			if (ImGui::ImageButton((ImTextureID)srv->GetSRV().Get(), ImVec2(100, 100)))
+			{
+				strcpy_s(m_cResTag, sizeof(m_cResTag), m_vFlipBookResTag[i].c_str());
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
 void CLevelUIEditor::Picking()
 {
 	_float2 mousePos = CGameInstance::Get().GetMousePos();
@@ -683,6 +832,13 @@ void CLevelUIEditor::Picking()
 		m_fAlpha = selectUI->GetAlpha();
 		m_iWeight = selectUI->GetWeight();
 		strcpy_s(m_cName, sizeof(m_cName), selectUI->GetName());
+
+		if (ETOUI(UI_TYPE::FLIPBOOK) == selectUI->GetUIType())
+		{
+			m_fCellSize = static_cast<CFlipBook*>(selectUI)->GetCellSize();
+			m_fDuration = static_cast<CFlipBook*>(selectUI)->GetDuration();
+			m_iTotalFrame = static_cast<CFlipBook*>(selectUI)->GetTotalFrame();
+		}
 	}
 }
 
@@ -850,7 +1006,21 @@ void CLevelUIEditor::PrefabSave()
 		root["UI"].push_back(obj);
 	}
 
-	char path[256] = "./Resources/SampleClient/UIData/Prefabs/";
+	switch (m_iEditorMode)
+	{
+	case ETOUI(UiEditorMode::ARRANGE):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/LevelUI/");
+		break;
+	case ETOUI(UiEditorMode::PREFAB):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/Prefabs/");
+		break;
+	case ETOUI(UiEditorMode::FLIPBOOK):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/FlipBook/");
+		break;
+	}
+	
+	char path[256] = "";
+	strcpy_s(path, sizeof(path), g_BasePath);
 	strcat_s(path, sizeof(path), m_cPrefabName);
 	char final[256] = ".json";
 	strcat_s(path, sizeof(path), final);
@@ -872,7 +1042,21 @@ void CLevelUIEditor::PrefabSave()
 
 void CLevelUIEditor::PrefabLoad()
 {
-	char path[256] = "./Resources/SampleClient/UIData/Prefabs/";
+	switch (m_iEditorMode)
+	{
+	case ETOUI(UiEditorMode::ARRANGE):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/LevelUI/");
+		break;
+	case ETOUI(UiEditorMode::PREFAB):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/Prefabs/");
+		break;
+	case ETOUI(UiEditorMode::FLIPBOOK):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/FlipBook/");
+		break;
+	}
+
+	char path[256] = "";
+	strcpy_s(path, sizeof(path), g_BasePath);
 	strcat_s(path, sizeof(path), m_cPrefabName);
 	strcat_s(path, sizeof(path), ".json");
 
@@ -892,6 +1076,25 @@ void CLevelUIEditor::PrefabLoad()
 	{
 		LoadUIRecursive(obj, nullptr);
 	}
+}
+
+void CLevelUIEditor::FlipBookMake()
+{
+	auto clientSize = CGameInstance::Get().GetClientScreenSize();
+
+	count++;
+	CFlipBook::UIOBJECT_DESC Desc{};
+	Desc.sObjectTag = "UI_" + std::to_string(count);
+	Desc.fSizeX = 200.f;
+	Desc.fSizeY = 200.f;
+	Desc.fX = clientSize.x * 0.5f;
+	Desc.fY = clientSize.y * 0.5f;
+	Desc.fAlpha = 1.f;
+	Desc.ResTag = m_cResTag;
+	Desc.ResWeight = count;
+	Desc.m_UIType = ETOUI(UI_TYPE::FLIPBOOK);
+
+	std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", "Layer_UI", &Desc);
 }
 
 void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& obj)
@@ -1198,6 +1401,14 @@ void CLevelUIEditor::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 		DeleteUIRecursive(childHandle);
 	}
 
+	if (targetUI->GetParent())
+	{
+		Engine::CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*targetUI->GetParent());
+
+		if (nullptr != parentUI)
+			parentUI->DeleteChild(targetUI->GetHandle());
+	}
+
 	if (0 == childHandles.size())
 	{
 		selectedParent--;
@@ -1205,30 +1416,26 @@ void CLevelUIEditor::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 		return;
 	}
 
-	if (targetUI->GetParent())
-	{
-		Engine::CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*targetUI->GetParent());
-
-		if (parentUI)
-			parentUI->DeleteChild(targetUI->GetHandle());
-	}
 	selectedParent--;
 	targetUI->SetPendingDestroyCascade();
 
 	return;
 }
 
-void CLevelUIEditor::RefreshJsonFileList(uint32_t EditorMode)
+void CLevelUIEditor::RefreshJsonFileList()
 {
 	g_JsonFiles.clear();
 
-	switch (EditorMode)
+	switch (m_iEditorMode)
 	{
 	case ETOUI(UiEditorMode::ARRANGE) :
-		g_BasePath = "./Resources/SampleClient/UIData/LevelUI/";
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/LevelUI/");
 		break;
 	case ETOUI(UiEditorMode::PREFAB):
-		g_BasePath = "./Resources/SampleClient/UIData/Prefabs/";
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/Prefabs/");
+		break;
+	case ETOUI(UiEditorMode::FLIPBOOK):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/FlipBook/");
 		break;
 	}
 
@@ -1259,16 +1466,29 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 {
 	if (!g_IsFileGridInitialized)
 	{
-		RefreshJsonFileList(EditorMode);
+		RefreshJsonFileList();
 		g_IsFileGridInitialized = true;
 	}
+	std::string title = "";
+	switch (EditorMode)
+	{
+	case ETOUI(UiEditorMode::ARRANGE):
+		title = "Level Selector";
+		break;
+	case ETOUI(UiEditorMode::PREFAB):
+		title = "PREFAB Selector";
+		break;
+	case ETOUI(UiEditorMode::FLIPBOOK):
+		title = "FLIPBOOK Selector";
+		break;
+	}
 
-	ImGui::Begin("JSON 파일 선택기");
+	ImGui::Begin(title.c_str());
 
 	// 파일이 추가되었을 때를 대비한 새로고침 버튼
-	if (ImGui::Button("새로고침 (Refresh)"))
+	if (ImGui::Button("Refresh"))
 	{
-		RefreshJsonFileList(EditorMode);
+		RefreshJsonFileList();
 	}
 
 	ImGui::Separator();
@@ -1297,9 +1517,11 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
 					PrefabLoad();
 					break;
+				case ETOUI(UiEditorMode::FLIPBOOK):
+					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
+					PrefabLoad();
+					break;
 				}
-
-
 
 				// 디버깅용 콘솔 출력
 				printf("로드 대상 파일: %s\n", file.fullPath.c_str());
