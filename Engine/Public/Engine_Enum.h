@@ -5,7 +5,7 @@ namespace Engine
 	enum class WINMODE { FULL, WIN };
 	enum class MOUSEKEYSTATE { LB, RB, MB, END };
 	enum class MOUSEMOVESTATE { X, Y, Z, END };
-	enum class RENDERGROUP { PRIORITY, NONBLEND, BLEND, SKYBOX, COLLIDER,PARTICLE, UI, END };
+	enum class RENDERGROUP { PRIORITY, NONBLEND, BLEND, LIGHT, SKYBOX, COLLIDER, PARTICLE, UI, END };
 	enum class RENDERPASS : uint32_t
 	{
 		DEFAULT = 1 << 0,

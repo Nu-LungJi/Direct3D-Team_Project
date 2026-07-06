@@ -14,8 +14,13 @@ CResShader::~CResShader()
 {
 }
 
-HRESULT CResShader::CompileShader()
+HRESULT CResShader::CompileShader(const DESC* _desc)
 {
+    if (_desc) {
+        m_sEntryPoint = _desc->sEntryPoint;
+        m_sTarget = _desc->sTarget;
+    }
+
     uint32_t        iFlag = {};
     iFlag |= D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
     iFlag |= D3DCOMPILE_ENABLE_STRICTNESS;

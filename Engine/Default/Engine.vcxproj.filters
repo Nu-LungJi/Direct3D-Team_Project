@@ -1146,9 +1146,6 @@
     <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_FixArgs.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">

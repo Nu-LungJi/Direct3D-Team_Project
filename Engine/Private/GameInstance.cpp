@@ -310,18 +310,17 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
-	
-	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
-	//m_pGameObjectManager->Update(fTimeDelta);
-	//m_pGameObjectManager->LateUpdate(fTimeDelta);
-	
-	m_pLevelManager->Update(fTimeDelta);
 
 	{
 		ZoneScopedN("LightManager_Update");
 		m_pLightManager->Update(fTimeDelta);
 	}
 
+	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	//m_pGameObjectManager->Update(fTimeDelta);
+	//m_pGameObjectManager->LateUpdate(fTimeDelta);
+	
+	//m_pLevelManager->Update(fTimeDelta);
 
 	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
 
@@ -457,6 +456,13 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_MATERIAL) })))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
@@ -519,7 +525,7 @@ HRESULT CGameInstance::InitializeResources()
 	
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
-	//./ShaderFiles
+	//ShaderFiles
 	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))
@@ -542,13 +548,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadCol", "./ShaderFiles/QuadCol/QuadCol.hlsl"))
-	{
-		if (FAILED(res->Load()))
-		{
-			return E_FAIL;
-		}
-	}
-	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -677,6 +676,37 @@ HRESULT CGameInstance::InitializeResources()
 		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 		res->Load(blendDesc);
 	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = FALSE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		res->Load(blendDesc);
+	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		res->Load(blendDesc);
+	}
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD", E::CResBlendState::Create()))
 	{
 		D3D11_BLEND_DESC blendDesc{};
@@ -701,19 +731,40 @@ HRESULT CGameInstance::InitializeResources()
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		res->Load(depthDesc);
 	}
-
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthDesc.StencilEnable		= FALSE;
+		depthDesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		res->Load(depthDesc);
+	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthDesc.StencilEnable = FALSE;
+		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		res->Load(depthDesc);
+	}
 	// Test Model Load
 	// 오류나서 제거
 	if(true)
 	{
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -735,48 +786,20 @@ HRESULT CGameInstance::InitializeResources()
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR", "../../Engine/ShaderFiles/PBR/VS_PBR.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR", "../../Engine/ShaderFiles/PBR/PS_PBR.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-
-	
-		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/aaaaa/SK_aaaaa.bin"))) {
-
-			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-	
 	}
+	
+	// 텍스쳐 없는 경우 대비, 대체 텍스쳐
+	{
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_Gray", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Gray.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_White", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		{
+			res->Load();
+		}
+	}
+	
 
 	return S_OK;
 }
@@ -947,6 +970,10 @@ ComPtr<ID3D11DepthStencilView> CGameInstance::GetBackBufferDSV() const
 	return m_pGraphicDevice->GetBackBufferDSV();
 }
 
+ComPtr<ID3D11Texture2D> CGameInstance::GetBackBufferTexture() const
+{
+	return m_pGraphicDevice->GetBackBufferTexture();
+}
 HRESULT CGameInstance::ClearBackBufferView(const _float4* pClearColor)
 {
 	return m_pGraphicDevice->ClearBackBufferView(pClearColor);
@@ -1267,7 +1294,7 @@ HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
 HRESULT CGameInstance::LoadMapData(const std::string& path)
-{
+{	
 	return m_pMapManager->LoadMapData(path);
 }
 HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)

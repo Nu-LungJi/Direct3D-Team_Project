@@ -6,6 +6,8 @@ NS_USING(Engine)
 
 HRESULT CResVertexShader::Load(const std::any& arg)
 {
+    auto desc = std::any_cast<CResShader::DESC>(&arg);
+
 	if (m_eState == STATE::LOADED)
 	{
 		return S_OK;
@@ -13,7 +15,7 @@ HRESULT CResVertexShader::Load(const std::any& arg)
 
 	m_eState = STATE::LOADING;
 
-	if (FAILED(CompileShader()))
+	if (FAILED(CompileShader(desc)))
 	{
 		MSG_BOX("VERTEX SHADER COMPILE FAILED");
 		m_eState = STATE::LOADFAIL;

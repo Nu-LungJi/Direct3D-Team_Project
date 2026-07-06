@@ -42,7 +42,7 @@ public:
 
 public:
 	HRESULT AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum);
-	HRESULT AnimEditor_Play_AnimMontage(_float fTimeDelta, const std::string& strAnimMontageName);
+	HRESULT AnimEditor_Play_AnimMontage(_float fTimeDelta, const std::string& strAnimMontageName);   
 
 
 public:

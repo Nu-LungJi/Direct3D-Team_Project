@@ -15,6 +15,7 @@ public:
 	ComPtr<ID3D11DeviceContext> GetContext() const { return m_pDeviceContext; }
 	ComPtr<ID3D11RenderTargetView> GetBackBufferRTV() const { return m_pBackBufferRTV; }
 	ComPtr<ID3D11DepthStencilView> GetBackBufferDSV() const { return m_pDepthStencilView; }
+	ComPtr<ID3D11Texture2D> GetBackBufferTexture() const { return pBackBufferTexture; }
 
 public:
 	HRESULT Initialize(ComPtr< ID3D11Device>& ppDevice, ComPtr< ID3D11DeviceContext>& ppContext);
@@ -33,6 +34,7 @@ private:
 	ComPtr<IDXGISwapChain> m_pSwapChain{};
 	ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV{};
 	ComPtr<ID3D11DepthStencilView> m_pDepthStencilView{};
+	ComPtr<ID3D11Texture2D> pBackBufferTexture{};
 
 private:
 	HRESULT ReadySwapChain(HWND hWnd, WINMODE isWindowed, uint32_t iWinCX, uint32_t iWinCY);

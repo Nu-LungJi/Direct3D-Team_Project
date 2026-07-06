@@ -5,6 +5,11 @@ NS_BEGIN(Engine)
 class ENGINE_DLL CResShader: public CResource
 {
 public:
+	struct DESC {
+		_string sEntryPoint;
+		_string sTarget;
+	};
+public:
 	DECLARE_DERIVED_TYPE(CResShader, CResource)
 
 protected:
@@ -16,7 +21,7 @@ public:
 	size_t GetBufferSize() const { return m_pBlob->GetBufferSize(); }
 
 protected:
-	HRESULT CompileShader();
+	HRESULT CompileShader(const DESC* _desc = nullptr);
 
 protected:
 	_string m_sEntryPoint{};

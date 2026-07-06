@@ -25,13 +25,13 @@ void CTest_StaticModel::UpdateGUI()
 HRESULT CTest_StaticModel::InitializePrototype(void* pArg)
 {
 
-	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi");
+	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexNonAnimShader->Load()))
 	{
 		return E_FAIL;
 	}
-	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi");
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
 	{
