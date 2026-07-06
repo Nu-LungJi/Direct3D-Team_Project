@@ -28,6 +28,10 @@ public:
 
 	uint32_t FindKeyFrameIndex(float fTrackPos);
 
+public:
+	int32_t				Get_BoneIndex() { return m_iBoneIndex; }
+	uint32_t			Get_NumKeyFrames() { return m_iNumKeyFrames; }
+	std::vector<KEYFRAME>&	Get_KeyFrames() { return m_KeyFrames; }
 
 private:
 	char				m_szName[MAX_PATH] = {};

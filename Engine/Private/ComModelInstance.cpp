@@ -28,6 +28,7 @@ HRESULT CComModelInstance::Initialize(void* pArg)
     }
 
     if (pArg != nullptr) {
+        // 모델 Instance는 하나의 메모리를 모두 공유한다.
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
         m_pModel = CGameInstance::Get().GetResourceFirst<CResModel>(pDesc->sGroupTag, pDesc->sResTag);
         if (m_pModel == nullptr)
@@ -41,6 +42,7 @@ HRESULT CComModelInstance::Initialize(void* pArg)
 
 HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex)
 {
+    // 나중에 Bind 할떄 animation 정보를 던져준 GPU에서 Animatino 돌린다. 나중에 수정
     auto& pMesh = m_pModel->GetMeshes()[iMeshIndex];
 	auto& Bones = m_pModel->GetBones();
 

@@ -21,102 +21,79 @@ HRESULT CResModel::Load(const std::any& arg)
 {
 	auto descArg = std::any_cast<DESC>(&arg);
 	if (!descArg)
-	{
 		return E_FAIL;
-	}
 
 	if (m_eState == STATE::LOADED)
-	{
 		return S_OK;
-	}
 
 	m_eState = STATE::LOADING;
 	XMStoreFloat4x4(&m_PreTransformMatrix, descArg->PreTransformMatrix);
-	{	
-		std::ifstream file(m_sPath, std::ios::binary | std::ios::ate);
 
+	{
 		if (!std::filesystem::exists(m_sPath))
-		{
 			return E_FAIL;
-		}
 
+		std::ifstream file(m_sPath, std::ios::binary | std::ios::ate);
 		if (!file.is_open())
-		{
 			return E_FAIL;
-		}
 
-		file.seekg(0, std::ios::end);
-		size_t size = file.tellg();
+		size_t size = static_cast<size_t>(file.tellg());
 		file.seekg(0, std::ios::beg);
 
-		std::shared_ptr<char[]> buffer = std::make_shared<char[]>(size);
+		std::unique_ptr<char[]> buffer = std::make_unique<char[]>(size);
 		file.read(buffer.get(), size);
 
-		file.close();
+		if (!file)
+			return E_FAIL;
 
 		char* ptr = buffer.get();
 
-		MODEL_FILE_HEADER* fh = (MODEL_FILE_HEADER*)ptr;
+		MODEL_FILE_HEADER* fh = reinterpret_cast<MODEL_FILE_HEADER*>(ptr);
 		ptr += sizeof(MODEL_FILE_HEADER);
-		
-		m_iNumMeshes	= fh->MeshCount;
-		m_iAnimCnt		= fh->AnimationCount;
-		m_iNumMaterials = fh->MaterialCount;
-		m_iNumBones		= fh->BoneCount;
 
-	
+		m_iNumMeshes = fh->MeshCount;
+		m_iAnimCnt = fh->AnimationCount;
+		m_iNumMaterials = fh->MaterialCount;
+		m_iNumBones = fh->BoneCount;
+
 		char* base = buffer.get();
 		char* end = base + size;
 
 		while (ptr < end)
 		{
-			CHUCKHEADER* chunk = (CHUCKHEADER*)ptr;
+			CHUCKHEADER* chunk = reinterpret_cast<CHUCKHEADER*>(ptr);
 			ptr += sizeof(CHUCKHEADER);
+
+			if (ptr + chunk->size > end)
+				return E_FAIL;
 
 			switch (chunk->type)
 			{
-			case CHUNCK_TYPE::CHUNK_BONE: {
-				char* BoneData = ptr;
-
-				if (FAILED(Ready_Bones(BoneData)))
+			case CHUNCK_TYPE::CHUNK_BONE:
+				if (FAILED(Ready_Bones(ptr)))
 					return E_FAIL;
-
-				ptr += chunk->size;
-			}
-										break;
+				break;
 
 			case CHUNCK_TYPE::CHUNK_MESH:
-			{
-				char* meshData = ptr;
-
-				if (FAILED(Ready_Meshes(meshData)))
+				if (FAILED(Ready_Meshes(ptr)))
 					return E_FAIL;
-
-				ptr += chunk->size;
-			}
-			break;
+				break;
 
 			case CHUNCK_TYPE::CHUNK_MATERIAL:
-			{
-				char* matData = ptr;
-
-				if (FAILED(Ready_Materials(m_sPath, matData)))
+				if (FAILED(Ready_Materials(m_sPath, ptr)))
 					return E_FAIL;
-
-				ptr += chunk->size;
+				break;
 			}
-			break;
 
-		
-
-			}
-		};
-	
-		if (FAILED(Ready_Animation())) {
-			return E_FAIL;
+			ptr += chunk->size;
 		}
 
+		// 여기서 buffer는 블록 끝나면서 해제됨
 	}
+
+	// 모델 bin 전체 버퍼가 해제된 다음 애니메이션 로드
+	if (FAILED(Ready_Animation()))
+		return E_FAIL;
 
 	m_eState = STATE::LOADED;
 	return S_OK;
@@ -292,3 +269,4 @@ SPtr<CResModel> CResModel::Create(const _string& sPath)
 {
 	return ToSPtr(new CResModel{ sPath });
 }
+

@@ -52,6 +52,11 @@ public:
 	uint32_t GetPlayAnimIndex() const { return m_iPlayAnimIndex; }
 	void SetPlayAnimIndex(uint32_t iIndex) { m_iPlayAnimIndex = iIndex; }
 
+	_float GetPlayAnimRatio() const { return m_fRatio; }
+
+	_bool GetPlay() const { return m_bPlay; }
+	void  SetPlay() { m_bPlay = !m_bPlay; }
+
 private:
 	CComModelInstance* m_pModelInstance;
 	std::unordered_map <std::string, CComAnimMontage*> m_mapAnimMontages;
@@ -62,6 +67,11 @@ private:
 	uint32_t		m_iPlayAnimationNum{ 0 };
 	uint32_t		m_iPlayAnimIndex{ 0 };
 	uint32_t		m_iPlayAnimMonatgueIndex{ 0 };
+
+private:
+	_bool		    m_bPlay{ false };
+	_float          m_fRatio{ 0.f };
+
 
 public:
 	static UPtr<CComAnimator> Create();
