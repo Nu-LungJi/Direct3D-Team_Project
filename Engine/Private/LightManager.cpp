@@ -15,12 +15,6 @@ HRESULT CLightManager::Initialize_LightManager(){
         if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LIGHT) })))    return E_FAIL;
     }
 
-    // MODEL
-    if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PBR", E::CResCBuffer::Create()))
-    {
-        if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_OBJECT_PBR) })))    return E_FAIL;
-    }
-
 	return S_OK;
 }
 

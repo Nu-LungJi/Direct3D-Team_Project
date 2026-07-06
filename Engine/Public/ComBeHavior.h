@@ -36,7 +36,7 @@ public:
 	void					UnRegistNode(uint32_t iindex);
 
 private:	
-	UPtr<class CBTSelector>						m_Root;
+	UPtr<class CBTSelector>					 m_Root;
 	std::map<uint32_t,CBTRoot*>				m_NodeMap;
 
 	uint32_t								m_iNodeID{ 0 };

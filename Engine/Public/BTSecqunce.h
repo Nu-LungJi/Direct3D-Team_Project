@@ -27,7 +27,7 @@ public:
 
 public:
 	static  UPtr<CBTSecqunce> Create(void* pArg);
-
+	UPtr<CBTRoot>Clone(void* pArg) { return nullptr; };
 };
 
 NS_END

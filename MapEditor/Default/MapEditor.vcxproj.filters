@@ -37,6 +37,9 @@
     <Filter Include="GUIWindow\MapEditorGUI\Inspector">
       <UniqueIdentifier>{5bf757a3-d438-461a-b54a-e0a3dccfad8a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUIWindow\MapChunkGUI">
+      <UniqueIdentifier>{72e95bca-c637-4938-8a94-1af9092c75d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -87,6 +90,12 @@
     <ClInclude Include="..\Public\MapEditorGUI.h">
       <Filter>GUIWindow\MapEditorGUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ResourceGUI.h">
+      <Filter>GUIWindow\MapEditorGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapChunkGUI.h">
+      <Filter>GUIWindow\MapChunkGUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -134,6 +143,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\MapEditorGUI.cpp">
       <Filter>GUIWindow\MapEditorGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResourceGUI.cpp">
+      <Filter>GUIWindow\MapEditorGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapChunkGUI.cpp">
+      <Filter>GUIWindow\MapChunkGUI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -23,8 +23,11 @@
 #include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
 #include "NodeEditor.h"
+#include "Action_Manager.h"
 #include "Light.h"
 #include "ComCollider.h"
+#include "MapMeshObject.h"
+#include "MapManager.h"
 
 #include "ParticleManager.h"
 #include "Particle.h"
@@ -171,11 +174,21 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pMapManager = CMapManager::Create();
+	if (m_pMapManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	m_pNodeEditor = CNodeEditor::Create();
 	if (m_pNodeEditor == nullptr)
 	{
 		return E_FAIL;
 	}
+
+	m_pActionManager = CAction_Manager::Create();
+	if (m_pActionManager == nullptr)
+		return E_FAIL;
+
     return S_OK;
 }
 
@@ -193,8 +206,12 @@ void CGameInstance::UpdateGUI()
 		m_pGameObjectManager->UpdateGUI();
 	}
 	
+	{
+		ZoneScopedN("m_pAnimEdit_Manager_UpdateGUI");
 
-	m_pAnimEdit_Manager->UpdateGUI();
+		m_pAnimEdit_Manager->UpdateGUI();
+	}
+
 
 	m_pWorkerManager->UpdateGUI();
 
@@ -293,19 +310,22 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		ZoneScopedN("LevelManager_Update");
 		m_pLevelManager->Update(fTimeDelta);
 	}
-	m_pGameObjectManager->PriorityUpdate(fTimeDelta);
-	m_pGameObjectManager->Update(fTimeDelta);
-	m_pGameObjectManager->LateUpdate(fTimeDelta);
-	
-	m_pLevelManager->Update(fTimeDelta);
 
 	{
 		ZoneScopedN("LightManager_Update");
 		m_pLightManager->Update(fTimeDelta);
 	}
 
+	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	//m_pGameObjectManager->Update(fTimeDelta);
+	//m_pGameObjectManager->LateUpdate(fTimeDelta);
+	
+	//m_pLevelManager->Update(fTimeDelta);
 
 	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+
+	m_pMapManager->Update(fTimeDelta);
+
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
@@ -316,6 +336,10 @@ HRESULT CGameInstance::Draw()
 	{
 		return E_FAIL;
 	}
+
+#ifdef _DEBUG
+	m_pMapManager->RenderDebugMapChunk();
+#endif
     return S_OK;
 }
 
@@ -328,6 +352,8 @@ void CGameInstance::Release_Engine()
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
+	m_pNodeEditor.reset();
+	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
@@ -341,6 +367,7 @@ void CGameInstance::Release_Engine()
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pResourceManager.reset();
+	m_pMapManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -433,6 +460,13 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_MATERIAL) })))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE, E::CResCBuffer::Create()))
 	{
@@ -503,7 +537,7 @@ HRESULT CGameInstance::InitializeResources()
 	
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
-	//./ShaderFiles
+	//ShaderFiles
 	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))
@@ -526,13 +560,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadCol", "./ShaderFiles/QuadCol/QuadCol.hlsl"))
-	{
-		if (FAILED(res->Load()))
-		{
-			return E_FAIL;
-		}
-	}
-	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -661,6 +688,37 @@ HRESULT CGameInstance::InitializeResources()
 		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 		res->Load(blendDesc);
 	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = FALSE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		res->Load(blendDesc);
+	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		res->Load(blendDesc);
+	}
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD", E::CResBlendState::Create()))
 	{
 		D3D11_BLEND_DESC blendDesc{};
@@ -685,19 +743,40 @@ HRESULT CGameInstance::InitializeResources()
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		res->Load(depthDesc);
 	}
-
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthDesc.StencilEnable		= FALSE;
+		depthDesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		res->Load(depthDesc);
+	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthDesc.StencilEnable = FALSE;
+		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		res->Load(depthDesc);
+	}
 	// Test Model Load
 	// 오류나서 제거
 	if(true)
 	{
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -719,20 +798,21 @@ HRESULT CGameInstance::InitializeResources()
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR", "../../Engine/ShaderFiles/PBR/VS_PBR.hlsl"))
+	}
+	
+	// 텍스쳐 없는 경우 대비, 대체 텍스쳐
+	{
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_Gray", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Gray.png")))
 		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
+			res->Load();
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR", "../../Engine/ShaderFiles/PBR/PS_PBR.hlsl"))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_White", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
 		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
+			res->Load();
 		}
+	}
+	
+
 
 	
 		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
@@ -759,12 +839,9 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-	
-	}
 
 	return S_OK;
 }
-
 HRESULT CGameInstance::InitializePrototype()
 {
 	if (AddPrototype("PERMANENT", "Prototype_Component_Transform", CComTransform::Create()))
@@ -809,6 +886,11 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (AddPrototype("PERMANENT", "Prototype_GameObject_MapMeshObject", CMapMeshObject::Create()))
 	{
 		return E_FAIL;
 	}
@@ -877,6 +959,10 @@ const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* CGameInstance:
 {
 	return m_pResourceManager->GetResource(sGroupTag);
 }
+const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& CGameInstance::GetResources() const
+{
+	return m_pResourceManager->GetResources();
+}
 HRESULT CGameInstance::LoadResource(const StringID& sGroupTag)
 {
 	return m_pResourceManager->LoadResource(sGroupTag);
@@ -922,6 +1008,10 @@ ComPtr<ID3D11DepthStencilView> CGameInstance::GetBackBufferDSV() const
 	return m_pGraphicDevice->GetBackBufferDSV();
 }
 
+ComPtr<ID3D11Texture2D> CGameInstance::GetBackBufferTexture() const
+{
+	return m_pGraphicDevice->GetBackBufferTexture();
+}
 HRESULT CGameInstance::ClearBackBufferView(const _float4* pClearColor)
 {
 	return m_pGraphicDevice->ClearBackBufferView(pClearColor);
@@ -1232,6 +1322,55 @@ HRESULT CGameInstance::SetupTestModel() {
 }
 #pragma endregion
 
+#pragma region MAP_MANAGER
+HRESULT CGameInstance::SaveMap(const std::string& path)
+{
+	return m_pMapManager->SaveMap(path);
+}
+HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
+{
+	return m_pMapManager->LoadMap(path, clearBeforeLoad);
+}
+HRESULT CGameInstance::LoadMapData(const std::string& path)
+{	
+	return m_pMapManager->LoadMapData(path);
+}
+HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)
+{
+	return m_pMapManager->LoadChunk(coord);
+}
+HRESULT CGameInstance::UnLoadMapChunk(const MAPCHUNK_COORD& coord)
+{
+	return m_pMapManager->UnLoadChunk(coord);
+}
+void CGameInstance::RebuildMapChunks()
+{
+	m_pMapManager->RebuildChunks();
+}
+const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
+{
+	return m_pMapManager->GetChunks();
+}
+const _float3& CGameInstance::GetMapChunkSize() const
+{
+	return m_pMapManager->GetChunkSize();
+}
+void CGameInstance::SetMapChunkStreaming(_bool enable)
+{
+	m_pMapManager->SetChunkStreaming(enable);
+}
+_bool CGameInstance::IsMapChunkStreaming() const
+{
+	return m_pMapManager->IsChunkStreaming();
+}
+#ifdef _DEBUG
+void CGameInstance::SetDebugDrawMapChunk(_bool draw)
+{
+	return m_pMapManager->SetDebugDrawMapChunk(draw);
+}
+#endif
+#pragma endregion
+
 #pragma region LIGHT_MANAGER
 VOID	CGameInstance::Bind_EnviromentLight() {
 	m_pLightManager->Bind_EnviromentLight();
@@ -1257,5 +1396,20 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
 {
 	return m_pNodeEditor->OpenBeHavior(Handle);
+}
+#pragma endregion
+
+#pragma region NODE_EDITOR
+HRESULT					CGameInstance::Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction)
+{
+	return m_pActionManager->Add_Action_Prototype(strActionName, std::move(pAction));
+}
+UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos,CHandle Handle)
+{
+	return m_pActionManager->Show_ActioNode_List(iNode, vNodePos, Handle);
+}
+void				CGameInstance::Show_Action_NodeWidget(CBTRoot* pNode)
+{
+	m_pActionManager->Show_Action_NodeWidget(pNode);
 }
 #pragma endregion

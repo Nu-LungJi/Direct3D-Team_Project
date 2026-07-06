@@ -5,7 +5,7 @@ namespace Engine
 	enum class WINMODE { FULL, WIN };
 	enum class MOUSEKEYSTATE { LB, RB, MB, END };
 	enum class MOUSEMOVESTATE { X, Y, Z, END };
-	enum class RENDERGROUP { PRIORITY, NONBLEND, BLEND, SKYBOX, COLLIDER,PARTICLE, UI, END };
+	enum class RENDERGROUP { PRIORITY, NONBLEND, BLEND, LIGHT, SKYBOX, COLLIDER, PARTICLE, UI, END };
 	enum class RENDERPASS : uint32_t
 	{
 		DEFAULT = 1 << 0,
@@ -17,7 +17,9 @@ namespace Engine
 	enum class BEHAVIOR {SELECTOR, SECQUNCE,ACTION,END};
 	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
-
+#define X(name) name,
+	enum class NODE_ACTION { NODE_ACTION_M };
+#undef X	
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
 	enum class PARTICLE_TYPE { FIRE_CPU,FIRE_GPU,RIBBON,TRAIL,END };
 	enum class TRAIL_TYPE { POINT,PLANE,END };

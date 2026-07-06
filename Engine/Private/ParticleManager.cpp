@@ -507,6 +507,8 @@ HRESULT CParticleManager::ExecuteCommandQueue()
     HRESULT hr = S_OK;
     for (auto& cmd : m_vecCommandQueue)
     {
+        //파일 path를 읽어서 
+        //cmd.baemStart를 본인 특정 좌표로 
         if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
         {
             std::vector<PARTICLE_SPAWN_DATA> spawnList(cmd.count);

@@ -46,6 +46,10 @@ private:
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
+	XMFLOAT3	m_fAlbedoValue{};
+	_float		m_fRoughnessValue{};
+	_float		m_fMetallicValue{};
+
 public:
 	static E::UPtr<CLightObject> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

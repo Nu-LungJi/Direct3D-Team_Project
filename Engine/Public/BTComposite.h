@@ -36,5 +36,7 @@ protected:
 	NODE_VALUE				m_NodeValue{};
 
 	std::vector<UPtr<CBTRoot>>			  m_Actions;
+public:
+	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };
 NS_END

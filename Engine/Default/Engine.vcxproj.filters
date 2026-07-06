@@ -199,9 +199,6 @@
     <Filter Include="GameObject\UI\UITool">
       <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model">
-      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
     </Filter>
@@ -243,15 +240,6 @@
     </Filter>
     <Filter Include="Tracy">
       <UniqueIdentifier>{e02f4b44-ac4b-4c18-9468-0d92e7afed7a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComModelInstance">
-      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComAnimMontage">
-      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Component\Model\ComAnimator">
-      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
     </Filter>
     <Filter Include="AnimationEditor">
       <UniqueIdentifier>{5068b7e8-6054-49e9-b16c-65ba14323f27}</UniqueIdentifier>
@@ -304,17 +292,41 @@
     <Filter Include="Resource\Model\Animation\Chanel">
       <UniqueIdentifier>{5501d83f-8f9c-4c60-9920-38d2224d1bfd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model\ComStaticModelInstance">
-      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\MapMeshObject">
+      <UniqueIdentifier>{771de9b5-bb1c-4900-8366-21c558f64744}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DebugDraw">
+      <UniqueIdentifier>{766f1db3-e511-4caf-a8bc-c189164d5b76}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource\Buffer\InstanceBuffer">
       <UniqueIdentifier>{c6f96c4d-a6c1-4ed5-8f61-31cd10d721d3}</UniqueIdentifier>
     </Filter>
     <Filter Include="Particle\Beam">
       <UniqueIdentifier>{25baf6d4-8ef0-42f5-a817-5e51b5a77092}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model">
+      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComModelInstance">
+      <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimMontage">
+      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComAnimator">
+      <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComStaticModelInstance">
+      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CreatureEditor">
+      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Manager">
+      <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
     </Filter>
     <Filter Include="Particle\Trail">
       <UniqueIdentifier>{fa144d76-945b-4f75-9b1e-e904b23c45de}</UniqueIdentifier>
@@ -678,6 +690,15 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshObject.h">
+      <Filter>GameObject\MapMeshObject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\DebugDraw.h">
+      <Filter>DebugDraw</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Particle_CPU.h">
       <Filter>Particle</Filter>
     </ClInclude>
@@ -689,6 +710,12 @@
     </ClInclude>
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CreatureEditor.h">
+      <Filter>CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Action_Manager.h">
+      <Filter>Component\BeHavior\Manager</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Trail_CPU.h">
       <Filter>Particle\Trail</Filter>
@@ -1028,6 +1055,15 @@
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\MapMeshObject.cpp">
+      <Filter>GameObject\MapMeshObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapManager.cpp">
+      <Filter>GameObject\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\DebugDraw.cpp">
+      <Filter>DebugDraw</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\Particle_CPU.cpp">
       <Filter>Particle</Filter>
     </ClCompile>
@@ -1039,6 +1075,12 @@
     </ClCompile>
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CreatureEditor.cpp">
+      <Filter>CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Action_Manager.cpp">
+      <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Trail_CPU.cpp">
       <Filter>Particle\Trail</Filter>
@@ -1111,9 +1153,6 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_FixArgs.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

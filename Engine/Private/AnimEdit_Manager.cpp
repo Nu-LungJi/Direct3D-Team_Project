@@ -49,6 +49,54 @@ void CAnimEdit_Manager::Update(_float fTimeDelta)
 }
 
 
+uint32_t CAnimEdit_Manager::GetAnimIndex()
+{
+    int m_iSelectedAnimIndex = -1;
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if (pSampleObj == nullptr)
+        return m_iSelectedAnimIndex;
+
+    auto pComModelInstance =
+        pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+    auto pComAnimator =
+        pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+    if (nullptr == pComAnimator)
+        return m_iSelectedAnimIndex;
+
+    if (ImGui::BeginPopupModal("SelectAnimation", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        auto pModel = pComModelInstance->GetModel();
+
+        if (pModel)
+        {
+            auto& anim = pModel->GetAnimations();
+
+            for (uint32_t i = 0; i < anim.size(); ++i)
+            {
+                const std::string& animName = anim[i]->GetAnimName();
+
+                if (ImGui::Selectable(animName.c_str()))
+                {
+                    m_iSelectedAnimIndex = static_cast<int>(i);
+                
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+        }
+
+        if (ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
+    return m_iSelectedAnimIndex;
+}
+
 void CAnimEdit_Manager::IMGUI_Select_AnimType()
 {
     auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
@@ -234,12 +282,9 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
             if (!pAnim)
                 continue;
 
-            bool bSelected =
-                (pComAnimator->GetPlayAnimIndex() == i);
+            bool bSelected = (pComAnimator->GetPlayAnimIndex() == i);
 
-            if (ImGui::Selectable(
-                pAnim->GetAnimName().c_str(),
-                bSelected))
+            if (ImGui::Selectable( pAnim->GetAnimName().c_str(), bSelected))
             {
                 pComAnimator->SetPlayAnimIndex(i);
             }
@@ -251,14 +296,34 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
     ImGui::End();
 }
 
+void CAnimEdit_Manager::IMGUI_TestGetAnimIndex()
+{
+    ImGui::Begin("Anim Index Test");
+
+    if (ImGui::Button("Select Animation"))
+    {
+        ImGui::OpenPopup("SelectAnimation");
+    }
+
+    uint32_t iIndex = GetAnimIndex();
+
+    if (iIndex != static_cast<uint32_t>(-1))
+    {
+        ImGui::Text("Selected Index : %u", iIndex);
+    }
+
+    ImGui::End();
+
+}
 void CAnimEdit_Manager::UpdateGUI()
 {
-    if (m_hTestModel.GetIndex() != 0)
+    if (&m_hTestModel == nullptr)
         return;
 
 	IMGUI_Select_AnimType();
     IMGUI_Slider_Animation();
     IMGUI_Select_Animation();
+    IMGUI_TestGetAnimIndex();
 }
 
 

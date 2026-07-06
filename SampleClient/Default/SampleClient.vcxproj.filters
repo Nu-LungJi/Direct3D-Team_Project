@@ -168,6 +168,12 @@
     <ClInclude Include="..\Public\Test_StaticModel.h">
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTAnimation.h">
+      <Filter>GameObject\Monsters\BT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Monster.h">
+      <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Trail_Example.h">
       <Filter>Particles</Filter>
     </ClInclude>
@@ -265,6 +271,12 @@
     </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\Monsters\BT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Monster.cpp">
+      <Filter>GameObject\Monsters</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Trail_Example.cpp">
       <Filter>Particles</Filter>

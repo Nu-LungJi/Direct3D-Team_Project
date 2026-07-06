@@ -11,6 +11,7 @@ public:
 public:
 	typedef struct tagbtroot
 	{
+		CHandle		Handle;
 		GUINODE		 m_GuiNode;
 		GUINODE_LINK m_GuiLink;
 		_string		 NodeName;
@@ -18,23 +19,42 @@ public:
 
 protected:
 	explicit CBTRoot();
-	 ~CBTRoot() override;
-	
+	~CBTRoot() override;
+
 	virtual HRESULT Initalize(void* pArg);
 public:
 	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
 	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
-	virtual HRESULT	Priority_Update(_float fTimeDelta) PURE;
-	virtual HRESULT	Update(_float fTimeDelta)		   PURE;
-	virtual HRESULT	Late_Update(_float fTimeDelta)	   PURE;
+	CHandle&		Get_Handle() { return m_Handle; }
+
+	virtual HRESULT	Priority_Update(_float fTimeDelta) { return S_OK; };
+	virtual HRESULT	Update(_float fTimeDelta) { return S_OK; };
+	virtual HRESULT	Late_Update(_float fTimeDelta) { return S_OK; };
+
 public:
 	virtual EVALUATE		Evaluate() PURE;
-	const ACTION_NODE&		Get_NodeInfo() { return m_NodeInfo; }
+
 protected:
-	ACTION_NODE							m_NodeInfo;
 	GUINODE								m_GuiNode;
 	GUINODE_LINK						m_GuiLink;
+	CHandle								m_Handle;
 
+public:
+	template<typename T1> 
+	class CComponent* Get_Component(const CHandle & Handle, const _string& name)
+	{
+		if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(Handle))
+		{
+			if (auto pComBt = pObj->GetComponent<T1>(name))
+			{
+				m_Handle = Handle;
+				return pComBt;
+			}
+		}
+		return nullptr;
+	}
+public:
+	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };
 
 NS_END

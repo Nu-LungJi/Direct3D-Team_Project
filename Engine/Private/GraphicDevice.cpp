@@ -182,7 +182,6 @@ HRESULT CGraphicDevice::ReadyBackBufferRenderTargetView()
 		return E_FAIL;
 	}
 
-	ComPtr<ID3D11Texture2D> pBackBufferTexture{};
 	if (FAILED(m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)pBackBufferTexture.GetAddressOf())))
 	{
 		return E_FAIL;

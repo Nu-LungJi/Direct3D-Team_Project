@@ -57,6 +57,18 @@ HRESULT CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, u
 
 }
 
+HRESULT CComStaticModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)
+{
+    auto pModel = CGameInstance::Get().GetResourceFirst<CResStaticModel>(sGroupTag, sResTag);
+    if (pModel == nullptr)
+    {
+        return E_FAIL;
+    }
+
+    m_pModel = pModel;
+    return S_OK;
+}
+
 // 모델의 단일 텍스쳐 반환
 SPtr<CResTexture2D> CComStaticModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
     auto Materials = m_pModel->GetMaterials();

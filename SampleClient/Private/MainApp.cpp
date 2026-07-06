@@ -6,9 +6,10 @@
 #include "Resources.h"
 #include "Particle_Fire_CPU.h"
 #include "Particle_Ribbon.h"
+#include "BTMove.h"
+#include "BTAnimation.h"
 #include "Trail_Example.h"
 #include "Particle_Fire_GPU.h"
-
 
 NS_USING(Client)
 
@@ -240,7 +241,6 @@ HRESULT CMainApp::Initialize()
 		}
 
 	}
-
 
 	return S_OK;
 }

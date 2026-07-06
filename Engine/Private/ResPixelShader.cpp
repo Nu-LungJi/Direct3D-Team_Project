@@ -6,8 +6,10 @@ NS_USING(Engine)
 
 HRESULT CResPixelShader::Load(const std::any& arg)
 {
+	auto desc = std::any_cast<CResShader::DESC>(&arg);
+
 	m_eState = STATE::LOADING;
-	if (FAILED(CompileShader()))
+	if (FAILED(CompileShader(desc)))
 	{
 		MSG_BOX("PIXEL SHADER COMPILE FAILED");
 		m_eState = STATE::LOADFAIL;

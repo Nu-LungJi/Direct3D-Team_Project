@@ -555,7 +555,35 @@ HRESULT CImporter::ExportAnimation(const std::string& outpath)
     {
         animBuffer.clear();
 
+
         std::string animName = Animation->m_AnimationData.sAnimName;
+
+        const std::string invalidChars = R"(< >:"/\|?*)";
+
+        std::replace_if(
+            animName.begin(),
+            animName.end(),
+            [](char c)
+            {
+                switch (c)
+                {
+                case '<':
+                case '>':
+                case ':':
+                case '"':
+                case '/':
+                case '\\':
+                case '|':
+                case '?':
+                case '*':
+                    return true;
+                default:
+                    return false;
+                }
+            },
+            '_'
+        );
+
 
         std::filesystem::path animPath = fileParentName+ "/" + ( "AN_" + animName + ".bin");
 

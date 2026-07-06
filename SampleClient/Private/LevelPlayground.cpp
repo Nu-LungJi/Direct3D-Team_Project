@@ -10,7 +10,7 @@
 #include "Particle.h"
 #include "TestModel.h"
 #include "Gobline.h"
-
+#include  "LightObject.h";
 NS_USING(Client)
 
 CLevelPlayground::CLevelPlayground()
@@ -38,29 +38,36 @@ HRESULT CLevelPlayground::Initialize()
 		}
 	}
 	{
-		//테스트 고블린
-		CGameObject::GAMEOBJECT_DESC Desc{};
-		Desc.sObjectTag = "Gobline";
-
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
-			"02_Gobline", &Desc))
-		{
-			int x = 0;
-		}
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject";
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+		if (!LightObject)	return E_FAIL;
 	}
 	{
-		if(false)
-		{
-			CTestModel::DESC Desc{};
-			Desc.sObjectTag = "TestModel";
-
-			if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
-				"02_TestModel", &Desc))
-			{
-				int x = 0;
-			}
-		}
-
+		//테스트 고블린
+		//CGameObject::GAMEOBJECT_DESC Desc{};
+		//Desc.sObjectTag = "Gobline";
+		//
+		//if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
+		//	"02_Gobline", &Desc))
+		//{
+		//	int x = 0;
+		//}
+	}
+	{
+		//if(false)
+		//{
+		//	CTestModel::DESC Desc{};
+		//	Desc.sObjectTag = "TestModel";
+		//
+		//	if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
+		//		"02_TestModel", &Desc))
+		//	{
+		//		int x = 0;
+		//	}
+		//}
+	
 	}
 
 
@@ -97,7 +104,7 @@ HRESULT CLevelPlayground::Initialize()
 		Desc.fHeight = g_iWinSizeY;
 		Desc.sObjectTag = "UICam";
 		Desc.vEye = { 0.f, 0.f, -0.1f };
-
+		
 		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
 			"99_CAMERA", &Desc))
 		{
@@ -107,6 +114,7 @@ HRESULT CLevelPlayground::Initialize()
 			}
 		}
 	}
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 
 	return S_OK;

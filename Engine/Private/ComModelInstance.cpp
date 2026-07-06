@@ -95,10 +95,16 @@ HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_
 {
 	auto Materials = m_pModel->GetMaterials();
 	auto Mesh = m_pModel->GetMeshes();
+
 	auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures(); 
  
-    if (Textures[eMaterialType][iTextureIndex] == nullptr)
+
+
+    if (Textures[eMaterialType].size() == 0)
+    {
+        pContext->PSSetShaderResources(eMaterialType, 1, Textures[0].front()->GetSRV().GetAddressOf());
         return S_OK;
+    }
 
     pContext->PSSetShaderResources(eMaterialType, 1, Textures[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
 
@@ -106,6 +112,18 @@ HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_
     return S_OK;
 
 
+}
+
+HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)
+{
+    auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(sGroupTag, sResTag);
+    if (pModel == nullptr)
+    {
+        return E_FAIL;
+    }
+
+    m_pModel = pModel;
+    return S_OK;
 }
 
 // 모델의 단일 텍스쳐 반환

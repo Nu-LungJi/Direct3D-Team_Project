@@ -6,6 +6,7 @@
 #include "ResCBuffer.h"
 #include "BackGround.h"
 #include "TestModel.h"
+#include "Test_StaticModel.h"
 
 
 NS_USING(Client)
@@ -24,6 +25,18 @@ HRESULT CLevelAnimEditor::Initialize()
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
 	{
+		CTest_StaticModel::DESC Desc{};
+		Desc.sObjectTag = "TestStaticModel";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestStaticModel",
+			"TestStaticModelLayer", &Desc))
+		{
+			int x = 0;
+		}
+	}
+
+
+	{
 		CTestModel::DESC Desc{};
 		Desc.sObjectTag = "TestModel";
 
@@ -33,17 +46,7 @@ HRESULT CLevelAnimEditor::Initialize()
 			int x = 0;
 		}
 	}
-
-	{
-		CTestModel::DESC Desc{};
-		Desc.sObjectTag = "TestStaticModel";
-
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestStaticModel",
-			"TestStaticModelLayer", &Desc))
-		{
-			int x = 0;
-		}
-	}
+	
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
