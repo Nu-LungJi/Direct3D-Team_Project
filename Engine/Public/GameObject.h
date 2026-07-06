@@ -122,6 +122,7 @@ protected:
 
 public:
 	_string_view GetObjectTag() const { return m_sObjectTag; }
+	void SetObjectTag(_string_view sObjectTag) { m_sObjectTag = sObjectTag; }
 protected:
 	_string m_sObjectTag{};
 

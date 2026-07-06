@@ -22,19 +22,21 @@ protected:
 		_bool	bCur{ false };
 	}NODE_VALUE;
 public:
+	std::vector<UPtr<CBTRoot>>* Get_Nodes() { return &m_Actions; }
+	
 	virtual EVALUATE		Evaluate() PURE;
 	
-
 	virtual HRESULT	Priority_Update(_float fTimeDelta)PURE;
 	virtual HRESULT	Update(_float fTimeDelta)		  PURE;
 	virtual HRESULT	Late_Update(_float fTimeDelta)	  PURE;
-protected:
-	int32_t		Find_Node(const _string& strNodeName);
-
+	
+public:
+	HRESULT		Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
 protected:
 	NODE_VALUE				m_NodeValue{};
 
 	std::vector<UPtr<CBTRoot>>			  m_Actions;
-	std::map<_string, int32_t>			  m_NodeHandles;
+public:
+	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };
 NS_END

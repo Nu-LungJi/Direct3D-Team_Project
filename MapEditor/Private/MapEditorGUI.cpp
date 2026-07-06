@@ -6,6 +6,39 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr const char* MAP_SAVE_ROOT = "./Resources/Engine/MapSaved/";
+
+	std::string MakeMapPath(const char* mapName)
+	{
+		std::string cleanName = mapName;
+		if (cleanName.empty())
+		{
+			cleanName = "Default";
+		}
+
+		for (char& ch : cleanName)
+		{
+			switch (ch)
+			{
+			case '/':
+			case '\\':
+			case ':':
+			case '*':
+			case '?':
+			case '"':
+			case '<':
+			case '>':
+			case '|':
+				ch = '_';
+				break;
+			default:
+				break;
+			}
+		}
+
+		return std::string(MAP_SAVE_ROOT) + cleanName + "/";
+	}
+
 	bool DrawModeButton(const char* label, bool selected, const char* tooltip)
 	{
 		if (selected)
@@ -63,13 +96,19 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.f);
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.f, 7.f));
 
+	ImGui::SetNextItemWidth(236.f);
+	ImGui::InputText("Map", m_MapName, sizeof(m_MapName));
+
 	if (ImGui::Button("Level Save", ImVec2(112.f, 0.f)))
 	{
+		CGameInstance::Get().SaveMap(MakeMapPath(m_MapName));
 		ImGui::OpenPopup("SaveCheck");
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Level Load", ImVec2(112.f, 0.f)))
 	{
+		CGameInstance::Get().LoadMap(MakeMapPath(m_MapName), true);
+		AddCamera();
 		ImGui::OpenPopup("LoadCheck");
 	}
 
@@ -106,6 +145,8 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::PopStyleVar(2);
 	ImGui::End();
 
+	m_pResourceGUI->UpdateGUI(fTimeDelta);
+	m_pMapChunkGUI->UpdateGUI(fTimeDelta);
 	RenderGizmo();
 }
 
@@ -126,6 +167,18 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 	pInstance->m_pInspector = CInspector::Create(pSelectedObject);
 	if (pInstance->m_pInspector == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pResourceGUI = CResourceGUI::Create(pSelectedObject);
+	if (pInstance->m_pResourceGUI == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pMapChunkGUI = CMapChunkGUI::Create(pSelectedObject);
+	if (pInstance->m_pMapChunkGUI == nullptr)
 	{
 		return nullptr;
 	}
@@ -202,5 +255,51 @@ void CMapEditorGUI::RenderGizmo()
 	if (ImGuizmo::Manipulate(&view._11, &proj._11, m_GizmoOperation, m_GizmoMode, &gizmoMatrix._11))
 	{
 		ApplyMatrixToTransform(selectedTransform, gizmoMatrix);
+	}
+}
+
+void CMapEditorGUI::AddCamera()
+{
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+		Desc.vAt = { 0.f, 0.f, 0.f };
+		Desc.vEye = { 0.f, 0.f, -5.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fFovY = 75.f;
+		Desc.fNear = 0.1f;
+		Desc.fFar = 100.f;
+		Desc.sObjectTag = "FlyCam";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
+			{
+				MSG_BOX("MSG_BOX_123");
+			}
+			E::CGameInstance::Get().SetActiveCamera("FLY");
+		}
+	}
+
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+		Desc.fNear = 0.f;
+		Desc.fFar = 1.f;
+		Desc.fWidth = g_iWinSizeX;
+		Desc.fHeight = g_iWinSizeY;
+		Desc.sObjectTag = "UICam";
+		Desc.vEye = { 0.f, 0.f, -0.1f };
+
+		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+			{
+				MSG_BOX("MSG_BOX_123_");
+			}
+			//E::CGameInstance::Get().SetActiveUICamera("UI");
+		}
 	}
 }

@@ -170,12 +170,16 @@ call CopySampleClient.bat</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\Public\BackGround.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAnimation.h" />
+    <ClInclude Include="..\public\BTMove.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\Public\CTexUI.h" />
-    <ClInclude Include="..\public\Goblin.h" />
     <ClInclude Include="..\public\Gobline.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\public\LevelCollider.h" />
@@ -186,12 +190,14 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\LightObject.h" />
     <ClInclude Include="..\Public\MainApp.h" />
+    <ClInclude Include="..\public\Monster.h" />
     <ClInclude Include="..\public\Particle_Fire_CPU.h" />
     <ClInclude Include="..\public\Particle_Ribbon.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
+    <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -199,9 +205,13 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\Private\BackGround.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp" />
+    <ClCompile Include="..\private\BTMove.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
-    <ClCompile Include="..\private\Goblin.cpp" />
     <ClCompile Include="..\private\Gobline.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
@@ -211,12 +221,14 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\private\LevelPlayground.cpp" />
     <ClCompile Include="..\Private\LightObject.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
+    <ClCompile Include="..\private\Monster.cpp" />
     <ClCompile Include="..\private\Particle_Fire_CPU.cpp" />
     <ClCompile Include="..\private\Particle_Ribbon.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
+    <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -5,6 +5,7 @@ xcopy				/y/I			.\Engine\Bin\Engine.dll		.\MapEditor\Bin\
 xcopy				/y/I			.\Engine\Bin\Engine.lib		.\EngineSDK\Lib\
 //xcopy				/y/I /d			.\vcpkg_installed\x64-windows\x64-windows\bin\*.dll .\MapEditor\Bin\
 xcopy				/y/I			.\ThirdParty\fmod_2_03_12\lib\x64\fmod.dll		.\MapEditor\Bin\
+xcopy				/y/I			.\ThirdParty\HBAOPlus-3.1.0\lib\GFSDK_SSAO_D3D11.win64.dll		.\MapEditor\Bin\
 if "$(Configuration)" == "Release" (
     xcopy /y/I /d .\vcpkg_installed\x64-windows\x64-windows\bin\*.dll .\MapEditor\Bin\
 ) else (

@@ -8,6 +8,7 @@
 #include "Particle.h"
 
 #include "TestGuizmo.h"
+#include "MapMeshObject.h"
 
 NS_USING(Client)
 

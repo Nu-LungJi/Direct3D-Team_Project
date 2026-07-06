@@ -5,6 +5,7 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "MapManager.h"
 #include "LightManager.h"
 
 struct FMOD_SOUND;
@@ -23,8 +24,9 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
+class CNodeEditor;
 class CParticleManager;
-
+class CAction_Manager;
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
@@ -81,6 +83,7 @@ public:
 	}
 	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
 	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const;
+	const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& GetResources() const;
 	HRESULT LoadResource(const StringID& sGroupTag);
 	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
 	HRESULT UnLoadResource(const StringID& sGroupTag);
@@ -258,6 +261,16 @@ public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
+#pragma region NODE_EDITOR
+	HRESULT	   OpenBeHavior(CHandle Handle);
+#pragma endregion
+
+#pragma region Action_Manager
+	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
+	void					Show_Action_NodeWidget(CBTRoot* pNode);
+#pragma endregion
+
 public:
 	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop = false, _float fSpawnInterval = 0.1f);
@@ -265,6 +278,23 @@ public:
 	HRESULT Add_Particle(UPtr<class CParticle> particle);
 
 	HRESULT SpawnRibbon(const _float4& start, const _float4& end);
+#pragma endregion
+
+#pragma region MAP_MANAGER
+public:
+	HRESULT SaveMap(const std::string& path);
+	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
+	HRESULT LoadMapData(const std::string& path);
+	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
+	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
+	void RebuildMapChunks();
+	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
+	const _float3& GetMapChunkSize() const;
+	void SetMapChunkStreaming(_bool enable);
+	_bool IsMapChunkStreaming() const;
+#ifdef _DEBUG
+	void SetDebugDrawMapChunk(_bool draw);
+#endif
 #pragma endregion
 
 public:
@@ -305,7 +335,10 @@ private:
 	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CNodeEditor>		m_pNodeEditor{};
+	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
+	UPtr<CMapManager> m_pMapManager{};
 };
 
 NS_END
