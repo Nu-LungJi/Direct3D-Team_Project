@@ -91,7 +91,10 @@ VOID CLightManager::UpdateGUI() {
 
     ImGui::Separator();
 
-    // 2. 선택된 라이트의 상세 속성 제어
+    if (m_LightHandleList.size() == 0) {
+        ImGui::End();
+        return;
+    }
     auto pSelectedLight = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[selectedLightIdx]);
     ImGui::Text("Selected Light Details (Index: %d)", selectedLightIdx);
 
@@ -176,7 +179,7 @@ VOID CLightManager::Bind_DynamicLight(){
 
     for (auto& LightHandle : m_LightHandleList) {
         if (LightCount >= MAX_LIGHT_COUNT) break;
-    
+
         // Need Culling - Frustum & Distance
         auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
 
@@ -197,8 +200,7 @@ VOID CLightManager::Bind_DynamicLight(){
     D3D11_MAPPED_SUBRESOURCE MRES;
     if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
     {
-        CB_LIGHT   CBL;
-        CBL = LightBuffer;
+        CB_LIGHT   CBL = LightBuffer;
         memcpy(MRES.pData, &CBL, sizeof(CB_LIGHT));
         m_pContext->Unmap(LightConstantBuffer->GetCBuffer().Get(), 0);
     }

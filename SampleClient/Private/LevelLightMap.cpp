@@ -53,7 +53,7 @@ HRESULT CLevelLightMap::Initialize()
 			return E_FAIL;
 		}
 	}
-
+	
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
@@ -77,6 +77,7 @@ HRESULT CLevelLightMap::Initialize()
 	}
 
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 100.f, 10.f);
 
 	return S_OK;
 }

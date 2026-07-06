@@ -10,7 +10,7 @@
 #include "Particle.h"
 #include "TestModel.h"
 #include "Gobline.h"
-
+#include "LightObject.h"
 NS_USING(Client)
 
 CLevelPlayground::CLevelPlayground()
@@ -49,20 +49,29 @@ HRESULT CLevelPlayground::Initialize()
 		}
 	}
 	{
-		if(false)
-		{
-			CTestModel::DESC Desc{};
-			Desc.sObjectTag = "TestModel";
-
-			if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
-				"02_TestModel", &Desc))
-			{
-				int x = 0;
-			}
-		}
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject";
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+		if (!LightObject)	return E_FAIL;
+	
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(1.f, 10.f, 0.f, 1.f));
+	}
+	{
+		//if(false)
+		//{
+		//	CTestModel::DESC Desc{};
+		//	Desc.sObjectTag = "TestModel";
+		//
+		//	if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
+		//		"02_TestModel", &Desc))
+		//	{
+		//		int x = 0;
+		//	}
+		//}
 
 	}
-
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -86,27 +95,26 @@ HRESULT CLevelPlayground::Initialize()
 		}
 	}
 
-
-	
-	{
-		E::CCameraObject::CAMERA_DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
-		Desc.fNear = 0.f;
-		Desc.fFar = 1.f;
-		Desc.fWidth = g_iWinSizeX;
-		Desc.fHeight = g_iWinSizeY;
-		Desc.sObjectTag = "UICam";
-		Desc.vEye = { 0.f, 0.f, -0.1f };
-
-		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
-			"99_CAMERA", &Desc))
-		{
-			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
-			{
-				int x = 0;
-			}
-		}
-	}
+	//{
+	//	E::CCameraObject::CAMERA_DESC Desc{};
+	//	Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+	//	Desc.fNear = 0.f;
+	//	Desc.fFar = 1.f;
+	//	Desc.fWidth = g_iWinSizeX;
+	//	Desc.fHeight = g_iWinSizeY;
+	//	Desc.sObjectTag = "UICam";
+	//	Desc.vEye = { 0.f, 0.f, -0.1f };
+	//
+	//	if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
+	//		"99_CAMERA", &Desc))
+	//	{
+	//		if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+	//		{
+	//			MSG_BOX("Deb");
+	//		}
+	//	}
+	//}
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 
 	return S_OK;

@@ -8,7 +8,6 @@
 #include "TestModel.h"
 #include "Test_StaticModel.h"
 
-
 NS_USING(Client)
 
 CLevelAnimEditor::CLevelAnimEditor()
@@ -47,7 +46,6 @@ HRESULT CLevelAnimEditor::Initialize()
 		}
 	}
 	
-
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;

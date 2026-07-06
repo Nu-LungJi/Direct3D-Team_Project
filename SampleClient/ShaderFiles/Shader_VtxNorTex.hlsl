@@ -1,7 +1,10 @@
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderHeader/SH_SamplerState.hlsli"
 
-Texture2D gDiffuseTexture : register(t0);
-SamplerState gSamLinearWrap : register(s0);
+Texture2D g_DiffuseTexture : register(t0);
+Texture2D g_NormalTexture : register(t1);
+Texture2D g_SMROTexture : register(t2);
+Texture2D g_EmissiveTexture : register(t3);
 
 struct VS_IN
 {
@@ -19,27 +22,35 @@ struct VS_OUT
     float4 vProjPos : TEXCOORD2;
 };
 
+cbuffer CB_OBJECT_PBR : register(b3)
+{
+    float4 AlbedoColor;
+
+    float NormalIntensity;
+    float RoughnessIntensity;
+    float MetallicIntensity;
+    float AmbientIntensity;
+    float SpecularIntensity;
+
+    float3 EmissiveColor;
+    float EmissiveIntensity;
+
+    float3 Padding;
+};
+
 VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out;
     
-    float4x4 matWV, matWVP;
-    
-    matWV = mul(g_matWorld, g_matView);
-    matWVP = mul(matWV, g_matProj);
-    
-    Out.vPosition = mul(float4(In.vPosition, 1.f), matWVP);
+    Out.vPosition = mul(float4(In.vPosition, 1.f), g_matWVP);
     Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
     Out.vProjPos = Out.vPosition;
-    //Out.vNormal = float4(In.vNormal, 1.f);
+    
     return Out;
 }
 
-/* 투영변환 -> W나누기 */ 
-/* 뷰포트로 변환해준다 */ 
-/* 래스터라이즈 : 픽셀의 정보가 생성된다. */ 
 struct PS_IN
 {
     float4 vPosition : SV_POSITION;
@@ -57,17 +68,16 @@ struct PS_OUT
     vector vEmissive : SV_TARGET3;
 };
 
-
-PS_OUT PSMain(PS_IN In)
+PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT Out;
     
-    vector vMtrlDiffuse = gDiffuseTexture.Sample(gSamLinearWrap, In.vTexcoord * 50.f);
+    vector vMtrlDiffuse = g_DiffuseTexture.Sample(SamplerWrap, IN.vTexcoord * 50.f);
     
-    Out.vDiffuse    = vMtrlDiffuse;
-    Out.vNormal     = float4(In.vNormal.xyz * 0.5f + 0.5f, 0.f);
-    Out.vSMRO       = float4(0.f, 0.f, 0.f, 1.f);
-    Out.vEmissive   = float4(0.f, 0.f, 0.f, 1.f);
+    Out.vDiffuse = vMtrlDiffuse;
+    Out.vNormal = float4(IN.vNormal.xyz * 0.5f + 0.5f, 0.f);
+    Out.vSMRO = float4(0.f, 0.f, 0.f, 1.f);
+    Out.vEmissive = float4(0.f, 0.f, 0.f, 1.f);
     
     return Out;
 }

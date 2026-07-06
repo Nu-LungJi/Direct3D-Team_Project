@@ -34,13 +34,11 @@ HRESULT CTerrain::InitializePrototype(void* pArg)
 	}
 
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX");
-	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
 	{
 		return E_FAIL;
 	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX");
-	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;
@@ -105,7 +103,6 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	const auto& vs = m_pResVertexShader;
 	const auto& ps = m_pResPixelShader;
 	
-
 	const auto& viBuffer = m_pResTerrainVIBuffer;
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
@@ -123,23 +120,36 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 	pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+	{
+		auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+		D3D11_MAPPED_SUBRESOURCE MRES;
+		if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+		{
+			CB_MATERIAL   CMMAT;
+			CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
 
+			CMMAT.NormalIntensity = 1.f;
+			CMMAT.RoughnessIntensity = 1.f;
+			CMMAT.MetallicIntensity = 1.f;
+			CMMAT.AmbientIntensity = 1.f;
+			CMMAT.SpecularIntensity = 1.f;
+
+			CMMAT.EmissiveColor = { 1.f, 0.f, 0.f };
+			CMMAT.EmissiveIntensity = 1.f;
+
+			memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+			pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+		}
+		pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+	}
 	{
 		pContext->PSSetShaderResources(0, 1, m_pResTerrainTexture2D->GetSRV().GetAddressOf());
 	}
 
-	{
-		const auto& sampler = m_pResSamplerState;
-		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-	}
-
-	{
-		const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-		pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-	}
-
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
+	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+	pContext->PSSetShaderResources(0, 1, pSRVs);
 
 	return S_OK;
 }

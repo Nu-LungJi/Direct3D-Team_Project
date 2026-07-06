@@ -140,11 +140,10 @@ void CLevelLoading::ThreadStart()
 				//return E_FAIL;
 			}
 		}
-
-
-
-
-
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		{
+			return;
+		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
 			{
 
@@ -161,10 +160,10 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
-				{
-					return false;
-				}
+				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
+				//{
+				//	return false;
+				//}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
 				//{
 				//   return false;
@@ -178,7 +177,6 @@ void CLevelLoading::ThreadStart()
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				return  true;
 			});
-
 	}
 	break;
 	case LEVEL::UIEDITOR:
@@ -206,7 +204,11 @@ void CLevelLoading::ThreadStart()
 		break;
 	case LEVEL::ANIMEDITOR:
 	{
-
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		{
+			int a = 0;
+			//return false;
+		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
 			{
 		

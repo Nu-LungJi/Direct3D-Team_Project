@@ -132,6 +132,11 @@ SPtr<CResTexture2D> CComModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_T
     auto Mesh = m_pModel->GetMeshes();
     auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
 
+    if (Textures[eMaterialType].size() == 0)
+    {
+        return Textures[0].front();
+    }
+
     return Textures[eMaterialType][iTextureIndex];
 }
 

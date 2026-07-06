@@ -134,21 +134,15 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
-
-
-
-	
 	const auto& vs =
 		!m_pComModelInstance->GetModel()->GetAnimations().empty()
 		? m_pResVertexShader
 		: m_pResVertexNonAnimShader;
-
+	
 	const auto& ps =
 		!m_pComModelInstance->GetModel()->GetAnimations().empty()
 		? m_pResPixelShader
 		: m_pResPixelNonAnimShader;
-
-
 
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -184,24 +178,74 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		//}
 
 		{
-			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+			//m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
 		
 		}
 
 		{
 			if(!m_pComModelInstance->GetModel()->GetAnimations().empty())
-				m_pComModelInstance->Bind_BoneMatrices(pContext, i);
+				if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i))) {
+					return E_FAIL;
+				}
 
 		}
 
-		{
-			const auto& sampler = m_pResSamplerState;
-			pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-		}
+		//{
+		//	const auto& sampler = m_pResSamplerState;
+		//	pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
+		//}
+		//
+		//{
+		//	const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+		//	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+		//}
 
 		{
-			const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-			pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+			SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+				DiffuseTexture = Resource;
+			}
+			pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
+
+			SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+				NormalTexture = Resource;
+			}
+			pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
+
+			SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+				SMROTexture = Resource;
+			}
+			pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
+
+			SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+				EmissiveTexture = Resource;
+			}
+			pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
+		}
+		{
+			auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+			D3D11_MAPPED_SUBRESOURCE MRES;
+			if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+			{
+				CB_MATERIAL   CMMAT;
+				CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
+
+				CMMAT.NormalIntensity = 1.f;
+				CMMAT.RoughnessIntensity = 1.f;
+				CMMAT.MetallicIntensity = 1.f;
+				CMMAT.AmbientIntensity = 1.f;
+				CMMAT.SpecularIntensity = 1.f;
+
+				CMMAT.EmissiveColor = { 1.f, 1.f, 1.f };
+				CMMAT.EmissiveIntensity = 1.f;
+
+				memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+				pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+			}
+			pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

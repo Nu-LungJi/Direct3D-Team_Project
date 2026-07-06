@@ -576,9 +576,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-
-
-
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex", E::CResQuadTexBuffer::Create()))
 	{
 		if (FAILED(res->Load()))
@@ -588,9 +585,6 @@ HRESULT CGameInstance::InitializeResources()
 	}
 
 
-
-
-	//
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL, E::CResRasterizerState::Create()))
 	{
 		D3D11_RASTERIZER_DESC desc{};
@@ -788,13 +782,45 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	
+	//if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
+	//	CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+	//
+	//	E::CResModel::DESC pDesc{};
+	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+	//
+	//	if (FAILED(res->Load(pDesc)))
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
+	//
+	//if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+	//	CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+	//
+	//	E::CResStaticModel::DESC pDesc{};
+	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+	//
+	//	if (FAILED(res->Load(pDesc)))
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
+
 	// 텍스쳐 없는 경우 대비, 대체 텍스쳐
 	{
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_Gray", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Gray.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Diffuse.png")))
 		{
 			res->Load();
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_White", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Normal.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_SMRO.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Emissive.png")))
 		{
 			res->Load();
 		}
