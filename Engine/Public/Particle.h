@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine_Defines.h"
 #include "GameObject.h"
-
+#include "ComStaticModelInstance.h"
 NS_BEGIN(Engine)
 
 class ENGINE_DLL CParticle : public CEngineBase
@@ -12,7 +12,6 @@ public:
 
 protected:
 	explicit CParticle();
-	CParticle(const CParticle& rhs);
 	virtual ~CParticle();
 public:
 	virtual HRESULT Initialize(void* pArg) = 0;
@@ -28,9 +27,16 @@ public:
 
 protected:
 	PARTICLE_TYPE m_eType;
-	SPtr<class CResTexture2D> m_pParticleTexture;
 	SPtr<class CResPixelShader> m_pResPixelShader{};
 	SPtr<class CResVertexShader> m_pResVertexShader{};
+
+	//모델을 쓸건지 텍스쳐를 쓸건지 선택
+	UPtr<class CComStaticModelInstance> m_pComModelInstance{};
+	SPtr<class CResTexture2D> m_pParticleTexture;
+
+	//모델이 텍스쳐, 메쉬 준비
+
+
 };
 
 NS_END

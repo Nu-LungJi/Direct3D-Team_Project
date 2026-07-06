@@ -38,15 +38,22 @@ HRESULT CLevelPlayground::Initialize()
 		}
 	}
 	{
+		CLightObject::DESC LDesc{};
+		LDesc.sObjectTag = "LightObject";
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+		if (!LightObject)	return E_FAIL;
+	}
+	{
 		//테스트 고블린
-		CGameObject::GAMEOBJECT_DESC Desc{};
-		Desc.sObjectTag = "Gobline";
-
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
-			"02_Gobline", &Desc))
-		{
-			int x = 0;
-		}
+		//CGameObject::GAMEOBJECT_DESC Desc{};
+		//Desc.sObjectTag = "Gobline";
+		//
+		//if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
+		//	"02_Gobline", &Desc))
+		//{
+		//	int x = 0;
+		//}
 	}
 	{
 		CLightObject::DESC LDesc{};

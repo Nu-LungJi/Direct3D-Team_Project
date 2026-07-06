@@ -166,15 +166,12 @@ void CLevelLoading::ThreadStart()
 				//}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
 				//{
-				//   return false;
-				//}
-				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel", CTestModel::Create())))
-				//{
-				//   return false;
+				//	int a = 0;
+				//	//return false;
 				//}
 
 
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
 				return  true;
 			});
 	}

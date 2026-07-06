@@ -65,6 +65,14 @@ namespace Engine
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 
+	typedef struct tagInitParticle
+	{
+		uint32_t g_iMaxParticles;
+		_float3 pad;
+	}CB_INIT_PARTICLE;
+	static_assert(sizeof(CB_INIT_PARTICLE) % 16 == 0);
+
+
 	typedef struct CB_ParticleUpdate
 	{
 		float    g_fTimeDelta;
@@ -77,7 +85,8 @@ namespace Engine
 	typedef struct CB_ParticleSpawn
 	{
 		uint32_t    g_iSpawnCount;
-		_float3     pad;
+		uint32_t	g_iMaxParticles;
+		_float2     pad;
 		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_PARTICLE_SPAWN;
 	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
@@ -88,6 +97,6 @@ namespace Engine
 		_float3     pad;
 		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_RIBBON_PARTICLE;
-	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
+	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 
 }

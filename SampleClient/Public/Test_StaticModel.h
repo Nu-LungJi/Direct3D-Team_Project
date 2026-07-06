@@ -38,7 +38,6 @@ public:
 
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
-
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};

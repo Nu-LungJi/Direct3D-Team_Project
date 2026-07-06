@@ -21,10 +21,11 @@ namespace Engine
 	enum class NODE_ACTION { NODE_ACTION_M };
 #undef X	
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
-	enum class PARTICLE_TYPE { FIRE,SMOKE,RIBBON, END };
-	enum class CPU_GPU{ CPU, GPU, END};
+	enum class PARTICLE_TYPE { FIRE_CPU,FIRE_GPU,RIBBON,TRAIL,END };
+	enum class TRAIL_TYPE { POINT,PLANE,END };
+	enum class MESHORTEXTURE{ MESH, TEX, END};
 
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
-	static const uint32_t MAX_SPAWN_PER_CALL = 256;
+	static const uint32_t MAX_SPAWN_PER_CALL = 2000;
 
 }

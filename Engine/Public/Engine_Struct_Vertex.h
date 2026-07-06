@@ -50,7 +50,6 @@ namespace Engine
 		uint32_t alive;
 		uint32_t loop;
 		_float4 color;
-		uint32_t texIndex;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{

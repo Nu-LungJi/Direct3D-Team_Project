@@ -9,7 +9,7 @@ NS_BEGIN(Engine)
 // 텍스처/behaviorType/최대 파티클 개수만 다르게 주입한다.
 // Update/Spawn/Render 파이프라인(Compute Shader 3종 + StructuredBuffer 3개)은
 // 모든 이펙트가 공유하며, HLSL 쪽에서 g_iBehaviorType 분기로 실제 움직임을 다르게 처리한다.
-class ENGINE_DLL CParticle_GPU final : public CParticle
+class ENGINE_DLL CParticle_GPU  : public CParticle
 {
 public:
     DECLARE_DERIVED_TYPE(CParticle_GPU, CParticle)
@@ -19,24 +19,36 @@ public:
     // 이펙트별로 달라지는 값은 전부 여기로 뺐다 ? 하드코딩 금지.
     struct DESC
     {
-        uint32_t     iMaxParticles ;   // 예전 하드코딩 1000
+        uint32_t     iMaxParticles = 1000;   
         int32_t      iBehaviorType ;      //  (HLSL 쪽 분기 인덱스)
         PARTICLE_TYPE       type;
         std::pair<StringID, StringID> textureID;  // 파티클 텍스처
-
+        MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
+        std::pair<StringID, StringID> VSID;  // 버텍스 쉐이더
+        std::pair<StringID, StringID> PSID;  // 픽셀 쉐이더
+        //모델이면 넣어줌
+        StringID sGroupTag;
+        StringID sResTag;
+        uint32_t modelNumber = 1;
     };
 
-private:
+protected:
     explicit CParticle_GPU();
+
     virtual ~CParticle_GPU();
 
 public:
     virtual HRESULT Initialize(void* pArg) override;
+    void DebugPrintDeadListCount();
     virtual void PriorityUpdate(E::_float fTimeDelta) override;
     virtual void Update(E::_float fTimeDelta) override;
     virtual void LateUpdate(E::_float fTimeDelta) override;
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+    HRESULT Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+    HRESULT Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
+
+    uint32_t GetDeadListCounterSync();
 
 
 private:
@@ -56,7 +68,7 @@ private:
 
     SPtr<class CResCBuffer> m_pComCBuffer;
     SPtr<CResCBuffer>       m_pComSpawnCBuffer;
-
+    SPtr<CResCBuffer>        m_pComInitCBuffer;
 
     uint32_t                         m_iCurrentSpawnCount = 0;
 };

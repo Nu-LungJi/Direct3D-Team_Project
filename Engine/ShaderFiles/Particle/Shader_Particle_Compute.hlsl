@@ -19,7 +19,6 @@ struct ParticleData
     uint alive;
     uint loop;
     float4 color;
-    uint texIndex;
 };
 AppendStructuredBuffer<uint> gDeadList : register(u0);
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u1);

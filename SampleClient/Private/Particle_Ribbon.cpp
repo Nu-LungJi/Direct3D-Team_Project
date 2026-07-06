@@ -14,10 +14,7 @@ CParticle_Ribbon::CParticle_Ribbon() : CBeam_CPU()
 
 
 
-CParticle_Ribbon::CParticle_Ribbon(const CParticle_Ribbon& rhs)
-    : CBeam_CPU(rhs)
-{
-}
+
 
 CParticle_Ribbon::~CParticle_Ribbon()
 {

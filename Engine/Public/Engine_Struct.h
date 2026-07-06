@@ -224,6 +224,9 @@ namespace Engine
 
 	}MODEL_FILE_HEADER;
 
+	typedef struct tagParticleSpecies {
+		
+	}PARTICLE_SPECIES;
 
 
 

@@ -14,10 +14,6 @@ CParticle_Fire_CPU::CParticle_Fire_CPU() : CParticle_CPU()
 
    
 
-CParticle_Fire_CPU::CParticle_Fire_CPU(const CParticle_Fire_CPU& rhs)
-    : CParticle_CPU(rhs)
-{
-}
 
 CParticle_Fire_CPU::~CParticle_Fire_CPU()
 {
@@ -26,12 +22,27 @@ CParticle_Fire_CPU::~CParticle_Fire_CPU()
 HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
 {
     DESC desc{};
-    desc.iMaxParticles = 50;
-    desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
-    desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };
-    desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX" };
-    desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX" };
-    desc.type = E::PARTICLE_TYPE::FIRE;
+    desc.whatKind = MESHORTEXTURE::MESH;
+    desc.iMaxParticles = 10000;
+    //desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
+    //desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };
+
+
+    //텍스쳐용
+    //desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
+    //desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };
+    //desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX" };
+    //desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX" };
+
+    //메쉬용
+    desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_MESH" };
+    desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_MESH" };
+    
+    desc.sGroupTag = "TEST";
+    desc.sResTag = "Static_Model_Resource";
+
+
+    desc.type = E::PARTICLE_TYPE::FIRE_CPU;
 
     return __super::Initialize(&desc);
 }

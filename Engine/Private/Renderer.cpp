@@ -400,7 +400,7 @@ HRESULT CRenderer::Draw() {
     if (FAILED(Render_PostProcess()))     return E_FAIL;
 
     // UI
-    if (FAILED(Render_UserInterface()))  return E_FAIL;
+   // if (FAILED(Render_UserInterface()))  return E_FAIL;
 
     {
         m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
@@ -472,6 +472,7 @@ HRESULT CRenderer::Render_DepthMap() {
         }
 
         if (FAILED(RenderNonBlend()))            return E_FAIL;
+
     }
 
     return S_OK;
