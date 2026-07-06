@@ -170,12 +170,15 @@ call CopySampleClient.bat</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\Public\BackGround.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\public\BTMove.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\Public\CTexUI.h" />
-    <ClInclude Include="..\public\Goblin.h" />
     <ClInclude Include="..\public\Gobline.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\public\LevelCollider.h" />
@@ -187,11 +190,13 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\LightObject.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\Particle_Fire_CPU.h" />
+    <ClInclude Include="..\public\Particle_Fire_GPU.h" />
     <ClInclude Include="..\public\Particle_Ribbon.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
+    <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="..\public\Trail_Example.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -200,9 +205,12 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\Private\BackGround.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMove.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
-    <ClCompile Include="..\private\Goblin.cpp" />
     <ClCompile Include="..\private\Gobline.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
@@ -213,11 +221,13 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\LightObject.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\Particle_Fire_CPU.cpp" />
+    <ClCompile Include="..\private\Particle_Fire_GPU.cpp" />
     <ClCompile Include="..\private\Particle_Ribbon.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
+    <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">
@@ -235,8 +245,10 @@ call CopySampleClient.bat</Command>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
-    <FxCompile Include="..\ShaderFiles\Shader_Structured_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
     <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />

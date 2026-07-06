@@ -1,9 +1,9 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "AnimEdit_Manager.h"
 #include  "GameObject.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
-
+#include "ResModel.h"
 NS_USING(Engine)
 
 
@@ -25,7 +25,7 @@ HRESULT CAnimEdit_Manager::Initilize()
 
 HRESULT CAnimEdit_Manager::SetupTestModel()
 {
-	// ¹İµå½Ã TestModelÀÌ ¸ÕÀú »ı¼ºµÈ ÈÄ¿¡ CAnimEdit_Manager¸¦ »ı¼ºÇØ¾ß ÇÑ´Ù.
+	// ë°˜ë“œì‹œ TestModelì´ ë¨¼ì € ìƒì„±ëœ í›„ì— CAnimEdit_Managerë¥¼ ìƒì„±í•´ì•¼ í•œë‹¤.
 
 	if (auto layer = CGameInstance::Get().GetGameObjectLayer("TestModelLayer"))
 	{
@@ -64,7 +64,7 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
     int iAnimType = static_cast<int>(pComAnimator->GetAnimationTYPE());
 
     //----------------------------------------
-    // È­¸é »ó´Ü ÀüÃ¼ ³Êºñ
+    // í™”ë©´ ìƒë‹¨ ì „ì²´ ë„ˆë¹„
     //----------------------------------------
 
     ImGuiViewport* pViewport = ImGui::GetMainViewport();
@@ -88,7 +88,7 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
     const char* pTypeName =
         (iAnimType == 0) ? "Animation" : "Montage";
 
-    // Å¸ÀÔ ¼±ÅÃ
+    // íƒ€ì… ì„ íƒ
     if (ImGui::Button((std::string("Type : ") + pTypeName + "  v").c_str(),ImVec2(180.f, 28.f)))
     {
         ImGui::OpenPopup("AnimTypePopup");
@@ -107,7 +107,7 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
 
     ImGui::SameLine();
 
-    // ¾ÕÀ¸·Î Ãß°¡µÉ ¹öÆ°µé
+    // ì•ìœ¼ë¡œ ì¶”ê°€ë  ë²„íŠ¼ë“¤
     if (ImGui::Button("Save", ImVec2(100.f, 28.f)))
     {
     }
@@ -156,7 +156,7 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
         return;
 
     //----------------------------------------
-    // Ã¢ À§Ä¡ (È­¸é Áß¾Ó ¾Æ·¡)
+    // ì°½ ìœ„ì¹˜ (í™”ë©´ ì¤‘ì•™ ì•„ë˜)
     //----------------------------------------
 
     ImGuiViewport* pViewport = ImGui::GetMainViewport();
@@ -208,13 +208,57 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
     ImGui::End();
 }
 
+void CAnimEdit_Manager::IMGUI_Select_Animation()
+{
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if (!pSampleObj)
+        return;
+
+    auto pComModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+    auto pComAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+    if (!pComModelInstance || !pComAnimator)
+        return;
+
+    auto& animations = pComModelInstance->GetModel()->GetAnimations();
+
+    ImGui::Begin("Animation List");
+
+    if (ImGui::TreeNode("Animation"))
+    {
+        for (uint32_t i = 0; i < animations.size(); ++i)
+        {
+            auto pAnim = animations[i];
+
+            if (!pAnim)
+                continue;
+
+            bool bSelected =
+                (pComAnimator->GetPlayAnimIndex() == i);
+
+            if (ImGui::Selectable(
+                pAnim->GetAnimName().c_str(),
+                bSelected))
+            {
+                pComAnimator->SetPlayAnimIndex(i);
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::End();
+}
+
 void CAnimEdit_Manager::UpdateGUI()
 {
     if (m_hTestModel.GetIndex() != 0)
         return;
 
-	//IMGUI_Select_AnimType();
+	IMGUI_Select_AnimType();
     IMGUI_Slider_Animation();
+    IMGUI_Select_Animation();
 }
 
 

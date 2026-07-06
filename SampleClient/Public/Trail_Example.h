@@ -11,7 +11,6 @@ public:
 
 private:
     explicit CTrail_Example();
-    CTrail_Example(const CTrail_Example& rhs);
     virtual ~CTrail_Example();
     virtual HRESULT Initialize(void* pArg) override;
 

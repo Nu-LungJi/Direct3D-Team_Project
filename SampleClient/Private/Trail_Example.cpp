@@ -14,10 +14,7 @@ CTrail_Example::CTrail_Example() : CTrail_CPU()
 
 
 
-CTrail_Example::CTrail_Example(const CTrail_Example& rhs)
-    : CTrail_CPU(rhs)
-{
-}
+
 
 CTrail_Example::~CTrail_Example()
 {
@@ -26,7 +23,6 @@ CTrail_Example::~CTrail_Example()
 HRESULT CTrail_Example::Initialize(void* pArg)
 {
     DESC desc{};
-
     // desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
     desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_TRAIL" };
     desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_Trail_TEX" };

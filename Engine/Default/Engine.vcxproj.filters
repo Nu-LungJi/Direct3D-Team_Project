@@ -286,6 +286,27 @@
     <Filter Include="GameObject\Light\Light">
       <UniqueIdentifier>{80386b6b-b029-4c7a-8977-2585324517d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource\Model\Mesh">
+      <UniqueIdentifier>{2529e691-5e3c-4d3d-a5c7-36938f85e568}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Material">
+      <UniqueIdentifier>{a9a0ccd1-a8fb-426a-894f-42bd47e35abd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Bone">
+      <UniqueIdentifier>{80be926b-aef1-480b-9d13-375a5022482e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\StaticMesh">
+      <UniqueIdentifier>{7a769126-7605-4c3d-a331-718c47992402}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Animation">
+      <UniqueIdentifier>{0def9701-063f-4df4-8d18-1c408b1e3fcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Model\Animation\Chanel">
+      <UniqueIdentifier>{5501d83f-8f9c-4c60-9920-38d2224d1bfd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComStaticModelInstance">
+      <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
@@ -630,6 +651,30 @@
     <ClInclude Include="..\Public\Light.h">
       <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ResModelMesh.h">
+      <Filter>Resource\Model\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelMaterial.h">
+      <Filter>Resource\Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelBone.h">
+      <Filter>Resource\Model\Bone</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelAnim.h">
+      <Filter>Resource\Model\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResModelChanel.h">
+      <Filter>Resource\Model\Animation\Chanel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResStaticModelMesh.h">
+      <Filter>Resource\Model\StaticMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResStaticModel.h">
+      <Filter>Resource\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComStaticModelInstance.h">
+      <Filter>Component\Model\ComStaticModelInstance</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClInclude>
@@ -955,6 +1000,30 @@
     </ClCompile>
     <ClCompile Include="..\Private\NodeEditor.cpp">
       <Filter>Component\BeHavior\NodeEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelMesh.cpp">
+      <Filter>Resource\Model\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelMaterial.cpp">
+      <Filter>Resource\Model\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelBone.cpp">
+      <Filter>Resource\Model\Bone</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelAnim.cpp">
+      <Filter>Resource\Model\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResModelChanel.cpp">
+      <Filter>Resource\Model\Animation\Chanel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResStaticModelMesh.cpp">
+      <Filter>Resource\Model\StaticMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResStaticModel.cpp">
+      <Filter>Resource\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComStaticModelInstance.cpp">
+      <Filter>Component\Model\ComStaticModelInstance</Filter>
     </ClCompile>
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>

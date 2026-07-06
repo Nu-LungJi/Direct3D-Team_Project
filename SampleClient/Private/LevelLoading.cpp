@@ -10,6 +10,7 @@
 #include "Terrain.h"
 #include "Particle.h"
 #include "TestModel.h"
+#include "Test_StaticModel.h"
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
 #include "LevelLightMap.h"
@@ -17,6 +18,7 @@
 #include "TestCollider.h"
 #include "LightObject.h"
 
+#include "Gobline.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -159,6 +161,10 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
+				{
+					return false;
+				}
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Particle", CParticle::Create())))
 				//{
 				//   return false;
@@ -209,6 +215,10 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_TestStaticModel", CTest_StaticModel::Create())))
+				{
+					return false;
+				}
 
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				return  true;

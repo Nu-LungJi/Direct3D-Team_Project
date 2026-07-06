@@ -42,7 +42,6 @@ public:
 
 protected:
     CTrail_CPU();
-    CTrail_CPU(const CTrail_CPU& rhs);
     virtual ~CTrail_CPU();
 
 public:

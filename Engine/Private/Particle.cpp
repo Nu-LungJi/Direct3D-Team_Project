@@ -11,9 +11,6 @@ CParticle::CParticle()
 
 }
 
-CParticle::CParticle(const CParticle& rhs)
-{
-}
 
 CParticle::~CParticle()
 {

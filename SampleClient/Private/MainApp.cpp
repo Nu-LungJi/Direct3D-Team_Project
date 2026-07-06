@@ -7,6 +7,7 @@
 #include "Particle_Fire_CPU.h"
 #include "Particle_Ribbon.h"
 #include "Trail_Example.h"
+#include "Particle_Fire_GPU.h"
 
 
 NS_USING(Client)
@@ -87,7 +88,7 @@ HRESULT CMainApp::Initialize()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -96,7 +97,41 @@ HRESULT CMainApp::Initialize()
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
+		{
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -197,9 +232,11 @@ HRESULT CMainApp::Initialize()
 
 		{
 			//파티클 객채들 생성
-			CGameInstance::Get().Add_Particle(CParticle_Fire_CPU::Create());
-			CGameInstance::Get().Add_Particle(CParticle_Ribbon::Create());
-			CGameInstance::Get().Add_Particle(CTrail_Example::Create());
+			CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
+			CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());
+			CGameInstance::Get().Add_Particle("BEAM", "ATTACK", CParticle_Ribbon::Create());
+			CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
+			
 		}
 
 	}

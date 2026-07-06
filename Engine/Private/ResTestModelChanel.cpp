@@ -108,7 +108,7 @@ HRESULT CResTestModelChanel::Unload(const std::any& arg)
 	return S_OK;
 }
 
-void CResTestModelChanel::Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResTestModelBone>>& Bones)
+void CResTestModelChanel::Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResModelBone>>& Bones)
 {
     if (0.f == fCurrentTrackPosition)
         iCurrentKeyFrameIndex = 0;

@@ -5,11 +5,11 @@
 #include "Component.h"
 
 NS_BEGIN(Engine)
-class CResTestModelMesh;
-class CResTestModelMaterial;
-class CResTestModelBone;
-class CResTestModelMaterial;
-class CResTestModel;
+class CResModelMesh;
+class CResModelMaterial;
+class CResModelBone;
+class CResModelMaterial;
+class CResModel;
 
 class ENGINE_DLL CComModelInstance : public CComponent
 {
@@ -39,10 +39,10 @@ public:
 
 	SPtr<CResTexture2D>	Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 public:
-	SPtr<CResTestModel> GetModel() { return m_pModel; }	
+	SPtr<CResModel> GetModel() { return m_pModel; }	
 
 private:
-	SPtr<CResTestModel> m_pModel;
+	SPtr<CResModel> m_pModel;
 public:
 	static UPtr<CComModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

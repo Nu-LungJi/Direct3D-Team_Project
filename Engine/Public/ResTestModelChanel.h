@@ -8,7 +8,7 @@ struct aiNodeAnim;
 NS_BEGIN(Engine)
 
 class CResTestModel;
-class CResTestModelBone;
+class CResModelBone;
 class ENGINE_DLL CResTestModelChanel final : public CResource
 {
 public:
@@ -26,7 +26,7 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
-	void Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResTestModelBone>>& Bones);
+	void Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResModelBone>>& Bones);
 
 	uint32_t FindKeyFrameIndex(float fTrackPos);
 

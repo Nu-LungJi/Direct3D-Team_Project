@@ -20,7 +20,9 @@
 #include "ComBeHavior.h"
 #include "AnimEdit_Manager.h"
 #include "ComModelInstance.h"
+#include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
+#include "NodeEditor.h"
 #include "Light.h"
 #include "ComCollider.h"
 
@@ -169,7 +171,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-
+	m_pNodeEditor = CNodeEditor::Create();
+	if (m_pNodeEditor == nullptr)
+	{
+		return E_FAIL;
+	}
     return S_OK;
 }
 
@@ -210,7 +216,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSoundManager->UpdateGUI();
 
-	m_pImguiManager->Update_ImguiNodeEditor();
+	m_pNodeEditor->NodeEditorUpdate();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -356,18 +362,22 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 
 
 #pragma region PARTICLE_MANAGER
-HRESULT CGameInstance::Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
+	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 	_bool bLoop, _float fSpawnInterval)
 {
-	return m_pParticleManager->Spawn(type, count, pSpawnData, bLoop, fSpawnInterval);
+	return m_pParticleManager->Spawn(sGroupTag, sTypeTag, count, pSpawnData, bLoop, fSpawnInterval);
 }
-HRESULT CGameInstance::Add_Particle(UPtr<CParticle> particle)
+
+HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
-	return m_pParticleManager->Add_Particle(std::move(particle));
+	return m_pParticleManager->Add_Particle(sGroupTag, sTypeTag, std::move(particle));
 }
-HRESULT CGameInstance::SpawnRibbon(const _float4& start, const _float4& end)
+HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
+	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
+	_float fFlickerInterval, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(start, end);
+	return m_pParticleManager->SpawnRibbon(quantity,start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, fDuration);
 }
 #pragma endregion
 
@@ -419,6 +429,14 @@ HRESULT CGameInstance::InitializeResources()
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_UI) })))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_INIT_PARTICLE) })))
 		{
 			return E_FAIL;
 		}
@@ -717,12 +735,11 @@ HRESULT CGameInstance::InitializeResources()
 		}
 
 	
-		if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource",
-			CResTestModel::Create("./Resources/SampleClient/Models/LightObject/HorseStatue.fbx"))) {
+		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
+			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
 
-			E::CResTestModel::DESC pDesc{};
-			pDesc.eModelType = MODEL::NONANIM;
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.00001f, 0.00001f, 0.00001f);
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -730,17 +747,19 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-		//if (auto res = AddResourceT<E::CResTestModel>("TEST", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/ForkLift/ForkLift.FBX"))) {
+		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
-		//	E::CResTestModel::DESC pDesc{};
-		//	pDesc.eModelType = MODEL::NONANIM;
-		//	pDesc.PreTransformMatrix = XMMatrixIdentity();
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
 
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
+
+	
 	}
 
 	return S_OK;
@@ -762,6 +781,10 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
+	if (AddPrototype("PERMANENT", "Prototype_Component_StaticModelInstance", CComStaticModelInstance::Create()))
+	{
+		return E_FAIL;
+	}
 	if (AddPrototype("PERMANENT", "Prototype_Component_Animator", CComAnimator::Create()))
 	{
 		return E_FAIL;
@@ -776,7 +799,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-	if (AddPrototype("BEHAVIOR", "Prototype_GameObject_BeHavior", CComBeHavior::Create()))
+	if (AddPrototype("BEHAVIOR", "Prototype_Component_BeHavior", CComBeHavior::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1227,4 +1250,12 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
 }
 
+#pragma endregion
+#pragma endregion
+
+#pragma region NODE_EDITOR
+HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
+{
+	return m_pNodeEditor->OpenBeHavior(Handle);
+}
 #pragma endregion

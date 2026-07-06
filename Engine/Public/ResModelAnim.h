@@ -1,0 +1,63 @@
+#pragma once
+
+#include "Resource.h"
+struct aiAnimation;
+
+
+NS_BEGIN(Engine)
+class CResModelChanel;
+class CResModel;
+class ENGINE_DLL CResModelAnim final : public CResource
+{
+public:
+	DECLARE_DERIVED_TYPE(CResModelAnim, CResource)
+public:
+	typedef struct tagDesc {
+		CResModel* pModel;
+		std::string& path;
+	}DESC;
+private:
+	explicit CResModelAnim(const _string& sPath);
+	~CResModelAnim() override;
+
+public:
+	HRESULT Load(const std::any& arg = {}) override;
+	HRESULT Unload(const std::any& arg = {}) override;
+
+	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResModelBone>>& Bones, _bool isLoop);
+	void RebuildCurrentKeyFrameIndices();
+
+public:
+	_float  GetDuration() const { return m_fDuration; }
+	_float  GetTickPerSecond() const { return m_fTickPerSecond; }
+	_float  GetCurrentTrackPosition() const { return m_fCurrentTrackPosition; }
+
+	void    SetDuration(_float fDuration) { m_fDuration = fDuration; }
+	void    SetTickPerSecond(_float fTickPerSecond) { m_fTickPerSecond = fTickPerSecond; }
+	void    SetCurrentTrackPosition(_float fCurrentTrackPosition);
+
+	std::string& GetAnimName() { return m_AnimName; }
+	void		 SetAnimName(std::string _name) { m_AnimName = _name; }
+
+private:
+	std::string			m_AnimName;
+
+	/* 이 애니메이션의 총 길이. */
+	_float				m_fDuration = {};
+	_float				m_fTickPerSecond = {};
+	_float				m_fCurrentTrackPosition = {};
+
+	/* 컨트롤해야하는 뼈의 갯수 */
+	uint32_t							m_iNumChannels = {};
+	std::vector<SPtr<CResModelChanel>>	m_Channels;
+	std::vector<uint32_t>					m_CurrentKeyFrameIndices;
+
+
+
+
+public:
+
+	static SPtr<CResModelAnim> Create(const _string& sPath = {});
+};
+
+NS_END

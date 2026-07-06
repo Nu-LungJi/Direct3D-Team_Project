@@ -21,8 +21,8 @@ HRESULT CBaseApp::Loop()
 
 	m_UpdateTimer.AppendCurrTime(fPerfTime);
 	if (m_UpdateTimer.Get_JustFinished())
-	{
-		const float fGoalTime = m_UpdateTimer.Get_GoalTime();
+		{
+			const float fGoalTime = m_UpdateTimer.Get_GoalTime();
 		float fCurrTime = m_UpdateTimer.Get_CurrTime();
 
 		float fDeltaTime = std::min(fCurrTime, MAX_DELTA);

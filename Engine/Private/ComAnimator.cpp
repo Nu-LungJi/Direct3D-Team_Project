@@ -1,8 +1,9 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "GameInstance.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
-#include "ResTestModelAnim.h"
+#include "ResModelAnim.h"
+#include "ResModel.h"
 NS_USING(Engine)
 
 
@@ -76,7 +77,7 @@ HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t i
 
     _bool           isFinished = { false };
 
-    /* »ÀµéÀÇ m_TransformationMatrix¸¦ °»½ÅÇØÁØ´Ù. */
+    /* ë¼ˆë“¤ì˜ m_TransformationMatrixë¥¼ ê°±ì‹ í•´ì¤€ë‹¤. */
     isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), true);
 
     for (auto& pBone : pModel->GetBones())

@@ -57,6 +57,8 @@ HRESULT CResTestModel::Load(const std::any& arg)
 
 		uint32_t        iFlag = { aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast };
 		if (MODEL::NONANIM == m_eModelType)
+
+		if (MODEL::STATIC == m_eModelType)
 			iFlag |= aiProcess_PreTransformVertices;
 
 		iFlag |= aiProcess_PopulateArmatureData;							// 애니메이션 최적화(본-노드 사이의 연산 단순화)
@@ -123,6 +125,9 @@ HRESULT CResTestModel::Ready_Bones(const aiNode* pAINode, int32_t iParentBoneInd
 	{
 		Ready_Bones(pAINode->mChildren[i], iParentIndex);
 	}
+
+
+
 
 	return S_OK;
 }

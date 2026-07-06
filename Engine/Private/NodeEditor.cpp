@@ -1,6 +1,9 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "NodeEditor.h"
-
+#include "BTSelector.h"
+#include "BTSecqunce.h"
+#include "BTActionNode.h"
+#include "ComBeHavior.h"
 CNodeEditor::CNodeEditor()
 {
 }
@@ -16,26 +19,24 @@ HRESULT CNodeEditor::Initialize()
 	ax::NodeEditor::Config config;
 	config.SettingsFile = nullptr;
 
-
 	m_pNodeContext = ax::NodeEditor::CreateEditor(&config);
 
 	if (nullptr == m_pNodeContext)
 		return E_FAIL;
 
-	//³ëµå
-	m_Nodes.push_back(GUINODE(0, "MainTex", _float2(40, 50), 0.5f, _float4(255, 100, 100, 1), 1, 1));
-	m_Nodes.push_back(GUINODE(1, "BumpMap", _float2(40, 150), 0.42f, _float4(200, 100, 100, 1), 1, 1));
-	m_Nodes.push_back(GUINODE(2, "Combine", _float2(270, 80), 1.0f, _float4(0, 200, 100, 1), 2, 1));
+	//ë…¸ë“œ
+	m_Nodes.push_back(GUINODE(BEHAVIOR::SECQUNCE,0, "MainTex", _float2(40, 50), 0.5f, _float4(255, 100, 100, 1) ));
+	m_Nodes.push_back(GUINODE(BEHAVIOR::SECQUNCE,1, "BumpMap", _float2(40, 150), 0.42f, _float4(200, 100, 100, 1) ));
+	m_Nodes.push_back(GUINODE(BEHAVIOR::SELECTOR,2, "Combine", _float2(270, 80), 1.0f, _float4(0, 200, 100, 1)));
 
-	m_NodesLink.push_back(GUINODE_LINK(0, 0, 2, 0));
-	m_NodesLink.push_back(GUINODE_LINK(1, 0, 2, 1));
+	m_NodesLink.push_back(GUINODE_LINK(2));
+	m_NodesLink.push_back(GUINODE_LINK(2));
 
 	return S_OK;
 }
 void CNodeEditor::UpdateGUI()
 {
-	LeftSide_MenuBar();
-
+	
 }
 void CNodeEditor::RenderGUI()
 {
@@ -43,44 +44,75 @@ void CNodeEditor::RenderGUI()
 
 void CNodeEditor::NodeEditorUpdate()
 {
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_hTarget))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>("Com_BT"))
+		{
+			m_pBeHavior = pComBt;
+			m_BTNodesMain = pComBt->Get_Selector()->Get_Nodes();
+
+			Show_Editor();
+		}
+		else
+		{
+			m_pBeHavior = nullptr;
+			m_BTNodesMain = nullptr;
+		}
+	}
 }
 
-void CNodeEditor::LeftSide_MenuBar()
+HRESULT CNodeEditor::OpenBeHavior(CHandle Handle)
 {
-	ImGui::Begin("BeHavior Tree");
-	// ±¸ÇØÁà
-	ImGuiIO& io = ImGui::GetIO();
-	_bool	bOpen_Context_Menu = false;//¿ìÅ¬¸¯½Ã ÄÁÅØ½ºÆ® ¸Ş´º·Ñ ¿­µµ·Ï ÇÏ´Â°Å
-	int32_t iNode_hovered_in_list = -1; //ÇöÀç ¸¶¿ì½º¿¡ ¿Ã¶ó°£ ³ëµå id hoveredµÈ(¸¶¿ì½º°¡ ¾î¶² ¿ä¼ÒÀ§¿¡ ¿Ã¶ó°¡ÀÖ´Ù) NodeId¸¦ ÀúÀåÇÏ´Â º¯¼ö
-	int32_t iNode_hovered_in_scene = -1; //¿À¸¥ÂÊ Äµ¹ö½º °ø°£(½ÇÁ¦·Î ³ëµå¸¦ ¹èÄ¡ÇÏ´Â°÷)¿¡¼­ ³ëµå¿¡ ¸¶¿ì½º ¿Ã¶ó°£°÷ ÆÇÁ¤
-	const _float fNode_Slot_Radius = 4.0f; //½½·Ô ¹İÁö¸§
-	const _float2 fNode_Window_Padding(8.f, 8.f); //³ëµå ³»ºÎ ¿©¹é
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>("Com_BT"))
+		{
+			m_hTarget = Handle;
+			return S_OK;
+		}
+	}
 
-	//¿ŞÂÊ ÆĞ³Î¿ëµµ
+	return E_FAIL;
+}
+
+void CNodeEditor::Show_Editor()
+{
+	if (nullptr == m_pBeHavior) return;
+
+	ImGui::Begin("BeHavior Tree");
+	// êµ¬í•´ì¤˜
+	ImGuiIO& io = ImGui::GetIO();
+	_bool	bOpen_Context_Menu = false;//ìš°í´ë¦­ì‹œ ì»¨í…ìŠ¤íŠ¸ ë©”ë‰´ë¡¤ ì—´ë„ë¡ í•˜ëŠ”ê±°
+	int32_t iNode_hovered_in_list = -1; //í˜„ì¬ ë§ˆìš°ìŠ¤ì— ì˜¬ë¼ê°„ ë…¸ë“œ id hoveredëœ(ë§ˆìš°ìŠ¤ê°€ ì–´ë–¤ ìš”ì†Œìœ„ì— ì˜¬ë¼ê°€ìˆë‹¤) NodeIdë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
+	int32_t iNode_hovered_in_scene = -1; //ì˜¤ë¥¸ìª½ ìº”ë²„ìŠ¤ ê³µê°„(ì‹¤ì œë¡œ ë…¸ë“œë¥¼ ë°°ì¹˜í•˜ëŠ”ê³³)ì—ì„œ ë…¸ë“œì— ë§ˆìš°ìŠ¤ ì˜¬ë¼ê°„ê³³ íŒì •
+	const _float fNode_Slot_Radius = 4.0f; //ìŠ¬ë¡¯ ë°˜ì§€ë¦„
+	const _float2 fNode_Window_Padding(8.f, 8.f); //ë…¸ë“œ ë‚´ë¶€ ì—¬ë°±
+
+	//ì™¼ìª½ íŒ¨ë„ìš©ë„
 	NodeList_Panel(&iNode_hovered_in_list,&bOpen_Context_Menu);
-	ImGui::BeginGroup(); //À§Á¬ ¿©·¯°³¸¦ ¹­´Â¿ëµµ
-	//¿À¸¥ÂÊ Äµ¹ö½ºÃ¢
+	ImGui::BeginGroup(); //ìœ„ì ¯ ì—¬ëŸ¬ê°œë¥¼ ë¬¶ëŠ”ìš©ë„
+	//ì˜¤ë¥¸ìª½ ìº”ë²„ìŠ¤ì°½
 	Begin_Canvas();
-	//È­¸é °İÀÚ
+	//í™”ë©´ ê²©ì
 	Draw_Grid();
 
-	//¸µÅ©
-	m_pDrawList->ChannelsSplit(2); //Draw List¸¦ µÎ°³ÀÇ ·¹ÀÌ¾î·Î ³ª´«´Ù?							   
+	//ë§í¬
+	m_pDrawList->ChannelsSplit(2); //Draw Listë¥¼ ë‘ê°œì˜ ë ˆì´ì–´ë¡œ ë‚˜ëˆˆë‹¤?							   
 	
-	Draw_Link(); // 0¹øÁö¿¡ ¸µÅ© ±×¸®°í
+	Draw_Link(); // 0ë²ˆì§€ì— ë§í¬ ê·¸ë¦¬ê³ 
 
-	//1¹øÁö¿¡ ³ëµå ±×·Á¼­
-	Draw_Node(iNode_hovered_in_list, iNode_hovered_in_scene,fNode_Slot_Radius,fNode_Window_Padding,bOpen_Context_Menu, io);
-
-	////À§ 2°³¸¦ ÇÕÃÄ¶ó
+	//1ë²ˆì§€ì— ë…¸ë“œ ê·¸ë ¤ì„œ
+	Draw_Node(iNode_hovered_in_list, iNode_hovered_in_scene,fNode_Slot_Radius,fNode_Window_Padding,bOpen_Context_Menu, io,m_pBeHavior->Get_Selector());
+	Draw_TmpNode(iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
+	////ìœ„ 2ê°œë¥¼ í•©ì³ë¼
 	m_pDrawList->ChannelsMerge();
 	
 
-	//context menu ¿­±âÀü Á¶°Ç °Ë»ç
-	//1. ¿À¸¥ÂÊ ¹öÆ°À» ¶Ã´Ù ISMouseRelease Right
-	//2. ÇöÀç Ã¢ À§¿¡ ¸¶¿ì½º°¡ ÀÖ´Ù Hovered
-	//3. ¶Ç´Â ¾Æ¹« ¾ÆÀÌÅÛµµ hoverµµ ¾Æ´Ï´Ù
-	//4. ¿­¾î¶ó
+	//context menu ì—´ê¸°ì „ ì¡°ê±´ ê²€ì‚¬
+	//1. ì˜¤ë¥¸ìª½ ë²„íŠ¼ì„ ë—ë‹¤ ISMouseRelease Right
+	//2. í˜„ì¬ ì°½ ìœ„ì— ë§ˆìš°ìŠ¤ê°€ ìˆë‹¤ Hovered
+	//3. ë˜ëŠ” ì•„ë¬´ ì•„ì´í…œë„ hoverë„ ì•„ë‹ˆë‹¤
+	//4. ì—´ì–´ë¼
 
 	if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
 	{
@@ -105,10 +137,9 @@ void CNodeEditor::LeftSide_MenuBar()
 	if (ImGui::BeginPopup("context_menu"))
 	{
 		GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
-		ImVec2 vScene_Pos = ImGui::GetMousePosOnOpeningCurrentPopup() - ImVec2(m_vOffset.x, m_vOffset.y);
 		if (pNode)
 		{
-			//³ëµå¿¡¼­ ¿ìÅ¬¸¯ -> Rename delete copy ...
+			//ë…¸ë“œì—ì„œ ìš°í´ë¦­ -> Rename delete copy ...
 			ImGui::Text("Node %s", pNode->Name);
 			ImGui::Separator();
 			if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
@@ -117,15 +148,33 @@ void CNodeEditor::LeftSide_MenuBar()
 		}
 		else
 		{
-			//ºó°ø°£ ¿ìÅ¬¸¯...
-			if (ImGui::MenuItem("Add")) { m_Nodes.push_back(GUINODE(m_Nodes.size(), "New node", _float2(vScene_Pos.x, vScene_Pos.y), 0.5f, _float4(100, 100, 200,255), 2, 2)); }
+			//ë¹ˆê³µê°„ ìš°í´ë¦­...
+			if (ImGui::MenuItem("Add_Selector"))
+			{
+				m_eBTType = BEHAVIOR::SELECTOR;
+				m_pNodeName = "Selector";
+				m_bPopup = true;
+			}
+			else if (ImGui::MenuItem("Add_Sequence"))
+			{
+				m_eBTType = BEHAVIOR::SECQUNCE;
+				m_pNodeName = "Sequence";
+				m_bPopup = true;
+			}
+			
 			if (ImGui::MenuItem("Paste", NULL, false, false)) {}
 		}
+
+
 		ImGui::EndPopup();
 	}
+	ImVec2 vScene_Pos = ImGui::GetMousePosOnOpeningCurrentPopup() - ImVec2(m_vOffset.x, m_vOffset.y);
+	if (m_bPopup)
+		Add_Node(m_eBTType, m_pNodeName, vScene_Pos);
+
 	ImGui::PopStyleVar();
 
-	//ÈÙ·Î Äµ¹ö½º ÀÌµ¿
+	//íœ ë¡œ ìº”ë²„ìŠ¤ ì´ë™
 	if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))
 	{
 		m_vScroll.x += io.MouseDelta.x;
@@ -136,7 +185,7 @@ void CNodeEditor::LeftSide_MenuBar()
 }
 void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_Manu)
 {
-	ImGui::BeginChild("NodeList", ImVec2(100, 0)); //³ëµå ¸®½ºÆ® ui ¿ŞÂÊ ÆĞ³Î
+	ImGui::BeginChild("NodeList", ImVec2(100, 0)); //ë…¸ë“œ ë¦¬ìŠ¤íŠ¸ ui ì™¼ìª½ íŒ¨ë„
 	ImGui::Text("Nodes");
 	ImGui::Separator();
 
@@ -146,9 +195,9 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 		ImGui::PushID(node->iID);
 		if (ImGui::Selectable(node->Name.c_str(), node->iID == m_iNodeSelect))
 			m_iNodeSelect = node->iID;
-		if (ImGui::IsItemHovered()) //±× uiÀ§¿¡ ¸¶¿ì½º°¡ ¿Ã¶ó°¡ÀÖ³Ä?
+		if (ImGui::IsItemHovered()) //ê·¸ uiìœ„ì— ë§ˆìš°ìŠ¤ê°€ ì˜¬ë¼ê°€ìˆëƒ?
 		{
-			*piNode_hoverd_List = node->iID; //±×·³ ÀúÀåÇÏ¶ó°í~~
+			*piNode_hoverd_List = node->iID; //ê·¸ëŸ¼ ì €ì¥í•˜ë¼ê³ ~~
 			*pbContext_Manu |= ImGui::IsMouseClicked(1);
 		}
 		ImGui::PopID();
@@ -170,16 +219,16 @@ void CNodeEditor::Begin_Canvas()
 
 	_float2 fCursorScrrenPos = _float2(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y);
 	XMStoreFloat2(&m_vOffset, XMLoadFloat2(&fCursorScrrenPos) + XMLoadFloat2(&m_vScroll));
-	m_pDrawList = ImGui::GetWindowDrawList(); //ÀÌ°ÅÇÏ¸é ¼± ¿ø »ç°¢Çü Á÷Á¢ ±×¸±¼öÀÖ´Ù³×
+	m_pDrawList = ImGui::GetWindowDrawList(); //ì´ê±°í•˜ë©´ ì„  ì› ì‚¬ê°í˜• ì§ì ‘ ê·¸ë¦´ìˆ˜ìˆë‹¤ë„¤
 
 }
 void CNodeEditor::Draw_Grid()
 {
 	if (m_bShow_grid)
-	{ // °İÀÚ¸¦ ±×·Á¶ó¶ó¶ó
+	{ // ê²©ìë¥¼ ê·¸ë ¤ë¼ë¼ë¼
 		ImU32 GRID_COLOR = IM_COL32(200, 200, 200, 40);
 		_float GRID_SZ = 64.f;
-		ImVec2 vWin_pos = ImGui::GetCursorScreenPos(); //È­¸é ÁÂÇ¥ ½ÃÀÛÁ¡
+		ImVec2 vWin_pos = ImGui::GetCursorScreenPos(); //í™”ë©´ ì¢Œí‘œ ì‹œì‘ì 
 		ImVec2 vCanvas_sz = ImGui::GetWindowSize();
 		for (_float x = fmodf(m_vScroll.x, GRID_SZ); x < vCanvas_sz.x; x += GRID_SZ)
 			m_pDrawList->AddLine(ImVec2(x, 0.f) + vWin_pos, ImVec2(x, vCanvas_sz.y) + vWin_pos, GRID_COLOR);
@@ -189,164 +238,268 @@ void CNodeEditor::Draw_Grid()
 }
 void CNodeEditor::Draw_Link()
 {
-	m_pDrawList->ChannelsSetCurrent(0); // layer0¹øÁö¿¡ ¸µÅ©¸¦ ±×¸®°í
+	m_pDrawList->ChannelsSetCurrent(0); // layer0ë²ˆì§€ì— ë§í¬ë¥¼ ê·¸ë¦¬ê³ 
+	//ì•„ 
+	Recursive_Call_Node(m_pBeHavior->Get_Selector());
 
-	for (size_t i = 0; i < m_NodesLink.size(); ++i)
+	for (size_t i = 0; i < m_BTNodesTmp.size(); ++i)
 	{
-		//inputid inputslot  ouputid outputslow
-		GUINODE_LINK* link = &m_NodesLink[i];
-		GUINODE* pNode_inp = &m_Nodes[link->iStartIdx]; //¸µÅ©°¡ ¿¬°áµÇ´Â ÀÔ·Â ³ëµå
-		GUINODE* pNode_out = &m_Nodes[link->iEndIdx]; //¸µÅ©°¡ ½ÃÀÛµÇ´Â Ãâ·Â ³ëµå
-
-		Draw_NodeLine(pNode_inp->GetEndSlotPos(link->iStartSlot), pNode_out->GetStartSlotPos(link->iEndSlot));
+		Recursive_Call_Node((m_BTNodesTmp[i]).get());
 	}
 	if (nullptr != m_CurrentNode.pCurrentNode)
 	{
 		Draw_NodeLine(m_CurrentNode.vSlotPos, _float2(ImGui::GetMousePos().x, ImGui::GetMousePos().y),true);
 	}
+	if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		Reset_CurrentNode();
+}
+void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io,  CBTRoot* pCurNode)
+{
+	GUINODE* pNode = &pCurNode->Get_GuiNodeInfo();
+	GUINODE_LINK* pLink = &pCurNode->Get_GuiNodeLink();
+
+	ImGui::PushID(pNode->iID); // ë…¸ë“œ ë‚´ë¶€ì—ì„œ ìƒì„±ë˜ëŠ” widget id ì¤‘ë³µë°©ì§€ìš©
+	Widget(pNode, pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
+	int32_t iSlot = Choice_StartSlot(pNode,fNode_Slot_Radius);
+
+	if (-1 != iSlot)
+	{
+		GUICURRENT_NODE CurNode(pNode, &pCurNode->Get_GuiNodeLink(), iSlot);
+		//ê·¸ ìœ„ì—ìˆëƒ?
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		{
+			//ì‹œì‘ ê¸°ì¤€ìœ¼ë¡œ ì¡ê¸° 
+			if (-1 != pLink->iStartIdx && !m_CurrentNode.bSelected )
+			{
+				//ë³¸ì¸ê³¼ ì—°ê²°ëœ ë¶€ëª¨ë…¸ë“œ
+				if (auto pParentNode = m_pBeHavior->Find_Node(pLink->ParentNode.iDestNode))
+				{
+					int32_t iParentIndex = pCurNode->Get_GuiNodeLink().iStartIdx;
+					pParentNode->Get_GuiNodeLink().SlotEnd[iParentIndex].Reset(); //ê·¸ ë¶€ëª¨ë„ ì‹œì‘ì§€ì  ì—°ê²° ëŠê¸°
+				
+					CurNode.eType = NODETYPE::START;
+					CurNode.vSlotPos = pNode->GetStartSlotPos();
+					CurNode.bSelected = true;
+					CurNode.iD = pNode->iID;
+					m_CurrentNode = CurNode;
+					if (pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					{
+						auto& pSrc = (*(static_cast<CBTComposite*>(pParentNode)->Get_Nodes()))[iParentIndex];
+						pSrc->Get_GuiNodeLink().iStartIdx = -1;
+						pSrc->Get_GuiNodeLink().ParentNode.Reset();
+						m_pBeHavior->UnRegistNode(pSrc->Get_GuiNodeInfo().iID);
+
+						if (m_BTNodesTmp.empty())
+							m_BTNodesTmp.push_back(std::move(pSrc));
+						else
+						{
+							for (size_t i = 0; i < m_BTNodesTmp.size(); ++i)
+							{
+								if (m_BTNodesTmp[i] == nullptr)
+								{
+									m_BTNodesTmp[i] = std::move(pSrc);
+									break;
+								}
+									
+							}
+						}
+					}
+
+				}
+			}
+			else if (-1 == pLink->iStartIdx && !m_CurrentNode.bSelected)
+			{
+				CurNode.eType = NODETYPE::START; //í˜„ì¬ ì„ íƒí•œê±°
+				CurNode.vSlotPos = pNode->GetStartSlotPos();
+				CurNode.bSelected = true;
+				CurNode.pCurrentLink->iStartIdx = iSlot;
+				CurNode.iD = pNode->iID;
+				m_CurrentNode = CurNode;
+			}
+		}
+	}
+	//ì¶œë ¥ì´ë“  ì…ë ¥ì´ë“  í•´ë‹¹ ë…¸ë“œì—ì„œ ì„ íƒ ë˜ëŠ”ê±° íŒì •
+	if (pNode->eMyType != BEHAVIOR::ACTION)
+	{
+		iSlot = Choice_EndSlot(pNode, pLink, fNode_Slot_Radius);
+		if (-1 != iSlot)
+		{
+			GUICURRENT_NODE CurNode(pNode, &pCurNode->Get_GuiNodeLink(), iSlot);
+			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+			{//ë¶€ëª¨ë…¸ë“œ ê¸°ì¤€ì—ì„œ ìì‹ë…¸ë“œë¡œ ì—°ê²°í•˜ëŠ”ê±°
+				//ì•„ ì´ê±°ëŠ” ì„ì‹œ ì €ì¥ì†Œì— ë„£ìœ¼ë©´ ì•ˆë˜ë„¤ ì´ëŸ°
+				if (-1 != pLink->SlotEnd[iSlot].iDestNode && !m_CurrentNode.bSelected)
+				{	//ë¶€ëª¨ê¸°ì¤€ìœ¼ë¡œ ëŠì–´ë„ ë™ì¼í•˜ê²Œ ì—°ê²°ëœ ìì‹ì´ tmpë¡œ ë¹ ì§€ëŠ”ê±¸ë¡œ
+
+					if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					{
+						auto& pSrc = (*(static_cast<CBTComposite*>(pCurNode))->Get_Nodes())[iSlot];										
+						pSrc->Get_GuiNodeLink().iStartIdx = -1;				//ìì‹ ê¸°ì¤€ ë¶€ëª¨ ëŠê¸°
+						pSrc->Get_GuiNodeLink().ParentNode.Reset();
+
+						m_pBeHavior->UnRegistNode(pSrc->Get_GuiNodeInfo().iID);
+						if(m_BTNodesTmp.empty())
+							m_BTNodesTmp.push_back(std::move(pSrc));
+						else
+						{
+							for (size_t i = 0; i < m_BTNodesTmp.size(); ++i)
+							{
+								if (m_BTNodesTmp[i] == nullptr)
+								{
+									m_BTNodesTmp[i] = std::move(pSrc);
+									break;
+								}
+									
+							}
+						}
+					}
+					pCurNode->Get_GuiNodeLink().SlotEnd[iSlot].Reset(); // ì—°ê²°ëœ ìì‹ ëŠê¸°
+					CurNode.eType = NODETYPE::NODE_END; //í˜„ì¬ ì„ íƒí•œê±°
+					CurNode.vSlotPos = pNode->GetEndSlotPos(iSlot,pLink->SlotEnd.size());
+					CurNode.bSelected = true;
+					CurNode.pCurrentLink->iStartIdx = iSlot;	
+					CurNode.iD = pNode->iID;
+					m_CurrentNode = CurNode;
+					
+				}
+				else if (m_CurrentNode.bSelected && m_CurrentNode.eType == NODETYPE::START)
+				{
+					if (pNode->eMyType == BEHAVIOR::SELECTOR || pNode->eMyType == BEHAVIOR::SECQUNCE)
+					{
+						auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
+						for (auto iter = m_BTNodesTmp.begin(); iter != m_BTNodesTmp.end(); ++iter)
+						{
+							if ((*iter) == nullptr) continue;
+							if ((*iter)->Get_GuiNodeInfo().iID == m_CurrentNode.iD)
+							{
+								//ë“±ë¡
+								m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
+
+								(*iter)->Get_GuiNodeLink().iStartIdx = iSlot;
+								(*iter)->Get_GuiNodeLink().ParentNode = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
+								pCurNode->Get_GuiNodeLink().SlotEnd[iSlot] = (*iter)->Get_GuiNodeInfo().Get_DestInfo();
+								(*pSrc)[iSlot] = std::move((*iter));
+
+								Reset_CurrentNode();
+								break;
+							}
+						}
+					}
+					
+				}
+				else if (-1 == pLink->SlotEnd[iSlot].iDestNode && !m_CurrentNode.bSelected)
+				{
+					CurNode.eType = NODETYPE::NODE_END; //í˜„ì¬ ì„ íƒí•œê±°
+					CurNode.vSlotPos = pNode->GetEndSlotPos(iSlot, pLink->SlotEnd.size());
+					CurNode.bSelected = true;
+					CurNode.pCurrentLink->iStartIdx = iSlot;
+					CurNode.iD = pNode->iID;
+					m_CurrentNode = CurNode;
+				}
+			}
+			
+		}
+	}
+	if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+	{
+		auto pSelector = static_cast<CBTComposite*>(pCurNode);
+		for (size_t j = 0; j < pSelector->Get_Nodes()->size(); ++j)
+		{
+			if (nullptr == ((*pSelector->Get_Nodes())[j]))
+				continue;
+			
+			Draw_Node(iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io, (*(pSelector->Get_Nodes()))[j].get());
+		}
+	}
+	ImGui::PopID();
+
+
 }
 
-void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io)
+void CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io)
 {
-	for (size_t i = 0; i < m_Nodes.size(); ++i)
+	for (auto iter = m_BTNodesTmp.begin(); iter != m_BTNodesTmp.end(); ++iter)
 	{
-		GUINODE* pNode = &m_Nodes[i]; //ÇöÀç ±×¸®·Á´Â ³ëµå¸¦ °¡Á®¿Â´Ù
-		ImGui::PushID(pNode->iID); // ³ëµå ³»ºÎ¿¡¼­ »ı¼ºµÇ´Â widget id Áßº¹¹æÁö¿ë
-		_float2 vMin{};
-		XMStoreFloat2(&vMin, XMLoadFloat2(&m_vOffset) + XMLoadFloat2(&pNode->vPos)); // Äµ¹ö½º ±âÁØ ÁÂÇ¥¸¦ ½ºÅ©¸° ÁÂÇ¥ ±âÁØÀ¸·Î º¯È¯
-		ImVec2 vNode_Rect_Min(vMin.x, vMin.y);
+		if ((*iter)  == nullptr)
+			continue;
 
-		m_pDrawList->ChannelsSetCurrent(1); //·¹ÀÌ¾î 1¿¡ UI ±×·Á
-		_bool	bOld_Any_Active = ImGui::IsAnyItemActive(); //À§Á¬ »ı¼ºÀü¿¡ ´Ù¸¥ À§Á¬ÀÌ ÀÌ¹Ì È°¼ºÈ­ µÇ¾îÀÖ´ÂÁö ÀúÀå
-		ImGui::SetCursorScreenPos(vNode_Rect_Min + ImVec2(fNode_Window_Padding.x, fNode_Window_Padding.y)); //¿©±â¿¡ À§Á¬À» ¸¸µé¾î¶ó
-		//³ëµå ³»ºÎÀ¸ imgui À§Á¬ »ı¼º	
-		ImGui::BeginGroup();
-		ImGui::Text("%s", pNode->Name.c_str()); //ÀÌ¸§..
-		ImGui::SliderFloat("##value", &pNode->fValue, 0.f, 1.f, "Alpha %2.f"); //¾ËÆÄ°ª ¹¹ ¾µ¸ğ°¡..
-		ImGui::ColorEdit3("##Color", &pNode->vColor.x); //»ö»ó ¹¹ ¾µ¸ğ°¡..
-		ImGui::EndGroup();
-		///////////////////À§Á¬ »ı¼º
+		GUINODE* pNode = &(*iter)->Get_GuiNodeInfo(); //í˜„ì¬ ê·¸ë¦¬ë ¤ëŠ” ë…¸ë“œë¥¼ ê°€ì ¸ì˜¨ë‹¤
+		GUINODE_LINK* pLink = &(*iter)->Get_GuiNodeLink();
+		ImGui::PushID(pNode->iID); // ë…¸ë“œ ë‚´ë¶€ì—ì„œ ìƒì„±ë˜ëŠ” widget id ì¤‘ë³µë°©ì§€ìš©
 
-		_bool bNode_Widgets_active = (!bOld_Any_Active && ImGui::IsAnyItemActive());
-		_float2 vDouble_Padding{};
-		XMStoreFloat2(&vDouble_Padding, XMLoadFloat2(&fNode_Window_Padding) + XMLoadFloat2(&fNode_Window_Padding));
-		ImVec2 vSize = ImGui::GetItemRectSize() + ImVec2(vDouble_Padding.x, vDouble_Padding.y);
-		//Group ³»ºÎ WidgetµéÀÇ Å©±â¸¦ ÀÚµ¿ °è»ê
-		//GetItemRectSize´Â gui°¡ text slider¸¦ ¹èÄ¡ ÈÄ °¡·Î ¼¼·Î¸¦ ÀÚµ¿À¸·Î °è»êÇØ¼­ ´Ã·ÁÁØ´Ù³×
-		pNode->vSize = _float2(vSize.x, vSize.y);
-
-		ImVec2 vNode_Rect_Max = vNode_Rect_Min + vSize;
-
-		//¹¹ ³ëµå ¹Ú½º?
-		m_pDrawList->ChannelsSetCurrent(0);
-		ImGui::SetCursorScreenPos(vNode_Rect_Min);
-		ImGui::InvisibleButton("node", vSize); //º¸ÀÌÁö¾Ê´Â ¹öÆ° Talon
-								//³ëµå ÀüÃ¼¿¡ ¹öÆ°À» ±ò¾Æ¼­ ³ëµå ¿òÁ÷ÀÏ¼ö ÀÖ°ÔÇØÁÜ
-		if (ImGui::IsItemHovered())
-		{//¸¶¿ì½º°¡ À§¿¡ÀÖ°í ¿ìÅ¬¸¯À» Çß´Ù? ±×·³ ¸Å´ºÃ¢À»¿¬´Ù
-			iNode_hovered_in_scene = pNode->iID;
-			bOpen_Context_Menu |= ImGui::IsMouseClicked(1);
-		}
-
-		_bool bNode_Moving_Active = ImGui::IsItemActive(); //Å¬¸¯ÁßÀÌ³Ä?
-		if (bNode_Widgets_active || bNode_Moving_Active)
-			m_iNodeSelect = pNode->iID;
-		if (bNode_Moving_Active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) //µå·¡±×ÁßÀÌ³Ä?
-			pNode->vPos = _float2(pNode->vPos.x + io.MouseDelta.x, pNode->vPos.y + io.MouseDelta.y);
-
-		//¼±ÅÃÇÏ°Å³ª ¸¶¿ì½º À§¿¡ ¿Ã·ÈÀ»¶§ sceneÀÎ°¡ hover È®ÀÎÇØ¼­ »ö»óÀ¸·Î Ç¥±â
-		ImU32 Node_Bg_Color = (iNode_hovered_in_list == pNode->iID ||
-			iNode_hovered_in_scene == pNode->iID || m_iNodeSelect == pNode->iID ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255));
-		
-		//³ëµå ÀÇ ¿ÜÇüÀ» Á÷Á¢ ±×¸®´Â°Å
-		//¹è°æ
-		m_pDrawList->AddRectFilled(vNode_Rect_Min, vNode_Rect_Max, Node_Bg_Color, 4.f);
-		//Å×µÎ¸®Â÷µÎ¸®µÎ¸®µÎ¸®µÎ¸®
-		m_pDrawList->AddRect(vNode_Rect_Min, vNode_Rect_Max, IM_COL32(100, 100, 100, 255), 4.f);
-		//µ¿±Û¹ğÀÌ ÀÔ·Â³ëµå Ãâ·Â³ëµå
-		for (uint32_t i = 0; i < pNode->iStartCnt; ++i)
-			m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetStartSlotPos(i).x, m_vOffset.y + pNode->GetStartSlotPos(i).y), fNode_Slot_Radius, IM_COL32(150, 150, 150, 150));
-		for (uint32_t i = 0; i < pNode->iEndCnt; ++i)
-			m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetEndSlotPos(i).x, m_vOffset.y + pNode->GetEndSlotPos(i).y), fNode_Slot_Radius, IM_COL32(150, 150, 150, 150));
-
-		//µ¿±×¶ó¹Ì À§¿¡ÀÖ´ÂÁö 
-		//ÇöÀç³ëµåÀÇ µ¿±Û¹ğÀÌ °Å¸®¶û °¡±õ³Ä?
+		Widget(pNode,pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
+		//ë™ê·¸ë¼ë¯¸ ìœ„ì—ìˆëŠ”ì§€ 
+		//í˜„ì¬ë…¸ë“œì˜ ë™ê¸€ë±…ì´ ê±°ë¦¬ë‘ ê°€ê¹ëƒ?
 		int32_t iSlot = Choice_StartSlot(pNode, fNode_Slot_Radius);
 		if (-1 != iSlot)
 		{
-			//±× À§¿¡ÀÖ³Ä?
-			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+			GUICURRENT_NODE CurNode(pNode, &(*iter)->Get_GuiNodeLink(), iSlot);
+			//ê·¸ ìœ„ì—ìˆëƒ?
+			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && (*iter))
 			{
-				if (m_CurrentNode.pCurrentNode && m_CurrentNode.pCurrentNode != pNode && m_CurrentNode.eType == NODETYPE::NODE_END)
+				if (!Link_Connect_Check((*iter)->Get_GuiNodeLink().iStartIdx) && !m_CurrentNode.bSelected) //í˜„ì¬ ë…¸ë“œì˜ Start ë¶€ë¶„ì— ì—°ê²°ëœê²Œ ìˆëŠ”ì§€?
 				{
-					//inputid  inputslot   ouputid  outputslot
-					m_NodesLink.push_back(GUINODE_LINK(m_CurrentNode.iD, m_CurrentNode.iSelectedSlot,i,iSlot));
+					CurNode.eType = NODETYPE::START;
+					CurNode.vSlotPos = pNode->GetStartSlotPos();
+					CurNode.bSelected = true;
+					CurNode.iD = pNode->iID;
+					m_CurrentNode = CurNode;
+				}
+				else if (m_CurrentNode.bSelected && m_CurrentNode.eType == NODETYPE::NODE_END)
+				{
+					//ì—¬ê¸°ì„œ ì›ë³¸ í´ë˜ìŠ¤ ë…¸ë“œ ë¶€ëª¨ì—ì„œ tmp ìì‹ ì— ì—°ê²°í•˜ê¸°
+					auto pSrc = m_pBeHavior->Find_Node(m_CurrentNode.iD);
+				
+					if (nullptr != pSrc &&  pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					{
+						int32_t iPreSlot = m_CurrentNode.pCurrentLink->iStartIdx;
+						(*iter)->Get_GuiNodeLink().iStartIdx = iPreSlot; // ìì‹ì— ë¶€ëª¨ ë‹´ì•˜ê³ 
+						
+						auto pParn = static_cast<CBTComposite*>(pSrc);
+						pParn->Get_GuiNodeLink().SlotEnd[iPreSlot] = (*iter)->Get_GuiNodeInfo().Get_DestInfo();
+						(*iter)->Get_GuiNodeLink().ParentNode = pParn->Get_GuiNodeInfo().Get_DestInfo();
+
+						m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
+						(*pParn->Get_Nodes())[iPreSlot] = std::move(*iter);
+					}
+
 					Reset_CurrentNode();
-					
+					ImGui::PopID();
+					return;
 				}
-				else
-				{
-					m_CurrentNode.iD = i;
-					m_CurrentNode.eType = NODETYPE::START;
-					m_CurrentNode.pCurrentNode = pNode;
-					m_CurrentNode.vSlotPos = pNode->GetStartSlotPos(iSlot);
-					m_CurrentNode.iSelectedSlot = iSlot;
-					m_CurrentNode.bSelected = true;
-				}
+
+			}
+			else if (m_CurrentNode.bSelected && m_CurrentNode.eType == NODETYPE::START)
+			{
+
 			}
 		}
-		//Ãâ·ÂÀÌµç ÀÔ·ÂÀÌµç ÇØ´ç ³ëµå¿¡¼­ ¼±ÅÃ µÇ´Â°Å ÆÇÁ¤
-		iSlot = Choice_EndSlot(pNode,fNode_Slot_Radius);
-		if (-1 != iSlot)
-		{
-			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-			{
-				if (m_CurrentNode.pCurrentNode && m_CurrentNode.pCurrentNode != pNode && m_CurrentNode.eType == NODETYPE::START)
-				{
-					m_NodesLink.push_back(GUINODE_LINK(i, iSlot, m_CurrentNode.iD, m_CurrentNode.iSelectedSlot));
-					Reset_CurrentNode();
-			
-				}
-				else
-				{
-					m_CurrentNode.iD = i;
-					m_CurrentNode.eType = NODETYPE::NODE_END;
-					m_CurrentNode.pCurrentNode = pNode;
-					m_CurrentNode.vSlotPos = pNode->GetEndSlotPos(iSlot);
-					m_CurrentNode.iSelectedSlot = iSlot;
-					m_CurrentNode.bSelected = true;
-				}
-			}
-		}
+
+		
 		ImGui::PopID();
 	}
 }
 
-int32_t CNodeEditor::Choice_EndSlot(GUINODE* pNode, const _float& fNode_Radius)
+int32_t CNodeEditor::Choice_EndSlot(GUINODE* pNode, GUINODE_LINK* pLink, const _float& fNode_Radius)
 {
-	//ÇØ´ç ³ëµå ¼±ÅÃ µÆÀ» °æ¿ì¿¡¸¸ÁøÀÔ
-	for (uint32_t i = 0; i < pNode->iEndCnt; ++i)
+	//í•´ë‹¹ ë…¸ë“œ ì„ íƒ ëì„ ê²½ìš°ì—ë§Œì§„ì…
+	for (uint32_t i = 0; i < pLink->SlotEnd.size(); ++i)
 	{
-		if (ImsMouseHoverSlot(pNode->GetEndSlotPos(i), fNode_Radius))
+		if (ImsMouseHoverSlot(pNode->GetEndSlotPos(i, pLink->SlotEnd.size()), fNode_Radius))
 			return i;
 	}
 	return -1;
 }
-
 int32_t CNodeEditor::Choice_StartSlot(GUINODE* pNode, const _float& fNode_Radius)
 {
-
-	//ÇØ´ç ³ëµå ¼±ÅÃ µÆÀ» °æ¿ì¿¡¸¸ÁøÀÔ
-	for (uint32_t i = 0; i < pNode->iStartCnt; ++i)
-	{
-		if (ImsMouseHoverSlot(pNode->GetStartSlotPos(i), fNode_Radius))
-			return i;
-	}
+	if (ImsMouseHoverSlot(pNode->GetStartSlotPos(), fNode_Radius))
+			return 0;
+	
 	return -1;
 }
 
 void CNodeEditor::End_Canvas()
-{
+{//ì‚´ë ¤ì¤˜
 	ImGui::PopItemWidth();
 	ImGui::EndChild();
 	ImGui::PopStyleColor();
@@ -356,21 +509,158 @@ void CNodeEditor::End_Canvas()
 	ImGui::End();
 }
 
+void CNodeEditor::Widget(GUINODE* pNode, GUINODE_LINK* pLink, int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io)
+{
+	_float2 vMin{};
+	XMStoreFloat2(&vMin, XMLoadFloat2(&m_vOffset) + XMLoadFloat2(&pNode->vPos)); // ìº”ë²„ìŠ¤ ê¸°ì¤€ ì¢Œí‘œë¥¼ ìŠ¤í¬ë¦° ì¢Œí‘œ ê¸°ì¤€ìœ¼ë¡œ ë³€í™˜
+	ImVec2 vNode_Rect_Min(vMin.x, vMin.y);
+
+	m_pDrawList->ChannelsSetCurrent(1); //ë ˆì´ì–´ 1ì— UI ê·¸ë ¤
+	_bool	bOld_Any_Active = ImGui::IsAnyItemActive(); //ìœ„ì ¯ ìƒì„±ì „ì— ë‹¤ë¥¸ ìœ„ì ¯ì´ ì´ë¯¸ í™œì„±í™” ë˜ì–´ìˆëŠ”ì§€ ì €ì¥
+	ImGui::SetCursorScreenPos(vNode_Rect_Min + ImVec2(fNode_Window_Padding.x, fNode_Window_Padding.y)); //ì—¬ê¸°ì— ìœ„ì ¯ì„ ë§Œë“¤ì–´ë¼
+	//ë…¸ë“œ ë‚´ë¶€ìœ¼ imgui ìœ„ì ¯ ìƒì„±	
+	ImGui::BeginGroup();
+	ImGui::Text("%s", pNode->Name.c_str()); //ì´ë¦„..
+	ImGui::SliderFloat("##value", &pNode->fValue, 0.f, 1.f, "Alpha %2.f"); //ì•ŒíŒŒê°’ ë­ ì“¸ëª¨ê°€..
+	ImGui::ColorEdit3("##Color", &pNode->vColor.x); //ìƒ‰ìƒ ë­ ì“¸ëª¨ê°€..
+	ImGui::EndGroup();
+	///////////////////ìœ„ì ¯ ìƒì„±
+
+	_bool bNode_Widgets_active = (!bOld_Any_Active && ImGui::IsAnyItemActive());
+	_float2 vDouble_Padding{};
+	XMStoreFloat2(&vDouble_Padding, XMLoadFloat2(&fNode_Window_Padding) + XMLoadFloat2(&fNode_Window_Padding));
+	ImVec2 vSize = ImGui::GetItemRectSize() + ImVec2(vDouble_Padding.x, vDouble_Padding.y);
+	//Group ë‚´ë¶€ Widgetë“¤ì˜ í¬ê¸°ë¥¼ ìë™ ê³„ì‚°
+	//GetItemRectSizeëŠ” guiê°€ text sliderë¥¼ ë°°ì¹˜ í›„ ê°€ë¡œ ì„¸ë¡œë¥¼ ìë™ìœ¼ë¡œ ê³„ì‚°í•´ì„œ ëŠ˜ë ¤ì¤€ë‹¤ë„¤
+	pNode->vSize = _float2(vSize.x, vSize.y);
+
+	ImVec2 vNode_Rect_Max = vNode_Rect_Min + vSize;
+
+	//ë­ ë…¸ë“œ ë°•ìŠ¤?
+	m_pDrawList->ChannelsSetCurrent(0);
+	ImGui::SetCursorScreenPos(vNode_Rect_Min);
+	ImGui::InvisibleButton("node", vSize); //ë³´ì´ì§€ì•ŠëŠ” ë²„íŠ¼ Talon
+	//ë…¸ë“œ ì „ì²´ì— ë²„íŠ¼ì„ ê¹”ì•„ì„œ ë…¸ë“œ ì›€ì§ì¼ìˆ˜ ìˆê²Œí•´ì¤Œ
+	if (ImGui::IsItemHovered())
+	{//ë§ˆìš°ìŠ¤ê°€ ìœ„ì—ìˆê³  ìš°í´ë¦­ì„ í–ˆë‹¤? ê·¸ëŸ¼ ë§¤ë‰´ì°½ì„ì—°ë‹¤
+		iNode_hovered_in_scene = pNode->iID;
+		bOpen_Context_Menu |= ImGui::IsMouseClicked(1);
+	}
+
+	_bool bNode_Moving_Active = ImGui::IsItemActive(); //í´ë¦­ì¤‘ì´ëƒ?
+	if (bNode_Widgets_active || bNode_Moving_Active)
+		m_iNodeSelect = pNode->iID;
+	if (bNode_Moving_Active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) //ë“œë˜ê·¸ì¤‘ì´ëƒ?
+		pNode->vPos = _float2(pNode->vPos.x + io.MouseDelta.x, pNode->vPos.y + io.MouseDelta.y);
+
+	//ì„ íƒí•˜ê±°ë‚˜ ë§ˆìš°ìŠ¤ ìœ„ì— ì˜¬ë ¸ì„ë•Œ sceneì¸ê°€ hover í™•ì¸í•´ì„œ ìƒ‰ìƒìœ¼ë¡œ í‘œê¸°
+	ImU32 Node_Bg_Color = (iNode_hovered_in_list == pNode->iID ||
+		iNode_hovered_in_scene == pNode->iID || m_iNodeSelect == pNode->iID ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255));
+
+	//ë…¸ë“œ ì˜ ì™¸í˜•ì„ ì§ì ‘ ê·¸ë¦¬ëŠ”ê±°
+	//ë°°ê²½
+	m_pDrawList->AddRectFilled(vNode_Rect_Min, vNode_Rect_Max, Node_Bg_Color, 4.f);
+	//í…Œë‘ë¦¬ì°¨ë‘ë¦¬ë‘ë¦¬ë‘ë¦¬ë‘ë¦¬
+	m_pDrawList->AddRect(vNode_Rect_Min, vNode_Rect_Max, IM_COL32(100, 100, 100, 255), 4.f);
+	//ë™ê¸€ë±…ì´ ì…ë ¥ë…¸ë“œ ì¶œë ¥ë…¸ë“œ
+	
+	m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetStartSlotPos().x, m_vOffset.y + pNode->GetStartSlotPos().y), fNode_Slot_Radius, IM_COL32(150, 150, 150, 150));
+	
+	if (!pLink->SlotEnd.empty())
+	{
+		for (uint32_t i = 0; i < pLink->SlotEnd.size(); ++i)
+			m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetEndSlotPos(i,pLink->SlotEnd.size()).x, m_vOffset.y + pNode->GetEndSlotPos(i, pLink->SlotEnd.size()).y), fNode_Slot_Radius, IM_COL32(150, 150, 150, 150));
+	}
+
+}
+
+void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
+{
+	CBTRoot::BTROOT_DESC SequenceDesc;
+	_string PopupID = _string(pPopupName) + " Popup";
+	_string InputName = _string(pPopupName) + " Name :";
+	_char Name[32]{};
+	_char NameBuffer[32]{};
+	UPtr<CBTRoot>  pNode{ nullptr };
+	ImGui::OpenPopup(PopupID.c_str());
+
+	if (ImGui::BeginPopup(PopupID.c_str(), ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text(InputName.c_str());
+		if (ImGui::InputText("##NodeName", NameBuffer, IM_ARRAYSIZE(NameBuffer))) //ì´ë¦„ ì…ë ¥
+			m_AddNodeName = _string(pPopupName) + " " + NameBuffer;
+		
+		if (ImGui::Button("Add"))
+		{
+			int32_t iIndex = 0;
+			m_bPopup = false;
+			SequenceDesc.m_GuiNode = GUINODE(eType, m_pBeHavior->Get_NodeID()++, m_AddNodeName.c_str(), _float2(vPos.x, vPos.y), 0.5f, _float4(100, 100, 200, 255));
+			SequenceDesc.m_GuiLink = (GUINODE_LINK(2));
+			
+			if (auto iter = m_pBeHavior->Find_Node(m_pBeHavior->Get_NodeID()))
+			{
+				MSG_BOX("Failed : Node Index Problem");
+				ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+				return;
+			}
+
+			if (eType == BEHAVIOR::SELECTOR)
+				pNode = CBTSelector::Create(&SequenceDesc);
+			else if(eType == BEHAVIOR::SECQUNCE)
+				pNode = CBTSecqunce::Create(&SequenceDesc);
+
+			if (nullptr == pNode)
+			{
+				ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+				return;
+			}
+				
+			m_BTNodesTmp.push_back(std::move(pNode));
+			ImGui::CloseCurrentPopup();
+		}
+		
+		if (ImGui::Button("Cancle"))
+		{
+			m_bPopup = false;
+			ImGui::CloseCurrentPopup();
+		}
+			
+		ImGui::EndPopup();
+	}
+
+	//m_BTNodes[ETOUI(BEHAVIOR::SECQUNCE)].push_back());
+}
+
+_bool CNodeEditor::Link_Connect_Check(int32_t iSlot)
+{
+	//í˜„ì¬ ë…¸ë“œ ë§í¬ì— ë‹´ê²¨ìˆëŠ”ê±° startê¸°ì¤€(ë…¸ë“œì˜ id)ìœ¼ë¡œ endë‘ ì—°ê²°ë˜ê²Œ ë˜ì–´ìˆê³ 
+	//ì´ê±° nodelink ê¸°ì¤€ìœ¼ë¡œ ìŠ¤íƒ€íŠ¸ì— ë‹´ê²¨ìˆëŠ”ê±°ë¥¼ ë‹¤ì‹œ ëˆ„ë¥´ë ¤ê³ í•˜ë©´ ë–¨ì–´ì§€ê²Œ í•´ì•¼ëŒ
+	//ë§Œì•½ ë…¸ë“œì˜ idê°€ nodeslinkì— ì•ˆë‹´ê²¨ ìˆìœ¼ë©´ í•´ë‹¹ ë…¸ë“œì˜ ìŠ¤íƒ€íŠ¸ ì§€ì ìœ¼ë¡œ ë¶€í„° ë‚˜ê°€ëŠ” ì„ ì€ ì—†ìŒ //ì´ê²½ìš°ëŠ” falseì§€
+	//ê·¼ë° end ì§€ì ì€ë˜ ì—°ê²° ë˜ì–´ìˆì„ìˆ˜ë„ ìˆìŒ
+	if ( - 1 != iSlot)
+		return true;
+	return false;
+}
+
+
+
 void CNodeEditor::Reset_CurrentNode()
 {
 	m_CurrentNode.eType = NODETYPE::END;
 	m_CurrentNode.pCurrentNode = nullptr;
+	m_CurrentNode.pCurrentLink = nullptr;
 	m_CurrentNode.vSlotPos = _float2(0,0);
 	m_CurrentNode.iSelectedSlot = -1;
 	m_CurrentNode.bSelected = false;
 }
-
 void CNodeEditor::Draw_NodeLine(_float2 iStartnode, _float2 iEndNode, _bool bMouse)
 {
 	_float2 p1{}, p2{}, input{}, output{};
-	input = iStartnode; //µ¿±Û¹ğÀÌ ÁÂÇ¥
+	input = iStartnode; //ë™ê¸€ë±…ì´ ì¢Œí‘œ
 	output = iEndNode;
-	XMStoreFloat2(&p1, XMLoadFloat2(&m_vOffset) +   //Äµ¹ö½º È­¸é ÁÂÇ¥¿¡ ³» ÁÂÇ¥ ´õÇØ¼­ È­¸é ÁÂÇ¥·Î
+	XMStoreFloat2(&p1, XMLoadFloat2(&m_vOffset) +   //ìº”ë²„ìŠ¤ í™”ë©´ ì¢Œí‘œì— ë‚´ ì¢Œí‘œ ë”í•´ì„œ í™”ë©´ ì¢Œí‘œë¡œ
 		XMLoadFloat2(&input));
 
 	if (bMouse)
@@ -380,21 +670,52 @@ void CNodeEditor::Draw_NodeLine(_float2 iStartnode, _float2 iEndNode, _bool bMou
 		XMStoreFloat2(&p2, XMLoadFloat2(&m_vOffset) +
 			XMLoadFloat2(&output));
 	}
-	//¼± ±×¸®¶ó°í
+	//ì„  ê·¸ë¦¬ë¼ê³ 
 	m_pDrawList->AddBezierCubic(ImVec2(p1.x, p1.y), ImVec2(p1.x, p1.y) + ImVec2(+50, 0),
 		ImVec2(p2.x, p2.y) + ImVec2(-50, 0), ImVec2(p2.x, p2.y), IM_COL32(200, 200, 100, 255), 3.f);
 }
-
 _bool CNodeEditor::ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radius)
 {
-	ImVec2 vMousePos = ImGui::GetMousePos();
+	ImGuiIO& io = ImGui::GetIO();
+	ImVec2 vMousePos = io.MousePos;
 	_vector vScreen{}, vMouse{ vMousePos.x, vMousePos .y,0,1.f};
 	vScreen = XMLoadFloat2(&m_vOffset) + XMLoadFloat2(&vSlotPos);
 	
 	_float fDist = XMVectorGetX(XMVector2LengthSq(vScreen - vMouse));
-	_bool  bhovered = fDist <= fNode_Radius * fNode_Radius;
-	
+	_bool  bhovered = fDist <= (fNode_Radius +1.f) * (fNode_Radius +1.f);
+	if (bhovered)
+		int32_t i = 0;
 	return bhovered;
+}
+
+void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
+{
+	if (nullptr == pParent)
+		return;
+	GUINODE_LINK* pLink = &pParent->Get_GuiNodeLink();
+	GUINODE* pNode_inp{ nullptr };
+	GUINODE* pNode_out{ nullptr };
+	BEHAVIOR eType = pParent->Get_GuiNodeInfo().eMyType;
+	if (BEHAVIOR::SELECTOR == eType || BEHAVIOR::SECQUNCE == eType)
+	{
+		auto pNode = static_cast<CBTSelector*>(pParent);
+		auto& pNodeArray = (*pNode->Get_Nodes());
+		for (size_t i = 0; i < pNodeArray.size(); ++i)
+		{
+			if(nullptr == pNodeArray[i])
+				continue;
+			int32_t iParentIndex = pNodeArray[i]->Get_GuiNodeLink().iStartIdx;
+
+			pNode_inp = &pNodeArray[i]->Get_GuiNodeInfo();
+			pNode_out = &pParent->Get_GuiNodeInfo();
+			Draw_NodeLine(pNode_inp->GetStartSlotPos(), pNode_out->GetEndSlotPos(iParentIndex, pParent->Get_GuiNodeLink().SlotEnd.size()));
+
+
+			if ((*pNode->Get_Nodes())[i]->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION)
+			Recursive_Call_Node(pNodeArray[i].get());
+		}
+	}
+	
 }
 
 

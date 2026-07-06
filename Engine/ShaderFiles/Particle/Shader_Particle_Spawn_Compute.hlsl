@@ -18,14 +18,14 @@ struct ParticleData
     uint alive;
     uint loop;
     float4 color;
-    uint texIndex;
     
 };
 
 cbuffer CB_SPAWN_COUNT : register(b6)
 {
     uint g_iSpawnCount;
-    float3 pad;
+    uint g_iMaxParticles; // 추가: 버퍼 크기
+    float2 pad;
 };
 
 StructuredBuffer<SPAWN_DATA> gSpawnBuffer : register(t0);
@@ -35,12 +35,14 @@ RWStructuredBuffer<ParticleData> gParticles : register(u1);
 [numthreads(256, 1, 1)]
 void CSMain(uint id : SV_DispatchThreadID)
 {
-    if (id >= g_iSpawnCount)      // count는 별도 cbuffer(b6)에서
+    if (id >= g_iSpawnCount)
         return;
 
     uint index = gDeadList.Consume();
-    SPAWN_DATA s = gSpawnBuffer[id]; // id로 인덱싱 → 파티클마다 다른 데이터
+    if (index >= g_iMaxParticles)   // 언더플로우로 인한 쓰레기값 방어
+        return;
 
+    SPAWN_DATA s = gSpawnBuffer[id];
     ParticleData p = (ParticleData) 0;
     p.position = s.position;
     p.velocity = s.velocity;
@@ -49,6 +51,7 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.size = s.size;
     p.alive = 1;
     p.color = s.color;
-
     gParticles[index] = p;
 }
+
+

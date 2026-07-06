@@ -23,6 +23,7 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
+class CNodeEditor;
 class CParticleManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
@@ -252,18 +253,25 @@ public:
 #pragma endregion
 
 #pragma region ANIM_MANAGER
-#pragma region PARTICLE_MANAGER
 public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
+#pragma region NODE_EDITOR
+	HRESULT	   OpenBeHavior(CHandle Handle);
+#pragma endregion
+
+#pragma region PARTICLE_MANAGER
 public:
-	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
-		_bool bLoop = false, _float fSpawnInterval = 0.1f);
+	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
+		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+		_bool bLoop, _float fSpawnInterval);
 
-	HRESULT Add_Particle(UPtr<class CParticle> particle);
+	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
-	HRESULT SpawnRibbon(const _float4& start, const _float4& end);
+	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
+		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
+		_float fFlickerInterval, _float fDuration = 1.f);
 #pragma endregion
 
 public:
@@ -304,6 +312,7 @@ private:
 	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CNodeEditor>		m_pNodeEditor{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
 

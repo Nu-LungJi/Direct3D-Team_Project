@@ -106,30 +106,61 @@ namespace Engine
 	}KEYFRAME;
 
 	
+
+	///////BeHavior 아
+	typedef struct tagactionnode
+	{
+		_string NodeName{};
+		_float2  vPos{}, vSize{};
+		_float   fSpeed{};
+	}ACTION_NODE;
+	typedef struct tagdestnode
+	{
+		tagdestnode() = default;
+		tagdestnode(_string Name, BEHAVIOR eBType, int32_t iNode)
+		{
+			DestName = Name; eType = eBType; iDestNode = iNode;
+		}
+		_string  DestName{};
+		int32_t iDestNode{ -1 };
+
+		BEHAVIOR eType{ BEHAVIOR::END };
+
+		void Reset() { DestName = "";  eType = BEHAVIOR::END; iDestNode = -1; }
+
+	}DEST_NODE;
 	typedef struct tagimguinode
 	{
-		int32_t		iID;
-		_string		Name;
-		_float2		vPos, vSize;
-		_float		fValue;
-		_float4		vColor;
-		int32_t		iStartCnt, iEndCnt;
-
-		tagimguinode(int id, const char* name, const _float2& pos, float value, const _float4& color, int inputs_count, int outputs_count) { iID = id; Name =  name; vPos = pos; fValue = value; vColor = color; iStartCnt = inputs_count; iEndCnt = outputs_count; }
-
-		_float2 GetStartSlotPos(int slot_no) const  { return _float2(vPos.x, vPos.y + vSize.y * ((float)slot_no + 1) / ((float)iStartCnt + 1)); }
-		_float2 GetEndSlotPos(int slot_no) const { return _float2(vPos.x + vSize.x, vPos.y + vSize.y * ((float)slot_no + 1) / ((float)iEndCnt+ 1)); }
-	}GUINODE;
-	
-	typedef struct tagimguinodelink
-	{
-		int32_t		iStartIdx, iStartSlot, iEndIdx, iEndSlot;
-
-		tagimguinodelink(int32_t input_idx, int32_t input_slot, int32_t output_idx, int32_t output_slot )
-		{
-			iStartIdx = input_idx; iStartSlot = input_slot; iEndIdx = output_idx; iEndSlot = output_slot;
+		uint32_t	iID{};
+		_string		Name{};
+		_float2		vPos{}, vSize{};
+		_float		fValue{};
+		_float4		vColor{};
+		BEHAVIOR    eMyType{};
+		tagimguinode() = default;
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, const _float2& pos, float value, const _float4& color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
+		_float2 GetStartSlotPos() const  { return _float2(vPos.x + vSize.x, vPos.y + vSize.y);}
+		_float2 GetEndSlotPos(int slot_no  ,int32_t iMaxCnt) const { return  _float2(vPos.x, vPos.y + vSize.y * ((float)slot_no + 1) / ((float)iMaxCnt )); }
+		DEST_NODE Get_DestInfo() {
+			DEST_NODE Dst{};
+			Dst.DestName = Name;
+			Dst.eType = eMyType;
+			Dst.iDestNode = iID;
+			return Dst;
 		}
+	}GUINODE;
 
+	typedef struct tagimguinodelink
+	{//이거다 이거
+		int32_t					iStartIdx{ -1 };
+		DEST_NODE				ParentNode;
+		std::vector<DEST_NODE>  SlotEnd{};
+		
+		tagimguinodelink() = default;
+		tagimguinodelink(int32_t iEnd)
+		{
+			SlotEnd.resize(iEnd);
+		}
 	}GUINODE_LINK;
 	typedef struct tagParticleSpawnData
 	{
@@ -148,11 +179,18 @@ namespace Engine
 	} PARTICLE_EMIT_REQUEST;
 	typedef struct tagimguiCurrentNode
 	{
+		tagimguiCurrentNode() = default;
+		tagimguiCurrentNode(GUINODE* pNode, GUINODE_LINK* pLink, int32_t iSlot)
+		{
+			pCurrentNode = pNode; pCurrentLink = pLink;  iSelectedSlot = iSlot;
+
+		}
 		GUINODE* pCurrentNode{ nullptr };
+		GUINODE_LINK* pCurrentLink{ nullptr };
 		int32_t  iSelectedSlot{ -1 }, iD{ -1 };
 		_float2  vSlotPos;
 		_bool	 bSelected = false;
-
+		
 		NODETYPE eType = NODETYPE::END;
 	}GUICURRENT_NODE;
 	typedef struct tagBeamVertex
@@ -160,5 +198,34 @@ namespace Engine
 		_float3 vPosition;
 		_float2 vUV;
 	}BEAM_VERTEX;
+
+
+
+
+	typedef struct ChunkHeader
+	{
+		uint32_t type;
+		uint32_t size;
+	}CHUCKHEADER;
+
+	typedef struct MODEL_FILE_HEADER
+	{
+		bool bHasBone;
+		bool bHasAnimation;
+
+		uint32_t MeshCount;
+		uint32_t MaterialCount;
+		uint32_t AnimationCount;
+		uint32_t BoneCount;
+
+	}MODEL_FILE_HEADER;
+
+	typedef struct tagParticleSpecies {
+		
+	}PARTICLE_SPECIES;
+
+
+
+	///////NodeEditor용
 
 }

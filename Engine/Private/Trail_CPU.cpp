@@ -7,11 +7,7 @@ CTrail_CPU::CTrail_CPU()
 {
 }
 
-CTrail_CPU::CTrail_CPU(const CTrail_CPU& rhs)
-    : CParticle(rhs)
-    , m_Desc{ rhs.m_Desc }
-{
-}
+
 
 CTrail_CPU::~CTrail_CPU()
 {

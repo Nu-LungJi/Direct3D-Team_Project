@@ -8,10 +8,12 @@ class  CBTRoot : public CEngineBase
 {
 public:
 	DECLARE_DERIVED_TYPE(CBTRoot, CEngineBase)
-
+public:
 	typedef struct tagbtroot
 	{
-		_string NodeName;
+		GUINODE		 m_GuiNode;
+		GUINODE_LINK m_GuiLink;
+		_string		 NodeName;
 	}BTROOT_DESC;
 
 protected:
@@ -20,15 +22,18 @@ protected:
 	
 	virtual HRESULT Initalize(void* pArg);
 public:
-
+	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
+	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
 	virtual HRESULT	Priority_Update(_float fTimeDelta) PURE;
 	virtual HRESULT	Update(_float fTimeDelta)		   PURE;
 	virtual HRESULT	Late_Update(_float fTimeDelta)	   PURE;
 public:
 	virtual EVALUATE		Evaluate() PURE;
-	const _string&		Get_NodeName() { return m_NodeName; }
+	const ACTION_NODE&		Get_NodeInfo() { return m_NodeInfo; }
 protected:
-	std::string							m_NodeName;
+	ACTION_NODE							m_NodeInfo;
+	GUINODE								m_GuiNode;
+	GUINODE_LINK						m_GuiLink;
 
 };
 

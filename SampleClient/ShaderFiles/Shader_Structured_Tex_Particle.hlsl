@@ -11,7 +11,6 @@ struct ParticleData
     uint alive;
     uint loop;
     float4 color;
-    uint texIndex;
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
