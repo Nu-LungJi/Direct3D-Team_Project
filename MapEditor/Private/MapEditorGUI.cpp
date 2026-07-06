@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MapEditorGUI.h"
 #include "GameInstance.h"
+#include "MapMeshObject.h"
 
 NS_USING(Client)
 
@@ -135,6 +136,19 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	ImGui::Separator();
 	DrawGizmoToolbar();
+
+	ImGui::Separator();
+	bool bMapMeshInstancing = E::CMapMeshObject::IsInstancingEnabled();
+	if (ImGui::Checkbox("MapMesh Instancing", &bMapMeshInstancing))
+	{
+		E::CMapMeshObject::SetInstancingEnabled(bMapMeshInstancing);
+	}
+	const auto& instancingStats = E::CMapMeshObject::GetInstancingStats();
+	ImGui::Text("Mode: %s", instancingStats.bEnabled ? "Instanced" : "Normal");
+	ImGui::Text("Objects: %u", instancingStats.iObjects);
+	ImGui::Text("Batches: %u", instancingStats.iBatches);
+	ImGui::Text("Instances: %u", instancingStats.iInstances);
+	ImGui::Text("DrawCalls: %u", instancingStats.iDrawCalls);
 
 	ImGui::Separator();
 	m_pHierarchy->UpdateGUI(fTimeDelta);

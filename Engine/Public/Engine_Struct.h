@@ -51,7 +51,7 @@ namespace Engine
 		_float4 specular{};
 		_float3 pos{};
 		_float range{};
-		_float3 att{};//ê°ì‡ 
+		_float3 att{};//°¨¼è
 		_float _pad{};
 	} POINT_LIGHT;
 
@@ -64,12 +64,12 @@ namespace Engine
 		_float range{};
 		_float3 direction{};
 		_float spot{};
-		_float3 att{};//ê°ì‡ 
+		_float3 att{};//°¨¼è
 		_float _pad{};
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE í™œìš©í•˜ê¸°
+		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE È°¿ëÇÏ±â
 
 		_float3  LightDirection;
 		_float3  LightColor;
@@ -86,10 +86,10 @@ namespace Engine
 
 	typedef struct tagPostProcess
 	{
-		_float DistortionIntensity;  // ì™œê³¡ ê°•ë„
-		_float ChromaticIntensity;   // ìƒ‰ìˆ˜ì°¨ ê°•ë„
-		_float VignetteIntensity;    // ë¹„ë„¤íŒ… ê°•ë„
-		_float VignetteSmoothness;   // ë¹„ë„¤íŒ…
+		_float DistortionIntensity;  // ¿Ö°î °­µµ
+		_float ChromaticIntensity;   // »ö¼öÂ÷ °­µµ
+		_float VignetteIntensity;    // ºñ³×ÆÃ °­µµ
+		_float VignetteSmoothness;   // ºñ³×ÆÃ
 	} POSTPROCESS;
 	typedef struct tagUiDesc
 	{
@@ -107,7 +107,7 @@ namespace Engine
 
 	
 
-	///////BeHavior ì•„
+	///////BeHavior ¾Æ
 	typedef struct tagactionvalue
 	{
 		tagactionvalue() = default;
@@ -155,7 +155,7 @@ namespace Engine
 	}GUINODE;
 
 	typedef struct tagimguinodelink
-	{//ì´ê±°ë‹¤ ì´ê±°
+	{//ÀÌ°Å´Ù ÀÌ°Å
 		int32_t					iStartIdx{ -1 };
 		DEST_NODE				ParentNode;
 		std::vector<DEST_NODE>  SlotEnd{};
@@ -227,9 +227,9 @@ namespace Engine
 
 
 
-	///////NodeEditorìš©
+	///////NodeEditor¿ë
 
-	// ì—¬ëŸ¬ ì²­í¬ë¥¼ ê´€ë¦¬í•  ë•Œ keyë¡œ ì‚¬ìš©í•  ChunkCoord
+	// ¿©·¯ Ã»Å©¸¦ °ü¸®ÇÒ ¶§ key·Î »ç¿ëÇÒ ChunkCoord
 	typedef struct tagMapChunkCoord
 	{
 		int64_t x = 0;
@@ -241,4 +241,39 @@ namespace Engine
 			return x == rhs.x && y == rhs.y && z == rhs.z;
 		}
 	}MAPCHUNK_COORD;
+
+	//----------------------------MapMeshObject ?¸ìŠ¤?´ì‹±------------------------
+	typedef struct tagMapMeshInstanceData
+	{
+		_float4x4 world;
+	} MAPMESH_INSTANCE_DATA;
+
+	typedef struct tagMapMeshBatchKey
+	{
+		std::string modelGroup;
+		std::string modelTag;
+
+		bool operator==(const tagMapMeshBatchKey& rhs) const
+		{
+			return modelGroup == rhs.modelGroup && modelTag == rhs.modelTag;
+		}
+	} MAPMESH_BATCH_KEY;
+
+	struct tagMapMeshBatchKeyHash
+	{
+		size_t operator()(const MAPMESH_BATCH_KEY& key) const noexcept
+		{
+			const size_t h1 = std::hash<std::string>{}(key.modelGroup);
+			const size_t h2 = std::hash<std::string>{}(key.modelTag);
+			return h1 ^ (h2 << 1);
+		}
+	};
+
+	//class CResStaticModel;
+	//typedef struct tagMapMeshBatch
+	//{
+	//	CResStaticModel* model = nullptr;
+	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
+	//} MAPMESH_BATCH;
+	//----------------------------MapMeshObject ?¸ìŠ¤?´ì‹±------------------------
 }

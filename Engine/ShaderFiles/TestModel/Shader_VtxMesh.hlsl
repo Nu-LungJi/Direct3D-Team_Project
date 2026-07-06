@@ -24,6 +24,10 @@ struct VS_IN
     float3 vTangent : TANGENT;
     float3 vBinormal : BINORMAL;    
     float2 vTexcoord : TEXCOORD0;
+    float4 iWorld0 : INSTANCE_WORLD0;
+    float4 iWorld1 : INSTANCE_WORLD1;
+    float4 iWorld2 : INSTANCE_WORLD2;
+    float4 iWorld3 : INSTANCE_WORLD3;
 };
 
 struct VS_OUT
@@ -42,16 +46,17 @@ VS_OUT VSMain(VS_IN In)
     VS_OUT Out;    
     
     float4x4 matWV, matWVP;
+    float4x4 matWorld = float4x4(In.iWorld0, In.iWorld1, In.iWorld2, In.iWorld3);
     
-    matWV = mul(g_matWorld, g_matView);
+    matWV = mul(matWorld, g_matView);
     matWVP = mul(matWV, g_matProj);
     
     Out.vPosition = mul(float4(In.vPosition, 1.f), matWVP);
-    Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
-    Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
-    Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
+    Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), matWorld));
+    Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), matWorld));
+    Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), matWorld));
     Out.vTexcoord = In.vTexcoord;
-    Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
+    Out.vWorldPos = mul(float4(In.vPosition, 1.f), matWorld);
     Out.vProjPos = Out.vPosition;
     return Out;
 }
@@ -77,7 +82,7 @@ struct PS_OUT
 
 PS_OUT PSMain(PS_IN In)
 {
-    PS_OUT Out;
+    PS_OUT Out = (PS_OUT)0;
     
     vector      vMtrlDiffuse = g_DiffuseTexture.Sample(LinearSampler, In.vTexcoord);
     
