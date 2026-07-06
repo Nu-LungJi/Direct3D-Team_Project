@@ -97,6 +97,12 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
 
+	// 컬링된 애면 렌더러 등록x
+	if (m_bRenderEnable == false)
+		return;
+
+	m_bRenderEnable = false;
+
 	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
 	{
 		return;

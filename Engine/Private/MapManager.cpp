@@ -4,6 +4,8 @@
 #include <fstream>
 #include <filesystem>
 
+#include "FlyCamera.h"
+#include "CollFrustum.h"
 NS_USING(Engine)
 
 namespace
@@ -267,6 +269,10 @@ void CMapManager::Update(_float fTimeDelta)
 	}
 
 	// 주변 3*3*3 Chunk들 중, m_Chunks에 존재하는거라면 Load
+	auto* pFlyCamera = dynamic_cast<CFlyCamera*>(CGameInstance::Get().GetActiveCamera());
+	if (pFlyCamera == nullptr || pFlyCamera->GetFrustumCollider() == nullptr)
+		return;
+	const auto& boundingFrustum = pFlyCamera->GetFrustumCollider()->GetBoundingFrustum();
 	for (const auto& coord : neededChunks)
 	{
 		auto iter = m_Chunks.find(coord);
@@ -279,6 +285,22 @@ void CMapManager::Update(_float fTimeDelta)
 		{
 			RequestLoadChunkAsync(coord);
 			//LoadChunk(coord);
+		}
+
+
+		// 카메라-Chunk 컬링
+		{
+			if (iter->second.loadState != EChunkLoadState::Loaded)
+				continue;
+
+			if (boundingFrustum.Intersects(iter->second.bounds))
+			{
+				for (const auto& hObject : iter->second.hObjects)
+				{
+					if (auto* obj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(hObject))
+						obj->SetRenderEnable(true);
+				}
+			}
 		}
 	}
 }

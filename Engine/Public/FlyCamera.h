@@ -2,6 +2,7 @@
 #include "CameraObject.h"
 NS_BEGIN(Engine)
 class CCollider;
+class CCollFrustum;
 class ENGINE_DLL CFlyCamera final : public CCameraObject
 {
 public:
@@ -21,6 +22,9 @@ public:
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
+ 
+public:
+	const CCollFrustum* GetFrustumCollider() const;
 
 private:
 	void MouseFix() const;

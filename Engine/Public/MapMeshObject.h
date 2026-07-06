@@ -44,6 +44,9 @@ public:
 	HRESULT SetModelResource(const std::string& modelGroupTag, const std::string& modelResTag);
 
 public:
+	void SetRenderEnable(_bool enable) { m_bRenderEnable = enable; }
+
+public:
 	struct INSTANCING_STATS
 	{
 		_bool bEnabled = true;
@@ -86,6 +89,8 @@ private:
 	static INSTANCING_STATS s_FrameStats;
 	static INSTANCING_STATS s_LastStats;
 
+private:
+	_bool m_bRenderEnable = false; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
 public:
 	static UPtr<CMapMeshObject> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
