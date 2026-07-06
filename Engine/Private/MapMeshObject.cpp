@@ -26,13 +26,13 @@ CMapMeshObject::~CMapMeshObject()
 
 HRESULT CMapMeshObject::InitializePrototype(void* pArg)
 {
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi");
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	if (!m_pResVertexShader || FAILED(m_pResVertexShader->Load()))
 	{
 		return E_FAIL;
 	}
 
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi");
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;

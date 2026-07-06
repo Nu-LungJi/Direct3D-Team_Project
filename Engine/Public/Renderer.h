@@ -19,7 +19,12 @@ public:
 
 public:
 	HRESULT Initialize();
+
+	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
+
 private:
+	HRESULT InitializeShaderResource();
+	HRESULT InitializeBackBuffer();
 	HRESULT InitializeOffscreen();
 	HRESULT InitializeShadow();
 	HRESULT InitializeFullscreen();
@@ -31,8 +36,8 @@ private:
 	HRESULT InitilizePostProcess();
 	HRESULT InitializeGFSDK_SSAO();
 
+	
 public:
-	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 	HRESULT Draw();
 	void FrameEnd();
 
@@ -68,13 +73,12 @@ private:
 	SPtr<CResVertexShader>		m_pBlendVertexShader{};
 	SPtr<CResPixelShader>		m_pBlendPixelShader{};
 
-	ComPtr<ID3D11Texture2D>			m_pBackBufferActualTexture{};
-	ComPtr<ID3D11Texture2D>          m_pBackBufferCopyTexture{};
-	ComPtr<ID3D11ShaderResourceView> m_pBackBufferCopySRV{};
+	ComPtr<ID3D11Texture2D>          m_pBackBufferTexture{};
+	ComPtr<ID3D11ShaderResourceView> m_pBackBufferSRV{};
 
 private:
 	SPtr<CResDynamicTexture2D> m_pShadowTex2D{};
-	SPtr<CResViewPort> m_pShadowVP{};
+	SPtr<CResViewPort> m_pShadowViewPort{};
 
 private:
 	SPtr<CResDynamicTexture2D> m_pDeathScreenRedFilterTex2D{};
@@ -84,7 +88,7 @@ private:
 private:
 	ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV{};
 	ComPtr<ID3D11DepthStencilView> m_pBackBufferDSV{};
-	SPtr<CResViewPort> m_pBackBufferVP{};
+	SPtr<CResViewPort> m_pBackBufferViewPort{};
 
 private:
 	SPtr<CResDynamicTexture2D> m_pLastTex2DBeforeFullScreenDraw{};
@@ -108,21 +112,30 @@ private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
 
 private:
-	HRESULT Render_ShadowMap(RENDER_CTX& ctx);
-	HRESULT	Render_DepthMap(RENDER_CTX& ctx);
-	HRESULT	Render_NonAlpha(RENDER_CTX& ctx);
-	HRESULT	Render_Alpha(RENDER_CTX& ctx);
-	HRESULT Render_OffScreen(RENDER_CTX& ctx);
+	HRESULT Render_ShadowMap();
+	HRESULT	Render_DepthMap();
+	HRESULT	Render_NonAlpha();
+	HRESULT	Render_Alpha();
+	HRESULT Render_OffScreen();
+	HRESULT Render_UserInterface();
+
+	HRESULT Render_Lighting();
+
+	HRESULT Render_PostProcess();
+
+	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
+	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
 	HRESULT Render_FullScreen();
 
 	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 #ifdef _DEBUG
 	VOID	PostProcessGUI();
 
 	HRESULT Initialize_Debugging();
-	HRESULT	Render_Debugging(const RENDER_CTX& ctx);
+	HRESULT	Render_Debugging();
 
 private:
 	XMFLOAT4X4					m_fDebugWorldMatrix[9];
@@ -136,23 +149,19 @@ private:
 #endif
 
 private:
-	HRESULT RenderPriority(const RENDER_CTX& ctx);
-	HRESULT RenderNonBlend(const RENDER_CTX& ctx);
-	HRESULT RenderBlend(const RENDER_CTX& ctx);
-	HRESULT RenderLight(const RENDER_CTX& ctx);
-	HRESULT RenderSkybox(const RENDER_CTX& ctx);
-	HRESULT RenderCollider(const RENDER_CTX& ctx);
-	HRESULT RenderParticle(const RENDER_CTX& ctx);
-	HRESULT RenderPostProcess(const RENDER_CTX& ctx);
-	HRESULT RenderUI(const RENDER_CTX& ctx);
+	HRESULT RenderPriority();
+	HRESULT RenderNonBlend();
+	HRESULT RenderBlend();
+	HRESULT RenderLight();
+	HRESULT RenderSkybox();
+	HRESULT RenderCollider();
+	HRESULT RenderParticle();
+	HRESULT RenderUI();
 
-	HRESULT RenderPBR(const RENDER_CTX& ctx);
-	HRESULT RenderPBR2(const RENDER_CTX& ctx);
-	
-	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
 	
 private:
-	_bool	ApplyFilter = { false };		// 필터 적용 ON-OFF
+	_bool			ApplyFilter = { false };		// 필터 적용 ON-OFF
+	RENDER_CTX		RenderContext = {};
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

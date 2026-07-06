@@ -525,7 +525,7 @@ HRESULT CGameInstance::InitializeResources()
 	
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
-	//./ShaderFiles
+	//ShaderFiles
 	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))
@@ -548,13 +548,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadCol", "./ShaderFiles/QuadCol/QuadCol.hlsl"))
-	{
-		if (FAILED(res->Load()))
-		{
-			return E_FAIL;
-		}
-	}
-	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -787,34 +780,6 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR", "../../Engine/ShaderFiles/PBR/VS_PBR.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR", "../../Engine/ShaderFiles/PBR/PS_PBR.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Deferred", "./ShaderFiles/Deferred Rendering/VS_Deferred.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_Deferred", "./ShaderFiles/Deferred Rendering/PS_Deferred.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -1329,7 +1294,7 @@ HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
 HRESULT CGameInstance::LoadMapData(const std::string& path)
-{
+{	
 	return m_pMapManager->LoadMapData(path);
 }
 HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)
