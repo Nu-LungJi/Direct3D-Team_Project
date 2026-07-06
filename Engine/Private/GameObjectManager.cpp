@@ -144,6 +144,10 @@ void CGameObjectManager::UpdateGUIDrawTreeNode(CGameObject* pObj)
 
 void CGameObjectManager::FrameStart()
 {
+	{
+		ZoneScopedN("CGameObjectManager_FrameStart");
+	}
+
 	if (!m_bTreeReBuild)
 	{
 		return;
@@ -343,6 +347,20 @@ void CGameObjectManager::DelLayer(std::string_view sLayerName)
 	FrameEnd();
 
 	SortLayer();
+}
+
+void CGameObjectManager::FixedUpdate(_float fTimeDelta)
+{
+	{
+		ZoneScopedN("CGameObjectManager_FixedUpdate");
+	}
+	for (auto& pObj : m_Tree)
+	{
+		if (!pObj->GetPendingDestroy())
+		{
+			pObj->FixedUpdate(fTimeDelta);
+		}
+	}
 }
 
 void CGameObjectManager::PriorityUpdate(_float fTimeDelta)

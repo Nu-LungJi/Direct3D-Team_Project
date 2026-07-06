@@ -44,6 +44,12 @@
 #include "ResTestModelMaterial.h"
 #include "ResTestModelBone.h"
 
+#include "ResPhysXTriMeshGeometry.h"
+#include "ResPhysXBoxGeometry.h"
+#include "ResPhysXSphereGeometry.h"
+#include "ResPhysXCapsuleGeometry.h"
+#include "ResPhysXMaterial.h"
+
 static const char* TAG_RES_GRP_PERMANENT_BUFFER = "PERMANENT_BUFFER";
 static const char* TAG_RES_GRP_PERMANENT_SHADER = "PERMANENT_SHADER";
 static const char* TAG_RES_GRP_PERMANENT_TEXTURE = "PERMANENT_TEXTURE";

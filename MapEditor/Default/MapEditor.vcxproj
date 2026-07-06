@@ -125,7 +125,7 @@
     </Link>
     <PreBuildEvent>
       <Command>cd /d $(SolutionDir)
-call CopyMapEditor.bat</Command>
+call CopyMapEditor.bat "$(Configuration)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -150,7 +150,7 @@ call CopyMapEditor.bat</Command>
     </Link>
     <PreBuildEvent>
       <Command>cd /d $(SolutionDir)
-call CopyMapEditor.bat</Command>
+call CopyMapEditor.bat "$(Configuration)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

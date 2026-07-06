@@ -32,6 +32,7 @@ protected:
 
 protected:
 	CTimer m_UpdateTimer{};
+	CTimer m_FixedUpdateTimer{};
 	CTimer m_MeasureTimer{};
 
 	uint32_t m_iMeasureUpdateCnt{};

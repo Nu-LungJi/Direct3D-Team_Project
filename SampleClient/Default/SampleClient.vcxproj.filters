@@ -70,6 +70,24 @@
     <Filter Include="GameObject\TestCollider">
       <UniqueIdentifier>{98c5a8e4-2bf9-481e-a667-3fdc3b61dcef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\PhysX">
+      <UniqueIdentifier>{243ae7a2-41e9-4636-8c84-385d065d145d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx">
+      <UniqueIdentifier>{724fae78-f8d4-47c3-81bb-10356cc8d895}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Terrain">
+      <UniqueIdentifier>{99e3d2a8-e90c-4ad3-b430-03c3773444d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Ball">
+      <UniqueIdentifier>{d2e9dd97-180f-44f6-b8d6-b7ce9f47413a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Box">
+      <UniqueIdentifier>{41d927b4-d289-4d1e-8a17-29332f266fde}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Capsule">
+      <UniqueIdentifier>{7b83671d-5cd1-4f24-8519-9695f9bf0a20}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -145,6 +163,24 @@
     <ClInclude Include="..\public\TestCollider.h">
       <Filter>GameObject\TestCollider</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LevelPhysX.h">
+      <Filter>Level\PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysX.h">
+      <Filter>GameObject\TestPhysx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXTerrain.h">
+      <Filter>GameObject\TestPhysx\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXBall.h">
+      <Filter>GameObject\TestPhysx\Ball</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXBox.h">
+      <Filter>GameObject\TestPhysx\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXCapsule.h">
+      <Filter>GameObject\TestPhysx\Capsule</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -202,6 +238,24 @@
     </ClCompile>
     <ClCompile Include="..\private\TestCollider.cpp">
       <Filter>GameObject\TestCollider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelPhysX.cpp">
+      <Filter>Level\PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysX.cpp">
+      <Filter>GameObject\TestPhysx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXTerrain.cpp">
+      <Filter>GameObject\TestPhysx\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXBall.cpp">
+      <Filter>GameObject\TestPhysx\Ball</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXBox.cpp">
+      <Filter>GameObject\TestPhysx\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXCapsule.cpp">
+      <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

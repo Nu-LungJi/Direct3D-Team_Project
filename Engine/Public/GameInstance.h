@@ -5,6 +5,12 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "DbgLineRender.h"
+
+NS_BEGIN(physx)
+class PxScene;
+class PxPhysics;
+NS_END
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -22,6 +28,8 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CAnimEdit_Manager;
+class CPhysXManager;
+class CDbgLineRender;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -32,6 +40,7 @@ private:
 
 public:
 	HRESULT InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID3D11Device>& ppDevice, ComPtr<ID3D11DeviceContext>& ppContext);
+	void FixedUpdateEngine(_float fFixedTimeDelta);
 	void UpdateEngine(_float fTimeDelta);
 	HRESULT Draw();
 	void UpdateGUI();
@@ -244,6 +253,19 @@ public:
 	HRESULT SetupTestModel();
 #pragma endregion
 
+#pragma region PHYSX_MANAGER
+public:
+	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
+	physx::PxScene* PxGetScene() const;
+	physx::PxPhysics* PxGetPhysics() const;
+#pragma endregion
+
+
+#pragma region DBG_LINE_RENDER
+public:
+	CDbgLineRender* GetDbgLineRender() const { return m_pDbgLineRender.get(); };
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -282,6 +304,8 @@ private:
 	//UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 };
 

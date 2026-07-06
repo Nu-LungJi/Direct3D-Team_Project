@@ -23,6 +23,15 @@
 #include "ComAnimator.h"
 #include "Light.h"
 #include "ComCollider.h"
+#include "PhysXManager.h"
+#include "DbgLineRender.h"
+
+#include "ComPxBoxCollider.h"
+#include "ComPxCapsuleCollider.h"
+#include "ComPxSphereCollider.h"
+#include "ComPxCollider.h"
+#include "ComPxRigidBody.h"
+#include "ComPxTriMeshCollider.h"
 
 NS_USING(Engine)
 
@@ -162,8 +171,25 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pPhysXManager = CPhysXManager::Create();
+	if (m_pPhysXManager == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pDbgLineRender = CDbgLineRender::Create(ppDevice.Get(), ppContext.Get());
+	if (m_pDbgLineRender == nullptr)
+	{
+		return E_FAIL;
+	}
 
     return S_OK;
+}
+
+void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
+{
+	m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
 }
 
 void CGameInstance::UpdateGUI()
@@ -201,7 +227,10 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	m_pSoundManager->UpdateGUI();
+	// 사운드 붙일때 부활
+	// m_pSoundManager->UpdateGUI();
+
+	m_pPhysXManager->UpdateGUI();
 
 	m_pImguiManager->Update_ImguiNodeEditor();
 	if (ImGui::Button("ShaderRebuild"))
@@ -223,11 +252,6 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
-	{
-		ZoneScopedN("InputManager_Update");
-		m_pDInputManager->Update_InputDev();
-	}
-	
 	// TODO: 마우스 가두기 함수화하기
 	{
 		if (CGameInstance::Get().KeyDown(DIK_TAB))
@@ -249,6 +273,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		}
 	}
 
+	// 사운드 붙일때 부활
+	if constexpr (false)
 	{
 		ZoneScopedN("SoundManager_Update");
 		m_pSoundManager->Update();
@@ -259,10 +285,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	//m_pParticleManager->Update(fTimeDelta);
 	m_pAnimEdit_Manager->Update(fTimeDelta);
 
-
 	{
-		ZoneScopedN("GameObjectManager_PriorityUpdate");
-		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+		m_pPhysXManager->Update(fTimeDelta);
 	}
 
 	{
@@ -280,7 +304,9 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pLevelManager->Update(fTimeDelta);
 	}
 
+	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 
+	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
@@ -314,16 +340,30 @@ void CGameInstance::Release_Engine()
 	m_pGameObjectManager.reset();
 	m_pRenderer.reset();
 	m_pFontManager.reset();
+	m_pDbgLineRender.reset();
 	m_pResourceManager.reset();
+	m_pPhysXManager.reset();
 	m_pGraphicDevice.reset();
 }
 
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
+	{
+		ZoneScopedN("InputManager_Update");
+		m_pDInputManager->Update_InputDev();
+	}
+
 	m_pLevelManager->FrameStart(fTimeDelta);
 	m_pGameObjectManager->FrameStart();
 	m_pColliderManager->FrameStart();
+
+
+
+	{
+		ZoneScopedN("GameObjectManager_PriorityUpdate");
+		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	}
 }
 void CGameInstance::FrameEnd(_float fTimeDelta) 
 {
@@ -332,6 +372,7 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 
 	m_pRenderer->FrameEnd();
 	m_pColliderManager->FrameEnd();
+	m_pDbgLineRender->FrameEnd();
 }
 
 void CGameInstance::MouseFix() const
@@ -691,6 +732,30 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
+	// 피직스관련
+	{
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxBoxCollider", CComPxBoxCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxCapsuleCollider", CComPxCapsuleCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxSphereCollider", CComPxSphereCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxTriMeshCollider", CComPxTriMeshCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxRigidBody", CComPxRigidBody::Create()))
+		{
+			return E_FAIL;
+		}
+	}
+	
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;
@@ -1107,5 +1172,21 @@ HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pR
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
+}
+#pragma endregion
+
+#pragma region PHYSX_MANAGER
+//void CGameInstance::PxStepSimulation(float fFixedDeltaTime)
+//{
+//	m_pPhysXManager->StepSimulation(fFixedDeltaTime);
+//}
+
+physx::PxScene* CGameInstance::PxGetScene() const
+{
+	return m_pPhysXManager->GetScene();
+}
+physx::PxPhysics* CGameInstance::PxGetPhysics() const
+{
+	return m_pPhysXManager->GetPhysics();
 }
 #pragma endregion

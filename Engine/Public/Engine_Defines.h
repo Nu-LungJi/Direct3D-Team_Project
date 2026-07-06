@@ -53,6 +53,7 @@ using namespace Microsoft::WRL;
 #include "Engine_Tag.h"
 #include "Engine_Assimp_Enum.h"
 #include "Engine_Base.h"
+#include "Engine_PhysxDefines.h"
 namespace E = Engine;
 
 // for study
