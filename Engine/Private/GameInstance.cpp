@@ -389,18 +389,22 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 
 
 #pragma region PARTICLE_MANAGER
-HRESULT CGameInstance::Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
+	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 	_bool bLoop, _float fSpawnInterval)
 {
-	return m_pParticleManager->Spawn(type, count, pSpawnData, bLoop, fSpawnInterval);
+	return m_pParticleManager->Spawn(sGroupTag, sTypeTag, count, pSpawnData, bLoop, fSpawnInterval);
 }
-HRESULT CGameInstance::Add_Particle(UPtr<CParticle> particle)
+
+HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
-	return m_pParticleManager->Add_Particle(std::move(particle));
+	return m_pParticleManager->Add_Particle(sGroupTag, sTypeTag, std::move(particle));
 }
-HRESULT CGameInstance::SpawnRibbon(const _float4& start, const _float4& end)
+HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
+	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
+	_float fFlickerInterval, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(start, end);
+	return m_pParticleManager->SpawnRibbon(quantity,start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, fDuration);
 }
 #pragma endregion
 
@@ -459,6 +463,14 @@ HRESULT CGameInstance::InitializeResources()
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_MATERIAL) })))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_INIT_PARTICLE) })))
 		{
 			return E_FAIL;
 		}
@@ -801,9 +813,35 @@ HRESULT CGameInstance::InitializeResources()
 	}
 	
 
+
+	
+		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
+			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
+
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
+
+		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
+
+
 	return S_OK;
 }
-
 HRESULT CGameInstance::InitializePrototype()
 {
 	if (AddPrototype("PERMANENT", "Prototype_Component_Transform", CComTransform::Create()))

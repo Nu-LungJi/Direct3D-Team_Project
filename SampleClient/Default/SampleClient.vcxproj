@@ -192,12 +192,14 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\Monster.h" />
     <ClInclude Include="..\public\Particle_Fire_CPU.h" />
+    <ClInclude Include="..\public\Particle_Fire_GPU.h" />
     <ClInclude Include="..\public\Particle_Ribbon.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
+    <ClInclude Include="..\public\Trail_Example.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -223,12 +225,14 @@ call CopySampleClient.bat</Command>
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\Monster.cpp" />
     <ClCompile Include="..\private\Particle_Fire_CPU.cpp" />
+    <ClCompile Include="..\private\Particle_Fire_GPU.cpp" />
     <ClCompile Include="..\private\Particle_Ribbon.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
+    <ClCompile Include="..\private\Trail_Example.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -245,8 +249,11 @@ call CopySampleClient.bat</Command>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
-    <FxCompile Include="..\ShaderFiles\Shader_Structured_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
     <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />

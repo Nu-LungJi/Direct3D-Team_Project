@@ -125,6 +125,28 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 	{
+   auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+   D3D11_MAPPED_SUBRESOURCE MRES;
+   if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+   {
+      CB_MATERIAL   CMMAT;
+      CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
+
+      CMMAT.NormalIntensity = 1.f;
+      CMMAT.RoughnessIntensity = 1.f;
+      CMMAT.MetallicIntensity = 1.f;
+      CMMAT.AmbientIntensity = 1.f;
+      CMMAT.SpecularIntensity = 1.f;
+
+      CMMAT.EmissiveColor = { 1.f, 0.f, 0.f };
+      CMMAT.EmissiveIntensity = 1.f;
+
+      memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+      pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+   }
+   pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+}
+	{
 		pContext->PSSetShaderResources(0, 1, m_pResTerrainTexture2D->GetSRV().GetAddressOf());
 	}
 

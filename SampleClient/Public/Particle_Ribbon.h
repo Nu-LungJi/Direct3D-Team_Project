@@ -11,7 +11,6 @@ public:
 
 private:
     explicit CParticle_Ribbon();
-    CParticle_Ribbon(const CParticle_Ribbon& rhs);
     virtual ~CParticle_Ribbon();
     virtual HRESULT Initialize(void* pArg) override;
 

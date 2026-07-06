@@ -129,7 +129,6 @@
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
@@ -174,6 +173,12 @@
     </ClInclude>
     <ClInclude Include="..\public\Monster.h">
       <Filter>GameObject\Monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Trail_Example.h">
+      <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_Fire_GPU.h">
+      <Filter>Particles</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -253,6 +258,9 @@
     <ClCompile Include="..\Private\Test_StaticModel.cpp">
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\Particle_Fire_GPU.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\Gobline.cpp">
@@ -270,6 +278,9 @@
     <ClCompile Include="..\private\Monster.cpp">
       <Filter>GameObject\Monsters</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\Trail_Example.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
@@ -281,13 +292,22 @@
     <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Shader_Structured_Particle.hlsl">
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

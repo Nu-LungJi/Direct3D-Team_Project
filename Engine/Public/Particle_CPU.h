@@ -35,12 +35,16 @@ public:
         std::pair<StringID, StringID> VSID;  // 버텍스 쉐이더
         std::pair<StringID, StringID> PSID;  // 픽셀 쉐이더
         PARTICLE_TYPE                  type;
+        MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
+
+        //모델이면 넣어줌
+        StringID sGroupTag;
+        StringID sResTag;
     };
 public:
     DECLARE_DERIVED_TYPE(CParticle_CPU, CParticle)
 protected:
     explicit CParticle_CPU();
-    CParticle_CPU(const CParticle_CPU& rhs);
     virtual ~CParticle_CPU();
 public:
     virtual HRESULT Initialize(void* pArg) override;
@@ -49,6 +53,8 @@ public:
     virtual void LateUpdate(E::_float fTimeDelta) override;
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
+    HRESULT Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+    HRESULT Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
 protected:
     // 자식 클래스가 반드시 구현해야 하는 실제 움직임 로직.
     // Simulate()가 살아있는 파티클 하나마다 이 함수를 호출해준다.
@@ -63,6 +69,10 @@ protected:
     std::vector<VTX_PARTICLE_INSTANCED_DATA> m_vecInstancedData; // 이번 프레임 살아있는 것만
     SPtr<class CResDynamicBuffer> m_pResInstancedBuffer;
     std::pair<StringID, StringID>  m_viBufferID;
+    SPtr<CResCBuffer>       m_pCBuffer;
+    SPtr<class CResCBuffer> m_pComCBuffer;
+    SPtr<CResSamplerState> m_pResSamplerState{};
+
     // m_pParticleTexture는 부모 CParticle이 CResTexture2D로 공통 소유
 
 };

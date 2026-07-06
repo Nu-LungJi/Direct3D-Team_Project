@@ -11,7 +11,6 @@ public:
 
 private:
     explicit CParticle_Fire_CPU();
-    CParticle_Fire_CPU(const CParticle_Fire_CPU& rhs);
     virtual ~CParticle_Fire_CPU();
     virtual HRESULT Initialize(void* pArg) override;
 private:

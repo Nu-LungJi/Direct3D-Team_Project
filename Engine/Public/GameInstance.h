@@ -256,7 +256,6 @@ public:
 #pragma endregion
 
 #pragma region ANIM_MANAGER
-#pragma region PARTICLE_MANAGER
 public:
 	HRESULT SetupTestModel();
 #pragma endregion
@@ -271,13 +270,17 @@ public:
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
 #pragma endregion
 
+#pragma region PARTICLE_MANAGER
 public:
-	HRESULT Spawn(PARTICLE_TYPE type, uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
-		_bool bLoop = false, _float fSpawnInterval = 0.1f);
+	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
+		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+		_bool bLoop, _float fSpawnInterval);
 
-	HRESULT Add_Particle(UPtr<class CParticle> particle);
+	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
-	HRESULT SpawnRibbon(const _float4& start, const _float4& end);
+	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
+		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
+		_float fFlickerInterval, _float fDuration = 1.f);
 #pragma endregion
 
 #pragma region MAP_MANAGER

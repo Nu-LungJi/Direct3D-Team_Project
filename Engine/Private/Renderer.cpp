@@ -390,7 +390,7 @@ HRESULT CRenderer::Draw() {
     if (FAILED(Render_PostProcess()))     return E_FAIL;
 
     // UI
-    if (FAILED(Render_UserInterface()))  return E_FAIL;
+   // if (FAILED(Render_UserInterface()))  return E_FAIL;
 
     {
         m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
@@ -445,7 +445,7 @@ HRESULT CRenderer::Render_ShadowMap(){
 HRESULT CRenderer::Render_DepthMap() {
     ZoneScopedN("Render_DepthMap");
     {
-        ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetDepth->GetRTV().Get() };
+        ID3D11RenderTargetView* pRTVs[1] = {nullptr };
         m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
         m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
@@ -458,6 +458,7 @@ HRESULT CRenderer::Render_DepthMap() {
         if (FAILED(Bind_CameraAttribute(pGameCam))) return E_FAIL;
 
         if (FAILED(RenderNonBlend()))            return E_FAIL;
+
     }
 
     return S_OK;
@@ -706,12 +707,12 @@ HRESULT CRenderer::Render_UserInterface(){
     {
         auto pUICame = CGameInstance::Get().GetCamera("UI");
         if (nullptr == pUICame) return S_OK;
-    
+       
         RenderContext.matProj = pUICame->GetProj();
         RenderContext.matView = pUICame->GetView();
         RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
         RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
-    
+       
         if (FAILED(Bind_CameraAttribute(pUICame)))
         {
             return E_FAIL;
