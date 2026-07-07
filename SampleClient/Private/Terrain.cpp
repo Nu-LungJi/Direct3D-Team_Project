@@ -106,7 +106,13 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	const auto& viBuffer = m_pResTerrainVIBuffer;
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	if (ctx.pass == RENDERPASS::DEPTH) {			// 오류 메세지 ID3D11DeviceContext::DrawIndexed 제거용
+		pContext->PSSetShader(nullptr, nullptr, 0);
+	}
+	else {
+		pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	}
+	
 
 	ID3D11Buffer* vertexBuffers[] = {
 		viBuffer->GetVertexBuffer().Get()

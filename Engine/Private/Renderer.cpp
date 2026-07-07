@@ -463,7 +463,7 @@ HRESULT CRenderer::Render_DepthMap() {
         auto pGameCam = CGameInstance::Get().GetActiveCamera();
         if (nullptr == pGameCam)    return S_OK;
 
-        if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
+        if (FAILED(Reset_RenderContext(RENDERPASS::DEPTH, pGameCam))) return E_FAIL;
 
         if (FAILED(Bind_CameraAttribute(pGameCam))) return E_FAIL;
 
