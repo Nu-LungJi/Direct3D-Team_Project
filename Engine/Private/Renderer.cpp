@@ -518,17 +518,12 @@ HRESULT CRenderer::Render_NonAlpha() {
         m_pContext->RSSetState(rasterizer->GetRasterizerState().Get());
     }
 
-    if (FAILED(RenderPriority()))        return E_FAIL;
+    if (FAILED(RenderPriority()))       return E_FAIL;
 
-    if (FAILED(RenderNonBlend()))
-    {
-        return E_FAIL;
-    }
-    if (FAILED(RenderLight()))
-    {
-        return E_FAIL;
-    }
-    
+    if (FAILED(RenderNonBlend()))       return E_FAIL;
+
+    if (FAILED(RenderLight()))          return E_FAIL;
+
     // UnBind RenderTargets
     {
         ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };

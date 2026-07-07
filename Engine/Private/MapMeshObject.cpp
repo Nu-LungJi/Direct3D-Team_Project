@@ -82,10 +82,10 @@ HRESULT CMapMeshObject::Initialize(void* pArg)
 	}
 
 	{
-		CComModelInstance::DESC Desc{};
+		CComStaticModelInstance::DESC Desc{};
 		Desc.sGroupTag = m_modelResourceGroup;
 		Desc.sResTag = m_modelResourceTag;
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelInstance", &Desc, &m_pComModelInstance)))
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelInstance", &Desc, &m_pComModelInstance)))
 		{
 			return E_FAIL;
 		}
@@ -102,7 +102,7 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	if (m_bRenderEnable == false)
 		return;
 
-	m_bRenderEnable = false;
+	//m_bRenderEnable = false;
 
 	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
 	{
@@ -145,6 +145,7 @@ HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 			return E_FAIL;
 		}
 
+		
 		{
 			CB_PER_OBJECT cbPerObject{};
 			cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
@@ -157,35 +158,78 @@ HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 			pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		}
 
-		pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
-		pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
-		pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
-
 		auto pModel = m_pComModelInstance->GetModel();
+		if (nullptr == pModel)	return E_FAIL;
 		const uint32_t iNumMeshes = pModel->Get_NumMeshes();
-		for (uint32_t i = 0; i < iNumMeshes; ++i)
-		{
+		for (uint32_t i = 0; i < iNumMeshes; ++i) {
 			const auto& viBuffer = pModel->GetMeshes()[i];
 
 			ID3D11Buffer* vertexBuffers[] = { viBuffer->GetVertexBuffer().Get() };
 			uint32_t strides[] = { viBuffer->GetVertexStride() };
 			uint32_t offsets[] = { 0 };
+
 			pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 			pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 			pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-			pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
-
-			const auto& rasterizer = CGameInstance::GetConst().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-			if (rasterizer)
 			{
-				pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+				SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+				if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+					DiffuseTexture = Resource;
+				}
+				pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
+
+				SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+				if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+					NormalTexture = Resource;
+				}
+				pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
+
+				SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+				if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+					SMROTexture = Resource;
+				}
+				pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
+
+				SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+				if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+					EmissiveTexture = Resource;
+				}
+				pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
+			}
+			{
+				auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+				D3D11_MAPPED_SUBRESOURCE MRES;
+				if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+				{
+					CB_MATERIAL   CMMAT;
+					CMMAT.AlbedoColor = m_fAlbedoColor;
+
+					CMMAT.NormalIntensity = m_fNormalIntensity;
+					CMMAT.RoughnessIntensity = m_fRoughnessIntensity;
+					CMMAT.MetallicIntensity = m_fMetallicIntensity;
+					CMMAT.AmbientIntensity = m_fAmbientIntensity;
+					CMMAT.SpecularIntensity = m_fSpecularIntensity;
+
+					CMMAT.EmissiveColor = m_fEmissiveColor;
+					CMMAT.EmissiveIntensity = m_fEmissiveIntensity;
+
+					memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+					pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+				}
+				pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 			}
 
 			pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-			++s_FrameStats.iDrawCalls;
+
+			ComPtr<ID3D11ShaderResourceView> NullSRV = { nullptr };
+			pContext->PSSetShaderResources(0, 1, NullSRV.GetAddressOf());
+			pContext->PSSetShaderResources(1, 1, NullSRV.GetAddressOf());
+			pContext->PSSetShaderResources(2, 1, NullSRV.GetAddressOf());
+			pContext->PSSetShaderResources(3, 1, NullSRV.GetAddressOf());
 		}
+		++s_FrameStats.iDrawCalls;
+		
 
 		return S_OK;
 	}

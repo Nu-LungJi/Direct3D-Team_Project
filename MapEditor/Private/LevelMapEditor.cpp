@@ -48,7 +48,7 @@ HRESULT CLevelMapEditor::Initialize()
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
 		Desc.fNear = 0.1f;
-		Desc.fFar = 100.f;
+		Desc.fFar = 1000.f;
 		Desc.sObjectTag = "FlyCam";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
@@ -71,7 +71,7 @@ HRESULT CLevelMapEditor::Initialize()
 		Desc.fHeight = g_iWinSizeY;
 		Desc.sObjectTag = "UICam";
 		Desc.vEye = { 0.f, 0.f, -0.1f };
-
+	
 		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
 			"99_CAMERA", &Desc))
 		{
@@ -88,6 +88,10 @@ HRESULT CLevelMapEditor::Initialize()
 	{
 		return E_FAIL;
 	}
+
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;		// 월드에 전역조명 추가
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	//CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 0.f, 0.f }, 30.f, 10.f);
 
 	return S_OK;
 }
