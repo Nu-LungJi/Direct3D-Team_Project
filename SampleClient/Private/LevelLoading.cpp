@@ -16,9 +16,18 @@
 #include "LevelLightMap.h"
 #include "LevelCollider.h"
 #include "TestCollider.h"
+#include "LevelPhysX.h"
+#include "TestPhysX.h"
+#include "TestPhysXTerrain.h"
+#include "TestPhysXBox.h"
+#include "TestPhysXBall.h"
+#include "TestPhysXCapsule.h"
 #include "LightObject.h"
+#include "CTexUI.h"
+#include "FlipBook.h"
+#include "UI_Item.h"
 
-#include "Gobline.h"
+#include "TestGob.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -96,6 +105,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::LIGHTMAP:
 		pNewLevel = CLevelLightMap::Create();
 		break;
+	case LEVEL::PHYSX:
+		pNewLevel = CLevelPhysX::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -109,6 +121,7 @@ HRESULT CLevelLoading::LoadEnd()
 
 void CLevelLoading::ThreadStart()
 {
+
 	switch (m_eNextLevelIndex)
 	{
 	case LEVEL::LOGO:
@@ -140,10 +153,9 @@ void CLevelLoading::ThreadStart()
 				//return E_FAIL;
 			}
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
 		{
-			int a = 0;
-			//return false;
+			return;
 		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
 			{
@@ -161,7 +173,8 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CTestGob::Create())))
 				{
 					return false;
 				}
@@ -183,15 +196,66 @@ void CLevelLoading::ThreadStart()
 
 				return  true;
 			});
-
 	}
 	break;
 	case LEVEL::UIEDITOR:
+		/* Texture */
 		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
 		{
 			res->Load();
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create("./Resources/SampleClient/Textures/T_Map_OverlandPaper_D.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/T_Map_OverlandPaper_D.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Back_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Back_4k.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Ready_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Ready_4k.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Outer_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Outer_4k.png")))
+		{
+			res->Load();
+		}
+		/* Mask */
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "MASK_UI_T_ButtonFlameTopClamp", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_ButtonFlameTopClamp.png")))
+		{
+			res->Load();
+		}
+
+		/* FlipBook */
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_LoadingWidget_Flame", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Flame.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_LoadingWidget_Houses", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Houses.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_VFXSmokeSim_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_VFXSmokeSim_D.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_VFX_T_ItemSpark_8x8_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_VFX_T_ItemSpark_8x8_D.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_VFX_T_PopVFX_8x8_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_VFX_T_PopVFX_8x8_D.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_VFX_BlinkingStars", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_VFX_BlinkingStars.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_UI_T_MagicEffect1", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/FlipBook/UI_T_MagicEffect1.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_UI_T_SmokeWispy_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/FlipBook/UI_T_SmokeWispy_D.png")))
 		{
 			res->Load();
 		}
@@ -199,6 +263,21 @@ void CLevelLoading::ThreadStart()
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
 			{
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_BackGround", CBackGround::Create())))
+				{
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", CTexUI::Create())))
+				{
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", CFlipBook::Create())))
+				{
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_UI_Item", CUI_Item::Create())))
 				{
 					return false;
 				}
@@ -211,7 +290,11 @@ void CLevelLoading::ThreadStart()
 		break;
 	case LEVEL::ANIMEDITOR:
 	{
-
+		//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		//{
+		//	int a = 0;
+		//	//return false;
+		//}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
 			{
 		
@@ -263,7 +346,6 @@ void CLevelLoading::ThreadStart()
 			int a = 0;
 			//return false;
 		}
-
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LIGHTMAP", [this]()
 			{
 				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
@@ -284,6 +366,65 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 				
+				return  true;
+			});
+	}
+	break;
+	case LEVEL::PHYSX:
+	{
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
+
+
+
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PHYSX", [this]()
+			{
+				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+				{
+					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
+					{
+						//MSG_BOX("");
+						return false;
+					}
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysX", CTestPhysX::Create())))
+				{
+					return false;
+				}
+				//TestPhysXTerrain
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXTerrain", CTestPhysXTerrain::Create())))
+				{
+					return false;
+				}
+
+				//TestPhysXBox
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox", CTestPhysXBox::Create())))
+				{
+					return false;
+				}
+
+				//TestPhysXBall
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBall", CTestPhysXBall::Create())))
+				{
+					return false;
+				}
+
+				//TestPhysXCapsule
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXCapsule", CTestPhysXCapsule::Create())))
+				{
+					return false;
+				}
 				return  true;
 			});
 	}

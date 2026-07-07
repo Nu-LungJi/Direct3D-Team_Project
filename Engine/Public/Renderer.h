@@ -70,6 +70,9 @@ private:
 	SPtr<CResVertexShader>		m_pPBRVertexShader{};
 	SPtr<CResPixelShader>		m_pPBRPixelShader{};
 
+	SPtr<CResVertexShader>		m_pResVertexShader{};
+	SPtr<CResPixelShader>		m_pResPixelShader{};
+
 	SPtr<CResVertexShader>		m_pBlendVertexShader{};
 	SPtr<CResPixelShader>		m_pBlendPixelShader{};
 
@@ -160,7 +163,7 @@ private:
 
 	
 private:
-	_bool			ApplyFilter = { false };		// « ≈Õ ¿˚øÎ ON-OFF
+	_bool			ApplyFilter = { false };		// ÌïÑÌÑ∞ Ï†ÅÏö© ON-OFF
 	RENDER_CTX		RenderContext = {};
 
 public:

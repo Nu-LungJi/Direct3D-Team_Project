@@ -16,7 +16,7 @@ CBaseApp::~CBaseApp()
 
 HRESULT CBaseApp::Loop()
 {
-	constexpr float MAX_DELTA = 0.1f;
+	//constexpr float MAX_DELTA = 1.f;
 	const float fPerfTime = Engine::CGameInstance::Get().UpdateTimeProvider();
 
 	m_UpdateTimer.AppendCurrTime(fPerfTime);
@@ -25,27 +25,32 @@ HRESULT CBaseApp::Loop()
 			const float fGoalTime = m_UpdateTimer.Get_GoalTime();
 		float fCurrTime = m_UpdateTimer.Get_CurrTime();
 
-		float fDeltaTime = std::min(fCurrTime, MAX_DELTA);
+		//float fDeltaTime = std::min(fCurrTime, MAX_DELTA);
+		float fDeltaTime = fCurrTime;
 
 		{
 			ZoneScopedN("FrameStart");
 			FrameStart(fDeltaTime);
 		}
 
-		//m_FixedUpdateTimer.AppendCurrTime(fDeltaTime);
-		//if (m_FixedUpdateTimer.Get_JustFinished())
-		//{
-		//	const float fFixedGoalTime = m_FixedUpdateTimer.Get_GoalTime();
-		//	float fFixedCurrTime = m_FixedUpdateTimer.Get_CurrTime();
+		m_FixedUpdateTimer.AppendCurrTime(fDeltaTime);
+		if (m_FixedUpdateTimer.Get_JustFinished())
+		{
+			const float fFixedGoalTime = m_FixedUpdateTimer.Get_GoalTime();
+			float fFixedCurrTime = m_FixedUpdateTimer.Get_CurrTime();
 
-		//	while (fFixedCurrTime >= fFixedGoalTime)
-		//	{
-		//		FixedUpdate(fFixedGoalTime);
-		//		fFixedCurrTime -= fFixedGoalTime;
-		//	}
+			while (fFixedCurrTime >= fFixedGoalTime)
+			{
+				{
+					ZoneScopedN("FixedUpdate");
+					FixedUpdate(fFixedGoalTime);
+				}
+				
+				fFixedCurrTime -= fFixedGoalTime;
+			}
 
-		//	m_FixedUpdateTimer.Reset(fFixedCurrTime);
-		//}
+			m_FixedUpdateTimer.Reset(fFixedCurrTime);
+		}
 
 		{
 			ZoneScopedN("Update"); 
@@ -53,9 +58,10 @@ HRESULT CBaseApp::Loop()
 		}
 
 
-
-		fDeltaTime = fmodf(fDeltaTime, fGoalTime);
-		m_UpdateTimer.Reset(fDeltaTime);
+		float remain = fmodf(fDeltaTime, fGoalTime);
+		m_UpdateTimer.Reset(remain);
+		//fDeltaTime = fmodf(fDeltaTime, fGoalTime);
+		//m_UpdateTimer.Reset(fDeltaTime);
 
 		float fUpdateGoalTime = m_UpdateTimer.Get_GoalTime();
 		float fInterpolatoin = m_UpdateTimer.Get_CurrTime() / fUpdateGoalTime;
@@ -94,23 +100,22 @@ HRESULT CBaseApp::Loop()
 	return S_OK;
 }
 
-void CBaseApp::UpdateGUI()
+void CBaseApp::UpdateGUI() const
 {
 	Engine::CGameInstance::Get().ImguiNewFrame();
 
-	//ImGui::Begin("Mesure");
-	////ImGui::Text("FU/s: %i", m_iMeasureFixedUpdateCntPerSec);
-	//ImGui::Text("U/s: %i", m_iMeasureUpdateCntPerSec);
-	////ImGui::Text("R/s: %i", m_iMeasureRenderCntPerSec);
-	//ImGui::End();
-
 	Engine::CGameInstance::Get().UpdateGUI();
+}
+
+void CBaseApp::RenderGUI() const
+{
 
 	Engine::CGameInstance::Get().ImguiEndFrameAndRender();
 }
 
 void CBaseApp::FixedUpdate(_float fTimeDelta)
 {
+	Engine::CGameInstance::Get().FixedUpdateEngine(fTimeDelta);
 }
 
 void CBaseApp::Update(_float fTimeDelta)
@@ -136,7 +141,8 @@ HRESULT CBaseApp::Render(_float fInterpolation)
 #ifdef IMGUI_ENABLE
 	if (Engine::CGameInstance::Get().ImguiGetActive())
 	{
-		UpdateGUI();
+		ZoneScopedN("RenderGUI");
+		RenderGUI();
 	}
 #endif
 
@@ -151,6 +157,12 @@ HRESULT CBaseApp::Render(_float fInterpolation)
 void CBaseApp::FrameStart(_float fTimeDelta)
 {
 	Engine::CGameInstance::Get().FrameStart(fTimeDelta);
+#ifdef IMGUI_ENABLE
+	if (Engine::CGameInstance::Get().ImguiGetActive())
+	{
+		UpdateGUI();
+	}
+#endif
 }
 
 void CBaseApp::FrameEnd(_float fTimeDelta)
@@ -161,6 +173,7 @@ void CBaseApp::FrameEnd(_float fTimeDelta)
 HRESULT CBaseApp::Initialize(const ENGINE_DESC& engineDesc)
 {
 	m_UpdateTimer.Set_GoalTime(1.f / 60.f);
+	m_FixedUpdateTimer.Set_GoalTime(1.f/ 60.);
 	m_MeasureTimer.Set_GoalTime(1.f);
 
 	Engine::ENGINE_DESC EngineDesc{ engineDesc };

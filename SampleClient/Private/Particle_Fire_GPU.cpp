@@ -27,7 +27,7 @@ HRESULT CParticle_Fire_GPU::Initialize(void* pArg)
     desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_MESH" };
     desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_MESH" };
 
-    desc.sGroupTag = "TEST";
+    desc.sGroupTag = "Rock1";
     desc.sResTag = "Static_Model_Resource";
 
 

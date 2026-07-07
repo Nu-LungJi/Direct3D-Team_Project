@@ -196,26 +196,14 @@
     <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\ActionNode">
       <UniqueIdentifier>{34a81dda-27be-4b5f-987d-0d8910cb8c11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\Model">
+      <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\UI\UITool">
       <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel">
-      <UniqueIdentifier>{4c25b2ac-573c-40ee-88e7-0f70de63247b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Mesh">
-      <UniqueIdentifier>{1a12f9fc-dc1d-45cc-aab6-2cb7353e89a3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Bone">
-      <UniqueIdentifier>{bc24a058-4739-4344-b77f-23414a27730c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Animation">
-      <UniqueIdentifier>{82bcb8c8-265d-4ffc-ae85-34d63c9d456c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Animation\Chanel">
-      <UniqueIdentifier>{8dcf1b80-d4bb-479a-ac3a-10c4930d8b06}</UniqueIdentifier>
     </Filter>
     <Filter Include="Particle">
       <UniqueIdentifier>{589fcc85-1017-4ac2-af22-a72a33cda30d}</UniqueIdentifier>
@@ -225,9 +213,6 @@
     </Filter>
     <Filter Include="Resource\Buffer\StructuredBuffer">
       <UniqueIdentifier>{597ecc2e-6e12-4bca-a731-710e41604dc9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Material">
-      <UniqueIdentifier>{45ea22c3-2923-44e3-a37e-472383f5a015}</UniqueIdentifier>
     </Filter>
     <Filter Include="Worker">
       <UniqueIdentifier>{4b54a874-7f22-406a-87ee-4ab1ddb1f1ec}</UniqueIdentifier>
@@ -295,6 +280,60 @@
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PhysX">
+      <UniqueIdentifier>{6bae5342-64b4-433d-9a1a-504418ae115e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PhysX\Manager">
+      <UniqueIdentifier>{f5a5eb2a-888e-4d69-bfbd-c08eacd2a9f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX">
+      <UniqueIdentifier>{ffcf98bd-cb43-4bcb-aeb7-f1c348a7cd4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DbgLineRender">
+      <UniqueIdentifier>{73dc1ce5-5e43-456c-9516-480eec51ec73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PhysX\Manager\Listeners">
+      <UniqueIdentifier>{a0000210-3a95-4f92-a279-706ab301b8f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider">
+      <UniqueIdentifier>{060add1d-1058-4620-ac1c-9efccfc640bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\RigidBody">
+      <UniqueIdentifier>{ef069a81-7cf2-4664-904d-b30ae8d04d26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Box">
+      <UniqueIdentifier>{0ec1bad3-3526-4018-b870-041113a940d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Sphere">
+      <UniqueIdentifier>{4aa2412d-f417-447b-8ad3-fdce453d4a28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Capsule">
+      <UniqueIdentifier>{add171b8-6e1d-48a8-aac0-97b85f3f8bd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\TriMesh">
+      <UniqueIdentifier>{268cfd1a-926a-45bb-8ca0-77076c713cf6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX">
+      <UniqueIdentifier>{9c4cf5b7-ec80-4892-90ff-c9dac3d1361a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Material">
+      <UniqueIdentifier>{45111356-3fc4-4f24-b687-6f5e2c3ed218}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry">
+      <UniqueIdentifier>{f9f0768f-a162-4a0c-a772-5c7e9a7ddafd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Box">
+      <UniqueIdentifier>{2f83e41a-cfe1-4714-8db8-6268104900ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Sphere">
+      <UniqueIdentifier>{2ba6b853-162b-4d7b-acc6-a78fea6c3430}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Capsule">
+      <UniqueIdentifier>{cc252147-9b76-442d-b3bc-cc4cc6b08dbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\TriMesh">
+      <UniqueIdentifier>{64989bcc-7d16-41d1-81b6-b3e54f558f9c}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\MapMeshObject">
       <UniqueIdentifier>{771de9b5-bb1c-4900-8366-21c558f64744}</UniqueIdentifier>
     </Filter>
@@ -330,6 +369,21 @@
     </Filter>
     <Filter Include="Particle\Trail">
       <UniqueIdentifier>{fa144d76-945b-4f75-9b1e-e904b23c45de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\UIManager">
+      <UniqueIdentifier>{0a583505-4c42-45b5-8ff5-c8a7ae4d942c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\TexUI">
+      <UniqueIdentifier>{95b3224a-ec84-44dc-bea3-82786515b1a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\FlipBook">
+      <UniqueIdentifier>{1e0a8593-1c36-4a42-b050-de4ea209625e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\Decorator">
+      <UniqueIdentifier>{47e93750-d693-43cf-905b-e6410128780a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Manager\Octree">
+      <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -591,24 +645,6 @@
     <ClInclude Include="..\Public\ResModel.h">
       <Filter>Resource\Model</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ResTestModel.h">
-      <Filter>Resource\TestModel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelMesh.h">
-      <Filter>Resource\TestModel\Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelBone.h">
-      <Filter>Resource\TestModel\Bone</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelAnim.h">
-      <Filter>Resource\TestModel\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelChanel.h">
-      <Filter>Resource\TestModel\Animation\Chanel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelMaterial.h">
-      <Filter>Resource\TestModel\Material</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -636,11 +672,14 @@
     <ClInclude Include="..\Public\BTActionNode.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\UIManager.h">
-      <Filter>GameObject\UI\UITool</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UITex.h">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIManager.h">
+      <Filter>GameObject\UI\UIManager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\ComModelInstance.h">
       <Filter>Component\Model\ComModelInstance</Filter>
@@ -690,6 +729,60 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\PhysXManager.h">
+      <Filter>PhysX\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Engine_PhysxDefines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DbgLineRender.h">
+      <Filter>DbgLineRender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\IPhysicsListener.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysxManagerListener.h">
+      <Filter>PhysX\Manager\Listeners</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxCollider.h">
+      <Filter>Component\PhysX\Collider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxRigidBody.h">
+      <Filter>Component\PhysX\RigidBody</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxBoxCollider.h">
+      <Filter>Component\PhysX\Collider\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxSphereCollider.h">
+      <Filter>Component\PhysX\Collider\Sphere</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxCapsuleCollider.h">
+      <Filter>Component\PhysX\Collider\Capsule</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxTriMeshCollider.h">
+      <Filter>Component\PhysX\Collider\TriMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\IPhysicsSync.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXMaterial.h">
+      <Filter>Resource\PhysX\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXGeometry.h">
+      <Filter>Resource\PhysX\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXBoxGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXSphereGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Sphere</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Capsule</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\MapMeshObject.h">
       <Filter>GameObject\MapMeshObject</Filter>
     </ClInclude>
@@ -719,6 +812,15 @@
     </ClInclude>
     <ClInclude Include="..\public\Trail_CPU.h">
       <Filter>Particle\Trail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecorator.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Engine_Json_Util.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\OctreeNode.h">
+      <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -950,24 +1052,6 @@
     <ClCompile Include="..\Private\ResModel.cpp">
       <Filter>Resource\Model</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\ResTestModel.cpp">
-      <Filter>Resource\TestModel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelMesh.cpp">
-      <Filter>Resource\TestModel\Mesh</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelBone.cpp">
-      <Filter>Resource\TestModel\Bone</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelAnim.cpp">
-      <Filter>Resource\TestModel\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelChanel.cpp">
-      <Filter>Resource\TestModel\Animation\Chanel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelMaterial.cpp">
-      <Filter>Resource\TestModel\Material</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
@@ -1082,8 +1166,68 @@
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp">
+      <Filter>GameObject\Manager\Octree</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\Trail_CPU.cpp">
       <Filter>Particle\Trail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp">
+      <Filter>GameObject\Manager\Octree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysXManager.cpp">
+      <Filter>PhysX\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DbgLineRender.cpp">
+      <Filter>DbgLineRender</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysxManagerListener.cpp">
+      <Filter>PhysX\Manager\Listeners</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCollider.cpp">
+      <Filter>Component\PhysX\Collider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRigidBody.cpp">
+      <Filter>Component\PhysX\RigidBody</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxBoxCollider.cpp">
+      <Filter>Component\PhysX\Collider\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxSphereCollider.cpp">
+      <Filter>Component\PhysX\Collider\Sphere</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCapsuleCollider.cpp">
+      <Filter>Component\PhysX\Collider\Capsule</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxTriMeshCollider.cpp">
+      <Filter>Component\PhysX\Collider\TriMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXMaterial.cpp">
+      <Filter>Resource\PhysX\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Sphere</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Capsule</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UITex.cpp">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIManager.cpp">
+      <Filter>GameObject\UI\UIManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecorator.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1104,9 +1248,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\BTActionNode.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\UIManager.cpp">
-      <Filter>GameObject\UI\UITool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1134,7 +1275,7 @@
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
       <Filter>ShaderFiles\DeferredRendering</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
@@ -1154,6 +1295,21 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
       <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

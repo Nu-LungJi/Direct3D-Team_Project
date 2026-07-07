@@ -71,70 +71,47 @@ HRESULT CImporter::ImportFBXFolder(const std::string& strLevelName, const std::s
 HRESULT CImporter::AssimpFBX(const std::string& fbxFileName)
 {
     m_index = 0;
-    {
-        Assimp::Importer importer;
-        importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, true);      // FBX 파일의 계층 구조를 원본 그대로 유지시킴.
-        importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.025f);      // 모델을 import할 때, 배율을 지정.
-
-        const aiScene* pScene =importer.ReadFile(fbxFileName, aiProcess_ConvertToLeftHanded);
-
-        if (!pScene)
-            return E_FAIL;
-
-        m_bHasAnimation = pScene->HasAnimations();
-
-        for (uint32_t i = 0; i < pScene->mNumMeshes; ++i)
-        {
-            if (pScene->mMeshes[i]->HasBones())
-            {
-                m_bHasBone = true;
-                break;
-            }
-        }
-    }
-
-
+    m_bHasAnimation = false;
+    m_bHasBone = false;
 
     uint32_t iFlag = 0;
-    iFlag |= aiProcess_ConvertToLeftHanded;                        // DirectX 왼손 좌표계 표준화
-    iFlag |= aiProcess_PopulateArmatureData;                     // 애니메이션 최적화(본-노드 사이의 연산 단순화)
-    iFlag |= aiProcess_GlobalScale;                              // Blender 편집 크기와 DirectX에서의 크기를 동기화
-    iFlag |= aiProcess_OptimizeMeshes;                           // 너무 잘게 쪼개진 메쉬 통합시켜 DrawCall 낮춤.
-    iFlag |= aiProcess_ImproveCacheLocality;                     // 캐시 히트율을 증가 시킴. (데이터 순서를 재배치)
-    iFlag |= aiProcessPreset_TargetRealtime_Fast;                  // 빠른 로딩이 필요한 최적화 옵션 모음.
-
-    if (!m_bHasBone && !m_bHasAnimation)
-    {
-        iFlag |= aiProcess_PreTransformVertices;
-    }
+    iFlag |= aiProcess_ConvertToLeftHanded;
+    iFlag |= aiProcess_PopulateArmatureData;
+    iFlag |= aiProcess_GlobalScale;
+    iFlag |= aiProcess_ImproveCacheLocality;
+    iFlag |= aiProcessPreset_TargetRealtime_Fast;
+//    iFlag |= aiProcess_OptimizeMeshes;
 
     Assimp::Importer importer;
+
 
     const aiScene* pScene = importer.ReadFile(fbxFileName, iFlag);
 
     if (!pScene)
         return E_FAIL;
 
-    if (m_bHasBone)
+    m_bHasAnimation = pScene->HasAnimations();
+
+    for (uint32_t i = 0; i < pScene->mNumMeshes; ++i)
     {
-        Ready_Bones(pScene->mRootNode, -1);
+        if (pScene->mMeshes[i]->HasBones())
+        {
+            m_bHasBone = true;
+            break;
+        }
     }
+
+    if (m_bHasBone)
+        Ready_Bones(pScene->mRootNode, -1);
 
     if (pScene->HasMeshes())
-    {
         Ready_Mesh(pScene, m_bHasBone);
-    }
 
     if (pScene->HasMaterials())
-    {
         Ready_Material(pScene);
-    }
-
 
     if (m_bHasAnimation)
-    {
         Ready_Animation(pScene);
-    }
 
     return S_OK;
 }
@@ -149,11 +126,11 @@ HRESULT CImporter::ExportFBX(const std::string& outpath)
     if (!m_bHasBone && !m_bHasAnimation)
         prefix = "SM_";
     else if (!m_bHasBone && m_bHasAnimation)
-        prefix = "SMA_";
+        prefix = "SM_";
     else if (m_bHasBone && m_bHasAnimation)
         prefix = "SK_";
     else
-        prefix = "SKA_";
+        prefix = "SK_";
 
     std::string finalPath =
         path.parent_path().string() + "/" +
@@ -832,6 +809,9 @@ HRESULT CImporter::Load_Channel(CHANNELDATA& ChannelData, const aiNodeAnim* pAIC
         ChannelData.KeyFrames->emplace_back(KeyFrame);
     }
 
+
+    return S_OK;
+
 }
 
 HRESULT CImporter::Ready_Mesh(const aiScene* scene, bool _bHasBone)
@@ -853,6 +833,15 @@ void CImporter::ProcessNonAnimMesh(aiMesh* mesh, const aiScene* scene)
     std::shared_ptr<std::vector<VTXMESH>> vertices = std::make_shared<std::vector<VTXMESH>>();
     std::shared_ptr<std::vector<uint32_t>> indices = std::make_shared<std::vector<uint32_t>>();
 
+
+    vertices->reserve(mesh->mNumVertices);
+
+    uint32_t indexCount = 0;
+    for (UINT i = 0; i < mesh->mNumFaces; ++i)
+    {
+        indexCount += mesh->mFaces[i].mNumIndices;
+    }
+    indices->reserve(indexCount);
 
     for (UINT i = 0; i < mesh->mNumVertices; ++i)
     {
@@ -992,14 +981,23 @@ void CImporter::ProcessAnimMesh(aiMesh* mesh, const aiScene* scene, std::string 
     std::shared_ptr<std::vector<XMFLOAT4X4>> m_OffsetMatrices = std::make_shared<std::vector<XMFLOAT4X4>>();
     std::shared_ptr<std::vector<VTXANIMMESH>> vertices = std::make_shared<std::vector<VTXANIMMESH>>();
     std::shared_ptr<std::vector<uint32_t>> indices = std::make_shared<std::vector<uint32_t>>();
-
-    m_Boneindices->resize(m_iNumBones);
-    m_BoneMatrices->resize(m_iNumBones);
-    m_OffsetMatrices->resize(m_iNumBones);
+    if (m_iNumBones > 0)
+    {
+        m_Boneindices->resize(m_iNumBones);
+        m_BoneMatrices->resize(m_iNumBones);
+        m_OffsetMatrices->resize(m_iNumBones);
+    }
     std::shared_ptr<CMesh> fbxmesh = std::make_shared<CMesh>();
 
 
+    vertices->reserve(mesh->mNumVertices);
 
+    uint32_t indexCount = 0;
+    for (UINT i = 0; i < mesh->mNumFaces; ++i)
+    {
+        indexCount += mesh->mFaces[i].mNumIndices;
+    }
+    indices->reserve(indexCount);
 
 
     for (UINT i = 0; i < mesh->mNumVertices; ++i)
@@ -1059,20 +1057,23 @@ void CImporter::ProcessAnimMesh(aiMesh* mesh, const aiScene* scene, std::string 
     {
         m_iNumBones = 1;
 
-        int32_t        iBoneIndex = { -1 };
-
-        iBoneIndex = Get_BoneIndex(_name.data());
+        int32_t iBoneIndex = Get_BoneIndex(_name.data());
 
         if (-1 == iBoneIndex)
             return;
 
-        XMFLOAT4X4       OffsetMatrix;
+        XMFLOAT4X4 OffsetMatrix;
         XMStoreFloat4x4(&OffsetMatrix, XMMatrixIdentity());
 
-        m_Boneindices->push_back(iBoneIndex);
-        m_OffsetMatrices->push_back(OffsetMatrix);
-        m_BoneMatrices->resize(iBoneIndex);
+        m_Boneindices->resize(1);
+        m_BoneMatrices->resize(1);
+        m_OffsetMatrices->resize(1);
+
+        (*m_Boneindices)[0] = iBoneIndex;
+        XMStoreFloat4x4(&(*m_BoneMatrices)[0], XMMatrixIdentity());
+        (*m_OffsetMatrices)[0] = OffsetMatrix;
     }
+
     else {
         for (size_t i = 0; i < m_iNumBones; i++)
         {

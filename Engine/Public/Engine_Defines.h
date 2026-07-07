@@ -38,6 +38,8 @@ using namespace Microsoft::WRL;
 #include <future>
 #include <random>
 #include <limits>
+#include <fstream>
+#include <variant>
 
 // bitwise 
 #pragma warning(disable: 26813)
@@ -53,6 +55,7 @@ using namespace Microsoft::WRL;
 #include "Engine_Tag.h"
 #include "Engine_Assimp_Enum.h"
 #include "Engine_Base.h"
+#include "Engine_PhysxDefines.h"
 namespace E = Engine;
 
 // for study
@@ -66,6 +69,7 @@ namespace E = Engine;
 #include <ImGuizmo.h>
 #include <imgui_node_editor.h>
 #include <nlohmann/json.hpp>
+#include "Engine_Json_Util.h"
 
 
 using namespace Engine;

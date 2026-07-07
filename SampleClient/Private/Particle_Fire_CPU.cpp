@@ -38,7 +38,7 @@ HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
     desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_MESH" };
     desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_MESH" };
     
-    desc.sGroupTag = "TEST";
+    desc.sGroupTag = "Rock1";
     desc.sResTag = "Static_Model_Resource";
 
 
@@ -50,15 +50,14 @@ HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
 void CParticle_Fire_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 {
     // 부력 (하드코딩) - Spawn()으로 받은 초기 velocity 위에 계속 더해짐
-    p.vVelocity.y += 4.f * fTimeDelta;
-    p.vVelocity.x *= (1.f - 0.5f * fTimeDelta);
-    p.vVelocity.z *= (1.f - 0.5f * fTimeDelta);
-
-    p.vPosition.x += p.vVelocity.x * fTimeDelta;
-    p.vPosition.y += p.vVelocity.y * fTimeDelta;
-    p.vPosition.z += p.vVelocity.z * fTimeDelta;
-    p.vColor = _float4((1.f), (0/255.f), (0/255.f), 1.f);
-    p.vColor.w = 1.f - (p.fAge / p.fLifeTime);
+    //p.vVelocity.y += Randf(1,4) * fTimeDelta;
+    //p.vVelocity.x *= (1.f - 0.5f * fTimeDelta);
+    //p.vVelocity.z *= (1.f - 0.5f * fTimeDelta);
+    //
+   // p.vPosition.x += p.vVelocity.x * fTimeDelta;
+   // p.vPosition.y += p.vVelocity.y * fTimeDelta;
+   // p.vPosition.z += p.vVelocity.z * fTimeDelta;
+   // p.vColor.w = 1.f - (p.fAge / p.fLifeTime);
      
 }
 

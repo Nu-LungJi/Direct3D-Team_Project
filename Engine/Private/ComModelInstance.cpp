@@ -28,12 +28,15 @@ HRESULT CComModelInstance::Initialize(void* pArg)
     }
 
     if (pArg != nullptr) {
+        // 모델 Instance는 하나의 메모리를 모두 공유한다.
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
         m_pModel = CGameInstance::Get().GetResourceFirst<CResModel>(pDesc->sGroupTag, pDesc->sResTag);
         if (m_pModel == nullptr)
         {
 			return E_FAIL;
         }
+
+        m_Buffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE);
     }
 	
     return S_OK;
@@ -41,6 +44,7 @@ HRESULT CComModelInstance::Initialize(void* pArg)
 
 HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex)
 {
+    // 나중에 Bind 할떄 animation 정보를 던져준 GPU에서 Animatino 돌린다. 나중에 수정
     auto& pMesh = m_pModel->GetMeshes()[iMeshIndex];
 	auto& Bones = m_pModel->GetBones();
 
@@ -59,8 +63,8 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
     {
 
         D3D11_MAPPED_SUBRESOURCE MappedResource{};
-
-        if (FAILED(pContext->Map(pMesh->GetCBBones().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource)))
+    
+        if (FAILED(pContext->Map(m_Buffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource)))
         {
             return E_FAIL;
         }
@@ -76,9 +80,9 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 
         memcpy(pBoneMatrices, BoneMatrices.data(), sizeof(_float4x4) * iBoneCount);
 
-        pContext->Unmap(pMesh->GetCBBones().Get(), 0);
+        pContext->Unmap(m_Buffer->GetCBuffer().Get(), 0);
 
-        ID3D11Buffer* pCBBones = pMesh->GetCBBones().Get();
+        ID3D11Buffer* pCBBones = m_Buffer->GetCBuffer().Get();
 
         pContext->VSSetConstantBuffers(2, 1, &pCBBones);
     }
@@ -126,11 +130,16 @@ HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID
     return S_OK;
 }
 
-// ���� ���� �ؽ��� ��ȯ
+// 모델의 단일 텍스쳐 반환
 SPtr<CResTexture2D> CComModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
     auto Materials = m_pModel->GetMaterials();
     auto Mesh = m_pModel->GetMeshes();
     auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
+
+    if (Textures[eMaterialType].size() == 0)
+    {
+        return Textures[0].front();
+    }
 
     return Textures[eMaterialType][iTextureIndex];
 }

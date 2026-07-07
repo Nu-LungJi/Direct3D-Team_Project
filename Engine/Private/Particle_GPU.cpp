@@ -26,10 +26,10 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
     m_Desc = *pDesc;
 
-    // ¿¹Àü: m_iNumElements = 1000; (ÇÏµåÄÚµù) ¡æ ÀÌÁ¦ DESC¿¡¼­ ÁÖÀÔ
+    // ì˜ˆì „: m_iNumElements = 1000; (í•˜ë“œì½”ë”©) â†’ ì´ì œ DESCì—ì„œ ì£¼ì…
     m_iNumElements = m_Desc.iMaxParticles;
     m_eType = pDesc->type;
-    // ÆÄÆ¼Å¬À» ´Ù Á×Àº »óÅÂ·Î ÃÊ±âÈ­
+    // íŒŒí‹°í´ì„ ë‹¤ ì£½ì€ ìƒíƒœë¡œ ì´ˆê¸°í™”
     std::vector<PARTICLE> initParticles(m_iNumElements);
     for (uint32_t i = 0; i < m_iNumElements; i++)
     {
@@ -41,18 +41,19 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].color = _float4(1, 1, 1, 1);
         initParticles[i].alive = false;
         initParticles[i].loop = false;
+        initParticles[i].emissive = { 1,1,1,1 };
     }
 
     std::vector<uint32_t> initDeadIndices(m_iNumElements);
     for (uint32_t i = 0; i < m_iNumElements; i++)
         initDeadIndices[i] = i;
 
-    //Init ¹öÆÛ
+    //Init ë²„í¼
     m_pComInitCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE);
     if (!m_pComInitCBuffer)
         return E_FAIL;
 
-    // ÆÄÆ¼Å¬ ±¸Á¶Ã¼ ¹öÆÛ
+    // íŒŒí‹°í´ êµ¬ì¡°ì²´ ë²„í¼
     if (auto res = CResStructuredBuffer::Create())
     {
         CResStructuredBuffer::DESC bufDesc{};
@@ -65,7 +66,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         m_pParticleStructuredBuffer = res;
     }
 
-    // Á×Àº ÆÄÆ¼Å¬ ÀÎµ¦½º ¹öÆÛ
+    // ì£½ì€ íŒŒí‹°í´ ì¸ë±ìŠ¤ ë²„í¼
     if (auto res = CResStructuredBuffer::Create())
     {
         CResStructuredBuffer::DESC bufDesc{};
@@ -78,7 +79,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         m_pDeadListBuffer = res;
     }
 
-    // ½ºÆù µ¥ÀÌÅÍ ¹öÆÛ
+    // ìŠ¤í° ë°ì´í„° ë²„í¼
     if (auto res = CResStructuredBuffer::Create())
     {
         std::vector<PARTICLE_SPAWN_DATA> initSpawnData(MAX_SPAWN_PER_CALL);
@@ -132,8 +133,8 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
 
 
-        // ¸ğµ¨ ÀÎ½ºÅÏ½º´Â ÄÄÆ÷³ÍÆ® ÇÁ·ÎÅäÅ¸ÀÔ cloneÀÌ ÇÊ¿äÇÏ´Ù¸é ¾Æ·¡Ã³·³
-        // (AddComponentFromProto ´ë½Å, GameObject ¾øÀÌµµ ¾µ ¼ö ÀÖ´Â ÇüÅÂ·Î)
+        // ëª¨ë¸ ì¸ìŠ¤í„´ìŠ¤ëŠ” ì»´í¬ë„ŒíŠ¸ í”„ë¡œí† íƒ€ì… cloneì´ í•„ìš”í•˜ë‹¤ë©´ ì•„ë˜ì²˜ëŸ¼
+        // (AddComponentFromProto ëŒ€ì‹ , GameObject ì—†ì´ë„ ì“¸ ìˆ˜ ìˆëŠ” í˜•íƒœë¡œ)
         {
 
             CComStaticModelInstance::DESC Desc{};
@@ -157,7 +158,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
 
 
-    // ¼ÎÀÌ´õ 3Á¾(VS/PS) + CS 3Á¾Àº ¸ğµç GPU ÆÄÆ¼Å¬ÀÌ °øÀ¯ÇÏ´Â ¹ü¿ë ÆÄÀÌÇÁ¶óÀÎÀÌ¶ó °íÁ¤
+    // ì…°ì´ë” 3ì¢…(VS/PS) + CS 3ì¢…ì€ ëª¨ë“  GPU íŒŒí‹°í´ì´ ê³µìœ í•˜ëŠ” ë²”ìš© íŒŒì´í”„ë¼ì¸ì´ë¼ ê³ ì •
 
 
     m_pResUpdateComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_UpdateParticle");
@@ -177,7 +178,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         return E_FAIL;
 
 
-    //ÃÊ±âÈ­ ¹öÆÛ ÃÊ±âÈ­
+    //ì´ˆê¸°í™” ë²„í¼ ì´ˆê¸°í™”
     {
         CB_INIT_PARTICLE cb{};
         cb.g_iMaxParticles = m_iNumElements;
@@ -192,7 +193,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
     }
 
 
-    // Á×Àº ÆÄÆ¼Å¬ ÃÊ±âÈ­ (µü ÇÑ ¹ø, InitDead CS Dispatch)
+    // ì£½ì€ íŒŒí‹°í´ ì´ˆê¸°í™” (ë”± í•œ ë²ˆ, InitDead CS Dispatch)
     ID3D11UnorderedAccessView* uav = m_pDeadListBuffer->GetUAV().Get();
     UINT initCount = 0;
     context->CSSetUnorderedAccessViews(0, 1, &uav, &initCount);
@@ -225,6 +226,7 @@ void CParticle_GPU::DebugPrintDeadListCount()
     if (SUCCEEDED(pContext->Map(pCounterStaging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
     {
         uint32_t counterValue = *(uint32_t*)mapped.pData;
+        m_iDeadCount = *(uint32_t*)mapped.pData;
         char buf[64];
         sprintf_s(buf, "DeadList counter = %u\n", counterValue);
         OutputDebugStringA(buf);
@@ -241,7 +243,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
 
-    // 1. ½ºÆù
+    // 1. ìŠ¤í°
     if (m_iCurrentSpawnCount > 0)
     {
         pContext->CSSetConstantBuffers(6, 1, m_pComSpawnCBuffer->GetCBuffer().GetAddressOf());
@@ -302,7 +304,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
 
-    DebugPrintDeadListCount();
+   // DebugPrintDeadListCount();
 }
 
 void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
@@ -311,10 +313,13 @@ void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CParticle_GPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+    uint32_t iAliveCount = (m_iNumElements > m_iDeadCount) ? (m_iNumElements - m_iDeadCount) : 0;
+    if (iAliveCount == 0)
+        return S_OK;
     if (m_Desc.whatKind == MESHORTEXTURE::MESH)
         return Render_Mesh(pContext, ctx);
 
-    return Render_Texture(pContext, ctx); // ±âÁ¸ ÅØ½ºÃ³ ÆÄÆ¼Å¬ ·»´õ ÄÚµå
+    return Render_Texture(pContext, ctx); // ê¸°ì¡´ í…ìŠ¤ì²˜ íŒŒí‹°í´ ë Œë” ì½”ë“œ
 }
 
 HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -324,7 +329,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
     pContext->VSSetShaderResources(0, 1, &pParticleSRV);
 
-    const auto& vs = m_pResVertexShader; // ÀÎ½ºÅÏ½Ì¿ë ½Å±Ô VS ÇÊ¿ä
+    const auto& vs = m_pResVertexShader; // ì¸ìŠ¤í„´ì‹±ìš© ì‹ ê·œ VS í•„ìš”
     const auto& ps = m_pResPixelShader;
     pContext->IASetInputLayout(vs->GetInputLayout().Get());
     pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
@@ -351,7 +356,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
         pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 
-        // ÇÙ½É: DrawIndexed ¡æ DrawIndexedInstanced
+        // í•µì‹¬: DrawIndexed â†’ DrawIndexedInstanced
         pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), m_iNumElements, 0, 0, 0);
     }
 

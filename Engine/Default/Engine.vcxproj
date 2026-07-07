@@ -151,7 +151,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\imgui-1.83\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\imgui-1.83\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -159,13 +159,10 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <PostBuildEvent>
-      <Command>cd /d $(SolutionDir)
-call CopyClient.bat</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
@@ -182,7 +179,7 @@ call CopyClient.bat</Command>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -190,13 +187,10 @@ call CopyClient.bat</Command>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <PostBuildEvent>
-      <Command>cd /d $(SolutionDir)
-call CopyClient.bat</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
@@ -240,6 +234,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\public\Beam_CPU.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
+    <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
@@ -258,15 +253,29 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ComCollider.h" />
     <ClInclude Include="..\Public\ComConstantBuffer.h" />
     <ClInclude Include="..\Public\Component.h" />
+    <ClInclude Include="..\public\ComPxBoxCollider.h" />
+    <ClInclude Include="..\public\ComPxCapsuleCollider.h" />
+    <ClInclude Include="..\public\ComPxCollider.h" />
+    <ClInclude Include="..\public\ComPxRigidBody.h" />
+    <ClInclude Include="..\public\ComPxSphereCollider.h" />
+    <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\public\ResPhysXBoxGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXMaterial.h" />
+    <ClInclude Include="..\public\ResPhysXGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXSphereGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h" />
+    <ClInclude Include="..\public\DbgLineRender.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
     <ClInclude Include="..\Public\Engine_Base.h" />
     <ClInclude Include="..\Public\Engine_Defines.h" />
     <ClInclude Include="..\Public\Engine_Enum.h" />
     <ClInclude Include="..\Public\Engine_Function.h" />
+    <ClInclude Include="..\Public\Engine_Json_Util.h" />
     <ClInclude Include="..\Public\Engine_Macro.h" />
     <ClInclude Include="..\Public\Engine_Struct.h" />
     <ClInclude Include="..\Public\Engine_Struct_ConstantBuffer.h" />
@@ -282,6 +291,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\GraphicDevice.h" />
     <ClInclude Include="..\Public\Handle.h" />
     <ClInclude Include="..\Public\ImguiManager.h" />
+    <ClInclude Include="..\Public\IPhysicsListener.h" />
     <ClInclude Include="..\Public\IRenderable.h" />
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
@@ -293,10 +303,16 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\LightManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
+    <ClInclude Include="..\Public\OctreeNode.h" />
     <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\ParticleManager.h" />
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
+    <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysxManagerListener.h" />
+    <ClInclude Include="..\Public\UITex.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\Public\Prototype.h" />
     <ClInclude Include="..\Public\PrototypeManager.h" />
     <ClInclude Include="..\Public\Renderer.h" />
@@ -337,30 +353,6 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\ResStaticModelMesh.h" />
     <ClInclude Include="..\Public\ResTessDomainShader.h" />
     <ClInclude Include="..\Public\ResTessHullShader.h" />
-    <ClInclude Include="..\Public\ResTestModel.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelAnim.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelBone.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelChanel.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelMaterial.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelMesh.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\Public\ResTexture.h" />
     <ClInclude Include="..\Public\ResTexture2D.h" />
     <ClInclude Include="..\Public\ResTexture2DArray.h" />
@@ -379,6 +371,8 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\UIObject.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
+    <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
+    <ClInclude Include="..\Public\IPhysicsSync.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -493,6 +487,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\private\Beam_CPU.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
+    <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
@@ -512,9 +507,22 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ComConstantBuffer.cpp" />
     <ClCompile Include="..\Private\ComModelInstance.cpp" />
     <ClCompile Include="..\Private\Component.cpp" />
+    <ClCompile Include="..\private\ComPxBoxCollider.cpp" />
+    <ClCompile Include="..\private\ComPxCapsuleCollider.cpp" />
+    <ClCompile Include="..\private\ComPxCollider.cpp" />
+    <ClCompile Include="..\private\ComPxRigidBody.cpp" />
+    <ClCompile Include="..\private\ComPxSphereCollider.cpp" />
+    <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXMaterial.cpp" />
+    <ClCompile Include="..\private\ResPhysXGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp" />
+    <ClCompile Include="..\private\DbgLineRender.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />
     <ClCompile Include="..\Private\FlyCamera.cpp" />
     <ClCompile Include="..\Private\FontManager.cpp" />
@@ -531,10 +539,13 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp" />
+    <ClCompile Include="..\Private\OctreeNode.cpp" />
     <ClCompile Include="..\Private\Particle.cpp" />
     <ClCompile Include="..\private\ParticleManager.cpp" />
     <ClCompile Include="..\private\Particle_CPU.cpp" />
     <ClCompile Include="..\private\Particle_GPU.cpp" />
+    <ClCompile Include="..\private\PhysXManager.cpp" />
+    <ClCompile Include="..\private\PhysxManagerListener.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />
     <ClCompile Include="..\Private\Renderer.cpp" />
@@ -574,30 +585,6 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ResStaticModelMesh.cpp" />
     <ClCompile Include="..\Private\ResTessDomainShader.cpp" />
     <ClCompile Include="..\Private\ResTessHullShader.cpp" />
-    <ClCompile Include="..\Private\ResTestModel.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelAnim.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelBone.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelChanel.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelMaterial.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelMesh.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\Private\ResTexture.cpp" />
     <ClCompile Include="..\Private\ResTexture2D.cpp" />
     <ClCompile Include="..\Private\ResTexture2DArray.cpp" />
@@ -608,6 +595,9 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ShaderManager.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
+    <ClCompile Include="..\Private\UITex.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\Private\TimeProvider.cpp" />
     <ClCompile Include="..\Private\Timer.cpp" />
     <ClCompile Include="..\private\Trail_CPU.cpp" />
@@ -628,6 +618,7 @@ call CopyClient.bat</Command>
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl" />
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
@@ -679,7 +670,14 @@ call CopyClient.bat</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
-    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli" />

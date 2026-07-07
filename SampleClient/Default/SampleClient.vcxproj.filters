@@ -37,12 +37,6 @@
     <Filter Include="Resource\Buffer">
       <UniqueIdentifier>{314c6dc0-716a-40bc-b990-a48202075419}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Monsters">
-      <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Monsters\BT">
-      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
     </Filter>
@@ -78,6 +72,42 @@
     </Filter>
     <Filter Include="GameObject\TestModel\NonAnim">
       <UniqueIdentifier>{30ad92bc-cfdc-4eb6-bda6-bfee0401f606}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\PhysX">
+      <UniqueIdentifier>{243ae7a2-41e9-4636-8c84-385d065d145d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx">
+      <UniqueIdentifier>{724fae78-f8d4-47c3-81bb-10356cc8d895}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Terrain">
+      <UniqueIdentifier>{99e3d2a8-e90c-4ad3-b430-03c3773444d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Ball">
+      <UniqueIdentifier>{d2e9dd97-180f-44f6-b8d6-b7ce9f47413a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Box">
+      <UniqueIdentifier>{41d927b4-d289-4d1e-8a17-29332f266fde}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\TestPhysx\Capsule">
+      <UniqueIdentifier>{7b83671d-5cd1-4f24-8519-9695f9bf0a20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\TexUI">
+      <UniqueIdentifier>{96c0555a-899c-43c8-b53f-8d8a0fff0b0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\FilpBook">
+      <UniqueIdentifier>{0857634d-6e20-458d-bd1e-e0b73c69a1d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI">
+      <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTAction">
+      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTDecorator">
+      <UniqueIdentifier>{0f051330-2786-432f-8a2c-59dcb645f58f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Header">
+      <UniqueIdentifier>{98fd5b71-cb07-4a23-88f0-80d1b6f6f076}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -129,14 +159,23 @@
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Gobline.h">
-      <Filter>GameObject\Monsters</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\CTexUI.h">
-      <Filter>GameObject\UI</Filter>
+    <ClInclude Include="..\public\TestGob.h">
+      <Filter>GameObject\AI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelUIEditor.h">
       <Filter>Level\UiEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CTexUI.h">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlipBook.h">
+      <Filter>GameObject\UI\FilpBook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlipbookPlayer.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_Item.h">
+      <Filter>GameObject\UI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelAnimEditor.h">
       <Filter>Level\AnimationEditor</Filter>
@@ -153,6 +192,24 @@
     <ClInclude Include="..\public\TestCollider.h">
       <Filter>GameObject\TestCollider</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LevelPhysX.h">
+      <Filter>Level\PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysX.h">
+      <Filter>GameObject\TestPhysx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXTerrain.h">
+      <Filter>GameObject\TestPhysx\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXBall.h">
+      <Filter>GameObject\TestPhysx\Ball</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXBox.h">
+      <Filter>GameObject\TestPhysx\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPhysXCapsule.h">
+      <Filter>GameObject\TestPhysx\Capsule</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Particle_Fire_CPU.h">
       <Filter>Particles</Filter>
     </ClInclude>
@@ -160,7 +217,7 @@
       <Filter>Particles</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTMove.h">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel\Anim</Filter>
@@ -169,10 +226,19 @@
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Monster.h">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTchase.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecSearch.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHeader_Definse.h">
+      <Filter>GameObject\AI\Header</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Trail_Example.h">
       <Filter>Particles</Filter>
@@ -226,10 +292,7 @@
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTMove.cpp">
-      <Filter>GameObject\Monsters\BT</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
@@ -249,6 +312,41 @@
     <ClCompile Include="..\private\Particle_Ribbon.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LevelPhysX.cpp">
+      <Filter>Level\PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysX.cpp">
+      <Filter>GameObject\TestPhysx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXTerrain.cpp">
+      <Filter>GameObject\TestPhysx\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXBall.cpp">
+      <Filter>GameObject\TestPhysx\Ball</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXBox.cpp">
+      <Filter>GameObject\TestPhysx\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXCapsule.cpp">
+      <Filter>GameObject\TestPhysx\Capsule</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CTexUI.cpp">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\FlipBook.cpp">
+      <Filter>GameObject\UI\FilpBook</Filter>
+    </ClCompile>
+    <ClCompile Include="FlipbookPlayer.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_Item.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestGob.cpp">
+      <Filter>GameObject\AI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">
       <Filter>GameObject\TestModel</Filter>
     </ClCompile>
@@ -261,22 +359,25 @@
     <ClCompile Include="..\private\Particle_Fire_GPU.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTchase.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecSearch.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\CTexUI.cpp">
-      <Filter>GameObject\UI</Filter>
-    </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Monster.cpp">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Trail_Example.cpp">
       <Filter>Particles</Filter>

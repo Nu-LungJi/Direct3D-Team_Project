@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "GameInstance.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
@@ -30,7 +30,7 @@ HRESULT CComAnimator::Initialize(void* pArg)
         CComAnimator::DESC* pDesc = reinterpret_cast<CComAnimator::DESC*>(pArg);
            
         m_Comtag = pDesc->sComTag;
-    
+        m_pModelInstance = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag);
     }
 
 
@@ -39,17 +39,23 @@ HRESULT CComAnimator::Initialize(void* pArg)
 
 HRESULT CComAnimator::Update(_float fTimeDelta)
 {
-  
-    switch (m_iPlayAnimationType) {
-    case ANIMTYPE::MONTAGE: {
-        Play_AnimationMontage(fTimeDelta, "");
+    if (m_bPlay) {
+        switch (m_iPlayAnimationType) {
+        case ANIMTYPE::MONTAGE: {
+            Play_AnimationMontage(fTimeDelta, "");
         }
-        break;
-    case ANIMTYPE::ANIM: {
-		AnimEditor_Play_AnimResource(fTimeDelta, m_iPlayAnimIndex);
+                              break;
+        case ANIMTYPE::ANIM: {
+            AnimEditor_Play_AnimResource(fTimeDelta, m_iPlayAnimIndex);
+
+            m_fRatio = m_pModelInstance->GetModel()->GetAnimations()[m_iPlayAnimIndex]->GetCurrentTrackPosition()
+                / m_pModelInstance->GetModel()->GetAnimations()[m_iPlayAnimIndex]->GetDuration();
+
         }
-        break;
+         break;
+        }
     }
+
 
     return S_OK;
 }
@@ -81,6 +87,7 @@ HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t i
     {
         pBone->Update_CombinedTransformationMatrix(pModel->GetBones(), XMLoadFloat4x4(&m_PreTransformMatrix));
     }
+
 
     return isFinished;
 

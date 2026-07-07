@@ -8,17 +8,19 @@ namespace Engine
 	enum class RENDERGROUP { PRIORITY, NONBLEND, BLEND, LIGHT, SKYBOX, COLLIDER, PARTICLE, UI, END };
 	enum class RENDERPASS : uint32_t
 	{
-		DEFAULT = 1 << 0,
-		SHADOW = 1 << 1,
+		DEFAULT = 1 << 0,	// 1
+		SHADOW	= 1 << 1,	// 2
+		DEPTH	= 1 << 2	// 4
 	};
 	enum class STATE { RIGHT, UP, LOOK, POSITION, END };
 	enum class MODEL {STATIC, SKELETAL, END };
 	enum class NODETYPE {START,NODE_END ,END};
-	enum class BEHAVIOR {SELECTOR, SECQUNCE,ACTION,END};
+	enum class BEHAVIOR {SELECTOR, SECQUNCE, DECORATOR, ACTION,END};
 	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
 #define X(name) name,
-	enum class NODE_ACTION { NODE_ACTION_M };
+	enum class NODEGROUP { NODE_ACTION_M };
+	enum class MOVE { MOVE_M };
 #undef X	
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
 	enum class PARTICLE_TYPE { FIRE_CPU,FIRE_GPU,RIBBON,TRAIL,END };
@@ -27,5 +29,8 @@ namespace Engine
 
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
 	static const uint32_t MAX_SPAWN_PER_CALL = 2000;
+
+	enum class UI_TYPE{ CONTAINER, TEXUI, FLIPBOOK, END };
+	enum class UI_EFFECT_TYPE { NONE, HOVER, CLICK, END};
 
 }

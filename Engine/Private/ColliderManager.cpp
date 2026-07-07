@@ -67,6 +67,28 @@ void CColliderManager::FrameEnd()
     ClearColliderGroup();
 }
 
+void CColliderManager::Update()
+{
+	for (const auto& [key, coll] : m_Colliders)
+	{
+		auto [iter, inserted] = m_DbgRenders.try_emplace(key, true);
+
+		ImGui::PushID(key.GetDbgStr());
+
+		ImGui::Text("%s: %i", key.GetDbgStr(), iter->second);
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Render"))
+		{
+			iter->second = !iter->second;
+		}
+
+		ImGui::PopID();
+	}
+
+}
+
 static const uint32_t edge[24] =
 {
     0,1, 1,2, 2,3, 3,0,

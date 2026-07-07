@@ -1,7 +1,10 @@
 #include "../ShaderHeader/SH_SamplerState.hlsli"
 #include "../ShaderDefines.hlsl"
 
-Texture2D tex : register(t0);
+Texture2D g_DiffuseTexture : register(t0);
+Texture2D g_NormalTexture : register(t1);
+Texture2D g_SMROTexture : register(t2);
+Texture2D g_EmissiveTexture : register(t3);
 
 struct VS_IN
 {
@@ -21,21 +24,19 @@ PS_IN VSMain(VS_IN vin)
     output.posH = mul(float4(vin.posL, 1.f), g_matWVP);
 
     output.uv = vin.uv;
+
     return output;
 }
-struct PS_OUT
-{
-    vector vDiffuse : SV_TARGET0;
-};
 
-// Pixel Shader
-float4 PSMain(PS_IN input) : SV_Target
+// Pixel Shader : 불투명(NONBLEND) 오브젝트 그릴 때는 사용X(Normal, SMRO, Emissive에서 안 그려져서 정상적으로 렌더X)
+float4 PSMain(PS_IN input)  : SV_TARGET0
 {
-    float4 TexColor = tex.Sample(SamplerWrap, input.uv);
-    if (TexColor.a == 0.0f)  discard;
+    float4 TexColor = g_DiffuseTexture.Sample(SamplerWrap, input.uv);
+    if (TexColor.a == 0.01f)  discard;
+    
     return TexColor;
 }
-float4 PSMain_NonAlpha(PS_IN input) : SV_Target
+float4 PSMain_NonAlpha(PS_IN input) : SV_TARGET0
 {
-    return tex.Sample(SamplerWrap, input.uv);
+    return g_DiffuseTexture.Sample(SamplerWrap, input.uv);;
 }

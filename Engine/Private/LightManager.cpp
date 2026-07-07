@@ -91,11 +91,14 @@ VOID CLightManager::UpdateGUI() {
 
     ImGui::Separator();
 
-    // 2. º±≈√µ» ∂Û¿Ã∆Æ¿« ªÛºº º”º∫ ¡¶æÓ
+    if (m_LightHandleList.size() == 0) {
+        ImGui::End();
+        return;
+    }
     auto pSelectedLight = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[selectedLightIdx]);
     ImGui::Text("Selected Light Details (Index: %d)", selectedLightIdx);
 
-    // --- Getter∑Œ «ˆ¿Á ∞™µÈ ∞°¡Æø¿±‚ ---
+    // --- GetterÎ°ú ÌòÑÏû¨ Í∞íÎì§ Í∞ÄÏ†∏Ïò§Í∏∞ ---
     LIGHT_TYPE lightType = pSelectedLight->Get_LightType();
     XMFLOAT3 direction = pSelectedLight->Get_LightDirection();
     XMFLOAT3 color = pSelectedLight->Get_LightColor();
@@ -122,10 +125,10 @@ VOID CLightManager::UpdateGUI() {
         pSelectedLight->Set_LightIntensity(intensity);
     }
 
-    // ≈∏¿‘∫∞ ∞°∫Ø º”º∫ ≥Î√‚
+    // ÌÉÄÏûÖÎ≥Ñ Í∞ÄÎ≥Ä ÏÜçÏÑ± ÎÖ∏Ï∂ú
     if (lightType == LIGHT_TYPE::DIRECTIONAL || lightType == LIGHT_TYPE::SPOTLIGHT)
     {
-        // πÊ«‚ ∫§≈Õ ¡∂¿˝ (DragFloat3)
+        // Î∞©Ìñ• Î≤°ÌÑ∞ Ï°∞Ï†à (DragFloat3)
         if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f, "%.2f"))
         {
             pSelectedLight->Set_LightDirection(direction);
@@ -134,12 +137,12 @@ VOID CLightManager::UpdateGUI() {
 
     if (lightType == LIGHT_TYPE::POINT || lightType == LIGHT_TYPE::SPOTLIGHT)
     {
-        // ¿ßƒ° ¡∂¿˝
+        // ÏúÑÏπò Ï°∞Ï†à
         if (ImGui::DragFloat3("Position", &position.x, 0.1f, -100.0f, 100.0f, "%.2f"))
         {
             pSelectedLight->Set_LightPosition(position);
         }
-        // π¸¿ß ¡∂¿˝
+        // Î≤îÏúÑ Ï°∞Ï†à
         if (ImGui::DragFloat("Range", &range, 0.1f, 0.0f, 1000.0f, "%.2f"))
         {
             pSelectedLight->Set_LightRange(range);
@@ -147,11 +150,11 @@ VOID CLightManager::UpdateGUI() {
     }
 
     if (lightType == LIGHT_TYPE::SPOTLIGHT) {
-        if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 180.0f, "%.1fµµ"))
+        if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 180.0f, "%.1fÎèÑ"))
         {
             pSelectedLight->Set_LightInnerAttenuation(innerAttn);
         }
-        if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 180.0f, "%.1fµµ"))
+        if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 180.0f, "%.1fÎèÑ"))
         {
             pSelectedLight->Set_LightOuterAttenuation(outerAttn);
         }
@@ -169,14 +172,14 @@ VOID CLightManager::Bind_EnviromentLight(){
 }
 
 VOID CLightManager::Bind_DynamicLight(){
-    // «ÿ¥Á «‘ºˆ(Bind_SceneLight)¥¬ ∏µ®¿« PBR «»ºøΩ¶¿Ã¥ı∏¶ Draw∏¶ «œ±‚¿¸ø° CB_LIGHT_BUFFER∏¶ √§øˆ¡÷±‚ ¿ß«— øÎµµ. ±◊∏Æ±‚ ø¨ªÍ¿∫ ºˆ«‡«œ¡ˆ æ ¿Ω.
+    // Ìï¥Îãπ Ìï®Ïàò(Bind_SceneLight)Îäî Î™®Îç∏Ïùò PBR ÌîΩÏÖÄÏâêÏù¥ÎçîÎ•º DrawÎ•º ÌïòÍ∏∞Ï†ÑÏóê CB_LIGHT_BUFFERÎ•º Ï±ÑÏõåÏ£ºÍ∏∞ ÏúÑÌïú Ïö©ÎèÑ. Í∑∏Î¶¨Í∏∞ Ïó∞ÏÇ∞ÏùÄ ÏàòÌñâÌïòÏßÄ ÏïäÏùå.
 
     CB_LIGHT LightBuffer{};
     uint32_t LightCount = 0;
 
     for (auto& LightHandle : m_LightHandleList) {
         if (LightCount >= MAX_LIGHT_COUNT) break;
-    
+
         // Need Culling - Frustum & Distance
         auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
 
@@ -197,8 +200,7 @@ VOID CLightManager::Bind_DynamicLight(){
     D3D11_MAPPED_SUBRESOURCE MRES;
     if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
     {
-        CB_LIGHT   CBL;
-        CBL = LightBuffer;
+        CB_LIGHT   CBL = LightBuffer;
         memcpy(MRES.pData, &CBL, sizeof(CB_LIGHT));
         m_pContext->Unmap(LightConstantBuffer->GetCBuffer().Get(), 0);
     }

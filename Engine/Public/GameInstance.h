@@ -5,8 +5,14 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "DbgLineRender.h"
 #include "MapManager.h"
 #include "LightManager.h"
+
+NS_BEGIN(physx)
+class PxScene;
+class PxPhysics;
+NS_END
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -27,6 +33,9 @@ class CAnimEdit_Manager;
 class CNodeEditor;
 class CParticleManager;
 class CAction_Manager;
+class CPhysXManager;
+class CDbgLineRender;
+
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
@@ -36,6 +45,7 @@ private:
 
 public:
 	HRESULT InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID3D11Device>& ppDevice, ComPtr<ID3D11DeviceContext>& ppContext);
+	void FixedUpdateEngine(_float fFixedTimeDelta);
 	void UpdateEngine(_float fTimeDelta);
 	HRESULT Draw();
 	void UpdateGUI();
@@ -255,7 +265,10 @@ public:
 	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 #pragma endregion
 
-#pragma region ANIM_MANAGER
+#pragma region ANIMATIONEDTIOR_MANAGER
+	int32_t GetAnimIndex(CHandle Handle);
+#pragma endregion
+#pragma region PARTICLE_MANAGER
 public:
 	HRESULT SetupTestModel();
 #pragma endregion
@@ -265,9 +278,11 @@ public:
 #pragma endregion
 
 #pragma region Action_Manager
-	HRESULT					Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction);
-	UPtr<class CBTRoot>		Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
+	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
+	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
+
 #pragma endregion
 
 #pragma region PARTICLE_MANAGER
@@ -280,7 +295,7 @@ public:
 
 	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-		_float fFlickerInterval, _float fDuration = 1.f);
+		_float fFlickerInterval, _float4 emissive, _float fDuration = 1.f);
 #pragma endregion
 
 #pragma region MAP_MANAGER
@@ -301,9 +316,29 @@ public:
 #pragma endregion
 
 public:
+	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
+	physx::PxScene* PxGetScene() const;
+	physx::PxPhysics* PxGetPhysics() const;
+
+	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
+	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+#pragma endregion
+
+
+#pragma region DBG_LINE_RENDER
+public:
+	CDbgLineRender* GetDbgLineRender() const { return m_pDbgLineRender.get(); };
+#pragma endregion
+
+public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
 	_bool GetMouseFix() const { return m_bMouseFix; }
+
+	_float2 GetMousePos() {
+		POINT pt; GetCursorPos(&pt); ScreenToClient(m_hWnd, &pt);
+		return { (float)pt.x, (float)pt.y };
+	}
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
 	HWND m_hWnd{};
@@ -338,6 +373,8 @@ private:
 	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
 	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};

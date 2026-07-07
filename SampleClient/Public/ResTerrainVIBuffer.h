@@ -27,9 +27,16 @@ public:
     HRESULT Load(const std::any& arg = {}) override;
     HRESULT Unload(const std::any& arg = {})  override;
 
+public:
+    const std::vector<VTX_NORMAL_TEX>& GetVertices() const { return m_vecVertices; }
+    const std::vector<uint32_t>& GetIndices() const { return m_vecIndices; }
+
 private:
     uint32_t			m_iNumVerticesX = {};
     uint32_t			m_iNumVerticesZ = {};
+    //std::shared_ptr<VTX_NORMAL_TEX[]> m_pVertices{};
+    std::vector<VTX_NORMAL_TEX> m_vecVertices{};
+    std::vector<uint32_t> m_vecIndices{};
 
 public:
     static SPtr<CResTerrainVIBuffer> Create(const _string& sPath);

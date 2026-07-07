@@ -29,6 +29,7 @@ HRESULT CComStaticModelInstance::Initialize(void* pArg)
     if (pArg != nullptr) {
         CComStaticModelInstance::DESC* pDesc = reinterpret_cast<CComStaticModelInstance::DESC*>(pArg);
         m_pModel = CGameInstance::Get().GetResourceFirst<CResStaticModel>(pDesc->sGroupTag, pDesc->sResTag);
+        //"PERMANENT", "Prototype_Component_StaticModelInstance"
         if (m_pModel == nullptr)
         {
             return E_FAIL;
@@ -46,8 +47,11 @@ HRESULT CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, u
     auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
 
 
-    if (Textures[eMaterialType][iTextureIndex] == nullptr)
+    if (Textures[eMaterialType].size() == 0)
+    {
+        pContext->PSSetShaderResources(eMaterialType, 1, Textures[0].front()->GetSRV().GetAddressOf());
         return S_OK;
+    }
 
     pContext->PSSetShaderResources(eMaterialType, 1, Textures[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
 
@@ -74,6 +78,10 @@ SPtr<CResTexture2D> CComStaticModelInstance::Get_MeshTexture(uint32_t iMeshIndex
     auto Materials = m_pModel->GetMaterials();
     auto Mesh = m_pModel->GetMeshes();
     auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
+    if (Textures[eMaterialType].size() == 0)
+    {
+        return nullptr;
+    }
 
     return Textures[eMaterialType][iTextureIndex];
 }

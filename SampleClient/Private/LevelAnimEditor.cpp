@@ -7,7 +7,7 @@
 #include "BackGround.h"
 #include "TestModel.h"
 #include "Test_StaticModel.h"
-
+#include "LightObject.h"
 
 NS_USING(Client)
 
@@ -47,7 +47,6 @@ HRESULT CLevelAnimEditor::Initialize()
 		}
 	}
 	
-
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
@@ -90,6 +89,9 @@ HRESULT CLevelAnimEditor::Initialize()
 			}
 		}
 	}
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
 
 	CGameInstance::Get().SetupTestModel();;
 	return S_OK;

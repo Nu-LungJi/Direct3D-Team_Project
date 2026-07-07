@@ -13,18 +13,59 @@ struct PARTICLE_LOOP_REQUEST
 };
 enum class SPAWN_COMMAND_KIND
 {
-    STANDARD,   // À§Ä¡/¼Óµµ/¼ö¸í/Å©±â/»ö - ´ëºÎºĞÀÇ ÆÄÆ¼Å¬
-    BEAM,       // ½ÃÀÛÁ¡/³¡Á¡/Áö¼Ó½Ã°£ - CBeam_CPU °è¿­
+    STANDARD,   // ìœ„ì¹˜/ì†ë„/ìˆ˜ëª…/í¬ê¸°/ìƒ‰ - ëŒ€ë¶€ë¶„ì˜ íŒŒí‹°í´
+    BEAM,       // ì‹œì‘ì /ëì /ì§€ì†ì‹œê°„ - CBeam_CPU ê³„ì—´
 };
 
+//struct STANDARD_PARAMS
+//{
+//    uint32_t count = 1;
+//    _float3  position = {};
+//    _float3  velocity = {};
+//    _float   life = 1.f;
+//    _float   size = 1.f;
+//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
+//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+//    _bool    bLoop = false;
+//    _float   fSpawnInterval = 0.1f;
+//};
+//
+//struct BEAM_PARAMS
+//{
+//    _float4  beamStart = {};
+//    _float4  beamEnd = {};
+//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
+//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+//    int      iDisplacementIterations = 6;
+//    _float   fDisplacementAmplitude = 2.5f;
+//    _float   fDisplacementDamping = 0.25f;
+//    _float   flickerTimeInverval = 0.25f;
+//    _float   beamDuration = 0.f;
+//};
+//
+//// ë‚˜ì¤‘ì— ìƒˆ íŒŒí‹°í´ ì¢…ë¥˜(ì˜ˆ: RIBBON, DECAL ë“±) ì¶”ê°€ë˜ë©´ ì—¬ê¸° êµ¬ì¡°ì²´ë§Œ ì¶”ê°€í•˜ë©´ ë¨
+//struct SPAWN_COMMAND
+//{
+//    SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // ì´ë¦„ì€ ê¸°ì¡´ kind ê·¸ëŒ€ë¡œ ì‚¬ìš©í•´ë„ ë¨
+//    StringID sGroupTag;
+//    StringID sTypeTag;
+//    std::variant<STANDARD_PARAMS, BEAM_PARAMS> params;
+//};
+//struct PARTICLE_EFFECT_PRESET
+//{
+//    std::string sEffectName;              // ì €ì¥ ì‹œ ì‹ë³„ìš© ì´ë¦„ (ì˜ˆ: "Explosion_Fire")
+//    std::vector<SPAWN_COMMAND> commands;  // ì´ ì´í™íŠ¸ë¥¼ êµ¬ì„±í•˜ëŠ” ì—¬ëŸ¬ ìŠ¤í° ëª…ë ¹
+//};
 struct SPAWN_COMMAND
 {
     SPAWN_COMMAND_KIND kind = SPAWN_COMMAND_KIND::STANDARD;
     StringID sGroupTag;
     StringID sTypeTag;
-
-    // STANDARD ¿ë
+    //ê³µìš©
     uint32_t count = 1;
+    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+
+    // STANDARD ìš©
     _float3  position = {};
     _float3  velocity = {};
     _float   life = 1.f;
@@ -32,14 +73,14 @@ struct SPAWN_COMMAND
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
-
-    // BEAM ¿ë
+    
+    // BEAM ìš©
     _float4  beamStart = {};
     _float4  beamEnd = {};
-    int    iDisplacementIterations = 6;   // Àç±Í ¼¼ºĞÈ­ È½¼ö ¡æ ¼¼±×¸ÕÆ® °³¼ö = 2^6 = 64°³
-    _float      fDisplacementAmplitude = 2.5f; // Ã¹ ¼¼ºĞÈ­ ´Ü°è¿¡¼­ ÁßÁ¡À» ¾ó¸¶³ª Å©°Ô ÈçµéÁö
-    _float      fDisplacementDamping = 0.25f;// ¸î ÃÊ¸¶´Ù Áö±×Àç±× ¸ğ¾çÀ» »õ·Î »ÌÀ»Áö (ÂªÀ»¼ö·Ï ¹ø°³°¡ ÆÄ¸£¸£ ¶°´Â ´À³¦)
-    _float      flickerTimeInverval = 0.25f; // fFlickerInterval¿¡ µµ´ŞÇÒ ¶§¸¶´Ù ¸®¼ÂµÇ´Â Å¸ÀÌ¸Ó (Áö±×Àç±× Àç»ı¼º ½ÃÁ¡ Ã¼Å©¿ë)
+    int    iDisplacementIterations = 6;   // ì¬ê·€ ì„¸ë¶„í™” íšŸìˆ˜ â†’ ì„¸ê·¸ë¨¼íŠ¸ ê°œìˆ˜ = 2^6 = 64ê°œ
+    _float      fDisplacementAmplitude = 2.5f; // ì²« ì„¸ë¶„í™” ë‹¨ê³„ì—ì„œ ì¤‘ì ì„ ì–¼ë§ˆë‚˜ í¬ê²Œ í”ë“¤ì§€
+    _float      fDisplacementDamping = 0.25f;// ëª‡ ì´ˆë§ˆë‹¤ ì§€ê·¸ì¬ê·¸ ëª¨ì–‘ì„ ìƒˆë¡œ ë½‘ì„ì§€ (ì§§ì„ìˆ˜ë¡ ë²ˆê°œê°€ íŒŒë¥´ë¥´ ë– ëŠ” ëŠë‚Œ)
+    _float      flickerTimeInverval = 0.25f; // fFlickerIntervalì— ë„ë‹¬í•  ë•Œë§ˆë‹¤ ë¦¬ì…‹ë˜ëŠ” íƒ€ì´ë¨¸ (ì§€ê·¸ì¬ê·¸ ì¬ìƒì„± ì‹œì  ì²´í¬ìš©)
     _float   beamDuration = 0.f;
 };
 class ENGINE_DLL CParticleManager final : public CEngineBase, public IRenderable
@@ -57,29 +98,29 @@ public:
     bool HasRenderPass(RENDERPASS ePass) const override { return ePass == RENDERPASS::DEFAULT; };
 
 public:
-    // »çÀü µî·Ï - [´ëºĞ·ù][¼ÒºĞ·ù]·Î ÀúÀå
+    // ì‚¬ì „ ë“±ë¡ - [ëŒ€ë¶„ë¥˜][ì†Œë¶„ë¥˜]ë¡œ ì €ì¥
     HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle);
 
-    // Á¤È®È÷ ÁöÁ¤ÇØ¼­ ½ºÆù
+    // ì •í™•íˆ ì§€ì •í•´ì„œ ìŠ¤í°
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 
-    // ´ëºĞ·ù ¾È¿¡¼­ ·£´ıÇÏ°Ô ÇÏ³ª °ñ¶ó ½ºÆù (¿¹: "stone" ¾È¿¡¼­ ¾Æ¹« ÆÄÆíÀÌ³ª)
+    // ëŒ€ë¶„ë¥˜ ì•ˆì—ì„œ ëœë¤í•˜ê²Œ í•˜ë‚˜ ê³¨ë¼ ìŠ¤í° (ì˜ˆ: "stone" ì•ˆì—ì„œ ì•„ë¬´ íŒŒí¸ì´ë‚˜)
     HRESULT SpawnRandomInGroup(const StringID& sGroupTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 
-    // ´ëºĞ·ù ÀüÃ¼¿¡ µ¿½Ã¿¡ ½ºÆù (ÇÊ¿äÇÏ´Ù¸é)
+    // ëŒ€ë¶„ë¥˜ ì „ì²´ì— ë™ì‹œì— ìŠ¤í° (í•„ìš”í•˜ë‹¤ë©´)
     HRESULT SpawnAllInGroup(const StringID& sGroupTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData);
 
     HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
         _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, _float fDuration);
+        _float fFlickerInterval, _float4 emissive, _float fDuration);
 
 public:
-    // Á¶È¸ ÇïÆÛ
+    // ì¡°íšŒ í—¬í¼
     CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
     bool HasGroup(const StringID& sGroupTag) const;
 
@@ -87,7 +128,7 @@ public:
     static UPtr<CParticleManager> Create();
 
 private:
-    // [´ëºĞ·ù][¼ÒºĞ·ù] -> ÆÄÆ¼Å¬ ÀÎ½ºÅÏ½º
+    // [ëŒ€ë¶„ë¥˜][ì†Œë¶„ë¥˜] -> íŒŒí‹°í´ ì¸ìŠ¤í„´ìŠ¤
     std::unordered_map<StringID, std::unordered_map<StringID, UPtr<CParticle>>> m_Particles;
     std::vector<PARTICLE_LOOP_REQUEST> m_LoopRequests;
 
@@ -95,7 +136,7 @@ private:
 
 private:
     std::vector<SPAWN_COMMAND> m_vecCommandQueue;
-    // Å¥ ÀüÃ¼¸¦ ½ÇÇà
+    // í ì „ì²´ë¥¼ ì‹¤í–‰
     HRESULT ExecuteCommandQueue();
 };
 NS_END

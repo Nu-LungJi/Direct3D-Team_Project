@@ -17,16 +17,22 @@ CTexUI::~CTexUI()
 
 HRESULT CTexUI::Initialize(void* pArg)
 {
-
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
-	pDesc->fSizeX = g_iWinSizeX;
-	pDesc->fSizeY = 200.f;
-
-	pDesc->fX = g_iWinSizeX * 0.5f;
-	pDesc->fY = g_iWinSizeY - pDesc->fSizeY * 0.5f;
 
 	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
+
+
+	{
+		CComConstantBuffer::DESC Desc{};
+		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI" };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerUI", &Desc, &m_pComCBufferPerUI)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	m_UIType = ETOUI(UI_TYPE::TEXUI);
 
 	return S_OK;
 }
@@ -37,7 +43,15 @@ void CTexUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CTexUI::Update(E::_float fTimeDelta)
 {
+	CUIObject::Update(fTimeDelta);
 
+	if (m_bMouseTracking)
+	{
+		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+		m_fX = mousePos.x;
+		m_fY = mousePos.y;
+		CalcUICoord();
+	}
 }
 
 void CTexUI::LateUpdate(E::_float fTimeDelta)
@@ -48,9 +62,11 @@ void CTexUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	std::string currentLevel = "LEVEL_UIEDITOR";
+
 	//VS_QuadTex
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex");
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -70,6 +86,19 @@ HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 	pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
+	{
+		E::CB_PER_UI perUI{};
+		perUI.texCoord = {0.f, 0.f};
+		perUI.uvSize = { 0.f, 0.f };
+		perUI.color = { 0.f, 0.f, 0.f, m_fAlpha };
+
+		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
+		{
+			return E_FAIL;
+		}
+		pContext->VSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+	}
 
 	{
 		//auto pUICam = E::CGameInstance::Get().GetActiveUICamera();
@@ -90,8 +119,9 @@ HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
+
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_LOGO", "TEX_SHM");
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_sRestag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 
 		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);

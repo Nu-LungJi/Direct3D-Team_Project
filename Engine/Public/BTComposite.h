@@ -10,8 +10,10 @@ public:
 	DECLARE_DERIVED_TYPE(CBTComposite, CBTRoot)
 protected:
 	explicit CBTComposite();
+	CBTComposite(const CBTComposite& rhs);
 	 ~CBTComposite() override;
 
+	 virtual HRESULT InitalizePrototype(void* pArg = nullptr) { return S_OK; }
 	 virtual HRESULT Initalize(void* pArg) override;
 protected:
 	typedef struct strnodevalue
@@ -24,19 +26,18 @@ protected:
 public:
 	std::vector<UPtr<CBTRoot>>* Get_Nodes() { return &m_Actions; }
 	
-	virtual EVALUATE		Evaluate() PURE;
-	
-	virtual HRESULT	Priority_Update(_float fTimeDelta)PURE;
-	virtual HRESULT	Update(_float fTimeDelta)		  PURE;
-	virtual HRESULT	Late_Update(_float fTimeDelta)	  PURE;
-	
+	virtual EVALUATE		Evaluate(_float fTimeDelta) { return EVALUATE::SUCCESS; }
+	void					Tick(_float fTimeDelta);
 public:
-	HRESULT		Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
+	HRESULT					Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
+	virtual nlohmann::json  Save_Node() override;
+	virtual HRESULT			Load_json(const nlohmann::json& j);
 protected:
 	NODE_VALUE				m_NodeValue{};
 
 	std::vector<UPtr<CBTRoot>>			  m_Actions;
 public:
-	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
+	static  UPtr<CBTComposite> Create(void* pArg);
+	virtual UPtr<CBTRoot>Clone(void* pArg) { return nullptr; }
 };
 NS_END

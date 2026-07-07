@@ -83,9 +83,7 @@ float2 NineSliceUV(float2 uv)
 PS_OUT PSMain(VS_OUT pin)
 {
     float2 tc = NineSliceUV(pin.texCoord);
-    
-    
-    
+
     uint groupId = GetTexArrayGroup(g_ui_texIndex);
     uint sliceIndex = GetTexSliceIndex(g_ui_texIndex);
     float4 albedo;

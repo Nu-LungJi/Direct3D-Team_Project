@@ -9,6 +9,7 @@
 #include "Engine_Base.h"
 
 NS_BEGIN(Engine)
+class COctreeNode;
 
 enum class EChunkLoadState
 {
@@ -29,6 +30,7 @@ typedef struct tagMapChunk
 	MAPCHUNK_COORD coord{};
 	std::vector<CHandle> hObjects{};
 	BoundingBox bounds{};
+	UPtr<COctreeNode> octreeNode;
 
 	EChunkLoadState loadState = EChunkLoadState::Unloaded;
 	EChunkSaveState saveState = EChunkSaveState::Unsaved;

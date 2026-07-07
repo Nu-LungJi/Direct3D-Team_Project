@@ -39,15 +39,24 @@ public:
 	std::string& GetAnimName() { return m_AnimName; }
 	void		 SetAnimName(std::string _name) { m_AnimName = _name; }
 
+	std::string& GetAnimPath() { return m_AnimPath; }
+	void	 SetAnimPath(std::string _path) { m_AnimPath = _path; }	
+
+	uint32_t	GetNumChannel() { return m_iNumChannels; };
+	std::vector<SPtr<CResModelChanel>>& GetChannels() { return m_Channels; }
+
+
 private:
+	// ëŸ° íƒ€ì„ ë„ì¤‘ë§Œ ê°€ì§€ëŠ” ì£¼ì†Œ
+	std::string			m_AnimPath;
 	std::string			m_AnimName;
 
-	/* ÀÌ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ÃÑ ±æÀÌ. */
+	/* ì´ ì• ë‹ˆë©”ì´ì…˜ì˜ ì´ ê¸¸ì´. */
 	_float				m_fDuration = {};
 	_float				m_fTickPerSecond = {};
 	_float				m_fCurrentTrackPosition = {};
 
-	/* ÄÁÆ®·ÑÇØ¾ßÇÏ´Â »ÀÀÇ °¹¼ö */
+	/* ì»¨íŠ¸ë¡¤í•´ì•¼í•˜ëŠ” ë¼ˆì˜ ê°¯ìˆ˜ */
 	uint32_t							m_iNumChannels = {};
 	std::vector<SPtr<CResModelChanel>>	m_Channels;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;

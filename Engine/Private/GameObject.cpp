@@ -49,6 +49,11 @@ HRESULT CGameObject::Initialize(void* pArg)
     return S_OK;
 }
 
+void CGameObject::FixedUpdate(_float fTimeDelta)
+{
+
+}
+
 void CGameObject::PriorityUpdate(_float fTimeDelta)
 {
 }
@@ -157,4 +162,19 @@ void CGameObject::SetPendingDestroy(_bool b)
 void CGameObject::SetPendingDestroyCascade(_bool b)
 {
     MyTreeDFS(this, [&](auto pObj) {pObj->SetPendingDestroy(b); });
+}
+
+void CGameObject::SyncActivePhysXData(const PHYSX_SYNC_DATA& syncData)
+{
+    m_PhysXSyncData = syncData;
+    m_bPhysXSynced = true;
+}
+
+void CGameObject::UpdatePhysicData()
+{
+	if (m_bPhysXSynced)
+	{
+		GetTransform().SetPosition(XMVectorSet(m_PhysXSyncData.vPos.x, m_PhysXSyncData.vPos.y, m_PhysXSyncData.vPos.z, 1.f));
+		GetTransform().SetQuaternion(XMVectorSet(m_PhysXSyncData.vQuat.x, m_PhysXSyncData.vQuat.y, m_PhysXSyncData.vQuat.z, m_PhysXSyncData.vQuat.w));
+	}
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+
 namespace Engine
 {
 	typedef struct tagEngineDesc
@@ -111,10 +112,10 @@ namespace Engine
 	typedef struct tagactionvalue
 	{
 		tagactionvalue() = default;
-		tagactionvalue(int32_t iAnim, NODE_ACTION ActionType) { iAnim = iAnimIndex, eNodeType = ActionType; }
+		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{};
-		NODE_ACTION eNodeType{ NODE_ACTION::END };
+		_float   fSpeed{}, fTime{}, fTick{};
+	
 	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{
@@ -125,9 +126,7 @@ namespace Engine
 		}
 		_string  DestName{};
 		int32_t iDestNode{ -1 };
-
 		BEHAVIOR eType{ BEHAVIOR::END };
-
 		void Reset() { DestName = "";  eType = BEHAVIOR::END; iDestNode = -1; }
 
 	}DEST_NODE;
@@ -135,15 +134,15 @@ namespace Engine
 	{
 		uint32_t	iID{};
 		_string		Name{};
-		_float2		vPos{}, vSize{};
-		_float		fValue{};
-		_float4		vColor{};
+		XMFLOAT2		vPos{},vSize{};
+		float		fValue{};
+		XMFLOAT4		vColor{};
 		BEHAVIOR    eMyType{};
-		tagimguinode() = default;
-		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, const _float2& pos, float value, const _float4& color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
-		_float2 GetStartSlotPos() const  { return _float2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
-		_float2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
-			return _float2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
+		tagimguinode()=default ;
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
+		XMFLOAT2 GetStartSlotPos()  { return XMFLOAT2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
+		XMFLOAT2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
+			return XMFLOAT2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
 		}
 		DEST_NODE Get_DestInfo() {
 			DEST_NODE Dst{};
@@ -152,6 +151,7 @@ namespace Engine
 			Dst.iDestNode = iID;
 			return Dst;
 		}
+
 	}GUINODE;
 
 	typedef struct tagimguinodelink
@@ -173,6 +173,7 @@ namespace Engine
 		_float  life;
 		_float  size;
 		_float4 color;
+		_float4 emissive;
 	}PARTICLE_SPAWN_DATA;
 
 	typedef struct tagParticleEmitRequest
@@ -244,4 +245,39 @@ namespace Engine
 			return x == rhs.x && y == rhs.y && z == rhs.z;
 		}
 	}MAPCHUNK_COORD;
+
+	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+	typedef struct tagMapMeshInstanceData
+	{
+		_float4x4 world;
+	} MAPMESH_INSTANCE_DATA;
+
+	typedef struct tagMapMeshBatchKey
+	{
+		std::string modelGroup;
+		std::string modelTag;
+
+		bool operator==(const tagMapMeshBatchKey& rhs) const
+		{
+			return modelGroup == rhs.modelGroup && modelTag == rhs.modelTag;
+		}
+	} MAPMESH_BATCH_KEY;
+
+	struct tagMapMeshBatchKeyHash
+	{
+		size_t operator()(const MAPMESH_BATCH_KEY& key) const noexcept
+		{
+			const size_t h1 = std::hash<std::string>{}(key.modelGroup);
+			const size_t h2 = std::hash<std::string>{}(key.modelTag);
+			return h1 ^ (h2 << 1);
+		}
+	};
+
+	//class CResStaticModel;
+	//typedef struct tagMapMeshBatch
+	//{
+	//	CResStaticModel* model = nullptr;
+	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
+	//} MAPMESH_BATCH;
+	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
 }

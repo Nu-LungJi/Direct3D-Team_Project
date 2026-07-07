@@ -4,16 +4,16 @@
 
 NS_BEGIN(Engine)
 
-// ÇÑ ÇÁ·¹ÀÓ¿¡ ±â·ÏµÈ ¹«±â ±ËÀû ÇÑ ½Ö(Ä®³¯ ¹Øµ¿~Ä®³¡) + ±× ¼ø°£ºÎÅÍ Èå¸¥ ½Ã°£
+// í•œ í”„ë ˆìž„ì— ê¸°ë¡ëœ ë¬´ê¸° ê¶¤ì  í•œ ìŒ(ì¹¼ë‚  ë°‘ë™~ì¹¼ë) + ê·¸ ìˆœê°„ë¶€í„° íë¥¸ ì‹œê°„
 struct TRAIL_FRAME
 {
-    _float3 vStart; // Ä®³¯ ¹Øµ¿(¼ÕÀâÀÌ ÂÊ) ¿ùµå À§Ä¡
-    _float3 vEnd;   // Ä®³¯ ³¡(Ä®³¡) ¿ùµå À§Ä¡
+    _float3 vStart; // ì¹¼ë‚  ë°‘ë™(ì†ìž¡ì´ ìª½) ì›”ë“œ ìœ„ì¹˜
+    _float3 vEnd;   // ì¹¼ë‚  ë(ì¹¼ë) ì›”ë“œ ìœ„ì¹˜
     _float  fAge = 0.f;
 };
 
-// Æ®·¹ÀÏ Àü¿ë Á¤Á¡ - BEAM_VERTEX¿Í ´Þ¸® »ö»ó(¾ËÆÄ)À» °®°í ÀÖ¾î¼­
-// ³ªÀÌ µç ÇÁ·¹ÀÓÀÏ¼ö·Ï Åõ¸íÇØÁö´Â °É Á¤Á¡ ´ÜÀ§·Î Ç¥ÇöÇÒ ¼ö ÀÖ´Ù.
+// íŠ¸ë ˆì¼ ì „ìš© ì •ì  - BEAM_VERTEXì™€ ë‹¬ë¦¬ ìƒ‰ìƒ(ì•ŒíŒŒ)ì„ ê°–ê³  ìžˆì–´ì„œ
+// ë‚˜ì´ ë“  í”„ë ˆìž„ì¼ìˆ˜ë¡ íˆ¬ëª…í•´ì§€ëŠ” ê±¸ ì •ì  ë‹¨ìœ„ë¡œ í‘œí˜„í•  ìˆ˜ ìžˆë‹¤.
 struct TRAIL_VERTEX
 {
     _float3 vPosition;
@@ -21,11 +21,11 @@ struct TRAIL_VERTEX
     _float4 vColor = { 1.f, 1.f, 1.f, 1.f };
 };
 
-// ¹«±â ±ËÀû Æ®·¹ÀÏ.
-// ¸Å ÇÁ·¹ÀÓ (¹Øµ¿, Ä®³¡) µÎ Á¡À» ±â·ÏÇØ¼­, ±× ½ÖÀ» ´ÙÀ½ ÇÁ·¹ÀÓÀÇ ½Ö°ú ÀÌ¾îºÙÀÌ´Â ¹æ½ÄÀ¸·Î
-// °ËÀÌ ½ÇÁ¦·Î ÈÛ¾µ°í Áö³ª°£ ¸é(½ºÀ¬ ¼­ÇÇ½º)À» ±×¸°´Ù.
-// µÎ Á¡ÀÌ ÀÌ¹Ì ÆøÀÇ ¾ç ³¡À» Á¤ÀÇÇØÁÖ¹Ç·Î, ºö/´ÜÀÏÁ¡ Æ®·¹ÀÏ°ú ´Þ¸®
-// Ä«¸Þ¶ó¸¦ ÇâÇÑ Æø º¤ÅÍ¸¦ µû·Î °è»êÇÒ ÇÊ¿ä°¡ ¾ø´Ù.
+// ë¬´ê¸° ê¶¤ì  íŠ¸ë ˆì¼.
+// ë§¤ í”„ë ˆìž„ (ë°‘ë™, ì¹¼ë) ë‘ ì ì„ ê¸°ë¡í•´ì„œ, ê·¸ ìŒì„ ë‹¤ìŒ í”„ë ˆìž„ì˜ ìŒê³¼ ì´ì–´ë¶™ì´ëŠ” ë°©ì‹ìœ¼ë¡œ
+// ê²€ì´ ì‹¤ì œë¡œ íœ©ì“¸ê³  ì§€ë‚˜ê°„ ë©´(ìŠ¤ìœ• ì„œí”¼ìŠ¤)ì„ ê·¸ë¦°ë‹¤.
+// ë‘ ì ì´ ì´ë¯¸ í­ì˜ ì–‘ ëì„ ì •ì˜í•´ì£¼ë¯€ë¡œ, ë¹”/ë‹¨ì¼ì  íŠ¸ë ˆì¼ê³¼ ë‹¬ë¦¬
+// ì¹´ë©”ë¼ë¥¼ í–¥í•œ í­ ë²¡í„°ë¥¼ ë”°ë¡œ ê³„ì‚°í•  í•„ìš”ê°€ ì—†ë‹¤.
 class ENGINE_DLL CTrail_CPU  : public CParticle
 {
 public:
@@ -36,8 +36,8 @@ public:
         std::pair<StringID, StringID> PSID;
         PARTICLE_TYPE type;
         TRAIL_TYPE  tType;
-        _float   fMaxDuration = 1.25f; // ±â·ÏµÈ ÇÁ·¹ÀÓ ÇÏ³ª°¡ ¾ó¸¶³ª ¿À·¡ ³²¾ÆÀÖÀ»Áö (²¿¸® ±æÀÌ)
-        uint32_t iMaxFrames = 64;    // ÃÖ´ë º¸°ü ÇÁ·¹ÀÓ °³¼ö (¹öÆÛ Å©±â °áÁ¤)
+        _float   fMaxDuration = 1.25f; // ê¸°ë¡ëœ í”„ë ˆìž„ í•˜ë‚˜ê°€ ì–¼ë§ˆë‚˜ ì˜¤ëž˜ ë‚¨ì•„ìžˆì„ì§€ (ê¼¬ë¦¬ ê¸¸ì´)
+        uint32_t iMaxFrames = 64;    // ìµœëŒ€ ë³´ê´€ í”„ë ˆìž„ ê°œìˆ˜ (ë²„í¼ í¬ê¸° ê²°ì •)
     };
 
 protected:
@@ -50,10 +50,10 @@ public:
     virtual void    Update(_float fTimeDelta) override;
     virtual void    LateUpdate(_float fTimeDelta) override;
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
-    virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override; // ¹Ì»ç¿ë
+    virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override; // ë¯¸ì‚¬ìš©
 
 public:
-    // ¸Å ÇÁ·¹ÀÓ È£Ãâ - ¹«±â ¾Ö´Ï¸ÞÀÌ¼Ç Àç»ý Áß Ä®³¯ ¹Øµ¿/Ä®³¡ÀÇ ÇöÀç ¿ùµå ÁÂÇ¥¸¦ °°ÀÌ ³Ñ±ä´Ù.
+    // ë§¤ í”„ë ˆìž„ í˜¸ì¶œ - ë¬´ê¸° ì• ë‹ˆë©”ì´ì…˜ ìž¬ìƒ ì¤‘ ì¹¼ë‚  ë°‘ë™/ì¹¼ëì˜ í˜„ìž¬ ì›”ë“œ ì¢Œí‘œë¥¼ ê°™ì´ ë„˜ê¸´ë‹¤.
     void AddPoint(const _float3& vStart, const _float3& vEnd);
 
     void Clear();
@@ -66,7 +66,7 @@ private:
 private:
     DESC     m_Desc;
     TRAIL_TYPE m_eTrailType;
-    std::deque<TRAIL_FRAME>  m_dequeFrames; // ¾Õ(front)ÀÌ ÃÖ½Å, µÚ(back)°¡ °¡Àå ¿À·¡µÈ ÇÁ·¹ÀÓ
+    std::deque<TRAIL_FRAME>  m_dequeFrames; // ì•ž(front)ì´ ìµœì‹ , ë’¤(back)ê°€ ê°€ìž¥ ì˜¤ëž˜ëœ í”„ë ˆìž„
     std::vector<TRAIL_VERTEX> m_vecVertices;
 
     SPtr<class CResDynamicBuffer> m_pResVertexBuffer;

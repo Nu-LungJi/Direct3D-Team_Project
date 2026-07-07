@@ -23,18 +23,18 @@ Texture2D   LUTMap          : register(t9);
 
 cbuffer CB_OBJECT_PBR : register(b3)
 {
-    float4 AlbedoColor;
+    float4  AlbedoColor;
 
-    float NormalIntensity;
-    float RoughnessIntensity;
-    float MetallicIntensity;
-    float AmbientIntensity;
-    float SpecularIntensity;
+    float   NormalIntensity;
+    float   RoughnessIntensity;
+    float   MetallicIntensity;
+    float   AmbientIntensity;
+    float   SpecularIntensity;
 
-    float3 EmissiveColor;
-    float EmissiveIntensity;
+    float3  EmissiveColor;
+    float   EmissiveIntensity;
 
-    float3 Padding;
+    float3  Padding;
 };
 cbuffer CB_LIGHT_BUFFER  : register(b4)
 {
@@ -229,10 +229,12 @@ PS_OUT PSMain(PS_IN IN)
     [branch]
     if (DepthData >= 1.0f)  discard;
 
+    float3 DepthWorld = ReconstructWorldPos(IN.TexCoord, DepthData);
+    
     float3 WorldNormal = NormalMap.Sample(SamplerWrap, IN.TexCoord).rgb;
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
-    float3  V = normalize(g_vCamPos - ReconstructWorldPos(IN.TexCoord, DepthData));
+    float3 V = normalize(g_vCamPos - DepthWorld);
     float   R = reflect(-V, WorldNormal);
 
     float   NDV = max(dot(WorldNormal, V), 0.f);
@@ -255,7 +257,7 @@ PS_OUT PSMain(PS_IN IN)
         float3 L, Radiance;
     
         [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], IN.Position.xyz, L, Radiance))
+        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
             continue;
     
         float RawNDL = dot(WorldNormal, L);
@@ -278,6 +280,7 @@ PS_OUT PSMain(PS_IN IN)
             float3 Diffuse = kD * Albedo / PI;
     
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
+
         }
     }
 
@@ -290,6 +293,7 @@ PS_OUT PSMain(PS_IN IN)
     //LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
     
     OUT.Diffuse = float4(LightAccumulation, 1.f) + float4(Emissive, 1.f);
+ 
     return OUT;
 }
 
@@ -303,7 +307,7 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     if (AlbedoTex.a == 0.0f)
         discard;
     
-    float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent) ;
+    float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);
     float3 V    = normalize(g_vCamPos - IN.WorldPos.xyz);
     float  R    = reflect(-V, WorldNormal);

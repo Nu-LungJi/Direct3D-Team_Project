@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 #include "Client_Defines.h"
 #include "BTActionNode.h"
 
@@ -9,15 +9,17 @@ public:
 	DECLARE_DERIVED_TYPE(CBTAnimation, CBTActionNode)
 private:
 	CBTAnimation();
-	CBTAnimation(const CBTAnimation& Prototype);
+
+	CBTAnimation(const CBTAnimation& rhs);
 	~CBTAnimation() override;
-	// CBTActionNode¿ª(∏¶) ≈Î«ÿ ªÛº”µ 
+	// CBTActionNodeÏùÑ(Î•º) ÌÜµÌï¥ ÏÉÅÏÜçÎê®
 
-	HRESULT InitializePrototype();
-	HRESULT Initalize(void* pArg);
+	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT Initalize(void* pArg)override;
 public:
-	EVALUATE Evaluate() override;
+	EVALUATE Evaluate(_float fTimeDelta) override;
 
+	virtual void		Update_Gui() override;
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;

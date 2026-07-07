@@ -157,7 +157,7 @@ HRESULT CBeam_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 
 int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
     _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
-    _float fFlickerInterval, _float fDuration)
+    _float fFlickerInterval, _float4 emissive, _float fDuration)
 {
     // 안전장치: 버퍼 크기 산정 기준(iMaxDisplacementIterations)을 넘지 않도록 클램프
     if (iDisplacementIterations > m_Desc.iMaxDisplacementIterations)
@@ -173,7 +173,7 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
             beam.vEndPos = vEnd;
             beam.fElapsedTime = 0.f;
             beam.fDuration = fDuration;
-
+            beam.vEmissive = emissive;
             beam.fDisplacementAmplitude = fDisplacementAmplitude;
             beam.iDisplacementIterations = iDisplacementIterations;
             beam.fDisplacementDamping = fDisplacementDamping;
@@ -184,7 +184,7 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
             beam.iSegmentCount = 1u << beam.iDisplacementIterations;
             beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
             beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
-
+            
             RegenerateJaggedPath(beam);
             BuildBeamGeometry();
             return (int32_t)i;

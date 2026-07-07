@@ -88,7 +88,17 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				strcat_s(szFullPath, szDir);
 				strcat_s(szFullPath, file.c_str());
 				strcat_s(szFullPath, ext.c_str());
-			
+				//strcat_s(szFullPath,".dds");
+				std::filesystem::path fsPath(szFullPath);
+				std::string sExt = fsPath.extension().string();
+				std::filesystem::path ddsFsPath = fsPath;
+				ddsFsPath.replace_extension(".dds");
+
+				// dds가 실제로 존재하면 dds 사용
+				if (std::filesystem::exists(ddsFsPath))
+				{
+					strcpy_s(szFullPath, MAX_PATH, ddsFsPath.string().c_str());
+				}
 
 				auto resTex = CResTexture2D::Create(szFullPath);
 				if (FAILED(resTex->Load())) {
@@ -99,13 +109,6 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 			}
 		}
 
-
-		auto resTex = CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png");
-		if (FAILED(resTex->Load())) {
-			return E_FAIL;
-		}
-
-		m_Materials[0].push_back(resTex);
 
 
 	}
@@ -120,6 +123,7 @@ HRESULT CResModelMaterial::Unload(const std::any& arg)
 	m_eState = STATE::UNLOAD;
 	return S_OK;
 }
+
 
 
 

@@ -13,12 +13,12 @@ public:
         PARTICLE_TYPE type;
         _float      fWidth = 1.f;
         _float      fScrollSpeed = 1.f;
-        uint32_t    iDisplacementIterations = 6;      // ±âº»°ª (AddBeam¿¡¼­ ¾È ³Ñ±â¸é ÀÌ°É ¾¸)
+        uint32_t    iDisplacementIterations = 6;      // ê¸°ë³¸ê°’ (AddBeamì—ì„œ ì•ˆ ë„˜ê¸°ë©´ ì´ê±¸ ì”€)
         _float      fDisplacementAmplitude = 2.5f;
         _float      fDisplacementDamping = 0.25f;
         _float      fFlickerInterval = 0.01f;
         uint32_t    iMaxBeams = 16;
-        uint32_t    iMaxDisplacementIterations = 10;  // ¹öÆÛ Å©±â »êÁ¤¿ë - ½ÇÁ¦ »ç¿ë °¡´ÉÇÑ ÃÖ´ñ°ª
+        uint32_t    iMaxDisplacementIterations = 10;  // ë²„í¼ í¬ê¸° ì‚°ì •ìš© - ì‹¤ì œ ì‚¬ìš© ê°€ëŠ¥í•œ ìµœëŒ“ê°’
     };
 
     struct BEAM_INSTANCE
@@ -33,8 +33,9 @@ public:
         _float      fDisplacementDamping = 0.25f;
         _float      fFlickerInterval = 0.1f;
         _float      fFlickerTimer = 0.f;
-
-        // ÀÌ ºö¸¸ÀÇ ¼¼±×¸ÕÆ® Á¤º¸ (°³º°ÀûÀ¸·Î ´Ù¸¦ ¼ö ÀÖÀ½)
+        _float4     vColor = _float4(1, 1, 1, 1);
+        _float4     vEmissive = _float4(1, 1, 1, 1);
+        // ì´ ë¹”ë§Œì˜ ì„¸ê·¸ë¨¼íŠ¸ ì •ë³´ (ê°œë³„ì ìœ¼ë¡œ ë‹¤ë¥¼ ìˆ˜ ìˆìŒ)
         uint32_t    iSegmentCount = 0;        // = 2^iDisplacementIterations
         uint32_t    iVerticesPerPlane = 0;    // = (iSegmentCount+1) * 2
 
@@ -55,7 +56,7 @@ public:
 public:
     int32_t AddBeam(const _float4& vStart, const _float4& vEnd,
         _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, _float fDuration = 0.f);
+        _float fFlickerInterval, _float4 emissive, _float fDuration = 0.f);
     void    SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration = 0.f);
     void    SetStartPos(uint32_t beamIndex, const _float4& vPos);
     void    SetEndPos(uint32_t beamIndex, const _float4& vPos);
@@ -72,7 +73,7 @@ private:
     struct BEAM_DRAW_RANGE
     {
         uint32_t startVertex;
-        uint32_t verticesPerPlane;   // ÀÌ ºöÀÇ Æò¸é ÇÏ³ª´ç ¹öÅØ½º ¼ö (Draw ½Ã ÇÊ¿ä)
+        uint32_t verticesPerPlane;   // ì´ ë¹”ì˜ í‰ë©´ í•˜ë‚˜ë‹¹ ë²„í…ìŠ¤ ìˆ˜ (Draw ì‹œ í•„ìš”)
     };
     std::vector<BEAM_DRAW_RANGE> m_vecDrawRanges;
 

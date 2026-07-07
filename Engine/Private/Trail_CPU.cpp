@@ -15,8 +15,8 @@ CTrail_CPU::~CTrail_CPU()
 
 HRESULT CTrail_CPU::Initialize(void* pArg)
 {
-    // CTrail_CPU´Â CParticle_CPU¿Í °°Àº ¿ªÇÒ - ¹öÆÛ/¼ÎÀÌ´õ/ÅØ½ºÃ³ ·Îµù °°Àº °øÅë Ã³¸®¸¸ ÇÏ°í,
-    // ½ÇÁ¦ °ª(desc)Àº ÀÚ½Ä Å¬·¡½º(CTrail_Example µî)°¡ Ã¤¿ö¼­ ³Ñ°ÜÁØ´Ù.
+    // CTrail_CPUëŠ” CParticle_CPUì™€ ê°™ì€ ì—­í•  - ë²„í¼/ì…°ì´ë”/í…ìŠ¤ì²˜ ë¡œë”© ê°™ì€ ê³µí†µ ì²˜ë¦¬ë§Œ í•˜ê³ ,
+    // ì‹¤ì œ ê°’(desc)ì€ ìžì‹ í´ëž˜ìŠ¤(CTrail_Example ë“±)ê°€ ì±„ì›Œì„œ ë„˜ê²¨ì¤€ë‹¤.
     auto pDesc = static_cast<DESC*>(pArg);
     if (pDesc == nullptr)
         return E_FAIL;
@@ -25,7 +25,7 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
     m_eType = pDesc->type;
 
 
-    // ÇÁ·¹ÀÓ ÇÏ³ª´ç Á¤Á¡ 2°³(¹Øµ¿/Ä®³¡) - Á¤Á¡ ÀÚÃ¼°¡ ÀÌ¹Ì ÆøÀÇ ¾ç ³¡
+    // í”„ë ˆìž„ í•˜ë‚˜ë‹¹ ì •ì  2ê°œ(ë°‘ë™/ì¹¼ë) - ì •ì  ìžì²´ê°€ ì´ë¯¸ í­ì˜ ì–‘ ë
     uint32_t iMaxVertices = m_Desc.iMaxFrames * 2;
 
     if (auto res = CResDynamicBuffer::Create())
@@ -102,7 +102,7 @@ void CTrail_CPU::Clear()
 
 HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
-    if (m_vecVertices.size() < 4) // ÃÖ¼Ò ÇÁ·¹ÀÓ 2°³(=4Á¤Á¡)´Â ÀÖ¾î¾ß ½ºÀ¬ ¸éÀÌ ¼º¸³
+    if (m_vecVertices.size() < 4) // ìµœì†Œ í”„ë ˆìž„ 2ê°œ(=4ì •ì )ëŠ” ìžˆì–´ì•¼ ìŠ¤ìœ• ë©´ì´ ì„±ë¦½
         return S_OK;
 
     pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
@@ -141,14 +141,14 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     pContext->PSSetShaderResources(0, 1, nullSRV);
 
-    pContext->RSSetState(nullptr); // ´ÙÀ½¿¡ ±×·ÁÁú ¿ÀºêÁ§Æ®¿¡ ¿µÇâ ¾È ÁÖµµ·Ï ±âº» »óÅÂ·Î º¹±¸
+    pContext->RSSetState(nullptr); // ë‹¤ìŒì— ê·¸ë ¤ì§ˆ ì˜¤ë¸Œì íŠ¸ì— ì˜í–¥ ì•ˆ ì£¼ë„ë¡ ê¸°ë³¸ ìƒíƒœë¡œ ë³µêµ¬
 
     return S_OK;
 }
 
 HRESULT CTrail_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
-    return E_FAIL; // AddPoint(start, end)·Î Á÷Á¢ Á¦¾î - ÀÌ ÀÎÅÍÆäÀÌ½º´Â ¾È ¾¸
+    return E_FAIL; // AddPoint(start, end)ë¡œ ì§ì ‘ ì œì–´ - ì´ ì¸í„°íŽ˜ì´ìŠ¤ëŠ” ì•ˆ ì”€
 }
 
 void CTrail_CPU::BuildTrailGeometry()
@@ -163,15 +163,15 @@ void CTrail_CPU::BuildTrailGeometry()
     {
         const auto& frame = m_dequeFrames[i];
 
-        // t¸¦ "¹è¿­ ¾È ¸î ¹øÂ°³Ä"°¡ ¾Æ´Ï¶ó "ÀÌ Á¡ÀÌ ¾ó¸¶³ª ´Ä¾ú³Ä"·Î °è»êÇÑ´Ù.
-        // ÀÎµ¦½º ±â¹ÝÀÌ¸é ¸Å ÇÁ·¹ÀÓ ¹è¿­ Å©±â(iCount)°¡ ¹Ù²ð ¶§¸¶´Ù °°Àº Á¡ÀÇ t°¡
-        // ¿äµ¿ÃÄ¼­ ÆøÀÌ ºÎÃ¤Ã³·³ Á¢Çû´Ù ÆìÁ³´Ù ÇÏ´Â ¹®Á¦°¡ »ý±ä´Ù.
-        // ³ªÀÌ´Â ±× Á¡ °íÀ¯ÀÇ °ªÀÌ¶ó ÁÖº¯¿¡ Á¡ÀÌ ¸î °³ ÀÖµç Àý´ë ¾È Èçµé¸°´Ù.
-        _float fAgeRatio = frame.fAge / m_Desc.fMaxDuration; // 0(¹æ±Ý »ý±è)~1(¼Ò¸ê Á÷Àü) - ¾ÈÁ¤Àû
+        // të¥¼ "ë°°ì—´ ì•ˆ ëª‡ ë²ˆì§¸ëƒ"ê°€ ì•„ë‹ˆë¼ "ì´ ì ì´ ì–¼ë§ˆë‚˜ ëŠ™ì—ˆëƒ"ë¡œ ê³„ì‚°í•œë‹¤.
+        // ì¸ë±ìŠ¤ ê¸°ë°˜ì´ë©´ ë§¤ í”„ë ˆìž„ ë°°ì—´ í¬ê¸°(iCount)ê°€ ë°”ë€” ë•Œë§ˆë‹¤ ê°™ì€ ì ì˜ tê°€
+        // ìš”ë™ì³ì„œ í­ì´ ë¶€ì±„ì²˜ëŸ¼ ì ‘í˜”ë‹¤ íŽ´ì¡Œë‹¤ í•˜ëŠ” ë¬¸ì œê°€ ìƒê¸´ë‹¤.
+        // ë‚˜ì´ëŠ” ê·¸ ì  ê³ ìœ ì˜ ê°’ì´ë¼ ì£¼ë³€ì— ì ì´ ëª‡ ê°œ ìžˆë“  ì ˆëŒ€ ì•ˆ í”ë“¤ë¦°ë‹¤.
+        _float fAgeRatio = frame.fAge / m_Desc.fMaxDuration; // 0(ë°©ê¸ˆ ìƒê¹€)~1(ì†Œë©¸ ì§ì „) - ì•ˆì •ì 
         _float fLifeRatio = 1.f - fAgeRatio;
-        _float t = fAgeRatio; // UV ¼¼·ÎÃàµµ °°Àº ±âÁØÀ¸·Î
+        _float t = fAgeRatio; // UV ì„¸ë¡œì¶•ë„ ê°™ì€ ê¸°ì¤€ìœ¼ë¡œ
 
-        // ¾ç ³¡(t=0, t=1)¿¡¼­ ÆøÀÌ 0¿¡ °¡±õ°Ô, Áß°£¿¡¼­ ¿ø·¡ ÆøÀÌ µÇµµ·Ï Å×ÀÌÆÛ¸µ.
+        // ì–‘ ë(t=0, t=1)ì—ì„œ í­ì´ 0ì— ê°€ê¹ê²Œ, ì¤‘ê°„ì—ì„œ ì›ëž˜ í­ì´ ë˜ë„ë¡ í…Œì´í¼ë§.
         _float fWidthScale = sinf(t * XM_PI);
 
         _float3 vMid = {

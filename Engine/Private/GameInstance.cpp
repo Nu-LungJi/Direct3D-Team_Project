@@ -28,6 +28,15 @@
 #include "ComCollider.h"
 #include "MapMeshObject.h"
 #include "MapManager.h"
+#include "PhysXManager.h"
+#include "DbgLineRender.h"
+
+#include "ComPxBoxCollider.h"
+#include "ComPxCapsuleCollider.h"
+#include "ComPxSphereCollider.h"
+#include "ComPxCollider.h"
+#include "ComPxRigidBody.h"
+#include "ComPxTriMeshCollider.h"
 
 #include "ParticleManager.h"
 #include "Particle.h"
@@ -145,10 +154,10 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
-	if(m_pAnimEdit_Manager == nullptr)
+	if (m_pAnimEdit_Manager == nullptr)
 	{
 		return E_FAIL;
-	}	
+	}
 
 	m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pLightManager == nullptr)
@@ -184,12 +193,29 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	m_pPhysXManager = CPhysXManager::Create();
+	if (m_pPhysXManager == nullptr)
+	{
+		return E_FAIL;
+	}
 
 	m_pActionManager = CAction_Manager::Create();
 	if (m_pActionManager == nullptr)
 		return E_FAIL;
 
-    return S_OK;
+	m_pDbgLineRender = CDbgLineRender::Create(ppDevice.Get(), ppContext.Get());
+	if (m_pDbgLineRender == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
+{
+	m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
 }
 
 void CGameInstance::UpdateGUI()
@@ -205,7 +231,7 @@ void CGameInstance::UpdateGUI()
 		ZoneScopedN("GameObjectManager_UpdateGUI");
 		m_pGameObjectManager->UpdateGUI();
 	}
-	
+
 	{
 		ZoneScopedN("m_pAnimEdit_Manager_UpdateGUI");
 
@@ -231,9 +257,12 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	m_pSoundManager->UpdateGUI();
+	// 사운드 붙일때 부활
+	// m_pSoundManager->UpdateGUI();
 
 	m_pNodeEditor->NodeEditorUpdate();
+	m_pPhysXManager->UpdateGUI();
+
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -253,11 +282,6 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
-	{
-		ZoneScopedN("InputManager_Update");
-		m_pDInputManager->Update_InputDev();
-	}
-	
 	// TODO: 마우스 가두기 함수화하기
 	{
 		if (CGameInstance::Get().KeyDown(DIK_TAB))
@@ -279,21 +303,21 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		}
 	}
 
+	// 사운드 붙일때 부활
+	if constexpr (false)
 	{
 		ZoneScopedN("SoundManager_Update");
 		m_pSoundManager->Update();
 	}
-	
+
 
 
 	//m_pParticleManager->Update(fTimeDelta);
 	m_pAnimEdit_Manager->Update(fTimeDelta);
 	m_pParticleManager->Update(fTimeDelta);
 
-
 	{
-		ZoneScopedN("GameObjectManager_PriorityUpdate");
-		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+		m_pPhysXManager->Update(fTimeDelta);
 	}
 
 	{
@@ -316,16 +340,20 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pLightManager->Update(fTimeDelta);
 	}
 
+	m_pColliderManager->Update();
 	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
 	//m_pGameObjectManager->Update(fTimeDelta);
 	//m_pGameObjectManager->LateUpdate(fTimeDelta);
-	
+
 	//m_pLevelManager->Update(fTimeDelta);
 
-	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
 
 	m_pMapManager->Update(fTimeDelta);
 
+	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
+
+	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
@@ -340,7 +368,7 @@ HRESULT CGameInstance::Draw()
 #ifdef _DEBUG
 	m_pMapManager->RenderDebugMapChunk();
 #endif
-    return S_OK;
+	return S_OK;
 }
 
 //void CGameInstance::ClearResource(uint32_t iClearLevelIndex)
@@ -349,6 +377,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
@@ -366,7 +395,9 @@ void CGameInstance::Release_Engine()
 	m_pGameObjectManager.reset();
 	m_pRenderer.reset();
 	m_pFontManager.reset();
+	m_pDbgLineRender.reset();
 	m_pResourceManager.reset();
+	m_pPhysXManager.reset();
 	m_pMapManager.reset();
 	m_pGraphicDevice.reset();
 }
@@ -374,17 +405,31 @@ void CGameInstance::Release_Engine()
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
+	{
+		ZoneScopedN("InputManager_Update");
+		m_pDInputManager->Update_InputDev();
+	}
+
 	m_pLevelManager->FrameStart(fTimeDelta);
 	m_pGameObjectManager->FrameStart();
 	m_pColliderManager->FrameStart();
+
+
+
+	{
+		ZoneScopedN("GameObjectManager_PriorityUpdate");
+		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+	}
 }
-void CGameInstance::FrameEnd(_float fTimeDelta) 
+void CGameInstance::FrameEnd(_float fTimeDelta)
 {
 	m_pGameObjectManager->FrameEnd();
 	m_pLevelManager->FrameEnd(fTimeDelta);
 
 	m_pRenderer->FrameEnd();
+	CMapMeshObject::ClearInstancingData();
 	m_pColliderManager->FrameEnd();
+	m_pDbgLineRender->FrameEnd();
 }
 
 
@@ -402,9 +447,9 @@ HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& s
 }
 HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-	_float fFlickerInterval, _float fDuration)
+	_float fFlickerInterval, _float4 emissive, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(quantity,start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, fDuration);
+	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
 }
 #pragma endregion
 
@@ -476,6 +521,14 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(_float4x4) * 512 })))
+		{
+			return E_FAIL;
+		}
+	}
+
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
 		res->Load(D3D11_SAMPLER_DESC{
@@ -534,7 +587,7 @@ HRESULT CGameInstance::InitializeResources()
 		{
 			return E_FAIL;
 		}
-	
+
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
 	//ShaderFiles
@@ -546,6 +599,34 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI", "./ShaderFiles/UI/QuadTexUI.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI", "./ShaderFiles/UI/QuadTexUI.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook", "./ShaderFiles/UI/QuadTexFlipBook.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook", "./ShaderFiles/UI/QuadTexFlipBook.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -588,9 +669,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-
-
-
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex", E::CResQuadTexBuffer::Create()))
 	{
 		if (FAILED(res->Load()))
@@ -600,9 +678,6 @@ HRESULT CGameInstance::InitializeResources()
 	}
 
 
-
-
-	//
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL, E::CResRasterizerState::Create()))
 	{
 		D3D11_RASTERIZER_DESC desc{};
@@ -739,7 +814,7 @@ HRESULT CGameInstance::InitializeResources()
 	{
 		D3D11_DEPTH_STENCIL_DESC depthDesc{};
 		depthDesc.DepthEnable = TRUE;
-		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; 
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		res->Load(depthDesc);
 	}
@@ -749,9 +824,9 @@ HRESULT CGameInstance::InitializeResources()
 		depthDesc.DepthEnable = TRUE;
 		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
-		depthDesc.StencilEnable		= FALSE;
-		depthDesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
-		depthDesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		depthDesc.StencilEnable = FALSE;
+		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
 		res->Load(depthDesc);
 	}
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD", E::CResDepthStencilState::Create()))
@@ -765,24 +840,59 @@ HRESULT CGameInstance::InitializeResources()
 		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
 		res->Load(depthDesc);
 	}
+
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = FALSE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+		depthDesc.StencilEnable = FALSE;
+		res->Load(depthDesc);
+	}
+
 	// Test Model Load
 	// 오류나서 제거
-	if(true)
+	if (true)
 	{
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+		//if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		return E_FAIL;
+		//	}
+		//}
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
+
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
 
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{
@@ -799,45 +909,54 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 	}
-	
+
+
 	// 텍스쳐 없는 경우 대비, 대체 텍스쳐
 	{
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_Gray", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Gray.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Diffuse.png")))
 		{
 			res->Load();
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_White", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Normal.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_SMRO.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Emissive.png")))
 		{
 			res->Load();
 		}
 	}
-	
 
 
-	
-		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
 
-			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
+	if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
+		CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
 		}
+	}
 
-		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
 
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
 		}
+	}
 
 
 	return S_OK;
@@ -881,10 +1000,6 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-	if (AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))
-	{
-		return E_FAIL;
-	}
 	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
 	{
 		return E_FAIL;
@@ -893,6 +1008,32 @@ HRESULT CGameInstance::InitializePrototype()
 	if (AddPrototype("PERMANENT", "Prototype_GameObject_MapMeshObject", CMapMeshObject::Create()))
 	{
 		return E_FAIL;
+	}
+
+
+
+	// 피직스관련
+	{
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxBoxCollider", CComPxBoxCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxCapsuleCollider", CComPxCapsuleCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxSphereCollider", CComPxSphereCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxTriMeshCollider", CComPxTriMeshCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (AddPrototype("PHYSX", "Prototype_Component_ComPxRigidBody", CComPxRigidBody::Create()))
+		{
+			return E_FAIL;
+		}
 	}
 
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
@@ -1332,7 +1473,7 @@ HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
 HRESULT CGameInstance::LoadMapData(const std::string& path)
-{	
+{
 	return m_pMapManager->LoadMapData(path);
 }
 HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)
@@ -1400,16 +1541,51 @@ HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
 #pragma endregion
 
 #pragma region NODE_EDITOR
-HRESULT					CGameInstance::Add_Action_Prototype(const _string& strActionName, UPtr<class CBTRoot> pAction)
+HRESULT					CGameInstance::Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction)
 {
-	return m_pActionManager->Add_Action_Prototype(strActionName, std::move(pAction));
+	return m_pActionManager->Add_Action_Prototype(eType, strActionName, std::move(pAction));
 }
-UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(uint32_t& iNode, ImVec2 vNodePos,CHandle Handle)
+UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
 {
-	return m_pActionManager->Show_ActioNode_List(iNode, vNodePos, Handle);
+	return m_pActionManager->Show_ActioNode_List(eType, iNode, vNodePos, Handle);
 }
 void				CGameInstance::Show_Action_NodeWidget(CBTRoot* pNode)
 {
 	m_pActionManager->Show_Action_NodeWidget(pNode);
+}
+#pragma endregion
+
+#pragma region PHYSX_MANAGER
+//void CGameInstance::PxStepSimulation(float fFixedDeltaTime)
+//{
+//	m_pPhysXManager->StepSimulation(fFixedDeltaTime);
+//}
+
+physx::PxScene* CGameInstance::PxGetScene() const
+{
+	return m_pPhysXManager->GetScene();
+}
+physx::PxPhysics* CGameInstance::PxGetPhysics() const
+{
+	return m_pPhysXManager->GetPhysics();
+}
+_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const
+{
+	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
+}
+_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+{
+	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
+}
+#pragma endregion
+UPtr<class CBTRoot>	    CGameInstance::Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg)
+{
+	return m_pActionManager->Clone_Action(eType, strActionName, pArg);
+}
+#pragma endregion
+#pragma region ANIMATIONEDTIOR_MANAGER
+int32_t CGameInstance::GetAnimIndex(CHandle Handle)
+{
+	return m_pAnimEdit_Manager->GetAnimIndex(Handle);
 }
 #pragma endregion

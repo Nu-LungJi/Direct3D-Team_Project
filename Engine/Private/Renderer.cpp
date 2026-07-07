@@ -4,6 +4,7 @@
 #include "CameraObject.h"
 #include "Resources.h"
 #include "MyGFSDK_SSAO.h"
+#include "UIObject.h"
 
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice } , m_pContext{ pContext } { }
@@ -22,7 +23,7 @@ void CRenderer::UpdateGUI()
 
 HRESULT CRenderer::Initialize()
 {
-    if (FAILED(InitializeShaderResource()))         return E_FAIL;
+    if (FAILED(InitializeShaderResource()))     return E_FAIL;
 
     if (FAILED(InitializeBackBuffer()))         return E_FAIL;
 
@@ -88,6 +89,7 @@ HRESULT CRenderer::InitializeShaderResource()
     {
         if (FAILED(res->Load()))    return E_FAIL;
     }
+
     return S_OK;
 }
 
@@ -213,6 +215,15 @@ HRESULT CRenderer::InitializeTargetPBR()
     if (m_pPBRPixelShader  = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR"))
     {
         if (FAILED(m_pPBRPixelShader->Load()))    return E_FAIL;
+    }
+
+    if (m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim"))
+    {
+        if (FAILED(m_pResVertexShader->Load()))    return E_FAIL;
+    }
+    if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim"))
+    {
+        if (FAILED(m_pResPixelShader->Load()))    return E_FAIL;
     }
 
     return S_OK;
@@ -390,7 +401,7 @@ HRESULT CRenderer::Draw() {
     if (FAILED(Render_PostProcess()))     return E_FAIL;
 
     // UI
-   // if (FAILED(Render_UserInterface()))  return E_FAIL;
+    if (FAILED(Render_UserInterface()))  return E_FAIL;
 
     {
         m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
@@ -445,17 +456,21 @@ HRESULT CRenderer::Render_ShadowMap(){
 HRESULT CRenderer::Render_DepthMap() {
     ZoneScopedN("Render_DepthMap");
     {
-        ID3D11RenderTargetView* pRTVs[1] = {nullptr };
-        m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+        ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
+        m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
         m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 
         auto pGameCam = CGameInstance::Get().GetActiveCamera();
         if (nullptr == pGameCam)    return S_OK;
 
-        if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
+        if (FAILED(Reset_RenderContext(RENDERPASS::DEPTH, pGameCam))) return E_FAIL;
 
         if (FAILED(Bind_CameraAttribute(pGameCam))) return E_FAIL;
+
+        {
+            m_pContext->PSSetShader(nullptr, nullptr, 0);       // Depth 기록, PS 제외
+        }
 
         if (FAILED(RenderNonBlend()))            return E_FAIL;
 
@@ -463,7 +478,7 @@ HRESULT CRenderer::Render_DepthMap() {
 
     return S_OK;
 }
-HRESULT CRenderer::Render_NonAlpha() {
+HRESULT CRenderer::Render_NonAlpha() { 
     ZoneScopedN("Render_NonAlpha");
     {
         ID3D11RenderTargetView* pRTVs[4] = {
@@ -490,31 +505,49 @@ HRESULT CRenderer::Render_NonAlpha() {
         if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
         if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
+    } 
+    {
+        const auto& PBR_VertexShader = m_pResVertexShader;		// Renderer에서 조정
+        const auto& PBR_PixelShader = m_pResPixelShader;		// Renderer에서 조정
+
+        m_pContext->IASetInputLayout(PBR_VertexShader->GetInputLayout().Get());
+        m_pContext->VSSetShader(PBR_VertexShader->GetVertexShader().Get(), nullptr, 0);
+        m_pContext->PSSetShader(PBR_PixelShader->GetPixelShader().Get(), nullptr, 0);
+    }
+    {
+        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+        m_pContext->RSSetState(rasterizer->GetRasterizerState().Get());
     }
 
-    if (FAILED(RenderPriority()))        return E_FAIL;
-    {
+    if (FAILED(RenderPriority()))       return E_FAIL;
 
-    }
+    if (FAILED(RenderNonBlend()))       return E_FAIL;
 
-    if (FAILED(RenderNonBlend()))
-    {
-        return E_FAIL;
-    }
-    if (FAILED(RenderLight()))
-    {
-        return E_FAIL;
-    }
-    
+    if (FAILED(RenderLight()))          return E_FAIL;
+
     // UnBind RenderTargets
     {
         ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
         m_pContext->OMSetRenderTargets(4, pRTVs, nullptr);
+
+        ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+        m_pContext->PSSetShaderResources(0, 1, pSRVs);
+        m_pContext->PSSetShaderResources(1, 1, pSRVs);
+        m_pContext->PSSetShaderResources(2, 1, pSRVs);
+        m_pContext->PSSetShaderResources(3, 1, pSRVs);
+        m_pContext->PSSetShaderResources(4, 1, pSRVs);
+    }
+    {
+        m_pContext->IASetInputLayout(nullptr);
+        m_pContext->VSSetShader(nullptr, nullptr, 0);
+        m_pContext->PSSetShader(nullptr, nullptr, 0);
     }
 
     return S_OK;
 }
 HRESULT CRenderer::Render_Lighting() {
+    CGameInstance::Get().Bind_DynamicLight();
+
     ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
     m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
     m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
@@ -581,6 +614,12 @@ HRESULT CRenderer::Render_Lighting() {
         m_pContext->PSSetShaderResources(3, 1, pSRVs);
         m_pContext->PSSetShaderResources(4, 1, pSRVs);
     }
+    {
+        m_pContext->IASetInputLayout(nullptr);
+        m_pContext->VSSetShader(nullptr, nullptr, 0);
+        m_pContext->PSSetShader(nullptr, nullptr, 0);
+    }
+    
     return S_OK;
 }
 
@@ -597,6 +636,16 @@ HRESULT CRenderer::Render_Alpha() {
 
     auto pGameCam = CGameInstance::Get().GetActiveCamera();
     if (nullptr == pGameCam)    return S_OK;
+
+    {
+        m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
+        m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
+        m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
+    }
+    {
+        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+        m_pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+    }
 
     if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
@@ -617,10 +666,10 @@ HRESULT CRenderer::Render_Alpha() {
         return E_FAIL;
     }
 
-    if (FAILED(RenderParticle()))
-    {
-        return E_FAIL;
-    }
+    //if (FAILED(RenderParticle()))
+    //{
+    //    return E_FAIL;
+    //}
    
     // UnBind RenderTargets
     {
@@ -705,22 +754,22 @@ HRESULT CRenderer::Render_OffScreen() {
 }
 HRESULT CRenderer::Render_UserInterface(){
     {
-        auto pUICame = CGameInstance::Get().GetCamera("UI");
-        if (nullptr == pUICame) return S_OK;
+       auto pUICame = CGameInstance::Get().GetCamera("UI");
+       if (nullptr == pUICame) return S_OK;
        
-        RenderContext.matProj = pUICame->GetProj();
-        RenderContext.matView = pUICame->GetView();
-        RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
-        RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
+       RenderContext.matProj = pUICame->GetProj();
+       RenderContext.matView = pUICame->GetView();
+       RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
+       RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
        
-        if (FAILED(Bind_CameraAttribute(pUICame)))
-        {
-            return E_FAIL;
-        }
-        if (FAILED(RenderUI()))
-        {
-            return E_FAIL;
-        }
+       if (FAILED(Bind_CameraAttribute(pUICame)))
+       {
+           return E_FAIL;
+       }
+       if (FAILED(RenderUI()))
+       {
+           return E_FAIL;
+       }
     }
     return S_OK;
 }
@@ -774,7 +823,7 @@ HRESULT CRenderer::Render_FullScreen()
     }
     else
     {
-        ID3D11ShaderResourceView* pSRVs[1] = { m_pOffScreenTex2D->GetSRV().Get() };
+        ID3D11ShaderResourceView* pSRVs[1] = { m_pLastTex2DBeforeFullScreenDraw->GetSRV().Get() };
         m_pContext->PSSetShaderResources(0, 1, pSRVs);
     }
 
@@ -824,7 +873,7 @@ HRESULT CRenderer::RenderBlend()
 {
     ZoneScopedN("RenderBlend");
 
-    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD");
     m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::BLEND)])
@@ -942,7 +991,30 @@ HRESULT CRenderer::Render_PostProcess(){
 
 HRESULT CRenderer::RenderUI()
 {
-    for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI)])
+    auto& renderList = m_RenderObject[ETOUI(RENDERGROUP::UI)];
+
+    std::sort(renderList.begin(), renderList.end(),
+        [](const IRenderable* lhs, const IRenderable* rhs)
+        {
+            const CUIObject* l = static_cast<const CUIObject*>(lhs);
+            const CUIObject* r = static_cast<const CUIObject*>(rhs);
+            return l->GetWeight() < r->GetWeight();
+        });
+
+    auto noDepth = E::CGameInstance::Get().GetResourceFirst<E::CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
+
+    m_pContext->OMSetDepthStencilState(
+        noDepth->GetDepthStencilState().Get(),
+        0);
+
+    auto blend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE,"BS_ALPHA_BLEND");
+    float blendFactor[4] = { 0,0,0,0 };
+    m_pContext->OMSetBlendState(
+        blend->GetBlendState().Get(),
+        blendFactor,
+        0xffffffff);
+
+    for (auto* pRenderObject : renderList)
     {
         if (pRenderObject->HasRenderPass(RenderContext.pass))
         {

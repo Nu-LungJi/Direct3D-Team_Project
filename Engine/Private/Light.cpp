@@ -19,12 +19,12 @@ void CLight::UpdateGUI()
 }
 HRESULT CLight::InitializePrototype(void* pArg) {
     m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
-    if (FAILED(m_pResVertexShader->Load()))
+    if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = "VSMain", .sTarget = "vs_5_0" })))
     {
         return E_FAIL;
     }
     m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex");
-    if (FAILED(m_pResPixelShader->Load()))
+    if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain", .sTarget = "ps_5_0" })))
     {
         return E_FAIL;
     }
@@ -38,7 +38,7 @@ HRESULT CLight::InitializePrototype(void* pArg) {
     {
         return E_FAIL;
     }
-
+    
 #ifdef _DEBUG
     if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_Icon_DirectionalLight", CResTexture2D::Create("./Resources/Engine/Texture/Debugging/Icon_DirectionalLight.png"))) {
         res->Load();
@@ -61,10 +61,8 @@ HRESULT CLight::Initialize(void* pArg)
     {
         CComConstantBuffer::DESC Desc{};
         Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-        if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-        {
-            return E_FAIL;
-        };
+        if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject))) return E_FAIL;
+
     }
     {
         CComCollider::DESC Desc{};
@@ -135,8 +133,9 @@ void CLight::Update(E::_float fTimeDelta) {
 void CLight::LateUpdate(E::_float fTimeDelta) {
 #ifdef _DEBUG     
     if (Debug_RenderFlag)
+        CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
 #endif
-        CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+        
 }
 HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 #ifdef _DEBUG
@@ -178,6 +177,11 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
             pContext->PSSetShaderResources(0, 1, m_pResSpotLightTexture2D->GetSRV().GetAddressOf());
         }
     }
+    ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+    pContext->PSSetShaderResources(1, 1, pSRVs);
+    pContext->PSSetShaderResources(2, 1, pSRVs);
+    pContext->PSSetShaderResources(3, 1, pSRVs);
+
     {
         const auto& sampler = m_pResSamplerState;
         pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
@@ -187,6 +191,15 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
         pContext->RSSetState(rasterizer->GetRasterizerState().Get());
     }
     pContext->DrawIndexed(m_pResLightTexBuffer->GetNumIndices(), 0, 0);
+
+    pContext->VSSetShader(nullptr, nullptr, 0);
+    pContext->PSSetShader(nullptr, nullptr, 0);
+
+    ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
+    pContext->PSSetShaderResources(0, 1, pSRVs);
+    pContext->PSSetShaderResources(1, 1, pSRVs);
+    pContext->PSSetShaderResources(2, 1, pSRVs);
+    pContext->PSSetShaderResources(3, 1, pSRVs);
 #endif 
 
     return S_OK;
@@ -194,7 +207,7 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
 
 VOID CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
     m_LightType = _LTYPE;
-    // ³»ÀÏ ±¸Çö - Å¸ÀÔ ¹Ù²î¸é Äİ¶óÀÌ´õµµ 
+    // ë‚´ì¼ êµ¬í˜„ - íƒ€ì… ë°”ë€Œë©´ ì½œë¼ì´ë”ë„ 
 }
 UPtr<CLight> CLight::Create()
 {
