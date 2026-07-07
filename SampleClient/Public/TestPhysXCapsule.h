@@ -1,7 +1,6 @@
 #pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
-#include "ComPhysX.h"
 #include "ComCollider.h"
 
 NS_BEGIN(Engine)

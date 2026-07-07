@@ -4,7 +4,6 @@
 #include "ComConstantBuffer.h"
 #include "Resources.h"
 #include "GameInstance.h"
-#include "ComPhysX.h"
 
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
