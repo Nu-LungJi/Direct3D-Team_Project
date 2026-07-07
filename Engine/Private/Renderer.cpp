@@ -273,6 +273,7 @@ HRESULT CRenderer::InitializeGFSDK_SSAO()
     {
         return E_FAIL;
     }
+	m_pResDynAOTex2D = Generate_RenderTarget("DynTex2D_HBAO_PLUS", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
     return S_OK;
 }
 #pragma endregion
@@ -387,21 +388,24 @@ HRESULT CRenderer::Draw() {
 
     // Diffuse + Normal + SMRO + Emissive
     if (FAILED(Render_NonAlpha()))       return E_FAIL;
-    
-    // PBR Lighting
-    if (FAILED(Render_Lighting()))       return E_FAIL;
 
-    // Trensparent + PBR
-    if (FAILED(Render_Alpha()))          return E_FAIL;
+	// HBAO
+	if (FAILED(RenderHBAO()))			 return E_FAIL;
 
-    // Combined
-    if (FAILED(Render_OffScreen()))      return E_FAIL;
+	// PBR Lighting
+	if (FAILED(Render_Lighting()))       return E_FAIL;
 
-    // PostProcess
-    if (FAILED(Render_PostProcess()))     return E_FAIL;
+	// Trensparent + PBR
+	if (FAILED(Render_Alpha()))          return E_FAIL;
 
-    // UI
-    if (FAILED(Render_UserInterface()))  return E_FAIL;
+	// Combined
+	if (FAILED(Render_OffScreen()))      return E_FAIL;
+
+	// PostProcess
+	if (FAILED(Render_PostProcess()))     return E_FAIL;
+
+	// UI
+	if (FAILED(Render_UserInterface()))  return E_FAIL;
 
     {
         m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
@@ -598,6 +602,8 @@ HRESULT CRenderer::Render_Lighting() {
         ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDepth->GetSRV().Get() };
         m_pContext->PSSetShaderResources(4, 1, pSRVs);
     }
+	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynAOTex2D->GetSRV().Get() };
+	m_pContext->PSSetShaderResources(5, 1, pSRVs);
 
     // Draw On PBRScreen
     m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
@@ -613,7 +619,9 @@ HRESULT CRenderer::Render_Lighting() {
         m_pContext->PSSetShaderResources(2, 1, pSRVs);
         m_pContext->PSSetShaderResources(3, 1, pSRVs);
         m_pContext->PSSetShaderResources(4, 1, pSRVs);
-    }
+		m_pContext->PSSetShaderResources(5, 1, pSRVs);
+	}
+
     {
         m_pContext->IASetInputLayout(nullptr);
         m_pContext->VSSetShader(nullptr, nullptr, 0);
@@ -725,6 +733,10 @@ HRESULT CRenderer::Render_OffScreen() {
             ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetPBR->GetSRV().Get() };
             m_pContext->PSSetShaderResources(0, 1, pSRVs);
         }
+
+
+		
+		
         // Draw On OffScreen
         m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
@@ -818,7 +830,7 @@ HRESULT CRenderer::Render_FullScreen()
 
     if (CGameInstance::Get().KeyPressing(DIK_N))
     {
-        ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetNormal->GetSRV().Get() };
+        ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynAOTex2D->GetSRV().Get() };
         m_pContext->PSSetShaderResources(0, 1, pSRVs);
     }
     else
@@ -826,6 +838,8 @@ HRESULT CRenderer::Render_FullScreen()
         ID3D11ShaderResourceView* pSRVs[1] = { m_pLastTex2DBeforeFullScreenDraw->GetSRV().Get() };
         m_pContext->PSSetShaderResources(0, 1, pSRVs);
     }
+
+
 
     //ID3D11ShaderResourceView* pSRVs[1] = { m_pLastTex2DBeforeFullScreenDraw->GetSRV().Get() };
     //m_pContext->PSSetShaderResources(0, 1, pSRVs);
@@ -867,6 +881,82 @@ HRESULT CRenderer::RenderNonBlend()
     }
 
     return S_OK;
+}
+
+HRESULT CRenderer::RenderHBAO() {
+
+	ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+
+	if (auto pCam = CGameInstance::Get().GetActiveCamera()) {
+
+		GFSDK_SSAO_InputData_D3D11 Input;
+		Input.DepthData.DepthTextureType = GFSDK_SSAO_HARDWARE_DEPTHS;
+		Input.DepthData.pFullResDepthTextureSRV = m_pResDynTexTargetDepth->GetSRV().Get();
+		Input.NormalData.pFullResNormalTextureSRV = m_pResDynTexTargetNormal->GetSRV().Get();
+		Input.NormalData.Enable = true;
+
+		Input.NormalData.DecodeScale = 2.0f;
+		Input.NormalData.DecodeBias = -1.0f;
+		auto ViewMat = pCam->GetView();
+		float ViewMat16[16]{};
+
+		// 앞서 투영행렬 복사한 것과 똑같이 16개 배열에 복사
+		memcpy(&ViewMat16[0], &ViewMat.r[0], sizeof(float) * 4);
+		memcpy(&ViewMat16[4], &ViewMat.r[1], sizeof(float) * 4);
+		memcpy(&ViewMat16[8], &ViewMat.r[2], sizeof(float) * 4);
+		memcpy(&ViewMat16[12], &ViewMat.r[3], sizeof(float) * 4);
+
+		// 복사한 데이터를 HBAO+ 구조체 행렬에 대입
+		Input.NormalData.WorldToViewMatrix.Data = GFSDK_SSAO_Float4x4(ViewMat16);
+		Input.NormalData.WorldToViewMatrix.Layout = GFSDK_SSAO_ROW_MAJOR_ORDER;
+
+		//Input.DepthData.pFullResDepthTexture2ndLayerSRV = pDepthStencilTexture2ndLayerSRV; // Required only if Params.DualLayerAO=true
+
+		// 1. 16개짜리 float 배열 선언
+		float ProjMat[16]{};
+
+		// 2. pCam의 투영 행렬(XMMATRIX 등) 데이터를 float 배열에 복사
+		// (DirectXMath 기준 r[0], r[1]... 배열을 직접 복사하거나 XMStoreFloat4x4를 활용할 수 있습니다)
+		auto Mat = pCam->GetProj();
+		memcpy(&ProjMat[0], &Mat.r[0], sizeof(float) * 4);
+		memcpy(&ProjMat[4], &Mat.r[1], sizeof(float) * 4);
+		memcpy(&ProjMat[8], &Mat.r[2], sizeof(float) * 4);
+		memcpy(&ProjMat[12], &Mat.r[3], sizeof(float) * 4);
+
+		// 3. 배열을 구조체 생성자에 전달하여 변환 완료
+		GFSDK_SSAO_Float4x4 ssaoProjMatrix(ProjMat);
+		Input.DepthData.ProjectionMatrix.Data = GFSDK_SSAO_Float4x4(ProjMat);
+		Input.DepthData.ProjectionMatrix.Layout = GFSDK_SSAO_ROW_MAJOR_ORDER;
+
+		float SceneScale = 1.0f;
+		Input.DepthData.MetersToViewSpaceUnits = SceneScale;
+
+		GFSDK_SSAO_Parameters Params;
+		Params.Radius = 4.f;
+		Params.Bias = 0.1f;
+		Params.PowerExponent = 4.f;
+		Params.Blur.Enable = true;
+		Params.Blur.Radius = GFSDK_SSAO_BLUR_RADIUS_4;
+		Params.Blur.Sharpness = 16.f;
+		//Params.DualLayerAO = true;
+		GFSDK_SSAO_Output_D3D11 Output;
+
+		Output.pRenderTargetView = m_pResDynAOTex2D->GetRTV().Get();
+		Output.Blend.Mode = GFSDK_SSAO_OVERWRITE_RGB;
+		m_pGFSDK_SSAO->SetInputDepths(Input);
+		m_pGFSDK_SSAO->SetAOParameters(Params);
+		m_pGFSDK_SSAO->SetRenderTarget(Output);
+
+
+		//_float4 clearColor = { 1.f, 1.f, 1.f, 1.f };
+		//m_pContext->ClearRenderTargetView(m_pResDynAOTex2D->GetRTV().Get(), reinterpret_cast<const float*>(&clearColor));
+
+		if (FAILED(m_pGFSDK_SSAO->RenderAO())) {
+			MSG_BOX("ao 실패");
+		}
+	}
+	return S_OK;
 }
 
 HRESULT CRenderer::RenderBlend()
@@ -1114,7 +1204,8 @@ HRESULT CRenderer::Initialize_Debugging()
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetSMRO);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetEmissive);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
-    m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess); 
+    m_pResDynTexTargetList.push_back(m_pResDynAOTex2D);
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess);
 
     for (uint32_t i = 0; i < m_pResDynTexTargetList.size(); i++)
     {

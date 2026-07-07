@@ -10,9 +10,7 @@
 #define MAX_REFLECTION_LOD  4.f
 
 Texture2D g_DiffuseTexture  : register(t0);
-Texture2D g_NormalTexture   : register(t1);
-Texture2D g_SMROTexture     : register(t2);
-Texture2D g_EmissiveTexture : register(t3);
+Texture2D g_AOTexture       : register(t1);
 //Texture2D g_ShadowMap       : register(t4);
 
 struct PS_IN
@@ -40,7 +38,10 @@ PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT OUT;
     
-    OUT.Diffuse = g_DiffuseTexture.Sample(SamplerWrap, IN.TexCoord);
+    float4 Diffuse = g_DiffuseTexture.Sample(SamplerWrap, IN.TexCoord);
+   
     
+    float3 finalColor = Diffuse;
+    OUT.Diffuse = float4(finalColor, 1.f);
     return OUT;
 }

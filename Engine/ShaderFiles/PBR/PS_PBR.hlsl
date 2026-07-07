@@ -15,6 +15,7 @@ Texture2D   NormalMap       : register(t1);
 Texture2D   SMROMap         : register(t2);
 Texture2D   EmissiveMap     : register(t3);
 Texture2D   DepthMap        : register(t4);
+Texture2D g_AOTexture : register(t5);
 
 // Image Based Lighting
 TextureCube IrridianceMap   : register(t7);
@@ -239,6 +240,8 @@ PS_OUT PSMain(PS_IN IN)
 
     float   NDV = max(dot(WorldNormal, V), 0.f);
     float3  AlbedoTex   = AlbedoMap.Sample(SamplerWrap, IN.TexCoord).rgb;
+    
+   
 
     float3  Albedo      = pow(AlbedoTex.rgb, 2.2f);
     float3  SMRO        = SMROMap.Sample(SamplerWrap, IN.TexCoord);
@@ -286,14 +289,16 @@ PS_OUT PSMain(PS_IN IN)
 
     float3 Emissive = EmissiveMap.Sample(SamplerWrap, IN.TexCoord).rgb;
     // Enviroment Light Process
-    //float3  Ambient  = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-    //float   Occlusion = clamp(1.0f + dot(R, WorldNormal), 0.0f, 1.0f);
-    //Ambient *= Occlusion * Occlusion;
-    //LightAccumulation += Ambient;
-    //LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
     
+    float3 Ambient = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
+    //LightAccumulation += Ambient * 3.f;
+      
+    float AO = g_AOTexture.Sample(SamplerWrap, IN.TexCoord).r;
+   // LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
+    
+   // LightAccumulation *= AO;
     OUT.Diffuse = float4(LightAccumulation, 1.f) + float4(Emissive, 1.f);
- 
+    OUT.Diffuse *= AO;
     return OUT;
 }
 

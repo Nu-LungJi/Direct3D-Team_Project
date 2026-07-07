@@ -929,6 +929,10 @@ HRESULT CGameInstance::InitializeResources()
 		{
 			res->Load();
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		{
+			res->Load();
+		}
 	}
 
 

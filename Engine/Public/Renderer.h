@@ -35,7 +35,7 @@ private:
 
 	HRESULT InitilizePostProcess();
 	HRESULT InitializeGFSDK_SSAO();
-
+	
 	
 public:
 	HRESULT Draw();
@@ -62,6 +62,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
 	
+	SPtr<CResDynamicTexture2D>	m_pResDynAOTex2D{};				// HBAO
 	//SPtr<CResDynamicTexture2D> m_pResDynTex
 
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
@@ -154,6 +155,7 @@ private:
 private:
 	HRESULT RenderPriority();
 	HRESULT RenderNonBlend();
+	HRESULT	RenderHBAO();
 	HRESULT RenderBlend();
 	HRESULT RenderLight();
 	HRESULT RenderSkybox();
