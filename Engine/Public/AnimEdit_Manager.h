@@ -9,12 +9,17 @@ class CGameObject;
 class CAnimEdit_Manager final : public CEngineBase
 {
 public:
-	struct AnimSpeedKey
+	struct SPEED_KEY
 	{
 		float fTime = 0.f;
 		float fSpeed = 1.f;
-	};
 
+	};
+	struct BAKE_SAMPLE
+	{
+		float fSourceTrackPosition = 0.f; // 원본에서 읽을 시간
+		float fBakedTrackPosition = 0.f;  // 새 애니메이션에 저장할 시간
+	};
 private:
 	CAnimEdit_Manager();
 	~CAnimEdit_Manager();
@@ -39,6 +44,8 @@ public:
 	void IMGUI_Select_Animation();
 	void IMGUI_Select_Detail_Data();
 
+	void IMGUI_Speed_Animation();
+
 	void IMGUI_File_Rename(const std::string& Path, const std::string& fileName, const std::string& newfileName);
 
 
@@ -47,7 +54,10 @@ public:
 	_bool RenameAnimFile_Overwrite(const std::string& oldFullPath, const std::string& newAnimName, std::string& outNewFullPath);
 	_bool IsSamePath(const std::filesystem::path& a, const std::filesystem::path& b);
 	_bool IsAlreadyLoadedAnim(const std::vector<SPtr<CResModelAnim>>& animations, const std::filesystem::path& loadPath);
-	_bool WriteSaveBinary(const std::string _path, const std::string _Name);
+
+	_bool WriteSaveBakedBinary(const std::string& _path, const std::string& _Name);
+	std::vector<BAKE_SAMPLE> BuildBakeSamples(float fSourceDuration, float fTickPerSecond, float fSampleFPS);
+	KEYFRAME SampleChannelKeyFrame(CResModelChanel* pChannel, float fTrackPosition);
 
 
 
@@ -75,7 +85,7 @@ private:
 	std::string oldPath;
 	std::string newPath;
 
-	std::vector<AnimSpeedKey> m_SpeedKeys;
+	std::vector<SPEED_KEY> m_SpeedKeys;
 
 public:
 	static UPtr<CAnimEdit_Manager> Create();

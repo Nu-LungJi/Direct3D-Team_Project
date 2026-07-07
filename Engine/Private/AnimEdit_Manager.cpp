@@ -19,6 +19,7 @@ CAnimEdit_Manager::~CAnimEdit_Manager()
 
 HRESULT CAnimEdit_Manager::Initilize()
 {
+    m_SpeedKeys.clear();
 
     m_SpeedKeys.push_back({ 0.f, 1.f });
 
@@ -376,11 +377,10 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
 
                     if (pAnim)
                     {
-                        if (WriteSaveBinary(
+                        if (WriteSaveBakedBinary(
                             s_SaveTargetPath.parent_path().string(),
                             s_SaveTargetPath.stem().string()))
                         {
-     
                         }
                     }
                 }
@@ -721,7 +721,228 @@ void CAnimEdit_Manager::IMGUI_Select_Detail_Data()
 
 }
 
+void CAnimEdit_Manager::IMGUI_Speed_Animation()
+{
+    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    if (!pSampleObj)
+        return;
 
+    auto pComModelInstance =
+        pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+    auto pComAnimator =
+        pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+    if (!pComModelInstance || !pComAnimator)
+        return;
+
+    if (!pComModelInstance->GetModel())
+        return;
+
+    auto& animations = pComModelInstance->GetModel()->GetAnimations();
+
+    if (animations.empty())
+        return;
+
+    uint32_t iAnimIndex = pComAnimator->GetPlayAnimIndex();
+
+    if (iAnimIndex >= animations.size())
+        return;
+
+    auto pAnim = animations[iAnimIndex];
+
+    if (!pAnim)
+        return;
+
+    float fDuration = pAnim->GetDuration();
+    float fCurrentPos = pAnim->GetCurrentTrackPosition();
+
+    if (m_SpeedKeys.empty())
+    {
+        m_SpeedKeys.push_back({ 0.f, 1.f });
+    }
+
+    //----------------------------------------
+    // 창 위치
+    //----------------------------------------
+    ImGuiViewport* pViewport = ImGui::GetMainViewport();
+
+    constexpr float WINDOW_WIDTH = 380.f;
+    constexpr float WINDOW_HEIGHT = 360.f;
+
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            pViewport->Pos.x + pViewport->Size.x - WINDOW_WIDTH - 20.f,
+            pViewport->Pos.y + 80.f
+        ),
+        ImGuiCond_FirstUseEver
+    );
+
+    ImGui::SetNextWindowSize(
+        ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+        ImGuiCond_FirstUseEver
+    );
+
+    ImGui::Begin("Animation Speed Editor");
+
+    //----------------------------------------
+    // 현재 정보
+    //----------------------------------------
+    float fCurrentSpeed = GetSpeedAtTime(fCurrentPos);
+
+    ImGui::Text("Current Anim : %s", pAnim->GetAnimName().c_str());
+    ImGui::Text("Current Tick : %.3f / %.3f", fCurrentPos, fDuration);
+    ImGui::Text("Current Speed : %.2fx", fCurrentSpeed);
+
+    ImGui::Separator();
+
+    //----------------------------------------
+    // 현재 위치에 Speed Key 추가
+    //----------------------------------------
+    static float s_fNewSpeed = 1.f;
+
+    ImGui::DragFloat("New Speed", &s_fNewSpeed, 0.01f, 0.05f, 50.f, "%.2fx");
+
+    if (ImGui::Button("Add Key At Current Time", ImVec2(-1.f, 28.f)))
+    {
+        CAnimEdit_Manager::SPEED_KEY key{};
+        key.fTime = fCurrentPos;
+        key.fSpeed = s_fNewSpeed;
+
+        m_SpeedKeys.push_back(key);
+
+        std::sort(
+            m_SpeedKeys.begin(),
+            m_SpeedKeys.end(),
+            [](const SPEED_KEY& A, const SPEED_KEY& B)
+            {
+                return A.fTime < B.fTime;
+            });
+    }
+
+    if (ImGui::Button("Reset Speed Keys", ImVec2(-1.f, 28.f)))
+    {
+        m_SpeedKeys.clear();
+        m_SpeedKeys.push_back({ 0.f, 1.f });
+    }
+
+    ImGui::Separator();
+
+    //----------------------------------------
+    // Speed Key 목록
+    //----------------------------------------
+    ImGui::Text("Speed Keys");
+
+    static int s_iSelectedSpeedKey = -1;
+
+    if (s_iSelectedSpeedKey >= static_cast<int>(m_SpeedKeys.size()))
+        s_iSelectedSpeedKey = -1;
+
+    ImGui::BeginChild("##SpeedKeyList", ImVec2(0.f, 120.f), true);
+
+    for (int i = 0; i < static_cast<int>(m_SpeedKeys.size()); ++i)
+    {
+        char szLabel[128] = {};
+        sprintf_s(
+            szLabel,
+            "Key %d | Time %.3f | Speed %.2fx",
+            i,
+            m_SpeedKeys[i].fTime,
+            m_SpeedKeys[i].fSpeed
+        );
+
+        bool bSelected = (s_iSelectedSpeedKey == i);
+
+        if (ImGui::Selectable(szLabel, bSelected))
+        {
+            s_iSelectedSpeedKey = i;
+        }
+    }
+
+    ImGui::EndChild();
+
+    //----------------------------------------
+    // 선택된 Speed Key 편집
+    //----------------------------------------
+    if (s_iSelectedSpeedKey >= 0 &&
+        s_iSelectedSpeedKey < static_cast<int>(m_SpeedKeys.size()))
+    {
+        ImGui::Separator();
+        ImGui::Text("Edit Selected Key");
+
+        SPEED_KEY& key = m_SpeedKeys[s_iSelectedSpeedKey];
+
+        bool bNeedSort = false;
+
+        if (s_iSelectedSpeedKey == 0)
+        {
+            ImGui::Text("First key time is fixed to 0.");
+            key.fTime = 0.f;
+        }
+        else
+        {
+            if (ImGui::SliderFloat("Time", &key.fTime, 0.f, fDuration, "%.3f"))
+            {
+                bNeedSort = true;
+            }
+        }
+
+        ImGui::DragFloat("Speed", &key.fSpeed, 0.01f, 0.05f, 5.f, "%.2fx");
+
+        if (key.fSpeed < 0.05f)
+            key.fSpeed = 0.05f;
+
+        if (ImGui::Button("Move Selected Key To Current Time", ImVec2(-1.f, 28.f)))
+        {
+            if (s_iSelectedSpeedKey != 0)
+            {
+                key.fTime = fCurrentPos;
+                bNeedSort = true;
+            }
+        }
+
+        if (s_iSelectedSpeedKey != 0)
+        {
+            if (ImGui::Button("Delete Selected Key", ImVec2(-1.f, 28.f)))
+            {
+                m_SpeedKeys.erase(m_SpeedKeys.begin() + s_iSelectedSpeedKey);
+                s_iSelectedSpeedKey = -1;
+            }
+        }
+
+        if (bNeedSort)
+        {
+            std::sort(
+                m_SpeedKeys.begin(),
+                m_SpeedKeys.end(),
+                [](const SPEED_KEY& A, const SPEED_KEY& B)
+                {
+                    return A.fTime < B.fTime;
+                });
+
+            s_iSelectedSpeedKey = -1;
+        }
+    }
+
+    ImGui::Separator();
+
+    //----------------------------------------
+    // 디버그 출력
+    //----------------------------------------
+    ImGui::Text("Bake Preview");
+
+    for (int i = 0; i < static_cast<int>(m_SpeedKeys.size()); ++i)
+    {
+        ImGui::Text(
+            "[%d] Time %.3f  Speed %.2fx",
+            i,
+            m_SpeedKeys[i].fTime,
+            m_SpeedKeys[i].fSpeed
+        );
+    }
+
+    ImGui::End();
+}
 
 float CAnimEdit_Manager::GetSpeedAtTime(float fTrackPos)
 {
@@ -758,6 +979,7 @@ void CAnimEdit_Manager::UpdateGUI()
     IMGUI_Slider_Animation();
     IMGUI_Select_Animation();
     IMGUI_Select_Detail_Data();
+    IMGUI_Speed_Animation();
 }
 
 _bool CAnimEdit_Manager::RenameAnimFile_Overwrite(const std::string& oldFullPath,const std::string& newAnimName,std::string& outNewFullPath)
@@ -835,9 +1057,8 @@ _bool CAnimEdit_Manager::IsAlreadyLoadedAnim( const std::vector<SPtr<CResModelAn
     return false;
 }
 
-_bool CAnimEdit_Manager::WriteSaveBinary(const std::string _path, const std::string _Name)
+_bool CAnimEdit_Manager::WriteSaveBakedBinary(const std::string& _path,const std::string& _Name)
 {
-
     std::vector<char> animBuffer;
 
     auto pushAnim = [&](const void* data, size_t size)
@@ -846,25 +1067,52 @@ _bool CAnimEdit_Manager::WriteSaveBinary(const std::string _path, const std::str
             animBuffer.resize(old + size);
             memcpy(animBuffer.data() + old, data, size);
         };
-    //---------------------------------------------------Animaiton-------------------------------------------------------------------//
-    animBuffer.clear();
-
-
-    std::string animName = _Name;
 
     auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
     if (pSampleObj == nullptr)
         return false;
 
-    auto pComAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+    auto pComAnimator =
+        pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
 
-    auto pComModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+    auto pComModelInstance =
+        pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
 
+    if (!pComAnimator || !pComModelInstance || !pComModelInstance->GetModel())
+        return false;
 
+    auto& Animations = pComModelInstance->GetModel()->GetAnimations();
 
-    std::filesystem::path animPath = _path + "/" + ("AN_" + animName + ".bin");
+    uint32_t iAnimIndex = pComAnimator->GetPlayAnimIndex();
+
+    if (Animations.empty() || iAnimIndex >= Animations.size())
+        return false;
+
+    auto pAnim = Animations[iAnimIndex];
+
+    if (!pAnim)
+        return false;
+
+    float fSourceDuration = pAnim->GetDuration();
+    float fTickPerSecond = pAnim->GetTickPerSecond();
+
+    // 30fps 기준으로 굽기
+    // 더 부드럽게 하고 싶으면 60.f
+    constexpr float fBakeSampleFPS = 30.f;
+
+    std::vector<BAKE_SAMPLE> samples = BuildBakeSamples(fSourceDuration, fTickPerSecond, fBakeSampleFPS);
+
+    if (samples.empty())
+        return false;
+
+    float fBakedDuration = samples.back().fBakedTrackPosition;
+
+    std::filesystem::path animPath = std::filesystem::path(_path) / ("AN_" + _Name + ".bin");
 
     std::ofstream file(animPath, std::ios::binary);
+
+    if (!file.is_open())
+        return false;
 
     MODEL_FILE_HEADER MFH{};
     MFH.bHasBone = false;
@@ -876,62 +1124,66 @@ _bool CAnimEdit_Manager::WriteSaveBinary(const std::string _path, const std::str
 
     file.write((char*)&MFH, sizeof(MFH));
 
-    auto& Animations = pComModelInstance->GetModel()->GetAnimations();
-    auto& Animation = Animations[pComAnimator->GetPlayAnimIndex()];
+    // 굽힌 Duration 저장
+    pushAnim(&fBakedDuration, sizeof(float));
 
-    float Duration = Animations[pComAnimator->GetPlayAnimIndex()]->GetDuration();
+    // TPS는 기존 TPS 유지
+    pushAnim(&fTickPerSecond, sizeof(float));
 
-    float TickPerSecond = Animations[pComAnimator->GetPlayAnimIndex()]->GetTickPerSecond();
-
-    pushAnim(&Duration, sizeof(float));
-    pushAnim(&TickPerSecond, sizeof(float));
-
-    uint32_t ChannelCount = Animations[pComAnimator->GetPlayAnimIndex()]->GetNumChannel();
-
+    uint32_t ChannelCount = pAnim->GetNumChannel();
     pushAnim(&ChannelCount, sizeof(uint32_t));
 
-    auto& Channels = Animations[pComAnimator->GetPlayAnimIndex()]->GetChannels();
+    auto& Channels = pAnim->GetChannels();
 
     for (uint32_t i = 0; i < ChannelCount; ++i)
     {
-       
-        int32_t BoneIndex = (Channels)[i]->Get_BoneIndex();
+        auto pChannel = Channels[i];
 
-        uint32_t KeyFrameCount = (Channels)[i]->Get_NumKeyFrames();
+        if (!pChannel)
+            continue;
 
+        int32_t BoneIndex = pChannel->Get_BoneIndex();
+
+        // 이제 키프레임 개수는 원본 키 개수가 아니라 굽힌 샘플 개수
+        uint32_t KeyFrameCount = static_cast<uint32_t>(samples.size());
 
         uint32_t ChannelSize =
-            sizeof(int32_t) +                    // BoneIndex
-            sizeof(uint32_t) +                   // KeyFrameCount
+            sizeof(int32_t) +
+            sizeof(uint32_t) +
             KeyFrameCount *
             (
-                sizeof(XMFLOAT3) +               // Scale
-                sizeof(XMFLOAT4) +               // Rotation
-                sizeof(XMFLOAT3) +               // Translation
-                sizeof(float)                    // TrackPosition
+                sizeof(XMFLOAT3) +
+                sizeof(XMFLOAT4) +
+                sizeof(XMFLOAT3) +
+                sizeof(float)
                 );
 
         pushAnim(&ChannelSize, sizeof(uint32_t));
-
-
-
         pushAnim(&BoneIndex, sizeof(int32_t));
         pushAnim(&KeyFrameCount, sizeof(uint32_t));
 
         for (uint32_t j = 0; j < KeyFrameCount; ++j)
         {
-            auto& KeyFrame = (Channels)[i]->Get_KeyFrames()[j];
+            const BAKE_SAMPLE& sample = samples[j];
 
-            pushAnim(&KeyFrame.vScale, sizeof(XMFLOAT3));
-            pushAnim(&KeyFrame.vRotation, sizeof(XMFLOAT4));
-            pushAnim(&KeyFrame.vTranslation, sizeof(XMFLOAT3));
-            pushAnim(&KeyFrame.fTrackPosition, sizeof(float));
+            KEYFRAME bakedKey =
+                SampleChannelKeyFrame(
+                    pChannel.get(),
+                    sample.fSourceTrackPosition);
+
+
+            bakedKey.fTrackPosition = sample.fBakedTrackPosition;
+
+            pushAnim(&bakedKey.vScale, sizeof(XMFLOAT3));
+            pushAnim(&bakedKey.vRotation, sizeof(XMFLOAT4));
+            pushAnim(&bakedKey.vTranslation, sizeof(XMFLOAT3));
+            pushAnim(&bakedKey.fTrackPosition, sizeof(float));
         }
     }
 
-    ChunkHeader chAnim;
+    ChunkHeader chAnim{};
     chAnim.type = CHUNCK_TYPE::CHUNK_ANIM;
-    chAnim.size = (uint32_t)animBuffer.size();
+    chAnim.size = static_cast<uint32_t>(animBuffer.size());
 
     file.write((char*)&chAnim, sizeof(chAnim));
     file.write(animBuffer.data(), animBuffer.size());
@@ -939,6 +1191,118 @@ _bool CAnimEdit_Manager::WriteSaveBinary(const std::string _path, const std::str
     file.close();
 
     return true;
+}
+std::vector<CAnimEdit_Manager::BAKE_SAMPLE> CAnimEdit_Manager::BuildBakeSamples(float fSourceDuration,float fTickPerSecond,float fSampleFPS)
+{
+    std::vector<BAKE_SAMPLE> samples;
+
+    if (fSourceDuration <= 0.f || fTickPerSecond <= 0.f || fSampleFPS <= 0.f)
+        return samples;
+
+    float fSourceTrack = 0.f;
+    float fBakedTrack = 0.f;
+
+    // 예: TPS 60, SampleFPS 30이면 2 tick마다 키프레임 하나 생성
+    const float fDeltaTrack = fTickPerSecond / fSampleFPS;
+
+    while (fSourceTrack < fSourceDuration)
+    {
+        BAKE_SAMPLE sample{};
+        sample.fSourceTrackPosition = fSourceTrack;
+        sample.fBakedTrackPosition = fBakedTrack;
+        samples.push_back(sample);
+
+        float fSpeed = GetSpeedAtTime(fSourceTrack);
+
+        // 0 이하 속도면 무한루프 방지
+        if (fSpeed <= 0.001f)
+            fSpeed = 0.001f;
+
+        fSourceTrack += fDeltaTrack * fSpeed;
+        fBakedTrack += fDeltaTrack;
+    }
+
+    // 마지막 프레임 보장
+    BAKE_SAMPLE last{};
+    last.fSourceTrackPosition = fSourceDuration;
+    last.fBakedTrackPosition = fBakedTrack;
+    samples.push_back(last);
+
+    return samples;
+}
+
+KEYFRAME CAnimEdit_Manager::SampleChannelKeyFrame(CResModelChanel* pChannel,float fTrackPosition)
+{
+    KEYFRAME result{};
+
+    auto& keyFrames = pChannel->Get_KeyFrames();
+
+    if (keyFrames.empty())
+        return result;
+
+    if (keyFrames.size() == 1)
+    {
+        result = keyFrames[0];
+        result.fTrackPosition = fTrackPosition;
+        return result;
+    }
+
+    if (fTrackPosition <= keyFrames.front().fTrackPosition)
+    {
+        result = keyFrames.front();
+        result.fTrackPosition = fTrackPosition;
+        return result;
+    }
+
+    if (fTrackPosition >= keyFrames.back().fTrackPosition)
+    {
+        result = keyFrames.back();
+        result.fTrackPosition = fTrackPosition;
+        return result;
+    }
+
+    uint32_t iIndex = 0;
+
+    for (uint32_t i = 0; i < keyFrames.size() - 1; ++i)
+    {
+        if (fTrackPosition < keyFrames[i + 1].fTrackPosition)
+        {
+            iIndex = i;
+            break;
+        }
+    }
+
+    const auto& A = keyFrames[iIndex];
+    const auto& B = keyFrames[iIndex + 1];
+
+    float fRange = B.fTrackPosition - A.fTrackPosition;
+    float fRatio = 0.f;
+
+    if (fRange > 0.f)
+        fRatio = (fTrackPosition - A.fTrackPosition) / fRange;
+
+    fRatio = std::clamp(fRatio, 0.f, 1.f);
+
+    XMVECTOR vScaleA = XMLoadFloat3(&A.vScale);
+    XMVECTOR vScaleB = XMLoadFloat3(&B.vScale);
+
+    XMVECTOR vRotA = XMLoadFloat4(&A.vRotation);
+    XMVECTOR vRotB = XMLoadFloat4(&B.vRotation);
+
+    XMVECTOR vTransA = XMLoadFloat3(&A.vTranslation);
+    XMVECTOR vTransB = XMLoadFloat3(&B.vTranslation);
+
+    XMVECTOR vScale = XMVectorLerp(vScaleA, vScaleB, fRatio);
+    XMVECTOR vRot = XMQuaternionSlerp(vRotA, vRotB, fRatio);
+    XMVECTOR vTrans = XMVectorLerp(vTransA, vTransB, fRatio);
+
+    XMStoreFloat3(&result.vScale, vScale);
+    XMStoreFloat4(&result.vRotation, XMQuaternionNormalize(vRot));
+    XMStoreFloat3(&result.vTranslation, vTrans);
+
+    result.fTrackPosition = fTrackPosition;
+
+    return result;
 }
 
 void CAnimEdit_Manager::IMGUI_File_Rename(const std::string& Path, const std::string& fileName,const std::string& newfileName )
