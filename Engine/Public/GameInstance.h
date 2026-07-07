@@ -5,8 +5,14 @@
 #include "GameObjectManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
+#include "DbgLineRender.h"
 #include "MapManager.h"
 #include "LightManager.h"
+
+NS_BEGIN(physx)
+class PxScene;
+class PxPhysics;
+NS_END
 
 struct FMOD_SOUND;
 NS_BEGIN(Engine)
@@ -27,6 +33,9 @@ class CAnimEdit_Manager;
 class CNodeEditor;
 class CParticleManager;
 class CAction_Manager;
+class CPhysXManager;
+class CDbgLineRender;
+
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
@@ -36,6 +45,7 @@ private:
 
 public:
 	HRESULT InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID3D11Device>& ppDevice, ComPtr<ID3D11DeviceContext>& ppContext);
+	void FixedUpdateEngine(_float fFixedTimeDelta);
 	void UpdateEngine(_float fTimeDelta);
 	HRESULT Draw();
 	void UpdateGUI();
@@ -301,6 +311,21 @@ public:
 #pragma endregion
 
 public:
+	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
+	physx::PxScene* PxGetScene() const;
+	physx::PxPhysics* PxGetPhysics() const;
+
+	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
+	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+#pragma endregion
+
+
+#pragma region DBG_LINE_RENDER
+public:
+	CDbgLineRender* GetDbgLineRender() const { return m_pDbgLineRender.get(); };
+#pragma endregion
+
+public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
 	_bool GetMouseFix() const { return m_bMouseFix; }
@@ -338,6 +363,8 @@ private:
 	UPtr<CParticleManager> m_pParticleManager{};
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
+	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
 	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};

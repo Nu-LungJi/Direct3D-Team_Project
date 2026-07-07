@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "MainApp.h"
 #include "GameInstance.h"
@@ -68,6 +68,11 @@ HRESULT CMainApp::Initialize()
 	CGameInstance::Get().RegisterLevelChangeFunc("TO_Collider", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::COLLIDER));
+		});
+
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_Physx", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PHYSX));
 		});
 
 	// TODO   SampleClinet  초기 이니셜라이즈
@@ -260,6 +265,10 @@ HRESULT CMainApp::Load_Particle_Resources()
 		CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
 
 	}
+	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL",	 CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
+	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_BOX",		CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
+	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE",	CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
+	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 	return S_OK;
 }
 

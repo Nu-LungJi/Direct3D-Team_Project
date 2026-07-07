@@ -12,5 +12,6 @@ namespace Client
 		ANIMEDITOR,
 		LIGHTMAP,
 		COLLIDER,
+		PHYSX,
 	};
 }

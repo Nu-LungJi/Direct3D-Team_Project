@@ -16,6 +16,12 @@
 #include "LevelLightMap.h"
 #include "LevelCollider.h"
 #include "TestCollider.h"
+#include "LevelPhysX.h"
+#include "TestPhysX.h"
+#include "TestPhysXTerrain.h"
+#include "TestPhysXBox.h"
+#include "TestPhysXBall.h"
+#include "TestPhysXCapsule.h"
 #include "LightObject.h"
 
 #include "Gobline.h"
@@ -95,6 +101,9 @@ HRESULT CLevelLoading::LoadEnd()
 		break;
 	case LEVEL::LIGHTMAP:
 		pNewLevel = CLevelLightMap::Create();
+		break;
+	case LEVEL::PHYSX:
+		pNewLevel = CLevelPhysX::Create();
 		break;
 	}
 	assert(pNewLevel);
@@ -211,7 +220,6 @@ void CLevelLoading::ThreadStart()
 		break;
 	case LEVEL::ANIMEDITOR:
 	{
-
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
 			{
 		
@@ -284,6 +292,65 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 				
+				return  true;
+			});
+	}
+	break;
+	case LEVEL::PHYSX:
+	{
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
+
+
+
+		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PHYSX", [this]()
+			{
+				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+				{
+					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
+					{
+						//MSG_BOX("");
+						return false;
+					}
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysX", CTestPhysX::Create())))
+				{
+					return false;
+				}
+				//TestPhysXTerrain
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXTerrain", CTestPhysXTerrain::Create())))
+				{
+					return false;
+				}
+
+				//TestPhysXBox
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox", CTestPhysXBox::Create())))
+				{
+					return false;
+				}
+
+				//TestPhysXBall
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBall", CTestPhysXBall::Create())))
+				{
+					return false;
+				}
+
+				//TestPhysXCapsule
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXCapsule", CTestPhysXCapsule::Create())))
+				{
+					return false;
+				}
 				return  true;
 			});
 	}

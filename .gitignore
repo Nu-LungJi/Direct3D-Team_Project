@@ -8,6 +8,8 @@ x64/
 !ThirdParty/HBAOPlus-3.1.0/lib/
 /EngineSDK/
 
+ThirdParty/physx-5.6.1
+
 **/Bin/
 
 imgui.ini

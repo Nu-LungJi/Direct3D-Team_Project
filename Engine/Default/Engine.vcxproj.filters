@@ -295,6 +295,60 @@
     <Filter Include="Renderer\MyGFSDK_SSAO">
       <UniqueIdentifier>{01c59ff2-d7dc-4d7e-bfdf-981eb6d44a2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PhysX">
+      <UniqueIdentifier>{6bae5342-64b4-433d-9a1a-504418ae115e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PhysX\Manager">
+      <UniqueIdentifier>{f5a5eb2a-888e-4d69-bfbd-c08eacd2a9f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX">
+      <UniqueIdentifier>{ffcf98bd-cb43-4bcb-aeb7-f1c348a7cd4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DbgLineRender">
+      <UniqueIdentifier>{73dc1ce5-5e43-456c-9516-480eec51ec73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PhysX\Manager\Listeners">
+      <UniqueIdentifier>{a0000210-3a95-4f92-a279-706ab301b8f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider">
+      <UniqueIdentifier>{060add1d-1058-4620-ac1c-9efccfc640bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\RigidBody">
+      <UniqueIdentifier>{ef069a81-7cf2-4664-904d-b30ae8d04d26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Box">
+      <UniqueIdentifier>{0ec1bad3-3526-4018-b870-041113a940d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Sphere">
+      <UniqueIdentifier>{4aa2412d-f417-447b-8ad3-fdce453d4a28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Capsule">
+      <UniqueIdentifier>{add171b8-6e1d-48a8-aac0-97b85f3f8bd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\TriMesh">
+      <UniqueIdentifier>{268cfd1a-926a-45bb-8ca0-77076c713cf6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX">
+      <UniqueIdentifier>{9c4cf5b7-ec80-4892-90ff-c9dac3d1361a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Material">
+      <UniqueIdentifier>{45111356-3fc4-4f24-b687-6f5e2c3ed218}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry">
+      <UniqueIdentifier>{f9f0768f-a162-4a0c-a772-5c7e9a7ddafd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Box">
+      <UniqueIdentifier>{2f83e41a-cfe1-4714-8db8-6268104900ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Sphere">
+      <UniqueIdentifier>{2ba6b853-162b-4d7b-acc6-a78fea6c3430}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Capsule">
+      <UniqueIdentifier>{cc252147-9b76-442d-b3bc-cc4cc6b08dbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\TriMesh">
+      <UniqueIdentifier>{64989bcc-7d16-41d1-81b6-b3e54f558f9c}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\MapMeshObject">
       <UniqueIdentifier>{771de9b5-bb1c-4900-8366-21c558f64744}</UniqueIdentifier>
     </Filter>
@@ -689,6 +743,60 @@
     </ClInclude>
     <ClInclude Include="..\public\MyGFSDK_SSAO.h">
       <Filter>Renderer\MyGFSDK_SSAO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysXManager.h">
+      <Filter>PhysX\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Engine_PhysxDefines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DbgLineRender.h">
+      <Filter>DbgLineRender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\IPhysicsListener.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysxManagerListener.h">
+      <Filter>PhysX\Manager\Listeners</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxCollider.h">
+      <Filter>Component\PhysX\Collider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxRigidBody.h">
+      <Filter>Component\PhysX\RigidBody</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxBoxCollider.h">
+      <Filter>Component\PhysX\Collider\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxSphereCollider.h">
+      <Filter>Component\PhysX\Collider\Sphere</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxCapsuleCollider.h">
+      <Filter>Component\PhysX\Collider\Capsule</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxTriMeshCollider.h">
+      <Filter>Component\PhysX\Collider\TriMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\IPhysicsSync.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXMaterial.h">
+      <Filter>Resource\PhysX\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXGeometry.h">
+      <Filter>Resource\PhysX\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXBoxGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXSphereGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Sphere</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Capsule</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\MapMeshObject.h">
       <Filter>GameObject\MapMeshObject</Filter>
@@ -1085,6 +1193,51 @@
     <ClCompile Include="..\private\Trail_CPU.cpp">
       <Filter>Particle\Trail</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\PhysXManager.cpp">
+      <Filter>PhysX\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DbgLineRender.cpp">
+      <Filter>DbgLineRender</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysxManagerListener.cpp">
+      <Filter>PhysX\Manager\Listeners</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCollider.cpp">
+      <Filter>Component\PhysX\Collider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRigidBody.cpp">
+      <Filter>Component\PhysX\RigidBody</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxBoxCollider.cpp">
+      <Filter>Component\PhysX\Collider\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxSphereCollider.cpp">
+      <Filter>Component\PhysX\Collider\Sphere</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCapsuleCollider.cpp">
+      <Filter>Component\PhysX\Collider\Capsule</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxTriMeshCollider.cpp">
+      <Filter>Component\PhysX\Collider\TriMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXMaterial.cpp">
+      <Filter>Resource\PhysX\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Sphere</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Capsule</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1153,6 +1306,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

@@ -2,6 +2,15 @@
 
 namespace Engine
 {
+	inline _float4 ColorIntToFloat4(int c) {
+		_float4 color;
+		color.x = ((c >> 0) & 0xFF) / 255.0f; // R
+		color.y = ((c >> 8) & 0xFF) / 255.0f; // G
+		color.z = ((c >> 16) & 0xFF) / 255.0f; // B
+		color.w = ((c >> 24) & 0xFF) / 255.0f; // A
+		return color;
+	}
+
 	inline float Randf(float min, float max)
 	{
 		return min +

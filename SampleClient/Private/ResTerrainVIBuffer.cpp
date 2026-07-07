@@ -49,8 +49,10 @@ HRESULT CResTerrainVIBuffer::Load(const std::any& arg)
 			m_iNumVertices = m_iNumVerticesX * m_iNumVerticesZ;
 			//VTX_NORMAL_TEX
 
-			std::unique_ptr<VTX_NORMAL_TEX[]> pVertices = std::unique_ptr<VTX_NORMAL_TEX[]>(new VTX_NORMAL_TEX[m_iNumVertices]);
-			ZeroMemory(pVertices.get(), sizeof(VTX_NORMAL_TEX) * m_iNumVertices);
+
+			
+			m_vecVertices.resize(m_iNumVertices);
+			//ZeroMemory(pVertices.get(), sizeof(VTX_NORMAL_TEX) * m_iNumVertices);
 
 			for (uint32_t i = 0; i < m_iNumVerticesZ; i++)
 			{
@@ -59,9 +61,9 @@ HRESULT CResTerrainVIBuffer::Load(const std::any& arg)
 					uint32_t        iIndex = i * m_iNumVerticesX + j;
 
 
-					pVertices[iIndex].pos = _float3(j, (pPixels[iIndex] & 0x000000ff) / 10.f, i);
-					pVertices[iIndex].normal = _float3(0.f, 0.f, 0.f);
-					pVertices[iIndex].texCoord = _float2(j / (m_iNumVerticesX - 1.f), i / (m_iNumVerticesZ - 1.f));
+					m_vecVertices[iIndex].pos = _float3(j, (pPixels[iIndex] & 0x000000ff) / 10.f, i);
+					m_vecVertices[iIndex].normal = _float3(0.f, 0.f, 0.f);
+					m_vecVertices[iIndex].texCoord = _float2(j / (m_iNumVerticesX - 1.f), i / (m_iNumVerticesZ - 1.f));
 				}
 			}
 
@@ -77,8 +79,10 @@ HRESULT CResTerrainVIBuffer::Load(const std::any& arg)
 			m_eIndexFormat = DXGI_FORMAT_R32_UINT;
 			m_ePrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-			std::unique_ptr<uint32_t[]> pIndices = std::unique_ptr<uint32_t[]>(new uint32_t[m_iNumIndices]);
-			ZeroMemory(pIndices.get(), sizeof(uint32_t) * m_iNumIndices);
+			m_vecIndices.resize(m_iNumIndices);
+
+			//std::unique_ptr<uint32_t[]> pIndices = std::unique_ptr<uint32_t[]>(new uint32_t[m_iNumIndices]);
+			//ZeroMemory(pIndices.get(), sizeof(uint32_t) * m_iNumIndices);
 
 			uint32_t        iNumIndices = {};
 
@@ -97,35 +101,35 @@ HRESULT CResTerrainVIBuffer::Load(const std::any& arg)
 
 					_vector     vSour, vDest, vNormal;
 
-					pIndices[iNumIndices++] = iIndices[0];
-					pIndices[iNumIndices++] = iIndices[1];
-					pIndices[iNumIndices++] = iIndices[2];
+					m_vecIndices[iNumIndices++] = iIndices[0];
+					m_vecIndices[iNumIndices++] = iIndices[1];
+					m_vecIndices[iNumIndices++] = iIndices[2];
 
-					vSour = XMLoadFloat3(&pVertices[iIndices[1]].pos) - XMLoadFloat3(&pVertices[iIndices[0]].pos);
-					vDest = XMLoadFloat3(&pVertices[iIndices[2]].pos) - XMLoadFloat3(&pVertices[iIndices[1]].pos);
+					vSour = XMLoadFloat3(&m_vecVertices[iIndices[1]].pos) - XMLoadFloat3(&m_vecVertices[iIndices[0]].pos);
+					vDest = XMLoadFloat3(&m_vecVertices[iIndices[2]].pos) - XMLoadFloat3(&m_vecVertices[iIndices[1]].pos);
 					vNormal = XMVector3Normalize(XMVector3Cross(vSour, vDest));
 
-					XMStoreFloat3(&pVertices[iIndices[0]].normal, XMLoadFloat3(&pVertices[iIndices[0]].normal) + vNormal);
-					XMStoreFloat3(&pVertices[iIndices[1]].normal, XMLoadFloat3(&pVertices[iIndices[1]].normal) + vNormal);
-					XMStoreFloat3(&pVertices[iIndices[2]].normal, XMLoadFloat3(&pVertices[iIndices[2]].normal) + vNormal);
+					XMStoreFloat3(&m_vecVertices[iIndices[0]].normal, XMLoadFloat3(&m_vecVertices[iIndices[0]].normal) + vNormal);
+					XMStoreFloat3(&m_vecVertices[iIndices[1]].normal, XMLoadFloat3(&m_vecVertices[iIndices[1]].normal) + vNormal);
+					XMStoreFloat3(&m_vecVertices[iIndices[2]].normal, XMLoadFloat3(&m_vecVertices[iIndices[2]].normal) + vNormal);
 
 
-					pIndices[iNumIndices++] = iIndices[0];
-					pIndices[iNumIndices++] = iIndices[2];
-					pIndices[iNumIndices++] = iIndices[3];
+					m_vecIndices[iNumIndices++] = iIndices[0];
+					m_vecIndices[iNumIndices++] = iIndices[2];
+					m_vecIndices[iNumIndices++] = iIndices[3];
 
 
-					vSour = XMLoadFloat3(&pVertices[iIndices[2]].pos) - XMLoadFloat3(&pVertices[iIndices[0]].pos);
-					vDest = XMLoadFloat3(&pVertices[iIndices[3]].pos) - XMLoadFloat3(&pVertices[iIndices[2]].pos);
+					vSour = XMLoadFloat3(&m_vecVertices[iIndices[2]].pos) - XMLoadFloat3(&m_vecVertices[iIndices[0]].pos);
+					vDest = XMLoadFloat3(&m_vecVertices[iIndices[3]].pos) - XMLoadFloat3(&m_vecVertices[iIndices[2]].pos);
 					vNormal = XMVector3Normalize(XMVector3Cross(vSour, vDest));
 
-					XMStoreFloat3(&pVertices[iIndices[0]].normal, XMLoadFloat3(&pVertices[iIndices[0]].normal) + vNormal);
-					XMStoreFloat3(&pVertices[iIndices[2]].normal, XMLoadFloat3(&pVertices[iIndices[2]].normal) + vNormal);
-					XMStoreFloat3(&pVertices[iIndices[3]].normal, XMLoadFloat3(&pVertices[iIndices[3]].normal) + vNormal);
+					XMStoreFloat3(&m_vecVertices[iIndices[0]].normal, XMLoadFloat3(&m_vecVertices[iIndices[0]].normal) + vNormal);
+					XMStoreFloat3(&m_vecVertices[iIndices[2]].normal, XMLoadFloat3(&m_vecVertices[iIndices[2]].normal) + vNormal);
+					XMStoreFloat3(&m_vecVertices[iIndices[3]].normal, XMLoadFloat3(&m_vecVertices[iIndices[3]].normal) + vNormal);
 				}
 			}
 			for (size_t i = 0; i < m_iNumVertices; i++)
-				XMStoreFloat3(&pVertices[i].normal, XMVector3Normalize(XMLoadFloat3(&pVertices[i].normal)));
+				XMStoreFloat3(&m_vecVertices[i].normal, XMVector3Normalize(XMLoadFloat3(&m_vecVertices[i].normal)));
 
 
 
@@ -138,7 +142,7 @@ HRESULT CResTerrainVIBuffer::Load(const std::any& arg)
 			vertexBufferDesc.MiscFlags = 0;
 
 			D3D11_SUBRESOURCE_DATA vertexInitialData{};
-			vertexInitialData.pSysMem = pVertices.get();
+			vertexInitialData.pSysMem = m_vecVertices.data();
 			if (FAILED(CreateVertexBuffer(vertexBufferDesc, &vertexInitialData)))
 			{
 				m_eState = STATE::LOADFAIL;
@@ -156,7 +160,7 @@ HRESULT CResTerrainVIBuffer::Load(const std::any& arg)
 			IndexBufferDesc.MiscFlags = 0;
 
 			D3D11_SUBRESOURCE_DATA indexInitialData{};
-			indexInitialData.pSysMem = pIndices.get();
+			indexInitialData.pSysMem = m_vecIndices.data();
 
 			if (FAILED(CreateIndexBuffer(IndexBufferDesc, &indexInitialData)))
 			{

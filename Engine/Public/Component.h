@@ -15,9 +15,6 @@ public:
 	{
 		CGameObject* pGameObject{};
 	}DESC;
-	//public:
-	//	void SetGameObject(CGameObject* pGameObject) { m_pGameObject = pGameObject; }
-	//	CGameObject* GetGameObject() const { return m_pGameObject; }
 
 protected:
 	explicit CComponent();
@@ -31,22 +28,12 @@ protected:
 	virtual HRESULT Initialize(void* pArg);
 
 protected:
-	//std::optional<CHandle> m_ObjectHandle{};
 	CGameObject* m_pGameObject{};
 public:
-	//void SetGameObject(CGameObject* pObj) { m_pGameObject = pObj; }
 	CGameObject* GetGameObject() const { return m_pGameObject; }
 
-	//const std::optional<CHandle>& GetGameObjectHandle() const { return m_ObjectHandle; }
-	//void SetGameObjectHandle(const CHandle& handle)
-	//{
-	//	assert(!m_ObjectHandle.has_value() && "이 오브젝트는 이미 핸들이 할당되어 있습니다!");
-
-	//	if (!m_ObjectHandle.has_value())
-	//	{
-	//		m_ObjectHandle = handle;
-	//	}
-	//}
+protected:
+	void Free() override;
 
 };
 

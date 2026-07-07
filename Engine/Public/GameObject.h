@@ -5,11 +5,15 @@
 #include "ComTransform.h"
 #include "Handle.h"
 #include "IRenderable.h"
+#include "IPhysicsListener.h"
+#include "IPhysicsSync.h"
 
 NS_BEGIN(Engine)
 
 class ENGINE_DLL CGameObject : public CPrototype,
 								public IRenderable,
+								public IPhysicsListener,
+								public IPhysicsSync,
 								public CMyTreeNode<CGameObject>
 {
 public:
@@ -31,6 +35,7 @@ protected:
 
 public:
 	virtual HRESULT Initialize(void* pArg);
+	virtual void FixedUpdate(_float fTimeDelta);
 	virtual void PriorityUpdate(_float fTimeDelta);
 	virtual void Update(_float fTimeDelta);
 	virtual void LateUpdate(_float fTimeDelta);
@@ -141,6 +146,23 @@ public:
 	_bool GetPendingDestroy() const { return m_bPendingDestroy; }
 private:
 	_bool m_bPendingDestroy{ false };
+
+	// IPhysicsListener
+public:
+	void OnWake() override {}
+	void OnSleep() override {}
+	void OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info) override {}
+	void OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info) override {}
+	void OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info) override {}
+	void OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info) override {}
+
+	// IPhysicsSync
+public:
+	void SyncActivePhysXData(const PHYSX_SYNC_DATA& syncData) override;
+	virtual void UpdatePhysicData();
+private:
+	PHYSX_SYNC_DATA m_PhysXSyncData{};
+	_bool m_bPhysXSynced{ false };
 };
 
 NS_END

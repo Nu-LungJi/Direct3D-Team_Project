@@ -21,6 +21,12 @@ HRESULT CComponent::Initialize(void* pArg)
     return S_OK;
 }
 
+void CComponent::Free()
+{
+	m_pGameObject = nullptr;
+	CPrototype::Free();
+}
+
 void CComponent::UpdateGUI()
 {
 }

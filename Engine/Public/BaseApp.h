@@ -13,7 +13,8 @@ public:
 	HRESULT Loop();
 
 protected:
-	void UpdateGUI();
+	void UpdateGUI() const;
+	void RenderGUI() const;
 
 protected:
 	virtual void FixedUpdate(_float fTimeDelta);
@@ -32,6 +33,7 @@ protected:
 
 protected:
 	CTimer m_UpdateTimer{};
+	CTimer m_FixedUpdateTimer{};
 	CTimer m_MeasureTimer{};
 
 	uint32_t m_iMeasureUpdateCnt{};

@@ -54,7 +54,7 @@ public:
 		_float3 vecrayOrigin;
 		_float3 vecrayDir;
 		XMStoreFloat3(&vecrayOrigin, XMVector3TransformCoord(rayOrigin, invView));
-		XMStoreFloat3(&vecrayDir, XMVector3TransformNormal(rayDir, invView));
+		XMStoreFloat3(&vecrayDir, XMVector3Normalize(XMVector3TransformNormal(rayDir, invView)));
 		return { vecrayOrigin ,vecrayDir };
 	}
 

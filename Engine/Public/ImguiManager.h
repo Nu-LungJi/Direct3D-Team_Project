@@ -17,7 +17,6 @@ public:
 	void Update_Imgui();
 	void Render_Imgui();
 
-	void Update_ImguiNodeEditor();
 	void EnableDocking(_bool bEnableDocking, _bool bEnableViewports);
 
 	_bool WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

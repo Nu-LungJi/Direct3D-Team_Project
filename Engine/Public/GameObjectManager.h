@@ -54,6 +54,7 @@ public:
 	void AllReset();
 
 public:
+	void FixedUpdate(_float fTimeDelta);
 	void PriorityUpdate(_float fTimeDelta);
 	void Update(_float fTimeDelta);
 	void LateUpdate(_float fTimeDelta);
