@@ -5,33 +5,36 @@ CBTSelector::CBTSelector()
 {
 }
 
+CBTSelector::CBTSelector(const CBTSelector& rhs) : CBTComposite(rhs)
+{
 
+}
 CBTSelector::~CBTSelector()
 {
 }
 
+HRESULT CBTSelector::InitalizePrototype(void* pArg)
+{
+    __super::InitalizePrototype(pArg);
+    m_MasterName = "BTSelector";
+    m_eGroup = NODEGROUP::SELECTOR;
+    return S_OK;
+}
 
 HRESULT CBTSelector::Initalize(void* pArg)
 {
     __super::Initalize(pArg);
-
+    NODEGROUP eGroup = m_eGroup;
 	return S_OK;
 }
 
-HRESULT CBTSelector::Priority_Update(_float fTimeDelta)
-{
-   
-    return S_OK;
-}
-
-HRESULT CBTSelector::Update(_float fTimeDelta)
+EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
     int32_t iIndex = 0;
-    
     if (m_NodeValue.bCur)
         iIndex = m_NodeValue.iCurSecquenceIndex;
 
-    for (size_t i = iIndex ; i < m_Actions.size();++i)
+    for (size_t i = iIndex; i < m_Actions.size(); ++i)
     {
         if (nullptr == m_Actions[i])
             continue;
@@ -39,52 +42,53 @@ HRESULT CBTSelector::Update(_float fTimeDelta)
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
-
         }
         else if (eValuate == EVALUATE::RUN)
         {
             m_NodeValue.bCur = true;
             m_NodeValue.iPreSecquenceIndex = i;
-            return S_OK;
-        }else if (eValuate == EVALUATE::FAILED)
+            return  EVALUATE::RUN;
+        }
+        else if (eValuate == EVALUATE::FAILED)
         {
             m_NodeValue.bCur = false;
-          
+            return EVALUATE::FAILED;
         }
-         
+
     }
-    return S_OK;
-}
-
-HRESULT CBTSelector::Late_Update(_float fTimeDelta)
-{
-   
-    return S_OK;
-}
-
-EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
-{
-	return EVALUATE();
+	return EVALUATE::RUN;
 }
 
 nlohmann::json CBTSelector::Save_Node()
 {
-    return nlohmann::json();
+    return __super::Save_Node();
 }
 
-HRESULT CBTSelector::Load_json(nlohmann::json& j)
+HRESULT CBTSelector::Load_json(const nlohmann::json& j)
 {
-    return E_NOTIMPL;
+    return __super::Load_json(j);
 }
 
 UPtr<CBTSelector> CBTSelector::Create(void* pArg)
 {
     auto pInstance = ToUPtr(new CBTSelector()) ;
-    if (FAILED(pInstance->Initalize(pArg)))
+    if (FAILED(pInstance->InitalizePrototype(pArg)))
     {
         MSG_BOX("Failed to Created : CBTSelector");
         return nullptr;
     }
+    return pInstance;
+}
+
+E::UPtr<E::CBTRoot> CBTSelector::Clone(void* pArg)
+{
+    auto	pInstance = E::ToUPtr(new CBTSelector{ *this });
+    if (FAILED(pInstance->Initalize(pArg)))
+    {
+        MSG_BOX("Failed to Cloned : CBTSelector");
+        return nullptr;
+    }
+
     return pInstance;
 }
 

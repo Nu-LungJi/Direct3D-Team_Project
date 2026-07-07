@@ -6,8 +6,7 @@
 #include "Resources.h"
 #include "Particle_Fire_CPU.h"
 #include "Particle_Ribbon.h"
-#include "BTMove.h"
-#include "BTAnimation.h"
+#include "BTHeader_Definse.h"
 
 NS_USING(Client)
 
@@ -187,11 +186,20 @@ HRESULT CMainApp::Initialize()
 
 HRESULT CMainApp::Create_ActionNode()
 {
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(BEHAVIOR::ACTION,"BTMove", CBTMove::Create())))
+	//프로토타입 이니셜라이즈랑 이름 맞출것
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
 		return E_FAIL;
 
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(BEHAVIOR::ACTION,"BTAnimation", CBTAnimation::Create())))
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTchase", CBTchase::Create())))
 		return E_FAIL;
+
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
+		return E_FAIL;
+
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
+		return E_FAIL;
+
+
 	return S_OK;
 }
 

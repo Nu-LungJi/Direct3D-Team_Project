@@ -38,6 +38,7 @@ private:
 
 private:
 	//기능
+	void		SavePopUp();
 	void		Widget(CBTRoot* pRoot , GUINODE* pNode, GUINODE_LINK* pLink,int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io);
 	void		ShowWidgetByType(CBTRoot* pRoot);
 	void		Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos);
@@ -62,7 +63,7 @@ private:
 	GUICURRENT_NODE										m_CurrentNode;
 
 	_float2												m_vScroll{ 0,0 }, m_vOffset{};
-	_bool												m_binited{ false }, m_bShow_grid{ true }, m_bPopup{ false }, m_bPopupAction{ false };
+	_bool												m_binited{ false }, m_bShow_grid{ true }, m_bPopup{ false }, m_bPopupAction{ false }, m_bSaveLoad{ false };
 														
 	int32_t												m_iNodeSelect{ -1 }, iNodeID{0};
 														
@@ -70,9 +71,11 @@ private:
 														
 	CHandle												m_hTarget{};
 
+	_string												m_SaveName;
 	const _char*										m_pNodeName;
 	BEHAVIOR											m_eBTType;
 
+	ImFont*										m_FontRegular{ nullptr };
 public:
 	static UPtr<CNodeEditor> Create();
 	

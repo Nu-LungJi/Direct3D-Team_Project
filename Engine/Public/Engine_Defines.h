@@ -38,7 +38,7 @@ using namespace Microsoft::WRL;
 #include <future>
 #include <random>
 #include <limits>
-
+#include <fstream>
 // bitwise 
 #pragma warning(disable: 26813)
 
@@ -66,6 +66,7 @@ namespace E = Engine;
 #include <ImGuizmo.h>
 #include <imgui_node_editor.h>
 #include <nlohmann/json.hpp>
+#include "Engine_Json_Util.h"
 
 
 using namespace Engine;

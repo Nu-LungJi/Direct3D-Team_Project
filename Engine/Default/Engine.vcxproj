@@ -267,6 +267,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\Engine_Defines.h" />
     <ClInclude Include="..\Public\Engine_Enum.h" />
     <ClInclude Include="..\Public\Engine_Function.h" />
+    <ClInclude Include="..\Public\Engine_Json_Util.h" />
     <ClInclude Include="..\Public\Engine_Macro.h" />
     <ClInclude Include="..\Public\Engine_Struct.h" />
     <ClInclude Include="..\Public\Engine_Struct_ConstantBuffer.h" />

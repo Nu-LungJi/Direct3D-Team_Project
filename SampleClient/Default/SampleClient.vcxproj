@@ -177,6 +177,7 @@ call CopySampleClient.bat</Command>
     <ClInclude Include="..\public\BTAnimation.h" />
     <ClInclude Include="..\public\BTchase.h" />
     <ClInclude Include="..\public\BTDecSearch.h" />
+    <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\public\BTMove.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />

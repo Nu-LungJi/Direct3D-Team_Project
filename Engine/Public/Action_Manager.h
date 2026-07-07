@@ -13,17 +13,17 @@ private:
 
 private:
 	HRESULT					Initialize();
-	UPtr<class CBTRoot>	    Clone_Action(BEHAVIOR eType, const _string& strActionName, void* pArg);
 public:
+	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
-	HRESULT					Add_Action_Prototype(BEHAVIOR eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
-	UPtr<class CBTRoot>		Show_ActioNode_List(BEHAVIOR eType, uint32_t& iNode,ImVec2 vNodePos, CHandle Handle);
+	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode,ImVec2 vNodePos, CHandle Handle);
 private:
-	std::map<_string, UPtr<class CBTRoot>>			m_Prototype_Actions[ETOUI(BEHAVIOR::END)];
+	std::map<_string, UPtr<class CBTRoot>>			m_Prototype_Actions[ETOUI(NODEGROUP::END)];
 
 	_string												m_SelectName{};
 	_bool												m_bPopup{ false };
-	_bool												m_bNode[ETOUI(NODE_ACTION::END)]{ false };
+	_bool												m_bNode[ETOUI(NODEGROUP::END)]{ false };
 public:
 
 	static UPtr<CAction_Manager> Create();

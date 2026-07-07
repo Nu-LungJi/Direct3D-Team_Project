@@ -6,6 +6,7 @@ class  CBTSecqunce final : public CBTComposite
 {
 public:
 	DECLARE_DERIVED_TYPE(CBTSecqunce, CBTComposite)
+	
 public:
 	typedef struct tagbtsecqunce : CBTRoot::BTROOT_DESC
 	{
@@ -14,22 +15,21 @@ public:
 
 private:
 	explicit CBTSecqunce();
+	CBTSecqunce(const CBTSecqunce& rhs);
 	~CBTSecqunce() override;
 
+	HRESULT	InitalizePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 
 public:
-	virtual HRESULT	Priority_Update(_float fTimeDelta) override;
-	virtual HRESULT	Update(_float fTimeDelta)		   override;
-	virtual HRESULT	Late_Update(_float fTimeDelta)	   override;
 
 	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
 
-	nlohmann::json				Save_Node()override;
-	HRESULT						Load_json(nlohmann::json& j) override;
+	nlohmann::json 				Save_Node()override;
+	HRESULT						Load_json(const nlohmann::json& j) override;
 public:
 	static  UPtr<CBTSecqunce> Create(void* pArg);
-	UPtr<CBTRoot>Clone(void* pArg) { return nullptr; };
+	UPtr<CBTRoot>Clone(void* pArg) override ;
 };
 
 NS_END

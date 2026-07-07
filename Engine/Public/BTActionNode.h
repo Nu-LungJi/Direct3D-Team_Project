@@ -20,18 +20,16 @@ protected:
 	CBTActionNode(const CBTActionNode& pPrototype);
 	~CBTActionNode() override;
 
+	virtual HRESULT	InitalizePrototype(void* pArg) override;
 	virtual HRESULT Initalize(void* pArg) override;
 public:
-	HRESULT	Priority_Update(_float fTimeDelta) override;
-	HRESULT	Update(_float fTimeDelta)		   override;
-	HRESULT	Late_Update(_float fTimeDelta)	   override;
-	void    Update_Gui();
+	virtual void		Update_Gui();
 	ACTION_VALUE&		Get_Value() { return m_Value; }
 public:
 	virtual EVALUATE		Evaluate(_float fTimeDelta) PURE;
 
-	nlohmann::json				Save_Node()override;
-	HRESULT						Load_json(nlohmann::json& j) override;
+	virtual nlohmann::json			Save_Node()override;
+	HRESULT					Load_json(const nlohmann::json& j) override;
 protected:
 	ACTION_VALUE			m_Value{};
 	_bool					m_bPopup{ false };

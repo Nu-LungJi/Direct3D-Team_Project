@@ -3,6 +3,7 @@
 #include "BTSelector.h"
 #include "BTSecqunce.h"
 #include "BTActionNode.h"
+#include "BTDecorator.h"
 #include "ComBeHavior.h"
 CNodeEditor::CNodeEditor()
 {
@@ -16,6 +17,13 @@ CNodeEditor::~CNodeEditor()
 //using namespace ax;
 HRESULT CNodeEditor::Initialize()
 {
+	ImGuiIO& io = ImGui::GetIO();
+
+	m_FontRegular = io.Fonts->AddFontFromFileTTF(
+		"./Resources/SampleClient/Fonts/NeoDunggeunmoPro-Regular.ttf",
+		15.f);
+
+
 	ax::NodeEditor::Config config;
 	config.SettingsFile = nullptr;
 
@@ -51,7 +59,9 @@ void CNodeEditor::NodeEditorUpdate()
 			m_pBeHavior = pComBt;
 			m_BTNodesMain = pComBt->Get_Selector()->Get_Nodes();
 
+			ImGui::PushFont(m_FontRegular);
 			Show_Editor();
+			ImGui::PopFont();
 		}
 		else
 		{
@@ -72,6 +82,7 @@ HRESULT CNodeEditor::OpenBeHavior(CHandle Handle)
 		}
 	}
 
+	//m_BTNodesTmp.clear();
 	return E_FAIL;
 }
 
@@ -140,6 +151,7 @@ void CNodeEditor::Show_Editor()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 	static _bool bTypeCheck{ false };
+	static NODEGROUP eGroupType = NODEGROUP::END;
 	if (ImGui::BeginPopup("context_menu"))
 	{
 		GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
@@ -186,32 +198,34 @@ void CNodeEditor::Show_Editor()
 		Add_Node(m_eBTType, m_pNodeName, vScene_Pos);
 	if (m_bPopupAction)
 	{
-		if (bTypeCheck)
-		{
-			ImGui::OpenPopup("Select_Type");
-			ImGui::BeginPopup("Select_Type");
-			if (ImGui::MenuItem("Action_Node"))
+			if (bTypeCheck)
 			{
-				m_eBTType = BEHAVIOR::ACTION;
-				bTypeCheck = false;
+				ImGui::OpenPopup("Group_Type");
+				ImGui::BeginPopup("Group_Type");
+#define X(name)#name,
+				const _char* pGroupList[] = { NODE_ACTION_M };
+#undef X
+				ImGui::Text("Group Name");
+				for (uint32_t i = 0; i < ETOUI(NODEGROUP::END); ++i)
+				{
+					if (ImGui::Button(pGroupList[i]))
+					{
+						eGroupType = static_cast<NODEGROUP>(i);
+						bTypeCheck = false;
+					}
+				}
+				ImGui::EndPopup();
 			}
-			else if (ImGui::MenuItem("Decorator_Node"))
+			else if (!bTypeCheck && eGroupType != NODEGROUP::END)
 			{
-				m_eBTType = BEHAVIOR::DECORATOR;
-				bTypeCheck = false;
+				auto iter = CGameInstance::Get().Show_ActioNode_List(eGroupType, m_pBeHavior->Get_NodeID(), vScene_Pos, m_hTarget);
+				if (iter != nullptr)
+				{
+					Add_NodeToTmp(iter);
+					bTypeCheck = true;
+					m_bPopupAction = false;
+				}
 			}
-			ImGui::EndPopup();
-		}
-		else
-		{
-			auto iter = CGameInstance::Get().Show_ActioNode_List(m_eBTType, m_pBeHavior->Get_NodeID(), vScene_Pos, m_hTarget);
-			if (iter != nullptr)
-			{
-				Add_NodeToTmp(iter);
-				m_bPopupAction = false;
-			}
-		}
-			
 	}
 	ImGui::PopStyleVar();
 
@@ -230,20 +244,23 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 	ImGui::Text("Nodes");
 	ImGui::Separator();
 
-	for (size_t i = 0; i < m_Nodes.size(); ++i)
+	if (!m_bSaveLoad && ImGui::Button("Save"))
 	{
-		GUINODE* node = &m_Nodes[i];
-		ImGui::PushID(node->iID);
-		if (ImGui::Selectable(node->Name.c_str(), node->iID == m_iNodeSelect))
-			m_iNodeSelect = node->iID;
-		if (ImGui::IsItemHovered()) //그 ui위에 마우스가 올라가있냐?
-		{
-			*piNode_hoverd_List = node->iID; //그럼 저장하라고~~
-			*pbContext_Manu |= ImGui::IsMouseClicked(1);
-		}
-		ImGui::PopID();
+		
+		m_AddNodeName = "";
+		m_bSaveLoad = true;
 	}
-
+	if (!m_bSaveLoad && ImGui::Button("Load"))
+	{
+		m_pBeHavior->Load_Data("./Resources/json/Behavior/test.json");
+		m_AddNodeName = "";
+		m_bSaveLoad = true;
+	}
+	
+	if (m_bSaveLoad)
+	{
+		SavePopUp();
+	}
 	ImGui::EndChild(); ImGui::SameLine();
 }
 void CNodeEditor::Begin_Canvas()
@@ -313,6 +330,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 			if (-1 != pLink->iStartIdx && !m_CurrentNode.bSelected )
 			{
 				//본인과 연결된 부모노드
+
 				if (auto pParentNode = m_pBeHavior->Find_Node(pLink->ParentNode.iDestNode))
 				{
 					int32_t iParentIndex = pCurNode->Get_GuiNodeLink().iStartIdx;
@@ -326,6 +344,13 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 					if (pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
 					{
 						auto& pSrc = (*(static_cast<CBTComposite*>(pParentNode)->Get_Nodes()))[iParentIndex];
+						pSrc->Get_GuiNodeLink().iStartIdx = -1;
+						pSrc->Get_GuiNodeLink().ParentNode.Reset();
+						Add_NodeToTmp(pSrc);
+					}
+					else if (pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+					{
+						auto& pSrc = static_cast<CBTDecorator*>(pParentNode)->Get_Child();
 						pSrc->Get_GuiNodeLink().iStartIdx = -1;
 						pSrc->Get_GuiNodeLink().ParentNode.Reset();
 						Add_NodeToTmp(pSrc);
@@ -356,11 +381,21 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 				//아 이거는 임시 저장소에 넣으면 안되네 이런
 				if (-1 != pLink->SlotEnd[iSlot].iDestNode && !m_CurrentNode.bSelected)
 				{	//부모기준으로 끊어도 동일하게 연결된 자식이 tmp로 빠지는걸로
-					auto& pSrc = (*(static_cast<CBTComposite*>(pCurNode))->Get_Nodes())[iSlot];										
-					pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
-					pSrc->Get_GuiNodeLink().ParentNode.Reset();
-					Add_NodeToTmp(pSrc);//지워
-					
+					if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					{
+						auto& pSrc = (*(static_cast<CBTComposite*>(pCurNode))->Get_Nodes())[iSlot];
+						pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
+						pSrc->Get_GuiNodeLink().ParentNode.Reset();
+						Add_NodeToTmp(pSrc);//지워
+					}
+					else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+					{
+						auto& pSrc = static_cast<CBTDecorator*>(pCurNode)->Get_Child();
+						pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
+						pSrc->Get_GuiNodeLink().ParentNode.Reset();
+						Add_NodeToTmp(pSrc);//지워
+					}
+				
 					pCurNode->Get_GuiNodeLink().SlotEnd[iSlot].Reset(); // 연결된 자식 끊기
 					CurNode.eType = NODETYPE::NODE_END; //현재 선택한거
 					CurNode.vSlotPos = pNode->GetEndSlotPos(iSlot,pLink->SlotEnd.size());
@@ -371,7 +406,6 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 				}
 				else if (m_CurrentNode.bSelected && m_CurrentNode.eType == NODETYPE::START)
 				{
-					auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
 					for (auto iter = m_BTNodesTmp.begin(); iter != m_BTNodesTmp.end(); ++iter)
 					{
 						if ((*iter) == nullptr) 
@@ -384,8 +418,17 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 							(*iter)->Get_GuiNodeLink().iStartIdx = iSlot;
 							(*iter)->Get_GuiNodeLink().ParentNode = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 							pCurNode->Get_GuiNodeLink().SlotEnd[iSlot] = (*iter)->Get_GuiNodeInfo().Get_DestInfo();
-							(*pSrc)[iSlot] = std::move((*iter));
 
+							if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+							{
+								auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
+								(*pSrc)[iSlot] = std::move((*iter));
+							}
+							else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+							{
+								auto pSrc = static_cast<CBTDecorator*>(pCurNode);
+								pSrc->Set_Child(std::move((*iter)));
+							}
 							Reset_CurrentNode();
 							break;
 						}
@@ -406,14 +449,21 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 
 	if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
 	{
-		auto pSelector = static_cast<CBTComposite*>(pCurNode);
-		for (size_t j = 0; j < pSelector->Get_Nodes()->size(); ++j)
+		auto pNode = static_cast<CBTComposite*>(pCurNode);
+		for (size_t j = 0; j < pNode->Get_Nodes()->size(); ++j)
 		{
-			if (nullptr == ((*pSelector->Get_Nodes())[j]))
+			if (nullptr == ((*pNode->Get_Nodes())[j]))
 				continue;
 			
-			Draw_Node(iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io, (*(pSelector->Get_Nodes()))[j].get());
+			Draw_Node(iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io, (*(pNode->Get_Nodes()))[j].get());
 		}
+	}
+	else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+	{
+		auto pNode = static_cast<CBTDecorator*>(pCurNode);
+		if(nullptr != pNode->Get_Child().get())
+		Draw_Node(iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io, pNode->Get_Child().get());
+
 	}
 	ImGui::PopID();
 
@@ -459,12 +509,20 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 					int32_t iPreSlot = m_CurrentNode.iSelectedSlot;
 					pCurNode->Get_GuiNodeLink().iStartIdx = iPreSlot; // 자식에 부모 담았고
 
-					auto pParn = static_cast<CBTComposite*>(pSrc);
-					pParn->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
-					pCurNode->Get_GuiNodeLink().ParentNode = pParn->Get_GuiNodeInfo().Get_DestInfo();
+					pSrc->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
+					pCurNode->Get_GuiNodeLink().ParentNode = pSrc->Get_GuiNodeInfo().Get_DestInfo();
 
 					m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
-					(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
+					if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					{
+						auto pParn = static_cast<CBTComposite*>(pSrc);
+						(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
+					}
+					else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+					{
+						auto pParn = static_cast<CBTDecorator*>(pSrc);
+						pParn->Set_Child(std::move(pCurNode));
+					}
 				}
 				bFinishe = true;
 				Reset_CurrentNode();
@@ -489,6 +547,12 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 				return true;
 		}
 	
+	}
+	else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+	{
+		auto pNode = static_cast<CBTDecorator*>(pCurNode.get());
+		if (Draw_TmpNode(iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io, pNode->Get_Child()))
+			return true;
 	}
 
 	return false;
@@ -523,6 +587,61 @@ void CNodeEditor::End_Canvas()
 	ImGui::End();
 }
 
+void CNodeEditor::SavePopUp()
+{
+
+	_string     PathName = "./Resources/json/Behavior/";
+	_char		NameBuffer[64]{};
+	_char		NameSrc[64]{};
+	_float2		ViewPortSize = CGameInstance::Get().GetClientScreenSize();
+	ImGui::SetNextWindowPos(
+		ImVec2(ViewPortSize.x *0.5f,ViewPortSize.y *0.5f),
+		ImGuiCond_Appearing,
+		ImVec2(0.5f, 0.5f) // pivot (중앙 기준)
+	);
+	ImGui::OpenPopup("File Save");
+
+	if (ImGui::BeginPopup("File Save", ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("FileName");
+		if (ImGui::InputText("##FileName", &NameBuffer[0], IM_ARRAYSIZE(NameBuffer))) //이름 입력
+		{
+			m_AddNodeName = PathName + NameBuffer + (".json");
+			m_SaveName = NameBuffer;
+		}
+
+		
+		if (ImGui::Button("Ok"))
+		{
+			_bool bfalse{false};
+			for (auto& iter : std::filesystem::recursive_directory_iterator(PathName))
+			{
+				if (iter.path().filename().stem() == m_SaveName)
+				{
+					bfalse = true;
+					MSG_BOX("File Name Same or Blink");
+				}
+			}
+		
+			if (!bfalse)
+			{
+
+				m_bSaveLoad = false;
+				m_pBeHavior->Save_Data(m_AddNodeName);
+				MSG_BOX("Successed Save");
+				ImGui::CloseCurrentPopup();
+			}
+		} ImGui::SameLine(100.f);
+		if (ImGui::Button("Cancle"))
+		{
+			m_bSaveLoad = false;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
 void CNodeEditor::Widget(CBTRoot* pRoot, GUINODE* pNode, GUINODE_LINK* pLink, int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io)
 {
 	_float2 vMin{};
@@ -533,11 +652,19 @@ void CNodeEditor::Widget(CBTRoot* pRoot, GUINODE* pNode, GUINODE_LINK* pLink, in
 	_bool	bOld_Any_Active = ImGui::IsAnyItemActive(); //위젯 생성전에 다른 위젯이 이미 활성화 되어있는지 저장
 	ImGui::SetCursorScreenPos(vNode_Rect_Min + ImVec2(fNode_Window_Padding.x, fNode_Window_Padding.y)); //여기에 위젯을 만들어라
 	//노드 내부으 imgui 위젯 생성	
+
 	ImGui::BeginGroup();
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.f, 0.f, 0.f, 1.f));
+	
 	ImGui::Text("%s", pNode->Name.c_str()); //이름..
+	ImGui::PopStyleColor();
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.245, 0.6834f, 1.f));
 	ShowWidgetByType(pRoot);
+	ImGui::PopStyleColor();
 	ImGui::SliderFloat("##value", &pNode->fValue, 0.f, 1.f, "Alpha %2.f"); //알파값 뭐 쓸모가..
 	ImGui::ColorEdit3("##Color", &pNode->vColor.x); //색상 뭐 쓸모가..
+
+	
 	ImGui::EndGroup();
 	///////////////////위젯 생성
 
@@ -569,22 +696,20 @@ void CNodeEditor::Widget(CBTRoot* pRoot, GUINODE* pNode, GUINODE_LINK* pLink, in
 		pNode->vPos = _float2(pNode->vPos.x + io.MouseDelta.x, pNode->vPos.y + io.MouseDelta.y);
 
 	//선택하거나 마우스 위에 올렸을때 scene인가 hover 확인해서 색상으로 표기
-	ImU32 Node_Bg_Color = (iNode_hovered_in_list == pNode->iID ||
-		iNode_hovered_in_scene == pNode->iID || m_iNodeSelect == pNode->iID ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255));
-
+	ImU32 Node_Bg_Color = ImGui::ColorConvertFloat4ToU32(ImVec4(pNode->vColor.x, pNode->vColor.y, pNode->vColor.z, pNode->vColor.w));
 	//노드 의 외형을 직접 그리는거
 	//배경
 	m_pDrawList->AddRectFilled(vNode_Rect_Min, vNode_Rect_Max, Node_Bg_Color, 4.f);
 	//테두리차두리두리두리두리
-	m_pDrawList->AddRect(vNode_Rect_Min, vNode_Rect_Max, IM_COL32(100, 100, 100, 255), 4.f);
+	m_pDrawList->AddRect(vNode_Rect_Min, vNode_Rect_Max, IM_COL32(0, 0, 0, 125), 4.f);
 	//동글뱅이 입력노드 출력노드
 	
-	m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetStartSlotPos().x, m_vOffset.y + pNode->GetStartSlotPos().y), fNode_Slot_Radius, IM_COL32(150, 150, 150, 150));
+	m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetStartSlotPos().x, m_vOffset.y + pNode->GetStartSlotPos().y), fNode_Slot_Radius, IM_COL32(255, 50, 50, 255));
 	
 	if (!pLink->SlotEnd.empty())
 	{
 		for (uint32_t i = 0; i < pLink->SlotEnd.size(); ++i)
-			m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetEndSlotPos(i,pLink->SlotEnd.size()).x, m_vOffset.y + pNode->GetEndSlotPos(i, pLink->SlotEnd.size()).y), fNode_Slot_Radius, IM_COL32(150, 150, 150, 150));
+			m_pDrawList->AddCircleFilled(ImVec2(m_vOffset.x + pNode->GetEndSlotPos(i,pLink->SlotEnd.size()).x, m_vOffset.y + pNode->GetEndSlotPos(i, pLink->SlotEnd.size()).y), fNode_Slot_Radius, IM_COL32(255, 50, 50, 255));
 	}
 
 }
@@ -597,8 +722,10 @@ void CNodeEditor::ShowWidgetByType(CBTRoot* pNode)
 		CGameInstance::Get().Show_Action_NodeWidget(pNode);
 	else if (eNodeType == BEHAVIOR::SELECTOR || eNodeType == BEHAVIOR::SECQUNCE)
 	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1.f));
 		if (ImGui::Button("Add Pin"))Pin(pNode, true);
 		if (ImGui::Button("Del pin"))Pin(pNode, false);
+		ImGui::PopStyleColor();
 	}
 }
 
@@ -622,11 +749,13 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 		{
 			int32_t iIndex = 0;
 			m_bPopup = false;
-			SequenceDesc.m_GuiNode = GUINODE(eType, m_pBeHavior->Get_NodeID()++, m_AddNodeName.c_str(), _float2(vPos.x, vPos.y), 0.5f, _float4(100, 100, 200, 255));
+			_float4 vCor = eType == BEHAVIOR::SECQUNCE ? _float4(0.1f, 1.f, 0.1f,1.f) : _float4(0.5294f, 0.9843f, 1.f, 1.f);
+			SequenceDesc.m_GuiNode = GUINODE(eType, m_pBeHavior->Get_NodeID()++, m_AddNodeName.c_str(), _float2(vPos.x, vPos.y), 0.5f, vCor);
 			SequenceDesc.m_GuiLink = (GUINODE_LINK(2));
 			SequenceDesc.Handle = m_hTarget;
 			if (auto iter = m_pBeHavior->Find_Node(m_pBeHavior->Get_NodeID()))
 			{
+				--m_pBeHavior->Get_NodeID();
 				MSG_BOX("Failed : Node Index Problem");
 				ImGui::CloseCurrentPopup();
 				ImGui::EndPopup();
@@ -634,9 +763,9 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 			}
 
 			if (eType == BEHAVIOR::SELECTOR)
-				pNode = CBTSelector::Create(&SequenceDesc);
+				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc);
 			else if(eType == BEHAVIOR::SECQUNCE)
-				pNode = CBTSecqunce::Create(&SequenceDesc);
+				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc);
 			if (nullptr == pNode)
 			{
 				ImGui::CloseCurrentPopup();
@@ -738,6 +867,23 @@ void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
 			if ((*pNode->Get_Nodes())[i]->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION)
 			Recursive_Call_Node(pNodeArray[i].get());
 		}
+	}
+	else if (BEHAVIOR::DECORATOR == eType)
+	{
+		auto pNode = static_cast<CBTDecorator*>(pParent);
+		auto& pChild = pNode->Get_Child();
+		if (nullptr != pChild)
+		{
+			int32_t iParentIndex = pChild->Get_GuiNodeLink().iStartIdx;
+
+			pNode_inp = &pChild->Get_GuiNodeInfo();
+			pNode_out = &pParent->Get_GuiNodeInfo();
+			Draw_NodeLine(pNode_inp->GetStartSlotPos(), pNode_out->GetEndSlotPos(iParentIndex, pParent->Get_GuiNodeLink().SlotEnd.size()));
+
+			if ((pNode->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION))
+				Recursive_Call_Node(pChild.get());
+		}
+		
 	}
 	
 }

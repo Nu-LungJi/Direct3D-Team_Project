@@ -1,5 +1,6 @@
 #pragma once
 
+
 namespace Engine
 {
 	typedef struct tagEngineDesc
@@ -111,11 +112,10 @@ namespace Engine
 	typedef struct tagactionvalue
 	{
 		tagactionvalue() = default;
-		tagactionvalue(int32_t iAnim, NODE_ACTION ActionType) { iAnim = iAnimIndex, eNodeType = ActionType; }
+		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
 		_float   fSpeed{}, fTime{}, fTick{};
-		NODE_ACTION eNodeType{ NODE_ACTION::END };
-
+	
 	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{
@@ -126,9 +126,7 @@ namespace Engine
 		}
 		_string  DestName{};
 		int32_t iDestNode{ -1 };
-
 		BEHAVIOR eType{ BEHAVIOR::END };
-
 		void Reset() { DestName = "";  eType = BEHAVIOR::END; iDestNode = -1; }
 
 	}DEST_NODE;
@@ -136,15 +134,15 @@ namespace Engine
 	{
 		uint32_t	iID{};
 		_string		Name{};
-		_float2		vPos{}, vSize{};
-		_float		fValue{};
-		_float4		vColor{};
+		XMFLOAT2		vPos{},vSize{};
+		float		fValue{};
+		XMFLOAT4		vColor{};
 		BEHAVIOR    eMyType{};
-		tagimguinode() = default;
-		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, const _float2& pos, float value, const _float4& color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
-		_float2 GetStartSlotPos() const  { return _float2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
-		_float2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
-			return _float2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
+		tagimguinode()=default ;
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
+		XMFLOAT2 GetStartSlotPos()  { return XMFLOAT2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
+		XMFLOAT2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
+			return XMFLOAT2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
 		}
 		DEST_NODE Get_DestInfo() {
 			DEST_NODE Dst{};
@@ -153,6 +151,7 @@ namespace Engine
 			Dst.iDestNode = iID;
 			return Dst;
 		}
+
 	}GUINODE;
 
 	typedef struct tagimguinodelink
@@ -231,3 +230,4 @@ namespace Engine
 	///////NodeEditor용
 
 }
+

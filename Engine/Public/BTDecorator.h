@@ -1,11 +1,11 @@
 #pragma once
-#include "BTComposite.h"
+#include "BTRoot.h"
 
 NS_BEGIN(Engine)
-class  ENGINE_DLL CBTDecorator : public CBTComposite
+class  ENGINE_DLL CBTDecorator : public CBTRoot
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTDecorator, CBTComposite)
+	DECLARE_DERIVED_TYPE(CBTDecorator, CBTRoot)
 	CBTDecorator& operator=(const CBTDecorator&) = delete;
 public:
 	typedef struct tagdecorator : CBTRoot::BTROOT_DESC
@@ -18,17 +18,21 @@ protected:
 	CBTDecorator(const CBTDecorator& Prototype);
 	~CBTDecorator() override;
 
+	virtual HRESULT	InitalizePrototype(void* pArg) override;
 	virtual HRESULT Initalize(void* pArg) override;
 
 public:
-	virtual HRESULT	Priority_Update(_float fTimeDelta) override;
-	virtual HRESULT	Update(_float fTimeDelta)		   override;
-	virtual HRESULT	Late_Update(_float fTimeDelta)	   override;
-
 	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
 
+	virtual void				Update_Gui();
 	nlohmann::json				Save_Node()override;
-	HRESULT						Load_json(nlohmann::json& j)override;
+	HRESULT						Load_json(const nlohmann::json& j)override;
+	UPtr<CBTRoot>&				Get_Child() { return m_pDecorator; }
+	void						Set_Child(UPtr<CBTRoot> pRoot) { 
+		if(nullptr == m_pDecorator)
+		m_pDecorator = std::move(pRoot); }
+private:
+	UPtr<CBTRoot>				m_pDecorator{ nullptr };
 public:
 	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };

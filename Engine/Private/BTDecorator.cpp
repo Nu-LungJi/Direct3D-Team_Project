@@ -5,7 +5,7 @@ CBTDecorator::CBTDecorator()
 {
 }
 
-CBTDecorator::CBTDecorator(const CBTDecorator& Prototype)
+CBTDecorator::CBTDecorator(const CBTDecorator& Prototype) : CBTRoot(Prototype)
 {
 }
 
@@ -13,6 +13,13 @@ CBTDecorator ::~CBTDecorator()
 {
 }
 
+
+HRESULT CBTDecorator::InitalizePrototype(void* pArg)
+{
+	__super::InitalizePrototype(pArg);
+	
+	return S_OK;
+}
 
 HRESULT CBTDecorator::Initalize(void* pArg)
 {
@@ -22,65 +29,55 @@ HRESULT CBTDecorator::Initalize(void* pArg)
     return S_OK;
 }
 
-HRESULT CBTDecorator::Priority_Update(_float fTimeDelta)
-{
-
-    return S_OK;
-}
-
-HRESULT CBTDecorator::Update(_float fTimeDelta)
-{
-
-    return S_OK;
-}
-
-HRESULT CBTDecorator::Late_Update(_float fTimeDelta)
-{
-
-
-    return S_OK;
-}
-
 EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 {
-
-    int32_t iIndex = 0;
-
-    if (m_NodeValue.bCur)
-        iIndex = m_NodeValue.iCurSecquenceIndex;
-
-    for (size_t i = iIndex; i < m_Actions.size(); ++i)
-    {
-        if (nullptr == m_Actions[i])
-            continue;
-
-        EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
-        if (eValuate == EVALUATE::SUCCESS)
-            return EVALUATE::SUCCESS;
-        else if (eValuate == EVALUATE::RUN)
-        {
-            m_NodeValue.bCur = true;
-            m_NodeValue.iPreSecquenceIndex = i;
-            return EVALUATE::RUN;
-        }
-        else if (eValuate == EVALUATE::FAILED)
-        {
-            m_NodeValue.bCur = false;
-            return EVALUATE::FAILED;
-
-        }
-
-    }
+    if(m_pDecorator != nullptr)
+        return m_pDecorator->Evaluate(fTimeDelta);
+    
     return EVALUATE::FAILED;
 }
 
 nlohmann::json CBTDecorator::Save_Node()
 {
-    return nlohmann::json();
-}
+	const _string Name = "Child";
+	nlohmann::json j;
+	j = __super::Save_Node();
 
-HRESULT CBTDecorator::Load_json(nlohmann::json& j)
+	if (m_GuiLink.SlotEnd[0].iDestNode != -1)
+	{
+		j["LinkEndSlot"] = m_GuiLink.SlotEnd[0];
+		SaveJsonEnum(j, "LinkEndSlotEnum", m_GuiLink.SlotEnd[0].eType);
+	}	
+	if(m_pDecorator != nullptr)
+		j[Name] = m_pDecorator->Save_Node();
+	
+	return j;
+}
+void CBTDecorator::Update_Gui()
 {
-    return E_NOTIMPL;
+
+}
+HRESULT CBTDecorator::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	m_GuiLink.SlotEnd.resize(1);
+	if (j.contains("LinkEndSlot"))
+	{
+		DEST_NODE Node{};
+		j["LinkEndSlot"].get_to<DEST_NODE>(Node);
+		m_GuiLink.SlotEnd[0] = Node;
+		LoadJsonEnum(j, "LinkEndSlotEnum", m_GuiLink.SlotEnd[0].eType);
+	}
+
+
+	if (j.contains("Child"))
+	{
+		auto pSrc = CGameInstance::Get().Clone_Action(m_eGroup, m_MasterName, nullptr);
+		pSrc->Load_json(j["Child"]);
+		m_pDecorator = std::move(pSrc);
+	}
+	
+
+    return S_OK;
 }
 

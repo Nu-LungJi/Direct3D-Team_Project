@@ -705,6 +705,9 @@
     <ClInclude Include="..\public\BTDecorator.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_Json_Util.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

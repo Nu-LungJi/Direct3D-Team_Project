@@ -8,13 +8,18 @@ CBTchase::CBTchase()
 
 }
 
+CBTchase::CBTchase(const CBTchase& rhs) : CBTActionNode(rhs)
+{
 
+}
 CBTchase::~CBTchase()
 {
 }
-HRESULT CBTchase::InitializePrototype()
+HRESULT CBTchase::InitalizePrototype(void* pArg)
 {
-
+	__super::InitalizePrototype(pArg);
+	m_eGroup = NODEGROUP::ACTION;
+	m_MasterName = "BTchase";
 	return S_OK;
 }
 HRESULT CBTchase::Initalize(void* pArg)
@@ -34,10 +39,13 @@ EVALUATE CBTchase::Evaluate(_float fTimeDelta)
 
 	return EVALUATE::FAILED;
 }
+void CBTchase::Update_Gui()
+{
+}
 E::UPtr<CBTchase> CBTchase::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTchase{});
-	if (FAILED(pInstance->InitializePrototype()))
+	if (FAILED(pInstance->InitalizePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTchase");
 		return nullptr;

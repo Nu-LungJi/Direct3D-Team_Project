@@ -12,35 +12,36 @@ public:
 	typedef struct tagbtroot
 	{
 		CHandle		Handle;
+		NODEGROUP    eGroup;
 		GUINODE		 m_GuiNode;
 		GUINODE_LINK m_GuiLink;
 		_string		 NodeName;
+		_string      m_MasterName;
 	}BTROOT_DESC;
 
 protected:
 	explicit CBTRoot();
+	CBTRoot(const CBTRoot& rhs);
 	~CBTRoot() override;
 
+	virtual HRESULT InitalizePrototype(void* pArg = nullptr);
 	virtual HRESULT Initalize(void* pArg);
 public:
 	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
 	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
+	void			Set_Handle(CHandle Handle) { m_Handle = Handle; }
 	CHandle&		Get_Handle() { return m_Handle; }
-
-	virtual HRESULT	Priority_Update(_float fTimeDelta) { return S_OK; };
-	virtual HRESULT	Update(_float fTimeDelta) { return S_OK; };
-	virtual HRESULT	Late_Update(_float fTimeDelta) { return S_OK; };
 public:
-	virtual nlohmann::json				Save_Node()PURE;
-	virtual HRESULT						Load_json(nlohmann::json& j) PURE;
+	virtual nlohmann::json		Save_Node();
+	virtual HRESULT				Load_json(const nlohmann::json& j);
 public:
 	virtual EVALUATE		Evaluate(_float fTimeDelta) PURE;
-
 protected:
 	GUINODE								m_GuiNode;
 	GUINODE_LINK						m_GuiLink;
 	CHandle								m_Handle;
-
+	_string								m_MasterName;
+	NODEGROUP							m_eGroup{};
 public:
 	template<typename T1> 
 	class CComponent* Get_Component(const CHandle & Handle, const _string& name)

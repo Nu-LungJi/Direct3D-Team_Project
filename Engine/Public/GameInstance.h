@@ -265,9 +265,11 @@ public:
 #pragma endregion
 
 #pragma region Action_Manager
-	HRESULT					Add_Action_Prototype(BEHAVIOR eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
-	UPtr<class CBTRoot>		Show_ActioNode_List(BEHAVIOR eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
+	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
+	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
+	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
+
 #pragma endregion
 
 public:

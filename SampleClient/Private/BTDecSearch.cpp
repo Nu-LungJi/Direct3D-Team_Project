@@ -7,12 +7,18 @@ CBTDecSearch::CBTDecSearch()
 
 }
 
+CBTDecSearch::CBTDecSearch(const CBTDecSearch& rhs) : CBTDecorator(rhs)
+{
+
+}
 CBTDecSearch::~CBTDecSearch()
 {
 }
-HRESULT CBTDecSearch::InitializePrototype()
+HRESULT CBTDecSearch::InitalizePrototype(void* pArg)
 {
-
+	__super::InitalizePrototype(pArg);
+	m_eGroup = NODEGROUP::DECORATOR;
+	m_MasterName = "BTDecSearch";
 	return S_OK;
 }
 HRESULT CBTDecSearch::Initalize(void* pArg)
@@ -30,13 +36,17 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	//	return EVALUATE::FAILED;
 	//if()조건을 만족하면
 	//__super::Evaluate(fTimeDelta);
-
+	__super::Evaluate(fTimeDelta);
 	return EVALUATE::FAILED;
+}
+void		CBTDecSearch::Update_Gui()
+{
+
 }
 E::UPtr<CBTDecSearch> CBTDecSearch::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTDecSearch{});
-	if (FAILED(pInstance->InitializePrototype()))
+	if (FAILED(pInstance->InitalizePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTDecSearch");
 		return nullptr;

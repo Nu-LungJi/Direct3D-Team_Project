@@ -18,12 +18,12 @@ namespace Engine
 	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
 #define X(name) name,
-	enum class NODE_ACTION { NODE_ACTION_M };
+	enum class NODEGROUP { NODE_ACTION_M };
+	enum class MOVE { MOVE_M };
 #undef X	
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
 	enum class PARTICLE_TYPE { FIRE,SMOKE,RIBBON, END };
 	enum class CPU_GPU{ CPU, GPU, END};
-
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
 	static const uint32_t MAX_SPAWN_PER_CALL = 256;
 
