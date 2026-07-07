@@ -8,7 +8,6 @@
 #include "ResCBuffer.h"
 #include "TestPhysX.h"
 #include "UiCamera.h"
-#include "ComPhysX.h"
 
 
 
