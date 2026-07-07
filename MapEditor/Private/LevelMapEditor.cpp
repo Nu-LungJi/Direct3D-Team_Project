@@ -24,19 +24,19 @@ HRESULT CLevelMapEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
-	{
-		CTestGuizmo::GAMEOBJECT_DESC Desc{};
-		Desc.sObjectTag = "TestGuizmo";
-		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer("MAPEDITOR", "Prototype_GameObject_TestGuizmo",
-			"00_OBJECTS", &Desc))
-		{
-			m_SelectedObject = hObject.value();
-		}
-		else
-		{
-			return E_FAIL;
-		}
-	}
+	//{
+	//	CTestGuizmo::GAMEOBJECT_DESC Desc{};
+	//	Desc.sObjectTag = "TestGuizmo";
+	//	if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer("MAPEDITOR", "Prototype_GameObject_TestGuizmo",
+	//		"00_OBJECTS", &Desc))
+	//	{
+	//		m_SelectedObject = hObject.value();
+	//	}
+	//	else
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
 
 
 
