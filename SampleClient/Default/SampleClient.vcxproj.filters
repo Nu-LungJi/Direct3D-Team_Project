@@ -97,6 +97,12 @@
     <Filter Include="GameObject\TestPhysx\Capsule">
       <UniqueIdentifier>{7b83671d-5cd1-4f24-8519-9695f9bf0a20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\TexUI">
+      <UniqueIdentifier>{96c0555a-899c-43c8-b53f-8d8a0fff0b0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\FilpBook">
+      <UniqueIdentifier>{0857634d-6e20-458d-bd1e-e0b73c69a1d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -150,11 +156,20 @@
     <ClInclude Include="..\public\Gobline.h">
       <Filter>GameObject\Monsters</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\CTexUI.h">
-      <Filter>GameObject\UI</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\LevelUIEditor.h">
       <Filter>Level\UiEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CTexUI.h">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlipBook.h">
+      <Filter>GameObject\UI\FilpBook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlipbookPlayer.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_Item.h">
+      <Filter>GameObject\UI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelAnimEditor.h">
       <Filter>Level\AnimationEditor</Filter>
@@ -303,6 +318,19 @@
     <ClCompile Include="..\private\TestPhysXCapsule.cpp">
       <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Particle.cpp" />
+    <ClCompile Include="..\Private\CTexUI.cpp">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\FlipBook.cpp">
+      <Filter>GameObject\UI\FilpBook</Filter>
+    </ClCompile>
+    <ClCompile Include="FlipbookPlayer.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_Item.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">
@@ -321,9 +349,6 @@
   <ItemGroup>
     <ClCompile Include="..\private\Gobline.cpp">
       <Filter>GameObject\Monsters</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\CTexUI.cpp">
-      <Filter>GameObject\UI</Filter>
     </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>

@@ -1,6 +1,6 @@
-﻿#pragma once
+#pragma once
 
-#include "UIObject.h"
+#include "UITex.h"
 #include "Client_Defines.h"
 
 NS_BEGIN(Engine)
@@ -9,14 +9,14 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CTexUI final : public E::CUIObject
+class CUI_Item final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CTexUI, CUIObject)
+	DECLARE_DERIVED_TYPE(CUI_Item, E::CUITex)
 
 private:
-	CTexUI();
-	~CTexUI() override;
+	CUI_Item();
+	~CUI_Item() override;
 
 public:
 	HRESULT Initialize(void* pArg) override;
@@ -25,21 +25,26 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+protected:
+	virtual void Creating();
+	virtual void StartHovering();
+	virtual void Hovering();
+	virtual void EndHovering();
+	virtual void Ending();
+
 public:
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
 private:
 	_bool m_bMouseTracking{};
 
 private:
-	// 쉐이더
 	bool m_bOutline{};
 
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
 
 public:
-	static E::UPtr<CTexUI> Create();
+	static E::UPtr<CUI_Item> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
-
 };
 
 NS_END

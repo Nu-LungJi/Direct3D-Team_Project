@@ -21,6 +21,7 @@ PS_IN VSMain(VS_IN vin)
     output.posH = mul(float4(vin.posL, 1.f), g_matWVP);
 
     output.uv = vin.uv;
+
     return output;
 }
 struct PS_OUT

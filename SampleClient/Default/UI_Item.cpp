@@ -1,21 +1,21 @@
 #include "pch.h"
-#include "CTexUI.h"
+#include "UI_Item.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
 
 NS_USING(Client)
 
-CTexUI::CTexUI()
+CUI_Item::CUI_Item()
 {
 
 }
 
-CTexUI::~CTexUI()
+CUI_Item::~CUI_Item()
 {
 }
 
-HRESULT CTexUI::Initialize(void* pArg)
+HRESULT CUI_Item::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
 
@@ -37,11 +37,11 @@ HRESULT CTexUI::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CTexUI::PriorityUpdate(E::_float fTimeDelta)
+void CUI_Item::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CTexUI::Update(E::_float fTimeDelta)
+void CUI_Item::Update(E::_float fTimeDelta)
 {
 	CUIObject::Update(fTimeDelta);
 
@@ -54,13 +54,13 @@ void CTexUI::Update(E::_float fTimeDelta)
 	}
 }
 
-void CTexUI::LateUpdate(E::_float fTimeDelta)
+void CUI_Item::LateUpdate(E::_float fTimeDelta)
 {
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
 
-HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = "LEVEL_UIEDITOR";
 
@@ -88,7 +88,7 @@ HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 	{
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = {0.f, 0.f};
+		perUI.texCoord = { 0.f, 0.f };
 		perUI.uvSize = { 0.f, 0.f };
 		perUI.color = { 0.f, 0.f, 0.f, m_fAlpha };
 
@@ -135,9 +135,30 @@ HRESULT CTexUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 	return S_OK;
 }
 
-E::UPtr<CTexUI> CTexUI::Create()
+void CUI_Item::Creating()
 {
-	auto pInstance = E::ToUPtr(new CTexUI{});
+}
+
+void CUI_Item::StartHovering()
+{
+}
+
+void CUI_Item::Hovering()
+{
+
+}
+
+void CUI_Item::EndHovering()
+{
+}
+
+void CUI_Item::Ending()
+{
+}
+
+E::UPtr<CUI_Item> CUI_Item::Create()
+{
+	auto pInstance = E::ToUPtr(new CUI_Item{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CTexUI");
@@ -146,12 +167,12 @@ E::UPtr<CTexUI> CTexUI::Create()
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTexUI::Clone(void* pArg)
+E::UPtr<E::CPrototype> CUI_Item::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTexUI{ *this });
+	auto	pInstance = E::ToUPtr(new CUI_Item{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTexUI");
+		MSG_BOX("Failed to Cloned : CUI_Item");
 		return nullptr;
 	}
 
