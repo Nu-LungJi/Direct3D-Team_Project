@@ -2,6 +2,7 @@
 #include "MapMeshObject.h"
 #include "ComConstantBuffer.h"
 #include "ComStaticModelInstance.h"
+#include "ComModelInstance.h"
 #include "GameInstance.h"
 #include "Resources.h"
 
@@ -73,10 +74,10 @@ HRESULT CMapMeshObject::Initialize(void* pArg)
 	}
 
 	{
-		CComStaticModelInstance::DESC Desc{};
+		CComModelInstance::DESC Desc{};
 		Desc.sGroupTag = m_modelResourceGroup;
 		Desc.sResTag = m_modelResourceTag;
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelInstance", &Desc, &m_pComModelInstance)))
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelInstance", &Desc, &m_pComModelInstance)))
 		{
 			return E_FAIL;
 		}

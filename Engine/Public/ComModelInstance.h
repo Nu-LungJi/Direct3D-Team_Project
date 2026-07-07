@@ -45,6 +45,7 @@ public:
 
 private:
 	SPtr<CResModel> m_pModel;
+	SPtr<CResCBuffer> m_Buffer;
 public:
 	static UPtr<CComModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

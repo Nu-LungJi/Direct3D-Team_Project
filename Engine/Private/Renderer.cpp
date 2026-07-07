@@ -23,7 +23,7 @@ void CRenderer::UpdateGUI()
 
 HRESULT CRenderer::Initialize()
 {
-    if (FAILED(InitializeShaderResource()))         return E_FAIL;
+    if (FAILED(InitializeShaderResource()))     return E_FAIL;
 
     if (FAILED(InitializeBackBuffer()))         return E_FAIL;
 
@@ -89,6 +89,7 @@ HRESULT CRenderer::InitializeShaderResource()
     {
         if (FAILED(res->Load()))    return E_FAIL;
     }
+
     return S_OK;
 }
 
@@ -214,6 +215,15 @@ HRESULT CRenderer::InitializeTargetPBR()
     if (m_pPBRPixelShader  = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR"))
     {
         if (FAILED(m_pPBRPixelShader->Load()))    return E_FAIL;
+    }
+
+    if (m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim"))
+    {
+        if (FAILED(m_pResVertexShader->Load()))    return E_FAIL;
+    }
+    if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim"))
+    {
+        if (FAILED(m_pResPixelShader->Load()))    return E_FAIL;
     }
 
     return S_OK;
@@ -446,8 +456,8 @@ HRESULT CRenderer::Render_ShadowMap(){
 HRESULT CRenderer::Render_DepthMap() {
     ZoneScopedN("Render_DepthMap");
     {
-        ID3D11RenderTargetView* pRTVs[1] = {nullptr };
-        m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+        ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
+        m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
         m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 
@@ -458,13 +468,17 @@ HRESULT CRenderer::Render_DepthMap() {
 
         if (FAILED(Bind_CameraAttribute(pGameCam))) return E_FAIL;
 
+        {
+            m_pContext->PSSetShader(nullptr, nullptr, 0);       // Depth 기록, PS 제외
+        }
+
         if (FAILED(RenderNonBlend()))            return E_FAIL;
 
     }
 
     return S_OK;
 }
-HRESULT CRenderer::Render_NonAlpha() {
+HRESULT CRenderer::Render_NonAlpha() { 
     ZoneScopedN("Render_NonAlpha");
     {
         ID3D11RenderTargetView* pRTVs[4] = {
@@ -491,12 +505,21 @@ HRESULT CRenderer::Render_NonAlpha() {
         if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
         if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
+    } 
+    {
+        const auto& PBR_VertexShader = m_pResVertexShader;		// Renderer에서 조정
+        const auto& PBR_PixelShader = m_pResPixelShader;		// Renderer에서 조정
+
+        m_pContext->IASetInputLayout(PBR_VertexShader->GetInputLayout().Get());
+        m_pContext->VSSetShader(PBR_VertexShader->GetVertexShader().Get(), nullptr, 0);
+        m_pContext->PSSetShader(PBR_PixelShader->GetPixelShader().Get(), nullptr, 0);
+    }
+    {
+        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+        m_pContext->RSSetState(rasterizer->GetRasterizerState().Get());
     }
 
     if (FAILED(RenderPriority()))        return E_FAIL;
-    {
-
-    }
 
     if (FAILED(RenderNonBlend()))
     {
@@ -515,11 +538,25 @@ HRESULT CRenderer::Render_NonAlpha() {
     {
         ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
         m_pContext->OMSetRenderTargets(4, pRTVs, nullptr);
+
+        ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+        m_pContext->PSSetShaderResources(0, 1, pSRVs);
+        m_pContext->PSSetShaderResources(1, 1, pSRVs);
+        m_pContext->PSSetShaderResources(2, 1, pSRVs);
+        m_pContext->PSSetShaderResources(3, 1, pSRVs);
+        m_pContext->PSSetShaderResources(4, 1, pSRVs);
+    }
+    {
+        m_pContext->IASetInputLayout(nullptr);
+        m_pContext->VSSetShader(nullptr, nullptr, 0);
+        m_pContext->PSSetShader(nullptr, nullptr, 0);
     }
 
     return S_OK;
 }
 HRESULT CRenderer::Render_Lighting() {
+    CGameInstance::Get().Bind_DynamicLight();
+
     ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
     m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
     m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
@@ -586,6 +623,12 @@ HRESULT CRenderer::Render_Lighting() {
         m_pContext->PSSetShaderResources(3, 1, pSRVs);
         m_pContext->PSSetShaderResources(4, 1, pSRVs);
     }
+    {
+        m_pContext->IASetInputLayout(nullptr);
+        m_pContext->VSSetShader(nullptr, nullptr, 0);
+        m_pContext->PSSetShader(nullptr, nullptr, 0);
+    }
+    
     return S_OK;
 }
 
@@ -602,6 +645,16 @@ HRESULT CRenderer::Render_Alpha() {
 
     auto pGameCam = CGameInstance::Get().GetActiveCamera();
     if (nullptr == pGameCam)    return S_OK;
+
+    {
+        m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
+        m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
+        m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
+    }
+    {
+        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+        m_pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+    }
 
     if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
@@ -710,22 +763,22 @@ HRESULT CRenderer::Render_OffScreen() {
 }
 HRESULT CRenderer::Render_UserInterface(){
     {
-        auto pUICame = CGameInstance::Get().GetCamera("UI");
-        if (nullptr == pUICame) return S_OK;
-       
-        RenderContext.matProj = pUICame->GetProj();
-        RenderContext.matView = pUICame->GetView();
-        RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
-        RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
-       
-        if (FAILED(Bind_CameraAttribute(pUICame)))
-        {
-            return E_FAIL;
-        }
-        if (FAILED(RenderUI()))
-        {
-            return E_FAIL;
-        }
+       //auto pUICame = CGameInstance::Get().GetCamera("UI");
+       //if (nullptr == pUICame) return S_OK;
+       //
+       //RenderContext.matProj = pUICame->GetProj();
+       //RenderContext.matView = pUICame->GetView();
+       //RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
+       //RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
+       //
+       //if (FAILED(Bind_CameraAttribute(pUICame)))
+       //{
+       //    return E_FAIL;
+       //}
+       //if (FAILED(RenderUI()))
+       //{
+       //    return E_FAIL;
+       //}
     }
     return S_OK;
 }

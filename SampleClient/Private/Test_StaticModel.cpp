@@ -31,7 +31,7 @@ HRESULT CTest_StaticModel::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
 	{

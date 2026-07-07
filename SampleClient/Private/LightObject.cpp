@@ -17,17 +17,17 @@ void CLightObject::UpdateGUI() {
 }
 
 HRESULT CLightObject::InitializePrototype(void* pArg) {
-	//m_pResVertexShader	= CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
+	//m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	//if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
-	
-	//m_pResPixelShader	= CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	//
+	//m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	//if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
 
-	m_pResVertexShader	= CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR_BLEND");
-	if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
-	
-	m_pResPixelShader	= CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR_BLEND");
-	if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
+	//m_pResVertexShader	= CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR_BLEND");
+	//if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
+	//
+	//m_pResPixelShader	= CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR_BLEND");
+	//if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
 
 	m_pResSamplerState	= CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	if (!m_pResSamplerState)				return E_FAIL;
@@ -36,7 +36,6 @@ HRESULT CLightObject::InitializePrototype(void* pArg) {
 		E::CResModel::DESC pDesc = { XMMatrixIdentity() };
 		if (FAILED(res->Load(pDesc)))	return E_FAIL;
 	}
-	
 
 	return S_OK;
 }
@@ -87,7 +86,7 @@ void CLightObject::Update(E::_float fTimeDelta) {
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
 HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -101,14 +100,9 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
-	const auto& PBR_VertexShader = m_pResVertexShader;
-	const auto& PBR_PixelShader = m_pResPixelShader;
-
-	pContext->IASetInputLayout(PBR_VertexShader->GetInputLayout().Get());
-	pContext->VSSetShader(PBR_VertexShader->GetVertexShader().Get(), nullptr, 0);
-	pContext->PSSetShader(PBR_PixelShader->GetPixelShader().Get(), nullptr, 0);
 
 	auto pModel = m_pComModelInstance->GetModel();
+	if (nullptr == pModel)	return E_FAIL;
 
 	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
 	for (uint32_t i = 0; i < iNumMeshes; ++i) {
@@ -128,29 +122,29 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 		{
-			//m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-			SPtr<CResTexture2D> DiffuseTexture	= m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-			SPtr<CResTexture2D> NormalTexture	= m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
-
+			SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+				DiffuseTexture = Resource;
+			}
 			pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
+
+			SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+				NormalTexture = Resource;
+			}
 			pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
 
-			SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_Gray");
+			SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
 			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
 				SMROTexture = Resource;
 			}
 			pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
 
-			SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_White");
+			SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
 			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
 				EmissiveTexture = Resource;
 			}
 			pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
-		}
-
-		{
-			CGameInstance::Get().Bind_DynamicLight();
-			m_pComModelInstance->Bind_BoneMatrices(pContext, i);
 		}
 		{
 			auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
@@ -166,7 +160,7 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 				CMMAT.AmbientIntensity = 1.f;
 				CMMAT.SpecularIntensity = 1.f;
 		
-				CMMAT.EmissiveColor = {1.f, 0.f, 0.f};
+				CMMAT.EmissiveColor = {1.f, 1.f, 1.f};
 				CMMAT.EmissiveIntensity = 1.f;
 			
 			    memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
@@ -175,17 +169,14 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 			pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 		}
 
-		{
-			const auto& sampler = m_pResSamplerState;
-			pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-		}
-		{
-			const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-			pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-		}
-
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
+
+	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+	pContext->PSSetShaderResources(0, 1, pSRVs);
+	pContext->PSSetShaderResources(1, 1, pSRVs);
+	pContext->PSSetShaderResources(2, 1, pSRVs);
+	pContext->PSSetShaderResources(3, 1, pSRVs);
 
 	return S_OK;
 }

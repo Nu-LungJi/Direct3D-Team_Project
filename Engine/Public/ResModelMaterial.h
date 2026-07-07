@@ -29,6 +29,8 @@ public:
 	uint32_t GetMaterialTypeNum() { return m_iMaterialTypeNum; }
 
 
+public:
+
 private:
 	uint32_t			m_iMaterialTypeNum{};
 

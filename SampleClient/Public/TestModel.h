@@ -53,6 +53,15 @@ private:
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
+	_float4 m_fAlbedoColor			= { 1.f, 1.f, 1.f, 1.f };
+	_float	m_fNormalIntensity		= 1.f;
+	_float	m_fRoughnessIntensity	= 1.f;
+	_float	m_fMetallicIntensity	= 1.f;
+	_float	m_fAmbientIntensity		= 1.f;
+	_float	m_fSpecularIntensity	= 1.f;
+	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };
+	_float	m_fEmissiveIntensity	= 0.f;
+
 public:
 	static E::UPtr<CTestModel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

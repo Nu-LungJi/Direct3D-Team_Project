@@ -27,16 +27,34 @@ PS_IN VSMain(VS_IN vin)
 struct PS_OUT
 {
     vector vDiffuse : SV_TARGET0;
+    vector vNormal : SV_TARGET1;
+    vector vSMRO : SV_TARGET2;
+    vector vEmissive : SV_TARGET3;
 };
 
 // Pixel Shader
-float4 PSMain(PS_IN input) : SV_Target
+PS_OUT PSMain(PS_IN input)
 {
+    PS_OUT OUT;
     float4 TexColor = tex.Sample(SamplerWrap, input.uv);
-    if (TexColor.a == 0.0f)  discard;
-    return TexColor;
+    if (TexColor.a == 0.01f)  discard;
+    
+    OUT.vDiffuse = TexColor;
+    OUT.vNormal  = float4(0.f, 0.f, 0.f, 0.f);
+    OUT.vSMRO = float4(0.f, 0.f, 0.f, 0.f);
+    OUT.vEmissive = float4(0.f, 0.f, 0.f, 0.f);
+
+    return OUT;
 }
-float4 PSMain_NonAlpha(PS_IN input) : SV_Target
+PS_OUT PSMain_NonAlpha(PS_IN input)
 {
-    return tex.Sample(SamplerWrap, input.uv);
+    PS_OUT OUT;
+    float4 TexColor = tex.Sample(SamplerWrap, input.uv);
+    
+    OUT.vDiffuse = TexColor;
+    OUT.vNormal = float4(0.f, 0.f, 0.f, 1.f);
+    OUT.vSMRO = float4(0.f, 0.f, 0.f, 1.f);
+    OUT.vEmissive = float4(0.f, 0.f, 0.f, 1.f);
+
+    return OUT;
 }

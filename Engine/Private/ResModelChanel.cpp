@@ -37,6 +37,8 @@ HRESULT CResModelChanel::Load(const std::any& arg)
         pPoint += sizeof(uint32_t);
 
 
+
+
         if (-1 == m_iBoneIndex)
             return E_FAIL;
 
@@ -47,30 +49,27 @@ HRESULT CResModelChanel::Load(const std::any& arg)
         _float3     vScale = {};
         _float4     vRotation = {};
         _float3     vTranslation = {};
+        m_KeyFrames.clear();
+        m_KeyFrames.resize(m_iNumKeyFrames);
+        
 
-        for (size_t i = 0; i < m_iNumKeyFrames; i++)
+        
+
+        for (uint32_t i = 0; i < m_iNumKeyFrames; ++i)
         {
-            KEYFRAME            KeyFrame = {};
+            KEYFRAME& KeyFrame = m_KeyFrames[i];
 
-            KeyFrame.vScale = *(XMFLOAT3*)pPoint;
+            memcpy(&KeyFrame.vScale, pPoint, sizeof(XMFLOAT3));
             pPoint += sizeof(XMFLOAT3);
 
-
-            KeyFrame.vRotation = *(XMFLOAT4*)pPoint;
+            memcpy(&KeyFrame.vRotation, pPoint, sizeof(XMFLOAT4));
             pPoint += sizeof(XMFLOAT4);
 
-
-            KeyFrame.vTranslation = *(XMFLOAT3*)pPoint;
+            memcpy(&KeyFrame.vTranslation, pPoint, sizeof(XMFLOAT3));
             pPoint += sizeof(XMFLOAT3);
 
-
-            KeyFrame.fTrackPosition = *(_float*)pPoint;
-            pPoint += sizeof(_float);
-
-
-    
-
-            m_KeyFrames.push_back(KeyFrame);
+            memcpy(&KeyFrame.fTrackPosition, pPoint, sizeof(float));
+            pPoint += sizeof(float);
         }
 
     }

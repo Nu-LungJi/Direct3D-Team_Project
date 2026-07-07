@@ -15,94 +15,98 @@ CResModelAnim::~CResModelAnim()
 
 HRESULT CResModelAnim::Load(const std::any& arg)
 {
+    auto descArg = std::any_cast<DESC>(&arg);
+    if (!descArg)
+        return E_FAIL;
 
-	auto descArg = std::any_cast<DESC>(&arg);
-	if (!descArg)
-	{
-		return E_FAIL;
-	}
+    if (m_eState == STATE::LOADED)
+        return S_OK;
 
-	if (m_eState == STATE::LOADED)
-	{
-		return S_OK;
-	}
-	m_eState = STATE::LOADING;
+    m_eState = STATE::LOADING;
 
-	auto& pPath = descArg->path;
-	auto& pModel = descArg->pModel;
-	{
+    m_AnimPath = descArg->path;
+    auto& pModel = descArg->pModel;
 
-		std::ifstream file(pPath, std::ios::binary | std::ios::ate);
+    std::ifstream file(m_AnimPath, std::ios::binary | std::ios::ate);
+    if (!file.is_open())
+        return E_FAIL;
 
+    size_t fileSize = static_cast<size_t>(file.tellg());
+    file.seekg(0, std::ios::beg);
 
-		if (!file.is_open())
-		{
-			return E_FAIL;
-		}
+    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(fileSize);
 
-		file.seekg(0, std::ios::end);
-		size_t size = file.tellg();
-		file.seekg(0, std::ios::beg);
+    file.read(buffer.get(), fileSize);
+    if (!file)
+        return E_FAIL;
 
-		std::shared_ptr<char[]> buffer = std::make_shared<char[]>(size);
-		file.read(buffer.get(), size);
+    char* ptr = buffer.get();
+    char* end = buffer.get() + fileSize;
 
-		file.close();
+    if (ptr + sizeof(MODEL_FILE_HEADER) > end)
+        return E_FAIL;
 
-		char* ptr = buffer.get();
+    MODEL_FILE_HEADER* fh = reinterpret_cast<MODEL_FILE_HEADER*>(ptr);
+    ptr += sizeof(MODEL_FILE_HEADER);
 
-		MODEL_FILE_HEADER* fh = (MODEL_FILE_HEADER*)ptr;
-		ptr += sizeof(MODEL_FILE_HEADER);
+    if (ptr + sizeof(ChunkHeader) > end)
+        return E_FAIL;
 
-		ChunkHeader* chAnim = (ChunkHeader*)ptr;
-		ptr += sizeof(ChunkHeader);
+    ChunkHeader* chAnim = reinterpret_cast<ChunkHeader*>(ptr);
+    ptr += sizeof(ChunkHeader);
 
+    if (ptr + sizeof(_float) * 2 + sizeof(uint32_t) > end)
+        return E_FAIL;
 
-		uint32_t m_iNumMeshes = fh->MeshCount;
-		uint32_t m_iAnimCnt = fh->AnimationCount;
-		uint32_t m_iNumMaterials = fh->MaterialCount;
-		uint32_t m_iNumBones = fh->BoneCount;
+    memcpy(&m_fDuration, ptr, sizeof(_float));
+    ptr += sizeof(_float);
 
-		m_fDuration = *(_float*)ptr;
-		ptr += sizeof(_float);
+    memcpy(&m_fTickPerSecond, ptr, sizeof(_float));
+    ptr += sizeof(_float);
 
-		m_fTickPerSecond = *(_float*)ptr;
-		ptr += sizeof(_float);
+    memcpy(&m_iNumChannels, ptr, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
 
-		m_iNumChannels = *(uint32_t*)ptr;
-		ptr += sizeof(uint32_t);
+    m_Channels.clear();
+    m_Channels.reserve(m_iNumChannels);
 
+    m_CurrentKeyFrameIndices.clear();
+    m_CurrentKeyFrameIndices.resize(m_iNumChannels, 0);
 
-		m_CurrentKeyFrameIndices.resize(m_iNumChannels);
+    for (uint32_t i = 0; i < m_iNumChannels; ++i)
+    {
+        if (ptr + sizeof(uint32_t) > end)
+            return E_FAIL;
 
-		for (size_t i = 0; i < m_iNumChannels; i++)
-		{
+        uint32_t channelSize = 0;
+        memcpy(&channelSize, ptr, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
 
-			uint32_t size = *(uint32_t*)ptr;
-			ptr += sizeof(uint32_t);
-		
+        if (channelSize == 0)
+            return E_FAIL;
 
-			auto    pChannel = CResModelChanel::Create();
-			if (nullptr == pChannel)
-				return E_FAIL;
+        if (ptr + channelSize > end)
+            return E_FAIL;
 
-			if (FAILED(pChannel->Load(CResModelChanel::DESC{ .ptr = ptr,.pModel = pModel }))) {
-				return E_FAIL;
-			}
+        auto pChannel = CResModelChanel::Create();
+        if (nullptr == pChannel)
+            return E_FAIL;
 
+        CResModelChanel::DESC channelDesc{};
+        channelDesc.ptr = ptr;
+        channelDesc.pModel = pModel;
 
-			m_Channels.push_back(pChannel);
+        if (FAILED(pChannel->Load(channelDesc)))
+            return E_FAIL;
 
-			ptr += size;
+        m_Channels.push_back(pChannel);
 
+        ptr += channelSize;
+    }
 
-		}
-	}
-
-	m_eState = STATE::LOADED;
-	return S_OK;
+    m_eState = STATE::LOADED;
+    return S_OK;
 }
-
 HRESULT CResModelAnim::Unload(const std::any& arg)
 {
 

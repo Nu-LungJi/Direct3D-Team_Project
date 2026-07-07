@@ -33,6 +33,11 @@ private:
 	HRESULT Ready_Materials(const _string& strModelFilePath, _char* ptr);
 	HRESULT Ready_Meshes(_char* ptr);
 	HRESULT Ready_Animation();
+
+#ifdef _DEBUG
+public:
+	HRESULT Ready_OneAnimation();
+#endif
 public:
 	uint32_t Get_NumMeshes( ) const { return m_iNumMeshes;}
 
@@ -82,6 +87,7 @@ private:
 
 public:
 	static SPtr<CResModel> Create(const _string& sPath);
+
 };
 
 NS_END
