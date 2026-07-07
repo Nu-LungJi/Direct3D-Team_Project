@@ -258,7 +258,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pDInputManager->Update_InputDev();
 	}
 	
-	// TODO: ë§ˆìš°ìŠ¤ ê°€ë‘ê¸° í•¨ìˆ˜í™”í•˜ê¸°
+	// TODO: ¸¶¿ì½º °¡µÎ±â ÇÔ¼öÈ­ÇÏ±â
 	{
 		if (CGameInstance::Get().KeyDown(DIK_TAB))
 		{
@@ -349,6 +349,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObjectÀÇ static ÀÎ½ºÅÏ½º ¹öÆÛ ÇØÁ¦
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
@@ -384,6 +385,7 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 	m_pLevelManager->FrameEnd(fTimeDelta);
 
 	m_pRenderer->FrameEnd();
+	CMapMeshObject::ClearInstancingData();
 	m_pColliderManager->FrameEnd();
 }
 
@@ -760,9 +762,17 @@ HRESULT CGameInstance::InitializeResources()
 		res->Load(depthDesc);
 	}
 	// Test Model Load
-	// ì˜¤ë¥˜ë‚˜ì„œ ì œê±°
+	// ¿À·ù³ª¼­ Á¦°Å
 	if(true)
 	{
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
@@ -818,7 +828,7 @@ HRESULT CGameInstance::InitializeResources()
 	//	}
 	//}
 
-	// í…ìŠ¤ì³ ì—†ëŠ” ê²½ìš° ëŒ€ë¹„, ëŒ€ì²´ í…ìŠ¤ì³
+	// ÅØ½ºÃÄ ¾ø´Â °æ¿ì ´ëºñ, ´ëÃ¼ ÅØ½ºÃÄ
 	{
 		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Diffuse.png")))
 		{

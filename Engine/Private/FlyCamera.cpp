@@ -173,6 +173,11 @@ void CFlyCamera::LateUpdate(E::_float fTimeDelta)
 
 }
 
+const CCollFrustum* CFlyCamera::GetFrustumCollider() const
+{
+    return static_cast<const CCollFrustum*>(m_pCollider.get());
+}
+
 void CFlyCamera::MouseFix() const
 {
     RECT rect;
