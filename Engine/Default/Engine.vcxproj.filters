@@ -328,6 +328,9 @@
     <Filter Include="Component\BeHavior\Manager">
       <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Manager\Octree">
+      <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -714,6 +717,9 @@
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\OctreeNode.h">
+      <Filter>GameObject\Manager\Octree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1075,6 +1081,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp">
+      <Filter>GameObject\Manager\Octree</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

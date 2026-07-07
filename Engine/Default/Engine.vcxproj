@@ -293,6 +293,7 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\LightManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
+    <ClInclude Include="..\Public\OctreeNode.h" />
     <ClInclude Include="..\Public\Particle.h" />
     <ClInclude Include="..\public\ParticleManager.h" />
     <ClInclude Include="..\public\Particle_CPU.h" />
@@ -530,6 +531,7 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp" />
+    <ClCompile Include="..\Private\OctreeNode.cpp" />
     <ClCompile Include="..\Private\Particle.cpp" />
     <ClCompile Include="..\private\ParticleManager.cpp" />
     <ClCompile Include="..\private\Particle_CPU.cpp" />
