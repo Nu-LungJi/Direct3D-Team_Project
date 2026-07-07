@@ -60,9 +60,9 @@ private:
 	_float	m_fAmbientIntensity		= 1.f;
 	_float	m_fSpecularIntensity	= 1.f;
 	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };
-	_float	m_fEmissiveIntensity	= 1.f;
+	_float	m_fEmissiveIntensity	= 0.f;
 
-public:
+public:  
 	static E::UPtr<CTestModel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
