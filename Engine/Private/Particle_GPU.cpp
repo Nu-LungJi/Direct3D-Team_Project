@@ -41,6 +41,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].color = _float4(1, 1, 1, 1);
         initParticles[i].alive = false;
         initParticles[i].loop = false;
+        initParticles[i].emissive = { 1,1,1,1 };
     }
 
     std::vector<uint32_t> initDeadIndices(m_iNumElements);
@@ -225,6 +226,7 @@ void CParticle_GPU::DebugPrintDeadListCount()
     if (SUCCEEDED(pContext->Map(pCounterStaging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
     {
         uint32_t counterValue = *(uint32_t*)mapped.pData;
+        m_iDeadCount = *(uint32_t*)mapped.pData;
         char buf[64];
         sprintf_s(buf, "DeadList counter = %u\n", counterValue);
         OutputDebugStringA(buf);
@@ -302,7 +304,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
 
-    DebugPrintDeadListCount();
+   // DebugPrintDeadListCount();
 }
 
 void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
@@ -311,6 +313,9 @@ void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CParticle_GPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+    uint32_t iAliveCount = (m_iNumElements > m_iDeadCount) ? (m_iNumElements - m_iDeadCount) : 0;
+    if (iAliveCount == 0)
+        return S_OK;
     if (m_Desc.whatKind == MESHORTEXTURE::MESH)
         return Render_Mesh(pContext, ctx);
 

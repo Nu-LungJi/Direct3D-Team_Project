@@ -112,7 +112,10 @@ void CParticleManager::UpdateGUI()
         ImGui::InputFloat3("Velocity", &pending.velocity.x);
         ImGui::InputFloat("Life", &pending.life);
         ImGui::InputFloat("Size", &pending.size);
-        ImGui::ColorEdit4("Color", &pending.color.x);
+        ImGui::ColorEdit4("BaseColor", &pending.color.x);
+        //mGui::ColorEdit4("Emissive", &pending.emissive.x);
+        ImGui::ColorEdit3("Emissive Color", &pending.emissive.x);
+        ImGui::InputFloat("Emissive Intensity", &pending.emissive.w);
         ImGui::Checkbox("Loop", &pending.bLoop);
         if (pending.bLoop)
             ImGui::InputFloat("Spawn Interval", &pending.fSpawnInterval);
@@ -129,6 +132,10 @@ void CParticleManager::UpdateGUI()
         ImGui::InputFloat("DisplacementDamping", &pending.fDisplacementDamping);
         ImGui::InputFloat("flickerTimeInverval", &pending.flickerTimeInverval);
         ImGui::InputFloat("Duration", &pending.beamDuration);
+        ImGui::ColorEdit4("BaseColor", &pending.color.x);
+        ImGui::ColorEdit3("Emissive Color", &pending.emissive.x);
+        ImGui::InputFloat("Emissive Intensity", &pending.emissive.w);
+        //ImGui::ColorEdit4("Emissive", &pending.emissive.x);
     }
 
     if (ImGui::Button("Add to List") && !groupKeys.empty())
@@ -466,15 +473,15 @@ HRESULT CParticleManager::SpawnAllInGroup(const StringID& sGroupTag,
     return hr;
 }
 
-HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, _float fDuration)
+HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, _float4 emissive, _float fDuration)
 {
     auto pParticle = GetParticle("BEAM", "ATTACK");
     if (!pParticle)
-        return E_FAIL;
+        return E_FAIL; 
     auto pBeam = static_cast<CBeam_CPU*>(pParticle);
 
     for (uint32_t i = 0; i < quantity; i++) {
-        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, fDuration);
+        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
     }
     return S_OK;
 }
@@ -507,6 +514,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
     HRESULT hr = S_OK;
     for (auto& cmd : m_vecCommandQueue)
     {
+
         //파일 path를 읽어서 
         //cmd.baemStart를 본인 특정 좌표로 
         if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
@@ -519,6 +527,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
                 s.life = cmd.life;
                 s.size = cmd.size;
                 s.color = cmd.color;   // PARTICLE_SPAWN_DATA에 color 필드가 있다는 전제
+                s.emissive = cmd.emissive;
             }
 
             if (FAILED(Spawn(cmd.sGroupTag, cmd.sTypeTag, cmd.count, spawnList.data(), cmd.bLoop, cmd.fSpawnInterval)))
@@ -532,7 +541,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
                 auto pBeam = static_cast<CBeam_CPU*>(pParticle);
                 pBeam->AddBeam(cmd.beamStart, cmd.beamEnd,
                     cmd.fDisplacementAmplitude, (uint32_t)cmd.iDisplacementIterations, cmd.fDisplacementDamping,
-                    cmd.flickerTimeInverval, cmd.beamDuration);
+                    cmd.flickerTimeInverval, cmd.emissive,cmd.beamDuration);
             }
             else
             {
@@ -544,3 +553,52 @@ HRESULT CParticleManager::ExecuteCommandQueue()
   //  m_vecCommandQueue.clear();   // 실행 후 큐 비우기 (원하시면 안 비우게 바꿀 수도 있음)
     return hr;
 }
+
+//HRESULT CParticleManager::ExecuteCommandQueue()
+//{
+//    HRESULT hr = S_OK;
+//
+//    // 그룹/타입별로 스폰 데이터를 모으기
+//    std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
+//
+//    for (auto& cmd : m_vecCommandQueue)
+//    {
+//        if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
+//        {
+//            auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
+//            for (uint32_t i = 0; i < cmd.count; ++i)
+//            {
+//                PARTICLE_SPAWN_DATA s{};
+//                s.position = cmd.position;
+//                s.velocity = cmd.velocity;
+//                s.life = cmd.life;
+//                s.size = cmd.size;
+//                s.color = cmd.color;
+//                s.emissive = cmd.emissive;
+//                vec.push_back(s);
+//            }
+//        }
+//        else if (cmd.kind == SPAWN_COMMAND_KIND::BEAM)
+//        {
+//            // 기존과 동일
+//            auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
+//            if (pParticle)
+//            {
+//                auto pBeam = static_cast<CBeam_CPU*>(pParticle);
+//                pBeam->AddBeam(cmd.beamStart, cmd.beamEnd,
+//                    cmd.fDisplacementAmplitude, (uint32_t)cmd.iDisplacementIterations, cmd.fDisplacementDamping,
+//                    cmd.flickerTimeInverval,cmd.emissive, cmd.beamDuration);
+//            }
+//            else hr = E_FAIL;
+//        }
+//    }
+//
+//    // 그룹/타입별로 한 번씩만 Spawn 호출
+//    for (auto& [key, spawnList] : batched)
+//    {
+//        if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))
+//            hr = E_FAIL;
+//    }
+//
+//    return hr;
+//}

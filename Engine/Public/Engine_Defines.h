@@ -38,6 +38,7 @@ using namespace Microsoft::WRL;
 #include <future>
 #include <random>
 #include <limits>
+#include <variant>
 
 // bitwise 
 #pragma warning(disable: 26813)
