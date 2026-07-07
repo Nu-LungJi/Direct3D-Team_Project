@@ -1,6 +1,12 @@
 #include "pch.h"
 #include "Gobline.h"
 #include "ComBeHavior.h"
+#include "Client_Resources.h"
+#include "ComConstantBuffer.h"
+#include "ComModelInstance.h"
+#include "ComAnimator.h"
+#include "Resources.h"
+#include "GameInstance.h"
 NS_USING(Client)
 CGobline::CGobline()
 {
@@ -10,13 +16,80 @@ CGobline::~CGobline()
 {
 }
 
+HRESULT CGobline::InitializePrototype(void* pArg)
+{
+	
+	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi");
+	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
+	if (FAILED(m_pResVertexNonAnimShader->Load()))
+	{
+		return E_FAIL;
+	}
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi");
+	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
+	if (FAILED(m_pResPixelNonAnimShader->Load()))
+	{
+		return E_FAIL;
+	}
+
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
+	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
+	if (FAILED(m_pResVertexShader->Load()))
+	{
+		return E_FAIL;
+	}
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
+	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
+	if (FAILED(m_pResPixelShader->Load()))
+	{
+		return E_FAIL;
+	}
+
+
+	m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	if (!m_pResSamplerState)
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
 HRESULT CGobline::Initialize(void* pArg)
 {
 	if (FAILED(__super::Initialize(pArg)))
 		return E_FAIL;
+
+	CComBeHavior::BEHAVIOR_DESC Desc{};
+	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pComBT)))
 	{
-		CComBeHavior::BEHAVIOR_DESC Desc{};
-		if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pComBT)))
+		return E_FAIL;
+	};
+	{
+		CComConstantBuffer::DESC Desc{};
+		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
+		CComModelInstance::DESC Desc{};
+		Desc.sGroupTag = "TEST";
+		Desc.sResTag = "Model_Resource";
+
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
+		CComAnimator::DESC DescAnim{};
+		DescAnim.sComTag = "ComCModelIntance";
+
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
 		{
 			return E_FAIL;
 		};
@@ -30,14 +103,105 @@ void CGobline::PriorityUpdate(E::_float fTimeDelta)
 
 void CGobline::Update(E::_float fTimeDelta)
 {
+	m_pComBT->Update(fTimeDelta);
+
+	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
+		m_pModelAnimator->Update(fTimeDelta);
+	
 }
 
 void CGobline::LateUpdate(E::_float fTimeDelta)
 {
+	GetTransform().Update();
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
 HRESULT CGobline::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	{
+		E::CB_PER_OBJECT cbPerObject{};
+		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
+		{
+			return E_FAIL;
+		}
+		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	}
+
+
+
+
+	const auto& vs =
+		!m_pComModelInstance->GetModel()->GetAnimations().empty()
+		? m_pResVertexShader
+		: m_pResVertexNonAnimShader;
+
+	const auto& ps =
+		!m_pComModelInstance->GetModel()->GetAnimations().empty()
+		? m_pResPixelShader
+		: m_pResPixelNonAnimShader;
+
+
+
+
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+
+
+
+	auto pModel = m_pComModelInstance->GetModel();
+
+	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
+	for (uint32_t i = 0; i < iNumMeshes; ++i) {
+		const auto& viBuffer = pModel->GetMeshes()[i];
+
+
+		ID3D11Buffer* vertexBuffers[] = {
+				viBuffer->GetVertexBuffer().Get()
+		};
+		uint32_t strides[] = {
+			viBuffer->GetVertexStride()
+		};
+		uint32_t offsets[] = {
+			0
+		};
+		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+		//{
+		//	auto tex = m_pResTestModel->GetMaterials()[0]->GetTextures()[1][0];
+		//	pContext->PSSetShaderResources(0, 1, tex->GetSRV().GetAddressOf());
+		//}
+
+		{
+			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+
+		}
+
+		{
+			if (!m_pComModelInstance->GetModel()->GetAnimations().empty())
+				m_pComModelInstance->Bind_BoneMatrices(pContext, i);
+
+		}
+
+		{
+			const auto& sampler = m_pResSamplerState;
+			pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
+		}
+
+		{
+			const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+			pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+		}
+
+		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+	}
+
 	return S_OK;
 }
 

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ComBeHavior.h"
-#include "BTSelector.h"
-#include "BTSecqunce.h"
+#include "BTDecorator.h"
+#include "BTComposite.h"
 CComBeHavior::CComBeHavior()
 {
 }
@@ -16,6 +16,7 @@ CComBeHavior::~CComBeHavior()
 
 HRESULT CComBeHavior::InitializePrototype(void* pArg)
 {
+    
     return S_OK;
 }
 
@@ -26,12 +27,61 @@ HRESULT CComBeHavior::Initialize(void* pArg)
     
     CBTRoot::BTROOT_DESC BtRoot{};
     BtRoot.Handle    = GetGameObject()->GetHandle();
-    BtRoot.NodeName = "Main_Selector";
-    BtRoot.m_GuiNode = (GUINODE(BEHAVIOR::SELECTOR, m_iNodeID, "Main_Selector", _float2(40, 50), 0.5f, _float4(255, 100, 100, 1)));
+    BtRoot.NodeName = "Root";
+    BtRoot.m_GuiNode = (GUINODE(BEHAVIOR::SELECTOR, m_iNodeID, BtRoot.NodeName.c_str(), _float2(40, 50), 0.5f, _float4(0.5f, 0.5f, 0.5f, 1)));
     BtRoot.m_GuiLink = (GUINODE_LINK(2));
    
-    m_Root = std::move(CBTSelector::Create(&BtRoot));
+    m_Root = std::move(CBTComposite::Create(&BtRoot));
     m_NodeMap[m_iNodeID++] = m_Root.get();
+    return S_OK;
+}
+void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
+{
+    BEHAVIOR eType = pNode->Get_GuiNodeInfo().eMyType;
+    pNode->Set_Handle(GetGameObject()->GetHandle());
+    pNode->Get_GuiNodeInfo().iID = m_iNodeID++;
+    RegistNode(m_Root->Get_GuiNodeInfo().iID, m_Root.get());
+
+    if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR)
+    {
+        auto& pSrc = (*static_cast<CBTComposite*>(pNode)->Get_Nodes());
+        for (auto& iter : pSrc)
+        {
+            Set_NodeInfo(iter.get());
+        }
+    }
+    else if (eType == BEHAVIOR::DECORATOR)
+    {
+        auto pSrc = static_cast<CBTDecorator*>(pNode)->Get_Child().get();
+        Set_NodeInfo(pSrc);
+    }
+}
+void CComBeHavior::Save_Data(const _string& filePath)
+{
+    nlohmann::json j;
+
+    j = m_Root->Save_Node();
+
+    std::ofstream path(filePath);
+    path << j.dump(4);
+    path.close();
+
+    return;
+}
+HRESULT CComBeHavior::Load_Data(const _string& filePath)
+{
+    nlohmann::json j;
+    std::ifstream file(filePath);
+    if (!file.is_open())
+    {
+        MSG_BOX("Node Data Load Failed");
+        return E_FAIL;
+    }
+    file >> j;
+    m_Root->Load_json(j);
+    file.close();
+
+    Set_NodeInfo(m_Root.get());
     return S_OK;
 }
 CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)
@@ -44,7 +94,7 @@ CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)
     return nullptr;
 }
 
-CBTSelector* CComBeHavior::Get_Selector()
+CBTComposite* CComBeHavior::Get_Selector()
 {
     return m_Root.get(); 
 }
@@ -68,7 +118,7 @@ void CComBeHavior::UnRegistNode(uint32_t iIndex)
 
 void CComBeHavior::Update(_float fTimeDelta)
 {
-    m_Root->Update(fTimeDelta);
+    m_Root->Tick(fTimeDelta);
 }
 void CComBeHavior::UpdateGUI()
 {

@@ -1,27 +1,27 @@
 ﻿#pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTDecorator.h"
 
 NS_BEGIN(Client)
-class CBTAnimation final : public CBTActionNode
+class CBTDecSearch final : public CBTDecorator
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTAnimation, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTDecSearch, CBTDecorator)
 private:
-	CBTAnimation();
-
-	CBTAnimation(const CBTAnimation& rhs);
-	~CBTAnimation() override;
+	CBTDecSearch();
+	CBTDecSearch(const CBTDecSearch& rhs);
+	~CBTDecSearch() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitalizePrototype(void* pArg = nullptr);
-	HRESULT Initalize(void* pArg)override;
+	HRESULT Initalize(void* pArg) override;
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
 
 	virtual void		Update_Gui() override;
 public:
-	static UPtr<CBTAnimation> Create();
+	static UPtr<CBTDecSearch> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END
+

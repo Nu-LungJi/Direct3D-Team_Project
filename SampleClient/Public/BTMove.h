@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 #include "Client_Defines.h"
 #include "BTActionNode.h"
 
@@ -9,15 +9,18 @@ public:
 	DECLARE_DERIVED_TYPE(CBTMove, CBTActionNode)
 private:
 	 CBTMove();
-	 CBTMove(const CBTMove& Prototype);
+	 CBTMove(const CBTMove& rhs);
 	~CBTMove() override;
-	// CBTActionNode¿ª(∏¶) ≈Î«ÿ ªÛº”µ 
+	// CBTActionNodeÏùÑ(Î•º) ÌÜµÌï¥ ÏÉÅÏÜçÎê®
 
-	HRESULT InitializePrototype();
-	HRESULT Initalize(void* pArg);
+	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE Evaluate() override;
-
+	virtual nlohmann::json			Save_Node()override;
+	EVALUATE Evaluate(_float fTimeDelta) override;
+	virtual void		Update_Gui() override;
+private:
+	MOVE						m_eMove{};
 public:
 	static UPtr<CBTMove> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;

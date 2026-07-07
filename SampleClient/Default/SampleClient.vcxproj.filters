@@ -37,12 +37,6 @@
     <Filter Include="Resource\Buffer">
       <UniqueIdentifier>{314c6dc0-716a-40bc-b990-a48202075419}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Monsters">
-      <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Monsters\BT">
-      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{38cf841e-101b-430d-880d-1fd220c36526}</UniqueIdentifier>
     </Filter>
@@ -103,6 +97,18 @@
     <Filter Include="GameObject\UI\FilpBook">
       <UniqueIdentifier>{0857634d-6e20-458d-bd1e-e0b73c69a1d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AI">
+      <UniqueIdentifier>{b724b668-98a1-40fb-892d-e6e4c6169904}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTAction">
+      <UniqueIdentifier>{fee9e43f-c036-47ab-8d2d-97e6771ec8c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTDecorator">
+      <UniqueIdentifier>{0f051330-2786-432f-8a2c-59dcb645f58f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Header">
+      <UniqueIdentifier>{98fd5b71-cb07-4a23-88f0-80d1b6f6f076}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -154,7 +160,7 @@
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Gobline.h">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelUIEditor.h">
       <Filter>Level\UiEditor</Filter>
@@ -211,7 +217,7 @@
       <Filter>Particles</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTMove.h">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel\Anim</Filter>
@@ -220,10 +226,19 @@
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Monster.h">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTchase.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecSearch.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHeader_Definse.h">
+      <Filter>GameObject\AI\Header</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Trail_Example.h">
       <Filter>Particles</Filter>
@@ -277,10 +292,10 @@
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTMove.cpp">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
@@ -345,6 +360,12 @@
     <ClCompile Include="..\private\Particle_Fire_GPU.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTchase.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecSearch.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\Gobline.cpp">
@@ -354,10 +375,10 @@
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\Monsters\BT</Filter>
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Monster.cpp">
-      <Filter>GameObject\Monsters</Filter>
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Trail_Example.cpp">
       <Filter>Particles</Filter>

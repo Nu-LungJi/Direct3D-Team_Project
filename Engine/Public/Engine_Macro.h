@@ -71,11 +71,20 @@
 //		}
 
 #define NODE_ACTION_M    \
-X(MOVE)					 \
+X(ACTION)\
 X(ANIMATION)            \
+X(DECORATOR)            \
+X(EFFECT)               \
+X(SELECTOR)\
+X(SEQUENCE)\
 X(END)
 
-
+#define MOVE_M    \
+X(LEFT)			     \
+X(RIGHT)            \
+X(STRAIGHT)            \
+X(BACKWARD)               \
+X(END)
 #define IMGUI_ENABLE
 
 #define MAX_LIGHT_COUNT 8

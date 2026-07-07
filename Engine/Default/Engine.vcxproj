@@ -234,6 +234,7 @@
     <ClInclude Include="..\public\Beam_CPU.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
+    <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
@@ -274,6 +275,7 @@
     <ClInclude Include="..\Public\Engine_Defines.h" />
     <ClInclude Include="..\Public\Engine_Enum.h" />
     <ClInclude Include="..\Public\Engine_Function.h" />
+    <ClInclude Include="..\Public\Engine_Json_Util.h" />
     <ClInclude Include="..\Public\Engine_Macro.h" />
     <ClInclude Include="..\Public\Engine_Struct.h" />
     <ClInclude Include="..\Public\Engine_Struct_ConstantBuffer.h" />
@@ -508,6 +510,7 @@
     <ClCompile Include="..\private\Beam_CPU.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
+    <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />

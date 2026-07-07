@@ -10,6 +10,7 @@
 #include "BTAnimation.h"
 #include "Trail_Example.h"
 #include "Particle_Fire_GPU.h"
+#include "BTHeader_Definse.h"
 
 NS_USING(Client)
 
@@ -293,6 +294,30 @@ HRESULT CMainApp::Load_Particle_Resources()
 	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_BOX",		CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
 	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE",	CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
 	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
+
+	if (FAILED(Create_ActionNode()))
+	{
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CMainApp::Create_ActionNode()
+{
+	//프로토타입 이니셜라이즈랑 이름 맞출것
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
+		return E_FAIL;
+
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTchase", CBTchase::Create())))
+		return E_FAIL;
+
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
+		return E_FAIL;
+
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
+		return E_FAIL;
+
+
 	return S_OK;
 }
 
