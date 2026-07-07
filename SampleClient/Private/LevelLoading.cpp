@@ -202,7 +202,7 @@ void CLevelLoading::ThreadStart()
 		break;
 	case LEVEL::ANIMEDITOR:
 	{
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_LightObject", CLightObject::Create())))
 		{
 			int a = 0;
 			//return false;

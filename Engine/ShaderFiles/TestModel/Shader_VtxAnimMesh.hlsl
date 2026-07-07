@@ -61,8 +61,8 @@ VS_OUT VSMain(VS_IN In)
     vector vPosition = mul(float4(In.vPosition, 1.f), BoneMatrix);
     vector vNormal = mul(float4(In.vNormal, 0.f), BoneMatrix);
     
-    Out.vPosition = mul(float4(In.vPosition, 1.f), g_matWVP);
-    Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
+    Out.vPosition = mul(vPosition, g_matWVP);
+    Out.vNormal = normalize(mul(vNormal, g_matWorld));
     Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
     Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
     Out.vTexcoord = In.vTexcoord;
@@ -142,6 +142,3 @@ PS_OUT PSMain(PS_IN IN)
     
     return Out;
 }
-
-
-

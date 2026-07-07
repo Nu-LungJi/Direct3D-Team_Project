@@ -134,23 +134,20 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
-	const auto& vs =
-		!m_pComModelInstance->GetModel()->GetAnimations().empty()
-		? m_pResVertexShader
-		: m_pResVertexNonAnimShader;
+	const auto& vs = m_pResVertexShader;
+		//!m_pComModelInstance->GetModel()->GetAnimations().empty()
+		//? m_pResVertexShader
+		//: m_pResVertexNonAnimShader;
 	
-	const auto& ps =
-		!m_pComModelInstance->GetModel()->GetAnimations().empty()
-		? m_pResPixelShader
-		: m_pResPixelNonAnimShader;
+	const auto& ps = m_pResPixelShader;
+		//!m_pComModelInstance->GetModel()->GetAnimations().empty()
+		//? m_pResPixelShader
+		//: m_pResPixelNonAnimShader;
 
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-
-
 
 	auto pModel = m_pComModelInstance->GetModel(); 
 
@@ -172,33 +169,12 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		//{
-		//	auto tex = m_pResTestModel->GetMaterials()[0]->GetTextures()[1][0];
-		//	pContext->PSSetShaderResources(0, 1, tex->GetSRV().GetAddressOf());
-		//}
-
-		{
-			//m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-		
-		}
-
 		{
 			if(!m_pComModelInstance->GetModel()->GetAnimations().empty())
 				if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i))) {
 					return E_FAIL;
 				}
-
 		}
-
-		//{
-		//	const auto& sampler = m_pResSamplerState;
-		//	pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-		//}
-		//
-		//{
-		//	const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-		//	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-		//}
 
 		{
 			SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
@@ -231,16 +207,16 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 			{
 				CB_MATERIAL   CMMAT;
-				CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
+				CMMAT.AlbedoColor			= m_fAlbedoColor;
 
-				CMMAT.NormalIntensity = 1.f;
-				CMMAT.RoughnessIntensity = 1.f;
-				CMMAT.MetallicIntensity = 1.f;
-				CMMAT.AmbientIntensity = 1.f;
-				CMMAT.SpecularIntensity = 1.f;
+				CMMAT.NormalIntensity		= m_fNormalIntensity;
+				CMMAT.RoughnessIntensity	= m_fRoughnessIntensity;
+				CMMAT.MetallicIntensity		= m_fMetallicIntensity;
+				CMMAT.AmbientIntensity		= m_fAmbientIntensity;
+				CMMAT.SpecularIntensity		= m_fSpecularIntensity;
 
-				CMMAT.EmissiveColor = { 1.f, 1.f, 1.f };
-				CMMAT.EmissiveIntensity = 1.f;
+				CMMAT.EmissiveColor			= m_fEmissiveColor;
+				CMMAT.EmissiveIntensity		= m_fEmissiveIntensity;
 
 				memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 				pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
@@ -250,7 +226,6 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
-
 
 	return S_OK;
 }
