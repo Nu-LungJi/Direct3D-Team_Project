@@ -842,7 +842,7 @@ HRESULT CGameInstance::InitializeResources()
 
 	
 		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Fiona/SK_Fiona.bin"))) {
+			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
 			E::CResModel::DESC pDesc{};
 			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
@@ -853,17 +853,17 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+		//if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		//	CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
+		//	E::CResStaticModel::DESC pDesc{};
+		//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
+		//	if (FAILED(res->Load(pDesc)))
+		//	{
+		//		return E_FAIL;
+		//	}
+		//}
 
 
 	return S_OK;

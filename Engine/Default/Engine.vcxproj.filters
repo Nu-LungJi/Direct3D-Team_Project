@@ -202,21 +202,6 @@
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource\TestModel">
-      <UniqueIdentifier>{4c25b2ac-573c-40ee-88e7-0f70de63247b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Mesh">
-      <UniqueIdentifier>{1a12f9fc-dc1d-45cc-aab6-2cb7353e89a3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Bone">
-      <UniqueIdentifier>{bc24a058-4739-4344-b77f-23414a27730c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Animation">
-      <UniqueIdentifier>{82bcb8c8-265d-4ffc-ae85-34d63c9d456c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Animation\Chanel">
-      <UniqueIdentifier>{8dcf1b80-d4bb-479a-ac3a-10c4930d8b06}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Particle">
       <UniqueIdentifier>{589fcc85-1017-4ac2-af22-a72a33cda30d}</UniqueIdentifier>
     </Filter>
@@ -225,9 +210,6 @@
     </Filter>
     <Filter Include="Resource\Buffer\StructuredBuffer">
       <UniqueIdentifier>{597ecc2e-6e12-4bca-a731-710e41604dc9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource\TestModel\Material">
-      <UniqueIdentifier>{45ea22c3-2923-44e3-a37e-472383f5a015}</UniqueIdentifier>
     </Filter>
     <Filter Include="Worker">
       <UniqueIdentifier>{4b54a874-7f22-406a-87ee-4ab1ddb1f1ec}</UniqueIdentifier>
@@ -591,24 +573,6 @@
     <ClInclude Include="..\Public\ResModel.h">
       <Filter>Resource\Model</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ResTestModel.h">
-      <Filter>Resource\TestModel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelMesh.h">
-      <Filter>Resource\TestModel\Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelBone.h">
-      <Filter>Resource\TestModel\Bone</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelAnim.h">
-      <Filter>Resource\TestModel\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelChanel.h">
-      <Filter>Resource\TestModel\Animation\Chanel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResTestModelMaterial.h">
-      <Filter>Resource\TestModel\Material</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -949,24 +913,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\ResModel.cpp">
       <Filter>Resource\Model</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModel.cpp">
-      <Filter>Resource\TestModel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelMesh.cpp">
-      <Filter>Resource\TestModel\Mesh</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelBone.cpp">
-      <Filter>Resource\TestModel\Bone</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelAnim.cpp">
-      <Filter>Resource\TestModel\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelChanel.cpp">
-      <Filter>Resource\TestModel\Animation\Chanel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResTestModelMaterial.cpp">
-      <Filter>Resource\TestModel\Material</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>

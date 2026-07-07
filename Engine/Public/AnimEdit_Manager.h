@@ -9,7 +9,11 @@ class CGameObject;
 class CAnimEdit_Manager final : public CEngineBase
 {
 public:
-
+	struct AnimSpeedKey
+	{
+		float fTime = 0.f;
+		float fSpeed = 1.f;
+	};
 
 private:
 	CAnimEdit_Manager();
@@ -33,16 +37,49 @@ public:
 	void IMGUI_Select_AnimType();
 	void IMGUI_Slider_Animation();
 	void IMGUI_Select_Animation();
+	void IMGUI_Select_Detail_Data();
+
+	void IMGUI_File_Rename(const std::string& Path, const std::string& fileName, const std::string& newfileName);
+
+
 public:
-	void IMGUI_TestGetAnimIndex();
+	// helper ÇÔ¼öµé
+	_bool RenameAnimFile_Overwrite(const std::string& oldFullPath, const std::string& newAnimName, std::string& outNewFullPath);
+	_bool IsSamePath(const std::filesystem::path& a, const std::filesystem::path& b);
+	_bool IsAlreadyLoadedAnim(const std::vector<SPtr<CResModelAnim>>& animations, const std::filesystem::path& loadPath);
+	_bool WriteSaveBinary(const std::string _path, const std::string _Name);
+
+
+
+public:
 	void UpdateGUI();
+
+
+
+public:
+	float GetSpeedAtTime(float fTrackPos);
+	
+	
+
+
+public:
+	
 private:
 	CHandle m_hTestModel{};
 	_float	m_fTimeDelta{ 0.f };
+	uint32_t m_iCurrentAnimIndex{};
 
+private:
+	bool bPopup_File_Open = false;
+
+	std::string oldPath;
+	std::string newPath;
+
+	std::vector<AnimSpeedKey> m_SpeedKeys;
 
 public:
 	static UPtr<CAnimEdit_Manager> Create();
 };
 
 NS_END
+

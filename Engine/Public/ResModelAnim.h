@@ -39,7 +39,16 @@ public:
 	std::string& GetAnimName() { return m_AnimName; }
 	void		 SetAnimName(std::string _name) { m_AnimName = _name; }
 
+	std::string& GetAnimPath() { return m_AnimPath; }
+	void	 SetAnimPath(std::string _path) { m_AnimPath = _path; }	
+
+	uint32_t	GetNumChannel() { return m_iNumChannels; };
+	std::vector<SPtr<CResModelChanel>>& GetChannels() { return m_Channels; }
+
+
 private:
+	// 런 타임 도중만 가지는 주소
+	std::string			m_AnimPath;
 	std::string			m_AnimName;
 
 	/* 이 애니메이션의 총 길이. */

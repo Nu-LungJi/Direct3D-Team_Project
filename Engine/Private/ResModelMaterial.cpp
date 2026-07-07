@@ -87,8 +87,9 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				strcpy_s(szFullPath, szDrive);
 				strcat_s(szFullPath, szDir);
 				strcat_s(szFullPath, file.c_str());
-				strcat_s(szFullPath, ext.c_str());
-			
+				//strcat_s(szFullPath, ext.c_str());
+				strcat_s(szFullPath,".dds");
+
 
 				auto resTex = CResTexture2D::Create(szFullPath);
 				if (FAILED(resTex->Load())) {
