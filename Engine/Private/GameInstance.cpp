@@ -1529,7 +1529,9 @@ VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _
 VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
 	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
 }
-
+VOID	CGameInstance::Clear_DynamicLightList() {
+	m_pLightManager->Clear_DynamicLightList();
+}
 #pragma endregion
 #pragma endregion
 

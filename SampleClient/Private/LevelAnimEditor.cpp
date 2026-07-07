@@ -143,5 +143,6 @@ Engine::UPtr<CLevelAnimEditor> CLevelAnimEditor::Create()
 
 void CLevelAnimEditor::Free()
 {
+	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
 }
