@@ -382,6 +382,9 @@
     <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\Decorator">
       <UniqueIdentifier>{47e93750-d693-43cf-905b-e6410128780a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Manager\Octree">
+      <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -816,6 +819,9 @@
     <ClInclude Include="..\Public\Engine_Json_Util.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\OctreeNode.h">
+      <Filter>GameObject\Manager\Octree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1159,6 +1165,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp">
+      <Filter>GameObject\Manager\Octree</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Trail_CPU.cpp">
       <Filter>Particle\Trail</Filter>

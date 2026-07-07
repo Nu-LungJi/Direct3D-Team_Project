@@ -10,6 +10,7 @@
 #include "TestGuizmo.h"
 #include "MapMeshObject.h"
 
+#include "ResStaticModel.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept

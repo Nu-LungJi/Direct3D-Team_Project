@@ -41,6 +41,7 @@ public:
 	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
 private:
 	SPtr<CResStaticModel> m_pModel;
+
 public:
 	static UPtr<CComStaticModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

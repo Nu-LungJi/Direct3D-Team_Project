@@ -17,13 +17,15 @@ struct VS_IN
 
 struct VS_OUT
 {
-    float4 vPosition    : SV_POSITION;
-    float4 vNormal      : NORMAL;
-    float4 vTangent     : TANGENT;
-    float4 vBinormal    : BINORMAL;
-    float2 vTexcoord    : TEXCOORD0;
-    float4 vWorldPos    : TEXCOORD1;
-    float4 vProjPos     : TEXCOORD2;
+    float3 vPosition : POSITION;
+    float3 vNormal : NORMAL;
+    float3 vTangent : TANGENT;
+    float3 vBinormal : BINORMAL;    
+    float2 vTexcoord : TEXCOORD0;
+    float4 iWorld0 : INSTANCE_WORLD0;
+    float4 iWorld1 : INSTANCE_WORLD1;
+    float4 iWorld2 : INSTANCE_WORLD2;
+    float4 iWorld3 : INSTANCE_WORLD3;
 };
 
 cbuffer CB_OBJECT_PBR   : register(b3)
@@ -46,14 +48,19 @@ VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out;
     
-    Out.vPosition   = mul(float4(In.vPosition, 1.f), g_matWVP);
-    Out.vNormal     = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
-    Out.vTangent    = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
-    Out.vBinormal   = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
-    Out.vTexcoord   = In.vTexcoord;
-    Out.vWorldPos   = mul(float4(In.vPosition, 1.f), g_matWorld);
-    Out.vProjPos    = Out.vPosition;
+    float4x4 matWV, matWVP;
+    float4x4 matWorld = float4x4(In.iWorld0, In.iWorld1, In.iWorld2, In.iWorld3);
     
+    matWV = mul(matWorld, g_matView);
+    matWVP = mul(matWV, g_matProj);
+    
+    Out.vPosition = mul(float4(In.vPosition, 1.f), matWVP);
+    Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), matWorld));
+    Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), matWorld));
+    Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), matWorld));
+    Out.vTexcoord = In.vTexcoord;
+    Out.vWorldPos = mul(float4(In.vPosition, 1.f), matWorld);
+    Out.vProjPos = Out.vPosition;
     return Out;
 }
 
