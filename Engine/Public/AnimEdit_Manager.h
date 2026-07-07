@@ -37,7 +37,8 @@ public:
 	void IMGUI_Select_AnimType();
 	void IMGUI_Slider_Animation();
 	void IMGUI_Select_Animation();
-	void IMGUI_AnimationSpeedCurve();
+	void IMGUI_Select_Detail_Data();
+
 	void IMGUI_File_Rename(const std::string& Path, const std::string& fileName, const std::string& newfileName);
 
 

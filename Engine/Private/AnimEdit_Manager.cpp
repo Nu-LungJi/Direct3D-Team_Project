@@ -410,7 +410,6 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
         {
             std::filesystem::path filePath;
             std::string fileName;
-            bool bAlreadyLoaded = false;
         };
 
     static std::vector<LOAD_ANIM_FILE_DESC> s_LoadAnimFiles;
@@ -444,10 +443,12 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
                     if (filePath.extension() != ".bin")
                         continue;
 
+                    if (IsAlreadyLoadedAnim(animations, filePath))
+                        continue;
+
                     LOAD_ANIM_FILE_DESC desc{};
                     desc.filePath = filePath;
                     desc.fileName = filePath.filename().string();
-                    desc.bAlreadyLoaded = IsAlreadyLoadedAnim(animations, filePath);
 
                     s_LoadAnimFiles.push_back(desc);
                 }
@@ -467,7 +468,6 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
         if (pComModelInstance && pComModelInstance->GetModel() && pComAnimator)
         {
             auto pModel = pComModelInstance->GetModel();
-
             auto animations = pModel->GetAnimations();
 
             std::filesystem::path animFolder;
@@ -483,7 +483,9 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
                 }
             }
 
-            RefreshLoadAnimFileList(animFolder, animations);
+            s_LoadAnimFolder = animFolder;
+
+   
         }
 
         ImGui::OpenPopup("LoadAnim");
@@ -503,27 +505,22 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
         {
             for (auto& desc : s_LoadAnimFiles)
             {
-                if (desc.bAlreadyLoaded)
+                if (ImGui::Selectable(desc.fileName.c_str()))
                 {
-                    ImGui::TextDisabled("%s  [Loaded]", desc.fileName.c_str());
-                }
-                else
-                {
-                    if (ImGui::Selectable(desc.fileName.c_str()))
+                    auto pSampleObj =
+                        CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+
+                    auto pComModelInstance =
+                        pSampleObj ? pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance") : nullptr;
+
+                    if (pComModelInstance && pComModelInstance->GetModel())
                     {
-                        auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+                        auto pModel = pComModelInstance->GetModel();
 
-                        auto pComModelInstance = pSampleObj ? pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance") : nullptr;
+                        //// 실제 애니메이션 로드
+                        //pModel->LoadAnim(desc.filePath.string());
 
-                        if (pComModelInstance && pComModelInstance->GetModel())
-                        {
-                            auto pModel = pComModelInstance->GetModel();
-
-                            // 여기에 실제 Load 함수 넣으면 됨
-                            // pModel->LoadAnim(desc.filePath.string());
-
-                            ImGui::CloseCurrentPopup();
-                        }
+                        ImGui::CloseCurrentPopup();
                     }
                 }
             }
@@ -718,78 +715,13 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
     ImGui::End();
 }
 
-void CAnimEdit_Manager::IMGUI_AnimationSpeedCurve()
+void CAnimEdit_Manager::IMGUI_Select_Detail_Data()
 {
-    auto pSampleObj =
-        CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+    
 
-    if (!pSampleObj)
-        return;
-
-    auto pComModelInstance =
-        pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
-
-    auto pComAnimator =
-        pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
-
-    if (!pComModelInstance || !pComAnimator)
-        return;
-
-    auto pAnim =
-        pComModelInstance->GetModel()->GetAnimations()
-        [pComAnimator->GetPlayAnimIndex()];
-
-    if (!pAnim)
-        return;
-
-    ImGui::Begin("Animation Speed");
-
-    float fDuration = pAnim->GetDuration();
-
-    if (ImGui::Button("Add Key"))
-    {
-        m_SpeedKeys.push_back(
-            {
-                fDuration * 0.5f,
-                1.f
-            });
-    }
-
-    ImGui::Separator();
-
-    for (size_t i = 0; i < m_SpeedKeys.size(); ++i)
-    {
-        ImGui::PushID((int)i);
-
-        ImGui::SliderFloat(
-            "Time",
-            &m_SpeedKeys[i].fTime,
-            0.f,
-            fDuration);
-
-        ImGui::DragFloat(
-            "Speed",
-            &m_SpeedKeys[i].fSpeed,
-            0.01f,
-            0.f,
-            10.f);
-
-        if (ImGui::Button("Delete"))
-        {
-            m_SpeedKeys.erase(
-                m_SpeedKeys.begin() + i);
-
-            ImGui::PopID();
-            break;
-        }
-
-        ImGui::Separator();
-
-        ImGui::PopID();
-    }
-
-    ImGui::End();
 }
+
+
 
 float CAnimEdit_Manager::GetSpeedAtTime(float fTrackPos)
 {
@@ -825,7 +757,7 @@ void CAnimEdit_Manager::UpdateGUI()
 	IMGUI_Select_AnimType();
     IMGUI_Slider_Animation();
     IMGUI_Select_Animation();
-    IMGUI_AnimationSpeedCurve();
+    IMGUI_Select_Detail_Data();
 }
 
 _bool CAnimEdit_Manager::RenameAnimFile_Overwrite(const std::string& oldFullPath,const std::string& newAnimName,std::string& outNewFullPath)

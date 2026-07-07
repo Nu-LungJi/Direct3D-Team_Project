@@ -38,6 +38,7 @@ private:
 	int32_t				m_iBoneIndex = {};
 	uint32_t			m_iNumKeyFrames = {};
 	std::vector<KEYFRAME>	m_KeyFrames;
+	std::vector<KEYFRAME>   m_RootKeyFrames;
 
 public:
 	static SPtr<CResModelChanel> Create(const _string& sPath = {});

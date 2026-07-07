@@ -37,6 +37,8 @@ HRESULT CResModelChanel::Load(const std::any& arg)
         pPoint += sizeof(uint32_t);
 
 
+
+
         if (-1 == m_iBoneIndex)
             return E_FAIL;
 
@@ -49,6 +51,9 @@ HRESULT CResModelChanel::Load(const std::any& arg)
         _float3     vTranslation = {};
         m_KeyFrames.clear();
         m_KeyFrames.resize(m_iNumKeyFrames);
+        
+
+        
 
         for (uint32_t i = 0; i < m_iNumKeyFrames; ++i)
         {

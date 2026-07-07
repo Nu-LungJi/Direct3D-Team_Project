@@ -88,10 +88,9 @@ HRESULT CResModel::Load(const std::any& arg)
 			ptr += chunk->size;
 		}
 
-		// 여기서 buffer는 블록 끝나면서 해제됨
 	}
 
-	// 모델 bin 전체 버퍼가 해제된 다음 애니메이션 로드
+
 	if (FAILED(Ready_Animation()))
 		return E_FAIL;
 
