@@ -1,6 +1,7 @@
 #include "../ShaderDefines.hlsl"
 
 Texture2D tex : register(t0);
+//Texture2D maskTex  : register(t1);
 SamplerState samp : register(s0);
 
 struct VS_IN
@@ -18,8 +19,8 @@ struct PS_IN
 PS_IN VSMain(VS_IN vin)
 {
     PS_IN output;
-    output.posH = mul(float4(vin.posL, 1.f), g_matWVP);
 
+    output.posH = mul(float4(vin.posL, 1.f), g_matWVP);
     output.uv = vin.uv;
 
     return output;
@@ -30,10 +31,10 @@ float4 PSMain(PS_IN input) : SV_Target
 {
     float4 texColor = tex.Sample(samp, input.uv);
 
-    //if (max(texColor.r, max(texColor.g, texColor.b)) < 0.001)
-    //{
-    //    discard;
-    //}
+    if (texColor.a < 0.1f)
+    {
+        discard;
+    }
 
-    return float4(texColor.rgb, g_ui_color.a);
+    return float4(texColor.rgb, texColor.a * g_ui_color.a);
 }

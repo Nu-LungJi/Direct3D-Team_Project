@@ -30,7 +30,7 @@ namespace Engine
 	{
 		_float2  texCoord{};
 		_float2  uvSize{};
-		_float4  color{ 1.f, 1.f, 1.f, 1.f };
+		_float4  color{ 0.f, 0.f, 0.f, 1.f };
 		//uint32_t texIndex{};
 		//_float2  borderUV{};
 		//float    _pad0{};

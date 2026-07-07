@@ -71,6 +71,9 @@ private:
 	uint32_t count{};
 	_float2 m_vDragOffset{};
 
+	_float3 m_vColor{0.f, 0.f, 0.f};
+	uint32_t m_iEffectType{};
+
 private:
 	void CreateMode();
 	void SelectMode();

@@ -196,9 +196,6 @@
     <Filter Include="Component\BeHavior\Root\Composite\CompositeNode\ActionNode">
       <UniqueIdentifier>{34a81dda-27be-4b5f-987d-0d8910cb8c11}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\UITool">
-      <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\Model">
       <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
     </Filter>
@@ -241,11 +238,14 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\UIPrefab">
-      <UniqueIdentifier>{95b3224a-ec84-44dc-bea3-82786515b1a8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI\UIManager">
       <UniqueIdentifier>{0a583505-4c42-45b5-8ff5-c8a7ae4d942c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\TexUI">
+      <UniqueIdentifier>{95b3224a-ec84-44dc-bea3-82786515b1a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\FlipBook">
+      <UniqueIdentifier>{1e0a8593-1c36-4a42-b050-de4ea209625e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -552,13 +552,13 @@
     <ClInclude Include="..\Public\BTActionNode.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\UIManager.h">
-      <Filter>GameObject\UI\UITool</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\ShaderManager.h">
       <Filter>ShaderManager</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\UIManger.h">
+    <ClInclude Include="..\Public\UITex.h">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIManager.h">
       <Filter>GameObject\UI\UIManager</Filter>
     </ClInclude>
   </ItemGroup>
@@ -833,7 +833,10 @@
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
-    <ClCompile Include="UIManager.cpp">
+    <ClCompile Include="..\Private\UITex.cpp">
+      <Filter>GameObject\UI\TexUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIManager.cpp">
       <Filter>GameObject\UI\UIManager</Filter>
     </ClCompile>
   </ItemGroup>
@@ -855,9 +858,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\BTActionNode.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\UIManager.cpp">
-      <Filter>GameObject\UI\UITool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

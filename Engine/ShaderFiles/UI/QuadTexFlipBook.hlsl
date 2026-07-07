@@ -40,10 +40,18 @@ float4 PSMain(PS_IN input) : SV_Target
     float alpha = dot(texColor.rgb, float3(0.299, 0.587, 0.114));
     alpha = pow(alpha, 0.5);
 
-    if (alpha < 0.001f)
+    if (alpha < 0.1f)
     {
         discard;
     }
 
-    return float4(texColor.rgb, alpha * g_ui_color.a);
+    float brightness = dot(texColor.rgb, float3(0.299, 0.587, 0.114));
+    brightness = pow(brightness, 1.f);
+
+    if (max(g_ui_color.r, max(g_ui_color.g, g_ui_color.b)) > 0.0f)
+    {
+        texColor.rgb = g_ui_color.rgb * brightness;
+    }
+
+    return float4(texColor.rgb, brightness * g_ui_color.a);
 }

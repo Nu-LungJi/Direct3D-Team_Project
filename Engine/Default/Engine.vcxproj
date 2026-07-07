@@ -268,7 +268,9 @@ call CopyClient.bat</Command>
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\ParticleManager.h" />
-    <ClInclude Include="..\Public\UIManger.h" />
+    <ClInclude Include="..\Public\UITex.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\Public\Prototype.h" />
     <ClInclude Include="..\Public\PrototypeManager.h" />
     <ClInclude Include="..\Public\Renderer.h" />
@@ -455,6 +457,9 @@ call CopyClient.bat</Command>
     <ClCompile Include="..\Private\ShaderManager.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
+    <ClCompile Include="..\Private\UITex.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\Private\TimeProvider.cpp" />
     <ClCompile Include="..\Private\Timer.cpp" />
     <ClCompile Include="..\Private\UICamera.cpp" />
@@ -469,7 +474,6 @@ call CopyClient.bat</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">

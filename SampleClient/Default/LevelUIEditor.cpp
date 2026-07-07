@@ -11,6 +11,7 @@
 #include "UIObject.h"
 #include "FlipBook.h"
 #include <fstream>
+#include "UI_Item.h"
 
 namespace fs = std::filesystem;
 
@@ -39,6 +40,9 @@ HRESULT CLevelUIEditor::Initialize()
 
 	m_vResTag.push_back("TEX_SHM");
 	m_vResTag.push_back("TEX_MAP");
+	m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Back_4k");
+	m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Ready_4k");
+	m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Outer_4k");
 
 	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Flame");
 	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Houses");
@@ -46,6 +50,8 @@ HRESULT CLevelUIEditor::Initialize()
 	m_vFlipBookResTag.push_back("Flipbook_VFX_T_ItemSpark_8x8_D");
 	m_vFlipBookResTag.push_back("Flipbook_VFX_T_PopVFX_8x8_D");
 	m_vFlipBookResTag.push_back("Flipbook_VFX_BlinkingStars");
+	m_vFlipBookResTag.push_back("Flipbook_UI_T_MagicEffect1");
+	m_vFlipBookResTag.push_back("Flipbook_UI_T_SmokeWispy_D");
 
 	if (std::nullopt == Target_UI)
 	{
@@ -162,18 +168,18 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 		// debug용 
 		{
 			count++;
-			CFlipBook::UIOBJECT_DESC Desc{};
+			CUIObject::UIOBJECT_DESC Desc{};
 			Desc.sObjectTag = "UI_" + std::to_string(count);
 			Desc.fSizeX = 200.f;
 			Desc.fSizeY = 200.f;
 			Desc.fX = clientSize.x * 0.5f;
 			Desc.fY = clientSize.y * 0.5f;
 			Desc.fAlpha = 1.f;
-			Desc.ResTag = "Flipbook_VFX_T_ItemSpark_8x8_D";
+			Desc.ResTag = "TEX_MAP";
 			Desc.ResWeight = count;
-			Desc.m_UIType = ETOUI(UI_TYPE::FLIPBOOK);
+			Desc.m_UIType = ETOUI(UI_TYPE::TEXUI);
 
-			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", "Layer_UI", &Desc);
+			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_UI_Item", "Layer_UI", &Desc);
 		}
 	}
 	if (bV)
@@ -832,6 +838,7 @@ void CLevelUIEditor::Picking()
 		m_fAlpha = selectUI->GetAlpha();
 		m_iWeight = selectUI->GetWeight();
 		strcpy_s(m_cName, sizeof(m_cName), selectUI->GetName());
+		m_vColor = selectUI->GetColor();
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == selectUI->GetUIType())
 		{
@@ -1125,6 +1132,8 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 
 	obj["ResTag"] = pUI->Get_ResTag();
 
+	obj["Color"] = { pUI->GetColor().x, pUI->GetColor().y, pUI->GetColor().z };
+
 	switch (uiType)
 	{
 	case ETOUI(UI_TYPE::TEXUI):
@@ -1209,6 +1218,14 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 	pUI->SetWeightOffset(obj["WeightOffset"]);
 
 	pUI->Set_ResTag(obj["ResTag"]);
+
+	auto color = obj["Color"];
+
+	_float3 vColor;
+	vColor.x = color[0];
+	vColor.y = color[1];
+	vColor.z = color[2];
+	pUI->SetColor(vColor);
 
 	if (parent == nullptr)
 	{
@@ -1303,6 +1320,19 @@ void CLevelUIEditor::StateView()
 
 	ImGui::SetNextItemWidth(80);
 	ImGui::InputText("Name", m_cName, sizeof(m_cName));
+
+	ImGui::SetNextItemWidth(80);
+	ImGui::DragFloat("fColor.r", &m_vColor.x, 0.001f, 0.0f, 1.f);
+	ImGui::SetNextItemWidth(80);
+	ImGui::DragFloat("fColor.g", &m_vColor.y, 0.001f, 0.0f, 1.f);
+	ImGui::SetNextItemWidth(80);
+	ImGui::DragFloat("fColor.b", &m_vColor.z, 0.001f, 0.0f, 1.f);
+
+	if (std::nullopt != Target_UI)
+	{
+		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+		selectUI->SetColor(m_vColor);
+	}
 }
 
 void CLevelUIEditor::LocalStateView()

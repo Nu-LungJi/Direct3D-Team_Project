@@ -16,5 +16,6 @@ namespace Engine
 	//enum class VSYNC{ OFF, ON };
 
 	enum class UI_TYPE{ CONTAINER, TEXUI, FLIPBOOK, END };
+	enum class UI_EFFECT_TYPE { NONE, HOVER, CLICK, END};
 
 }

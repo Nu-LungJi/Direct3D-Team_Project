@@ -62,9 +62,34 @@ void CUIObject::Update(_float fTimeDelta)
 
 		CalcUICoord();
 	}
+	InputAnimState();
 }
 
 void CUIObject::LateUpdate(_float fTimeDelta)
+{
+}
+
+void CUIObject::Creating()
+{
+}
+
+void CUIObject::StartHovering()
+{
+}
+
+void CUIObject::Hovering()
+{
+}
+
+void CUIObject::EndHovering()
+{
+}
+
+void CUIObject::Click()
+{
+}
+
+void CUIObject::Ending()
 {
 }
 
@@ -73,6 +98,13 @@ void CUIObject::DeleteChild(CHandle childHandle)
 	m_vChildren.erase(
 		std::remove(m_vChildren.begin(), m_vChildren.end(), childHandle),
 		m_vChildren.end());
+}
+
+void CUIObject::InputAnimState()
+{
+	if(m_AnimState == ETOUI(UI_ANIM_STATE::CREATING) || m_AnimState == ETOUI(UI_ANIM_STATE::ENDING))
+		CheckHovered();
+
 }
 
 void CUIObject::CalcUICoord()
@@ -86,4 +118,44 @@ void CUIObject::CalcUICoord()
 
 	
 	GetTransform().SetPosition(XMVectorSet(m_fX - clientWidth * 0.5f, -m_fY + clientHeight * 0.5f, GetTransform().GetPosition().z, 1.f));
+}
+
+_bool CUIObject::CheckHovered()
+{
+	_bool MouseLB = CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB);
+
+	_float2 mousePos = CGameInstance::Get().GetMousePos();
+
+	_float2 origin = {m_fX, m_fY};
+	_float2 size = {m_fSizeX, m_fSizeY};
+
+	_float2 minPos =
+	{
+		origin.x - size.x * 0.5f,
+		origin.y - size.y * 0.5f
+	};
+
+	_float2 maxPos =
+	{
+		origin.x + size.x * 0.5f,
+		origin.y + size.y * 0.5f
+	};
+
+	if (mousePos.x >= minPos.x &&
+		mousePos.x <= maxPos.x &&
+		mousePos.y >= minPos.y &&
+		mousePos.y <= maxPos.y)
+	{
+		if (m_AnimState != ETOUI(UI_ANIM_STATE::HOVERING) && m_AnimState != ETOUI(UI_ANIM_STATE::CLICK))
+			m_AnimState = ETOUI(UI_ANIM_STATE::STARTHOVERING);
+		if(MouseLB)
+			m_AnimState = ETOUI(UI_ANIM_STATE::CLICK);
+	}
+	else
+	{
+		if(m_AnimState != ETOUI(UI_ANIM_STATE::ENDING))
+			m_AnimState = ETOUI(UI_ANIM_STATE::ENDHOVERING);
+	}
+
+	return true;
 }

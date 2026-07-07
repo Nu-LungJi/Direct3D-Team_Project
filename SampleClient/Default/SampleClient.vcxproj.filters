@@ -124,6 +124,12 @@
     <ClInclude Include="..\Public\FlipBook.h">
       <Filter>GameObject\UI\FilpBook</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\FlipbookPlayer.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_Item.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -172,6 +178,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\FlipBook.cpp">
       <Filter>GameObject\UI\FilpBook</Filter>
+    </ClCompile>
+    <ClCompile Include="FlipbookPlayer.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_Item.cpp">
+      <Filter>GameObject\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

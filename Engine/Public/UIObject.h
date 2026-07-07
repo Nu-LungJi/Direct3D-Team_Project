@@ -3,6 +3,18 @@
 #include "GameObject.h"
 NS_BEGIN(Engine)
 
+enum class UI_ANIM_STATE
+{
+	NONE,
+	CREATING,
+	STARTHOVERING,
+	HOVERING,
+	ENDHOVERING,
+	CLICK,
+	ENDING,
+
+	END
+};
 
 class ENGINE_DLL CUIObject : public CGameObject
 {
@@ -29,6 +41,31 @@ public:
 	HRESULT Initialize(void* pArg) override;
 	virtual void Update(_float fTimeDelta);
 	virtual void LateUpdate(_float fTimeDelta);
+
+protected:
+	virtual void Creating();
+	virtual void StartHovering();
+	virtual void Hovering();
+	virtual void EndHovering();
+	virtual void Click();
+	virtual void Ending();
+
+protected:
+	_float m_fX{}, m_fY{}, m_fSizeX{}, m_fSizeY{}, m_fAlpha{};
+	int m_iWeight{};
+	char m_cName[256] = "";
+	uint32_t m_UIType{};
+	uint32_t m_iEffectType{};
+
+	_float m_fLocalX{ 0 }, m_fLocalY{ 0 }, m_fWidthRatioX{ 1 }, m_fWidthRatioY{ 1 }, m_fAlphaRatio{ 1 };
+	int m_iWeightOffset{ 0 };
+
+	_float3 m_vColor = { 0, 0, 0 };
+
+	std::string m_sRestag;
+
+protected:
+	uint32_t m_AnimState = 0;
 
 public:
 	_float2 GetOrigin() const { return { m_fX , m_fY }; }
@@ -74,21 +111,19 @@ public:
 
 	std::string Get_ResTag() { return m_sRestag; }
 	void Set_ResTag(std::string tag) { m_sRestag = tag; }
+
+	_float3 GetColor() { return m_vColor; }
+	void SetColor(_float3 vColor) { m_vColor = vColor; }
+
+	uint32_t GetEffectType() { return m_iEffectType; }
+	void SetEffectType(uint32_t effectType) { m_iEffectType = effectType; }
 public:
 	void DeleteChild(CHandle childHandle);
+	void InputAnimState();
 protected:
 	void CalcUICoord();
+	_bool CheckHovered();
 
-protected:
-	_float m_fX{}, m_fY{}, m_fSizeX{}, m_fSizeY{}, m_fAlpha{};
-	int m_iWeight{};
-	char m_cName[256] = "";
-	uint32_t m_UIType{};
-
-	_float m_fLocalX{0}, m_fLocalY{0}, m_fWidthRatioX{1}, m_fWidthRatioY{1}, m_fAlphaRatio{1};
-	int m_iWeightOffset{0};
-
-	std::string m_sRestag;
 protected:
 	std::optional<CHandle> m_pParent = std::nullopt;
 

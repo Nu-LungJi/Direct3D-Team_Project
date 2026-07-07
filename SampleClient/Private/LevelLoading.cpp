@@ -13,6 +13,7 @@
 #include "LevelUIEditor.h"
 #include "CTexUI.h"
 #include "FlipBook.h"
+#include "UI_Item.h"
 
 NS_USING(Client)
 
@@ -164,6 +165,7 @@ void CLevelLoading::ThreadStart()
 	}
 	break;
 	case LEVEL::UIEDITOR:
+		/* Texture */
 		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
 		{
 			res->Load();
@@ -172,6 +174,25 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Back_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Back_4k.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Ready_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Ready_4k.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Outer_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Outer_4k.png")))
+		{
+			res->Load();
+		}
+		/* Mask */
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "MASK_UI_T_ButtonFlameTopClamp", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_ButtonFlameTopClamp.png")))
+		{
+			res->Load();
+		}
+
+		/* FlipBook */
 		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_LoadingWidget_Flame", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Flame.png")))
 		{
 			res->Load();
@@ -196,6 +217,14 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_UI_T_MagicEffect1", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/FlipBook/UI_T_MagicEffect1.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_UI_T_SmokeWispy_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/FlipBook/UI_T_SmokeWispy_D.png")))
+		{
+			res->Load();
+		}
 		
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
 			{
@@ -210,6 +239,11 @@ void CLevelLoading::ThreadStart()
 				}
 
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", CFlipBook::Create())))
+				{
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_UI_Item", CUI_Item::Create())))
 				{
 					return false;
 				}
