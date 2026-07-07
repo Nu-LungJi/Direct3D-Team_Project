@@ -464,7 +464,7 @@ HRESULT CRenderer::Render_DepthMap() {
         auto pGameCam = CGameInstance::Get().GetActiveCamera();
         if (nullptr == pGameCam)    return S_OK;
 
-        if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
+        if (FAILED(Reset_RenderContext(RENDERPASS::DEPTH, pGameCam))) return E_FAIL;
 
         if (FAILED(Bind_CameraAttribute(pGameCam))) return E_FAIL;
 
@@ -519,21 +519,12 @@ HRESULT CRenderer::Render_NonAlpha() {
         m_pContext->RSSetState(rasterizer->GetRasterizerState().Get());
     }
 
-    if (FAILED(RenderPriority()))        return E_FAIL;
+    if (FAILED(RenderPriority()))       return E_FAIL;
 
-    if (FAILED(RenderNonBlend()))
-    {
-        return E_FAIL;
-    }
-    if (FAILED(RenderLight()))
-    {
-        return E_FAIL;
-    }
-    if (FAILED(RenderParticle()))
-    {
-        return E_FAIL;
-    }
-    
+    if (FAILED(RenderNonBlend()))       return E_FAIL;
+
+    if (FAILED(RenderLight()))          return E_FAIL;
+
     // UnBind RenderTargets
     {
         ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };

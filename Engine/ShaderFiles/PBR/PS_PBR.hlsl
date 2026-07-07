@@ -292,8 +292,8 @@ PS_OUT PSMain(PS_IN IN)
     //LightAccumulation += Ambient;
     //LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
     
-    OUT.Diffuse = float4(LightAccumulation, 1.f);
-    //+float4(Emissive, 1.f);
+    OUT.Diffuse = float4(LightAccumulation, 1.f) + float4(Emissive, 1.f);
+ 
     return OUT;
 }
 

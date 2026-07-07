@@ -90,7 +90,17 @@ private:
 	static INSTANCING_STATS s_LastStats;
 
 private:
-	_bool m_bRenderEnable = false; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
+	_bool m_bRenderEnable = true; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
+
+	_float4 m_fAlbedoColor			= { 1.f, 1.f, 1.f, 1.f };	// 텍스쳐 색상 {1.f, 1.f, 1.f, 1.f} = 원색
+	_float	m_fNormalIntensity		= 1.f;						// Normal 강도
+	_float	m_fRoughnessIntensity	= 1.f;						// Roughness 강도
+	_float	m_fMetallicIntensity	= 1.f;						// Metallic 강도
+	_float	m_fAmbientIntensity		= 1.f;						// Ambient 강도
+	_float	m_fSpecularIntensity	= 1.f;						// Specular 강도
+	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };		// Emissive 색상. 텍스쳐가 있으면 {1.f, 1.f, 1.f} = 원색
+	_float	m_fEmissiveIntensity	= 0.f;						// Emissive 강도,
+
 public:
 	static UPtr<CMapMeshObject> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

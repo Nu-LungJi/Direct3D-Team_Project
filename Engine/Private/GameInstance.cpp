@@ -154,10 +154,10 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
-	if(m_pAnimEdit_Manager == nullptr)
+	if (m_pAnimEdit_Manager == nullptr)
 	{
 		return E_FAIL;
-	}	
+	}
 
 	m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pLightManager == nullptr)
@@ -209,7 +209,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-    return S_OK;
+	return S_OK;
 }
 
 void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
@@ -231,7 +231,7 @@ void CGameInstance::UpdateGUI()
 		ZoneScopedN("GameObjectManager_UpdateGUI");
 		m_pGameObjectManager->UpdateGUI();
 	}
-	
+
 	{
 		ZoneScopedN("m_pAnimEdit_Manager_UpdateGUI");
 
@@ -257,7 +257,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	// »ç¿îµå ºÙÀÏ¶§ ºÎÈ°
+	// ì‚¬ìš´ë“œ ë¶™ì¼ë•Œ ë¶€í™œ
 	// m_pSoundManager->UpdateGUI();
 
 	m_pNodeEditor->NodeEditorUpdate();
@@ -282,7 +282,7 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
-	// TODO: ¸¶¿ì½º °¡µÎ±â ÇÔ¼öÈ­ÇÏ±â
+	// TODO: ë§ˆìš°ìŠ¤ ê°€ë‘ê¸° í•¨ìˆ˜í™”í•˜ê¸°
 	{
 		if (CGameInstance::Get().KeyDown(DIK_TAB))
 		{
@@ -303,13 +303,13 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		}
 	}
 
-	// »ç¿îµå ºÙÀÏ¶§ ºÎÈ°
+	// ì‚¬ìš´ë“œ ë¶™ì¼ë•Œ ë¶€í™œ
 	if constexpr (false)
 	{
 		ZoneScopedN("SoundManager_Update");
 		m_pSoundManager->Update();
 	}
-	
+
 
 
 	//m_pParticleManager->Update(fTimeDelta);
@@ -344,7 +344,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	//m_pGameObjectManager->PriorityUpdate(fTimeDelta);
 	//m_pGameObjectManager->Update(fTimeDelta);
 	//m_pGameObjectManager->LateUpdate(fTimeDelta);
-	
+
 	//m_pLevelManager->Update(fTimeDelta);
 
 
@@ -368,7 +368,7 @@ HRESULT CGameInstance::Draw()
 #ifdef _DEBUG
 	m_pMapManager->RenderDebugMapChunk();
 #endif
-    return S_OK;
+	return S_OK;
 }
 
 //void CGameInstance::ClearResource(uint32_t iClearLevelIndex)
@@ -377,7 +377,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
-	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObjectÀÇ static ÀÎ½ºÅÏ½º ¹öÆÛ ÇØÁ¦
+	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObjectì˜ static ì¸ìŠ¤í„´ìŠ¤ ë²„í¼ í•´ì œ
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
@@ -421,7 +421,7 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
 	}
 }
-void CGameInstance::FrameEnd(_float fTimeDelta) 
+void CGameInstance::FrameEnd(_float fTimeDelta)
 {
 	m_pGameObjectManager->FrameEnd();
 	m_pLevelManager->FrameEnd(fTimeDelta);
@@ -449,7 +449,7 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
 	_float fFlickerInterval, _float4 emissive, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(quantity,start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
+	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
 }
 #pragma endregion
 
@@ -587,7 +587,7 @@ HRESULT CGameInstance::InitializeResources()
 		{
 			return E_FAIL;
 		}
-	
+
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
 	//ShaderFiles
@@ -814,7 +814,7 @@ HRESULT CGameInstance::InitializeResources()
 	{
 		D3D11_DEPTH_STENCIL_DESC depthDesc{};
 		depthDesc.DepthEnable = TRUE;
-		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; 
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		res->Load(depthDesc);
 	}
@@ -824,9 +824,9 @@ HRESULT CGameInstance::InitializeResources()
 		depthDesc.DepthEnable = TRUE;
 		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
-		depthDesc.StencilEnable		= FALSE;
-		depthDesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
-		depthDesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		depthDesc.StencilEnable = FALSE;
+		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
 		res->Load(depthDesc);
 	}
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD", E::CResDepthStencilState::Create()))
@@ -852,8 +852,8 @@ HRESULT CGameInstance::InitializeResources()
 	}
 
 	// Test Model Load
-	// ¿À·ù³ª¼­ Á¦°Å
-	if(true)
+	// ì˜¤ë¥˜ë‚˜ì„œ ì œê±°
+	if (true)
 	{
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
 		{
@@ -894,7 +894,7 @@ HRESULT CGameInstance::InitializeResources()
 	}
 
 
-	// ÅØ½ºÃÄ ¾ø´Â °æ¿ì ´ëºñ, ´ëÃ¼ ÅØ½ºÃÄ
+	// í…ìŠ¤ì³ ì—†ëŠ” ê²½ìš° ëŒ€ë¹„, ëŒ€ì²´ í…ìŠ¤ì³
 	{
 		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Diffuse.png")))
 		{
@@ -913,33 +913,33 @@ HRESULT CGameInstance::InitializeResources()
 			res->Load();
 		}
 	}
-	
 
 
-	
-		if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-			CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
-			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
+	if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
+		CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
 		}
+	}
 
-		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
 		}
+	}
 
 
 	return S_OK;
@@ -982,7 +982,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-	
+
 	if (AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
 	{
 		return E_FAIL;
@@ -993,9 +993,9 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-	
 
-	// ÇÇÁ÷½º°ü·Ã
+
+	// í”¼ì§ìŠ¤ê´€ë ¨
 	{
 		if (AddPrototype("PHYSX", "Prototype_Component_ComPxBoxCollider", CComPxBoxCollider::Create()))
 		{
@@ -1018,7 +1018,7 @@ HRESULT CGameInstance::InitializePrototype()
 			return E_FAIL;
 		}
 	}
-	
+
 	//if (AddPrototype("CAMERAS", "Prototype_GameObject_PlayerCamera", CPlayerCamera::Create()))
 	//{
 	//	return E_FAIL;
@@ -1456,7 +1456,7 @@ HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
 }
 HRESULT CGameInstance::LoadMapData(const std::string& path)
-{	
+{
 	return m_pMapManager->LoadMapData(path);
 }
 HRESULT CGameInstance::LoadMapChunk(const MAPCHUNK_COORD& coord)
@@ -1528,7 +1528,7 @@ HRESULT					CGameInstance::Add_Action_Prototype(NODEGROUP eType, const _string& 
 {
 	return m_pActionManager->Add_Action_Prototype(eType, strActionName, std::move(pAction));
 }
-UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos,CHandle Handle)
+UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
 {
 	return m_pActionManager->Show_ActioNode_List(eType, iNode, vNodePos, Handle);
 }

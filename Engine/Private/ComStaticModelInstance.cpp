@@ -78,6 +78,10 @@ SPtr<CResTexture2D> CComStaticModelInstance::Get_MeshTexture(uint32_t iMeshIndex
     auto Materials = m_pModel->GetMaterials();
     auto Mesh = m_pModel->GetMeshes();
     auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
+    if (Textures[eMaterialType].size() == 0)
+    {
+        return nullptr;
+    }
 
     return Textures[eMaterialType][iTextureIndex];
 }

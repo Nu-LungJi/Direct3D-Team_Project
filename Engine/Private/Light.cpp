@@ -61,10 +61,8 @@ HRESULT CLight::Initialize(void* pArg)
     {
         CComConstantBuffer::DESC Desc{};
         Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-        if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-        {
-            return E_FAIL;
-        };
+        if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject))) return E_FAIL;
+
     }
     {
         CComCollider::DESC Desc{};
@@ -179,6 +177,11 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
             pContext->PSSetShaderResources(0, 1, m_pResSpotLightTexture2D->GetSRV().GetAddressOf());
         }
     }
+    ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+    pContext->PSSetShaderResources(1, 1, pSRVs);
+    pContext->PSSetShaderResources(2, 1, pSRVs);
+    pContext->PSSetShaderResources(3, 1, pSRVs);
+
     {
         const auto& sampler = m_pResSamplerState;
         pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
@@ -188,6 +191,15 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
         pContext->RSSetState(rasterizer->GetRasterizerState().Get());
     }
     pContext->DrawIndexed(m_pResLightTexBuffer->GetNumIndices(), 0, 0);
+
+    pContext->VSSetShader(nullptr, nullptr, 0);
+    pContext->PSSetShader(nullptr, nullptr, 0);
+
+    ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
+    pContext->PSSetShaderResources(0, 1, pSRVs);
+    pContext->PSSetShaderResources(1, 1, pSRVs);
+    pContext->PSSetShaderResources(2, 1, pSRVs);
+    pContext->PSSetShaderResources(3, 1, pSRVs);
 #endif 
 
     return S_OK;

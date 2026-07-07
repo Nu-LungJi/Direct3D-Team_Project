@@ -15,19 +15,6 @@ struct VS_IN
     float2 vTexcoord    : TEXCOORD0;
 };
 
-struct VS_OUT
-{
-    float3 vPosition : POSITION;
-    float3 vNormal : NORMAL;
-    float3 vTangent : TANGENT;
-    float3 vBinormal : BINORMAL;    
-    float2 vTexcoord : TEXCOORD0;
-    float4 iWorld0 : INSTANCE_WORLD0;
-    float4 iWorld1 : INSTANCE_WORLD1;
-    float4 iWorld2 : INSTANCE_WORLD2;
-    float4 iWorld3 : INSTANCE_WORLD3;
-};
-
 cbuffer CB_OBJECT_PBR   : register(b3)
 {
     float4 AlbedoColor;

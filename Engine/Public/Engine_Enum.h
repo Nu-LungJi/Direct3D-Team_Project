@@ -8,8 +8,9 @@ namespace Engine
 	enum class RENDERGROUP { PRIORITY, NONBLEND, BLEND, LIGHT, SKYBOX, COLLIDER, PARTICLE, UI, END };
 	enum class RENDERPASS : uint32_t
 	{
-		DEFAULT = 1 << 0,
-		SHADOW = 1 << 1,
+		DEFAULT = 1 << 0,	// 1
+		SHADOW	= 1 << 1,	// 2
+		DEPTH	= 1 << 2	// 4
 	};
 	enum class STATE { RIGHT, UP, LOOK, POSITION, END };
 	enum class MODEL {STATIC, SKELETAL, END };

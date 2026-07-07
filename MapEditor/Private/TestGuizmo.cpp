@@ -52,7 +52,7 @@ void CTestGuizmo::Update(E::_float fTimeDelta)
 
 void CTestGuizmo::LateUpdate(E::_float fTimeDelta)
 {
-	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::NONBLEND, this);
+	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::LIGHT, this);
 	GetTransform().Update();
 }
 

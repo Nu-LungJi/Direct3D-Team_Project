@@ -1,7 +1,10 @@
 #include "../ShaderHeader/SH_SamplerState.hlsli"
 #include "../ShaderDefines.hlsl"
 
-Texture2D tex : register(t0);
+Texture2D g_DiffuseTexture : register(t0);
+Texture2D g_NormalTexture : register(t1);
+Texture2D g_SMROTexture : register(t2);
+Texture2D g_EmissiveTexture : register(t3);
 
 struct VS_IN
 {
@@ -24,37 +27,16 @@ PS_IN VSMain(VS_IN vin)
 
     return output;
 }
-struct PS_OUT
-{
-    vector vDiffuse : SV_TARGET0;
-    vector vNormal : SV_TARGET1;
-    vector vSMRO : SV_TARGET2;
-    vector vEmissive : SV_TARGET3;
-};
 
-// Pixel Shader
-PS_OUT PSMain(PS_IN input)
+// Pixel Shader : 불투명(NONBLEND) 오브젝트 그릴 때는 사용X(Normal, SMRO, Emissive에서 안 그려져서 정상적으로 렌더X)
+float4 PSMain(PS_IN input)  : SV_TARGET0
 {
-    PS_OUT OUT;
-    float4 TexColor = tex.Sample(SamplerWrap, input.uv);
+    float4 TexColor = g_DiffuseTexture.Sample(SamplerWrap, input.uv);
     if (TexColor.a == 0.01f)  discard;
     
-    OUT.vDiffuse = TexColor;
-    OUT.vNormal  = float4(0.f, 0.f, 0.f, 0.f);
-    OUT.vSMRO = float4(0.f, 0.f, 0.f, 0.f);
-    OUT.vEmissive = float4(0.f, 0.f, 0.f, 0.f);
-
-    return OUT;
+    return TexColor;
 }
-PS_OUT PSMain_NonAlpha(PS_IN input)
+float4 PSMain_NonAlpha(PS_IN input) : SV_TARGET0
 {
-    PS_OUT OUT;
-    float4 TexColor = tex.Sample(SamplerWrap, input.uv);
-    
-    OUT.vDiffuse = TexColor;
-    OUT.vNormal = float4(0.f, 0.f, 0.f, 1.f);
-    OUT.vSMRO = float4(0.f, 0.f, 0.f, 1.f);
-    OUT.vEmissive = float4(0.f, 0.f, 0.f, 1.f);
-
-    return OUT;
+    return g_DiffuseTexture.Sample(SamplerWrap, input.uv);;
 }

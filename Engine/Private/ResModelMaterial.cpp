@@ -88,14 +88,9 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				strcat_s(szFullPath, szDir);
 				strcat_s(szFullPath, file.c_str());
 				strcat_s(szFullPath, ext.c_str());
-				
-
+				//strcat_s(szFullPath,".dds");
 				std::filesystem::path fsPath(szFullPath);
 				std::string sExt = fsPath.extension().string();
-
-
-
-				// 같은 경로, 같은 파일명인데 확장자만 .dds로 바꾼 후보 경로
 				std::filesystem::path ddsFsPath = fsPath;
 				ddsFsPath.replace_extension(".dds");
 
@@ -104,8 +99,6 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				{
 					strcpy_s(szFullPath, MAX_PATH, ddsFsPath.string().c_str());
 				}
-
-
 
 				auto resTex = CResTexture2D::Create(szFullPath);
 				if (FAILED(resTex->Load())) {
