@@ -1,31 +1,39 @@
 #include "pch.h"
-#include "Gobline.h"
-#include "ComBeHavior.h"
+#include "TestGob.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Resources.h"
+#include "ComBeHavior.h"
 #include "GameInstance.h"
 NS_USING(Client)
-CGobline::CGobline()
+
+CTestGob::CTestGob()
+	: CGameObject{}
 {
 }
 
-CGobline::~CGobline()
+CTestGob::~CTestGob()
 {
 }
 
-HRESULT CGobline::InitializePrototype(void* pArg)
+void CTestGob::UpdateGUI()
 {
-	
-	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi");
+	CGameObject::UpdateGUI();
+
+}
+
+HRESULT CTestGob::InitializePrototype(void* pArg)
+{
+
+	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexNonAnimShader->Load()))
 	{
 		return E_FAIL;
 	}
-	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnmi");
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
 	{
@@ -55,13 +63,15 @@ HRESULT CGobline::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CGobline::Initialize(void* pArg)
+HRESULT CTestGob::Initialize(void* pArg)
 {
-	if (FAILED(__super::Initialize(pArg)))
+	if (FAILED(CGameObject::Initialize(pArg)))
+	{
 		return E_FAIL;
+	}
 
 	CComBeHavior::BEHAVIOR_DESC Desc{};
-	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pComBT)))
+	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
 	{
 		return E_FAIL;
 	};
@@ -94,29 +104,30 @@ HRESULT CGobline::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
+
+
+
 	return S_OK;
 }
 
-void CGobline::PriorityUpdate(E::_float fTimeDelta)
+void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CGobline::Update(E::_float fTimeDelta)
+void CTestGob::Update(E::_float fTimeDelta)
 {
-	m_pComBT->Update(fTimeDelta);
-
+	m_pBeHavior->Update(fTimeDelta);
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
-	
 }
 
-void CGobline::LateUpdate(E::_float fTimeDelta)
+void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
-HRESULT CGobline::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	{
 		E::CB_PER_OBJECT cbPerObject{};
@@ -129,29 +140,20 @@ HRESULT CGobline::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
+	const auto& vs = m_pResVertexShader;
+	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
+	//? m_pResVertexShader
+	//: m_pResVertexNonAnimShader;
 
-
-
-
-	const auto& vs =
-		!m_pComModelInstance->GetModel()->GetAnimations().empty()
-		? m_pResVertexShader
-		: m_pResVertexNonAnimShader;
-
-	const auto& ps =
-		!m_pComModelInstance->GetModel()->GetAnimations().empty()
-		? m_pResPixelShader
-		: m_pResPixelNonAnimShader;
-
-
+	const auto& ps = m_pResPixelShader;
+	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
+	//? m_pResPixelShader
+	//: m_pResPixelNonAnimShader;
 
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-
-
 
 	auto pModel = m_pComModelInstance->GetModel();
 
@@ -173,30 +175,59 @@ HRESULT CGobline::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		//{
-		//	auto tex = m_pResTestModel->GetMaterials()[0]->GetTextures()[1][0];
-		//	pContext->PSSetShaderResources(0, 1, tex->GetSRV().GetAddressOf());
-		//}
-
-		{
-			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-
-		}
-
 		{
 			if (!m_pComModelInstance->GetModel()->GetAnimations().empty())
-				m_pComModelInstance->Bind_BoneMatrices(pContext, i);
-
+				if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i))) {
+					return E_FAIL;
+				}
 		}
 
 		{
-			const auto& sampler = m_pResSamplerState;
-			pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-		}
+			SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+				DiffuseTexture = Resource;
+			}
+			pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
 
+			SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+				NormalTexture = Resource;
+			}
+			pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
+
+			SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+				SMROTexture = Resource;
+			}
+			pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
+
+			SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+				EmissiveTexture = Resource;
+			}
+			pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
+		}
 		{
-			const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-			pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+			auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+			D3D11_MAPPED_SUBRESOURCE MRES;
+			if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+			{
+				CB_MATERIAL   CMMAT;
+				CMMAT.AlbedoColor = m_fAlbedoColor;
+
+				CMMAT.NormalIntensity = m_fNormalIntensity;
+				CMMAT.RoughnessIntensity = m_fRoughnessIntensity;
+				CMMAT.MetallicIntensity = m_fMetallicIntensity;
+				CMMAT.AmbientIntensity = m_fAmbientIntensity;
+				CMMAT.SpecularIntensity = m_fSpecularIntensity;
+
+				CMMAT.EmissiveColor = m_fEmissiveColor;
+				CMMAT.EmissiveIntensity = m_fEmissiveIntensity;
+
+				memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+				pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+			}
+			pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -205,23 +236,23 @@ HRESULT CGobline::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	return S_OK;
 }
 
-E::UPtr<CGobline> CGobline::Create()
+E::UPtr<CTestGob> CTestGob::Create()
 {
-	auto pInstance = E::ToUPtr(new CGobline{});
+	auto pInstance = E::ToUPtr(new CTestGob{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CGobline");
+		MSG_BOX("Failed to Created : CTestGob");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CGobline::Clone(void* pArg)
+E::UPtr<E::CPrototype> CTestGob::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CGobline{ *this });
+	auto	pInstance = E::ToUPtr(new CTestGob{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CGobline");
+		MSG_BOX("Failed to Cloned : CTestGob");
 		return nullptr;
 	}
 

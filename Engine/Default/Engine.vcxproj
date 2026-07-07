@@ -670,7 +670,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
-    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>

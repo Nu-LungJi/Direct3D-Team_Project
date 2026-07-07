@@ -1,6 +1,11 @@
 #include "../ShaderDefines.hlsl"
+#include "../ShaderHeader/SH_SamplerState.hlsli"
 
-Texture2D g_DiffuseTexture : register(t1);
+Texture2D g_DiffuseTexture : register(t0);
+Texture2D g_NormalTexture : register(t1);
+Texture2D g_SMROTexture : register(t2);
+Texture2D g_EmissiveTexture : register(t3);
+
 SamplerState LinearSampler : register(s0);
 
 struct VS_IN
@@ -21,6 +26,23 @@ struct VS_OUT
     float2 vTexcoord : TEXCOORD0;
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+};
+
+
+cbuffer CB_OBJECT_PBR : register(b3)
+{
+    float4 AlbedoColor;
+
+    float NormalIntensity;
+    float RoughnessIntensity;
+    float MetallicIntensity;
+    float AmbientIntensity;
+    float SpecularIntensity;
+
+    float3 EmissiveColor;
+    float EmissiveIntensity;
+
+    float3 Padding;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -55,20 +77,58 @@ struct PS_OUT
 {
     vector vDiffuse : SV_TARGET0;
     vector vNormal : SV_TARGET1;
-    vector vDepth : SV_TARGET2;
-    vector vPickPos : SV_TARGET3;
+    vector vSMRO : SV_TARGET2;
+    vector vEmissive : SV_TARGET3;
 };
 
-PS_OUT PSMain(PS_IN In)
+float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
 {
-    PS_OUT Out = (PS_OUT)0;
+    float3 Normal = normalize(_Normal);
+    float3 Tangent = normalize(_Tangent);
 
-    vector vMtrlDiffuse = g_DiffuseTexture.Sample(LinearSampler, In.vTexcoord);
-    if (vMtrlDiffuse.a <= 0.3f)
-    {
-        discard;
-    }
+    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
 
-    Out.vDiffuse = vMtrlDiffuse;
+    float3 BiNormal = normalize(cross(Normal, Tangent));
+
+    return float3x3(Tangent, BiNormal, Normal);
+}
+float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
+{
+    float3 LocalNormal = _NormalTex.Sample(SamplerWrap, _TexCoord).rgb;
+    LocalNormal = normalize(LocalNormal * 2.f - 1.f);
+    float3x3 TBN = Make_TBNMatrix(_InNormal.xyz, _InTangent.xyz);
+
+    float3 N = normalize(_InNormal.xyz);
+    float3 T = normalize(_InTangent.xyz);
+
+    T = normalize(T - dot(T, N) * N);
+    float3 B = normalize(cross(N, T));
+
+    float3 worldNormal = LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N;
+
+    return normalize(worldNormal);
+}
+
+PS_OUT PSMain(PS_IN IN)
+{
+    PS_OUT Out;
+
+    float4 fDiffuse = g_DiffuseTexture.Sample(LinearSampler, IN.vTexcoord) * AlbedoColor;
+    float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
+    float3 fMRO = g_SMROTexture.Sample(SamplerWrap, IN.vTexcoord);
+
+    float fFinalMetallic = fMRO.r * MetallicIntensity;
+    float fFinalRoughness = fMRO.g * RoughnessIntensity;
+    float fFinalAO = fMRO.b * AmbientIntensity;
+
+    float3 fEmissive = g_EmissiveTexture.Sample(SamplerWrap, IN.vTexcoord).rgb * EmissiveColor * EmissiveIntensity;
+
+    if (fDiffuse.a == 0.0f) discard;
+
+    Out.vDiffuse = fDiffuse;
+    Out.vNormal = float4(fNormal * 0.5f + 0.5f, 1.f);
+    Out.vSMRO = float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
+    Out.vEmissive = float4(fEmissive, 1.f);
+
     return Out;
 }

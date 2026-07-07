@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "GameInstance.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"

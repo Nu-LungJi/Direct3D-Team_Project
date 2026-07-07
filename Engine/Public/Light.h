@@ -73,7 +73,7 @@ private:
 	CComCollider*		m_pComColliderSphere{};
 	CComCollider*		m_pComColliderFrustum{};
 
-#ifdef _DEBUG	// Light À§Ä¡ ³ªÅ¸³»´Â ¿ë ¾ÆÀÌÄÜ ÅØ½ºÃÄ
+#ifdef _DEBUG	// Light ìœ„ì¹˜ ë‚˜íƒ€ë‚´ëŠ” ìš© ì•„ì´ì½˜ í…ìŠ¤ì³
 	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D	{	};
 	SPtr<CResTexture2D>		m_pResPointLightTexture2D		{	};
 	SPtr<CResTexture2D>		m_pResSpotLightTexture2D		{	};

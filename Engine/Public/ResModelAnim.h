@@ -47,16 +47,16 @@ public:
 
 
 private:
-	// ·± Å¸ÀÓ µµÁß¸¸ °¡Áö´Â ÁÖ¼Ò
+	// ëŸ° íƒ€ì„ ë„ì¤‘ë§Œ ê°€ì§€ëŠ” ì£¼ì†Œ
 	std::string			m_AnimPath;
 	std::string			m_AnimName;
 
-	/* ÀÌ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ÃÑ ±æÀÌ. */
+	/* ì´ ì• ë‹ˆë©”ì´ì…˜ì˜ ì´ ê¸¸ì´. */
 	_float				m_fDuration = {};
 	_float				m_fTickPerSecond = {};
 	_float				m_fCurrentTrackPosition = {};
 
-	/* ÄÁÆ®·ÑÇØ¾ßÇÏ´Â »ÀÀÇ °¹¼ö */
+	/* ì»¨íŠ¸ë¡¤í•´ì•¼í•˜ëŠ” ë¼ˆì˜ ê°¯ìˆ˜ */
 	uint32_t							m_iNumChannels = {};
 	std::vector<SPtr<CResModelChanel>>	m_Channels;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;

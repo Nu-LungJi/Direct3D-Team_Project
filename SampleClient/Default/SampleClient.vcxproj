@@ -187,13 +187,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\FlipbookPlayer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="..\public\Gobline.h" />
+    <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\public\LevelCollider.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
-    
-    
     <ClInclude Include="..\public\LevelPhysX.h" />
     <ClInclude Include="..\public\LevelPlayground.h" />
     <ClInclude Include="..\Public\LevelUIEditor.h" />
@@ -235,13 +233,12 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTMove.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\Private\FlipBook.cpp" />
-    <ClCompile Include="..\private\Gobline.cpp" />
+    <ClCompile Include="..\private\TestGob.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
     <ClCompile Include="..\private\LevelCollider.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
     <ClCompile Include="..\Private\LevelLogo.cpp" />
-    
     <ClCompile Include="..\private\LevelPhysX.cpp" />
     <ClCompile Include="..\private\LevelPlayground.cpp" />
     <ClCompile Include="..\Private\LightObject.cpp" />

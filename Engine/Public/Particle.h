@@ -30,11 +30,11 @@ protected:
 	SPtr<class CResPixelShader> m_pResPixelShader{};
 	SPtr<class CResVertexShader> m_pResVertexShader{};
 
-	//¸ğµ¨À» ¾µ°ÇÁö ÅØ½ºÃÄ¸¦ ¾µ°ÇÁö ¼±ÅÃ
+	//ëª¨ë¸ì„ ì“¸ê±´ì§€ í…ìŠ¤ì³ë¥¼ ì“¸ê±´ì§€ ì„ íƒ
 	UPtr<class CComStaticModelInstance> m_pComModelInstance{};
 	SPtr<class CResTexture2D> m_pParticleTexture;
 
-	//¸ğµ¨ÀÌ ÅØ½ºÃÄ, ¸Ş½¬ ÁØºñ
+	//ëª¨ë¸ì´ í…ìŠ¤ì³, ë©”ì‰¬ ì¤€ë¹„
 
 
 };

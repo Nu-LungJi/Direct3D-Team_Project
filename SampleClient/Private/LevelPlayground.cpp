@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "LevelPlayground.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
@@ -9,7 +9,7 @@
 #include "Terrain.h"
 #include "Particle.h"
 #include "TestModel.h"
-#include "Gobline.h"
+#include "TestGob.h"
 #include "LightObject.h"
 NS_USING(Client)
 
@@ -47,14 +47,14 @@ HRESULT CLevelPlayground::Initialize()
 	}
 	{
 		//테스트 고블린
-		//CGameObject::GAMEOBJECT_DESC Desc{};
-		//Desc.sObjectTag = "Gobline";
-		//
-		//if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
-		//	"02_Gobline", &Desc))
-		//{
-		//	int x = 0;
-		//}
+		CGameObject::GAMEOBJECT_DESC Desc{};
+		Desc.sObjectTag = "Gobline";
+		
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
+			"02_Gobline", &Desc))
+		{
+			int x = 0;
+		}
 	}
 	{
 		//if(false)

@@ -38,7 +38,7 @@ void CParticleManager::UpdateGUI()
     static int typeIndex = 0;
     static SPAWN_COMMAND_KIND currentKind = SPAWN_COMMAND_KIND::STANDARD;
 
-    // ---- ´ëºĞ·ù/¼ÒºĞ·ù ¼±ÅÃ ----
+    // ---- ëŒ€ë¶„ë¥˜/ì†Œë¶„ë¥˜ ì„ íƒ ----
     std::vector<StringID> groupKeys;
     groupKeys.reserve(m_Particles.size());
     for (auto& [groupTag, typeMap] : m_Particles)
@@ -83,8 +83,8 @@ void CParticleManager::UpdateGUI()
 
             selectedType = typeKeys[typeIndex];
 
-            // ¼±ÅÃµÈ ÆÄÆ¼Å¬ÀÌ CBeam_CPUÀÎÁö ÆÇ´ÜÇØ¼­ ¼½¼Ç ºĞ±â
-            // dynamic_cast·Î ½ÇÁ¦ Å¸ÀÔ È®ÀÎ (¶Ç´Â CParticle¿¡ GetKind() °°Àº °É Ãß°¡ÇØµµ µÊ)
+            // ì„ íƒëœ íŒŒí‹°í´ì´ CBeam_CPUì¸ì§€ íŒë‹¨í•´ì„œ ì„¹ì…˜ ë¶„ê¸°
+            // dynamic_castë¡œ ì‹¤ì œ íƒ€ì… í™•ì¸ (ë˜ëŠ” CParticleì— GetKind() ê°™ì€ ê±¸ ì¶”ê°€í•´ë„ ë¨)
             auto pSelected = typeMap[selectedType].get();
             currentKind = (dynamic_cast<CBeam_CPU*>(pSelected) != nullptr)
                 ? SPAWN_COMMAND_KIND::BEAM
@@ -94,8 +94,8 @@ void CParticleManager::UpdateGUI()
 
     ImGui::Separator();
 
-    // ---- Á¾·ùº° ¸Å°³º¯¼ö ¼½¼Ç ----
-    static SPAWN_COMMAND pending{};   // Áö±İ ÀÔ·Â ÁßÀÎ ¸í·É (¾ÆÁ÷ Å¥¿¡ ¾È µé¾î°¨)
+    // ---- ì¢…ë¥˜ë³„ ë§¤ê°œë³€ìˆ˜ ì„¹ì…˜ ----
+    static SPAWN_COMMAND pending{};   // ì§€ê¸ˆ ì…ë ¥ ì¤‘ì¸ ëª…ë ¹ (ì•„ì§ íì— ì•ˆ ë“¤ì–´ê°)
 
     pending.kind = currentKind;
     pending.sGroupTag = selectedGroup;
@@ -145,7 +145,7 @@ void CParticleManager::UpdateGUI()
 
     ImGui::Separator();
 
-    // ---- ¸®½ºÆ® Ç¥½Ã ¹× »èÁ¦ ----
+    // ---- ë¦¬ìŠ¤íŠ¸ í‘œì‹œ ë° ì‚­ì œ ----
     ImGui::Text("Spawn Queue (%zu)", m_vecCommandQueue.size());
     for (int i = 0; i < (int)m_vecCommandQueue.size(); ++i)
     {
@@ -170,7 +170,7 @@ void CParticleManager::UpdateGUI()
         {
             m_vecCommandQueue.erase(m_vecCommandQueue.begin() + i);
             ImGui::PopID();
-            break;   // º¤ÅÍ°¡ ¹Ù²î¾úÀ¸´Ï ÀÌ¹ø ÇÁ·¹ÀÓÀº ¿©±â¼­ ·çÇÁ Áß´Ü
+            break;   // ë²¡í„°ê°€ ë°”ë€Œì—ˆìœ¼ë‹ˆ ì´ë²ˆ í”„ë ˆì„ì€ ì—¬ê¸°ì„œ ë£¨í”„ ì¤‘ë‹¨
         }
 
         ImGui::PopID();
@@ -198,7 +198,7 @@ void CParticleManager::UpdateGUI()
 //    ImGui::InputFloat("BladeLength", &fBladeLength);
 //    ImGui::InputFloat("SwingDuration", &fSwingDuration);
 //
-//    // ¿¹½Ã: [beam][trail] °°Àº Å°·Î µî·ÏµÇ¾î ÀÖ´Ù°í °¡Á¤
+//    // ì˜ˆì‹œ: [beam][trail] ê°™ì€ í‚¤ë¡œ ë“±ë¡ë˜ì–´ ìˆë‹¤ê³  ê°€ì •
 //    auto pTrail = static_cast<CTrail_CPU*>(GetParticle("TRAIL", "SLASH"));
 //
 //    if (pTrail)
@@ -342,7 +342,7 @@ void CParticleManager::Update(_float fTimeDelta)
         }
     }
 
-    // ¹İº¹ ½ºÆù ¿äÃ» Ã³¸®
+    // ë°˜ë³µ ìŠ¤í° ìš”ì²­ ì²˜ë¦¬
     for (auto& req : m_LoopRequests)
     {
         req.fElapsed += fTimeDelta;
@@ -351,7 +351,7 @@ void CParticleManager::Update(_float fTimeDelta)
 
         req.fElapsed -= req.fSpawnInterval;
 
-        // bLoop=false·Î ³»ºÎ È£Ãâ - ¿©±â¼­ ¶Ç µî·ÏÇØ¹ö¸®¸é ¹«ÇÑ Áßº¹ µî·ÏµÊ
+        // bLoop=falseë¡œ ë‚´ë¶€ í˜¸ì¶œ - ì—¬ê¸°ì„œ ë˜ ë“±ë¡í•´ë²„ë¦¬ë©´ ë¬´í•œ ì¤‘ë³µ ë“±ë¡ë¨
         Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
     }
 }
@@ -376,9 +376,9 @@ HRESULT CParticleManager::Add_Particle(const StringID& sGroupTag, const StringID
     if (FAILED(particle->Initialize(nullptr)))
         return E_FAIL;
 
-    auto& typeMap = m_Particles[sGroupTag];   // ¾øÀ¸¸é ÀÚµ¿ »ı¼ºµÊ
+    auto& typeMap = m_Particles[sGroupTag];   // ì—†ìœ¼ë©´ ìë™ ìƒì„±ë¨
     if (typeMap.contains(sTypeTag))
-        return E_FAIL;  // ÀÌ¹Ì µî·ÏµÈ [±×·ì][Å¸ÀÔ]
+        return E_FAIL;  // ì´ë¯¸ ë“±ë¡ëœ [ê·¸ë£¹][íƒ€ì…]
 
     typeMap[sTypeTag] = std::move(particle);
     return S_OK;
@@ -443,7 +443,7 @@ HRESULT CParticleManager::SpawnRandomInGroup(const StringID& sGroupTag,
     {
         PARTICLE_LOOP_REQUEST req{};
         req.sGroupTag = sGroupTag;
-        req.sTypeTag = it->first;   // ÀÌ¹ø¿¡ »ÌÈù ¼ÒºĞ·ù·Î °íÁ¤ (¹İº¹ ½Ã¿£ ¸Å¹ø ÀçÃßÃ· ¾È ÇÔ)
+        req.sTypeTag = it->first;   // ì´ë²ˆì— ë½‘íŒ ì†Œë¶„ë¥˜ë¡œ ê³ ì • (ë°˜ë³µ ì‹œì—” ë§¤ë²ˆ ì¬ì¶”ì²¨ ì•ˆ í•¨)
         req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
         req.fSpawnInterval = fSpawnInterval;
         req.fElapsed = 0.f;
@@ -515,8 +515,8 @@ HRESULT CParticleManager::ExecuteCommandQueue()
     for (auto& cmd : m_vecCommandQueue)
     {
 
-        //ÆÄÀÏ path¸¦ ÀĞ¾î¼­ 
-        //cmd.baemStart¸¦ º»ÀÎ Æ¯Á¤ ÁÂÇ¥·Î 
+        //íŒŒì¼ pathë¥¼ ì½ì–´ì„œ 
+        //cmd.baemStartë¥¼ ë³¸ì¸ íŠ¹ì • ì¢Œí‘œë¡œ 
         if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
         {
             std::vector<PARTICLE_SPAWN_DATA> spawnList(cmd.count);
@@ -526,7 +526,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
                 s.velocity = cmd.velocity;
                 s.life = cmd.life;
                 s.size = cmd.size;
-                s.color = cmd.color;   // PARTICLE_SPAWN_DATA¿¡ color ÇÊµå°¡ ÀÖ´Ù´Â ÀüÁ¦
+                s.color = cmd.color;   // PARTICLE_SPAWN_DATAì— color í•„ë“œê°€ ìˆë‹¤ëŠ” ì „ì œ
                 s.emissive = cmd.emissive;
             }
 
@@ -550,7 +550,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
         }
     }
 
-  //  m_vecCommandQueue.clear();   // ½ÇÇà ÈÄ Å¥ ºñ¿ì±â (¿øÇÏ½Ã¸é ¾È ºñ¿ì°Ô ¹Ù²Ü ¼öµµ ÀÖÀ½)
+  //  m_vecCommandQueue.clear();   // ì‹¤í–‰ í›„ í ë¹„ìš°ê¸° (ì›í•˜ì‹œë©´ ì•ˆ ë¹„ìš°ê²Œ ë°”ê¿€ ìˆ˜ë„ ìˆìŒ)
     return hr;
 }
 
@@ -558,7 +558,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 //{
 //    HRESULT hr = S_OK;
 //
-//    // ±×·ì/Å¸ÀÔº°·Î ½ºÆù µ¥ÀÌÅÍ¸¦ ¸ğÀ¸±â
+//    // ê·¸ë£¹/íƒ€ì…ë³„ë¡œ ìŠ¤í° ë°ì´í„°ë¥¼ ëª¨ìœ¼ê¸°
 //    std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
 //
 //    for (auto& cmd : m_vecCommandQueue)
@@ -580,7 +580,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 //        }
 //        else if (cmd.kind == SPAWN_COMMAND_KIND::BEAM)
 //        {
-//            // ±âÁ¸°ú µ¿ÀÏ
+//            // ê¸°ì¡´ê³¼ ë™ì¼
 //            auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
 //            if (pParticle)
 //            {
@@ -593,7 +593,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 //        }
 //    }
 //
-//    // ±×·ì/Å¸ÀÔº°·Î ÇÑ ¹ø¾¿¸¸ Spawn È£Ãâ
+//    // ê·¸ë£¹/íƒ€ì…ë³„ë¡œ í•œ ë²ˆì”©ë§Œ Spawn í˜¸ì¶œ
 //    for (auto& [key, spawnList] : batched)
 //    {
 //        if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))

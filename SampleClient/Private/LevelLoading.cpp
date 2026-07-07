@@ -27,7 +27,7 @@
 #include "FlipBook.h"
 #include "UI_Item.h"
 
-#include "Gobline.h"
+#include "TestGob.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -174,7 +174,7 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CGobline::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CTestGob::Create())))
 				{
 					return false;
 				}

@@ -401,7 +401,7 @@ HRESULT CRenderer::Draw() {
     if (FAILED(Render_PostProcess()))     return E_FAIL;
 
     // UI
-   // if (FAILED(Render_UserInterface()))  return E_FAIL;
+    if (FAILED(Render_UserInterface()))  return E_FAIL;
 
     {
         m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
@@ -469,7 +469,7 @@ HRESULT CRenderer::Render_DepthMap() {
         if (FAILED(Bind_CameraAttribute(pGameCam))) return E_FAIL;
 
         {
-            m_pContext->PSSetShader(nullptr, nullptr, 0);       // Depth ±â·Ï, PS Á¦¿Ü
+            m_pContext->PSSetShader(nullptr, nullptr, 0);       // Depth ê¸°ë¡, PS ì œì™¸
         }
 
         if (FAILED(RenderNonBlend()))            return E_FAIL;
@@ -507,8 +507,8 @@ HRESULT CRenderer::Render_NonAlpha() {
         if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
     } 
     {
-        const auto& PBR_VertexShader = m_pResVertexShader;		// Renderer¿¡¼­ Á¶Á¤
-        const auto& PBR_PixelShader = m_pResPixelShader;		// Renderer¿¡¼­ Á¶Á¤
+        const auto& PBR_VertexShader = m_pResVertexShader;		// Rendererì—ì„œ ì¡°ì •
+        const auto& PBR_PixelShader = m_pResPixelShader;		// Rendererì—ì„œ ì¡°ì •
 
         m_pContext->IASetInputLayout(PBR_VertexShader->GetInputLayout().Get());
         m_pContext->VSSetShader(PBR_VertexShader->GetVertexShader().Get(), nullptr, 0);
@@ -754,22 +754,22 @@ HRESULT CRenderer::Render_OffScreen() {
 }
 HRESULT CRenderer::Render_UserInterface(){
     {
-       //auto pUICame = CGameInstance::Get().GetCamera("UI");
-       //if (nullptr == pUICame) return S_OK;
-       //
-       //RenderContext.matProj = pUICame->GetProj();
-       //RenderContext.matView = pUICame->GetView();
-       //RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
-       //RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
-       //
-       //if (FAILED(Bind_CameraAttribute(pUICame)))
-       //{
-       //    return E_FAIL;
-       //}
-       //if (FAILED(RenderUI()))
-       //{
-       //    return E_FAIL;
-       //}
+       auto pUICame = CGameInstance::Get().GetCamera("UI");
+       if (nullptr == pUICame) return S_OK;
+       
+       RenderContext.matProj = pUICame->GetProj();
+       RenderContext.matView = pUICame->GetView();
+       RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
+       RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
+       
+       if (FAILED(Bind_CameraAttribute(pUICame)))
+       {
+           return E_FAIL;
+       }
+       if (FAILED(RenderUI()))
+       {
+           return E_FAIL;
+       }
     }
     return S_OK;
 }
@@ -823,7 +823,7 @@ HRESULT CRenderer::Render_FullScreen()
     }
     else
     {
-        ID3D11ShaderResourceView* pSRVs[1] = { m_pOffScreenTex2D->GetSRV().Get() };
+        ID3D11ShaderResourceView* pSRVs[1] = { m_pLastTex2DBeforeFullScreenDraw->GetSRV().Get() };
         m_pContext->PSSetShaderResources(0, 1, pSRVs);
     }
 

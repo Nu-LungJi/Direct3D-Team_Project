@@ -163,7 +163,7 @@ private:
 
 	
 private:
-	_bool			ApplyFilter = { false };		// ÇÊÅÍ Àû¿ë ON-OFF
+	_bool			ApplyFilter = { false };		// í•„í„° ì ìš© ON-OFF
 	RENDER_CTX		RenderContext = {};
 
 public:

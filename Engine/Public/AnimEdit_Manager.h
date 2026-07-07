@@ -17,8 +17,8 @@ public:
 	};
 	struct BAKE_SAMPLE
 	{
-		float fSourceTrackPosition = 0.f; // ¿øº»¿¡¼­ ÀĞÀ» ½Ã°£
-		float fBakedTrackPosition = 0.f;  // »õ ¾Ö´Ï¸ŞÀÌ¼Ç¿¡ ÀúÀåÇÒ ½Ã°£
+		float fSourceTrackPosition = 0.f; // ì›ë³¸ì—ì„œ ì½ì„ ì‹œê°„
+		float fBakedTrackPosition = 0.f;  // ìƒˆ ì• ë‹ˆë©”ì´ì…˜ì— ì €ì¥í•  ì‹œê°„
 	};
 private:
 	CAnimEdit_Manager();
@@ -50,7 +50,7 @@ public:
 
 
 public:
-	// helper ÇÔ¼öµé
+	// helper í•¨ìˆ˜ë“¤
 	_bool RenameAnimFile_Overwrite(const std::string& oldFullPath, const std::string& newAnimName, std::string& outNewFullPath);
 	_bool IsSamePath(const std::filesystem::path& a, const std::filesystem::path& b);
 	_bool IsAlreadyLoadedAnim(const std::vector<SPtr<CResModelAnim>>& animations, const std::filesystem::path& loadPath);

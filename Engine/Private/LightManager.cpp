@@ -98,7 +98,7 @@ VOID CLightManager::UpdateGUI() {
     auto pSelectedLight = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[selectedLightIdx]);
     ImGui::Text("Selected Light Details (Index: %d)", selectedLightIdx);
 
-    // --- Getter·Î ÇöÀç °ªµé °¡Á®¿À±â ---
+    // --- Getterë¡œ í˜„ì¬ ê°’ë“¤ ê°€ì ¸ì˜¤ê¸° ---
     LIGHT_TYPE lightType = pSelectedLight->Get_LightType();
     XMFLOAT3 direction = pSelectedLight->Get_LightDirection();
     XMFLOAT3 color = pSelectedLight->Get_LightColor();
@@ -125,10 +125,10 @@ VOID CLightManager::UpdateGUI() {
         pSelectedLight->Set_LightIntensity(intensity);
     }
 
-    // Å¸ÀÔº° °¡º¯ ¼Ó¼º ³ëÃâ
+    // íƒ€ì…ë³„ ê°€ë³€ ì†ì„± ë…¸ì¶œ
     if (lightType == LIGHT_TYPE::DIRECTIONAL || lightType == LIGHT_TYPE::SPOTLIGHT)
     {
-        // ¹æÇâ º¤ÅÍ Á¶Àı (DragFloat3)
+        // ë°©í–¥ ë²¡í„° ì¡°ì ˆ (DragFloat3)
         if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f, "%.2f"))
         {
             pSelectedLight->Set_LightDirection(direction);
@@ -137,12 +137,12 @@ VOID CLightManager::UpdateGUI() {
 
     if (lightType == LIGHT_TYPE::POINT || lightType == LIGHT_TYPE::SPOTLIGHT)
     {
-        // À§Ä¡ Á¶Àı
+        // ìœ„ì¹˜ ì¡°ì ˆ
         if (ImGui::DragFloat3("Position", &position.x, 0.1f, -100.0f, 100.0f, "%.2f"))
         {
             pSelectedLight->Set_LightPosition(position);
         }
-        // ¹üÀ§ Á¶Àı
+        // ë²”ìœ„ ì¡°ì ˆ
         if (ImGui::DragFloat("Range", &range, 0.1f, 0.0f, 1000.0f, "%.2f"))
         {
             pSelectedLight->Set_LightRange(range);
@@ -150,11 +150,11 @@ VOID CLightManager::UpdateGUI() {
     }
 
     if (lightType == LIGHT_TYPE::SPOTLIGHT) {
-        if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 180.0f, "%.1fµµ"))
+        if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 180.0f, "%.1fë„"))
         {
             pSelectedLight->Set_LightInnerAttenuation(innerAttn);
         }
-        if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 180.0f, "%.1fµµ"))
+        if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 180.0f, "%.1fë„"))
         {
             pSelectedLight->Set_LightOuterAttenuation(outerAttn);
         }
@@ -172,7 +172,7 @@ VOID CLightManager::Bind_EnviromentLight(){
 }
 
 VOID CLightManager::Bind_DynamicLight(){
-    // ÇØ´ç ÇÔ¼ö(Bind_SceneLight)´Â ¸ğµ¨ÀÇ PBR ÇÈ¼¿½¦ÀÌ´õ¸¦ Draw¸¦ ÇÏ±âÀü¿¡ CB_LIGHT_BUFFER¸¦ Ã¤¿öÁÖ±â À§ÇÑ ¿ëµµ. ±×¸®±â ¿¬»êÀº ¼öÇàÇÏÁö ¾ÊÀ½.
+    // í•´ë‹¹ í•¨ìˆ˜(Bind_SceneLight)ëŠ” ëª¨ë¸ì˜ PBR í”½ì…€ì‰ì´ë”ë¥¼ Drawë¥¼ í•˜ê¸°ì „ì— CB_LIGHT_BUFFERë¥¼ ì±„ì›Œì£¼ê¸° ìœ„í•œ ìš©ë„. ê·¸ë¦¬ê¸° ì—°ì‚°ì€ ìˆ˜í–‰í•˜ì§€ ì•ŠìŒ.
 
     CB_LIGHT LightBuffer{};
     uint32_t LightCount = 0;

@@ -28,7 +28,7 @@ HRESULT CComModelInstance::Initialize(void* pArg)
     }
 
     if (pArg != nullptr) {
-        // ¸ğµ¨ Instance´Â ÇÏ³ªÀÇ ¸Ş¸ğ¸®¸¦ ¸ğµÎ °øÀ¯ÇÑ´Ù.
+        // ëª¨ë¸ InstanceëŠ” í•˜ë‚˜ì˜ ë©”ëª¨ë¦¬ë¥¼ ëª¨ë‘ ê³µìœ í•œë‹¤.
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
         m_pModel = CGameInstance::Get().GetResourceFirst<CResModel>(pDesc->sGroupTag, pDesc->sResTag);
         if (m_pModel == nullptr)
@@ -44,7 +44,7 @@ HRESULT CComModelInstance::Initialize(void* pArg)
 
 HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint32_t iMeshIndex)
 {
-    // ³ªÁß¿¡ Bind ÇÒ‹š animation Á¤º¸¸¦ ´øÁ®ÁØ GPU¿¡¼­ Animatino µ¹¸°´Ù. ³ªÁß¿¡ ¼öÁ¤
+    // ë‚˜ì¤‘ì— Bind í• ë–„ animation ì •ë³´ë¥¼ ë˜ì ¸ì¤€ GPUì—ì„œ Animatino ëŒë¦°ë‹¤. ë‚˜ì¤‘ì— ìˆ˜ì •
     auto& pMesh = m_pModel->GetMeshes()[iMeshIndex];
 	auto& Bones = m_pModel->GetBones();
 
@@ -130,7 +130,7 @@ HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID
     return S_OK;
 }
 
-// ¸ğµ¨ÀÇ ´ÜÀÏ ÅØ½ºÃÄ ¹İÈ¯
+// ëª¨ë¸ì˜ ë‹¨ì¼ í…ìŠ¤ì³ ë°˜í™˜
 SPtr<CResTexture2D> CComModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
     auto Materials = m_pModel->GetMaterials();
     auto Mesh = m_pModel->GetMeshes();

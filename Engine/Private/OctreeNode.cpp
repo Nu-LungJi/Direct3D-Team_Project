@@ -52,7 +52,7 @@ void COctreeNode::BuildOctree(const std::vector<CHandle>& hObjects)
 		}
 	}
 
-	// ³ëµå¿¡ ¿ÀºêÁ§Æ® ¾øÀ¸¸é ¸®ÅÏ
+	// ë…¸ë“œì— ì˜¤ë¸Œì íŠ¸ ì—†ìœ¼ë©´ ë¦¬í„´
 	if (containedObjects.empty())
 		return;
 
@@ -62,7 +62,7 @@ void COctreeNode::BuildOctree(const std::vector<CHandle>& hObjects)
 		return;
 	}
 
-	// 8°³ ÀÚ½Ä ¹Ù¿îµù¹Ú½º »ı¼º
+	// 8ê°œ ìì‹ ë°”ìš´ë”©ë°•ìŠ¤ ìƒì„±
 	Subdivide();
 	
 	for (const auto& childNode : m_childrenNode)

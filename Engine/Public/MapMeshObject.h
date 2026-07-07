@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GameObject.h"
 
 NS_BEGIN(Engine)
@@ -67,7 +67,7 @@ public:
 private:
 	static HRESULT PushInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData);
 	static HRESULT EnsureInstanceBuffer(size_t instanceCount);
-	static HRESULT RenderInstancedBatches(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx);
+	HRESULT RenderInstancedBatches(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx);
 
 private:
 	std::string m_modelResourceGroup{};

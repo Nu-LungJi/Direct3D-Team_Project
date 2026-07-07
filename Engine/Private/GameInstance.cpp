@@ -855,27 +855,44 @@ HRESULT CGameInstance::InitializeResources()
 	// 오류나서 제거
 	if (true)
 	{
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
+		//if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		return E_FAIL;
+		//	}
+		//}
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnmi_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh.hlsl"))
+
+		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
 		}
+		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
 
 		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{
@@ -933,7 +950,7 @@ HRESULT CGameInstance::InitializeResources()
 		CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
 		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
 
 		if (FAILED(res->Load(pDesc)))
 		{

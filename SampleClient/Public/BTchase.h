@@ -11,7 +11,7 @@ private:
 	CBTchase();
 	CBTchase(const CBTchase& rhs);
 	~CBTchase() override;
-	// CBTActionNodeÀ»(¸¦) ÅëÇØ »ó¼ÓµÊ
+	// CBTActionNodeì„(ë¥¼) í†µí•´ ìƒì†ë¨
 
 	HRESULT InitalizePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg)override;

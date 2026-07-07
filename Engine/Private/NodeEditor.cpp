@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "NodeEditor.h"
 #include "BTSelector.h"
 #include "BTSecqunce.h"
@@ -17,11 +17,11 @@ CNodeEditor::~CNodeEditor()
 //using namespace ax;
 HRESULT CNodeEditor::Initialize()
 {
-	ImGuiIO& io = ImGui::GetIO();
-
-	m_FontRegular = io.Fonts->AddFontFromFileTTF(
-		"./Resources/SampleClient/Fonts/NeoDunggeunmoPro-Regular.ttf",
-		15.f);
+	//ImGuiIO& io = ImGui::GetIO();
+	//
+	//m_FontRegular = io.Fonts->AddFontFromFileTTF(
+	//	"./Resources/SampleClient/Fonts/NeoDunggeunmoPro-Regular.ttf",
+	//	15.f);
 
 
 	ax::NodeEditor::Config config;
@@ -59,9 +59,9 @@ void CNodeEditor::NodeEditorUpdate()
 			m_pBeHavior = pComBt;
 			m_BTNodesMain = pComBt->Get_Selector()->Get_Nodes();
 
-			ImGui::PushFont(m_FontRegular);
+			//ImGui::PushFont(m_FontRegular);
 			Show_Editor();
-			ImGui::PopFont();
+			//ImGui::PopFont();
 		}
 		else
 		{

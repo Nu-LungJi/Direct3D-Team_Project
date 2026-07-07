@@ -1275,7 +1275,7 @@
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\VS_Deferred.hlsl">
       <Filter>ShaderFiles\DeferredRendering</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
@@ -1307,6 +1307,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

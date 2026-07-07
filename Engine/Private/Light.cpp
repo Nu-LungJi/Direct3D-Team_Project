@@ -207,7 +207,7 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
 
 VOID CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
     m_LightType = _LTYPE;
-    // ³»ÀÏ ±¸Çö - Å¸ÀÔ ¹Ù²î¸é Äİ¶óÀÌ´õµµ 
+    // ë‚´ì¼ êµ¬í˜„ - íƒ€ì… ë°”ë€Œë©´ ì½œë¼ì´ë”ë„ 
 }
 UPtr<CLight> CLight::Create()
 {

@@ -159,7 +159,7 @@
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Gobline.h">
+    <ClInclude Include="..\public\TestGob.h">
       <Filter>GameObject\AI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelUIEditor.h">
@@ -294,9 +294,6 @@
     <ClCompile Include="..\private\BTMove.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\AI</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
     </ClCompile>
@@ -333,7 +330,6 @@
     <ClCompile Include="..\private\TestPhysXCapsule.cpp">
       <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Particle.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp">
       <Filter>GameObject\UI\TexUI</Filter>
     </ClCompile>
@@ -345,6 +341,9 @@
     </ClCompile>
     <ClCompile Include="UI_Item.cpp">
       <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestGob.cpp">
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

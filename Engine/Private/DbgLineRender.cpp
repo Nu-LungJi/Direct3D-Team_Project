@@ -83,7 +83,7 @@ void CDbgLineRender::AddSphere(float radius, FXMMATRIX world)
     constexpr float PI = XM_PI;
     constexpr float TWO_PI = XM_2PI;
 
-    // ¿ßµµ
+    // ÏúÑÎèÑ
     for (uint32_t stack = 1; stack < StackCount; ++stack)
     {
         float phi = PI * stack / StackCount;
@@ -116,7 +116,7 @@ void CDbgLineRender::AddSphere(float radius, FXMMATRIX world)
         }
     }
 
-    // ∞Êµµ
+    // Í≤ΩÎèÑ
     for (uint32_t slice = 0; slice < SliceCount; ++slice)
     {
         float theta = TWO_PI * slice / SliceCount;
@@ -163,7 +163,7 @@ void CDbgLineRender::AddCapsule(
     constexpr float TWO_PI = XM_2PI;
 
     // ==========================
-    // ø¯≈Î∫Œ
+    // ÏõêÌÜµÎ∂Ä
     // ==========================
     for (uint32_t i = 0; i < SliceCount; ++i)
     {
@@ -210,7 +210,7 @@ void CDbgLineRender::AddCapsule(
     }
 
     // ==========================
-    // π›±∏(XZ ¥‹∏È)
+    // Î∞òÍµ¨(XZ Îã®Î©¥)
     // ==========================
     for (uint32_t j = 0; j < ArcCount; ++j)
     {
@@ -251,7 +251,7 @@ void CDbgLineRender::AddCapsule(
     }
 
     // ==========================
-    // ºº πÊ«‚ æ∆≈©
+    // ÏÑ∏ Î∞©Ìñ• ÏïÑÌÅ¨
     // ==========================
     constexpr float rot[3] =
     {
@@ -306,7 +306,7 @@ void CDbgLineRender::AddCylinder(float radius, float halfHeight, FXMMATRIX world
     _float3 top[SliceCount];
     _float3 bottom[SliceCount];
 
-    // ø¯¿« ¡§¡° ª˝º∫
+    // ÏõêÏùò Ï†ïÏ†ê ÏÉùÏÑ±
     for (uint32_t i = 0; i < SliceCount; ++i)
     {
         float theta = TWO_PI * i / SliceCount;
@@ -327,7 +327,7 @@ void CDbgLineRender::AddCylinder(float radius, float halfHeight, FXMMATRIX world
         XMStoreFloat3(&bottom[i], XMVector3TransformCoord(vBottom, world));
     }
 
-    // ¿ß/æ∆∑° ø¯
+    // ÏúÑ/ÏïÑÎûò Ïõê
     for (uint32_t i = 0; i < SliceCount; ++i)
     {
         uint32_t next = (i + 1) % SliceCount;
@@ -336,7 +336,7 @@ void CDbgLineRender::AddCylinder(float radius, float halfHeight, FXMMATRIX world
         AddLine(bottom[i], bottom[next]);
     }
 
-    // ºº∑Œº±(4∞≥∏∏)
+    // ÏÑ∏Î°úÏÑ†(4Í∞úÎßå)
     constexpr uint32_t vertical[4] = { 0, 6, 12, 18 };
 
     for (uint32_t idx : vertical)
@@ -354,7 +354,7 @@ void CDbgLineRender::AddCone(float radius, float height, FXMMATRIX world)
 
     const float step = XM_2PI / Slice;
 
-    // πÿ∏È ø¯
+    // Î∞ëÎ©¥ Ïõê
     for (uint32_t i = 0; i < Slice; ++i)
     {
         float a0 = step * i;
@@ -375,7 +375,7 @@ void CDbgLineRender::AddCone(float radius, float height, FXMMATRIX world)
         AddLine(v0, v1);
     }
 
-    // ø∑º±
+    // ÏòÜÏÑ†
     constexpr uint32_t SideCount = 8;
 
     XMVECTOR apexPos = XMVector3TransformCoord(
@@ -399,7 +399,7 @@ void CDbgLineRender::AddCone(float radius, float height, FXMMATRIX world)
         AddLine(apexWorld, baseWorld);
     }
 
-    // ¡ﬂΩ…√‡(º±≈√ ªÁ«◊)
+    // Ï§ëÏã¨Ï∂ï(ÏÑ†ÌÉù ÏÇ¨Ìï≠)
     XMVECTOR baseCenter = XMVector3TransformCoord(
         XMLoadFloat3(&center),
         world);
@@ -485,12 +485,12 @@ void CDbgLineRender::AddArrow(const _float3& origin, const _float3& direction, f
     XMStoreFloat3(&p0, start);
     XMStoreFloat3(&p1, tip);
 
-    // ∏ˆ≈Î
+    // Î™∏ÌÜµ
     AddLine(p0, p1);
 
     const float angle = XMConvertToRadians(headAngleDeg);
 
-    // dirøÕ ∆Ú«‡«œ¡ˆ æ ¿∫ Up º±≈√
+    // dirÏôÄ ÌèâÌñâÌïòÏßÄ ÏïäÏùÄ Up ÏÑ†ÌÉù
     XMVECTOR up = XMVectorSet(0, 1, 0, 0);
     if (fabsf(XMVectorGetX(XMVector3Dot(up, dir))) > 0.99f)
         up = XMVectorSet(1, 0, 0, 0);
@@ -525,7 +525,7 @@ void CDbgLineRender::AddGrid(uint32_t halfCount, float cellSize, FXMMATRIX world
     {
         const float d = i * cellSize;
 
-        // X√‡ πÊ«‚ º±
+        // XÏ∂ï Î∞©Ìñ• ÏÑ†
         {
             XMVECTOR p0 = XMVectorSet(-extent, 0.f, d, 1.f);
             XMVECTOR p1 = XMVectorSet(extent, 0.f, d, 1.f);
@@ -540,7 +540,7 @@ void CDbgLineRender::AddGrid(uint32_t halfCount, float cellSize, FXMMATRIX world
             AddLine(v0, v1);
         }
 
-        // Z√‡ πÊ«‚ º±
+        // ZÏ∂ï Î∞©Ìñ• ÏÑ†
         {
             XMVECTOR p0 = XMVectorSet(d, 0.f, -extent, 1.f);
             XMVECTOR p1 = XMVectorSet(d, 0.f, extent, 1.f);

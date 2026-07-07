@@ -6,13 +6,30 @@ Texture2D g_NormalTexture   : register(t1);
 Texture2D g_SMROTexture     : register(t2);
 Texture2D g_EmissiveTexture : register(t3);
 
+SamplerState LinearSampler : register(s0);
+
 struct VS_IN
 {
-    float3 vPosition    : POSITION;
-    float3 vNormal      : NORMAL;
-    float3 vTangent     : TANGENT;
-    float3 vBinormal    : BINORMAL;
-    float2 vTexcoord    : TEXCOORD0;
+    float3 vPosition : POSITION;
+    float3 vNormal : NORMAL;
+    float3 vTangent : TANGENT;
+    float3 vBinormal : BINORMAL;
+    float2 vTexcoord : TEXCOORD0;
+    float4 iWorld0 : INSTANCE_WORLD0;
+    float4 iWorld1 : INSTANCE_WORLD1;
+    float4 iWorld2 : INSTANCE_WORLD2;
+    float4 iWorld3 : INSTANCE_WORLD3;
+};
+
+struct VS_OUT
+{
+    float4 vPosition : SV_POSITION;
+    float4 vNormal : NORMAL;
+    float4 vTangent : TANGENT;
+    float4 vBinormal : BINORMAL;
+    float2 vTexcoord : TEXCOORD0;
+    float4 vWorldPos : TEXCOORD1;
+    float4 vProjPos : TEXCOORD2;
 };
 
 cbuffer CB_OBJECT_PBR   : register(b3)
@@ -102,7 +119,7 @@ PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT Out;
     
-    float4 fDiffuse     = g_DiffuseTexture.Sample(SamplerWrap, IN.vTexcoord) * AlbedoColor;
+    float4 fDiffuse     = g_DiffuseTexture.Sample(LinearSampler, IN.vTexcoord) * AlbedoColor;
     float3 fNormal      = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
     float3 fMRO         = g_SMROTexture.Sample(SamplerWrap, IN.vTexcoord);
     

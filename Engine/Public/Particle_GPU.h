@@ -4,29 +4,29 @@
 
 NS_BEGIN(Engine)
 
-// GPU ÆÄÆ¼Å¬: ÇÏ³ªÀÇ concrete Å¬·¡½º°¡ ¸ğµç GPU ÀÌÆåÆ®¸¦ Ã³¸®ÇÑ´Ù.
-// ÀÌÆåÆ®¸¶´Ù Å¬·¡½º¸¦ »õ·Î ¸¸µéÁö ¾Ê°í, Initialize(pArg)¿¡ DESC¸¦ ³Ñ°Ü¼­
-// ÅØ½ºÃ³/behaviorType/ÃÖ´ë ÆÄÆ¼Å¬ °³¼ö¸¸ ´Ù¸£°Ô ÁÖÀÔÇÑ´Ù.
-// Update/Spawn/Render ÆÄÀÌÇÁ¶óÀÎ(Compute Shader 3Á¾ + StructuredBuffer 3°³)Àº
-// ¸ğµç ÀÌÆåÆ®°¡ °øÀ¯ÇÏ¸ç, HLSL ÂÊ¿¡¼­ g_iBehaviorType ºĞ±â·Î ½ÇÁ¦ ¿òÁ÷ÀÓÀ» ´Ù¸£°Ô Ã³¸®ÇÑ´Ù.
+// GPU íŒŒí‹°í´: í•˜ë‚˜ì˜ concrete í´ë˜ìŠ¤ê°€ ëª¨ë“  GPU ì´í™íŠ¸ë¥¼ ì²˜ë¦¬í•œë‹¤.
+// ì´í™íŠ¸ë§ˆë‹¤ í´ë˜ìŠ¤ë¥¼ ìƒˆë¡œ ë§Œë“¤ì§€ ì•Šê³ , Initialize(pArg)ì— DESCë¥¼ ë„˜ê²¨ì„œ
+// í…ìŠ¤ì²˜/behaviorType/ìµœëŒ€ íŒŒí‹°í´ ê°œìˆ˜ë§Œ ë‹¤ë¥´ê²Œ ì£¼ì…í•œë‹¤.
+// Update/Spawn/Render íŒŒì´í”„ë¼ì¸(Compute Shader 3ì¢… + StructuredBuffer 3ê°œ)ì€
+// ëª¨ë“  ì´í™íŠ¸ê°€ ê³µìœ í•˜ë©°, HLSL ìª½ì—ì„œ g_iBehaviorType ë¶„ê¸°ë¡œ ì‹¤ì œ ì›€ì§ì„ì„ ë‹¤ë¥´ê²Œ ì²˜ë¦¬í•œë‹¤.
 class ENGINE_DLL CParticle_GPU  : public CParticle
 {
 public:
     DECLARE_DERIVED_TYPE(CParticle_GPU, CParticle)
 
 public:
-    // Initialize(void* pArg)¿¡ ÀÌ ±¸Á¶Ã¼ÀÇ Æ÷ÀÎÅÍ¸¦ ³Ñ±ä´Ù.
-    // ÀÌÆåÆ®º°·Î ´Ş¶óÁö´Â °ªÀº ÀüºÎ ¿©±â·Î »°´Ù ? ÇÏµåÄÚµù ±İÁö.
+    // Initialize(void* pArg)ì— ì´ êµ¬ì¡°ì²´ì˜ í¬ì¸í„°ë¥¼ ë„˜ê¸´ë‹¤.
+    // ì´í™íŠ¸ë³„ë¡œ ë‹¬ë¼ì§€ëŠ” ê°’ì€ ì „ë¶€ ì—¬ê¸°ë¡œ ëºë‹¤ ? í•˜ë“œì½”ë”© ê¸ˆì§€.
     struct DESC
     {
         uint32_t     iMaxParticles = 1000;   
-        int32_t      iBehaviorType ;      //  (HLSL ÂÊ ºĞ±â ÀÎµ¦½º)
+        int32_t      iBehaviorType ;      //  (HLSL ìª½ ë¶„ê¸° ì¸ë±ìŠ¤)
         PARTICLE_TYPE       type;
-        std::pair<StringID, StringID> textureID;  // ÆÄÆ¼Å¬ ÅØ½ºÃ³
+        std::pair<StringID, StringID> textureID;  // íŒŒí‹°í´ í…ìŠ¤ì²˜
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
-        std::pair<StringID, StringID> VSID;  // ¹öÅØ½º ½¦ÀÌ´õ
-        std::pair<StringID, StringID> PSID;  // ÇÈ¼¿ ½¦ÀÌ´õ
-        //¸ğµ¨ÀÌ¸é ³Ö¾îÁÜ
+        std::pair<StringID, StringID> VSID;  // ë²„í…ìŠ¤ ì‰ì´ë”
+        std::pair<StringID, StringID> PSID;  // í”½ì…€ ì‰ì´ë”
+        //ëª¨ë¸ì´ë©´ ë„£ì–´ì¤Œ
         StringID sGroupTag;
         StringID sResTag;
         uint32_t modelNumber = 1;
@@ -52,7 +52,7 @@ public:
 
 
 private:
-    DESC m_Desc; // Initialize¿¡¼­ ¹ŞÀº ÀÌÆåÆ®º° ¼³Á¤ (behaviorType, ÅØ½ºÃ³ µî)
+    DESC m_Desc; // Initializeì—ì„œ ë°›ì€ ì´í™íŠ¸ë³„ ì„¤ì • (behaviorType, í…ìŠ¤ì²˜ ë“±)
 
 private:
     uint32_t m_iNumElements = 0;

@@ -5,7 +5,7 @@ namespace Engine
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DEST_NODE, DestName, iDestNode)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GUINODE, iID, Name,  fValue)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ACTION_VALUE, iAnimIndex, fSpeed, fTime, fTick)
-	//_float 2 3 4, enumÀº ¼öµ¿À¸·Î
+	//_float 2 3 4, enumì€ ìˆ˜ë™ìœ¼ë¡œ
 
 	class JsonSaveLoadManager
 	{

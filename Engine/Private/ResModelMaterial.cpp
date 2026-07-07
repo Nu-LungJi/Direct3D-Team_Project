@@ -94,7 +94,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				std::filesystem::path ddsFsPath = fsPath;
 				ddsFsPath.replace_extension(".dds");
 
-				// dds°¡ ½ÇÁ¦·Î Á¸ÀçÇÏ¸é dds »ç¿ë
+				// ddsê°€ ì‹¤ì œë¡œ ì¡´ìž¬í•˜ë©´ dds ì‚¬ìš©
 				if (std::filesystem::exists(ddsFsPath))
 				{
 					strcpy_s(szFullPath, MAX_PATH, ddsFsPath.string().c_str());
