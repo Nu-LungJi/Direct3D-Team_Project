@@ -18,6 +18,7 @@ struct VS_IN
     float4 vWorld2 : INSTANCE_WORLD2;
     float4 vWorld3 : INSTANCE_WORLD3;
     float4 vColor : INSTANCE_COLOR0;
+    float4 vInstEmissive : INSTANCE_EMISSIVE;
 };
 
 struct VS_OUT
@@ -25,6 +26,7 @@ struct VS_OUT
     float4 vPosition : SV_POSITION;
     float2 vTexcoord : TEXCOORD0;
     float4 vColor : COLOR0;
+    float4 vEmissive : COLOR1;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -48,20 +50,33 @@ VS_OUT VSMain(VS_IN In)
     Out.vPosition = mul(float4(vWorldPos, 1.f), g_matViewProj);
     Out.vTexcoord = In.vTexcoord;
     Out.vColor = In.vColor;
-
+    Out.vEmissive = In.vInstEmissive;
     return Out;
 }
 
 Texture2D g_ParticleTexture : register(t0);
 SamplerState g_Sampler : register(s0);
 
-float4 PSMain(VS_OUT In) : SV_TARGET
+struct PS_OUT
 {
-    float4 vTexColor = g_ParticleTexture.Sample(g_Sampler, In.vTexcoord);
-    float4 vFinalColor = vTexColor * In.vColor;
+    float4 vDiffuse : SV_TARGET0;
+    float4 vNormal : SV_TARGET1;
+    float4 vSMRO : SV_TARGET2;
+    float4 vEmissive : SV_TARGET3;
 
-    if (vFinalColor.a <= 0.01f)
+
+};
+PS_OUT PSMain(VS_OUT In)
+{
+    PS_OUT Out;
+    float4 texColor = g_ParticleTexture.Sample(g_Sampler, In.vTexcoord) * In.vColor;
+    Out.vDiffuse = texColor;
+    if (Out.vDiffuse.a <= 0.01f)
         discard;
+    Out.vNormal = float4(0, 0, 0, 1.f);
+    Out.vSMRO = float4(0, 0, 0, 0);
+    Out.vEmissive = float4(texColor.xyz * In.vEmissive.xyz * In.vEmissive.w, 1.0f);
+ 
 
-    return vFinalColor;
+    return Out;
 }

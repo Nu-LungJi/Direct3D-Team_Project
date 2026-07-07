@@ -120,11 +120,13 @@ void CParticle_CPU::PriorityUpdate(E::_float fTimeDelta)
 void CParticle_CPU::Update(E::_float fTimeDelta)
 {
     Simulate(fTimeDelta);
+
 }
 
 void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 {
 }
+static int a = 0;
 
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
@@ -132,9 +134,11 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 
     for (auto& p : m_Particles)
     {
+
         if (!p.bAlive)
             continue;
 
+        a++;
         p.fAge += fTimeDelta;
         if (p.fAge >= p.fLifeTime)
         {
@@ -152,6 +156,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
         _matrix matWorld = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
         XMStoreFloat4x4(&inst.matWorld, matScale * matWorld);
         inst.vColor = p.vColor;
+        inst.emissive = p.emissive;
 
         m_vecInstancedData.push_back(inst);
     }
@@ -170,11 +175,13 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
         const auto& src = pSpawnData[iSpawned];
         m_Particles[i].vPosition = src.position;
-        m_Particles[i].vVelocity = src.velocity;
+       // m_Particles[i].vVelocity = src.velocity;
         m_Particles[i].fLifeTime = src.life;
         m_Particles[i].fAge = 0.f;
         m_Particles[i].bAlive = true;
         m_Particles[i].fSize = src.size;
+        m_Particles[i].vColor = src.color;
+        m_Particles[i].emissive = src.emissive;
 
         ++iSpawned;
     }
@@ -183,6 +190,10 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 }
 HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+
+    if (m_vecInstancedData.empty())
+        return S_OK;
+
     if (m_Desc.whatKind == MESHORTEXTURE::MESH)
         return Render_Mesh(pContext, ctx);
 
@@ -209,7 +220,6 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
 
 
-
     // 인스턴스 데이터(월드행렬/컬러) 업로드 -- 텍스처 버전과 동일
     {
         D3D11_MAPPED_SUBRESOURCE mapped{};
@@ -220,11 +230,10 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
             pContext->Unmap(m_pResInstancedBuffer->GetBuffer().Get(), 0);
         }
     }
-    auto& viBuffer0 = pModel->GetMeshes()[1];
+  //  auto& viBuffer0 = pModel->GetMeshes()[1];
     for (uint32_t i = 0; i < iNumMeshes; ++i)
     {
         const auto& viBuffer = pModel->GetMeshes()[i];
-
         ID3D11Buffer* vertexBuffers[] = {
             viBuffer->GetVertexBuffer().Get(),
             m_pResInstancedBuffer->GetBuffer().Get()  // 슬롯1: 인스턴스별 월드행렬/컬러
@@ -235,11 +244,16 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         };
         uint32_t offsets[] = { 0, 0 };
 
+
         pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
         pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
         pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
+
+
+
         m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+        m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
 
         pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 

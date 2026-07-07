@@ -11,6 +11,7 @@ struct ParticleData
     uint alive;
     uint loop;
     float4 color;
+    float4 emissive;
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
@@ -22,6 +23,7 @@ struct VS_OUT
     float4 vPosition : SV_POSITION;
     float2 vTexcoord : TEXCOORD0;
     float4 vColor : COLOR0;
+    float4 vEmissive : COLOR1;
 };
 
 // Vertex Shader
@@ -50,22 +52,50 @@ VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
 
     // C++에서 세팅한 주황색 불꽃 컬러 전송
     Out.vColor = p.color;
+    Out.vEmissive = p.emissive;
 
     return Out;
 }
 
-// Pixel Shader
-float4 PSMain(VS_OUT In) : SV_TARGET
+struct PS_OUT
 {
-    float4 vTexColor = g_Texture.Sample(g_LinearSampler, In.vTexcoord);
+    float4 vDiffuse : SV_TARGET0;
+    float4 vNormal : SV_TARGET1;
+    float4 vSMRO : SV_TARGET2;
+    float4 vEmissive : SV_TARGET3;
+};
+// Pixel Shader
+PS_OUT PSMain(VS_OUT In)
+{
     
-    // 최종 주황색 틴트 컬러 결합
-    float4 vFinalColor = vTexColor * In.vColor;
-    
+    PS_OUT Out = (PS_OUT) 0;
 
+    // 텍스처 샘플링 (정확한 변수명 vTextureColor로 통일)
+    float4 vTextureColor = g_Texture.Sample(g_LinearSampler, In.vTexcoord);
     
-    if (vFinalColor.a < 0.1f)
+    // 알파 테스트 혹은 특정 채널 기준 discard (여기서는 투명도나 특정 값 기준으로 처리)
+    if (vTextureColor.a <= 0.05f)
         discard;
+    if (vTextureColor.x < 0.4f)
+    {
+        discard;
+    }
+    float4 vFinalColor = In.vColor;
 
-    return vFinalColor;
+    // 1. Diffuse (알베도/표면 색상)
+    Out.vDiffuse = vFinalColor;
+
+    // 2. Normal (빔은 이펙트이므로 기본 평면 노멀 또는 0을 줍니다. 필요시 계산)
+    Out.vNormal = float4(0.f, 0.f, 0.f, 1.f);
+
+    // 3. SMRO (Specular, Roughness, Metalness, Occlusion)
+    // 비금속질에 매끄러운 느낌을 주기 위해 임의의 기본값 세팅
+    Out.vSMRO = float4(0.f, 0.5f, 0.f, 1.f);
+
+    // 이펙트가 PBR 라이팅 단계에서 빛나게 하려면 에미시브에 색상 값을 강하게 넣어줍니다.
+    Out.vEmissive = float4(vFinalColor.xyz * In.vEmissive.xyz * In.vEmissive.w, 1.f);
+    
+    
+  
+    return Out;
 }

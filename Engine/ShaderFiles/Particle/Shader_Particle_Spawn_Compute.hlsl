@@ -5,6 +5,7 @@ struct SPAWN_DATA
     float life;
     float size;
     float4 color;
+    float4 emissive;
 };
 
 struct ParticleData
@@ -18,7 +19,7 @@ struct ParticleData
     uint alive;
     uint loop;
     float4 color;
-    
+    float4 emissive;
 };
 
 cbuffer CB_SPAWN_COUNT : register(b6)
@@ -51,6 +52,8 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.size = s.size;
     p.alive = 1;
     p.color = s.color;
+    p.emissive = s.emissive;
+    
     gParticles[index] = p;
 }
 

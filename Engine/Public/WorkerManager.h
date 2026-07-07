@@ -54,8 +54,8 @@ private:
 	void ShutDown();
 
 private:
-	std::vector<WORKER> m_Workers{};
-	std::list<WORKER_TASK> m_Tasks{};
+	std::vector<WORKER> m_Workers{}; 
+	std::list<WORKER_TASK> m_Tasks{}; 
 	std::mutex m_Mutex{};
 	std::condition_variable m_Condition{};
 

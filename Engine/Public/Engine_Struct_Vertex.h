@@ -50,6 +50,7 @@ namespace Engine
 		uint32_t alive;
 		uint32_t loop;
 		_float4 color;
+		_float4 emissive;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{
@@ -57,6 +58,7 @@ namespace Engine
 		uint32_t   texIndexs[6]{};
 		uint32_t   light{ 0xFF };
 		_float4 vColor{ 1.f, 1.f, 1.f, 1.f };
+		_float4 emissive;
 	}VTX_FIRE_INSTANCED_DATA;
 
 

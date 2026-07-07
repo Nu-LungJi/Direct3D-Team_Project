@@ -19,6 +19,7 @@ private:
 
 private:
 	HRESULT Initialize();
+	HRESULT Load_Particle_Resources();
 	//HRESULT ReadyWSClient();
 
 public:

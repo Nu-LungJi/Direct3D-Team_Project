@@ -17,14 +17,55 @@ enum class SPAWN_COMMAND_KIND
     BEAM,       // 시작점/끝점/지속시간 - CBeam_CPU 계열
 };
 
+//struct STANDARD_PARAMS
+//{
+//    uint32_t count = 1;
+//    _float3  position = {};
+//    _float3  velocity = {};
+//    _float   life = 1.f;
+//    _float   size = 1.f;
+//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
+//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+//    _bool    bLoop = false;
+//    _float   fSpawnInterval = 0.1f;
+//};
+//
+//struct BEAM_PARAMS
+//{
+//    _float4  beamStart = {};
+//    _float4  beamEnd = {};
+//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
+//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+//    int      iDisplacementIterations = 6;
+//    _float   fDisplacementAmplitude = 2.5f;
+//    _float   fDisplacementDamping = 0.25f;
+//    _float   flickerTimeInverval = 0.25f;
+//    _float   beamDuration = 0.f;
+//};
+//
+//// 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
+//struct SPAWN_COMMAND
+//{
+//    SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // 이름은 기존 kind 그대로 사용해도 됨
+//    StringID sGroupTag;
+//    StringID sTypeTag;
+//    std::variant<STANDARD_PARAMS, BEAM_PARAMS> params;
+//};
+//struct PARTICLE_EFFECT_PRESET
+//{
+//    std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
+//    std::vector<SPAWN_COMMAND> commands;  // 이 이펙트를 구성하는 여러 스폰 명령
+//};
 struct SPAWN_COMMAND
 {
     SPAWN_COMMAND_KIND kind = SPAWN_COMMAND_KIND::STANDARD;
     StringID sGroupTag;
     StringID sTypeTag;
+    //공용
+    uint32_t count = 1;
+    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
 
     // STANDARD 용
-    uint32_t count = 1;
     _float3  position = {};
     _float3  velocity = {};
     _float   life = 1.f;
@@ -32,7 +73,7 @@ struct SPAWN_COMMAND
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
-
+    
     // BEAM 용
     _float4  beamStart = {};
     _float4  beamEnd = {};
@@ -76,7 +117,7 @@ public:
 
     HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
         _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, _float fDuration);
+        _float fFlickerInterval, _float4 emissive, _float fDuration);
 
 public:
     // 조회 헬퍼

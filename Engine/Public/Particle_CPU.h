@@ -13,12 +13,14 @@ struct PARTICLE_CPU_DATA
     _float  fAge = 0.f;
     _float  fLifeTime = 1.f;
     _bool   bAlive = false;
+    _float4 emissive;
 };
 
 struct VTX_PARTICLE_INSTANCED_DATA
 {
     _float4x4 matWorld;
     _float4   vColor;
+    _float4 emissive;
 };
 
 // CPU 파티클 중간 추상 클래스.

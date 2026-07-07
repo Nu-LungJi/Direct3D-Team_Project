@@ -402,9 +402,9 @@ HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& s
 }
 HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-	_float fFlickerInterval, _float fDuration)
+	_float fFlickerInterval, _float4 emissive, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(quantity,start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, fDuration);
+	return m_pParticleManager->SpawnRibbon(quantity,start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
 }
 #pragma endregion
 
