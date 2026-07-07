@@ -123,6 +123,14 @@ HRESULT CMainApp::Initialize()
 		Load_Particle_Resources();
 	}
 
+	{
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL", CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_BOX", CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE", CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
+
+	}
+
 	return S_OK;
 }
 
@@ -290,11 +298,6 @@ HRESULT CMainApp::Load_Particle_Resources()
 		CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
 
 	}
-	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL",	 CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
-	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_BOX",		CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
-	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE",	CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
-	CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
-
 	if (FAILED(Create_ActionNode()))
 	{
 		return E_FAIL;
