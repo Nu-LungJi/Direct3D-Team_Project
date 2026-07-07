@@ -3,6 +3,12 @@
 
 NS_BEGIN(Engine)
 
+struct OCTREE_DEBUG_BOUNDS
+{
+	BoundingBox bounds{};
+	uint32_t depth = 0;
+};
+
 class ENGINE_DLL COctreeNode : public CEngineBase
 {
 public:
@@ -16,9 +22,11 @@ protected:
 public:
 	HRESULT Initialize(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth);
 	void BuildOctree(const std::vector<CHandle>& hObjects);
+	void CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds) const;
 
 	bool IsLeaf() const;
 
+	const BoundingBox& GetBoundingBox() const { return m_bounds; }
 	HRESULT RenderDebugOctree();
 	void SetDebugDrawOctree(_bool draw) { m_bDebugDrawOctree = draw; }
 
@@ -34,6 +42,9 @@ private:
 
 private:
 	_bool m_bDebugDrawOctree = false;
+
+public:
+	static UPtr<COctreeNode> Create(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth = 4);
 };
 
 NS_END

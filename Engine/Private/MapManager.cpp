@@ -6,6 +6,7 @@
 
 #include "FlyCamera.h"
 #include "CollFrustum.h"
+#include "OctreeNode.h"
 NS_USING(Engine)
 
 namespace
@@ -145,6 +146,7 @@ namespace
 
 		return hObject;
 	}
+
 }
 
 #ifdef _DEBUG
@@ -619,6 +621,12 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	chunk.loadState = EChunkLoadState::Loaded;
 	chunk.saveState = EChunkSaveState::Saved;
 
+	chunk.octreeNode.reset();
+	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
+	if (chunk.octreeNode)
+	{
+		chunk.octreeNode->BuildOctree(chunk.hObjects);
+	}
 	return S_OK;
 }
 
@@ -647,6 +655,7 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 	}
 
 	chunk.hObjects.clear();
+	chunk.octreeNode.reset();
 	chunk.loadState = EChunkLoadState::Unloaded;
 
 	return S_OK;
@@ -686,14 +695,33 @@ void CMapManager::RebuildChunks()
 {
 	std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash> prevChunks;
 	prevChunks.reserve(m_Chunks.size());
-	prevChunks.insert(m_Chunks.begin(), m_Chunks.end());
+	//prevChunks.insert(m_Chunks.begin(), m_Chunks.end());
+
+	for (auto& [coord, chunk] : m_Chunks)
+	{
+		MAPCHUNK prev{};
+		prev.coord = chunk.coord;
+		prev.bounds = chunk.bounds;
+		prev.loadState = chunk.loadState;
+		prev.saveState = chunk.saveState;
+		prev.filePath = chunk.filePath;
+		// hObjects and octreeNode are rebuilt below.
+
+		prevChunks.emplace(coord, std::move(prev));
+	}
 
 	m_Chunks.clear();
 	m_Chunks.reserve(prevChunks.size());
 
 	for (const auto& [coord, prevChunk] : prevChunks)
 	{
-		MAPCHUNK rebuiltChunk = prevChunk;
+		MAPCHUNK rebuiltChunk{};
+		rebuiltChunk.coord = prevChunk.coord;
+		rebuiltChunk.bounds = prevChunk.bounds;
+		rebuiltChunk.loadState = prevChunk.loadState;
+		rebuiltChunk.saveState = prevChunk.saveState;
+		rebuiltChunk.filePath = prevChunk.filePath;
+
 		rebuiltChunk.hObjects.clear();
 		rebuiltChunk.loadState = prevChunk.loadState; //EChunkLoadState::Unloaded;
 		m_Chunks.emplace(coord, std::move(rebuiltChunk));
@@ -724,10 +752,24 @@ void CMapManager::RebuildChunks()
 				chunk.bounds = MakeChunkBoundingBox(coord);
 				chunk.saveState = EChunkSaveState::Unsaved;
 				chunk.filePath.clear();
+				chunk.octreeNode.reset();
 			}
 
 			chunk.hObjects.push_back(handle);
 			chunk.loadState = EChunkLoadState::Loaded;
+		}
+	}
+
+	for (auto& [coord, chunk] : m_Chunks)
+	{
+		if (chunk.loadState != EChunkLoadState::Loaded)
+			continue;
+
+		chunk.bounds = MakeChunkBoundingBox(coord);
+		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0, 4);
+		if (chunk.octreeNode)
+		{
+			chunk.octreeNode->BuildOctree(chunk.hObjects);
 		}
 	}
 
@@ -748,12 +790,34 @@ HRESULT CMapManager::RenderDebugMapChunk()
 	const auto view = cam->GetView();
 	const auto proj = cam->GetProj();
 
+	//const XMVECTOR octreeDepthColors[] =
+	//{
+	//	Colors::Cyan,
+	//	Colors::DeepSkyBlue,
+	//	Colors::Yellow,
+	//	Colors::Orange,
+	//	Colors::Magenta,
+	//	Colors::White,
+	//};
+	//const size_t octreeDepthColorCount = sizeof(octreeDepthColors) / sizeof(octreeDepthColors[0]);
+
 	for (const auto& [coord, mapChunk] : m_Chunks)
 	{
-		_float3 center = GetChunkCenter(coord);
-
 		FXMVECTOR color = mapChunk.loadState == EChunkLoadState::Loaded ? Colors::Lime : Colors::Red;
 		DrawBox(mapChunk.bounds, color, view, proj, XMMatrixIdentity());
+
+		if (mapChunk.loadState == EChunkLoadState::Loaded && mapChunk.octreeNode)
+		{
+			std::vector<OCTREE_DEBUG_BOUNDS> octreeBounds;
+			mapChunk.octreeNode->CollectDebugBounds(octreeBounds);
+
+			for (const auto& nodeBounds : octreeBounds)
+			{
+				//const FXMVECTOR nodeColor = octreeDepthColors[
+				//	nodeBounds.depth % octreeDepthColorCount];
+				DrawBox(nodeBounds.bounds, Colors::Cyan, view, proj, XMMatrixIdentity());
+			}
+		}
 	}
 
 	//// 카메라 주변 3x3x3 스트리밍 대상 청크 표시
@@ -884,6 +948,8 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 
 	if (FAILED(result.hr))
 	{
+		chunk.hObjects.clear();
+		chunk.octreeNode.reset();
 		chunk.loadState = EChunkLoadState::Unloaded;
 		return E_FAIL;
 	}
@@ -893,6 +959,8 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		// 스트리밍 모드일때, 워커스레드가 뒤늦게 로드해준 Chunk 결과가 지금 카메라 위치를 보고 유효한 결과인지 판단
 		if (IsChunkInStreamingRange(result.coord) == false)
 		{
+			chunk.hObjects.clear();
+			chunk.octreeNode.reset();
 			chunk.loadState = EChunkLoadState::Unloaded;
 			return S_OK;
 		}
@@ -933,6 +1001,11 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 	chunk.bounds = MakeChunkBoundingBox(result.coord);
 	chunk.loadState = EChunkLoadState::Loaded;
 	chunk.saveState = EChunkSaveState::Saved;
+	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0, 4);
+	if (chunk.octreeNode)
+	{
+		chunk.octreeNode->BuildOctree(chunk.hObjects);
+	}
 
 	return S_OK;
 }

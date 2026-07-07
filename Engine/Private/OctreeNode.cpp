@@ -37,7 +37,7 @@ void COctreeNode::BuildOctree(const std::vector<CHandle>& hObjects)
 	std::vector<CHandle> containedObjects;
 	containedObjects.reserve(hObjects.size());
 
-	// hObjects들 중 내 BoundingBox안에 들어와있는 애들만 갖고 있는다.
+
 	for (const auto& handle : hObjects)
 	{
 		CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
@@ -52,16 +52,38 @@ void COctreeNode::BuildOctree(const std::vector<CHandle>& hObjects)
 		}
 	}
 
-	// 내 BoundingBox안에 있는 오브젝트가 없으면 리턴
+	// 노드에 오브젝트 없으면 리턴
 	if (containedObjects.empty())
 		return;
 
-	// 분할 (내 bound 8분할 해서 자식들 boundingBox에 적용)
+	if (m_depth >= m_maxDepth /*|| containedObjects.size() <= 8*/)
+	{
+		m_hObjects = std::move(containedObjects);
+		return;
+	}
+
+	// 8개 자식 바운딩박스 생성
 	Subdivide();
 	
 	for (const auto& childNode : m_childrenNode)
 	{
-		childNode->BuildOctree(containedObjects);
+		if (childNode)
+			childNode->BuildOctree(containedObjects);
+	}
+}
+
+void COctreeNode::CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds) const
+{
+	outBounds.push_back(OCTREE_DEBUG_BOUNDS
+		{
+			.bounds = m_bounds,
+			.depth = m_depth
+		});
+
+	for (const auto& childNode : m_childrenNode)
+	{
+		if (childNode)
+			childNode->CollectDebugBounds(outBounds);
 	}
 }
 
@@ -90,9 +112,9 @@ void COctreeNode::Subdivide()
 
 	const _float3 childExtents =
 	{
-		myCenterpos.x * 0.5f,
-		myCenterpos.y * 0.5f,
-		myCenterpos.z * 0.5f
+		myExtents.x * 0.5f,
+		myExtents.y * 0.5f,
+		myExtents.z * 0.5f
 	};
 
 	size_t index = 0;
@@ -125,4 +147,16 @@ void COctreeNode::Subdivide()
 			}
 		}
 	}
+}
+
+// OctreeNode.cpp
+UPtr<COctreeNode> COctreeNode::Create(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth)
+{
+	auto pInstance = ToUPtr(new COctreeNode{});
+	if (FAILED(pInstance->Initialize(bounds, depth, maxDepth)))
+	{
+		return nullptr;
+	}
+
+	return pInstance;
 }
