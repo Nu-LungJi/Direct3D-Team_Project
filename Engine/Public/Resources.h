@@ -82,5 +82,6 @@ constexpr static const char* TAG_RES_CBUFFER_MATERIAL = "CB_PerMaterial";
 constexpr static const char* TAG_RES_CBUFFER_PARTICLE = "CB_PerParticle";
 constexpr static const char* TAG_RES_CBUFFER_SPAWN_PARTICLE = "CB_SpawnParticle";
 constexpr static const char* TAG_RES_CBUFFER_INIT_PARTICLE = "CB_InitGPUParticle";
+constexpr static const char* TAG_RES_CBUFFER_BONE = "CB_Bone";
 
 

@@ -476,6 +476,14 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(_float4x4) * 512 })))
+		{
+			return E_FAIL;
+		}
+	}
+
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
 		res->Load(D3D11_SAMPLER_DESC{
@@ -793,30 +801,7 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 	}
-	
-	//if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-	//	CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
-	//
-	//	E::CResModel::DESC pDesc{};
-	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-	//
-	//	if (FAILED(res->Load(pDesc)))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
-	//
-	//if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-	//	CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
-	//
-	//	E::CResStaticModel::DESC pDesc{};
-	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-	//
-	//	if (FAILED(res->Load(pDesc)))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
+
 
 	// 텍스쳐 없는 경우 대비, 대체 텍스쳐
 	{
@@ -853,17 +838,17 @@ HRESULT CGameInstance::InitializeResources()
 			}
 		}
 
-		//if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		//	CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+		if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
 
-		//	E::CResStaticModel::DESC pDesc{};
-		//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
+			if (FAILED(res->Load(pDesc)))
+			{
+				return E_FAIL;
+			}
+		}
 
 
 	return S_OK;

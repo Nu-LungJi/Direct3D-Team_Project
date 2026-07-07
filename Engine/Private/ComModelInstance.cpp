@@ -35,6 +35,8 @@ HRESULT CComModelInstance::Initialize(void* pArg)
         {
 			return E_FAIL;
         }
+
+        m_Buffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE);
     }
 	
     return S_OK;
@@ -61,8 +63,8 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
     {
 
         D3D11_MAPPED_SUBRESOURCE MappedResource{};
-
-        if (FAILED(pContext->Map(pMesh->GetCBBones().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource)))
+    
+        if (FAILED(pContext->Map(m_Buffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource)))
         {
             return E_FAIL;
         }
@@ -78,9 +80,9 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 
         memcpy(pBoneMatrices, BoneMatrices.data(), sizeof(_float4x4) * iBoneCount);
 
-        pContext->Unmap(pMesh->GetCBBones().Get(), 0);
+        pContext->Unmap(m_Buffer->GetCBuffer().Get(), 0);
 
-        ID3D11Buffer* pCBBones = pMesh->GetCBBones().Get();
+        ID3D11Buffer* pCBBones = m_Buffer->GetCBuffer().Get();
 
         pContext->VSSetConstantBuffers(2, 1, &pCBBones);
     }

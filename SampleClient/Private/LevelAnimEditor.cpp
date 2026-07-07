@@ -24,16 +24,16 @@ HRESULT CLevelAnimEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
-	//{
-	//	CTest_StaticModel::DESC Desc{};
-	//	Desc.sObjectTag = "TestStaticModel";
+	{
+		CTest_StaticModel::DESC Desc{};
+		Desc.sObjectTag = "TestStaticModel";
 
-	//	if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestStaticModel",
-	//		"TestStaticModelLayer", &Desc))
-	//	{
-	//		int x = 0;
-	//	}
-	//}
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestStaticModel",
+			"TestStaticModelLayer", &Desc))
+		{
+			int x = 0;
+		}
+	}
 
 
 	{
@@ -92,14 +92,6 @@ HRESULT CLevelAnimEditor::Initialize()
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
-	{
-		CLightObject::DESC LDesc{};
-		LDesc.sObjectTag = "LightObject";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
-		if (!ObjectHandle.has_value())	return E_FAIL;
-		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
-		if (!LightObject)	return E_FAIL;
-	}
 
 	CGameInstance::Get().SetupTestModel();;
 	return S_OK;

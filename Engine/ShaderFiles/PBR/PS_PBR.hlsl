@@ -279,7 +279,7 @@ PS_OUT PSMain(PS_IN IN)
             float3 kD = (1.0 - kS) * (1.0 - Metallic);
             float3 Diffuse = kD * Albedo / PI;
     
-            LightAccumulation += Diffuse; //(Diffuse + Specular) * Radiance * NDL;
+            LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
 
         }
     }

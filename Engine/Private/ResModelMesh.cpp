@@ -38,19 +38,7 @@ HRESULT CResModelMesh::Load(const std::any& arg)
         if (FAILED(Ready_AnimMesh(pModel, ptr)))
             return E_FAIL;
 
-        D3D11_BUFFER_DESC BufferDesc{};
-        BufferDesc.ByteWidth = sizeof(_float4x4) * 512;
-        BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-        BufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-        BufferDesc.MiscFlags = 0;
-        BufferDesc.StructureByteStride = 0;
-
-
-        if (FAILED(CGameInstance::Get().GetGraphicDevice()->CreateBuffer(&BufferDesc, nullptr, m_pCBBones.GetAddressOf())))
-        {
-            return E_FAIL;
-        }
+  
 
     }
    

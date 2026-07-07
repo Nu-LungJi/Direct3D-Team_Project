@@ -39,11 +39,11 @@ public:
 	std::vector<uint32_t>& GetBoneIndices() { return m_BoneIndices; }
 	std::vector<_float4x4>& GetBoneMatrices() { return m_BoneMatrices; }
 	std::vector<_float4x4>& GetOffsetMatrices() { return m_OffsetMatrices; }
-	ComPtr<ID3D11Buffer> GetCBBones() { return m_pCBBones; }
+
 private:
 
 private:
-	ComPtr<ID3D11Buffer> m_pCBBones;
+
 
 private:
 	uint32_t		m_iMaterialIndex = {};

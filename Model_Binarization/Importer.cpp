@@ -126,11 +126,11 @@ HRESULT CImporter::ExportFBX(const std::string& outpath)
     if (!m_bHasBone && !m_bHasAnimation)
         prefix = "SM_";
     else if (!m_bHasBone && m_bHasAnimation)
-        prefix = "SMA_";
+        prefix = "SM_";
     else if (m_bHasBone && m_bHasAnimation)
         prefix = "SK_";
     else
-        prefix = "SKA_";
+        prefix = "SK_";
 
     std::string finalPath =
         path.parent_path().string() + "/" +
