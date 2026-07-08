@@ -1,5 +1,5 @@
 // Shader_Beam.hlsl
-#include "./ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
 cbuffer CB_BEAM : register(b0)
 {
@@ -34,7 +34,7 @@ VS_OUT VSMain(VS_IN In)
 }
 
 Texture2D g_BeamTexture : register(t0);
-SamplerState g_Sampler : register(s0);
+//SamplerState g_Sampler : register(s0);
 
 // MRT(Multi-Render Target) 대응 출력 구조체
 struct PS_OUT
@@ -50,7 +50,7 @@ PS_OUT PSMain(VS_OUT In)
     PS_OUT Out = (PS_OUT) 0;
 
     // 텍스처 샘플링 (정확한 변수명 vTextureColor로 통일)
-    float4 vTextureColor = g_BeamTexture.Sample(g_Sampler, In.vUV);
+    float4 vTextureColor = g_BeamTexture.Sample(LinearWrap, In.vUV);
     float4 finalColor = vTextureColor * In.vColor;
     Out.vDiffuse = finalColor;
     // 알파 테스트 혹은 특정 채널 기준 discard (여기서는 투명도나 특정 값 기준으로 처리)

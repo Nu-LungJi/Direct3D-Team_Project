@@ -1311,9 +1311,12 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
+    <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
       <Filter>ShaderFiles\ShaderHeader</Filter>
     </None>
   </ItemGroup>

@@ -38,7 +38,6 @@ private:
 	SPtr<CResTexture2D> m_pResTerrainTexture2D{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
-	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
 public:

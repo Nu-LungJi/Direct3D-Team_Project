@@ -1,7 +1,7 @@
 #include "../ShaderDefines.hlsl"
 
 Texture2D tex : register(t0);
-SamplerState samp : register(s0);
+//SamplerState samp : register(s0);
 
 struct VS_IN
 {
@@ -30,7 +30,7 @@ float4 PSMain(PS_IN input) : SV_Target
 {
     float2 uv = g_ui_texCoord + input.uv * g_ui_uvSize;
 
-    float4 texColor = tex.Sample(samp, uv);
+    float4 texColor = tex.Sample(LinearWrap, uv);
 
     if (max(texColor.r, max(texColor.g, texColor.b)) < 0.001f)
     {

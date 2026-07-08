@@ -1,4 +1,3 @@
-#include "../ShaderHeader/SH_SamplerState.hlsli"
 #include "../ShaderDefines.hlsl"
 
 #define MAX_LIGHT_COUNT     8
@@ -9,9 +8,8 @@
 
 #define MAX_REFLECTION_LOD  4.f
 
-Texture2D g_DiffuseTexture  : register(t0);
-Texture2D g_AOTexture       : register(t1);
-//Texture2D g_ShadowMap       : register(t4);
+Texture2D g_BackGroundTexture : register(t0);
+Texture2D g_OverDrawTexture   : register(t1);
 
 struct PS_IN
 {
@@ -34,14 +32,14 @@ struct PS_OUT
     float4 Diffuse : SV_TARGET;
 };
 
-PS_OUT PSMain(PS_IN IN)
+float4 PSMain_OverDraw(PS_IN IN) : SV_TARGET
 {
-    PS_OUT OUT;
-    
-    float4 Diffuse = g_DiffuseTexture.Sample(SamplerWrap, IN.TexCoord);
+    float4 BackGround = g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord);
+    float4 OverTexture = g_OverDrawTexture.Sample(LinearWrap, IN.TexCoord);
    
-    
-    float3 finalColor = Diffuse;
-    OUT.Diffuse = float4(finalColor, 1.f);
-    return OUT;
+    return lerp(BackGround, OverTexture, OverTexture.a);
+}
+float4 PSMain(PS_IN IN) : SV_TARGET
+{
+    return float4(g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord).rgb, 1.f);
 }

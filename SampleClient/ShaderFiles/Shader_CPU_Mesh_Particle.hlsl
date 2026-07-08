@@ -1,4 +1,4 @@
-#include "./ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
 struct VS_IN
 {
@@ -49,7 +49,7 @@ VS_OUT VSMain(VS_IN In)
 Texture2D g_DiffuseTexture : register(t1);
 Texture2D g_NormalTexture : register(t6);
 
-SamplerState g_LinearSampler : register(s0);
+//SamplerState g_LinearSampler : register(s0);
 
 struct PS_OUT
 {
@@ -64,14 +64,14 @@ PS_OUT PSMain(VS_OUT In)
     
     PS_OUT Out = (PS_OUT) 0;
 
-    float4 texColor = g_DiffuseTexture.Sample(g_LinearSampler, In.vTexcoord);
+    float4 texColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     //if (texColor.a < 0.1f)
     //    discard;
 
     Out.vDiffuse = texColor * In.vColor;
 
     // 노멀맵에서 tangent space 노멀을 가져와 world space로 변환
-    float3 tangentNormal = g_NormalTexture.Sample(g_LinearSampler, In.vTexcoord).xyz * 2.0f - 1.0f;
+    float3 tangentNormal = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).xyz * 2.0f - 1.0f;
 
     float3x3 TBN = float3x3(normalize(In.vTangent), normalize(In.vBinormal), normalize(In.vNormal));
     float3 worldNormal = normalize(mul(tangentNormal, TBN));
