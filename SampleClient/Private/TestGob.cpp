@@ -123,8 +123,10 @@ void CTestGob::Update(E::_float fTimeDelta)
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
+
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
 }
 
 HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

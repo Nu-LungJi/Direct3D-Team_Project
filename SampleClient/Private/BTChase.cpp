@@ -1,29 +1,29 @@
 #include "pch.h"
-#include "BTMove.h"
+#include "BTChase.h"
 #include "ComTransform.h" 
 NS_USING(Client)
 
-CBTMove::CBTMove()
+CBTChase::CBTChase()
 {
 
 }
-CBTMove::CBTMove(const CBTMove& rhs) : CBTActionNode(rhs)
+CBTChase::CBTChase(const CBTChase& rhs) : CBTActionNode(rhs)
 {
 
 }
 
-CBTMove::~CBTMove()
+CBTChase::~CBTChase()
 {
 }
-HRESULT CBTMove::InitalizePrototype(void* pArg)
+HRESULT CBTChase::InitalizePrototype(void* pArg)
 {
 	__super::InitalizePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
-	m_MasterName = "BTMove";
+	m_MasterName = "BTChase";
 	return S_OK;
 }
-HRESULT CBTMove::Initalize(void* pArg)
+HRESULT CBTChase::Initalize(void* pArg)
 {
 
 	__super::Initalize(pArg);
@@ -31,22 +31,22 @@ HRESULT CBTMove::Initalize(void* pArg)
 	return S_OK;
 }
 
-nlohmann::json CBTMove::Save_Node()
+nlohmann::json CBTChase::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
-	
+
 	SaveJsonEnum(j, "MOVE", m_eMove);
-	
+
 	return j;
 }
 
-HRESULT CBTMove::Load_json(const nlohmann::json& j)
+HRESULT CBTChase::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	return S_OK;
 }
 
-EVALUATE CBTMove::Evaluate(_float fTimeDelta)
+EVALUATE CBTChase::Evaluate(_float fTimeDelta)
 {
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
@@ -63,8 +63,8 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	//	return EVALUATE::SUCCESS;
 	//}else if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_UP))
 	//{
-	//	pTransform->GoStraight(2.f*fTimeDelta);
-		return EVALUATE::SUCCESS;
+	pTransform->GoStraight(5.f * fTimeDelta);
+	return EVALUATE::SUCCESS;
 	//}
 	//if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_DOWN))
 	//{
@@ -74,7 +74,7 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	//	
 	//return EVALUATE::FAILED;
 }
-void CBTMove::Update_Gui()
+void CBTChase::Update_Gui()
 {
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M };
@@ -87,22 +87,22 @@ void CBTMove::Update_Gui()
 			m_eMove = static_cast<MOVE>(i);
 	}
 }
-E::UPtr<CBTMove> CBTMove::Create()
+E::UPtr<CBTChase> CBTChase::Create()
 {
-	auto pInstance = E::ToUPtr(new CBTMove{});
+	auto pInstance = E::ToUPtr(new CBTChase{});
 	if (FAILED(pInstance->InitalizePrototype()))
 	{
-		MSG_BOX("Failed to Created : CBTMove");
+		MSG_BOX("Failed to Created : CBTChase");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTMove::Clone(void* pArg)
+E::UPtr<E::CBTRoot> CBTChase::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CBTMove{ *this });
+	auto	pInstance = E::ToUPtr(new CBTChase{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CBTMove");
+		MSG_BOX("Failed to Cloned : CBTChase");
 		return nullptr;
 	}
 

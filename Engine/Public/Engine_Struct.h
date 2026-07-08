@@ -108,13 +108,13 @@ namespace Engine
 
 	
 
-	///////BeHavior 아
+	///////BeHavior//////
 	typedef struct tagactionvalue
 	{
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{}, fTime{}, fTick{};
+		_float   fSpeed{}, fTime{1.f}, fTick{};
 	
 	}ACTION_VALUE;
 	typedef struct tagdestnode
@@ -155,7 +155,7 @@ namespace Engine
 	}GUINODE;
 
 	typedef struct tagimguinodelink
-	{//이거다 이거
+	{
 		int32_t					iStartIdx{ -1 };
 		DEST_NODE				ParentNode;
 		std::vector<DEST_NODE>  SlotEnd{};
@@ -166,6 +166,23 @@ namespace Engine
 			SlotEnd.resize(iEnd);
 		}
 	}GUINODE_LINK;
+	typedef struct tagimguiCurrentNode
+	{
+		tagimguiCurrentNode() = default;
+		tagimguiCurrentNode(GUINODE* pNode, GUINODE_LINK* pLink, int32_t iSlot)
+		{
+			pCurrentNode = pNode; pCurrentLink = pLink;  iSelectedSlot = iSlot;
+
+		}
+		GUINODE* pCurrentNode{ nullptr };
+		GUINODE_LINK* pCurrentLink{ nullptr };
+		int32_t  iSelectedSlot{ -1 }, iD{ -1 };
+		_float2  vSlotPos;
+		_bool	 bSelected = false;
+
+		NODETYPE eType = NODETYPE::END;
+	}GUICURRENT_NODE;
+
 	typedef struct tagParticleSpawnData
 	{
 		_float3 position;
@@ -182,22 +199,7 @@ namespace Engine
 		_bool    bLoop;
 		_float   fSpawnInterval;
 	} PARTICLE_EMIT_REQUEST;
-	typedef struct tagimguiCurrentNode
-	{
-		tagimguiCurrentNode() = default;
-		tagimguiCurrentNode(GUINODE* pNode, GUINODE_LINK* pLink, int32_t iSlot)
-		{
-			pCurrentNode = pNode; pCurrentLink = pLink;  iSelectedSlot = iSlot;
-
-		}
-		GUINODE* pCurrentNode{ nullptr };
-		GUINODE_LINK* pCurrentLink{ nullptr };
-		int32_t  iSelectedSlot{ -1 }, iD{ -1 };
-		_float2  vSlotPos;
-		_bool	 bSelected = false;
-		
-		NODETYPE eType = NODETYPE::END;
-	}GUICURRENT_NODE;
+	
 	typedef struct tagBeamVertex
 	{
 		_float3 vPosition;
@@ -228,10 +230,6 @@ namespace Engine
 	typedef struct tagParticleSpecies {
 		
 	}PARTICLE_SPECIES;
-
-
-
-	///////NodeEditor용
 
 	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
 	typedef struct tagMapChunkCoord

@@ -246,15 +246,13 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 
 	if (!m_bSaveLoad && ImGui::Button("Save"))
 	{
-		
 		m_AddNodeName = "";
 		m_bSaveLoad = true;
 	}
 	if (!m_bSaveLoad && ImGui::Button("Load"))
 	{
-		m_pBeHavior->Load_Data("./Resources/json/Behavior/test.json");
+		m_pBeHavior->Load_Data("./Resources/json/Behavior/MoveTest3.json");
 		m_AddNodeName = "";
-		m_bSaveLoad = true;
 	}
 	
 	if (m_bSaveLoad)
@@ -503,25 +501,28 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 			{
 				//여기서 원본 클래스 노드 부모에서 tmp 자식 에 연결하기
 				auto pSrc = m_pBeHavior->Find_Node(m_CurrentNode.iD);
-
-				if (nullptr != pSrc && pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+				if (nullptr != pSrc)
 				{
-					int32_t iPreSlot = m_CurrentNode.iSelectedSlot;
-					pCurNode->Get_GuiNodeLink().iStartIdx = iPreSlot; // 자식에 부모 담았고
 
-					pSrc->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
-					pCurNode->Get_GuiNodeLink().ParentNode = pSrc->Get_GuiNodeInfo().Get_DestInfo();
-
-					m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
 					if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
 					{
-						auto pParn = static_cast<CBTComposite*>(pSrc);
-						(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
-					}
-					else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-					{
-						auto pParn = static_cast<CBTDecorator*>(pSrc);
-						pParn->Set_Child(std::move(pCurNode));
+						int32_t iPreSlot = m_CurrentNode.iSelectedSlot;
+						pCurNode->Get_GuiNodeLink().iStartIdx = iPreSlot; // 자식에 부모 담았고
+
+						pSrc->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
+						pCurNode->Get_GuiNodeLink().ParentNode = pSrc->Get_GuiNodeInfo().Get_DestInfo();
+
+						m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
+						if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+						{
+							auto pParn = static_cast<CBTComposite*>(pSrc);
+							(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
+						}
+						else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+						{
+							auto pParn = static_cast<CBTDecorator*>(pSrc);
+							pParn->Set_Child(std::move(pCurNode));
+						}
 					}
 				}
 				bFinishe = true;
@@ -616,11 +617,20 @@ void CNodeEditor::SavePopUp()
 			_bool bfalse{false};
 			for (auto& iter : std::filesystem::recursive_directory_iterator(PathName))
 			{
-				if (iter.path().filename().stem() == m_SaveName)
+				if (iter.path().filename().stem() == "")
 				{
 					bfalse = true;
-					MSG_BOX("File Name Same or Blink");
+					MSG_BOX("File Name Blink");
+				
+					
 				}
+				//if (iter.path().filename().stem() == m_SaveName)
+				//{
+				//	bfalse = true;
+				//	MSG_BOX("File Name Same or Blink");
+				//
+				//	
+				//}
 			}
 		
 			if (!bfalse)
@@ -718,7 +728,7 @@ void CNodeEditor::ShowWidgetByType(CBTRoot* pNode)
 {
 	BEHAVIOR eNodeType = pNode->Get_GuiNodeInfo().eMyType;
 
-	if (eNodeType == BEHAVIOR::ACTION)
+	if (eNodeType == BEHAVIOR::ACTION || eNodeType == BEHAVIOR::DECORATOR)
 		CGameInstance::Get().Show_Action_NodeWidget(pNode);
 	else if (eNodeType == BEHAVIOR::SELECTOR || eNodeType == BEHAVIOR::SECQUNCE)
 	{

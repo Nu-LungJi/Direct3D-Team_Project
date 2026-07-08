@@ -231,7 +231,7 @@
     <ClInclude Include="..\public\Monster.h">
       <Filter>GameObject\AI</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTchase.h">
+    <ClInclude Include="..\public\BTTurnSlow.h">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTDecSearch.h">
@@ -245,6 +245,21 @@
     </ClInclude>
     <ClInclude Include="..\public\Particle_Fire_GPU.h">
       <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecTimer.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDead.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnDirect.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecLier.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTChase.h">
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -345,6 +360,21 @@
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTDecTimer.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\BTDead.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecLier.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTChase.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">
@@ -359,7 +389,7 @@
     <ClCompile Include="..\private\Particle_Fire_GPU.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTchase.cpp">
+    <ClCompile Include="..\private\BTTurnSlow.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTDecSearch.cpp">
@@ -367,9 +397,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\Monsters</Filter>
-    </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>

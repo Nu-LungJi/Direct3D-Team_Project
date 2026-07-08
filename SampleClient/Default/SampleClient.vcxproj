@@ -175,10 +175,15 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
-    <ClInclude Include="..\public\BTchase.h" />
+    <ClInclude Include="..\public\BTChase.h" />
+    <ClInclude Include="..\public\BTDead.h" />
+    <ClInclude Include="..\public\BTDecLier.h" />
+    <ClInclude Include="..\public\BTTurnDirect.h" />
+    <ClInclude Include="..\public\BTTurnSlow.h" />
     <ClInclude Include="..\public\BTDecSearch.h" />
     <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\public\BTMove.h" />
+    <ClInclude Include="..\public\BTDecTimer.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
@@ -228,9 +233,13 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
-    <ClCompile Include="..\private\BTchase.cpp" />
+    <ClCompile Include="..\private\BTChase.cpp" />
+    <ClCompile Include="..\private\BTDecLier.cpp" />
+    <ClCompile Include="..\private\BTTurnDirect.cpp" />
+    <ClCompile Include="..\private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\BTDecSearch.cpp" />
     <ClCompile Include="..\private\BTMove.cpp" />
+    <ClCompile Include="..\private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\Private\FlipBook.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
@@ -258,6 +267,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestPhysXBox.cpp" />
     <ClCompile Include="..\private\TestPhysXCapsule.cpp" />
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
+    <ClCompile Include="..\public\BTDead.cpp" />
     <ClCompile Include="FlipbookPlayer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>

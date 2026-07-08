@@ -34,8 +34,10 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	auto pAnimator = Cast<CComAnimator>(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	if (pAnimator != nullptr && -1 != m_Value.iAnimIndex)
 		pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
-	
-	return EVALUATE::SUCCESS;
+	if(pAnimator->GetPlay())
+		return EVALUATE::SUCCESS;
+
+	return EVALUATE::FAILED;
 }
 void CBTAnimation::Update_Gui()
 {

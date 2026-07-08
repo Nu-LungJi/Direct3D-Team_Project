@@ -32,7 +32,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
     int32_t iIndex = 0;
     if (m_NodeValue.bCur)
-        iIndex = m_NodeValue.iCurSecquenceIndex;
+        iIndex = m_NodeValue.iPreSecquenceIndex;
 
     for (size_t i = iIndex; i < m_Actions.size(); ++i)
     {
@@ -56,7 +56,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         }
 
     }
-	return EVALUATE::RUN;
+	return EVALUATE::SUCCESS;
 }
 
 nlohmann::json CBTSelector::Save_Node()
