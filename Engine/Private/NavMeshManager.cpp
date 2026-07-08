@@ -3,6 +3,8 @@
 #include "GameInstance.h"
 #include "DbgLineRender.h"
 
+#include <filesystem>
+#include <fstream>
 #include <recastnavigation/Recast.h>
 
 NS_USING(Engine)
@@ -90,6 +92,14 @@ _bool CNavMeshManager::Build(
 		tris.data(),
 		triCount,
 		triAreas.data());
+
+	for (const auto& [triangleIndex, areaType] : m_TriangleAreas)
+	{
+		if (areaType == ENavAreaType::Blocked && triangleIndex < triAreas.size())
+		{
+			triAreas[triangleIndex] = RC_NULL_AREA;
+		}
+	}
 
 	if (!rcRasterizeTriangles(
 		&ctx,
@@ -215,6 +225,120 @@ void CNavMeshManager::Clear()
 	}
 }
 
+void CNavMeshManager::SetTriangleArea(uint32_t triangleIndex, ENavAreaType areaType)
+{
+	if (areaType == ENavAreaType::Walkable)
+	{
+		m_TriangleAreas.erase(triangleIndex);
+		return;
+	}
+
+	m_TriangleAreas[triangleIndex] = areaType;
+}
+
+ENavAreaType CNavMeshManager::GetTriangleArea(uint32_t triangleIndex) const
+{
+	const auto iter = m_TriangleAreas.find(triangleIndex);
+	if (iter == m_TriangleAreas.end())
+	{
+		return ENavAreaType::Walkable;
+	}
+
+	return iter->second;
+}
+
+void CNavMeshManager::ClearTriangleAreas()
+{
+	m_TriangleAreas.clear();
+}
+
+uint32_t CNavMeshManager::GetTriangleAreaCount(ENavAreaType areaType) const
+{
+	uint32_t count = 0;
+	for (const auto& [triangleIndex, triangleAreaType] : m_TriangleAreas)
+	{
+		if (triangleAreaType == areaType)
+		{
+			++count;
+		}
+	}
+
+	return count;
+}
+
+void CNavMeshManager::SetTriangleBlocked(uint32_t triangleIndex, _bool blocked)
+{
+	SetTriangleArea(triangleIndex, blocked ? ENavAreaType::Blocked : ENavAreaType::Walkable);
+}
+
+void CNavMeshManager::ClearBlockedTriangles()
+{
+	for (auto iter = m_TriangleAreas.begin(); iter != m_TriangleAreas.end();)
+	{
+		if (iter->second == ENavAreaType::Blocked)
+		{
+			iter = m_TriangleAreas.erase(iter);
+			continue;
+		}
+
+		++iter;
+	}
+}
+
+_bool CNavMeshManager::IsTriangleBlocked(uint32_t triangleIndex) const
+{
+	return GetTriangleArea(triangleIndex) == ENavAreaType::Blocked;
+}
+
+void CNavMeshManager::DrawBlockedTriangles(const std::vector<_float3>& vertices, const std::vector<uint32_t>& indices)
+{
+	if (m_TriangleAreas.empty())
+	{
+		return;
+	}
+
+	auto* dbg = CGameInstance::Get().GetDbgLineRender();
+	if (!dbg)
+	{
+		return;
+	}
+
+	const uint32_t triangleCount = static_cast<uint32_t>(indices.size() / 3);
+	dbg->SetColor({ 1.f, 0.f, 0.f, 1.f });
+
+	for (const auto& [triangleIndex, areaType] : m_TriangleAreas)
+	{
+		if (areaType != ENavAreaType::Blocked)
+		{
+			continue;
+		}
+
+		if (triangleIndex >= triangleCount)
+		{
+			continue;
+		}
+
+		const uint32_t i0 = indices[triangleIndex * 3 + 0];
+		const uint32_t i1 = indices[triangleIndex * 3 + 1];
+		const uint32_t i2 = indices[triangleIndex * 3 + 2];
+
+		if (i0 >= vertices.size() || i1 >= vertices.size() || i2 >= vertices.size())
+		{
+			continue;
+		}
+
+		_float3 p0 = vertices[i0];
+		_float3 p1 = vertices[i1];
+		_float3 p2 = vertices[i2];
+
+		p0.y += 0.12f;
+		p1.y += 0.12f;
+		p2.y += 0.12f;
+
+		dbg->AddTriangle(p0, p1, p2);
+	}
+}
+
 void CNavMeshManager::DrawDebug()
 {
 	if (!m_bDebugDraw || !m_pPolyMesh)
@@ -259,6 +383,91 @@ void CNavMeshManager::DrawDebug()
 			dbg->AddLine(p0, p1);
 		}
 	}
+}
+
+HRESULT CNavMeshManager::Save(const std::string& path) const
+{
+	const std::filesystem::path filePath(path);
+	std::error_code ec;
+	std::filesystem::create_directories(filePath.parent_path(), ec);
+	if (ec)
+	{
+		return E_FAIL;
+	}
+
+	nlohmann::ordered_json rootJson = {};
+	rootJson["version"] = 1;
+	rootJson["triangleAreas"] = nlohmann::ordered_json::array();
+
+	for (const auto& [triangleIndex, areaType] : m_TriangleAreas)
+	{
+		if (areaType == ENavAreaType::Walkable)
+		{
+			continue;
+		}
+
+		rootJson["triangleAreas"].push_back(nlohmann::ordered_json
+		{
+			{"triangle", triangleIndex},
+			{"area", static_cast<uint32_t>(areaType)}
+		});
+	}
+
+	std::ofstream outFile(filePath.string());
+	if (!outFile.is_open())
+	{
+		return E_FAIL;
+	}
+
+	outFile << rootJson.dump(4);
+	outFile.close();
+
+	return S_OK;
+}
+
+HRESULT CNavMeshManager::Load(const std::string& path)
+{
+	ClearTriangleAreas();
+
+	const std::filesystem::path filePath(path);
+	if (!std::filesystem::exists(filePath))
+	{
+		return S_OK;
+	}
+
+	std::ifstream inFile(filePath.string());
+	if (!inFile.is_open())
+	{
+		return E_FAIL;
+	}
+
+	nlohmann::ordered_json rootJson;
+	inFile >> rootJson;
+	inFile.close();
+
+	if (!rootJson.contains("triangleAreas"))
+	{
+		return S_OK;
+	}
+
+	for (const auto& areaJson : rootJson["triangleAreas"])
+	{
+		if (!areaJson.contains("triangle") || !areaJson.contains("area"))
+		{
+			continue;
+		}
+
+		const uint32_t triangleIndex = areaJson["triangle"].get<uint32_t>();
+		const uint32_t areaValue = areaJson["area"].get<uint32_t>();
+		if (areaValue > static_cast<uint32_t>(ENavAreaType::Reserved_Climbable))
+		{
+			continue;
+		}
+
+		SetTriangleArea(triangleIndex, static_cast<ENavAreaType>(areaValue));
+	}
+
+	return S_OK;
 }
 
 UPtr<CNavMeshManager> CNavMeshManager::Create()

@@ -98,6 +98,22 @@ void CMapEditorTerrain::LateUpdate(E::_float fTimeDelta)
 
 		dbg->AddTriangle(p0, p1, p2);
 	}*/
+
+	if (auto* navMeshManager = CGameInstance::Get().GetNavMeshManager())
+	{
+		const auto& vertices = GetVertices();
+		const auto& indices = GetIndices();
+
+		std::vector<E::_float3> navVertices{};
+		navVertices.reserve(vertices.size());
+
+		for (const auto& vertex : vertices)
+		{
+			navVertices.push_back(vertex.pos);
+		}
+
+		navMeshManager->DrawBlockedTriangles(navVertices, indices);
+	}
 	
 }
 
