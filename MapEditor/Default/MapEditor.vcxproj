@@ -158,8 +158,10 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\GUIWindow.h" />
     <ClInclude Include="..\Public\Hierarchy.h" />
     <ClInclude Include="..\Public\Inspector.h" />
+    <ClInclude Include="..\Public\MapEditorTerrain.h" />
     <ClInclude Include="..\Public\MapChunkGUI.h" />
     <ClInclude Include="..\Public\MapEditorGUI.h" />
+    <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h" />
     <ClInclude Include="..\Public\ResourceGUI.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
@@ -177,8 +179,10 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\GUIWindow.cpp" />
     <ClCompile Include="..\Private\Hierarchy.cpp" />
     <ClCompile Include="..\Private\Inspector.cpp" />
+    <ClCompile Include="..\Private\MapEditorTerrain.cpp" />
     <ClCompile Include="..\Private\MapChunkGUI.cpp" />
     <ClCompile Include="..\Private\MapEditorGUI.cpp" />
+    <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp" />
     <ClCompile Include="..\Private\ResourceGUI.cpp" />
     <ClCompile Include="..\Private\TestGuizmo.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
@@ -197,6 +201,12 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
   <ItemGroup>
     <Image Include="MapEditor.ico" />
     <Image Include="small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

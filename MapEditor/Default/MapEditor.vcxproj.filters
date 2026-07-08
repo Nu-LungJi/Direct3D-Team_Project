@@ -40,6 +40,15 @@
     <Filter Include="GUIWindow\MapChunkGUI">
       <UniqueIdentifier>{72e95bca-c637-4938-8a94-1af9092c75d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{509872ef-76cb-42a4-9187-bff8fc770561}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Buffer">
+      <UniqueIdentifier>{81a1719c-93fd-4c58-9737-745efdab48ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles">
+      <UniqueIdentifier>{72246f9b-721f-4ad1-a414-5f830d976de9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -96,6 +105,12 @@
     <ClInclude Include="..\Public\MapChunkGUI.h">
       <Filter>GUIWindow\MapChunkGUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapEditorTerrain.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h">
+      <Filter>Resource\Buffer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -150,5 +165,16 @@
     <ClCompile Include="..\Private\MapChunkGUI.cpp">
       <Filter>GUIWindow\MapChunkGUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\MapEditorTerrain.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp">
+      <Filter>Resource\Buffer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
