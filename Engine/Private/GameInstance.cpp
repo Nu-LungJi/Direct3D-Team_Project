@@ -946,7 +946,7 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+	/*if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
 		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
 
 		E::CResStaticModel::DESC pDesc{};
@@ -956,7 +956,7 @@ HRESULT CGameInstance::InitializeResources()
 		{
 			return E_FAIL;
 		}
-	}
+	}*/
 	//if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
 	//	CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
 

@@ -72,8 +72,6 @@ HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t i
     
     if(pModel == nullptr)
 		return E_FAIL;
-    
-
 
     auto& pAnim = pModel->GetAnimations();
     auto& m_PreTransformMatrix = pModel->Get_PreTransformMatrix();
