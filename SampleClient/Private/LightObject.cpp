@@ -73,7 +73,7 @@ void CLightObject::Update(E::_float fTimeDelta) {
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
 }
 
 HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -110,7 +110,7 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 50.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 10.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

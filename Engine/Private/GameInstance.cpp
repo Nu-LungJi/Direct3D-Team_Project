@@ -899,7 +899,7 @@ HRESULT CGameInstance::InitializeResources()
 	{
 		D3D11_DEPTH_STENCIL_DESC depthDesc{};
 		depthDesc.DepthEnable = TRUE;
-		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		depthDesc.StencilEnable = FALSE;
 		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;

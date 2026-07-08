@@ -303,20 +303,20 @@ HRESULT CRenderer::InitializeGFSDK_SSAO()
 
 HRESULT CRenderer::InitializeBloom() {
 
-	m_pResDynTexTargetBrightPass	= Generate_RenderTarget("DynTex2D_HBAO_PLUS", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
-	m_pResDynTexTargetBlurPass		= Generate_RenderTarget("DynTex2D_HBAO_PLUS", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	m_pResDynTexTargetBrightPass	= Generate_RenderTarget("DynTex2D_BrightPass", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	m_pResDynTexTargetBlurPass		= Generate_RenderTarget("DynTex2D_BlurPass", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 	
-	m_pResDynTexTargetBloomPass		= Generate_RenderTarget("DynTex2D_HBAO_PLUS", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	m_pResDynTexTargetBloomPass		= Generate_RenderTarget("DynTex2D_BloomPass", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 
-	m_pBrightPassPixelShader = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_BrightPass");
+	m_pBrightPassPixelShader	= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_BrightPass");
 	{
 		if (nullptr == m_pBrightPassPixelShader)		return E_FAIL;
 	}
-	m_pVerticalBlurPixelShader = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_VerticalBlur");
+	m_pVerticalBlurPixelShader	= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_VerticalBlur");
 	{
 		if (nullptr == m_pVerticalBlurPixelShader)		return E_FAIL;
 	}
-	m_pBloomPassPixelShader = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_Combined");
+	m_pBloomPassPixelShader		= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_Combined");
 	{
 		if (nullptr == m_pBloomPassPixelShader)		return E_FAIL;
 	}
@@ -617,7 +617,7 @@ HRESULT CRenderer::Render_NonAlpha() {
         m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
         m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 
         _float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
@@ -730,7 +730,7 @@ HRESULT CRenderer::Render_Lighting() {
     m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
     m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
-    SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+    SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
     m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 
     const auto& FullScreenBuffer = m_pFullscreenVIBuffer;
@@ -786,6 +786,7 @@ HRESULT CRenderer::Render_Lighting() {
 }
 
 HRESULT CRenderer::Render_Alpha() {
+	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
     ZoneScopedN("Render_Alpha");
     {
         ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get()};
@@ -945,31 +946,31 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 
 	//////////////////////////// Vertical Blur /////////////////////////////////
 	m_pContext->PSSetShaderResources(1, 1, &NullSRV[0]);
-
+	
 	ID3D11RenderTargetView* BlurRTV[1] = { m_pResDynTexTargetBrightPass->GetRTV().Get() };
 	m_pContext->OMSetRenderTargets(1, BlurRTV, nullptr);
-
+	
 	m_pContext->PSSetShader(VerticalBlurPS->GetPixelShader().Get(), nullptr, 0);
 	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPostProcess->GetSRV().GetAddressOf());
-
+	
 	m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-
+	
 	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
-
-	//////////////////////////// Bloom Combined /////////////////////////////////
+	
+	////////////////////////////// Bloom Combined /////////////////////////////////
 	m_pContext->PSSetShaderResources(1, 1, &NullSRV[0]);
-
+	
 	ID3D11RenderTargetView* CombinedRTV[1] = { m_pResDynTexTargetPostProcess->GetRTV().Get() };
 	m_pContext->OMSetRenderTargets(1, CombinedRTV, nullptr);
-
+	
 	m_pContext->PSSetShader(CombinedPS->GetPixelShader().Get(), nullptr, 0);
 	m_pContext->PSSetShaderResources(0, 1, m_pOffScreenTex2D->GetSRV().GetAddressOf());
 	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetBrightPass->GetSRV().GetAddressOf());
-
+	
 	m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-
+	
 	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
-
+	
 	//////////////////////////// Unbind Resource /////////////////////////////////
 	m_pContext->PSSetShaderResources(0, 2, NullSRV);
 
