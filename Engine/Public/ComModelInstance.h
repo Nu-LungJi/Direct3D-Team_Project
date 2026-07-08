@@ -22,8 +22,8 @@ public:
 public:
 	DECLARE_DERIVED_TYPE(CComModelInstance, CComponent)
 
-
-
+public:
+	virtual void UpdateGUI() override;
 private:
 	explicit CComModelInstance();
 	~CComModelInstance() override;
@@ -49,6 +49,24 @@ private:
 public:
 	static UPtr<CComModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
+
+#ifdef _DEBUG
+public:
+	void DebugDraw_Bones(const _float4x4& WorldMatrix);
+
+
+private:
+	bool m_bDebugBoneEdit = false;
+	int  m_iDebugSelectedBone = 0;
+
+	std::vector<_float3> m_DebugBoneLocalOffsets;
+
+private:
+	void EnsureDebugBoneOffsetSize();
+	void ApplyDebugBoneLocalOffsets();
+
+
+#endif
 };
 
 NS_END

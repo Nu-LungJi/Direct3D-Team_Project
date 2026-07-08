@@ -133,6 +133,10 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		}
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+
+
+		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);
+		
 	}
 	const auto& vs = m_pResVertexShader;
 		//!m_pComModelInstance->GetModel()->GetAnimations().empty()
@@ -227,6 +231,8 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
 
+
+	
 	return S_OK;
 }
 

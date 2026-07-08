@@ -957,17 +957,17 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}*/
-	//if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-	//	CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
 
-	//	E::CResStaticModel::DESC pDesc{};
-	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-	//	if (FAILED(res->Load(pDesc)))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
 
 
 	return S_OK;
