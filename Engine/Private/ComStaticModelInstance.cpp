@@ -6,8 +6,26 @@
 #include "ResModel.h"
 NS_USING(Engine)
 
+void CComStaticModelInstance::UpdateGUI()
+{
+	static char szJsonName[MAX_PATH] = "StaticModel.json";
 
+	if (ImGui::Button("Save Json"))
+	{
+		std::string saveName = szJsonName;
 
+		if (saveName.empty())
+			return;
+
+		std::filesystem::path savePath =
+			std::filesystem::path("./Resources/SampleClient/Models/StaticModelJson") / saveName;
+
+		if (savePath.extension().empty())
+			savePath.replace_extension(".json");
+
+		Save_Binary_Json(savePath.string());
+	}
+}
 CComStaticModelInstance::CComStaticModelInstance()
 {
 
@@ -61,6 +79,7 @@ HRESULT CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, u
 
 }
 
+
 HRESULT CComStaticModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)
 {
     auto pModel = CGameInstance::Get().GetResourceFirst<CResStaticModel>(sGroupTag, sResTag);
@@ -72,8 +91,48 @@ HRESULT CComStaticModelInstance::ChangeModel(const StringID& sGroupTag, const St
     m_pModel = pModel;
     return S_OK;
 }
+HRESULT CComStaticModelInstance::Save_Binary_Json(std::string outpath)
+{
+	if (outpath.empty())
+		return E_FAIL;
 
-// ���� ���� �ؽ��� ��ȯ
+	std::filesystem::path savePath(outpath);
+
+	// 확장자가 없으면 .json 붙이기
+	if (savePath.extension().empty())
+		savePath.replace_extension(".json");
+
+	// 폴더 없으면 생성
+	if (!savePath.parent_path().empty())
+		std::filesystem::create_directories(savePath.parent_path());
+
+	// 현재 모델 없으면 실패
+	if (m_pModel == nullptr)
+		return E_FAIL;
+
+	std::filesystem::path modelPath = m_pModel->GetPath();
+
+	// 파일 이름만 저장
+	std::string fbxName = modelPath.filename().string();
+
+
+	nlohmann::json j;
+
+	j["fbx"] = fbxName;
+
+	std::ofstream file(savePath, std::ios::out);
+
+	if (!file.is_open())
+		return E_FAIL;
+
+	file << j.dump(4);
+	file.close();
+
+	return S_OK;
+}
+ 
+
+// 모델의 단일 텍스쳐 반환
 SPtr<CResTexture2D> CComStaticModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
     auto Materials = m_pModel->GetMaterials();
     auto Mesh = m_pModel->GetMeshes();

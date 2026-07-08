@@ -32,7 +32,7 @@ HRESULT CLightObject::InitializePrototype(void* pArg) {
 	m_pResSamplerState	= CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	if (!m_pResSamplerState)				return E_FAIL;
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/LightObject/SK_LightObject.bin"))) {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/Skeleton/LightObject/SK_LightObject.bin"))) {
 		E::CResModel::DESC pDesc = { XMMatrixIdentity() };
 		if (FAILED(res->Load(pDesc)))	return E_FAIL;
 	}
