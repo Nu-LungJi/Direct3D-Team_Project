@@ -56,7 +56,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         }
 
     }
-	return EVALUATE::RUN;
+	return EVALUATE::SUCCESS;
 }
 
 nlohmann::json CBTSelector::Save_Node()

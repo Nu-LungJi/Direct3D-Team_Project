@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GameObject.h"
 
 NS_BEGIN(Engine)
@@ -74,8 +74,9 @@ private:
 	_string												m_SaveName;
 	const _char*										m_pNodeName;
 	BEHAVIOR											m_eBTType;
+	ImFont*												m_FontRegular{ nullptr };
 
-	ImFont*										m_FontRegular{ nullptr };
+	//std::map<_string, _string>							m_LoadDataList;
 public:
 	static UPtr<CNodeEditor> Create();
 	

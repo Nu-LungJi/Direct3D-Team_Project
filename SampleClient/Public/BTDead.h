@@ -3,14 +3,14 @@
 #include "BTDecorator.h"
 
 NS_BEGIN(Client)
-class CBTDecSearch final : public CBTDecorator
+class CBTDead final : public CBTDecorator
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTDecSearch, CBTDecorator)
+	DECLARE_DERIVED_TYPE(CBTDead, CBTDecorator)
 private:
-	CBTDecSearch();
-	CBTDecSearch(const CBTDecSearch& rhs);
-	~CBTDecSearch() override;
+	CBTDead();
+	CBTDead(const CBTDead& rhs);
+	~CBTDead() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitalizePrototype(void* pArg = nullptr);
@@ -18,14 +18,13 @@ private:
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
 	virtual nlohmann::json			Save_Node()override;
-	HRESULT							Load_json(const nlohmann::json& j) override;
+	HRESULT					Load_json(const nlohmann::json& j) override;
 
 	virtual void		Update_Gui() override;
 private:
-	_float				m_fValue{10.f};
-	_bool				m_bUseAngle{ false };
+	_float				m_fDist{ 10.f };
 public:
-	static UPtr<CBTDecSearch> Create();
+	static UPtr<CBTDead> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END

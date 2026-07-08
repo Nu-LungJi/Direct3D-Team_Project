@@ -45,7 +45,8 @@ nlohmann::json CBTDecorator::Save_Node()
 
 	if (m_GuiLink.SlotEnd[0].iDestNode != -1)
 	{
-		j["LinkEndSlot"] = m_GuiLink.SlotEnd[0];
+		JsonSaveLoadManager::SaveJsonTypeString(j, "LinkEndSlotName", m_GuiLink.SlotEnd[0].DestName);
+		SaveJsonValue(j, "LinkEndSlotID", m_GuiLink.SlotEnd[0].iDestNode);
 		SaveJsonEnum(j, "LinkEndSlotEnum", m_GuiLink.SlotEnd[0].eType);
 	}	
 	if(m_pDecorator != nullptr)
@@ -53,28 +54,33 @@ nlohmann::json CBTDecorator::Save_Node()
 	
 	return j;
 }
-void CBTDecorator::Update_Gui()
-{
 
-}
 HRESULT CBTDecorator::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	m_GuiLink.SlotEnd.resize(1);
 	if (j.contains("LinkEndSlot"))
 	{
-		DEST_NODE Node{};
-		j["LinkEndSlot"].get_to<DEST_NODE>(Node);
-		m_GuiLink.SlotEnd[0] = Node;
+		JsonSaveLoadManager::LoadJsonTypeString(j, "LinkEndSlotName", m_GuiLink.SlotEnd[0].DestName);
+		LoadJsonValue(j, "LinkEndSlotID", m_GuiLink.SlotEnd[0].iDestNode);
 		LoadJsonEnum(j, "LinkEndSlotEnum", m_GuiLink.SlotEnd[0].eType);
 	}
 
 
 	if (j.contains("Child"))
 	{
-		auto pSrc = CGameInstance::Get().Clone_Action(m_eGroup, m_MasterName, nullptr);
-		pSrc->Load_json(j["Child"]);
-		m_pDecorator = std::move(pSrc);
+		_string MasterName{};
+		NODEGROUP eGroup{};
+		if (JsonSaveLoadManager::LoadJsonTypeString(j["Child"], "MasterName", MasterName))
+		{
+			if (LoadJsonEnum(j["Child"], "Group", eGroup))
+			{
+				auto pSrc = CGameInstance::Get().Clone_Action(eGroup, MasterName, nullptr);
+				pSrc->Load_json(j["Child"]);
+				m_pDecorator = std::move(pSrc);
+			}
+
+		}
 	}
 	
 

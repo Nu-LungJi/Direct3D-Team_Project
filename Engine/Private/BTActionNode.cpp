@@ -42,15 +42,20 @@ nlohmann::json CBTActionNode::Save_Node()
 {
 	nlohmann::json j;
 	j = __super::Save_Node();
-	j["Action_Value"] = m_Value;
+	SaveJsonValue(j,"ActionSpeed",m_Value.fSpeed);
+	SaveJsonValue(j,"ActionTimeTick",m_Value.fTick);
+	SaveJsonValue(j,"ActionMaxTime",m_Value.fTime);
+	SaveJsonValue(j,"ActionAnimIndex",m_Value.iAnimIndex);
 	return j;
 }
 
 HRESULT CBTActionNode::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	j["Action_Value"].get_to<ACTION_VALUE>(m_Value);
-
+	LoadJsonValue(j, "ActionSpeed", m_Value.fSpeed);
+	LoadJsonValue(j, "ActionTimeTick", m_Value.fTick);
+	LoadJsonValue(j, "ActionMaxTime", m_Value.fTime);
+	LoadJsonValue(j, "ActionAnimIndex", m_Value.iAnimIndex);
 	return S_OK;
 }
 

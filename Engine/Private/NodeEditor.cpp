@@ -246,15 +246,13 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 
 	if (!m_bSaveLoad && ImGui::Button("Save"))
 	{
-		
 		m_AddNodeName = "";
 		m_bSaveLoad = true;
 	}
 	if (!m_bSaveLoad && ImGui::Button("Load"))
 	{
-		m_pBeHavior->Load_Data("./Resources/json/Behavior/test.json");
+		m_pBeHavior->Load_Data("./Resources/json/Behavior/MoveTest2.json");
 		m_AddNodeName = "";
-		m_bSaveLoad = true;
 	}
 	
 	if (m_bSaveLoad)
@@ -616,11 +614,20 @@ void CNodeEditor::SavePopUp()
 			_bool bfalse{false};
 			for (auto& iter : std::filesystem::recursive_directory_iterator(PathName))
 			{
-				if (iter.path().filename().stem() == m_SaveName)
+				if (iter.path().filename().stem() == "")
 				{
 					bfalse = true;
-					MSG_BOX("File Name Same or Blink");
+					MSG_BOX("File Name Blink");
+				
+					
 				}
+				//if (iter.path().filename().stem() == m_SaveName)
+				//{
+				//	bfalse = true;
+				//	MSG_BOX("File Name Same or Blink");
+				//
+				//	
+				//}
 			}
 		
 			if (!bfalse)
@@ -718,7 +725,7 @@ void CNodeEditor::ShowWidgetByType(CBTRoot* pNode)
 {
 	BEHAVIOR eNodeType = pNode->Get_GuiNodeInfo().eMyType;
 
-	if (eNodeType == BEHAVIOR::ACTION)
+	if (eNodeType == BEHAVIOR::ACTION || eNodeType == BEHAVIOR::DECORATOR)
 		CGameInstance::Get().Show_Action_NodeWidget(pNode);
 	else if (eNodeType == BEHAVIOR::SELECTOR || eNodeType == BEHAVIOR::SECQUNCE)
 	{

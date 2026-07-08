@@ -311,15 +311,18 @@ HRESULT CMainApp::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
 		return E_FAIL;
 
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTchase", CBTchase::Create())))
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
 		return E_FAIL;
 
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnSlow", CBTTurnSlow::Create())))
+		return E_FAIL;
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
 		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecTimer", CBTDecTimer::Create())))
+		return E_FAIL;
 
 	return S_OK;
 }

@@ -24,7 +24,7 @@ protected:
 public:
 	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
 
-	virtual void				Update_Gui();
+	virtual void				Update_Gui() PURE;
 	nlohmann::json				Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j)override;
 	UPtr<CBTRoot>&				Get_Child() { return m_pDecorator; }

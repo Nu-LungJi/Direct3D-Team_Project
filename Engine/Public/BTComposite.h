@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "BTRoot.h"
 
 //셀렉터 시퀀스용도
@@ -13,7 +13,7 @@ protected:
 	CBTComposite(const CBTComposite& rhs);
 	 ~CBTComposite() override;
 
-	 virtual HRESULT InitalizePrototype(void* pArg = nullptr) { return S_OK; }
+	 virtual HRESULT InitalizePrototype(void* pArg = nullptr) { m_MasterName = "Root"; return S_OK; }
 	 virtual HRESULT Initalize(void* pArg) override;
 protected:
 	typedef struct strnodevalue
