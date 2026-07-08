@@ -11,6 +11,7 @@ class CResSamplerState;
 class CResStaticModel;
 class CResVertexShader;
 
+
 class ENGINE_DLL CMapMeshObject : public CGameObject
 {
 public:
