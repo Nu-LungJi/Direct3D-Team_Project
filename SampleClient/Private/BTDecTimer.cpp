@@ -31,39 +31,30 @@ HRESULT CBTDecTimer::Initalize(void* pArg)
 
 EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 {
-	//auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	//if (pTransform == nullptr)
-	//	return EVALUATE::FAILED;
-	//if()조건을 만족하면
-	//__super::Evaluate(fTimeDelta);
 	m_fTick += fTimeDelta;
 	
-	if (m_fTick > m_fTimeTickCnt)
-	{
-		m_fTick = 0.f;
-		++m_iCurrentTimeCnt;
-	}
-	if (m_iCurrentTimeCnt > m_iMaxTimeCnt)
-	{
-		__super::Evaluate(fTimeDelta);
-		m_iCurrentTimeCnt = 0;
+	if (m_fWaitTime < m_fTick)
 		return EVALUATE::SUCCESS;
-	}
-		
-	return EVALUATE::FAILED;
+
+	EVALUATE result = __super::Evaluate(fTimeDelta);
+
+	if (result != EVALUATE::RUN)
+		m_fTick = 0.f;
+
+	return result;
 }
 nlohmann::json CBTDecTimer::Save_Node()
 {
 	nlohmann::json j;
 	j = __super::Save_Node();
-	SaveJsonValue(j, "MaxTimeTickCnt", m_fTimeTickCnt);
+	SaveJsonValue(j, "WaitTime", m_fWaitTime);
 	SaveJsonValue(j, "MaxTimeCnt", m_iMaxTimeCnt);
 	return j;
 }
 HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	if (!LoadJsonValue(j, "MaxTimeTickCnt", m_fTimeTickCnt))
+	if (!LoadJsonValue(j, "WaitTime", m_fWaitTime))
 		MSG_BOX("Failed Load MaxTimeTickCnt : BTDecTimer");
 
 	if (!LoadJsonValue(j, "MaxTimeCnt", m_iMaxTimeCnt))

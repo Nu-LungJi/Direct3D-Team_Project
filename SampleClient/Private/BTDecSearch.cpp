@@ -31,6 +31,8 @@ HRESULT CBTDecSearch::Initalize(void* pArg)
 
 EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 {
+	if (m_bTrue)
+		return EVALUATE::SUCCESS;
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
 		return EVALUATE::FAILED;
@@ -42,7 +44,6 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	_float fDistance = XMVectorGetX(XMVector3Length(vSrcPos - vDestPos));
 	if (fDistance <= m_fValue);
 		return __super::Evaluate(fTimeDelta);
-	
 
 	return EVALUATE::FAILED;
 }

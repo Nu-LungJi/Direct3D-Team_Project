@@ -35,17 +35,17 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
 		return EVALUATE::FAILED;
-
-	_float3 fScale = pTransform->GetScale();
-
-	_vector vLook = XMVector3Normalize(pTransform->GetState(STATE::POSITION))-(vDest.GetState(STATE::POSITION));
+	XMMATRIX mat = XMMatrixIdentity();
+	_vector vLook = XMVector3Normalize((vDest.GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION)));
 	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
 	_vector vUp = XMVector3Cross(vLook, vRight);
-	vLook = XMVector3Cross(vRight, vUp);
 
-	pTransform->SetState(STATE::RIGHT, vRight * fScale.x);
-	pTransform->SetState(STATE::UP, vUp * fScale.y);
-	pTransform->SetState(STATE::LOOK, vLook * fScale.z);
+	mat.r[0] = vRight;
+	mat.r[1] = vUp;
+	mat.r[2] = vLook;
+
+	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
+	pTransform->SetQuaternion(quat);
 
 	return EVALUATE::SUCCESS;
 }

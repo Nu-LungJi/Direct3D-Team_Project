@@ -34,20 +34,20 @@ EVALUATE CBTTurnSlow::Evaluate(_float fTimeDelta)
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
 		return EVALUATE::FAILED;
-	_float3 vSrc = pTransform->GetPosition();
-	_float3 fScale = pTransform->GetScale();
-	
+	XMMATRIX mat = XMMatrixIdentity();
 	m_Value.fTick += fTimeDelta;
 	_float t = m_Value.fTick / m_Value.fTime;
-	_vector vLook  = XMVectorLerp(XMVector3Normalize(pTransform->GetState(STATE::LOOK)), 
-								  XMVector3Normalize(vDest.GetState(STATE::LOOK)),t);
+	_vector vLook = XMVectorLerp(pTransform->GetState(STATE::LOOK),
+		XMVector3Normalize((vDest.GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION))),t);
+	
 	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
 	_vector vUp = XMVector3Cross(vLook, vRight);
-	vLook = XMVector3Cross(vRight, vUp);
 
-	pTransform->SetState(STATE::RIGHT, vRight * fScale.x);
-	pTransform->SetState(STATE::UP, vUp* fScale.y);
-	pTransform->SetState(STATE::LOOK, vLook * fScale.z);
+	mat.r[0] = vRight;
+	mat.r[1] = vUp;
+	mat.r[2] = vLook;
+	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
+	pTransform->SetQuaternion(quat);
 	if (t <= 1.f)
 		return EVALUATE::RUN;
 
