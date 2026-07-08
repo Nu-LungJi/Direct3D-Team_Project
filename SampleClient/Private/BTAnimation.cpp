@@ -32,12 +32,15 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
 	auto pAnimator = Cast<CComAnimator>(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
-	if (pAnimator != nullptr && -1 != m_Value.iAnimIndex)
-	{
-		pAnimator->SetPlay(true);
-		pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
-	}
-		
+	if (pAnimator == nullptr && -1 != m_Value.iAnimIndex)
+		return EVALUATE::FAILED;
+
+	pAnimator->SetPlay(true);
+	pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
+	
+	if (m_bLoop)
+		return EVALUATE::SUCCESS;
+
 	if(pAnimator->GetFinish())
 		return EVALUATE::SUCCESS;
 
@@ -45,6 +48,12 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 }
 void CBTAnimation::Update_Gui()
 {
+
+	if (ImGui::Button("Loop Change"))
+		m_bLoop = !m_bLoop;
+	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
+	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)
@@ -59,6 +68,20 @@ void CBTAnimation::Update_Gui()
 			m_Value.iAnimIndex = iIndex;
 		}
 	}
+}
+nlohmann::json CBTAnimation::Save_Node()
+{
+	nlohmann::json j;
+	
+	j = __super::Save_Node();
+	SaveJsonValue(j, "Loop", m_bLoop);
+	return j;
+}
+HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "Loop", m_bLoop);
+	return S_OK;
 }
 E::UPtr<CBTAnimation> CBTAnimation::Create()
 {

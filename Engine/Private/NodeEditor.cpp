@@ -154,42 +154,46 @@ void CNodeEditor::Show_Editor()
 	static NODEGROUP eGroupType = NODEGROUP::END;
 	if (ImGui::BeginPopup("context_menu"))
 	{
-		GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
-		if (pNode)
+		if (m_Nodes.size() - 1 <= m_iNodeSelect)
 		{
-			//노드에서 우클릭 -> Rename delete copy ...
-			ImGui::Text("Node %s", pNode->Name);
-			ImGui::Separator();
-			if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
-			if (ImGui::MenuItem("Delete..", NULL, false, false)) {}
-			if (ImGui::MenuItem("Copy", NULL, false, false)) {}
-		}
-		else
-		{
-			if (m_bPopupAction)
-				m_bPopupAction = false;
-			//빈공간 우클릭...
-			if (ImGui::MenuItem("Add_Selector"))
-			{
-				m_eBTType = BEHAVIOR::SELECTOR;
-				m_pNodeName = "Selector";
-				m_bPopup = true;
-			}
-			else if (ImGui::MenuItem("Add_Sequence"))
-			{
-				m_eBTType = BEHAVIOR::SECQUNCE;
-				m_pNodeName = "Sequence";
-				m_bPopup = true;
-			}
-			else if (ImGui::MenuItem("Add_Action"))
-			{
-				bTypeCheck = true;
-				m_bPopupAction = true;
-			}
-			
-			if (ImGui::MenuItem("Paste", NULL, false, false)) {}
-		}
 
+			GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
+			if (pNode)
+			{
+				//노드에서 우클릭 -> Rename delete copy ...
+				ImGui::Text("Node %s", pNode->Name);
+				ImGui::Separator();
+				if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
+				if (ImGui::MenuItem("Delete..", NULL, false, false)) {}
+				if (ImGui::MenuItem("Copy", NULL, false, false)) {}
+			}
+			else
+			{
+				if (m_bPopupAction)
+					m_bPopupAction = false;
+				//빈공간 우클릭...
+				if (ImGui::MenuItem("Add_Selector"))
+				{
+					m_eBTType = BEHAVIOR::SELECTOR;
+					m_pNodeName = "Selector";
+					m_bPopup = true;
+				}
+				else if (ImGui::MenuItem("Add_Sequence"))
+				{
+					m_eBTType = BEHAVIOR::SECQUNCE;
+					m_pNodeName = "Sequence";
+					m_bPopup = true;
+				}
+				else if (ImGui::MenuItem("Add_Action"))
+				{
+					bTypeCheck = true;
+					m_bPopupAction = true;
+				}
+
+				if (ImGui::MenuItem("Paste", NULL, false, false)) {}
+			}
+
+		}
 
 		ImGui::EndPopup();
 	}
@@ -402,7 +406,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 					m_CurrentNode = CurNode;
 					
 				}
-				else if (m_CurrentNode.bSelected && m_CurrentNode.eType == NODETYPE::START)
+				else if (-1 == pLink->SlotEnd[iSlot].iDestNode && m_CurrentNode.bSelected && m_CurrentNode.eType == NODETYPE::START)
 				{
 					for (auto iter = m_BTNodesTmp.begin(); iter != m_BTNodesTmp.end(); ++iter)
 					{

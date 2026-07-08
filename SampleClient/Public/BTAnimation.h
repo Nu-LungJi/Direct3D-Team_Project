@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Client_Defines.h"
 #include "BTActionNode.h"
 
@@ -18,8 +18,12 @@ private:
 	HRESULT Initalize(void* pArg)override;
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
-
 	virtual void		Update_Gui() override;
+
+	virtual nlohmann::json			Save_Node()override;
+	HRESULT					Load_json(const nlohmann::json& j) override;
+private:
+	_bool				m_bLoop{ false };
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;

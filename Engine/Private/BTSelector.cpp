@@ -42,6 +42,9 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
+			m_NodeValue.bCur = false;
+			m_NodeValue.iPreSecquenceIndex = 0;
+			return EVALUATE::SUCCESS;
         }
         else if (eValuate == EVALUATE::RUN)
         {
@@ -49,14 +52,13 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
             m_NodeValue.iPreSecquenceIndex = i;
             return  EVALUATE::RUN;
         }
-        else if (eValuate == EVALUATE::FAILED)
-        {
-            m_NodeValue.bCur = false;
-            return EVALUATE::FAILED;
-        }
+ 
 
     }
-	return EVALUATE::SUCCESS;
+
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
+	return EVALUATE::FAILED;
 }
 
 nlohmann::json CBTSelector::Save_Node()

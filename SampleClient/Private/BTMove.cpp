@@ -63,7 +63,7 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	//	return EVALUATE::SUCCESS;
 	//}else if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_UP))
 	//{
-		pTransform->GoStraight(2.f*fTimeDelta);
+		pTransform->GoStraight(fTimeDelta);
 		return EVALUATE::SUCCESS;
 	//}
 	//if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_DOWN))
@@ -76,16 +76,16 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 }
 void CBTMove::Update_Gui()
 {
-#define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M };
-#undef X
-	ImGui::Text("Current Move Type : "); ImGui::SameLine(140.f); ImGui::Text(pMoveType[ETOUI(m_eMove)]);
-
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		if (ImGui::Button(pMoveType[i]))
-			m_eMove = static_cast<MOVE>(i);
-	}
+//#define X(name)#name,
+//	const _char* pMoveType[] = { MOVE_M };
+//#undef X
+//	ImGui::Text("Current Move Type : "); ImGui::SameLine(140.f); ImGui::Text(pMoveType[ETOUI(m_eMove)]);
+//
+//	for (uint32_t i = 0; i < 4; ++i)
+//	{
+//		if (ImGui::Button(pMoveType[i]))
+//			m_eMove = static_cast<MOVE>(i);
+//	}
 }
 E::UPtr<CBTMove> CBTMove::Create()
 {

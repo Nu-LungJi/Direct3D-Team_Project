@@ -42,7 +42,7 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
 		if (eValuate == EVALUATE::SUCCESS)
 		{
-
+			return eValuate;
 		}
         else if (eValuate == EVALUATE::RUN)
         {

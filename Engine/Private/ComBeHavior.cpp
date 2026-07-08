@@ -74,6 +74,8 @@ void CComBeHavior::Save_Data(const _string& filePath)
 HRESULT CComBeHavior::Load_Data(const _string& filePath)
 {
 	m_Root->Get_Nodes()->clear();
+	m_iNodeID = 0;
+	m_NodeMap.clear();
     nlohmann::json j;
     std::ifstream file(filePath);
     if (!file.is_open())

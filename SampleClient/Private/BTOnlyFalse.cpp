@@ -38,16 +38,7 @@ EVALUATE CBTOnlyFalse::Evaluate(_float fTimeDelta)
 }
 void CBTOnlyFalse::Update_Gui()
 {
-#define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M };
-#undef X
-	ImGui::Text("Current Move Type : "); ImGui::SameLine(140.f); ImGui::Text(pMoveType[ETOUI(m_eMove)]);
 
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		if (ImGui::Button(pMoveType[i]))
-			m_eMove = static_cast<MOVE>(i);
-	}
 }
 E::UPtr<CBTOnlyFalse> CBTOnlyFalse::Create()
 {

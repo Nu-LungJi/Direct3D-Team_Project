@@ -20,7 +20,7 @@ HRESULT CBTOnlyTrue::InitalizePrototype(void* pArg)
 	__super::InitalizePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
-	m_MasterName = "BTOnlyFalse";
+	m_MasterName = "BTOnlyTrue";
 	return S_OK;
 }
 HRESULT CBTOnlyTrue::Initalize(void* pArg)
@@ -34,20 +34,10 @@ HRESULT CBTOnlyTrue::Initalize(void* pArg)
 
 EVALUATE CBTOnlyTrue::Evaluate(_float fTimeDelta)
 {
-	return EVALUATE::FAILED;
+	return EVALUATE::SUCCESS;
 }
 void CBTOnlyTrue::Update_Gui()
 {
-#define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M };
-#undef X
-	ImGui::Text("Current Move Type : "); ImGui::SameLine(140.f); ImGui::Text(pMoveType[ETOUI(m_eMove)]);
-
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		if (ImGui::Button(pMoveType[i]))
-			m_eMove = static_cast<MOVE>(i);
-	}
 }
 E::UPtr<CBTOnlyTrue> CBTOnlyTrue::Create()
 {
