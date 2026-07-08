@@ -122,10 +122,13 @@ void CLight::Update(E::_float fTimeDelta) {
     XMMATRIX CameraTransMat = XMMatrixTranslationFromVector(XMLoadFloat3(&m_pComTransform->GetPosition()));
     XMMATRIX BBDMat = CameraInvViewMat * CameraTransMat;
 
-    m_pComTransform->SetState(STATE::RIGHT, BBDMat.r[0]);
-    m_pComTransform->SetState(STATE::UP, BBDMat.r[1]);
-    m_pComTransform->SetState(STATE::LOOK, BBDMat.r[2]);
-    m_pComTransform->SetState(STATE::POSITION, BBDMat.r[3]);
+	m_pComTransform->SetQuaternion(XMQuaternionRotationMatrix({
+		XMVectorSetW(BBDMat.r[0], 0.f), // RIGHT
+		XMVectorSetW(BBDMat.r[1], 0.f), // UP
+		XMVectorSetW(BBDMat.r[2], 0.f), // LOOK
+		XMVectorSet(0.f, 0.f, 0.f, 1.f)
+		}));
+	m_pComTransform->SetPosition(XMVectorSetW(BBDMat.r[3], 1.f));
 
 #endif
 
