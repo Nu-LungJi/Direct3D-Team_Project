@@ -344,7 +344,6 @@ void CGameObjectManager::DelLayer(std::string_view sLayerName)
 		}
 	}
 	m_Layers[iter->second].second.clear();
-	FrameEnd();
 
 	SortLayer();
 }
