@@ -29,7 +29,7 @@ cbuffer CB_SPAWN_COUNT : register(b6)
     float2 pad;
 };
 
-StructuredBuffer<SPAWN_DATA> gSpawnBuffer : register(t0);
+StructuredBuffer<SPAWN_DATA> gSpawnBuffer : register(t6);
 ConsumeStructuredBuffer<uint> gDeadList : register(u0);
 RWStructuredBuffer<ParticleData> gParticles : register(u1);
 

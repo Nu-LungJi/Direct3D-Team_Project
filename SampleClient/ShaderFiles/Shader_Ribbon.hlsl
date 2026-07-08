@@ -1,5 +1,6 @@
-// Shader_Beam.hlsl
-#include "./ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderHeader/SH_SamplerState.hlsli"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+
 
 cbuffer CB_BEAM : register(b0)
 {
@@ -11,8 +12,8 @@ struct VS_IN
 {
     float3 vPosition : POSITION;
     float2 vUV : TEXCOORD0;
-    float4 vColor : INSTANCE_COLOR0;
-    float4 vInstEmissive : INSTANCE_EMISSIVE;
+    float4 vColor : COLOR0;
+    float4 vInstEmissive : EMISSIVE;
 };
 
 struct VS_OUT
@@ -36,35 +37,28 @@ VS_OUT VSMain(VS_IN In)
 Texture2D g_BeamTexture : register(t0);
 SamplerState g_Sampler : register(s0);
 
-// MRT(Multi-Render Target) 대응 출력 구조체
 struct PS_OUT
 {
     float4 vDiffuse : SV_TARGET0;
-    float4 vNormal : SV_TARGET1;
-    float4 vSMRO : SV_TARGET2;
-    float3 vEmissive : SV_TARGET3;
+
 };
 
 PS_OUT PSMain(VS_OUT In)
 {
+
+
     PS_OUT Out = (PS_OUT) 0;
 
-    // 텍스처 샘플링 (정확한 변수명 vTextureColor로 통일)
-    float4 vTextureColor = g_BeamTexture.Sample(g_Sampler, In.vUV);
-    float4 finalColor = vTextureColor * In.vColor;
-    Out.vDiffuse = finalColor;
-    // 알파 테스트 혹은 특정 채널 기준 discard (여기서는 투명도나 특정 값 기준으로 처리)
-    if (finalColor.a <= 0.05f)
+    float4 texColor = g_BeamTexture.Sample(g_Sampler, In.vUV) * In.vColor;
+    if (texColor.a <= 0.01f)
         discard;
+    if (texColor.x < 0.1f)
+        discard;
+    float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
+    float3 FinalColor = texColor.rgb + instEmissive;
 
-    // 2. Normal (빔은 이펙트이므로 기본 평면 노멀 또는 0을 줍니다. 필요시 계산)
-    Out.vNormal = float4(0.f, 0.f, 0.f, 1.f);
-
-    // 3. SMRO (Specular, Roughness, Metalness, Occlusion)
-    // 비금속질에 매끄러운 느낌을 주기 위해 임의의 기본값 세팅
-    Out.vSMRO = float4(0.f, 0.5f, 0.f, 1.f);
-
-    Out.vEmissive = float4(finalColor.xyz * In.vEmissive.xyz * In.vEmissive.w, 1.0f);
-
+    Out.vDiffuse = float4(FinalColor, texColor.a);
+    
+    
     return Out;
 }

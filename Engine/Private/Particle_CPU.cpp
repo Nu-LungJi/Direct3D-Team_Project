@@ -249,11 +249,30 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
         pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
+		SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+			DiffuseTexture = Resource;
+		}
+		pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
+		SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+			NormalTexture = Resource;
+		}
+		pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
 
+		SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+			SMROTexture = Resource;
+		}
+		pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
 
-
-        m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-        m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
+		SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+			EmissiveTexture = Resource;
+		}
+		pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
+        //m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+        //m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
 
         pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 
@@ -266,8 +285,6 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
     return S_OK;
 }
-
-
 
 
 HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

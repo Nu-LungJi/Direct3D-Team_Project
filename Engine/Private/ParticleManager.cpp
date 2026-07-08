@@ -473,7 +473,7 @@ HRESULT CParticleManager::SpawnAllInGroup(const StringID& sGroupTag,
     return hr;
 }
 
-HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, _float4 emissive, _float fDuration)
+HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
     auto pParticle = GetParticle("BEAM", "ATTACK");
     if (!pParticle)
@@ -481,7 +481,7 @@ HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, c
     auto pBeam = static_cast<CBeam_CPU*>(pParticle);
 
     for (uint32_t i = 0; i < quantity; i++) {
-        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
+        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
     }
     return S_OK;
 }
@@ -541,7 +541,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
                 auto pBeam = static_cast<CBeam_CPU*>(pParticle);
                 pBeam->AddBeam(cmd.beamStart, cmd.beamEnd,
                     cmd.fDisplacementAmplitude, (uint32_t)cmd.iDisplacementIterations, cmd.fDisplacementDamping,
-                    cmd.flickerTimeInverval, cmd.emissive,cmd.beamDuration);
+                    cmd.flickerTimeInverval,cmd.color ,cmd.emissive,cmd.beamDuration);
             }
             else
             {

@@ -117,7 +117,7 @@ public:
 
     HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
         _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, _float4 emissive, _float fDuration);
+        _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration);
 
 public:
     // 조회 헬퍼

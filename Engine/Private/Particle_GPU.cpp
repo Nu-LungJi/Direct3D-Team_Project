@@ -249,7 +249,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
         pContext->CSSetConstantBuffers(6, 1, m_pComSpawnCBuffer->GetCBuffer().GetAddressOf());
 
         ID3D11ShaderResourceView* spawnSRV = m_pSpawnListBuffer->GetSRV().Get();
-        pContext->CSSetShaderResources(0, 1, &spawnSRV);
+        pContext->CSSetShaderResources(6, 1, &spawnSRV);
 
         ID3D11UnorderedAccessView* spawnUAVs[] = {
             m_pDeadListBuffer->GetUAV().Get(),
@@ -327,7 +327,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
 
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
-    pContext->VSSetShaderResources(0, 1, &pParticleSRV);
+    pContext->VSSetShaderResources(4, 1, &pParticleSRV);
 
     const auto& vs = m_pResVertexShader; // 인스턴싱용 신규 VS 필요
     const auto& ps = m_pResPixelShader;
@@ -349,7 +349,31 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
         pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-        m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
+
+		SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+			DiffuseTexture = Resource;
+		}
+		pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
+		SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+			NormalTexture = Resource;
+		}
+		pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
+
+		SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+			SMROTexture = Resource;
+		}
+		pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
+
+		SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+			EmissiveTexture = Resource;
+		}
+		pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
+
+       // m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
 
         pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 

@@ -188,7 +188,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPUParticle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -196,7 +196,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPUParticle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{

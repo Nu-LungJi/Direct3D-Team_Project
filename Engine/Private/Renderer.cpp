@@ -666,10 +666,10 @@ HRESULT CRenderer::Render_Alpha() {
         return E_FAIL;
     }
 
-    //if (FAILED(RenderParticle()))
-    //{
-    //    return E_FAIL;
-    //}
+    if (FAILED(RenderParticle()))
+    {
+        return E_FAIL;
+    }
    
     // UnBind RenderTargets
     {

@@ -22,19 +22,18 @@ CParticle_Fire_CPU::~CParticle_Fire_CPU()
 HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
 {
     DESC desc{};
-    desc.whatKind = MESHORTEXTURE::MESH;
     desc.iMaxParticles = 10000;
-    //desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
-    //desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };
 
 
-    //≈ÿΩ∫√ƒøÎ
-    //desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
+    //ÌÖçÏä§Ï≥êÏö©
     //desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };
+    //desc.whatKind = MESHORTEXTURE::TEX;
+    //desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
     //desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX" };
     //desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX" };
 
-    //∏ﬁΩ¨øÎ
+    //Î©îÏâ¨Ïö©
+    desc.whatKind = MESHORTEXTURE::MESH;
     desc.VSID = { "SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_MESH" };
     desc.PSID = { "SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_MESH" };
     
@@ -49,7 +48,7 @@ HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
 
 void CParticle_Fire_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 {
-    // ∫Œ∑¬ («œµÂƒ⁄µ˘) - Spawn()¿∏∑Œ πﬁ¿∫ √ ±‚ velocity ¿ßø° ∞Ëº” ¥ı«ÿ¡¸
+    // Î∂ÄÎ†• (ÌïòÎìúÏΩîÎî©) - Spawn()ÏúºÎ°ú Î∞õÏùÄ Ï¥àÍ∏∞ velocity ÏúÑÏóê Í≥ÑÏÜç ÎçîÌï¥Ïßê
     //p.vVelocity.y += Randf(1,4) * fTimeDelta;
     //p.vVelocity.x *= (1.f - 0.5f * fTimeDelta);
     //p.vVelocity.z *= (1.f - 0.5f * fTimeDelta);

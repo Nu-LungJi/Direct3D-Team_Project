@@ -1,5 +1,6 @@
+#include "../../Engine/ShaderFiles/ShaderHeader/SH_SamplerState.hlsli"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
-#include "./ShaderDefines.hlsl"
 
 struct VS_IN
 {
