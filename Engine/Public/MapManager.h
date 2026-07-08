@@ -10,6 +10,7 @@
 
 NS_BEGIN(Engine)
 class COctreeNode;
+class CCameraObject;
 
 enum class EChunkLoadState
 {
@@ -85,6 +86,7 @@ public:
 // ---------------------------------MapChunk-----------------------------------
 public:
 	void RebuildChunks();
+	HRESULT RegisterMapMeshObject(const CHandle& hObject);
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_vChunkSize; }
 	void SetChunkStreaming(_bool enable) { m_bChunkStreaming = enable; }
@@ -94,6 +96,10 @@ private:
 	_float3 GetChunkCenter(const MAPCHUNK_COORD& coord);
 	BoundingBox MakeChunkBoundingBox(const MAPCHUNK_COORD& coord);
 	MAPCHUNK_COORD WorldToChunkCoord(const _float3& pos) const;
+	std::vector<MAPCHUNK_COORD> GetNeededChunksAroundCamera(const CCameraObject* pCamera) const;
+	void UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks);
+	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
+	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 private:
 	_float3 m_vChunkSize = { 50.f, 50.f, 50.f };
 	std::string m_sMapRootPath;

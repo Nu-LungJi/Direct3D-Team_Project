@@ -102,7 +102,7 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	if (m_bRenderEnable == false)
 		return;
 
-	//m_bRenderEnable = false;
+	m_bRenderEnable = false;
 
 	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
 	{

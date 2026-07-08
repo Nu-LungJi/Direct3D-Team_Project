@@ -1488,6 +1488,10 @@ void CGameInstance::RebuildMapChunks()
 {
 	m_pMapManager->RebuildChunks();
 }
+HRESULT CGameInstance::RegisterMapMeshObjectToMapChunk(const CHandle& hObject)
+{
+	return m_pMapManager->RegisterMapMeshObject(hObject);
+}
 const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();

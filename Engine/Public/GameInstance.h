@@ -306,6 +306,7 @@ public:
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
 	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
+	HRESULT RegisterMapMeshObjectToMapChunk(const CHandle& hObject);
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);

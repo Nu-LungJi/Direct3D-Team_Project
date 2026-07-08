@@ -50,7 +50,7 @@ public:
 public:
 	struct INSTANCING_STATS
 	{
-		_bool bEnabled = true;
+		_bool bEnabled = false;
 		uint32_t iObjects = 0;
 		uint32_t iInstances = 0;
 		uint32_t iBatches = 0;
