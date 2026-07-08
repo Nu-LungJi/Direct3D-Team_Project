@@ -55,7 +55,8 @@ HRESULT CImporter::ImportFBXFolder(
 	// "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/Static/"
 	// ------------------------------------------------------------
 	std::filesystem::path basePath = std::filesystem::path(rootPath) / category;
-
+	std::filesystem::path originTextureDir =
+		MakeTextureOutputDir(std::filesystem::path(rootPath) / "OriginData" / category);
 	for (const auto& entry : std::filesystem::recursive_directory_iterator(strSourceFolder))
 	{
 		if (!entry.is_regular_file())
@@ -102,6 +103,8 @@ HRESULT CImporter::ImportFBXFolder(
 
 		std::filesystem::create_directories(textureDir);
 
+	
+
 		if (HasExtractedModelData(modelDir, modelName))
 		{
 			continue;
@@ -113,6 +116,17 @@ HRESULT CImporter::ImportFBXFolder(
 		{
 			Clear();
 			continue;
+		}
+
+		// ------------------------------------------------------------
+	// Static bin 저장용 텍스처 복사
+	//
+	// Textures/OriginData/Static/*.png
+	// -> Textures/Static/모델이름/*.png
+	// ------------------------------------------------------------
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
 		}
 
 		std::filesystem::path outputPath = modelDir / (modelName + ".bin");
@@ -1437,6 +1451,8 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		// bin 추출 스킵 전에 texture 폴더 생성
 		// ------------------------------------------------------------
 		std::filesystem::path textureDir;
+		std::filesystem::path originTextureDir =
+			MakeTextureOutputDir(std::filesystem::path(rootPath) / "OriginData" / category);
 
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
@@ -1449,6 +1465,7 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 
 		std::filesystem::create_directories(textureDir);
 
+	
 		if (HasExtractedModelData(modelDir, modelName))
 			continue;
 
@@ -1458,6 +1475,17 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		{
 			Clear();
 			continue;
+		}
+		
+		// ------------------------------------------------------------
+		// Static bin 저장용 텍스처 복사
+		//
+		// Textures/OriginData/Static/*.png
+		// -> Textures/Static/모델이름/*.png
+		// ------------------------------------------------------------
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
 		}
 
 		std::filesystem::path outputPath = modelDir / (modelName + ".bin");
@@ -1490,6 +1518,101 @@ int32_t CImporter::Get_BoneIndex(const char* pBoneName)
         return -1;
 
     return iBoneIndex;
+}
+
+void CImporter::CopyPngFilesToFolder(
+	const std::filesystem::path& srcDir,
+	const std::filesystem::path& dstDir
+) const
+{
+	if (!std::filesystem::exists(srcDir))
+		return;
+
+	if (!std::filesystem::is_directory(srcDir))
+		return;
+
+	std::filesystem::create_directories(dstDir);
+
+	for (const auto& entry : std::filesystem::directory_iterator(srcDir))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		const std::filesystem::path& srcPath = entry.path();
+
+		std::string ext = srcPath.extension().string();
+
+		if (_stricmp(ext.c_str(), ".png") != 0)
+			continue;
+
+		std::filesystem::path dstPath = dstDir / srcPath.filename();
+
+		std::error_code ec;
+
+		std::filesystem::copy_file(
+			srcPath,
+			dstPath,
+			std::filesystem::copy_options::overwrite_existing,
+			ec
+		);
+	}
+}
+
+void CImporter::CopyUsedTextureFilesToFolder(
+	const std::filesystem::path& srcDir,
+	const std::filesystem::path& dstDir
+) const
+{
+	if (!std::filesystem::exists(srcDir))
+		return;
+
+	if (!std::filesystem::is_directory(srcDir))
+		return;
+
+	std::filesystem::create_directories(dstDir);
+
+	for (const auto& mat : Materials)
+	{
+		if (mat == nullptr)
+			continue;
+
+		for (const auto& texGroup : mat->m_textures)
+		{
+			for (const auto& tex : texGroup)
+			{
+				if (tex.File.empty())
+					continue;
+
+				// 기본은 material에 저장된 확장자 사용
+				std::filesystem::path srcPath =
+					srcDir / (tex.File + tex.Ext);
+
+				// 근데 png만 원본 폴더에 모아뒀다면 png 우선 탐색
+				std::filesystem::path srcPngPath =
+					srcDir / (tex.File + ".png");
+
+				if (std::filesystem::exists(srcPngPath))
+				{
+					srcPath = srcPngPath;
+				}
+
+				if (!std::filesystem::exists(srcPath))
+					continue;
+
+				std::filesystem::path dstPath =
+					dstDir / srcPath.filename();
+
+				std::error_code ec;
+
+				std::filesystem::copy_file(
+					srcPath,
+					dstPath,
+					std::filesystem::copy_options::overwrite_existing,
+					ec
+				);
+			}
+		}
+	}
 }
 
 void CImporter::Clear() {

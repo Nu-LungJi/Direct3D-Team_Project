@@ -63,7 +63,10 @@ public:
 		const std::string& strSourceFolder,
 		const std::string& strJsonFolder
 	);
-
+	void CopyUsedTextureFilesToFolder(
+		const std::filesystem::path& srcDir,
+		const std::filesystem::path& dstDir
+	) const;
 private:
 	std::unordered_set<std::string> LoadMapFBXNamesFromJsonFolder(
 		const std::string& strJsonFolder
@@ -79,6 +82,7 @@ private:
 
 
 public:
+	void CopyPngFilesToFolder(const std::filesystem::path& srcDir, const std::filesystem::path& dstDir) const;
 	void Clear();
 public:
 	int m_index{ 0 };
@@ -89,8 +93,11 @@ public:
 private:
 	std::string fileParentName;
 	std::string textureParentName;
+
 private:
 	std::filesystem::path m_FBXSourceDir;
+
+
 private:
 	std::filesystem::path MakeTextureOutputDir(const std::filesystem::path& modelOutputDir) const;
 
