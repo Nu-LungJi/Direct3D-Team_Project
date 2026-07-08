@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "MapManager.h"
 #include "MapMeshObject.h"
 #include <fstream>
@@ -408,7 +408,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {
 	if (clearBeforeLoad)
 	{
-		CGameInstance::Get().GameObjectAllReset();
+		CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
 		m_Chunks.clear();
 	}
 
@@ -733,7 +733,7 @@ void CMapManager::RebuildChunks()
 	{
 		for (const auto& handle : layer)
 		{
-			CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
+			CMapMeshObject* pObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
 
 			if (pObj == nullptr)
 				continue;

@@ -25,7 +25,7 @@ public:
 private:
 	void DrawGizmoToolbar();
 	void RenderGizmo();
-	void AddCamera();
+	//void AddDefaultCameraLight();
 
 private:
 	E::UPtr<CHierarchy> m_pHierarchy{};
