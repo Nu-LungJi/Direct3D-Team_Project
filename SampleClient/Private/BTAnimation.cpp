@@ -36,6 +36,7 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 		return EVALUATE::FAILED;
 
 	pAnimator->SetPlay(true);
+	
 	pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
 	
 	if (m_bLoop)

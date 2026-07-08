@@ -40,11 +40,7 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
             continue;
 
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
-		if (eValuate == EVALUATE::SUCCESS)
-		{
-			return eValuate;
-		}
-        else if (eValuate == EVALUATE::RUN)
+		if (eValuate == EVALUATE::RUN)
         {
             m_NodeValue.bCur = true;
             m_NodeValue.iPreSecquenceIndex = i;
@@ -52,11 +48,14 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
         }
         else if (eValuate == EVALUATE::FAILED)
         {
-            m_NodeValue.bCur = false;
-
+			m_NodeValue.bCur = false;
+			m_NodeValue.iPreSecquenceIndex = 0;
+			return EVALUATE::FAILED;
         }
 
     }
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
     return EVALUATE::SUCCESS;
 }
 
