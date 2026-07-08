@@ -8,6 +8,7 @@
 #include "DbgLineRender.h"
 #include "MapManager.h"
 #include "LightManager.h"
+#include "NavMeshManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -331,6 +332,11 @@ public:
 	CDbgLineRender* GetDbgLineRender() const { return m_pDbgLineRender.get(); };
 #pragma endregion
 
+#pragma region NAVMESH_MANAGER
+public:
+	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -380,6 +386,7 @@ private:
 	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 	UPtr<CMapManager> m_pMapManager{};
+	UPtr<CNavMeshManager> m_pNavMeshManager{};
 };
 
 NS_END

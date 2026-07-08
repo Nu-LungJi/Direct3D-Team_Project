@@ -80,6 +80,37 @@ void CMapEditorTerrain::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+	/*auto dbg = CGameInstance::Get().GetDbgLineRender();
+	if (!dbg || !m_pResMapEditorTerrainVIBuffer)
+		return;
+
+	dbg->SetColor({ 0.f, 1.f, 0.f, 1.f });
+
+	const auto& vertices = m_pResMapEditorTerrainVIBuffer->GetVertices();
+	const auto& indices = m_pResMapEditorTerrainVIBuffer->GetIndices();
+
+	for (size_t i = 0; i + 2 < indices.size(); i += 3)
+	{
+		const auto& p0 = vertices[indices[i + 0]].pos;
+		const auto& p1 = vertices[indices[i + 1]].pos;
+		const auto& p2 = vertices[indices[i + 2]].pos;
+
+		dbg->AddTriangle(p0, p1, p2);
+	}*/
+	
+}
+
+const std::vector<VTX_NORMAL_TEX>& CMapEditorTerrain::GetVertices() const
+{
+	static const std::vector<VTX_NORMAL_TEX> emptyVertices{};
+	return m_pResMapEditorTerrainVIBuffer ? m_pResMapEditorTerrainVIBuffer->GetVertices() : emptyVertices;
+}
+
+const std::vector<uint32_t>& CMapEditorTerrain::GetIndices() const
+{
+	static const std::vector<uint32_t> emptyIndices{};
+	return m_pResMapEditorTerrainVIBuffer ? m_pResMapEditorTerrainVIBuffer->GetIndices() : emptyIndices;
 }
 
 HRESULT CMapEditorTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

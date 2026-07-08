@@ -101,7 +101,7 @@ private:
 	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 private:
-	_float3 m_vChunkSize = { 50.f, 50.f, 50.f };
+	_float3 m_vChunkSize = { 100.f, 100.f, 100.f };
 	std::string m_sMapRootPath;
 
 private:

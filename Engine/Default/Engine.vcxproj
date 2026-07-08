@@ -262,6 +262,7 @@
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\NavMeshManager.h" />
     <ClInclude Include="..\public\ResPhysXBoxGeometry.h" />
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h" />
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
@@ -516,6 +517,7 @@
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />

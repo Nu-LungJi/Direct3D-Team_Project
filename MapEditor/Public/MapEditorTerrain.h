@@ -33,6 +33,10 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+public:
+	const std::vector<VTX_NORMAL_TEX>& GetVertices() const;
+	const std::vector<uint32_t>& GetIndices() const;
+
 private:
 	SPtr<CResMapEditorTerrainVIBuffer> m_pResMapEditorTerrainVIBuffer{};
 	SPtr<CResTexture2D> m_pResTerrainTexture2D{};

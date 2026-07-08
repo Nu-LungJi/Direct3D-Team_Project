@@ -28,6 +28,7 @@
 #include "ComCollider.h"
 #include "MapMeshObject.h"
 #include "MapManager.h"
+#include "NavMeshManager.h"
 #include "PhysXManager.h"
 #include "DbgLineRender.h"
 
@@ -185,6 +186,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pMapManager = CMapManager::Create();
 	if (m_pMapManager == nullptr)
+	{
+		return E_FAIL;
+	}
+	m_pNavMeshManager = CNavMeshManager::Create();
+	if (m_pNavMeshManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -351,6 +357,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pMapManager->Update(fTimeDelta);
 
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
+	m_pNavMeshManager->DrawDebug();
 
 	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
@@ -398,6 +405,7 @@ void CGameInstance::Release_Engine()
 	m_pDbgLineRender.reset();
 	m_pResourceManager.reset();
 	m_pPhysXManager.reset();
+	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pGraphicDevice.reset();
 }

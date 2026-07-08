@@ -2,7 +2,8 @@
 #include "MapEditorGUI.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
-
+#include "MapEditorTerrain.h"
+#include "ResMapEditorTerrainVIBuffer.h"
 NS_USING(Client)
 
 namespace
@@ -147,6 +148,81 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::Text("Batches: %u", instancingStats.iBatches);
 	ImGui::Text("Instances: %u", instancingStats.iInstances);
 	ImGui::Text("DrawCalls: %u", instancingStats.iDrawCalls);
+
+
+	// ---------------------------------------NavMeshBuild--------------------------------------
+	CHandle* phandle = GetSelectedHandle();
+	if (phandle != nullptr)
+	{
+		CMapEditorTerrain* pTerrain = CGameInstance::Get().GetGameObjectByHandleT<CMapEditorTerrain>(*phandle);
+		if (pTerrain != nullptr)
+		{
+			ImGui::Separator();
+			ImGui::TextDisabled("NavMesh");
+
+			static E::NAVMESH_BUILD_DESC navDesc{};
+			static bool debugDrawNavMesh = true;
+			static bool buildTried = false;
+			static bool buildSucceeded = false;
+
+			ImGui::SliderFloat("Agent Height", &navDesc.agentHeight, 0.5f, 5.0f);
+			ImGui::SliderFloat("Agent Radius", &navDesc.agentRadius, 0.1f, 2.0f);
+			ImGui::SliderFloat("Agent Climb", &navDesc.agentMaxClimb, 0.1f, 2.0f);
+			ImGui::SliderFloat("Agent Slope", &navDesc.agentMaxSlope, 0.0f, 60.0f);
+			ImGui::SliderFloat("Cell Size", &navDesc.cellSize, 0.05f, 1.0f);
+			ImGui::SliderFloat("Cell Height", &navDesc.cellHeight, 0.05f, 1.0f);
+			ImGui::SliderFloat("Max Edge Len", &navDesc.maxEdgeLen, 1.0f, 64.0f);
+			ImGui::SliderFloat("Max Edge Error", &navDesc.maxSimplificationError, 0.1f, 5.0f);
+			ImGui::SliderInt("Min Region Area", &navDesc.minRegionArea, 0, 128);
+			ImGui::SliderInt("Merge Region Area", &navDesc.mergeRegionArea, 0, 256);
+			ImGui::SliderInt("Verts Per Poly", &navDesc.maxVertsPerPoly, 3, 12);
+			ImGui::SliderFloat("Detail Sample Dist", &navDesc.detailSampleDist, 0.0f, 16.0f);
+			ImGui::SliderFloat("Detail Max Error", &navDesc.detailSampleMaxError, 0.0f, 8.0f);
+
+			auto* navMeshManager = CGameInstance::Get().GetNavMeshManager();
+			if (navMeshManager != nullptr)
+			{
+				if (ImGui::Checkbox("Debug Draw", &debugDrawNavMesh))
+				{
+					navMeshManager->SetDebugDraw(debugDrawNavMesh);
+				}
+
+				if (ImGui::Button("Build NavMesh", ImVec2(140.f, 0.f)))
+				{
+					buildTried = true;
+					buildSucceeded = false;
+
+					const auto& srcVertices = pTerrain->GetVertices();
+					const auto& srcIndices = pTerrain->GetIndices();
+
+					std::vector<E::_float3> navVertices{};
+					navVertices.reserve(srcVertices.size());
+
+					for (const auto& vertex : srcVertices)
+					{
+						navVertices.push_back(vertex.pos);
+					}
+
+					buildSucceeded = navMeshManager->Build(navVertices, srcIndices, navDesc);
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Clear NavMesh", ImVec2(120.f, 0.f)))
+				{
+					navMeshManager->Clear();
+					buildTried = false;
+					buildSucceeded = false;
+				}
+
+				if (buildTried)
+				{
+					ImGui::Text("Build: %s", buildSucceeded ? "Success" : "Failed");
+				}
+				ImGui::Text("Built: %s", navMeshManager->IsBuilt() ? "Yes" : "No");
+			}
+		}
+	}
+	// ---------------------------------------NavMeshBuild--------------------------------------
 
 	ImGui::Separator();
 	m_pHierarchy->UpdateGUI(fTimeDelta);
