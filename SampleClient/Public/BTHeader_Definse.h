@@ -10,3 +10,4 @@
 #include "BTDecLier.h"
 #include "BTDecTimer.h"
 #include "BTDecSearch.h"
+#include "BTDecInvert.h"

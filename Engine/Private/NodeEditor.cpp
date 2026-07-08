@@ -251,7 +251,7 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 	}
 	if (!m_bSaveLoad && ImGui::Button("Load"))
 	{
-		m_pBeHavior->Load_Data("./Resources/json/Behavior/MoveTest3.json");
+		m_pBeHavior->Load_Data("./Resources/json/Behavior/MoveTest2.json");
 		m_AddNodeName = "";
 	}
 	

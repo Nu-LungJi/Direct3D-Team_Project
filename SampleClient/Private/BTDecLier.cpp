@@ -31,37 +31,18 @@ HRESULT CBTDecLier::Initalize(void* pArg)
 
 EVALUATE CBTDecLier::Evaluate(_float fTimeDelta)
 {
-	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	_float3 vDest = CGameInstance::Get().GetActiveCamera()->GetTransform().GetPosition();
-	if (pTransform == nullptr)
-		return EVALUATE::FAILED;
-	_float3 vSrc = pTransform->GetPosition();
-	_float fDistance = XMVectorGetX(XMVector3Length(XMLoadFloat3(&vSrc) - XMLoadFloat3(&vDest)));
-	if (fDistance <= m_fDist)
-	{
-		return __super::Evaluate(fTimeDelta);
-	}
+	if (m_bEnter)
+		return EVALUATE::SUCCESS;
 
-	return EVALUATE::FAILED;
+	EVALUATE eType = __super::Evaluate(fTimeDelta);
+	if (eType == EVALUATE::SUCCESS)
+		m_bEnter = true;
+	
+	return eType;
 }
-nlohmann::json CBTDecLier::Save_Node()
-{
-	nlohmann::json j;
-	SaveJsonValue(j, "Distance", m_fDist);
 
-	return j;
-}
-HRESULT CBTDecLier::Load_json(const nlohmann::json& j)
-{
-	__super::Load_json(j);
-	if (!LoadJsonValue(j, "Distance", m_fDist))
-
-		return S_OK;
-}
 void		CBTDecLier::Update_Gui()
 {
-	ImGui::Text("Distance %2.f : ");
-	ImGui::DragFloat("##Dist", &m_fDist, 0, 100);
 }
 E::UPtr<CBTDecLier> CBTDecLier::Create()
 {

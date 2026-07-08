@@ -325,7 +325,8 @@ HRESULT CMainApp::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecLier", CBTDecLier::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
+		return E_FAIL;
 	return S_OK;
 }
 

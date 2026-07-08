@@ -63,7 +63,7 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	//	return EVALUATE::SUCCESS;
 	//}else if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_UP))
 	//{
-	//	pTransform->GoStraight(2.f*fTimeDelta);
+		pTransform->GoStraight(2.f*fTimeDelta);
 		return EVALUATE::SUCCESS;
 	//}
 	//if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_DOWN))

@@ -42,7 +42,7 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	_vector vSrcPos = XMLoadFloat3(&vSrc->GetPosition());
 	_vector vDestPos = XMLoadFloat3(&vDest.GetPosition());
 	_float fDistance = XMVectorGetX(XMVector3Length(vSrcPos - vDestPos));
-	if (fDistance <= m_fValue);
+	if (fDistance <= m_fValue)
 		return __super::Evaluate(fTimeDelta);
 
 	return EVALUATE::FAILED;

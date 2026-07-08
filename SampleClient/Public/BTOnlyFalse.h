@@ -1,28 +1,27 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTDecorator.h"
+#include "BTActionNode.h"
 
 NS_BEGIN(Client)
-class CBTDecLier final : public CBTDecorator
+class CBTOnlyFalse final : public CBTActionNode
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTDecLier, CBTDecorator)
+	DECLARE_DERIVED_TYPE(CBTOnlyFalse, CBTActionNode)
 private:
-	CBTDecLier();
-	CBTDecLier(const CBTDecLier& rhs);
-	~CBTDecLier() override;
+	CBTOnlyFalse();
+	CBTOnlyFalse(const CBTOnlyFalse& rhs);
+	~CBTOnlyFalse() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitalizePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE			 Evaluate(_float fTimeDelta) override;
-
+	EVALUATE Evaluate(_float fTimeDelta) override;
 	virtual void		Update_Gui() override;
 private:
-	_bool				m_bEnter{ false };
+	MOVE						m_eMove{};
 public:
-	static UPtr<CBTDecLier> Create();
+	static UPtr<CBTOnlyFalse> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END

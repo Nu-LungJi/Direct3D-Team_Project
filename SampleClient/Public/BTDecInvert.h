@@ -3,14 +3,14 @@
 #include "BTDecorator.h"
 
 NS_BEGIN(Client)
-class CBTDecLier final : public CBTDecorator
+class CBTDecInvert final : public CBTDecorator
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTDecLier, CBTDecorator)
+	DECLARE_DERIVED_TYPE(CBTDecInvert, CBTDecorator)
 private:
-	CBTDecLier();
-	CBTDecLier(const CBTDecLier& rhs);
-	~CBTDecLier() override;
+	CBTDecInvert();
+	CBTDecInvert(const CBTDecInvert& rhs);
+	~CBTDecInvert() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitalizePrototype(void* pArg = nullptr);
@@ -22,7 +22,7 @@ public:
 private:
 	_bool				m_bEnter{ false };
 public:
-	static UPtr<CBTDecLier> Create();
+	static UPtr<CBTDecInvert> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END

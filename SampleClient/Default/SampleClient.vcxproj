@@ -177,7 +177,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTAnimation.h" />
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDead.h" />
+    <ClInclude Include="..\public\BTDecInvert.h" />
     <ClInclude Include="..\public\BTDecLier.h" />
+    <ClInclude Include="..\public\BTOnlyFalse.h" />
+    <ClInclude Include="..\public\BTOnlyTrue.h" />
     <ClInclude Include="..\public\BTTurnDirect.h" />
     <ClInclude Include="..\public\BTTurnSlow.h" />
     <ClInclude Include="..\public\BTDecSearch.h" />
@@ -234,7 +237,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
+    <ClCompile Include="..\private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecLier.cpp" />
+    <ClCompile Include="..\private\BTOnlyFalse.cpp" />
+    <ClCompile Include="..\private\BTOnlyTrue.cpp" />
     <ClCompile Include="..\private\BTTurnDirect.cpp" />
     <ClCompile Include="..\private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\BTDecSearch.cpp" />

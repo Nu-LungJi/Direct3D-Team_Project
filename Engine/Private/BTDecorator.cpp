@@ -59,14 +59,11 @@ HRESULT CBTDecorator::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	m_GuiLink.SlotEnd.resize(1);
-	if (j.contains("LinkEndSlot"))
-	{
-		JsonSaveLoadManager::LoadJsonTypeString(j, "LinkEndSlotName", m_GuiLink.SlotEnd[0].DestName);
-		LoadJsonValue(j, "LinkEndSlotID", m_GuiLink.SlotEnd[0].iDestNode);
-		LoadJsonEnum(j, "LinkEndSlotEnum", m_GuiLink.SlotEnd[0].eType);
-	}
 
-
+	JsonSaveLoadManager::LoadJsonTypeString(j, "LinkEndSlotName", m_GuiLink.SlotEnd[0].DestName);
+	LoadJsonValue(j, "LinkEndSlotID", m_GuiLink.SlotEnd[0].iDestNode);
+	LoadJsonEnum(j, "LinkEndSlotEnum", m_GuiLink.SlotEnd[0].eType);
+	
 	if (j.contains("Child"))
 	{
 		_string MasterName{};

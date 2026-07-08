@@ -116,9 +116,11 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
-	m_pBeHavior->Update(fTimeDelta);
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
+
+	m_pBeHavior->Update(fTimeDelta);
+
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)

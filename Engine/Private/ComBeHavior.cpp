@@ -48,12 +48,14 @@ void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
         auto& pSrc = (*static_cast<CBTComposite*>(pNode)->Get_Nodes());
         for (auto& iter : pSrc)
         {
+			if(iter != nullptr)
             Set_NodeInfo(iter.get());
         }
     }
     else if (eType == BEHAVIOR::DECORATOR)
     {
         auto pSrc = static_cast<CBTDecorator*>(pNode)->Get_Child().get();
+		if(pSrc != nullptr)
         Set_NodeInfo(pSrc);
     }
 }
@@ -84,6 +86,7 @@ HRESULT CComBeHavior::Load_Data(const _string& filePath)
     file.close();
 
     Set_NodeInfo(m_Root.get());
+	++m_iNodeID;
     return S_OK;
 }
 CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)

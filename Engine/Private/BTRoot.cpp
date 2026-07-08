@@ -46,7 +46,7 @@ nlohmann::json CBTRoot::Save_Node()
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "GuiNode_Pos", m_GuiNode.vPos);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "GuiNode_Size", m_GuiNode.vSize);
 	JsonSaveLoadManager::SaveJsonTypeFloat4(j, "GuiNode_Color", m_GuiNode.vColor);
-	JsonSaveLoadManager::SaveJsonTypeString(j, "MasterName", m_GuiNode.Name);
+	JsonSaveLoadManager::SaveJsonTypeString(j, "GuiNode_Name", m_GuiNode.Name);
 
 	SaveJsonEnum(j, "GuiLink_ParentNodeEnum", m_GuiLink.ParentNode.eType);
 	SaveJsonValue(j, "GuiLink_StartIndex", m_GuiLink.iStartIdx);
@@ -65,7 +65,7 @@ HRESULT				CBTRoot::Load_json(const nlohmann::json& j)
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "GuiNode_Pos", m_GuiNode.vPos);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "GuiNode_Size", m_GuiNode.vSize);
 	JsonSaveLoadManager::LoadJsonTypeFloat4(j, "GuiNode_Color", m_GuiNode.vColor);
-	JsonSaveLoadManager::LoadJsonTypeString(j, "MasterName", m_GuiNode.Name);
+	JsonSaveLoadManager::LoadJsonTypeString(j, "GuiNode_Name", m_GuiNode.Name);
 
 	LoadJsonEnum(j, "GuiLink_ParentNodeEnum", m_GuiLink.ParentNode.eType);
 	LoadJsonValue(j, "GuiLink_StartIndex", m_GuiLink.iStartIdx);
