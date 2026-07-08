@@ -232,6 +232,8 @@
     <ClInclude Include="..\Public\AnimEdit_Manager.h" />
     <ClInclude Include="..\Public\BaseApp.h" />
     <ClInclude Include="..\public\Beam_CPU.h" />
+    <ClInclude Include="..\public\BinDeSerializer.h" />
+    <ClInclude Include="..\public\BinSerializer.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
@@ -262,6 +264,9 @@
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\ISerializable.h" />
+    <ClInclude Include="..\public\JsonDeSerializer.h" />
+    <ClInclude Include="..\public\JsonSerializer.h" />
     <ClInclude Include="..\public\ResPhysXBoxGeometry.h" />
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h" />
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
@@ -373,6 +378,7 @@
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
     <ClInclude Include="..\Public\IPhysicsSync.h" />
+    <ClInclude Include="..\Public\SerializerInterface.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -485,6 +491,8 @@
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp" />
     <ClCompile Include="..\Private\BaseApp.cpp" />
     <ClCompile Include="..\private\Beam_CPU.cpp" />
+    <ClCompile Include="..\private\BinDeSerializer.cpp" />
+    <ClCompile Include="..\private\BinSerializer.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
@@ -516,6 +524,8 @@
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\private\JsonDeSerializer.cpp" />
+    <ClCompile Include="..\private\JsonSerializer.cpp" />
     <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />

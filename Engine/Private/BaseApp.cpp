@@ -2,11 +2,128 @@
 #include "BaseApp.h"
 #include "Level.h"
 #include "GameInstance.h"
+#include "ISerializable.h"
+#include "SerializerInterface.h"
+#include "JsonSerializer.h"
+#include "JsonDeSerializer.h"
+
+#include "BinSerializer.h"
+#include "JsonSerializer.h"
+#include "BinDeSerializer.h"
 
 NS_USING(Engine)
 
+struct TestStruct: public ISerializable
+{
+	int i = 0;
+	float f = 0;
+
+
+	std::vector<TestStruct> childs{ };
+	std::map<std::string, TestStruct> maps{};
+	std::unordered_map<StringID, TestStruct> umaps{};
+
+	std::unordered_map<int, TestStruct> uidmaps{};
+
+	_float3 vTmpPos{};
+
+	_float4x4 matWorld{};
+
+	void Serialize(ISerializer& serializer) const override;
+	void Deserialize(IDeserializer& deserializer) override;
+};
+
+void TestStruct::Serialize(ISerializer& serializer) const
+{
+	serializer.Write("i", i);
+	serializer.Write("f", f);
+	serializer.WriteArray("childs", childs);
+	serializer.WriteMap("maps", maps);
+	serializer.WriteMap("umaps", umaps);
+	serializer.WriteMap("uidmaps", uidmaps);
+	serializer.Write("vTmpPos", vTmpPos);
+	serializer.Write("matWorld", matWorld);
+}
+
+void TestStruct::Deserialize(IDeserializer& deserializer)
+{
+	deserializer.Read("i", i);
+	deserializer.Read("f", f);
+	deserializer.ReadArray("childs", childs);
+	deserializer.ReadMap("maps", maps);
+	deserializer.ReadMap("umaps", umaps);
+	deserializer.ReadMap("uidmaps", uidmaps);
+	deserializer.Read("vTmpPos", vTmpPos);
+	deserializer.Read("matWorld", matWorld);
+}
+
 CBaseApp::CBaseApp()
 {
+	auto jsonDes = CJsonDeSerializer::Create("./TestStruct.json");
+	if (jsonDes) 
+	{
+		TestStruct myStruct;
+		myStruct.Deserialize(*jsonDes);
+		int x = 0;
+	}
+
+
+	auto binDes = CBinDeSerializer::Create("./TestStruct.bin");
+	if (binDes)
+	{
+		TestStruct myStruct;
+		myStruct.Deserialize(*jsonDes);
+		int x = 0;
+	}
+	
+
+	TestStruct hello{};
+	hello.i = 1;
+	hello.f = 777.f;
+
+	TestStruct hello2{};
+	hello2.i = 2;
+	hello2.f = 77237.f;
+
+	TestStruct hello3{};
+	hello3.i = 3;
+	hello3.f = 77237.f;
+
+	TestStruct hello4{};
+	hello4.i = 4;
+	hello4.f = 77237.f;
+	hello4.vTmpPos = { 123.f, 456.f, 789.f };
+
+	TestStruct hello5{};
+	hello5.i = 5;
+	hello5.f = 77237.f;
+
+	hello4.umaps.emplace("JJJ", hello5);
+	hello3.childs.push_back(hello4);
+
+	TestStruct hihi{};
+	hihi.i = 6;
+	hihi.f = 888.3f;
+	hihi.childs.push_back(hello2);
+	hihi.umaps.emplace("ZZZ", hello3);
+
+	XMMatrixIdentity();
+
+	TestStruct ts{};
+	ts.i = 7;
+	ts.f = 123.66f;
+	ts.childs.push_back(hello);
+	ts.umaps.emplace("wow", hihi);
+
+	auto jsonSer = CJsonSerializer::Create();
+	ts.Serialize(*jsonSer);
+	jsonSer->SaveToFile("./TestStruct.json");
+
+	auto binSer = CBinSerializer::Create();
+	ts.Serialize(*binSer);
+	binSer->SaveToFile("./TestStruct.bin");
+
+
 }
 
 CBaseApp::~CBaseApp()

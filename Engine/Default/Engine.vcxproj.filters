@@ -385,6 +385,18 @@
     <Filter Include="GameObject\Manager\Octree">
       <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Serialize">
+      <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialize\Serializer">
+      <UniqueIdentifier>{d6e86395-2f32-4042-8451-2eb39d36945c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialize\Serializer\Json">
+      <UniqueIdentifier>{f177e4d8-2d52-4391-be87-0d91dbfbcbfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialize\Serializer\Bin">
+      <UniqueIdentifier>{3fec66fe-f56b-408d-9d7f-e9a88221201a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -822,6 +834,24 @@
     <ClInclude Include="..\Public\OctreeNode.h">
       <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ISerializable.h">
+      <Filter>Serialize</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\SerializerInterface.h">
+      <Filter>Serialize\Serializer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\JsonSerializer.h">
+      <Filter>Serialize\Serializer\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BinSerializer.h">
+      <Filter>Serialize\Serializer\Bin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\JsonDeSerializer.h">
+      <Filter>Serialize\Serializer\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BinDeSerializer.h">
+      <Filter>Serialize\Serializer\Bin</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1228,6 +1258,18 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\JsonSerializer.cpp">
+      <Filter>Serialize\Serializer\Json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BinSerializer.cpp">
+      <Filter>Serialize\Serializer\Bin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\JsonDeSerializer.cpp">
+      <Filter>Serialize\Serializer\Json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BinDeSerializer.cpp">
+      <Filter>Serialize\Serializer\Bin</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
