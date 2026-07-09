@@ -10,7 +10,74 @@
 #include "TestGuizmo.h"
 #include "MapMeshObject.h"
 
+#include <cctype>
+#include <filesystem>
+
 NS_USING(Client)
+
+namespace
+{
+	std::string MakeStaticModelResourceTag(const std::filesystem::path& rootPath, const std::filesystem::path& binPath)
+	{
+		std::filesystem::path relativePath = binPath.lexically_relative(rootPath);
+		if (relativePath.empty())
+		{
+			relativePath = binPath.filename();
+		}
+
+		relativePath.replace_extension();
+
+		std::string resourceTag = relativePath.string();
+		for (char& ch : resourceTag)
+		{
+			const unsigned char value = static_cast<unsigned char>(ch);
+			if (!std::isalnum(value))
+			{
+				ch = '_';
+			}
+		}
+
+		return resourceTag;
+	}
+
+	bool LoadLevelAnimEditorStaticModels()
+	{
+		const std::filesystem::path staticModelDir = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+		if (!std::filesystem::exists(staticModelDir))
+		{
+			return false;
+		}
+
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
+		{
+			if (!entry.is_regular_file() || entry.path().extension() != ".bin")
+			{
+				continue;
+			}
+
+			const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
+			auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
+				E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL,
+				resourceTag,
+				E::CResStaticModel::Create(entry.path().string()));
+
+			if (!res)
+			{
+				return false;
+			}
+
+			E::CResStaticModel::DESC desc{};
+			desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(desc)))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+}
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
 	: m_pDevice{ pDevice }
@@ -113,11 +180,16 @@ void CLevelLoading::ThreadStart()
 	{
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
 			{
-				//TestGuizmo
-				if (FAILED(CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_TestGuizmo", CTestGuizmo::Create())))
+				if (!LoadLevelAnimEditorStaticModels())
 				{
 					return false;
 				}
+
+				////TestGuizmo
+				//if (FAILED(CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_TestGuizmo", CTestGuizmo::Create())))
+				//{
+				//	return false;
+				//}
 
 				return true;
 			});
