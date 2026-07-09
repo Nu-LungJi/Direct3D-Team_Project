@@ -1046,6 +1046,8 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+
+
 	if (auto res = AddResourceT<E::CResStaticModel>(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL,
 		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
 

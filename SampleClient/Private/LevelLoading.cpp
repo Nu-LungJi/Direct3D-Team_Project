@@ -315,6 +315,10 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_TestStaticModel2", CTest_StaticModel::Create())))
+				{
+					return false;
+				}
 
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				return  true;

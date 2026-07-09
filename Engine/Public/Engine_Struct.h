@@ -195,6 +195,7 @@ namespace Engine
 		_float  size;
 		_float4 color;
 		_float4 emissive;
+		_float spawnDelay;
 	}PARTICLE_SPAWN_DATA;
 
 	typedef struct tagParticleEmitRequest

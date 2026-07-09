@@ -119,6 +119,7 @@ void CParticle_CPU::PriorityUpdate(E::_float fTimeDelta)
 
 void CParticle_CPU::Update(E::_float fTimeDelta)
 {
+	ProcessPendingSpawns(fTimeDelta);
     Simulate(fTimeDelta);
 
 }
@@ -126,7 +127,7 @@ void CParticle_CPU::Update(E::_float fTimeDelta)
 void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 {
 }
-static int a = 0;
+
 
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
@@ -138,7 +139,6 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
         if (!p.bAlive)
             continue;
 
-        a++;
         p.fAge += fTimeDelta;
         if (p.fAge >= p.fLifeTime)
         {
@@ -182,7 +182,7 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
         m_Particles[i].fSize = src.size;
         m_Particles[i].vColor = src.color;
         m_Particles[i].emissive = src.emissive;
-
+		m_Particles[i].spawnDelay = src.spawnDelay;
         ++iSpawned;
     }
 

@@ -32,6 +32,12 @@ public:
         uint32_t modelNumber = 1;
     };
 
+	struct PENDING_SPAWN
+	{
+		PARTICLE_SPAWN_DATA data;
+		E::_float remainingDelay;
+	};
+
 protected:
     explicit CParticle_GPU();
 
@@ -52,7 +58,7 @@ public:
 
 
 private:
-    DESC m_Desc; // Initialize에서 받은 이펙트별 설정 (behaviorType, 텍스처 등)
+    DESC m_Desc;
 
 private:
     uint32_t m_iNumElements = 0;
@@ -72,6 +78,7 @@ private:
 
     uint32_t                         m_iCurrentSpawnCount = 0;
     uint32_t                         m_iDeadCount = 0;
+
 };
 
 NS_END

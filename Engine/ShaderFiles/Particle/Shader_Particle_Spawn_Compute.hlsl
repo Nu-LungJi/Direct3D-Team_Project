@@ -6,6 +6,7 @@ struct SPAWN_DATA
     float size;
     float4 color;
     float4 emissive;
+    float spawnDelay;
 };
 
 struct ParticleData
@@ -16,6 +17,7 @@ struct ParticleData
     float life;
     float maxLife;
     float size;
+    float startSize;
     uint alive;
     uint loop;
     float4 color;
@@ -49,6 +51,7 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.velocity = s.velocity;
     p.life = s.life;
     p.maxLife = s.life;
+    p.startSize = s.size;
     p.size = s.size;
     p.alive = 1;
     p.color = s.color;

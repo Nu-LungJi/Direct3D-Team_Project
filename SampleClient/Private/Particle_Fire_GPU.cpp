@@ -29,7 +29,7 @@ HRESULT CParticle_Fire_GPU::Initialize(void* pArg)
 
     desc.sGroupTag = "Rock1";
     desc.sResTag = "Static_Model_Resource";
-
+	desc.iBehaviorType = 1;
 
     //desc.viBufferID = { "SAMPLE_CLIENT_PARTICLEBF", "VIBUF_ParticleQuad" };
     //desc.textureID = { "SAMPLE_CLINET_TEXTURE", "TEX_FLARE" };

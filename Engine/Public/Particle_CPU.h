@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "Particle.h"
 
@@ -14,6 +14,7 @@ struct PARTICLE_CPU_DATA
     _float  fLifeTime = 1.f;
     _bool   bAlive = false;
     _float4 emissive;
+	_float spawnDelay;
 };
 
 struct VTX_PARTICLE_INSTANCED_DATA

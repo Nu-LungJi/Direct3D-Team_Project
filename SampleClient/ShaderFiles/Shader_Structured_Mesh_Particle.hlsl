@@ -13,6 +13,7 @@ struct ParticleData
     float life;
     float maxLife;
     float size;
+    float startSize;
     uint alive;
     uint loop;
     float4 color;

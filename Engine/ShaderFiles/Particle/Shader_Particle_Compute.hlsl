@@ -1,4 +1,7 @@
+#define BEHAVIOR_NONE   0
+#define BEHAVIOR_SHRINK (1u << 0) 
 // 1. C++의 CB_ParticleUpdate 구조체와 메모리 일치 (b0)
+
 cbuffer CB_PER_PARTICLE : register(b5)
 {
     float g_fTimeDelta; // 프레임 경과 시간
@@ -16,6 +19,7 @@ struct ParticleData
     float life;
     float maxLife;
     float size;
+    float startSize;
     uint alive;
     uint loop;
     float4 color;
@@ -34,13 +38,19 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.life -= g_fTimeDelta;
     p.position += p.velocity * g_fTimeDelta;
 
+    //  비트 검사: g_iBehaviorType에 BEHAVIOR_SHRINK 비트가 켜져 있는지
+    if ((g_iBehaviorType & BEHAVIOR_SHRINK) != 0)
+    {
+        float lifeRatio = saturate(p.life / max(p.maxLife, 0.0001f));
+        p.size = p.startSize * lifeRatio;
+    }
+
     if (p.life <= 0)
     {
         if (p.loop == 1)
         {
-            // 되살리기: 수명만 리셋하고 위치/속도는 그대로 유지
             p.life = p.maxLife;
-            p.position = float3(0, 0, 0);  
+            p.position = float3(0, 0, 0);
         }
         else
         {
@@ -50,4 +60,29 @@ void CSMain(uint id : SV_DispatchThreadID)
     }
 
     g_ParticleBuffer[id] = p;
+    
+    
+   // ParticleData p = g_ParticleBuffer[id];
+   // if (p.alive == 0)
+   //     return;
+   //
+   // p.life -= g_fTimeDelta;
+   // p.position += p.velocity * g_fTimeDelta;
+   //
+   // if (p.life <= 0)
+   // {
+   //     if (p.loop == 1)
+   //     {
+   //         // 되살리기: 수명만 리셋하고 위치/속도는 그대로 유지
+   //         p.life = p.maxLife;
+   //         p.position = float3(0, 0, 0);  
+   //     }
+   //     else
+   //     {
+   //         p.alive = 0;
+   //         gDeadList.Append(id);
+   //     }
+   // }
+   //
+   // g_ParticleBuffer[id] = p;
 }

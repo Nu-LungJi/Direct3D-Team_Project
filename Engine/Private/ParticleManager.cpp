@@ -42,6 +42,7 @@ void CParticleManager::UpdateGUI()
 	static STANDARD_PARAMS pendingStandard{};
 	static BEAM_PARAMS     pendingBeam{};
 	static STAIR_PARAMS    pendingStair{};
+	static STRAIGHT_PARAMS    pendingStraight{};
 
 	// ---- 대분류/소분류 선택 ----
 	std::vector<StringID> groupKeys;
@@ -101,7 +102,7 @@ void CParticleManager::UpdateGUI()
 	// ---- 종류 선택 (STANDARD / BEAM / STAIR를 사람이 직접 고를 수 있게) ----
 	{
 		int kindIndex = (int)currentKind;
-		const char* kindNames[] = { "Standard", "Beam", "Stair" };
+		const char* kindNames[] = { "Standard", "Beam", "Stair" ,"Straight"};
 		if (ImGui::Combo("Spawn Kind", &kindIndex, kindNames, IM_ARRAYSIZE(kindNames)))
 			currentKind = (SPAWN_COMMAND_KIND)kindIndex;
 	}
@@ -123,7 +124,9 @@ void CParticleManager::UpdateGUI()
 		ImGui::ColorEdit4("BaseColor", &pendingStandard.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingStandard.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingStandard.emissive.w);
+		ImGui::InputFloat("SpawnDelay", &pendingStandard.fSpawnDelay);
 		ImGui::Checkbox("Loop", &pendingStandard.bLoop);
+
 		if (pendingStandard.bLoop)
 			ImGui::InputFloat("Spawn Interval", &pendingStandard.fSpawnInterval);
 	}
@@ -137,26 +140,49 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputFloat("DisplacementDamping", &pendingBeam.fDisplacementDamping);
 		ImGui::InputFloat("flickerTimeInverval", &pendingBeam.flickerTimeInverval);
 		ImGui::InputFloat("Duration", &pendingBeam.beamDuration);
+		ImGui::InputFloat("SpawnDelay", &pendingStandard.fSpawnDelay);
 		ImGui::ColorEdit4("BaseColor", &pendingBeam.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingBeam.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingBeam.emissive.w);
+
 	}
 	else if (currentKind == SPAWN_COMMAND_KIND::STAIR)
 	{
 		ImGui::Text("Stair Params");
 		ImGui::InputFloat3("Start Pos", &pendingStair.vStartPos.x);
-
 		int stepCount = (int)pendingStair.iStepCount;
 		ImGui::InputInt("Step Count", &stepCount);
 		pendingStair.iStepCount = (uint32_t)std::max(1, stepCount);
-
 		ImGui::InputFloat("Step Width", &pendingStair.fStepWidth);
 		ImGui::InputFloat("Step Height", &pendingStair.fStepHeight);
 		ImGui::InputFloat("Step Depth", &pendingStair.fStepDepth);
 		ImGui::InputFloat("Life", &pendingStair.life);
+		ImGui::InputFloat("SpawnDelay", &pendingStandard.fSpawnDelay);
 		ImGui::ColorEdit4("BaseColor", &pendingStair.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingStair.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingStair.emissive.w);
+
+	}
+
+	else if (currentKind == SPAWN_COMMAND_KIND::STRAIGHT)
+	{
+		ImGui::Text("Straight Params");
+		ImGui::InputFloat3("Start Pos", &pendingStraight.vStartPos.x);
+		int rowCount = (int)pendingStraight.row;
+		int colCount = (int)pendingStraight.col;
+		ImGui::InputInt("Row Count", &rowCount);
+		ImGui::InputInt("Column Count", &colCount);
+		pendingStraight.row = (uint32_t)std::max(1, rowCount); 
+		pendingStraight.col = (uint32_t)std::max(1, colCount); 
+		ImGui::InputFloat("OffSetX", &pendingStraight.offSetX);
+		ImGui::InputFloat("OffsetZ", &pendingStraight.offsetZ);
+		ImGui::InputFloat("SpawnDelay", &pendingStraight.spawnDelay);
+		ImGui::InputFloat("Size", &pendingStraight.fSize);
+		ImGui::InputFloat("Life", &pendingStraight.fLife);
+		ImGui::ColorEdit4("BaseColor", &pendingStraight.color.x);
+		ImGui::ColorEdit3("Emissive Color", &pendingStraight.emissive.x);
+		ImGui::InputFloat("Emissive Intensity", &pendingStraight.emissive.w);
+
 	}
 
 	if (ImGui::Button("Add to List") && !groupKeys.empty())
@@ -173,6 +199,8 @@ void CParticleManager::UpdateGUI()
 			cmd.params = pendingBeam;
 		else if (currentKind == SPAWN_COMMAND_KIND::STAIR)
 			cmd.params = pendingStair;
+		else if (currentKind == SPAWN_COMMAND_KIND::STRAIGHT)
+			cmd.params = pendingStraight;
 
 		m_vecCommandQueue.push_back(cmd);
 	}
@@ -206,6 +234,13 @@ void CParticleManager::UpdateGUI()
 			ImGui::Text("[%s/%s] STAIR start=(%.1f,%.1f,%.1f) steps=%u",
 				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
 				p.vStartPos.x, p.vStartPos.y, p.vStartPos.z, p.iStepCount);
+		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STRAIGHT)
+		{
+			const auto& p = std::get<STRAIGHT_PARAMS>(cmd.params);
+			ImGui::Text("[%s/%s] STAIR start=(%.1f,%.1f,%.1f) steps=%u",
+				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
+				p.vStartPos.x, p.vStartPos.y, p.vStartPos.z, p.row,p.col);
 		}
 
 		ImGui::SameLine();
@@ -442,9 +477,9 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
     if (typeIt == groupIt->second.end())
         return E_FAIL;
 
-    HRESULT hr = typeIt->second->Spawn(count, pSpawnData);
-    if (FAILED(hr))
-        return hr;
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(pSpawnData, pSpawnData + count);
+	typeIt->second->RequestSpawn(spawnList);
+	HRESULT hr = S_OK;
 
     if (bLoop)
     {
@@ -648,10 +683,21 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
 			vec.insert(vec.end(), spawnList.begin(), spawnList.end());
 		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STRAIGHT)
+		{
+			const auto& p = std::get<STRAIGHT_PARAMS>(cmd.params);
+
+			auto spawnList = ParticlePattern::MakeStrightGround(p.vStartPos, p.row, p.col, p.offSetX, p.offsetZ, p.spawnDelay,p.fSize,p.fLife, p.color, p.emissive);
+
+			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
+			vec.insert(vec.end(), spawnList.begin(), spawnList.end());
+		}
 	}
 
 	for (auto& [key, spawnList] : batched)
 	{
+
+
 		if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))
 			hr = E_FAIL;
 	}

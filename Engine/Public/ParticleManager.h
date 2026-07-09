@@ -16,6 +16,7 @@ enum class SPAWN_COMMAND_KIND
     STANDARD,   // 위치/속도/수명/크기/색 - 대부분의 파티클
     BEAM,       // 시작점/끝점/지속시간 - CBeam_CPU 계열
 	STAIR,
+	STRAIGHT,
 };
 
 struct STANDARD_PARAMS
@@ -29,6 +30,7 @@ struct STANDARD_PARAMS
     _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
+	_float	 fSpawnDelay = 0.f;
 };
 
 struct BEAM_PARAMS
@@ -42,6 +44,8 @@ struct BEAM_PARAMS
     _float   fDisplacementDamping = 0.25f;
     _float   flickerTimeInverval = 0.25f;
     _float   beamDuration = 0.f;
+	_float	 fSpawnDelay = 0.f;
+
 };
 struct STAIR_PARAMS
 {
@@ -53,6 +57,22 @@ struct STAIR_PARAMS
 	_float   life = 1.f;
 	_float4  color = { 1.f, 1.f, 1.f, 1.f };
 	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+	_float	 fSpawnDelay = 0.f;
+
+};
+struct STRAIGHT_PARAMS
+{
+	_float3  vStartPos = {};
+	uint32_t row = 1;
+	uint32_t col = 1;
+	_float   offSetX = 2.f;
+	_float   offsetZ = 1.5f;
+	_float   spawnDelay = 2.f;
+	_float   fSize = 1.f;
+	_float   fLife = 1.f;
+	_float4  color = { 1.f, 1.f, 1.f, 1.f };
+	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+
 };
 
 // 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
@@ -61,7 +81,7 @@ struct SPAWN_COMMAND
     SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // 이름은 기존 kind 그대로 사용해도 됨
     StringID sGroupTag;
     StringID sTypeTag;
-    std::variant<STANDARD_PARAMS, BEAM_PARAMS, STAIR_PARAMS> params;
+    std::variant<STANDARD_PARAMS, BEAM_PARAMS, STAIR_PARAMS, STRAIGHT_PARAMS> params;
 };
 struct PARTICLE_EFFECT_PRESET
 {

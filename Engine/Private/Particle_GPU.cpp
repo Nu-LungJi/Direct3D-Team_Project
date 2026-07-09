@@ -37,7 +37,8 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].velocity = _float3(0.f, 0.f, 0.f);
         initParticles[i].life = 0.f;
         initParticles[i].maxLife = 0.f;
-        initParticles[i].size = 0.5f;
+        initParticles[i].size = 1.f;
+        initParticles[i].startSize = 1.f;
         initParticles[i].color = _float4(1, 1, 1, 1);
         initParticles[i].alive = false;
         initParticles[i].loop = false;
@@ -239,9 +240,14 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
+	ProcessPendingSpawns(fTimeDelta);
     auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
+
+
+
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
 
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
@@ -304,7 +310,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
 
-   // DebugPrintDeadListCount();
+    DebugPrintDeadListCount();
 }
 
 void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
@@ -397,6 +403,10 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 
 HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
+	char buf[64];
+	sprintf_s(buf, "Spawn called: count=%u\n", count);
+	OutputDebugStringA(buf);
+
     if (pSpawnData == nullptr || count == 0)
         return E_FAIL;
 
@@ -412,8 +422,11 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
     auto context = CGameInstance::Get().GetGraphicDeviceContext();
 
-    std::vector<PARTICLE_SPAWN_DATA> fullData(count);
-    memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
+    //std::vector<PARTICLE_SPAWN_DATA> fullData(count);
+    //memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
+
+	std::vector<PARTICLE_SPAWN_DATA> fullData(MAX_SPAWN_PER_CALL);
+	memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
 
     context->UpdateSubresource(m_pSpawnListBuffer->GetBuffer().Get(), 0, nullptr, fullData.data(), 0, 0);
 
@@ -454,3 +467,4 @@ uint32_t CParticle_GPU::GetDeadListCounterSync()
     }
     return counterValue;
 }
+

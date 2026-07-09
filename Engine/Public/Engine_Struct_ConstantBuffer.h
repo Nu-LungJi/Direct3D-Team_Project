@@ -80,7 +80,7 @@ namespace Engine
 		uint32_t    g_iSpawnCount;
 		uint32_t	g_iMaxParticles;
 		_float2     pad;
-		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
+		//PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_PARTICLE_SPAWN;
 	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
 
