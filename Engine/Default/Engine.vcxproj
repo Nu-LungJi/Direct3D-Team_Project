@@ -373,6 +373,7 @@
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
     <ClInclude Include="..\Public\IPhysicsSync.h" />
+    <ClInclude Include="..\Public\Engine_EnumString.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

@@ -822,6 +822,9 @@
     <ClInclude Include="..\Public\OctreeNode.h">
       <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_EnumString.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

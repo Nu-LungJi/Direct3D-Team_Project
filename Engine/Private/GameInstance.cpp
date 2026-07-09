@@ -963,7 +963,8 @@ HRESULT CGameInstance::InitializeResources()
 }
 HRESULT CGameInstance::InitializePrototype()
 {
-	if (AddPrototype("PERMANENT", "Prototype_Component_Transform", CComTransform::Create()))
+	
+	if (AddPrototype(ES_EngineProtoMajorType::PERMANENT, ES_EngineProtoComponent::Prototype_Component_Transform, CComTransform::Create()))
 	{
 		return E_FAIL;
 	}
@@ -987,7 +988,7 @@ HRESULT CGameInstance::InitializePrototype()
 	}
 
 
-	if (AddPrototype("CAMERAS", "Prototype_GameObject_FlyCamera", CFlyCamera::Create()))
+	if (AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_FlyCamera, CFlyCamera::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1010,27 +1011,28 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-
+	
 
 	// 피직스관련
 	{
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxBoxCollider", CComPxBoxCollider::Create()))
+		
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, CComPxBoxCollider::Create()))
 		{
 			return E_FAIL;
 		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxCapsuleCollider", CComPxCapsuleCollider::Create()))
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCapsuleCollider, CComPxCapsuleCollider::Create()))
 		{
 			return E_FAIL;
 		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxSphereCollider", CComPxSphereCollider::Create()))
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
+		{
+			return E_FAIL; 
+		}
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxTriMeshCollider, CComPxTriMeshCollider::Create()))
 		{
 			return E_FAIL;
 		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxTriMeshCollider", CComPxTriMeshCollider::Create()))
-		{
-			return E_FAIL;
-		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxRigidBody", CComPxRigidBody::Create()))
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, CComPxRigidBody::Create()))
 		{
 			return E_FAIL;
 		}
@@ -1312,32 +1314,29 @@ void CGameInstance::GameObjectAllReset()
 {
 	m_pGameObjectManager->AllReset();
 }
-std::optional<CHandle> CGameInstance::AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg)
-{
-	return m_pGameObjectManager->AddGameObjectToLayer(iPrototypeLevelIndex, svPrototypeTag, sLayerName, pArg);
-}
+
 inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 {
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);
 }
-const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName) const
-{
-	return m_pGameObjectManager->GetLayer(sLayerName);
-}
-const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg)
-{
-	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
-}
+//const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName) const
+//{
+//	return m_pGameObjectManager->GetLayer(sLayerName);
+//}
+//const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg)
+//{
+//	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
+//}
 
 const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
 {
 	return m_pGameObjectManager->GetLayers();
 }
 
-void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
-{
-	return m_pGameObjectManager->DelLayer(sLayerName);
-}
+//void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
+//{
+//	return m_pGameObjectManager->DelLayer(sLayerName);
+//}
 //std::optional<CHandle> CGameInstance::GetFreeHandle() const
 //{
 //	return m_pGameObjectManager->GetFreeHandle();

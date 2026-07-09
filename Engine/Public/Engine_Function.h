@@ -2,6 +2,15 @@
 
 namespace Engine
 {
+	template<class T>
+	constexpr std::string_view MagicEnumToStringView(T&& t)
+	{
+		if constexpr (std::is_enum_v<std::remove_cvref_t<T>>)
+			return magic_enum::enum_name(t);
+		else
+			return std::string_view(t);
+	}
+
 	inline _float4 ColorIntToFloat4(int c) {
 		_float4 color;
 		color.x = ((c >> 0) & 0xFF) / 255.0f; // R

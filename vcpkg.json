@@ -4,7 +4,8 @@
   "dependencies": [
     "directxtex",
     "directxtk",
-	"assimp"
+	"assimp",
+	"magic-enum"
   ],
   "overrides": [
    

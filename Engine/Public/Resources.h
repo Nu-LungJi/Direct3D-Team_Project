@@ -61,6 +61,58 @@
 #include "ResPhysXCapsuleGeometry.h"
 #include "ResPhysXMaterial.h"
 
+enum class ES_EngineResMajorType
+{
+	PERMANENT_BUFFER,
+	PERMANENT_SHADER,
+	PERMANENT_TEXTURE,
+	PERMANENT_STATE,
+	PERMANENT_VP,
+};
+
+enum class ES_EngineResRasterizerState
+{
+	RS_SOLID_BACKCULL,
+	RS_SOLID_FRONTCULL,
+	RS_SOLID_NOCULL,
+	RS_WIREFRAME_NOCULL,
+};
+
+enum class ES_EngineResSamplerState
+{
+	SS_LinearWrap,
+	SS_PointWrap,
+	SS_PointWrapNoMip,
+	SS_SHADOW,
+};
+
+enum class ES_EngineResConstantBuffer
+{
+	CB_PerPass,
+	CB_PerObject,
+	CB_Material,
+	CB_PerParticle,
+	CB_SpawnParticle,
+	CB_InitGPUParticle,
+	CB_Bone,
+	CB_PerUI,
+};
+
+enum class ES_EngineResVertexShader
+{
+	VS_QuadTex
+};
+
+enum class ES_EngineResPixelShader
+{
+	PS_QuadTex
+};
+
+/*
+static const char* 선언했던것들은 전부
+Deprecated 돼었으니 앞으로 위에서 enum설정하여 사용해주세요
+*/
+
 static const char* TAG_RES_GRP_PERMANENT_BUFFER = "PERMANENT_BUFFER";
 static const char* TAG_RES_GRP_PERMANENT_SHADER = "PERMANENT_SHADER";
 static const char* TAG_RES_GRP_PERMANENT_TEXTURE = "PERMANENT_TEXTURE";

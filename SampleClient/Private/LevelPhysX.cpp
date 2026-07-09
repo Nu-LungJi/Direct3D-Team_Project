@@ -25,6 +25,11 @@ CLevelPhysX::~CLevelPhysX()
 {
 }
 
+enum class TestPhysXLayer
+{
+	_01_Terrain
+};
+
 HRESULT CLevelPhysX::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
@@ -35,7 +40,7 @@ HRESULT CLevelPhysX::Initialize()
 		Desc.sObjectTag = "TestPhysXTerrain";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXTerrain",
-			"01_Terrain", &Desc))
+			TestPhysXLayer::_01_Terrain, &Desc))
 		{
 			int x = 0;
 		}

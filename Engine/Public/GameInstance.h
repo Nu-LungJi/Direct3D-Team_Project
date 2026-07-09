@@ -178,11 +178,27 @@ public:
 #pragma region GAMEOBJECT_MANAGER
 public:
 	void GameObjectAllReset();
-	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg = nullptr);
-	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName) const;
-	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg);
+	template<typename TLayer>
+	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, TLayer&& sLayerName, void* pArg = nullptr)
+	{
+		return m_pGameObjectManager->AddGameObjectToLayer(iPrototypeLevelIndex, svPrototypeTag, MagicEnumToStringView(std::forward<TLayer>(sLayerName)), pArg);
+	}
+	template<typename TLayer>
+	const std::vector<CHandle>* GetGameObjectLayer(TLayer&& sLayerName) const
+	{
+		return m_pGameObjectManager->GetLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
+	}
+	template<typename TLayer>
+	const std::vector<CHandle>* GetGameObjectLayer(TLayer&& sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg)
+	{
+		return m_pGameObjectManager->GetLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)), iPrototypeLevelIndex, svPrototypeTag, pArg);
+	}
 	const std::vector<std::pair<std::string, std::vector<CHandle>>>& GetGameObjectLayers() const;
-	void DelGameObjectLayer(std::string_view sLayerName);
+	template<typename TLayer>
+	void DelGameObjectLayer(TLayer&& sLayerName)
+	{
+		return m_pGameObjectManager->DelLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
+	}
 
 	//std::optional<CHandle> GetFreeHandle() const;
 
@@ -198,10 +214,10 @@ public:
 		return static_cast<const CGameObjectManager*>(m_pGameObjectManager.get())->GetGameObjectByHandleT<T>(handle);
 	}
 
-	template<typename T>
-	T* GetFirstGameObjectByLayer(std::string_view sLayerName) const
+	template<typename T, typename TLayer>
+	T* GetFirstGameObjectByLayer(TLayer&& sLayerName) const
 	{
-		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(sLayerName);
+		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
 #pragma endregion
 
