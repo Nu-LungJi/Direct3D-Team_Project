@@ -1,5 +1,5 @@
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
-#include "./ShaderDefines.hlsl"
 struct ParticleData
 {
     float3 position;
@@ -16,7 +16,7 @@ struct ParticleData
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
 Texture2D g_Texture : register(t1);
-SamplerState g_LinearSampler : register(s0);
+//SamplerState g_LinearSampler : register(s0);
 
 struct VS_OUT
 {
@@ -71,7 +71,7 @@ PS_OUT PSMain(VS_OUT In)
     PS_OUT Out = (PS_OUT) 0;
 
     // 텍스처 샘플링 (정확한 변수명 vTextureColor로 통일)
-    float4 vTextureColor = g_Texture.Sample(g_LinearSampler, In.vTexcoord);
+    float4 vTextureColor = g_Texture.Sample(LinearWrap, In.vTexcoord);
     
     // 알파 테스트 혹은 특정 채널 기준 discard (여기서는 투명도나 특정 값 기준으로 처리)
     if (vTextureColor.a <= 0.05f)

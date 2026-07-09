@@ -163,5 +163,6 @@ Engine::UPtr<CLevelPlayground> CLevelPlayground::Create()
 
 void CLevelPlayground::Free()
 {
+	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
 }

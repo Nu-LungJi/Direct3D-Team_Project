@@ -1,4 +1,4 @@
-#include "./ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
 struct ParticleData
 {
@@ -19,7 +19,7 @@ StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
 
 Texture2D g_DiffuseTexture : register(t1);
 Texture2D g_NormalTexture : register(t6);
-SamplerState g_LinearSampler : register(s0);
+//SamplerState g_LinearSampler : register(s0);
 
 struct VS_IN
 {
@@ -79,7 +79,7 @@ PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
 
-    float4 vTexColor = g_DiffuseTexture.Sample(g_LinearSampler, In.vTexcoord);
+    float4 vTexColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     if (vTexColor.a < 0.1f)   // 알파로 discard 판정 (이전에 x채널 쓰던 것도 확인 필요)
         discard;
 
@@ -87,7 +87,7 @@ PS_OUT PSMain(VS_OUT In)
     Out.vDiffuse = finalColor;
 
     // 노멀맵에서 tangent space 노멀 읽기 ([0,1] → [-1,1] 복원)
-    float3 tangentNormal = g_NormalTexture.Sample(g_LinearSampler, In.vTexcoord).xyz * 2.0f - 1.0f;
+    float3 tangentNormal = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).xyz * 2.0f - 1.0f;
 
     float3 N = normalize(In.vNormal);
     float3 T = normalize(In.vTangent);

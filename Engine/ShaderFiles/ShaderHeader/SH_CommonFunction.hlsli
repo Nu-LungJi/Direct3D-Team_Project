@@ -1,0 +1,91 @@
+#include "../ShaderDefines.hlsl"
+
+float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
+{
+    float3 Normal = normalize(_Normal);
+    float3 Tangent = normalize(_Tangent);
+
+    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
+    
+    float3 BiNormal = normalize(cross(Normal, Tangent));
+    
+    return float3x3(Tangent, BiNormal, Normal);
+}
+float3  Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
+{
+    float3 LocalNormal = _NormalTex.Sample(LinearWrap, _TexCoord).rgb;
+    LocalNormal = normalize(LocalNormal * 2.f - 1.f);
+    float3x3 TBN = Make_TBNMatrix(_InNormal.xyz, _InTangent.xyz);
+
+    float3 N = normalize(_InNormal.xyz);
+    float3 T = normalize(_InTangent.xyz);
+    
+    T = normalize(T - dot(T, N) * N);
+    float3 B = normalize(cross(N, T));
+    
+    float3 worldNormal = LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N;
+
+    return normalize(worldNormal);
+}
+bool    Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout float3 L, inout float3 Radiance)
+{
+    // Directional Light PBR
+    [branch]
+    if (_Light.LightType == LIGHT_DIRECTIONAL)
+    {
+        L = normalize(-_Light.LightDirection);
+        Radiance = _Light.LightColor * _Light.LightIntensity;
+        return true;
+    }
+    // Point Light PBR
+    else if (_Light.LightType == LIGHT_POINT)
+    {
+        float MinimumDistance = 1.f;
+        
+        float3 LightVector = _Light.Position - _WorldPosition;
+        float Distance = length(LightVector);
+        
+        if (Distance > _Light.LightRange)
+            return false;
+
+        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        float DistanceByRange = Distance / _Light.LightRange;
+        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
+        
+        L = normalize(LightVector);
+        Radiance = _Light.LightColor * _Light.LightIntensity * (Attenuation * Window * Window);
+
+        return true;
+    }
+    // SpotLight Light PBR
+    else if (_Light.LightType == LIGHT_SPOTLIGHT)
+    {
+        float MinimumDistance = 1.f;
+        
+        float3 LightVector = _Light.Position - _WorldPosition;
+        float Distance = length(LightVector);
+        
+        if (Distance > _Light.LightRange)
+            return false;
+        
+        // Decrease By Distance
+        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        float DistanceByRange = Distance / _Light.LightRange;
+        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
+        float DistanceFade = Attenuation * Window * Window;
+        
+        L = normalize(LightVector);
+        
+         // Decrease By SpotLight Cone
+        float CosAngle = dot(-L, normalize(_Light.LightDirection));
+        float Num = CosAngle - _Light.OuterAttanuation;
+        float DeNum = _Light.InnerAttanuation - _Light.OuterAttanuation;
+        float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
+        
+        Radiance = _Light.LightColor * _Light.LightIntensity * (DistanceFade * ConeFade * ConeFade);
+        
+        return true;
+    }
+    
+    return false;
+}

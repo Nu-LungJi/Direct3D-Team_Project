@@ -2,7 +2,7 @@
 
 Texture2D tex : register(t0);
 //Texture2D maskTex  : register(t1);
-SamplerState samp : register(s0);
+//SamplerState samp : register(s0);
 
 struct VS_IN
 {
@@ -29,7 +29,7 @@ PS_IN VSMain(VS_IN vin)
 // Pixel Shader
 float4 PSMain(PS_IN input) : SV_Target
 {
-    float4 texColor = tex.Sample(samp, input.uv);
+    float4 texColor = tex.Sample(LinearWrap, input.uv);
 
     if (texColor.a < 0.1f)
     {

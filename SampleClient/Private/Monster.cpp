@@ -38,6 +38,7 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+
 	return S_OK;
 }
 

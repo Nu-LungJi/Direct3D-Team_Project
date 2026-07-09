@@ -2,7 +2,7 @@
 // CParticle_CPU 렌더링용 - 카메라를 향하는(Billboard) 인스턴싱 파티클
 // 텍스처는 파티클 하나당 Texture2D 한 장 (Texture2DArray 사용 안 함)
 // 카메라 행렬(g_matView/g_matProj/g_matViewProj)은 ShaderDefines.hlsl의 CB_PER_PASS(b1)에서 가져온다.
-#include "./ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
 struct VS_IN
 {
@@ -55,7 +55,7 @@ VS_OUT VSMain(VS_IN In)
 }
 
 Texture2D g_ParticleTexture : register(t0);
-SamplerState g_Sampler : register(s0);
+//SamplerState g_Sampler : register(s0);
 
 struct PS_OUT
 {
@@ -69,7 +69,7 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out;
-    float4 texColor = g_ParticleTexture.Sample(g_Sampler, In.vTexcoord) * In.vColor;
+    float4 texColor = g_ParticleTexture.Sample(LinearWrap, In.vTexcoord) * In.vColor;
     Out.vDiffuse = texColor;
     if (Out.vDiffuse.a <= 0.01f)
         discard;

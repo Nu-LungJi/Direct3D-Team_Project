@@ -367,9 +367,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\Monsters</Filter>
-    </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
@@ -388,9 +385,6 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">

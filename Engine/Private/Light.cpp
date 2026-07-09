@@ -185,14 +185,6 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
     pContext->PSSetShaderResources(2, 1, pSRVs);
     pContext->PSSetShaderResources(3, 1, pSRVs);
 
-    {
-        const auto& sampler = m_pResSamplerState;
-        pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-    }
-    {
-        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-        pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-    }
     pContext->DrawIndexed(m_pResLightTexBuffer->GetNumIndices(), 0, 0);
 
     pContext->VSSetShader(nullptr, nullptr, 0);
