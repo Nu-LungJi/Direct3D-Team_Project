@@ -363,6 +363,11 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->PSSetShaderResources(2, 1, pSRVs);
 	pContext->PSSetShaderResources(3, 1, pSRVs);
 
+	{
+		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
+		pContext->VSSetShaderResources(4, 1, nullSRV);
+	}
+
     return S_OK;
 }
 
