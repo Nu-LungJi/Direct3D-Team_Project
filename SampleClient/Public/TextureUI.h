@@ -9,14 +9,14 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CUI_Item final : public E::CUITex
+class CTextureUI final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CUI_Item, E::CUITex)
+	DECLARE_DERIVED_TYPE(CTextureUI, E::CUITex)
 
 private:
-	CUI_Item();
-	~CUI_Item() override;
+	CTextureUI();
+	~CTextureUI() override;
 
 public:
 	HRESULT Initialize(void* pArg) override;
@@ -35,7 +35,7 @@ protected:
 public:
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
 private:
-	_bool m_bMouseTracking{};
+	_bool m_bMouseTracking{false};
 
 private:
 	bool m_bOutline{};
@@ -43,7 +43,7 @@ private:
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
 
 public:
-	static E::UPtr<CUI_Item> Create();
+	static E::UPtr<CTextureUI> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

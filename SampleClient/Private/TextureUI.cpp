@@ -1,21 +1,21 @@
 #include "pch.h"
-#include "UI_Item.h"
+#include "TextureUI.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
 
 NS_USING(Client)
 
-CUI_Item::CUI_Item()
+CTextureUI::CTextureUI()
 {
 
 }
 
-CUI_Item::~CUI_Item()
+CTextureUI::~CTextureUI()
 {
 }
 
-HRESULT CUI_Item::Initialize(void* pArg)
+HRESULT CTextureUI::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
 
@@ -32,35 +32,35 @@ HRESULT CUI_Item::Initialize(void* pArg)
 		};
 	}
 
-	m_UIType = ETOUI(UI_TYPE::TEXUI);
+	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
 
 	return S_OK;
 }
 
-void CUI_Item::PriorityUpdate(E::_float fTimeDelta)
+void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CUI_Item::Update(E::_float fTimeDelta)
+void CTextureUI::Update(E::_float fTimeDelta)
 {
 	CUIObject::Update(fTimeDelta);
 
 	if (m_bMouseTracking)
 	{
 		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
-		m_fX = mousePos.x;
-		m_fY = mousePos.y;
+		m_UIINFO.fX = mousePos.x;
+		m_UIINFO.fY = mousePos.y;
 		CalcUICoord();
 	}
 }
 
-void CUI_Item::LateUpdate(E::_float fTimeDelta)
+void CTextureUI::LateUpdate(E::_float fTimeDelta)
 {
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
 
-HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = "LEVEL_UIEDITOR";
 
@@ -90,7 +90,7 @@ HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = { 0.f, 0.f };
 		perUI.uvSize = { 0.f, 0.f };
-		perUI.color = { 0.f, 0.f, 0.f, m_fAlpha };
+		perUI.color = { 0.f, 0.f, 0.f, m_UIINFO.Alpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -121,7 +121,7 @@ HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	}
 
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_sRestag);
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 	}
 
@@ -132,30 +132,30 @@ HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	return S_OK;
 }
 
-void CUI_Item::Creating()
+void CTextureUI::Creating()
 {
 }
 
-void CUI_Item::StartHovering()
+void CTextureUI::StartHovering()
 {
 }
 
-void CUI_Item::Hovering()
+void CTextureUI::Hovering()
 {
 
 }
 
-void CUI_Item::EndHovering()
+void CTextureUI::EndHovering()
 {
 }
 
-void CUI_Item::Ending()
+void CTextureUI::Ending()
 {
 }
 
-E::UPtr<CUI_Item> CUI_Item::Create()
+E::UPtr<CTextureUI> CTextureUI::Create()
 {
-	auto pInstance = E::ToUPtr(new CUI_Item{});
+	auto pInstance = E::ToUPtr(new CTextureUI{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CTexUI");
@@ -164,12 +164,12 @@ E::UPtr<CUI_Item> CUI_Item::Create()
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CUI_Item::Clone(void* pArg)
+E::UPtr<E::CPrototype> CTextureUI::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CUI_Item{ *this });
+	auto	pInstance = E::ToUPtr(new CTextureUI{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CUI_Item");
+		MSG_BOX("Failed to Cloned : CTextureUI");
 		return nullptr;
 	}
 

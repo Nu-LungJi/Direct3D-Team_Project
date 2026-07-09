@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "FlipBook.h"
+#include "EffectUI.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
@@ -9,19 +9,19 @@
 
 NS_USING(Client)
 
-CFlipBook::CFlipBook()
+CEffectUI::CEffectUI()
 {
 }
 
-CFlipBook::~CFlipBook()
+CEffectUI::~CEffectUI()
 {
 }
 
-HRESULT CFlipBook::Initialize(void* pArg)
+HRESULT CEffectUI::Initialize(void* pArg)
 {
-	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
+	auto		pDesc = static_cast<CFlipbookUI::FLIPBOOK_DESC*>(pArg);
 
-	if (FAILED(CUIObject::Initialize(pDesc)))
+	if (FAILED(CFlipbookUI::Initialize(pDesc)))
 		return E_FAIL;
 
 	{
@@ -32,59 +32,28 @@ HRESULT CFlipBook::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
+
 	m_UIINFO.UIType = ETOUI(UI_TYPE::FLIPBOOK);
 
 	return S_OK;
 }
 
-void CFlipBook::PriorityUpdate(E::_float fTimeDelta)
+void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CFlipBook::Update(E::_float fTimeDelta)
+void CEffectUI::Update(E::_float fTimeDelta)
 {
-	CUIObject::Update(fTimeDelta);
-
-	m_fPadding = 2.f / cellsize;
-	m_Columns = static_cast<int>(std::round(std::sqrt(m_TotalFrame)));
-	m_Rows = static_cast<int>(std::round(std::sqrt(m_TotalFrame)));
-
-	if (m_Loop == false && m_CurrentFrame == m_TotalFrame)
-		return;
-
-	if (m_CurrentFrame % m_iPuaseFrame == 0 && m_fPauseSumTime < m_fPauseTime && m_CurrentFrame != 0 && m_isPause)
-	{
-		m_fPauseSumTime += fTimeDelta;
-	}
-	else
-	{
-		m_fPauseSumTime = 0.f;
-		m_fSumTime += fTimeDelta;
-
-		uint32_t frameCount = (m_TotalFrame - m_StartFrame + 1);
-		float delta = m_fDuration / frameCount;
-
-		if (m_fSumTime >= delta)
-		{
-			m_fSumTime = 0.f;
-			m_CurrentFrame = (m_CurrentFrame + 1) % frameCount;
-		}
-	}
-
-	m_curColum = m_CurrentFrame % m_Columns;
-	m_curRow = m_CurrentFrame / m_Rows;
-
-	m_texcoord = { m_curColum / (float)m_Columns + m_fPadding, m_curRow / (float)m_Rows + m_fPadding };
-	m_uvSize = { 1 / (float)m_Columns - m_fPadding * 2 , 1 / (float)m_Rows - m_fPadding * 2 };
+	CFlipbookUI::Update(fTimeDelta);
 }
 
-void CFlipBook::LateUpdate(E::_float fTimeDelta)
+void CEffectUI::LateUpdate(E::_float fTimeDelta)
 {
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
 
-HRESULT CFlipBook::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = "LEVEL_UIEDITOR";
 
@@ -131,11 +100,11 @@ HRESULT CFlipBook::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 			D3D11_MAPPED_SUBRESOURCE mappedSubResource;
 			if (SUCCEEDED(pContext->Map(pCbPerObject->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
 			{
-	
+
 				E::CB_PER_OBJECT cbPerObject{};
 				cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
 				XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
-	
+
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
 			}
@@ -148,8 +117,8 @@ HRESULT CFlipBook::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_sRestag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 
-		//const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-		//pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
+		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -159,9 +128,9 @@ HRESULT CFlipBook::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	return S_OK;
 }
 
-E::UPtr<CFlipBook> CFlipBook::Create()
+E::UPtr<CEffectUI> CEffectUI::Create()
 {
-	auto pInstance = E::ToUPtr(new CFlipBook{});
+	auto pInstance = E::ToUPtr(new CEffectUI{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CFlipBook");
@@ -170,9 +139,9 @@ E::UPtr<CFlipBook> CFlipBook::Create()
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CFlipBook::Clone(void* pArg)
+E::UPtr<E::CPrototype> CEffectUI::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CFlipBook{ *this });
+	auto	pInstance = E::ToUPtr(new CEffectUI{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
 		MSG_BOX("Failed to Cloned : CFlipBook");

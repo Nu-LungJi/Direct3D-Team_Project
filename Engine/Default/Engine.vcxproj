@@ -263,6 +263,7 @@
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
     <ClInclude Include="..\Public\NavMeshManager.h" />
+    <ClInclude Include="..\public\FlipbookUI.h" />
     <ClInclude Include="..\public\ResPhysXBoxGeometry.h" />
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h" />
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
@@ -311,6 +312,7 @@
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
     <ClInclude Include="..\public\PhysxManagerListener.h" />
+    <ClInclude Include="..\public\TextUI.h" />
     <ClInclude Include="..\Public\UITex.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
@@ -519,6 +521,7 @@
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
+    <ClCompile Include="..\private\FlipbookUI.cpp" />
     <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />
@@ -598,6 +601,7 @@
     <ClCompile Include="..\Private\ShaderManager.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
+    <ClCompile Include="..\private\TextUI.cpp" />
     <ClCompile Include="..\Private\UITex.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>

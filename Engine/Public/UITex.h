@@ -18,13 +18,6 @@ public:
 	HRESULT Initialize(void* pArg) override;
 	virtual void Update(_float fTimeDelta);
 	virtual void LateUpdate(_float fTimeDelta);
-
-protected:
-	virtual void Creating();
-	virtual void StartHovering();
-	virtual void Hovering();
-	virtual void EndHovering();
-	virtual void Ending();
 };
 
 NS_END
