@@ -8,6 +8,7 @@
 #include "DbgLineRender.h"
 #include "MapManager.h"
 #include "LightManager.h"
+#include "NavMeshManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -322,6 +323,7 @@ public:
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
 	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
+	HRESULT RegisterMapMeshObjectToMapChunk(const CHandle& hObject);
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
@@ -344,6 +346,11 @@ public:
 #pragma region DBG_LINE_RENDER
 public:
 	CDbgLineRender* GetDbgLineRender() const { return m_pDbgLineRender.get(); };
+#pragma endregion
+
+#pragma region NAVMESH_MANAGER
+public:
+	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
 #pragma endregion
 
 public:
@@ -395,6 +402,7 @@ private:
 	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 	UPtr<CMapManager> m_pMapManager{};
+	UPtr<CNavMeshManager> m_pNavMeshManager{};
 };
 
 NS_END

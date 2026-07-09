@@ -74,6 +74,11 @@ namespace E = Engine;
 #include <nlohmann/json.hpp>
 #include "Engine_Json_Util.h"
 
+#include <recastnavigation/Recast.h>
+#include <recastnavigation/DetourNavMesh.h>
+#include <recastnavigation/DetourNavMeshBuilder.h>
+#include <recastnavigation/DetourNavMeshQuery.h>
+#include <recastnavigation/DetourCommon.h>
 
 using namespace Engine;
 

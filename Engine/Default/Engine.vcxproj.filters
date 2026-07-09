@@ -385,6 +385,9 @@
     <Filter Include="GameObject\Manager\Octree">
       <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NavMesh">
+      <UniqueIdentifier>{d41c07dc-efc6-4a40-ab12-ec459a466f78}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -825,6 +828,9 @@
     <ClInclude Include="..\Public\Engine_EnumString.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\NavMeshManager.h">
+      <Filter>NavMesh</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1231,6 +1237,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\NavMeshManager.cpp">
+      <Filter>NavMesh</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
