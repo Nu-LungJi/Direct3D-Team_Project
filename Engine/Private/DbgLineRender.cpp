@@ -626,13 +626,13 @@ void CDbgLineRender::AddAxis(float length, FXMMATRIX world)
 	const auto prev = m_vColor;
 
 	SetColor({ 0.5f, 0.f, 0.f, 1.f });
-	AddArrow(o, fx, length);
+	AddArrow(o, fx, length, 0.001f);
 
 	SetColor({ 0.f, 0.5f, 0.f, 1.f });
-	AddArrow(o, fy, length);
+	AddArrow(o, fy, length, 0.001f);
 
 	SetColor({ 0.f, 0.f, 0.5f, 1.f });
-	AddArrow(o, fz, length);
+	AddArrow(o, fz, length, 0.001f);
 
 	SetColor(prev);
 }
@@ -791,9 +791,15 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
             m_pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
         }
     }
+	ComPtr<ID3D11DepthStencilState> aa = {nullptr};
+	m_pContext->OMGetDepthStencilState(aa.GetAddressOf(), 0);
+	
+	auto ds = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
 
+	m_pContext->OMSetDepthStencilState(ds->GetDepthStencilState().Get(), 0);
     m_pContext->Draw((uint32_t)m_Vertices.size(), 0);
-
+	m_pContext->OMSetDepthStencilState(aa.Get(), 0);
+	
 
 
     return S_OK;

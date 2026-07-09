@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "MapManager.h"
 #include "MapMeshObject.h"
 #include <fstream>
@@ -216,12 +216,7 @@ void CMapManager::Update(_float fTimeDelta)
 {
 	ProcessLoadedChunkResults();
 
-	if (!m_bChunkStreaming)
-	{
-		return;
-	}
-
-	if (m_sMapRootPath.empty() || m_Chunks.empty())
+	if (m_Chunks.empty())
 	{
 		return;
 	}
@@ -232,8 +227,27 @@ void CMapManager::Update(_float fTimeDelta)
 		return;
 	}
 
+	auto* pFlyCamera = dynamic_cast<CFlyCamera*>(pCamera);
+	if (pFlyCamera == nullptr || pFlyCamera->GetFrustumCollider() == nullptr)
+		return;
+
+	const auto neededChunks = GetNeededChunksAroundCamera(pCamera);
+	const auto& boundingFrustum = pFlyCamera->GetFrustumCollider()->GetBoundingFrustum();
+
+	CullLoadedChunksByCameraFrustum(neededChunks, boundingFrustum);
+
+	if (m_bChunkStreaming && !m_sMapRootPath.empty())
+	{
+		UnloadChunksOutsideRange(neededChunks);
+		RequestNeededChunkLoads(neededChunks);
+	}
+}
+
+std::vector<MAPCHUNK_COORD> CMapManager::GetNeededChunksAroundCamera(const CCameraObject* pCamera) const
+{
+
 	const auto& pos = pCamera->GetTransform().GetPosition();
-	const MAPCHUNK_COORD cameraChunkCoord = WorldToChunkCoord(pos); // 카메라가 속한 Chunk 구함
+	const MAPCHUNK_COORD cameraChunkCoord = WorldToChunkCoord(pos);
 
 	std::vector<MAPCHUNK_COORD> neededChunks;
 	neededChunks.reserve(27);
@@ -256,6 +270,11 @@ void CMapManager::Update(_float fTimeDelta)
 		}
 	}
 
+	return neededChunks;
+}
+
+void CMapManager::UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks)
+{
 	auto isNeededChunk = [&neededChunks](const MAPCHUNK_COORD& coord)
 		{
 			return std::find(neededChunks.begin(), neededChunks.end(), coord) != neededChunks.end();
@@ -269,12 +288,10 @@ void CMapManager::Update(_float fTimeDelta)
 			UnLoadChunk(coord);
 		}
 	}
+}
 
-	// 주변 3*3*3 Chunk들 중, m_Chunks에 존재하는거라면 Load
-	auto* pFlyCamera = dynamic_cast<CFlyCamera*>(CGameInstance::Get().GetActiveCamera());
-	if (pFlyCamera == nullptr || pFlyCamera->GetFrustumCollider() == nullptr)
-		return;
-	const auto& boundingFrustum = pFlyCamera->GetFrustumCollider()->GetBoundingFrustum();
+void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks)
+{
 	for (const auto& coord : neededChunks)
 	{
 		auto iter = m_Chunks.find(coord);
@@ -288,24 +305,37 @@ void CMapManager::Update(_float fTimeDelta)
 			RequestLoadChunkAsync(coord);
 			//LoadChunk(coord);
 		}
+	}
+}
 
-
-		// 카메라-Chunk 컬링
+void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum)
+{
+	for (const auto& coord : neededChunks)
+	{
+		auto iter = m_Chunks.find(coord);
+		if (iter == m_Chunks.end())
 		{
-			if (iter->second.loadState != EChunkLoadState::Loaded)
-				continue;
+			continue;
+		}
 
-			if (boundingFrustum.Intersects(iter->second.bounds))
-			{
-				for (const auto& hObject : iter->second.hObjects)
-				{
-					if (auto* obj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(hObject))
-						obj->SetRenderEnable(true);
-				}
-			}
+		if (iter->second.loadState != EChunkLoadState::Loaded)
+		{
+			continue;
+		}
+
+		if (!boundingFrustum.Intersects(iter->second.bounds))
+		{
+			continue;
+		}
+
+		const auto& selectedChunk = iter->second;
+		if (const auto& octreeNode = selectedChunk.octreeNode)
+		{
+			octreeNode->OctreeFrustumCull(boundingFrustum);
 		}
 	}
 }
+
 void CMapManager::LateUpdate(_float fTimeDelta)
 {
 
@@ -338,7 +368,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		if (chunk.loadState == EChunkLoadState::Unloaded && chunk.saveState != EChunkSaveState::Unsaved)
 		{
 			originallyUnloadedChunks.push_back(coord);
-			if (FAILED(/*RequestLoadChunkAsync(coord)*/LoadChunk(coord))) // 여기서는 동기적으로 Load
+			if (FAILED(/*RequestLoadChunkAsync(coord)*/LoadChunk(coord))) // Synchronous load while saving.
 			{
 				return E_FAIL;
 			}
@@ -408,7 +438,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {
 	if (clearBeforeLoad)
 	{
-		CGameInstance::Get().GameObjectAllReset();
+		CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
 		m_Chunks.clear();
 	}
 
@@ -705,7 +735,6 @@ void CMapManager::RebuildChunks()
 		prev.loadState = chunk.loadState;
 		prev.saveState = chunk.saveState;
 		prev.filePath = chunk.filePath;
-		// hObjects and octreeNode are rebuilt below.
 
 		prevChunks.emplace(coord, std::move(prev));
 	}
@@ -733,7 +762,7 @@ void CMapManager::RebuildChunks()
 	{
 		for (const auto& handle : layer)
 		{
-			CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
+			CMapMeshObject* pObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
 
 			if (pObj == nullptr)
 				continue;
@@ -775,6 +804,42 @@ void CMapManager::RebuildChunks()
 
 }
 
+HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
+{
+	CMapMeshObject* pObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(hObject);
+	if (pObj == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	const MAPCHUNK_COORD coord = WorldToChunkCoord(pObj->GetTransform().GetPosition());
+	auto& chunk = m_Chunks[coord];
+
+	chunk.coord = coord;
+	chunk.bounds = MakeChunkBoundingBox(coord);
+	chunk.loadState = EChunkLoadState::Loaded;
+	chunk.saveState = EChunkSaveState::Unsaved; // 새 오브젝트가 배치되면서 변질된 chunk니까 Unsaved되는게 맞음
+
+	if (!HasHandle(chunk.hObjects, hObject))
+	{
+		chunk.hObjects.push_back(hObject);
+	}
+
+	if (!chunk.octreeNode)
+	{
+		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0, 4);
+	}
+
+	if (chunk.octreeNode)
+	{
+		chunk.octreeNode->BuildOctree(chunk.hObjects);
+	}
+
+	pObj->SetRenderEnable(true);
+
+	return S_OK;
+}
+
 #ifdef _DEBUG
 
 HRESULT CMapManager::RenderDebugMapChunk()
@@ -796,16 +861,13 @@ HRESULT CMapManager::RenderDebugMapChunk()
 	//	Colors::DeepSkyBlue,
 	//	Colors::Yellow,
 	//	Colors::Orange,
-	//	Colors::Magenta,
+	//	Colors::Black,
 	//	Colors::White,
 	//};
 	//const size_t octreeDepthColorCount = sizeof(octreeDepthColors) / sizeof(octreeDepthColors[0]);
 
 	for (const auto& [coord, mapChunk] : m_Chunks)
 	{
-		FXMVECTOR color = mapChunk.loadState == EChunkLoadState::Loaded ? Colors::Lime : Colors::Red;
-		DrawBox(mapChunk.bounds, color, view, proj, XMMatrixIdentity());
-
 		if (mapChunk.loadState == EChunkLoadState::Loaded && mapChunk.octreeNode)
 		{
 			std::vector<OCTREE_DEBUG_BOUNDS> octreeBounds;
@@ -815,9 +877,11 @@ HRESULT CMapManager::RenderDebugMapChunk()
 			{
 				//const FXMVECTOR nodeColor = octreeDepthColors[
 				//	nodeBounds.depth % octreeDepthColorCount];
-				DrawBox(nodeBounds.bounds, Colors::Cyan, view, proj, XMMatrixIdentity());
+				DrawBox(nodeBounds.bounds, Colors::Red, view, proj, XMMatrixIdentity());
 			}
 		}
+		FXMVECTOR color = mapChunk.loadState == EChunkLoadState::Loaded ? Colors::Lime : Colors::Red;
+		DrawBox(mapChunk.bounds, color, view, proj, XMMatrixIdentity());
 	}
 
 	//// 카메라 주변 3x3x3 스트리밍 대상 청크 표시
@@ -1041,4 +1105,5 @@ void CMapManager::Free()
 {
 	CEngineBase::Free();
 }
+
 

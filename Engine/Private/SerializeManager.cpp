@@ -1,10 +1,14 @@
 #include "pch.h"
 #include "SerializeManager.h"
 
+#include "SerDeTestCase.h"
+
 NS_USING(Engine)
 
 CSerializeManager::CSerializeManager()
 {
+	RunMegaSerializationTest();
+	int d = 0;
 }
 
 CSerializeManager::~CSerializeManager()

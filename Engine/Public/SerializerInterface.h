@@ -4,16 +4,21 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
-#include <type_traits> // type_traits 필수 포함
+#include <type_traits>
+#include "ISerializable.h"
 
 NS_BEGIN(Engine)
 
-class ISerializable;
-
-class ENGINE_DLL ISerializer {
+class ENGINE_DLL ISerializer
+{
 public:
 	virtual ~ISerializer() = default;
 
+#pragma region PRIMITIVE
+public:
+	virtual void Write(const std::string& key, bool value) = 0;
+	virtual void Write(const std::string& key, uint32_t value) = 0;
+	virtual void Write(const std::string& key, uint64_t value) = 0;
 	virtual void Write(const std::string& key, int value) = 0;
 	virtual void Write(const std::string& key, float value) = 0;
 	virtual void Write(const std::string& key, const std::string& value) = 0;
@@ -23,7 +28,16 @@ public:
 	virtual void Write(const std::string& key, const _float4x4& value) = 0;
 	virtual void Write(const std::string& key, const ISerializable& value) = 0;
 
+	template<typename T>
+	auto Write(const std::string& key, T value)
+		-> std::enable_if_t<std::is_enum_v<T>>
+	{
+		Write(key, static_cast<int>(value));
+	}
+#pragma endregion
 
+#pragma region ARRAY
+public:
 	template<typename InputIt>
 	void Write(const std::string& key, InputIt begin, InputIt end)
 	{
@@ -58,7 +72,13 @@ public:
 	{
 		Write(key, std::begin(container), std::end(container));
 	}
+protected:
+	virtual void StartArray(const std::string& key) = 0;
+	virtual void EndArray() = 0;
+#pragma endregion
 
+#pragma region MAP
+public:
 	template<typename K, typename V>
 	void Write(const std::string& key, const std::map<K, V>& mapData)
 	{
@@ -104,19 +124,22 @@ public:
 		}
 		EndMap();
 	}
-
-//protected:
-	virtual void StartArray(const std::string& key) = 0;
-	virtual void EndArray() = 0;
+protected:
 	virtual void StartMap(const std::string& key) = 0;
 	virtual void EndMap() = 0;
+#pragma endregion
 };
 
-class ENGINE_DLL IDeserializer {
+class ENGINE_DLL IDeserializer
+{
 public:
 	virtual ~IDeserializer() = default;
 
-	// 1. 단일 원자 타입 및 객체 읽기
+#pragma region PRIMITIVE
+public:
+	virtual void Read(const std::string& key, bool& outValue) = 0;
+	virtual void Read(const std::string& key, uint32_t& outValue) = 0;
+	virtual void Read(const std::string& key, uint64_t& outValue) = 0;
 	virtual void Read(const std::string& key, int& outValue) = 0;
 	virtual void Read(const std::string& key, float& outValue) = 0;
 	virtual void Read(const std::string& key, std::string& outValue) = 0;
@@ -125,8 +148,18 @@ public:
 	virtual void Read(const std::string& key, _float4& outValue) = 0;
 	virtual void Read(const std::string& key, _float4x4& outValue) = 0;
 	virtual void Read(const std::string& key, ISerializable& outValue) = 0;
+	template<typename T>
+	auto Read(const std::string& key, T& outValue)
+		-> std::enable_if_t<std::is_enum_v<T>>
+	{
+		int temp = 0;
+		Read(key, temp); // int 형태로 먼저 읽어옴
+		outValue = static_cast<T>(temp); // 원래의 Enum 타입으로 캐스팅하여 대입
+	}
+#pragma endregion
 
-
+#pragma region MAP
+public:
 	template<typename K, typename V>
 	void Read(const std::string& key, std::map<K, V>& outMap)
 	{
@@ -165,11 +198,18 @@ public:
 		EndMap();
 	}
 
+protected:
+	// 맵도 배열처럼 개수를 반환
+	virtual size_t StartMap(const std::string& key) = 0;
+	virtual void EndMap() = 0;
 
-	// =========================================================
-		// 1. 동적 컨테이너 범용 템플릿 (std::vector, std::list, std::deque 등)
-		// (resize() 함수와 반복자를 지원하는 모든 컨테이너 처리)
-		// =========================================================
+	// 현재 위치의 단일 Key를 읽는 함수
+	virtual std::string ReadMapKey() = 0;
+#pragma endregion
+
+
+#pragma region ARRAY
+public:
 	template<typename Container>
 	auto Read(const std::string& key, Container& outContainer)
 		-> decltype(outContainer.resize(1), std::begin(outContainer), void()) // SFINAE: resize가 가능한 컨테이너만 매칭
@@ -190,10 +230,31 @@ public:
 		EndArray();
 	}
 
-	// =========================================================
-	// 2. Raw Pointer + Max Size 기반 배열 읽기
-	// (동적 할당된 배열이나 버퍼 포인터를 넘길 때 사용, 오버플로우 방지)
-	// =========================================================
+	// Set대응 Set은 insert
+	template<typename Container>
+	auto Read(const std::string& key, Container& outContainer)
+		-> decltype(outContainer.insert(*std::begin(outContainer)), void())
+	{
+		size_t count = StartArray(key);
+
+		// set 계열은 resize가 없으므로 무조건 clear 후 insert 해야 함
+		outContainer.clear();
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			// 1. 임시 객체 생성 (set의 원소는 const이므로 직접 수정 불가)
+			typename Container::value_type item;
+
+			// 2. 값 읽기
+			Read("", item);
+
+			// 3. 삽입
+			outContainer.insert(std::move(item));
+		}
+
+		EndArray();
+	}
+
 	template<typename T>
 	void Read(const std::string& key, T* outArray, size_t maxElements)
 	{
@@ -211,29 +272,18 @@ public:
 		EndArray();
 	}
 
-	// =========================================================
-	// 3. 고정 크기 C-스타일 생배열 (T arr[N]) 편의성 래퍼
-	// (예: int myArr[10]; -> ReadArray("Key", myArr); 한 줄로 처리)
-	// =========================================================
+
 	template<typename T, size_t N>
 	void Read(const std::string& key, T(&outArray)[N])
 	{
-		// 배열의 크기 N을 컴파일러가 자동으로 추론하여 2번 함수로 토스합니다.
 		Read(key, outArray, N);
 	}
-//protected:
 
-	// 2. 컨테이너 노드 제어 (public으로 열어두어야 외부에서 접근 가능)
-	// 배열의 크기를 알아야 for문을 돌 수 있으므로 size_t 반환!
+protected:
+	// 배열의 크기를 알아야 for문을 돌 수 있으므로 size_t 반환
 	virtual size_t StartArray(const std::string& key) = 0;
 	virtual void EndArray() = 0;
-
-	// 1. 맵도 배열처럼 개수(size_t)를 반환하도록 변경합니다.
-	virtual size_t StartMap(const std::string& key) = 0;
-	virtual void EndMap() = 0;
-
-	// 2. 전체 키를 가져오는 GetMapKeys() 대신, 현재 위치의 단일 Key를 읽는 함수로 변경
-	virtual std::string ReadMapKey() = 0;
+#pragma endregion
 };
 
 NS_END

@@ -85,7 +85,7 @@ HRESULT CResModelChanel::Unload(const std::any& arg)
     return S_OK;
 }
 
-void CResModelChanel::Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResModelBone>>& Bones)
+void CResModelChanel::Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResModelBone>>& Bones,int32_t m_iRootBoneIndex)
 {
     if (0.f == fCurrentTrackPosition)
         iCurrentKeyFrameIndex = 0;
@@ -129,10 +129,16 @@ void CResModelChanel::Update_TransformationMatrix(uint32_t& iCurrentKeyFrameInde
 
     _matrix         TransformationMatrix = XMMatrixAffineTransformation(vScale, XMVectorSet(0.f, 0.f, 0.f, 1.f), vRotation, vTranslation);
 
+	// 해당되는 RootBone이 들어오면 이동량 삭제
+	if (m_iBoneIndex == m_iRootBoneIndex)
+	{
+		TransformationMatrix.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+	}
+
     Bones[m_iBoneIndex]->Set_TransformationMatrix(TransformationMatrix);
 }
 
-uint32_t CResModelChanel::FindKeyFrameIndex(float fTrackPos)
+uint32_t CResModelChanel::FindKeyFrameIndex(float fTrackPos)const
 {
     if (m_KeyFrames.size() < 2)
         return 0;
@@ -144,6 +150,68 @@ uint32_t CResModelChanel::FindKeyFrameIndex(float fTrackPos)
     }
 
     return static_cast<uint32_t>(m_KeyFrames.size() - 2);
+}
+
+_matrix CResModelChanel::Evaluate_TransformationMatrix(_float fTrackPosition) const {
+	// 이 함수는 처음 Load 해 올때만 Root Bone Transform 빼오기 위해서 만든 함수
+	if (m_KeyFrames.empty())
+		return XMMatrixIdentity();
+
+	if (m_KeyFrames.size() == 1) {
+
+		const KEYFRAME& KeyFrame = m_KeyFrames[0];
+
+		_vector vScale = XMLoadFloat3(&KeyFrame.vScale);
+		_vector vRotation = XMLoadFloat4(&KeyFrame.vRotation);
+		_vector vTranslation = XMVectorSetW(XMLoadFloat3(&KeyFrame.vTranslation), 1.f);
+
+		return XMMatrixAffineTransformation(vScale,XMVectorSet(0.f, 0.f, 0.f, 1.f),vRotation,vTranslation);
+	}
+
+
+	uint32_t iKeyFrameIndex = FindKeyFrameIndex(fTrackPosition);
+	// 다음 프레임, 이전 프레임 Keyframe 
+	const KEYFRAME& CurKeyFrame = m_KeyFrames[iKeyFrameIndex];
+	const KEYFRAME& NextKeyFrame = m_KeyFrames[iKeyFrameIndex + 1];
+
+
+	// 다음 프레임간의 Tickpersecond
+	float fDuration = NextKeyFrame.fTrackPosition - CurKeyFrame.fTrackPosition;
+	_float fRatio = 0.f;
+
+	// 현재 프레임의 위치와 이전 프레임의 위치의 보간된 비율
+	if (fDuration > 0.f)
+	{
+		fRatio = (fTrackPosition - CurKeyFrame.fTrackPosition) / fDuration;
+	}
+
+
+
+	_vector vScale = XMVectorLerp(
+		XMLoadFloat3(&CurKeyFrame.vScale),
+		XMLoadFloat3(&NextKeyFrame.vScale),
+		fRatio
+	);
+
+	_vector vRotation = XMQuaternionSlerp(
+		XMLoadFloat4(&CurKeyFrame.vRotation),
+		XMLoadFloat4(&NextKeyFrame.vRotation),
+		fRatio
+	);
+
+	_vector vTranslation = XMVectorSetW(
+		XMVectorLerp(
+			XMLoadFloat3(&CurKeyFrame.vTranslation),
+			XMLoadFloat3(&NextKeyFrame.vTranslation),
+			fRatio
+		),
+		1.f
+	);
+
+	// Lerp 함수로 보간 
+
+	return XMMatrixAffineTransformation(vScale,XMVectorSet(0.f, 0.f, 0.f, 1.f),vRotation,vTranslation);
+
 }
 
 

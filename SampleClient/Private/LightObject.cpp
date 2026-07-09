@@ -32,7 +32,7 @@ HRESULT CLightObject::InitializePrototype(void* pArg) {
 	m_pResSamplerState	= CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	if (!m_pResSamplerState)				return E_FAIL;
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/LightObject/SK_LightObject.bin"))) {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/Skeleton/LightObject/SK_LightObject.bin"))) {
 		E::CResModel::DESC pDesc = { XMMatrixIdentity() };
 		if (FAILED(res->Load(pDesc)))	return E_FAIL;
 	}
@@ -73,8 +73,10 @@ HRESULT CLightObject::Initialize(void* pArg) {
 	}
 
 	m_pComTransform->SetScale(XMVectorSet(100.f, 100.f, 100.f, 1.f));
-	m_pComTransform->SetRotation(XMVectorSet(1.f, 0.f, 0.f, 1.f), 90.f);
+	m_pComTransform->SetRotation(XMVectorSet(1.f, 0.f, 0.f, 1.f), +90.f);
+	m_pComTransform->SetRotation(XMVectorSet(0.f, 0.f, 1.f, 1.f), +90.f);
 	m_pComTransform->SetPosition(XMVectorSet(1.f, 3.f, 0.f, 1.f));
+
 	return S_OK;
 }
 
@@ -86,7 +88,7 @@ void CLightObject::Update(E::_float fTimeDelta) {
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
 }
 
 HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -122,51 +124,8 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 		{
-			SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
-			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
-				DiffuseTexture = Resource;
-			}
-			pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
-
-			SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
-			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
-				NormalTexture = Resource;
-			}
-			pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
-
-			SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
-			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
-				SMROTexture = Resource;
-			}
-			pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
-
-			SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
-			if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
-				EmissiveTexture = Resource;
-			}
-			pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
-		}
-		{
-			auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
-			D3D11_MAPPED_SUBRESOURCE MRES;
-			if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-			{
-				CB_MATERIAL   CMMAT;
-				CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
-		
-				CMMAT.NormalIntensity = 1.f;
-			    CMMAT.RoughnessIntensity = 1.f;
-			    CMMAT.MetallicIntensity = 1.f;
-				CMMAT.AmbientIntensity = 1.f;
-				CMMAT.SpecularIntensity = 1.f;
-		
-				CMMAT.EmissiveColor = {1.f, 1.f, 1.f};
-				CMMAT.EmissiveIntensity = 1.f;
-			
-			    memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
-				pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
-			}
-			pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+			m_pComModelInstance->Bind_Textures(pContext, i);
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 10.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

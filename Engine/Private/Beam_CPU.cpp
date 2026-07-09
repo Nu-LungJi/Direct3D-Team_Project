@@ -22,10 +22,10 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
     m_Desc = *pDesc;
     m_eType = pDesc->type;
 
-    // ½½·Ô¸¸ ¹Ì¸® ÁØºñ (¼¼±×¸ÕÆ® Á¤º¸´Â AddBeam ½ÃÁ¡¿¡ °³º°·Î Ã¤¿öÁü)
+    // ìŠ¬ë¡¯ë§Œ ë¯¸ë¦¬ ì¤€ë¹„ (ì„¸ê·¸ë¨¼íŠ¸ ì •ë³´ëŠ” AddBeam ì‹œì ì— ê°œë³„ë¡œ ì±„ì›Œì§)
     m_vecBeams.resize(m_Desc.iMaxBeams);
 
-    // ¹öÆÛ Å©±â´Â "Çã¿ë °¡´ÉÇÑ ÃÖ´ë ¼¼±×¸ÕÆ® ¼ö" ±âÁØÀ¸·Î ³Ë³ËÇÏ°Ô »êÁ¤
+    // ë²„í¼ í¬ê¸°ëŠ” "í—ˆìš© ê°€ëŠ¥í•œ ìµœëŒ€ ì„¸ê·¸ë¨¼íŠ¸ ìˆ˜" ê¸°ì¤€ìœ¼ë¡œ ë„‰ë„‰í•˜ê²Œ ì‚°ì •
     uint32_t iMaxSegmentCount = 1u << m_Desc.iMaxDisplacementIterations;
     uint32_t iMaxVerticesPerPlane = (iMaxSegmentCount + 1) * 2;
     uint32_t iMaxVerticesTotal = iMaxVerticesPerPlane * 2 * m_Desc.iMaxBeams;
@@ -132,12 +132,8 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
     pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-    {
-        const auto& sampler = CGameInstance::GetConst().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-        pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-    }
 
-    // °¢ ºöÀº ÀÌÁ¦ ÀÚ±â¸¸ÀÇ verticesPerPlaneÀ» °®°í ÀÖÀ¸´Ï, ±× °ª ±âÁØÀ¸·Î Draw
+    // ê° ë¹”ì€ ì´ì œ ìê¸°ë§Œì˜ verticesPerPlaneì„ ê°–ê³  ìˆìœ¼ë‹ˆ, ê·¸ ê°’ ê¸°ì¤€ìœ¼ë¡œ Draw
     for (auto& range : m_vecDrawRanges)
     {
         pContext->Draw(range.verticesPerPlane, range.startVertex);
@@ -157,9 +153,9 @@ HRESULT CBeam_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 
 int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
     _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
-    _float fFlickerInterval, _float4 emissive, _float fDuration)
+    _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
-    // ¾ÈÀüÀåÄ¡: ¹öÆÛ Å©±â »êÁ¤ ±âÁØ(iMaxDisplacementIterations)À» ³ÑÁö ¾Êµµ·Ï Å¬·¥ÇÁ
+    // ì•ˆì „ì¥ì¹˜: ë²„í¼ í¬ê¸° ì‚°ì • ê¸°ì¤€(iMaxDisplacementIterations)ì„ ë„˜ì§€ ì•Šë„ë¡ í´ë¨í”„
     if (iDisplacementIterations > m_Desc.iMaxDisplacementIterations)
         iDisplacementIterations = m_Desc.iMaxDisplacementIterations;
 
@@ -179,8 +175,9 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
             beam.fDisplacementDamping = fDisplacementDamping;
             beam.fFlickerInterval = fFlickerInterval;
             beam.fFlickerTimer = fFlickerInterval;
+			beam.vColor = vColor;
 
-            // ÀÌ ºö¸¸ÀÇ ¼¼±×¸ÕÆ® °³¼ö¸¦ ¿©±â¼­ °è»êÇÏ°í, ¹è¿­ Å©±âµµ ±×¿¡ ¸Â°Ô ÀçÁ¶Á¤
+            // ì´ ë¹”ë§Œì˜ ì„¸ê·¸ë¨¼íŠ¸ ê°œìˆ˜ë¥¼ ì—¬ê¸°ì„œ ê³„ì‚°í•˜ê³ , ë°°ì—´ í¬ê¸°ë„ ê·¸ì— ë§ê²Œ ì¬ì¡°ì •
             beam.iSegmentCount = 1u << beam.iDisplacementIterations;
             beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
             beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
@@ -259,7 +256,7 @@ void CBeam_CPU::RegenerateJaggedPath(BEAM_INSTANCE& beam)
     XMVECTOR right2 = XMVector3Normalize(XMVector3Cross(segDir, right1));
 
     XMStoreFloat3(&beam.vecJaggedPoints[0], start);
-    XMStoreFloat3(&beam.vecJaggedPoints[beam.iSegmentCount], end);   // ºö °³º° ¼¼±×¸ÕÆ® ¼ö »ç¿ë
+    XMStoreFloat3(&beam.vecJaggedPoints[beam.iSegmentCount], end);   // ë¹” ê°œë³„ ì„¸ê·¸ë¨¼íŠ¸ ìˆ˜ ì‚¬ìš©
 
     MidpointDisplace(beam.vecJaggedPoints, 0, beam.iSegmentCount,
         right1, right2, beam.fDisplacementAmplitude, beam.fDisplacementDamping,
@@ -289,7 +286,7 @@ void CBeam_CPU::BuildBeamGeometry()
 
         auto buildPlane = [&](const XMVECTOR& vRight)
             {
-                for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)   // ºö °³º° ¼¼±×¸ÕÆ® ¼ö »ç¿ë
+                for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)   // ë¹” ê°œë³„ ì„¸ê·¸ë¨¼íŠ¸ ìˆ˜ ì‚¬ìš©
                 {
                     _float t = (_float)i / (_float)beam.iSegmentCount;
                     XMVECTOR pos = XMLoadFloat3(&beam.vecJaggedPoints[i]);
@@ -301,11 +298,14 @@ void CBeam_CPU::BuildBeamGeometry()
                     BEAM_VERTEX vTop{};
                     XMStoreFloat3(&vTop.vPosition, top);
                     vTop.vUV = { 0.f, t };
+					vTop.vColor = beam.vColor;
+					vTop.vEmissive = beam.vEmissive;
 
                     BEAM_VERTEX vBottom{};
                     XMStoreFloat3(&vBottom.vPosition, bottom);
                     vBottom.vUV = { 1.f, t };
-
+					vBottom.vColor = beam.vColor;
+					vBottom.vEmissive = beam.vEmissive;
                     m_vecBeamVertices.push_back(vTop);
                     m_vecBeamVertices.push_back(vBottom);
                 }
@@ -316,7 +316,8 @@ void CBeam_CPU::BuildBeamGeometry()
 
         BEAM_DRAW_RANGE range{};
         range.startVertex = startVertex;
-        range.verticesPerPlane = beam.iVerticesPerPlane;   // ºö °³º° °ª ÀúÀå
+        range.verticesPerPlane = beam.iVerticesPerPlane;   // ë¹” ê°œë³„ ê°’ ì €ì¥
+	
         m_vecDrawRanges.push_back(range);
     }
 }

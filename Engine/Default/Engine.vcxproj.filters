@@ -199,9 +199,6 @@
     <Filter Include="Component\Model">
       <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\UITool">
-      <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
     </Filter>
@@ -385,6 +382,18 @@
     <Filter Include="GameObject\Manager\Octree">
       <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\TextUI">
+      <UniqueIdentifier>{a92fc6c2-e328-43e7-84e1-97d2e602a42e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\RayMarching">
+      <UniqueIdentifier>{3a83175f-9144-49e7-a79d-807e0f72fd2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NavMesh">
+      <UniqueIdentifier>{d41c07dc-efc6-4a40-ab12-ec459a466f78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle\Patterns">
+      <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Serialize">
       <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
     </Filter>
@@ -402,6 +411,9 @@
     </Filter>
     <Filter Include="Serialize\Factory">
       <UniqueIdentifier>{fa3bef3a-5cdf-42dd-94dc-2af1936fec0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialize\TestCase">
+      <UniqueIdentifier>{c5f4b517-bb73-4605-8016-a663b5b4c675}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -840,6 +852,21 @@
     <ClInclude Include="..\Public\OctreeNode.h">
       <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ParticlePattern.h">
+      <Filter>Particle\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\FlipbookUI.h">
+      <Filter>GameObject\UI\FlipBook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextUI.h">
+      <Filter>GameObject\UI\TextUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Engine_EnumString.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\NavMeshManager.h">
+      <Filter>NavMesh</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ISerializable.h">
       <Filter>Serialize</Filter>
     </ClInclude>
@@ -863,6 +890,9 @@
     </ClInclude>
     <ClInclude Include="..\public\ObjectFactory.h">
       <Filter>Serialize\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\SerDeTestCase.h">
+      <Filter>Serialize\TestCase</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1271,6 +1301,18 @@
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\ParticlePattern.cpp">
+      <Filter>Particle\Patterns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\FlipbookUI.cpp">
+      <Filter>GameObject\UI\FlipBook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TextUI.cpp">
+      <Filter>GameObject\UI\TextUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\NavMeshManager.cpp">
+      <Filter>NavMesh</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\JsonSerializer.cpp">
       <Filter>Serialize\Serializer\Json</Filter>
     </ClCompile>
@@ -1371,9 +1413,15 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
+    <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
       <Filter>ShaderFiles\ShaderHeader</Filter>
     </None>
   </ItemGroup>

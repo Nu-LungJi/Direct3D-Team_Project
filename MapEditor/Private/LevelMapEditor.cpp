@@ -8,6 +8,8 @@
 
 
 #include "TestGuizmo.h"
+#include "MapMeshObject.h"
+#include "MapEditorTerrain.h"
 
 NS_USING(Client)
 
@@ -24,20 +26,36 @@ HRESULT CLevelMapEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
-	//{
-	//	CTestGuizmo::GAMEOBJECT_DESC Desc{};
-	//	Desc.sObjectTag = "TestGuizmo";
-	//	if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer("MAPEDITOR", "Prototype_GameObject_TestGuizmo",
-	//		"00_OBJECTS", &Desc))
-	//	{
-	//		m_SelectedObject = hObject.value();
-	//	}
-	//	else
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
+	{
+		CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
+		Desc.sObjectTag = "DefaultMapMeshObject";
+		Desc.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
+		Desc.modelResTag = E::TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL;
+		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_MapMeshObject",
+			E::MAPMESHOBJECTLAYER, &Desc))
+		{
+			m_SelectedObject = hObject.value();
+		}
+		else
+		{
+			return E_FAIL;
+		}
+	}
 
+	// MapEditorTerrain
+	{
+		CMapEditorTerrain::DESC Desc{};
+		Desc.sObjectTag = "Terrain";
+
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			"MAPEDITOR",
+			"Prototype_GameObject_MapEditorTerrain",
+			"01_Terrain",
+			&Desc))
+		{
+			return E_FAIL;
+		}
+	}
 
 
 	{
@@ -89,7 +107,7 @@ HRESULT CLevelMapEditor::Initialize()
 		return E_FAIL;
 	}
 
-	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;		// ø˘µÂø° ¿¸ø™¡∂∏Ì √ﬂ∞°
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;		// ÏõîÎìúÏóê Ï†ÑÏó≠Ï°∞Î™Ö Ï∂îÍ∞Ä
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	//CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 0.f, 0.f }, 30.f, 10.f);
 

@@ -12,6 +12,7 @@ CJsonSerializer::~CJsonSerializer()
 {
 }
 
+
 HRESULT CJsonSerializer::Initialize()
 {
 	m_nodeStack.push_back(&m_json);
@@ -28,6 +29,29 @@ UPtr<CJsonSerializer> CJsonSerializer::Create()
 	return pInstance;
 }
 
+void CJsonSerializer::Write(const std::string& key, bool value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
+
+void CJsonSerializer::Write(const std::string& key, uint32_t value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
+
+void CJsonSerializer::Write(const std::string& key, uint64_t value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
 void CJsonSerializer::Write(const std::string& key, int value)
 {
 	nlohmann::json& node = *m_nodeStack.back();

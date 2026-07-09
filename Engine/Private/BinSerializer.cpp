@@ -7,6 +7,7 @@ NS_USING(Engine)
 CBinSerializer::CBinSerializer() {}
 CBinSerializer::~CBinSerializer() {}
 
+
 UPtr<CBinSerializer> CBinSerializer::Create() {
 	return ToUPtr(new CBinSerializer{});
 }
@@ -25,7 +26,7 @@ void CBinSerializer::PreWrite(const std::string& key)
 	SNodeState& state = m_nodeStack.back();
 	if (state.type == ENodeType::Map)
 	{
-		// 맵인 경우에만 Key 문자열을 바이너리에 기록합니다. (일반 변수 Key는 용량 절약을 위해 무시!)
+		// 맵인 경우에만 Key 문자열을 바이너리에 기록 (일반 변수 Key는 용량 절약을 위해 무시!)
 		size_t len = key.size();
 		WriteBytes(len);
 		if (len > 0) m_buffer.insert(m_buffer.end(), key.begin(), key.end());
@@ -37,7 +38,24 @@ void CBinSerializer::PreWrite(const std::string& key)
 	}
 }
 
-// === 데이터 쓰기 ===
+void CBinSerializer::Write(const std::string& key, bool value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
+void CBinSerializer::Write(const std::string& key, uint32_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
+void CBinSerializer::Write(const std::string& key, uint64_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
 void CBinSerializer::Write(const std::string& key, int value) {
 	PreWrite(key);
 	WriteBytes(value);
@@ -81,7 +99,6 @@ void CBinSerializer::Write(const std::string& key, const _float4x4& value)
 
 void CBinSerializer::Write(const std::string& key, const ISerializable& value) {
 	PreWrite(key);
-	// 하위 변수들이 부모 배열의 count를 올리지 못하게 Object 방어막을 칩니다.
 	m_nodeStack.push_back({ ENodeType::Object, 0, 0 });
 	value.Serialize(*this);
 	m_nodeStack.pop_back();
@@ -98,7 +115,7 @@ void CBinSerializer::StartArray(const std::string& key) {
 void CBinSerializer::EndArray() {
 	auto state = m_nodeStack.back();
 	m_nodeStack.pop_back();
-	// 기억해둔 위치로 돌아가 진짜 개수(count)를 덮어씁니다!
+	// 기억해둔 위치로 돌아가 진짜 개수(count)를 덮어씀
 	std::memcpy(m_buffer.data() + state.sizePos, &state.count, sizeof(size_t));
 }
 

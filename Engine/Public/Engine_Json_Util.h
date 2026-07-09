@@ -6,7 +6,7 @@ namespace Engine
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GUINODE, iID, Name,  fValue)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ACTION_VALUE, iAnimIndex, fSpeed, fTime, fTick)
 	//_float 2 3 4, enum은 수동으로
-
+	
 	class JsonSaveLoadManager
 	{
 	public:

@@ -23,6 +23,9 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
+
+	HRESULT LoadAssimp(aiMaterial* material, uint32_t materialNum);
+	std::filesystem::path MakeTextureBaseDirFromModelPath(const std::string& modelFilePath);
 public:
 	std::vector<SPtr<CResTexture2D>>* GetTextures() { return m_Materials; }
 	uint32_t GetMaterialSize() const { return ENG_AI_TEXTURE_TYPE_MAX; }

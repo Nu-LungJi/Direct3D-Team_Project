@@ -56,7 +56,7 @@ public:
 public:
     int32_t AddBeam(const _float4& vStart, const _float4& vEnd,
         _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, _float4 emissive, _float fDuration = 0.f);
+        _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration = 0.f);
     void    SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration = 0.f);
     void    SetStartPos(uint32_t beamIndex, const _float4& vPos);
     void    SetEndPos(uint32_t beamIndex, const _float4& vPos);

@@ -18,6 +18,9 @@ public:
 	HRESULT LoadFromFile(const std::string& path);
 	static UPtr<CBinDeSerializer> Create(const std::string& path);
 
+	void Read(const std::string& key, bool& outValue) override;
+	void Read(const std::string& key, uint32_t& outValue) override;
+	void Read(const std::string& key, uint64_t& outValue) override;
 	void Read(const std::string& key, int& outValue) override;
 	void Read(const std::string& key, float& outValue) override;
 	void Read(const std::string& key, std::string& outValue) override;

@@ -8,11 +8,8 @@ int main()
 {
 	shared_ptr<CImporter> import = make_shared<CImporter>();
 
-    //import->ImportFBXFolder("LevelAnimEditor","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/LevelAnimEditor/Static");
-	//import->ImportFBXFolder("LevelAnimEditor","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/LevelAnimEditor/Skeletal");
-	import->ImportFBXFolder("ParticleMesh","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/ParticleMesh/Static");
 
-	//import->ImportFBXFolder("Test","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/LightObject");
-
+	//import->ImportFBXFolder("","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Skeleton");
+	import->ImportFBXFolder_ForMapJson("","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Static","C:/JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/StaticModelJson");
 	return 0;
 }

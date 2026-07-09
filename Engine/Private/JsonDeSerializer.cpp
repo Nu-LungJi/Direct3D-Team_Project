@@ -30,15 +30,69 @@ HRESULT CJsonDeSerializer::LoadFromFile(const std::string& path)
 	return S_OK;
 }
 
+void CJsonDeSerializer::Read(const std::string& key, bool& outValue)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array() && !m_arrayIndexStack.empty())
+	{
+		size_t& idx = m_arrayIndexStack.back();
+		if (idx < node.size())
+		{
+			if (!node[idx].is_null()) outValue = node[idx].get<bool>();
+			idx++;
+		}
+	}
+	else if (node.is_object() && node.contains(key) && !node[key].is_null())
+	{
+		outValue = node[key].get<bool>();
+	}
+}
+
+void CJsonDeSerializer::Read(const std::string& key, uint32_t& outValue)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array() && !m_arrayIndexStack.empty())
+	{
+		size_t& idx = m_arrayIndexStack.back();
+		if (idx < node.size())
+		{
+			if (!node[idx].is_null()) outValue = node[idx].get<uint32_t>();
+			idx++;
+		}
+	}
+	else if (node.is_object() && node.contains(key) && !node[key].is_null())
+	{
+		outValue = node[key].get<uint32_t>();
+	}
+}
+
+void CJsonDeSerializer::Read(const std::string& key, uint64_t& outValue)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array() && !m_arrayIndexStack.empty())
+	{
+		size_t& idx = m_arrayIndexStack.back();
+		if (idx < node.size())
+		{
+			if (!node[idx].is_null()) outValue = node[idx].get<uint64_t>();
+			idx++;
+		}
+	}
+	else if (node.is_object() && node.contains(key) && !node[key].is_null())
+	{
+		outValue = node[key].get<uint64_t>();
+	}
+}
+
 HRESULT CJsonDeSerializer::Initialize()
 {
 	m_nodeStack.push_back(&m_json);
 	return S_OK;
 }
 
-// =======================================================
-// 1. 원자 타입 읽기 (안전한 인덱스 접근)
-// =======================================================
 void CJsonDeSerializer::Read(const std::string& key, int& outValue)
 {
 	nlohmann::json& node = *m_nodeStack.back();
@@ -49,7 +103,7 @@ void CJsonDeSerializer::Read(const std::string& key, int& outValue)
 		if (idx < node.size())
 		{
 			if (!node[idx].is_null()) outValue = node[idx].get<int>();
-			idx++; // 값을 못 읽어도 인덱스는 증가시켜야 다음 원소로 넘어감
+			idx++; 
 		}
 	}
 	else if (node.is_object() && node.contains(key) && !node[key].is_null())
@@ -157,7 +211,7 @@ void CJsonDeSerializer::Read(const std::string& key, _float4x4& outValue)
 		matrix = node[key];
 	}
 
-	// [수정됨] 크래시 방지 방어 코드 추가: matrix가 2차원 배열(4x4) 형태를 갖추고 있는지 확인
+	// matrix가 2차원 배열(4x4) 형태를 갖추고 있는지 확인
 	if (matrix.is_array() && matrix.size() == 4)
 	{
 		float* f = reinterpret_cast<float*>(&outValue);
@@ -175,23 +229,22 @@ void CJsonDeSerializer::Read(const std::string& key, _float4x4& outValue)
 	}
 }
 
-// =======================================================
-// 2. 자식 ISerializable 객체 읽기
-// =======================================================
 void CJsonDeSerializer::Read(const std::string& key, ISerializable& outValue)
 {
 	nlohmann::json& node = *m_nodeStack.back();
 
 	if (node.is_array() && !m_arrayIndexStack.empty())
 	{
-		size_t& idx = m_arrayIndexStack.back();
-		if (idx < node.size() && node[idx].is_object())
+		size_t currentIdx = m_arrayIndexStack.back();
+
+		if (currentIdx < node.size() && node[currentIdx].is_object())
 		{
-			m_nodeStack.push_back(&node[idx]);
+			m_nodeStack.push_back(&node[currentIdx]);
 			outValue.Deserialize(*this);
 			m_nodeStack.pop_back();
 		}
-		idx++; // 안전한 순회를 위해 증가
+
+		m_arrayIndexStack.back()++;
 	}
 	else if (node.is_object() && node.contains(key) && node[key].is_object())
 	{
@@ -201,9 +254,6 @@ void CJsonDeSerializer::Read(const std::string& key, ISerializable& outValue)
 	}
 }
 
-// =======================================================
-// 3. 컨테이너 노드 제어 (스택 밸런스 완벽 보장)
-// =======================================================
 size_t CJsonDeSerializer::StartArray(const std::string& key)
 {
 	nlohmann::json& node = *m_nodeStack.back();
@@ -224,7 +274,7 @@ size_t CJsonDeSerializer::StartArray(const std::string& key)
 		bSuccess = true;
 	}
 
-	// [핵심] 실패하더라도 EndArray()의 pop_back()과 짝을 맞추기 위해 자기 자신을 더미로 푸시!
+	// 실패하더라도 EndArray()의 pop_back()과 짝을 맞추기 위해 자기 자신을 더미로 푸시
 	if (!bSuccess) m_nodeStack.push_back(&node);
 
 	m_arrayIndexStack.push_back(0);
@@ -242,7 +292,6 @@ size_t CJsonDeSerializer::StartMap(const std::string& key)
 	nlohmann::json& node = *m_nodeStack.back();
 	bool bSuccess = false;
 
-	// [수정됨] 누락되었던 실제 맵 노드 진입 로직 복구
 	if (node.is_object() && node.contains(key) && node[key].is_object())
 	{
 		m_nodeStack.push_back(&node[key]);
@@ -282,7 +331,6 @@ std::string CJsonDeSerializer::ReadMapKey()
 
 void CJsonDeSerializer::EndMap()
 {
-	// [수정됨] 누락되었던 노드 탈출 로직 복구
 	if (m_nodeStack.size() > 1) m_nodeStack.pop_back();
 	if (!m_mapKeysStack.empty()) m_mapKeysStack.pop_back();
 	if (!m_mapKeyIndexStack.empty()) m_mapKeyIndexStack.pop_back();

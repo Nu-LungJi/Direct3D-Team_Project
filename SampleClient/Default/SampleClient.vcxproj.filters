@@ -171,12 +171,6 @@
     <ClInclude Include="..\Public\FlipBook.h">
       <Filter>GameObject\UI\FilpBook</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\FlipbookPlayer.h">
-      <Filter>GameObject\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="UI_Item.h">
-      <Filter>GameObject\UI</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\LevelAnimEditor.h">
       <Filter>Level\AnimationEditor</Filter>
     </ClInclude>
@@ -231,7 +225,7 @@
     <ClInclude Include="..\public\Monster.h">
       <Filter>GameObject\AI</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTchase.h">
+    <ClInclude Include="..\public\BTTurnSlow.h">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTDecSearch.h">
@@ -245,6 +239,42 @@
     </ClInclude>
     <ClInclude Include="..\public\Particle_Fire_GPU.h">
       <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EffectUI.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TextureUI.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecTimer.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDead.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnDirect.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecLier.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTChase.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecInvert.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTOnlyFalse.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTOnlyTrue.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTeleport.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextBox.h">
+      <Filter>GameObject\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -336,14 +366,44 @@
     <ClCompile Include="..\Private\FlipBook.cpp">
       <Filter>GameObject\UI\FilpBook</Filter>
     </ClCompile>
-    <ClCompile Include="FlipbookPlayer.cpp">
-      <Filter>GameObject\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="UI_Item.cpp">
-      <Filter>GameObject\UI</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EffectUI.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TextBox.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TextureUI.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecTimer.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\BTDead.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecLier.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTChase.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecInvert.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTOnlyFalse.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTOnlyTrue.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTeleport.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -359,7 +419,7 @@
     <ClCompile Include="..\private\Particle_Fire_GPU.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTchase.cpp">
+    <ClCompile Include="..\private\BTTurnSlow.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTDecSearch.cpp">
@@ -367,9 +427,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\Monsters</Filter>
-    </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>
@@ -390,13 +447,7 @@
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
@@ -409,6 +460,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

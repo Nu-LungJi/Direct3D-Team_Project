@@ -111,15 +111,7 @@ HRESULT CMainApp::Initialize()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
-		{
-			if (FAILED(res->Load()))
-			{
-				//MSG_BOX("");
-				return E_FAIL;
-			}
-		}
-		
+	
 		Load_Particle_Resources();
 	}
 
@@ -188,7 +180,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPUParticle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -196,7 +188,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPUParticle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -265,7 +257,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 		}
 		
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/ParticleMesh/Static/rocks/SM_rock1.bin"))) {
+			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/SM_rock1.fbx"))) {
 
 			E::CResStaticModel::DESC pDesc{};
 			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
@@ -310,8 +302,13 @@ HRESULT CMainApp::Create_ActionNode()
 	//프로토타입 이니셜라이즈랑 이름 맞출것
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
 		return E_FAIL;
-
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTchase", CBTchase::Create())))
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnSlow", CBTTurnSlow::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTOnlyFalse", CBTOnlyFalse::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
 		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
@@ -319,7 +316,12 @@ HRESULT CMainApp::Create_ActionNode()
 
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecTimer", CBTDecTimer::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecLier", CBTDecLier::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
+		return E_FAIL;
 
 	return S_OK;
 }

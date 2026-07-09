@@ -16,6 +16,9 @@ private:
 	~CBinSerializer() override;
 
 public:
+	void Write(const std::string& key, bool value) override;
+	void Write(const std::string& key, uint32_t value) override;
+	void Write(const std::string& key, uint64_t value) override;
 	void Write(const std::string& key, int value) override;
 	void Write(const std::string& key, float value) override;
 	void Write(const std::string& key, const std::string& value) override;

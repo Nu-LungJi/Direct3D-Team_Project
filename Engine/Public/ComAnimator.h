@@ -55,7 +55,10 @@ public:
 	_float GetPlayAnimRatio() const { return m_fRatio; }
 
 	_bool GetPlay() const { return m_bPlay; }
-	void  SetPlay() { m_bPlay = !m_bPlay; }
+	void  SetPlay(_bool bPlay) { m_bPlay = bPlay; }
+
+	_bool GetFinish() const { return m_bFinish; }
+
 
 private:
 	CComModelInstance* m_pModelInstance;
@@ -70,9 +73,10 @@ private:
 
 private:
 	_bool		    m_bPlay{ false };
+	_bool		    m_bFinish{ false };
 	_float          m_fRatio{ 0.f };
 
-
+	
 public:
 	static UPtr<CComAnimator> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

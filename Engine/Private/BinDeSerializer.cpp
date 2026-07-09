@@ -34,6 +34,22 @@ void CBinDeSerializer::ReadBytes(T& outData) {
 }
 
 // === 초고속 순차 읽기 ===
+
+void CBinDeSerializer::Read(const std::string& key, bool& outValue)
+{
+	ReadBytes(outValue);
+}
+
+void CBinDeSerializer::Read(const std::string& key, uint32_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
+void CBinDeSerializer::Read(const std::string& key, uint64_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
 void CBinDeSerializer::Read(const std::string& key, int& outValue) {
 	ReadBytes(outValue);
 }

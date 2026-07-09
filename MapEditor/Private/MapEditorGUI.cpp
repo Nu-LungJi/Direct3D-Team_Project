@@ -2,13 +2,10 @@
 #include "MapEditorGUI.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
-
 NS_USING(Client)
 
 namespace
 {
-	constexpr const char* MAP_SAVE_ROOT = "./Resources/Engine/MapSaved/";
-
 	std::string MakeMapPath(const char* mapName)
 	{
 		std::string cleanName = mapName;
@@ -37,7 +34,7 @@ namespace
 			}
 		}
 
-		return std::string(MAP_SAVE_ROOT) + cleanName + "/";
+		return std::string(E::MAP_SAVE_ROOT) + cleanName + "/";
 	}
 
 	bool DrawModeButton(const char* label, bool selected, const char* tooltip)
@@ -78,6 +75,7 @@ namespace
 			transform.Update();
 		}
 	}
+
 }
 
 CMapEditorGUI::CMapEditorGUI()
@@ -102,14 +100,24 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	if (ImGui::Button("Level Save", ImVec2(112.f, 0.f)))
 	{
-		CGameInstance::Get().SaveMap(MakeMapPath(m_MapName));
+		const std::string mapPath = MakeMapPath(m_MapName);
+		CGameInstance::Get().SaveMap(mapPath);
+		if (m_pNavMeshGUI)
+		{
+			m_pNavMeshGUI->SaveNavMesh(mapPath);
+		}
 		ImGui::OpenPopup("SaveCheck");
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Level Load", ImVec2(112.f, 0.f)))
 	{
-		CGameInstance::Get().LoadMap(MakeMapPath(m_MapName), true);
-		AddCamera();
+		const std::string mapPath = MakeMapPath(m_MapName);
+		CGameInstance::Get().LoadMap(mapPath, true);
+		if (m_pNavMeshGUI)
+		{
+			m_pNavMeshGUI->LoadNavMesh(mapPath);
+		}
+		//AddDefaultCameraLight();
 		ImGui::OpenPopup("LoadCheck");
 	}
 
@@ -149,6 +157,9 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::Text("Batches: %u", instancingStats.iBatches);
 	ImGui::Text("Instances: %u", instancingStats.iInstances);
 	ImGui::Text("DrawCalls: %u", instancingStats.iDrawCalls);
+
+
+	m_pNavMeshGUI->UpdateGUI(fTimeDelta);
 
 	ImGui::Separator();
 	m_pHierarchy->UpdateGUI(fTimeDelta);
@@ -193,6 +204,12 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 	pInstance->m_pMapChunkGUI = CMapChunkGUI::Create(pSelectedObject);
 	if (pInstance->m_pMapChunkGUI == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pNavMeshGUI = CNavMeshGUI::Create(pSelectedObject);
+	if (pInstance->m_pNavMeshGUI == nullptr)
 	{
 		return nullptr;
 	}
@@ -272,48 +289,54 @@ void CMapEditorGUI::RenderGizmo()
 	}
 }
 
-void CMapEditorGUI::AddCamera()
-{
-	{
-		E::CCameraObject::CAMERA_DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-		Desc.vAt = { 0.f, 0.f, 0.f };
-		Desc.vEye = { 0.f, 0.f, -5.f };
-		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
-		Desc.fFar = 100.f;
-		Desc.sObjectTag = "FlyCam";
-
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
-			"99_CAMERA", &Desc))
-		{
-			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
-			{
-				MSG_BOX("MSG_BOX_123");
-			}
-			E::CGameInstance::Get().SetActiveCamera("FLY");
-		}
-	}
-
-	{
-		E::CCameraObject::CAMERA_DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
-		Desc.fNear = 0.f;
-		Desc.fFar = 1.f;
-		Desc.fWidth = g_iWinSizeX;
-		Desc.fHeight = g_iWinSizeY;
-		Desc.sObjectTag = "UICam";
-		Desc.vEye = { 0.f, 0.f, -0.1f };
-
-		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
-			"99_CAMERA", &Desc))
-		{
-			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
-			{
-				MSG_BOX("MSG_BOX_123_");
-			}
-			//E::CGameInstance::Get().SetActiveUICamera("UI");
-		}
-	}
-}
+//void CMapEditorGUI::AddDefaultCameraLight()
+//{
+//	{
+//		E::CCameraObject::CAMERA_DESC Desc{};
+//		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+//		Desc.vAt = { 0.f, 0.f, 0.f };
+//		Desc.vEye = { 0.f, 0.f, -5.f };
+//		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+//		Desc.fFovY = 75.f;
+//		Desc.fNear = 0.1f;
+//		Desc.fFar = 100.f;
+//		Desc.sObjectTag = "FlyCam";
+//
+//		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
+//			"99_CAMERA", &Desc))
+//		{
+//			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
+//			{
+//				MSG_BOX("MSG_BOX_123");
+//			}
+//			E::CGameInstance::Get().SetActiveCamera("FLY");
+//		}
+//	}
+//
+//	{
+//		E::CCameraObject::CAMERA_DESC Desc{};
+//		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+//		Desc.fNear = 0.f;
+//		Desc.fFar = 1.f;
+//		Desc.fWidth = g_iWinSizeX;
+//		Desc.fHeight = g_iWinSizeY;
+//		Desc.sObjectTag = "UICam";
+//		Desc.vEye = { 0.f, 0.f, -0.1f };
+//
+//		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
+//			"99_CAMERA", &Desc))
+//		{
+//			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+//			{
+//				MSG_BOX("MSG_BOX_123_");
+//			}
+//			//E::CGameInstance::Get().SetActiveUICamera("UI");
+//		}
+//	}
+//
+//	if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create())))
+//	{
+//		MSG_BOX("MSG_BOX_123_");		// 월드에 전역조명 추가
+//	}
+//	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+//}

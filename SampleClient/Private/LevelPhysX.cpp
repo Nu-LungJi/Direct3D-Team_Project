@@ -25,6 +25,11 @@ CLevelPhysX::~CLevelPhysX()
 {
 }
 
+enum class TestPhysXLayer
+{
+	_01_Terrain
+};
+
 HRESULT CLevelPhysX::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
@@ -35,7 +40,7 @@ HRESULT CLevelPhysX::Initialize()
 		Desc.sObjectTag = "TestPhysXTerrain";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXTerrain",
-			"01_Terrain", &Desc))
+			TestPhysXLayer::_01_Terrain, &Desc))
 		{
 			int x = 0;
 		}
@@ -86,6 +91,9 @@ HRESULT CLevelPhysX::Initialize()
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -150,5 +158,6 @@ Engine::UPtr<CLevelPhysX> CLevelPhysX::Create()
 
 void CLevelPhysX::Free()
 {
+	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
 }

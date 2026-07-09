@@ -39,20 +39,23 @@ void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
 {
     BEHAVIOR eType = pNode->Get_GuiNodeInfo().eMyType;
     pNode->Set_Handle(GetGameObject()->GetHandle());
-    pNode->Get_GuiNodeInfo().iID = m_iNodeID++;
-    RegistNode(m_Root->Get_GuiNodeInfo().iID, m_Root.get());
+	uint32_t iMax = 0;
+	m_iNodeID = std::max(m_iNodeID,pNode->Get_GuiNodeInfo().iID);
+    RegistNode(pNode->Get_GuiNodeInfo().iID, pNode);
 
     if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR)
     {
         auto& pSrc = (*static_cast<CBTComposite*>(pNode)->Get_Nodes());
         for (auto& iter : pSrc)
         {
+			if(iter != nullptr)
             Set_NodeInfo(iter.get());
         }
     }
     else if (eType == BEHAVIOR::DECORATOR)
     {
         auto pSrc = static_cast<CBTDecorator*>(pNode)->Get_Child().get();
+		if(pSrc != nullptr)
         Set_NodeInfo(pSrc);
     }
 }
@@ -70,6 +73,9 @@ void CComBeHavior::Save_Data(const _string& filePath)
 }
 HRESULT CComBeHavior::Load_Data(const _string& filePath)
 {
+	m_Root->Get_Nodes()->clear();
+	m_iNodeID = 0;
+	m_NodeMap.clear();
     nlohmann::json j;
     std::ifstream file(filePath);
     if (!file.is_open())
@@ -82,6 +88,7 @@ HRESULT CComBeHavior::Load_Data(const _string& filePath)
     file.close();
 
     Set_NodeInfo(m_Root.get());
+	++m_iNodeID;
     return S_OK;
 }
 CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)

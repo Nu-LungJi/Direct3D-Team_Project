@@ -11,6 +11,7 @@ class CResSamplerState;
 class CResStaticModel;
 class CResVertexShader;
 
+
 class ENGINE_DLL CMapMeshObject : public CGameObject
 {
 public:
@@ -49,7 +50,7 @@ public:
 public:
 	struct INSTANCING_STATS
 	{
-		_bool bEnabled = true;
+		_bool bEnabled = false;
 		uint32_t iObjects = 0;
 		uint32_t iInstances = 0;
 		uint32_t iBatches = 0;
@@ -76,7 +77,6 @@ private:
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
-	SPtr<CResSamplerState> m_pResSamplerState{};
 
 private:
 	static std::unordered_map<SPtr<CResStaticModel>, std::vector<MAPMESH_INSTANCE_DATA>> s_InstanceBatches;
@@ -92,14 +92,9 @@ private:
 private:
 	_bool m_bRenderEnable = true; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
 
-	_float4 m_fAlbedoColor			= { 1.f, 1.f, 1.f, 1.f };	// 텍스쳐 색상 {1.f, 1.f, 1.f, 1.f} = 원색
-	_float	m_fNormalIntensity		= 1.f;						// Normal 강도
-	_float	m_fRoughnessIntensity	= 1.f;						// Roughness 강도
-	_float	m_fMetallicIntensity	= 1.f;						// Metallic 강도
-	_float	m_fAmbientIntensity		= 1.f;						// Ambient 강도
-	_float	m_fSpecularIntensity	= 1.f;						// Specular 강도
 	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };		// Emissive 색상. 텍스쳐가 있으면 {1.f, 1.f, 1.f} = 원색
 	_float	m_fEmissiveIntensity	= 0.f;						// Emissive 강도,
+	_float	m_fObjectAlpha			= 1.f;						// Object의 투명도,
 
 public:
 	static UPtr<CMapMeshObject> Create();

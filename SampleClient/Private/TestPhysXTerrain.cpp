@@ -194,16 +194,6 @@ HRESULT CTestPhysXTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->PSSetShaderResources(0, 1, m_pResTerrainTexture2D->GetSRV().GetAddressOf());
 	}
 
-	{
-		const auto& sampler = m_pResSamplerState;
-		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-	}
-
-	{
-		const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-		pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-	}
-
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
 

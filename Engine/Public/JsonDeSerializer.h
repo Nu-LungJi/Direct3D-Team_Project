@@ -17,7 +17,10 @@ public:
 public:
 	HRESULT LoadFromFile(const std::string& path);
 
-	// IDeserializer 구현
+public:
+	void Read(const std::string& key, bool& outValue) override;
+	void Read(const std::string& key, uint32_t& outValue) override;
+	void Read(const std::string& key, uint64_t& outValue) override;
 	void Read(const std::string& key, int& outValue) override;
 	void Read(const std::string& key, float& outValue) override;
 	void Read(const std::string& key, std::string& outValue) override;
@@ -27,21 +30,19 @@ public:
 	void Read(const std::string& key, _float4x4& outValue) override;
 	void Read(const std::string& key, ISerializable& outValue) override;
 
-	// 배열을 순회하려면 크기를 알아야 하므로 size_t를 반환하도록 합니다.
 	size_t StartArray(const std::string& key) override;
 	void EndArray() override;
 
 	size_t StartMap(const std::string& key) override;
 	void EndMap() override;
 	std::string ReadMapKey() override;
-
 private:
 	HRESULT Initialize();
 
 private:
 	nlohmann::json m_json{};
 	std::vector<nlohmann::json*> m_nodeStack;
-	std::vector<size_t> m_arrayIndexStack; // [핵심] 배열 순회 시 인덱스 추적기
+	std::vector<size_t> m_arrayIndexStack;
 
 	std::vector<std::vector<std::string>> m_mapKeysStack;
 	std::vector<size_t> m_mapKeyIndexStack;

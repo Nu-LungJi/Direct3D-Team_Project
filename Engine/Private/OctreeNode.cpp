@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "OctreeNode.h"
+#include "MapMeshObject.h"
 
 NS_USING(Engine)
 
@@ -77,13 +78,47 @@ void COctreeNode::CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds
 	outBounds.push_back(OCTREE_DEBUG_BOUNDS
 		{
 			.bounds = m_bounds,
-			.depth = m_depth
+			.depth = m_depth,
+			.color = m_bInCameraFrustum ? Colors::Magenta : Colors::Cyan
 		});
 
 	for (const auto& childNode : m_childrenNode)
 	{
 		if (childNode)
 			childNode->CollectDebugBounds(outBounds);
+	}
+}
+
+void COctreeNode::OctreeFrustumCull(const BoundingFrustum& cameraFrustum)
+{
+	// 카메라 프러스텀과 교차안하면 그냥 리턴 	// 교차 안하면 암것도안함 (고려대상에서 버림)
+	if (!m_bounds.Intersects(cameraFrustum))
+	{
+		m_bInCameraFrustum = false; //디버그 렌더용
+		return;
+	}
+
+	// 카메라 프러스텀과 교차한다면
+	{
+		m_bInCameraFrustum = true; //디버그 렌더용
+		if (m_depth >= m_maxDepth) // 리프노드라면
+		{
+			for (const auto& handle : m_hObjects)
+			{
+				CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
+				if (mapObj == nullptr)
+					continue;
+
+				mapObj->SetRenderEnable(true);
+			}
+			return;
+		}
+
+		for (const auto& child : m_childrenNode)
+		{
+			if (child)
+				child->OctreeFrustumCull(cameraFrustum);
+		}
 	}
 }
 

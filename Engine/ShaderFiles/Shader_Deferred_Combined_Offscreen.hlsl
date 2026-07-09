@@ -1,4 +1,3 @@
-#include "./ShaderHeader/SH_SamplerState.hlsli"
 #include "./ShaderDefines.hlsl"
 
 Texture2D g_DiffuseTexture  : register(t0);
@@ -27,7 +26,7 @@ PS_OUT_BACKBUFFER PS_MAIN_DEBUG(PS_IN In)
 {
     PS_OUT_BACKBUFFER Out;
     
-    Out.vBackBuffer = g_DiffuseTexture.Sample(SamplerWrap, In.vTexcoord);
+    Out.vBackBuffer = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     
     return Out;
 }
@@ -37,7 +36,7 @@ PS_OUT_BACKBUFFER PSMain(PS_IN In)
 {
     PS_OUT_BACKBUFFER Out;
     
-    vector vDiffuse = g_DiffuseTexture.Sample(SamplerWrap, In.vTexcoord);
+    vector vDiffuse = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     if (0.f == vDiffuse.a)
         discard;
     //vector vShade = g_ShadeTexture.Sample(LinearSampler, In.vTexcoord);

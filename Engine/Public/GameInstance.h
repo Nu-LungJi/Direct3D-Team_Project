@@ -8,6 +8,7 @@
 #include "DbgLineRender.h"
 #include "MapManager.h"
 #include "LightManager.h"
+#include "NavMeshManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -179,26 +180,27 @@ public:
 #pragma region GAMEOBJECT_MANAGER
 public:
 	void GameObjectAllReset();
-	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg = nullptr);
-	template<typename E>
-		requires std::is_enum_v<E>
-	std::optional<CHandle> AddGameObjectToLayer(
-		const StringID& level,
-		const StringID& prototype,
-		E layer,
-		void* arg = nullptr)
+	template<typename TLayer>
+	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, TLayer&& sLayerName, void* pArg = nullptr)
 	{
-		return AddGameObjectToLayer(
-			level,
-			prototype,
-			magic_enum::enum_name(layer),
-			arg);
+		return m_pGameObjectManager->AddGameObjectToLayer(iPrototypeLevelIndex, svPrototypeTag, MagicEnumToStringView(std::forward<TLayer>(sLayerName)), pArg);
 	}
-
-	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName) const;
-	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg);
+	template<typename TLayer>
+	const std::vector<CHandle>* GetGameObjectLayer(TLayer&& sLayerName) const
+	{
+		return m_pGameObjectManager->GetLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
+	}
+	template<typename TLayer>
+	const std::vector<CHandle>* GetGameObjectLayer(TLayer&& sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg)
+	{
+		return m_pGameObjectManager->GetLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)), iPrototypeLevelIndex, svPrototypeTag, pArg);
+	}
 	const std::vector<std::pair<std::string, std::vector<CHandle>>>& GetGameObjectLayers() const;
-	void DelGameObjectLayer(std::string_view sLayerName);
+	template<typename TLayer>
+	void DelGameObjectLayer(TLayer&& sLayerName)
+	{
+		return m_pGameObjectManager->DelLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
+	}
 
 	//std::optional<CHandle> GetFreeHandle() const;
 
@@ -214,10 +216,10 @@ public:
 		return static_cast<const CGameObjectManager*>(m_pGameObjectManager.get())->GetGameObjectByHandleT<T>(handle);
 	}
 
-	template<typename T>
-	T* GetFirstGameObjectByLayer(std::string_view sLayerName) const
+	template<typename T, typename TLayer>
+	T* GetFirstGameObjectByLayer(TLayer&& sLayerName) const
 	{
-		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(sLayerName);
+		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
 	//template<typename T, typename E> requires std::is_enum_v<E>
 	//T* GetFirstGameObjectByLayer(E layer) const
@@ -284,6 +286,8 @@ public:
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
 	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
 	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+
+	VOID	Clear_DynamicLightList();
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER
@@ -316,7 +320,7 @@ public:
 
 	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-		_float fFlickerInterval, _float4 emissive, _float fDuration = 1.f);
+		_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration = 1.f);
 #pragma endregion
 
 #pragma region MAP_MANAGER
@@ -327,6 +331,7 @@ public:
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
 	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
+	HRESULT RegisterMapMeshObjectToMapChunk(const CHandle& hObject);
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
@@ -349,6 +354,11 @@ public:
 #pragma region DBG_LINE_RENDER
 public:
 	CDbgLineRender* GetDbgLineRender() const { return m_pDbgLineRender.get(); };
+#pragma endregion
+
+#pragma region NAVMESH_MANAGER
+public:
+	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
 #pragma endregion
 
 public:
@@ -400,6 +410,7 @@ private:
 	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 	UPtr<CMapManager> m_pMapManager{};
+	UPtr<CNavMeshManager> m_pNavMeshManager{};
 	UPtr<CSerializeManager> m_pSerializeManager{};
 };
 
