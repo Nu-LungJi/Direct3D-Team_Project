@@ -267,6 +267,7 @@
     <ClInclude Include="..\Public\ISerializable.h" />
     <ClInclude Include="..\public\JsonDeSerializer.h" />
     <ClInclude Include="..\public\JsonSerializer.h" />
+    <ClInclude Include="..\public\ObjectFactory.h" />
     <ClInclude Include="..\public\ResPhysXBoxGeometry.h" />
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h" />
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
@@ -315,6 +316,7 @@
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
     <ClInclude Include="..\public\PhysxManagerListener.h" />
+    <ClInclude Include="..\public\SerializeManager.h" />
     <ClInclude Include="..\Public\UITex.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
@@ -526,6 +528,7 @@
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
     <ClCompile Include="..\private\JsonDeSerializer.cpp" />
     <ClCompile Include="..\private\JsonSerializer.cpp" />
+    <ClCompile Include="..\private\ObjectFactory.cpp" />
     <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />
@@ -602,6 +605,7 @@
     <ClCompile Include="..\Private\ResVertexShader.cpp" />
     <ClCompile Include="..\Private\ResVIBuffer.cpp" />
     <ClCompile Include="..\Private\ResViewPort.cpp" />
+    <ClCompile Include="..\private\SerializeManager.cpp" />
     <ClCompile Include="..\Private\ShaderManager.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />

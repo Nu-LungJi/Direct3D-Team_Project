@@ -141,7 +141,7 @@ void CJsonDeSerializer::Read(const std::string& key, _float4& outValue)
 		vec = node[key].get<std::vector<float>>();
 	}
 
-	if (vec.size() >= 4) { outValue.x = vec[0]; outValue.y = vec[1]; outValue.z = vec[2];  outValue.z = vec[3]; }
+	if (vec.size() >= 4) { outValue.x = vec[0]; outValue.y = vec[1]; outValue.z = vec[2];  outValue.w = vec[3]; }
 }
 
 void CJsonDeSerializer::Read(const std::string& key, _float4x4& outValue)
@@ -157,14 +157,24 @@ void CJsonDeSerializer::Read(const std::string& key, _float4x4& outValue)
 		matrix = node[key];
 	}
 
-	// 4x4 행렬 복구
-	float* f = reinterpret_cast<float*>(&outValue);
-	for (int i = 0; i < 4; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			f[i * 4 + j] = matrix[i][j].get<float>();
+	// [수정됨] 크래시 방지 방어 코드 추가: matrix가 2차원 배열(4x4) 형태를 갖추고 있는지 확인
+	if (matrix.is_array() && matrix.size() == 4)
+	{
+		float* f = reinterpret_cast<float*>(&outValue);
+		for (int i = 0; i < 4; ++i)
+		{
+			// 각 행(Row) 역시 배열이고 크기가 4인지 확인
+			if (matrix[i].is_array() && matrix[i].size() == 4)
+			{
+				for (int j = 0; j < 4; ++j)
+				{
+					f[i * 4 + j] = matrix[i][j].get<float>();
+				}
+			}
 		}
 	}
 }
+
 // =======================================================
 // 2. 자식 ISerializable 객체 읽기
 // =======================================================

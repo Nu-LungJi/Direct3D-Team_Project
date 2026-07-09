@@ -25,7 +25,7 @@ public:
 
 
 	template<typename InputIt>
-	void WriteArray(const std::string& key, InputIt begin, InputIt end)
+	void Write(const std::string& key, InputIt begin, InputIt end)
 	{
 		StartArray(key);
 
@@ -47,48 +47,20 @@ public:
 	}
 
 	template<typename T>
-	void WriteArray(const std::string& key, const T* startPtr, size_t size)
+	void Write(const std::string& key, const T* startPtr, size_t size)
 	{
-		WriteArray(key, startPtr, startPtr + size);
+		Write(key, startPtr, startPtr + size);
 	}
 
 	template<typename Container>
-	auto WriteArray(const std::string& key, const Container& container)
+	auto Write(const std::string& key, const Container& container)
 		-> decltype(std::begin(container), std::end(container), void()) // 컨테이너인지 SFINAE 검사
 	{
-		WriteArray(key, std::begin(container), std::end(container));
+		Write(key, std::begin(container), std::end(container));
 	}
 
-
-	//template<typename MapType>
-	//void WriteMap(const std::string& key, const MapType& mapData)
-	//{
-	//	StartMap(key);
-
-	//	for (const auto& [itemKey, itemValue] : mapData)
-	//	{
-	//		using ValueType = std::decay_t<decltype(itemValue)>;
-
-	//		if constexpr (std::is_pointer_v<ValueType>)
-	//		{
-	//			// 밸류가 포인터인 경우
-	//			if (itemValue != nullptr) {
-	//				Write(itemKey, *itemValue);
-	//			}
-	//		}
-	//		else
-	//		{
-	//			// 밸류가 기본 타입
-	//			Write(itemKey, itemValue);
-	//		}
-	//	}
-
-	//	EndMap();
-	//}
-
-
 	template<typename K, typename V>
-	void WriteMap(const std::string& key, const std::map<K, V>& mapData)
+	void Write(const std::string& key, const std::map<K, V>& mapData)
 	{
 		StartMap(key);
 		for (const auto& [itemKey, itemValue] : mapData)
@@ -111,7 +83,7 @@ public:
 	}
 
 	template<typename K, typename V>
-	void WriteMap(const std::string& key, const std::unordered_map<K, V>& mapData)
+	void Write(const std::string& key, const std::unordered_map<K, V>& mapData)
 	{
 		StartMap(key);
 		for (const auto& [itemKey, itemValue] : mapData)
@@ -133,7 +105,7 @@ public:
 		EndMap();
 	}
 
-protected:
+//protected:
 	virtual void StartArray(const std::string& key) = 0;
 	virtual void EndArray() = 0;
 	virtual void StartMap(const std::string& key) = 0;
@@ -154,6 +126,103 @@ public:
 	virtual void Read(const std::string& key, _float4x4& outValue) = 0;
 	virtual void Read(const std::string& key, ISerializable& outValue) = 0;
 
+
+	template<typename K, typename V>
+	void Read(const std::string& key, std::map<K, V>& outMap)
+	{
+		size_t count = StartMap(key);
+		for (size_t i = 0; i < count; ++i)
+		{
+			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
+
+			// 문자열 키를 다시 K 타입으로 변환
+			K k;
+			if constexpr (std::is_same_v<K, std::string>) k = stringKey;
+			else if constexpr (std::is_same_v<K, int>) k = std::stoi(stringKey);
+			else k = K(stringKey.c_str()); // StringID(const char*) 생성자 활용
+
+			Read(stringKey, outMap[k]); // Read 내부에서 키를 무시하고 밸류만 읽도록 처리
+		}
+		EndMap();
+	}
+
+	template<typename K, typename V>
+	void Read(const std::string& key, std::unordered_map<K, V>& outMap)
+	{
+		size_t count = StartMap(key);
+		for (size_t i = 0; i < count; ++i)
+		{
+			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
+
+			// 문자열 키를 다시 K 타입으로 변환
+			K k;
+			if constexpr (std::is_same_v<K, std::string>) k = stringKey;
+			else if constexpr (std::is_same_v<K, int>) k = std::stoi(stringKey);
+			else k = K(stringKey.c_str()); // StringID(const char*) 생성자 활용
+
+			Read(stringKey, outMap[k]); // Read 내부에서 키를 무시하고 밸류만 읽도록 처리
+		}
+		EndMap();
+	}
+
+
+	// =========================================================
+		// 1. 동적 컨테이너 범용 템플릿 (std::vector, std::list, std::deque 등)
+		// (resize() 함수와 반복자를 지원하는 모든 컨테이너 처리)
+		// =========================================================
+	template<typename Container>
+	auto Read(const std::string& key, Container& outContainer)
+		-> decltype(outContainer.resize(1), std::begin(outContainer), void()) // SFINAE: resize가 가능한 컨테이너만 매칭
+	{
+		size_t count = StartArray(key);
+
+		if (count > 0)
+		{
+			outContainer.resize(count); // 컨테이너 크기를 JSON 배열 크기에 맞춤
+
+			// std::list 등은 operator[]가 없으므로 Range-based for를 사용
+			for (auto& item : outContainer)
+			{
+				Read("", item); // 각 원소 읽기
+			}
+		}
+
+		EndArray();
+	}
+
+	// =========================================================
+	// 2. Raw Pointer + Max Size 기반 배열 읽기
+	// (동적 할당된 배열이나 버퍼 포인터를 넘길 때 사용, 오버플로우 방지)
+	// =========================================================
+	template<typename T>
+	void Read(const std::string& key, T* outArray, size_t maxElements)
+	{
+		size_t count = StartArray(key);
+
+		// JSON의 배열 크기가 버퍼보다 클 경우를 대비해 안전하게 작은 값을 선택
+		size_t readCount = std::min(count, maxElements);
+
+		for (size_t i = 0; i < readCount; ++i)
+		{
+			Read("", outArray[i]);
+		}
+
+		// 만약 JSON 데이터가 더 많더라도 스택 밸런스를 위해 남은 것은 무시하고 루프 종료
+		EndArray();
+	}
+
+	// =========================================================
+	// 3. 고정 크기 C-스타일 생배열 (T arr[N]) 편의성 래퍼
+	// (예: int myArr[10]; -> ReadArray("Key", myArr); 한 줄로 처리)
+	// =========================================================
+	template<typename T, size_t N>
+	void Read(const std::string& key, T(&outArray)[N])
+	{
+		// 배열의 크기 N을 컴파일러가 자동으로 추론하여 2번 함수로 토스합니다.
+		Read(key, outArray, N);
+	}
+//protected:
+
 	// 2. 컨테이너 노드 제어 (public으로 열어두어야 외부에서 접근 가능)
 	// 배열의 크기를 알아야 for문을 돌 수 있으므로 size_t 반환!
 	virtual size_t StartArray(const std::string& key) = 0;
@@ -165,102 +234,6 @@ public:
 
 	// 2. 전체 키를 가져오는 GetMapKeys() 대신, 현재 위치의 단일 Key를 읽는 함수로 변경
 	virtual std::string ReadMapKey() = 0;
-
-	// =======================================================
-	// [수정된] 맵(Map) 통째로 읽기 템플릿
-	// =======================================================
-	//template<typename V>
-	//void ReadMap(const std::string& key, std::map<std::string, V>& outMap)
-	//{
-	//	// 1. 맵에 들어있는 아이템 개수를 받아옵니다.
-	//	size_t count = StartMap(key);
-
-	//	// 2. 개수만큼 순차적으로 [Key] -> [Value] 순서대로 읽습니다.
-	//	for (size_t i = 0; i < count; ++i)
-	//	{
-	//		std::string k = ReadMapKey(); // 바이너리 스트림에서 문자열 1개 읽기
-	//		Read(k, outMap[k]);           // 이어서 해당 밸류 읽기
-	//	}
-
-	//	EndMap();
-	//}
-
-	// unordered_map 버전도 동일하게 지원
-	//template<typename V>
-	//void ReadMap(const std::string& key, std::unordered_map<std::string, V>& outMap)
-	//{
-	//	size_t count = StartMap(key);
-	//	for (size_t i = 0; i < count; ++i)
-	//	{
-	//		std::string k = ReadMapKey(); // 바이너리 스트림에서 문자열 1개 읽기
-	//		Read(k, outMap[k]);           // 이어서 해당 밸류 읽기
-	//	}
-	//	EndMap();
-	//}
-
-	template<typename K, typename V>
-	void ReadMap(const std::string& key, std::map<K, V>& outMap)
-	{
-		size_t count = StartMap(key);
-		for (size_t i = 0; i < count; ++i)
-		{
-			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
-
-			// 문자열 키를 다시 K 타입으로 변환
-			K k;
-			if constexpr (std::is_same_v<K, std::string>) k = stringKey;
-			else if constexpr (std::is_same_v<K, int>) k = std::stoi(stringKey);
-			else k = K(stringKey.c_str()); // StringID(const char*) 생성자 활용
-
-			Read(stringKey, outMap[k]); // Read 내부에서 키를 무시하고 밸류만 읽도록 처리
-		}
-		EndMap();
-	}
-
-	template<typename K, typename V>
-	void ReadMap(const std::string& key, std::unordered_map<K, V>& outMap)
-	{
-		size_t count = StartMap(key);
-		for (size_t i = 0; i < count; ++i)
-		{
-			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
-
-			// 문자열 키를 다시 K 타입으로 변환
-			K k;
-			if constexpr (std::is_same_v<K, std::string>) k = stringKey;
-			else if constexpr (std::is_same_v<K, int>) k = std::stoi(stringKey);
-			else k = K(stringKey.c_str()); // StringID(const char*) 생성자 활용
-
-			Read(stringKey, outMap[k]); // Read 내부에서 키를 무시하고 밸류만 읽도록 처리
-		}
-		EndMap();
-	}
-
-	
-	template<typename T>
-	void ReadArray(const std::string& key, std::vector<T>& outVec)
-	{
-		// 1. JSON 배열에 진입하면서 원소 개수를 받아옵니다.
-		size_t count = StartArray(key);
-
-		if (count > 0)
-		{
-			// 2. 컨테이너 크기를 미리 세팅합니다.
-			outVec.resize(count);
-
-			// 3. 루프를 돌면서 순서대로 데이터를 채워 넣습니다.
-			for (size_t i = 0; i < count; ++i)
-			{
-				// 배열 안에서는 키값이 무의미하므로 ""를 넘깁니다.
-				// (CJsonDeSerializer 내부에서 m_arrayIndexStack을 통해 알아서 다음 원소를 꺼내줍니다)
-				Read("", outVec[i]);
-			}
-		}
-
-		// 4. 배열 노드에서 빠져나옵니다.
-		EndArray();
-	}
-
 };
 
 NS_END

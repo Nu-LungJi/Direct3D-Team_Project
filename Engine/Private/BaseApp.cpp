@@ -20,6 +20,8 @@ struct TestStruct: public ISerializable
 
 
 	std::vector<TestStruct> childs{ };
+	std::vector<TestStruct*> pointVec{};
+	std::list<TestStruct> lists{};
 	std::map<std::string, TestStruct> maps{};
 	std::unordered_map<StringID, TestStruct> umaps{};
 
@@ -33,95 +35,125 @@ struct TestStruct: public ISerializable
 	void Deserialize(IDeserializer& deserializer) override;
 };
 
+struct SerDeTestStruct : public ISerializable
+{
+
+};
+
 void TestStruct::Serialize(ISerializer& serializer) const
 {
 	serializer.Write("i", i);
 	serializer.Write("f", f);
-	serializer.WriteArray("childs", childs);
-	serializer.WriteMap("maps", maps);
-	serializer.WriteMap("umaps", umaps);
-	serializer.WriteMap("uidmaps", uidmaps);
+	serializer.Write("childs", childs);
+	serializer.Write("maps", maps);
+	serializer.Write("umaps", umaps);
+	serializer.Write("uidmaps", uidmaps);
 	serializer.Write("vTmpPos", vTmpPos);
 	serializer.Write("matWorld", matWorld);
+	serializer.Write("lists", lists);
+	//serializer.Write("pointVec", pointVec);
 }
 
 void TestStruct::Deserialize(IDeserializer& deserializer)
 {
 	deserializer.Read("i", i);
 	deserializer.Read("f", f);
-	deserializer.ReadArray("childs", childs);
-	deserializer.ReadMap("maps", maps);
-	deserializer.ReadMap("umaps", umaps);
-	deserializer.ReadMap("uidmaps", uidmaps);
+	deserializer.Read("childs", childs);
+	deserializer.Read("maps", maps);
+	deserializer.Read("umaps", umaps);
+	deserializer.Read("uidmaps", uidmaps);
 	deserializer.Read("vTmpPos", vTmpPos);
 	deserializer.Read("matWorld", matWorld);
+	deserializer.Read("lists", lists);
+	//deserializer.Read("pointVec", pointVec);
 }
+enum class EShader
+{
+	Deferred,
+	Shadow,
+	SSAO,
+	Count
+};
 
 CBaseApp::CBaseApp()
 {
-	auto jsonDes = CJsonDeSerializer::Create("./TestStruct.json");
-	if (jsonDes) 
-	{
-		TestStruct myStruct;
-		myStruct.Deserialize(*jsonDes);
-		int x = 0;
-	}
+	//magic_enum::enum_name(EShader)
+	;
+	StringID asdd = magic_enum::enum_name(EShader::Deferred).data();
+	//"asdf_asdfGameO_"
+	//CGameInstance::Get().AddGameObjectToLayer(EShader::Count, EShader::Count, EShader::Count);
+	int x = 0;
+	//auto jsonDes = CJsonDeSerializer::Create("./TestStruct.json");
+	//if (jsonDes) 
+	//{
+	//	TestStruct myStruct;
+	//	myStruct.Deserialize(*jsonDes);
+	//	int x = 0;
+	//}
 
 
-	auto binDes = CBinDeSerializer::Create("./TestStruct.bin");
-	if (binDes)
-	{
-		TestStruct myStruct;
-		myStruct.Deserialize(*jsonDes);
-		int x = 0;
-	}
-	
+	//auto binDes = CBinDeSerializer::Create("./TestStruct.bin");
+	//if (binDes)
+	//{
+	//	TestStruct myStruct;
+	//	myStruct.Deserialize(*jsonDes);
+	//	int x = 0;
+	//}
+	//
 
-	TestStruct hello{};
-	hello.i = 1;
-	hello.f = 777.f;
+	//TestStruct hello{};
+	//hello.i = 1;
+	//hello.f = 777.f;
 
-	TestStruct hello2{};
-	hello2.i = 2;
-	hello2.f = 77237.f;
+	//TestStruct hello2{};
+	//hello2.i = 2;
+	//hello2.f = 77237.f;
 
-	TestStruct hello3{};
-	hello3.i = 3;
-	hello3.f = 77237.f;
+	//TestStruct hello3{};
+	//hello3.i = 3;
+	//hello3.f = 77237.f;
 
-	TestStruct hello4{};
-	hello4.i = 4;
-	hello4.f = 77237.f;
-	hello4.vTmpPos = { 123.f, 456.f, 789.f };
+	//TestStruct hello4{};
+	//hello4.i = 4;
+	//hello4.f = 77237.f;
+	//hello4.vTmpPos = { 123.f, 456.f, 789.f };
 
-	TestStruct hello5{};
-	hello5.i = 5;
-	hello5.f = 77237.f;
+	//TestStruct hello5{};
+	//hello5.i = 5;
+	//hello5.f = 77237.f;
 
-	hello4.umaps.emplace("JJJ", hello5);
-	hello3.childs.push_back(hello4);
+	//hello4.umaps.emplace("JJJ", hello5);
+	//hello3.childs.push_back(hello4);
 
-	TestStruct hihi{};
-	hihi.i = 6;
-	hihi.f = 888.3f;
-	hihi.childs.push_back(hello2);
-	hihi.umaps.emplace("ZZZ", hello3);
+	//TestStruct hihi{};
+	//hihi.i = 6;
+	//hihi.f = 888.3f;
+	//hihi.childs.push_back(hello2);
+	//hihi.umaps.emplace("ZZZ", hello3);
+	//TestStruct zzzz{};
+	//zzzz.i = -1;
+	//zzzz.f = 2412.f;
+	//hihi.lists.emplace_back(zzzz);
 
-	XMMatrixIdentity();
+	////hihi.pointVec.push_back(new TestStruct{});
 
-	TestStruct ts{};
-	ts.i = 7;
-	ts.f = 123.66f;
-	ts.childs.push_back(hello);
-	ts.umaps.emplace("wow", hihi);
+	//_float4x4 mat;
+	//XMStoreFloat4x4(&mat, XMMatrixIdentity());
+	//hihi.matWorld = mat;
 
-	auto jsonSer = CJsonSerializer::Create();
-	ts.Serialize(*jsonSer);
-	jsonSer->SaveToFile("./TestStruct.json");
+	//TestStruct ts{};
+	//ts.i = 7;
+	//ts.f = 123.66f;
+	//ts.childs.push_back(hello);
+	//ts.umaps.emplace("wow", hihi);
 
-	auto binSer = CBinSerializer::Create();
-	ts.Serialize(*binSer);
-	binSer->SaveToFile("./TestStruct.bin");
+	//auto jsonSer = CJsonSerializer::Create();
+	//ts.Serialize(*jsonSer);
+	//jsonSer->SaveToFile("./TestStruct.json");
+
+	//auto binSer = CBinSerializer::Create();
+	//ts.Serialize(*binSer);
+	//binSer->SaveToFile("./TestStruct.bin");
 
 
 }

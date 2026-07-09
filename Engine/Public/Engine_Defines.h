@@ -44,6 +44,8 @@ using namespace Microsoft::WRL;
 // bitwise 
 #pragma warning(disable: 26813)
 
+#include <magic_enum/magic_enum.hpp>
+
 #include "Engine_Typedef.h"
 #include "Engine_Macro.h"
 #include "Engine_Enum.h"

@@ -397,6 +397,12 @@
     <Filter Include="Serialize\Serializer\Bin">
       <UniqueIdentifier>{3fec66fe-f56b-408d-9d7f-e9a88221201a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Serialize\Manager">
+      <UniqueIdentifier>{ce1b0279-18da-41e8-9877-92414cc80d39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialize\Factory">
+      <UniqueIdentifier>{fa3bef3a-5cdf-42dd-94dc-2af1936fec0f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -852,6 +858,12 @@
     <ClInclude Include="..\public\BinDeSerializer.h">
       <Filter>Serialize\Serializer\Bin</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\SerializeManager.h">
+      <Filter>Serialize\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ObjectFactory.h">
+      <Filter>Serialize\Factory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1270,6 +1282,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BinDeSerializer.cpp">
       <Filter>Serialize\Serializer\Bin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\SerializeManager.cpp">
+      <Filter>Serialize\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ObjectFactory.cpp">
+      <Filter>Serialize\Factory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

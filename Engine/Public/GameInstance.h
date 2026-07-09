@@ -35,6 +35,7 @@ class CParticleManager;
 class CAction_Manager;
 class CPhysXManager;
 class CDbgLineRender;
+class CSerializeManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -179,6 +180,21 @@ public:
 public:
 	void GameObjectAllReset();
 	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg = nullptr);
+	template<typename E>
+		requires std::is_enum_v<E>
+	std::optional<CHandle> AddGameObjectToLayer(
+		const StringID& level,
+		const StringID& prototype,
+		E layer,
+		void* arg = nullptr)
+	{
+		return AddGameObjectToLayer(
+			level,
+			prototype,
+			magic_enum::enum_name(layer),
+			arg);
+	}
+
 	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName) const;
 	const std::vector<CHandle>* GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg);
 	const std::vector<std::pair<std::string, std::vector<CHandle>>>& GetGameObjectLayers() const;
@@ -203,6 +219,11 @@ public:
 	{
 		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(sLayerName);
 	}
+	//template<typename T, typename E> requires std::is_enum_v<E>
+	//T* GetFirstGameObjectByLayer(E layer) const
+	//{
+	//	return GetFirstGameObjectByLayer<T>(magic_enum::enum_name(layer));
+	//}
 #pragma endregion
 
 #pragma region COLLIDER_MANAGER
@@ -379,6 +400,7 @@ private:
 	UPtr<CAction_Manager>	m_pActionManager{};
 	//UPtr<CWorldManager> m_pWorldManager{};
 	UPtr<CMapManager> m_pMapManager{};
+	UPtr<CSerializeManager> m_pSerializeManager{};
 };
 
 NS_END
