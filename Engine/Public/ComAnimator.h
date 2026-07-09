@@ -23,6 +23,8 @@ public:
 		ANIM, MONTAGE
 	};
 
+
+
 public:
 	DECLARE_DERIVED_TYPE(CComAnimator, CComponent)
 
@@ -57,6 +59,9 @@ public:
 	_bool GetPlay() const { return m_bPlay; }
 	void  SetPlay() { m_bPlay = !m_bPlay; }
 
+	_bool GetLoop() const { return m_bLoop; }
+	void  SetLoop(_bool _bLoop) { m_bLoop = _bLoop; }
+
 private:
 	CComModelInstance* m_pModelInstance;
 	std::unordered_map <std::string, CComAnimMontage*> m_mapAnimMontages;
@@ -70,6 +75,7 @@ private:
 
 private:
 	_bool		    m_bPlay{ false };
+	_bool			m_bLoop{ false };
 	_float          m_fRatio{ 0.f };
 
 	
