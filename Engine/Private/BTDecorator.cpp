@@ -42,6 +42,7 @@ EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 }
 void CBTDecorator::ResetDebug()
 {
+	m_eDebug = EVALUATE::END;
 	if (m_pDecorator != nullptr)
 		m_pDecorator->ResetDebug();
 }

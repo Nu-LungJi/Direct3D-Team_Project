@@ -35,7 +35,7 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
 	{
-
+		m_eDebug = EVALUATE::FAILED;
 		return EVALUATE::FAILED;
 	}
 	XMMATRIX mat = XMMatrixIdentity();
@@ -50,7 +50,7 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
 	pTransform->SetQuaternion(quat);
 
-
+	m_eDebug = EVALUATE::SUCCESS;
 	return EVALUATE::SUCCESS;
 }
 void CBTTurnDirect::Update_Gui()

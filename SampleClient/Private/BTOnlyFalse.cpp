@@ -34,7 +34,7 @@ HRESULT CBTOnlyFalse::Initalize(void* pArg)
 
 EVALUATE CBTOnlyFalse::Evaluate(_float fTimeDelta)
 {
-
+	m_eDebug = EVALUATE::FAILED;
 	return EVALUATE::FAILED;
 }
 void CBTOnlyFalse::Update_Gui()

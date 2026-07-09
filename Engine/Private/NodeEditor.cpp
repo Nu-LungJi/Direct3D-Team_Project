@@ -896,6 +896,9 @@ void CNodeEditor::Draw_NodeLine(EVALUATE eType, _float2 iStartnode, _float2 iEnd
 	case EVALUATE::FAILED:
 		vColor = _float4(255, 0, 0, 255);
 		break;
+	default :
+		vColor = _float4(0, 0, 0, 255);
+		break;
 	}
 	m_pDrawList->AddBezierCubic(ImVec2(p1.x, p1.y), ImVec2(p1.x, p1.y) + ImVec2(+50, 0),
 		ImVec2(p2.x, p2.y) + ImVec2(-50, 0), ImVec2(p2.x, p2.y), IM_COL32(vColor.x, vColor.y, vColor.z, vColor.w), 3.f);
