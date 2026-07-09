@@ -246,7 +246,6 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + fEmissive;
-    
     OUT.Diffuse = float4(FinalColor, AlbedoTex.a);
     return OUT;
 }

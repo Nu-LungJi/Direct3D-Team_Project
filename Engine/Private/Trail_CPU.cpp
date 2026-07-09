@@ -137,10 +137,10 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->PSSetShaderResources(0, 1, nullSRV);
 
     //pContext->RSSetState(nullptr); // 다음에 그려질 오브젝트에 영향 안 주도록 기본 상태로 복구
-	{	/* --- 광윤 : 다른 RasterizerState 쓰시고 원래 상태로 돌려주시면 됩니다 --- */
-		const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-		pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-	}
+	//{	/* --- 광윤 : 다른 RasterizerState 쓰시고 원래 상태로 돌려주시면 됩니다 --- */
+	//	const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	//	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+	//}
 
     return S_OK;
 }

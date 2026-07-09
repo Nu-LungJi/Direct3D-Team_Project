@@ -153,7 +153,7 @@ HRESULT CBeam_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 
 int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
     _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
-    _float fFlickerInterval, _float4 emissive, _float fDuration)
+    _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
     // 안전장치: 버퍼 크기 산정 기준(iMaxDisplacementIterations)을 넘지 않도록 클램프
     if (iDisplacementIterations > m_Desc.iMaxDisplacementIterations)
@@ -175,6 +175,7 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
             beam.fDisplacementDamping = fDisplacementDamping;
             beam.fFlickerInterval = fFlickerInterval;
             beam.fFlickerTimer = fFlickerInterval;
+			beam.vColor = vColor;
 
             // 이 빔만의 세그먼트 개수를 여기서 계산하고, 배열 크기도 그에 맞게 재조정
             beam.iSegmentCount = 1u << beam.iDisplacementIterations;
@@ -297,11 +298,14 @@ void CBeam_CPU::BuildBeamGeometry()
                     BEAM_VERTEX vTop{};
                     XMStoreFloat3(&vTop.vPosition, top);
                     vTop.vUV = { 0.f, t };
+					vTop.vColor = beam.vColor;
+					vTop.vEmissive = beam.vEmissive;
 
                     BEAM_VERTEX vBottom{};
                     XMStoreFloat3(&vBottom.vPosition, bottom);
                     vBottom.vUV = { 1.f, t };
-
+					vBottom.vColor = beam.vColor;
+					vBottom.vEmissive = beam.vEmissive;
                     m_vecBeamVertices.push_back(vTop);
                     m_vecBeamVertices.push_back(vBottom);
                 }
@@ -313,6 +317,7 @@ void CBeam_CPU::BuildBeamGeometry()
         BEAM_DRAW_RANGE range{};
         range.startVertex = startVertex;
         range.verticesPerPlane = beam.iVerticesPerPlane;   // 빔 개별 값 저장
+	
         m_vecDrawRanges.push_back(range);
     }
 }

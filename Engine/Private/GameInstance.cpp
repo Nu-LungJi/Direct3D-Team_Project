@@ -359,7 +359,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
 
-	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+	AddRenderObject(RENDERGROUP::BLEND, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
@@ -455,9 +455,9 @@ HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& s
 }
 HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-	_float fFlickerInterval, _float4 emissive, _float fDuration)
+	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
+	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
 }
 #pragma endregion
 

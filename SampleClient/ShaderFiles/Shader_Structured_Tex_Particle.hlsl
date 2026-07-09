@@ -60,9 +60,6 @@ VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
 struct PS_OUT
 {
     float4 vDiffuse : SV_TARGET0;
-    float4 vNormal : SV_TARGET1;
-    float4 vSMRO : SV_TARGET2;
-    float4 vEmissive : SV_TARGET3;
 };
 // Pixel Shader
 PS_OUT PSMain(VS_OUT In)
@@ -85,15 +82,9 @@ PS_OUT PSMain(VS_OUT In)
     // 1. Diffuse (알베도/표면 색상)
     Out.vDiffuse = vFinalColor;
 
-    // 2. Normal (빔은 이펙트이므로 기본 평면 노멀 또는 0을 줍니다. 필요시 계산)
-    Out.vNormal = float4(0.f, 0.f, 0.f, 1.f);
-
-    // 3. SMRO (Specular, Roughness, Metalness, Occlusion)
-    // 비금속질에 매끄러운 느낌을 주기 위해 임의의 기본값 세팅
-    Out.vSMRO = float4(0.f, 0.5f, 0.f, 1.f);
 
     // 이펙트가 PBR 라이팅 단계에서 빛나게 하려면 에미시브에 색상 값을 강하게 넣어줍니다.
-    Out.vEmissive = float4(vFinalColor.xyz * In.vEmissive.xyz * In.vEmissive.w, 1.f);
+    Out.vDiffuse = float4(vFinalColor.xyz + In.vEmissive.xyz * In.vEmissive.w, 1.f);
     
     
   

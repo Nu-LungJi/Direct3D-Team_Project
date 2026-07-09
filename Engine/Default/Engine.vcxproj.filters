@@ -391,6 +391,9 @@
     <Filter Include="NavMesh">
       <UniqueIdentifier>{d41c07dc-efc6-4a40-ab12-ec459a466f78}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particle\Patterns">
+      <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -828,6 +831,9 @@
     <ClInclude Include="..\Public\OctreeNode.h">
       <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ParticlePattern.h">
+      <Filter>Particle\Patterns</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\FlipbookUI.h">
       <Filter>GameObject\UI\FlipBook</Filter>
     </ClInclude>
@@ -1246,6 +1252,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ParticlePattern.cpp">
+      <Filter>Particle\Patterns</Filter>
     </ClCompile>
     <ClCompile Include="..\private\FlipbookUI.cpp">
       <Filter>GameObject\UI\FlipBook</Filter>

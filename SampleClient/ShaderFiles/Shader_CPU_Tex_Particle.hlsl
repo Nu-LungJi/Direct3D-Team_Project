@@ -1,8 +1,5 @@
-// Shader_Particle.hlsl
-// CParticle_CPU 렌더링용 - 카메라를 향하는(Billboard) 인스턴싱 파티클
-// 텍스처는 파티클 하나당 Texture2D 한 장 (Texture2DArray 사용 안 함)
-// 카메라 행렬(g_matView/g_matProj/g_matViewProj)은 ShaderDefines.hlsl의 CB_PER_PASS(b1)에서 가져온다.
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+
 
 struct VS_IN
 {
@@ -55,28 +52,26 @@ VS_OUT VSMain(VS_IN In)
 }
 
 Texture2D g_ParticleTexture : register(t0);
-//SamplerState g_Sampler : register(s0);
+SamplerState g_Sampler : register(s0);
 
 struct PS_OUT
 {
     float4 vDiffuse : SV_TARGET0;
-    float4 vNormal : SV_TARGET1;
-    float4 vSMRO : SV_TARGET2;
-    float4 vEmissive : SV_TARGET3;
 
 
 };
 PS_OUT PSMain(VS_OUT In)
 {
-    PS_OUT Out;
-    float4 texColor = g_ParticleTexture.Sample(LinearWrap, In.vTexcoord) * In.vColor;
-    Out.vDiffuse = texColor;
-    if (Out.vDiffuse.a <= 0.01f)
-        discard;
-    Out.vNormal = float4(0, 0, 0, 1.f);
-    Out.vSMRO = float4(0, 0, 0, 0);
-    Out.vEmissive = float4(texColor.xyz * In.vEmissive.xyz * In.vEmissive.w, 1.0f);
  
+    PS_OUT Out = (PS_OUT) 0;
 
+    float4 texColor = g_ParticleTexture.Sample(g_Sampler, In.vTexcoord) * In.vColor;
+    if (texColor.a <= 0.01f)
+        discard;
+
+    float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
+    float3 FinalColor = texColor.rgb + instEmissive;
+
+    Out.vDiffuse = float4(FinalColor, texColor.a);
     return Out;
 }

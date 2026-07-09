@@ -208,6 +208,8 @@ namespace Engine
 	{
 		_float3 vPosition;
 		_float2 vUV;
+		_float4 vColor;
+		_float4 vEmissive;
 	}BEAM_VERTEX;
 
 

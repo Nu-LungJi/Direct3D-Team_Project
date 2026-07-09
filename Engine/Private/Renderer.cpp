@@ -795,7 +795,7 @@ HRESULT CRenderer::Render_Alpha() {
         m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
         m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     }
 
@@ -807,6 +807,8 @@ HRESULT CRenderer::Render_Alpha() {
         m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
         m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
     }
+
+	
 
     if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
@@ -1211,7 +1213,8 @@ HRESULT CRenderer::RenderParticle()
     //emissive
     const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
         TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
-
+	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
     if (!blendState)
         return E_FAIL;
     if (blendState)
@@ -1226,6 +1229,7 @@ HRESULT CRenderer::RenderParticle()
     }
 
     m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+	//m_pContext->RSSetState(nullptr);
     return S_OK;
 }
 
