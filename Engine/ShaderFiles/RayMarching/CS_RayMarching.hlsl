@@ -87,15 +87,42 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     
     float   StepSize = RayLength / (int) FogMaxStep;        // StepSize = 1 Step Distance
     
+    float   t = StepSize * Jitter;
     
+    float3  LightColor = float3(1.0f, 0.9f, 0.7f);
     
+    for (int i = 0; i < FogMaxStep; ++i)
+    {
+        if (t >= PixelDepth)    break;
+        
+        float3  p = RayOrigin + RayDirection * t;
+        float   VolumeDensity = GetVolumeFogDensity(p);
+        
+        if (VolumeDensity > 0.f)
+        {
+            float Shadow = Compute_Shadow(p);
+            float3 CurrentLight = LightColor * Shadow;
+            
+            float Extinction = VolumeDensity;                   // ºû Èí¼öµµ
+            float Scattering = VolumeDensity * CurrentLight;    // ºû »ê¶õµµ
+            
+            float SampledTransmittance = exp(-Extinction * StepSize);
+            
+            LightAccumulation += Scattering * LightTransmittance * StepSize;
+            
+            LightTransmittance *= SampledTransmittance;
+            
+            if (LightTransmittance < 0.01f)
+            {
+                LightTransmittance = 0.f;
+                break;
+            }
+        }
+        t += StepSize;
+    }
+    float3 SceneDiffuse = OUTPUT[ID.xy].rgb;
     
-    
-    
-    
-    
-    
-    float3 FinalColor = float3(1.f, 1.f, 1.f);
-    OUTPUT[ID.xy] = float4(FinalColor, 1.f);
+    float3 FinalColor = (SceneDiffuse * LightTransmittance) + LightAccumulation;
 
+    OUTPUT[ID.xy] = float4(FinalColor, 1.f);
 }

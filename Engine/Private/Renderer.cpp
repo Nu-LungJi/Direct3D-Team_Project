@@ -16,9 +16,7 @@ void CRenderer::UpdateGUI()
 
     ImGui::End();
 
-#ifdef _DEBUG
     PostProcessGUI();
-#endif
 }
 
 HRESULT CRenderer::Initialize()
@@ -45,9 +43,7 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeBloom()))				return E_FAIL;
 
-#ifdef _DEBUG
     if (FAILED(Initialize_Debugging()))         return E_FAIL;
-#endif
 
     return S_OK;
 }
@@ -108,7 +104,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_OverDraw", .sTarget = "ps_5_0" })))    return E_FAIL;
 	}
-
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_RayMarching", "./ShaderFiles/RayMarching/CS_RayMarching.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
 
     return S_OK;
 }
@@ -174,11 +173,11 @@ HRESULT CRenderer::InitializeOffscreen()
 
 HRESULT CRenderer::InitializeShadow()
 {
-    UINT iShadowWidth   = 2048 * 2;
-    UINT iShadowHeight  = 2048 * 2;
+	uint32_t ShadowMapResolutionX = { 4096 };
+	uint32_t ShadowMapResolutionY = { 4096 };
 
-    m_pShadowTex2D      = Generate_DepthStencil_RenderTarget("DynTex2D_Shadow", DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_FLOAT, iShadowWidth, iShadowHeight);
-    m_pShadowViewPort   = Generate_ViewPort("VP_Shadow", iShadowWidth, iShadowHeight);
+    m_pShadowTex2D      = Generate_DepthStencil_RenderTarget("DynTex2D_Shadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
+    m_pShadowViewPort   = Generate_ViewPort("VP_ShadowMap", ShadowMapResolutionX, ShadowMapResolutionY);
     
     return S_OK;
 }
@@ -502,7 +501,7 @@ HRESULT CRenderer::Draw() {
 
     _bool bApplyShadow = false;
     if (bApplyShadow)
-        if (FAILED(Render_ShadowMap()))  return E_FAIL;
+        if (FAILED(Render_Shadow()))  return E_FAIL;
 
     // DepthMap
     if (FAILED(Render_DepthMap()))       return E_FAIL;
@@ -525,6 +524,7 @@ HRESULT CRenderer::Draw() {
 	if (CGameInstance::Get().KeyDown(DIK_3)) {
 		ApplyFilter = !ApplyFilter;
 	}
+
 	// PostProcess
 	if (FAILED(Render_PostProcess()))     return E_FAIL;
 
@@ -538,9 +538,8 @@ HRESULT CRenderer::Draw() {
     // FullScreen : Final
     if (FAILED(Render_FullScreen()))        return E_FAIL;
 
-#ifdef _DEBUG
+	// Debugging
     if (FAILED(Render_Debugging()))      return E_FAIL;
-#endif
 
     return S_OK;
 }
@@ -553,7 +552,7 @@ void CRenderer::FrameEnd()
     }
 }
 
-HRESULT CRenderer::Render_ShadowMap(){
+HRESULT CRenderer::Render_Shadow(){
     // UnBind Shadow Map
     {
         ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
@@ -839,6 +838,12 @@ HRESULT CRenderer::Render_Alpha() {
     m_pContext->CopyResource(m_pBackBufferTexture.Get(), CGameInstance::Get().GetBackBufferTexture().Get());
    
     return S_OK;
+}
+
+HRESULT CRenderer::Render_Volumetric(){
+	
+	
+	return S_OK;
 }
 
 HRESULT CRenderer::Render_OffScreen() {
@@ -1273,7 +1278,6 @@ HRESULT CRenderer::RenderUI()
 }
 #pragma endregion
 
-#ifdef _DEBUG
 VOID	CRenderer::PostProcessGUI() {
     ImGui::Begin("PostProcess");
 
@@ -1415,7 +1419,6 @@ HRESULT CRenderer::Render_Debugging() {
 
     return S_OK;
 }
-#endif
 
 UPtr<CRenderer> CRenderer::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {
