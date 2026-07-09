@@ -25,6 +25,8 @@ public:
 	HRESULT Unload(const std::any& arg = {}) override;
 
 
+public:
+	HRESULT LoadAssimp();
 private:
 
 	HRESULT Ready_Meshes(_char* ptr);
@@ -34,6 +36,10 @@ public:
 	const _float4x4& Get_PreTransformMatrix() { return m_PreTransformMatrix; }
 
 
+public:
+	void ProcessAssimpMesh(aiMesh* mesh, const aiScene* scene);
+	void ProcessAssimpNode(aiNode* node, const aiScene* scene);
+	HRESULT AssimpMaterials(const aiScene* scene);
 
 
 public:
@@ -54,9 +60,9 @@ private:
 	uint32_t						m_iNumMaterials;
 	std::vector<SPtr<CResModelMaterial>>	m_Materials;
 
-
 private:
 	_float4x4				m_PreTransformMatrix = {};
+
 
 public:
 	static SPtr<CResStaticModel> Create(const _string& sPath);

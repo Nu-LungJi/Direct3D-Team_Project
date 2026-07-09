@@ -17,7 +17,22 @@ void CLightObject::UpdateGUI() {
 }
 
 HRESULT CLightObject::InitializePrototype(void* pArg) {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/LightObject/SK_LightObject.bin"))) {
+	//m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
+	//if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
+	//
+	//m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	//if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
+
+	//m_pResVertexShader	= CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR_BLEND");
+	//if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
+	//
+	//m_pResPixelShader	= CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR_BLEND");
+	//if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
+
+	m_pResSamplerState	= CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	if (!m_pResSamplerState)				return E_FAIL;
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/Skeleton/LightObject/SK_LightObject.bin"))) {
 		E::CResModel::DESC pDesc = { XMMatrixIdentity() };
 		if (FAILED(res->Load(pDesc)))	return E_FAIL;
 	}
@@ -110,7 +125,7 @@ HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 10.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 10.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

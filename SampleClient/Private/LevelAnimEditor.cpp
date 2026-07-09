@@ -25,14 +25,14 @@ HRESULT CLevelAnimEditor::Initialize()
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
 	{
-		CTest_StaticModel::DESC Desc{};
+	/*	CTest_StaticModel::DESC Desc{};
 		Desc.sObjectTag = "TestStaticModel";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestStaticModel",
 			"TestStaticModelLayer", &Desc))
 		{
 			int x = 0;
-		}
+		}*/
 	}
 
 

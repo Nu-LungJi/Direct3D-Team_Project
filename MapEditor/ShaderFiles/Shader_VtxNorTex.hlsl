@@ -1,5 +1,4 @@
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
-#include "../../Engine/ShaderFiles/ShaderHeader/SH_SamplerState.hlsli"
 
 Texture2D g_DiffuseTexture : register(t0);
 Texture2D g_NormalTexture : register(t1);
@@ -22,32 +21,16 @@ struct VS_OUT
     float4 vProjPos : TEXCOORD2;
 };
 
-cbuffer CB_OBJECT_PBR : register(b3)
-{
-    float4 AlbedoColor;
-
-    float NormalIntensity;
-    float RoughnessIntensity;
-    float MetallicIntensity;
-    float AmbientIntensity;
-    float SpecularIntensity;
-
-    float3 EmissiveColor;
-    float EmissiveIntensity;
-
-    float3 Padding;
-};
-
 VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out;
-    
+
     Out.vPosition = mul(float4(In.vPosition, 1.f), g_matWVP);
     Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
     Out.vProjPos = Out.vPosition;
-    
+
     return Out;
 }
 
@@ -71,13 +54,13 @@ struct PS_OUT
 PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT Out;
-    
-    vector vMtrlDiffuse = g_DiffuseTexture.Sample(SamplerWrap, IN.vTexcoord * 50.f);
-    
+
+    vector vMtrlDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord * 50.f);
+
     Out.vDiffuse = vMtrlDiffuse;
     Out.vNormal = float4(IN.vNormal.xyz * 0.5f + 0.5f, 0.f);
     Out.vSMRO = float4(0.f, 0.f, 0.f, 1.f);
     Out.vEmissive = float4(0.f, 0.f, 0.f, 1.f);
-    
+
     return Out;
 }

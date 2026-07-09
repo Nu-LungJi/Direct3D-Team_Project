@@ -76,7 +76,7 @@ private:
 	_bool		    m_bFinish{ false };
 	_float          m_fRatio{ 0.f };
 
-
+	
 public:
 	static UPtr<CComAnimator> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

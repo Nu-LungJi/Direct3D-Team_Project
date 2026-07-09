@@ -22,6 +22,9 @@ public:
 	DECLARE_DERIVED_TYPE(CComStaticModelInstance, CComponent)
 
 
+public:
+	virtual void UpdateGUI() override;
+
 
 private:
 	explicit CComStaticModelInstance();
@@ -42,6 +45,13 @@ public:
 public:
 	SPtr<CResStaticModel> GetModel() { return m_pModel; }
 	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
+
+
+
+public:
+
+	HRESULT Save_Binary_Json(std::string outpath);
+
 private:
 	SPtr<CResStaticModel> m_pModel;
 

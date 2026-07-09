@@ -34,6 +34,10 @@ public:
 		XMStoreFloat4x4(&m_TransformationMatrix, TransformationMatrix);
 	}
 
+	int32_t GetParendBoneIndex()const { return m_iParentBoneIndex; }
+
+	std::string GetBoneName() { return m_szName; }
+
 public:
 	void Update_CombinedTransformationMatrix(const std::vector<SPtr<CResModelBone>>& Bones, _fmatrix PreTransformMatrix);
 

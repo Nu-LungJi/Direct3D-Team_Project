@@ -1013,7 +1013,7 @@ HRESULT CGameInstance::InitializeResources()
 
 
 	if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-		CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
 		E::CResModel::DESC pDesc{};
 		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) *XMMatrixRotationY(XMConvertToRadians(180.f));
@@ -1024,18 +1024,39 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
+	/*if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
 
 		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}*/
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
 		if (FAILED(res->Load(pDesc)))
 		{
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResStaticModel>(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL,
+		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
 
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
 
 	return S_OK;
 }

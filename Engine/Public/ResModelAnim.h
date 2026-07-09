@@ -25,6 +25,8 @@ public:
 	HRESULT Unload(const std::any& arg = {}) override;
 
 	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResModelBone>>& Bones, _bool isLoop);
+	_bool ExtractRootMotionDelta(_float fPrevTrackPosition, _float fCurrTrackPosition, uint32_t iRootBoneIndex, _float3& vOutDelta);
+	SPtr<CResModelChanel> FindRootChannel(uint32_t iRootBoneIndex);
 	void RebuildCurrentKeyFrameIndices();
 
 public:
@@ -46,6 +48,8 @@ public:
 	std::vector<SPtr<CResModelChanel>>& GetChannels() { return m_Channels; }
 
 
+	int32_t     GetRootBoneIndex() { return m_iRootBoneIndex; }
+
 private:
 	// 런 타임 도중만 가지는 주소
 	std::string			m_AnimPath;
@@ -61,8 +65,8 @@ private:
 	std::vector<SPtr<CResModelChanel>>	m_Channels;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;
 
-
-
+	int32_t								m_iRootBoneIndex{};
+	_float3								m_vRootDelta;
 
 public:
 

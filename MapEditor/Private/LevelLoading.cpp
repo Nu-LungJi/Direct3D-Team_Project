@@ -200,13 +200,13 @@ void CLevelLoading::ThreadStart()
 			}
 		}
 
+		if (!LoadLevelAnimEditorStaticModels())
+		{
+			MSG_BOX("");
+		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
 			{
-				if (!LoadLevelAnimEditorStaticModels())
-				{
-					return false;
-				}
-
+			
 				// 터레인
 				if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_MapEditorTerrain", CMapEditorTerrain::Create())))
 				{
