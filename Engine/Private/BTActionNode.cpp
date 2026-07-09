@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "BTActionNode.h"
+#include "BTDecorator.h"
 
 CBTActionNode::CBTActionNode()
 {

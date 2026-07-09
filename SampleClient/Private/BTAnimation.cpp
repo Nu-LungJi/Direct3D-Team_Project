@@ -42,8 +42,10 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	if (m_bLoop)
 		return EVALUATE::SUCCESS;
 
-	if(pAnimator->GetFinish())
+
+	if (pAnimator->GetFinish())
 		return EVALUATE::SUCCESS;
+
 
 	return EVALUATE::RUN;
 }

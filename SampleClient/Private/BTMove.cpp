@@ -51,6 +51,7 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
 		return EVALUATE::FAILED;
+	
 
 	//if (m_eMove ==MOVE::RIGHT&&CGameInstance::Get().KeyPressing(DIK_RIGHT))
 	//{
