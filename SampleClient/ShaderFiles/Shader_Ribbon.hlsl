@@ -52,7 +52,7 @@ PS_OUT PSMain(VS_OUT In)
     float4 texColor = g_BeamTexture.Sample(g_Sampler, In.vUV) * In.vColor;
     if (texColor.a <= 0.01f)
         discard;
-    if (texColor.x < 0.1f)
+    if (texColor.x < 0.4f)
         discard;
     float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
     float3 FinalColor = texColor.rgb + instEmissive;

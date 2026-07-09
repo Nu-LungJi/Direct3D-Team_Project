@@ -15,74 +15,86 @@ enum class SPAWN_COMMAND_KIND
 {
     STANDARD,   // 위치/속도/수명/크기/색 - 대부분의 파티클
     BEAM,       // 시작점/끝점/지속시간 - CBeam_CPU 계열
+	STAIR,
 };
 
-//struct STANDARD_PARAMS
-//{
-//    uint32_t count = 1;
-//    _float3  position = {};
-//    _float3  velocity = {};
-//    _float   life = 1.f;
-//    _float   size = 1.f;
-//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
-//    _bool    bLoop = false;
-//    _float   fSpawnInterval = 0.1f;
-//};
-//
-//struct BEAM_PARAMS
-//{
-//    _float4  beamStart = {};
-//    _float4  beamEnd = {};
-//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
-//    int      iDisplacementIterations = 6;
-//    _float   fDisplacementAmplitude = 2.5f;
-//    _float   fDisplacementDamping = 0.25f;
-//    _float   flickerTimeInverval = 0.25f;
-//    _float   beamDuration = 0.f;
-//};
-//
-//// 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
-//struct SPAWN_COMMAND
-//{
-//    SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // 이름은 기존 kind 그대로 사용해도 됨
-//    StringID sGroupTag;
-//    StringID sTypeTag;
-//    std::variant<STANDARD_PARAMS, BEAM_PARAMS> params;
-//};
-//struct PARTICLE_EFFECT_PRESET
-//{
-//    std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
-//    std::vector<SPAWN_COMMAND> commands;  // 이 이펙트를 구성하는 여러 스폰 명령
-//};
-struct SPAWN_COMMAND
+struct STANDARD_PARAMS
 {
-    SPAWN_COMMAND_KIND kind = SPAWN_COMMAND_KIND::STANDARD;
-    StringID sGroupTag;
-    StringID sTypeTag;
-    //공용
     uint32_t count = 1;
-    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
-
-    // STANDARD 용
     _float3  position = {};
     _float3  velocity = {};
     _float   life = 1.f;
     _float   size = 1.f;
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
+    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
-    
-    // BEAM 용
+};
+
+struct BEAM_PARAMS
+{
     _float4  beamStart = {};
     _float4  beamEnd = {};
-    int    iDisplacementIterations = 6;   // 재귀 세분화 횟수 → 세그먼트 개수 = 2^6 = 64개
-    _float      fDisplacementAmplitude = 2.5f; // 첫 세분화 단계에서 중점을 얼마나 크게 흔들지
-    _float      fDisplacementDamping = 0.25f;// 몇 초마다 지그재그 모양을 새로 뽑을지 (짧을수록 번개가 파르르 떠는 느낌)
-    _float      flickerTimeInverval = 0.25f; // fFlickerInterval에 도달할 때마다 리셋되는 타이머 (지그재그 재생성 시점 체크용)
+    _float4  color = { 1.f, 1.f, 1.f, 1.f };
+    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+    int      iDisplacementIterations = 6;
+    _float   fDisplacementAmplitude = 2.5f;
+    _float   fDisplacementDamping = 0.25f;
+    _float   flickerTimeInverval = 0.25f;
     _float   beamDuration = 0.f;
 };
+struct STAIR_PARAMS
+{
+	_float3  vStartPos = {};
+	uint32_t iStepCount = 5;
+	_float   fStepWidth = 2.f;
+	_float   fStepHeight = 1.5f;
+	_float   fStepDepth = 2.f;
+	_float   life = 1.f;
+	_float4  color = { 1.f, 1.f, 1.f, 1.f };
+	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+};
+
+// 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
+struct SPAWN_COMMAND
+{
+    SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // 이름은 기존 kind 그대로 사용해도 됨
+    StringID sGroupTag;
+    StringID sTypeTag;
+    std::variant<STANDARD_PARAMS, BEAM_PARAMS, STAIR_PARAMS> params;
+};
+struct PARTICLE_EFFECT_PRESET
+{
+    std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
+    std::vector<SPAWN_COMMAND> commands;  // 이 이펙트를 구성하는 여러 스폰 명령
+};
+//struct SPAWN_COMMAND
+//{
+//    SPAWN_COMMAND_KIND kind = SPAWN_COMMAND_KIND::STANDARD;
+//    StringID sGroupTag;
+//    StringID sTypeTag;
+//    //공용
+//    uint32_t count = 1;
+//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+//
+//    // STANDARD 용
+//    _float3  position = {};
+//    _float3  velocity = {};
+//    _float   life = 1.f;
+//    _float   size = 1.f;
+//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
+//    _bool    bLoop = false;
+//    _float   fSpawnInterval = 0.1f;
+//    
+//    // BEAM 용
+//    _float4  beamStart = {};
+//    _float4  beamEnd = {};
+//    int    iDisplacementIterations = 6;   // 재귀 세분화 횟수 → 세그먼트 개수 = 2^6 = 64개
+//    _float      fDisplacementAmplitude = 2.5f; // 첫 세분화 단계에서 중점을 얼마나 크게 흔들지
+//    _float      fDisplacementDamping = 0.25f;// 몇 초마다 지그재그 모양을 새로 뽑을지 (짧을수록 번개가 파르르 떠는 느낌)
+//    _float      flickerTimeInverval = 0.25f; // fFlickerInterval에 도달할 때마다 리셋되는 타이머 (지그재그 재생성 시점 체크용)
+//    _float   beamDuration = 0.f;
+//};
 class ENGINE_DLL CParticleManager final : public CEngineBase, public IRenderable
 {
 private:

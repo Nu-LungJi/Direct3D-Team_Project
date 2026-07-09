@@ -56,27 +56,10 @@ VS_OUT VSMain(VS_IN In)
 Texture2D   AlbedoMap    : register(t0);
 Texture2D   NormalMap    : register(t1);
 Texture2D   SMROMap      : register(t2);
-Texture2D   EmissiveMap  : register(t3);
+Texture2D   EmissiveMap : register(t3);
+Texture2D   DepthMap    : register(t4);
 
-cbuffer CB_OBJECT_PBR : register(b3)
-{
-    float4  AlbedoColor;
-    float   NormalIntensity;
-    float   RoughnessIntensity;
-    float   MetallicIntensity;
-    float   AmbientIntensity;
-    float   SpecularIntensity;
-    float3  EmissiveColor;
-    float   EmissiveIntensity;
-    float3  Padding;
-};
-
-cbuffer CB_LIGHT_BUFFER : register(b4)
-{
-    DynamicLight AffectedLight[MAX_LIGHT_COUNT];
-    int          g_iLightCount;
-    float3       g_LightPadding;
-}
+//SamplerState g_LinearSampler : register(s0);
 
 struct PS_OUT
 {
@@ -179,12 +162,30 @@ float3 FresnelSchlick(float CTH, float3 MBR)
     float ClampCTH = clamp(CTH, 0.0f, 1.0f);
     return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
+float3 ReconstructWorldPos(float2 uv, float depth)
+{
+    float x = uv.x * 2.0f - 1.0f;
+    float y = (1.0f - uv.y) * 2.0f - 1.0f;
+    float z = depth;
 
+    float4 ndcPos = float4(x, y, z, 1.0f);
+    
+    float4 worldPos = mul(ndcPos, g_matInvViewProj);
+    return worldPos.xyz / worldPos.w;
+}
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
+    
+    float DepthData = DepthMap.Sample(LinearWrap, In.vTexcoord).r;
+    
+    [branch]
+    if (DepthData >= 1.0f)
+        discard;
 
-    float4 AlbedoTex = AlbedoMap.Sample(SamplerWrap, In.vTexcoord) * AlbedoColor * In.vColor;
+    float3 DepthWorld = ReconstructWorldPos(In.vTexcoord, DepthData);
+    
+    float4 AlbedoTex = AlbedoMap.Sample(SamplerWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
     if (AlbedoTex.a == 0.0f)
         discard;
 
@@ -193,7 +194,7 @@ PS_OUT PSMain(VS_OUT In)
     float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);
 
-    float3 V = normalize(g_vCamPos - In.vWorldPos);
+    float3 V = normalize(g_vCamPos - DepthWorld); //In.vWorldPos);
     float  NDV = max(dot(WorldNormal, V), 0.f);
 
     float3 SMRO = SMROMap.Sample(SamplerWrap, In.vTexcoord).rgb;
@@ -211,7 +212,7 @@ PS_OUT PSMain(VS_OUT In)
         float3 L, Radiance;
 
         [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
+        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
             continue;
 
         float RawNDL = dot(WorldNormal, L);
@@ -246,4 +247,5 @@ PS_OUT PSMain(VS_OUT In)
 
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
+    
 }

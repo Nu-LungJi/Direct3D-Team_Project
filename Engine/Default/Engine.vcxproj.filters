@@ -385,6 +385,9 @@
     <Filter Include="GameObject\Manager\Octree">
       <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particle\Patterns">
+      <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -822,6 +825,9 @@
     <ClInclude Include="..\Public\OctreeNode.h">
       <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ParticlePattern.h">
+      <Filter>Particle\Patterns</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1229,6 +1235,9 @@
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\ParticlePattern.cpp">
+      <Filter>Particle\Patterns</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1311,9 +1320,12 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ShaderFiles\ShaderHeader\SH_SamplerState.hlsli">
+    <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
       <Filter>ShaderFiles\ShaderHeader</Filter>
     </None>
   </ItemGroup>

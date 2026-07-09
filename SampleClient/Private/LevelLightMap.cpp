@@ -121,6 +121,7 @@ Engine::UPtr<CLevelLightMap> CLevelLightMap::Create()
 
 void CLevelLightMap::Free()
 {
+	CGameInstance::Get().Clear_DynamicLightList();
 	E::CGameInstance::Get().DelPrototype("LIGHT");
 	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_TEX");
 	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_BUFFER");

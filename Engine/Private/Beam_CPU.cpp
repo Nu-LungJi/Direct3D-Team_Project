@@ -132,10 +132,6 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
     pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-    {
-        const auto& sampler = CGameInstance::GetConst().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-        pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-    }
 
     // 각 빔은 이제 자기만의 verticesPerPlane을 갖고 있으니, 그 값 기준으로 Draw
     for (auto& range : m_vecDrawRanges)

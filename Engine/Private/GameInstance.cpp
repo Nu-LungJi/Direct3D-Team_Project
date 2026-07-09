@@ -529,9 +529,10 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
+	// LinearWrap
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
-		res->Load(D3D11_SAMPLER_DESC{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
 			.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 			.AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
 			.AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
@@ -539,12 +540,32 @@ HRESULT CGameInstance::InitializeResources()
 			.ComparisonFunc = D3D11_COMPARISON_NEVER,
 			.MinLOD = 0,
 			.MaxLOD = D3D11_FLOAT32_MAX,
-			});
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 	}
-	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP, CResSamplerState::Create()))
+	// LinearClamp
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_CLAMP, CResSamplerState::Create()))
+	{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
+			.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+			.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.ComparisonFunc = D3D11_COMPARISON_NEVER,
+			.MinLOD = 0,
+			.MaxLOD = D3D11_FLOAT32_MAX,
+			}))) {
+				return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
+	}
+	// PointWrap
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC samplerDesc{};
-		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 
 		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -555,11 +576,31 @@ HRESULT CGameInstance::InitializeResources()
 		samplerDesc.MinLOD = 0.f;
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-		res->Load(samplerDesc);
+		if (FAILED(res->Load(samplerDesc))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 	}
-	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP_NOMIP, CResSamplerState::Create()))
+	// PointClamp
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_CLAMP, CResSamplerState::Create()))
 	{
-		res->Load(D3D11_SAMPLER_DESC{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
+			.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
+			.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.ComparisonFunc = D3D11_COMPARISON_NEVER,
+			.MinLOD = 0,
+			.MaxLOD = D3D11_FLOAT32_MAX,
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
+	}
+	// PointWrapNoMip
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP_NOMIP, CResSamplerState::Create()))
+	{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
 			.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
 			.AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
 			.AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
@@ -567,8 +608,30 @@ HRESULT CGameInstance::InitializeResources()
 			.ComparisonFunc = D3D11_COMPARISON_NEVER,
 			.MinLOD = 0,
 			.MaxLOD = 0.0f,
-			});
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
+	// AnisotropicWrap
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_ANISOTROPIC_WRAP, CResSamplerState::Create()))
+	{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
+			.Filter = D3D11_FILTER_ANISOTROPIC,
+			.AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
+			.AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
+			.AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+			.MipLODBias = 0.f,
+			.MaxAnisotropy = 16,
+			.ComparisonFunc = D3D11_COMPARISON_NEVER,
+			.MinLOD = 0,
+			.MaxLOD = D3D11_FLOAT32_MAX,
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(5, 1, res->GetSamplerState().GetAddressOf());
+	}
+	// ShadowSampler
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
@@ -576,20 +639,23 @@ HRESULT CGameInstance::InitializeResources()
 		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.BorderColor[0] = 1.f;
-		sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
 
-		//sampDesc.MinLOD = -D3D11_FLOAT32_MAX;
-		//sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-		//sampDesc.MipLODBias = 0.f;
-		//sampDesc.MaxAnisotropy = 1;
+		sampDesc.BorderColor[0] = 1.f;
+		sampDesc.BorderColor[1] = 1.f;
+		sampDesc.BorderColor[2] = 1.f;
+		sampDesc.BorderColor[3] = 1.f;
+
+		sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 		if (FAILED(res->Load(sampDesc)))
 		{
 			return E_FAIL;
 		}
 
-		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 	}
+	
+	
+
 	//ShaderFiles
 	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
@@ -926,6 +992,10 @@ HRESULT CGameInstance::InitializeResources()
 			res->Load();
 		}
 		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Emissive.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
 		{
 			res->Load();
 		}
@@ -1529,7 +1599,9 @@ VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _
 VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
 	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
 }
-
+VOID	CGameInstance::Clear_DynamicLightList() {
+	m_pLightManager->Clear_DynamicLightList();
+}
 #pragma endregion
 #pragma endregion
 

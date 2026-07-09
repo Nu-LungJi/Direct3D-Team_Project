@@ -286,7 +286,6 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
-    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>

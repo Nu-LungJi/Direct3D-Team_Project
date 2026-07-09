@@ -387,9 +387,6 @@
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>

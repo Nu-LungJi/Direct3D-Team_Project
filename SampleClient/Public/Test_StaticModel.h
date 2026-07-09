@@ -42,7 +42,6 @@ private:
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
 
-	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
 public:

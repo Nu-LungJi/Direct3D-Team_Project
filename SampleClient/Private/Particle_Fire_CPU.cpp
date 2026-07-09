@@ -22,7 +22,7 @@ CParticle_Fire_CPU::~CParticle_Fire_CPU()
 HRESULT CParticle_Fire_CPU::Initialize(void* pArg)
 {
     DESC desc{};
-    desc.iMaxParticles = 10000;
+    desc.iMaxParticles = 1000;
 
 
     //텍스쳐용

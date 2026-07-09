@@ -35,7 +35,8 @@ private:
 
 	HRESULT InitilizePostProcess();
 	HRESULT InitializeGFSDK_SSAO();
-
+	HRESULT InitializeBloom();
+	
 	
 public:
 	HRESULT Draw();
@@ -60,9 +61,13 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
 	
-	//SPtr<CResDynamicTexture2D> m_pResDynTex
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
+
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBlurPass{};		// BlurPass
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomPass{};		// BloomPass
 
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
 	SPtr<CResPixelShader>		m_pOffScreenPixelShader{};
@@ -75,6 +80,10 @@ private:
 
 	SPtr<CResVertexShader>		m_pBlendVertexShader{};
 	SPtr<CResPixelShader>		m_pBlendPixelShader{};
+
+	SPtr<CResPixelShader>		m_pBrightPassPixelShader{};
+	SPtr<CResPixelShader>		m_pVerticalBlurPixelShader{};
+	SPtr<CResPixelShader>		m_pBloomPassPixelShader{};
 
 	ComPtr<ID3D11Texture2D>          m_pBackBufferTexture{};
 	ComPtr<ID3D11ShaderResourceView> m_pBackBufferSRV{};
@@ -104,6 +113,7 @@ private:
 	SPtr<CResPixelShader>	m_pPostProcessPS{};
 
 private:	// PostProcess Variable
+	_float m_pBloomIntensity		{ 0.f };
 	_float m_pDistortionIntensity	{ 0.f };
 	_float m_pChromaticIntensity	{ 0.f };
 	_float m_pVignetteIntensity		{ 0.f };
@@ -125,11 +135,15 @@ private:
 	HRESULT Render_Lighting();
 
 	HRESULT Render_PostProcess();
+	HRESULT Render_PostProcess_Bloom();
+	HRESULT	Render_PostProcess_Filter();
 
 	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
 	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
 	HRESULT Render_FullScreen();
+
+	VOID	Unbind_Resources();
 
 	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
@@ -154,6 +168,7 @@ private:
 private:
 	HRESULT RenderPriority();
 	HRESULT RenderNonBlend();
+	HRESULT	Render_HBAO();
 	HRESULT RenderBlend();
 	HRESULT RenderLight();
 	HRESULT RenderSkybox();
@@ -166,6 +181,7 @@ private:
 	_bool			ApplyFilter = { false };		// 필터 적용 ON-OFF
 	RENDER_CTX		RenderContext = {};
 
+	SPtr<CResRasterizerState>	Rasterizer{};
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };

@@ -92,9 +92,6 @@ HRESULT CBackGround::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 	{
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_LOGO", "TEX_SHM");
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
-
-		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

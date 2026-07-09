@@ -20,32 +20,13 @@ struct ParticleData
     float4 emissive;
 };
 
-StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
-Texture2D AlbedoMap : register(t1);
+StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
+Texture2D AlbedoMap : register(t0);
+Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
-Texture2D NormalMap : register(t6);
 SamplerState g_LinearSampler : register(s0);
 
-cbuffer CB_OBJECT_PBR : register(b3)
-{
-    float4 AlbedoColor;
-    float NormalIntensity;
-    float RoughnessIntensity;
-    float MetallicIntensity;
-    float AmbientIntensity;
-    float SpecularIntensity;
-    float3 EmissiveColor;
-    float EmissiveIntensity;
-    float3 Padding;
-};
-
-cbuffer CB_LIGHT_BUFFER : register(b4)
-{
-    DynamicLight AffectedLight[MAX_LIGHT_COUNT];
-    int g_iLightCount;
-    float3 g_LightPadding;
-}
 
 struct VS_IN
 {
@@ -186,7 +167,7 @@ PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
 
-    float4 AlbedoTex = AlbedoMap.Sample(SamplerWrap, In.vTexcoord) * AlbedoColor * In.vColor;
+    float4 AlbedoTex = AlbedoMap.Sample(SamplerWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
     if (AlbedoTex.a == 0.0f)
         discard;
 

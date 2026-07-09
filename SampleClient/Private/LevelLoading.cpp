@@ -121,7 +121,6 @@ HRESULT CLevelLoading::LoadEnd()
 
 void CLevelLoading::ThreadStart()
 {
-
 	switch (m_eNextLevelIndex)
 	{
 	case LEVEL::LOGO:

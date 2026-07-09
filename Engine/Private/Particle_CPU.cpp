@@ -276,9 +276,6 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
         pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 
-        auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-        pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-
         pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
     }
 
@@ -323,11 +320,6 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     }
 
     pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-
-    {
-        const auto& sampler = CGameInstance::GetConst().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-        pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-    }
 
     pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
 

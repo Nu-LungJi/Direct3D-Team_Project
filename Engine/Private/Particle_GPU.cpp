@@ -377,9 +377,6 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
         pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 
-        auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-        pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-
         // 핵심: DrawIndexed → DrawIndexedInstanced
         pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), m_iNumElements, 0, 0, 0);
     }
@@ -389,9 +386,6 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
     return S_OK;
 }
-
-
-
 
 HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
@@ -405,7 +399,6 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     pContext->VSSetShaderResources(0, 1, &pSRV);
 
     pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-    pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 
     pContext->DrawInstanced(4, m_iNumElements, 0, 0);
 

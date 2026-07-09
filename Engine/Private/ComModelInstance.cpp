@@ -95,27 +95,48 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 }
 
 
-HRESULT CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
+VOID CComModelInstance::Bind_Textures(ID3D11DeviceContext* pContext, uint32_t _MeshIndex) {
+	SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+		DiffuseTexture = Resource;
+	}
+	pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
+
+	SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+		NormalTexture = Resource;
+	}
+	pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
+
+	SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+		SMROTexture = Resource;
+	}
+	pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
+
+	SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+		EmissiveTexture = Resource;
+	}
+	pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
+}
+
+VOID CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float _ObjectAlpha)
 {
-	auto Materials = m_pModel->GetMaterials();
-	auto Mesh = m_pModel->GetMeshes();
+	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+	D3D11_MAPPED_SUBRESOURCE MRES;
+	if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+	{
+		CB_MATERIAL   CMMAT;
 
-	auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures(); 
- 
+		CMMAT.EmissiveColor = _EmissiveColor;
+		CMMAT.EmissiveIntensity = _EmissiveIntensity;
+		CMMAT.ObjectAlpha = _ObjectAlpha;
 
-
-    if (Textures[eMaterialType].size() == 0)
-    {
-        pContext->PSSetShaderResources(eMaterialType, 1, Textures[0].front()->GetSRV().GetAddressOf());
-        return S_OK;
-    }
-
-    pContext->PSSetShaderResources(eMaterialType, 1, Textures[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
-
-
-    return S_OK;
-
-
+		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+	}
+	pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 }
 
 HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)

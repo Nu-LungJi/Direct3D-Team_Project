@@ -28,11 +28,11 @@ VS_OUT VSMain(VS_IN In)
 }
 
 Texture2D g_TrailTexture : register(t0);
-SamplerState g_Sampler : register(s0);
+//SamplerState g_Sampler : register(s0);
 
 float4 PSMain(VS_OUT In) : SV_TARGET
 {
-    float4 vTexColor = g_TrailTexture.Sample(g_Sampler, In.vUV);
+    float4 vTexColor = g_TrailTexture.Sample(LinearWrap, In.vUV);
     vTexColor.x = 0.4f;
     // 폭 방향(U, 0~1) 기준으로 중심은 밝고 가장자리는 부드럽게 사라지는 글로우 코어.
     // 텍스처 자체가 이미 그라디언트라면 이 보정은 살짝만 줘도 되고,

@@ -44,12 +44,6 @@ HRESULT CTerrain::InitializePrototype(void* pArg)
 		return E_FAIL;
 	}
 
-	m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-	if (!m_pResSamplerState)
-	{
-		return E_FAIL;
-	}
-
 	return S_OK;
 }
 
@@ -106,14 +100,13 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	const auto& viBuffer = m_pResTerrainVIBuffer;
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	if (ctx.pass == RENDERPASS::DEPTH) {			// ¿À·ù ¸Þ¼¼Áö ID3D11DeviceContext::DrawIndexed Á¦°Å¿ë
+	if (ctx.pass == RENDERPASS::DEPTH) {			// ì˜¤ë¥˜ ë©”ì„¸ì§€ ID3D11DeviceContext::DrawIndexed ì œê±°ìš©
 		pContext->PSSetShader(nullptr, nullptr, 0);
 	}
 	else {
 		pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 	}
 	
-
 	ID3D11Buffer* vertexBuffers[] = {
 		viBuffer->GetVertexBuffer().Get()
 	};
@@ -132,44 +125,16 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
 			CB_MATERIAL   CMMAT;
-			CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
-
-			CMMAT.NormalIntensity = 1.f;
-			CMMAT.RoughnessIntensity = 1.f;
-			CMMAT.MetallicIntensity = 1.f;
-			CMMAT.AmbientIntensity = 1.f;
-			CMMAT.SpecularIntensity = 1.f;
 
 			CMMAT.EmissiveColor = { 1.f, 0.f, 0.f };
 			CMMAT.EmissiveIntensity = 1.f;
+			CMMAT.ObjectAlpha = 1.f;
 
 			memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 			pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
 		}
 		pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 	}
-	{
-   auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
-   D3D11_MAPPED_SUBRESOURCE MRES;
-   if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-   {
-      CB_MATERIAL   CMMAT;
-      CMMAT.AlbedoColor = { 1.f, 1.f, 1.f, 0.5f };
-
-      CMMAT.NormalIntensity = 1.f;
-      CMMAT.RoughnessIntensity = 1.f;
-      CMMAT.MetallicIntensity = 1.f;
-      CMMAT.AmbientIntensity = 1.f;
-      CMMAT.SpecularIntensity = 1.f;
-
-      CMMAT.EmissiveColor = { 1.f, 0.f, 0.f };
-      CMMAT.EmissiveIntensity = 1.f;
-
-      memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
-      pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
-   }
-   pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
-}
 	{
 		pContext->PSSetShaderResources(0, 1, m_pResTerrainTexture2D->GetSRV().GetAddressOf());
 	}

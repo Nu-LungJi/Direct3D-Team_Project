@@ -44,13 +44,11 @@ private:
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
+
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 
-
-
-	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
 	_float4 m_fAlbedoColor			= { 1.f, 1.f, 1.f, 1.f };
