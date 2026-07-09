@@ -32,7 +32,7 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
     int32_t iIndex = 0;
 
     if (m_NodeValue.bCur)
-        iIndex = m_NodeValue.iCurSecquenceIndex;
+        iIndex = m_NodeValue.iPreSecquenceIndex;
 
     for (size_t i = iIndex; i < m_Actions.size(); ++i)
     {
@@ -40,9 +40,7 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
             continue;
 
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
-        if (eValuate == EVALUATE::SUCCESS)
-            return EVALUATE::SUCCESS;
-        else if (eValuate == EVALUATE::RUN)
+		if (eValuate == EVALUATE::RUN)
         {
             m_NodeValue.bCur = true;
             m_NodeValue.iPreSecquenceIndex = i;
@@ -50,12 +48,15 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
         }
         else if (eValuate == EVALUATE::FAILED)
         {
-            m_NodeValue.bCur = false;
-
+			m_NodeValue.bCur = false;
+			m_NodeValue.iPreSecquenceIndex = 0;
+			return EVALUATE::FAILED;
         }
 
     }
-    EVALUATE::SUCCESS;
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
+    return EVALUATE::SUCCESS;
 }
 
 nlohmann::json  CBTSecqunce::Save_Node()

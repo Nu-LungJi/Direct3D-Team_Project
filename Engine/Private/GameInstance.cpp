@@ -1016,7 +1016,7 @@ HRESULT CGameInstance::InitializeResources()
 		CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
 		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) *XMMatrixRotationY(XMConvertToRadians(180.f));
 
 		if (FAILED(res->Load(pDesc)))
 		{

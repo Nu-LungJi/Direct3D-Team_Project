@@ -116,15 +116,19 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
-	m_pBeHavior->Update(fTimeDelta);
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
+
+	m_pBeHavior->Update(fTimeDelta);
+
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
+
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
 }
 
 HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

@@ -310,8 +310,13 @@ HRESULT CMainApp::Create_ActionNode()
 	//프로토타입 이니셜라이즈랑 이름 맞출것
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
 		return E_FAIL;
-
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTchase", CBTchase::Create())))
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnSlow", CBTTurnSlow::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTOnlyFalse", CBTOnlyFalse::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
 		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
@@ -319,7 +324,12 @@ HRESULT CMainApp::Create_ActionNode()
 
 	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecTimer", CBTDecTimer::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecLier", CBTDecLier::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
+		return E_FAIL;
 
 	return S_OK;
 }
