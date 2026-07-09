@@ -20,7 +20,7 @@ HRESULT CBTTeleport::InitalizePrototype(void* pArg)
 	__super::InitalizePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
-	m_MasterName = "BTOnlyTrue";
+	m_MasterName = "BTTeleport";
 	return S_OK;
 }
 HRESULT CBTTeleport::Initalize(void* pArg)

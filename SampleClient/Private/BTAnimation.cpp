@@ -32,22 +32,31 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
 	auto pAnimator = Cast<CComAnimator>(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
-	if (pAnimator == nullptr && -1 != m_Value.iAnimIndex)
+	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
 		return m_eDebug = EVALUATE::FAILED;
+	if (m_bStart)
+	{
+		pAnimator->SetPlay(true);
+		m_bStart = false;
+	}
 
-	pAnimator->SetPlay(true);
-	
 	pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
-	
+	pAnimator->SetLoop(m_bLoop);
+	_bool bFinished = pAnimator->GetFinish();
+
 	if (m_bLoop)
+	{
+		m_bStart = true;
 		return m_eDebug = EVALUATE::SUCCESS;
-
-
-
-	if (pAnimator->GetFinish())
-		return m_eDebug =EVALUATE::SUCCESS;
-
-
+	}
+		
+	if (bFinished)
+	{
+		if(!m_bLoop)
+			m_bStart = false;
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
+		
 	return m_eDebug = EVALUATE::RUN;
 }
 void CBTAnimation::Update_Gui()

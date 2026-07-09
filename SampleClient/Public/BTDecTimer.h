@@ -23,8 +23,8 @@ public:
 
 	virtual void					Update_Gui() override;
 private:
-	_float							m_fTick{}, m_fTimeTickCnt{};
-	int32_t							m_fWaitTime{}, m_iMaxTimeCnt{};
+	_float							m_fTick{}, m_fTimeTickCnt{}, m_fWaitTime;
+	int32_t							 m_iMaxTimeCnt{};
 public:
 	static UPtr<CBTDecTimer> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;

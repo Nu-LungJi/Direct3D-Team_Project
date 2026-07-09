@@ -53,11 +53,9 @@ EVALUATE CBTTurnSlow::Evaluate(_float fTimeDelta)
 	pTransform->SetQuaternion(quat);
 	if (t <= 1.f)
 	{
-		m_eDebug = EVALUATE::RUN;
-		return EVALUATE::RUN;
+		m_Value.fTick = 0.f;
 	}
-		
-	m_Value.fTick = 0.f;
+	
 	m_eDebug = EVALUATE::SUCCESS;
 	return EVALUATE::SUCCESS;
 }

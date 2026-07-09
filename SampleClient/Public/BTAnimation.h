@@ -23,7 +23,7 @@ public:
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
-	_bool				m_bLoop{ false };
+	_bool				m_bLoop{ true }, m_bStart{true};
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;

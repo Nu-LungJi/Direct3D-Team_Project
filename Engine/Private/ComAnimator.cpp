@@ -65,6 +65,21 @@ HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, const std::string
     return S_OK;
 }
 
+void CComAnimator::SetPlayAnimIndex(uint32_t iIndex)
+{
+	if (m_iPreAnimIndex != iIndex)
+	{
+		m_iPreAnimIndex = m_iPlayAnimIndex = iIndex;
+		auto pModel = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag)->GetModel();
+		auto& pAnim = pModel->GetAnimations();
+		pAnim[iIndex]->SetCurrentTrackPosition(0);
+		m_bFinish = false;
+
+	}
+	//애니매이션 변경 시점에 0으로 초기화 되게 변경 루프 아닌애들만
+	//창준 수정
+
+}
 
 HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum)
 {
@@ -79,9 +94,15 @@ HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t i
     _bool           isFinished = { false };
 
     /* 뼈들의 m_TransformationMatrix를 갱신해준다. */
+	if (m_bFinish)
+		pAnim[iModelAnimNum]->SetCurrentTrackPosition(0);
+	
     isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), m_bLoop);
+	//루프든 아니든 애니매이션 끝 판정
+	
+	m_bFinish = isFinished;
 
-    for (auto& pBone : pModel->GetBones())
+	for (auto& pBone : pModel->GetBones())
     {
         pBone->Update_CombinedTransformationMatrix(pModel->GetBones(), XMLoadFloat4x4(&m_PreTransformMatrix));
     }

@@ -52,7 +52,7 @@ public:
 	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }	
 
 	uint32_t GetPlayAnimIndex() const { return m_iPlayAnimIndex; }
-	void SetPlayAnimIndex(uint32_t iIndex) { m_iPlayAnimIndex = iIndex; }
+	void SetPlayAnimIndex(uint32_t iIndex);
 
 	_float GetPlayAnimRatio() const { return m_fRatio; }
 
@@ -75,7 +75,7 @@ private:
 	uint32_t		m_iPlayAnimationNum{ 0 };
 	uint32_t		m_iPlayAnimIndex{ 0 };
 	uint32_t		m_iPlayAnimMonatgueIndex{ 0 };
-
+	uint32_t		m_iPreAnimIndex{ UINT_MAX };
 private:
 	_bool		    m_bPlay{ false };
 	_bool			m_bLoop{ false };
