@@ -385,6 +385,9 @@
     <Filter Include="GameObject\Manager\Octree">
       <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\RayMarching">
+      <UniqueIdentifier>{3a83175f-9144-49e7-a79d-807e0f72fd2b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1313,6 +1316,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">
       <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

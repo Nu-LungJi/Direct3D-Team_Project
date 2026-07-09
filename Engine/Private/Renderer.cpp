@@ -522,12 +522,14 @@ HRESULT CRenderer::Draw() {
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
 
+	if (CGameInstance::Get().KeyDown(DIK_3)) {
+		ApplyFilter = !ApplyFilter;
+	}
 	// PostProcess
 	if (FAILED(Render_PostProcess()))     return E_FAIL;
 
-
     {
-        m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pOffScreenTex2D : m_pOffScreenTex2D;
+        m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
     }
 
 	// UI
