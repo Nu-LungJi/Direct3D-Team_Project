@@ -1,5 +1,5 @@
 
-Texture2D<float> g_InputDepth : register(t0); // 원본 depth SRV
+Texture2D<float4> g_InputDepth : register(t0); // 원본 depth SRV
 RWTexture2D<float> g_OutputMip0 : register(u0); // Mip0 UAV
 
 
@@ -16,6 +16,6 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     if(coord.x >= width || coord.y >= height)
         return;
     
-    float depth = g_InputDepth.Load(uint3(coord, 0));
+    float depth = g_InputDepth.Load(uint3(coord, 0)).r;
     g_OutputMip0[coord] = depth;
 }

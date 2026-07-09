@@ -32,5 +32,5 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     float d2 = g_InputMip.Load(uint3(c2, 0));
     float d3 = g_InputMip.Load(uint3(c3, 0));
 
-    g_OutputMip[outCoord] = min(min(d0, d1), min(d2, d3));
+    g_OutputMip[outCoord] = max(max(d0, d1), max(d2, d3));
 }
