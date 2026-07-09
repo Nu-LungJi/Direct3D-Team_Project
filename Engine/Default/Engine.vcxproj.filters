@@ -199,9 +199,6 @@
     <Filter Include="Component\Model">
       <UniqueIdentifier>{dfa57b22-fd37-4dd2-9367-bbd2228e36e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\UITool">
-      <UniqueIdentifier>{527ebbb4-6136-4ae8-9733-fd76ed85ac3d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource\Model">
       <UniqueIdentifier>{da29fb2a-2441-4902-b380-64c51f245a4a}</UniqueIdentifier>
     </Filter>
@@ -384,6 +381,9 @@
     </Filter>
     <Filter Include="GameObject\Manager\Octree">
       <UniqueIdentifier>{609be27f-61d8-411a-9f8d-827099564f0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\TextUI">
+      <UniqueIdentifier>{a92fc6c2-e328-43e7-84e1-97d2e602a42e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -822,6 +822,12 @@
     <ClInclude Include="..\Public\OctreeNode.h">
       <Filter>GameObject\Manager\Octree</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\FlipbookUI.h">
+      <Filter>GameObject\UI\FlipBook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextUI.h">
+      <Filter>GameObject\UI\TextUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1228,6 +1234,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\FlipbookUI.cpp">
+      <Filter>GameObject\UI\FlipBook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TextUI.cpp">
+      <Filter>GameObject\UI\TextUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

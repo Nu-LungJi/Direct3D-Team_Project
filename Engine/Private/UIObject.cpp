@@ -30,20 +30,31 @@ HRESULT CUIObject::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<UIOBJECT_DESC*>(pArg);
 
-	m_fX = pDesc->fX;
-	m_fY = pDesc->fY;
-	m_fSizeX = pDesc->fSizeX;
-	m_fSizeY = pDesc->fSizeY;
-	m_fAlpha = pDesc->fAlpha;
-	m_iWeight = pDesc->ResWeight;
-	m_sRestag = pDesc->ResTag;
+	m_UIINFO.fX = pDesc->fX;
+	m_UIINFO.fY = pDesc->fY;
+	m_UIINFO.SizeX = pDesc->fSizeX;
+	m_UIINFO.SizeY = pDesc->fSizeY;
+	m_UIINFO.Alpha = pDesc->fAlpha;
+	m_UIINFO.Weight = pDesc->ResWeight;
+	m_UIINFO.Restag = pDesc->ResTag;
+	m_UIINFO.Name = pDesc->Name;
 	strcpy_s(m_cName, pDesc->sObjectTag.c_str());
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
-	
 	CalcUICoord();
+
+	//m_fX = pDesc->fX;
+	//m_fY = pDesc->fY;
+	//m_fSizeX = pDesc->fSizeX;
+	//m_fSizeY = pDesc->fSizeY;
+	//m_fAlpha = pDesc->fAlpha;
+	//m_iWeight = pDesc->ResWeight;
+	//m_sRestag = pDesc->ResTag;
+	//strcpy_s(m_cName, pDesc->sObjectTag.c_str());
+
+
 	return S_OK;
 }
 
@@ -52,44 +63,21 @@ void CUIObject::Update(_float fTimeDelta)
 	if (std::nullopt != m_pParent)
 	{
 		CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_pParent);
+		UI_INFO& parentInfo = parentUI->GetUIInfo();
 
-		m_fX = parentUI->GetOrigin().x + m_fLocalX;
-		m_fY = parentUI->GetOrigin().y + m_fLocalY;
-		m_fSizeX = parentUI->GetSize().x * m_fWidthRatioX;
-		m_fSizeY = parentUI->GetSize().y * m_fWidthRatioY;
-		m_fAlpha = parentUI->GetAlpha() * m_fAlphaRatio;
-		m_iWeight = parentUI->GetWeight() + m_iWeightOffset;
+		m_UIINFO.fX		= parentInfo.fX + m_UIINFO.LocalX;
+		m_UIINFO.fY		= parentInfo.fY + m_UIINFO.LocalY;
+		m_UIINFO.SizeX	= parentInfo.SizeX * m_UIINFO.WidthRatioX;
+		m_UIINFO.SizeY	= parentInfo.SizeY * m_UIINFO.WidthRatioY;
+		m_UIINFO.Alpha	= parentInfo.Alpha * m_UIINFO.AlphaRatio;
+		m_UIINFO.Weight = parentInfo.Weight + m_UIINFO.WeightOffset;
+		m_UIINFO.Rot	= parentInfo.Rot + m_UIINFO.LocalRot;
 
 		CalcUICoord();
 	}
-	InputAnimState();
 }
 
 void CUIObject::LateUpdate(_float fTimeDelta)
-{
-}
-
-void CUIObject::Creating()
-{
-}
-
-void CUIObject::StartHovering()
-{
-}
-
-void CUIObject::Hovering()
-{
-}
-
-void CUIObject::EndHovering()
-{
-}
-
-void CUIObject::Click()
-{
-}
-
-void CUIObject::Ending()
 {
 }
 
@@ -100,24 +88,16 @@ void CUIObject::DeleteChild(CHandle childHandle)
 		m_vChildren.end());
 }
 
-void CUIObject::InputAnimState()
-{
-	if(m_AnimState == ETOUI(UI_ANIM_STATE::CREATING) || m_AnimState == ETOUI(UI_ANIM_STATE::ENDING))
-		CheckHovered();
-
-}
-
 void CUIObject::CalcUICoord()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 	auto clientWidth = clientSize.x;
 	auto clientHeight = clientSize.y;
-	GetTransform().SetScale(E::_float3{ m_fSizeX, m_fSizeY, 1.f });
-	//auto a = m_fX - clientWidth * 0.5f;
-	//auto b = -m_fY + clientHeight * 0.5f;
-
+	GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX, m_UIINFO.SizeY, 1.f });
+	auto x = m_UIINFO.fX - clientWidth * 0.5f;
+	auto y = -m_UIINFO.fY + clientHeight * 0.5f;
 	
-	GetTransform().SetPosition(XMVectorSet(m_fX - clientWidth * 0.5f, -m_fY + clientHeight * 0.5f, GetTransform().GetPosition().z, 1.f));
+	GetTransform().SetPosition(XMVectorSet(x, y, GetTransform().GetPosition().z, 1.f));
 }
 
 _bool CUIObject::CheckHovered()
@@ -146,15 +126,9 @@ _bool CUIObject::CheckHovered()
 		mousePos.y >= minPos.y &&
 		mousePos.y <= maxPos.y)
 	{
-		if (m_AnimState != ETOUI(UI_ANIM_STATE::HOVERING) && m_AnimState != ETOUI(UI_ANIM_STATE::CLICK))
-			m_AnimState = ETOUI(UI_ANIM_STATE::STARTHOVERING);
-		if(MouseLB)
-			m_AnimState = ETOUI(UI_ANIM_STATE::CLICK);
 	}
 	else
 	{
-		if(m_AnimState != ETOUI(UI_ANIM_STATE::ENDING))
-			m_AnimState = ETOUI(UI_ANIM_STATE::ENDHOVERING);
 	}
 
 	return true;

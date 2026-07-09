@@ -1,20 +1,29 @@
 #pragma once
 
 #include "GameObject.h"
+
 NS_BEGIN(Engine)
 
-enum class UI_ANIM_STATE
+typedef struct tagUIInfo
 {
-	NONE,
-	CREATING,
-	STARTHOVERING,
-	HOVERING,
-	ENDHOVERING,
-	CLICK,
-	ENDING,
+	/* 루트 노드 인포 */
+	_float fX{ 0.f }, fY{ 0.f };
+	_float SizeX{ 0.f }, SizeY{ 0.f }, Alpha{ 1.f };
+	_float Rot{ 0.f };
+	int Weight{ 0 };
 
-	END
-};
+	/* 자식 로컬 인포*/
+	_float LocalX{ 0.f }, LocalY{ 0.f };
+	_float WidthRatioX{ 1.f }, WidthRatioY{ 1.f }, AlphaRatio{ 1.f };
+	_float LocalRot{ 0.f };
+	int WeightOffset{ 0 };
+
+	std::string		Name = "";						// 이름
+	std::string		Restag = "";					// 리소스 태그
+	uint32_t		UIType{ 0 };					// 텍스처냐 플립북이냐
+	uint32_t		EffectType{ 0 };				// 호버링이펙트, 클릭이펙트 등등
+	_float3			Color = { 0.f, 0.f, 0.f };		// 색
+}UI_INFO;
 
 class ENGINE_DLL CUIObject : public CGameObject
 {
@@ -22,12 +31,16 @@ public:
 	DECLARE_DERIVED_TYPE(CUIObject, CGameObject)
 
 public:
+	enum class UI_STATE { ENTER, IDLE, EXIT, CLICK, APPEAR, DISAPPEAR, NONE };
+
+public:
 	typedef struct tagUIObjectDesc : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float			fX, fY, fSizeX, fSizeY, fAlpha;
 		std::string		ResTag;
+		std::string		Name;
 		uint32_t		ResWeight;
-		uint32_t		m_UIType;
+		uint32_t		UIType;
 	}UIOBJECT_DESC;
 
 protected:
@@ -43,12 +56,28 @@ public:
 	virtual void LateUpdate(_float fTimeDelta);
 
 protected:
-	virtual void Creating();
-	virtual void StartHovering();
-	virtual void Hovering();
-	virtual void EndHovering();
-	virtual void Click();
-	virtual void Ending();
+	UI_INFO		m_UIINFO{};
+	UI_STATE	m_CurrentState = UI_STATE::NONE;
+	uint32_t	m_AnimState = 0;
+	_bool		m_isActive = true;
+	_bool		m_isVisible = true;
+
+public:
+	const UI_INFO& GetUIInfo() const { return m_UIINFO; }
+	UI_INFO& GetUIInfo() { return m_UIINFO; }
+
+	_bool GetActive() { return m_isActive; }
+	_bool GetVisible() { return m_isVisible; }
+
+	void SetActive(bool isActive) { m_isActive = isActive; }
+	void SetVisible(bool isVisible) { m_isVisible = isVisible; }
+
+	const char* GetName() { return m_UIINFO.Name.c_str(); }
+public:
+	void SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
+	std::optional<CHandle>  GetParent() { return m_pParent; }
+	void AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
+	const std::vector<CHandle>& GetChildren() const { return m_vChildren; }
 
 protected:
 	_float m_fX{}, m_fY{}, m_fSizeX{}, m_fSizeY{}, m_fAlpha{};
@@ -64,9 +93,6 @@ protected:
 
 	std::string m_sRestag;
 
-protected:
-	uint32_t m_AnimState = 0;
-
 public:
 	_float2 GetOrigin() const { return { m_fX , m_fY }; }
 	_float2 GetSize() const { return{ m_fSizeX , m_fSizeY }; }
@@ -78,7 +104,7 @@ public:
 	int			GetWeight() const { return m_iWeight; }
 	void		SetWeight(int weight) { m_iWeight = weight; }
 
-	const char* GetName()				{ return m_cName; }
+	
 	void		SetName(_string name)	{ strcpy_s(m_cName, name.c_str()); }
 
 	void SetLocalPos(_float2 localPos) { m_fLocalX = localPos.x; m_fLocalY = localPos.y;     CalcUICoord();};
@@ -87,10 +113,7 @@ public:
 	_float2 GetLocalPos() { _float2 localPos = { m_fLocalX , m_fLocalY }; return localPos; }
 	_float2 GetWorldPos() { _float2 worldPos = { m_fX , m_fY }; return worldPos; }
 
-	void SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
-	std::optional<CHandle>  GetParent() { return m_pParent; }
-	void AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
-	const std::vector<CHandle>& GetChildren() const { return m_vChildren; }
+
 
 	_float GetLocalX() { return m_fLocalX; };
 	_float GetLocalY() { return m_fLocalY; };
@@ -119,9 +142,8 @@ public:
 	void SetEffectType(uint32_t effectType) { m_iEffectType = effectType; }
 public:
 	void DeleteChild(CHandle childHandle);
-	void InputAnimState();
-protected:
 	void CalcUICoord();
+protected:
 	_bool CheckHovered();
 
 protected:

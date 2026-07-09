@@ -171,12 +171,6 @@
     <ClInclude Include="..\Public\FlipBook.h">
       <Filter>GameObject\UI\FilpBook</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\FlipbookPlayer.h">
-      <Filter>GameObject\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="UI_Item.h">
-      <Filter>GameObject\UI</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\LevelAnimEditor.h">
       <Filter>Level\AnimationEditor</Filter>
     </ClInclude>
@@ -245,6 +239,13 @@
     </ClInclude>
     <ClInclude Include="..\public\Particle_Fire_GPU.h">
       <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EffectUI.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextBox.h" />
+    <ClInclude Include="..\Public\TextureUI.h">
+      <Filter>GameObject\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -336,14 +337,17 @@
     <ClCompile Include="..\Private\FlipBook.cpp">
       <Filter>GameObject\UI\FilpBook</Filter>
     </ClCompile>
-    <ClCompile Include="FlipbookPlayer.cpp">
-      <Filter>GameObject\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="UI_Item.cpp">
-      <Filter>GameObject\UI</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EffectUI.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TextBox.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TextureUI.cpp">
+      <Filter>GameObject\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -367,9 +371,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\private\Gobline.cpp">
-      <Filter>GameObject\Monsters</Filter>
-    </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
     </ClCompile>

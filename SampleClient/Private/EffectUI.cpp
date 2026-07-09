@@ -1,27 +1,28 @@
 #include "pch.h"
-#include "UI_Item.h"
+#include "EffectUI.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
+#include "Resources.h"
+#include "Client_Resources.h"
+#include "ComConstantBuffer.h"
 #include "Resources.h"
 
 NS_USING(Client)
 
-CUI_Item::CUI_Item()
-{
-
-}
-
-CUI_Item::~CUI_Item()
+CEffectUI::CEffectUI()
 {
 }
 
-HRESULT CUI_Item::Initialize(void* pArg)
+CEffectUI::~CEffectUI()
 {
-	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
+}
 
-	if (FAILED(CUIObject::Initialize(pDesc)))
+HRESULT CEffectUI::Initialize(void* pArg)
+{
+	auto		pDesc = static_cast<CFlipbookUI::FLIPBOOK_DESC*>(pArg);
+
+	if (FAILED(CFlipbookUI::Initialize(pDesc)))
 		return E_FAIL;
-
 
 	{
 		CComConstantBuffer::DESC Desc{};
@@ -32,41 +33,33 @@ HRESULT CUI_Item::Initialize(void* pArg)
 		};
 	}
 
-	m_UIType = ETOUI(UI_TYPE::TEXUI);
+	m_UIINFO.UIType = ETOUI(UI_TYPE::FLIPBOOK);
 
 	return S_OK;
 }
 
-void CUI_Item::PriorityUpdate(E::_float fTimeDelta)
+void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CUI_Item::Update(E::_float fTimeDelta)
+void CEffectUI::Update(E::_float fTimeDelta)
 {
-	CUIObject::Update(fTimeDelta);
-
-	if (m_bMouseTracking)
-	{
-		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
-		m_fX = mousePos.x;
-		m_fY = mousePos.y;
-		CalcUICoord();
-	}
+	CFlipbookUI::Update(fTimeDelta);
 }
 
-void CUI_Item::LateUpdate(E::_float fTimeDelta)
+void CEffectUI::LateUpdate(E::_float fTimeDelta)
 {
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
 
-HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = "LEVEL_UIEDITOR";
 
 	//VS_QuadTex
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -88,9 +81,9 @@ HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 	{
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = { 0.f, 0.f };
-		perUI.uvSize = { 0.f, 0.f };
-		perUI.color = { 0.f, 0.f, 0.f, m_fAlpha };
+		perUI.texCoord = m_texcoord;
+		perUI.uvSize = m_uvSize;
+		perUI.color = { m_vColor.x, m_vColor.y, m_vColor.z, m_fAlpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -135,44 +128,23 @@ HRESULT CUI_Item::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	return S_OK;
 }
 
-void CUI_Item::Creating()
+E::UPtr<CEffectUI> CEffectUI::Create()
 {
-}
-
-void CUI_Item::StartHovering()
-{
-}
-
-void CUI_Item::Hovering()
-{
-
-}
-
-void CUI_Item::EndHovering()
-{
-}
-
-void CUI_Item::Ending()
-{
-}
-
-E::UPtr<CUI_Item> CUI_Item::Create()
-{
-	auto pInstance = E::ToUPtr(new CUI_Item{});
+	auto pInstance = E::ToUPtr(new CEffectUI{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTexUI");
+		MSG_BOX("Failed to Created : CFlipBook");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CUI_Item::Clone(void* pArg)
+E::UPtr<E::CPrototype> CEffectUI::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CUI_Item{ *this });
+	auto	pInstance = E::ToUPtr(new CEffectUI{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CUI_Item");
+		MSG_BOX("Failed to Cloned : CFlipBook");
 		return nullptr;
 	}
 

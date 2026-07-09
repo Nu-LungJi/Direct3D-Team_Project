@@ -25,7 +25,9 @@
 #include "LightObject.h"
 #include "CTexUI.h"
 #include "FlipBook.h"
-#include "UI_Item.h"
+#include "TextureUI.h"
+#include "EffectUI.h"
+#include "TextBox.h"
 
 #include "TestGob.h"
 NS_USING(Client)
@@ -276,8 +278,15 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_UI_Item", CUI_Item::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", CTextBox::Create())))
 				{
 					return false;
 				}
