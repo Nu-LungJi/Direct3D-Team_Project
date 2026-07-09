@@ -278,7 +278,7 @@ UPtr<CPrototype> CComModelInstance::Clone(void* pArg)
 }
 
 
-#ifdef _DEBUG
+
 void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 {
 	
@@ -401,5 +401,5 @@ void CComModelInstance::ApplyDebugBoneLocalOffsets()
 		Bones[i]->Set_TransformationMatrix(matLocal);
 	}
 }
-#endif // DEBUG
+
 

@@ -54,7 +54,7 @@ public:
 	static UPtr<CComModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
-#ifdef _DEBUG
+
 public:
 	void DebugDraw_Bones(const _float4x4& WorldMatrix);
 
@@ -70,7 +70,6 @@ private:
 	void ApplyDebugBoneLocalOffsets();
 
 
-#endif
 };
 
 NS_END
