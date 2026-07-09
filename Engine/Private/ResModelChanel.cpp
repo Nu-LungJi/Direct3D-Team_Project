@@ -44,8 +44,7 @@ HRESULT CResModelChanel::Load(const std::any& arg)
 
         m_iNumKeyFrames = *(uint32_t*)pPoint;
         pPoint += sizeof(uint32_t);
-
-
+		
         _float3     vScale = {};
         _float4     vRotation = {};
         _float3     vTranslation = {};
