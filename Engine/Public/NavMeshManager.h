@@ -5,6 +5,8 @@
 
 struct rcPolyMesh;
 struct rcPolyMeshDetail;
+class dtNavMesh;
+class dtNavMeshQuery;
 
 NS_BEGIN(Engine)
 
@@ -59,6 +61,14 @@ public:
 	_bool IsDebugDraw() const { return m_bDebugDraw; }
 	_bool IsBuilt() const { return m_pPolyMesh != nullptr; }
 
+	void SetPathTestStart(const _float3& position);
+	void SetPathTestEnd(const _float3& position);
+	void ClearPathTest();
+	_bool BuildPathTest();
+	_bool HasPathTestStart() const { return m_bHasPathTestStart; }
+	_bool HasPathTestEnd() const { return m_bHasPathTestEnd; }
+	uint32_t GetPathTestPointCount() const { return static_cast<uint32_t>(m_PathTestPoints.size()); }
+
 	void SetTriangleArea(uint32_t triangleIndex, ENavAreaType areaType);
 	ENavAreaType GetTriangleArea(uint32_t triangleIndex) const;
 	void ClearTriangleAreas();
@@ -78,9 +88,26 @@ public:
 	static UPtr<CNavMeshManager> Create();
 
 private:
+	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
+	void DrawPathTest();
+
+private:
+	// NavMesh 빌드
 	rcPolyMesh* m_pPolyMesh = nullptr;
 	rcPolyMeshDetail* m_pDetailMesh = nullptr;
+
+	// NavMesh 빌드결과 바이너리화된 결과, 이걸로 런타임에 길찾기
+	dtNavMesh* m_pDetourNavMesh = nullptr;
+	dtNavMeshQuery* m_pNavMeshQuery = nullptr;
+
 	std::unordered_map<uint32_t, ENavAreaType> m_TriangleAreas{};
+
+	// 길찾기 테스트
+	_float3 m_PathTestStart{};
+	_float3 m_PathTestEnd{};
+	std::vector<_float3> m_PathTestPoints{};
+	_bool m_bHasPathTestStart = false;
+	_bool m_bHasPathTestEnd = false;
 	_bool m_bDebugDraw = true;
 };
 

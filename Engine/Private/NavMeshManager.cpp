@@ -6,6 +6,9 @@
 #include <filesystem>
 #include <fstream>
 #include <recastnavigation/Recast.h>
+#include <recastnavigation/DetourNavMesh.h>
+#include <recastnavigation/DetourNavMeshBuilder.h>
+#include <recastnavigation/DetourNavMeshQuery.h>
 
 NS_USING(Engine)
 
@@ -201,17 +204,117 @@ _bool CNavMeshManager::Build(
 		return false;
 	}
 
+	for (int i = 0; i < pmesh->npolys; ++i)
+	{
+		if (pmesh->areas[i] == RC_WALKABLE_AREA)
+		{
+			pmesh->areas[i] = 0;
+			pmesh->flags[i] = 1;
+		}
+	}
+
+	dtNavMeshCreateParams params{};
+	params.verts = pmesh->verts;
+	params.vertCount = pmesh->nverts;
+	params.polys = pmesh->polys;
+	params.polyAreas = pmesh->areas;
+	params.polyFlags = pmesh->flags;
+	params.polyCount = pmesh->npolys;
+	params.nvp = pmesh->nvp;
+	params.detailMeshes = dmesh->meshes;
+	params.detailVerts = dmesh->verts;
+	params.detailVertsCount = dmesh->nverts;
+	params.detailTris = dmesh->tris;
+	params.detailTriCount = dmesh->ntris;
+	params.walkableHeight = desc.agentHeight;
+	params.walkableRadius = desc.agentRadius;
+	params.walkableClimb = desc.agentMaxClimb;
+	rcVcopy(params.bmin, pmesh->bmin);
+	rcVcopy(params.bmax, pmesh->bmax);
+	params.cs = cfg.cs;
+	params.ch = cfg.ch;
+	params.buildBvTree = true;
+
+	unsigned char* navData = nullptr;
+	int navDataSize = 0;
+	if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
+	{
+		rcFreePolyMeshDetail(dmesh);
+		rcFreePolyMesh(pmesh);
+		rcFreeContourSet(cset);
+		rcFreeCompactHeightfield(chf);
+		return false;
+	}
+
+	dtNavMesh* detourNavMesh = dtAllocNavMesh();
+	if (!detourNavMesh)
+	{
+		dtFree(navData);
+		rcFreePolyMeshDetail(dmesh);
+		rcFreePolyMesh(pmesh);
+		rcFreeContourSet(cset);
+		rcFreeCompactHeightfield(chf);
+		return false;
+	}
+
+	if (dtStatusFailed(detourNavMesh->init(navData, navDataSize, DT_TILE_FREE_DATA)))
+	{
+		dtFreeNavMesh(detourNavMesh);
+		rcFreePolyMeshDetail(dmesh);
+		rcFreePolyMesh(pmesh);
+		rcFreeContourSet(cset);
+		rcFreeCompactHeightfield(chf);
+		return false;
+	}
+
+	dtNavMeshQuery* navMeshQuery = dtAllocNavMeshQuery();
+	if (!navMeshQuery)
+	{
+		dtFreeNavMesh(detourNavMesh);
+		rcFreePolyMeshDetail(dmesh);
+		rcFreePolyMesh(pmesh);
+		rcFreeContourSet(cset);
+		rcFreeCompactHeightfield(chf);
+		return false;
+	}
+
+	if (dtStatusFailed(navMeshQuery->init(detourNavMesh, 2048)))
+	{
+		dtFreeNavMeshQuery(navMeshQuery);
+		dtFreeNavMesh(detourNavMesh);
+		rcFreePolyMeshDetail(dmesh);
+		rcFreePolyMesh(pmesh);
+		rcFreeContourSet(cset);
+		rcFreeCompactHeightfield(chf);
+		return false;
+	}
+
 	rcFreeContourSet(cset);
 	rcFreeCompactHeightfield(chf);
 
 	m_pPolyMesh = pmesh;
 	m_pDetailMesh = dmesh;
+	m_pDetourNavMesh = detourNavMesh;
+	m_pNavMeshQuery = navMeshQuery;
+	m_PathTestPoints.clear();
 
 	return true;
 }
 
 void CNavMeshManager::Clear()
 {
+	if (m_pNavMeshQuery)
+	{
+		dtFreeNavMeshQuery(m_pNavMeshQuery);
+		m_pNavMeshQuery = nullptr;
+	}
+
+	if (m_pDetourNavMesh)
+	{
+		dtFreeNavMesh(m_pDetourNavMesh);
+		m_pDetourNavMesh = nullptr;
+	}
+
 	if (m_pDetailMesh)
 	{
 		rcFreePolyMeshDetail(m_pDetailMesh);
@@ -223,6 +326,113 @@ void CNavMeshManager::Clear()
 		rcFreePolyMesh(m_pPolyMesh);
 		m_pPolyMesh = nullptr;
 	}
+
+	m_PathTestPoints.clear();
+}
+
+void CNavMeshManager::SetPathTestStart(const _float3& position)
+{
+	m_PathTestStart = position;
+	m_bHasPathTestStart = true;
+	m_PathTestPoints.clear();
+}
+
+void CNavMeshManager::SetPathTestEnd(const _float3& position)
+{
+	m_PathTestEnd = position;
+	m_bHasPathTestEnd = true;
+	m_PathTestPoints.clear();
+}
+
+void CNavMeshManager::ClearPathTest()
+{
+	m_bHasPathTestStart = false;
+	m_bHasPathTestEnd = false;
+	m_PathTestPoints.clear();
+}
+
+_bool CNavMeshManager::BuildPathTest()
+{
+	m_PathTestPoints.clear();
+
+	if (!m_bHasPathTestStart || !m_bHasPathTestEnd)
+	{
+		return false;
+	}
+
+	return FindPath(m_PathTestStart, m_PathTestEnd, m_PathTestPoints);
+}
+
+_bool CNavMeshManager::FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const
+{
+	outPath.clear();
+
+	if (!m_pNavMeshQuery)
+	{
+		return false;
+	}
+
+	const float startPos[3] = { start.x, start.y, start.z };
+	const float endPos[3] = { end.x, end.y, end.z };
+	const float halfExtents[3] = { 2.0f, 4.0f, 2.0f };
+
+	dtQueryFilter filter{};
+	filter.setIncludeFlags(0xffff);
+	filter.setExcludeFlags(0);
+
+	dtPolyRef startRef = 0;
+	dtPolyRef endRef = 0;
+	float nearestStart[3]{};
+	float nearestEnd[3]{};
+
+	if (dtStatusFailed(m_pNavMeshQuery->findNearestPoly(startPos, halfExtents, &filter, &startRef, nearestStart)) || startRef == 0)
+	{
+		return false;
+	}
+
+	if (dtStatusFailed(m_pNavMeshQuery->findNearestPoly(endPos, halfExtents, &filter, &endRef, nearestEnd)) || endRef == 0)
+	{
+		return false;
+	}
+
+	constexpr int MaxPolys = 256;
+	dtPolyRef polys[MaxPolys]{};
+	int polyCount = 0;
+
+	if (dtStatusFailed(m_pNavMeshQuery->findPath(startRef, endRef, nearestStart, nearestEnd, &filter, polys, &polyCount, MaxPolys)) || polyCount == 0)
+	{
+		return false;
+	}
+
+	constexpr int MaxStraightPath = 256;
+	float straightPath[MaxStraightPath * 3]{};
+	unsigned char straightPathFlags[MaxStraightPath]{};
+	dtPolyRef straightPathRefs[MaxStraightPath]{};
+	int straightPathCount = 0;
+
+	if (dtStatusFailed(m_pNavMeshQuery->findStraightPath(
+		nearestStart,
+		nearestEnd,
+		polys,
+		polyCount,
+		straightPath,
+		straightPathFlags,
+		straightPathRefs,
+		&straightPathCount,
+		MaxStraightPath)) ||
+		straightPathCount == 0)
+	{
+		return false;
+	}
+
+	outPath.reserve(static_cast<size_t>(straightPathCount));
+	for (int i = 0; i < straightPathCount; ++i)
+	{
+		const float* pos = &straightPath[i * 3];
+		outPath.push_back({ pos[0], pos[1] + 0.18f, pos[2] });
+	}
+
+	return outPath.size() >= 2;
 }
 
 void CNavMeshManager::SetTriangleArea(uint32_t triangleIndex, ENavAreaType areaType)
@@ -339,6 +549,38 @@ void CNavMeshManager::DrawBlockedTriangles(const std::vector<_float3>& vertices,
 	}
 }
 
+void CNavMeshManager::DrawPathTest()
+{
+	auto* dbg = CGameInstance::Get().GetDbgLineRender();
+	if (!dbg)
+	{
+		return;
+	}
+
+	if (m_bHasPathTestStart)
+	{
+		dbg->SetColor({ 0.0f, 1.0f, 0.15f, 1.0f });
+		dbg->AddSphere(0.35f, XMMatrixTranslation(m_PathTestStart.x, m_PathTestStart.y + 0.35f, m_PathTestStart.z));
+	}
+
+	if (m_bHasPathTestEnd)
+	{
+		dbg->SetColor({ 1.0f, 0.25f, 0.1f, 1.0f });
+		dbg->AddSphere(0.35f, XMMatrixTranslation(m_PathTestEnd.x, m_PathTestEnd.y + 0.35f, m_PathTestEnd.z));
+	}
+
+	if (m_PathTestPoints.size() < 2)
+	{
+		return;
+	}
+
+	dbg->SetColor({ 1.0f, 0.9f, 0.0f, 1.0f });
+	for (size_t i = 1; i < m_PathTestPoints.size(); ++i)
+	{
+		dbg->AddLine(m_PathTestPoints[i - 1], m_PathTestPoints[i]);
+	}
+}
+
 void CNavMeshManager::DrawDebug()
 {
 	if (!m_bDebugDraw || !m_pPolyMesh)
@@ -383,6 +625,8 @@ void CNavMeshManager::DrawDebug()
 			dbg->AddLine(p0, p1);
 		}
 	}
+
+	DrawPathTest();
 }
 
 HRESULT CNavMeshManager::Save(const std::string& path) const
