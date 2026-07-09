@@ -138,6 +138,9 @@ HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 			return E_FAIL;
 		}
 
+		pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
+		pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+		pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
 		
 		{
 			CB_PER_OBJECT cbPerObject{};
@@ -389,7 +392,7 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 				//{
 				//	pContext->PSSetShaderResources(AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 1, textures[0].front()->GetSRV().GetAddressOf());
 				//}
-				// 
+				 
 				/*----------- 광윤 추가 -----------*/
 				m_pComModelInstance->Bind_Textures(pContext, i);
 				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순

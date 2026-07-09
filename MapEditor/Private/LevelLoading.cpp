@@ -187,7 +187,7 @@ void CLevelLoading::ThreadStart()
 			{
 				if (FAILED(res->Load()))
 				{
-					MSG_BOX("");
+					MSG_BOX("터레인 타일 png 로드안됨!");
 				}
 			}
 
@@ -195,14 +195,14 @@ void CLevelLoading::ThreadStart()
 			{
 				if (FAILED(res->Load(CResMapEditorTerrainVIBuffer::DESC{})))
 				{
-					MSG_BOX("");
+					MSG_BOX("터레인 VI버퍼 로드안됨!");
 				}
 			}
 		}
 
 		if (!LoadLevelAnimEditorStaticModels())
 		{
-			MSG_BOX("");
+			MSG_BOX("스태틱모델 로드안됨!");
 		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
 			{

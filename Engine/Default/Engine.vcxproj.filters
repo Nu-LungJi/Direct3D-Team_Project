@@ -394,6 +394,12 @@
     <Filter Include="Particle\Patterns">
       <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HizBuffer">
+      <UniqueIdentifier>{5845c6c7-4ded-47fc-8930-ee331e174fba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\Hiz">
+      <UniqueIdentifier>{e0e7be52-836f-4e14-a329-df3c1fdd8171}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -846,6 +852,9 @@
     <ClInclude Include="..\Public\NavMeshManager.h">
       <Filter>NavMesh</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HizBuffer.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1265,6 +1274,9 @@
     <ClCompile Include="..\Private\NavMeshManager.cpp">
       <Filter>NavMesh</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\HizBuffer.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1352,6 +1364,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizMipPyramid.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizCopyDepth.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
