@@ -299,7 +299,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 		selectInfo.Name = m_cName;
 		selectInfo.Color = m_UIINFO.Color;
 
-		if (ETOUI(UI_TYPE::FLIPBOOK) == selectUI->GetUIType())
+		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
 		{
 			FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(selectUI)->GetFlipInfo();
 
@@ -757,7 +757,7 @@ void CLevelUIEditor::FlipbookMode()
 
 	DrawJsonFileLoader(m_iEditorMode);
 
-	ImGui::Begin("EDITOR_MODE: ARRANGE_MODE");
+	ImGui::Begin("EDITOR_MODE: Flipbook_MODE");
 
 	//if (ImGui::Button("Save"))
 	//	PrefabSave();
@@ -787,7 +787,6 @@ void CLevelUIEditor::FlipbookMode()
 		m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
 		RefreshJsonFileList();
 	}
-		
 
 	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Save FlipBook");
 	ImGui::Separator();
@@ -812,20 +811,31 @@ void CLevelUIEditor::FlipbookMode()
 	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Animation_Value");
 	ImGui::Separator();
 
+	int cellsize = m_FLIPINFO.cellsize;
+	int totalFrame = m_FLIPINFO.TotalFrame;
+	int padding = m_FLIPINFO.Padding;
 	ImGui::SetNextItemWidth(80);
-	ImGui::InputFloat("CellSize", &m_fCellSize);
+	ImGui::InputInt("CellSize", &cellsize);
+	m_FLIPINFO.cellsize = cellsize;
 	ImGui::SetNextItemWidth(80);
-	ImGui::InputFloat("Duration", &m_fDuration);
+	ImGui::InputInt("TotalFrame", &totalFrame);
+	m_FLIPINFO.TotalFrame = totalFrame;
 	ImGui::SetNextItemWidth(80);
-	ImGui::InputInt("TotalFrame", &m_iTotalFrame);
+	ImGui::InputInt("Padding", &padding);
+	m_FLIPINFO.Padding = padding;
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputFloat("Duration", &m_FLIPINFO.Duration);
+
 
 	if (std::nullopt != Target_UI)
 	{
 		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
 
-		static_cast<CFlipBook*>(selectUI)->SetCellSize(m_fCellSize);
-		static_cast<CFlipBook*>(selectUI)->SetDuration(m_fDuration);
-		static_cast<CFlipBook*>(selectUI)->SetTotalFrame(m_iTotalFrame);
+		FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(selectUI)->GetFlipInfo();
+		flipInfo.cellsize = m_FLIPINFO.cellsize;
+		flipInfo.TotalFrame = m_FLIPINFO.TotalFrame;
+		flipInfo.Padding = m_FLIPINFO.Padding;
+		flipInfo.Duration = m_FLIPINFO.Duration;
 
 		if (std::nullopt != selectUI->GetParent())
 			LocalStateView();
@@ -852,7 +862,8 @@ void CLevelUIEditor::FlipbookMode()
 
 			if (ImGui::ImageButton((ImTextureID)srv->GetSRV().Get(), ImVec2(100, 100)))
 			{
-				strcpy_s(m_cResTag, sizeof(m_cResTag), m_vFlipBookResTag[i].c_str());
+				m_UIINFO.Restag = m_vFlipBookResTag[i].c_str();
+				//strcpy_s(m_cResTag, sizeof(m_cResTag), m_vFlipBookResTag[i].c_str());
 			}
 			ImGui::PopID();
 		}
@@ -940,6 +951,9 @@ void CLevelUIEditor::Picking()
 void CLevelUIEditor::PickingOnlyRoot()
 {
 	_float2 mousePos = CGameInstance::Get().GetMousePos();
+
+	if (nullptr == CGameInstance::Get().GetGameObjectLayer("Layer_UI"))
+		return;
 
 	std::vector<CHandle> uiHandles = *CGameInstance::Get().GetGameObjectLayer("Layer_UI");
 
@@ -1200,6 +1214,15 @@ void CLevelUIEditor::FlipBookMake()
 	Desc.UIType = ETOUI(UI_TYPE::FLIPBOOK);
 
 	std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
+	CEffectUI* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*handle);
+
+	FLIP_INFO& flipInfo = pUI->GetFlipInfo();
+	flipInfo.cellsize = m_FLIPINFO.cellsize;
+	flipInfo.TotalFrame = m_FLIPINFO.TotalFrame;
+	flipInfo.Padding = m_FLIPINFO.Padding;
+	flipInfo.Duration = m_FLIPINFO.Duration;
+
+	
 }
 
 void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& obj)
@@ -1321,28 +1344,26 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 
 	uiInfo.EffectType = obj["UI_EFFECT_TYPE"];
 	uiInfo.Name = obj["Name"];
-
+	
 	uiInfo.SizeX = obj["SizeX"];
 	uiInfo.SizeY = obj["SizeY"];
-
+	
 	uiInfo.Alpha = obj["Alpha"];
 	uiInfo.AlphaRatio = obj["AlphaRatio"];
-
+	
 	uiInfo.Weight = obj["Weight"];
-
+	
 	uiInfo.LocalX = obj["LocalX"];
 	uiInfo.LocalY = obj["LocalY"];
-
+	
 	uiInfo.WidthRatioX = obj["WidthRatioX"];
 	uiInfo.WidthRatioY = obj["WidthRatioY"];
-
-	uiInfo.WeightOffset = obj["WeightOffset"];
-
+	
 	uiInfo.Restag = obj["ResTag"];
-
+	
 	uiInfo.Rot = obj["Rot"];
 	uiInfo.LocalRot = obj["LocalRot"];
-
+	
 	auto color = obj["Color"];
 	uiInfo.Color = { color[0], color[1], color[2] };
 
@@ -1357,7 +1378,7 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 		parent->AddChildren(pUI->GetHandle());
 
 		uiInfo.LocalX = obj["LocalX"];
-		uiInfo.LocalX = obj["LocalY"];
+		uiInfo.LocalY = obj["LocalY"];
 	}
 
 	// 부모 기준으로 다시 계산

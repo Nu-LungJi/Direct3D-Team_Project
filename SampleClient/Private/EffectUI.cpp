@@ -83,7 +83,7 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = m_texcoord;
 		perUI.uvSize = m_uvSize;
-		perUI.color = { m_vColor.x, m_vColor.y, m_vColor.z, m_fAlpha };
+		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -114,7 +114,7 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	}
 
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_sRestag);
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 
 		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);

@@ -73,6 +73,7 @@ public:
 	void SetVisible(bool isVisible) { m_isVisible = isVisible; }
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
+	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }
 public:
 	void SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
 	std::optional<CHandle>  GetParent() { return m_pParent; }
@@ -128,8 +129,6 @@ public:
 	void SetWidthRatioY(_float widthY) { m_fWidthRatioY = widthY; };
 	void SetAlphaRatio(_float alphaRatio) { m_fAlphaRatio = alphaRatio; };
 	void SetWeightOffset(int weightOffset) { m_iWeightOffset = weightOffset; };
-
-	uint32_t GetUIType() { return m_UIType; }
 	void SetUIType(uint32_t uiType) { m_UIType = uiType; }
 
 	std::string Get_ResTag() { return m_sRestag; }
