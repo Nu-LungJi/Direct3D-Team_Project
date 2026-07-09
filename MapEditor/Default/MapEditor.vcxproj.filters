@@ -49,6 +49,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{72246f9b-721f-4ad1-a414-5f830d976de9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\NavMesh">
+      <UniqueIdentifier>{25439a9b-5cd4-486d-abeb-aaedaa816293}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -111,6 +114,9 @@
     <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h">
       <Filter>Resource\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\NavMeshGUI.h">
+      <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -170,6 +176,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\NavMeshGUI.cpp">
+      <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

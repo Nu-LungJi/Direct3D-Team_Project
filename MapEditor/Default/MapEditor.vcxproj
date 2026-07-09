@@ -161,6 +161,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\MapEditorTerrain.h" />
     <ClInclude Include="..\Public\MapChunkGUI.h" />
     <ClInclude Include="..\Public\MapEditorGUI.h" />
+    <ClInclude Include="..\Public\NavMeshGUI.h" />
     <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h" />
     <ClInclude Include="..\Public\ResourceGUI.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
@@ -182,6 +183,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\MapEditorTerrain.cpp" />
     <ClCompile Include="..\Private\MapChunkGUI.cpp" />
     <ClCompile Include="..\Private\MapEditorGUI.cpp" />
+    <ClCompile Include="..\Private\NavMeshGUI.cpp" />
     <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp" />
     <ClCompile Include="..\Private\ResourceGUI.cpp" />
     <ClCompile Include="..\Private\TestGuizmo.cpp" />
