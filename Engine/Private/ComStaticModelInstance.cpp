@@ -6,8 +6,26 @@
 #include "ResModel.h"
 NS_USING(Engine)
 
+void CComStaticModelInstance::UpdateGUI()
+{
+	static char szJsonName[MAX_PATH] = "StaticModel.json";
 
+	if (ImGui::Button("Save Json"))
+	{
+		std::string saveName = szJsonName;
 
+		if (saveName.empty())
+			return;
+
+		std::filesystem::path savePath =
+			std::filesystem::path("./Resources/SampleClient/Models/StaticModelJson") / saveName;
+
+		if (savePath.extension().empty())
+			savePath.replace_extension(".json");
+
+		Save_Binary_Json(savePath.string());
+	}
+}
 CComStaticModelInstance::CComStaticModelInstance()
 {
 
@@ -40,26 +58,50 @@ HRESULT CComStaticModelInstance::Initialize(void* pArg)
 }
 
 
-HRESULT CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex)
-{
-    auto Materials = m_pModel->GetMaterials();
-    auto Mesh = m_pModel->GetMeshes();
-    auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
+VOID CComStaticModelInstance::Bind_Textures(ID3D11DeviceContext* pContext, uint32_t _MeshIndex) {
+	SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
+		DiffuseTexture = Resource;
+	}
+	pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
 
+	SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
+		NormalTexture = Resource;
+	}
+	pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
 
-    if (Textures[eMaterialType].size() == 0)
-    {
-        pContext->PSSetShaderResources(eMaterialType, 1, Textures[0].front()->GetSRV().GetAddressOf());
-        return S_OK;
-    }
+	SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
+		SMROTexture = Resource;
+	}
+	pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
 
-    pContext->PSSetShaderResources(eMaterialType, 1, Textures[eMaterialType][iTextureIndex]->GetSRV().GetAddressOf());
-
-
-    return S_OK;
-
-
+	SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+	if (auto Resource =	Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
+		EmissiveTexture = Resource;
+	}
+	pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
 }
+
+VOID CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float _ObjectAlpha)
+{
+	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+	D3D11_MAPPED_SUBRESOURCE MRES;
+	if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+	{
+		CB_MATERIAL   CMMAT;
+
+		CMMAT.EmissiveColor		= _EmissiveColor;
+		CMMAT.EmissiveIntensity = _EmissiveIntensity;
+		CMMAT.ObjectAlpha		= _ObjectAlpha;
+
+		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
+		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
+	}
+	pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+}
+
 
 HRESULT CComStaticModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)
 {
@@ -72,8 +114,48 @@ HRESULT CComStaticModelInstance::ChangeModel(const StringID& sGroupTag, const St
     m_pModel = pModel;
     return S_OK;
 }
+HRESULT CComStaticModelInstance::Save_Binary_Json(std::string outpath)
+{
+	if (outpath.empty())
+		return E_FAIL;
 
-// ���� ���� �ؽ��� ��ȯ
+	std::filesystem::path savePath(outpath);
+
+	// 확장자가 없으면 .json 붙이기
+	if (savePath.extension().empty())
+		savePath.replace_extension(".json");
+
+	// 폴더 없으면 생성
+	if (!savePath.parent_path().empty())
+		std::filesystem::create_directories(savePath.parent_path());
+
+	// 현재 모델 없으면 실패
+	if (m_pModel == nullptr)
+		return E_FAIL;
+
+	std::filesystem::path modelPath = m_pModel->GetPath();
+
+	// 파일 이름만 저장
+	std::string fbxName = modelPath.filename().string();
+
+
+	nlohmann::json j;
+
+	j["fbx"] = fbxName;
+
+	std::ofstream file(savePath, std::ios::out);
+
+	if (!file.is_open())
+		return E_FAIL;
+
+	file << j.dump(4);
+	file.close();
+
+	return S_OK;
+}
+ 
+
+// 모델의 단일 텍스쳐 반환
 SPtr<CResTexture2D> CComStaticModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
     auto Materials = m_pModel->GetMaterials();
     auto Mesh = m_pModel->GetMeshes();

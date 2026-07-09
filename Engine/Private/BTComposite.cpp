@@ -44,9 +44,11 @@ nlohmann::json CBTComposite::Save_Node()
 	{
 		if (m_GuiLink.SlotEnd[i].iDestNode != -1)
 		{
-			_string SlotName = "LinkEndSlot" + std::to_string(iCnt);
+			_string DestSlotName = "LinkEndSlotName" + std::to_string(iCnt);
+			_string DestID = "LinkEndSlotID" + std::to_string(iCnt);
 			_string SlotNameEnum = "LinkEndSlotType" + std::to_string(iCnt);
-			j[SlotName] = m_GuiLink.SlotEnd[i];
+			JsonSaveLoadManager::SaveJsonTypeString(j, DestSlotName, m_GuiLink.SlotEnd[i].DestName);
+			SaveJsonValue(j, DestID, m_GuiLink.SlotEnd[i].iDestNode);
 			SaveJsonEnum(j, SlotNameEnum, m_GuiLink.SlotEnd[i].eType);
 			++iCnt;
 		}
@@ -71,9 +73,11 @@ HRESULT		CBTComposite::Load_json(const nlohmann::json& j)
 	m_GuiLink.SlotEnd.resize(iSlotSize);
 	for (size_t i = 0; i < iSlotSize; ++i)
 	{
-		_string SlotName = "LinkEndSlot" + std::to_string(i);
+		_string DestSlotName = "LinkEndSlotName" + std::to_string(i);
+		_string DestID = "LinkEndSlotID" + std::to_string(i);
 		_string SlotNameEnum = "LinkEndSlotType" + std::to_string(i);
-		j[SlotName].get_to<DEST_NODE>(m_GuiLink.SlotEnd[i]);
+		JsonSaveLoadManager::LoadJsonTypeString(j, DestSlotName, m_GuiLink.SlotEnd[i].DestName);
+		LoadJsonValue(j, DestID, m_GuiLink.SlotEnd[i].iDestNode);
 		LoadJsonEnum(j, SlotNameEnum, m_GuiLink.SlotEnd[i].eType);
 	}
 	size_t iArraySize = j["Size"];

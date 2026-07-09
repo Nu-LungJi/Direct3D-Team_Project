@@ -4,6 +4,7 @@
 #include "Inspector.h"
 #include "ResourceGUI.h"
 #include "MapChunkGUI.h"
+#include "NavMeshGUI.h"
 
 NS_BEGIN(Client)
 
@@ -25,13 +26,14 @@ public:
 private:
 	void DrawGizmoToolbar();
 	void RenderGizmo();
-	void AddCamera();
+	//void AddDefaultCameraLight();
 
 private:
 	E::UPtr<CHierarchy> m_pHierarchy{};
 	E::UPtr<CInspector> m_pInspector{};
 	E::UPtr<CResourceGUI> m_pResourceGUI{};
 	E::UPtr<CMapChunkGUI> m_pMapChunkGUI{};
+	E::UPtr<CNavMeshGUI> m_pNavMeshGUI{};
 	char m_MapName[64] = "LevelA";
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };

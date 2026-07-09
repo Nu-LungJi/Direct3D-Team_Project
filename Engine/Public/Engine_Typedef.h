@@ -163,6 +163,24 @@ namespace Engine
 #endif
 			}
 
+			StringID(std::basic_string_view<_char> sv)
+				: hash(STRID(sv.data(), sv.size()))
+			{
+#ifndef STRID_NODBG
+				owned_str = std::make_shared<_char[]>(sv.size() + 1);
+				std::copy(sv.begin(), sv.end(), owned_str.get());
+				owned_str[sv.size()] = 0;
+				str = owned_str.get();
+#endif
+			}
+
+			template<typename E>
+				requires std::is_enum_v<E>
+			StringID(E e)
+				: StringID(magic_enum::enum_name(e))
+			{
+			}
+
 			bool operator==(const StringID& other) const
 			{
 				return hash == other.hash;
@@ -227,6 +245,25 @@ namespace Engine
 				owned_str[len] = L'\0';
 				str = owned_str.get();
 #endif
+			}
+
+
+			WStringID(std::basic_string_view<_tchar> sv)
+				: hash(WSTRID(sv.data(), sv.size()))
+			{
+#ifndef STRID_NODBG
+				owned_str = std::make_shared<_tchar[]>(sv.size() + 1);
+				std::copy(sv.begin(), sv.end(), owned_str.get());
+				owned_str[sv.size()] = 0;
+				str = owned_str.get();
+#endif
+			}
+
+			template<typename E>
+				requires std::is_enum_v<E>
+			WStringID(E e)
+				: WStringID(magic_enum::enum_name(e))
+			{
 			}
 
 			bool operator==(const WStringID& other) const

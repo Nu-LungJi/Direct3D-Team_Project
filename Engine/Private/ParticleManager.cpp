@@ -3,7 +3,7 @@
 #include "Particle.h"
 #include "Beam_CPU.h"
 #include "Trail_CPU.h"
-
+#include "ParticlePattern.h"
 NS_USING(Engine)
 
 CParticleManager::CParticleManager()
@@ -30,165 +30,208 @@ static int  iCount = 0;
 static float fTime = 1;
 void CParticleManager::UpdateGUI()
 {
-    ImGui::Begin("CParticleManager");
+	ImGui::Begin("CParticleManager");
 
-    static StringID selectedGroup;
-    static StringID selectedType;
-    static int groupIndex = 0;
-    static int typeIndex = 0;
-    static SPAWN_COMMAND_KIND currentKind = SPAWN_COMMAND_KIND::STANDARD;
+	static StringID selectedGroup;
+	static StringID selectedType;
+	static int groupIndex = 0;
+	static int typeIndex = 0;
+	static SPAWN_COMMAND_KIND currentKind = SPAWN_COMMAND_KIND::STANDARD;
 
-    // ---- 대분류/소분류 선택 ----
-    std::vector<StringID> groupKeys;
-    groupKeys.reserve(m_Particles.size());
-    for (auto& [groupTag, typeMap] : m_Particles)
-        groupKeys.push_back(groupTag);
+	// 입력 중인 파라미터는 종류별로 따로 보관 (variant 아님, 순수 입력용 임시 데이터)
+	static STANDARD_PARAMS pendingStandard{};
+	static BEAM_PARAMS     pendingBeam{};
+	static STAIR_PARAMS    pendingStair{};
 
-    if (!groupKeys.empty())
-    {
-        std::vector<std::string> groupNamesStorage;
-        groupNamesStorage.reserve(groupKeys.size());
-        for (auto& key : groupKeys)
-            groupNamesStorage.emplace_back(key.GetDbgStr());
+	// ---- 대분류/소분류 선택 ----
+	std::vector<StringID> groupKeys;
+	groupKeys.reserve(m_Particles.size());
+	for (auto& [groupTag, typeMap] : m_Particles)
+		groupKeys.push_back(groupTag);
 
-        std::vector<const char*> groupNames;
-        for (auto& s : groupNamesStorage)
-            groupNames.push_back(s.c_str());
+	if (!groupKeys.empty())
+	{
+		std::vector<std::string> groupNamesStorage;
+		groupNamesStorage.reserve(groupKeys.size());
+		for (auto& key : groupKeys)
+			groupNamesStorage.emplace_back(key.GetDbgStr());
 
-        groupIndex = std::clamp(groupIndex, 0, (int)groupNames.size() - 1);
-        if (ImGui::Combo("Group", &groupIndex, groupNames.data(), (int)groupNames.size()))
-            typeIndex = 0;
+		std::vector<const char*> groupNames;
+		for (auto& s : groupNamesStorage)
+			groupNames.push_back(s.c_str());
 
-        selectedGroup = groupKeys[groupIndex];
+		groupIndex = std::clamp(groupIndex, 0, (int)groupNames.size() - 1);
+		if (ImGui::Combo("Group", &groupIndex, groupNames.data(), (int)groupNames.size()))
+			typeIndex = 0;
 
-        auto& typeMap = m_Particles[selectedGroup];
-        std::vector<StringID> typeKeys;
-        typeKeys.reserve(typeMap.size());
-        for (auto& [typeTag, particle] : typeMap)
-            typeKeys.push_back(typeTag);
+		selectedGroup = groupKeys[groupIndex];
 
-        if (!typeKeys.empty())
-        {
-            std::vector<std::string> typeNamesStorage;
-            typeNamesStorage.reserve(typeKeys.size());
-            for (auto& key : typeKeys)
-                typeNamesStorage.emplace_back(key.GetDbgStr());
+		auto& typeMap = m_Particles[selectedGroup];
+		std::vector<StringID> typeKeys;
+		typeKeys.reserve(typeMap.size());
+		for (auto& [typeTag, particle] : typeMap)
+			typeKeys.push_back(typeTag);
 
-            std::vector<const char*> typeNames;
-            for (auto& s : typeNamesStorage)
-                typeNames.push_back(s.c_str());
+		if (!typeKeys.empty())
+		{
+			std::vector<std::string> typeNamesStorage;
+			typeNamesStorage.reserve(typeKeys.size());
+			for (auto& key : typeKeys)
+				typeNamesStorage.emplace_back(key.GetDbgStr());
 
-            typeIndex = std::clamp(typeIndex, 0, (int)typeNames.size() - 1);
-            ImGui::Combo("Type", &typeIndex, typeNames.data(), (int)typeNames.size());
+			std::vector<const char*> typeNames;
+			for (auto& s : typeNamesStorage)
+				typeNames.push_back(s.c_str());
 
-            selectedType = typeKeys[typeIndex];
+			typeIndex = std::clamp(typeIndex, 0, (int)typeNames.size() - 1);
+			ImGui::Combo("Type", &typeIndex, typeNames.data(), (int)typeNames.size());
 
-            // 선택된 파티클이 CBeam_CPU인지 판단해서 섹션 분기
-            // dynamic_cast로 실제 타입 확인 (또는 CParticle에 GetKind() 같은 걸 추가해도 됨)
-            auto pSelected = typeMap[selectedType].get();
-            currentKind = (dynamic_cast<CBeam_CPU*>(pSelected) != nullptr)
-                ? SPAWN_COMMAND_KIND::BEAM
-                : SPAWN_COMMAND_KIND::STANDARD;
-        }
-    }
+			selectedType = typeKeys[typeIndex];
 
-    ImGui::Separator();
+			// 선택된 파티클이 CBeam_CPU인지 판단해서 섹션 기본값 자동 전환
+			// (STAIR는 자동 판별할 방법이 없으므로, 아래 라디오 버튼으로 사람이 직접 선택)
+			auto pSelected = typeMap[selectedType].get();
+			if (dynamic_cast<CBeam_CPU*>(pSelected) != nullptr)
+				currentKind = SPAWN_COMMAND_KIND::BEAM;
+		}
+	}
 
-    // ---- 종류별 매개변수 섹션 ----
-    static SPAWN_COMMAND pending{};   // 지금 입력 중인 명령 (아직 큐에 안 들어감)
+	ImGui::Separator();
 
-    pending.kind = currentKind;
-    pending.sGroupTag = selectedGroup;
-    pending.sTypeTag = selectedType;
+	// ---- 종류 선택 (STANDARD / BEAM / STAIR를 사람이 직접 고를 수 있게) ----
+	{
+		int kindIndex = (int)currentKind;
+		const char* kindNames[] = { "Standard", "Beam", "Stair" };
+		if (ImGui::Combo("Spawn Kind", &kindIndex, kindNames, IM_ARRAYSIZE(kindNames)))
+			currentKind = (SPAWN_COMMAND_KIND)kindIndex;
+	}
 
-    if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
-    {
-        ImGui::Text("Standard Particle Params");
-        int countInput = (int)pending.count;
-        ImGui::InputInt("Count", &countInput);
-        pending.count = (uint32_t)std::clamp(countInput, 1, (int)MAX_SPAWN_PER_CALL);
+	ImGui::Separator();
 
-        ImGui::InputFloat3("Position", &pending.position.x);
-        ImGui::InputFloat3("Velocity", &pending.velocity.x);
-        ImGui::InputFloat("Life", &pending.life);
-        ImGui::InputFloat("Size", &pending.size);
-        ImGui::ColorEdit4("BaseColor", &pending.color.x);
-        //mGui::ColorEdit4("Emissive", &pending.emissive.x);
-        ImGui::ColorEdit3("Emissive Color", &pending.emissive.x);
-        ImGui::InputFloat("Emissive Intensity", &pending.emissive.w);
-        ImGui::Checkbox("Loop", &pending.bLoop);
-        if (pending.bLoop)
-            ImGui::InputFloat("Spawn Interval", &pending.fSpawnInterval);
-    }
-    else if (currentKind == SPAWN_COMMAND_KIND::BEAM)
-    {
-      
-        std::vector<_float3> vecJaggedPoints;
-        ImGui::Text("Beam Params");
-        ImGui::InputFloat4("Start Pos", &pending.beamStart.x);
-        ImGui::InputFloat4("End Pos", &pending.beamEnd.x);
-        ImGui::InputInt("DisplacementIterations", &pending.iDisplacementIterations);
-        ImGui::InputFloat("DisplacementAmplitude", &pending.fDisplacementAmplitude);
-        ImGui::InputFloat("DisplacementDamping", &pending.fDisplacementDamping);
-        ImGui::InputFloat("flickerTimeInverval", &pending.flickerTimeInverval);
-        ImGui::InputFloat("Duration", &pending.beamDuration);
-        ImGui::ColorEdit4("BaseColor", &pending.color.x);
-        ImGui::ColorEdit3("Emissive Color", &pending.emissive.x);
-        ImGui::InputFloat("Emissive Intensity", &pending.emissive.w);
-        //ImGui::ColorEdit4("Emissive", &pending.emissive.x);
-    }
+	// ---- 종류별 매개변수 섹션 ----
+	if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
+	{
+		ImGui::Text("Standard Particle Params");
+		int countInput = (int)pendingStandard.count;
+		ImGui::InputInt("Count", &countInput);
+		pendingStandard.count = (uint32_t)std::clamp(countInput, 1, (int)MAX_SPAWN_PER_CALL);
 
-    if (ImGui::Button("Add to List") && !groupKeys.empty())
-    {
-        m_vecCommandQueue.push_back(pending);
-    }
+		ImGui::InputFloat3("Position", &pendingStandard.position.x);
+		ImGui::InputFloat3("Velocity", &pendingStandard.velocity.x);
+		ImGui::InputFloat("Life", &pendingStandard.life);
+		ImGui::InputFloat("Size", &pendingStandard.size);
+		ImGui::ColorEdit4("BaseColor", &pendingStandard.color.x);
+		ImGui::ColorEdit3("Emissive Color", &pendingStandard.emissive.x);
+		ImGui::InputFloat("Emissive Intensity", &pendingStandard.emissive.w);
+		ImGui::Checkbox("Loop", &pendingStandard.bLoop);
+		if (pendingStandard.bLoop)
+			ImGui::InputFloat("Spawn Interval", &pendingStandard.fSpawnInterval);
+	}
+	else if (currentKind == SPAWN_COMMAND_KIND::BEAM)
+	{
+		ImGui::Text("Beam Params");
+		ImGui::InputFloat4("Start Pos", &pendingBeam.beamStart.x);
+		ImGui::InputFloat4("End Pos", &pendingBeam.beamEnd.x);
+		ImGui::InputInt("DisplacementIterations", &pendingBeam.iDisplacementIterations);
+		ImGui::InputFloat("DisplacementAmplitude", &pendingBeam.fDisplacementAmplitude);
+		ImGui::InputFloat("DisplacementDamping", &pendingBeam.fDisplacementDamping);
+		ImGui::InputFloat("flickerTimeInverval", &pendingBeam.flickerTimeInverval);
+		ImGui::InputFloat("Duration", &pendingBeam.beamDuration);
+		ImGui::ColorEdit4("BaseColor", &pendingBeam.color.x);
+		ImGui::ColorEdit3("Emissive Color", &pendingBeam.emissive.x);
+		ImGui::InputFloat("Emissive Intensity", &pendingBeam.emissive.w);
+	}
+	else if (currentKind == SPAWN_COMMAND_KIND::STAIR)
+	{
+		ImGui::Text("Stair Params");
+		ImGui::InputFloat3("Start Pos", &pendingStair.vStartPos.x);
 
-    ImGui::Separator();
+		int stepCount = (int)pendingStair.iStepCount;
+		ImGui::InputInt("Step Count", &stepCount);
+		pendingStair.iStepCount = (uint32_t)std::max(1, stepCount);
 
-    // ---- 리스트 표시 및 삭제 ----
-    ImGui::Text("Spawn Queue (%zu)", m_vecCommandQueue.size());
-    for (int i = 0; i < (int)m_vecCommandQueue.size(); ++i)
-    {
-        auto& cmd = m_vecCommandQueue[i];
-        ImGui::PushID(i);
+		ImGui::InputFloat("Step Width", &pendingStair.fStepWidth);
+		ImGui::InputFloat("Step Height", &pendingStair.fStepHeight);
+		ImGui::InputFloat("Step Depth", &pendingStair.fStepDepth);
+		ImGui::InputFloat("Life", &pendingStair.life);
+		ImGui::ColorEdit4("BaseColor", &pendingStair.color.x);
+		ImGui::ColorEdit3("Emissive Color", &pendingStair.emissive.x);
+		ImGui::InputFloat("Emissive Intensity", &pendingStair.emissive.w);
+	}
 
-        if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
-        {
-            ImGui::Text("[%s/%s] count=%u pos=(%.1f,%.1f,%.1f)",
-                cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
-                cmd.count, cmd.position.x, cmd.position.y, cmd.position.z);
-        }
-        else
-        {
-            ImGui::Text("[%s/%s] BEAM start=(%.1f,%.1f,%.1f)",
-                cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
-                cmd.beamStart.x, cmd.beamStart.y, cmd.beamStart.z);
-        }
+	if (ImGui::Button("Add to List") && !groupKeys.empty())
+	{
+		SPAWN_COMMAND cmd{};
+		cmd.sGroupTag_KindTag = currentKind;
+		cmd.sGroupTag = selectedGroup;
+		cmd.sTypeTag = selectedType;
 
-        ImGui::SameLine();
-        if (ImGui::Button("Remove"))
-        {
-            m_vecCommandQueue.erase(m_vecCommandQueue.begin() + i);
-            ImGui::PopID();
-            break;   // 벡터가 바뀌었으니 이번 프레임은 여기서 루프 중단
-        }
+		// 현재 선택된 종류에 해당하는 파라미터만 variant에 담음
+		if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
+			cmd.params = pendingStandard;
+		else if (currentKind == SPAWN_COMMAND_KIND::BEAM)
+			cmd.params = pendingBeam;
+		else if (currentKind == SPAWN_COMMAND_KIND::STAIR)
+			cmd.params = pendingStair;
 
-        ImGui::PopID();
-    }
+		m_vecCommandQueue.push_back(cmd);
+	}
 
-    if (ImGui::Button("Clear List"))
-    {
-        m_vecCommandQueue.clear();
-    }
+	ImGui::Separator();
 
-    ImGui::SameLine();
+	// ---- 리스트 표시 및 삭제 ----
+	ImGui::Text("Spawn Queue (%zu)", m_vecCommandQueue.size());
+	for (int i = 0; i < (int)m_vecCommandQueue.size(); ++i)
+	{
+		auto& cmd = m_vecCommandQueue[i];
+		ImGui::PushID(i);
 
-    if (ImGui::Button("Execute Spawn (All)"))
-    {
-        ExecuteCommandQueue();
-    }
+		if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STANDARD)
+		{
+			const auto& p = std::get<STANDARD_PARAMS>(cmd.params);
+			ImGui::Text("[%s/%s] count=%u pos=(%.1f,%.1f,%.1f)",
+				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
+				p.count, p.position.x, p.position.y, p.position.z);
+		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::BEAM)
+		{
+			const auto& p = std::get<BEAM_PARAMS>(cmd.params);
+			ImGui::Text("[%s/%s] BEAM start=(%.1f,%.1f,%.1f)",
+				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
+				p.beamStart.x, p.beamStart.y, p.beamStart.z);
+		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STAIR)
+		{
+			const auto& p = std::get<STAIR_PARAMS>(cmd.params);
+			ImGui::Text("[%s/%s] STAIR start=(%.1f,%.1f,%.1f) steps=%u",
+				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
+				p.vStartPos.x, p.vStartPos.y, p.vStartPos.z, p.iStepCount);
+		}
 
-    ImGui::End();
+		ImGui::SameLine();
+		if (ImGui::Button("Remove"))
+		{
+			m_vecCommandQueue.erase(m_vecCommandQueue.begin() + i);
+			ImGui::PopID();
+			break;   // 벡터가 바뀌었으니 이번 프레임은 여기서 루프 중단
+		}
+
+		ImGui::PopID();
+	}
+
+	if (ImGui::Button("Clear List"))
+	{
+		m_vecCommandQueue.clear();
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Execute Spawn (All)"))
+	{
+		ExecuteCommandQueue();
+	}
+
+	ImGui::End();
 }
 //void CParticleManager::UpdateGUI()
 //{
@@ -473,7 +516,7 @@ HRESULT CParticleManager::SpawnAllInGroup(const StringID& sGroupTag,
     return hr;
 }
 
-HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, _float4 emissive, _float fDuration)
+HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
     auto pParticle = GetParticle("BEAM", "ATTACK");
     if (!pParticle)
@@ -481,7 +524,7 @@ HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, c
     auto pBeam = static_cast<CBeam_CPU*>(pParticle);
 
     for (uint32_t i = 0; i < quantity; i++) {
-        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
+        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
     }
     return S_OK;
 }
@@ -509,96 +552,109 @@ UPtr<CParticleManager> CParticleManager::Create()
     return UPtr<CParticleManager>(new CParticleManager{});
 }
 
-HRESULT CParticleManager::ExecuteCommandQueue()
-{
-    HRESULT hr = S_OK;
-    for (auto& cmd : m_vecCommandQueue)
-    {
-
-        //파일 path를 읽어서 
-        //cmd.baemStart를 본인 특정 좌표로 
-        if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
-        {
-            std::vector<PARTICLE_SPAWN_DATA> spawnList(cmd.count);
-            for (auto& s : spawnList)
-            {
-                s.position = cmd.position;
-                s.velocity = cmd.velocity;
-                s.life = cmd.life;
-                s.size = cmd.size;
-                s.color = cmd.color;   // PARTICLE_SPAWN_DATA에 color 필드가 있다는 전제
-                s.emissive = cmd.emissive;
-            }
-
-            if (FAILED(Spawn(cmd.sGroupTag, cmd.sTypeTag, cmd.count, spawnList.data(), cmd.bLoop, cmd.fSpawnInterval)))
-                hr = E_FAIL;
-        }
-        else if (cmd.kind == SPAWN_COMMAND_KIND::BEAM)
-        {
-            auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
-            if (pParticle)
-            {
-                auto pBeam = static_cast<CBeam_CPU*>(pParticle);
-                pBeam->AddBeam(cmd.beamStart, cmd.beamEnd,
-                    cmd.fDisplacementAmplitude, (uint32_t)cmd.iDisplacementIterations, cmd.fDisplacementDamping,
-                    cmd.flickerTimeInverval, cmd.emissive,cmd.beamDuration);
-            }
-            else
-            {
-                hr = E_FAIL;
-            }
-        }
-    }
-
-  //  m_vecCommandQueue.clear();   // 실행 후 큐 비우기 (원하시면 안 비우게 바꿀 수도 있음)
-    return hr;
-}
-
 //HRESULT CParticleManager::ExecuteCommandQueue()
 //{
 //    HRESULT hr = S_OK;
-//
-//    // 그룹/타입별로 스폰 데이터를 모으기
-//    std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
-//
 //    for (auto& cmd : m_vecCommandQueue)
 //    {
+//
+//        //파일 path를 읽어서 
+//        //cmd.baemStart를 본인 특정 좌표로 
 //        if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
 //        {
-//            auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
-//            for (uint32_t i = 0; i < cmd.count; ++i)
+//            std::vector<PARTICLE_SPAWN_DATA> spawnList(cmd.count);
+//            for (auto& s : spawnList)
 //            {
-//                PARTICLE_SPAWN_DATA s{};
 //                s.position = cmd.position;
 //                s.velocity = cmd.velocity;
 //                s.life = cmd.life;
 //                s.size = cmd.size;
-//                s.color = cmd.color;
+//                s.color = cmd.color;   // PARTICLE_SPAWN_DATA에 color 필드가 있다는 전제
 //                s.emissive = cmd.emissive;
-//                vec.push_back(s);
 //            }
+//
+//            if (FAILED(Spawn(cmd.sGroupTag, cmd.sTypeTag, cmd.count, spawnList.data(), cmd.bLoop, cmd.fSpawnInterval)))
+//                hr = E_FAIL;
 //        }
 //        else if (cmd.kind == SPAWN_COMMAND_KIND::BEAM)
 //        {
-//            // 기존과 동일
 //            auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
 //            if (pParticle)
 //            {
 //                auto pBeam = static_cast<CBeam_CPU*>(pParticle);
 //                pBeam->AddBeam(cmd.beamStart, cmd.beamEnd,
 //                    cmd.fDisplacementAmplitude, (uint32_t)cmd.iDisplacementIterations, cmd.fDisplacementDamping,
-//                    cmd.flickerTimeInverval,cmd.emissive, cmd.beamDuration);
+//                    cmd.flickerTimeInverval,cmd.color ,cmd.emissive,cmd.beamDuration);
 //            }
-//            else hr = E_FAIL;
+//            else
+//            {
+//                hr = E_FAIL;
+//            }
 //        }
 //    }
 //
-//    // 그룹/타입별로 한 번씩만 Spawn 호출
-//    for (auto& [key, spawnList] : batched)
-//    {
-//        if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))
-//            hr = E_FAIL;
-//    }
-//
+//  //  m_vecCommandQueue.clear();   // 실행 후 큐 비우기 (원하시면 안 비우게 바꿀 수도 있음)
 //    return hr;
 //}
+
+HRESULT CParticleManager::ExecuteCommandQueue()
+{
+	HRESULT hr = S_OK;
+
+	std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
+
+	for (auto& cmd : m_vecCommandQueue)
+	{
+		if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STANDARD)
+		{
+			// params에서 STANDARD_PARAMS를 꺼냄
+			const auto& p = std::get<STANDARD_PARAMS>(cmd.params);
+
+			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
+			for (uint32_t i = 0; i < p.count; ++i)
+			{
+				PARTICLE_SPAWN_DATA s{};
+				s.position = p.position;
+				s.velocity = p.velocity;
+				s.life = p.life;
+				s.size = p.size;
+				s.color = p.color;
+				s.emissive = p.emissive;
+				vec.push_back(s);
+			}
+		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::BEAM)
+		{
+			const auto& p = std::get<BEAM_PARAMS>(cmd.params);
+
+			auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
+			if (pParticle)
+			{
+				auto pBeam = static_cast<CBeam_CPU*>(pParticle);
+				pBeam->AddBeam(p.beamStart, p.beamEnd,
+					p.fDisplacementAmplitude, (uint32_t)p.iDisplacementIterations, p.fDisplacementDamping,
+					p.flickerTimeInverval, p.color, p.emissive, p.beamDuration);
+			}
+			else hr = E_FAIL;
+		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STAIR)
+		{
+			const auto& p = std::get<STAIR_PARAMS>(cmd.params);  
+
+			auto spawnList = ParticlePattern::MakeStairs(
+				p.vStartPos, p.iStepCount, p.fStepWidth, p.fStepHeight, p.fStepDepth,
+				p.life, p.color, p.emissive);
+
+			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
+			vec.insert(vec.end(), spawnList.begin(), spawnList.end());
+		}
+	}
+
+	for (auto& [key, spawnList] : batched)
+	{
+		if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))
+			hr = E_FAIL;
+	}
+
+	return hr;
+}

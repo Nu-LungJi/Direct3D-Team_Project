@@ -595,42 +595,46 @@ void CDbgLineRender::AddTriangle(const _float3& p0, const _float3& p1, const _fl
     AddLine(p2, p0);
 }
 
-void CDbgLineRender::AddAxis(
-    float length,
-    FXMMATRIX world)
+void CDbgLineRender::AddAxis(float length, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+	if (m_Vertices.size() >= m_iVertexCnt)
+		return;
 
-    XMVECTOR origin = XMVector3TransformCoord(
-        XMVectorZero(), world);
+	XMVECTOR origin = XMVector3TransformCoord(XMVectorZero(), world);
 
-    XMVECTOR x = XMVector3TransformCoord(
-        XMVectorSet(length, 0.f, 0.f, 1.f), world);
+	XMVECTOR x = XMVector3TransformCoord(
+		XMVectorSet(length, 0.f, 0.f, 1.f), world);
 
-    XMVECTOR y = XMVector3TransformCoord(
-        XMVectorSet(0.f, length, 0.f, 1.f), world);
+	XMVECTOR y = XMVector3TransformCoord(
+		XMVectorSet(0.f, length, 0.f, 1.f), world);
 
-    XMVECTOR z = XMVector3TransformCoord(
-        XMVectorSet(0.f, 0.f, length, 1.f), world);
+	XMVECTOR z = XMVector3TransformCoord(
+		XMVectorSet(0.f, 0.f, length, 1.f), world);
 
-    XMFLOAT3 o, px, py, pz;
-    XMStoreFloat3(&o, origin);
-    XMStoreFloat3(&px, x);
-    XMStoreFloat3(&py, y);
-    XMStoreFloat3(&pz, z);
+	XMFLOAT3 o;
+	XMStoreFloat3(&o, origin);
 
-    const auto prev = m_vColor;
+	XMVECTOR xDir = XMVector3Normalize(x - origin);
+	XMVECTOR yDir = XMVector3Normalize(y - origin);
+	XMVECTOR zDir = XMVector3Normalize(z - origin);
 
-    SetColor({0.5f, 0.f, 0.f, 1.f});
-    AddArrow(o, { 1.f, 0.f, 0.f }, length);
+	XMFLOAT3 fx, fy, fz;
+	XMStoreFloat3(&fx, xDir);
+	XMStoreFloat3(&fy, yDir);
+	XMStoreFloat3(&fz, zDir);
 
-    SetColor({ 0.f, 0.5f, 0.f, 1.f });
-    AddArrow(o, { 0.f, 1.f, 0.f }, length);
+	const auto prev = m_vColor;
 
-    SetColor({ 0.f, 0.f, 0.5f, 1.f });
-    AddArrow(o, { 0.f, 0.f, 1.f }, length);
+	SetColor({ 0.5f, 0.f, 0.f, 1.f });
+	AddArrow(o, fx, length, 0.001f);
 
-    SetColor(prev);
+	SetColor({ 0.f, 0.5f, 0.f, 1.f });
+	AddArrow(o, fy, length, 0.001f);
+
+	SetColor({ 0.f, 0.f, 0.5f, 1.f });
+	AddArrow(o, fz, length, 0.001f);
+
+	SetColor(prev);
 }
 
 void CDbgLineRender::AddCircle(
@@ -787,9 +791,15 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
             m_pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
         }
     }
+	ComPtr<ID3D11DepthStencilState> aa = {nullptr};
+	m_pContext->OMGetDepthStencilState(aa.GetAddressOf(), 0);
+	
+	auto ds = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
 
+	m_pContext->OMSetDepthStencilState(ds->GetDepthStencilState().Get(), 0);
     m_pContext->Draw((uint32_t)m_Vertices.size(), 0);
-
+	m_pContext->OMSetDepthStencilState(aa.Get(), 0);
+	
 
 
     return S_OK;

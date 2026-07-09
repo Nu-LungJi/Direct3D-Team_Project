@@ -122,10 +122,13 @@ void CLight::Update(E::_float fTimeDelta) {
     XMMATRIX CameraTransMat = XMMatrixTranslationFromVector(XMLoadFloat3(&m_pComTransform->GetPosition()));
     XMMATRIX BBDMat = CameraInvViewMat * CameraTransMat;
 
-    m_pComTransform->SetState(STATE::RIGHT, BBDMat.r[0]);
-    m_pComTransform->SetState(STATE::UP, BBDMat.r[1]);
-    m_pComTransform->SetState(STATE::LOOK, BBDMat.r[2]);
-    m_pComTransform->SetState(STATE::POSITION, BBDMat.r[3]);
+	m_pComTransform->SetQuaternion(XMQuaternionRotationMatrix({
+		XMVectorSetW(BBDMat.r[0], 0.f), // RIGHT
+		XMVectorSetW(BBDMat.r[1], 0.f), // UP
+		XMVectorSetW(BBDMat.r[2], 0.f), // LOOK
+		XMVectorSet(0.f, 0.f, 0.f, 1.f)
+		}));
+	m_pComTransform->SetPosition(XMVectorSetW(BBDMat.r[3], 1.f));
 
 #endif
 
@@ -182,14 +185,6 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
     pContext->PSSetShaderResources(2, 1, pSRVs);
     pContext->PSSetShaderResources(3, 1, pSRVs);
 
-    {
-        const auto& sampler = m_pResSamplerState;
-        pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-    }
-    {
-        const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-        pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-    }
     pContext->DrawIndexed(m_pResLightTexBuffer->GetNumIndices(), 0, 0);
 
     pContext->VSSetShader(nullptr, nullptr, 0);

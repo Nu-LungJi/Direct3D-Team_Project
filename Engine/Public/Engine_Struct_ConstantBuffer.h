@@ -41,18 +41,11 @@ namespace Engine
 
 	typedef struct tagConstantBufferObjectMaterial
 	{
-		_float4	 AlbedoColor;
-
-		_float   NormalIntensity;
-		_float   RoughnessIntensity;
-		_float   MetallicIntensity;
-		_float   AmbientIntensity;
-		_float	 SpecularIntensity;
-
-		_float3	 EmissiveColor;
+		_float3  EmissiveColor;
 		_float   EmissiveIntensity;
+		_float	 ObjectAlpha;
 
-		_float3  Padding;
+		_float3  ObjectPadding;
 
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
@@ -60,8 +53,8 @@ namespace Engine
 	typedef struct tagConstantBufferLight
 	{
 		DYNAMIC_LIGHT AffectedLight[MAX_LIGHT_COUNT];
-		int           g_iLightCount;
-		XMFLOAT3      g_LightPadding;
+		uint32_t      g_iLightCount;
+		XMFLOAT3      g_fLightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 

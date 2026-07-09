@@ -28,6 +28,7 @@
 #include "ComCollider.h"
 #include "MapMeshObject.h"
 #include "MapManager.h"
+#include "NavMeshManager.h"
 #include "PhysXManager.h"
 #include "DbgLineRender.h"
 
@@ -185,6 +186,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pMapManager = CMapManager::Create();
 	if (m_pMapManager == nullptr)
+	{
+		return E_FAIL;
+	}
+	m_pNavMeshManager = CNavMeshManager::Create();
+	if (m_pNavMeshManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -351,8 +357,9 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pMapManager->Update(fTimeDelta);
 
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
+	m_pNavMeshManager->DrawDebug();
 
-	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+	AddRenderObject(RENDERGROUP::BLEND, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
@@ -398,6 +405,7 @@ void CGameInstance::Release_Engine()
 	m_pDbgLineRender.reset();
 	m_pResourceManager.reset();
 	m_pPhysXManager.reset();
+	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pGraphicDevice.reset();
 }
@@ -447,9 +455,9 @@ HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& s
 }
 HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-	_float fFlickerInterval, _float4 emissive, _float fDuration)
+	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
 {
-	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, emissive, fDuration);
+	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
 }
 #pragma endregion
 
@@ -529,9 +537,10 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
+	// LinearWrap
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
 	{
-		res->Load(D3D11_SAMPLER_DESC{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
 			.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 			.AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
 			.AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
@@ -539,12 +548,32 @@ HRESULT CGameInstance::InitializeResources()
 			.ComparisonFunc = D3D11_COMPARISON_NEVER,
 			.MinLOD = 0,
 			.MaxLOD = D3D11_FLOAT32_MAX,
-			});
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 	}
-	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP, CResSamplerState::Create()))
+	// LinearClamp
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_CLAMP, CResSamplerState::Create()))
+	{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
+			.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+			.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.ComparisonFunc = D3D11_COMPARISON_NEVER,
+			.MinLOD = 0,
+			.MaxLOD = D3D11_FLOAT32_MAX,
+			}))) {
+				return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
+	}
+	// PointWrap
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC samplerDesc{};
-		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 
 		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -555,11 +584,31 @@ HRESULT CGameInstance::InitializeResources()
 		samplerDesc.MinLOD = 0.f;
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-		res->Load(samplerDesc);
+		if (FAILED(res->Load(samplerDesc))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 	}
-	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP_NOMIP, CResSamplerState::Create()))
+	// PointClamp
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_CLAMP, CResSamplerState::Create()))
 	{
-		res->Load(D3D11_SAMPLER_DESC{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
+			.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
+			.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
+			.ComparisonFunc = D3D11_COMPARISON_NEVER,
+			.MinLOD = 0,
+			.MaxLOD = D3D11_FLOAT32_MAX,
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
+	}
+	// PointWrapNoMip
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP_NOMIP, CResSamplerState::Create()))
+	{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
 			.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
 			.AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
 			.AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
@@ -567,8 +616,30 @@ HRESULT CGameInstance::InitializeResources()
 			.ComparisonFunc = D3D11_COMPARISON_NEVER,
 			.MinLOD = 0,
 			.MaxLOD = 0.0f,
-			});
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
+	// AnisotropicWrap
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_ANISOTROPIC_WRAP, CResSamplerState::Create()))
+	{
+		if (FAILED(res->Load(D3D11_SAMPLER_DESC{
+			.Filter = D3D11_FILTER_ANISOTROPIC,
+			.AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
+			.AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
+			.AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+			.MipLODBias = 0.f,
+			.MaxAnisotropy = 16,
+			.ComparisonFunc = D3D11_COMPARISON_NEVER,
+			.MinLOD = 0,
+			.MaxLOD = D3D11_FLOAT32_MAX,
+			}))) {
+			return E_FAIL;
+		}
+		GetGraphicDeviceContext()->PSSetSamplers(5, 1, res->GetSamplerState().GetAddressOf());
+	}
+	// ShadowSampler
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
@@ -576,20 +647,23 @@ HRESULT CGameInstance::InitializeResources()
 		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.BorderColor[0] = 1.f;
-		sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
 
-		//sampDesc.MinLOD = -D3D11_FLOAT32_MAX;
-		//sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-		//sampDesc.MipLODBias = 0.f;
-		//sampDesc.MaxAnisotropy = 1;
+		sampDesc.BorderColor[0] = 1.f;
+		sampDesc.BorderColor[1] = 1.f;
+		sampDesc.BorderColor[2] = 1.f;
+		sampDesc.BorderColor[3] = 1.f;
+
+		sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 		if (FAILED(res->Load(sampDesc)))
 		{
 			return E_FAIL;
 		}
 
-		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 	}
+	
+	
+
 	//ShaderFiles
 	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
@@ -833,7 +907,7 @@ HRESULT CGameInstance::InitializeResources()
 	{
 		D3D11_DEPTH_STENCIL_DESC depthDesc{};
 		depthDesc.DepthEnable = TRUE;
-		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		depthDesc.StencilEnable = FALSE;
 		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
@@ -929,15 +1003,53 @@ HRESULT CGameInstance::InitializeResources()
 		{
 			res->Load();
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		{
+			res->Load();
+		}
 	}
 
 
 
 
 	if (auto res = AddResourceT<E::CResModel>("TEST", "Model_Resource",
-		CResModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Skeletal/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
 		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) *XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	/*if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}*/
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResStaticModel>(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL,
+		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
+
+		E::CResStaticModel::DESC pDesc{};
 		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
 		if (FAILED(res->Load(pDesc)))
@@ -946,24 +1058,12 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		CResStaticModel::Create("./Resources/SampleClient/Models/LevelAnimEditor/Static/HorseStatue/SM_HorseStatue.bin"))) {
-
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(0.001f, 0.001f, 0.001f);
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
-
-
 	return S_OK;
 }
 HRESULT CGameInstance::InitializePrototype()
 {
-	if (AddPrototype("PERMANENT", "Prototype_Component_Transform", CComTransform::Create()))
+	
+	if (AddPrototype(ES_EngineProtoMajorType::PERMANENT, ES_EngineProtoComponent::Prototype_Component_Transform, CComTransform::Create()))
 	{
 		return E_FAIL;
 	}
@@ -987,7 +1087,7 @@ HRESULT CGameInstance::InitializePrototype()
 	}
 
 
-	if (AddPrototype("CAMERAS", "Prototype_GameObject_FlyCamera", CFlyCamera::Create()))
+	if (AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_FlyCamera, CFlyCamera::Create()))
 	{
 		return E_FAIL;
 	}
@@ -1010,27 +1110,28 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-
+	
 
 	// 피직스관련
 	{
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxBoxCollider", CComPxBoxCollider::Create()))
+		
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, CComPxBoxCollider::Create()))
 		{
 			return E_FAIL;
 		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxCapsuleCollider", CComPxCapsuleCollider::Create()))
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCapsuleCollider, CComPxCapsuleCollider::Create()))
 		{
 			return E_FAIL;
 		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxSphereCollider", CComPxSphereCollider::Create()))
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
+		{
+			return E_FAIL; 
+		}
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxTriMeshCollider, CComPxTriMeshCollider::Create()))
 		{
 			return E_FAIL;
 		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxTriMeshCollider", CComPxTriMeshCollider::Create()))
-		{
-			return E_FAIL;
-		}
-		if (AddPrototype("PHYSX", "Prototype_Component_ComPxRigidBody", CComPxRigidBody::Create()))
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, CComPxRigidBody::Create()))
 		{
 			return E_FAIL;
 		}
@@ -1312,32 +1413,29 @@ void CGameInstance::GameObjectAllReset()
 {
 	m_pGameObjectManager->AllReset();
 }
-std::optional<CHandle> CGameInstance::AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, std::string_view sLayerName, void* pArg)
-{
-	return m_pGameObjectManager->AddGameObjectToLayer(iPrototypeLevelIndex, svPrototypeTag, sLayerName, pArg);
-}
+
 inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 {
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);
 }
-const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName) const
-{
-	return m_pGameObjectManager->GetLayer(sLayerName);
-}
-const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg)
-{
-	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
-}
+//const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName) const
+//{
+//	return m_pGameObjectManager->GetLayer(sLayerName);
+//}
+//const std::vector<CHandle>* CGameInstance::GetGameObjectLayer(std::string_view sLayerName, const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, void* pArg)
+//{
+//	return m_pGameObjectManager->GetLayer(sLayerName, iPrototypeLevelIndex, svPrototypeTag, pArg);
+//}
 
 const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
 {
 	return m_pGameObjectManager->GetLayers();
 }
 
-void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
-{
-	return m_pGameObjectManager->DelLayer(sLayerName);
-}
+//void CGameInstance::DelGameObjectLayer(std::string_view sLayerName)
+//{
+//	return m_pGameObjectManager->DelLayer(sLayerName);
+//}
 //std::optional<CHandle> CGameInstance::GetFreeHandle() const
 //{
 //	return m_pGameObjectManager->GetFreeHandle();
@@ -1488,6 +1586,10 @@ void CGameInstance::RebuildMapChunks()
 {
 	m_pMapManager->RebuildChunks();
 }
+HRESULT CGameInstance::RegisterMapMeshObjectToMapChunk(const CHandle& hObject)
+{
+	return m_pMapManager->RegisterMapMeshObject(hObject);
+}
 const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();
@@ -1529,7 +1631,9 @@ VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _
 VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
 	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
 }
-
+VOID	CGameInstance::Clear_DynamicLightList() {
+	m_pLightManager->Clear_DynamicLightList();
+}
 #pragma endregion
 #pragma endregion
 

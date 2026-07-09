@@ -45,8 +45,8 @@ namespace
 
 		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
 		Desc.sObjectTag = "MapMesh_" + std::to_string(s_iObjectIndex++);
-		Desc.modelGroupTag = "TEST";
-		Desc.modelResTag = "Static_Model_Resource";
+		Desc.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
+		Desc.modelResTag = E::TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL;
 		Desc.protoGroupTag = "PERMANENT";
 		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
 
@@ -56,6 +56,7 @@ namespace
 			strLayerTag,
 			&Desc))
 		{
+			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
 			*pSelectedObject = hObject.value();
 		}
 	}
@@ -82,6 +83,7 @@ namespace
 			strLayerTag,
 			&Desc))
 		{
+			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
 			*pSelectedObject = hObject.value();
 		}
 	}
@@ -137,6 +139,7 @@ namespace
 				transform.SetScale(g_MapMeshClipboard.scale);
 			}
 
+			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
 			*pSelectedObject = hObject.value();
 		}
 	}

@@ -24,9 +24,11 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
-	void Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResModelBone>>& Bones);
+	void Update_TransformationMatrix(uint32_t& iCurrentKeyFrameIndex, _float fCurrentTrackPosition, const std::vector<SPtr<CResModelBone>>& Bones, int32_t m_iRootBoneIndex);
 
-	uint32_t FindKeyFrameIndex(float fTrackPos);
+	uint32_t FindKeyFrameIndex(float fTrackPos)const;
+
+	_matrix Evaluate_TransformationMatrix(_float fTrackPosition) const;
 
 public:
 	int32_t				Get_BoneIndex() { return m_iBoneIndex; }

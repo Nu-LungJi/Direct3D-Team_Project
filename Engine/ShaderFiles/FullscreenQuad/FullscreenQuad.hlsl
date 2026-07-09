@@ -1,3 +1,4 @@
+#include "../ShaderDefines.hlsl"
 struct VS_IN
 {
     float3 pos : POSITION; // (-1~1)
@@ -12,7 +13,7 @@ struct VS_OUT
 
 
 Texture2D gTex : register(t0);
-SamplerState samLinear : register(s0);
+//SamplerState samLinear : register(s0);
 
 VS_OUT VSMain(VS_IN vin)
 {
@@ -24,5 +25,5 @@ VS_OUT VSMain(VS_IN vin)
 
 float4 PSMain(VS_OUT pin) : SV_Target
 {
-    return gTex.Sample(samLinear, pin.uv);
+    return gTex.Sample(LinearWrap, pin.uv);
 }
