@@ -38,6 +38,7 @@ private:
 
 private:
 	//기능
+	void		DragAllMove(CBTRoot* pRoot ,_float2 vPos);
 	void		SavePopUp();
 	void		Widget(CBTRoot* pRoot , GUINODE* pNode, GUINODE_LINK* pLink,int32_t& iNode_hovered_in_list, int32_t& iNode_hovered_in_scene, const _float& fNode_Slot_Radius, const _float2& fNode_Window_Padding, _bool& bOpen_Context_Menu, ImGuiIO& io);
 	void		ShowWidgetByType(CBTRoot* pRoot);

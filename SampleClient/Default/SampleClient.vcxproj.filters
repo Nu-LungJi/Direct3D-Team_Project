@@ -270,6 +270,9 @@
     <ClInclude Include="..\public\BTOnlyTrue.h">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTTeleport.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -391,6 +394,9 @@
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTOnlyTrue.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTeleport.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
   </ItemGroup>

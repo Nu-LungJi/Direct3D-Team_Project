@@ -7,6 +7,7 @@
 #include "BTChase.h"//쫓는거인데 뭔가 겹치는거 같아서 지울수도있음
 #include "BTOnlyTrue.h"//SUCCESSE만 반환
 #include "BTOnlyFalse.h"//FAILED만 반환
+#include "BTTeleport.h" //대상 위치로 텔포
 
 #include "BTDead.h" //죽는거 체크해야지
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함

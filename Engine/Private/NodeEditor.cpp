@@ -39,7 +39,7 @@ HRESULT CNodeEditor::Initialize()
 
 	m_NodesLink.push_back(GUINODE_LINK(2));
 	m_NodesLink.push_back(GUINODE_LINK(2));
-	
+
 	return S_OK;
 }
 void CNodeEditor::UpdateGUI()
@@ -59,6 +59,7 @@ void CNodeEditor::NodeEditorUpdate()
 			m_pBeHavior = pComBt;
 			m_BTNodesMain = pComBt->Get_Selector()->Get_Nodes();
 
+			CGameInstance::Get().ImguiEnableDocking(true, true);
 			//ImGui::PushFont(m_FontRegular);
 			Show_Editor();
 			//ImGui::PopFont();
@@ -90,7 +91,7 @@ HRESULT CNodeEditor::OpenBeHavior(CHandle Handle)
 void CNodeEditor::Show_Editor()
 {
 	if (nullptr == m_pBeHavior) return;
-
+	
 	ImGui::Begin("BeHavior Tree");
 	// 구해줘
 	ImGuiIO& io = ImGui::GetIO();
@@ -285,7 +286,7 @@ void CNodeEditor::Begin_Canvas()
 void CNodeEditor::Draw_Grid()
 {
 	if (m_bShow_grid)
-	{ // 격자를 그려라라라
+	{ // 격자를 그려라
 		ImU32 GRID_COLOR = IM_COL32(200, 200, 200, 40);
 		_float GRID_SZ = 64.f;
 		ImVec2 vWin_pos = ImGui::GetCursorScreenPos(); //화면 좌표 시작점
@@ -592,6 +593,36 @@ void CNodeEditor::End_Canvas()
 	ImGui::End();
 }
 
+void CNodeEditor::DragAllMove(CBTRoot* pRoot, _float2 vPos)
+{
+	
+	BEHAVIOR eType = pRoot->Get_GuiNodeInfo().eMyType;
+	_float2 vCurrent = pRoot->Get_GuiNodeInfo().vPos;
+	pRoot->Get_GuiNodeInfo().vPos = _float2(vCurrent.x + vPos.x, vCurrent.y + vPos.y);
+	
+	if (eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::SECQUNCE)
+	{
+		auto& pSrc = (*static_cast<CBTComposite*>(pRoot)->Get_Nodes());
+		if (pSrc.empty())
+			return;
+		for (size_t i =0; i<  pSrc.size(); ++i)
+		{
+			if (pSrc[i] != nullptr)
+			{
+				DragAllMove(pSrc[i].get(), vPos);
+			}
+		}
+	}
+	else if (eType == BEHAVIOR::DECORATOR)
+	{
+		auto& pSrc = (static_cast<CBTDecorator*>(pRoot)->Get_Child());
+		if (nullptr == pSrc)
+			return;
+		
+		DragAllMove(pSrc.get(), vPos);
+	}
+}
+
 void CNodeEditor::SavePopUp()
 {
 
@@ -707,7 +738,19 @@ void CNodeEditor::Widget(CBTRoot* pRoot, GUINODE* pNode, GUINODE_LINK* pLink, in
 	if (bNode_Widgets_active || bNode_Moving_Active)
 		m_iNodeSelect = pNode->iID;
 	if (bNode_Moving_Active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) //드래그중이냐?
-		pNode->vPos = _float2(pNode->vPos.x + io.MouseDelta.x, pNode->vPos.y + io.MouseDelta.y);
+	{
+		
+		_float2 Offset = _float2(io.MouseDelta.x, io.MouseDelta.y);
+		if (CGameInstance::Get().KeyPressing(DIK_Z) && pNode->eMyType != BEHAVIOR::ACTION)
+		{
+			DragAllMove(pRoot, Offset);
+		}
+		else {
+			_float2 vPos = _float2(pNode->vPos.x + io.MouseDelta.x, pNode->vPos.y + io.MouseDelta.y);
+			pNode->vPos = vPos;
+		}
+	}
+		
 
 	//선택하거나 마우스 위에 올렸을때 scene인가 hover 확인해서 색상으로 표기
 	ImU32 Node_Bg_Color = ImGui::ColorConvertFloat4ToU32(ImVec4(pNode->vColor.x, pNode->vColor.y, pNode->vColor.z, pNode->vColor.w));
