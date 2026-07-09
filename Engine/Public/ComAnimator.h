@@ -39,7 +39,7 @@ private:
 public:
 	HRESULT Update(_float fTimeDelta);
 
-	HRESULT Play_AnimationMontage(_float fTimeDelta, const std::string& strAnimMontageName);
+	HRESULT Play_AnimationMontage(_float fTimeDelta, int32_t iAnimMontageIndex);
 	 
 
 public:
@@ -65,9 +65,15 @@ public:
 	_bool GetLoop() const { return m_bLoop; }
 	void  SetLoop(_bool _bLoop) { m_bLoop = _bLoop; }
 
+
+	std::unordered_map<int32_t, CComAnimMontage*>& GetAnimMontages(){return m_mapAnimMontages;}
+
+	int32_t Get_CurrAnimMontageIndex() { return m_iAnimMontageIndex; }
+	void SetCurrentAnimMontageIndex(int32_t iIndex) { m_iAnimMontageIndex = iIndex; }
 private:
 	CComModelInstance* m_pModelInstance;
-	std::unordered_map <std::string, CComAnimMontage*> m_mapAnimMontages;
+	std::unordered_map<int32_t, CComAnimMontage*> m_mapAnimMontages;
+	int32_t		   m_iAnimMontageIndex{ -1 };
 
 private:
 	_string			m_Comtag;

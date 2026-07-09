@@ -42,11 +42,17 @@ HRESULT CComAnimator::Update(_float fTimeDelta)
     if (m_bPlay) {
         switch (m_iPlayAnimationType) {
         case ANIMTYPE::MONTAGE: {
-            Play_AnimationMontage(fTimeDelta, "");
-        }
-                              break;
+			if (m_iPlayAnimMonatgueIndex < 0)
+				break;
+			Play_AnimationMontage(fTimeDelta, m_iPlayAnimMonatgueIndex);
+        }break;
         case ANIMTYPE::ANIM: {
-            AnimEditor_Play_AnimResource(fTimeDelta, m_iPlayAnimIndex);
+			if (m_iPlayAnimIndex < 0 || m_pModelInstance->GetModel()->GetAnimations().size() > m_iPlayAnimIndex) {
+				break;
+			}
+			
+			AnimEditor_Play_AnimResource(fTimeDelta, m_iPlayAnimIndex);
+
 
             m_fRatio = m_pModelInstance->GetModel()->GetAnimations()[m_iPlayAnimIndex]->GetCurrentTrackPosition()
                 / m_pModelInstance->GetModel()->GetAnimations()[m_iPlayAnimIndex]->GetDuration();
@@ -60,8 +66,11 @@ HRESULT CComAnimator::Update(_float fTimeDelta)
     return S_OK;
 }
 
-HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, const std::string& strAnimMontageName)
+HRESULT CComAnimator::Play_AnimationMontage(_float fTimeDelta, int32_t iAnimMontageIndex)
 {
+	
+
+
     return S_OK;
 }
 
