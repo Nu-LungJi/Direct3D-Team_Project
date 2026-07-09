@@ -243,7 +243,6 @@
     <ClInclude Include="..\public\EffectUI.h">
       <Filter>GameObject\UI</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h">
       <Filter>GameObject\UI</Filter>
     </ClInclude>
@@ -273,6 +272,9 @@
     </ClInclude>
     <ClInclude Include="..\public\BTTeleport.h">
       <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextBox.h">
+      <Filter>GameObject\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

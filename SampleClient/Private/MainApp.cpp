@@ -111,15 +111,7 @@ HRESULT CMainApp::Initialize()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Particle.hlsl")))
-		{
-			if (FAILED(res->Load()))
-			{
-				//MSG_BOX("");
-				return E_FAIL;
-			}
-		}
-		
+	
 		Load_Particle_Resources();
 	}
 
@@ -265,7 +257,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 		}
 		
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/ParticleMesh/Static/rocks/SM_rock1.bin"))) {
+			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/SM_rock1.fbx"))) {
 
 			E::CResStaticModel::DESC pDesc{};
 			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
