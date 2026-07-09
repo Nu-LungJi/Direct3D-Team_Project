@@ -26,26 +26,16 @@ HRESULT CTest_StaticModel::InitializePrototype(void* pArg)
 {
 
 	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
-	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexNonAnimShader->Load()))
 	{
 		return E_FAIL;
 	}
 	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
-	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
 	{
 		return E_FAIL;
 	}
 
-	
-
-
-	m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-	if (!m_pResSamplerState)
-	{
-		return E_FAIL;
-	}
 
 	return S_OK;
 }
@@ -112,22 +102,12 @@ HRESULT CTest_StaticModel::Render(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 
-
-
-
 	const auto& vs = m_pResVertexNonAnimShader;
-
 	const auto& ps = m_pResPixelNonAnimShader;
-
-
-
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-
-
 
 	auto pModel = m_pComModelInstance->GetModel();
 
@@ -149,26 +129,9 @@ HRESULT CTest_StaticModel::Render(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		//{
-		//	auto tex = m_pResTestModel->GetMaterials()[0]->GetTextures()[1][0];
-		//	pContext->PSSetShaderResources(0, 1, tex->GetSRV().GetAddressOf());
-		//}
-
 		{
-			m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-
-		}
-
-		
-
-		{
-			const auto& sampler = m_pResSamplerState;
-			pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
-		}
-
-		{
-			const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-			pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+			m_pComModelInstance->Bind_Textures(pContext, i);
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

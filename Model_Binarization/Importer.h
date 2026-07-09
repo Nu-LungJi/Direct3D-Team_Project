@@ -56,15 +56,50 @@ public:
 	int32_t Get_BoneIndex(const char* pBoneName);
 
 
+
 public:
+	HRESULT ImportFBXFolder_ForMapJson(
+		const std::string& strLevelName,
+		const std::string& strSourceFolder,
+		const std::string& strJsonFolder
+	);
+	void CopyUsedTextureFilesToFolder(
+		const std::filesystem::path& srcDir,
+		const std::filesystem::path& dstDir
+	) const;
+private:
+	std::unordered_set<std::string> LoadMapFBXNamesFromJsonFolder(
+		const std::string& strJsonFolder
+	);
+
+	bool HasExtractedModelData(
+		const std::filesystem::path& modelDir,
+		const std::string& modelName
+	) const;
+
+	std::string ToLowerFileName(std::string name) const;
+
+
+
+public:
+	void CopyPngFilesToFolder(const std::filesystem::path& srcDir, const std::filesystem::path& dstDir) const;
 	void Clear();
 public:
 	int m_index{ 0 };
 	int32_t m_iBoneIndex{ -1 };
 	bool m_bHasAnimation = false;
 	bool m_bHasBone = false;
-	string			fileParentName; 
 
+private:
+	std::string fileParentName;
+	std::string textureParentName;
+
+private:
+	std::filesystem::path m_FBXSourceDir;
+
+
+private:
+	std::filesystem::path MakeTextureOutputDir(const std::filesystem::path& modelOutputDir) const;
 
 	std::vector<std::shared_ptr<CBone>> Bones;
 	std::vector<std::shared_ptr<CMesh>> Meshes;

@@ -1,5 +1,7 @@
 #pragma once
-
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <DirectXTex.h>
@@ -44,6 +46,8 @@ using namespace Microsoft::WRL;
 // bitwise 
 #pragma warning(disable: 26813)
 
+#include <magic_enum/magic_enum.hpp>
+
 #include "Engine_Typedef.h"
 #include "Engine_Macro.h"
 #include "Engine_Enum.h"
@@ -56,6 +60,7 @@ using namespace Microsoft::WRL;
 #include "Engine_Assimp_Enum.h"
 #include "Engine_Base.h"
 #include "Engine_PhysxDefines.h"
+#include "Engine_EnumString.h"
 namespace E = Engine;
 
 // for study
@@ -71,6 +76,11 @@ namespace E = Engine;
 #include <nlohmann/json.hpp>
 #include "Engine_Json_Util.h"
 
+#include <recastnavigation/Recast.h>
+#include <recastnavigation/DetourNavMesh.h>
+#include <recastnavigation/DetourNavMeshBuilder.h>
+#include <recastnavigation/DetourNavMeshQuery.h>
+#include <recastnavigation/DetourCommon.h>
 
 using namespace Engine;
 

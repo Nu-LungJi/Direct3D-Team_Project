@@ -28,7 +28,8 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
-
+public:
+	HRESULT LoadAssimp(std::string name, uint32_t materialIndex, const XMFLOAT3& minPos, const XMFLOAT3& maxPos, std::vector<VTXMESH>&& vertices, std::vector<uint32_t>&& indices, _fmatrix PreTransformMatrix);
 private:
 	HRESULT Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransformMatrix);
 
@@ -38,7 +39,8 @@ public:
 private:
 	uint32_t		m_iMaterialIndex = {};
 
-
+	XMFLOAT3 m_vMinPos{};
+	XMFLOAT3 m_vMaxPos{};
 
 public:
 	static SPtr<CResStaticModelMesh> Create();

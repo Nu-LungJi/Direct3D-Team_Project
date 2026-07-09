@@ -249,7 +249,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
         pContext->CSSetConstantBuffers(6, 1, m_pComSpawnCBuffer->GetCBuffer().GetAddressOf());
 
         ID3D11ShaderResourceView* spawnSRV = m_pSpawnListBuffer->GetSRV().Get();
-        pContext->CSSetShaderResources(0, 1, &spawnSRV);
+        pContext->CSSetShaderResources(6, 1, &spawnSRV);
 
         ID3D11UnorderedAccessView* spawnUAVs[] = {
             m_pDeadListBuffer->GetUAV().Get(),
@@ -327,7 +327,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
 
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
-    pContext->VSSetShaderResources(0, 1, &pParticleSRV);
+    pContext->VSSetShaderResources(4, 1, &pParticleSRV);
 
     const auto& vs = m_pResVertexShader; // 인스턴싱용 신규 VS 필요
     const auto& ps = m_pResPixelShader;
@@ -348,26 +348,23 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
         pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
         pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-        m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-
-        pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
-
-        auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-        pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+		{
+			m_pComModelInstance->Bind_Textures(pContext, i);
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.0f, 1.1f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
+		}
 
         // 핵심: DrawIndexed → DrawIndexedInstanced
         pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), m_iNumElements, 0, 0, 0);
     }
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr };
-    pContext->VSSetShaderResources(0, 1, nullSRV);
+	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+	pContext->PSSetShaderResources(0, 1, pSRVs);
+	pContext->PSSetShaderResources(1, 1, pSRVs);
+	pContext->PSSetShaderResources(2, 1, pSRVs);
+	pContext->PSSetShaderResources(3, 1, pSRVs);
 
     return S_OK;
 }
-
-
-
 
 HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
@@ -381,7 +378,6 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     pContext->VSSetShaderResources(0, 1, &pSRV);
 
     pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-    pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 
     pContext->DrawInstanced(4, m_iNumElements, 0, 0);
 

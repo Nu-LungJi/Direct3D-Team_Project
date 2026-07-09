@@ -1,4 +1,3 @@
-#include "../ShaderHeader/SH_SamplerState.hlsli"
 #include "../ShaderDefines.hlsl"
 
 Texture2D g_DiffuseTexture : register(t0);
@@ -31,12 +30,16 @@ PS_IN VSMain(VS_IN vin)
 // Pixel Shader : 불투명(NONBLEND) 오브젝트 그릴 때는 사용X(Normal, SMRO, Emissive에서 안 그려져서 정상적으로 렌더X)
 float4 PSMain(PS_IN input)  : SV_TARGET0
 {
-    float4 TexColor = g_DiffuseTexture.Sample(SamplerWrap, input.uv);
+    float4 TexColor = g_DiffuseTexture.Sample(LinearWrap, input.uv);
     if (TexColor.a == 0.01f)  discard;
     
     return TexColor;
 }
 float4 PSMain_NonAlpha(PS_IN input) : SV_TARGET0
 {
-    return g_DiffuseTexture.Sample(SamplerWrap, input.uv);;
+    return g_DiffuseTexture.Sample(LinearWrap, input.uv);;
+}
+float4 PSMain_TextureOverDraw(PS_IN input) : SV_TARGET0
+{
+    return g_DiffuseTexture.Sample(LinearWrap, input.uv);;
 }

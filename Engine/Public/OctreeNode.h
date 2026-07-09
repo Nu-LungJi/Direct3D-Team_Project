@@ -7,6 +7,7 @@ struct OCTREE_DEBUG_BOUNDS
 {
 	BoundingBox bounds{};
 	uint32_t depth = 0;
+	FXMVECTOR color = Colors::Lime;
 };
 
 class ENGINE_DLL COctreeNode : public CEngineBase
@@ -23,6 +24,7 @@ public:
 	HRESULT Initialize(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth);
 	void BuildOctree(const std::vector<CHandle>& hObjects);
 	void CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds) const;
+	void OctreeFrustumCull(const BoundingFrustum& cameraFrustum);
 
 	bool IsLeaf() const;
 
@@ -42,6 +44,7 @@ private:
 
 private:
 	_bool m_bDebugDrawOctree = false;
+	_bool m_bInCameraFrustum = false; // 디버그렌더용
 
 public:
 	static UPtr<COctreeNode> Create(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth = 4);

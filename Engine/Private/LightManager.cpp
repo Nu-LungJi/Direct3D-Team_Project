@@ -96,6 +96,10 @@ VOID CLightManager::UpdateGUI() {
         return;
     }
     auto pSelectedLight = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[selectedLightIdx]);
+	if (nullptr == pSelectedLight) {
+		ImGui::End();
+		return;
+	}
     ImGui::Text("Selected Light Details (Index: %d)", selectedLightIdx);
 
     // --- Getter로 현재 값들 가져오기 ---
@@ -177,11 +181,13 @@ VOID CLightManager::Bind_DynamicLight(){
     CB_LIGHT LightBuffer{};
     uint32_t LightCount = 0;
 
+	auto iter = m_LightHandleList.begin(); iter != m_LightHandleList.end();
     for (auto& LightHandle : m_LightHandleList) {
         if (LightCount >= MAX_LIGHT_COUNT) break;
 
         // Need Culling - Frustum & Distance
         auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
+		if (nullptr == LightOBJ)	continue;
 
         LightBuffer.AffectedLight[LightCount].LightType         = ETOUI(LightOBJ->Get_LightType());
         LightBuffer.AffectedLight[LightCount].LightDirection    = LightOBJ->Get_LightDirection();

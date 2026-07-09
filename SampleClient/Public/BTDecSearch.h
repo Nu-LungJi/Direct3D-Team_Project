@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Client_Defines.h"
 #include "BTDecorator.h"
 
@@ -17,8 +17,13 @@ private:
 	HRESULT Initalize(void* pArg) override;
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
+	virtual nlohmann::json			Save_Node()override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
 
 	virtual void		Update_Gui() override;
+private:
+	_float				m_fValue{10.f};
+	_bool				m_bTrue{ false };
 public:
 	static UPtr<CBTDecSearch> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;

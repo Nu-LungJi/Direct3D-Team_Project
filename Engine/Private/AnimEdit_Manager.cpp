@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "AnimEdit_Manager.h"
 #include  "GameObject.h"
 #include "ComModelInstance.h"
@@ -636,7 +636,8 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
 
     if (ImGui::Button(pComAnimator->GetPlay() ? "Play" : "Pause"))
     {
-        pComAnimator->SetPlay();
+		//민수한태 알릴거
+        pComAnimator->SetPlay(true);
     }
 
     ImGui::PushItemWidth(-1.f);

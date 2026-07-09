@@ -9,6 +9,7 @@
 
 #include "TestGuizmo.h"
 #include "MapMeshObject.h"
+#include "MapEditorTerrain.h"
 
 NS_USING(Client)
 
@@ -41,6 +42,20 @@ HRESULT CLevelMapEditor::Initialize()
 		}
 	}
 
+	// MapEditorTerrain
+	{
+		CMapEditorTerrain::DESC Desc{};
+		Desc.sObjectTag = "Terrain";
+
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			"MAPEDITOR",
+			"Prototype_GameObject_MapEditorTerrain",
+			"01_Terrain",
+			&Desc))
+		{
+			return E_FAIL;
+		}
+	}
 
 
 	{

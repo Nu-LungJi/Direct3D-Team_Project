@@ -86,12 +86,17 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		}
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
-		for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
 		{
-			if (ImGui::Button(iter.first.c_str()))
+			for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
 			{
-				m_SelectName = iter.first;
-				m_bPopup = true;
+				if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR)
+				{
+					if (ImGui::Button(iter.first.c_str()))
+					{
+						m_SelectName = iter.first;
+						m_bPopup = true;
+					}
+				}
 			}
 		}
 		else
@@ -101,7 +106,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 #undef X
 			const _char* pComboPreview = pNodeType[ETOUI(eType)];
 			ImGui::Text("NodeType");
-			if (eType != NODEGROUP::END)
+			if (eType != NODEGROUP::END )
 			{
 				ImGui::Text(m_SelectName.c_str()); ImGui::SameLine(100);
 				if (ImGui::Button("Add"))

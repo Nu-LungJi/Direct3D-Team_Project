@@ -3,24 +3,24 @@
 #include "BTActionNode.h"
 
 NS_BEGIN(Client)
-class CBTchase final : public CBTActionNode
+class CBTTurnSlow final : public CBTActionNode
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTchase, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTTurnSlow, CBTActionNode)
 private:
-	CBTchase();
-	CBTchase(const CBTchase& rhs);
-	~CBTchase() override;
+	CBTTurnSlow();
+	CBTTurnSlow(const CBTTurnSlow& rhs);
+	~CBTTurnSlow() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitalizePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg)override;
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
-
 	virtual void		Update_Gui() override;
+
 public:
-	static UPtr<CBTchase> Create();
+	static UPtr<CBTTurnSlow> Create();
 	UPtr<CBTRoot> Clone(void* pArg)override;
 };
 NS_END

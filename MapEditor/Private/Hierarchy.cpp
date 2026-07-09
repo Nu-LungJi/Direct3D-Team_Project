@@ -56,6 +56,7 @@ namespace
 			strLayerTag,
 			&Desc))
 		{
+			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
 			*pSelectedObject = hObject.value();
 		}
 	}
@@ -82,6 +83,7 @@ namespace
 			strLayerTag,
 			&Desc))
 		{
+			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
 			*pSelectedObject = hObject.value();
 		}
 	}
@@ -137,6 +139,7 @@ namespace
 				transform.SetScale(g_MapMeshClipboard.scale);
 			}
 
+			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
 			*pSelectedObject = hObject.value();
 		}
 	}

@@ -29,23 +29,3 @@ void CUITex::Update(E::_float fTimeDelta)
 void CUITex::LateUpdate(_float fTimeDelta)
 {
 }
-
-void CUITex::Creating()
-{
-}
-
-void CUITex::StartHovering()
-{
-}
-
-void CUITex::Hovering()
-{
-}
-
-void CUITex::EndHovering()
-{
-}
-
-void CUITex::Ending()
-{
-}

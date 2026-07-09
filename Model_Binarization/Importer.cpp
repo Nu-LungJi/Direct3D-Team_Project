@@ -11,61 +11,136 @@ CImporter::~CImporter()
 {
 }
 
-HRESULT CImporter::ImportFBXFolder(const std::string& strLevelName, const std::string& strSourceFolder)
+HRESULT CImporter::ImportFBXFolder(
+	const std::string& strLevelName,
+	const std::string& strSourceFolder
+)
 {
-    std::filesystem::path sourcePath(strSourceFolder);
+	std::filesystem::path sourcePath(strSourceFolder);
 
-    std::string category = sourcePath.filename().string();
+	// 예: strSourceFolder = "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Skeletal"
+	// category = "Skeletal"
+	// Static이면 category = "Static"
+	std::string category = sourcePath.filename().string();
 
-    if (!std::filesystem::exists(strSourceFolder))
-    {
-        return E_FAIL;
-    }
+	if (!std::filesystem::exists(strSourceFolder))
+	{
+		return E_FAIL;
+	}
 
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(strSourceFolder))
-    {
-        if (!entry.is_regular_file())
-            continue;
+	// ------------------------------------------------------------
+	// OriginData 앞 경로까지만 남긴다.
+	// "../../.../Models/OriginData/Skeletal"
+	// -> "../../.../Models/"
+	// ------------------------------------------------------------
+	std::string rootPath = strSourceFolder;
 
-        const auto& path = entry.path();
+	size_t pos = rootPath.find("OriginData");
 
-        if (path.extension() != ".fbx" &&
-            path.extension() != ".FBX")
-            continue;
+	if (pos != std::string::npos)
+	{
+		rootPath = rootPath.substr(0, pos);
+	}
+	else
+	{
+		// OriginData가 경로에 없으면 sourcePath의 부모의 부모를 기준으로 처리
+		// 필요 없으면 이 else는 return E_FAIL 해도 됨
+		rootPath = sourcePath.parent_path().parent_path().string() + "/";
+	}
 
-        std::string inputPath = path.string();
-        std::string modelName = path.stem().string();
+	// ------------------------------------------------------------
+	// strLevelName 무시
+	// 최종 basePath:
+	// "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/Skeletal/"
+	// "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/Static/"
+	// ------------------------------------------------------------
+	std::filesystem::path basePath = std::filesystem::path(rootPath) / category;
+	std::filesystem::path originTextureDir =
+		MakeTextureOutputDir(std::filesystem::path(rootPath) / "OriginData" / category);
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(strSourceFolder))
+	{
+		if (!entry.is_regular_file())
+			continue;
 
-        std::string rootPath = strSourceFolder;
+		const auto& path = entry.path();
 
-        size_t pos = rootPath.find("OriginData");
+		std::string ext = path.extension().string();
 
-        if (pos != std::string::npos)
-        {
-            rootPath = rootPath.substr(0, pos);
-        }
+		if (_stricmp(ext.c_str(), ".fbx") != 0)
+			continue;
 
-        std::string basePath = rootPath +strLevelName + "/" + category + "/";
+		std::string inputPath = path.string();
+		std::string modelName = path.stem().string();
 
-        std::string modelDir = basePath + modelName + "/";
+		std::filesystem::path modelDir;
 
-        std::filesystem::create_directories(modelDir);
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			// Static bin은 Models/Static 바로 아래
+			modelDir = basePath;
+		}
+		else
+		{
+			// Skeletal은 Models/Skeletal/모델이름 아래
+			modelDir = basePath / modelName;
+		}
 
+		// ------------------------------------------------------------
+		// Texture 폴더는 bin 존재 여부와 상관없이 먼저 생성
+		// Static texture는 Textures/Static/모델이름/
+		// Skeletal texture는 Textures/Skeletal/모델이름/
+		// ------------------------------------------------------------
+		std::filesystem::path textureDir;
 
-        AssimpFBX(inputPath);
-        
-        std::string outputPath = modelDir + modelName + ".bin";
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			textureDir = MakeTextureOutputDir(basePath) / modelName;
+		}
+		else
+		{
+			textureDir = MakeTextureOutputDir(modelDir);
+		}
 
-        ExportFBX(outputPath);
+		std::filesystem::create_directories(textureDir);
 
+	
 
-        Clear();
+		if (HasExtractedModelData(modelDir, modelName))
+		{
+			continue;
+		}
 
-    }
+		std::filesystem::create_directories(modelDir);
 
+		if (FAILED(AssimpFBX(inputPath)))
+		{
+			Clear();
+			continue;
+		}
 
+		// ------------------------------------------------------------
+	// Static bin 저장용 텍스처 복사
+	//
+	// Textures/OriginData/Static/*.png
+	// -> Textures/Static/모델이름/*.png
+	// ------------------------------------------------------------
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
+		}
 
-    return S_OK;
+		std::filesystem::path outputPath = modelDir / (modelName + ".bin");
+
+		if (FAILED(ExportFBX(outputPath.string())))
+		{
+			Clear();
+			continue;
+		}
+
+		Clear();
+	}
+
+	return S_OK;
 }
 
 HRESULT CImporter::AssimpFBX(const std::string& fbxFileName)
@@ -117,49 +192,74 @@ HRESULT CImporter::AssimpFBX(const std::string& fbxFileName)
 }
 HRESULT CImporter::ExportFBX(const std::string& outpath)
 {
-    std::filesystem::path path(outpath);
+	std::filesystem::path path(outpath);
 
-    std::string modelName = path.stem().string();
+	std::string modelName = path.stem().string();
 
-    std::string prefix;
+	std::string prefix;
 
-    if (!m_bHasBone && !m_bHasAnimation)
-        prefix = "SM_";
-    else if (!m_bHasBone && m_bHasAnimation)
-        prefix = "SM_";
-    else if (m_bHasBone && m_bHasAnimation)
-        prefix = "SK_";
-    else
-        prefix = "SK_";
+	if (!m_bHasBone && !m_bHasAnimation)
+		prefix = "SM_";
+	else if (!m_bHasBone && m_bHasAnimation)
+		prefix = "SM_";
+	else if (m_bHasBone && m_bHasAnimation)
+		prefix = "SK_";
+	else
+		prefix = "SK_";
 
-    std::string finalPath =
-        path.parent_path().string() + "/" +
-        prefix + modelName + ".bin";
+	std::filesystem::path modelOutputDir = path.parent_path();
 
-    fileParentName = path.parent_path().string();
+	std::filesystem::path finalPath =
+		modelOutputDir / (prefix + modelName + ".bin");
 
-    if (!m_bHasBone && !m_bHasAnimation)
-    {
-        ExportStatic(finalPath);
-    }
-    else if (!m_bHasBone && m_bHasAnimation)
-    {
-        //ExportStaticAnim(finalPath);
-    }
-    else if (m_bHasBone )
-    {
-        ExportSkeletal(finalPath);
-    }
-    else
-    {
-        //ExportSkeletalAnim(finalPath);
-    }
+	fileParentName = modelOutputDir.string();
 
+	// ------------------------------------------------------------
+	// Texture output path
+	// Models -> Textures
+	// Static 모델은 Textures/Static/모델이름/ 으로 분리
+	// Skeletal은 기존처럼 Textures/Skeletal/모델이름/
+	// ------------------------------------------------------------
+	std::filesystem::path textureOutputDir =
+		MakeTextureOutputDir(modelOutputDir);
 
-    if (m_bHasAnimation) {
-        ExportAnimation(finalPath);
-    }
-    return S_OK;
+	if (!m_bHasBone)
+	{
+		std::string dirName = modelOutputDir.filename().string();
+
+		if (_stricmp(dirName.c_str(), "Static") == 0)
+		{
+			textureOutputDir /= modelName;
+		}
+	}
+
+	textureParentName = textureOutputDir.string();
+
+	std::filesystem::create_directories(textureOutputDir);
+
+	if (!m_bHasBone && !m_bHasAnimation)
+	{
+		ExportStatic(finalPath.string());
+	}
+	else if (!m_bHasBone && m_bHasAnimation)
+	{
+		// ExportStaticAnim(finalPath.string());
+	}
+	else if (m_bHasBone)
+	{
+		ExportSkeletal(finalPath.string());
+	}
+	else
+	{
+		// ExportSkeletalAnim(finalPath.string());
+	}
+
+	if (m_bHasAnimation)
+	{
+		ExportAnimation(finalPath.string());
+	}
+
+	return S_OK;
 }
 HRESULT CImporter::ExportStatic(const std::string& outpath)
 {
@@ -187,41 +287,47 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
     file.write((char*)&MFH, sizeof(MFH));
 
     //---------------------------------------------------------MESH-------------------------------------------------------------------//
-    for (auto& mesh : Meshes)
-    {
-        uint32_t snameLen = (uint32_t)mesh->m_name.size();
-        uint32_t svCount = (uint32_t)mesh->m_vertices->size();
-        uint32_t siCount = (uint32_t)mesh->m_indices->size();
+	for (auto& mesh : Meshes)
+	{
+		uint32_t snameLen = static_cast<uint32_t>(mesh->m_name.size());
+		uint32_t svCount = static_cast<uint32_t>(mesh->m_vertices->size());
+		uint32_t siCount = static_cast<uint32_t>(mesh->m_indices->size());
 
-        uint32_t meshSize =
-            sizeof(uint32_t) + snameLen +                    // nameLen + name
-            sizeof(uint32_t) +                              // materialIndex
-            sizeof(uint32_t) +                              // vCount
-            sizeof(uint32_t) +                              // iCount
-            sizeof(VTXMESH) * svCount +                      // vertices
-            sizeof(uint32_t) * siCount;                      // indices
+		uint32_t meshSize =
+			sizeof(uint32_t) + snameLen +              // nameLen + name
+			sizeof(uint32_t) +                         // materialIndex
+			sizeof(XMFLOAT3) +                         // min
+			sizeof(XMFLOAT3) +                         // max
+			sizeof(uint32_t) +                         // vCount
+			sizeof(uint32_t) +                         // iCount
+			sizeof(VTXMESH) * svCount +                // vertices
+			sizeof(uint32_t) * siCount;                // indices
 
-        // Mesh ũ�� ���� ���
-        pushMesh(&meshSize, sizeof(uint32_t));
+		pushMesh(&meshSize, sizeof(uint32_t));
 
+		uint32_t nameLen = static_cast<uint32_t>(mesh->m_name.size());
+		pushMesh(&nameLen, sizeof(uint32_t));
 
-        uint32_t nameLen = (uint32_t)mesh->m_name.size();
-        pushMesh(&nameLen, sizeof(uint32_t));
+		pushMesh(mesh->m_name.data(), nameLen);
 
-        pushMesh(mesh->m_name.data(), nameLen);
-        
-        uint32_t vMaterialIndex = mesh->m_materialIndex;
-        pushMesh(&vMaterialIndex, sizeof(uint32_t));
+		uint32_t vMaterialIndex = mesh->m_materialIndex;
+		pushMesh(&vMaterialIndex, sizeof(uint32_t));
 
-        uint32_t vCount = mesh->m_vertices->size();
-        pushMesh(&vCount, sizeof(uint32_t));
+		// ------------------------------------------------------------
+		// min / max 저장
+		// ------------------------------------------------------------
+		pushMesh(&mesh->m_min, sizeof(XMFLOAT3));
+		pushMesh(&mesh->m_max, sizeof(XMFLOAT3));
 
-        uint32_t iCount = mesh->m_indices->size();
-        pushMesh(&iCount, sizeof(uint32_t));
+		uint32_t vCount = static_cast<uint32_t>(mesh->m_vertices->size());
+		pushMesh(&vCount, sizeof(uint32_t));
 
-        pushMesh(mesh->m_vertices->data(), sizeof(VTXMESH) * vCount);
-        pushMesh(mesh->m_indices->data(), sizeof(uint32_t) * iCount);
-    }
+		uint32_t iCount = static_cast<uint32_t>(mesh->m_indices->size());
+		pushMesh(&iCount, sizeof(uint32_t));
+
+		pushMesh(mesh->m_vertices->data(), sizeof(VTXMESH) * vCount);
+		pushMesh(mesh->m_indices->data(), sizeof(uint32_t) * iCount);
+	}
 
     ChunkHeader chMesh;
     chMesh.type = ChunkType::CHUNK_MESH;
@@ -265,7 +371,7 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
             }
         }
 
-        // Material ũ�� ���� ���
+        // Material 크기 먼저 기록
         pushMaterial(&materialSize, sizeof(uint32_t));
 
 
@@ -407,15 +513,15 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         // Index Count
         pushMesh(&iCount, sizeof(uint32_t));
 
-        // Vertex ������
+        // Vertex 데이터
         pushMesh(mesh->m_animvertices->data(),
             sizeof(VTXANIMMESH) * vCount);
 
-        // Index ������
+        // Index 데이터
         pushMesh(mesh->m_indices->data(),
             sizeof(uint32_t) * iCount);
 
-        // Mesh�� �̿��ϴ� ���� ����
+        // Mesh가 이용하는 뼈의 개수
         pushMesh(&mesh->m_iNumBones, sizeof(uint32_t));
 
         // BoneIndices Count
@@ -427,15 +533,15 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         // OffsetMatrices Count
         pushMesh(&OffsetMatricesCount, sizeof(uint32_t));
 
-        // BoneIndices ������
+        // BoneIndices 데이터
         pushMesh(mesh->m_BoneIndices->data(),
             sizeof(uint32_t) * BoneIndicesCount);
 
-        // BoneMatrices ������
+        // BoneMatrices 데이터
         pushMesh(mesh->m_BoneMatrices->data(),
             sizeof(XMFLOAT4X4) * BoneMatricesCount);
 
-        // OffsetMatrices ������
+        // OffsetMatrices 데이터
         pushMesh(mesh->m_OffsetMatrices->data(),
             sizeof(XMFLOAT4X4) * OffsetMatricesCount);
     }
@@ -476,7 +582,7 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
             }
         }
 
-        // Material ũ�� ���� ���
+        // Material 크기 먼저 기록
         pushMaterial(&materialSize, sizeof(uint32_t));
 
 
@@ -780,7 +886,7 @@ HRESULT CImporter::Load_Channel(CHANNELDATA& ChannelData, const aiNodeAnim* pAIC
     {
         KEYFRAME            KeyFrame = {};
 
-        if (i < pAIChannel->mNumScalingKeys) // ���࿡ �� ū ���� ���Ë� �� ���� ������ �������� ä���ش�.
+        if (i < pAIChannel->mNumScalingKeys) // 만약에 더 큰 값이 들어올떄 그 전의 값으로 마지막껄 채워준다.
         {
             memcpy(&vScale, &pAIChannel->mScalingKeys[i].mValue, sizeof vScale);
             KeyFrame.fTrackPosition = pAIChannel->mScalingKeys[i].mTime;
@@ -1179,6 +1285,222 @@ void CImporter::ProcessAnimNode(aiNode* node, const aiScene* scene)
         ProcessAnimNode(node->mChildren[i], scene);
 }
 
+std::string CImporter::ToLowerFileName(std::string name) const
+{
+	std::transform(
+		name.begin(),
+		name.end(),
+		name.begin(),
+		[](unsigned char c)
+		{
+			return static_cast<char>(std::tolower(c));
+		}
+	);
+
+	return name;
+}
+
+bool CImporter::HasExtractedModelData(
+	const std::filesystem::path& modelDir,
+	const std::string& modelName
+) const
+{
+	if (!std::filesystem::exists(modelDir))
+		return false;
+
+	std::filesystem::path smPath = modelDir / ("SM_" + modelName + ".bin");
+	std::filesystem::path skPath = modelDir / ("SK_" + modelName + ".bin");
+
+	if (std::filesystem::exists(smPath))
+		return true;
+
+	if (std::filesystem::exists(skPath))
+		return true;
+
+	return false;
+}
+
+std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
+	const std::string& strJsonFolder
+)
+{
+	std::unordered_set<std::string> fbxNames;
+
+	if (!std::filesystem::exists(strJsonFolder))
+		return fbxNames;
+
+	for (const auto& entry : std::filesystem::directory_iterator(strJsonFolder))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		const std::filesystem::path& jsonPath = entry.path();
+
+		if (_stricmp(jsonPath.extension().string().c_str(), ".json") != 0)
+			continue;
+
+		std::ifstream file(jsonPath);
+
+		if (!file.is_open())
+			continue;
+
+		try
+		{
+			nlohmann::json j;
+			file >> j;
+
+			if (!j.contains("fbx"))
+				continue;
+
+			if (!j["fbx"].is_string())
+				continue;
+
+			std::string fbxName = j["fbx"].get<std::string>();
+
+			if (fbxName.empty())
+				continue;
+
+			// 혹시 경로까지 들어와도 파일 이름만 비교
+			fbxName = std::filesystem::path(fbxName).filename().string();
+
+			// 대소문자 무시 비교용
+			fbxNames.insert(ToLowerFileName(fbxName));
+		}
+		catch (...)
+		{
+			continue;
+		}
+	}
+
+	return fbxNames;
+}
+
+HRESULT CImporter::ImportFBXFolder_ForMapJson(
+	const std::string& strLevelName,
+	const std::string& strSourceFolder,
+	const std::string& strJsonFolder
+)
+{
+	UNREFERENCED_PARAMETER(strLevelName);
+
+	if (!std::filesystem::exists(strSourceFolder))
+		return E_FAIL;
+
+	if (!std::filesystem::exists(strJsonFolder))
+		return E_FAIL;
+
+	std::unordered_set<std::string> targetFBXNames =
+		LoadMapFBXNamesFromJsonFolder(strJsonFolder);
+
+	if (targetFBXNames.empty())
+		return E_FAIL;
+
+	std::filesystem::path sourcePath(strSourceFolder);
+
+	std::string category = sourcePath.filename().string();
+
+	std::string rootPath = strSourceFolder;
+
+	size_t pos = rootPath.find("OriginData");
+
+	if (pos != std::string::npos)
+	{
+		rootPath = rootPath.substr(0, pos);
+	}
+	else
+	{
+		rootPath = sourcePath.parent_path().parent_path().string() + "/";
+	}
+
+	// 핵심:
+	// LevelAnimEditor 같은 중간 폴더를 넣지 않고,
+	// Models/Static 또는 Models/Skeletal 바로 밑으로 보냄
+	std::filesystem::path basePath = std::filesystem::path(rootPath) / category;
+
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(strSourceFolder))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		const std::filesystem::path& path = entry.path();
+
+		if (_stricmp(path.extension().string().c_str(), ".fbx") != 0)
+			continue;
+
+		std::string fbxFileName = path.filename().string();
+		std::string lowerFBXName = ToLowerFileName(fbxFileName);
+
+		if (targetFBXNames.find(lowerFBXName) == targetFBXNames.end())
+			continue;
+
+		std::string inputPath = path.string();
+		std::string modelName = path.stem().string();
+
+		std::filesystem::path modelDir;
+
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			modelDir = basePath;
+		}
+		else
+		{
+			modelDir = basePath / modelName;
+		}
+
+		// ------------------------------------------------------------
+		// bin 추출 스킵 전에 texture 폴더 생성
+		// ------------------------------------------------------------
+		std::filesystem::path textureDir;
+		std::filesystem::path originTextureDir =
+			MakeTextureOutputDir(std::filesystem::path(rootPath) / "OriginData" / category);
+
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			textureDir = MakeTextureOutputDir(basePath) / modelName;
+		}
+		else
+		{
+			textureDir = MakeTextureOutputDir(modelDir);
+		}
+
+		std::filesystem::create_directories(textureDir);
+
+	
+		if (HasExtractedModelData(modelDir, modelName))
+			continue;
+
+		std::filesystem::create_directories(modelDir);
+
+		if (FAILED(AssimpFBX(inputPath)))
+		{
+			Clear();
+			continue;
+		}
+		
+		// ------------------------------------------------------------
+		// Static bin 저장용 텍스처 복사
+		//
+		// Textures/OriginData/Static/*.png
+		// -> Textures/Static/모델이름/*.png
+		// ------------------------------------------------------------
+		if (_stricmp(category.c_str(), "Static") == 0)
+		{
+			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
+		}
+
+		std::filesystem::path outputPath = modelDir / (modelName + ".bin");
+
+		if (FAILED(ExportFBX(outputPath.string())))
+		{
+			Clear();
+			continue;
+		}
+
+		Clear();
+	}
+
+	return S_OK;
+}
 int32_t CImporter::Get_BoneIndex(const char* pBoneName)
 {
     int32_t iBoneIndex = { 0 };
@@ -1198,6 +1520,101 @@ int32_t CImporter::Get_BoneIndex(const char* pBoneName)
     return iBoneIndex;
 }
 
+void CImporter::CopyPngFilesToFolder(
+	const std::filesystem::path& srcDir,
+	const std::filesystem::path& dstDir
+) const
+{
+	if (!std::filesystem::exists(srcDir))
+		return;
+
+	if (!std::filesystem::is_directory(srcDir))
+		return;
+
+	std::filesystem::create_directories(dstDir);
+
+	for (const auto& entry : std::filesystem::directory_iterator(srcDir))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		const std::filesystem::path& srcPath = entry.path();
+
+		std::string ext = srcPath.extension().string();
+
+		if (_stricmp(ext.c_str(), ".png") != 0)
+			continue;
+
+		std::filesystem::path dstPath = dstDir / srcPath.filename();
+
+		std::error_code ec;
+
+		std::filesystem::copy_file(
+			srcPath,
+			dstPath,
+			std::filesystem::copy_options::overwrite_existing,
+			ec
+		);
+	}
+}
+
+void CImporter::CopyUsedTextureFilesToFolder(
+	const std::filesystem::path& srcDir,
+	const std::filesystem::path& dstDir
+) const
+{
+	if (!std::filesystem::exists(srcDir))
+		return;
+
+	if (!std::filesystem::is_directory(srcDir))
+		return;
+
+	std::filesystem::create_directories(dstDir);
+
+	for (const auto& mat : Materials)
+	{
+		if (mat == nullptr)
+			continue;
+
+		for (const auto& texGroup : mat->m_textures)
+		{
+			for (const auto& tex : texGroup)
+			{
+				if (tex.File.empty())
+					continue;
+
+				// 기본은 material에 저장된 확장자 사용
+				std::filesystem::path srcPath =
+					srcDir / (tex.File + tex.Ext);
+
+				// 근데 png만 원본 폴더에 모아뒀다면 png 우선 탐색
+				std::filesystem::path srcPngPath =
+					srcDir / (tex.File + ".png");
+
+				if (std::filesystem::exists(srcPngPath))
+				{
+					srcPath = srcPngPath;
+				}
+
+				if (!std::filesystem::exists(srcPath))
+					continue;
+
+				std::filesystem::path dstPath =
+					dstDir / srcPath.filename();
+
+				std::error_code ec;
+
+				std::filesystem::copy_file(
+					srcPath,
+					dstPath,
+					std::filesystem::copy_options::overwrite_existing,
+					ec
+				);
+			}
+		}
+	}
+}
+
 void CImporter::Clear() {
     Bones.clear();
     Meshes.clear();
@@ -1210,4 +1627,29 @@ void CImporter::Clear() {
     m_bHasAnimation = false;
     m_bHasBone = false;
 
+}
+std::filesystem::path CImporter::MakeTextureOutputDir(
+	const std::filesystem::path& modelOutputDir
+) const
+{
+	std::filesystem::path result;
+
+	bool replaced = false;
+
+	for (const auto& part : modelOutputDir)
+	{
+		std::string token = part.string();
+
+		if (!replaced && token == "Models")
+		{
+			result /= "Textures";
+			replaced = true;
+		}
+		else
+		{
+			result /= part;
+		}
+	}
+
+	return result;
 }

@@ -9,6 +9,8 @@
 
 #include "TestGuizmo.h"
 #include "MapMeshObject.h"
+#include "ResMapEditorTerrainVIBuffer.h"
+#include "MapEditorTerrain.h"
 
 #include <cctype>
 #include <filesystem>
@@ -178,9 +180,35 @@ void CLevelLoading::ThreadStart()
 	break;
 	case LEVEL::MAPEDITOR:
 	{
+
+		// 터레인 띄우려고 SampleClient에서 복붙해옴
+		{
+			if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+			{
+				if (FAILED(res->Load()))
+				{
+					MSG_BOX("");
+				}
+			}
+
+			if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResMapEditorTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+			{
+				if (FAILED(res->Load(CResMapEditorTerrainVIBuffer::DESC{})))
+				{
+					MSG_BOX("");
+				}
+			}
+		}
+
+		if (!LoadLevelAnimEditorStaticModels())
+		{
+			MSG_BOX("");
+		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
 			{
-				if (!LoadLevelAnimEditorStaticModels())
+			
+				// 터레인
+				if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_MapEditorTerrain", CMapEditorTerrain::Create())))
 				{
 					return false;
 				}

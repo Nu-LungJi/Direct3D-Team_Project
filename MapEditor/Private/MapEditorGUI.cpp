@@ -2,7 +2,6 @@
 #include "MapEditorGUI.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
-
 NS_USING(Client)
 
 namespace
@@ -76,6 +75,7 @@ namespace
 			transform.Update();
 		}
 	}
+
 }
 
 CMapEditorGUI::CMapEditorGUI()
@@ -100,13 +100,23 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	if (ImGui::Button("Level Save", ImVec2(112.f, 0.f)))
 	{
-		CGameInstance::Get().SaveMap(MakeMapPath(m_MapName));
+		const std::string mapPath = MakeMapPath(m_MapName);
+		CGameInstance::Get().SaveMap(mapPath);
+		if (m_pNavMeshGUI)
+		{
+			m_pNavMeshGUI->SaveNavMesh(mapPath);
+		}
 		ImGui::OpenPopup("SaveCheck");
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Level Load", ImVec2(112.f, 0.f)))
 	{
-		CGameInstance::Get().LoadMap(MakeMapPath(m_MapName), true);
+		const std::string mapPath = MakeMapPath(m_MapName);
+		CGameInstance::Get().LoadMap(mapPath, true);
+		if (m_pNavMeshGUI)
+		{
+			m_pNavMeshGUI->LoadNavMesh(mapPath);
+		}
 		//AddDefaultCameraLight();
 		ImGui::OpenPopup("LoadCheck");
 	}
@@ -147,6 +157,9 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::Text("Batches: %u", instancingStats.iBatches);
 	ImGui::Text("Instances: %u", instancingStats.iInstances);
 	ImGui::Text("DrawCalls: %u", instancingStats.iDrawCalls);
+
+
+	m_pNavMeshGUI->UpdateGUI(fTimeDelta);
 
 	ImGui::Separator();
 	m_pHierarchy->UpdateGUI(fTimeDelta);
@@ -191,6 +204,12 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 	pInstance->m_pMapChunkGUI = CMapChunkGUI::Create(pSelectedObject);
 	if (pInstance->m_pMapChunkGUI == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pNavMeshGUI = CNavMeshGUI::Create(pSelectedObject);
+	if (pInstance->m_pNavMeshGUI == nullptr)
 	{
 		return nullptr;
 	}

@@ -1,17 +1,9 @@
-#include "../ShaderHeader/SH_SamplerState.hlsli"
+#include "../ShaderDefines.hlsl"
 // Color LUT + ToneMapping + Vignetting + Noise
 
 // 지금까지 씬에 그려진 텍스쳐 바인딩
 Texture2D SceneColorTexture : register(t0);
 Texture2D LUT_Texture       : register(t1); // LUT 필터 3D 텍스쳐
-
-cbuffer PostProcessBuffer : register(b0)
-{
-    float DistortionIntensity;  // 왜곡 강도
-    float ChromaticIntensity;   // 색수차 강도
-    float VignetteIntensity;    // 비네팅 강도
-    float VignetteSmoothness;   // 비네팅
-}
 
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
@@ -51,9 +43,9 @@ float3 ChromaticAberration(float2 _UV)
     
     float2 Seperation = UVFromCenter * (DistanceFromCenter * ChromaticIntensity);
     
-    float R = SceneColorTexture.Sample(SamplerClamp, _UV - Seperation).r;
-    float G = SceneColorTexture.Sample(SamplerClamp, _UV).g;
-    float B = SceneColorTexture.Sample(SamplerClamp, _UV + Seperation).b;
+    float R = SceneColorTexture.Sample(LinearClamp, _UV - Seperation).r;
+    float G = SceneColorTexture.Sample(LinearClamp, _UV).g;
+    float B = SceneColorTexture.Sample(LinearClamp, _UV + Seperation).b;
 
     return float3(R, G, B);
 }
@@ -89,8 +81,8 @@ float3 LUT_Filtering(float3 _Color)
     TexCoordB.x = (AdjustTile02 + LUT_UVOffset.x) / LUT_Size;
     TexCoordB.y = LUT_UVOffset.y;
     
-    float3 LUT_ColorA = LUT_Texture.Sample(SamplerClamp, TexCoordA).rgb;
-    float3 LUT_ColorB = LUT_Texture.Sample(SamplerClamp, TexCoordB).rgb;
+    float3 LUT_ColorA = LUT_Texture.Sample(LinearClamp, TexCoordA).rgb;
+    float3 LUT_ColorB = LUT_Texture.Sample(LinearClamp, TexCoordB).rgb;
     
     //float3 LUT_Mapping = _Color * ((LUT_Size - 1.f) / LUT_Size) + (0.5f / LUT_Size);
     //return LUT_Texture.Sample(SamplerClamp, LUT_Mapping);

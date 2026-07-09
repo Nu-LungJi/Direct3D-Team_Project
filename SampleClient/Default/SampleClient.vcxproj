@@ -175,18 +175,27 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
-    <ClInclude Include="..\public\BTchase.h" />
+    <ClInclude Include="..\public\BTChase.h" />
+    <ClInclude Include="..\public\BTDead.h" />
+    <ClInclude Include="..\public\BTDecInvert.h" />
+    <ClInclude Include="..\public\BTDecLier.h" />
+    <ClInclude Include="..\public\BTOnlyFalse.h" />
+    <ClInclude Include="..\public\BTOnlyTrue.h" />
+    <ClInclude Include="..\public\BTTeleport.h" />
+    <ClInclude Include="..\public\BTTurnDirect.h" />
+    <ClInclude Include="..\public\BTTurnSlow.h" />
     <ClInclude Include="..\public\BTDecSearch.h" />
     <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\public\BTMove.h" />
+    <ClInclude Include="..\public\EffectUI.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecTimer.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\Public\CTexUI.h" />
     <ClInclude Include="..\Public\FlipBook.h" />
-    <ClInclude Include="..\Public\FlipbookPlayer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\public\LevelCollider.h" />
@@ -212,15 +221,14 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestPhysXCapsule.h" />
     <ClInclude Include="..\public\TestPhysXTerrain.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
+    <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h" />
+    <ClInclude Include="..\Public\TextureUI.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SampleClient.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="UI_Item.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp">
@@ -228,9 +236,20 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
-    <ClCompile Include="..\private\BTchase.cpp" />
+    <ClCompile Include="..\private\BTChase.cpp" />
+    <ClCompile Include="..\private\BTDecInvert.cpp" />
+    <ClCompile Include="..\private\BTDecLier.cpp" />
+    <ClCompile Include="..\private\BTOnlyFalse.cpp" />
+    <ClCompile Include="..\private\BTOnlyTrue.cpp" />
+    <ClCompile Include="..\private\BTTeleport.cpp" />
+    <ClCompile Include="..\private\BTTurnDirect.cpp" />
+    <ClCompile Include="..\private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\BTDecSearch.cpp" />
     <ClCompile Include="..\private\BTMove.cpp" />
+    <ClCompile Include="..\private\EffectUI.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\Private\FlipBook.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
@@ -252,12 +271,15 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
+    <ClCompile Include="..\private\TextBox.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp" />
     <ClCompile Include="..\private\TestPhysX.cpp" />
     <ClCompile Include="..\private\TestPhysXBall.cpp" />
     <ClCompile Include="..\private\TestPhysXBox.cpp" />
     <ClCompile Include="..\private\TestPhysXCapsule.cpp" />
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
+    <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\public\BTDead.cpp" />
     <ClCompile Include="FlipbookPlayer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -267,9 +289,6 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SampleClient.cpp" />
-    <ClCompile Include="UI_Item.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SampleClient.rc" />
@@ -279,14 +298,13 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\ShaderFiles\Shader_CPUParticle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
-    <FxCompile Include="..\..\Engine\ShaderFiles\TestModel\Shader_VtxMesh.hlsl" />
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>
