@@ -280,9 +280,6 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
     <ClCompile Include="..\public\BTDead.cpp" />
-    <ClCompile Include="FlipbookPlayer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
