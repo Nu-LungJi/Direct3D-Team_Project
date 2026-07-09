@@ -16,9 +16,9 @@ CBTActionNode::~CBTActionNode()
 }
 
 
-HRESULT CBTActionNode::InitalizePrototype(void* pArg)
+HRESULT CBTActionNode::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	return S_OK;
 }

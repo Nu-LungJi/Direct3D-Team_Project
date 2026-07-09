@@ -819,10 +819,12 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				return;
 			}
 
+			;
+
 			if (eType == BEHAVIOR::SELECTOR)
-				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc);
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc));
 			else if(eType == BEHAVIOR::SECQUNCE)
-				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc);
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc));
 			if (nullptr == pNode)
 			{
 				ImGui::CloseCurrentPopup();

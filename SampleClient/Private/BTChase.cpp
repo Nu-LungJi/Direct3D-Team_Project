@@ -15,9 +15,9 @@ CBTChase::CBTChase(const CBTChase& rhs) : CBTActionNode(rhs)
 CBTChase::~CBTChase()
 {
 }
-HRESULT CBTChase::InitalizePrototype(void* pArg)
+HRESULT CBTChase::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
 	m_MasterName = "BTChase";
@@ -70,14 +70,14 @@ void CBTChase::Update_Gui()
 E::UPtr<CBTChase> CBTChase::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTChase{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTChase");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTChase::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTChase::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTChase{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

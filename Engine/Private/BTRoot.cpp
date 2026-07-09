@@ -5,7 +5,7 @@ CBTRoot::CBTRoot()
 {
 }
 
-CBTRoot::CBTRoot(const CBTRoot& rhs) : CEngineBase(rhs)
+CBTRoot::CBTRoot(const CBTRoot& rhs) : CPrototype(rhs)
 {
 	m_eGroup = rhs.m_eGroup;
 	m_MasterName = rhs.m_MasterName;
@@ -15,7 +15,7 @@ CBTRoot::~CBTRoot()
 {
 }
 
-HRESULT CBTRoot::InitalizePrototype(void* pArg)
+HRESULT CBTRoot::InitializePrototype(void* pArg)
 {
 	
 	return S_OK;

@@ -15,9 +15,9 @@ CBTMove::CBTMove(const CBTMove& rhs) : CBTActionNode(rhs)
 CBTMove::~CBTMove()
 {
 }
-HRESULT CBTMove::InitalizePrototype(void* pArg)
+HRESULT CBTMove::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
 	m_MasterName = "BTMove";
@@ -97,14 +97,14 @@ void CBTMove::Update_Gui()
 E::UPtr<CBTMove> CBTMove::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTMove{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTMove");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTMove::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTMove::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTMove{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

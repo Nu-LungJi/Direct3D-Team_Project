@@ -18,7 +18,7 @@ protected:
 	CBTDecorator(const CBTDecorator& Prototype);
 	~CBTDecorator() override;
 
-	virtual HRESULT	InitalizePrototype(void* pArg) override;
+	virtual HRESULT	InitializePrototype(void* pArg) override;
 	virtual HRESULT Initalize(void* pArg) override;
 
 public:
@@ -34,8 +34,7 @@ public:
 		m_pDecorator = std::move(pRoot); }
 private:
 	UPtr<CBTRoot>				m_pDecorator{ nullptr };
-public:
-	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
+
 };
 
 NS_END

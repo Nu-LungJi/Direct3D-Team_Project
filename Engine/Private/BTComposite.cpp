@@ -107,7 +107,7 @@ HRESULT		CBTComposite::Load_json(const nlohmann::json& j)
 		{
 			if (LoadJsonEnum(j["Child"][i], "Group", eGroup))
 			{
-				auto pSrc = CGameInstance::Get().Clone_Action(eGroup, MasterName, nullptr);
+				auto pSrc = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(eGroup, MasterName, nullptr));
 				pSrc->Load_json(j["Child"][i]);
 				m_Actions[i] = std::move(pSrc);
 			}
@@ -125,7 +125,7 @@ HRESULT CBTComposite::Initalize(void* pArg)
 UPtr<CBTComposite> CBTComposite::Create(void* pArg)
 {
 	auto pInstance = ToUPtr(new CBTComposite());
-	if (FAILED(pInstance->Initalize(pArg)))
+	if (FAILED(pInstance->InitializePrototype(pArg)))
 	{
 		MSG_BOX("Failed to Created : CBTComposite");
 		return nullptr;
@@ -133,3 +133,15 @@ UPtr<CBTComposite> CBTComposite::Create(void* pArg)
 	return pInstance;
 }
 
+
+E::UPtr<E::CPrototype> CBTComposite::Clone(void* pArg)
+{
+	auto	pInstance = E::ToUPtr(new CBTComposite{ *this });
+	if (FAILED(pInstance->Initalize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CBTComposite");
+		return nullptr;
+	}
+
+	return pInstance;
+}

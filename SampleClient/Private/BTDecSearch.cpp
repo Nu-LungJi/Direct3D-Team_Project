@@ -14,9 +14,9 @@ CBTDecSearch::CBTDecSearch(const CBTDecSearch& rhs) : CBTDecorator(rhs)
 CBTDecSearch::~CBTDecSearch()
 {
 }
-HRESULT CBTDecSearch::InitalizePrototype(void* pArg)
+HRESULT CBTDecSearch::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::DECORATOR;
 	m_MasterName = "BTDecSearch";
 	return S_OK;
@@ -74,14 +74,14 @@ void		CBTDecSearch::Update_Gui()
 E::UPtr<CBTDecSearch> CBTDecSearch::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTDecSearch{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTDecSearch");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTDecSearch::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTDecSearch::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTDecSearch{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

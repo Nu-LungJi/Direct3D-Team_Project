@@ -238,23 +238,6 @@ public:
 
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
-
-	//const CCameraObject* GetCameraObject(const StringID& GroupID) const;
-	//HRESULT SetCameraObject(const StringID& GroupID, const CHandle& handle);
-
-	//CCameraObject* GetActiveGameCamera() const;
-	//HRESULT SetActiveGameCamera(const StringID& CameraID);
-	//CCameraObject* GetActiveUICamera() const;
-	//HRESULT SetActiveUICamera(const StringID& CameraID);
-
-	//CCameraObject* GetActiveGameCamera(const StringID& CameraID) const;
-	//CCameraObject* GetActiveUICamera(const StringID& CameraID) const;
-
-	//CCameraObject* GetGameCamera(const StringID& CameraID) const;
-	//CCameraObject* GetUICamera(const StringID& CameraID) const;
-
-	//HRESULT RegistGameCamera(const StringID& CameraID, const CHandle& handle);
-	//HRESULT RegistUICamera(const StringID& CameraID, const CHandle& handle);
 #pragma endregion
 
 #pragma region RENDERER
@@ -297,10 +280,8 @@ public:
 #pragma endregion
 
 #pragma region Action_Manager
-	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
 	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
-	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
 
 #pragma endregion
 

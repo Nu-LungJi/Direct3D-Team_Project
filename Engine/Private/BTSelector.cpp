@@ -13,9 +13,9 @@ CBTSelector::~CBTSelector()
 {
 }
 
-HRESULT CBTSelector::InitalizePrototype(void* pArg)
+HRESULT CBTSelector::InitializePrototype(void* pArg)
 {
-    __super::InitalizePrototype(pArg);
+    __super::InitializePrototype(pArg);
     m_MasterName = "BTSelector";
     m_eGroup = NODEGROUP::SELECTOR;
     return S_OK;
@@ -76,7 +76,7 @@ HRESULT CBTSelector::Load_json(const nlohmann::json& j)
 UPtr<CBTSelector> CBTSelector::Create(void* pArg)
 {
     auto pInstance = ToUPtr(new CBTSelector()) ;
-    if (FAILED(pInstance->InitalizePrototype(pArg)))
+    if (FAILED(pInstance->InitializePrototype(pArg)))
     {
         MSG_BOX("Failed to Created : CBTSelector");
         return nullptr;
@@ -84,7 +84,7 @@ UPtr<CBTSelector> CBTSelector::Create(void* pArg)
     return pInstance;
 }
 
-E::UPtr<E::CBTRoot> CBTSelector::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTSelector::Clone(void* pArg)
 {
     auto	pInstance = E::ToUPtr(new CBTSelector{ *this });
     if (FAILED(pInstance->Initalize(pArg)))

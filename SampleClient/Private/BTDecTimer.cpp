@@ -14,9 +14,9 @@ CBTDecTimer::CBTDecTimer(const CBTDecTimer& rhs) : CBTDecorator(rhs)
 CBTDecTimer::~CBTDecTimer()
 {
 }
-HRESULT CBTDecTimer::InitalizePrototype(void* pArg)
+HRESULT CBTDecTimer::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::DECORATOR;
 	m_MasterName = "BTDecTimer";
 	return S_OK;
@@ -72,14 +72,14 @@ void		CBTDecTimer::Update_Gui()
 E::UPtr<CBTDecTimer> CBTDecTimer::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTDecTimer{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTDecTimer");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTDecTimer::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTDecTimer::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTDecTimer{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

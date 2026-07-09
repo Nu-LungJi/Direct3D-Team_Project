@@ -15,9 +15,9 @@ CBTTurnDirect::CBTTurnDirect(const CBTTurnDirect& rhs) : CBTActionNode(rhs)
 CBTTurnDirect::~CBTTurnDirect()
 {
 }
-HRESULT CBTTurnDirect::InitalizePrototype(void* pArg)
+HRESULT CBTTurnDirect::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::ACTION;
 	m_MasterName = "BTTurnDirect";
 	return S_OK;
@@ -61,14 +61,14 @@ void CBTTurnDirect::Update_Gui()
 E::UPtr<CBTTurnDirect> CBTTurnDirect::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTTurnDirect{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTTurnDirect");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTTurnDirect::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTTurnDirect::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTTurnDirect{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

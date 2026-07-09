@@ -1,12 +1,13 @@
 #pragma once
+#include "Prototype.h"
 #include "Engine_Defines.h"
 #include "GameInstance.h"
 //뿌리
 NS_BEGIN(Engine)
-class  CBTRoot : public CEngineBase
+class ENGINE_DLL  CBTRoot : public CPrototype
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTRoot, CEngineBase)
+	DECLARE_DERIVED_TYPE(CBTRoot, CPrototype)
 public:
 	typedef struct tagbtroot
 	{
@@ -23,7 +24,7 @@ protected:
 	CBTRoot(const CBTRoot& rhs);
 	~CBTRoot() override;
 
-	virtual HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	virtual HRESULT Initalize(void* pArg);
 public:
 	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
@@ -59,8 +60,6 @@ public:
 		}
 		return nullptr;
 	}
-public:
-	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };
 
 NS_END

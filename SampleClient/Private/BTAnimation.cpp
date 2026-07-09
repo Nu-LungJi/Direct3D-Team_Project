@@ -15,9 +15,9 @@ CBTAnimation::CBTAnimation(const CBTAnimation& rhs) : CBTActionNode(rhs)
 CBTAnimation::~CBTAnimation()
 {
 }
-HRESULT CBTAnimation::InitalizePrototype(void* pArg)
+HRESULT CBTAnimation::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTAnimation";
 	return S_OK;
@@ -99,14 +99,14 @@ HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 E::UPtr<CBTAnimation> CBTAnimation::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTAnimation{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTAnimation");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTAnimation::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTAnimation::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTAnimation{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))
