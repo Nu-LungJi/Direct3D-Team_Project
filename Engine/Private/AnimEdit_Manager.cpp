@@ -4,7 +4,7 @@
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "ResModel.h"
-#include "ComAnimMontage.h"
+
 
 #include <fstream>
 NS_USING(Engine)
@@ -437,7 +437,6 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
 		return;
 
 
-
     auto pComModelInstance =
         pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
 
@@ -450,6 +449,12 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
 
     if (pComModelInstance->GetModel()->GetAnimations().size() == 0)
         return;
+
+	if (pComAnimator->GetPlayAnimIndex() < 0)
+		return;
+
+	if (pComAnimator->GetPlayAnimIndex() == -1)
+		return;
 
     auto pAnim = pComModelInstance->GetModel()->GetAnimations()[pComAnimator->GetPlayAnimIndex()];
 
@@ -482,32 +487,29 @@ void CAnimEdit_Manager::IMGUI_Slider_Animation()
     //----------------------------------------
 
     float fDuration = pAnim->GetDuration();
-    float fCurrentPos = pAnim->GetCurrentTrackPosition();
+    float fCurrentPos = pComAnimator->GetCurAnimState().fTrackPosition;
     float fTPS = pAnim->GetTickPerSecond();
 
     ImGui::Text("Animation Timeline");
 
     ImGui::SameLine();
 
-    if (ImGui::Button(pComAnimator->GetPlay() ? "Play" : "Pause"))
-    {
-		//민수한태 알릴거
-        pComAnimator->SetPlay(true);
-    }
+	if (ImGui::Button(pComAnimator->GetPlay() ? "Pause" : "Play", ImVec2(70.f, 0.f)))
+	{
+		pComAnimator->SetPlay(!pComAnimator->GetPlay());
+	}
+
 
     ImGui::PushItemWidth(-1.f);
 
 
     if (ImGui::SliderFloat("##AnimTimeline",&fCurrentPos,0.f,fDuration, "%.3f") )
     {
-        if (pComAnimator->GetPlay() == true) {
+		// 에디터에서 스크럽할 때는 멈추는 게 자연스러움
+		pComAnimator->SetPlay(false);
 
-            pAnim->SetCurrentTrackPosition(fCurrentPos);
-        }
-        else if (pComAnimator->GetPlay() == false) {
-            pAnim->SetCurrentTrackPosition(fCurrentPos);
-            pComAnimator->AnimEditor_Play_AnimResource(m_fTimeDelta, pComAnimator->GetPlayAnimIndex());
-        }
+		// Resource Anim 말고 Animator의 TrackPosition을 바꿔야 함
+		pComAnimator->SetTrackPosition(fCurrentPos);
         
     }
    
@@ -568,11 +570,6 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
     ImGui::End();
 }
 
-void CAnimEdit_Manager::IMGUI_Select_Detail_Data()
-{
-    
-
-}
 
 void CAnimEdit_Manager::IMGUI_Speed_Animation()
 {
@@ -608,7 +605,7 @@ void CAnimEdit_Manager::IMGUI_Speed_Animation()
         return;
 
     float fDuration = pAnim->GetDuration();
-    float fCurrentPos = pAnim->GetCurrentTrackPosition();
+	float fCurrentPos = pComAnimator->GetCurAnimState().fTrackPosition;
 
     if (m_SpeedKeys.empty())
     {
@@ -841,15 +838,10 @@ void CAnimEdit_Manager::UpdateGUI()
 
 		IMGUI_Slider_Animation();
 		IMGUI_Select_Animation();
-		IMGUI_Select_Detail_Data();
 		IMGUI_Speed_Animation();
 	}
 
-	if (pComAnimator->GetAnimationTYPE() == CComAnimator::MONTAGE) {
-		IMGUI_Slider_AnimMontage();
-		IMGUI_Select_AnimMontage();
-		IMGUI_Detail_AnimMontage();
-	}
+
 	
 }
 
@@ -1199,436 +1191,6 @@ void CAnimEdit_Manager::IMGUI_File_Rename(const std::string& Path, const std::st
 
 }
 
-void CAnimEdit_Manager::IMGUI_Slider_AnimMontage()
-{
-	//----------------------------------------
-	// Editor UI 전용 임시 값
-	// 실제 Montage 데이터 연결 X
-	//----------------------------------------
-	static float s_fMontageTime = 0.f;
-	static float s_fMontageDuration = 1.f;
-
-	if (s_fMontageDuration <= 0.f)
-		s_fMontageDuration = 1.f;
-
-	s_fMontageTime = std::clamp(s_fMontageTime, 0.f, s_fMontageDuration);
-
-	//----------------------------------------
-	// Window
-	//----------------------------------------
-	ImGuiViewport* pViewport = ImGui::GetMainViewport();
-
-	constexpr float WINDOW_WIDTH = 760.f;
-	constexpr float WINDOW_HEIGHT = 280.f;
-
-	ImGui::SetNextWindowPos(
-		ImVec2(
-			pViewport->Pos.x + (pViewport->Size.x - WINDOW_WIDTH) * 0.5f,
-			pViewport->Pos.y + pViewport->Size.y - WINDOW_HEIGHT - 20.f
-		),
-		ImGuiCond_FirstUseEver
-	);
-
-	ImGui::SetNextWindowSize(
-		ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT),
-		ImGuiCond_FirstUseEver
-	);
-
-	ImGui::SetNextWindowBgAlpha(0.92f);
-
-	// 접을 수 있게 NoCollapse 사용 안 함
-	if (!ImGui::Begin("Anim Montage Timeline"))
-	{
-		ImGui::End();
-		return;
-	}
-
-	//----------------------------------------
-	// Top Control
-	//----------------------------------------
-	ImGui::Text("Montage");
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Play", ImVec2(55.f, 22.f)))
-	{
-		// TODO : Play
-	}
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Stop", ImVec2(55.f, 22.f)))
-	{
-		// TODO : Stop
-	}
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Reset", ImVec2(55.f, 22.f)))
-	{
-		s_fMontageTime = 0.f;
-	}
-
-	ImGui::SameLine();
-
-	ImGui::Text("%.3f / %.3f", s_fMontageTime, s_fMontageDuration);
-
-	//----------------------------------------
-	// Main Slider
-	//----------------------------------------
-	ImGui::PushItemWidth(-1.f);
-
-	ImGui::SliderFloat(
-		"##MontageMainSlider",
-		&s_fMontageTime,
-		0.f,
-		s_fMontageDuration,
-		"%.3f"
-	);
-
-	ImGui::PopItemWidth();
-
-	ImGui::PushItemWidth(140.f);
-
-	ImGui::DragFloat(
-		"Duration",
-		&s_fMontageDuration,
-		0.01f,
-		0.01f,
-		9999.f,
-		"%.3f"
-	);
-
-	ImGui::PopItemWidth();
-
-	ImGui::Separator();
-
-	//----------------------------------------
-	// Timeline Draw Area
-	//----------------------------------------
-	ImGui::BeginChild("##MontageTimelineCanvas", ImVec2(0.f, 165.f), true);
-
-	ImDrawList* pDrawList = ImGui::GetWindowDrawList();
-
-	ImVec2 canvasPos = ImGui::GetCursorScreenPos();
-	ImVec2 canvasSize = ImGui::GetContentRegionAvail();
-
-	float fLabelWidth = 105.f;
-	float fTimelineX = canvasPos.x + fLabelWidth;
-	float fTimelineY = canvasPos.y;
-	float fTimelineWidth = canvasSize.x - fLabelWidth - 8.f;
-
-	if (fTimelineWidth < 10.f)
-		fTimelineWidth = 10.f;
-
-	auto TimeToX = [&](float fTime)->float
-		{
-			float fRatio = 0.f;
-
-			if (s_fMontageDuration > 0.f)
-				fRatio = fTime / s_fMontageDuration;
-
-			fRatio = std::clamp(fRatio, 0.f, 1.f);
-
-			return fTimelineX + fTimelineWidth * fRatio;
-		};
-
-	ImU32 colFrame = ImGui::GetColorU32(ImGuiCol_FrameBg);
-	ImU32 colFrameHovered = ImGui::GetColorU32(ImGuiCol_FrameBgHovered);
-	ImU32 colButton = ImGui::GetColorU32(ImGuiCol_Button);
-	ImU32 colText = ImGui::GetColorU32(ImGuiCol_Text);
-	ImU32 colMarker = ImGui::GetColorU32(ImGuiCol_SliderGrab);
-
-	//----------------------------------------
-	// Size Setting
-	//----------------------------------------
-	const float fHeaderHeight = 18.f;
-	const float fAnimRowHeight = 22.f;
-	const float fCallbackLaneHeight = 14.f;
-	const float fRowGap = 5.f;
-
-	//----------------------------------------
-	// Header
-	//----------------------------------------
-	pDrawList->AddText(
-		ImVec2(canvasPos.x, fTimelineY + 2.f),
-		colText,
-		"Time"
-	);
-
-	pDrawList->AddRectFilled(
-		ImVec2(fTimelineX, fTimelineY),
-		ImVec2(fTimelineX + fTimelineWidth, fTimelineY + fHeaderHeight),
-		colFrame
-	);
-
-	constexpr int TICK_COUNT = 8;
-
-	for (int i = 0; i <= TICK_COUNT; ++i)
-	{
-		float fRatio = static_cast<float>(i) / static_cast<float>(TICK_COUNT);
-		float x = fTimelineX + fTimelineWidth * fRatio;
-
-		pDrawList->AddLine(
-			ImVec2(x, fTimelineY),
-			ImVec2(x, fTimelineY + 160.f),
-			colFrameHovered
-		);
-
-		char szTick[32] = {};
-		sprintf_s(szTick, "%.1f", s_fMontageDuration * fRatio);
-
-		pDrawList->AddText(
-			ImVec2(x + 2.f, fTimelineY + 2.f),
-			colText,
-			szTick
-		);
-	}
-
-	//----------------------------------------
-	// Current Time Marker
-	//----------------------------------------
-	float fCurrentX = TimeToX(s_fMontageTime);
-
-	pDrawList->AddLine(
-		ImVec2(fCurrentX, fTimelineY),
-		ImVec2(fCurrentX, fTimelineY + 160.f),
-		colMarker,
-		2.f
-	);
-
-	//----------------------------------------
-	// Animation Track Row
-	//----------------------------------------
-	float fAnimRowY = fTimelineY + fHeaderHeight + fRowGap;
-
-	pDrawList->AddText(
-		ImVec2(canvasPos.x, fAnimRowY + 3.f),
-		colText,
-		"Animation"
-	);
-
-	pDrawList->AddRectFilled(
-		ImVec2(fTimelineX, fAnimRowY),
-		ImVec2(fTimelineX + fTimelineWidth, fAnimRowY + fAnimRowHeight),
-		colFrame
-	);
-
-	// TODO : 여기서 Animation Track Bar 그리기
-	// startX = TimeToX(StartTime)
-	// endX   = TimeToX(EndTime)
-	// pDrawList->AddRectFilled(...)
-
-//----------------------------------------
-// Callback Section
-//----------------------------------------
-	float fCallbackStartY = fAnimRowY + fAnimRowHeight + fRowGap;
-
-	constexpr int CALLBACK_TYPE_COUNT = 4;
-	constexpr int MAX_CALLBACK_LAYER_COUNT = 4;
-
-	static int s_CallbackLayerCount[CALLBACK_TYPE_COUNT] =
-	{
-		1, 1, 1, 1
-	};
-
-	float fCurrentY = fCallbackStartY;
-
-	for (int iType = 0; iType < CALLBACK_TYPE_COUNT; ++iType)
-	{
-		//----------------------------------------
-		// TODO:
-		// 나중에 실제 CallbackDesc 연결하면 여기서 판단
-		//
-		// bool bTypeExists = HasCallbackType(iType);
-		// if (!bTypeExists)
-		//     continue;
-		//----------------------------------------
-		bool bTypeExists = true;
-
-		if (!bTypeExists)
-			continue;
-
-		int& iLayerCount = s_CallbackLayerCount[iType];
-
-		if (iLayerCount < 1)
-			iLayerCount = 1;
-
-		if (iLayerCount > MAX_CALLBACK_LAYER_COUNT)
-			iLayerCount = MAX_CALLBACK_LAYER_COUNT;
-
-		//----------------------------------------
-		// Type Label
-		//----------------------------------------
-		char szTypeLabel[64] = {};
-		sprintf_s(szTypeLabel, "Callback Type %d", iType);
-
-		pDrawList->AddText(
-			ImVec2(canvasPos.x, fCurrentY + 2.f),
-			colText,
-			szTypeLabel
-		);
-
-		//----------------------------------------
-		// Type Block Background
-		//----------------------------------------
-		float fTypeBlockHeight =
-			fCallbackLaneHeight * static_cast<float>(iLayerCount);
-
-		pDrawList->AddRectFilled(
-			ImVec2(fTimelineX, fCurrentY),
-			ImVec2(fTimelineX + fTimelineWidth, fCurrentY + fTypeBlockHeight),
-			colFrame
-		);
-
-		//----------------------------------------
-		// Layers
-		//----------------------------------------
-		for (int iLayer = 0; iLayer < iLayerCount; ++iLayer)
-		{
-			float fLayerY =
-				fCurrentY + iLayer * fCallbackLaneHeight;
-
-			//----------------------------------------
-			// Layer 구분선
-			//----------------------------------------
-			pDrawList->AddLine(
-				ImVec2(fTimelineX, fLayerY),
-				ImVec2(fTimelineX + fTimelineWidth, fLayerY),
-				colFrameHovered
-			);
-
-			//----------------------------------------
-			// Layer Label
-			//----------------------------------------
-			char szLayerLabel[32] = {};
-			sprintf_s(szLayerLabel, "L%d", iLayer);
-
-			pDrawList->AddText(
-				ImVec2(fTimelineX + 4.f, fLayerY + 1.f),
-				colText,
-				szLayerLabel
-			);
-
-			//----------------------------------------
-			// TODO:
-			// 나중에 실제 Callback 데이터 연결
-			//
-			// for (auto& callback : Callbacks)
-			// {
-			//     if (callback.Type != iType)
-			//         continue;
-			//
-			//     if (callback.Layer != iLayer)
-			//         continue;
-			//
-			//     float x = TimeToX(callback.Time);
-			//     float y = fLayerY + fCallbackLaneHeight * 0.5f;
-			//
-			//     pDrawList->AddCircleFilled(
-			//         ImVec2(x, y),
-			//         3.f,
-			//         colMarker
-			//     );
-			// }
-		}
-
-		//----------------------------------------
-		// Layer 추가/삭제 버튼 자리
-		//----------------------------------------
-		ImGui::SetCursorScreenPos(
-			ImVec2(canvasPos.x, fCurrentY + fTypeBlockHeight + 2.f)
-		);
-
-		ImGui::PushID(iType);
-
-		if (ImGui::SmallButton("+ Layer"))
-		{
-			if (iLayerCount < MAX_CALLBACK_LAYER_COUNT)
-				++iLayerCount;
-		}
-
-		ImGui::SameLine();
-
-		if (ImGui::SmallButton("- Layer"))
-		{
-			if (iLayerCount > 1)
-				--iLayerCount;
-		}
-
-		ImGui::PopID();
-
-		fCurrentY += fTypeBlockHeight + 24.f;
-	}
-
-	//----------------------------------------
-	// Button Area
-	//----------------------------------------
-	ImGui::SetCursorScreenPos(
-		ImVec2(canvasPos.x, fCurrentY + 4.f)
-	);
-
-	if (ImGui::Button("Add Animation", ImVec2(120.f, 22.f)))
-	{
-		// TODO : Add Animation Track
-	}
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Add Callback", ImVec2(110.f, 22.f)))
-	{
-		// TODO : Add Callback
-	}
-
-	ImGui::EndChild();
-
-	ImGui::End();
-}
-
-void CAnimEdit_Manager::IMGUI_Select_AnimMontage()
-{
-	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
-	if (!pSampleObj)
-		return;
-
-	auto pComAnimator =
-		pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
-
-	if (!pComAnimator)
-		return;
-
-	ImGui::Begin("Montage List");
-
-	if (ImGui::TreeNode("Anim Montage"))
-	{
-		auto& montages = pComAnimator->GetAnimMontages();
-
-		for ( auto& pair : montages)
-		{
-			uint32_t montageIndex = pair.first;
-			auto& pMontage = pair.second;
-
-			if (!pMontage)
-				continue;
-
-			bool bSelected =(pComAnimator->Get_CurrAnimMontageIndex() == montageIndex);
-
-			if (ImGui::Selectable(pMontage->GetName().c_str(), bSelected))
-			{
-				pComAnimator->SetCurrentAnimMontageIndex(montageIndex);
-			}
-		}
-
-		ImGui::TreePop();
-	}
-
-	ImGui::End();
-
-}
-
-void CAnimEdit_Manager::IMGUI_Detail_AnimMontage()
-{
-}
 
 
 UPtr<CAnimEdit_Manager> CAnimEdit_Manager::Create()

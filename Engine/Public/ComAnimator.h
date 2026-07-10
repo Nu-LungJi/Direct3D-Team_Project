@@ -3,6 +3,9 @@
 
 #include "Component.h"
 
+#include "ISerializable.h"
+#include "SerializerInterface.h"
+
 NS_BEGIN(Engine)
 class CComModelInstance;
 class CResModelAnim;
@@ -11,6 +14,8 @@ class CResModelAnim;
 class ENGINE_DLL CComAnimator : public CComponent
 {
 
+public:
+	void UpdateGUI() override;
 
 public:
 	typedef struct tagDesc : CComponent::DESC
@@ -19,12 +24,21 @@ public:
 	
 	}DESC;
 
+
 public:
 	enum ANIMTYPE{
 		ANIM, ACTION
 	};
 
-	struct ANIMSTRUCT {
+	enum EVENTTYPE {
+		COLLIDER,
+		SOUND,
+		EFFECT,
+		END_EVENTTYPE
+	};
+
+	struct ANIMSTRUCT
+	{
 		int32_t   iAnimIndex = -1;
 
 		// 재생 시간
@@ -66,8 +80,47 @@ public:
 			return iAnimIndex >= 0;
 		}
 
+
+
+
+		//void Serialize(ISerializer& serializer) const
+		//{
+		//	WRITE_ALL(serializer, iAnimIndex, fTrackPosition, fSpeed, bLoop, bFinished, KeyFrameIndices);
+		//	//serializer.Write("iAnimIndex", iAnimIndex);
+		//	//serializer.Write("fTrackPosition", fTrackPosition);
+		//	//serializer.Write("fSpeed", fSpeed);
+		//	//serializer.Write("bLoop", bLoop);
+		//	//serializer.Write("bFinished", bFinished);
+		//	//serializer.Write("KeyFrameIndices", KeyFrameIndices);
+		//}
+		//void Deserialize(IDeserializer& deserializer)
+		//{
+		//	READ_ALL(deserializer, iAnimIndex, fTrackPosition, fSpeed, bLoop, bFinished, KeyFrameIndices);
+		//	//deserializer.Read("iAnimIndex", iAnimIndex);
+		//	//deserializer.Read("fTrackPosition", fTrackPosition);
+		//	//deserializer.Read("fSpeed", fSpeed);
+		//	//deserializer.Read("bLoop", bLoop);
+		//	//deserializer.Read("bFinished", bFinished);
+		//	//deserializer.Read("KeyFrameIndices", KeyFrameIndices);
+		//}
 	};
 	 
+	struct ACTIONSTRUCT : public ISerializable {
+		std::vector<std::string> sNames;
+		std::vector<int32_t>   iAnimIndexes;
+		// 항상 breakPoint는 iAnimIndexes보다 -1만큼 작다.
+		std::vector<_float>    fAnimBreakPoint;
+		// 재생 시간
+		_float	  fDuration = 0.f;
+		_float	  fActionTrackPosition = 0.f;
+
+		// Collider
+		
+
+
+
+
+	};
 
 public:
 	DECLARE_DERIVED_TYPE(CComAnimator, CComponent)
@@ -98,6 +151,8 @@ public:
 	_vector RemoveYRotation(_vector qRotation);
 	void	Blend_Anim(_float fTimeDelta);
 
+	void	SetTrackPosition(_float fTrackPosition);
+
 
 public:
 	_float3 GetRootMotionDelta() { return m_vRootMotionDelta; }
@@ -113,7 +168,7 @@ private:
 	ANIMTYPE		m_iPlayAnimationType{ ANIMTYPE::ANIM };
 	int32_t		m_iPlayAnimationNum{ 0 };
 	int32_t		m_iPlayAnimIndex{ 0 };
-	int32_t		m_iPlayAnimMonatgueIndex{ 0 };
+
 
 private:
 	// 애니메이션 정보 (블렌딩 고려)

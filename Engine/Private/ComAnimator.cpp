@@ -8,6 +8,19 @@ NS_USING(Engine)
 
 
 
+void CComAnimator::UpdateGUI()
+{
+	//if (ImGui::Button("save")) {
+	//	CGameInstance::Get().JsonSerialize("./Test.json", m_CurAnimState);
+	//}
+	//if (ImGui::Button("load")) {
+	//	ANIMSTRUCT m_Cur;
+	//	CGameInstance::Get().JsonDeSerialize("./Test.json", m_Cur);
+	//	Play_Anim(m_Cur.iAnimIndex, m_Cur.bLoop);
+	//	m_bPlay = true;
+	//}
+}
+
 CComAnimator::CComAnimator()
 {
 
@@ -548,6 +561,7 @@ _matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _flo
 	return XMMatrixAffineTransformation(vScale, XMVectorSet(0.f, 0.f, 0.f, 1.f), vRotation, vTranslation);
 
 }
+
 _vector CComAnimator::RemoveYRotation(_vector qRotation)
 {
 	qRotation = XMQuaternionNormalize(qRotation);
@@ -629,7 +643,54 @@ void CComAnimator::Blend_Anim(_float fTimeDelta)
     }
 }
 
+void CComAnimator::SetTrackPosition(_float fTrackPosition)
+{
+	if (m_pModelInstance == nullptr)
+		return;
 
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return;
+
+	auto& Anims = pModel->GetAnimations();
+
+	if (m_CurAnimState.iAnimIndex < 0 ||
+		m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+	{
+		return;
+	}
+
+	auto pAnim = Anims[m_CurAnimState.iAnimIndex];
+	if (pAnim == nullptr)
+		return;
+
+	_float fDuration = pAnim->GetDuration();
+
+	if (fDuration <= 0.f)
+		return;
+
+	fTrackPosition = std::clamp(fTrackPosition, 0.f, fDuration);
+
+	m_CurAnimState.fTrackPosition = fTrackPosition;
+
+	std::fill(
+		m_CurAnimState.KeyFrameIndices.begin(),
+		m_CurAnimState.KeyFrameIndices.end(),
+		0
+	);
+
+
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+
+	m_bBlending = false;
+	m_fBlendTime = 0.f;
+	m_fBlendDuration = 0.f;
+
+
+	Build_BoneMatrices_CPU(0.f);
+
+	m_fRatio = m_CurAnimState.fTrackPosition / fDuration;
+}
 
 
 
