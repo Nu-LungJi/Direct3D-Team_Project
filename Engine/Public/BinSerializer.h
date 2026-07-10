@@ -27,6 +27,7 @@ public:
 	void Write(const std::string& key, const _float4& value) override;
 	void Write(const std::string& key, const _float4x4& value)override;
 	void Write(const std::string& key, const ISerializable& value) override;
+	void Write(const std::string& key, const StringID& value) override;
 
 	void StartArray(const std::string& key) override;
 	void EndArray() override;

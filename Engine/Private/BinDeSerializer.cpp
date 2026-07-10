@@ -94,6 +94,14 @@ void CBinDeSerializer::Read(const std::string& key, ISerializable& outValue) {
 	outValue.Deserialize(*this); // 하위 객체는 알아서 순서대로 자기 것을 읽음
 }
 
+void CBinDeSerializer::Read(const std::string& key, StringID& outValue)
+{
+	std::string tempStr;
+	Read(key, tempStr); // 바로 위에 구현된 문자열 Read 호출
+
+	outValue = StringID(tempStr); // 다시 StringID로 복원!
+}
+
 // === 배열 및 맵 제어 ===
 size_t CBinDeSerializer::StartArray(const std::string& key) {
 	size_t count = 0;
