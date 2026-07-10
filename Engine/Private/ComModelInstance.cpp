@@ -137,16 +137,17 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
     // 나중에 Bind 할떄 animation 정보를 던져준 GPU에서 Animatino 돌린다. 나중에 수정
     auto& pMesh = m_pModel->GetMeshes()[iMeshIndex];
 	auto& Bones = m_pModel->GetBones();
-
+	auto  BonesSize = Bones.size();
     auto& BoneMatrices = pMesh->GetBoneMatrices();
     auto& BoneIndices = pMesh->GetBoneIndices();
     auto& OffsetMatrix = pMesh->GetOffsetMatrices();
-    
 
     for (uint32_t i = 0; i < pMesh->Get_BoneIndex(); i++)
     {
-        XMStoreFloat4x4(&BoneMatrices[i],
-            XMLoadFloat4x4(&OffsetMatrix[i]) * Bones[BoneIndices[i]]->Get_CombinedTransformationMatrix());
+		if (m_CombinedBoneMatrices.size() != 0) {
+
+			XMStoreFloat4x4(&BoneMatrices[i],XMLoadFloat4x4(&OffsetMatrix[i]) *XMLoadFloat4x4(&m_CombinedBoneMatrices[BoneIndices[i]]));
+		}
     }
 
     if (!BoneMatrices.empty())
@@ -161,7 +162,7 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 
         _float4x4* pBoneMatrices = reinterpret_cast<_float4x4*>(MappedResource.pData);
 
-        for (uint32_t i = 0; i < 512; ++i)
+        for (uint32_t i = 0; i < BonesSize; ++i)
         {
             XMStoreFloat4x4(&pBoneMatrices[i], XMMatrixIdentity());
         }

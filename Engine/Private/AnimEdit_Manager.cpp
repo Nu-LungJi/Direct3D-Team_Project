@@ -556,9 +556,7 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
  
             if (ImGui::Selectable(pAnim->GetAnimName().c_str(), bSelected))
             {
-                pComAnimator->SetPlayAnimIndex(i);
-
-          
+                pComAnimator->Play_Anim(i,true, 0.1f);
 
             }
         }
