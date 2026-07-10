@@ -12,6 +12,8 @@
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
 
+#include "SerDeTestCase.h"
+
 NS_USING(Client)
 
 CMainApp::CMainApp()
@@ -122,6 +124,9 @@ HRESULT CMainApp::Initialize()
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 
 	}
+
+	// 시리얼라이즈 테스트
+	//RunMegaSerializationTest();
 
 	return S_OK;
 }
