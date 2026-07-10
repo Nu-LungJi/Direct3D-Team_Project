@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "SerializeManager.h"
 
-#include "SerDeTestCase.h"
+//#include "SerDeTestCase.h"
 
 NS_USING(Engine)
 
