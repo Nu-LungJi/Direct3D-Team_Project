@@ -19,6 +19,9 @@ public:
 
 	HRESULT Build(ID3D11ShaderResourceView* depthSRV); // 원본 Depth받아와서 Build
 
+	// 이 함수는 GPU 결과를 CPU가 읽는 거라 Map()에서 stall (GPU가 원래 자기 할 일을 못함)
+	HRESULT ReadMipToCPU(uint32_t mip, std::vector<float>& outDepths, uint32_t& outWidth, uint32_t& outHeight) const; // 나중에 GPU-Driven-Rendering으로 바꾸면서 안 쓸 거임, 임시검증용
+
 	ComPtr<ID3D11ShaderResourceView> GetSRV() const { return m_pSRV; }
 	ComPtr<ID3D11ShaderResourceView> GetMipSRV(uint32_t mip) const { return m_MipSRVs[mip]; }
 	ComPtr<ID3D11UnorderedAccessView> GetMipUAV(uint32_t mip) const { return m_MipUAVs[mip]; }

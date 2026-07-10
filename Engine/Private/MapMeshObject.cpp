@@ -199,6 +199,75 @@ void CMapMeshObject::UpdateGUI()
 	CGameObject::UpdateGUI();
 }
 
+bool CMapMeshObject::IsOcclusionCullable() const
+{
+	return !s_bInstancingEnabled &&
+		m_pComModelInstance != nullptr &&
+		m_pComModelInstance->GetModel() != nullptr;
+}
+
+bool CMapMeshObject::GetOcclusionBounds(BoundingBox& outBounds) const
+{
+	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
+		return false;
+
+	const auto& meshes = m_pComModelInstance->GetModel()->GetMeshes();
+	if (meshes.empty())
+		return false;
+
+	XMFLOAT3 minPos{
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max()
+	};
+
+	XMFLOAT3 maxPos{
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max()
+	};
+	bool hasBounds = false;
+
+	for (const auto& mesh : meshes)
+	{
+		if (mesh == nullptr)
+			continue;
+
+		hasBounds = true;
+
+		const auto& meshMin = mesh->GetMinPos();
+		const auto& meshMax = mesh->GetMaxPos();
+
+		minPos.x = std::min(minPos.x, meshMin.x);
+		minPos.y = std::min(minPos.y, meshMin.y);
+		minPos.z = std::min(minPos.z, meshMin.z);
+
+		maxPos.x = std::max(maxPos.x, meshMax.x);
+		maxPos.y = std::max(maxPos.y, meshMax.y);
+		maxPos.z = std::max(maxPos.z, meshMax.z);
+	}
+
+	if (!hasBounds)
+		return false;
+
+	XMFLOAT3 center{
+		(minPos.x + maxPos.x) * 0.5f,
+		(minPos.y + maxPos.y) * 0.5f,
+		(minPos.z + maxPos.z) * 0.5f
+	};
+
+	XMFLOAT3 extents{
+		(maxPos.x - minPos.x) * 0.5f,
+		(maxPos.y - minPos.y) * 0.5f,
+		(maxPos.z - minPos.z) * 0.5f
+	};
+
+	BoundingBox localBox(center, extents);
+	localBox.Transform(outBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
+
 HRESULT CMapMeshObject::SetModelResource(const std::string& modelGroupTag, const std::string& modelResTag)
 {
 	if (m_pComModelInstance == nullptr)

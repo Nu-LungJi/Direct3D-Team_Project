@@ -134,6 +134,67 @@ HRESULT CHizBuffer::Build(ID3D11ShaderResourceView* depthSRV)
 	return S_OK;
 }
 
+HRESULT CHizBuffer::ReadMipToCPU(uint32_t mip, std::vector<float>& outDepths, uint32_t& outWidth, uint32_t& outHeight) const
+{
+	if (mip >= m_iMipCount || m_pTexture == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	outWidth = std::max(1u, m_iWidth >> mip);
+	outHeight = std::max(1u, m_iHeight >> mip);
+
+	D3D11_TEXTURE2D_DESC stagingDesc{};
+	stagingDesc.Width = outWidth;
+	stagingDesc.Height = outHeight;
+	stagingDesc.MipLevels = 1;
+	stagingDesc.ArraySize = 1;
+	stagingDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	stagingDesc.SampleDesc.Count = 1;
+	stagingDesc.SampleDesc.Quality = 0;
+	stagingDesc.Usage = D3D11_USAGE_STAGING;
+	stagingDesc.BindFlags = 0;
+	stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	stagingDesc.MiscFlags = 0;
+
+	ComPtr<ID3D11Texture2D> stagingTexture{};
+	if (FAILED(m_pDevice->CreateTexture2D(&stagingDesc, nullptr, stagingTexture.GetAddressOf())))
+	{
+		return E_FAIL;
+	}
+
+	const uint32_t srcSubresource = D3D11CalcSubresource(mip, 0, m_iMipCount);
+	m_pContext->CopySubresourceRegion(
+		stagingTexture.Get(),
+		0,
+		0,
+		0,
+		0,
+		m_pTexture.Get(),
+		srcSubresource,
+		nullptr);
+
+	// GPU 결과를 CPU가 읽는 거라 Map()에서 stall (GPU가 원래 자기 할 일을 못함)
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (FAILED(m_pContext->Map(stagingTexture.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
+	{
+		return E_FAIL;
+	}
+
+	outDepths.resize(static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight));
+
+	for (uint32_t y = 0; y < outHeight; ++y)
+	{
+		const auto* srcRow = reinterpret_cast<const float*>(
+			static_cast<const uint8_t*>(mapped.pData) + static_cast<size_t>(mapped.RowPitch) * y);
+		auto* dstRow = outDepths.data() + static_cast<size_t>(outWidth) * y;
+		std::memcpy(dstRow, srcRow, sizeof(float) * outWidth);
+	}
+
+	m_pContext->Unmap(stagingTexture.Get(), 0);
+	return S_OK;
+}
+
 
 HRESULT CHizBuffer::CreateResources()
 {

@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine_Defines.h"
 #include "IRenderable.h"
+#include "HizBuffer.h"
+
 NS_BEGIN(Engine)
 class CGameObject;
 class CResOffscreenTexture;
@@ -182,6 +184,46 @@ private:
 	RENDER_CTX		RenderContext = {};
 
 	SPtr<CResRasterizerState>	Rasterizer{};
+
+
+
+//------------------------------------- 대성 추가 오클루전 컬링용 ------------------------------
+private:
+	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
+	UPtr<CHizBuffer> m_pPrevHizBuffer = {}; // 컬링에 사용할 자료
+	_bool m_bHasPrevHizBuffer = false;
+
+private:
+	HRESULT InitializeHizBuffer();
+	HRESULT BuildCurrentHizBuffer(); // 다 그려진 후 depth를 Hiz버퍼에 copy & mipChain 구성
+	HRESULT UpdatePrevHizCpuMips(); // prev Hi-Z의 모든 mip을 CPU vector로 복사한다 // 임시 테스트용
+
+	_bool IsOcclusionCulledCPU(const IRenderable* pRenderObject) const; // 렌더러블 오브젝트 오클루전 컬링 검사 (CPU로 검사)
+	_float SampleHizCpuDepth(uint32_t mip, uint32_t x, uint32_t y) const; // mip에서 depth값을 가져옴(CPU)
+
+
+	void DrawOcclusionBoundsDebug(const IRenderable* pRenderObject, const _float4& color) const;
+
+
+	struct HIZ_CPU_MIP
+	{
+		std::vector<float> depths{}; // mip depth 캐싱
+		uint32_t width = 0; // mip width
+		uint32_t height = 0; // mip height
+	};
+	std::vector<HIZ_CPU_MIP> m_HizCpuMips{};
+
+	// 디버깅GUI용
+	uint32_t m_iHizCpuTested = 0;
+	uint32_t m_iHizCpuCulled = 0;
+	_bool m_bDrawOcclusionBounds = false;
+
+	// Mip선택이 잘 이루어지고 있는지 확인용GUI
+	static constexpr uint32_t HIZ_DEBUG_MAX_MIPS = 16;
+	mutable uint32_t m_HizSelectedMipCounts[HIZ_DEBUG_MAX_MIPS] = {};
+	mutable uint32_t m_iHizSelectedMipOverflow = 0;
+//--------------------------------------------------------------------------------------------
+
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };

@@ -40,6 +40,9 @@ public:
 	void UpdateGUI() override;
 
 public:
+	bool IsOcclusionCullable() const override;
+	bool GetOcclusionBounds(BoundingBox& outBounds) const override;
+public:
 	const std::string& GetModelResourceGroup() const { return m_modelResourceGroup; }
 	const std::string& GetModelResourceTag() const { return m_modelResourceTag; }
 	HRESULT SetModelResource(const std::string& modelGroupTag, const std::string& modelResTag);
