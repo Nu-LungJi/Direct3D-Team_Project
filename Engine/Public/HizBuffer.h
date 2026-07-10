@@ -8,7 +8,7 @@ class CHizBuffer final : public CEngineBase
 public:
 	DECLARE_DERIVED_TYPE(CHizBuffer, CEngineBase)
 
-protected:
+private:
 	CHizBuffer(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContext> context);
 	CHizBuffer(const CHizBuffer& Prototype);
 	~CHizBuffer() override;

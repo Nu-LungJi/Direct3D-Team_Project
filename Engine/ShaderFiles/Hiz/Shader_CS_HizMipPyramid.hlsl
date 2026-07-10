@@ -1,6 +1,6 @@
 
-Texture2D<float> g_InputMip : register(t0);
-RWTexture2D<float> g_OutputMip : register(u0);
+Texture2D<float> g_InputMip : register(t0); // MipNÀÇ SRV
+RWTexture2D<float> g_OutputMip : register(u0); // MipN+1ÀÇ UAV
 
 // MipN -> MipN+1
 [numthreads(8, 8, 1)]

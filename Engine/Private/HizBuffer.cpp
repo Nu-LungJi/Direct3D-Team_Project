@@ -20,12 +20,6 @@ HRESULT CHizBuffer::Initialize(uint32_t width, uint32_t height)
 {
 	Resize(width, height);
 
-	if (FAILED(CreateResources()))
-		return E_FAIL;
-
-	if (FAILED(CreateViews()))
-		return E_FAIL;
-
 	return S_OK;
 }
 
@@ -43,6 +37,24 @@ HRESULT CHizBuffer::Resize(uint32_t width, uint32_t height)
 		++mipCount;
 	}
 	m_iMipCount = mipCount;
+
+	m_pTexture.Reset();
+	m_pSRV.Reset();
+	for (auto& pMipSRV : m_MipSRVs)
+	{
+		pMipSRV.Reset();
+	}
+	for (auto& pMipUAV : m_MipUAVs)
+	{
+		pMipUAV.Reset();
+	}
+
+	if (FAILED(CreateResources()))
+		return E_FAIL;
+
+	if (FAILED(CreateViews()))
+		return E_FAIL;
+
 	return S_OK;
 }
 
