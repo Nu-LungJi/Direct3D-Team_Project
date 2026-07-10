@@ -33,7 +33,10 @@ EVALUATE CBTTurnSlow::Evaluate(_float fTimeDelta)
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
+	{
+		m_eDebug = EVALUATE::FAILED;
 		return EVALUATE::FAILED;
+	}
 	XMMATRIX mat = XMMatrixIdentity();
 	m_Value.fTick += fTimeDelta;
 	_float t = m_Value.fTick / m_Value.fTime;
@@ -49,9 +52,13 @@ EVALUATE CBTTurnSlow::Evaluate(_float fTimeDelta)
 	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
 	pTransform->SetQuaternion(quat);
 	if (t <= 1.f)
+	{
+		m_eDebug = EVALUATE::RUN;
 		return EVALUATE::RUN;
-
+	}
+		
 	m_Value.fTick = 0.f;
+	m_eDebug = EVALUATE::SUCCESS;
 	return EVALUATE::SUCCESS;
 }
 void CBTTurnSlow::Update_Gui()

@@ -125,7 +125,12 @@ void CComBeHavior::UnRegistNode(uint32_t iIndex)
 
 void CComBeHavior::Update(_float fTimeDelta)
 {
-    m_Root->Tick(fTimeDelta);
+	if (nullptr != m_Root)
+	{
+		m_Root->ResetDebug();
+		m_Root->Tick(fTimeDelta);
+	}
+
 }
 void CComBeHavior::UpdateGUI()
 {

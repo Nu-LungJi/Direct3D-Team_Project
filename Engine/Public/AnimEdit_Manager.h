@@ -5,6 +5,8 @@
 
 NS_BEGIN(Engine)
 class CGameObject;
+class CComAnimator;
+class CComAnimMontage;
 
 class CAnimEdit_Manager final : public CEngineBase
 {
@@ -39,6 +41,9 @@ public:
 public:
 	int32_t GetAnimIndex(CHandle Handle);
 public:
+	
+	//-------------------------------------------------------Anim---------------------------------------------------------
+	void IMGUI_TopBar_Animation(CGameObject* pSampleObj, CComAnimator* pComAnimator);
 	void IMGUI_Select_AnimType();
 	void IMGUI_Slider_Animation();
 	void IMGUI_Select_Animation();
@@ -48,8 +53,12 @@ public:
 
 	void IMGUI_File_Rename(const std::string& Path, const std::string& fileName, const std::string& newfileName);
 
-
+	//------------------------------------------------------AnimMontage--------------------------------------------------------
+	void IMGUI_Slider_AnimMontage();
+	void IMGUI_Select_AnimMontage();
+	void IMGUI_Detail_AnimMontage();
 public:
+	//-------------------------------------------------------Anim---------------------------------------------------------
 	// helper 함수들
 	_bool RenameAnimFile_Overwrite(const std::string& oldFullPath, const std::string& newAnimName, std::string& outNewFullPath);
 	_bool IsSamePath(const std::filesystem::path& a, const std::filesystem::path& b);
@@ -59,6 +68,12 @@ public:
 	std::vector<BAKE_SAMPLE> BuildBakeSamples(float fSourceDuration, float fTickPerSecond, float fSampleFPS);
 	KEYFRAME SampleChannelKeyFrame(CResModelChanel* pChannel, float fTrackPosition);
 
+	//-------------------------------------------------------Animmontage---------------------------------------------------------
+private:
+	std::unordered_map<std::string, CComAnimMontage*> m_mapAnimMontages;
+
+	CComAnimMontage* m_pCurrentMontage = nullptr;
+	std::string   m_strCurrentMontageName;
 
 
 public:

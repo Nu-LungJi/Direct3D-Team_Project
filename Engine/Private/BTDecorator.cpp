@@ -31,12 +31,21 @@ HRESULT CBTDecorator::Initalize(void* pArg)
 
 EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 {
-    if(m_pDecorator != nullptr)
-        return m_pDecorator->Evaluate(fTimeDelta);
+	if (m_pDecorator != nullptr)
+	{
+		EVALUATE  eType = m_pDecorator->Evaluate(fTimeDelta);
+		return m_eDebug = eType;
+	}
     
+	m_eDebug = EVALUATE::FAILED;
     return EVALUATE::FAILED;
 }
-
+void CBTDecorator::ResetDebug()
+{
+	m_eDebug = EVALUATE::END;
+	if (m_pDecorator != nullptr)
+		m_pDecorator->ResetDebug();
+}
 nlohmann::json CBTDecorator::Save_Node()
 {
 	const _string Name = "Child";

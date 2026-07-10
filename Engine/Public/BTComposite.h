@@ -28,6 +28,7 @@ public:
 	
 	virtual EVALUATE		Evaluate(_float fTimeDelta) { return EVALUATE::SUCCESS; }
 	void					Tick(_float fTimeDelta);
+	void			ResetDebug() override;
 public:
 	HRESULT					Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
 	virtual nlohmann::json  Save_Node() override;

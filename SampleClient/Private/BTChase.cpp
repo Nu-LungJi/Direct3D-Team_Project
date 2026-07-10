@@ -50,9 +50,9 @@ EVALUATE CBTChase::Evaluate(_float fTimeDelta)
 {
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
-		return EVALUATE::FAILED;
+		return m_eDebug = EVALUATE::FAILED;
 
-	return EVALUATE::SUCCESS;
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTChase::Update_Gui()
 {

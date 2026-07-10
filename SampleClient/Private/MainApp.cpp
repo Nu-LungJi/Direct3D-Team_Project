@@ -124,10 +124,11 @@ HRESULT CMainApp::Initialize()
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 
 	}
-
-	// 시리얼라이즈 테스트
-	//RunMegaSerializationTest();
-
+	if (FAILED(Create_ActionNode()))
+	{
+		MSG_BOX("Failed Action Node To MainApp");
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -294,10 +295,6 @@ HRESULT CMainApp::Load_Particle_Resources()
 		CGameInstance::Get().Add_Particle("BEAM", "ATTACK", CParticle_Ribbon::Create());
 		CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
 
-	}
-	if (FAILED(Create_ActionNode()))
-	{
-		return E_FAIL;
 	}
 	return S_OK;
 }
