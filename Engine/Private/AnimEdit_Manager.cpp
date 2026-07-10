@@ -4,6 +4,7 @@
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "ResModel.h"
+#include "ComAnimMontage.h"
 
 #include <fstream>
 NS_USING(Engine)
@@ -96,479 +97,333 @@ int32_t CAnimEdit_Manager::GetAnimIndex(CHandle Handle)
 
 void CAnimEdit_Manager::IMGUI_Select_AnimType()
 {
-    auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
-    if(pSampleObj == nullptr)
-		return; 
-
-    auto pComAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
-
-
-    if (nullptr == pComAnimator)
-        return;
-
-    int iAnimType = static_cast<int>(pComAnimator->GetAnimationTYPE());
-
-    //----------------------------------------
-    // 화면 상단 전체 너비
-    //----------------------------------------
-
-    ImGuiViewport* pViewport = ImGui::GetMainViewport();
-
-    ImGui::SetNextWindowPos(
-        ImVec2(pViewport->Pos.x, pViewport->Pos.y));
-
-    ImGui::SetNextWindowSize(
-        ImVec2(pViewport->Size.x, 40.f));
-
-    ImGui::SetNextWindowBgAlpha(0.75f);
-
-    ImGui::Begin(
-        "##AnimationEditor",
-        nullptr,
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse);
-
-    const char* pTypeName =
-        (iAnimType == 0) ? "Animation" : "Montage";
-
-    // 타입 선택
-    if (ImGui::Button((std::string("Type : ") + pTypeName + "  v").c_str(),ImVec2(180.f, 28.f)))
-    {
-        ImGui::OpenPopup("AnimTypePopup");
-    }
-
-    if (ImGui::BeginPopup("AnimTypePopup"))
-    {
-        if (ImGui::MenuItem("Animation"))
-            iAnimType = 0;
-
-        if (ImGui::MenuItem("Montage"))
-            iAnimType = 1;
-
-        ImGui::EndPopup();
-    }
-
-    ImGui::SameLine();
-
-
-    // Save 관련 static 상태들
-    static bool s_bOpenRenamePopup = false;
-    static bool s_bOpenSaveFilePopup = false;
-    static bool s_bOpenSaveConfirmPopup = false;
-
-    static char s_szRenameBuffer[256] = "";
-    static char s_szSaveNameBuffer[256] = "";
-
-    static std::filesystem::path s_SaveTargetPath;
-
-    // ------------------------------------------------------------
-    // Save 버튼
-    // ------------------------------------------------------------
-    if (ImGui::Button("Save", ImVec2(100.f, 28.f)))
-    {
-        ImGui::OpenPopup("SaveAnimAction");
-    }
-
-    // ------------------------------------------------------------
-    // 1단계: Rename 할 건지, 실제 Save 할 건지 선택
-    // ------------------------------------------------------------
-    if (ImGui::BeginPopupModal("SaveAnimAction", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Select Save Action");
-        ImGui::Separator();
-
-        if (ImGui::Button("Rename Only", ImVec2(180.f, 28.f)))
-        {
-            s_bOpenRenamePopup = true;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::Spacing();
-
-        if (ImGui::Button("Save New File", ImVec2(180.f, 28.f)))
-        {
-            s_bOpenSaveFilePopup = true;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::Button("Cancel", ImVec2(180.f, 28.f)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-
-    // CloseCurrentPopup() 직후 바로 OpenPopup()이 안 먹을 수 있어서 플래그로 다음 프레임에 열기
-    if (s_bOpenRenamePopup)
-    {
-        s_bOpenRenamePopup = false;
-        ImGui::OpenPopup("RenameAnim");
-    }
-
-    if (s_bOpenSaveFilePopup)
-    {
-        s_bOpenSaveFilePopup = false;
-        ImGui::OpenPopup("SaveAnimFile");
-    }
-
-    if (s_bOpenSaveConfirmPopup)
-    {
-        s_bOpenSaveConfirmPopup = false;
-        ImGui::OpenPopup("ConfirmSaveAnimFile");
-    }
-
-    // ------------------------------------------------------------
-    // Rename Only 팝업
-    // 파일 이름만 변경
-    // ------------------------------------------------------------
-    if (ImGui::BeginPopupModal("RenameAnim", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Rename Animation File");
-        ImGui::Separator();
-
-        ImGui::InputText("Anim Name", s_szRenameBuffer, sizeof(s_szRenameBuffer));
-
-        if (ImGui::Button("OK", ImVec2(100.f, 28.f)))
-        {
-            uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
-
-            auto pComModelInstance =
-                pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
-
-            if (pComModelInstance && pComModelInstance->GetModel())
-            {
-                auto animations = pComModelInstance->GetModel()->GetAnimations();
-
-                if (!animations.empty() && iSelected < animations.size())
-                {
-                    auto pAnim = animations[iSelected];
-
-                    if (pAnim && s_szRenameBuffer[0] != '\0')
-                    {
-                        std::string oldPath = pAnim->GetAnimPath();
-                        std::string newPath;
-
-                        // 실제 파일 이름 변경
-                        if (RenameAnimFile_Overwrite(oldPath, s_szRenameBuffer, newPath))
-                        {
-                            pAnim->SetAnimName(s_szRenameBuffer);
-                            pAnim->SetAnimPath(newPath);
-                        }
-                    }
-                }
-            }
-
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Cancel", ImVec2(100.f, 28.f)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-
-    // ------------------------------------------------------------
-    // Save New File 팝업
-    // 저장할 새 파일 이름 입력
-    // ------------------------------------------------------------
-    if (ImGui::BeginPopupModal("SaveAnimFile", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Save Current Animation As New File");
-        ImGui::Separator();
-
-        ImGui::InputText("Save Name", s_szSaveNameBuffer, sizeof(s_szSaveNameBuffer));
-
-        if (ImGui::Button("Save", ImVec2(100.f, 28.f)))
-        {
-            uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
-
-            auto pComModelInstance =
-                pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
-
-            if (pComModelInstance && pComModelInstance->GetModel())
-            {
-                auto animations = pComModelInstance->GetModel()->GetAnimations();
-
-                if (!animations.empty() && iSelected < animations.size())
-                {
-                    auto pAnim = animations[iSelected];
-
-                    if (pAnim && s_szSaveNameBuffer[0] != '\0')
-                    {
-                        std::filesystem::path oldPath = pAnim->GetAnimPath();
-                        std::filesystem::path saveName = s_szSaveNameBuffer;
-
-                        // 확장자 안 적으면 기존 확장자 붙이기
-                        if (saveName.extension().empty())
-                        {
-                            saveName += oldPath.extension().string();
-                        }
-
-                        s_SaveTargetPath = oldPath.parent_path() / saveName;
-
-                        // 바로 저장하지 않고 확인 팝업으로 넘김
-                        s_bOpenSaveConfirmPopup = true;
-                        ImGui::CloseCurrentPopup();
-                    }
-                }
-            }
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Cancel", ImVec2(100.f, 28.f)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-
-    // ------------------------------------------------------------
-    // 최종 저장 확인 팝업
-    // 여기서 Yes 눌러야 실제 저장됨
-    // ------------------------------------------------------------
-    if (ImGui::BeginPopupModal("ConfirmSaveAnimFile", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Really save this animation?");
-        ImGui::Separator();
-
-        ImGui::Text("Target File:");
-        ImGui::TextWrapped("%s", s_SaveTargetPath.string().c_str());
-
-        if (std::filesystem::exists(s_SaveTargetPath))
-        {
-            ImGui::Spacing();
-            ImGui::TextColored(
-                ImVec4(1.f, 0.3f, 0.3f, 1.f),
-                "File already exists. It will be overwritten."
-            );
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::Button("Yes, Save", ImVec2(120.f, 28.f)))
-        {
-            uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
-
-            auto pComModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
-
-            if (pComModelInstance && pComModelInstance->GetModel())
-            {
-                auto animations = pComModelInstance->GetModel()->GetAnimations();
-
-                if (!animations.empty() && iSelected < animations.size())
-                {
-                    auto pAnim = animations[iSelected];
-
-                    if (pAnim)
-                    {
-                        if (WriteSaveBakedBinary(
-                            s_SaveTargetPath.parent_path().string(),
-                            s_SaveTargetPath.stem().string()))
-                        {
-                        }
-                    }
-                }
-            }
-
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("No", ImVec2(100.f, 28.f)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-
-    ImGui::SameLine();
-
-
-    
-
-
-     
-    struct LOAD_ANIM_FILE_DESC
-        {
-            std::filesystem::path filePath;
-            std::string fileName;
-        };
-
-    static std::vector<LOAD_ANIM_FILE_DESC> s_LoadAnimFiles;
-    static std::filesystem::path s_LoadAnimFolder;
-
-    auto RefreshLoadAnimFileList =
-        [&](const std::filesystem::path& animFolder,
-            const std::vector<SPtr<CResModelAnim>>& animations)
-            {
-                s_LoadAnimFiles.clear();
-                s_LoadAnimFolder = animFolder;
-
-                if (s_LoadAnimFolder.empty())
-                    return;
-
-                std::error_code ec;
-
-                if (!std::filesystem::exists(s_LoadAnimFolder, ec))
-                    return;
-
-                for (auto& entry : std::filesystem::directory_iterator(s_LoadAnimFolder, ec))
-                {
-                    if (ec)
-                        break;
-
-                    if (!entry.is_regular_file())
-                        continue;
-
-                    std::filesystem::path filePath = entry.path();
-
-                    if (filePath.extension() != ".bin")
-                        continue;
-
-                    if (IsAlreadyLoadedAnim(animations, filePath))
-                        continue;
-
-                    LOAD_ANIM_FILE_DESC desc{};
-                    desc.filePath = filePath;
-                    desc.fileName = filePath.filename().string();
-
-                    s_LoadAnimFiles.push_back(desc);
-                }
-            };
-    
-    if (ImGui::Button("Load", ImVec2(100.f, 28.f)))
-    {
-        auto pSampleObj =
-            CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
-
-        auto pComModelInstance =
-            pSampleObj ? pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance") : nullptr;
-
-        auto pComAnimator =
-            pSampleObj ? pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator") : nullptr;
-
-        if (pComModelInstance && pComModelInstance->GetModel() && pComAnimator)
-        {
-            auto pModel = pComModelInstance->GetModel();
-            auto animations = pModel->GetAnimations();
-
-            std::filesystem::path animFolder;
-
-            if (!animations.empty())
-            {
-                uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
-
-                if (iSelected < animations.size() && animations[iSelected])
-                {
-                    animFolder =
-                        std::filesystem::path(animations[iSelected]->GetAnimPath()).parent_path();
-                }
-            }
-
-            s_LoadAnimFolder = animFolder;
-
-   
-        }
-
-        ImGui::OpenPopup("LoadAnim");
-    }
-
-    if (ImGui::BeginPopupModal("LoadAnim", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Anim Folder:");
-        ImGui::Text("%s", s_LoadAnimFolder.string().c_str());
-        ImGui::Separator();
-
-        if (s_LoadAnimFiles.empty())
-        {
-            ImGui::Text("No anim files found.");
-        }
-        else
-        {
-            for (auto& desc : s_LoadAnimFiles)
-            {
-                if (ImGui::Selectable(desc.fileName.c_str()))
-                {
-                    auto pSampleObj =
-                        CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
-
-                    auto pComModelInstance =
-                        pSampleObj ? pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance") : nullptr;
-
-                    if (pComModelInstance && pComModelInstance->GetModel())
-                    {
-                        auto pModel = pComModelInstance->GetModel();
-
-                        //// 실제 애니메이션 로드
-                        //pModel->LoadAnim(desc.filePath.string());
-
-                        ImGui::CloseCurrentPopup();
-                    }
-                }
-            }
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::Button("Refresh", ImVec2(100.f, 28.f)))
-        {
-            auto pSampleObj =
-                CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
-
-            auto pComModelInstance =
-                pSampleObj ? pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance") : nullptr;
-
-            if (pComModelInstance && pComModelInstance->GetModel())
-            {
-                auto animations = pComModelInstance->GetModel()->GetAnimations();
-
-                RefreshLoadAnimFileList(s_LoadAnimFolder, animations);
-            }
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Cancel", ImVec2(100.f, 28.f)))
-            ImGui::CloseCurrentPopup();
-
-        ImGui::EndPopup();
-    }
-    ImGui::SameLine();
-
-    if (ImGui::Button("Create", ImVec2(100.f, 28.f)))
-    {
-    }
-
-	pComAnimator->SetAnimationTYPE(static_cast<CComAnimator::ANIMTYPE>(iAnimType));
-
-    ImGui::SameLine();
-    if (iAnimType == 0) {
-        auto pComModelInstance =
-            pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
-
-        if (pComModelInstance->GetModel()->GetAnimations().size() == 0)
-            return;
-
-        auto animations = pComModelInstance->GetModel()->GetAnimations();
-        ImGui::Text("Current : %s", animations[pComAnimator->GetPlayAnimIndex()]->GetAnimName().c_str());
-    }
-
-
-    ImGui::End();
-
+	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+	if (pSampleObj == nullptr)
+		return;
+
+	auto pComAnimator =
+		pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+	if (pComAnimator == nullptr)
+		return;
+
+	int iAnimType =
+		static_cast<int>(pComAnimator->GetAnimationTYPE());
+
+	ImGuiViewport* pViewport = ImGui::GetMainViewport();
+
+	ImGui::SetNextWindowPos(
+		ImVec2(pViewport->Pos.x, pViewport->Pos.y));
+
+	ImGui::SetNextWindowSize(
+		ImVec2(pViewport->Size.x, 40.f));
+
+	ImGui::SetNextWindowBgAlpha(0.75f);
+
+	ImGui::Begin(
+		"##AnimationEditor",
+		nullptr,
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoCollapse);
+
+	const char* pTypeName =
+		(iAnimType == 0) ? "Animation" : "Montage";
+
+	if (ImGui::Button(
+		(std::string("Type : ") + pTypeName + "  v").c_str(),
+		ImVec2(180.f, 28.f)))
+	{
+		ImGui::OpenPopup("AnimTypePopup");
+	}
+
+	if (ImGui::BeginPopup("AnimTypePopup"))
+	{
+		if (ImGui::MenuItem("Animation"))
+			iAnimType = 0;
+
+		if (ImGui::MenuItem("Montage"))
+			iAnimType = 1;
+
+		ImGui::EndPopup();
+	}
+
+	pComAnimator->SetAnimationTYPE(
+		static_cast<CComAnimator::ANIMTYPE>(iAnimType)
+	);
+
+	ImGui::SameLine();
+
+	if (iAnimType == 0)
+	{
+		IMGUI_TopBar_Animation(pSampleObj, pComAnimator);
+	}
+	else if (iAnimType == 1)
+	{
+		//IMGUI_TopBar_Montage(pSampleObj, pComAnimator);
+	}
+
+	ImGui::End();
+}
+
+void CAnimEdit_Manager::IMGUI_TopBar_Animation(CGameObject* pSampleObj,CComAnimator* pComAnimator)
+{
+	if (!pSampleObj || !pComAnimator)
+		return;
+
+	// 여기 안에 기존 Save 관련 static 상태들 둔다.
+	static bool s_bOpenRenamePopup = false;
+	static bool s_bOpenSaveFilePopup = false;
+	static bool s_bOpenSaveConfirmPopup = false;
+
+	static char s_szRenameBuffer[256] = "";
+	static char s_szSaveNameBuffer[256] = "";
+
+	static std::filesystem::path s_SaveTargetPath;
+
+	// ------------------------------------------------------------
+	// Animation Save
+	// ------------------------------------------------------------
+	if (ImGui::Button("Save", ImVec2(100.f, 28.f)))
+	{
+		ImGui::OpenPopup("SaveAnimAction");
+	}
+
+	if (ImGui::BeginPopupModal("SaveAnimAction", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Select Animation Save Action");
+		ImGui::Separator();
+
+		if (ImGui::Button("Rename Animation", ImVec2(180.f, 28.f)))
+		{
+			s_bOpenRenamePopup = true;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::Spacing();
+
+		if (ImGui::Button("Save New Animation File", ImVec2(180.f, 28.f)))
+		{
+			s_bOpenSaveFilePopup = true;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Cancel", ImVec2(180.f, 28.f)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	if (s_bOpenRenamePopup)
+	{
+		s_bOpenRenamePopup = false;
+		ImGui::OpenPopup("RenameAnim");
+	}
+
+	if (s_bOpenSaveFilePopup)
+	{
+		s_bOpenSaveFilePopup = false;
+		ImGui::OpenPopup("SaveAnimFile");
+	}
+
+	if (s_bOpenSaveConfirmPopup)
+	{
+		s_bOpenSaveConfirmPopup = false;
+		ImGui::OpenPopup("ConfirmSaveAnimFile");
+	}
+
+	// ------------------------------------------------------------
+	// Rename Animation
+	// ------------------------------------------------------------
+	if (ImGui::BeginPopupModal("RenameAnim", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Rename Animation File");
+		ImGui::Separator();
+
+		ImGui::InputText("Anim Name", s_szRenameBuffer, sizeof(s_szRenameBuffer));
+
+		if (ImGui::Button("OK", ImVec2(100.f, 28.f)))
+		{
+			uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
+
+			auto pComModelInstance =
+				pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+			if (pComModelInstance && pComModelInstance->GetModel())
+			{
+				auto animations =
+					pComModelInstance->GetModel()->GetAnimations();
+
+				if (!animations.empty() && iSelected < animations.size())
+				{
+					auto pAnim = animations[iSelected];
+
+					if (pAnim && s_szRenameBuffer[0] != '\0')
+					{
+						std::string oldPath = pAnim->GetAnimPath();
+						std::string newPath;
+
+						if (RenameAnimFile_Overwrite(
+							oldPath,
+							s_szRenameBuffer,
+							newPath))
+						{
+							pAnim->SetAnimName(s_szRenameBuffer);
+							pAnim->SetAnimPath(newPath);
+						}
+					}
+				}
+			}
+
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel", ImVec2(100.f, 28.f)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	// ------------------------------------------------------------
+	// Save Animation As New File
+	// ------------------------------------------------------------
+	if (ImGui::BeginPopupModal("SaveAnimFile", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Save Current Animation As New File");
+		ImGui::Separator();
+
+		ImGui::InputText("Save Name", s_szSaveNameBuffer, sizeof(s_szSaveNameBuffer));
+
+		if (ImGui::Button("Save", ImVec2(100.f, 28.f)))
+		{
+			uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
+
+			auto pComModelInstance =
+				pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+			if (pComModelInstance && pComModelInstance->GetModel())
+			{
+				auto animations =
+					pComModelInstance->GetModel()->GetAnimations();
+
+				if (!animations.empty() && iSelected < animations.size())
+				{
+					auto pAnim = animations[iSelected];
+
+					if (pAnim && s_szSaveNameBuffer[0] != '\0')
+					{
+						std::filesystem::path oldPath = pAnim->GetAnimPath();
+						std::filesystem::path saveName = s_szSaveNameBuffer;
+
+						if (saveName.extension().empty())
+							saveName += oldPath.extension().string();
+
+						s_SaveTargetPath = oldPath.parent_path() / saveName;
+
+						s_bOpenSaveConfirmPopup = true;
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel", ImVec2(100.f, 28.f)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	// ------------------------------------------------------------
+	// Confirm Save Animation
+	// ------------------------------------------------------------
+	if (ImGui::BeginPopupModal("ConfirmSaveAnimFile", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Really save this animation?");
+		ImGui::Separator();
+
+		ImGui::Text("Target File:");
+		ImGui::TextWrapped("%s", s_SaveTargetPath.string().c_str());
+
+		if (std::filesystem::exists(s_SaveTargetPath))
+		{
+			ImGui::Spacing();
+			ImGui::TextColored(
+				ImVec4(1.f, 0.3f, 0.3f, 1.f),
+				"File already exists. It will be overwritten."
+			);
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Yes, Save", ImVec2(120.f, 28.f)))
+		{
+			WriteSaveBakedBinary(
+				s_SaveTargetPath.parent_path().string(),
+				s_SaveTargetPath.stem().string()
+			);
+
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("No", ImVec2(100.f, 28.f)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	ImGui::SameLine();
+
+	// ------------------------------------------------------------
+	// Animation Load
+	// ------------------------------------------------------------
+	if (ImGui::Button("Load", ImVec2(100.f, 28.f)))
+	{
+		ImGui::OpenPopup("LoadAnim");
+	}
+
+
+
+	ImGui::SameLine();
+
+	// ------------------------------------------------------------
+	// Current Animation 표시
+	// ------------------------------------------------------------
+	auto pComModelInstance =
+		pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+	if (pComModelInstance && pComModelInstance->GetModel())
+	{
+		auto animations = pComModelInstance->GetModel()->GetAnimations();
+
+		uint32_t iSelected = pComAnimator->GetPlayAnimIndex();
+
+		if (!animations.empty() && iSelected < animations.size() && animations[iSelected])
+		{
+			ImGui::Text("Current Anim : %s",
+				animations[iSelected]->GetAnimName().c_str());
+		}
+		else
+		{
+			ImGui::Text("Current Anim : None");
+		}
+	}
 }
 
 void CAnimEdit_Manager::IMGUI_Slider_Animation()
@@ -697,9 +552,7 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
  
             if (ImGui::Selectable(pAnim->GetAnimName().c_str(), bSelected))
             {
-                pComAnimator->SetPlayAnimIndex(i);
-
-          
+                pComAnimator->Play_Anim(i,true, 0.1f);
 
             }
         }
@@ -972,10 +825,28 @@ void CAnimEdit_Manager::UpdateGUI()
         return;
 
 	IMGUI_Select_AnimType();
-    IMGUI_Slider_Animation();
-    IMGUI_Select_Animation();
-    IMGUI_Select_Detail_Data();
-    IMGUI_Speed_Animation();
+    
+	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+	if (pSampleObj == nullptr)
+		return;
+
+	auto pComAnimator =
+		pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+	if (pComAnimator->GetAnimationTYPE() == CComAnimator::ANIM) {
+
+		IMGUI_Slider_Animation();
+		IMGUI_Select_Animation();
+		IMGUI_Select_Detail_Data();
+		IMGUI_Speed_Animation();
+	}
+
+	if (pComAnimator->GetAnimationTYPE() == CComAnimator::MONTAGE) {
+		IMGUI_Slider_AnimMontage();
+		IMGUI_Select_AnimMontage();
+		IMGUI_Detail_AnimMontage();
+	}
+	
 }
 
 _bool CAnimEdit_Manager::RenameAnimFile_Overwrite(const std::string& oldFullPath,const std::string& newAnimName,std::string& outNewFullPath)
@@ -1322,6 +1193,437 @@ void CAnimEdit_Manager::IMGUI_File_Rename(const std::string& Path, const std::st
 
     return ;
 
+}
+
+void CAnimEdit_Manager::IMGUI_Slider_AnimMontage()
+{
+	//----------------------------------------
+	// Editor UI 전용 임시 값
+	// 실제 Montage 데이터 연결 X
+	//----------------------------------------
+	static float s_fMontageTime = 0.f;
+	static float s_fMontageDuration = 1.f;
+
+	if (s_fMontageDuration <= 0.f)
+		s_fMontageDuration = 1.f;
+
+	s_fMontageTime = std::clamp(s_fMontageTime, 0.f, s_fMontageDuration);
+
+	//----------------------------------------
+	// Window
+	//----------------------------------------
+	ImGuiViewport* pViewport = ImGui::GetMainViewport();
+
+	constexpr float WINDOW_WIDTH = 760.f;
+	constexpr float WINDOW_HEIGHT = 280.f;
+
+	ImGui::SetNextWindowPos(
+		ImVec2(
+			pViewport->Pos.x + (pViewport->Size.x - WINDOW_WIDTH) * 0.5f,
+			pViewport->Pos.y + pViewport->Size.y - WINDOW_HEIGHT - 20.f
+		),
+		ImGuiCond_FirstUseEver
+	);
+
+	ImGui::SetNextWindowSize(
+		ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+		ImGuiCond_FirstUseEver
+	);
+
+	ImGui::SetNextWindowBgAlpha(0.92f);
+
+	// 접을 수 있게 NoCollapse 사용 안 함
+	if (!ImGui::Begin("Anim Montage Timeline"))
+	{
+		ImGui::End();
+		return;
+	}
+
+	//----------------------------------------
+	// Top Control
+	//----------------------------------------
+	ImGui::Text("Montage");
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Play", ImVec2(55.f, 22.f)))
+	{
+		// TODO : Play
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Stop", ImVec2(55.f, 22.f)))
+	{
+		// TODO : Stop
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Reset", ImVec2(55.f, 22.f)))
+	{
+		s_fMontageTime = 0.f;
+	}
+
+	ImGui::SameLine();
+
+	ImGui::Text("%.3f / %.3f", s_fMontageTime, s_fMontageDuration);
+
+	//----------------------------------------
+	// Main Slider
+	//----------------------------------------
+	ImGui::PushItemWidth(-1.f);
+
+	ImGui::SliderFloat(
+		"##MontageMainSlider",
+		&s_fMontageTime,
+		0.f,
+		s_fMontageDuration,
+		"%.3f"
+	);
+
+	ImGui::PopItemWidth();
+
+	ImGui::PushItemWidth(140.f);
+
+	ImGui::DragFloat(
+		"Duration",
+		&s_fMontageDuration,
+		0.01f,
+		0.01f,
+		9999.f,
+		"%.3f"
+	);
+
+	ImGui::PopItemWidth();
+
+	ImGui::Separator();
+
+	//----------------------------------------
+	// Timeline Draw Area
+	//----------------------------------------
+	ImGui::BeginChild("##MontageTimelineCanvas", ImVec2(0.f, 165.f), true);
+
+	ImDrawList* pDrawList = ImGui::GetWindowDrawList();
+
+	ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+	ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+
+	float fLabelWidth = 105.f;
+	float fTimelineX = canvasPos.x + fLabelWidth;
+	float fTimelineY = canvasPos.y;
+	float fTimelineWidth = canvasSize.x - fLabelWidth - 8.f;
+
+	if (fTimelineWidth < 10.f)
+		fTimelineWidth = 10.f;
+
+	auto TimeToX = [&](float fTime)->float
+		{
+			float fRatio = 0.f;
+
+			if (s_fMontageDuration > 0.f)
+				fRatio = fTime / s_fMontageDuration;
+
+			fRatio = std::clamp(fRatio, 0.f, 1.f);
+
+			return fTimelineX + fTimelineWidth * fRatio;
+		};
+
+	ImU32 colFrame = ImGui::GetColorU32(ImGuiCol_FrameBg);
+	ImU32 colFrameHovered = ImGui::GetColorU32(ImGuiCol_FrameBgHovered);
+	ImU32 colButton = ImGui::GetColorU32(ImGuiCol_Button);
+	ImU32 colText = ImGui::GetColorU32(ImGuiCol_Text);
+	ImU32 colMarker = ImGui::GetColorU32(ImGuiCol_SliderGrab);
+
+	//----------------------------------------
+	// Size Setting
+	//----------------------------------------
+	const float fHeaderHeight = 18.f;
+	const float fAnimRowHeight = 22.f;
+	const float fCallbackLaneHeight = 14.f;
+	const float fRowGap = 5.f;
+
+	//----------------------------------------
+	// Header
+	//----------------------------------------
+	pDrawList->AddText(
+		ImVec2(canvasPos.x, fTimelineY + 2.f),
+		colText,
+		"Time"
+	);
+
+	pDrawList->AddRectFilled(
+		ImVec2(fTimelineX, fTimelineY),
+		ImVec2(fTimelineX + fTimelineWidth, fTimelineY + fHeaderHeight),
+		colFrame
+	);
+
+	constexpr int TICK_COUNT = 8;
+
+	for (int i = 0; i <= TICK_COUNT; ++i)
+	{
+		float fRatio = static_cast<float>(i) / static_cast<float>(TICK_COUNT);
+		float x = fTimelineX + fTimelineWidth * fRatio;
+
+		pDrawList->AddLine(
+			ImVec2(x, fTimelineY),
+			ImVec2(x, fTimelineY + 160.f),
+			colFrameHovered
+		);
+
+		char szTick[32] = {};
+		sprintf_s(szTick, "%.1f", s_fMontageDuration * fRatio);
+
+		pDrawList->AddText(
+			ImVec2(x + 2.f, fTimelineY + 2.f),
+			colText,
+			szTick
+		);
+	}
+
+	//----------------------------------------
+	// Current Time Marker
+	//----------------------------------------
+	float fCurrentX = TimeToX(s_fMontageTime);
+
+	pDrawList->AddLine(
+		ImVec2(fCurrentX, fTimelineY),
+		ImVec2(fCurrentX, fTimelineY + 160.f),
+		colMarker,
+		2.f
+	);
+
+	//----------------------------------------
+	// Animation Track Row
+	//----------------------------------------
+	float fAnimRowY = fTimelineY + fHeaderHeight + fRowGap;
+
+	pDrawList->AddText(
+		ImVec2(canvasPos.x, fAnimRowY + 3.f),
+		colText,
+		"Animation"
+	);
+
+	pDrawList->AddRectFilled(
+		ImVec2(fTimelineX, fAnimRowY),
+		ImVec2(fTimelineX + fTimelineWidth, fAnimRowY + fAnimRowHeight),
+		colFrame
+	);
+
+	// TODO : 여기서 Animation Track Bar 그리기
+	// startX = TimeToX(StartTime)
+	// endX   = TimeToX(EndTime)
+	// pDrawList->AddRectFilled(...)
+
+//----------------------------------------
+// Callback Section
+//----------------------------------------
+	float fCallbackStartY = fAnimRowY + fAnimRowHeight + fRowGap;
+
+	constexpr int CALLBACK_TYPE_COUNT = 4;
+	constexpr int MAX_CALLBACK_LAYER_COUNT = 4;
+
+	static int s_CallbackLayerCount[CALLBACK_TYPE_COUNT] =
+	{
+		1, 1, 1, 1
+	};
+
+	float fCurrentY = fCallbackStartY;
+
+	for (int iType = 0; iType < CALLBACK_TYPE_COUNT; ++iType)
+	{
+		//----------------------------------------
+		// TODO:
+		// 나중에 실제 CallbackDesc 연결하면 여기서 판단
+		//
+		// bool bTypeExists = HasCallbackType(iType);
+		// if (!bTypeExists)
+		//     continue;
+		//----------------------------------------
+		bool bTypeExists = true;
+
+		if (!bTypeExists)
+			continue;
+
+		int& iLayerCount = s_CallbackLayerCount[iType];
+
+		if (iLayerCount < 1)
+			iLayerCount = 1;
+
+		if (iLayerCount > MAX_CALLBACK_LAYER_COUNT)
+			iLayerCount = MAX_CALLBACK_LAYER_COUNT;
+
+		//----------------------------------------
+		// Type Label
+		//----------------------------------------
+		char szTypeLabel[64] = {};
+		sprintf_s(szTypeLabel, "Callback Type %d", iType);
+
+		pDrawList->AddText(
+			ImVec2(canvasPos.x, fCurrentY + 2.f),
+			colText,
+			szTypeLabel
+		);
+
+		//----------------------------------------
+		// Type Block Background
+		//----------------------------------------
+		float fTypeBlockHeight =
+			fCallbackLaneHeight * static_cast<float>(iLayerCount);
+
+		pDrawList->AddRectFilled(
+			ImVec2(fTimelineX, fCurrentY),
+			ImVec2(fTimelineX + fTimelineWidth, fCurrentY + fTypeBlockHeight),
+			colFrame
+		);
+
+		//----------------------------------------
+		// Layers
+		//----------------------------------------
+		for (int iLayer = 0; iLayer < iLayerCount; ++iLayer)
+		{
+			float fLayerY =
+				fCurrentY + iLayer * fCallbackLaneHeight;
+
+			//----------------------------------------
+			// Layer 구분선
+			//----------------------------------------
+			pDrawList->AddLine(
+				ImVec2(fTimelineX, fLayerY),
+				ImVec2(fTimelineX + fTimelineWidth, fLayerY),
+				colFrameHovered
+			);
+
+			//----------------------------------------
+			// Layer Label
+			//----------------------------------------
+			char szLayerLabel[32] = {};
+			sprintf_s(szLayerLabel, "L%d", iLayer);
+
+			pDrawList->AddText(
+				ImVec2(fTimelineX + 4.f, fLayerY + 1.f),
+				colText,
+				szLayerLabel
+			);
+
+			//----------------------------------------
+			// TODO:
+			// 나중에 실제 Callback 데이터 연결
+			//
+			// for (auto& callback : Callbacks)
+			// {
+			//     if (callback.Type != iType)
+			//         continue;
+			//
+			//     if (callback.Layer != iLayer)
+			//         continue;
+			//
+			//     float x = TimeToX(callback.Time);
+			//     float y = fLayerY + fCallbackLaneHeight * 0.5f;
+			//
+			//     pDrawList->AddCircleFilled(
+			//         ImVec2(x, y),
+			//         3.f,
+			//         colMarker
+			//     );
+			// }
+		}
+
+		//----------------------------------------
+		// Layer 추가/삭제 버튼 자리
+		//----------------------------------------
+		ImGui::SetCursorScreenPos(
+			ImVec2(canvasPos.x, fCurrentY + fTypeBlockHeight + 2.f)
+		);
+
+		ImGui::PushID(iType);
+
+		if (ImGui::SmallButton("+ Layer"))
+		{
+			if (iLayerCount < MAX_CALLBACK_LAYER_COUNT)
+				++iLayerCount;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::SmallButton("- Layer"))
+		{
+			if (iLayerCount > 1)
+				--iLayerCount;
+		}
+
+		ImGui::PopID();
+
+		fCurrentY += fTypeBlockHeight + 24.f;
+	}
+
+	//----------------------------------------
+	// Button Area
+	//----------------------------------------
+	ImGui::SetCursorScreenPos(
+		ImVec2(canvasPos.x, fCurrentY + 4.f)
+	);
+
+	if (ImGui::Button("Add Animation", ImVec2(120.f, 22.f)))
+	{
+		// TODO : Add Animation Track
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Add Callback", ImVec2(110.f, 22.f)))
+	{
+		// TODO : Add Callback
+	}
+
+	ImGui::EndChild();
+
+	ImGui::End();
+}
+
+void CAnimEdit_Manager::IMGUI_Select_AnimMontage()
+{
+	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+	if (!pSampleObj)
+		return;
+
+	auto pComAnimator =
+		pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+
+	if (!pComAnimator)
+		return;
+
+	ImGui::Begin("Montage List");
+
+	if (ImGui::TreeNode("Anim Montage"))
+	{
+		auto& montages = pComAnimator->GetAnimMontages();
+
+		for ( auto& pair : montages)
+		{
+			uint32_t montageIndex = pair.first;
+			auto& pMontage = pair.second;
+
+			if (!pMontage)
+				continue;
+
+			bool bSelected =(pComAnimator->Get_CurrAnimMontageIndex() == montageIndex);
+
+			if (ImGui::Selectable(pMontage->GetName().c_str(), bSelected))
+			{
+				pComAnimator->SetCurrentAnimMontageIndex(montageIndex);
+			}
+		}
+
+		ImGui::TreePop();
+	}
+
+	ImGui::End();
+
+}
+
+void CAnimEdit_Manager::IMGUI_Detail_AnimMontage()
+{
 }
 
 

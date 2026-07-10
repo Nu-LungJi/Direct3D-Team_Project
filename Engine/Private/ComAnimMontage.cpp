@@ -41,6 +41,7 @@ HRESULT CComAnimMontage::Update(_float fTimeDelta)
 	return S_OK;
 }
 
+
 HRESULT CComAnimMontage::Update_Montage(_float fTimeDelta)
 {
 	return E_NOTIMPL;
@@ -54,37 +55,6 @@ HRESULT CComAnimMontage::Process_Clips()
 HRESULT CComAnimMontage::Process_Events()
 {
 	return E_NOTIMPL;
-}
-
-_bool CComAnimMontage::IsClipActive(const MONTAGE_CLIP& clip, float fMontageTime)
-{
-	return _bool();
-}
-
-float CComAnimMontage::CalcClipLocalTime(const MONTAGE_CLIP& clip, float fMontageTime)
-{
-	return 0.0f;
-}
-
-float CComAnimMontage::CalcClipWeight(const MONTAGE_CLIP& clip, float fMontageTime)
-{
-	return 0.0f;
-}
-
-void CComAnimMontage::DispatchEvent(const MONTAGE_EVENT& eventDesc)
-{
-}
-
-void CComAnimMontage::PlaySoundEvent(const MONTAGE_EVENT& eventDesc)
-{
-}
-
-void CComAnimMontage::SpawnParticleEvent(const MONTAGE_EVENT& eventDesc)
-{
-}
-
-void CComAnimMontage::ExecuteCallbackEvent(const MONTAGE_EVENT& eventDesc)
-{
 }
 
 

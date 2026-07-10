@@ -13,6 +13,8 @@ public:
 	enum class EVENT_TYPE : uint32_t {
 		SOUND,
 		PARTICLE,
+		COLLIDER,
+		EFFECT,
 		CALLBACK_END
 	};
 
@@ -42,80 +44,69 @@ public:
 		std::string strPayload;
 		std::string strBoneName;
 	};
-	public:
-		CComAnimMontage();
-		
-		virtual ~CComAnimMontage();
+public:
+	CComAnimMontage();
+	
+	virtual ~CComAnimMontage();
 
-	public:
-		virtual HRESULT Initialize(void* pArg) override;
-		virtual HRESULT Update(_float fTimeDelta) ;
+public:
+	virtual HRESULT Initialize(void* pArg) override;
+	virtual HRESULT Update(_float fTimeDelta) ;
 
-	public:
-		HRESULT Play();
-		HRESULT Stop();
-		HRESULT Reset();
+public:
+	HRESULT Load_Montage(const std::string& strPath);
+	HRESULT Save_Montage(const std::string& strPath);
 
-	public:
-		HRESULT Load_Montage(const std::string& strPath);
-		HRESULT Save_Montage(const std::string& strPath);
+public:
+	void AddClip(const MONTAGE_CLIP& clip);
+	void AddEvent(const MONTAGE_EVENT& eventDesc);
 
-	public:
-		void AddClip(const MONTAGE_CLIP& clip);
-		void AddEvent(const MONTAGE_EVENT& eventDesc);
+public:
+	_bool IsPlaying() const {
+		return m_bPlaying;
+	}
 
-	public:
-		_bool IsPlaying() const {
-			return m_bPlaying;
-		}
+	float GetCurrentTime() const {
+		return m_fCurrentTime;
+	}
 
-		float GetCurrentTime() const {
-			return m_fCurrentTime;
-		}
+	float GetDuration() const {
+		return m_fDuration;
+	}
 
-		float GetDuration() const {
-			return m_fDuration;
-		}
+private:
+	HRESULT Update_Montage(_float fTimeDelta);
+	HRESULT Process_Clips();
+	HRESULT Process_Events();
 
-	private:
-		HRESULT Update_Montage(_float fTimeDelta);
-		HRESULT Process_Clips();
-		HRESULT Process_Events();
+public:
+	static UPtr<CComAnimMontage> Create();
+	virtual UPtr<CPrototype> Clone(void* pArg) override;
 
-	private:
-		_bool IsClipActive(const MONTAGE_CLIP& clip, float fMontageTime);
-		float CalcClipLocalTime(const MONTAGE_CLIP& clip, float fMontageTime);
-		float CalcClipWeight(const MONTAGE_CLIP& clip, float fMontageTime);
 
-	private:
-		void DispatchEvent(const MONTAGE_EVENT& eventDesc);
-		void PlaySoundEvent(const MONTAGE_EVENT& eventDesc);
-		void SpawnParticleEvent(const MONTAGE_EVENT& eventDesc);
-		void ExecuteCallbackEvent(const MONTAGE_EVENT& eventDesc);
 
-	public:
-		static UPtr<CComAnimMontage> Create();
-		virtual UPtr<CPrototype> Clone(void* pArg) override;
+public:
+	std::string GetName() { return m_sName;}
+private:
+	CComModelInstance* m_pModelInstance = nullptr;
 
-	private:
-		CComModelInstance* m_pModelInstance = nullptr;
-		CComAnimator* m_pAnimator = nullptr;
+private:
+	std::vector<MONTAGE_CLIP>  m_Clips;
+	std::vector<MONTAGE_EVENT> m_Events;
 
-	private:
-		std::vector<MONTAGE_CLIP>  m_Clips;
-		std::vector<MONTAGE_EVENT> m_Events;
+private:
+	std::string m_sName;
 
-	private:
-		float m_fDuration = 0.f;
+	float m_fDuration = 0.f;
 
-		float m_fCurrentTime = 0.f;
-		float m_fPrevTime = 0.f;
-		float m_fPlayRate = 1.f;
+	float m_fCurrentTime = 0.f;
+	float m_fPrevTime = 0.f;
+	float m_fPlayRate = 1.f;
 
-		_bool m_bPlaying = false;
-		_bool m_bLoop = false;
+	_bool m_bPlaying = false;
+	_bool m_bLoop = false;
 
-		std::vector<_bool> m_EventPlayed;
+	std::vector<_bool> m_EventPlayed;
 };
 
 

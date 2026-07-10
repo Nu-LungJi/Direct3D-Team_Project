@@ -9,6 +9,7 @@
 #include "MapManager.h"
 #include "LightManager.h"
 #include "NavMeshManager.h"
+#include "SerializeManager.h"
 #include "PrototypeManager.h"
 
 NS_BEGIN(physx)
@@ -36,6 +37,7 @@ class CParticleManager;
 class CAction_Manager;
 class CPhysXManager;
 class CDbgLineRender;
+class CSerializeManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -221,6 +223,11 @@ public:
 	{
 		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
+	//template<typename T, typename E> requires std::is_enum_v<E>
+	//T* GetFirstGameObjectByLayer(E layer) const
+	//{
+	//	return GetFirstGameObjectByLayer<T>(magic_enum::enum_name(layer));
+	//}
 #pragma endregion
 
 #pragma region COLLIDER_MANAGER
@@ -337,6 +344,24 @@ public:
 	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
 #pragma endregion
 
+
+
+#pragma region SERIALIZE_MANAGER
+public:
+	template<typename T>
+	HRESULT BinDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "BIN")
+	{ return m_pSerializeManager->BinDeSerialize(path, outValue, rootName); }
+	template<typename T>
+	HRESULT BinSerialize(const std::string& path, const T& value, const std::string& rootName = "BIN")
+	{ return m_pSerializeManager->BinSerialize(path, value, rootName); }
+	template<typename T>
+	HRESULT JsonDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "JSON")
+	{ return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName); }
+	template<typename T>
+	HRESULT JsonSerialize(const std::string& path, const T& value, const std::string& rootName = "JSON")
+	{ return m_pSerializeManager->JsonSerialize(path, value, rootName); }
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -387,6 +412,7 @@ private:
 	//UPtr<CWorldManager> m_pWorldManager{};
 	UPtr<CMapManager> m_pMapManager{};
 	UPtr<CNavMeshManager> m_pNavMeshManager{};
+	UPtr<CSerializeManager> m_pSerializeManager{};
 };
 
 NS_END

@@ -31,6 +31,7 @@
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
 #include "DbgLineRender.h"
+#include "SerializeManager.h"
 
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
@@ -41,6 +42,7 @@
 
 #include "ParticleManager.h"
 #include "Particle.h"
+
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -211,6 +213,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pDbgLineRender = CDbgLineRender::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pDbgLineRender == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pSerializeManager = CSerializeManager::Create();
+	if (m_pSerializeManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -402,6 +410,7 @@ void CGameInstance::Release_Engine()
 	m_pGameObjectManager.reset();
 	m_pRenderer.reset();
 	m_pFontManager.reset();
+	m_pSerializeManager.reset();
 	m_pDbgLineRender.reset();
 	m_pResourceManager.reset();
 	m_pPhysXManager.reset();
