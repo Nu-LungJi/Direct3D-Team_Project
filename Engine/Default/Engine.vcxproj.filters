@@ -394,6 +394,9 @@
     <Filter Include="Particle\Patterns">
       <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Camera\ShadowCamera">
+      <UniqueIdentifier>{2b125f10-cc19-43a7-aaaf-319cafb50254}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -846,6 +849,9 @@
     <ClInclude Include="..\Public\NavMeshManager.h">
       <Filter>NavMesh</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShadowCamera.h">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1264,6 +1270,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\NavMeshManager.cpp">
       <Filter>NavMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ShadowCamera.cpp">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

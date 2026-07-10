@@ -7,9 +7,9 @@ Texture3D<float>    VolumeTexture    : register(t3);
 
 RWTexture2D<float4> OUTPUT : register(u0);
 
-const static float2 ScreenResolution = { 1280.f, 720.f };
-const static float2 NoiseResolution = { };
-const static int    FogMaxStep = 32;
+const static float2 ScreenResolution    = { 1280.f, 720.f };
+const static float2 NoiseResolution     = { 128.f, 128.f };
+const static int    FogMaxStep          = 32;
 
 float Map(float3 _Point)
 {
@@ -29,7 +29,7 @@ float3 Compute_Normal(float3 _Point)        // Ãæµ¹ ÁöÁ¡ Normal °è»ê
 
 float Compute_Shadow(float3 _Point)
 {
-    float4 shadowSpacePos = mul(float4(_Point, 1.0f), g_ShadowViewProj);
+    float4 shadowSpacePos = mul(float4(_Point, 1.0f), g_matShadowLightViewProj);
     shadowSpacePos.xyz /= shadowSpacePos.w;
     
     float2 shadowUV = shadowSpacePos.xy * 0.5f + 0.5f;
@@ -66,7 +66,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     float2 NDC = UV * 2.f - 1.f;
     NDC.y = -NDC.y;
     float4  ScreenPos = float4(NDC, PixelDepth, 1.f);       // ProjSpace : xy ÁÂÇ¥(NDC)  + z ÁÂÇ¥(ÇÈ¼¿ ±íÀÌ)
-    float4  ViewPos = mul(ScreenPos, g_matinvProj);         // ViewSpace
+    float4 ViewPos = mul(ScreenPos, g_matInvView); // ViewSpace ~ g_matInvView -> g_matInvProj
     ViewPos /= ViewPos.w;
     float3  WorldPos = mul(ViewPos, g_matInvView).xyz;      // WorldSpace
     

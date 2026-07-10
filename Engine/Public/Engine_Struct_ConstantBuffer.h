@@ -9,10 +9,11 @@ namespace Engine
 		_float4x4  matViewProj{};        // 곱해진 행렬 (VS에서 연산 절약)
 		_float4x4  matInvView{};			// 뷰 역행렬 (빌보드 계산이나 월드 좌표 복원용)
 		_float4x4  matInvViewProj{};
-		_float3 vCamPos{};
 		_float4x4  matShadowLightViewProj{};
-		_float3 vShadowLightDir{};
-		_float2 _pad{};
+		_float3	   vCamPos{};
+		_float	   _pad1{};
+		_float3	   vShadowLightDir{};
+		_float	   _pad2{};
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
 

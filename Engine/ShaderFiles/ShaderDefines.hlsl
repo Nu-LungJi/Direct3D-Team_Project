@@ -101,13 +101,11 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matViewProj;
     matrix g_matInvView;
     matrix g_matInvViewProj;
-    float3 g_vCamPos;
-    float g_fDayFactor; //
-    matrix g_matSkyRotation;
-    matrix g_matStarRotation;
     matrix g_matShadowLightViewProj;
+    float3 g_vCamPos;
+    float  g_PerPassPadding1;
     float3 g_vShadowLightDir;
-
+    float  g_PerPassPadding2;
 };
 
 cbuffer CB_BONES : register(b2)

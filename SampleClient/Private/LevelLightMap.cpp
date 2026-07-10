@@ -43,7 +43,7 @@ HRESULT CLevelLightMap::Initialize()
 		if (!LightObject)	return E_FAIL;
 
 		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(1.f, 10.f, 0.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(-2.f, 3.f, -3.f, 1.f));
 	}
 	{
 		CTerrain::DESC Desc{};
@@ -64,7 +64,7 @@ HRESULT CLevelLightMap::Initialize()
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
 		Desc.fNear = 0.1f;
-		Desc.fFar = 100.f;
+		Desc.fFar = 1000.f;
 		Desc.sObjectTag = "FlyCam";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
@@ -72,15 +72,40 @@ HRESULT CLevelLightMap::Initialize()
 		{
 			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
 			{
-				MSG_BOX("MSG_BOX_123");
+				MSG_BOX("Cannot Register Fly Camera");
 			}
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
-	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
-	CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 100.f, 10.f);
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+		Desc.vAt	= { 0.f, 10.f, 0.f };
+		Desc.vEye = { -30.f, 30.f, -30.f };
+		Desc.vUp	= { 0.f, 1.f, 0.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fWidth = 100.0f;
+		Desc.fHeight = 100.0f;
 
+		Desc.fNear = 0.1f;
+		Desc.fFar = 1000.f;
+
+		Desc.fFovY = 75.f;
+		Desc.sObjectTag = "Shadow";
+
+		if (auto ShadowCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_ShadowCamera",
+			"98_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("Shadow", ShadowCam.value())))
+			{
+				MSG_BOX("Cannot Register Shadow Camera.");
+			}
+		}
+	}
+
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
+	CGameInstance::Get().Add_PointLight({ 0.5f, 6.1f, -1.6f }, { 1.f, 0.f, 0.f }, 100.f, 20.f);
 	return S_OK;
 }
 

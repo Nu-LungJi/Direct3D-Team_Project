@@ -16,6 +16,7 @@
 #include "Renderer.h"
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
+#include "ShadowCamera.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
 #include "AnimEdit_Manager.h"
@@ -643,21 +644,15 @@ HRESULT CGameInstance::InitializeResources()
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
-		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
 
 		sampDesc.BorderColor[0] = 1.f;
-		sampDesc.BorderColor[1] = 1.f;
-		sampDesc.BorderColor[2] = 1.f;
-		sampDesc.BorderColor[3] = 1.f;
 
 		sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-		if (FAILED(res->Load(sampDesc)))
-		{
-			return E_FAIL;
-		}
+		if (FAILED(res->Load(sampDesc)))				return E_FAIL; 
 
 		GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 	}
@@ -1085,16 +1080,20 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-
-
+	
 	if (AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_FlyCamera, CFlyCamera::Create()))
 	{
 		return E_FAIL;
 	}
-	if (AddPrototype("CAMERAS", "Prototype_GameObject_UICamera", CUICamera::Create()))
+	if (AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_ShadowCamera, CShadowCamera::Create()))
 	{
 		return E_FAIL;
 	}
+	if (AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_UICamera, CUICamera::Create()))
+	{
+		return E_FAIL;
+	}
+
 	if (AddPrototype("BEHAVIOR", "Prototype_Component_BeHavior", CComBeHavior::Create()))
 	{
 		return E_FAIL;

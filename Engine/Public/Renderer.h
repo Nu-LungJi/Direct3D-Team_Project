@@ -71,6 +71,8 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 
+
+
 private:
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
 	SPtr<CResPixelShader>		m_pOffScreenPixelShader{};
@@ -95,8 +97,8 @@ private:
 	ComPtr<ID3D11ShaderResourceView>	m_pBackBufferSRV{};
 
 private:
-	SPtr<CResDynamicTexture2D> m_pShadowTex2D{};
-	SPtr<CResViewPort> m_pShadowViewPort{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetShadow{};
+	SPtr<CResViewPort>			m_pShadowViewPort{};
 
 private:
 	SPtr<CResDynamicTexture2D> m_pDeathScreenRedFilterTex2D{};
@@ -188,7 +190,8 @@ private:
 private:
 	_bool			ApplyFilter = { false };		// 필터 적용 ON-OFF
 	RENDER_CTX		RenderContext = {};
-
+	_bool bApplyShadow = { true };
+	XMMATRIX	ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

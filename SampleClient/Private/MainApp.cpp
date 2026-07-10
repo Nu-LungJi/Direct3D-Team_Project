@@ -257,7 +257,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 		}
 		
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/SM_rock1.fbx"))) {
+			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/rock1.fbx"))) {
 
 			E::CResStaticModel::DESC pDesc{};
 			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);

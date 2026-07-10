@@ -7,6 +7,7 @@ Texture2D   SMROMap         : register(t2);
 Texture2D   EmissiveMap     : register(t3);
 Texture2D   DepthMap        : register(t4);
 Texture2D   AmbientMap      : register(t5);
+Texture2D   ShadowMap       : register(t6);
 
 // Image Based Lighting
 TextureCube IrridianceMap   : register(t7);
@@ -72,11 +73,14 @@ float3 ReconstructWorldPos(float2 uv, float depth)
     float x = uv.x * 2.0f - 1.0f;
     float y = (1.0f - uv.y) * 2.0f - 1.0f;
     float z = depth;
-
+    
     float4 ndcPos = float4(x, y, z, 1.0f);
     
     float4 worldPos = mul(ndcPos, g_matInvViewProj);
-    return worldPos.xyz / worldPos.w;
+    
+    worldPos /= worldPos.w;
+    
+    return worldPos.xyz;
 }
 float3      Compute_IBL(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
 {
@@ -103,37 +107,109 @@ float3      Compute_IBL(float3 N, float3 V, float3 albedo, float _Roughness, flo
     return (DiffuseAmbient + SpecularAmbient);
 }
 
+float   Compute_ShadowPCF(float4 _WorldPos)
+{
+    float4 LightSpacePos = mul(_WorldPos, g_matShadowLightViewProj);
+    
+    LightSpacePos.xyz /= LightSpacePos.w;
+    
+    float2 ShadowMapUV;
+    ShadowMapUV.x = _WorldPos.x * 0.5f + 0.5f;
+    ShadowMapUV.y = -_WorldPos.y * 0.5f + 0.5f;
+    
+    float CurrentDepth = _WorldPos.z;
+    CurrentDepth -= 0.0005f;
+
+    if (ShadowMapUV.x < 0.f || ShadowMapUV.y < 0.f || ShadowMapUV.x > 1.f || ShadowMapUV.y > 1.f)
+    {
+        return 0.f;
+    }
+    
+    float width, height;
+    ShadowMap.GetDimensions(width, height);
+    float2 texelSize = float2(1.0f / width, 1.0f / height);
+    
+    float shadowFactor = 0.f;
+    
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+        [unroll]
+        for (int y = -1; y <= 1; ++y)
+        {
+            float2 offset = float2(x, y) * texelSize;
+            shadowFactor += ShadowMap.SampleCmpLevelZero(ShadowSampler, ShadowMapUV + offset, CurrentDepth).r;
+        }
+    }
+    return shadowFactor / 9.0f;
+}
+
 //[earlydepthstencil]         // Test : Block Pixel OverDraw
 PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT OUT;
-    float DepthData = DepthMap.Sample(LinearWrap, IN.TexCoord).r;
+    float4 DepthData = DepthMap.Sample(LinearWrap, IN.TexCoord);
     
     [branch]
-    if (DepthData >= 1.0f)  discard;
+    if (DepthData.r >= 1.0f)
+    {
+        OUT.Diffuse = float4(0.f, 0.f, 0.f, 0.f);
+        return OUT;
+    }
+    
+    float3 DepthWorld = ReconstructWorldPos(IN.TexCoord, DepthData.r);
+    
+    float4 ShadowData = ShadowMap.Sample(LinearWrap, IN.TexCoord);
+    
+    vector NDCPos;
+    
+    float fNear = 0.1f;
+    float fFar = 1000.f;
+    float linearDepth = fNear / (fFar - DepthData.r * (fFar - fNear));
 
-    float3 DepthWorld = ReconstructWorldPos(IN.TexCoord, DepthData);
+    NDCPos.x = IN.TexCoord.x * 2.f - 1.f;
+    NDCPos.y = IN.TexCoord.y * -2.f + 1.f;
+    NDCPos.z = DepthData.r;
+    NDCPos.w = 1.f;
+    
+    //float fViewSpaceZ = DepthData.y * 1000.f;
+    //NDCPos = NDCPos * fViewSpaceZ;
+    float4 WorldPos = mul(NDCPos, g_matInvViewProj);
+    WorldPos.xyz /= WorldPos.w;
+    WorldPos.w = 1.f;
+    
+    float4 LightPos = mul(WorldPos, g_matShadowLightViewProj);
+    
+    float2 vTexcoord;
+    vTexcoord.x = (LightPos.x / LightPos.w) * 0.5f + 0.5f;
+    vTexcoord.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
+    
+    
+    float fCurrentZ = LightPos.z;// / LightPos.w;
+    
+    float fOldZ = ShadowMap.Sample(LinearWrap, vTexcoord).r;
+    
+    
+    
     
     float3 WorldNormal = NormalMap.Sample(LinearWrap, IN.TexCoord).rgb;
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
-    float3 V = normalize(g_vCamPos - DepthWorld);
+    float3  V = normalize(g_vCamPos - DepthWorld);
     float   R = reflect(-V, WorldNormal);
 
-    float   NDV = max(dot(WorldNormal, V), 0.f);
-    float3 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord).rgb;
+    float   NDV   = max(dot(WorldNormal, V), 0.f);
+    float3  AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord).rgb;
     
+    float3  Albedo   = pow(AlbedoTex.rgb, 2.2f);
+    float3  SMRO     = SMROMap.Sample(LinearWrap, IN.TexCoord);
+    float   Metallic  = SMRO.r;
+    float   Roughness = SMRO.g;
    
-
-    float3  Albedo      = pow(AlbedoTex.rgb, 2.2f);
-    float3 SMRO = SMROMap.Sample(LinearWrap, IN.TexCoord);
-    float   Metallic    = SMRO.r;
-    float   Roughness   = SMRO.g;
-    
     // Metallic Material Based Reflection
-    float3  MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
+    float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
     
-    float3  LightAccumulation = float3(0.f, 0.f, 0.f);
+    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
     
     // Multiple Light Process
     [unroll(MAX_LIGHT_COUNT)]
@@ -151,7 +227,7 @@ PS_OUT PSMain(PS_IN IN)
         if (RawNDL > 0.f)
         {
             float NDL = clamp(RawNDL, 0.f, 1.f);
-        
+    
             float3 H = normalize(V + L);
             float D = DistributionGGX(WorldNormal, H, Roughness);
             float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
@@ -165,22 +241,36 @@ PS_OUT PSMain(PS_IN IN)
             float3 Diffuse = kD * Albedo / PI;
     
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
-
         }
     }
-
+        
     float3 Emissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
+    
     // Enviroment Light Process
-    
     float3 Ambient = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-    //LightAccumulation += Ambient * 3.f;
-      
-    float AO = AmbientMap.Sample(LinearWrap, IN.TexCoord).r;
-   // LightAccumulation = pow(LightAccumulation, 1.f / 2.2f);
     
-   // LightAccumulation *= AO;
-    OUT.Diffuse = float4(LightAccumulation, 1.f) + float4(Emissive, 1.f);
-    OUT.Diffuse *= AO;
+    float AO = AmbientMap.Sample(LinearWrap, IN.TexCoord).r;
+
+    if (g_matShadowLightViewProj[0][0] == 0.f ||
+        g_matShadowLightViewProj[1][1] == 0.f ||
+        g_matShadowLightViewProj[2][2] == 0.f ||
+        g_matShadowLightViewProj[3][3] == 0.f)
+    {
+        OUT.Diffuse = float4(0.f, 0.f, 0.f, 1.f);
+        return OUT;
+    }
+    
+    float ShadowFactor = 1.0f;
+    if (fCurrentZ - 0.0005f > fOldZ)
+    {
+        ShadowFactor = 0.25f;
+    }
+    
+    LightAccumulation *= ShadowFactor;
+    LightAccumulation *= AO;
+    
+    OUT.Diffuse = float4(LightAccumulation + Emissive, 1.f);
+    
     return OUT;
 }
 

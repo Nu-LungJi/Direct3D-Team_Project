@@ -28,6 +28,8 @@ namespace Engine
 
 	enum class ES_EngineProtoGameObject
 	{
-		Prototype_GameObject_FlyCamera
+		Prototype_GameObject_FlyCamera,
+		Prototype_GameObject_ShadowCamera,
+		Prototype_GameObject_UICamera
 	};
 }
