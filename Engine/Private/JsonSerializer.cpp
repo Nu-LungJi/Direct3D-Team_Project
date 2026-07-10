@@ -179,13 +179,13 @@ void CJsonSerializer::EndMap()
 	}
 }
 
-void CJsonSerializer::SaveToFile(const std::string& path)
+HRESULT CJsonSerializer::SaveToFile(const std::string& path)
 {
 	std::ofstream file(path);
 	if (!file.is_open())
 	{
 		MSG_BOX("파일 저장 실패");
-		return;
+		return E_FAIL;
 	}
 
 	file << m_json.dump(4);
@@ -194,4 +194,6 @@ void CJsonSerializer::SaveToFile(const std::string& path)
 	// 세이브 후 인스턴스를 재활용할 수도 있으므로 스택을 초기 상태로 복구
 	m_nodeStack.clear();
 	m_nodeStack.push_back(&m_json);
+
+	return S_OK;
 }

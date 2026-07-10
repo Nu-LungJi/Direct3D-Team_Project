@@ -133,9 +133,16 @@ void CBinSerializer::EndMap() {
 }
 
 // === 최종 파일 출력 ===
-void CBinSerializer::SaveToFile(const std::string& path) {
+HRESULT CBinSerializer::SaveToFile(const std::string& path) {
 	std::ofstream file(path, std::ios::binary);
+	if (!file.is_open())
+	{
+		MSG_BOX("SaveToFile 파일 저장 실패");
+		return E_FAIL;
+	}
 	if (file.is_open() && !m_buffer.empty()) {
 		file.write(reinterpret_cast<const char*>(m_buffer.data()), m_buffer.size());
 	}
+
+	return S_OK;
 }

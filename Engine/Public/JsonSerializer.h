@@ -4,7 +4,7 @@
 
 NS_BEGIN(Engine)
 class ISerializable;
-class CJsonSerializer : public CEngineBase, public ISerializer
+class ENGINE_DLL CJsonSerializer : public CEngineBase, public ISerializer
 {
 public:
 	DECLARE_DERIVED_TYPE(CJsonSerializer, CEngineBase)
@@ -33,7 +33,7 @@ public:
 	void EndMap();
 
 public:
-	void SaveToFile(const std::string& path);
+	HRESULT SaveToFile(const std::string& path);
 
 private:
 	nlohmann::json m_json{};

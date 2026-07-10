@@ -14,6 +14,8 @@
 #include <string>
 #include <fstream>
 
+#include "GameInstance.h"
+
 struct Float3Comparator {
 	bool operator()(const _float3& a, const _float3& b) const {
 		if (a.x != b.x) return a.x < b.x;
@@ -175,6 +177,9 @@ public:
 	bool b{};
 	TestEnum::SomeEnum eSomeEnum{};
 	TestEnum::SomeClassEnum eSomeClassEnum{};
+	std::pair<std::string, std::string> pairStringID{};
+
+
 
 	void Serialize(ISerializer& serializer) const override
 	{
@@ -190,6 +195,7 @@ public:
 		serializer.Write("b", b);
 		serializer.Write("eSomeEnum", eSomeEnum);
 		serializer.Write("eSomeClassEnum", eSomeClassEnum);
+		serializer.Write("pairStringID", pairStringID);
 	}
 
 	void Deserialize(IDeserializer& deserializer) override
@@ -206,6 +212,7 @@ public:
 		deserializer.Read("b", b);
 		deserializer.Read("eSomeEnum", eSomeEnum);
 		deserializer.Read("eSomeClassEnum", eSomeClassEnum);
+		deserializer.Read("pairStringID", pairStringID);
 	}
 
 	bool operator==(const CWorldData& rhs) const
@@ -227,10 +234,13 @@ public:
 				++it2;
 			}
 		}
+
+		
 		return (worldName == rhs.worldName) &&
 			(players == rhs.players) &&
 			(monsters == rhs.monsters) &&
 			//(sets == rhs.sets) &&
+			(pairStringID == rhs.pairStringID) &&
 			(unorderSets == rhs.unorderSets) &&
 			(ui32 == rhs.ui32) &&
 			(ui64 == rhs.ui64) &&
@@ -251,6 +261,7 @@ inline std::string GetFileSizeString(const std::string& path)
 // =========================================================================
 inline void RunMegaSerializationTest()
 {
+	auto& pMgr = CGameInstance::Get();
 	// ----------------------------------------------------
 	// 데이터 세팅
 	// ----------------------------------------------------
@@ -310,6 +321,8 @@ inline void RunMegaSerializationTest()
 	originalWorld.eSomeClassEnum = TestEnum::SomeClassEnum::Third;
 	originalWorld.eSomeEnum = TestEnum::Two;
 
+	originalWorld.pairStringID = { "youcan", "doit" };
+
 	// ---------------------------------
 	// ---------------------------------
 	// ---------------------------------
@@ -328,22 +341,16 @@ inline void RunMegaSerializationTest()
 	// ----------------------------------------------------
 	try {
 		// [Save]
-		auto pJsonSer = CJsonSerializer::Create();
-		if (pJsonSer) {
-			pJsonSer->Write("RootWorld", originalWorld);
-			pJsonSer->SaveToFile("MegaTest_SaveData.json");
+		if (SUCCEEDED(pMgr.JsonSerialize("MegaTest_SaveData.json", originalWorld)))
+		{
 			bJsonSaveSuccess = true;
 		}
-
 		// [Load]
 		if (bJsonSaveSuccess) {
-			auto pJsonDeSer = CJsonDeSerializer::Create("MegaTest_SaveData.json");
-			if (pJsonDeSer) {
-				CWorldData restoredWorld;
-				pJsonDeSer->Read("RootWorld", restoredWorld);
+			CWorldData restoredWorld;
+			if (SUCCEEDED(pMgr.JsonDeSerialize("MegaTest_SaveData.json", restoredWorld)))
+			{
 				bJsonLoadSuccess = true;
-
-				// [Match]
 				if (originalWorld == restoredWorld) bJsonDataMatch = true;
 			}
 		}
@@ -355,22 +362,18 @@ inline void RunMegaSerializationTest()
 	// ----------------------------------------------------
 	try {
 		// [Save]
-		auto pBinSer = CBinSerializer::Create();
-		if (pBinSer) {
-			pBinSer->Write("RootWorld", originalWorld);
-			pBinSer->SaveToFile("MegaTest_SaveData.bin");
+
+		if (SUCCEEDED(pMgr.BinSerialize("MegaTest_SaveData.json", originalWorld)))
+		{
 			bBinSaveSuccess = true;
 		}
 
 		// [Load]
 		if (bBinSaveSuccess) {
-			auto pBinDeSer = CBinDeSerializer::Create("MegaTest_SaveData.bin");
-			if (pBinDeSer) {
-				CWorldData restoredWorld;
-				pBinDeSer->Read("RootWorld", restoredWorld);
+			CWorldData restoredWorld;
+			if (SUCCEEDED(pMgr.BinDeSerialize("MegaTest_SaveData.json", originalWorld)))
+			{
 				bBinLoadSuccess = true;
-
-				// [Match]
 				if (originalWorld == restoredWorld) bBinDataMatch = true;
 			}
 		}

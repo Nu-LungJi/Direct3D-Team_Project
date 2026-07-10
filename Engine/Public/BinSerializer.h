@@ -34,7 +34,7 @@ public:
 	void EndMap() override;
 
 public:
-	void SaveToFile(const std::string& path);
+	HRESULT SaveToFile(const std::string& path);
 	static UPtr<CBinSerializer> Create();
 
 private:

@@ -9,6 +9,7 @@
 #include "MapManager.h"
 #include "LightManager.h"
 #include "NavMeshManager.h"
+#include "SerializeManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -359,6 +360,24 @@ public:
 #pragma region NAVMESH_MANAGER
 public:
 	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
+#pragma endregion
+
+
+
+#pragma region SERIALIZE_MANAGER
+public:
+	template<typename T>
+	HRESULT BinDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "BIN")
+	{ return m_pSerializeManager->BinDeSerialize(path, outValue, rootName); }
+	template<typename T>
+	HRESULT BinSerialize(const std::string& path, const T& value, const std::string& rootName = "BIN")
+	{ return m_pSerializeManager->BinSerialize(path, value, rootName); }
+	template<typename T>
+	HRESULT JsonDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "JSON")
+	{ return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName); }
+	template<typename T>
+	HRESULT JsonSerialize(const std::string& path, const T& value, const std::string& rootName = "JSON")
+	{ return m_pSerializeManager->JsonSerialize(path, value, rootName); }
 #pragma endregion
 
 public:

@@ -7,8 +7,6 @@ NS_USING(Engine)
 
 CSerializeManager::CSerializeManager()
 {
-	RunMegaSerializationTest();
-	int d = 0;
 }
 
 CSerializeManager::~CSerializeManager()

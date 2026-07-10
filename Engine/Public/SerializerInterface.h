@@ -32,7 +32,17 @@ public:
 	auto Write(const std::string& key, T value)
 		-> std::enable_if_t<std::is_enum_v<T>>
 	{
-		Write(key, static_cast<int>(value));
+		using Underlying = std::underlying_type_t<T>;
+		Write(key, static_cast<Underlying>(value));
+	}
+
+	template<typename T1, typename T2>
+	void Write(const std::string& key, const std::pair<T1, T2>& pairData)
+	{
+		StartMap(key); 
+		Write("First", pairData.first);
+		Write("Second", pairData.second);
+		EndMap();
 	}
 #pragma endregion
 
@@ -85,7 +95,6 @@ public:
 		StartMap(key);
 		for (const auto& [itemKey, itemValue] : mapData)
 		{
-			// 핵심: Key 타입을 문자열로 변환해야 JSON 키로 쓸 수 있습니다.
 			std::string stringKey;
 			if constexpr (std::is_same_v<K, std::string>) stringKey = itemKey;
 			else if constexpr (requires { itemKey.GetDbgStr(); }) stringKey = itemKey.GetDbgStr(); // StringID 대응
@@ -108,7 +117,6 @@ public:
 		StartMap(key);
 		for (const auto& [itemKey, itemValue] : mapData)
 		{
-			// 핵심: Key 타입을 문자열로 변환해야 JSON 키로 쓸 수 있습니다.
 			std::string stringKey;
 			if constexpr (std::is_same_v<K, std::string>) stringKey = itemKey;
 			else if constexpr (requires { itemKey.GetDbgStr(); }) stringKey = itemKey.GetDbgStr(); // StringID 대응
@@ -152,10 +160,34 @@ public:
 	auto Read(const std::string& key, T& outValue)
 		-> std::enable_if_t<std::is_enum_v<T>>
 	{
-		int temp = 0;
-		Read(key, temp); // int 형태로 먼저 읽어옴
-		outValue = static_cast<T>(temp); // 원래의 Enum 타입으로 캐스팅하여 대입
+		using Underlying = std::underlying_type_t<T>;
+		Underlying temp = 0;
+		Read(key, temp);
+		outValue = static_cast<T>(temp);
 	}
+
+	template<typename T1, typename T2>
+	void Read(const std::string& key, std::pair<T1, T2>& outPair)
+	{
+		size_t count = StartMap(key);
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			std::string stringKey = ReadMapKey(); 
+
+			if (stringKey == "First")
+			{
+				Read(stringKey, outPair.first);
+			}
+			else if (stringKey == "Second")
+			{
+				Read(stringKey, outPair.second);
+			}
+		}
+
+		EndMap();
+	}
+
 #pragma endregion
 
 #pragma region MAP
@@ -168,7 +200,6 @@ public:
 		{
 			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
 
-			// 문자열 키를 다시 K 타입으로 변환
 			K k;
 			if constexpr (std::is_same_v<K, std::string>) k = stringKey;
 			else if constexpr (std::is_same_v<K, int>) k = std::stoi(stringKey);
@@ -187,7 +218,6 @@ public:
 		{
 			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
 
-			// 문자열 키를 다시 K 타입으로 변환
 			K k;
 			if constexpr (std::is_same_v<K, std::string>) k = stringKey;
 			else if constexpr (std::is_same_v<K, int>) k = std::stoi(stringKey);
@@ -212,7 +242,7 @@ protected:
 public:
 	template<typename Container>
 	auto Read(const std::string& key, Container& outContainer)
-		-> decltype(outContainer.resize(1), std::begin(outContainer), void()) // SFINAE: resize가 가능한 컨테이너만 매칭
+		-> decltype(outContainer.resize(1), std::begin(outContainer), void()) 
 	{
 		size_t count = StartArray(key);
 
@@ -237,18 +267,14 @@ public:
 	{
 		size_t count = StartArray(key);
 
-		// set 계열은 resize가 없으므로 무조건 clear 후 insert 해야 함
 		outContainer.clear();
 
 		for (size_t i = 0; i < count; ++i)
 		{
-			// 1. 임시 객체 생성 (set의 원소는 const이므로 직접 수정 불가)
 			typename Container::value_type item;
 
-			// 2. 값 읽기
 			Read("", item);
 
-			// 3. 삽입
 			outContainer.insert(std::move(item));
 		}
 
