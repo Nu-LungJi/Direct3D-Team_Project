@@ -40,7 +40,6 @@ HRESULT CNodeEditor::Initialize()
 	m_NodesLink.push_back(GUINODE_LINK(2));
 	m_NodesLink.push_back(GUINODE_LINK(2));
 
-	Load_FileList();
 	return S_OK;
 }
 void CNodeEditor::UpdateGUI()
@@ -252,16 +251,13 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 
 	if (!m_bSaveLoad && ImGui::Button("Save"))
 	{
+		m_AddNodeName = "";
 		m_bSaveLoad = true;
 	}
-	ImGui::Text("LoadFile list");
-	for (auto& iter : m_LoadDataList)
+	if (!m_bSaveLoad && ImGui::Button("Load"))
 	{
-		if (ImGui::Button(iter.first.c_str()))
-		{
-			m_pBeHavior->Load_Data(iter.second);
-
-		}
+		m_pBeHavior->Load_Data("./Resources/json/Behavior/MoveTest2.json");
+		m_AddNodeName = "";
 	}
 	
 	if (m_bSaveLoad)
@@ -597,16 +593,6 @@ void CNodeEditor::End_Canvas()
 	ImGui::End();
 }
 
-void CNodeEditor::Load_FileList()
-{
-	_string Path = "./Resources/json/Behavior/";
-	m_LoadDataList.clear();
-	for (auto& iter : std::filesystem::directory_iterator(Path))
-	{
-		m_LoadDataList.emplace(iter.path().filename().string(), iter.path().string());
-	}
-}
-
 void CNodeEditor::DragAllMove(CBTRoot* pRoot, _float2 vPos)
 {
 	
@@ -684,7 +670,7 @@ void CNodeEditor::SavePopUp()
 		
 			if (!bfalse)
 			{
-				Load_FileList();
+
 				m_bSaveLoad = false;
 				m_pBeHavior->Save_Data(m_AddNodeName);
 				MSG_BOX("Successed Save");
