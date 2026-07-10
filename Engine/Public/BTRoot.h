@@ -1,7 +1,6 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "GameInstance.h"
-enum class EVALUATE { SUCCESS, FAILED, RUN };
 //뿌리
 NS_BEGIN(Engine)
 class  CBTRoot : public CEngineBase
@@ -31,6 +30,8 @@ public:
 	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
 	void			Set_Handle(CHandle Handle) { m_Handle = Handle; }
 	CHandle&		Get_Handle() { return m_Handle; }
+	virtual void			ResetDebug() { m_eDebug = EVALUATE::END; }
+	EVALUATE				GetDebugType() const {return m_eDebug;}
 public:
 	virtual nlohmann::json		Save_Node();
 	virtual HRESULT				Load_json(const nlohmann::json& j);
@@ -42,6 +43,8 @@ protected:
 	CHandle								m_Handle;
 	_string								m_MasterName;
 	NODEGROUP							m_eGroup{};
+
+	EVALUATE							m_eDebug{};
 public:
 	template<typename T1> 
 	class CComponent* Get_Component(const CHandle & Handle, const _string& name)

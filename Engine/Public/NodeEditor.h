@@ -45,7 +45,7 @@ private:
 	void		Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos);
 	_bool		Link_Connect_Check(int32_t iSlot);
 	void		Reset_CurrentNode();
-	void		Draw_NodeLine(_float2 iStartnode, _float2 iEndNode,_bool bMouse = false);
+	void		Draw_NodeLine(EVALUATE eType, _float2 iStartnode, _float2 iEndNode,_bool bMouse = false);
 	_bool		ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radius);
 	void		Recursive_Call_Node(class CBTRoot* pParent);
 	void		Pin(CBTRoot* pNode,_bool bPin);
