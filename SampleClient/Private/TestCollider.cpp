@@ -2,6 +2,9 @@
 #include "TestCollider.h"
 #include "CollBox.h"
 #include "ComCollider.h"
+#include "ComLuaScript.h"
+#include "ComConstantBuffer.h"
+#include "Resources.h"
 NS_USING(Client)
 
 CTestCollider::CTestCollider()
@@ -38,6 +41,25 @@ HRESULT CTestCollider::Initialize(void* pArg)
 			};
 		}
 		
+		//{
+		//	CComConstantBuffer::DESC Desc{};
+		//	Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+		//	if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
+		//	{
+		//		return E_FAIL;
+		//	};
+		//}
+	}
+
+	{
+		CComLuaScript::DESC Desc{};
+		Desc.pResScript = CGameInstance::Get().GetResourceFirst<CResLuaScript>(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST);
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::LUA, ES_EngineProtoComponent::Prototype_Component_ComLuaScript, "ComLuaScript", & Desc, &m_pComLuaScript)))
+		{
+			return E_FAIL;
+		};
+
+
 	}
     return S_OK;
 }

@@ -415,6 +415,21 @@
     <Filter Include="Serialize\TestCase">
       <UniqueIdentifier>{c5f4b517-bb73-4605-8016-a663b5b4c675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Lua">
+      <UniqueIdentifier>{dfd76b79-cecb-4cca-9ac8-e0ce39ef16d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Lua">
+      <UniqueIdentifier>{1c8d7925-0f83-447f-a69c-11d8567da66e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Lua\Script">
+      <UniqueIdentifier>{1ba4e867-2138-473d-9756-d729dd3de5b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles">
+      <UniqueIdentifier>{b542ee9a-40cf-4a50-9d8a-b0feb91d0b38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Lua">
+      <UniqueIdentifier>{b39ae02f-5cb2-4ba1-b7b3-e4646aac4b23}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -894,6 +909,18 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LuaManager.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResLua.h">
+      <Filter>Resource\Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResLuaScript.h">
+      <Filter>Resource\Lua\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComLuaScript.h">
+      <Filter>Component\Lua</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1331,6 +1358,18 @@
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LuaManager.cpp">
+      <Filter>Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResLua.cpp">
+      <Filter>Resource\Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResLuaScript.cpp">
+      <Filter>Resource\Lua\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComLuaScript.cpp">
+      <Filter>Component\Lua</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1423,6 +1462,9 @@
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
       <Filter>ShaderFiles\ShaderHeader</Filter>
+    </None>
+    <None Include="..\LuaFiles\Test.lua">
+      <Filter>LuaFiles</Filter>
     </None>
   </ItemGroup>
 </Project>

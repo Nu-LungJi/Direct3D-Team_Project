@@ -237,6 +237,7 @@
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
+    <ClInclude Include="..\public\ComLuaScript.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
@@ -264,6 +265,8 @@
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\public\LuaManager.h" />
+    <ClInclude Include="..\public\ResLuaScript.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
     <ClInclude Include="..\Public\NavMeshManager.h" />
     <ClInclude Include="..\public\FlipbookUI.h" />
@@ -271,6 +274,7 @@
     <ClInclude Include="..\public\JsonDeSerializer.h" />
     <ClInclude Include="..\public\JsonSerializer.h" />
     <ClInclude Include="..\public\ObjectFactory.h" />
+    <ClInclude Include="..\public\ResLua.h" />
     <ClInclude Include="..\public\ResPhysXBoxGeometry.h" />
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h" />
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
@@ -504,6 +508,7 @@
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
+    <ClCompile Include="..\private\ComLuaScript.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
@@ -532,12 +537,15 @@
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\private\LuaManager.cpp" />
+    <ClCompile Include="..\private\ResLuaScript.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\FlipbookUI.cpp" />
     <ClCompile Include="..\private\ParticlePattern.cpp" />
     <ClCompile Include="..\private\JsonDeSerializer.cpp" />
     <ClCompile Include="..\private\JsonSerializer.cpp" />
     <ClCompile Include="..\private\ObjectFactory.cpp" />
+    <ClCompile Include="..\private\ResLua.cpp" />
     <ClCompile Include="..\private\ResPhysXBoxGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />
@@ -708,6 +716,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\LuaFiles\Test.lua" />
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

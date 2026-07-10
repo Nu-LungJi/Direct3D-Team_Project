@@ -10,6 +10,7 @@
 #include "LightManager.h"
 #include "NavMeshManager.h"
 #include "SerializeManager.h"
+#include "LuaManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -380,6 +381,34 @@ public:
 	{ return m_pSerializeManager->JsonSerialize(path, value, rootName); }
 #pragma endregion
 
+#pragma region LUA_MANAGER
+	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env);
+	sol::environment LuaCreateEnvironment();
+	template<typename... Args>
+	HRESULT LuaCall(sol::environment& env, std::string_view function, Args&&... args)
+	{ return m_pLuaManager->Call(env, function, std::forward<Args>(args)...); }
+	bool LuaHasFunction( sol::environment& env, std::string_view function) const;
+	template<typename T>
+	void LuaSetValue(sol::environment& env, std::string_view name, T&& value)
+	{ m_pLuaManager->SetValue(env, name, value); }
+
+	template<typename T>
+	bool GetValue(sol::environment& env, std::string_view name, T& value)
+	{ return m_pLuaManager->GetValue(env, name, value); }
+
+	HRESULT LuaCompile(const std::string& script);
+
+	template<typename Ret, typename... Args>
+	HRESULT LuaCall(sol::environment& env, std::string_view function, Ret& ret, Args&&... args)
+	{ return m_pLuaManager->Call(env, function, ret, args); }
+
+	bool LuaIsEnvValid(const sol::environment& env) const;
+	bool LuaHasValue(const sol::environment& env, std::string_view name) const;
+	void LuaRemoveValue(sol::environment& env, std::string_view name);
+	void LuaEnvDump(const sol::environment& env) const;
+	void LuaEnvClear(sol::environment& env);
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
@@ -431,6 +460,7 @@ private:
 	UPtr<CMapManager> m_pMapManager{};
 	UPtr<CNavMeshManager> m_pNavMeshManager{};
 	UPtr<CSerializeManager> m_pSerializeManager{};
+	UPtr<CLuaManager> m_pLuaManager{};
 };
 
 NS_END

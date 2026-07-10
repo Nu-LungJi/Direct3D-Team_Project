@@ -69,6 +69,9 @@ namespace E = Engine;
 //#include "tracy/Tracy.hpp"
 #include "tracy/Tracy.hpp"
 
+// lua
+#include <sol/sol.hpp>
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <ImGuizmo.h>

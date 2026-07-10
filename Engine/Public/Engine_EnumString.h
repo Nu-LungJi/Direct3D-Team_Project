@@ -6,6 +6,7 @@ namespace Engine
 		PERMANENT,
 		CAMERAS,
 		PHYSX,
+		LUA,
 	};
 
 	enum class ES_EngineProtoComponent
@@ -14,7 +15,8 @@ namespace Engine
 		Prototype_Component_ConstantBuffer,
 		Prototype_Component_ModelInstance,
 		Prototype_Component_StaticModelInstance,
-		Prototype_Component_Animator
+		Prototype_Component_Animator,
+		Prototype_Component_ComLuaScript
 	};
 
 	enum class ES_EngineProtoPhysXComponent
@@ -23,7 +25,7 @@ namespace Engine
 		Prototype_Component_ComPxCapsuleCollider,
 		Prototype_Component_ComPxSphereCollider,
 		Prototype_Component_ComPxTriMeshCollider,
-		Prototype_Component_ComPxRigidBody
+		Prototype_Component_ComPxRigidBody,
 	};
 
 	enum class ES_EngineProtoGameObject

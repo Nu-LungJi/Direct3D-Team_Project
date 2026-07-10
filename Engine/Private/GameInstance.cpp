@@ -40,8 +40,12 @@
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 
+#include "ComLuaScript.h"
+
 #include "ParticleManager.h"
 #include "Particle.h"
+
+
 
 NS_USING(Engine)
 
@@ -85,6 +89,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pLuaManager = CLuaManager::Create();
+	if (m_pLuaManager == nullptr)
+	{
+		return E_FAIL;
+	}
 
 	if (FAILED(InitializeResources()))
 	{
@@ -222,6 +231,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+
 
 	return S_OK;
 }
@@ -410,6 +420,7 @@ void CGameInstance::Release_Engine()
 	m_pCameraManager.reset();
 	m_pPrototypeManager.reset();
 	m_pGameObjectManager.reset();
+	m_pLuaManager.reset();
 	m_pRenderer.reset();
 	m_pFontManager.reset();
 	m_pSerializeManager.reset();
@@ -472,7 +483,44 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 }
 #pragma endregion
 
-
+#pragma region LUA_MANAGER
+HRESULT CGameInstance::LuaScriptExecute(const std::string& script, const sol::environment& env)
+{
+	return m_pLuaManager->Execute(script, env);
+}
+sol::environment CGameInstance::LuaCreateEnvironment()
+{
+	return m_pLuaManager->CreateEnvironment();
+}
+bool CGameInstance::LuaHasFunction(sol::environment& env, std::string_view function) const
+{
+	return m_pLuaManager->HasFunction(env, function);
+}
+HRESULT CGameInstance::LuaCompile(const std::string& script)
+{
+	return m_pLuaManager->Compile(script);
+}
+bool CGameInstance::LuaIsEnvValid(const sol::environment& env) const
+{
+	return m_pLuaManager->IsEnvValid(env);
+}
+bool CGameInstance::LuaHasValue(const sol::environment& env, std::string_view name) const
+{
+	return m_pLuaManager->HasValue(env, name);
+}
+void CGameInstance::LuaRemoveValue(sol::environment& env, std::string_view name)
+{
+	m_pLuaManager->RemoveValue(env, name);
+}
+void CGameInstance::LuaEnvDump(const sol::environment& env) const
+{
+	m_pLuaManager->EnvDump(env);
+}
+void CGameInstance::LuaEnvClear(sol::environment& env)
+{
+	m_pLuaManager->EnvClear(env);
+}
+#pragma endregion
 void CGameInstance::MouseFix() const
 {
 	RECT rect;
@@ -1069,6 +1117,15 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
+
+
+	// 루아 리소스
+	{
+		
+		auto res = AddResource(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST, CResLuaScript::CreateAndLoad("./LuaFiles/Test.lua"));
+	
+	}
+
 	return S_OK;
 }
 HRESULT CGameInstance::InitializePrototype()
@@ -1143,6 +1200,14 @@ HRESULT CGameInstance::InitializePrototype()
 			return E_FAIL;
 		}
 		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, CComPxRigidBody::Create()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	// 루아
+	{
+		if (AddPrototype(ES_EngineProtoMajorType::LUA, ES_EngineProtoComponent::Prototype_Component_ComLuaScript, CComLuaScript::Create()))
 		{
 			return E_FAIL;
 		}
