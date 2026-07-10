@@ -12,6 +12,8 @@
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
 
+//#include "SerDeTestCase.h"
+
 NS_USING(Client)
 
 CMainApp::CMainApp()
@@ -123,7 +125,11 @@ HRESULT CMainApp::Initialize()
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 
 	}
-
+	if (FAILED(Create_ActionNode()))
+	{
+		MSG_BOX("Failed Action Node To MainApp");
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -297,10 +303,6 @@ HRESULT CMainApp::Load_Particle_Resources()
 		OutputDebugStringA(("sizeof(CB_PER_PARTICLE) = " + std::to_string(sizeof(CB_PER_PARTICLE)) + "\n").c_str());
 		OutputDebugStringA(("sizeof(CParticle_Ribbon) = " + std::to_string(sizeof(CParticle_Ribbon)) + "\n").c_str());
 		OutputDebugStringA(("sizeof(CTrail_Example) = " + std::to_string(sizeof(CTrail_Example)) + "\n").c_str());
-	}
-	if (FAILED(Create_ActionNode()))
-	{
-		return E_FAIL;
 	}
 	return S_OK;
 }

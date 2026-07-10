@@ -26,10 +26,9 @@ public:
 	virtual void		Update_Gui();
 	ACTION_VALUE&		Get_Value() { return m_Value; }
 public:
-	virtual EVALUATE		Evaluate(_float fTimeDelta) PURE;
-
-	virtual nlohmann::json			Save_Node()override;
-	HRESULT					Load_json(const nlohmann::json& j) override;
+	virtual EVALUATE			Evaluate(_float fTimeDelta) PURE;
+	virtual nlohmann::json		Save_Node()override;
+	HRESULT						Load_json(const nlohmann::json& j) override;
 protected:
 	ACTION_VALUE			m_Value{};
 	_bool					m_bPopup{ false };

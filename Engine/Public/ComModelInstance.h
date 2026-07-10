@@ -47,9 +47,14 @@ public:
 	SPtr<const CResModel> GetModel() const { return m_pModel; }
 	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
 
+
+	std::vector<_float4x4>&			Get_CombinedBoneMatrices() { return m_CombinedBoneMatrices; }
+
 private:
 	SPtr<CResModel> m_pModel;
 	SPtr<CResCBuffer> m_Buffer;
+	std::vector<_float4x4> m_CombinedBoneMatrices;
+
 public:
 	static UPtr<CComModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

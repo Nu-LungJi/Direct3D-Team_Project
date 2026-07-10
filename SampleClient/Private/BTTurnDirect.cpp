@@ -34,7 +34,10 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
+	{
+		m_eDebug = EVALUATE::FAILED;
 		return EVALUATE::FAILED;
+	}
 	XMMATRIX mat = XMMatrixIdentity();
 	_vector vLook = XMVector3Normalize((vDest.GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION)));
 	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
@@ -47,6 +50,7 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
 	pTransform->SetQuaternion(quat);
 
+	m_eDebug = EVALUATE::SUCCESS;
 	return EVALUATE::SUCCESS;
 }
 void CBTTurnDirect::Update_Gui()

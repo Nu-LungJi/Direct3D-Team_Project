@@ -18,6 +18,8 @@ namespace Engine
 	enum class BEHAVIOR {SELECTOR, SECQUNCE, DECORATOR, ACTION,END};
 	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
+
+	enum class EVALUATE { SUCCESS, FAILED, RUN, END };
 #define X(name) name,
 	enum class NODEGROUP { NODE_ACTION_M };
 	enum class MOVE { MOVE_M };

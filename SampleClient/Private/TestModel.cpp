@@ -106,6 +106,11 @@ void CTestModel::Update(E::_float fTimeDelta)
 
 	if(m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
+
+
+
+
+
 }
 
 void CTestModel::LateUpdate(E::_float fTimeDelta)
