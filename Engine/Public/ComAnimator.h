@@ -115,8 +115,7 @@ private:
 
 	// 애니메이션 제어를 위한 멤버 변수들
 	_bool		    m_bPlay{ false };
-	_bool			m_bLoop{ false };
-	_bool		    m_bFinish{ false };
+
 	_bool			m_bBlending = true;
 	_float          m_fRatio{ 0.f };
 	_float			m_fBlendTime = 0.f;
@@ -139,13 +138,13 @@ public:
 	static UPtr<CComAnimator> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
-	_bool GetFinish() const { return m_bFinish; }
+	_bool GetFinish() const { return m_CurAnimState.bFinished; }
 
 	_bool GetPlay() const { return m_bPlay; }
 	void  SetPlay(_bool bPlay) { m_bPlay = bPlay;}
 
-	_bool GetLoop() const { return m_bLoop; }
-	void  SetLoop(_bool _bLoop) { m_bLoop = _bLoop; }
+	_bool GetLoop() const { return m_CurAnimState.bLoop; }
+	void  SetLoop(_bool _bLoop) { m_CurAnimState.bLoop = _bLoop; }
 
 
 

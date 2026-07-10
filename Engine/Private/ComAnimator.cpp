@@ -521,7 +521,7 @@ HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t i
     _bool           isFinished = { false };
 
     /* 뼈들의 m_TransformationMatrix를 갱신해준다. */
-    isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), m_bLoop);
+    isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), false);
 
     for (auto& pBone : pModel->GetBones())
     {
