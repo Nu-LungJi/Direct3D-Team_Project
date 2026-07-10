@@ -30,6 +30,7 @@ class CPrototype;
 class CColliderManager;
 class CCollider;
 class CRenderer;
+class CHizOcclusionCuller;
 class CAnimEdit_Manager;
 class CNodeEditor;
 class CParticleManager;
@@ -260,6 +261,7 @@ public:
 #pragma region RENDERER
 public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
+	_bool IsOcclusionCulled(const IRenderable* pRenderObject);
 #pragma endregion
 
 
@@ -390,6 +392,7 @@ private:
 	UPtr<CCameraManager> m_pCameraManager{};
 	UPtr<CColliderManager> m_pColliderManager{};
 	UPtr<CRenderer> m_pRenderer{};
+	UPtr<CHizOcclusionCuller> m_pHizOcclusionCuller{};
 	UPtr<CShaderManager> m_pShaderManager{};
 	UPtr<CLightManager> m_pLightManager{};
 	//UPtr<CVoxelManager> m_pVoxelManager{};

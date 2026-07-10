@@ -297,6 +297,7 @@
     <ClInclude Include="..\Public\ImguiManager.h" />
     <ClInclude Include="..\Public\IPhysicsListener.h" />
     <ClInclude Include="..\Public\IRenderable.h" />
+    <ClInclude Include="..\Public\HizOcclusionCuller.h" />
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
@@ -523,6 +524,7 @@
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
+    <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\FlipbookUI.cpp" />
     <ClCompile Include="..\private\ParticlePattern.cpp" />

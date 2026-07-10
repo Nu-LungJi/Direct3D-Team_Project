@@ -14,8 +14,10 @@
 #include "ColliderManager.h"
 #include "Collider.h"
 #include "Renderer.h"
+#include "HizOcclusionCuller.h"
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
+#include "CameraObject.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
 #include "AnimEdit_Manager.h"
@@ -142,6 +144,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pHizOcclusionCuller = CHizOcclusionCuller::Create();
+	if (m_pHizOcclusionCuller == nullptr)
+	{
+		return E_FAIL;
+	}
+
 	m_pCameraManager = CCameraManager::Create();
 	if (m_pCameraManager == nullptr)
 	{
@@ -262,6 +270,7 @@ void CGameInstance::UpdateGUI()
 
 
 	m_pRenderer->UpdateGUI();
+	m_pHizOcclusionCuller->UpdateGUI();
 
 	// 사운드 붙일때 부활
 	// m_pSoundManager->UpdateGUI();
@@ -413,6 +422,12 @@ void CGameInstance::Release_Engine()
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
+	m_pHizOcclusionCuller->FrameStart();
+	if (m_pRenderer->HasPrevHizBuffer())
+	{
+		m_pHizOcclusionCuller->Prepare(m_pRenderer->GetPrevHizBuffer());
+	}
+
 	{
 		ZoneScopedN("InputManager_Update");
 		m_pDInputManager->Update_InputDev();
@@ -1566,6 +1581,23 @@ HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& han
 HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
 	return m_pRenderer->AddRenderObject(eRenderGroup, pRenderObject);
+}
+
+_bool CGameInstance::IsOcclusionCulled(const IRenderable* pRenderObject)
+{
+	if (m_pHizOcclusionCuller == nullptr || m_pRenderer == nullptr || !m_pRenderer->HasPrevHizBuffer())
+	{
+		return false;
+	}
+
+	auto* pCamera = GetActiveCamera();
+	if (pCamera == nullptr)
+	{
+		return false;
+	}
+
+	const _matrix matViewProj = pCamera->GetView() * pCamera->GetProj();
+	return m_pHizOcclusionCuller->IsOcclusionCulledCPU(pRenderObject, matViewProj, m_vClientScreenSize);
 }
 #pragma endregion
 

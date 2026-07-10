@@ -107,6 +107,11 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	// ------------------------------------------- 인스턴싱 OFF --------------------------------------
 	if (!s_bInstancingEnabled)
 	{
+		if (CGameInstance::Get().IsOcclusionCulled(this))
+		{
+			return;
+		}
+
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 		return;
 	}

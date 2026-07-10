@@ -648,6 +648,9 @@
     <ClInclude Include="..\Public\Renderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HizOcclusionCuller.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\UICamera.h">
       <Filter>GameObject\Camera\UICamera</Filter>
     </ClInclude>
@@ -1275,6 +1278,9 @@
       <Filter>NavMesh</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\HizBuffer.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HizOcclusionCuller.cpp">
       <Filter>HizBuffer</Filter>
     </ClCompile>
   </ItemGroup>
