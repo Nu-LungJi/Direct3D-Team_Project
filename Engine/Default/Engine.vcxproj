@@ -238,7 +238,6 @@
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
-    <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
     <ClInclude Include="..\public\ComBeHavior.h" />
     <ClInclude Include="..\public\BTRoot.h" />
@@ -505,7 +504,6 @@
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
-    <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
     <ClCompile Include="..\private\ComBeHavior.cpp" />
     <ClCompile Include="..\private\BTRoot.cpp" />

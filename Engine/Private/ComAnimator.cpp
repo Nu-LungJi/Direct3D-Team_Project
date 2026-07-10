@@ -45,14 +45,14 @@ HRESULT CComAnimator::Update(_float fTimeDelta)
 {
     if (m_bPlay) {
         switch (m_iPlayAnimationType) {
-        case ANIMTYPE::MONTAGE: {
-			if (m_iPlayAnimMonatgueIndex < 0)
-				break;
-			
-        }break;
         case ANIMTYPE::ANIM: {
 				
 			Update_Anim(fTimeDelta);
+        }
+         break;
+		case ANIMTYPE::ACTION: {
+				
+			Update_Action(fTimeDelta);
         }
          break;
         }
@@ -75,6 +75,95 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 
 	if (m_CurAnimState.iAnimIndex < 0 ||
 		m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+	{
+		return E_FAIL;
+	}
+
+	auto pAnim = Anims[m_CurAnimState.iAnimIndex];
+	if (pAnim == nullptr)
+		return E_FAIL;
+
+
+	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
+
+	Update_AnimState(fTimeDelta, m_CurAnimState);
+
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+
+	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	{
+		auto pRootChannel = pAnim->FindRootChannel(m_iRootBoneIndex);
+
+		if (pRootChannel)
+		{
+			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
+			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
+
+			_float3 vPrevPos{};
+			_float3 vCurrPos{};
+
+			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
+			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
+
+			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
+			m_vRootMotionDelta.y = 0.f;
+			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
+
+		
+	/*		_vector qPrevRotation{};
+	
+
+			_vector vCurrScale;
+			_vector qCurrRotation;
+			_vector vCurrTranslation;
+
+			if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+			{
+				qPrevRotation = XMQuaternionNormalize(qPrevRotation);
+				qCurrRotation = XMQuaternionNormalize(qCurrRotation);
+
+
+				_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
+
+				qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
+
+
+				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+			}*/
+		}
+	}
+
+	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
+
+
+	Build_BoneMatrices_CPU(fTimeDelta);
+
+	if (pAnim->GetDuration() > 0.f)
+	{
+		m_fRatio = m_CurAnimState.fTrackPosition / pAnim->GetDuration();
+	}
+	else
+	{
+		m_fRatio = 0.f;
+	}
+
+	return S_OK;
+
+
+}
+
+HRESULT CComAnimator::Update_Action(_float fTimeDelta)
+{
+	if (m_pModelInstance == nullptr)
+		return E_FAIL;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return E_FAIL;
+
+	auto& Anims = pModel->GetAnimations();
+
+	if (m_CurAnimState.iAnimIndex < 0 || m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
 	{
 		return E_FAIL;
 	}
@@ -379,6 +468,15 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 		);
 	}
 
+
+
+	if (m_bRootMotion && iBoneIndex == m_iRootBoneIndex)
+	{
+		//matLocal.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+
+		vTranslation = XMVectorZero();
+		vRotation = RemoveYRotation(vRotation);
+	}
 	_matrix matLocal =
 		XMMatrixAffineTransformation(
 			vScale,
@@ -386,12 +484,6 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 			vRotation,
 			vTranslation
 		);
-
-	if (m_bRootMotion && iBoneIndex == m_iRootBoneIndex)
-	{
-		matLocal.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
-	}
-
 	XMStoreFloat4x4(&OutLocalBoneMatrices[iBoneIndex],matLocal);
 }
 
@@ -456,6 +548,35 @@ _matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _flo
 	return XMMatrixAffineTransformation(vScale, XMVectorSet(0.f, 0.f, 0.f, 1.f), vRotation, vTranslation);
 
 }
+_vector CComAnimator::RemoveYRotation(_vector qRotation)
+{
+	qRotation = XMQuaternionNormalize(qRotation);
+
+	// Quaternion의 Y축 회전 성분(Twist)만 추출
+	_vector qTwistY = XMVectorSet(
+		0.f,
+		XMVectorGetY(qRotation),
+		0.f,
+		XMVectorGetW(qRotation)
+	);
+
+	const float fLengthSq =
+		XMVectorGetX(XMVector4LengthSq(qTwistY));
+
+	if (fLengthSq < 0.000001f)
+		return qRotation;
+
+	qTwistY = XMQuaternionNormalize(qTwistY);
+
+	// 원본 회전에서 Y축 회전만 제거
+	// DirectXMath의 Multiply는 두 번째 인자가 왼쪽에 곱해짐
+	_vector qResult = XMQuaternionMultiply(
+		XMQuaternionInverse(qTwistY),
+		qRotation
+	);
+
+	return XMQuaternionNormalize(qResult);
+}
 
 void CComAnimator::Blend_Anim(_float fTimeDelta)
 {
@@ -508,28 +629,7 @@ void CComAnimator::Blend_Anim(_float fTimeDelta)
     }
 }
 
-HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum)
-{
-	auto pModel = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag)->GetModel();
-    
-    if(pModel == nullptr)
-		return E_FAIL;
 
-    auto& pAnim = pModel->GetAnimations();
-    auto& m_PreTransformMatrix = pModel->Get_PreTransformMatrix();
-
-    _bool           isFinished = { false };
-
-    /* 뼈들의 m_TransformationMatrix를 갱신해준다. */
-    isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), false);
-
-    for (auto& pBone : pModel->GetBones())
-    {
-        pBone->Update_CombinedTransformationMatrix(pModel->GetBones(), XMLoadFloat4x4(&m_PreTransformMatrix));
-    }
-
-    return isFinished;
-}
 
 
 

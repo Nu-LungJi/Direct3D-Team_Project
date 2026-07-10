@@ -349,9 +349,6 @@
     <Filter Include="Component\Model\ComModelInstance">
       <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model\ComAnimMontage">
-      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\Model\ComAnimator">
       <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
     </Filter>
@@ -716,9 +713,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\ComAnimator.h">
       <Filter>Component\Model\ComAnimator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ComAnimMontage.h">
-      <Filter>Component\Model\ComAnimMontage</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\AnimEdit_Manager.h">
       <Filter>AnimationEditor</Filter>
@@ -1132,9 +1126,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\ComAnimator.cpp">
       <Filter>Component\Model\ComAnimator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ComAnimMontage.cpp">
-      <Filter>Component\Model\ComAnimMontage</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp">
       <Filter>AnimationEditor</Filter>

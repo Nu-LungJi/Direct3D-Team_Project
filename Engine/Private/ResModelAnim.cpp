@@ -118,60 +118,6 @@ HRESULT CResModelAnim::Unload(const std::any& arg)
 	return S_OK;
 }
 
-_bool CResModelAnim::Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResModelBone>>& Bones, _bool isLoop)
-{
-	_float fPrevTrackPosition = m_fCurrentTrackPosition;
-
-	m_fCurrentTrackPosition += m_fTickPerSecond * fTimeDelta;
-
-	if (m_fCurrentTrackPosition >= m_fDuration)
-	{
-		if (true == isLoop)
-			m_fCurrentTrackPosition = 0.f;
-		else
-			return true;
-	}
-
-	 ExtractRootMotionDelta(fPrevTrackPosition, m_fCurrentTrackPosition, m_iRootBoneIndex, m_vRootDelta);
-
-	for (uint32_t i = 0; i < m_iNumChannels; ++i)
-	{
-		m_Channels[i]->Update_TransformationMatrix(m_CurrentKeyFrameIndices[i], m_fCurrentTrackPosition, Bones, m_iRootBoneIndex);
-	}
-
-	return false;
-
-}
-
-_bool CResModelAnim::ExtractRootMotionDelta(_float fPrevTrackPosition,_float fCurrTrackPosition,uint32_t iRootBoneIndex,_float3& vOutDelta)
-{
-	vOutDelta = _float3(0.f, 0.f, 0.f);
-	// 본 채널 : 애니메이션의 처음 채널을 찾는다.
-	auto pRootChannel = FindRootChannel(iRootBoneIndex);
-	if (pRootChannel == nullptr)
-		return false;
-
-	//이전 루트 매트릭스 구함
-	_matrix PrevRootMatrix =
-		pRootChannel->Evaluate_TransformationMatrix(fPrevTrackPosition);
-
-
-	// 최근 루트 매트리긋 구함
-	_matrix CurrRootMatrix =
-		pRootChannel->Evaluate_TransformationMatrix(fCurrTrackPosition);
-
-	_float3 vPrevPos;
-	_float3 vCurrPos;
-
-	XMStoreFloat3(&vPrevPos, PrevRootMatrix.r[3]);
-	XMStoreFloat3(&vCurrPos, CurrRootMatrix.r[3]);
-
-	vOutDelta.x = vCurrPos.x - vPrevPos.x;
-	vOutDelta.y = vCurrPos.y - vPrevPos.y;
-	vOutDelta.z = vCurrPos.z - vPrevPos.z;
-
-	return true;
-}
 
 void CResModelAnim::SetCurrentTrackPosition(float fPos)
 {

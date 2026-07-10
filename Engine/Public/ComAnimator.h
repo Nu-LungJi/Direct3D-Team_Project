@@ -5,7 +5,6 @@
 
 NS_BEGIN(Engine)
 class CComModelInstance;
-class CComAnimMontage;
 class CResModelAnim;
 
 
@@ -22,7 +21,7 @@ public:
 
 public:
 	enum ANIMTYPE{
-		ANIM, MONTAGE
+		ANIM, ACTION
 	};
 
 	struct ANIMSTRUCT {
@@ -58,6 +57,10 @@ public:
 			KeyFrameIndices.clear();
 		}
 
+		void SetTrackPostion(_float _trackPos) {
+			fTrackPosition = _trackPos;
+		}
+
 		_bool IsValid() const
 		{
 			return iAnimIndex >= 0;
@@ -83,6 +86,7 @@ public:
 
 	// AnimUPdate
 	HRESULT	Update_Anim(_float fTimeDelta);
+	HRESULT Update_Action(_float fTimeDelta);
 	void	Play_Anim(int32_t iAnimIndex, _bool bLoop=false, _float fBlendDuration = 0.1f);
 	void	Update_AnimState(_float fTimeDelta, ANIMSTRUCT& AnimState);
 	void	Build_BoneMatrices_CPU(_float fTimeDelta);
@@ -90,16 +94,19 @@ public:
 	_matrix Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition);
 
 
+
+	_vector RemoveYRotation(_vector qRotation);
 	void	Blend_Anim(_float fTimeDelta);
 
 
 public:
 	_float3 GetRootMotionDelta() { return m_vRootMotionDelta; }
+	ANIMSTRUCT& GetCurAnimState() { return  m_CurAnimState; }
+
 
 private:
 	CComModelInstance* m_pModelInstance;
-	std::unordered_map<int32_t, CComAnimMontage*> m_mapAnimMontages;
-	int32_t		   m_iAnimMontageIndex{ -1 };
+
 
 private:
 	_string			m_Comtag;
@@ -121,11 +128,6 @@ private:
 	_float			m_fBlendTime = 0.f;
 	_float			m_fBlendDuration;
 
-	/* 이 애니메이션의 총 길이. */
-	_float				m_fDuration = {};
-	_float				m_fTickPerSecond = {};
-	_float				m_fCurrentTrackPosition = {};
-
 	std::vector<_float4x4>				m_LocalBoneMatrices;
 	std::vector<_float4x4>				m_BlendStartLocalMatrices;
 private:
@@ -145,27 +147,20 @@ public:
 
 	_bool GetLoop() const { return m_CurAnimState.bLoop; }
 	void  SetLoop(_bool _bLoop) { m_CurAnimState.bLoop = _bLoop; }
+	_float GetPlayAnimRatio() const { return m_fRatio; }
 
 
-
-	// 다 지울것들
 public:
 
-public:
-	HRESULT AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum);
-
-	std::unordered_map<int32_t, CComAnimMontage*>& GetAnimMontages() { return m_mapAnimMontages; }
-
-	int32_t Get_CurrAnimMontageIndex() { return m_iAnimMontageIndex; }
-	void SetCurrentAnimMontageIndex(int32_t iIndex) { m_iAnimMontageIndex = iIndex; }
+	
 public:
 	uint32_t GetAnimationTYPE() const { return ETOUI(m_iPlayAnimationType); }
 	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }	
 
-	uint32_t GetPlayAnimIndex() const { return m_iPlayAnimIndex; }
+	uint32_t GetPlayAnimIndex() const { return m_CurAnimState.iAnimIndex; }
 	void SetPlayAnimIndex(uint32_t iIndex) { m_iPlayAnimIndex = iIndex; }
 
-	_float GetPlayAnimRatio() const { return m_fRatio; }
+
 
 };
 
