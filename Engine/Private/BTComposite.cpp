@@ -21,7 +21,23 @@ void CBTComposite::Tick(_float fTimeDelta)
 	for (auto& iter : m_Actions)
 	{
 		if(iter != nullptr)
+		iter->ResetDebug();
+	}
+	for (auto& iter : m_Actions)
+	{
+		if(iter != nullptr)
 		iter->Evaluate(fTimeDelta);
+	}
+		
+}
+
+void CBTComposite::ResetDebug()
+{
+	m_eDebug = EVALUATE::END;
+	for (auto& iter : m_Actions)
+	{
+		if(nullptr != iter)
+			iter->ResetDebug();
 	}
 		
 }

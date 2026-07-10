@@ -44,6 +44,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         {
 			m_NodeValue.bCur = false;
 			m_NodeValue.iPreSecquenceIndex = 0;
+			m_eDebug = EVALUATE::SUCCESS;
 			return EVALUATE::SUCCESS;
         }
         else if (eValuate == EVALUATE::RUN)
@@ -58,6 +59,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 
 	m_NodeValue.bCur = false;
 	m_NodeValue.iPreSecquenceIndex = 0;
+	m_eDebug = EVALUATE::FAILED;
 	return EVALUATE::FAILED;
 }
 
