@@ -12,7 +12,7 @@
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
 
-#include "SerDeTestCase.h"
+//#include "SerDeTestCase.h"
 
 NS_USING(Client)
 
