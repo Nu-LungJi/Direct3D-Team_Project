@@ -277,6 +277,8 @@ void CGameInstance::UpdateGUI()
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
 
+	m_pSerializeManager->UpdateGUI();
+
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER

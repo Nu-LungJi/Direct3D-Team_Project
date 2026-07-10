@@ -16,6 +16,10 @@
 
 #include "GameInstance.h"
 
+
+NS_BEGIN(Engine)
+
+NS_BEGIN(SerializeTest)
 struct Float3Comparator {
 	bool operator()(const _float3& a, const _float3& b) const {
 		if (a.x != b.x) return a.x < b.x;
@@ -45,9 +49,6 @@ struct Float3Equal {
 		return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
 	}
 };
-
-NS_BEGIN(Engine)
-
 namespace TestEnum
 {
 	enum SomeEnum
@@ -177,14 +178,21 @@ public:
 	bool b{};
 	TestEnum::SomeEnum eSomeEnum{};
 	TestEnum::SomeClassEnum eSomeClassEnum{};
-	std::pair<std::string, std::string> pairStringID{};
+	std::pair<StringID, StringID> pairStringID{};
+
+	StringID strId{};
+
+	std::unordered_map<StringID, std::string> umapStrId{};
+
+	std::vector<StringID> vecStrID{};
 
 
 
 	void Serialize(ISerializer& serializer) const override
 	{
-		serializer.Write("worldName", worldName);
-		serializer.Write("Players", players);
+		WRITE_ALL(serializer, worldName, players);
+		//serializer.Write("worldName", worldName);
+		//serializer.Write("Players", players);
 		serializer.Write("Monsters", monsters);
 		serializer.Write("Mats", mats);
 		serializer.Write("Sets", sets);
@@ -196,12 +204,16 @@ public:
 		serializer.Write("eSomeEnum", eSomeEnum);
 		serializer.Write("eSomeClassEnum", eSomeClassEnum);
 		serializer.Write("pairStringID", pairStringID);
+		serializer.Write("strId", strId);
+		serializer.Write("umapStrId", umapStrId);
+		serializer.Write("vecStrID", vecStrID);
 	}
 
 	void Deserialize(IDeserializer& deserializer) override
 	{
-		deserializer.Read("worldName", worldName);
-		deserializer.Read("Players", players);
+		READ_ALL(deserializer, worldName, players);
+		//deserializer.Read("worldName", worldName);
+		//deserializer.Read("Players", players);
 		deserializer.Read("Monsters", monsters);
 		deserializer.Read("Mats", mats);
 		deserializer.Read("Sets", sets);
@@ -213,6 +225,9 @@ public:
 		deserializer.Read("eSomeEnum", eSomeEnum);
 		deserializer.Read("eSomeClassEnum", eSomeClassEnum);
 		deserializer.Read("pairStringID", pairStringID);
+		deserializer.Read("strId", strId);
+		deserializer.Read("umapStrId", umapStrId);
+		deserializer.Read("vecStrID", vecStrID);
 	}
 
 	bool operator==(const CWorldData& rhs) const
@@ -235,7 +250,7 @@ public:
 			}
 		}
 
-		
+
 		return (worldName == rhs.worldName) &&
 			(players == rhs.players) &&
 			(monsters == rhs.monsters) &&
@@ -245,6 +260,9 @@ public:
 			(ui32 == rhs.ui32) &&
 			(ui64 == rhs.ui64) &&
 			(b == rhs.b) &&
+			(strId == rhs.strId) &&
+			(umapStrId == rhs.umapStrId) &&
+			(vecStrID == rhs.vecStrID) && 
 			(memcmp(&mats[0], &rhs.mats[0], sizeof(_float4x4) * rhs.mats.size()) == 0);
 	}
 };
@@ -306,7 +324,7 @@ inline void RunMegaSerializationTest()
 		originalWorld.mats.push_back(tmp);
 	}
 
-	originalWorld.sets.insert({ 1.f, 2.f, 3.f});
+	originalWorld.sets.insert({ 1.f, 2.f, 3.f });
 
 	originalWorld.unorderSets.insert({ 4.f, 5.f, 6.f });
 
@@ -322,6 +340,13 @@ inline void RunMegaSerializationTest()
 	originalWorld.eSomeEnum = TestEnum::Two;
 
 	originalWorld.pairStringID = { "youcan", "doit" };
+
+	originalWorld.strId = "WTTTF";
+
+	originalWorld.umapStrId.emplace("!!@#", "####");
+	originalWorld.umapStrId.emplace("HELLO", "WORLD");
+
+	originalWorld.vecStrID.push_back("FF_GG");
 
 	// ---------------------------------
 	// ---------------------------------
@@ -371,7 +396,7 @@ inline void RunMegaSerializationTest()
 		// [Load]
 		if (bBinSaveSuccess) {
 			CWorldData restoredWorld;
-			if (SUCCEEDED(pMgr.BinDeSerialize("MegaTest_SaveData.bin", originalWorld)))
+			if (SUCCEEDED(pMgr.BinDeSerialize("MegaTest_SaveData.bin", restoredWorld)))
 			{
 				bBinLoadSuccess = true;
 				if (originalWorld == restoredWorld) bBinDataMatch = true;
@@ -415,5 +440,7 @@ inline void RunMegaSerializationTest()
 
 	MessageBoxA(nullptr, resultMsg.c_str(), "Serializer Test Report", MB_OK | MB_ICONINFORMATION);
 }
+
+NS_END
 
 NS_END

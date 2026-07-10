@@ -29,6 +29,7 @@ public:
 	void Read(const std::string& key, _float4& outValue)  override;
 	void Read(const std::string& key, _float4x4& outValue) override;
 	void Read(const std::string& key, ISerializable& outValue) override;
+	void Read(const std::string& key, StringID& outValue) override;
 
 	size_t StartArray(const std::string& key) override;
 	void EndArray() override;
