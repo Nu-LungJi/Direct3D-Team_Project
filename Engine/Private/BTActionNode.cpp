@@ -33,6 +33,10 @@ HRESULT CBTActionNode::Initalize(void* pArg)
     return S_OK;
 }
 
+void CBTActionNode::Abort()
+{
+}
+
 void CBTActionNode::Update_Gui()
 {
 }

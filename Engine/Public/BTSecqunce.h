@@ -23,8 +23,8 @@ private:
 
 public:
 
-	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
-
+	virtual EVALUATE			Evaluate(_float fTimeDelta)override;
+	void						Abort() override;
 	nlohmann::json 				Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j) override;
 public:

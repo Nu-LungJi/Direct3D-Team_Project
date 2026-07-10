@@ -23,7 +23,7 @@ protected:
 
 public:
 	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
-
+	void						Abort() override;
 	virtual void				Update_Gui() PURE;
 	virtual void				ResetDebug() override;
 	nlohmann::json				Save_Node()override;

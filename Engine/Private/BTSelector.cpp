@@ -43,16 +43,20 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         }
         else if (eValuate == EVALUATE::RUN)
 		{
+			m_NodeValue.iPreSecquenceIndex = i;
             return  EVALUATE::RUN;
         }
  
 
     }
-
-	m_NodeValue.bCur = false;
-	m_NodeValue.iPreSecquenceIndex = 0;
 	m_eDebug = EVALUATE::FAILED;
 	return EVALUATE::FAILED;
+}
+
+void CBTSelector::Abort()
+{
+	for(size_t i=0; i< m_Actions.size(); ++i)
+		m_Actions[i]->Abort();
 }
 
 nlohmann::json CBTSelector::Save_Node()

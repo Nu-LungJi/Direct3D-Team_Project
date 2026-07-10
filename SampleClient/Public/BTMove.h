@@ -17,9 +17,9 @@ private:
 	HRESULT Initalize(void* pArg) override;
 public:
 	virtual nlohmann::json			Save_Node()override;
-	HRESULT					Load_json(const nlohmann::json& j) override;
-	EVALUATE Evaluate(_float fTimeDelta) override;
-	virtual void		Update_Gui() override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
+	EVALUATE						Evaluate(_float fTimeDelta) override;
+	virtual void					Update_Gui() override;
 private:
 	MOVE						m_eMove{};
 public:

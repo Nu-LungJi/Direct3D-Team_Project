@@ -72,6 +72,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	}
 
 	CComBeHavior::BEHAVIOR_DESC Desc{};
+	Desc.OwnerName = "Com_BT";
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
 	{
 		return E_FAIL;
@@ -133,11 +134,7 @@ void CTestGob::Update(E::_float fTimeDelta)
 		m_pModelAnimator->Update(fTimeDelta);
 
 	m_pBeHavior->Update(fTimeDelta);
-
-
-	
-	
-
+	m_pBeHavior->AbortNode();
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)

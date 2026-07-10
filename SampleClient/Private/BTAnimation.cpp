@@ -32,35 +32,32 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
 	auto pAnimator =(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
+	
 	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
 		return m_eDebug = EVALUATE::FAILED;
 	if (m_bStart)
-	{
 		pAnimator->SetPlay(true);
-		m_bStart = false;
-	}
-
-	pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
-	pAnimator->SetLoop(m_bLoop);
+	
+	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 	_bool bFinished = pAnimator->GetFinish();
 
-	if (m_bLoop)
+	if (m_bLoop || bFinished)
 	{
-		m_bStart = true;
+		if (m_GuiNode.bAbort)
+		{
+			Set_Abort();
+		}
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
-		
-	if (bFinished)
-	{
-		if(!m_bLoop)
-			m_bStart = false;
-		return m_eDebug = EVALUATE::SUCCESS;
-	}
-		
+
 	return m_eDebug = EVALUATE::RUN;
 }
 void CBTAnimation::Update_Gui()
 {
+	if (ImGui::Button("Abort : ")) 
+		m_GuiNode.bAbort = !m_GuiNode.bAbort;
+	ImGui::SameLine(50.f);
+	m_GuiNode.bAbort == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
 
 	if (ImGui::Button("Loop Change"))
 		m_bLoop = !m_bLoop;
@@ -84,9 +81,8 @@ void CBTAnimation::Update_Gui()
 }
 nlohmann::json CBTAnimation::Save_Node()
 {
-	nlohmann::json j;
+	nlohmann::json j = __super::Save_Node();
 	
-	j = __super::Save_Node();
 	SaveJsonValue(j, "Loop", m_bLoop);
 	return j;
 }

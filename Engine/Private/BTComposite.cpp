@@ -16,6 +16,10 @@ CBTComposite::~CBTComposite()
 
 }
 
+void CBTComposite::Abort()
+{
+}
+
 void CBTComposite::Tick(_float fTimeDelta)
 {
 	for (auto& iter : m_Actions)
@@ -42,20 +46,36 @@ void CBTComposite::ResetDebug()
 		
 }
 
-HRESULT CBTComposite::Add_Node(void* pArg, UPtr<CBTRoot> pNode)
+HRESULT CBTComposite::Add_Node(uint32_t iIndex, UPtr<CBTRoot> pNode)
 {
-	auto pDesc = static_cast<CBTRoot::BTROOT_DESC*>(pArg);
+	if (iIndex >= m_Actions.size())
+		return E_FAIL;
+
+	if (m_Actions[iIndex] == nullptr)
+		return E_FAIL;
 	
-	int32_t iIndex = {};
-	//	return E_FAIL;
+	m_Actions[iIndex] = std::move(pNode);
 	return S_OK;
 }
 
 nlohmann::json CBTComposite::Save_Node()
 {
 	size_t iCnt(0);
-	nlohmann::json j;
-	j = __super::Save_Node();
+	nlohmann::json j = __super::Save_Node();
+	for (auto iter = m_Actions.begin(); iter != m_Actions.end();)
+	{
+		if ((*iter) == nullptr)
+		{
+			iter = m_Actions.erase(iter);
+		}
+		++iter;
+	}
+	for (size_t i = 0; i < m_Actions.size(); ++i)
+	{
+		m_Actions[i]->Get_GuiNodeLink().ParentNode = m_GuiNode.Get_DestInfo();
+		m_Actions[i]->Get_GuiNodeLink().iStartIdx = i;
+	}
+
 	for (size_t i = 0; i < m_GuiLink.SlotEnd.size(); ++i)
 	{
 		if (m_GuiLink.SlotEnd[i].iDestNode != -1)

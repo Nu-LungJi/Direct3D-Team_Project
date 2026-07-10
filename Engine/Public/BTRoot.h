@@ -2,6 +2,7 @@
 #include "Prototype.h"
 #include "Engine_Defines.h"
 #include "GameInstance.h"
+#include "ComBeHavior.h"
 //뿌리
 NS_BEGIN(Engine)
 class ENGINE_DLL  CBTRoot : public CPrototype
@@ -33,16 +34,21 @@ public:
 	CHandle&					Get_Handle() { return m_Handle; }
 	virtual void				ResetDebug() { m_eDebug = EVALUATE::END; }
 	EVALUATE					GetDebugType() const {return m_eDebug;}
+
 public:
 	virtual nlohmann::json		Save_Node();
 	virtual HRESULT				Load_json(const nlohmann::json& j);
 public:
 	virtual EVALUATE			Evaluate(_float fTimeDelta) PURE;
+	virtual void				Abort() PURE;
+	void						Set_OwnerName(const _string& strOwnerName) { m_OwnerName = strOwnerName; }
+	class CComBeHavior*			Get_ComBT();
+	void						Set_Abort();
 protected:
 	GUINODE								m_GuiNode;
 	GUINODE_LINK						m_GuiLink;
 	CHandle								m_Handle;
-	_string								m_MasterName;
+	_string								m_MasterName, m_OwnerName;
 	NODEGROUP							m_eGroup{};
 
 	EVALUATE							m_eDebug{};

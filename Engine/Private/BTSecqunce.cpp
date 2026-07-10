@@ -62,6 +62,12 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
     return EVALUATE::SUCCESS;
 }
 
+void CBTSecqunce::Abort()
+{
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
+}
+
 nlohmann::json  CBTSecqunce::Save_Node()
 {
     return __super::Save_Node();

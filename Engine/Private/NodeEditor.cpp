@@ -420,22 +420,23 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 						if ((*iter)->Get_GuiNodeInfo().iID == m_CurrentNode.iD)
 						{
 							//등록
-							m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
+							//m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
 
 							(*iter)->Get_GuiNodeLink().iStartIdx = iSlot;
 							(*iter)->Get_GuiNodeLink().ParentNode = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 							pCurNode->Get_GuiNodeLink().SlotEnd[iSlot] = (*iter)->Get_GuiNodeInfo().Get_DestInfo();
 
-							if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
-							{
-								auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
-								(*pSrc)[iSlot] = std::move((*iter));
-							}
-							else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-							{
-								auto pSrc = static_cast<CBTDecorator*>(pCurNode);
-								pSrc->Set_Child(std::move((*iter)));
-							}
+							m_pBeHavior->Add_Node(pCurNode, iSlot, std::move(*iter));
+							//if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+							//{
+							//	auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
+							//	(*pSrc)[iSlot] = std::move((*iter));
+							//}
+							//else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+							//{
+							//	auto pSrc = static_cast<CBTDecorator*>(pCurNode);
+							//	pSrc->Set_Child(std::move((*iter)));
+							//}
 							Reset_CurrentNode();
 							break;
 						}
@@ -513,7 +514,7 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 				if (nullptr != pSrc)
 				{
 
-					if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					if (pSrc->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION)
 					{
 						int32_t iPreSlot = m_CurrentNode.iSelectedSlot;
 						pCurNode->Get_GuiNodeLink().iStartIdx = iPreSlot; // 자식에 부모 담았고
@@ -521,17 +522,18 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 						pSrc->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 						pCurNode->Get_GuiNodeLink().ParentNode = pSrc->Get_GuiNodeInfo().Get_DestInfo();
 
-						m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
-						if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
-						{
-							auto pParn = static_cast<CBTComposite*>(pSrc);
-							(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
-						}
-						else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-						{
-							auto pParn = static_cast<CBTDecorator*>(pSrc);
-							pParn->Set_Child(std::move(pCurNode));
-						}
+						m_pBeHavior->Add_Node(pSrc, iPreSlot, std::move(pCurNode));
+						//m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
+						//if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+						//{
+						//	auto pParn = static_cast<CBTComposite*>(pSrc);
+						//	(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
+						//}
+						//else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+						//{
+						//	auto pParn = static_cast<CBTDecorator*>(pSrc);
+						//	pParn->Set_Child(std::move(pCurNode));
+						//}
 					}
 				}
 				bFinishe = true;
@@ -1009,7 +1011,6 @@ void CNodeEditor::Add_NodeToTmp(UPtr<class CBTRoot>& pRoot)
 		MSG_BOX("Add Failed To Tmp Node");
 		return;
 	}
-		
 	m_pBeHavior->UnRegistNode(pRoot->Get_GuiNodeInfo().iID);
 
 	if (m_BTNodesTmp.empty())

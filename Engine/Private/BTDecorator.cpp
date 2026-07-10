@@ -40,6 +40,9 @@ EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 	m_eDebug = EVALUATE::FAILED;
     return EVALUATE::FAILED;
 }
+void CBTDecorator::Abort()
+{
+}
 void CBTDecorator::ResetDebug()
 {
 	m_eDebug = EVALUATE::END;

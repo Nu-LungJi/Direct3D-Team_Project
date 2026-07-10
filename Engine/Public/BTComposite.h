@@ -27,10 +27,11 @@ public:
 	std::vector<UPtr<CBTRoot>>* Get_Nodes() { return &m_Actions; }
 	
 	virtual EVALUATE		Evaluate(_float fTimeDelta) { return EVALUATE::SUCCESS; }
+	void					Abort() override;
 	void					Tick(_float fTimeDelta);
 	void					ResetDebug() override;
 public:
-	HRESULT					Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
+	HRESULT					Add_Node(uint32_t iIndex, UPtr<CBTRoot> pNode);
 	virtual nlohmann::json  Save_Node() override;
 	virtual HRESULT			Load_json(const nlohmann::json& j);
 protected:

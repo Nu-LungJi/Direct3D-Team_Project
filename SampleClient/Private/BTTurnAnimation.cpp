@@ -101,9 +101,7 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 		return EVALUATE::SUCCESS;
 	}
 	
-	pAnimator->SetPlay(true);
-	pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
-	pAnimator->SetLoop(m_bLoop);
+	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 	_bool bFinished = pAnimator->GetFinish();
 
 	if (m_bLoop)
@@ -157,9 +155,8 @@ void CBTTurnAnimation::Update_Gui()
 }
 nlohmann::json CBTTurnAnimation::Save_Node()
 {
-	nlohmann::json j;
+	nlohmann::json j = __super::Save_Node();
 
-	j = __super::Save_Node();
 	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);

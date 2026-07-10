@@ -11,6 +11,7 @@
 #include "BTDead.h" //죽는거 체크해야지
 #include "BTDamage.h" //hp 깎기
 #include "BTTurnAnimation.h" // 회전 애니매이션이 너무 많아서 하나로 묶는용도
+#include "BTAttackAnimation.h"
 
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함

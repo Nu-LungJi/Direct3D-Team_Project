@@ -17,10 +17,10 @@ private:
 	HRESULT	InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initalize(void* pArg)override;
 public:
-	EVALUATE Evaluate(_float fTimeDelta) override;
-	virtual void		Update_Gui() override;
+	EVALUATE				Evaluate(_float fTimeDelta) override;
+	virtual void			Update_Gui() override;
 
-	virtual nlohmann::json			Save_Node()override;
+	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
 	_bool				m_bLoop{ true }, m_bStart{true};

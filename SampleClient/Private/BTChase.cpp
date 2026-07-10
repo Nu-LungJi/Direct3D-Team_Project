@@ -31,20 +31,6 @@ HRESULT CBTChase::Initalize(void* pArg)
 	return S_OK;
 }
 
-nlohmann::json CBTChase::Save_Node()
-{
-	nlohmann::json j = __super::Save_Node();
-
-	SaveJsonEnum(j, "MOVE", m_eMove);
-
-	return j;
-}
-
-HRESULT CBTChase::Load_json(const nlohmann::json& j)
-{
-	__super::Load_json(j);
-	return S_OK;
-}
 
 EVALUATE CBTChase::Evaluate(_float fTimeDelta)
 {

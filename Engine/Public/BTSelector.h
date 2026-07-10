@@ -19,9 +19,9 @@ private:
 	HRESULT Initalize(void* pArg) override;
 public:					
 	virtual EVALUATE		Evaluate(_float fTimeDelta) override;
-
-	nlohmann::json		Save_Node() override;
-	HRESULT				Load_json(const nlohmann::json& j) override;
+	void					Abort() override;
+	nlohmann::json			Save_Node() override;
+	HRESULT					Load_json(const nlohmann::json& j) override;
 public:
 	static  UPtr<CBTSelector> Create(void* pArg);
 	UPtr<CPrototype>Clone(void* pArg)override;

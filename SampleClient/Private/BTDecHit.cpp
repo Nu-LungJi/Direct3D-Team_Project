@@ -31,40 +31,31 @@ HRESULT CBTDecHit::Initalize(void* pArg)
 	return S_OK;
 }
 
-nlohmann::json CBTDecHit::Save_Node()
-{
-	nlohmann::json j = __super::Save_Node();
-
-	//SaveJsonEnum(j, "MOVE", m_eMove);
-
-	return j;
-}
-
-HRESULT CBTDecHit::Load_json(const nlohmann::json& j)
-{
-	__super::Load_json(j);
-	//LoadJsonEnum(j, "MOVE", m_eMove);
-	return S_OK;
-}
-
 EVALUATE CBTDecHit::Evaluate(_float fTimeDelta)
 {
-	if (auto pCam = CGameInstance::Get().GetActiveCamera())
+	if (auto pBT = Get_ComBT())
 	{
-		const auto& [vOri, vDir] = pCam->GetRay();
-		_float fDist{};
-		if (auto pVec = CGameInstance::Get().GetColliderGroup("CollTestGob"))
+		if (pBT->Get_Hit())
+			return EVALUATE::SUCCESS;
+
+		if (auto pCam = CGameInstance::Get().GetActiveCamera())
 		{
-			for (const auto& coll : *pVec)
+			const auto& [vOri, vDir] = pCam->GetRay();
+			_float fDist{};
+			if (auto pVec = CGameInstance::Get().GetColliderGroup("CollTestGob"))
 			{
-				if (coll->Intersect(vOri, vDir, fDist))
+				for (const auto& coll : *pVec)
 				{
-					return __super::Evaluate(fTimeDelta);
+					if (coll->Intersect(vOri, vDir, fDist))
+					{
+					
+						pBT->Set_Hit(true);
+						return __super::Evaluate(fTimeDelta);
+					}
 				}
 			}
 		}
 	}
-	
 	return m_eDebug = EVALUATE::FAILED;
 }
 void CBTDecHit::Update_Gui()

@@ -23,7 +23,6 @@ HRESULT CBTDecTimer::InitializePrototype(void* pArg)
 }
 HRESULT CBTDecTimer::Initalize(void* pArg)
 {
-
 	__super::Initalize(pArg);
 
 	return S_OK;

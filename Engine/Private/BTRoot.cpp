@@ -40,7 +40,8 @@ nlohmann::json CBTRoot::Save_Node()
 
 	SaveJsonValue(j, "ID", m_GuiNode.iID);
 	SaveJsonValue(j, "fValue", m_GuiNode.fValue);
-	
+	SaveJsonValue(j, "Abort", m_GuiNode.bAbort);
+
 	SaveJsonEnum(j, "Group", m_eGroup);
 	SaveJsonEnum(j, "GuiNode_BeHaviorType", m_GuiNode.eMyType);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "GuiNode_Pos", m_GuiNode.vPos);
@@ -60,16 +61,38 @@ HRESULT				CBTRoot::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "ID", m_GuiNode.iID);
 	LoadJsonValue(j, "fValue", m_GuiNode.fValue);
 
+	LoadJsonValue(j, "Abort", m_GuiNode.bAbort);
 	LoadJsonEnum(j, "Group", m_eGroup);
 	LoadJsonEnum(j, "GuiNode_BeHaviorType", m_GuiNode.eMyType);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "GuiNode_Pos", m_GuiNode.vPos);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "GuiNode_Size", m_GuiNode.vSize);
 	JsonSaveLoadManager::LoadJsonTypeFloat4(j, "GuiNode_Color", m_GuiNode.vColor);
 	JsonSaveLoadManager::LoadJsonTypeString(j, "GuiNode_Name", m_GuiNode.Name);
-
+	
+	if (m_GuiNode.Name == "Selector Root")
+		int32_t i = 0;
 	LoadJsonEnum(j, "GuiLink_ParentNodeEnum", m_GuiLink.ParentNode.eType);
 	LoadJsonValue(j, "GuiLink_StartIndex", m_GuiLink.iStartIdx);
 	LoadJsonValue(j, "GuiLink_StartParentNode", m_GuiLink.ParentNode);
 	JsonSaveLoadManager::LoadJsonTypeString(j, "MasterName", m_MasterName);
 	return S_OK;
+}
+void CBTRoot::Set_Abort()
+{
+	if (auto iter =Get_ComBT())
+	{
+		iter->Set_Abort();
+	}
+}
+CComBeHavior* CBTRoot::Get_ComBT()
+{
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>(m_OwnerName))
+		{
+			return pComBt;
+		}
+	}
+	return nullptr;
+
 }
