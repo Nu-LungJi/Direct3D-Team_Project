@@ -151,8 +151,13 @@ public:
         _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
         _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration);
 
+
 public:
-    // 조회 헬퍼
+	HRESULT Save_Binary_Json(std::string outpath, const std::string& fbxFullPath, const std::string& whatKind, const std::string& particleType,
+		const std::string& particleName, int iMaxParticles, int iBehaviorType, const std::string& VSGroup, const std::string& VSID,
+		const std::string& PSGroup, const std::string& PSID, const std::string& sGroupTag, const std::string& sResTag, 
+		const std::string& textureID1 = "", const std::string& textureID2 = "");
+	// 조회 헬퍼
     CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
     bool HasGroup(const StringID& sGroupTag) const;
 
@@ -170,5 +175,6 @@ private:
     std::vector<SPAWN_COMMAND> m_vecCommandQueue;
     // 큐 전체를 실행
     HRESULT ExecuteCommandQueue();
+	HRESULT LoadParticleModelJson(const std::string& strJsonPath, const std::string& strFbxRealFolder);
 };
 NS_END

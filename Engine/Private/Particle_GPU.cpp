@@ -29,6 +29,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
     // 예전: m_iNumElements = 1000; (하드코딩) → 이제 DESC에서 주입
     m_iNumElements = m_Desc.iMaxParticles;
     m_eType = pDesc->type;
+
     // 파티클을 다 죽은 상태로 초기화
     std::vector<PARTICLE> initParticles(m_iNumElements);
     for (uint32_t i = 0; i < m_iNumElements; i++)
@@ -240,6 +241,7 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
+
 	ProcessPendingSpawns(fTimeDelta);
     auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 
@@ -468,3 +470,13 @@ uint32_t CParticle_GPU::GetDeadListCounterSync()
     return counterValue;
 }
 
+UPtr<CParticle> CParticle_GPU::Create(void* pArg)
+{
+	auto pInstance = E::ToUPtr(new CParticle_GPU{});
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Created : CParticle_GPU");
+		return nullptr;
+	}
+	return  pInstance;
+}

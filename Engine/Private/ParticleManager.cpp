@@ -6,6 +6,10 @@
 #include "ParticlePattern.h"
 NS_USING(Engine)
 
+std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
+std::vector<std::string> ScanTextureFolder(const std::string& strFbxFolder);
+ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& strFbxFolder);
+
 CParticleManager::CParticleManager()
 {
 }
@@ -14,22 +18,221 @@ CParticleManager::~CParticleManager()
 {
 }
 
-static _float3 vStart = { 10.f, 9.f, 10.f };
-static _float3 vEnd = { 10.f, 11.f, 10.f };
-
-static _float3 vSwingPivot = { 10.f, 10.f, 10.f };
-static _float  fBladeGrip = 0.5f;
-static _float  fBladeLength = 3.f;
-static _float  fSwingStartDeg = -60.f;
-static _float  fSwingEndDeg = 150.f;
-static _float  fSwingDuration = 0.3f;
-static _float  fSwingElapsed = 0.f;
-static _bool   bSwinging = false;
-static _bool   bSpawn = false;
-static int  iCount = 0;
-static float fTime = 1;
 void CParticleManager::UpdateGUI()
 {
+	ImGui::Begin("SaveJson");
+
+	static const std::string kFbxListJsonPath = "./Resources/SampleClient/Models/ParticleModelJson/ParticleModel.json";
+	static const std::string kJsonFolder = "./Resources/json/Particle";
+
+	static std::vector<std::string> fbxFileList;
+	static bool bFbxScanned = false;
+	static int selectedFbxIndex = -1;
+	static std::string selectedFbxPath;
+
+	static char szJsonName[MAX_PATH] = "ParticleData.json";
+	static int whatKindIndex = 0; // 0: MESH, 1: TEXTURE
+	static char szParticleType[128] = "";
+	static char szParticleName[128] = "";
+	static char szTextureID1[128] = "SAMPLE_CLINET_TEXTURE";
+	static char szTextureID2[128] = "TEX_RIBBON";
+	static int iMaxParticles = 1000;
+	static int iBehaviorType = 1;
+	static char szVSID1[128] = "SAMPLE_CLIENT_SHADER";
+	static char szVSID2[128] = "VS_VTX_GPU_PARTICLE_MESH";
+	static char szPSID1[128] = "SAMPLE_CLIENT_SHADER";
+	static char szPSID2[128] = "PS_VTX_GPU_PARTICLE_MESH";
+	static char szGroupTag[128] = "Rock1";
+	static char szResTag[128] = "Static_Model_Resource";
+
+	static const std::string kTextureRealFolder = "./Resources/SampleClient/Textures/EffectParticle";
+	static std::vector<std::string> textureFileList;
+	static bool bTextureScanned = false;
+	static int selectedTextureIndex = -1;
+	static std::string selectedTexturePath;
+
+	// ---- 0. WhatKind 대분류 선택 ----
+	const char* whatKindNames[] = { "MESH", "TEXTURE" };
+	ImGui::Combo("WhatKind", &whatKindIndex, whatKindNames, IM_ARRAYSIZE(whatKindNames));
+
+	ImGui::Separator();
+
+	// ---- 1. MESH일 때만: fbx 섹션 ----
+	if (whatKindIndex == 0)
+	{
+		if (!bFbxScanned)
+		{
+			fbxFileList = ScanFbxFolder(kFbxListJsonPath);
+			bFbxScanned = true;
+		}
+
+		if (ImGui::Button("Rescan Fbx Folder"))
+			fbxFileList = ScanFbxFolder(kFbxListJsonPath);
+
+		ImGui::Text("Fbx Files:");
+
+		if (!fbxFileList.empty())
+		{
+			std::vector<const char*> namesForCombo;
+			for (auto& s : fbxFileList)
+				namesForCombo.push_back(s.c_str());
+
+			static const std::string kFbxRealFolder = "./SampleClient/Models/OriginData/Static/ParticleMeshes";
+
+			if (ImGui::Combo("Fbx List", &selectedFbxIndex, namesForCombo.data(), (int)namesForCombo.size()))
+			{
+				selectedFbxPath = kFbxRealFolder + "/" + fbxFileList[selectedFbxIndex];
+			}
+
+			if (!selectedFbxPath.empty())
+				ImGui::Text("Selected: %s", selectedFbxPath.c_str());
+		}
+		else
+		{
+			ImGui::Text("(No fbx files found in folder)");
+		}
+
+		ImGui::InputText("GroupTag", szGroupTag, IM_ARRAYSIZE(szGroupTag));
+		ImGui::InputText("ResTag", szResTag, IM_ARRAYSIZE(szResTag));
+	}
+
+	// ---- 2. TEXTURE일 때만: 텍스처 섹션 ----
+	if (whatKindIndex == 1)
+	{
+		if (!bTextureScanned)
+		{
+			textureFileList = ScanTextureFolder(kTextureRealFolder);
+			bTextureScanned = true;
+		}
+
+		if (ImGui::Button("Rescan Texture Folder"))
+			textureFileList = ScanTextureFolder(kTextureRealFolder);
+
+		ImGui::Text("Textures:");
+
+		const float thumbnailSize = 64.0f;
+		const float cellPadding = 10.0f;
+		const float cellWidth = thumbnailSize + cellPadding;
+		int columns = 4;
+		float windowWidth = ImGui::GetContentRegionAvail().x;
+		columns = std::max(1, (int)(windowWidth / cellWidth));
+
+		int i = 0;
+		for (auto& texName : textureFileList)
+		{
+			std::string fullPath = kTextureRealFolder + "/" + texName;
+			ID3D11ShaderResourceView* pSRV = GetOrLoadTextureThumbnail(fullPath);
+
+			ImGui::PushID(i);
+			ImGui::BeginGroup();
+
+			if (pSRV)
+			{
+				if (ImGui::ImageButton((ImTextureID)pSRV, ImVec2(thumbnailSize, thumbnailSize)))
+				{
+					selectedTextureIndex = i;
+					selectedTexturePath = fullPath;
+				}
+			}
+			else
+			{
+				if (ImGui::Button("No Img", ImVec2(thumbnailSize, thumbnailSize)))
+				{
+					selectedTextureIndex = i;
+					selectedTexturePath = fullPath;
+				}
+			}
+
+			ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + thumbnailSize);
+			ImGui::TextWrapped("%s", texName.c_str());
+			ImGui::PopTextWrapPos();
+
+			ImGui::EndGroup();
+
+			if (selectedTextureIndex == i)
+			{
+				ImVec2 minPos = ImGui::GetItemRectMin();
+				ImVec2 maxPos = ImGui::GetItemRectMax();
+				ImGui::GetWindowDrawList()->AddRect(minPos, maxPos, IM_COL32(255, 200, 0, 255), 0.0f, 0, 2.0f);
+			}
+
+			ImGui::PopID();
+
+			if ((i + 1) % columns != 0)
+				ImGui::SameLine(0.0f, cellPadding);
+
+			i++;
+		}
+
+		ImGui::NewLine();
+
+		if (!selectedTexturePath.empty())
+			ImGui::Text("Selected Texture: %s", selectedTexturePath.c_str());
+
+		ImGui::InputText("TextureID1", szTextureID1, IM_ARRAYSIZE(szTextureID1));
+		ImGui::InputText("TextureID2", szTextureID2, IM_ARRAYSIZE(szTextureID2));
+	}
+
+	ImGui::Separator();
+
+	// ---- 3. 공통 값 입력 ----
+	ImGui::InputText("Json Name", szJsonName, IM_ARRAYSIZE(szJsonName));
+	ImGui::InputText("Particle Type (e.g. Particle_CPU)", szParticleType, IM_ARRAYSIZE(szParticleType));
+	ImGui::InputText("Particle Name (e.g. ROCK1_CPU)", szParticleName, IM_ARRAYSIZE(szParticleName));
+	ImGui::InputInt("MaxParticles", &iMaxParticles);
+	ImGui::InputInt("BehaviorType", &iBehaviorType);
+	ImGui::InputText("VSID1", szVSID1, IM_ARRAYSIZE(szVSID1));
+	ImGui::InputText("VSID2", szVSID2, IM_ARRAYSIZE(szVSID2));
+	ImGui::InputText("PSID1", szPSID1, IM_ARRAYSIZE(szPSID1));
+	ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
+
+	ImGui::Separator();
+
+	// ---- 4. 저장 ----
+	if (ImGui::Button("Save Json"))
+	{
+		std::string targetPath = (whatKindIndex == 1) ? selectedTexturePath : selectedFbxPath;
+
+		if (!targetPath.empty())
+		{
+			std::string saveName = szJsonName;
+			if (!saveName.empty())
+			{
+				std::filesystem::path savePath = std::filesystem::path(kJsonFolder) / saveName;
+				if (savePath.extension().empty())
+					savePath.replace_extension(".json");
+
+				std::string whatKindStr = (whatKindIndex == 0) ? "MESH" : "TEXTURE";
+				std::string particleTypeStr = szParticleType;
+				std::string particleNameStr = szParticleName;
+
+				if (whatKindStr == "MESH") {
+					Save_Binary_Json(savePath.string(),
+						targetPath,
+						whatKindStr,
+						particleTypeStr,
+						particleNameStr,
+						iMaxParticles,
+						iBehaviorType,
+						szVSID1, szVSID2, szPSID1, szPSID2,
+						szGroupTag, szResTag);
+				}
+				else if (whatKindStr == "TEXTURE") {
+					Save_Binary_Json(savePath.string(),
+						targetPath,
+						whatKindStr,
+						particleTypeStr,
+						particleNameStr,
+						iMaxParticles,
+						iBehaviorType,
+						szVSID1, szVSID2, szPSID1, szPSID2,
+						szGroupTag, szResTag, szTextureID1, szTextureID2);
+				}
+			}
+		}
+	}
+
+	ImGui::End();
 	ImGui::Begin("CParticleManager");
 
 	static StringID selectedGroup;
@@ -38,13 +241,11 @@ void CParticleManager::UpdateGUI()
 	static int typeIndex = 0;
 	static SPAWN_COMMAND_KIND currentKind = SPAWN_COMMAND_KIND::STANDARD;
 
-	// 입력 중인 파라미터는 종류별로 따로 보관 (variant 아님, 순수 입력용 임시 데이터)
 	static STANDARD_PARAMS pendingStandard{};
 	static BEAM_PARAMS     pendingBeam{};
 	static STAIR_PARAMS    pendingStair{};
-	static STRAIGHT_PARAMS    pendingStraight{};
+	static STRAIGHT_PARAMS pendingStraight{};
 
-	// ---- 대분류/소분류 선택 ----
 	std::vector<StringID> groupKeys;
 	groupKeys.reserve(m_Particles.size());
 	for (auto& [groupTag, typeMap] : m_Particles)
@@ -89,8 +290,6 @@ void CParticleManager::UpdateGUI()
 
 			selectedType = typeKeys[typeIndex];
 
-			// 선택된 파티클이 CBeam_CPU인지 판단해서 섹션 기본값 자동 전환
-			// (STAIR는 자동 판별할 방법이 없으므로, 아래 라디오 버튼으로 사람이 직접 선택)
 			auto pSelected = typeMap[selectedType].get();
 			if (dynamic_cast<CBeam_CPU*>(pSelected) != nullptr)
 				currentKind = SPAWN_COMMAND_KIND::BEAM;
@@ -99,17 +298,15 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 
-	// ---- 종류 선택 (STANDARD / BEAM / STAIR를 사람이 직접 고를 수 있게) ----
 	{
 		int kindIndex = (int)currentKind;
-		const char* kindNames[] = { "Standard", "Beam", "Stair" ,"Straight"};
+		const char* kindNames[] = { "Standard", "Beam", "Stair", "Straight" };
 		if (ImGui::Combo("Spawn Kind", &kindIndex, kindNames, IM_ARRAYSIZE(kindNames)))
 			currentKind = (SPAWN_COMMAND_KIND)kindIndex;
 	}
 
 	ImGui::Separator();
 
-	// ---- 종류별 매개변수 섹션 ----
 	if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
 	{
 		ImGui::Text("Standard Particle Params");
@@ -140,11 +337,10 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputFloat("DisplacementDamping", &pendingBeam.fDisplacementDamping);
 		ImGui::InputFloat("flickerTimeInverval", &pendingBeam.flickerTimeInverval);
 		ImGui::InputFloat("Duration", &pendingBeam.beamDuration);
-		ImGui::InputFloat("SpawnDelay", &pendingStandard.fSpawnDelay);
+		ImGui::InputFloat("SpawnDelay", &pendingBeam.fSpawnDelay);
 		ImGui::ColorEdit4("BaseColor", &pendingBeam.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingBeam.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingBeam.emissive.w);
-
 	}
 	else if (currentKind == SPAWN_COMMAND_KIND::STAIR)
 	{
@@ -157,13 +353,11 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputFloat("Step Height", &pendingStair.fStepHeight);
 		ImGui::InputFloat("Step Depth", &pendingStair.fStepDepth);
 		ImGui::InputFloat("Life", &pendingStair.life);
-		ImGui::InputFloat("SpawnDelay", &pendingStandard.fSpawnDelay);
+		ImGui::InputFloat("SpawnDelay", &pendingStair.fSpawnDelay);
 		ImGui::ColorEdit4("BaseColor", &pendingStair.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingStair.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingStair.emissive.w);
-
 	}
-
 	else if (currentKind == SPAWN_COMMAND_KIND::STRAIGHT)
 	{
 		ImGui::Text("Straight Params");
@@ -172,8 +366,8 @@ void CParticleManager::UpdateGUI()
 		int colCount = (int)pendingStraight.col;
 		ImGui::InputInt("Row Count", &rowCount);
 		ImGui::InputInt("Column Count", &colCount);
-		pendingStraight.row = (uint32_t)std::max(1, rowCount); 
-		pendingStraight.col = (uint32_t)std::max(1, colCount); 
+		pendingStraight.row = (uint32_t)std::max(1, rowCount);
+		pendingStraight.col = (uint32_t)std::max(1, colCount);
 		ImGui::InputFloat("OffSetX", &pendingStraight.offSetX);
 		ImGui::InputFloat("OffsetZ", &pendingStraight.offsetZ);
 		ImGui::InputFloat("SpawnDelay", &pendingStraight.spawnDelay);
@@ -182,7 +376,6 @@ void CParticleManager::UpdateGUI()
 		ImGui::ColorEdit4("BaseColor", &pendingStraight.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingStraight.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingStraight.emissive.w);
-
 	}
 
 	if (ImGui::Button("Add to List") && !groupKeys.empty())
@@ -192,7 +385,6 @@ void CParticleManager::UpdateGUI()
 		cmd.sGroupTag = selectedGroup;
 		cmd.sTypeTag = selectedType;
 
-		// 현재 선택된 종류에 해당하는 파라미터만 variant에 담음
 		if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
 			cmd.params = pendingStandard;
 		else if (currentKind == SPAWN_COMMAND_KIND::BEAM)
@@ -207,7 +399,6 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 
-	// ---- 리스트 표시 및 삭제 ----
 	ImGui::Text("Spawn Queue (%zu)", m_vecCommandQueue.size());
 	for (int i = 0; i < (int)m_vecCommandQueue.size(); ++i)
 	{
@@ -238,9 +429,9 @@ void CParticleManager::UpdateGUI()
 		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STRAIGHT)
 		{
 			const auto& p = std::get<STRAIGHT_PARAMS>(cmd.params);
-			ImGui::Text("[%s/%s] STAIR start=(%.1f,%.1f,%.1f) steps=%u",
+			ImGui::Text("[%s/%s] STRAIGHT start=(%.1f,%.1f,%.1f) row=%u col=%u",
 				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
-				p.vStartPos.x, p.vStartPos.y, p.vStartPos.z, p.row,p.col);
+				p.vStartPos.x, p.vStartPos.y, p.vStartPos.z, p.row, p.col);
 		}
 
 		ImGui::SameLine();
@@ -248,7 +439,7 @@ void CParticleManager::UpdateGUI()
 		{
 			m_vecCommandQueue.erase(m_vecCommandQueue.begin() + i);
 			ImGui::PopID();
-			break;   // 벡터가 바뀌었으니 이번 프레임은 여기서 루프 중단
+			break;
 		}
 
 		ImGui::PopID();
@@ -268,369 +459,290 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::End();
 }
-//void CParticleManager::UpdateGUI()
-//{
-//    ImGui::Begin("CParticleManager");
-//
-//    ImGui::InputFloat3("SwingPivot", &vSwingPivot.x);
-//    ImGui::InputFloat("BladeLength", &fBladeLength);
-//    ImGui::InputFloat("SwingDuration", &fSwingDuration);
-//
-//    // 예시: [beam][trail] 같은 키로 등록되어 있다고 가정
-//    auto pTrail = static_cast<CTrail_CPU*>(GetParticle("TRAIL", "SLASH"));
-//
-//    if (pTrail)
-//    {
-//        if (ImGui::Button("Swing!"))
-//        {
-//            fSwingElapsed = 0.f;
-//            bSwinging = true;
-//        }
-//
-//        if (bSwinging)
-//        {
-//            _float fDeltaTime = ImGui::GetIO().DeltaTime;
-//            fSwingElapsed += fDeltaTime;
-//
-//            _float t = fSwingElapsed / fSwingDuration;
-//            if (t >= 1.f)
-//            {
-//                t = 1.f;
-//                bSwinging = false;
-//            }
-//
-//            _float fAngleDeg = fSwingStartDeg + (fSwingEndDeg - fSwingStartDeg) * t;
-//            _float fAngleRad = XMConvertToRadians(fAngleDeg);
-//            _float3 vDir = { 0.f, sinf(fAngleRad), cosf(fAngleRad) };
-//
-//            _float3 vBase = {
-//                vSwingPivot.x + vDir.x * fBladeGrip,
-//                vSwingPivot.y + vDir.y * fBladeGrip,
-//                vSwingPivot.z + vDir.z * fBladeGrip
-//            };
-//            _float3 vTip = {
-//                vSwingPivot.x + vDir.x * (fBladeGrip + fBladeLength),
-//                vSwingPivot.y + vDir.y * (fBladeGrip + fBladeLength),
-//                vSwingPivot.z + vDir.z * (fBladeGrip + fBladeLength)
-//            };
-//
-//            pTrail->AddPoint(vBase, vTip);
-//        }
-//    }
-//
-//    static int spawnCountInput = 10;
-//    static float posX = 10;
-//    static float posY = 10;
-//    static float posZ = 10;
-//    static float size = 10;
-//    static int isLoop = 0;
-//    ImGui::InputInt("SpawnCount", &spawnCountInput);
-//    ImGui::InputFloat("X", &posX);
-//    ImGui::InputFloat("Y", &posY);
-//    ImGui::InputFloat("Z", &posZ);
-//    ImGui::InputFloat("SIZE", &size);
-//    ImGui::InputInt("Bool", &isLoop);
-//    spawnCountInput = std::clamp(spawnCountInput, 1, (int)MAX_SPAWN_PER_CALL);
-//
-//    
-//    if (ImGui::Button("RandParticle"))
-//    {
-//        const uint32_t spawnCount = static_cast<uint32_t>(spawnCountInput);
-//
-//        std::vector<PARTICLE_SPAWN_DATA> spawnList(spawnCount);
-//        for (uint32_t i = 0; i < spawnCount; i++)
-//        {
-//            spawnList[i].position = _float3(posX, posY, posZ);
-//            spawnList[i].velocity = _float3(
-//                ((rand() % 100) / 10.f) - 5.f,
-//                ((rand() % 100) / 10.f) + 5.f,
-//                ((rand() % 100) / 10.f) - 5.f);
-//            spawnList[i].life = 3.f;
-//            spawnList[i].size = size;
-//        }
-//
-//        if (isLoop == 0) {
-//            Spawn("FIRE", "FIREBALL", spawnCount, spawnList.data());
-//        }
-//        else {
-//            Spawn("FIRE", "FIREBALL", spawnCount, spawnList.data(), true, 0.5f);
-//        }
-//    }
-//
-//    static _float4 vRibbonStart = { 0.f, 0.f, 0.f, 1.f };
-//    static _float4 vRibbonEnd = { 10.f, 0.f, 0.f, 1.f };
-//
-//    ImGui::InputFloat4("RibbonStart", &vRibbonStart.x);
-//    ImGui::InputFloat4("RibbonEnd", &vRibbonEnd.x);
-//
-//    if (ImGui::Button("RandRibbon"))
-//    {
-//        SpawnRibbon(vRibbonStart, vRibbonEnd);
-//    }
-//
-//    if (ImGui::Button("Test"))
-//    {
-//        bSpawn = true;
-//       
-//    }
-//
-//    if (bSpawn) {
-//        fTime += 0.5f;
-//        if (fTime >= 1.f) {
-//            fTime = 0;
-//
-//            const uint32_t spawnCount = static_cast<uint32_t>(spawnCountInput);
-//            std::vector<PARTICLE_SPAWN_DATA> spawnList(spawnCount);
-//            for (uint32_t i = 0; i < spawnCount; i++)
-//            {
-//                //posY += 1;
-//    
-//                spawnList[i].position = _float3(posX, posY, posZ);
-//                spawnList[i].velocity = _float3(0, 0, 0);
-//                spawnList[i].life = 3.f;
-//                spawnList[i].size = size;
-//                spawnList[i].color = _float4(1, 1, 1,1);
-//                posX += 1;
-//
-//            }
-//            Spawn("FIRE", "FIRESMOKE", spawnCount, spawnList.data());
-//            iCount++;
-//            posZ += 1;
-//            posX = 0;
-//        }
-//
-//        if (iCount == 30) {
-//            bSpawn = false;
-//            iCount = 0;
-//        }
-//    }
-//
-//    ImGui::End();
-//}
 
 void CParticleManager::Update(_float fTimeDelta)
 {
-    for (auto& [groupTag, typeMap] : m_Particles)
-    {
-        for (auto& [typeTag, particle] : typeMap)
-        {
-            particle->PriorityUpdate(fTimeDelta);
-            particle->Update(fTimeDelta);
-            particle->LateUpdate(fTimeDelta);
-        }
-    }
+	for (auto& [groupTag, typeMap] : m_Particles)
+	{
+		for (auto& [typeTag, particle] : typeMap)
+		{
+			particle->PriorityUpdate(fTimeDelta);
+			particle->Update(fTimeDelta);
+			particle->LateUpdate(fTimeDelta);
+		}
+	}
 
-    // 반복 스폰 요청 처리
-    for (auto& req : m_LoopRequests)
-    {
-        req.fElapsed += fTimeDelta;
-        if (req.fElapsed < req.fSpawnInterval)
-            continue;
+	for (auto& req : m_LoopRequests)
+	{
+		req.fElapsed += fTimeDelta;
+		if (req.fElapsed < req.fSpawnInterval)
+			continue;
 
-        req.fElapsed -= req.fSpawnInterval;
-
-        // bLoop=false로 내부 호출 - 여기서 또 등록해버리면 무한 중복 등록됨
-        Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
-    }
+		req.fElapsed -= req.fSpawnInterval;
+		Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
+	}
 }
 
 HRESULT CParticleManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
-    for (auto& [groupTag, typeMap] : m_Particles)
-    {
-        for (auto& [typeTag, particle] : typeMap)
-        {
-            particle->Render(pContext, ctx);
-        }
-    }
-    return S_OK;
+	for (auto& [groupTag, typeMap] : m_Particles)
+	{
+		for (auto& [typeTag, particle] : typeMap)
+		{
+			particle->Render(pContext, ctx);
+		}
+	}
+	return S_OK;
 }
 
 HRESULT CParticleManager::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
-    if (particle == nullptr)
-        return E_FAIL;
+	if (particle == nullptr)
+		return E_FAIL;
 
-    if (FAILED(particle->Initialize(nullptr)))
-        return E_FAIL;
+	if (FAILED(particle->Initialize(nullptr)))
+		return E_FAIL;
 
-    auto& typeMap = m_Particles[sGroupTag];   // 없으면 자동 생성됨
-    if (typeMap.contains(sTypeTag))
-        return E_FAIL;  // 이미 등록된 [그룹][타입]
+	auto& typeMap = m_Particles[sGroupTag];
+	if (typeMap.contains(sTypeTag))
+		return E_FAIL;
 
-    typeMap[sTypeTag] = std::move(particle);
-    return S_OK;
+	typeMap[sTypeTag] = std::move(particle);
+	return S_OK;
 }
 
 HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
-    uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
-    _bool bLoop, _float fSpawnInterval)
+	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+	_bool bLoop, _float fSpawnInterval)
 {
-    if (pSpawnData == nullptr || count == 0)
-        return E_FAIL;
+	if (pSpawnData == nullptr || count == 0)
+		return E_FAIL;
 
-    auto groupIt = m_Particles.find(sGroupTag);
-    if (groupIt == m_Particles.end())
-        return E_FAIL;
+	auto groupIt = m_Particles.find(sGroupTag);
+	if (groupIt == m_Particles.end())
+		return E_FAIL;
 
-    auto typeIt = groupIt->second.find(sTypeTag);
-    if (typeIt == groupIt->second.end())
-        return E_FAIL;
+	auto typeIt = groupIt->second.find(sTypeTag);
+	if (typeIt == groupIt->second.end())
+		return E_FAIL;
 
 	std::vector<PARTICLE_SPAWN_DATA> spawnList(pSpawnData, pSpawnData + count);
 	typeIt->second->RequestSpawn(spawnList);
 	HRESULT hr = S_OK;
 
-    if (bLoop)
-    {
-        PARTICLE_LOOP_REQUEST req{};
-        req.sGroupTag = sGroupTag;
-        req.sTypeTag = sTypeTag;
-        req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
-        req.fSpawnInterval = fSpawnInterval;
-        req.fElapsed = 0.f;
+	if (bLoop)
+	{
+		PARTICLE_LOOP_REQUEST req{};
+		req.sGroupTag = sGroupTag;
+		req.sTypeTag = sTypeTag;
+		req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
+		req.fSpawnInterval = fSpawnInterval;
+		req.fElapsed = 0.f;
 
-        m_LoopRequests.push_back(std::move(req));
-    }
+		m_LoopRequests.push_back(std::move(req));
+	}
 
-    return hr;
+	return hr;
 }
 
 HRESULT CParticleManager::SpawnRandomInGroup(const StringID& sGroupTag,
-    uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
-    _bool bLoop, _float fSpawnInterval)
+	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+	_bool bLoop, _float fSpawnInterval)
 {
-    if (pSpawnData == nullptr || count == 0)
-        return E_FAIL;
+	if (pSpawnData == nullptr || count == 0)
+		return E_FAIL;
 
-    auto groupIt = m_Particles.find(sGroupTag);
-    if (groupIt == m_Particles.end() || groupIt->second.empty())
-        return E_FAIL;
+	auto groupIt = m_Particles.find(sGroupTag);
+	if (groupIt == m_Particles.end() || groupIt->second.empty())
+		return E_FAIL;
 
-    auto& typeMap = groupIt->second;
-    uint32_t randIndex = rand() % (uint32_t)typeMap.size();
+	auto& typeMap = groupIt->second;
+	uint32_t randIndex = rand() % (uint32_t)typeMap.size();
 
-    auto it = typeMap.begin();
-    std::advance(it, randIndex);
+	auto it = typeMap.begin();
+	std::advance(it, randIndex);
 
-    HRESULT hr = it->second->Spawn(count, pSpawnData);
-    if (FAILED(hr))
-        return hr;
+	HRESULT hr = it->second->Spawn(count, pSpawnData);
+	if (FAILED(hr))
+		return hr;
 
-    if (bLoop)
-    {
-        PARTICLE_LOOP_REQUEST req{};
-        req.sGroupTag = sGroupTag;
-        req.sTypeTag = it->first;   // 이번에 뽑힌 소분류로 고정 (반복 시엔 매번 재추첨 안 함)
-        req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
-        req.fSpawnInterval = fSpawnInterval;
-        req.fElapsed = 0.f;
+	if (bLoop)
+	{
+		PARTICLE_LOOP_REQUEST req{};
+		req.sGroupTag = sGroupTag;
+		req.sTypeTag = it->first;
+		req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
+		req.fSpawnInterval = fSpawnInterval;
+		req.fElapsed = 0.f;
 
-        m_LoopRequests.push_back(std::move(req));
-    }
+		m_LoopRequests.push_back(std::move(req));
+	}
 
-    return hr;
+	return hr;
 }
 
 HRESULT CParticleManager::SpawnAllInGroup(const StringID& sGroupTag,
-    uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
+	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
-    if (pSpawnData == nullptr || count == 0)
-        return E_FAIL;
+	if (pSpawnData == nullptr || count == 0)
+		return E_FAIL;
 
-    auto groupIt = m_Particles.find(sGroupTag);
-    if (groupIt == m_Particles.end() || groupIt->second.empty())
-        return E_FAIL;
+	auto groupIt = m_Particles.find(sGroupTag);
+	if (groupIt == m_Particles.end() || groupIt->second.empty())
+		return E_FAIL;
 
-    HRESULT hr = S_OK;
-    for (auto& [typeTag, particle] : groupIt->second)
-    {
-        if (FAILED(particle->Spawn(count, pSpawnData)))
-            hr = E_FAIL;
-    }
-    return hr;
+	HRESULT hr = S_OK;
+	for (auto& [typeTag, particle] : groupIt->second)
+	{
+		if (FAILED(particle->Spawn(count, pSpawnData)))
+			hr = E_FAIL;
+	}
+	return hr;
 }
 
 HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
-    auto pParticle = GetParticle("BEAM", "ATTACK");
-    if (!pParticle)
-        return E_FAIL; 
-    auto pBeam = static_cast<CBeam_CPU*>(pParticle);
+	auto pParticle = GetParticle("BEAM", "ATTACK");
+	if (!pParticle)
+		return E_FAIL;
+	auto pBeam = static_cast<CBeam_CPU*>(pParticle);
 
-    for (uint32_t i = 0; i < quantity; i++) {
-        int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
-    }
-    return S_OK;
+	for (uint32_t i = 0; i < quantity; i++) {
+		int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
+	}
+	return S_OK;
+}
+
+HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
+	const std::string& FullPath,
+	const std::string& whatKind,
+	const std::string& particleType,
+	const std::string& particleName,
+	int iMaxParticles,
+	int iBehaviorType,
+	const std::string& VSGroup,
+	const std::string& VSID,
+	const std::string& PSGroup,
+	const std::string& PSID,
+	const std::string& sGroupTag,
+	const std::string& sResTag,
+	const std::string& textureID1,
+	const std::string& textureID2)
+{
+	if (outpath.empty() || FullPath.empty())
+		return E_FAIL;
+
+	std::filesystem::path savePath(outpath);
+
+	if (savePath.extension().empty())
+		savePath.replace_extension(".json");
+
+	if (!savePath.parent_path().empty())
+		std::filesystem::create_directories(savePath.parent_path());
+
+	std::string fbxName = std::filesystem::path(FullPath).filename().string();
+
+	if (fbxName.empty())
+		return E_FAIL;
+
+	std::string fullPath = FullPath;
+
+	nlohmann::json j;
+
+	if (std::filesystem::exists(savePath))
+	{
+		std::ifstream inFile(savePath);
+		if (inFile.is_open())
+		{
+			try { inFile >> j; }
+			catch (...) { j = nlohmann::json{}; }
+			inFile.close();
+		}
+	}
+
+	nlohmann::json newEntry;
+	newEntry["path"] = fullPath;
+	newEntry["whatKind"] = whatKind;
+	newEntry["particleType"] = particleType;
+	newEntry["particleName"] = particleName;
+	newEntry["iMaxParticles"] = iMaxParticles;
+	newEntry["iBehaviorType"] = iBehaviorType;
+	newEntry["VSGroup"] = VSGroup;
+	newEntry["VSID"] = VSID;
+	newEntry["PSGroup"] = PSGroup;
+	newEntry["PSID"] = PSID;
+
+	std::string arrayKey;
+
+	if (whatKind == "TEXTURE")
+	{
+		arrayKey = "textures";
+		newEntry["TextureID1"] = textureID1;
+		newEntry["TextureID2"] = textureID2;
+	}
+	else if (whatKind == "MESH")
+	{
+		arrayKey = "models";
+		newEntry["sGroupTag"] = sGroupTag;
+		newEntry["sResTag"] = sResTag;
+	}
+	else
+	{
+		return E_FAIL;
+	}
+
+	if (!j.contains(arrayKey) || !j[arrayKey].is_array())
+		j[arrayKey] = nlohmann::json::array();
+
+	bool bReplaced = false;
+	for (auto& entry : j[arrayKey])
+	{
+		if (entry.contains("path") && entry["path"].is_string() &&
+			entry.contains("particleType") && entry["particleType"].is_string() &&
+			entry["path"].get<std::string>() == fullPath &&
+			entry["particleType"].get<std::string>() == particleType)
+		{
+			entry = newEntry;
+			bReplaced = true;
+			break;
+		}
+	}
+
+	if (!bReplaced)
+		j[arrayKey].push_back(newEntry);
+
+	std::ofstream file(savePath, std::ios::out);
+	if (!file.is_open())
+		return E_FAIL;
+
+	file << j.dump(4);
+	file.close();
+
+	return S_OK;
 }
 
 CParticle* CParticleManager::GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const
 {
-    auto groupIt = m_Particles.find(sGroupTag);
-    if (groupIt == m_Particles.end())
-        return nullptr;
+	auto groupIt = m_Particles.find(sGroupTag);
+	if (groupIt == m_Particles.end())
+		return nullptr;
 
-    auto typeIt = groupIt->second.find(sTypeTag);
-    if (typeIt == groupIt->second.end())
-        return nullptr;
+	auto typeIt = groupIt->second.find(sTypeTag);
+	if (typeIt == groupIt->second.end())
+		return nullptr;
 
-    return typeIt->second.get();
+	return typeIt->second.get();
 }
 
 bool CParticleManager::HasGroup(const StringID& sGroupTag) const
 {
-    return m_Particles.find(sGroupTag) != m_Particles.end();
+	return m_Particles.find(sGroupTag) != m_Particles.end();
 }
 
 UPtr<CParticleManager> CParticleManager::Create()
 {
-    return UPtr<CParticleManager>(new CParticleManager{});
+	return UPtr<CParticleManager>(new CParticleManager{});
 }
-
-//HRESULT CParticleManager::ExecuteCommandQueue()
-//{
-//    HRESULT hr = S_OK;
-//    for (auto& cmd : m_vecCommandQueue)
-//    {
-//
-//        //파일 path를 읽어서 
-//        //cmd.baemStart를 본인 특정 좌표로 
-//        if (cmd.kind == SPAWN_COMMAND_KIND::STANDARD)
-//        {
-//            std::vector<PARTICLE_SPAWN_DATA> spawnList(cmd.count);
-//            for (auto& s : spawnList)
-//            {
-//                s.position = cmd.position;
-//                s.velocity = cmd.velocity;
-//                s.life = cmd.life;
-//                s.size = cmd.size;
-//                s.color = cmd.color;   // PARTICLE_SPAWN_DATA에 color 필드가 있다는 전제
-//                s.emissive = cmd.emissive;
-//            }
-//
-//            if (FAILED(Spawn(cmd.sGroupTag, cmd.sTypeTag, cmd.count, spawnList.data(), cmd.bLoop, cmd.fSpawnInterval)))
-//                hr = E_FAIL;
-//        }
-//        else if (cmd.kind == SPAWN_COMMAND_KIND::BEAM)
-//        {
-//            auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
-//            if (pParticle)
-//            {
-//                auto pBeam = static_cast<CBeam_CPU*>(pParticle);
-//                pBeam->AddBeam(cmd.beamStart, cmd.beamEnd,
-//                    cmd.fDisplacementAmplitude, (uint32_t)cmd.iDisplacementIterations, cmd.fDisplacementDamping,
-//                    cmd.flickerTimeInverval,cmd.color ,cmd.emissive,cmd.beamDuration);
-//            }
-//            else
-//            {
-//                hr = E_FAIL;
-//            }
-//        }
-//    }
-//
-//  //  m_vecCommandQueue.clear();   // 실행 후 큐 비우기 (원하시면 안 비우게 바꿀 수도 있음)
-//    return hr;
-//}
 
 HRESULT CParticleManager::ExecuteCommandQueue()
 {
@@ -642,7 +754,6 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 	{
 		if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STANDARD)
 		{
-			// params에서 STANDARD_PARAMS를 꺼냄
 			const auto& p = std::get<STANDARD_PARAMS>(cmd.params);
 
 			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
@@ -674,7 +785,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 		}
 		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STAIR)
 		{
-			const auto& p = std::get<STAIR_PARAMS>(cmd.params);  
+			const auto& p = std::get<STAIR_PARAMS>(cmd.params);
 
 			auto spawnList = ParticlePattern::MakeStairs(
 				p.vStartPos, p.iStepCount, p.fStepWidth, p.fStepHeight, p.fStepDepth,
@@ -687,7 +798,7 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 		{
 			const auto& p = std::get<STRAIGHT_PARAMS>(cmd.params);
 
-			auto spawnList = ParticlePattern::MakeStrightGround(p.vStartPos, p.row, p.col, p.offSetX, p.offsetZ, p.spawnDelay,p.fSize,p.fLife, p.color, p.emissive);
+			auto spawnList = ParticlePattern::MakeStrightGround(p.vStartPos, p.row, p.col, p.offSetX, p.offsetZ, p.spawnDelay, p.fSize, p.fLife, p.color, p.emissive);
 
 			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
 			vec.insert(vec.end(), spawnList.begin(), spawnList.end());
@@ -696,11 +807,134 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 
 	for (auto& [key, spawnList] : batched)
 	{
-
-
 		if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))
 			hr = E_FAIL;
 	}
 
 	return hr;
+}
+
+HRESULT CParticleManager::LoadParticleModelJson(const std::string& strJsonPath, const std::string& strFbxRealFolder)
+{
+	if (!std::filesystem::exists(strJsonPath))
+		return E_FAIL;
+
+	std::ifstream file(strJsonPath);
+	if (!file.is_open())
+		return E_FAIL;
+
+	nlohmann::json j;
+
+	try
+	{
+		file >> j;
+	}
+	catch (...)
+	{
+		return E_FAIL;
+	}
+
+	if (!j.contains("models") || !j["models"].is_array())
+		return E_FAIL;
+
+	HRESULT hr = S_OK;
+
+	for (const auto& entry : j["models"])
+	{
+		if (!entry.contains("path") || !entry["path"].is_string())
+			continue;
+
+		std::string fbxPath = entry["path"].get<std::string>();
+		if (fbxPath.empty())
+			continue;
+
+		std::string particleType = entry.value("particleType", "");
+		std::string sGroupTag = entry.value("sGroupTag", "");
+
+		if (particleType.empty() || sGroupTag.empty())
+			continue;
+
+		// TODO: 실제 파티클 생성/등록 로직은 프로젝트 구조에 맞게 채워야 함
+	}
+
+	return hr;
+}
+
+std::vector<std::string> ScanFbxFolder(const std::string& strJsonPath)
+{
+	std::vector<std::string> result;
+
+	if (!std::filesystem::exists(strJsonPath))
+		return result;
+
+	std::ifstream file(strJsonPath);
+	if (!file.is_open())
+		return result;
+
+	try
+	{
+		nlohmann::json j;
+		file >> j;
+
+		if (j.contains("fbx") && j["fbx"].is_array())
+		{
+			for (const auto& elem : j["fbx"])
+			{
+				if (elem.is_string())
+					result.push_back(elem.get<std::string>());
+			}
+		}
+	}
+	catch (...)
+	{
+	}
+
+	return result;
+}
+
+std::vector<std::string> ScanTextureFolder(const std::string& strTextureFolder)
+{
+	std::vector<std::string> result;
+
+	if (!std::filesystem::exists(strTextureFolder))
+		return result;
+
+	for (const auto& entry : std::filesystem::directory_iterator(strTextureFolder))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		std::string ext = entry.path().extension().string();
+
+		if (_stricmp(ext.c_str(), ".png") == 0 ||
+			_stricmp(ext.c_str(), ".dds") == 0 ||
+			_stricmp(ext.c_str(), ".jpg") == 0 ||
+			_stricmp(ext.c_str(), ".tga") == 0)
+		{
+			result.push_back(entry.path().filename().string());
+		}
+	}
+
+	return result;
+}
+
+static std::unordered_map<std::string, ID3D11ShaderResourceView*> s_TextureThumbnailCache;
+
+ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath)
+{
+	auto it = s_TextureThumbnailCache.find(fullPath);
+	if (it != s_TextureThumbnailCache.end())
+		return it->second;
+
+	ID3D11ShaderResourceView* pSRV = nullptr;
+
+	HRESULT hr = DirectX::CreateWICTextureFromFile(CGameInstance::Get().GetGraphicDevice().Get(), CGameInstance::Get().GetGraphicDeviceContext().Get(),
+		std::wstring(fullPath.begin(), fullPath.end()).c_str(), nullptr, &pSRV);
+
+	if (SUCCEEDED(hr) && pSRV)
+		s_TextureThumbnailCache[fullPath] = pSRV;
+	else
+		pSRV = nullptr;
+
+	return pSRV;
 }

@@ -21,6 +21,9 @@ CParticle_Fire_GPU::~CParticle_Fire_GPU()
 
 HRESULT CParticle_Fire_GPU::Initialize(void* pArg)
 {
+	char buf[128];
+	sprintf_s(buf, "sizeof(CParticle_Fire_GPU) = %zu\n", sizeof(CParticle_Fire_GPU));
+	OutputDebugStringA(buf);
     DESC desc{};
     desc.whatKind = MESHORTEXTURE::MESH;
     desc.iMaxParticles = 1000;
@@ -43,6 +46,8 @@ HRESULT CParticle_Fire_GPU::Initialize(void* pArg)
 
 UPtr<CParticle> CParticle_Fire_GPU::Create()
 {
+	
+	
     return ToUPtr(new CParticle_Fire_GPU{});
 }
 

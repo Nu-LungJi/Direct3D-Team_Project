@@ -24,6 +24,8 @@ CMainApp::~CMainApp()
 
 HRESULT CMainApp::Initialize()
 {
+	if (!_CrtCheckMemory()) { OutputDebugStringA("CORRUPT: CMainApp::Initialize VERY START\n"); __debugbreak(); }
+
 	Engine::ENGINE_DESC EngineDesc{};
 	EngineDesc.hWnd = g_hWnd;
 	EngineDesc.hInstance = g_hInstance;
@@ -40,7 +42,6 @@ HRESULT CMainApp::Initialize()
 	{
 		return E_FAIL;
 	}
-
 	CGameInstance::Get().RegisterLevelChangeFunc("TO_LOGO", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
@@ -239,6 +240,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 				//return E_FAIL;
 			}
 		}
+
 		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBON", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_AncientMagicStreak_E.png")))
 		{
 			if (FAILED(res->Load()))
@@ -255,7 +257,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 				return E_FAIL;
 			}
 		}
-		
+		// model-> cpu  용인지 gpu용인지 구분하고 메쉬를 쓰는지 텍스쳐를 쓰는지 구분을하고 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
 			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/ParticleMeshes/rock1.fbx"))) {
 
@@ -284,11 +286,17 @@ HRESULT CMainApp::Load_Particle_Resources()
 
 	{
 		//파티클 객채들 생성
-		CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
+		//CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
 		CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());
 		CGameInstance::Get().Add_Particle("BEAM", "ATTACK", CParticle_Ribbon::Create());
 		CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
 
+		OutputDebugStringA(("sizeof(PARTICLE) = " + std::to_string(sizeof(PARTICLE)) + "\n").c_str());
+		OutputDebugStringA(("sizeof(PARTICLE_SPAWN_DATA) = " + std::to_string(sizeof(PARTICLE_SPAWN_DATA)) + "\n").c_str());
+		OutputDebugStringA(("sizeof(CB_PARTICLE_SPAWN) = " + std::to_string(sizeof(CB_PARTICLE_SPAWN)) + "\n").c_str());
+		OutputDebugStringA(("sizeof(CB_PER_PARTICLE) = " + std::to_string(sizeof(CB_PER_PARTICLE)) + "\n").c_str());
+		OutputDebugStringA(("sizeof(CParticle_Ribbon) = " + std::to_string(sizeof(CParticle_Ribbon)) + "\n").c_str());
+		OutputDebugStringA(("sizeof(CTrail_Example) = " + std::to_string(sizeof(CTrail_Example)) + "\n").c_str());
 	}
 	if (FAILED(Create_ActionNode()))
 	{

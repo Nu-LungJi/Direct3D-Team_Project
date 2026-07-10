@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Resource.h"
 NS_BEGIN(Engine)
 
@@ -16,7 +16,7 @@ public:
 	} DESC;
 private:
 	explicit CResStructuredBuffer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
-	~CResStructuredBuffer() override;
+	virtual ~CResStructuredBuffer() override;
 
 public:
 	ComPtr<ID3D11Buffer> GetBuffer() const { return m_pBuffer; }

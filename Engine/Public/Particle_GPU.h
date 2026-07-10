@@ -78,7 +78,8 @@ private:
 
     uint32_t                         m_iCurrentSpawnCount = 0;
     uint32_t                         m_iDeadCount = 0;
-
+public:
+	static UPtr<CParticle> Create(void* pArg);
 };
 
 NS_END

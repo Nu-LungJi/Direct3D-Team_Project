@@ -28,7 +28,7 @@ namespace Engine
 	enum class MESHORTEXTURE{ MESH, TEX, END};
 
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
-	static const uint32_t MAX_SPAWN_PER_CALL = 400;
+	static const uint32_t MAX_SPAWN_PER_CALL = 1000;
 
 	enum class UI_TYPE{ CONTAINER, TEXUI, FLIPBOOK, TEXT, END };
 	enum class UI_EFFECT_TYPE { NONE, HOVER, CLICK, END};

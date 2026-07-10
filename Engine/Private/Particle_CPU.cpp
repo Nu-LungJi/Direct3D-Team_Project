@@ -29,6 +29,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
     m_eType = pDesc->type;
+
     m_Particles.assign(m_iNumElements, PARTICLE_CPU_DATA{});
 
     if (auto res = CResDynamicBuffer::Create())

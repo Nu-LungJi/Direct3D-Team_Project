@@ -13,6 +13,7 @@ private:
     explicit CParticle_Fire_GPU();
     virtual ~CParticle_Fire_GPU();
     virtual HRESULT Initialize(void* pArg) override;
+    HRESULT Initialize();
 public:
     static UPtr<CParticle> Create();
 };
