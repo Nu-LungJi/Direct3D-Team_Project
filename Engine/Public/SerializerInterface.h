@@ -7,6 +7,7 @@
 #include <type_traits>
 #include "ISerializable.h"
 
+#include <sstream>
 NS_BEGIN(Engine)
 
 class ENGINE_DLL ISerializer
@@ -27,6 +28,7 @@ public:
 	virtual void Write(const std::string& key, const _float4& value) = 0;
 	virtual void Write(const std::string& key, const _float4x4& value) = 0;
 	virtual void Write(const std::string& key, const ISerializable& value) = 0;
+	virtual void Write(const std::string& key, const StringID& value) = 0;
 
 	template<typename T>
 	auto Write(const std::string& key, T value)
@@ -156,6 +158,8 @@ public:
 	virtual void Read(const std::string& key, _float4& outValue) = 0;
 	virtual void Read(const std::string& key, _float4x4& outValue) = 0;
 	virtual void Read(const std::string& key, ISerializable& outValue) = 0;
+	virtual void Read(const std::string& key, StringID& outValue) = 0;
+
 	template<typename T>
 	auto Read(const std::string& key, T& outValue)
 		-> std::enable_if_t<std::is_enum_v<T>>
@@ -311,5 +315,54 @@ protected:
 	virtual void EndArray() = 0;
 #pragma endregion
 };
+
+
+
+#pragma region HELPER_MACRO
+
+template<typename... Args>
+void Helper_WriteAll(ISerializer& s, const std::string& names, const Args&... args)
+{
+	std::stringstream ss(names);
+	std::string name;
+
+	// C++17 Fold Expression: 인자로 받은 모든 변수(args...)에 대해 이 람다를 반복 실행
+	auto write_single = [&](const auto& arg) {
+		std::getline(ss, name, ','); // 쉼표 기준으로 문자열을 자름
+
+		// 앞뒤 공백 제거
+		size_t start = name.find_first_not_of(" \t");
+		size_t end = name.find_last_not_of(" \t");
+
+		s.Write(name.substr(start, end - start + 1), arg);
+		};
+
+	(write_single(args), ...); // 모든 변수를 순회하며 실행!
+}
+
+template<typename... Args>
+void Helper_ReadAll(IDeserializer& d, const std::string& names, Args&... args)
+{
+	std::stringstream ss(names);
+	std::string name;
+
+	auto read_single = [&](auto& arg) {
+		std::getline(ss, name, ',');
+
+		size_t start = name.find_first_not_of(" \t");
+		size_t end = name.find_last_not_of(" \t");
+
+		d.Read(name.substr(start, end - start + 1), arg);
+		};
+
+	(read_single(args), ...);
+}
+
+// 한 줄 매크로
+#define WRITE_ALL(serializer, ...)   Helper_WriteAll(serializer, #__VA_ARGS__, __VA_ARGS__)
+#define READ_ALL(deserializer, ...)  Helper_ReadAll(deserializer, #__VA_ARGS__, __VA_ARGS__)
+
+#pragma endregion
+
 
 NS_END

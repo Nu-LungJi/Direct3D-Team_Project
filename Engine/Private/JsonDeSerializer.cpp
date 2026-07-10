@@ -254,6 +254,15 @@ void CJsonDeSerializer::Read(const std::string& key, ISerializable& outValue)
 	}
 }
 
+void CJsonDeSerializer::Read(const std::string& key, StringID& outValue)
+{
+	std::string tempStr;
+
+	Read(key, tempStr);
+
+	outValue = StringID(tempStr);
+}
+
 size_t CJsonDeSerializer::StartArray(const std::string& key)
 {
 	nlohmann::json& node = *m_nodeStack.back();
