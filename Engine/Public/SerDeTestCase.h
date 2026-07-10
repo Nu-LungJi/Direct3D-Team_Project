@@ -363,7 +363,7 @@ inline void RunMegaSerializationTest()
 	try {
 		// [Save]
 
-		if (SUCCEEDED(pMgr.BinSerialize("MegaTest_SaveData.json", originalWorld)))
+		if (SUCCEEDED(pMgr.BinSerialize("MegaTest_SaveData.bin", originalWorld)))
 		{
 			bBinSaveSuccess = true;
 		}
@@ -371,7 +371,7 @@ inline void RunMegaSerializationTest()
 		// [Load]
 		if (bBinSaveSuccess) {
 			CWorldData restoredWorld;
-			if (SUCCEEDED(pMgr.BinDeSerialize("MegaTest_SaveData.json", originalWorld)))
+			if (SUCCEEDED(pMgr.BinDeSerialize("MegaTest_SaveData.bin", originalWorld)))
 			{
 				bBinLoadSuccess = true;
 				if (originalWorld == restoredWorld) bBinDataMatch = true;
