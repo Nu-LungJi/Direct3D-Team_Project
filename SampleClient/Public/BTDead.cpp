@@ -55,7 +55,6 @@ HRESULT CBTDead::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	if (!LoadJsonValue(j, "Distance", m_fDist))
-
 		return S_OK;
 }
 void		CBTDead::Update_Gui()

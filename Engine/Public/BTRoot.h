@@ -24,20 +24,20 @@ protected:
 	CBTRoot(const CBTRoot& rhs);
 	~CBTRoot() override;
 
-	HRESULT InitializePrototype(void* pArg = nullptr) override;
-	virtual HRESULT Initalize(void* pArg);
+	HRESULT						InitializePrototype(void* pArg = nullptr) override;
+	virtual HRESULT				Initalize(void* pArg);
 public:
-	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
-	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
-	void			Set_Handle(CHandle Handle) { m_Handle = Handle; }
-	CHandle&		Get_Handle() { return m_Handle; }
-	virtual void			ResetDebug() { m_eDebug = EVALUATE::END; }
-	EVALUATE				GetDebugType() const {return m_eDebug;}
+	GUINODE&					Get_GuiNodeInfo() { return m_GuiNode; }
+	GUINODE_LINK&				Get_GuiNodeLink() { return m_GuiLink; }
+	void						Set_Handle(CHandle Handle) { m_Handle = Handle; }
+	CHandle&					Get_Handle() { return m_Handle; }
+	virtual void				ResetDebug() { m_eDebug = EVALUATE::END; }
+	EVALUATE					GetDebugType() const {return m_eDebug;}
 public:
 	virtual nlohmann::json		Save_Node();
 	virtual HRESULT				Load_json(const nlohmann::json& j);
 public:
-	virtual EVALUATE		Evaluate(_float fTimeDelta) PURE;
+	virtual EVALUATE			Evaluate(_float fTimeDelta) PURE;
 protected:
 	GUINODE								m_GuiNode;
 	GUINODE_LINK						m_GuiLink;
@@ -48,7 +48,7 @@ protected:
 	EVALUATE							m_eDebug{};
 public:
 	template<typename T1> 
-	class CComponent* Get_Component(const CHandle & Handle, const _string& name)
+	T1* Get_Component(const CHandle & Handle, const _string& name)
 	{
 		if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(Handle))
 		{

@@ -8,9 +8,11 @@
 #include "BTOnlyTrue.h"//SUCCESSE만 반환
 #include "BTOnlyFalse.h"//FAILED만 반환
 #include "BTTeleport.h" //대상 위치로 텔포
-
 #include "BTDead.h" //죽는거 체크해야지
+#include "BTDamage.h"
+
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함
 #include "BTDecTimer.h"//타이머
 #include "BTDecSearch.h"//적거리 기반 탐색
 #include "BTDecInvert.h"// true false 인버터
+#include "BTDecHit.h"

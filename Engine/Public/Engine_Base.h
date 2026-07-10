@@ -68,6 +68,10 @@ namespace Engine
 	template<typename Derived, typename Base>
 	UPtr<Derived> engine_uptr_cast(UPtr<Base>&& base)
 	{
+		if (!Cast<Derived>(base.get()))
+		{
+			return nullptr;
+		}
 		return UPtr<Derived>(Cast<Derived>(base.release()));
 	}
 

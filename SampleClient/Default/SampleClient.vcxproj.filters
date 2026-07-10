@@ -276,6 +276,12 @@
     <ClInclude Include="..\public\TextBox.h">
       <Filter>GameObject\UI</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDecHit.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDamage.h">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -403,6 +409,12 @@
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTTeleport.cpp">
+      <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecHit.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDamage.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
   </ItemGroup>

@@ -56,17 +56,31 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
 		{
-			for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
+			CGameInstance;
+			//CGameInstance::Get().getpro
+			//CGameInstance::Get().GetPrototype()
+
+			CGameInstance::Get().GetPrototype(eType);
+			for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))
 			{
-				if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR)
+				if (ImGui::Button(key.GetDbgStr()))
 				{
-					if (ImGui::Button(iter.first.c_str()))
-					{
-						m_SelectName = iter.first;
-						m_bPopup = true;
-					}
+					m_SelectName = key.GetDbgStr();
+					m_bPopup = true;
 				}
 			}
+
+			//for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
+			//{
+			//	if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR)
+			//	{
+			//		if (ImGui::Button(iter.first.c_str()))
+			//		{
+			//			m_SelectName = iter.first;
+			//			m_bPopup = true;
+			//		}
+			//	}
+			//}
 		}
 		else
 		{

@@ -17,7 +17,7 @@ public:
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
 	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode,ImVec2 vNodePos, CHandle Handle);
 private:
-	std::map<_string, UPtr<class CBTRoot>>			m_Prototype_Actions[ETOUI(NODEGROUP::END)];
+	//std::map<_string, UPtr<class CBTRoot>>			m_Prototype_Actions[ETOUI(NODEGROUP::END)];
 
 	_string												m_SelectName{};
 	_bool												m_bPopup{ false };

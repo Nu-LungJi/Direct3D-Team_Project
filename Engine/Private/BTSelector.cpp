@@ -30,11 +30,7 @@ HRESULT CBTSelector::Initalize(void* pArg)
 
 EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
-    int32_t iIndex = 0;
-    if (m_NodeValue.bCur)
-        iIndex = m_NodeValue.iPreSecquenceIndex;
-
-    for (size_t i = iIndex; i < m_Actions.size(); ++i)
+    for (size_t i = 0; i < m_Actions.size(); ++i)
     {
         if (nullptr == m_Actions[i])
             continue;
@@ -42,15 +38,11 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
-			m_NodeValue.bCur = false;
-			m_NodeValue.iPreSecquenceIndex = 0;
 			m_eDebug = EVALUATE::SUCCESS;
 			return EVALUATE::SUCCESS;
         }
         else if (eValuate == EVALUATE::RUN)
-        {
-            m_NodeValue.bCur = true;
-            m_NodeValue.iPreSecquenceIndex = i;
+		{
             return  EVALUATE::RUN;
         }
  

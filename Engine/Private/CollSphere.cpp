@@ -109,6 +109,10 @@ _bool CCollSphere::Intersect(const CCollider& collider) const
 	return false;
 }
 
+_bool CCollSphere::Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const
+{
+	return m_BoundingSphereWorld.Intersects(XMLoadFloat3(&vOrigin), XMLoadFloat3(&vDir), fDist);
+}
 HRESULT CCollSphere::Initialize(const _float3 vCenter, _float fRadius)
 {
     m_BoundingSphereWorld = m_BoundingSphereLocal = BoundingSphere{ vCenter, fRadius };

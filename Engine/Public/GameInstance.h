@@ -9,6 +9,7 @@
 #include "MapManager.h"
 #include "LightManager.h"
 #include "NavMeshManager.h"
+#include "PrototypeManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -25,7 +26,6 @@ class CLevelManager;
 class CLevel;
 class CSoundManager;
 class CFontManager;
-class CPrototypeManager;
 class CPrototype;
 class CColliderManager;
 class CCollider;
@@ -174,6 +174,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
+	const CPrototypeManager::PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
