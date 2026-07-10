@@ -31,7 +31,7 @@ HRESULT CBTTurnDirect::Initalize(void* pArg)
 
 EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 {
-	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+	auto pTransform (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
 	{

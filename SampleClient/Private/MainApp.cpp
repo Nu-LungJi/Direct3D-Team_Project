@@ -316,7 +316,10 @@ HRESULT CMainApp::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTDamage", CBTDamage::Create())))
 		return E_FAIL;
 
+
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTTurnAnimation", CBTTurnAnimation::Create())))
 		return E_FAIL;
 
 

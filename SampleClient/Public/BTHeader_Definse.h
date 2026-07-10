@@ -9,8 +9,10 @@
 #include "BTOnlyFalse.h"//FAILED만 반환
 #include "BTTeleport.h" //대상 위치로 텔포
 #include "BTDead.h" //죽는거 체크해야지
-#include "BTDamage.h"
+#include "BTDamage.h" //hp 깎기
+#include "BTTurnAnimation.h" // 회전 애니매이션이 너무 많아서 하나로 묶는용도
 
+#include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함
 #include "BTDecTimer.h"//타이머
 #include "BTDecSearch.h"//적거리 기반 탐색

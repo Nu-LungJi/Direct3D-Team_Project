@@ -45,10 +45,8 @@ EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 }
 nlohmann::json CBTDecTimer::Save_Node()
 {
-	nlohmann::json j;
-	j = __super::Save_Node();
+	nlohmann::json j= __super::Save_Node();
 	SaveJsonValue(j, "WaitTime", m_fWaitTime);
-	SaveJsonValue(j, "MaxTimeCnt", m_iMaxTimeCnt);
 	return j;
 }
 HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
@@ -57,8 +55,7 @@ HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
 	if (!LoadJsonValue(j, "WaitTime", m_fWaitTime))
 		MSG_BOX("Failed Load MaxTimeTickCnt : BTDecTimer");
 
-	if (!LoadJsonValue(j, "MaxTimeCnt", m_iMaxTimeCnt))
-		MSG_BOX("Failed Load MaxTimeCnt : BTDecTimer");
+
 	return S_OK;
 }
 void		CBTDecTimer::Update_Gui()
@@ -66,7 +63,7 @@ void		CBTDecTimer::Update_Gui()
 	ImGui::Text("TimerTick Cnt");
 	ImGui::DragFloat("##Timer1", &m_fWaitTime, 0, 100);
 
-	ImGui::Text("Current Tick %2.f : ", &m_fTick);
+	ImGui::Text("Current Tick %2.f : ", m_fTick);
 
 }
 E::UPtr<CBTDecTimer> CBTDecTimer::Create()

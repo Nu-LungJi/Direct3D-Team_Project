@@ -16,13 +16,12 @@ private:
 	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE Evaluate(_float fTimeDelta) override;
 	virtual nlohmann::json			Save_Node()override;
-	HRESULT							Load_json(const nlohmann::json& j) override;
-
+	HRESULT					Load_json(const nlohmann::json& j) override;
+	EVALUATE Evaluate(_float fTimeDelta) override;
 	virtual void		Update_Gui() override;
 private:
-	_float				m_fValue{10.f};
+	_float				m_fDis{10.f};
 	_bool				m_bTrue{ false };
 public:
 	static UPtr<CBTDecSearch> Create();

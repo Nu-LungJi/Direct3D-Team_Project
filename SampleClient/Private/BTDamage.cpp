@@ -50,7 +50,7 @@ HRESULT CBTDamage::Load_json(const nlohmann::json& j)
 
 EVALUATE CBTDamage::Evaluate(_float fTimeDelta)
 {
-	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+	auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
 		return m_eDebug = EVALUATE::FAILED;
 

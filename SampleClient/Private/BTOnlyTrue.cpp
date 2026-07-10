@@ -25,7 +25,6 @@ HRESULT CBTOnlyTrue::InitializePrototype(void* pArg)
 }
 HRESULT CBTOnlyTrue::Initalize(void* pArg)
 {
-
 	__super::Initalize(pArg);
 
 	return S_OK;

@@ -31,7 +31,7 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
-	auto pAnimator = Cast<CComAnimator>(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
+	auto pAnimator =(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
 		return m_eDebug = EVALUATE::FAILED;
 	if (m_bStart)

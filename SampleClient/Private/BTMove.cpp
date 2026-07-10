@@ -48,7 +48,7 @@ HRESULT CBTMove::Load_json(const nlohmann::json& j)
 
 EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 {
-	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+	auto pTransform =(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
 	{
 		m_eDebug = EVALUATE::FAILED;

@@ -29,6 +29,20 @@ HRESULT CBTDecSearch::Initalize(void* pArg)
 	return S_OK;
 }
 
+nlohmann::json CBTDecSearch::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	SaveJsonValue(j, "Distance", m_fDis);
+	return j;
+}
+
+HRESULT CBTDecSearch::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "Distance", m_fDis);
+	return S_OK;
+}
+
 EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 {
 	if (m_bTrue)
@@ -42,34 +56,16 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	_vector vSrcPos = XMLoadFloat3(&vSrc->GetPosition());
 	_vector vDestPos = XMLoadFloat3(&vDest.GetPosition());
 	_float fDistance = XMVectorGetX(XMVector3Length(vSrcPos - vDestPos));
-	if (fDistance <= m_fValue)
+	if (fDistance <= m_fDis)
 		return __super::Evaluate(fTimeDelta);
 
 	return EVALUATE::FAILED;
 }
-nlohmann::json CBTDecSearch::Save_Node()
-{
-	nlohmann::json j;
-	j = __super::Save_Node();
-	SaveJsonValue(j, "Value", m_fValue);
-	//SaveJsonValue(j, "UseDisAngle", m_bUseAngle);
 
-	return j;
-}
-HRESULT CBTDecSearch::Load_json(const nlohmann::json& j)
-{
-	__super::Load_json(j);
-	if (!LoadJsonValue(j, "Value", m_fValue))
-		MSG_BOX("Failed Load Value : BTDecSearch");
-	//if(!LoadJsonValue(j, "UseDisAngle", m_bUseAngle))
-	//	MSG_BOX("Failed Save UseDisAngle : BTDecSearch");
-
-	return S_OK;
-}
 void		CBTDecSearch::Update_Gui()
 {
 	ImGui::Text("Distance : %2.f");
-	ImGui::DragFloat("##Dist", &m_fValue, 0, 100);
+	ImGui::DragFloat("##Dist", &m_fDis, 0, 100);
 }
 E::UPtr<CBTDecSearch> CBTDecSearch::Create()
 {
