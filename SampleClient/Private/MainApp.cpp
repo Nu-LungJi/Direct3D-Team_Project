@@ -122,7 +122,11 @@ HRESULT CMainApp::Initialize()
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 
 	}
-
+	if (FAILED(Create_ActionNode()))
+	{
+		MSG_BOX("Failed Action Node To MainApp");
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -290,39 +294,42 @@ HRESULT CMainApp::Load_Particle_Resources()
 		CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
 
 	}
-	if (FAILED(Create_ActionNode()))
-	{
-		return E_FAIL;
-	}
 	return S_OK;
 }
 
 HRESULT CMainApp::Create_ActionNode()
 {
 	//프로토타입 이니셜라이즈랑 이름 맞출것
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
+	
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION,"BTMove", CBTMove::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTTurnSlow", CBTTurnSlow::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTurnSlow", CBTTurnSlow::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTOnlyFalse", CBTOnlyFalse::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTOnlyFalse", CBTOnlyFalse::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
 		return E_FAIL;
-
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTeleport", CBTTeleport::Create())))
 		return E_FAIL;
-
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
-		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecTimer", CBTDecTimer::Create())))
-		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecLier", CBTDecLier::Create())))
-		return E_FAIL;
-	if (FAILED(CGameInstance::Get().Add_Action_Prototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTDamage", CBTDamage::Create())))
 		return E_FAIL;
 
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
+		return E_FAIL;
+
+
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecTimer", CBTDecTimer::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecLier", CBTDecLier::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHit", CBTDecHit::Create())))
+		return E_FAIL;
 	return S_OK;
 }
 

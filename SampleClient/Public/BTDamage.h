@@ -3,14 +3,14 @@
 #include "BTActionNode.h"
 
 NS_BEGIN(Client)
-class CBTChase final : public CBTActionNode
+class CBTDamage final : public CBTActionNode
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTChase, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTDamage, CBTActionNode)
 private:
-	CBTChase();
-	CBTChase(const CBTChase& rhs);
-	~CBTChase() override;
+	CBTDamage();
+	CBTDamage(const CBTDamage& rhs);
+	~CBTDamage() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitializePrototype(void* pArg = nullptr);
@@ -20,10 +20,8 @@ public:
 	HRESULT					 Load_json(const nlohmann::json& j) override;
 	EVALUATE				 Evaluate(_float fTimeDelta) override;
 	virtual void			 Update_Gui() override;
-private:
-	MOVE						m_eMove{};
 public:
-	static UPtr<CBTChase> Create();
+	static UPtr<CBTDamage> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END

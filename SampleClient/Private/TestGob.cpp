@@ -7,6 +7,7 @@
 #include "Resources.h"
 #include "ComBeHavior.h"
 #include "GameInstance.h"
+#include "ComCollider.h"
 NS_USING(Client)
 
 CTestGob::CTestGob()
@@ -105,7 +106,15 @@ HRESULT CTestGob::Initialize(void* pArg)
 		};
 	}
 
-
+	{
+		CComCollider::DESC Desc{};
+		Desc.eCollType = CollType::Box;
+		Desc.vExtents = {1.f, 1.f, 1.f};
+		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
+		{
+			return E_FAIL;
+		};
+	}
 
 	return S_OK;
 }
@@ -116,15 +125,24 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
+	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
+	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
+
+
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
 
 	m_pBeHavior->Update(fTimeDelta);
 
+
+	
+	
+
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
+
 
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);

@@ -13,7 +13,7 @@ CBTSecqunce ::~CBTSecqunce()
 {
 }
 
-HRESULT CBTSecqunce::InitalizePrototype(void* pArg)
+HRESULT CBTSecqunce::InitializePrototype(void* pArg)
 {
     m_MasterName = "BTSequnce";
     m_eGroup = NODEGROUP::SEQUENCE;
@@ -44,18 +44,21 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
         {
             m_NodeValue.bCur = true;
             m_NodeValue.iPreSecquenceIndex = i;
+			m_eDebug = EVALUATE::RUN;
             return EVALUATE::RUN;
         }
         else if (eValuate == EVALUATE::FAILED)
         {
 			m_NodeValue.bCur = false;
 			m_NodeValue.iPreSecquenceIndex = 0;
+			m_eDebug = EVALUATE::FAILED;
 			return EVALUATE::FAILED;
         }
 
     }
 	m_NodeValue.bCur = false;
 	m_NodeValue.iPreSecquenceIndex = 0;
+	m_eDebug = EVALUATE::SUCCESS;
     return EVALUATE::SUCCESS;
 }
 
@@ -72,7 +75,7 @@ HRESULT CBTSecqunce::Load_json(const nlohmann::json& j)
 UPtr<CBTSecqunce> CBTSecqunce::Create(void* pArg)
 {
     auto pInstance =ToUPtr(new CBTSecqunce());
-    if (FAILED(pInstance->InitalizePrototype(pArg)))
+    if (FAILED(pInstance->InitializePrototype(pArg)))
     {
         MSG_BOX("Failed to Created : CBTSecqunce");
         return nullptr;
@@ -81,7 +84,7 @@ UPtr<CBTSecqunce> CBTSecqunce::Create(void* pArg)
 }
 
 
-E::UPtr<E::CBTRoot> CBTSecqunce::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTSecqunce::Clone(void* pArg)
 {
     auto	pInstance = E::ToUPtr(new CBTSecqunce{ *this });
     if (FAILED(pInstance->Initalize(pArg)))

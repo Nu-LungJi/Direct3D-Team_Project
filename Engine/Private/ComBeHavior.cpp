@@ -30,8 +30,13 @@ HRESULT CComBeHavior::Initialize(void* pArg)
     BtRoot.NodeName = "Root";
     BtRoot.m_GuiNode = (GUINODE(BEHAVIOR::SELECTOR, m_iNodeID, BtRoot.NodeName.c_str(), _float2(40, 50), 0.5f, _float4(0.5f, 0.5f, 0.5f, 1)));
     BtRoot.m_GuiLink = (GUINODE_LINK(2));
-   
-    m_Root = std::move(CBTComposite::Create(&BtRoot));
+
+	auto pProto = CGameInstance::Get().ClonePrototype(NODEGROUP::ROOT, "BTRoot", &BtRoot);
+	auto proot = Cast<CBTComposite>(pProto.release());
+	if (!proot)
+		return E_FAIL;
+
+	m_Root = std::move(ToUPtr(proot));
     m_NodeMap[m_iNodeID++] = m_Root.get();
     return S_OK;
 }
@@ -125,7 +130,12 @@ void CComBeHavior::UnRegistNode(uint32_t iIndex)
 
 void CComBeHavior::Update(_float fTimeDelta)
 {
-    m_Root->Tick(fTimeDelta);
+	if (nullptr != m_Root)
+	{
+		m_Root->ResetDebug();
+		m_Root->Tick(fTimeDelta);
+	}
+
 }
 void CComBeHavior::UpdateGUI()
 {

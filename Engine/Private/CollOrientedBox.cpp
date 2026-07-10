@@ -35,6 +35,11 @@ _bool CCollOrientedBox::Intersect(const CCollider& collider) const
 	return false;
 }
 
+_bool CCollOrientedBox::Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const
+{
+	return m_BoundingOrientedBoxWorld.Intersects(XMLoadFloat3(&vOrigin), XMLoadFloat3(&vDir), fDist);
+}
+
 HRESULT CCollOrientedBox::Initialize(const _float3& vCenter, const _float3& vExtents, const _float4& vOrientation)
 {
 	m_BoundingOrientedBoxWorld = m_BoundingOrientedBoxLocal = BoundingOrientedBox{ vCenter, vExtents, vOrientation };

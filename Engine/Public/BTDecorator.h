@@ -18,13 +18,14 @@ protected:
 	CBTDecorator(const CBTDecorator& Prototype);
 	~CBTDecorator() override;
 
-	virtual HRESULT	InitalizePrototype(void* pArg) override;
+	virtual HRESULT	InitializePrototype(void* pArg) override;
 	virtual HRESULT Initalize(void* pArg) override;
 
 public:
 	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
 
 	virtual void				Update_Gui() PURE;
+	virtual void				ResetDebug() override;
 	nlohmann::json				Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j)override;
 	UPtr<CBTRoot>&				Get_Child() { return m_pDecorator; }
@@ -33,8 +34,7 @@ public:
 		m_pDecorator = std::move(pRoot); }
 private:
 	UPtr<CBTRoot>				m_pDecorator{ nullptr };
-public:
-	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
+
 };
 
 NS_END

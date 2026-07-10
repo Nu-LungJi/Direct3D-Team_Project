@@ -309,7 +309,7 @@ void CNodeEditor::Draw_Link()
 	}
 	if (nullptr != m_CurrentNode.pCurrentNode)
 	{
-		Draw_NodeLine(m_CurrentNode.vSlotPos, _float2(ImGui::GetMousePos().x, ImGui::GetMousePos().y),true);
+		Draw_NodeLine(m_pBeHavior->Get_Selector()->GetDebugType(), m_CurrentNode.vSlotPos, _float2(ImGui::GetMousePos().x, ImGui::GetMousePos().y), true);
 	}
 	if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 		Reset_CurrentNode();
@@ -819,10 +819,12 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				return;
 			}
 
+			;
+
 			if (eType == BEHAVIOR::SELECTOR)
-				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc);
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc));
 			else if(eType == BEHAVIOR::SECQUNCE)
-				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc);
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc));
 			if (nullptr == pNode)
 			{
 				ImGui::CloseCurrentPopup();
@@ -866,7 +868,7 @@ void CNodeEditor::Reset_CurrentNode()
 	m_CurrentNode.iSelectedSlot = -1;
 	m_CurrentNode.bSelected = false;
 }
-void CNodeEditor::Draw_NodeLine(_float2 iStartnode, _float2 iEndNode, _bool bMouse)
+void CNodeEditor::Draw_NodeLine(EVALUATE eType, _float2 iStartnode, _float2 iEndNode, _bool bMouse)
 {
 	_float2 p1{}, p2{}, input{}, output{};
 	input = iStartnode; //동글뱅이 좌표
@@ -882,8 +884,26 @@ void CNodeEditor::Draw_NodeLine(_float2 iStartnode, _float2 iEndNode, _bool bMou
 			XMLoadFloat2(&output));
 	}
 	//선 그리라고
+	_float4 vColor{};
+	switch (eType)
+	{
+	case EVALUATE::SUCCESS:
+		vColor = _float4(0, 255, 0, 255);
+		break;
+	case EVALUATE::RUN:
+
+		vColor = _float4(0, 0, 255, 255);
+		break;
+
+	case EVALUATE::FAILED:
+		vColor = _float4(255, 0, 0, 255);
+		break;
+	default :
+		vColor = _float4(0, 0, 0, 255);
+		break;
+	}
 	m_pDrawList->AddBezierCubic(ImVec2(p1.x, p1.y), ImVec2(p1.x, p1.y) + ImVec2(+50, 0),
-		ImVec2(p2.x, p2.y) + ImVec2(-50, 0), ImVec2(p2.x, p2.y), IM_COL32(200, 200, 100, 255), 3.f);
+		ImVec2(p2.x, p2.y) + ImVec2(-50, 0), ImVec2(p2.x, p2.y), IM_COL32(vColor.x, vColor.y, vColor.z, vColor.w), 3.f);
 }
 _bool CNodeEditor::ImsMouseHoverSlot(_float2 vSlotPos, const _float& fNode_Radius)
 {
@@ -918,7 +938,7 @@ void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
 
 			pNode_inp = &pNodeArray[i]->Get_GuiNodeInfo();
 			pNode_out = &pParent->Get_GuiNodeInfo();
-			Draw_NodeLine(pNode_inp->GetStartSlotPos(), pNode_out->GetEndSlotPos(iParentIndex, pParent->Get_GuiNodeLink().SlotEnd.size()));
+			Draw_NodeLine(pNodeArray[i]->GetDebugType(),pNode_inp->GetStartSlotPos(), pNode_out->GetEndSlotPos(iParentIndex, pParent->Get_GuiNodeLink().SlotEnd.size()));
 
 
 			if ((*pNode->Get_Nodes())[i]->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION)
@@ -935,7 +955,7 @@ void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
 
 			pNode_inp = &pChild->Get_GuiNodeInfo();
 			pNode_out = &pParent->Get_GuiNodeInfo();
-			Draw_NodeLine(pNode_inp->GetStartSlotPos(), pNode_out->GetEndSlotPos(iParentIndex, pParent->Get_GuiNodeLink().SlotEnd.size()));
+			Draw_NodeLine(pChild->GetDebugType(),pNode_inp->GetStartSlotPos(), pNode_out->GetEndSlotPos(iParentIndex, pParent->Get_GuiNodeLink().SlotEnd.size()));
 
 			if ((pNode->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION))
 				Recursive_Call_Node(pChild.get());

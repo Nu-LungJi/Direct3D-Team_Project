@@ -18,7 +18,7 @@ private:
 	CBTSecqunce(const CBTSecqunce& rhs);
 	~CBTSecqunce() override;
 
-	HRESULT	InitalizePrototype(void* pArg = nullptr);
+	HRESULT	InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 
 public:
@@ -29,7 +29,7 @@ public:
 	HRESULT						Load_json(const nlohmann::json& j) override;
 public:
 	static  UPtr<CBTSecqunce> Create(void* pArg);
-	UPtr<CBTRoot>Clone(void* pArg) override ;
+	UPtr<CPrototype>Clone(void* pArg) override ;
 };
 
 NS_END

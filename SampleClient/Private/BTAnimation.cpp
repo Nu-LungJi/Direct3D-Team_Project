@@ -15,9 +15,9 @@ CBTAnimation::CBTAnimation(const CBTAnimation& rhs) : CBTActionNode(rhs)
 CBTAnimation::~CBTAnimation()
 {
 }
-HRESULT CBTAnimation::InitalizePrototype(void* pArg)
+HRESULT CBTAnimation::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTAnimation";
 	return S_OK;
@@ -32,20 +32,32 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
 	auto pAnimator = Cast<CComAnimator>(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
-	if (pAnimator == nullptr && -1 != m_Value.iAnimIndex)
-		return EVALUATE::FAILED;
+	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
+		return m_eDebug = EVALUATE::FAILED;
+	if (m_bStart)
+	{
+		pAnimator->SetPlay(true);
+		m_bStart = false;
+	}
 
-	pAnimator->SetPlay(true);
-	
 	pAnimator->SetPlayAnimIndex(m_Value.iAnimIndex);
-	
+	pAnimator->SetLoop(m_bLoop);
+	_bool bFinished = pAnimator->GetFinish();
+
 	if (m_bLoop)
-		return EVALUATE::SUCCESS;
-
-	if(pAnimator->GetFinish())
-		return EVALUATE::SUCCESS;
-
-	return EVALUATE::RUN;
+	{
+		m_bStart = true;
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
+		
+	if (bFinished)
+	{
+		if(!m_bLoop)
+			m_bStart = false;
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
+		
+	return m_eDebug = EVALUATE::RUN;
 }
 void CBTAnimation::Update_Gui()
 {
@@ -87,14 +99,14 @@ HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 E::UPtr<CBTAnimation> CBTAnimation::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTAnimation{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTAnimation");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTAnimation::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTAnimation::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTAnimation{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

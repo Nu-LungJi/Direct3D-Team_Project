@@ -15,9 +15,9 @@ CBTMove::CBTMove(const CBTMove& rhs) : CBTActionNode(rhs)
 CBTMove::~CBTMove()
 {
 }
-HRESULT CBTMove::InitalizePrototype(void* pArg)
+HRESULT CBTMove::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
 	m_MasterName = "BTMove";
@@ -50,7 +50,12 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 {
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
+	{
+		m_eDebug = EVALUATE::FAILED;
+
 		return EVALUATE::FAILED;
+	}
+	
 
 	//if (m_eMove ==MOVE::RIGHT&&CGameInstance::Get().KeyPressing(DIK_RIGHT))
 	//{
@@ -64,6 +69,8 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	//}else if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_UP))
 	//{
 		pTransform->GoStraight(10.f * fTimeDelta);
+
+		m_eDebug = EVALUATE::SUCCESS;
 		return EVALUATE::SUCCESS;
 	//}
 	//if (m_eMove == MOVE::STRAIGHT && CGameInstance::Get().KeyPressing(DIK_DOWN))
@@ -90,14 +97,14 @@ void CBTMove::Update_Gui()
 E::UPtr<CBTMove> CBTMove::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTMove{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTMove");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTMove::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTMove::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTMove{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))
