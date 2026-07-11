@@ -433,11 +433,11 @@ void CGameInstance::Release_Engine()
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
-	m_pHizOcclusionCuller->FrameStart();
-	if (m_pRenderer->HasPrevHizBuffer())
-	{
-		m_pHizOcclusionCuller->Prepare(m_pRenderer->GetPrevHizBuffer());
-	}
+	//m_pHizOcclusionCuller->FrameStart();
+	//if (m_pRenderer->HasPrevHizBuffer())
+	//{
+	//	m_pHizOcclusionCuller->Prepare(m_pRenderer->GetPrevHizBuffer());
+	//}
 
 	{
 		ZoneScopedN("InputManager_Update");
@@ -776,6 +776,13 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizMipPyramid", "./ShaderFiles/Hiz/Shader_CS_HizMipPyramid.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -1609,6 +1616,16 @@ _bool CGameInstance::IsOcclusionCulled(const IRenderable* pRenderObject)
 
 	const _matrix matViewProj = pCamera->GetView() * pCamera->GetProj();
 	return m_pHizOcclusionCuller->IsOcclusionCulledCPU(pRenderObject, matViewProj, m_vClientScreenSize);
+}
+
+const CHizBuffer* CGameInstance::GetPrevHizBuffer() const
+{
+	if (m_pRenderer == nullptr || !m_pRenderer->HasPrevHizBuffer())
+	{
+		return nullptr;
+	}
+
+	return m_pRenderer->GetPrevHizBuffer();
 }
 #pragma endregion
 

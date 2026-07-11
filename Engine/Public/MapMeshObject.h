@@ -9,7 +9,9 @@ class CResDynamicBuffer;
 class CResPixelShader;
 class CResSamplerState;
 class CResStaticModel;
+class CResStructuredBuffer;
 class CResVertexShader;
+class CMapMeshGpuCuller;
 
 
 class ENGINE_DLL CMapMeshObject : public CGameObject
@@ -58,6 +60,8 @@ public:
 		uint32_t iInstances = 0;
 		uint32_t iBatches = 0;
 		uint32_t iDrawCalls = 0;
+		uint32_t iVisibleInstances = 0;
+		uint32_t iCulledInstances = 0;
 	};
 
 	// 인스턴싱 On/Off , 드로우 콜 GUI
@@ -69,8 +73,8 @@ public:
 	static void ReleaseInstancingResources(); // 종료할 때 인스턴싱 버퍼 해제
 
 private:
-	static HRESULT PushInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData);
-	static HRESULT EnsureInstanceBuffer(size_t instanceCount);
+	static HRESULT PushInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
+	static HRESULT EnsureInstanceResources(size_t instanceCount);
 	HRESULT RenderInstancedBatches(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx);
 
 private:
@@ -82,10 +86,14 @@ private:
 	SPtr<CResPixelShader> m_pResPixelShader{};
 
 private:
-	static std::unordered_map<SPtr<CResStaticModel>, std::vector<MAPMESH_INSTANCE_DATA>> s_InstanceBatches;
+	static std::unordered_map<SPtr<CResStaticModel>, MAPMESH_INSTANCE_BATCH> s_InstanceBatches;
 	static SPtr<CResDynamicBuffer> s_pInstanceBuffer;
 	static size_t s_iInstanceCapacity;
 	static std::optional<CHandle> s_hRenderRepresentative;// 대표로 렌더 콜 호출할 오브젝트
+	static UPtr<CMapMeshGpuCuller> s_pGpuCuller;
+
+	static SPtr<CResStructuredBuffer>  s_pOcclusionInputBuffer; // MAPMESH_OCCLUSION_DATA[]
+	static SPtr<CResStructuredBuffer> s_pVisibleFlagBuffer; // uint[]
 
 	// 드로우 콜 확인용
 	static _bool s_bInstancingEnabled; // 인스턴싱 On/Off

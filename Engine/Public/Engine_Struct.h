@@ -250,11 +250,19 @@ namespace Engine
 		}
 	}MAPCHUNK_COORD;
 
-	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+	//----------------------------MapMeshObject 인스턴싱------------------------
 	typedef struct tagMapMeshInstanceData
 	{
 		_float4x4 world;
 	} MAPMESH_INSTANCE_DATA;
+
+	typedef struct tagMapMeshOcclusionData
+	{
+		_float3		worldCenter;
+		_float		padding0;
+		_float3		worldExtents;
+		uint32_t	instanceIndex;
+	} MAPMESH_OCCLUSION_DATA;
 
 	typedef struct tagMapMeshBatchKey
 	{
@@ -277,11 +285,17 @@ namespace Engine
 		}
 	};
 
+	struct MAPMESH_INSTANCE_BATCH
+	{
+		std::vector<MAPMESH_INSTANCE_DATA> instances;
+		std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
+	};
+
 	//class CResStaticModel;
 	//typedef struct tagMapMeshBatch
 	//{
 	//	CResStaticModel* model = nullptr;
 	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
 	//} MAPMESH_BATCH;
-	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+	//----------------------------MapMeshObject 인스턴싱------------------------
 }

@@ -906,6 +906,9 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshGpuCuller.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1349,6 +1352,9 @@
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\MapMeshGpuCuller.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1441,6 +1447,9 @@
       <Filter>ShaderFiles\Hiz</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizCopyDepth.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGpuCull.hlsl">
       <Filter>ShaderFiles\Hiz</Filter>
     </FxCompile>
   </ItemGroup>

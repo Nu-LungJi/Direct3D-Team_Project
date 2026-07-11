@@ -32,6 +32,7 @@ class CColliderManager;
 class CCollider;
 class CRenderer;
 class CHizOcclusionCuller;
+class CHizBuffer;
 class CAnimEdit_Manager;
 class CNodeEditor;
 class CParticleManager;
@@ -269,6 +270,7 @@ public:
 public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 	_bool IsOcclusionCulled(const IRenderable* pRenderObject);
+	const CHizBuffer* GetPrevHizBuffer() const;
 #pragma endregion
 
 

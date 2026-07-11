@@ -158,6 +158,10 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::Text("Instances: %u", instancingStats.iInstances);
 	ImGui::Text("DrawCalls: %u", instancingStats.iDrawCalls);
 
+	ImGui::Text("----------------------------Occlusion-----------------------------------");
+	ImGui::Text("Visible: %u", instancingStats.iVisibleInstances);
+	ImGui::Text("Culled: %u", instancingStats.iCulledInstances);
+	ImGui::Text("----------------------------Occlusion-----------------------------------");
 
 	m_pNavMeshGUI->UpdateGUI(fTimeDelta);
 
