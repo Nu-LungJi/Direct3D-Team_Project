@@ -97,8 +97,9 @@ PS_OUT PSMain(VS_OUT In)
     //if (vTextureColor.x < 0.f)
     //    discard;
 
+    
     float4 vFinalColor = vTextureColor * In.vColor;
-
+    clip(vFinalColor.a - 0.02f);
     Out.vDiffuse = float4(vFinalColor.xyz + In.vEmissive.xyz * In.vEmissive.w, vFinalColor.a);
     return Out;
 }

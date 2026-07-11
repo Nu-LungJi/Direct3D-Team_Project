@@ -43,6 +43,9 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeBloom()))				return E_FAIL;
 
+	if (FAILED(InitializeVolumetricEffect()))	return E_FAIL;
+	
+
     if (FAILED(Initialize_Debugging()))         return E_FAIL;
 
     return S_OK;
@@ -947,6 +950,9 @@ HRESULT CRenderer::Render_Alpha() {
 
     m_pContext->CopyResource(m_pBackBufferTexture.Get(), CGameInstance::Get().GetBackBufferTexture().Get());
    
+	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+	m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
+
     return S_OK;
 }
 
@@ -1285,7 +1291,7 @@ HRESULT CRenderer::RenderBlend()
 {
     ZoneScopedN("RenderBlend");
 
-    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
     m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::BLEND)])
