@@ -154,6 +154,13 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
+cbuffer CB_INSTANCE_RENDER_DATA : register(b9)
+{
+    matrix g_WorldMatrices;
+};
+
+
+
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);
 SamplerState PointWrap                  : register(s2);

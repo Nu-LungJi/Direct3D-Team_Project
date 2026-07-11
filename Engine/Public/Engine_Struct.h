@@ -284,4 +284,78 @@ namespace Engine
 	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
 	//} MAPMESH_BATCH;
 	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+
+
+	//----------------------------AnimationObject------------------------------------
+	typedef struct GPU_BONE_DESC
+	{
+		_float4x4 BindLocalMatrix;
+
+		int32_t  iParentBoneIndex = -1;
+		uint32_t iDepth = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+	}GPU_BONE_DESC;
+
+	typedef struct GPU_ANIM_DESC
+	{
+		uint32_t iChannelOffset = 0;
+		uint32_t iChannelCount = 0;
+
+		uint32_t iBoneChannelMapOffset = 0;
+		uint32_t iBoneCount = 0;
+
+		float fDuration = 0.f;
+		float fPadding0 = 0.f;
+		float fPadding1 = 0.f;
+		float fPadding2 = 0.f;
+	}GPU_ANIM_DESC;
+
+	typedef struct GPU_CHANNEL_DESC
+	{
+		uint32_t iBoneIndex = 0;
+		uint32_t iKeyFrameOffset = 0;
+		uint32_t iKeyFrameCount = 0;
+		uint32_t iPadding = 0;
+	}GPU_CHANNEL_DESC;
+
+	typedef struct GPU_KEYFRAME_DESC
+	{
+		_float3 vScale{ 1.f, 1.f, 1.f };
+		float fTrackPosition = 0.f;
+
+		_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
+
+		_float3 vTranslation{ 0.f, 0.f, 0.f };
+		float fPadding = 0.f;
+	}GPU_KEYFRAME_DESC;
+
+	typedef struct GPU_SKIN_BONE_DESC
+	{
+		_float4x4 OffsetMatrix;
+
+		uint32_t iSkeletonBoneIndex = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+		uint32_t iPadding2 = 0;
+	}GPU_SKIN_BONE_DESC;
+
+	typedef struct GPU_MESH_SKIN_RANGE
+	{
+		uint32_t iSkinBoneOffset = 0;
+		uint32_t iSkinBoneCount = 0;
+	}GPU_MESH_SKIN_RANGE;
+
+	typedef	struct GPU_ANIM_INSTANCE_DESC
+	{
+		_float4x4 WorldMatrix;
+
+		uint32_t iAnimIndex = 0;
+		uint32_t iFlags = 0;
+
+		float fTrackPosition = 0.f;
+		float fPadding = 0.f;
+
+	}GPU_ANIM_INSTANCE_DESC;
+	//----------------------------AnimationObject------------------------------------
 }

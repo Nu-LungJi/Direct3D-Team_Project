@@ -24,6 +24,8 @@ public:
 	static UPtr<CLevelAnimEditor> Create();
 
 private:
+	int32_t iTestCount{1};
+private:
 	void Free() override;
 };
 

@@ -109,6 +109,9 @@
     <Filter Include="GameObject\AI\Header">
       <UniqueIdentifier>{98fd5b71-cb07-4a23-88f0-80d1b6f6f076}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestModel\Anim\Inctancing">
+      <UniqueIdentifier>{b16b0449-8dd6-4186-bba8-c4587a7b4a6c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">

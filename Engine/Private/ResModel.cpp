@@ -72,6 +72,9 @@ HRESULT CResModel::Load(const std::any& arg)
 			case CHUNCK_TYPE::CHUNK_BONE:
 				if (FAILED(Ready_Bones(ptr)))
 					return E_FAIL;
+
+				if (FAILED(Ready_BoneDepths()))
+					return E_FAIL;
 				break;
 
 			case CHUNCK_TYPE::CHUNK_MESH:
@@ -87,13 +90,14 @@ HRESULT CResModel::Load(const std::any& arg)
 
 			ptr += chunk->size;
 		}
-
 	}
 
 
 	if (FAILED(Ready_Animation()))
 		return E_FAIL;
 
+	if (FAILED(Ready_GPU_Ready()))
+		return E_FAIL;
 	m_eState = STATE::LOADED;
 	return S_OK;
 }
@@ -227,8 +231,432 @@ HRESULT CResModel::Ready_Animation()
 	return S_OK;
 }
 
+HRESULT CResModel::Ready_GPU_Ready()
+{
+	if (FAILED(Ready_GPU_Bone()))
+		return E_FAIL;
+
+	if (FAILED(Ready_GPU_Animation()))
+		return E_FAIL;
+
+	if (FAILED(Ready_GPU_MeshSkin()))
+		return E_FAIL;
+
+	return S_OK;
+}
+HRESULT CResModel::Ready_GPU_Bone()
+{
+	std::vector<GPU_BONE_DESC> gpuBones;
+
+	gpuBones.reserve(m_Bones.size());
+
+	for (const auto& pBone : m_Bones)
+	{
+		if (!pBone)
+			return E_FAIL;
+
+		GPU_BONE_DESC gpuBone{};
+
+		gpuBone.BindLocalMatrix =*pBone->Get_TransformationMatrixPtr();
+
+		gpuBone.iParentBoneIndex =pBone->GetParendBoneIndex();
+
+		gpuBone.iDepth = pBone->Get_Depth();
+
+		gpuBones.push_back(gpuBone);
+	}
+
+	auto res = CResStructuredBuffer::Create();
+
+	if (!res)
+		return E_FAIL;
+
+	CResStructuredBuffer::DESC desc{};
+
+	desc.iNumElements =static_cast<uint32_t>(gpuBones.size());
+
+	desc.iStructureByteStride = sizeof(GPU_BONE_DESC);
+
+	desc.pInitialData = gpuBones.data();
+
+	desc.bAppendConsume = false;
+
+	if (FAILED(res->Load(desc)))
+		return E_FAIL;
+
+	m_pGPUBones = res;
+
+	return S_OK;
+}
+
+HRESULT CResModel::Ready_GPU_Animation()
+{
+	if (m_Animations.empty())
+		return S_OK;
+
+	// Animation이 없는 Skeletal Mesh 인 경우
+	constexpr uint32_t INVALID_CHANNEL_INDEX = UINT32_MAX;
+
+	const uint32_t iBoneCount = static_cast<uint32_t>(m_Bones.size());
+
+	std::vector<GPU_ANIM_DESC> gpuAnimations;
+	std::vector<GPU_CHANNEL_DESC> gpuChannels;
+	std::vector<GPU_KEYFRAME_DESC> gpuKeyFrames;
+	std::vector<uint32_t> gpuBoneChannelMap;
+
+	gpuAnimations.reserve(m_Animations.size());
+
+	// 애니메이션 전체를 한 번 순회
+	for (const auto& pAnimation : m_Animations)
+	{
+		if (!pAnimation)
+			return E_FAIL;
+
+		GPU_ANIM_DESC gpuAnim{};
+
+		// 이 애니메이션의 Channel이 시작되는 전역 위치
+		gpuAnim.iChannelOffset = static_cast<uint32_t>(gpuChannels.size());
+
+		// 이 애니메이션의 BoneChannelMap 시작 위치
+		gpuAnim.iBoneChannelMapOffset = static_cast<uint32_t>(gpuBoneChannelMap.size());
+
+		gpuAnim.iBoneCount = iBoneCount;
+		gpuAnim.fDuration = pAnimation->GetDuration();
+
+		const auto& channels = pAnimation->GetChannels();
+
+		gpuAnim.iChannelCount = static_cast<uint32_t>(channels.size());
+
+		/*
+		 * 현재 애니메이션용 BoneChannelMap 공간 생성
+		 *
+		 * Bone마다 대응되는 Channel이 없을 수 있으므로
+		 * 처음에는 전부 INVALID로 초기화한다.
+		 */
+		gpuBoneChannelMap.resize(gpuBoneChannelMap.size() + iBoneCount,INVALID_CHANNEL_INDEX);
+
+		// 현재 애니메이션의 채널 순회
+		for (const auto& pChannel : channels)
+		{
+			if (!pChannel)
+				return E_FAIL;
+
+			GPU_CHANNEL_DESC gpuChannel{};
+
+			gpuChannel.iBoneIndex =pChannel->Get_BoneIndex();
+
+			if (gpuChannel.iBoneIndex >= iBoneCount)
+				return E_FAIL;
+
+			// 이 채널의 KeyFrame 시작 위치
+			gpuChannel.iKeyFrameOffset = static_cast<uint32_t>(gpuKeyFrames.size());
+
+			const auto& keyFrames = pChannel->Get_KeyFrames();
+
+			gpuChannel.iKeyFrameCount = static_cast<uint32_t>(keyFrames.size());
+
+			const uint32_t iGlobalChannelIndex = static_cast<uint32_t>(gpuChannels.size());
+
+			/*
+			 * Anim + Bone으로 Channel을 바로 찾을 수 있게 기록
+			 */
+			const uint32_t iMapIndex =gpuAnim.iBoneChannelMapOffset + gpuChannel.iBoneIndex;
+
+			gpuBoneChannelMap[iMapIndex] = iGlobalChannelIndex;
+
+			// 현재 Channel의 KeyFrame 순회
+			for (const auto& keyFrame : keyFrames)
+			{
+				GPU_KEYFRAME_DESC gpuKeyFrame{};
+
+				gpuKeyFrame.vScale = keyFrame.vScale;
+
+				gpuKeyFrame.vRotation = keyFrame.vRotation;
+
+				gpuKeyFrame.vTranslation = keyFrame.vTranslation;
+
+				gpuKeyFrame.fTrackPosition = keyFrame.fTrackPosition;
+
+				gpuKeyFrames.push_back(gpuKeyFrame);
+			}
+
+			gpuChannels.push_back(gpuChannel);
+		}
+
+		gpuAnimations.push_back(gpuAnim);
+	}
+
+	// 여기까지 오면 CPU 평탄화 데이터가 모두 완성된 상태
+	// 이제 각각 Structured Buffer로 올린다.
+	{
+		auto res = CResStructuredBuffer::Create();
+
+		if (!res)
+			return E_FAIL;
+
+		CResStructuredBuffer::DESC desc{};
+
+		desc.iNumElements = static_cast<uint32_t>(gpuAnimations.size());
+
+		desc.iStructureByteStride = sizeof(GPU_ANIM_DESC);
+
+		desc.pInitialData = gpuAnimations.data();
+
+		desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+	
+		m_pGPUAnimations = res;
+}
+
+	{
+		auto res = CResStructuredBuffer::Create();
+
+		if (!res)
+			return E_FAIL;
+
+		CResStructuredBuffer::DESC desc{};
+
+		desc.iNumElements =static_cast<uint32_t>(gpuChannels.size());
+
+		desc.iStructureByteStride =sizeof(GPU_CHANNEL_DESC);
+
+		desc.pInitialData = gpuChannels.data();
+
+		desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+
+		m_pGPUChannels = res;
+
+	}
+
+	{
+		auto res = CResStructuredBuffer::Create();
+
+		if (!res)
+			return E_FAIL;
+
+		CResStructuredBuffer::DESC desc{};
+
+		desc.iNumElements = static_cast<uint32_t>(gpuKeyFrames.size());
+
+		desc.iStructureByteStride = sizeof(GPU_KEYFRAME_DESC);
+
+		desc.pInitialData = gpuKeyFrames.data();
+
+		desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+
+		m_pGPUKeyFrames = res;
+	}
+
+	{
+		auto res = CResStructuredBuffer::Create();
+
+		if (!res)
+			return E_FAIL;
+
+		CResStructuredBuffer::DESC desc{};
+
+		desc.iNumElements =static_cast<uint32_t>(gpuBoneChannelMap.size());
+
+		desc.iStructureByteStride =sizeof(uint32_t);
+
+		desc.pInitialData = gpuBoneChannelMap.data();
+
+		desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+
+		m_pGPUBoneChannelMap = res;
+	}
+
+	return S_OK;
+}
+HRESULT CResModel::Ready_BoneDepths()
+{
+	const uint32_t iBoneCount =static_cast<uint32_t>(m_Bones.size());
+
+	std::vector<int32_t> depthCache(iBoneCount,-1);
+
+	std::vector<bool> visiting(iBoneCount,false);
+
+	m_iMaxBoneDepth = 0;
+
+	for (uint32_t i = 0;i < iBoneCount;++i)
+	{
+		uint32_t iDepth = 0;
+
+		if (FAILED(Calculate_BoneDepth(i,depthCache,visiting,iDepth)))
+		{
+			return E_FAIL;
+		}
+
+		m_Bones[i]->Set_Depth(iDepth);
+
+		m_iMaxBoneDepth =std::max(m_iMaxBoneDepth,iDepth);
+	}
 
 
+	return S_OK;
+}
+
+HRESULT CResModel::Ready_GPU_MeshSkin()
+{
+	std::vector<GPU_SKIN_BONE_DESC> gpuSkinBones;
+	std::vector<GPU_MESH_SKIN_RANGE> gpuMeshSkinRanges;
+
+	gpuMeshSkinRanges.reserve(m_Meshes.size());
+
+	for (const auto& pMesh : m_Meshes)
+	{
+		if (!pMesh)
+			return E_FAIL;
+
+		GPU_MESH_SKIN_RANGE meshRange{};
+
+		meshRange.iSkinBoneOffset =static_cast<uint32_t>(gpuSkinBones.size());
+
+		const auto& boneIndices = pMesh->GetBoneIndices();
+
+		const auto& offsetMatrices =pMesh->GetOffsetMatrices();
+
+		if (boneIndices.size() != offsetMatrices.size())
+			return E_FAIL;
+
+		if (boneIndices.size() != pMesh->Get_BoneIndex())
+			return E_FAIL;
+
+		meshRange.iSkinBoneCount = static_cast<uint32_t>(boneIndices.size());
+
+		for (uint32_t i = 0; i < meshRange.iSkinBoneCount;++i)
+		{
+			if (boneIndices[i] >= m_Bones.size())
+				return E_FAIL;
+
+			GPU_SKIN_BONE_DESC gpuSkinBone{};
+
+			gpuSkinBone.iSkeletonBoneIndex = boneIndices[i];
+
+			gpuSkinBone.OffsetMatrix = offsetMatrices[i];
+
+			gpuSkinBones.push_back(gpuSkinBone);
+		}
+
+		gpuMeshSkinRanges.push_back(meshRange);
+	}
+
+	// 이후 gpuSkinBones와 gpuMeshSkinRanges를
+	// 각각 Structured Buffer로 생성
+	if (!gpuSkinBones.empty())
+	{
+		auto res = CResStructuredBuffer::Create();
+		if (!res)
+			return E_FAIL;
+
+		CResStructuredBuffer::DESC desc{};
+		desc.iNumElements =
+			static_cast<uint32_t>(gpuSkinBones.size());
+		desc.iStructureByteStride =
+			sizeof(GPU_SKIN_BONE_DESC);
+		desc.pInitialData =
+			gpuSkinBones.data();
+		desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+
+		m_pGPUSkinBones = res;
+	}
+
+	if (!gpuMeshSkinRanges.empty())
+	{
+		auto res = CResStructuredBuffer::Create();
+		if (!res)
+			return E_FAIL;
+
+		CResStructuredBuffer::DESC desc{};
+		desc.iNumElements =
+			static_cast<uint32_t>(gpuMeshSkinRanges.size());
+		desc.iStructureByteStride =
+			sizeof(GPU_MESH_SKIN_RANGE);
+		desc.pInitialData =
+			gpuMeshSkinRanges.data();
+		desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+
+	}
+
+	return S_OK;
+}
+
+
+
+HRESULT CResModel::Calculate_BoneDepth(uint32_t iBoneIndex,std::vector<int32_t>& depthCache,std::vector<bool>& visiting,uint32_t& outDepth)
+{
+	// 본 인덱스 예외 처리
+	if (iBoneIndex >= m_Bones.size())
+		return E_FAIL;
+
+	if (!m_Bones[iBoneIndex])
+		return E_FAIL;
+
+	// 이미 계산됨
+	if (depthCache[iBoneIndex] >= 0)
+	{
+		outDepth =static_cast<uint32_t>(depthCache[iBoneIndex]);
+
+		return S_OK;
+	}
+
+	// 현재 계산 중인 본을 다시 방문했다면 순환 계층
+	if (visiting[iBoneIndex])
+		return E_FAIL;
+
+	visiting[iBoneIndex] = true;
+
+	const int32_t iParentBoneIndex = m_Bones[iBoneIndex]->GetParendBoneIndex();
+
+	uint32_t iDepth = 0;
+
+	if (iParentBoneIndex >= 0)
+	{
+		if (iParentBoneIndex >=static_cast<int32_t>(m_Bones.size()))
+		{
+			return E_FAIL;
+		}
+
+		if (iParentBoneIndex ==static_cast<int32_t>(iBoneIndex))
+		{
+			return E_FAIL;
+		}
+
+		uint32_t iParentDepth = 0;
+
+		if (FAILED(Calculate_BoneDepth(static_cast<uint32_t>(iParentBoneIndex),depthCache,visiting,iParentDepth)))
+		{
+			return E_FAIL;
+		}
+
+		iDepth = iParentDepth + 1;
+	}
+
+	visiting[iBoneIndex] = false;
+
+	depthCache[iBoneIndex] = static_cast<int32_t>(iDepth);
+
+	outDepth = iDepth;
+
+	return S_OK;
+}
 int32_t CResModel::Get_BoneIndex(const _char* pBoneName)
 {
 	int32_t iBoneIndex = { 0 };

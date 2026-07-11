@@ -46,7 +46,8 @@ HRESULT CLevelAnimEditor::Initialize()
 			int x = 0;
 		}
 	}
-	
+
+
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
@@ -108,18 +109,45 @@ HRESULT CLevelAnimEditor::Render()
 
 void CLevelAnimEditor::UpdateGUI()
 {
-	ImGui::Begin("LEVEL: CLevel_Anim");
-	//if (ImGui::Button("ChangeLevelTo: GamePlay"))
-	//{
-	//	if (FAILED(Engine::CGameInstance::Get().ChangeLevel(CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::GAMEPLAY))))
-	//	{
-	//		MSG_BOX("ChangeLevelTo: GamePlay Failed");
-	//	}
-	//}
+	ImGui::Begin("LEVEL: CLevelAnimEditor");
 
 
+	if (ImGui::Button("Spawn TestModel x10"))
+	{
+	
+
+
+
+		for (uint32_t i = 0; i < 10; ++i)
+		{
+			CTestModel::DESC Desc{};
+
+			// 버튼을 여러 번 눌러도 이름이 겹치지 않게 설정
+			Desc.sObjectTag ="TestModel_" + std::to_string(iTestCount++);
+
+			auto addedObject =
+				E::CGameInstance::Get().AddGameObjectToLayer(
+					"LEVEL_TEST",
+					"Prototype_GameObject_TestModel",
+					"TestModelLayer",
+					&Desc
+				);
+
+			if (!addedObject)
+				continue;
+	
+			_float fRandomX = Randf(-10.f, 10.f);
+			_float fRandomZ = Randf(-10.f, 10.f);
+			auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(addedObject.value());
+			auto& pTransform = pSampleObj->GetTransform();
+		
+			pTransform.SetPosition(_float3{fRandomX,0.f,fRandomZ});
+			
+		}
+	}
 
 	ImGui::End();
+
 }
 
 void CLevelAnimEditor::FrameStart(E::_float fTimeDelta)

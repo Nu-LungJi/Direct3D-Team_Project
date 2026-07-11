@@ -41,9 +41,6 @@ HRESULT CAnimEdit_Manager::SetupTestModel()
 		}
 	}
 
-
-
-
 	return S_OK;
 }
 

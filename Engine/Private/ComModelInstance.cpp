@@ -339,6 +339,50 @@ void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 	}
 }
 
+HRESULT CComModelInstance::Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext || !m_pModel)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* pSRVs[] =
+	{
+		m_pModel->Get_GPUBoneSRV(),            // t0
+		m_pModel->Get_GPUAnimationSRV(),       // t1
+		m_pModel->Get_GPUChannelSRV(),         // t2
+		m_pModel->Get_GPUKeyFrameSRV(),        // t3
+		m_pModel->Get_GPUBoneChannelMapSRV(),  // t4
+		m_pModel->Get_GPUSkinBoneSRV()         // t5
+	};
+
+	for (ID3D11ShaderResourceView* pSRV : pSRVs)
+	{
+		if (!pSRV)
+			return E_FAIL;
+	}
+
+	pContext->CSSetShaderResources(
+		0,
+		static_cast<UINT>(std::size(pSRVs)),
+		pSRVs
+	);
+
+	return S_OK;
+}
+
+void CComModelInstance::Unbind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext)
+		return;
+
+	ID3D11ShaderResourceView* pNullSRVs[6]{};
+
+	pContext->CSSetShaderResources(
+		0,
+		6,
+		pNullSRVs
+	);
+}
+
 
 
 void CComModelInstance::EnsureDebugBoneOffsetSize()

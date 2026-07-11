@@ -56,6 +56,7 @@ HRESULT CComAnimator::Initialize(void* pArg)
 
 HRESULT CComAnimator::Update(_float fTimeDelta)
 {
+
     if (m_bPlay) {
         switch (m_iPlayAnimationType) {
         case ANIMTYPE::ANIM: {

@@ -34,12 +34,22 @@ private:
 	HRESULT Ready_Meshes(_char* ptr);
 	HRESULT Ready_Animation();
 
-#ifdef _DEBUG
-public:
-	HRESULT Ready_OneAnimation();
-#endif
+
+	// for GPU
+	HRESULT Ready_GPU_Ready();
+	HRESULT Ready_GPU_Bone();
+
+	HRESULT Ready_GPU_Animation();
+	HRESULT Ready_GPU_MeshSkin();
+	// GPU에서 읽기 위해 계산 순서 정해주는거
+	HRESULT Ready_BoneDepths();
+
+	HRESULT Calculate_BoneDepth(uint32_t iBoneIndex, std::vector<int32_t>& depthCache, std::vector<bool>& visiting, uint32_t& outDepth);
+
+
 public:
 	uint32_t Get_NumMeshes( ) const { return m_iNumMeshes;}
+
 
 	int32_t Get_BoneIndex(const _char* pBoneName);
 
@@ -55,7 +65,17 @@ public:
 	std::vector<SPtr<CResModelAnim>>& GetAnimations() { return m_Animations; }
 	std::vector<SPtr<CResModelBone>>& GetBones() { return m_Bones; }
 
+	ID3D11ShaderResourceView* Get_GPUBoneSRV() const{return m_pGPUBones->GetSRV().Get();}
 
+	ID3D11ShaderResourceView* Get_GPUAnimationSRV() const{return m_pGPUAnimations->GetSRV().Get();}
+
+	ID3D11ShaderResourceView* Get_GPUChannelSRV() const{return m_pGPUChannels->GetSRV().Get();}
+
+	ID3D11ShaderResourceView* Get_GPUKeyFrameSRV() const{return  m_pGPUKeyFrames->GetSRV().Get();}
+
+	ID3D11ShaderResourceView* Get_GPUBoneChannelMapSRV() const {return m_pGPUBoneChannelMap->GetSRV().Get();}
+
+	ID3D11ShaderResourceView* Get_GPUSkinBoneSRV() const {return m_pGPUSkinBones->GetSRV().Get();}
 protected:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -82,9 +102,18 @@ private:
 	uint32_t						m_iNumAnimations = {};
 	std::vector<SPtr<CResModelAnim>>	m_Animations;
 
+
+private:
+	SPtr<CResStructuredBuffer> m_pGPUBones;
+	SPtr<CResStructuredBuffer> m_pGPUAnimations;
+	SPtr<CResStructuredBuffer> m_pGPUChannels;
+	SPtr<CResStructuredBuffer> m_pGPUKeyFrames;
+	SPtr<CResStructuredBuffer> m_pGPUBoneChannelMap;
+	SPtr<CResStructuredBuffer> m_pGPUSkinBones;
 private:
 	_float4x4				m_PreTransformMatrix = {};
-
+private:
+	uint32_t						 m_iMaxBoneDepth = 0;
 public:
 	static SPtr<CResModel> Create(const _string& sPath);
 

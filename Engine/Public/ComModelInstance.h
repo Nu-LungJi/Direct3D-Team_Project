@@ -63,7 +63,10 @@ public:
 public:
 	void DebugDraw_Bones(const _float4x4& WorldMatrix);
 
+public:
+	HRESULT Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext);
 
+	void Unbind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext);
 private:
 	bool m_bDebugBoneEdit = false;
 	int  m_iDebugSelectedBone = 0;
