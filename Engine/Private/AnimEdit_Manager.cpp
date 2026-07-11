@@ -570,7 +570,6 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
     ImGui::End();
 }
 
-
 void CAnimEdit_Manager::IMGUI_Speed_Animation()
 {
     auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
@@ -1189,6 +1188,14 @@ void CAnimEdit_Manager::IMGUI_File_Rename(const std::string& Path, const std::st
 
     return ;
 
+}
+
+void CAnimEdit_Manager::IMGUI_TopBar_Action(CGameObject* pSampleObj, CComAnimator* pComAnimator)
+{
+}
+
+void CAnimEdit_Manager::IMGUI_ActionEditor()
+{
 }
 
 

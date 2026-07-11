@@ -30,6 +30,13 @@ public:
 		ANIM, ACTION
 	};
 
+	enum SOUND_TYPE 
+	{
+		SOUND_2D,
+		SOUND_3D,
+		END
+	};
+
 	enum EVENTTYPE {
 		COLLIDER,
 		SOUND,
@@ -37,10 +44,52 @@ public:
 		END_EVENTTYPE
 	};
 
+
+	struct COLLIDER_EVENT_DESC 
+	{
+		std::string sColliderName;
+
+		// Action 전체 기준 콜라이더 발생 위치
+		_float fActionTrackPosition = 0.f;
+
+		// 부착할 Bone 이름
+		std::string sBoneName;
+
+		// Bone 기준 Local Transform
+		_float3 vLocalPosition = { 0.f, 0.f, 0.f };
+		_float3 vLocalRotation = { 0.f, 0.f, 0.f };
+		_float3 vLocalScale = { 1.f, 1.f, 1.f };
+	};
+
+	struct SOUND_EVENT_DESC {
+		// ResourceManager에서 FMOD::Sound를 찾을 이름
+		std::string sSoundName;
+
+		// Action 전체 기준 사운드 재생 시점
+		_float fActionTrackPosition = 0.f;
+
+		SOUND_TYPE eSoundType = SOUND_TYPE::SOUND_3D;
+
+		_float fVolume = 1.f;
+		_float fPitch = 1.f;
+
+		_bool bLoop = false;
+
+		// 3D Sound의 발생 위치
+		_bool bFollowOwner = true;
+
+		// 특정 Bone에서 재생해야 할 경우
+		std::string sBoneName;
+
+		// Owner 또는 Bone 기준 로컬 위치
+		_float3 vLocalPosition = { 0.f, 0.f, 0.f };
+	};
+
 	struct ANIMSTRUCT
 	{
 		int32_t   iAnimIndex = -1;
-
+		// 총 재생 시간
+		_float   fDuration = 0.f;
 		// 재생 시간
 		_float	  fTrackPosition = 0.f;
 		// 재생 속도
@@ -106,20 +155,108 @@ public:
 	};
 	 
 	struct ACTIONSTRUCT : public ISerializable {
-		std::vector<std::string> sNames;
-		std::vector<int32_t>   iAnimIndexes;
-		// 항상 breakPoint는 iAnimIndexes보다 -1만큼 작다.
-		std::vector<_float>    fAnimBreakPoint;
-		// 재생 시간
-		_float	  fDuration = 0.f;
-		_float	  fActionTrackPosition = 0.f;
-
-		// Collider
+		std::string ActionName;
+		
+		// Animation 이벤트
+		std::vector<ANIMSTRUCT> Anims;
+		// Animation 이벤트 시작 분기
+		std::vector<_float>     StartTime;
+		// 최종 시간
+		_float					LastTime;
+		// Collider 이벤트
+		std::vector<COLLIDER_EVENT_DESC> Colliders;
+		// Sound 이벤트
+		std::vector<SOUND_EVENT_DESC> Sounds;
 		
 
 
+		void Serialize(ISerializer& serializer) const
+		{
+			serializer.Write("ActionName", ActionName);
 
+			serializer.Write("iAnimSize", Anims.size());
+			
+			// Animation 저장
+			for (int32_t i = 0; i < (int32_t)Anims.size(); ++i) {
+				serializer.Write("iAnimIndex", Anims[i].iAnimIndex);
+				serializer.Write("fStartTime", StartTime[i]);
+			}
 
+			serializer.Write("fLastTime", LastTime);
+
+			// Collider 저장
+
+			serializer.Write("iColliderSize", Colliders.size());
+			for (int32_t i = 0; i < (int32_t)Colliders.size(); ++i) {
+			
+				serializer.Write("fActionTrackPosition", Colliders[i].fActionTrackPosition);
+				serializer.Write("sBoneName", Colliders[i].sBoneName);
+				serializer.Write("sColliderName", Colliders[i].sColliderName);
+				serializer.Write("vLocalPosition", Colliders[i].vLocalPosition);
+				serializer.Write("vLocalRotation", Colliders[i].vLocalRotation);
+				serializer.Write("vLocalScale", Colliders[i].vLocalScale);
+			}
+
+			// Sound저장 저장
+
+			serializer.Write("iSoundSize", Sounds.size());
+			for (int32_t i = 0; i < (int32_t)Sounds.size(); ++i) {
+
+				serializer.Write("bFollowOwner", Sounds[i].bFollowOwner);
+				serializer.Write("bLoop", Sounds[i].bLoop);
+				serializer.Write("eSoundType", Sounds[i].eSoundType);
+				serializer.Write("fActionTrackPosition", Sounds[i].fActionTrackPosition);
+				serializer.Write("fPitch", Sounds[i].fPitch);
+				serializer.Write("fVolume", Sounds[i].fVolume);
+				serializer.Write("sBoneName", Sounds[i].sBoneName);
+				serializer.Write("sSoundName", Sounds[i].sSoundName);
+				serializer.Write("vLocalPosition", Sounds[i].vLocalPosition);
+			}
+		}
+		void Deserialize(IDeserializer& deserializer)
+		{
+			deserializer.Read("ActionName", ActionName);
+
+			int32_t animsize{};
+			deserializer.Read("iAnimSize", animsize);
+			// Animation 저장
+			for (int32_t i = 0; i < animsize; ++i) {
+				deserializer.Read("iAnimIndex", Anims[i].iAnimIndex);
+				deserializer.Read("fStartTime", StartTime[i]);
+			}
+
+			deserializer.Read("fLastTime", LastTime);
+
+			// Collider 저장
+			
+			int32_t Collidersize{};
+			deserializer.Read("iColliderSize", Collidersize);
+			for (int32_t i = 0; i < Collidersize; ++i) {
+
+				deserializer.Read("fActionTrackPosition", Colliders[i].fActionTrackPosition);
+				deserializer.Read("sBoneName", Colliders[i].sBoneName);
+				deserializer.Read("sColliderName", Colliders[i].sColliderName);
+				deserializer.Read("vLocalPosition", Colliders[i].vLocalPosition);
+				deserializer.Read("vLocalRotation", Colliders[i].vLocalRotation);
+				deserializer.Read("vLocalScale", Colliders[i].vLocalScale);
+			}
+
+			// Sound저장 저장
+			int32_t SoundSize;
+			deserializer.Read("iSoundSize", SoundSize);
+			for (int32_t i = 0; i < SoundSize; ++i) {
+
+				deserializer.Read("bFollowOwner", Sounds[i].bFollowOwner);
+				deserializer.Read("bLoop", Sounds[i].bLoop);
+				deserializer.Read("eSoundType", Sounds[i].eSoundType);
+				deserializer.Read("fActionTrackPosition", Sounds[i].fActionTrackPosition);
+				deserializer.Read("fPitch", Sounds[i].fPitch);
+				deserializer.Read("fVolume", Sounds[i].fVolume);
+				deserializer.Read("sBoneName", Sounds[i].sBoneName);
+				deserializer.Read("sSoundName", Sounds[i].sSoundName);
+				deserializer.Read("vLocalPosition", Sounds[i].vLocalPosition);
+			}
+		}
 	};
 
 public:
@@ -137,19 +274,22 @@ public:
 	HRESULT Update(_float fTimeDelta);
 
 
-	// AnimUPdate
+	// AnimUpdate
 	HRESULT	Update_Anim(_float fTimeDelta);
-	HRESULT Update_Action(_float fTimeDelta);
-	void	Play_Anim(int32_t iAnimIndex, _bool bLoop=false, _float fBlendDuration = 0.1f);
 	void	Update_AnimState(_float fTimeDelta, ANIMSTRUCT& AnimState);
+	void	Update_ActionState(_float fTimeDelta, ANIMSTRUCT& AnimState);
+	void	Play_Anim(int32_t iAnimIndex, _bool bLoop=false, _float fBlendDuration = 0.1f);
+	void	Play_Action(int32_t iActionIndex, _float fBlendDuration);
 	void	Build_BoneMatrices_CPU(_float fTimeDelta);
 	void	Sample_Channel_CPU( CResModelChanel* pChannel, _float fTrackPosition, uint32_t& iCurrentKeyFrameIndex, std::vector<_float4x4>& OutLocalBoneMatrices);
 	_matrix Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition);
-
-
-
 	_vector RemoveYRotation(_vector qRotation);
 	void	Blend_Anim(_float fTimeDelta);
+
+
+	// ActionUpdate
+	HRESULT Update_Action(_float fTimeDelta);
+
 
 	void	SetTrackPosition(_float fTrackPosition);
 
@@ -158,7 +298,31 @@ public:
 	_float3 GetRootMotionDelta() { return m_vRootMotionDelta; }
 	ANIMSTRUCT& GetCurAnimState() { return  m_CurAnimState; }
 
+public:
+	std::vector<ACTIONSTRUCT>& GetActions()
+	{
+		return m_Actions;
+	}
 
+	const std::vector<ACTIONSTRUCT>& GetActions() const
+	{
+		return m_Actions;
+	}
+
+	int32_t GetCurrentActionIndex() const
+	{
+		return m_curActions;
+	}
+
+	int32_t GetCurrentActionAnimIndex() const
+	{
+		return m_curActionsAnim;
+	}
+
+	_float GetActionTime() const
+	{
+		return m_ActionTime;
+	}
 private:
 	CComModelInstance* m_pModelInstance;
 
@@ -166,15 +330,19 @@ private:
 private:
 	_string			m_Comtag;
 	ANIMTYPE		m_iPlayAnimationType{ ANIMTYPE::ANIM };
-	int32_t		m_iPlayAnimationNum{ 0 };
-	int32_t		m_iPlayAnimIndex{ 0 };
+	int32_t			m_iPlayAnimationNum{ 0 };
+	int32_t			m_iPlayAnimIndex{ 0 };
 
 
 private:
 	// 애니메이션 정보 (블렌딩 고려)
 	ANIMSTRUCT m_CurAnimState;
 	ANIMSTRUCT m_PrevAnimState;
-
+	std::vector<ACTIONSTRUCT> m_Actions;
+	// ActionAnim Num
+	int32_t					 m_curActionsAnim;
+	int32_t					 m_curActions;
+	_float				     m_ActionTime{};
 	// 애니메이션 제어를 위한 멤버 변수들
 	_bool		    m_bPlay{ false };
 
@@ -185,11 +353,14 @@ private:
 
 	std::vector<_float4x4>				m_LocalBoneMatrices;
 	std::vector<_float4x4>				m_BlendStartLocalMatrices;
+
+
 private:
 	_bool   m_bRootMotion{ true };
 	int32_t m_iRootBoneIndex{ -1 };
 	// 애니메이션 Local 기준 RootMotion
 	_float3 m_vRootMotionDelta{ 0.f, 0.f, 0.f };
+
 
 public:
 	static UPtr<CComAnimator> Create();
@@ -204,8 +375,6 @@ public:
 	void  SetLoop(_bool _bLoop) { m_CurAnimState.bLoop = _bLoop; }
 	_float GetPlayAnimRatio() const { return m_fRatio; }
 
-
-public:
 
 	
 public:

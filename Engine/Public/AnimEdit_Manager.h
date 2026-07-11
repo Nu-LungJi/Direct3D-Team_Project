@@ -51,7 +51,13 @@ public:
 	void IMGUI_Speed_Animation();
 
 	void IMGUI_File_Rename(const std::string& Path, const std::string& fileName, const std::string& newfileName);
+private:
+	void IMGUI_TopBar_Action(CGameObject* pSampleObj,CComAnimator* pComAnimator);
 
+	void IMGUI_ActionEditor();
+
+private:
+	int32_t m_iSelectedActionIndex = -1;
 public:
 	//-------------------------------------------------------Anim---------------------------------------------------------
 	// helper 함수들
