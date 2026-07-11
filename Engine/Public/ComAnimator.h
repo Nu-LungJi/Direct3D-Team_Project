@@ -85,7 +85,7 @@ public:
 		_float3 vLocalPosition = { 0.f, 0.f, 0.f };
 	};
 
-	struct ANIMSTRUCT
+	struct ANIMSTRUCT : public ISerializable
 	{
 		int32_t   iAnimIndex = -1;
 		// 총 재생 시간
@@ -122,6 +122,25 @@ public:
 
 		void SetTrackPostion(_float _trackPos) {
 			fTrackPosition = _trackPos;
+		}
+
+		void Serialize(ISerializer& serializer) const override
+		{
+			serializer.Write("AnimIndex", iAnimIndex);
+			serializer.Write("Duration", fDuration);
+			serializer.Write("Speed", fSpeed);
+			serializer.Write("Loop", bLoop);
+		}
+
+		void Deserialize(IDeserializer& deserializer) override
+		{
+			deserializer.Read("AnimIndex", iAnimIndex);
+			deserializer.Read("Duration", fDuration);
+			deserializer.Read("Speed", fSpeed);
+			deserializer.Read("Loop", bLoop);
+			fTrackPosition = 0.f;
+			bFinished = false;
+			KeyFrameIndices.clear();
 		}
 
 		_bool IsValid() const
@@ -173,7 +192,10 @@ public:
 		void Serialize(ISerializer& serializer) const
 		{
 			serializer.Write("ActionName", ActionName);
-
+			serializer.Write("Anims", Anims);
+			serializer.Write("StartTime", StartTime);
+			serializer.Write("fLastTime", LastTime);
+		
 			serializer.Write("iAnimSize", Anims.size());
 			
 			// Animation 저장
@@ -216,6 +238,12 @@ public:
 		void Deserialize(IDeserializer& deserializer)
 		{
 			deserializer.Read("ActionName", ActionName);
+			deserializer.Read("Anims", Anims);
+			deserializer.Read("StartTime", StartTime);
+			deserializer.Read("fLastTime", LastTime);
+			if (StartTime.size() < Anims.size())
+				StartTime.resize(Anims.size(), 0.f);
+		
 
 			int32_t animsize{};
 			deserializer.Read("iAnimSize", animsize);
@@ -231,6 +259,9 @@ public:
 			
 			int32_t Collidersize{};
 			deserializer.Read("iColliderSize", Collidersize);
+			Colliders.clear();
+			Colliders.resize(Collidersize);
+
 			for (int32_t i = 0; i < Collidersize; ++i) {
 
 				deserializer.Read("fActionTrackPosition", Colliders[i].fActionTrackPosition);
@@ -244,6 +275,9 @@ public:
 			// Sound저장 저장
 			int32_t SoundSize;
 			deserializer.Read("iSoundSize", SoundSize);
+			Sounds.clear();
+
+			Sounds.resize(SoundSize);
 			for (int32_t i = 0; i < SoundSize; ++i) {
 
 				deserializer.Read("bFollowOwner", Sounds[i].bFollowOwner);

@@ -322,9 +322,15 @@ void CComAnimator::Play_Action(int32_t iActionIndex, _float fBlendDuration)
 	// Action 인덱스 검사
 	if (iActionIndex < 0 || iActionIndex >= static_cast<int32_t>(m_Actions.size()))
 		return;
+	if (m_Actions[iActionIndex].Anims.empty())
+		return;
+	if (m_Actions[iActionIndex].Anims.front().iAnimIndex < 0 ||
+		m_Actions[iActionIndex].Anims.front().iAnimIndex >= static_cast<int32_t>(ResAnims.size()))
+		return;
 
 	m_curActionsAnim = 0;
 	m_curActions = iActionIndex;
+	m_ActionTime = 0.f;
 	// 같은 애니메이션이면 다시 세팅하지 않음
 	if (m_CurAnimState.iAnimIndex == m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex)
 		return;
@@ -337,7 +343,7 @@ void CComAnimator::Play_Action(int32_t iActionIndex, _float fBlendDuration)
 
 	m_CurAnimState.iAnimIndex = m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex;
 	m_CurAnimState.fTrackPosition = 0.f;
-	m_CurAnimState.fSpeed = 1.f;
+	m_CurAnimState.fSpeed = m_Actions[m_curActions].Anims[m_curActionsAnim].fSpeed;
 	m_CurAnimState.bLoop = false;
 	m_CurAnimState.bFinished = false;
 
@@ -427,7 +433,7 @@ void CComAnimator::Update_ActionState(_float fTimeDelta, ANIMSTRUCT& AnimState)
 	if (pModel == nullptr)
 		return;
 
-	if (m_Actions.size() == 0)
+	if (m_Actions.size() == 0 || m_Actions[0].Anims.size() == 0)
 		return;
 
 	auto& ResAnims = pModel->GetAnimations();
@@ -456,7 +462,14 @@ void CComAnimator::Update_ActionState(_float fTimeDelta, ANIMSTRUCT& AnimState)
 	{
 		AnimState.fTrackPosition = fDuration;
 		AnimState.bFinished = true;
-		if (m_Actions[m_curActions].Anims.size() == m_curActionsAnim ) {
+		if (m_curActionsAnim < 0 || m_curActions < 0) {
+			m_curActionsAnim = 0;
+			m_iPlayAnimationType = ANIMTYPE::ACTION;
+			m_curActions = 0;
+			m_ActionTime = 0.f;
+			m_bPlay = false;
+		}
+		else if (m_curActionsAnim + 1 >= static_cast<int32_t>(m_Actions[m_curActions].Anims.size())) {
 			m_curActionsAnim = 0;			
 			m_iPlayAnimationType = ANIMTYPE::ACTION;
 			m_curActions = 0;
@@ -464,8 +477,14 @@ void CComAnimator::Update_ActionState(_float fTimeDelta, ANIMSTRUCT& AnimState)
 			m_bPlay = false;
 		}
 		else {
-			if (m_Actions[m_curActions].StartTime[m_curActionsAnim] >= m_ActionTime) {
+			{
 				m_curActionsAnim += 1;
+				if (m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex < 0 ||
+					m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex >= static_cast<int32_t>(ResAnims.size()))
+				{
+					m_bPlay = false;
+					return;
+				}
 
 				// 이전 상태 저장
 				m_PrevAnimState = m_CurAnimState;
@@ -475,7 +494,7 @@ void CComAnimator::Update_ActionState(_float fTimeDelta, ANIMSTRUCT& AnimState)
 
 				m_CurAnimState.iAnimIndex = m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex;
 				m_CurAnimState.fTrackPosition = 0.f;
-				m_CurAnimState.fSpeed = 1.f;
+				m_CurAnimState.fSpeed = m_Actions[m_curActions].Anims[m_curActionsAnim].fSpeed;
 				m_CurAnimState.bLoop = false;
 				m_CurAnimState.bFinished = false;
 

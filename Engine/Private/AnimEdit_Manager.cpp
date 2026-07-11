@@ -4,6 +4,8 @@
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "ResModel.h"
+#include "JsonSerializer.h"
+#include "JsonDeSerializer.h"
 
 
 #include <fstream>
@@ -133,7 +135,7 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
 		ImGuiWindowFlags_NoCollapse);
 
 	const char* pTypeName =
-		(iAnimType == 0) ? "Animation" : "Montage";
+		(iAnimType == 0) ? "Animation" : "Action";
 
 	if (ImGui::Button(
 		(std::string("Type : ") + pTypeName + "  v").c_str(),
@@ -147,7 +149,7 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
 		if (ImGui::MenuItem("Animation"))
 			iAnimType = 0;
 
-		if (ImGui::MenuItem("Montage"))
+		if (ImGui::MenuItem("Action"))
 			iAnimType = 1;
 
 		ImGui::EndPopup();
@@ -165,7 +167,7 @@ void CAnimEdit_Manager::IMGUI_Select_AnimType()
 	}
 	else if (iAnimType == 1)
 	{
-		//IMGUI_TopBar_Montage(pSampleObj, pComAnimator);
+		IMGUI_TopBar_Action(pSampleObj, pComAnimator);
 	}
 
 	ImGui::End();
@@ -839,6 +841,9 @@ void CAnimEdit_Manager::UpdateGUI()
 		IMGUI_Select_Animation();
 		IMGUI_Speed_Animation();
 	}
+	else if (pComAnimator->GetAnimationTYPE() == CComAnimator::ACTION) {
+		IMGUI_ActionEditor();
+	}
 
 
 	
@@ -1192,10 +1197,632 @@ void CAnimEdit_Manager::IMGUI_File_Rename(const std::string& Path, const std::st
 
 void CAnimEdit_Manager::IMGUI_TopBar_Action(CGameObject* pSampleObj, CComAnimator* pComAnimator)
 {
+	if (!pSampleObj || !pComAnimator)
+		return;
+
+	if (ImGui::Button("New Action", ImVec2(110.f, 28.f)))
+	{
+		CComAnimator::ACTIONSTRUCT action{};
+		action.ActionName = "NewAction";
+		pComAnimator->GetActions().push_back(std::move(action));
+		m_iSelectedActionIndex = static_cast<int32_t>(pComAnimator->GetActions().size()) - 1;
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Save Actions", ImVec2(110.f, 28.f)))
+	{
+		m_ActionStatus = SaveActions(*pComAnimator, m_ActionFilePath)
+			? "Actions saved."
+			: "Failed to save Actions.";
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Load Actions", ImVec2(110.f, 28.f)))
+	{
+		m_ActionStatus = LoadActions(*pComAnimator, m_ActionFilePath)
+			? "Actions loaded."
+			: "Failed to load Actions.";
+	}
+
+	ImGui::SameLine();
+	if (m_iSelectedActionIndex >= 0 &&
+		m_iSelectedActionIndex < static_cast<int32_t>(pComAnimator->GetActions().size()) &&
+		ImGui::Button("Preview", ImVec2(90.f, 28.f)))
+	{
+		pComAnimator->Play_Action(m_iSelectedActionIndex, 0.1f);
+	}
 }
 
 void CAnimEdit_Manager::IMGUI_ActionEditor()
 {
+	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
+	if (!pSampleObj)
+		return;
+
+	auto pAnimator = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+	auto pModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+	if (!pAnimator || !pModelInstance || !pModelInstance->GetModel())
+		return;
+
+	auto& actions = pAnimator->GetActions();
+	if (m_iSelectedActionIndex >= static_cast<int32_t>(actions.size()))
+		m_iSelectedActionIndex = actions.empty() ? -1 : 0;
+
+	ImGui::SetNextWindowPos(ImVec2(10.f, 55.f), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(900.f, 540.f), ImGuiCond_Once);
+	if (!ImGui::Begin("Action Editor"))
+	{
+		ImGui::End();
+		return;
+	}
+
+	ImGui::TextUnformatted("Action asset");
+	ImGui::SameLine();
+	char pathBuffer[512]{};
+	strncpy_s(pathBuffer, m_ActionFilePath.string().c_str(), _TRUNCATE);
+	if (ImGui::InputText("##ActionFile", pathBuffer, sizeof(pathBuffer)))
+		m_ActionFilePath = pathBuffer;
+	if (!m_ActionStatus.empty())
+		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.f), "%s", m_ActionStatus.c_str());
+
+	ImGui::BeginChild("ActionList", ImVec2(220.f, 0.f), true);
+	for (int32_t i = 0; i < static_cast<int32_t>(actions.size()); ++i)
+	{
+		const char* name = actions[i].ActionName.empty() ? "Unnamed Action" : actions[i].ActionName.c_str();
+		if (ImGui::Selectable(name, m_iSelectedActionIndex == i))
+			m_iSelectedActionIndex = i;
+	}
+	ImGui::EndChild();
+	ImGui::SameLine();
+
+	ImGui::BeginChild("ActionDetails", ImVec2(0.f, 0.f), true);
+	if (m_iSelectedActionIndex < 0 || m_iSelectedActionIndex >= static_cast<int32_t>(actions.size()))
+	{
+		ImGui::TextUnformatted("Create an Action from the top bar to begin.");
+	}
+	else
+	{
+		auto& action = actions[m_iSelectedActionIndex];
+		char nameBuffer[128]{};
+		strncpy_s(nameBuffer, action.ActionName.c_str(), _TRUNCATE);
+		if (ImGui::InputText("Action Name", nameBuffer, sizeof(nameBuffer)))
+			action.ActionName = nameBuffer;
+
+		ImGui::SameLine();
+		if (ImGui::Button("Add Current Animation"))
+		{
+			const int32_t currentIndex = static_cast<int32_t>(pAnimator->GetPlayAnimIndex());
+			if (currentIndex >= 0)
+			{
+				CComAnimator::ANIMSTRUCT segment{};
+				segment.iAnimIndex = currentIndex;
+				segment.bLoop = false;
+				action.Anims.push_back(segment);
+				action.StartTime.push_back(action.LastTime);
+				RefreshActionLastTime(action, pSampleObj);
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Delete Action"))
+		{
+			actions.erase(actions.begin() + m_iSelectedActionIndex);
+			m_iSelectedActionIndex = actions.empty() ? -1 : std::min(m_iSelectedActionIndex, static_cast<int32_t>(actions.size()) - 1);
+			ImGui::EndChild();
+			ImGui::End();
+			return;
+		}
+
+		ImGui::Separator();
+		ImGui::Text("Timeline length: %.2f ticks", action.LastTime);
+		if (ImGui::BeginTable("ActionSegments", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+		{
+			ImGui::TableSetupColumn("Order");
+			ImGui::TableSetupColumn("Animation");
+			ImGui::TableSetupColumn("Start (ticks)");
+			ImGui::TableSetupColumn("Speed");
+			ImGui::TableSetupColumn("Remove");
+			ImGui::TableHeadersRow();
+			auto& resourceAnims = pModelInstance->GetModel()->GetAnimations();
+			for (int32_t i = 0; i < static_cast<int32_t>(action.Anims.size()); ++i)
+			{
+				ImGui::PushID(i);
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0); ImGui::Text("%d", i);
+				ImGui::TableSetColumnIndex(1);
+				const char* preview = (action.Anims[i].iAnimIndex >= 0 && action.Anims[i].iAnimIndex < static_cast<int32_t>(resourceAnims.size())) ? resourceAnims[action.Anims[i].iAnimIndex]->GetAnimName().c_str() : "Invalid";
+				if (ImGui::BeginCombo("##Animation", preview))
+				{
+					for (int32_t animIndex = 0; animIndex < static_cast<int32_t>(resourceAnims.size()); ++animIndex)
+						if (ImGui::Selectable(resourceAnims[animIndex]->GetAnimName().c_str(), action.Anims[i].iAnimIndex == animIndex)) action.Anims[i].iAnimIndex = animIndex;
+					ImGui::EndCombo();
+				}
+				ImGui::TableSetColumnIndex(2); ImGui::DragFloat("##Start", &action.StartTime[i], 1.f, 0.f);
+				ImGui::TableSetColumnIndex(3); ImGui::DragFloat("##Speed", &action.Anims[i].fSpeed, 0.05f, 0.01f, 10.f);
+				ImGui::TableSetColumnIndex(4);
+				if (ImGui::SmallButton("Remove")) { action.Anims.erase(action.Anims.begin() + i); action.StartTime.erase(action.StartTime.begin() + i); --i; }
+				ImGui::PopID();
+			}
+			ImGui::EndTable();
+		}
+		// Animation 기준 LastTime 먼저 계산
+		RefreshActionLastTime(action, pSampleObj);
+
+		// std::string 편집용
+		auto InputString =
+			[](
+				const char* pLabel,
+				std::string& strValue)
+			{
+				char szBuffer[256]{};
+
+				strncpy_s(
+					szBuffer,
+					sizeof(szBuffer),
+					strValue.c_str(),
+					_TRUNCATE
+				);
+
+				if (ImGui::InputText(
+					pLabel,
+					szBuffer,
+					sizeof(szBuffer)))
+				{
+					strValue = szBuffer;
+					return true;
+				}
+
+				return false;
+			};
+
+
+		// ============================================================
+		// Collider Events
+		// ============================================================
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		if (ImGui::CollapsingHeader(
+			"Collider Events",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (ImGui::Button(
+				"Add Collider",
+				ImVec2(140.f, 28.f)))
+			{
+				CComAnimator::COLLIDER_EVENT_DESC collider{};
+
+				collider.sColliderName =
+					"Collider_" +
+					std::to_string(action.Colliders.size());
+
+				collider.sBoneName = "Reference";
+				collider.fActionTrackPosition = 0.f;
+
+				collider.vLocalPosition =
+					_float3{ 0.f, 0.f, 0.f };
+
+				collider.vLocalRotation =
+					_float3{ 0.f, 0.f, 0.f };
+
+				collider.vLocalScale =
+					_float3{ 1.f, 1.f, 1.f };
+
+				action.Colliders.push_back(
+					std::move(collider)
+				);
+			}
+
+			ImGui::SameLine();
+
+			ImGui::Text(
+				"Collider Count : %d",
+				static_cast<int32_t>(
+					action.Colliders.size()
+					)
+			);
+
+			int32_t iRemoveCollider = -1;
+
+			for (int32_t i = 0;
+				i < static_cast<int32_t>(
+					action.Colliders.size());
+				++i)
+			{
+				auto& collider =
+					action.Colliders[i];
+
+				ImGui::PushID(10000 + i);
+
+				const char* pColliderName =
+					collider.sColliderName.empty()
+					? "Unnamed Collider"
+					: collider.sColliderName.c_str();
+
+				const bool bOpen =
+					ImGui::TreeNodeEx(
+						"##ColliderEvent",
+						ImGuiTreeNodeFlags_Framed |
+						ImGuiTreeNodeFlags_DefaultOpen,
+						"Collider %d : %s",
+						i,
+						pColliderName
+					);
+
+				if (bOpen)
+				{
+					InputString(
+						"Collider Name",
+						collider.sColliderName
+					);
+
+					InputString(
+						"Bone Name",
+						collider.sBoneName
+					);
+
+					ImGui::DragFloat(
+						"Action Position",
+						&collider.fActionTrackPosition,
+						0.01f,
+						0.f,
+						0.f,
+						"%.3f ticks"
+					);
+
+					collider.fActionTrackPosition =
+						std::max(
+							0.f,
+							collider.fActionTrackPosition
+						);
+
+					ImGui::DragFloat3(
+						"Local Position",
+						reinterpret_cast<float*>(
+							&collider.vLocalPosition
+							),
+						0.01f
+					);
+
+					ImGui::DragFloat3(
+						"Local Rotation",
+						reinterpret_cast<float*>(
+							&collider.vLocalRotation
+							),
+						0.1f
+					);
+
+					ImGui::DragFloat3(
+						"Local Scale",
+						reinterpret_cast<float*>(
+							&collider.vLocalScale
+							),
+						0.01f,
+						0.001f,
+						100.f
+					);
+
+					collider.vLocalScale.x =
+						std::max(
+							0.001f,
+							collider.vLocalScale.x
+						);
+
+					collider.vLocalScale.y =
+						std::max(
+							0.001f,
+							collider.vLocalScale.y
+						);
+
+					collider.vLocalScale.z =
+						std::max(
+							0.001f,
+							collider.vLocalScale.z
+						);
+
+					if (ImGui::Button(
+						"Move To Action End"))
+					{
+						collider.fActionTrackPosition =
+							action.LastTime;
+					}
+
+					ImGui::SameLine();
+
+					if (ImGui::Button(
+						"Remove Collider"))
+					{
+						iRemoveCollider = i;
+					}
+
+					ImGui::TreePop();
+				}
+
+				ImGui::PopID();
+			}
+
+			if (iRemoveCollider >= 0)
+			{
+				action.Colliders.erase(
+					action.Colliders.begin() +
+					iRemoveCollider
+				);
+			}
+		}
+
+
+		// ============================================================
+		// Sound Events
+		// ============================================================
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		if (ImGui::CollapsingHeader(
+			"Sound Events",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (ImGui::Button(
+				"Add Sound",
+				ImVec2(140.f, 28.f)))
+			{
+				CComAnimator::SOUND_EVENT_DESC sound{};
+
+				sound.sSoundName =
+					"Sound_" +
+					std::to_string(action.Sounds.size());
+
+				sound.fActionTrackPosition = 0.f;
+
+				sound.eSoundType =
+					CComAnimator::SOUND_3D;
+
+				sound.fVolume = 1.f;
+				sound.fPitch = 1.f;
+
+				sound.bLoop = false;
+				sound.bFollowOwner = true;
+
+				sound.sBoneName = "Reference";
+
+				sound.vLocalPosition =
+					_float3{ 0.f, 0.f, 0.f };
+
+				action.Sounds.push_back(
+					std::move(sound)
+				);
+			}
+
+			ImGui::SameLine();
+
+			ImGui::Text(
+				"Sound Count : %d",
+				static_cast<int32_t>(
+					action.Sounds.size()
+					)
+			);
+
+			int32_t iRemoveSound = -1;
+
+			for (int32_t i = 0;
+				i < static_cast<int32_t>(
+					action.Sounds.size());
+				++i)
+			{
+				auto& sound =
+					action.Sounds[i];
+
+				ImGui::PushID(20000 + i);
+
+				const char* pSoundName =
+					sound.sSoundName.empty()
+					? "Unnamed Sound"
+					: sound.sSoundName.c_str();
+
+				const bool bOpen =
+					ImGui::TreeNodeEx(
+						"##SoundEvent",
+						ImGuiTreeNodeFlags_Framed |
+						ImGuiTreeNodeFlags_DefaultOpen,
+						"Sound %d : %s",
+						i,
+						pSoundName
+					);
+
+				if (bOpen)
+				{
+					InputString(
+						"Sound Name",
+						sound.sSoundName
+					);
+
+					ImGui::DragFloat(
+						"Action Position",
+						&sound.fActionTrackPosition,
+						0.01f,
+						0.f,
+						0.f,
+						"%.3f ticks"
+					);
+
+					sound.fActionTrackPosition =
+						std::max(
+							0.f,
+							sound.fActionTrackPosition
+						);
+
+					int32_t iSoundType =
+						static_cast<int32_t>(
+							sound.eSoundType
+							);
+
+					const char* pSoundTypeNames[] =
+					{
+						"2D",
+						"3D"
+					};
+
+					if (ImGui::Combo(
+						"Sound Type",
+						&iSoundType,
+						pSoundTypeNames,
+						IM_ARRAYSIZE(pSoundTypeNames)))
+					{
+						sound.eSoundType =
+							static_cast<
+							CComAnimator::SOUND_TYPE>(
+								iSoundType
+								);
+					}
+
+					ImGui::DragFloat(
+						"Volume",
+						&sound.fVolume,
+						0.01f,
+						0.f,
+						10.f,
+						"%.2f"
+					);
+
+					ImGui::DragFloat(
+						"Pitch",
+						&sound.fPitch,
+						0.01f,
+						0.01f,
+						10.f,
+						"%.2f"
+					);
+
+					ImGui::Checkbox(
+						"Loop",
+						&sound.bLoop
+					);
+
+					if (sound.eSoundType ==
+						CComAnimator::SOUND_3D)
+					{
+						ImGui::Checkbox(
+							"Follow Owner",
+							&sound.bFollowOwner
+						);
+
+						InputString(
+							"Bone Name",
+							sound.sBoneName
+						);
+
+						ImGui::DragFloat3(
+							"Local Position",
+							reinterpret_cast<float*>(
+								&sound.vLocalPosition
+								),
+							0.01f
+						);
+					}
+					else
+					{
+						ImGui::TextDisabled(
+							"2D Sound does not use Bone or Local Position."
+						);
+					}
+
+					if (ImGui::Button(
+						"Move To Action End"))
+					{
+						sound.fActionTrackPosition =
+							action.LastTime;
+					}
+
+					ImGui::SameLine();
+
+					if (ImGui::Button(
+						"Remove Sound"))
+					{
+						iRemoveSound = i;
+					}
+
+					ImGui::TreePop();
+				}
+
+				ImGui::PopID();
+			}
+
+			if (iRemoveSound >= 0)
+			{
+				action.Sounds.erase(
+					action.Sounds.begin() +
+					iRemoveSound
+				);
+			}
+		}
+
+
+		// Collider와 Sound가 Animation보다 뒤에 있으면
+		// Action LastTime을 이벤트 위치까지 늘림
+		for (const auto& collider : action.Colliders)
+		{
+			action.LastTime =
+				std::max(
+					action.LastTime,
+					collider.fActionTrackPosition
+				);
+		}
+
+		for (const auto& sound : action.Sounds)
+		{
+			action.LastTime =
+				std::max(
+					action.LastTime,
+					sound.fActionTrackPosition
+				);
+		}
+
+
+
+	}
+	ImGui::EndChild();
+	ImGui::End();
+}
+
+_bool CAnimEdit_Manager::SaveActions(const CComAnimator& animator, const std::filesystem::path& path) const
+{
+	std::error_code ec;
+	std::filesystem::create_directories(path.parent_path(), ec);
+	if (ec)
+		return false;
+	auto serializer = CJsonSerializer::Create();
+	if (!serializer)
+		return false;
+	static_cast<ISerializer&>(*serializer).Write("Actions", animator.GetActions());
+	return SUCCEEDED(serializer->SaveToFile(path.string()));
+}
+
+_bool CAnimEdit_Manager::LoadActions(CComAnimator& animator, const std::filesystem::path& path)
+{
+	auto deserializer = CJsonDeSerializer::Create(path.string());
+	if (!deserializer)
+		return false;
+	std::vector<CComAnimator::ACTIONSTRUCT> loadedActions;
+	static_cast<IDeserializer&>(*deserializer).Read("Actions", loadedActions);
+	animator.GetActions() = std::move(loadedActions);
+	m_iSelectedActionIndex = animator.GetActions().empty() ? -1 : 0;
+	return true;
+}
+
+void CAnimEdit_Manager::RefreshActionLastTime(CComAnimator::ACTIONSTRUCT& action, CGameObject* pSampleObj) const
+{
+	action.LastTime = 0.f;
+	auto pModelInstance = pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+	if (!pModelInstance || !pModelInstance->GetModel())
+		return;
+	auto& animations = pModelInstance->GetModel()->GetAnimations();
+	for (size_t i = 0; i < action.Anims.size() && i < action.StartTime.size(); ++i)
+	{
+		const int32_t animIndex = action.Anims[i].iAnimIndex;
+		if (animIndex >= 0 && animIndex < static_cast<int32_t>(animations.size()))
+			action.LastTime = std::max(action.LastTime, action.StartTime[i] + animations[animIndex]->GetDuration());
+	}
 }
 
 
