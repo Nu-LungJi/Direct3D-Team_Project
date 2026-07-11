@@ -949,6 +949,37 @@ void CLevelUIEditor::FlipbookMode()
 	ImGui::PopStyleVar(); // 메인 윈도우 스타일 복원
 }
 
+void CLevelUIEditor::AnimationMode()
+{
+	//ImGui::Begin("UI Animation Tool");
+	//
+	//// ... 클립 이름 입력 및 JSON 로드/저장 로직 ...
+	//
+	//if (ImGui::Button("Add Track"))
+	//{
+	//	m_CurrentClip.Tracks.push_back(FUITweenTrack());
+	//}
+	//
+	//for (int i = 0; i < m_CurrentClip.Tracks.size(); ++i)
+	//{
+	//	ImGui::PushID(i);
+	//	auto& track = m_CurrentClip.Tracks[i];
+	//
+	//	const char* targetNames[] = { "SCALE", "EFFECT_ALPHA", "POSITION_X", "POSITION_Y" };
+	//	ImGui::Combo("Target", (int*)&track.TargetType, targetNames, IM_ARRAYSIZE(targetNames));
+	//
+	//	ImGui::Checkbox("Use Current Start", &track.bUseCurrentStart);
+	//	if (!track.bUseCurrentStart)
+	//		ImGui::DragFloat("Start Value", &track.fStartValue, 0.01f);
+	//
+	//	ImGui::DragFloat("End Value", &track.fEndValue, 0.01f);
+	//	ImGui::DragFloat("Duration", &track.fDuration, 0.01f);
+	//
+	//	ImGui::PopID();
+	//}
+	//ImGui::End();
+}
+
 void CLevelUIEditor::Picking()
 {
 	_float2 mousePos = CGameInstance::Get().GetMousePos();

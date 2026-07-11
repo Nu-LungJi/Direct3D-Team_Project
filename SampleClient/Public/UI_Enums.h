@@ -8,3 +8,5 @@ enum class BUTTON_EVENT
 	CHANGE_WEAPON,
 	QUIT_GAME,
 };
+
+

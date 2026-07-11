@@ -179,21 +179,6 @@ HRESULT CButton::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 void CButton::PlayEffect(uint32_t uiState)
 {
-	/*
-	switch (uiState)
-	{
-	case ETOUI(UI_STATE::ENTER):
-		if (m_Effect_Hovered != nullptr)
-			m_Effect_Hovered->SetActive(true);
-		break;
-	case ETOUI(UI_STATE::HOVERED):
-
-		break;
-	case ETOUI(UI_STATE::EXIT):
-		if (m_Effect_Hovered != nullptr)
-			m_Effect_Hovered->SetActive(false);
-		break;
-	}*/
 	if (m_pComTween == nullptr)
 		return;
 

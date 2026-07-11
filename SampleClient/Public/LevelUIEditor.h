@@ -4,6 +4,7 @@
 #include "Level.h"
 #include "Handle.h"
 #include "FlipbookUI.h"
+#include "UIObject.h"
 
 NS_BEGIN(Engine)
 class CUIObject;
@@ -21,6 +22,8 @@ public:
 public:
 	enum class UiEditorMode { ARRANGE, PREFAB, FLIPBOOK, END };
 	enum class UiButtonMode { DEFAULT, CREATE, SELECT, END };
+
+
 private:
 	explicit CLevelUIEditor();
 	~CLevelUIEditor() override;
@@ -56,12 +59,17 @@ private:
 	std::vector<std::string> m_vFlipBookResTag{};
 
 private:
+	// 애니메이션
+	//UI_ANIMCLIP m_CurrentClip;
+
+private:
 	void CreateMode();
 	void SelectMode();
 
 	void ArrangeMode();
 	void PrefabMode();
 	void FlipbookMode();
+	void AnimationMode();
 
 private:
 	void Picking();

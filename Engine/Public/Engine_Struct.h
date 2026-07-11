@@ -284,4 +284,22 @@ namespace Engine
 	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
 	//} MAPMESH_BATCH;
 	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+
+	/****************UI***********************/ 
+	// 개별 애니메이션 트랙 데이터
+	typedef struct tagUITweenTrack
+	{
+		EUITweenTarget TargetType;
+		bool bUseCurrentStart; // 시작값을 현재 UI의 상태값으로 쓸 것인지?
+		float fStartValue;     // bUseCurrentStart가 false일 때 쓸 고정 시작값
+		float fEndValue;       // 목표값
+		float fDuration;       // 걸리는 시
+	}UI_TWEENTRACK;
+
+	// 애니메이션 클립
+	typedef struct tagUIAnimClip
+	{
+		std::string ClipName;
+		std::vector<UI_TWEENTRACK> Tracks;
+	}UI_ANIMCLIP;
 }
