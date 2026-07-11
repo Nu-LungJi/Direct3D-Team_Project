@@ -179,11 +179,30 @@ void CComBeHavior::UnRegistNode(uint32_t iIndex)
 
 void CComBeHavior::AbortNode()
 {
-	if (m_bAbort)
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
 		ResetNode(m_Root.get());
-		m_bAbort = false;
+		m_iFlag &= ~ETOUI(CBTRoot::BTFLAG::ABORT);
 	}
+}
+
+_bool CComBeHavior::Check_Flag(uint32_t iFlag)
+{
+	if (m_iFlag & iFlag)
+		return true;
+
+	return false;
+}
+
+void CComBeHavior::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
+{
+	if (eType == FLAGTYPE::ADD)
+		m_iFlag |= iFlag;
+	else if (eType == FLAGTYPE::DEL)
+		m_iFlag &= ~iFlag;
+	else if (eType == FLAGTYPE::RESET)
+		m_iFlag = iFlag;
+
 }
 
 void CComBeHavior::Update(_float fTimeDelta)

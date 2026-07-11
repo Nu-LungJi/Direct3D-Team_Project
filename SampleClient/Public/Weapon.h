@@ -20,7 +20,8 @@ public:
 public:
 	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
 	{
-
+		CHandle ParentHandle{};
+		int32_t iBoneIndex{ -1 };
 	}WEAPON_DESC;
 
 private:
@@ -45,6 +46,8 @@ private:
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
+	CHandle				m_ParentHandle{};
+	int32_t				m_iBoneSocketIndex{ -1 };
 public:
 	static E::UPtr<CWeapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

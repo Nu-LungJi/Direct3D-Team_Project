@@ -31,16 +31,27 @@ HRESULT CBTDecHp::Initalize(void* pArg)
 	
 	return S_OK;
 }
-
-
 EVALUATE CBTDecHp::Evaluate(_float fTimeDelta)
 {
-
-	if(m_CurrentHp <= m_MaxHp / m_GuiNode.fValue)
+	if(m_CurrentHp <= m_MaxHp / m_fdivided)
 		return __super::Evaluate(fTimeDelta);
 	
 	return EVALUATE::FAILED;
 }
+nlohmann::json CBTDecHp::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	SaveJsonValue(j, "divided", m_fdivided);
+		return j;
+}
+
+HRESULT CBTDecHp::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "divided", m_fdivided);
+	return S_OK;
+}
+
 void CBTDecHp::Update_Gui()
 {
 }

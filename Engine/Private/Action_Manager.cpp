@@ -56,7 +56,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
 		{
-			if (eType != NODEGROUP::SEQUENCE || eType != NODEGROUP::SELECTOR)
+			if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR)
 			{
 				CGameInstance::Get().GetPrototype(eType);
 				for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))

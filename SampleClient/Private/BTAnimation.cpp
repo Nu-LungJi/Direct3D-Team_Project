@@ -45,7 +45,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	{
 		if (m_GuiNode.bAbort)
 		{
-			Set_Abort();
+			//애니매이션 겹침 방지
+			Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
 		}
 		return m_eDebug = EVALUATE::SUCCESS;
 	}

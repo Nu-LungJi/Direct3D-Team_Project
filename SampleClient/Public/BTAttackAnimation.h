@@ -24,9 +24,9 @@ public:
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	_float				m_fRatio{ 0 };
-	uint32_t			m_iLoopCnt{ 0 };
-	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false };
+	_float2				m_fRatio{  };
+	uint32_t			m_iLoopCnt{ 0 }, m_iStartFlag{}, m_iEndFlag{};
+	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bRatioInvert{ false };
 public:
 	static UPtr<CBTAttackAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

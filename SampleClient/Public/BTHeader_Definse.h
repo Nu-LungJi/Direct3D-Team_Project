@@ -11,11 +11,11 @@
 #include "BTDead.h" //죽는거 체크해야지
 #include "BTDamage.h" //hp 깎기
 #include "BTTurnAnimation.h" // 회전 애니매이션이 너무 많아서 하나로 묶는용도
-#include "BTAttackAnimation.h"
+#include "BTAttackAnimation.h" //애니매이션에 이동량 들어가야 될 경우 // 플래그 있음
 
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함
-#include "BTDecTimer.h"//타이머
+#include "BTDecTimer.h"//타이머 // 플래그 있음
 #include "BTDecSearch.h"//적거리 기반 탐색
 #include "BTDecInvert.h"// true false 인버터
-#include "BTDecHit.h"
+#include "BTDecHit.h" //맞은판정 플래그 있음

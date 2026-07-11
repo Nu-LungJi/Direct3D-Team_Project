@@ -35,7 +35,7 @@ EVALUATE CBTDecHit::Evaluate(_float fTimeDelta)
 {
 	if (auto pBT = Get_ComBT())
 	{
-		if (pBT->Get_Hit())
+		if (Check_Flag(ETOUI(BTFLAG::HIT)))
 			return EVALUATE::SUCCESS;
 
 		if (auto pCam = CGameInstance::Get().GetActiveCamera())
@@ -48,8 +48,10 @@ EVALUATE CBTDecHit::Evaluate(_float fTimeDelta)
 				{
 					if (coll->Intersect(vOri, vDir, fDist))
 					{
-					
-						pBT->Set_Hit(true);
+						//맞으면 hit 진행 되는동안 다른 노드 절대 진입못하게 하고 기존에 Run상태인 애니매이션들 초기화하기
+
+						uint32_t iFlag = ETOUI(BTFLAG::HIT) | ETOUI(BTFLAG::ABORT);
+						Set_Flag(iFlag, FLAGTYPE::ADD);
 						return __super::Evaluate(fTimeDelta);
 					}
 				}

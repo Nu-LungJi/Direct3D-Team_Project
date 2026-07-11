@@ -5,6 +5,7 @@
 #include "ComStaticModelInstance.h"
 #include "Resources.h"
 #include "GameInstance.h"
+#include "ComModelInstance.h"
 NS_USING(Client)
 
 CWeapon::CWeapon()
@@ -42,6 +43,10 @@ HRESULT CWeapon::InitializePrototype(void* pArg)
 
 HRESULT CWeapon::Initialize(void* pArg)
 {
+	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
+	m_iBoneSocketIndex = pDesc->iBoneIndex;
+	m_ParentHandle	   = pDesc->ParentHandle;
+	
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -81,6 +86,24 @@ void CWeapon::Update(E::_float fTimeDelta)
 
 void CWeapon::LateUpdate(E::_float fTimeDelta)
 {
+	_float4x4 Parent{};
+	XMStoreFloat4x4(&Parent, XMMatrixIdentity());
+	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+	{
+		if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
+		{
+			if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneSocketIndex)
+			{
+				_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
+				for (uint32_t i = 0; i < 3; ++i)
+				{
+					Par.r[i] = XMVector3Normalize(Par.r[i]);
+				}
+				XMStoreFloat4x4(&Parent, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+			}
+		}
+	}
+	GetTransform().SetParentWorldMatrix(Parent);
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }

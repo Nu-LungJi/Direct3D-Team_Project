@@ -16,10 +16,12 @@ private:
 	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE				 Evaluate(_float fTimeDelta) override;
-	virtual void			 Update_Gui() override;
+	virtual nlohmann::json			Save_Node()override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
+	EVALUATE						Evaluate(_float fTimeDelta) override;
+	virtual void					Update_Gui() override;
 private:
-	_float						m_CurrentHp{ 40 }, m_MaxHp{100};
+	_float						m_CurrentHp{ 40 }, m_MaxHp{ 100 }, m_fdivided{ 1.f };
 public:
 	static UPtr<CBTDecHp> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

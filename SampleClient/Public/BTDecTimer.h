@@ -15,14 +15,16 @@ private:
 
 	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
-
+	
 public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
-	virtual nlohmann::json			Save_Node()override;
-	HRESULT					Load_json(const nlohmann::json& j) override;
+	void							Abort() override;
+	void							Update_Gui() override;
 
-	virtual void					Update_Gui() override;
+	virtual nlohmann::json			Save_Node()override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
+	_bool							m_bRun{ true };
 	_float							m_fWaitTime{}, m_fTick{};
 public:
 	static UPtr<CBTDecTimer> Create();

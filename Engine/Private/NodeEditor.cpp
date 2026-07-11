@@ -159,18 +159,18 @@ void CNodeEditor::Show_Editor()
 		if (m_Nodes.size() - 1 <= m_iNodeSelect)
 		{
 
-			GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
-			if (pNode)
-			{
-				//노드에서 우클릭 -> Rename delete copy ...
-				ImGui::Text("Node %s", pNode->Name);
-				ImGui::Separator();
-				if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
-				if (ImGui::MenuItem("Delete..", NULL, false, false)) {}
-				if (ImGui::MenuItem("Copy", NULL, false, false)) {}
-			}
-			else
-			{
+			//GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
+			//if (pNode)
+			//{
+			////	//노드에서 우클릭 -> Rename delete copy ...
+			////	ImGui::Text("Node %s", pNode->Name);
+			////	ImGui::Separator();
+			////	if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
+			////	if (ImGui::MenuItem("Delete..", NULL, false, false)) {}
+			////	if (ImGui::MenuItem("Copy", NULL, false, false)) {}
+			//}
+			//else
+			//{
 				if (m_bPopupAction)
 					m_bPopupAction = false;
 				//빈공간 우클릭...
@@ -193,7 +193,7 @@ void CNodeEditor::Show_Editor()
 				}
 
 				if (ImGui::MenuItem("Paste", NULL, false, false)) {}
-			}
+			//}
 
 		}
 
