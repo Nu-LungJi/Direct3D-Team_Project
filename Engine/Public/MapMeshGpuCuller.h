@@ -60,12 +60,16 @@ private:
 	// MAPMESH_OCCLUSION_DATA[] // 각자의 boundingBox
 	SPtr<CResStructuredBuffer> m_pOcclusionInputBuffer{};
 
-	// MAPMESH_INSTANCE_DATA[] // ComputeShader가 보이는 instance만 씀 // Vertex shader에서 instance buffer로 사용
+	// MAPMESH_INSTANCE_DATA[] // ComputeShader가 보이는 instance만 씀
 	SPtr<CResStructuredBuffer> m_pVisibleInstanceBuffer{};
+
+	// Vertex shader에서 instance buffer로 사용
 	ComPtr<ID3D11Buffer> m_pVisibleInstanceVertexBuffer{};
 
 	// DrawIndexedInstancedIndirect 인자
 	ComPtr<ID3D11Buffer> m_pIndirectArgsBuffer{};
+	
+	// 디버그 확인용으로 cpu readback 하기위해 gpu에서 복사해올 버퍼
 	ComPtr<ID3D11Buffer> m_pVisibleCountStagingBuffer{};
 
 	ComPtr<ID3D11Buffer> m_pCBuffer{}; // ComputeShader가 instanceCount를 알아야 함

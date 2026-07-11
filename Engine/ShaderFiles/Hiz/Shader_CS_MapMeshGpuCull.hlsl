@@ -15,6 +15,7 @@ StructuredBuffer<MAPMESH_INSTANCE_DATA> gInputInstances : register(t0);
 StructuredBuffer<MAPMESH_OCCLUSION_DATA> gOcclusionData : register(t1);
 Texture2D<float> gPrevHiz : register(t2);
 
+// RWStructureBuffer로 하면 비는 인덱스가 있음. AppendStructuredBuffer로 압축
 AppendStructuredBuffer<MAPMESH_INSTANCE_DATA> gVisibleInstances : register(u0);
 
 cbuffer CB_MapMeshGpuCull : register(b0)

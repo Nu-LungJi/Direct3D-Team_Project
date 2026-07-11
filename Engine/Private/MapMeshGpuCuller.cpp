@@ -121,6 +121,7 @@ HRESULT CMapMeshGpuCuller::EnsureCapacity(uint32_t instanceCount)
 		}
 	}
 
+	// 디버그 확인용
 	if (m_pVisibleCountStagingBuffer == nullptr)
 	{
 		D3D11_BUFFER_DESC bufferDesc{};
@@ -262,6 +263,7 @@ HRESULT CMapMeshGpuCuller::PrepareIndirectArgs(
 	pContext->UpdateSubresource(m_pIndirectArgsBuffer.Get(), 0, nullptr, &args, 0, 0);
 	// offset 4바이트 줘서 args.InstanceCount 복사해옴
 	pContext->CopyStructureCount(m_pIndirectArgsBuffer.Get(), sizeof(uint32_t), m_pVisibleInstanceBuffer->GetUAV().Get());
+	// cpu readback하는게 아니라 gpu내부에서 uav가 관리하는 내부카운터를 복사해오는것.
 
 	return S_OK;
 }
