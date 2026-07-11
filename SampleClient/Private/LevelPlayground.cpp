@@ -11,6 +11,7 @@
 #include "TestModel.h"
 #include "TestGob.h"
 #include "LightObject.h"
+#include "Weapon.h"
 NS_USING(Client)
 
 CLevelPlayground::CLevelPlayground()
@@ -52,6 +53,14 @@ HRESULT CLevelPlayground::Initialize()
 		
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
 			"02_Gobline", &Desc))
+		{
+			int x = 0;
+		}
+		//테스트 고블린 무기 테스트
+		Desc.sObjectTag = "Weapon";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon",
+			"03_Weapon", &Desc))
 		{
 			int x = 0;
 		}

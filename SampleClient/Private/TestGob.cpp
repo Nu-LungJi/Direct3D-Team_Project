@@ -6,6 +6,7 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
+#include "Weapon.h"
 #include "GameInstance.h"
 NS_USING(Client)
 
@@ -105,17 +106,25 @@ HRESULT CTestGob::Initialize(void* pArg)
 		};
 	}
 
-
+	CWeapon::WEAPON_DESC DescWeapon{};
+	if (auto iter = CGameInstance::Get().ClonePrototype("WEAPON", "Prototype_GameObject_Weapon", &DescWeapon))
+	{
+		Uptr_cast
+		m_Partes[ETOUI(PARTES::WEAPON)] = std::move(iter);
+	}
 
 	return S_OK;
 }
 
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
+	__super::PriorityUpdate(fTimeDelta);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
+	__super::Update(fTimeDelta);
+
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
 
@@ -125,7 +134,7 @@ void CTestGob::Update(E::_float fTimeDelta)
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
-
+	__super::LateUpdate(fTimeDelta);
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 

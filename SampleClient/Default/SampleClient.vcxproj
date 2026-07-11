@@ -224,6 +224,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
+    <ClInclude Include="..\public\Weapon.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -279,6 +280,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestPhysXCapsule.cpp" />
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\private\Weapon.cpp" />
     <ClCompile Include="..\public\BTDead.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">

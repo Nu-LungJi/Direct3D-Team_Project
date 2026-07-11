@@ -1068,7 +1068,39 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Axe_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx"))) {
 
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Mace_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Sword_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }
 HRESULT CGameInstance::InitializePrototype()

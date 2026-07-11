@@ -20,9 +20,11 @@ public:
 	DECLARE_DERIVED_TYPE(CTestGob, CGameObject)
 
 public:
-	typedef struct tagTerrainDesc : public CGameObject::GAMEOBJECT_DESC
+	typedef struct tagMonsterDesc : public CGameObject::GAMEOBJECT_DESC
 	{
-	}DESC;
+		_string SocketName;
+
+	}MONSTER_DESC;
 
 private:
 	CTestGob();
@@ -42,6 +44,8 @@ private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
+	UPtr<CGameObject> m_Partes[ETOUI(PARTES::END)]{};
+
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
@@ -63,6 +67,9 @@ private:
 	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
+	int32_t						m_iHp{};
+	_bool						m_bDead{ false };
+	_string						m_SocketName{};
 public:
 	static E::UPtr<CTestGob> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
