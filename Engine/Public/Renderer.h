@@ -75,7 +75,6 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric{};
 
-
 private:
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
 	SPtr<CResPixelShader>		m_pOffScreenPixelShader{};
@@ -164,6 +163,9 @@ private:
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
+	ComPtr<ID3D11ShaderResourceView>	Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	ComPtr<ID3D11ShaderResourceView>	Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0, uint32_t _TexDepth = 0);
+
 	VOID	PostProcessGUI();
 
 	HRESULT Initialize_Debugging();
@@ -179,9 +181,12 @@ private:
 
 	_bool						m_bRenderable = { false };
 
+	ComPtr<ID3D11ShaderResourceView> BlueNoiseTexture = { nullptr };
+
 private:
 	HRESULT RenderPriority();
 	HRESULT RenderNonBlend();
+	HRESULT RenderNonBlend_Instanced();
 	HRESULT	Render_HBAO();
 	HRESULT RenderBlend();
 	HRESULT RenderLight();

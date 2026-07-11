@@ -1,128 +1,118 @@
-#include "../ShaderDefines.hlsl"
+#include "../ShaderHeader/SH_CommonFunction.hlsli"
 
 Texture2D<float>    DepthTexture     : register(t0);
 Texture2D<float>    ShadowMapTexture : register(t1);
-Texture2D<float2>   BlueNoiseTexture : register(t2);
+Texture2D<float>    BlueNoiseTexture : register(t2);
 Texture3D<float>    VolumeTexture    : register(t3);
 
 RWTexture2D<float4> OUTPUT : register(u0);
 
 const static float2 ScreenResolution    = { 1280.f, 720.f };
-const static float2 NoiseResolution     = { 128.f, 128.f };
-const static int    FogMaxStep          = 32;
+const static float2 NoiseResolution     = { 256.f, 256.f };
+const static int    FogMaxStep          = 64;
 
-float Map(float3 _Point)
+float GetVolumeFogDensity(float3 _Point)    
 {
-    float3 repeatedP = frac(_Point / 5.0f) * 5.0f - 2.5f;
-    return length(repeatedP) - 1.5f;
-}
-
-float3 Compute_Normal(float3 _Point)        // 충돌 지점 Normal 계산
-{
-    float3 Step = float3(0.001f, 0.0f, 0.0f);
-    return normalize(float3(
-        Map(_Point + Step.xyy) - Map(_Point - Step.xyy),
-        Map(_Point + Step.yxy) - Map(_Point - Step.yxy),
-        Map(_Point + Step.yyx) - Map(_Point - Step.yyx)
-    ));
-}
-
-float Compute_Shadow(float3 _Point)
-{
-    float4 shadowSpacePos = mul(float4(_Point, 1.0f), g_matShadowLightViewProj);
-    shadowSpacePos.xyz /= shadowSpacePos.w;
+    //float FogHeight = exp(-_Point.y * 0.05f);   
+    float FogHeight = max(0.5f, 10.f - _Point.y * 2.f);
     
-    float2 shadowUV = shadowSpacePos.xy * 0.5f + 0.5f;
-    shadowUV.y = 1.0f - shadowUV.y;
+    float DistanceFromCam = length(_Point - g_vCamPos);
     
-    float depth = shadowSpacePos.z;
+    float FogStartPos = 20.f, FogEndPos = 50.f;
     
-    if (shadowUV.x < 0.0f || shadowUV.x > 1.0f || shadowUV.y < 0.0f || shadowUV.y > 1.0f)
-        return 1.0f;
-        
-    return ShadowMapTexture.SampleCmpLevelZero(ShadowSampler, shadowUV, depth - 0.005f);
+    float NearFadeFactor = saturate((DistanceFromCam - FogStartPos) / (FogEndPos - FogStartPos));
+    
+    float Noise = 1.f; // VolumeTexture.SampleLevel(LinearWrap, _Point * 0.1f, 0.f).r;
+    float FogDensityScale = 0.005f;
+    
+    return FogHeight * Noise * FogDensityScale; // * NearFadeFactor;
 }
-
-float GetVolumeFogDensity(float3 _Point)
-{
-    float FogHeight = max(0.f, 1.f - _Point * 0.2f);
-    
-    float Noise = VolumeTexture.SampleLevel(LinearWrap, _Point * 0.1f, 0.f).r;
-
-    return FogHeight * Noise;
-}
-
-
 
 [numthreads(16, 16, 1)]
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
     if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return; // 스레드가 해상도 넘어가면 출력X
     
-    float2  UV = (float2(ID.xy) + 0.5f) / ScreenResolution;
-    
-    float   PixelDepth = DepthTexture[ID.xy];               // 해당 픽셀 깊이 Read
-    
-    float2 NDC = UV * 2.f - 1.f;
-    NDC.y = -NDC.y;
-    float4  ScreenPos = float4(NDC, PixelDepth, 1.f);       // ProjSpace : xy 좌표(NDC)  + z 좌표(픽셀 깊이)
-    float4 ViewPos = mul(ScreenPos, g_matInvView); // ViewSpace ~ g_matInvView -> g_matInvProj
-    ViewPos /= ViewPos.w;
-    float3  WorldPos = mul(ViewPos, g_matInvView).xyz;      // WorldSpace
+    float2  TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
+    float   Depth = DepthTexture[ID.xy]; // 해당 픽셀 깊이 Read
+
+    // Convert WorldPosition
+    float4 WorldPos = Convert_WorldPosByDepth(Depth, TexCoord);
     
     // Define Ray Data
-    float3  RayOrigin = g_vCamPos;
-    float3  RayDirection = normalize(WorldPos - RayOrigin);
+    float3  RayOrigin    = g_vCamPos;
+    float3  RayVector    = WorldPos.xyz - RayOrigin;
+    float3  RayDirection = normalize(RayVector);
+    float   RayLength    = length(RayVector);
+    if (Depth == 0.f) RayLength = 50.f; // 빈 공간 (> Camera Far) 최대 길이로 설정
     
-    float3  RayLength = length(WorldPos - RayOrigin);
-    if (PixelDepth == 0.f)  RayLength = 50.f;               // 빈 공간 (> Camera Far) 최대 길이로 설정
+    float RayStepSize = RayLength / FogMaxStep; // StepSize = 1 Step Distance
     
     // BlueNoise : Jittering
-    float2  NoiseUV = float2(ID.xy) / NoiseResolution;
-    float   Jitter = BlueNoiseTexture.SampleLevel(LinearWrap, NoiseUV, 0).r;
+    float2  NoiseTexCoord = float2(ID.xy) / NoiseResolution;
+    float   BlueNoise = BlueNoiseTexture.SampleLevel(LinearWrap, NoiseTexCoord, 0);
     
-    // Ready Fog Data
+    // Initialize Fog Data
     float3  LightAccumulation = float3(0.f, 0.f, 0.f);
-    float   LightTransmittance = 1.f;                       // 빛 투과율 (1.f : 완전 투과 ~ 0.f : 불투과)
-    
-    float   StepSize = RayLength / (int) FogMaxStep;        // StepSize = 1 Step Distance
-    
-    float   t = StepSize * Jitter;
+    float   LightTransmittance = 1.f; // 빛 투과율 (1.f : 완전 투과 ~ 0.f : 불투과)
+
+    // God Ray
+    //float4 ShadowOrigin = mul(float4(RayOrigin, 1.f), g_matShadowLightViewProj);
+    //float4 ShadowDirection = mul(float4(RayDirection, 1.f), g_matShadowLightViewProj);
     
     float3  LightColor = float3(1.0f, 0.9f, 0.7f);
-    
+
+    [unroll]
     for (int i = 0; i < FogMaxStep; ++i)
     {
-        if (t >= PixelDepth)    break;
+        // Noise Offset
+        float Offset = RayStepSize * (i + BlueNoise);
         
-        float3  p = RayOrigin + RayDirection * t;
-        float   VolumeDensity = GetVolumeFogDensity(p);
+        [branch]
+        if (Offset >= RayLength - 0.01f)    break;
         
+        float3  CurrentPosition = RayOrigin + RayDirection * Offset;
+        float   VolumeDensity   = GetVolumeFogDensity(CurrentPosition);
+        
+        [branch]
         if (VolumeDensity > 0.f)
         {
-            float Shadow = Compute_Shadow(p);
-            float3 CurrentLight = LightColor * Shadow;
+            float4 ShadowSpacePos = mul(float4(CurrentPosition, 1.0f), g_matShadowLightViewProj);
+            float2 ShadowMapUV;
+            ShadowMapUV.x = (ShadowSpacePos.x) * +0.5f + 0.5f;
+            ShadowMapUV.y = (ShadowSpacePos.y) * -0.5f + 0.5f;
             
-            float Extinction = VolumeDensity;                   // 빛 흡수도
-            float Scattering = VolumeDensity * CurrentLight;    // 빛 산란도
+            float CurrentPixelDepth = ShadowSpacePos.z;
             
-            float SampledTransmittance = exp(-Extinction * StepSize);
+            float Shadow = 1.0f;    // 최대 밝기 (1.f = 그림자가 안 지는 픽셀의 값)
             
-            LightAccumulation += Scattering * LightTransmittance * StepSize;
+            [branch]
+            if (ShadowMapUV.x >= 0.0f && ShadowMapUV.x <= 1.0f && ShadowMapUV.y >= 0.0f && ShadowMapUV.y <= 1.0f)
+            {   
+                float ShadowFactor = ShadowMapTexture.SampleCmpLevelZero(ShadowSampler, ShadowMapUV, CurrentPixelDepth + 0.002f);
+                //Shadow = ShadowFactor;//lerp(0.15f, 1.0f, ShadowFactor);
+                Shadow = pow(ShadowFactor, 3.0f);
+            }
+            
+            float Extinction = VolumeDensity;                       // 빛 흡수도
+            float Scattering = VolumeDensity * LightColor * Shadow; // 빛 산란도
+            
+            float SampledTransmittance = exp(-Extinction * RayStepSize);
+            
+            LightAccumulation += Scattering * LightTransmittance * RayStepSize;
             
             LightTransmittance *= SampledTransmittance;
             
+            [branch]
             if (LightTransmittance < 0.01f)
-            {
+            {  
                 LightTransmittance = 0.f;
                 break;
             }
         }
-        t += StepSize;
+        //Offset += RayStepSize;  
     }
-    float3 SceneDiffuse = OUTPUT[ID.xy].rgb;
     
-    float3 FinalColor = (SceneDiffuse * LightTransmittance) + LightAccumulation;
-
-    OUTPUT[ID.xy] = float4(FinalColor, 1.f);
+    OUTPUT[ID.xy] = float4(LightAccumulation, LightTransmittance);
+    return;
 }

@@ -100,6 +100,7 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matProj;
     matrix g_matViewProj;
     matrix g_matInvView;
+    matrix g_matInvProj;
     matrix g_matInvViewProj;
     matrix g_matShadowLightViewProj;
     float3 g_vCamPos;

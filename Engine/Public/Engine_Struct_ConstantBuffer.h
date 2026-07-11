@@ -8,6 +8,7 @@ namespace Engine
 		_float4x4  matProj{};            // 투영 행렬 (Perspective 또는 Ortho)
 		_float4x4  matViewProj{};        // 곱해진 행렬 (VS에서 연산 절약)
 		_float4x4  matInvView{};			// 뷰 역행렬 (빌보드 계산이나 월드 좌표 복원용)
+		_float4x4  matInvProj{};
 		_float4x4  matInvViewProj{};
 		_float4x4  matShadowLightViewProj{};
 		_float3	   vCamPos{};

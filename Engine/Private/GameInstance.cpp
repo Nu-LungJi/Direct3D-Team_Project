@@ -550,6 +550,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// LinearClamp
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_CLAMP, CResSamplerState::Create()))
@@ -566,6 +567,7 @@ HRESULT CGameInstance::InitializeResources()
 				return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// PointWrap
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP, CResSamplerState::Create()))
@@ -586,6 +588,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// PointClamp
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_CLAMP, CResSamplerState::Create()))
@@ -602,6 +605,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// PointWrapNoMip
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP_NOMIP, CResSamplerState::Create()))
@@ -618,6 +622,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// AnisotropicWrap
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_ANISOTROPIC_WRAP, CResSamplerState::Create()))
@@ -636,6 +641,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(5, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(5, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// ShadowSampler
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
@@ -652,6 +658,7 @@ HRESULT CGameInstance::InitializeResources()
 		if (FAILED(res->Load(sampDesc)))				return E_FAIL; 
 
 		GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
+		GetGraphicDeviceContext()->CSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 	}
 	
 	
