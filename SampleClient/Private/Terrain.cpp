@@ -19,15 +19,12 @@ CTerrain::~CTerrain()
 HRESULT CTerrain::InitializePrototype(void* pArg)
 {
 	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain");
-	//m_pResTerrainVIBuffer = CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp");
 	if (!m_pResTerrainVIBuffer)
 	{
 		return E_FAIL;
 	}
 
-	//"SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0"
 	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0");
-	//m_pResTerrainTexture2D = CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds");
 	if (!m_pResTerrainTexture2D)
 	{
 		return E_FAIL;
@@ -88,25 +85,21 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		E::CB_PER_OBJECT cbPerObject{};
 		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
 		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
-		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
-		{
-			return E_FAIL;
-		}
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
+
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
-	//const auto& vs = m_pResVertexShader;
-	//const auto& ps = m_pResPixelShader;
+	const auto& vs = m_pResVertexShader;
+	const auto& ps = m_pResPixelShader;
 	
 	const auto& viBuffer = m_pResTerrainVIBuffer;
-	//pContext->IASetInputLayout(vs->GetInputLayout().Get());
-	//pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	//if (ctx.pass == RENDERPASS::DEPTH) {			// 오류 메세지 ID3D11DeviceContext::DrawIndexed 제거용
-	//	pContext->PSSetShader(nullptr, nullptr, 0);
-	//}
-	//else {
-	//	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-	//}
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	
+	if (ctx.pass == RENDERPASS::DEFAULT) {			// 오류 메세지 ID3D11DeviceContext::DrawIndexed 제거용
+		pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	}
 	
 	ID3D11Buffer* vertexBuffers[] = {
 		viBuffer->GetVertexBuffer().Get()
@@ -120,57 +113,21 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 	pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
 	SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
 	if (auto Resource = m_pResTerrainTexture2D) {
 		DiffuseTexture = Resource;
 	}
 	pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
 
-	SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
-	//if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
-	//	NormalTexture = Resource;
-	//}
-	pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
-
-	SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
-	//if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
-	//	SMROTexture = Resource;
-	//}
-	pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
-
-	SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
-	//if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
-	//	EmissiveTexture = Resource;
-	//}
-	pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
-	//{
-	//	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
-	//	D3D11_MAPPED_SUBRESOURCE MRES;
-	//	if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-	//	{
-	//		CB_MATERIAL   CMMAT;
-	//
-	//		CMMAT.EmissiveColor = { 1.f, 0.f, 0.f };
-	//		CMMAT.EmissiveIntensity = 1.f;
-	//		CMMAT.ObjectAlpha = 1.f;
-	//
-	//		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
-	//		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
-	//	}
-	//	pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
-	//}
-	//{
-	//	pContext->PSSetShaderResources(0, 1, m_pResTerrainTexture2D->GetSRV().GetAddressOf());
-	//}
 	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
 	D3D11_MAPPED_SUBRESOURCE MRES;
 	if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 	{
 		CB_MATERIAL   CMMAT;
-
-		CMMAT.EmissiveColor = _float3(1.f, 1.f, 1.f);
+		CMMAT.EmissiveColor		= _float3(1.f, 1.f, 1.f);
 		CMMAT.EmissiveIntensity = 0.f;
-		CMMAT.ObjectAlpha = 1.f;
+		CMMAT.ObjectAlpha		= 1.f;
 
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
@@ -180,6 +137,14 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
 	pContext->PSSetShaderResources(0, 1, pSRVs);
+	pContext->PSSetShaderResources(1, 1, pSRVs);
+	pContext->PSSetShaderResources(2, 1, pSRVs);
+	pContext->PSSetShaderResources(3, 1, pSRVs);
+
+	CGameInstance::Get().Reset_DefaultShader(RENDERGROUP::NONBLEND);
+	// 오브젝트 렌더 할 떄, VSSetShader, PSSetShader 를 해야한다면,
+	// 다시 원래 쉐이더로 돌려놓아야 이후에 렌더하는 오브젝트들이 정상적으로 렌더 됨.
+	// 나중에 오브젝트들 정리해서 배칭으로 전환할 때 삭제 예정.
 
 	return S_OK;
 }

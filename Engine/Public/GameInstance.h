@@ -267,6 +267,7 @@ public:
 #pragma region RENDERER
 public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
+	HRESULT	Reset_DefaultShader(RENDERGROUP _Group);
 #pragma endregion
 
 

@@ -126,7 +126,6 @@ void CLight::Update(E::_float fTimeDelta) {
 		XMVectorSet(0.f, 0.f, 0.f, 1.f)
 		}));
 	m_pComTransform->SetPosition(XMVectorSetW(BBDMat.r[3], 1.f));
-
 }
 void CLight::LateUpdate(E::_float fTimeDelta) {    
     if (Debug_RenderFlag)
@@ -172,7 +171,7 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
         }
     }
     ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
-    pContext->PSSetShaderResources(1, 1, pSRVs);
+    pContext->PSSetShaderResources(1, 1, pSRVs); 
     pContext->PSSetShaderResources(2, 1, pSRVs);
     pContext->PSSetShaderResources(3, 1, pSRVs);
 

@@ -19,152 +19,175 @@ HRESULT CLightManager::Initialize_LightManager(){
 }
 
 VOID CLightManager::UpdateGUI() {
-    ImGui::Begin("Light Manager");
+	{
+		ImGui::Begin("Light Manager");
 
-    if (ImGui::Button("Generate Light")) {
-        Add_PointLight({ 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }, 10.f, 10.f);
-    }
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(180.f / 255.f, 135.f / 255.f, 255.f / 255.f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(180.f / 255.f * 1.2f, 135.f / 255.f * 1.2f, 255.f / 255.f * 1.2f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(180.f / 255.f / 2.f, 135.f / 255.f / 2.f, 255.f / 255.f / 2.f, 1.0f));
 
-    if (m_LightHandleList.empty()) {
-        ImGui::End();
-        return;
-    }
+		if (ImGui::Button("Generate Light", ImVec2(-FLT_MIN, 20))) {
+			Add_PointLight({ 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }, 10.f, 10.f);
+		}
+		ImGui::PopStyleColor(3);
+		if (m_LightHandleList.empty()) {
+			ImGui::End();
+			return;
+		}
 
-    static int selectedLightIdx = 0;
+		static int selectedLightIdx = 0;
 
-    if (selectedLightIdx >= static_cast<int>(m_LightHandleList.size()))
-        selectedLightIdx = 0;
+		if (selectedLightIdx >= static_cast<int>(m_LightHandleList.size()))
+			selectedLightIdx = 0;
 
-    ImGui::Text("Light List");
-    if (ImGui::BeginListBox("##Lights", ImVec2(-FLT_MIN, 100)))
-    {
-        int i = 0;
-        for (auto iter = m_LightHandleList.begin(); iter != m_LightHandleList.end();)
-        {
-            auto LightObject = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(*iter);
-            if (nullptr == LightObject) {
-                iter = m_LightHandleList.erase(iter);
-                continue;
-            }
-            auto pComCollider = LightObject->GetComponent<CComCollider>("ComCollider_Sphere");
-            if (pComCollider)
-            {
-                auto ColliderType = pComCollider->Get()->GetCollType();
+		ImGui::Text("Light List");
+		if (ImGui::BeginListBox("##Lights", ImVec2(-FLT_MIN, 100)))
+		{
+			int i = 0;
+			for (auto iter = m_LightHandleList.begin(); iter != m_LightHandleList.end();)
+			{
+				auto LightObject = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(*iter);
+				if (nullptr == LightObject) {
+					iter = m_LightHandleList.erase(iter);
+					continue;
+				}
+				auto pComCollider = LightObject->GetComponent<CComCollider>("ComCollider_Sphere");
+				if (pComCollider)
+				{
+					auto ColliderType = pComCollider->Get()->GetCollType();
 
-                if      (ColliderType == CollType::Sphere)  {
-                    static_cast<CCollSphere*>((pComCollider->Get()))->SetLocalBoundingSphere({}, LightObject->Get_LightRange());
-                }
-            }
-            auto pComCollider_FR = LightObject->GetComponent<CComCollider>("ComCollider_Frustum");
-            if (pComCollider_FR)
-            {
-                auto ColliderType = pComCollider->Get()->GetCollType();
+					if (ColliderType == CollType::Sphere) {
+						static_cast<CCollSphere*>((pComCollider->Get()))->SetLocalBoundingSphere({}, LightObject->Get_LightRange());
+					}
+				}
+				auto pComCollider_FR = LightObject->GetComponent<CComCollider>("ComCollider_Frustum");
+				if (pComCollider_FR)
+				{
+					auto ColliderType = pComCollider->Get()->GetCollType();
 
-                if (ColliderType == CollType::Frustum) {
-                    auto LightPos = LightObject->Get_LightPosition();
-                    static_cast<CCollFrustum*>((pComCollider->Get()))->SetLocalFrustum(
-                        XMMatrixLookAtLH(XMLoadFloat3(&LightPos),
-                            LightObject->GetComponent<CComTransform>("Com_Transform")->GetState(STATE::LOOK),
-                            LightObject->GetComponent<CComTransform>("Com_Transform")->GetState(STATE::UP)));
-                }
-            }
-            std::string lightName = "Light" + std::to_string(i);
-            LIGHT_TYPE type = LightObject->Get_LightType();
-            if      (type == LIGHT_TYPE::DIRECTIONAL)    lightName += " [Directional]";
-            else if (type == LIGHT_TYPE::POINT)          lightName += " [Point]";
-            else                                         lightName += " [Spot]";
+					if (ColliderType == CollType::Frustum) {
+						auto LightPos = LightObject->Get_LightPosition();
+						static_cast<CCollFrustum*>((pComCollider->Get()))->SetLocalFrustum(
+							XMMatrixLookAtLH(XMLoadFloat3(&LightPos),
+								LightObject->GetComponent<CComTransform>("Com_Transform")->GetState(STATE::LOOK),
+								LightObject->GetComponent<CComTransform>("Com_Transform")->GetState(STATE::UP)));
+					}
+				}
+				std::string lightName = "Light" + std::to_string(i);
+				LIGHT_TYPE type = LightObject->Get_LightType();
+				if (type == LIGHT_TYPE::DIRECTIONAL)    lightName += " [Directional]";
+				else if (type == LIGHT_TYPE::POINT)          lightName += " [Point]";
+				else                                         lightName += " [Spot]";
 
-            const bool isSelected = (selectedLightIdx == i);
-            if (ImGui::Selectable(lightName.c_str(), isSelected))
-            {
-                selectedLightIdx = i;
-            }
+				const bool isSelected = (selectedLightIdx == i);
+				if (ImGui::Selectable(lightName.c_str(), isSelected))
+				{
+					selectedLightIdx = i;
+				}
 
-            if (isSelected)
-                ImGui::SetItemDefaultFocus();
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
 
-            i++;
-            iter++;
-        }
-        ImGui::EndListBox();
-    }
+				i++;
+				iter++;
+			}
+			ImGui::EndListBox();
+		}
+		
+		if (m_LightHandleList.size() == 0) {
+			ImGui::End();
+			return;
+		}
+		auto pSelectedLight = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[selectedLightIdx]);
+		if (nullptr == pSelectedLight) {
+			ImGui::End();
+			return;
+		}
+		
+		ImGui::Separator();
+		ImGui::Text("Selected Light Details (Index: %d)", selectedLightIdx);
 
-    ImGui::Separator();
+		// --- Getter로 현재 값들 가져오기 ---
+		LIGHT_TYPE lightType = pSelectedLight->Get_LightType();
+		XMFLOAT3 direction = pSelectedLight->Get_LightDirection();
+		XMFLOAT3 color = pSelectedLight->Get_LightColor();
+		float intensity = pSelectedLight->Get_LightIntensity();
+		float range = pSelectedLight->Get_LightRange();
+		XMFLOAT3 position = pSelectedLight->Get_LightPosition();
+		float innerAttn = pSelectedLight->Get_LightInnerAttenuation();
+		float outerAttn = pSelectedLight->Get_LightOuterAttenuation();
 
-    if (m_LightHandleList.size() == 0) {
-        ImGui::End();
-        return;
-    }
-    auto pSelectedLight = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[selectedLightIdx]);
-	if (nullptr == pSelectedLight) {
+		const char* lightTypeNames[] = { "Directional", "Point", "Spot" };
+		int currentTypeIdx = static_cast<int>(lightType);
+		if (ImGui::Combo("Light Type", &currentTypeIdx, lightTypeNames, IM_ARRAYSIZE(lightTypeNames)))
+		{
+			pSelectedLight->Set_LightType(static_cast<LIGHT_TYPE>(currentTypeIdx));
+		}
+
+		if (ImGui::ColorEdit3("Color", &color.x))
+		{
+			pSelectedLight->Set_LightColor(color);
+		}
+
+		if (ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f, "%.2f"))
+		{
+			pSelectedLight->Set_LightIntensity(intensity);
+		}
+
+		// 타입별 가변 속성 노출
+		if (lightType == LIGHT_TYPE::DIRECTIONAL || lightType == LIGHT_TYPE::SPOTLIGHT)
+		{
+			// 방향 벡터 조절 (DragFloat3)
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f, "%.2f"))
+			{
+				pSelectedLight->Set_LightDirection(direction);
+			}
+		}
+
+		if (lightType == LIGHT_TYPE::POINT || lightType == LIGHT_TYPE::SPOTLIGHT)
+		{
+			// 위치 조절
+			if (ImGui::DragFloat3("Position", &position.x, 0.1f, -100.0f, 100.0f, "%.2f"))
+			{
+				pSelectedLight->Set_LightPosition(position);
+			}
+			// 범위 조절
+			if (ImGui::DragFloat("Range", &range, 0.1f, 0.0f, 1000.0f, "%.2f"))
+			{
+				pSelectedLight->Set_LightRange(range);
+			}
+		}
+
+		if (lightType == LIGHT_TYPE::SPOTLIGHT) {
+			if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 180.0f, "%.1f도"))
+			{
+				pSelectedLight->Set_LightInnerAttenuation(innerAttn);
+			}
+			if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 180.0f, "%.1f도"))
+			{
+				pSelectedLight->Set_LightOuterAttenuation(outerAttn);
+			}
+		}
+		ImGui::Separator();
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.f, 0.2f, 0.2f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.f, 0.4f, 0.4f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.05f, 0.05f, 1.0f));
+
+		if (ImGui::Button("Delete Light", ImVec2(-FLT_MIN, 20))) {
+			CHandle DeleteObjectHandle = pSelectedLight->GetHandle();
+			pSelectedLight->SetPendingDestroyCascade();
+			for (auto iter = m_LightHandleList.begin(); iter != m_LightHandleList.end();) {
+				if (*iter == DeleteObjectHandle) {
+					iter = m_LightHandleList.erase(iter);
+					break;
+				}
+				else iter++;
+			}
+		}
+		ImGui::PopStyleColor(3);
+
 		ImGui::End();
-		return;
 	}
-    ImGui::Text("Selected Light Details (Index: %d)", selectedLightIdx);
-
-    // --- Getter로 현재 값들 가져오기 ---
-    LIGHT_TYPE lightType = pSelectedLight->Get_LightType();
-    XMFLOAT3 direction = pSelectedLight->Get_LightDirection();
-    XMFLOAT3 color = pSelectedLight->Get_LightColor();
-    float intensity = pSelectedLight->Get_LightIntensity();
-    float range = pSelectedLight->Get_LightRange();
-    XMFLOAT3 position = pSelectedLight->Get_LightPosition();
-    float innerAttn = pSelectedLight->Get_LightInnerAttenuation();
-    float outerAttn = pSelectedLight->Get_LightOuterAttenuation();
-
-    const char* lightTypeNames[] = { "Directional", "Point", "Spot" };
-    int currentTypeIdx = static_cast<int>(lightType);
-    if (ImGui::Combo("Light Type", &currentTypeIdx, lightTypeNames, IM_ARRAYSIZE(lightTypeNames)))
-    {
-        pSelectedLight->Set_LightType(static_cast<LIGHT_TYPE>(currentTypeIdx));
-    }
-
-    if (ImGui::ColorEdit3("Color", &color.x))
-    {
-        pSelectedLight->Set_LightColor(color);
-    }
-
-    if (ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f, "%.2f"))
-    {
-        pSelectedLight->Set_LightIntensity(intensity);
-    }
-
-    // 타입별 가변 속성 노출
-    if (lightType == LIGHT_TYPE::DIRECTIONAL || lightType == LIGHT_TYPE::SPOTLIGHT)
-    {
-        // 방향 벡터 조절 (DragFloat3)
-        if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f, "%.2f"))
-        {
-            pSelectedLight->Set_LightDirection(direction);
-        }
-    }
-
-    if (lightType == LIGHT_TYPE::POINT || lightType == LIGHT_TYPE::SPOTLIGHT)
-    {
-        // 위치 조절
-        if (ImGui::DragFloat3("Position", &position.x, 0.1f, -100.0f, 100.0f, "%.2f"))
-        {
-            pSelectedLight->Set_LightPosition(position);
-        }
-        // 범위 조절
-        if (ImGui::DragFloat("Range", &range, 0.1f, 0.0f, 1000.0f, "%.2f"))
-        {
-            pSelectedLight->Set_LightRange(range);
-        }
-    }
-
-    if (lightType == LIGHT_TYPE::SPOTLIGHT) {
-        if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 180.0f, "%.1f도"))
-        {
-            pSelectedLight->Set_LightInnerAttenuation(innerAttn);
-        }
-        if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 180.0f, "%.1f도"))
-        {
-            pSelectedLight->Set_LightOuterAttenuation(outerAttn);
-        }
-    }
-
-    ImGui::End();
 }
 VOID CLightManager::Update(_float fTimeDelta){
 
@@ -181,13 +204,15 @@ VOID CLightManager::Bind_DynamicLight(){
     CB_LIGHT LightBuffer{};
     uint32_t LightCount = 0;
 
-	auto iter = m_LightHandleList.begin(); iter != m_LightHandleList.end();
     for (auto& LightHandle : m_LightHandleList) {
         if (LightCount >= MAX_LIGHT_COUNT) break;
 
         // Need Culling - Frustum & Distance
         auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
 		if (nullptr == LightOBJ)	continue;
+
+		// Distance Culling
+		// Frustum Culling
 
         LightBuffer.AffectedLight[LightCount].LightType         = ETOUI(LightOBJ->Get_LightType());
         LightBuffer.AffectedLight[LightCount].LightDirection    = LightOBJ->Get_LightDirection();
@@ -206,8 +231,7 @@ VOID CLightManager::Bind_DynamicLight(){
     D3D11_MAPPED_SUBRESOURCE MRES;
     if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
     {
-        CB_LIGHT   CBL = LightBuffer;
-        memcpy(MRES.pData, &CBL, sizeof(CB_LIGHT));
+        memcpy(MRES.pData, &LightBuffer, sizeof(CB_LIGHT));
         m_pContext->Unmap(LightConstantBuffer->GetCBuffer().Get(), 0);
     }
 

@@ -14,6 +14,16 @@ TextureCube IrridianceMap   : register(t7);
 TextureCube PreFilterMap    : register(t8);
 Texture2D   LUTMap          : register(t9);
 
+static const float  ShadowSmoothness = 1.5f;
+static const float  ShadowBrightness = 0.25f;
+static const float2 ShadowMapResolution = { 1280.f, 720.f };
+
+static const float2 PoissonDisk[8] =
+{
+    float2(0.000000, 0.000000), float2(0.527837, -0.085868), float2(-0.040062, 0.536087), float2(-0.670445, -0.179949),
+    float2(-0.419418, -0.616039), float2(0.440453, 0.639399), float2(-0.757088, 0.349334), float2(0.574619, -0.715851)
+};
+
 struct PS_IN
 {
     float4 Position : SV_POSITION;
@@ -22,12 +32,12 @@ struct PS_IN
 struct PS_IN_BLEND
 {
     float4 Position : SV_POSITION;
-    float4 Normal : NORMAL;
-    float4 Tangent : TANGENT;
+    float4 Normal   : NORMAL;
+    float4 Tangent  : TANGENT;
     float4 Binormal : BINORMAL;
     float2 TexCoord : TEXCOORD0;
     float4 WorldPos : TEXCOORD1;
-    float4 ProjPos : TEXCOORD2;
+    float4 ProjPos  : TEXCOORD2;
 };
 
 struct PS_OUT
@@ -35,7 +45,7 @@ struct PS_OUT
     vector Diffuse : SV_TARGET0;
 };
 
-float       DistributionGGX(float3 N, float3 H, float _Roughness)
+float  DistributionGGX(float3 N, float3 H, float _Roughness)
 {
     float R = _Roughness * _Roughness;
     float R2 = R * R;
@@ -44,45 +54,43 @@ float       DistributionGGX(float3 N, float3 H, float _Roughness)
     float NDH2 = NDH * NDH;
     
     float Num = R2;
-    float Denom = (NDH2 * (R2 - 1.0) + 1.0);
+    float Denom = ((NDH * NDH) * (R2 - 1.0) + 1.0);
     Denom = PI * Denom * Denom;
 	
     return Num / max(0.000001f, Denom);
 }
-
-float       VisibilitySmithJointGGX(float NdotV, float NdotL, float roughness)
+float  VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
 {
-    float a = roughness * roughness;
-    float a2 = a * a;
+    float R = _Roughness * _Roughness;
+    float R2 = R * R;
     
-    float lambdaV = NdotL * sqrt(max((-NdotV * a2 + NdotV) * NdotV + a2, 0.001f));
-    float lambdaL = NdotV * sqrt(max((-NdotL * a2 + NdotL) * NdotL + a2, 0.001f));
+    float lambdaV = NDL * sqrt(max((-NDY * R2 + NDY) * NDY + R2, 0.001f));
+    float lambdaL = NDY * sqrt(max((-NDL * R2 + NDL) * NDL + R2, 0.001f));
     
     float  Denom = lambdaV + lambdaL;
     return Denom > 0.0f ? 0.5f / Denom : 0.0f;
 }
-
-float3      FresnelSchlick(float CTH, float3 MBR)
+float3 FresnelSchlick(float CTH, float3 MBR)
 {
-    float ClampCTH = clamp(CTH, 0.0f, 1.0f);
-    return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
+    float   ClampCTH = clamp(CTH, 0.0f, 1.0f);
+    return  MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
 
-float3 ReconstructWorldPos(float2 uv, float depth)
+float4 Convert_WorldPosByDepth(float _Depth, float2 _TexCoord)
 {
-    float x = uv.x * 2.0f - 1.0f;
-    float y = (1.0f - uv.y) * 2.0f - 1.0f;
-    float z = depth;
+    float4 NDCWorldPos;
     
-    float4 ndcPos = float4(x, y, z, 1.0f);
+    NDCWorldPos.x = _TexCoord.x * +2.f - 1.f;
+    NDCWorldPos.y = _TexCoord.y * -2.f + 1.f;
+    NDCWorldPos.z = _Depth;
+    NDCWorldPos.w = 1.f;
     
-    float4 worldPos = mul(ndcPos, g_matInvViewProj);
+    // NDC -> ViewSpace(InvProj) -> WorldSpace(InvView)
+    float4 WorldPos = mul(NDCWorldPos, g_matInvViewProj);
     
-    worldPos /= worldPos.w;
-    
-    return worldPos.xyz;
+    return float4(WorldPos.xyz / WorldPos.w, 1.f);
 }
-float3      Compute_IBL(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
+float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
 {
     float NDV = max(dot(N, V), 0.0);
     
@@ -107,29 +115,58 @@ float3      Compute_IBL(float3 N, float3 V, float3 albedo, float _Roughness, flo
     return (DiffuseAmbient + SpecularAmbient);
 }
 
-float   Compute_ShadowPCF(float4 _WorldPos)
+float Get_GradientNoise(float2 _PixelPos)
 {
-    float4 LightSpacePos = mul(_WorldPos, g_matShadowLightViewProj);
-    
-    LightSpacePos.xyz /= LightSpacePos.w;
+    return frac(sin(dot(_PixelPos, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
+float Compute_NormalShadow(float4 _WorldPos, float2 _TexCoord)
+{
+    float4 LightPos = mul(_WorldPos, g_matShadowLightViewProj);
     
     float2 ShadowMapUV;
-    ShadowMapUV.x = _WorldPos.x * 0.5f + 0.5f;
-    ShadowMapUV.y = -_WorldPos.y * 0.5f + 0.5f;
+    ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
+    ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
     
-    float CurrentDepth = _WorldPos.z;
-    CurrentDepth -= 0.0005f;
-
-    if (ShadowMapUV.x < 0.f || ShadowMapUV.y < 0.f || ShadowMapUV.x > 1.f || ShadowMapUV.y > 1.f)
+    float CurrentPixelDepth = LightPos.z;
+    CurrentPixelDepth -= 0.0005f;           // Depth Bias
+    
+    float ShadowMapDepth = ShadowMap.Sample(LinearWrap, ShadowMapUV).r;
+    
+    float ShadowFactor = 1.0f;
+    
+    // CurrentPixelDepth = 월드의 어느 한 지점을 Shadow 카메라를 기준으로 평가한 깊이.
+    // ShadowMapDepth    = Shadow 카메라에 기록했던 깊이
+    
+    // CurrentPixelDepth > ShadowMapDepth : 가려진다.(어두워짐(그림자))
+    // CurrentPixelDepth = ShadowMapDepth : 똑같다.(밝아짐)
+    // CurrentPixelDepth < ShadowMapDepth : 허공
+    
+    [branch]
+    if (CurrentPixelDepth > ShadowMapDepth)
     {
-        return 0.f;
+        ShadowFactor = ShadowBrightness;
     }
     
-    float width, height;
-    ShadowMap.GetDimensions(width, height);
-    float2 texelSize = float2(1.0f / width, 1.0f / height);
+    return ShadowFactor;
+}
+float Compute_PCFShadow(float4 _WorldPos, float2 _TexCoord)
+{
+    float4 LightPos = mul(_WorldPos, g_matShadowLightViewProj);
     
-    float shadowFactor = 0.f;
+    float2 ShadowMapUV;
+    ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
+    ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
+
+    float CurrentPixelDepth = LightPos.z;
+    CurrentPixelDepth -= 0.0005f;
+
+    // Sampling Near Pixels (3 X 3)
+    float ShadowMapWidth, ShadowMapWHeight;
+    ShadowMap.GetDimensions(ShadowMapWidth, ShadowMapWHeight);
+    float2 TexelSize = float2(1.0f / ShadowMapWidth, 1.0f / ShadowMapWHeight);
+    
+    float ShadowFactorSum = 0.f;
     
     [unroll]
     for (int x = -1; x <= 1; ++x)
@@ -137,65 +174,83 @@ float   Compute_ShadowPCF(float4 _WorldPos)
         [unroll]
         for (int y = -1; y <= 1; ++y)
         {
-            float2 offset = float2(x, y) * texelSize;
-            shadowFactor += ShadowMap.SampleCmpLevelZero(ShadowSampler, ShadowMapUV + offset, CurrentDepth).r;
+            float2  SamplingPos = float2(x, y) * TexelSize;
+            float   ShadowMapDepth = ShadowMap.SampleCmpLevelZero(ShadowSampler, ShadowMapUV + SamplingPos, CurrentPixelDepth).r;
+            
+            [branch]
+            if (CurrentPixelDepth - 0.0005f > ShadowMapDepth)
+            {
+                ShadowFactorSum += ShadowBrightness;
+            }
+            else
+            {
+                ShadowFactorSum += 1.0f;
+            }
         }
+        
     }
-    return shadowFactor / 9.0f;
+    return ShadowFactorSum / 9.0f;
+}
+float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
+{
+    float4 LightPos = mul(_WorldPos, g_matShadowLightViewProj);
+    
+    float2 ShadowMapUV;
+    ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
+    ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
+    
+    float CurrentPixelDepth = LightPos.z;
+    CurrentPixelDepth -= 0.0005f; // Depth Bias
+    
+    float RandomNoise = Get_GradientNoise(_PixelPos);
+    float RandomAngle = RandomNoise * 2.f * PI;
+    
+    float CosAngle = cos(RandomAngle);
+    float SinAngle = sin(RandomAngle);
+    
+    float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
+    
+    // 주변 ShadowSmoothness 반경까지 Sampling
+    float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
+    
+    float ShadowFactor = 0.0f;
+
+    [unroll]
+    for (int i = 0; i < 8; ++i)
+    {
+        float2 RotatedOffset = mul(PoissonDisk[i], RotationMat);
+        
+        float2 SampleUV = ShadowMapUV + (RotatedOffset * SamplingRange);
+        
+        // SampleCmpLevelZero : Texture2D(ShadowMap)의 깊이와 CompareValue(CurrentPixelDepth) 를 비교했을 때 
+        // CompareValue가 크면 1, 아니면 0 반환.(x값에 결과값 저장)
+        ShadowFactor += ShadowMap.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
+    }
+    
+    return ShadowFactor / 8.f;
 }
 
 //[earlydepthstencil]         // Test : Block Pixel OverDraw
 PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT OUT;
-    float4 DepthData = DepthMap.Sample(LinearWrap, IN.TexCoord);
+    float DepthData = DepthMap.Sample(LinearWrap, IN.TexCoord).r;
     
     [branch]
-    if (DepthData.r >= 1.0f)
+    if (DepthData >= 1.0f)
     {
-        OUT.Diffuse = float4(0.f, 0.f, 0.f, 0.f);
+        OUT.Diffuse = float4(0.f, 0.f, 1.f, 1.f);
         return OUT;
     }
     
-    float3 DepthWorld = ReconstructWorldPos(IN.TexCoord, DepthData.r);
+    float4 DepthWorld  = Convert_WorldPosByDepth(DepthData, IN.TexCoord);
     
-    float4 ShadowData = ShadowMap.Sample(LinearWrap, IN.TexCoord);
-    
-    vector NDCPos;
-    
-    float fNear = 0.1f;
-    float fFar = 1000.f;
-    float linearDepth = fNear / (fFar - DepthData.r * (fFar - fNear));
-
-    NDCPos.x = IN.TexCoord.x * 2.f - 1.f;
-    NDCPos.y = IN.TexCoord.y * -2.f + 1.f;
-    NDCPos.z = DepthData.r;
-    NDCPos.w = 1.f;
-    
-    //float fViewSpaceZ = DepthData.y * 1000.f;
-    //NDCPos = NDCPos * fViewSpaceZ;
-    float4 WorldPos = mul(NDCPos, g_matInvViewProj);
-    WorldPos.xyz /= WorldPos.w;
-    WorldPos.w = 1.f;
-    
-    float4 LightPos = mul(WorldPos, g_matShadowLightViewProj);
-    
-    float2 vTexcoord;
-    vTexcoord.x = (LightPos.x / LightPos.w) * 0.5f + 0.5f;
-    vTexcoord.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
-    
-    
-    float fCurrentZ = LightPos.z;// / LightPos.w;
-    
-    float fOldZ = ShadowMap.Sample(LinearWrap, vTexcoord).r;
-    
-    
-    
+    float ShadowFactor = Compute_SmoothShadow(DepthWorld, IN.TexCoord, IN.Position.xy);
     
     float3 WorldNormal = NormalMap.Sample(LinearWrap, IN.TexCoord).rgb;
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
-    float3  V = normalize(g_vCamPos - DepthWorld);
+    float3  V = normalize(g_vCamPos - DepthWorld.xyz);
     float   R = reflect(-V, WorldNormal);
 
     float   NDV   = max(dot(WorldNormal, V), 0.f);
@@ -218,7 +273,7 @@ PS_OUT PSMain(PS_IN IN)
         float3 L, Radiance;
     
         [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
+        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld.xyz, L, Radiance))
             continue;
     
         float RawNDL = dot(WorldNormal, L);
@@ -247,30 +302,14 @@ PS_OUT PSMain(PS_IN IN)
     float3 Emissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
     
     // Enviroment Light Process
-    float3 Ambient = Compute_IBL(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
+    float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
     
     float AO = AmbientMap.Sample(LinearWrap, IN.TexCoord).r;
 
-    if (g_matShadowLightViewProj[0][0] == 0.f ||
-        g_matShadowLightViewProj[1][1] == 0.f ||
-        g_matShadowLightViewProj[2][2] == 0.f ||
-        g_matShadowLightViewProj[3][3] == 0.f)
-    {
-        OUT.Diffuse = float4(0.f, 0.f, 0.f, 1.f);
-        return OUT;
-    }
-    
-    float ShadowFactor = 1.0f;
-    if (fCurrentZ - 0.0005f > fOldZ)
-    {
-        ShadowFactor = 0.25f;
-    }
-    
     LightAccumulation *= ShadowFactor;
     LightAccumulation *= AO;
     
     OUT.Diffuse = float4(LightAccumulation + Emissive, 1.f);
-    
     return OUT;
 }
 
