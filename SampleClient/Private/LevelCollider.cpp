@@ -65,7 +65,7 @@ HRESULT CLevelCollider::Initialize()
 		Desc.collInfos = { {"ComCollider1", col1} };
 		Desc.sObjectTag = "TestColl";
 		if (auto handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider",
-			"00_COLLIDERS", &Desc))
+			"01_COLLIDERS", &Desc))
 		{
 			if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(handle.value()))
 			{
@@ -86,7 +86,7 @@ HRESULT CLevelCollider::Initialize()
 		Desc.collInfos = { {"ComCollider1", col1} };
 		Desc.sObjectTag = "TestColl";
 		if (auto handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider",
-			"00_COLLIDERS", &Desc))
+			"01_COLLIDERS", &Desc))
 		{
 			if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(handle.value()))
 			{
@@ -106,7 +106,7 @@ HRESULT CLevelCollider::Initialize()
 		Desc.collInfos = { {"ComCollider1", col1} };
 		Desc.sObjectTag = "TestColl";
 		if (auto handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider",
-			"00_COLLIDERS", &Desc))
+			"01_COLLIDERS", &Desc))
 		{
 			if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(handle.value()))
 			{
@@ -133,7 +133,7 @@ HRESULT CLevelCollider::Initialize()
 		Desc.collInfos = { {"ComCollider1", col1} };
 		Desc.sObjectTag = "TestColl";
 		if (auto handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider",
-			"00_COLLIDERS", &Desc))
+			"01_COLLIDERS", &Desc))
 		{
 			if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(handle.value()))
 			{

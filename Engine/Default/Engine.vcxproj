@@ -152,7 +152,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\imgui-1.83\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -266,6 +266,7 @@
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
     <ClInclude Include="..\public\LuaManager.h" />
+    <ClInclude Include="..\public\LuaWatcher.h" />
     <ClInclude Include="..\public\ResLuaScript.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
     <ClInclude Include="..\Public\NavMeshManager.h" />
@@ -538,6 +539,7 @@
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
+    <ClCompile Include="..\private\LuaWatcher.cpp" />
     <ClCompile Include="..\private\ResLuaScript.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\FlipbookUI.cpp" />
@@ -716,6 +718,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\LuaFiles\SomeFolder\Hi.lua" />
     <None Include="..\LuaFiles\Test.lua" />
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli" />
   </ItemGroup>

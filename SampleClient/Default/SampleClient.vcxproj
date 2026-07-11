@@ -304,6 +304,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LuaFiles\ClientTest\asdf.lua" />
+  </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>

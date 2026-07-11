@@ -22,9 +22,15 @@ namespace Engine
 
 	inline float Randf(float min, float max)
 	{
-		return min +
-			(max - min) *
-			(rand() / (float)RAND_MAX);
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> dist(min, max);
+		return dist(gen);
+
+		//return min +
+		//	(max - min) *
+		//	(rand() / (float)RAND_MAX);
 	}
 
 	inline int RandInt(int min, int max)

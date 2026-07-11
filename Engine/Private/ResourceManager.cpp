@@ -72,6 +72,41 @@ void CResourceManager::Initialize()
 	
 }
 
+const std::vector<CResource*>* CResourceManager::GetResourcesByPath(const _string& sPath) const
+{
+	auto it = m_PathLookup.find(sPath);
+
+	// 경로가 맵에 존재하지 않으면 nullptr 반환
+	if (it == m_PathLookup.end())
+	{
+		return nullptr;
+	}
+
+	// 찾은 벡터의 주소를 반환
+	return &it->second;
+}
+
+void CResourceManager::RemovePathLookup(const _string& sPath, CResource* pRes)
+{
+	if (m_bIsShutdown)
+		return;
+
+	auto it = m_PathLookup.find(sPath);
+	if (it != m_PathLookup.end())
+	{
+		auto& vec = it->second;
+
+		// erase-remove idiom: 해당 포인터와 일치하는 것만 삭제
+		vec.erase(std::remove(vec.begin(), vec.end(), pRes), vec.end());
+
+		// 더 이상 해당 경로를 쓰는 리소스가 없으면 키 자체를 제거 (메모리 최적화)
+		if (vec.empty())
+		{
+			m_PathLookup.erase(it);
+		}
+	}
+}
+
 SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const StringID& sResTag,
 	_string_id eAssetType, const _string& sPath, void* pArg)
 {
@@ -115,6 +150,20 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 		newAssets.emplace(sResTag, newVecAsset);
 
 		m_Resources.emplace(sGroupTag, newAssets);
+	}
+	
+	// RegisterPathLookup(CResource* pRes)
+	{
+		if (pAsset)
+		{
+			const _string& resPath = pAsset->GetPath();
+			if (!resPath.empty())
+			{
+				// 동일한 경로를 가진 리소스가 여러 개일 수 있으므로 vector에 추가
+				m_PathLookup[resPath].push_back(pAsset.get());
+			}
+		}
+		
 	}
 	return pAsset;
 }
@@ -317,4 +366,13 @@ SPtr<CResource> CResourceManager::CreateResource(_string_id eAssetType, const _s
 UPtr<CResourceManager> CResourceManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {
 	return ToUPtr(new CResourceManager{ pDevice , pContext });
+}
+
+void CResourceManager::Free()
+{
+	m_bIsShutdown = true;
+
+	m_Resources.clear();
+
+	CEngineBase::Free();
 }

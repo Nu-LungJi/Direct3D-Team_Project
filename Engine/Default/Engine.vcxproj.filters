@@ -430,6 +430,12 @@
     <Filter Include="Component\Lua">
       <UniqueIdentifier>{b39ae02f-5cb2-4ba1-b7b3-e4646aac4b23}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Lua\Watcher">
+      <UniqueIdentifier>{9d20ff6d-a821-4923-8d6b-f0880f32157f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles\SomeFolder">
+      <UniqueIdentifier>{bde2835c-1d45-44d2-aca4-56623b27cddf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -921,6 +927,9 @@
     <ClInclude Include="..\public\ComLuaScript.h">
       <Filter>Component\Lua</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LuaWatcher.h">
+      <Filter>Lua\Watcher</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1370,6 +1379,9 @@
     <ClCompile Include="..\private\ComLuaScript.cpp">
       <Filter>Component\Lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LuaWatcher.cpp">
+      <Filter>Lua\Watcher</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1465,6 +1477,9 @@
     </None>
     <None Include="..\LuaFiles\Test.lua">
       <Filter>LuaFiles</Filter>
+    </None>
+    <None Include="..\LuaFiles\SomeFolder\Hi.lua">
+      <Filter>LuaFiles\SomeFolder</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -13,6 +13,13 @@ CLevelManager::~CLevelManager()
 {
 }
 
+HRESULT CLevelManager::ChangeLevel(const _string& ID)
+{
+	m_sChangeLevel = ID;
+	
+	return S_OK;
+}
+
 HRESULT CLevelManager::ChangeLevel(UPtr<CLevel> pNewLevel)
 {
 	assert(pNewLevel);
@@ -74,19 +81,32 @@ void CLevelManager::UpdateGUI()
 
 void CLevelManager::FrameStart(_float fTimeDelta)
 {
+	if (m_sChangeLevel != "")
+	{
+		auto iter = m_LevelChangeFuncs.find(m_sChangeLevel);
+		if (iter != m_LevelChangeFuncs.end())
+		{
+			iter->second();
+		}
+		m_sChangeLevel = ""; // 예약 초기화
+	}
+
 	if (m_pLevelBeforeLevelChange.get())
 	{
 		if (m_pCurrentLevel.get())
 		{
 			//m_pCurrentLevel->BeforeLevelChange();
-			m_pCurrentLevel.reset();
+			m_pCurrentLevel.reset(); 
 		}
 
-		m_pCurrentLevel = std::move(m_pLevelBeforeLevelChange);
+		m_pCurrentLevel = std::move(m_pLevelBeforeLevelChange); 
 		//m_pCurrentLevel->AfterLevelChange();
 	}
 
-	m_pCurrentLevel->FrameStart(fTimeDelta);
+	if (m_pCurrentLevel)
+	{
+		m_pCurrentLevel->FrameStart(fTimeDelta);
+	}
 }
 
 void CLevelManager::FrameEnd(_float fTimeDelta)

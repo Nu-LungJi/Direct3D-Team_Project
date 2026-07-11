@@ -39,6 +39,15 @@ _string CResource::GetStateStr() const
 	return {};
 }
 
+void CResource::Free()
+{
+	if (!m_sPath.empty())
+	{
+		CGameInstance::Get().RemoveResourcePathLookup(m_sPath, this);
+	}
+	CEngineBase::Free();
+}
+
 void CResource::UpdateGUI()
 {
 	ImGui::Text("Type: %s", GetTypeString().data());

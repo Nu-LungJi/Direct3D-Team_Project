@@ -89,6 +89,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pDbgLineRender = CDbgLineRender::Create(ppDevice.Get(), ppContext.Get());
+	if (m_pDbgLineRender == nullptr)
+	{
+		return E_FAIL;
+	}
+
 	m_pLuaManager = CLuaManager::Create();
 	if (m_pLuaManager == nullptr)
 	{
@@ -220,11 +226,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	if (m_pActionManager == nullptr)
 		return E_FAIL;
 
-	m_pDbgLineRender = CDbgLineRender::Create(ppDevice.Get(), ppContext.Get());
-	if (m_pDbgLineRender == nullptr)
-	{
-		return E_FAIL;
-	}
+
 
 	m_pSerializeManager = CSerializeManager::Create();
 	if (m_pSerializeManager == nullptr)
@@ -334,6 +336,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	{
 		ZoneScopedN("SoundManager_Update");
 		m_pSoundManager->Update();
+	}
+
+	// lua hot reload
+	{
+		m_pLuaManager->Update(fTimeDelta);
 	}
 
 
@@ -484,9 +491,9 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 #pragma endregion
 
 #pragma region LUA_MANAGER
-HRESULT CGameInstance::LuaScriptExecute(const std::string& script, const sol::environment& env)
+HRESULT CGameInstance::LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& path)
 {
-	return m_pLuaManager->Execute(script, env);
+	return m_pLuaManager->Execute(script, env, path);
 }
 sol::environment CGameInstance::LuaCreateEnvironment()
 {
@@ -519,6 +526,18 @@ void CGameInstance::LuaEnvDump(const sol::environment& env) const
 void CGameInstance::LuaEnvClear(sol::environment& env)
 {
 	m_pLuaManager->EnvClear(env);
+}
+void CGameInstance::LuaRegisterComponent(const std::string& path, CComLuaScript* pComp)
+{
+	m_pLuaManager->RegisterComponent(path, pComp);
+}
+void CGameInstance::LuaUnregisterComponent(const std::string& path, CComLuaScript* pComp)
+{
+	m_pLuaManager->UnregisterComponent(path, pComp);
+}
+void CGameInstance::LuaRegisterExtension(std::function<void(sol::state&)> extensionFunc)
+{
+	m_pLuaManager->RegisterExtension(extensionFunc);
 }
 #pragma endregion
 void CGameInstance::MouseFix() const
@@ -1122,7 +1141,7 @@ HRESULT CGameInstance::InitializeResources()
 	// 루아 리소스
 	{
 		
-		auto res = AddResource(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST, CResLuaScript::CreateAndLoad("./LuaFiles/Test.lua"));
+		auto res = AddResource(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST, CResLuaScript::CreateAndLoad("./LuaFiles/SomeFolder/Hi.lua"));
 	
 	}
 
@@ -1305,6 +1324,16 @@ void CGameInstance::DelResource(const StringID& sGroupTag, const StringID& sResT
 {
 	m_pResourceManager->DelResource(sGroupTag, sResTag);
 }
+const std::vector<CResource*>* CGameInstance::GetResourcesByPath(const _string& sPath) const
+{
+	if (!m_pResourceManager) return nullptr;
+	return m_pResourceManager->GetResourcesByPath(sPath);
+}
+void CGameInstance::RemoveResourcePathLookup(const _string& sPath, CResource* pRes)
+{
+	if (!m_pResourceManager) return;
+	m_pResourceManager->RemovePathLookup(sPath, pRes);
+}
 #pragma endregion
 
 
@@ -1384,6 +1413,10 @@ _bool CGameInstance::MouseDown(MOUSEKEYSTATE eMouseState) const
 HRESULT CGameInstance::ChangeLevel(UPtr<CLevel> pNewLevel)
 {
 	return m_pLevelManager->ChangeLevel(std::move(pNewLevel));
+}
+HRESULT CGameInstance::ChangeLevel(const _string& ID)
+{
+	return m_pLevelManager->ChangeLevel(ID);
 }
 void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 {

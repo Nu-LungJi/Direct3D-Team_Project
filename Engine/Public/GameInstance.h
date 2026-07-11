@@ -104,11 +104,15 @@ public:
 	HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
 	void DelResource(const StringID& sGroupTag);
 	void DelResource(const StringID& sGroupTag, const StringID& sResTag);
+
+	const std::vector<CResource*>* GetResourcesByPath(const _string& sPath) const;
+	void RemoveResourcePathLookup(const _string& sPath, CResource* pRes);
 #pragma endregion
 
 #pragma region LEVEL_MANAGER
 public:
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
+	HRESULT ChangeLevel(const _string& ID);
 	void RegisterLevelChangeFunc(const _string& ID, _Func func);
 #pragma endregion
 
@@ -382,7 +386,7 @@ public:
 #pragma endregion
 
 #pragma region LUA_MANAGER
-	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env);
+	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& path);
 	sol::environment LuaCreateEnvironment();
 	template<typename... Args>
 	HRESULT LuaCall(sol::environment& env, std::string_view function, Args&&... args)
@@ -407,6 +411,11 @@ public:
 	void LuaRemoveValue(sol::environment& env, std::string_view name);
 	void LuaEnvDump(const sol::environment& env) const;
 	void LuaEnvClear(sol::environment& env);
+	void LuaRegisterComponent(const std::string& path, CComLuaScript* pComp);
+	void LuaUnregisterComponent(const std::string& path, CComLuaScript* pComp);
+	void LuaRegisterExtension(std::function<void(sol::state&)> extensionFunc);
+	template<typename T>
+	void LuaRegisterType() { m_pLuaManager->RegisterType<T>(); }
 #pragma endregion
 
 public:

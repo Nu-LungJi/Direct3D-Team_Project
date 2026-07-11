@@ -19,6 +19,10 @@ public:
 	const std::string& GetSource() const { return m_Source; }
 
 public:
+	// 리소스 리로드를 위한 함수 추가
+	HRESULT Reload();
+
+public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 

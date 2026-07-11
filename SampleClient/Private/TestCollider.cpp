@@ -53,13 +53,46 @@ HRESULT CTestCollider::Initialize(void* pArg)
 
 	{
 		CComLuaScript::DESC Desc{};
-		Desc.pResScript = CGameInstance::Get().GetResourceFirst<CResLuaScript>(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST);
+		Desc.pResScript = CGameInstance::Get().AddResourceT<CResLuaScript>("SampleClient_Lua", "Hi", CResLuaScript::CreateAndLoad("./LuaFiles/ClientTest/asdf.lua"));
+		//Desc.pResScript = CGameInstance::Get().GetResourceFirst<CResLuaScript>(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST);
+		//Desc.pResScript = CResLuaScript::CreateAndLoad("./LuaFiles/SomeFolder/Hi.lua");
+
+		Desc.funcScriptLoad = [copyHandle = GetHandle()](CComLuaScript* pComLua)
+			{
+				pComLua->GetEnv()["hello"] = "world";
+				pComLua->GetEnv()["msgBox"] = [](const std::string& str) {MSG_BOX_STR(StringToWString(str).c_str()); };
+
+				pComLua->GetEnv()["Gen"] = sol::table(pComLua->GetEnv().lua_state(), sol::create);
+				pComLua->GetEnv()["Gen"]["Spawn"] = [](float randX, float randY, float randZ)
+					{
+						{
+							CComCollider::DESC col1{};
+							col1.eCollType = CollType::Box;
+							col1.vCenter = {};
+							col1.vExtents = { 1.f, 1.f, 1.f };
+
+							CTestCollider::DESC Desc{};
+							Desc.CollGroupID = "Coll_Tests";
+							Desc.collInfos = { {"ComCollider1", col1} };
+							Desc.sObjectTag = "TestColl";
+							if (auto handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider",
+								"01_COLLIDERS", &Desc))
+							{
+								if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(handle.value()))
+								{
+									pObj->GetTransform().SetPosition(_float3{ randX, randY, randZ });
+								}
+							}
+						}
+					};
+			};
+		
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::LUA, ES_EngineProtoComponent::Prototype_Component_ComLuaScript, "ComLuaScript", & Desc, &m_pComLuaScript)))
 		{
 			return E_FAIL;
 		};
 
-
+		
 	}
     return S_OK;
 }
@@ -68,28 +101,33 @@ void CTestCollider::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (m_bController)
 	{
-		if (CGameInstance::Get().KeyPressing(DIK_LEFT))
-		{
-			GetTransform().AddPosition(XMVectorSet(-0.1f, 0.f, 0.f, 0.f));
-		}
-		if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
-		{
-			GetTransform().AddPosition(XMVectorSet(+0.1f, 0.f, 0.f, 0.f));
-		}
-		if (CGameInstance::Get().KeyPressing(DIK_UP))
-		{
-			GetTransform().AddPosition(XMVectorSet(0.f, 0.f, 0.1f, 0.f));
-		}
-		if (CGameInstance::Get().KeyPressing(DIK_DOWN))
-		{
-			GetTransform().AddPosition(XMVectorSet(0.f, 0.f, -0.1f, 0.f));
-		}
+		m_pComLuaScript->PriorityUpdate(fTimeDelta);
+		//if (CGameInstance::Get().KeyPressing(DIK_LEFT))
+		//{
+		//	GetTransform().AddPosition(XMVectorSet(-0.1f, 0.f, 0.f, 0.f));
+		//}
+		//if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		//{
+		//	GetTransform().AddPosition(XMVectorSet(+0.1f, 0.f, 0.f, 0.f));
+		//}
+		//if (CGameInstance::Get().KeyPressing(DIK_UP))
+		//{
+		//	GetTransform().AddPosition(XMVectorSet(0.f, 0.f, 0.1f, 0.f));
+		//}
+		//if (CGameInstance::Get().KeyPressing(DIK_DOWN))
+		//{
+		//	GetTransform().AddPosition(XMVectorSet(0.f, 0.f, -0.1f, 0.f));
+		//}
 	}
 	
 }
 
 void CTestCollider::Update(E::_float fTimeDelta)
 {
+	if (m_bController)
+	{
+		m_pComLuaScript->Update(fTimeDelta);
+	}
 	if (m_bController)
 	{
 		GetTransform().AddRotation(XMVectorSet(0.f, 1.f, 0.f, 0.f), 90.f * fTimeDelta);
@@ -105,6 +143,10 @@ void CTestCollider::Update(E::_float fTimeDelta)
 
 void CTestCollider::LateUpdate(E::_float fTimeDelta)
 {
+	if (m_bController)
+	{
+		m_pComLuaScript->LateUpdate(fTimeDelta);
+	}
 	if (m_bController)
 	{
 		if (auto* pVecColls = CGameInstance::Get().GetColliderGroup(m_CollGroupID))

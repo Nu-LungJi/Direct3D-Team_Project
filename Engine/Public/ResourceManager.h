@@ -21,6 +21,12 @@ private:
 	std::unordered_map<StringID, RESOURCES> m_Resources{};
 
 public:
+	const std::vector<CResource*>* GetResourcesByPath(const _string& sPath) const;;
+	void RemovePathLookup(const _string& sPath, CResource* pRes);
+private:
+	std::unordered_map<_string, std::vector<CResource*>> m_PathLookup{};
+
+public:
 	SPtr<CResource> AddResource(const StringID& sGroupTag, const StringID& sResTag, _string_id eAssetType, const _string& sPath, void* pArg);
 	SPtr<CResource> AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset);
 	template<typename T>
@@ -57,6 +63,10 @@ private:
 
 public:
 	static UPtr<CResourceManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
+
+private:
+	_bool m_bIsShutdown{ false };
+	void Free() override;
 };
 
 NS_END

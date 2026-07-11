@@ -2,6 +2,9 @@
 #include "Engine_Defines.h"
 
 NS_BEGIN(Engine)
+class CLuaWatcher;
+class CResLuaScript;
+class CComLuaScript;
 class CLuaManager final : public CEngineBase
 {
 private:
@@ -12,15 +15,21 @@ public:
 	void UpdateGUI();
 
 public:
+	void Update(_float fTimeDelta);
 
 private:
 	HRESULT Initialize();
-
+	HRESULT Initialize_PrintBinding();
+	HRESULT Initialize_FunctionBinding();
+	HRESULT Initialize_EngineGameObjectManagerBinding();
+	HRESULT Initialize_MathBinding();
+	HRESULT Initialize_TableBinding();
+	HRESULT Initialize_DebugDrawBinding();
 public:
 	bool HasFunction(
 		sol::environment& env,
 		std::string_view function) const;
-	HRESULT Execute(const std::string& script, const sol::environment& env);
+	HRESULT Execute(const std::string& script, const sol::environment& env, const std::string& path);
 	sol::environment CreateEnvironment();
 	template<typename... Args>
 	HRESULT Call(sol::environment& env, std::string_view function, Args&&... args);
@@ -83,11 +92,49 @@ public:
 	void RemoveValue(sol::environment& env, std::string_view name) { env[std::string(name)] = sol::lua_nil; }
 	void EnvDump(const sol::environment& env) const;
 	void EnvClear(sol::environment& env);
+	void RegisterExtension(std::function<void(sol::state&)> extensionFunc) {
+		extensionFunc(m_Lua);
+	}
+
+public:
+	template<typename T>
+	void RegisterType() {
+		m_TypeRegistry[ StringID{ T::StaticType }] = [this](CEngineBase* pBase) -> sol::object {
+			T* pCasted = Cast<T>(pBase);
+
+			// pCasted가 nullptr이면 sol::nil을 반환하여 루아에서 안전하게 처리됨
+			if (!pCasted) return sol::nil;
+
+			return sol::make_object(m_Lua, pCasted);
+			};
+	}
+private:
+	std::unordered_map<StringID, std::function<sol::object(CEngineBase*)>> m_TypeRegistry;
 
 private:
 	// 엔진에서 사용하는 유일한 VM
-	sol::state m_Lua;
+	sol::state m_Lua{};
 
+	UPtr<CLuaWatcher> m_pLuaWatcher{};
+
+public:
+	void UpdateHotReload();
+	void OnFileChanged(const std::string& path);
+
+private:
+	// 파일 경로를 Key로, 해당 리소스를 참조하는 컴포넌트들을 Value로 관리
+	std::unordered_map<std::string, std::vector<CComLuaScript*>> m_scriptRegistry{};
+
+//public:
+//	void RegistHotReloadScriptResource(WPtr<CResLuaScript> pResLuaScript);
+//private:
+//	std::list<WPtr<CResLuaScript>> m_listResLuascript{};
+
+public:
+	// 컴포넌트가 생성될 때 등록
+	void RegisterComponent(const std::string& path, CComLuaScript* pComp);
+	// 삭제될 때 제거
+	void UnregisterComponent(const std::string& path, CComLuaScript* pComp);
 public:
 	static UPtr<CLuaManager> Create();
 };

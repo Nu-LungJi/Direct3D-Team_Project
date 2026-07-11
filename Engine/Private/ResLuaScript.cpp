@@ -16,7 +16,7 @@ HRESULT CResLuaScript::Load(const std::any& arg)
 	{
 		m_eState = STATE::LOADING;
 
-		std::ifstream file(GetPath(), std::ios::binary);
+		std::ifstream file(m_sPath, std::ios::binary);
 		if (!file.is_open())
 			return E_FAIL;
 
@@ -65,4 +65,14 @@ SPtr<CResLuaScript> CResLuaScript::CreateAndLoad(const _string& sPath)
 		return nullptr;
 	}
 	return pRes;
+}
+
+
+HRESULT CResLuaScript::Reload()
+{
+	Unload();
+	Load();
+
+	//OutputDebugStringA(("[Lua] Reload Success: " + GetPath() + "\n").c_str());
+	return S_OK;
 }

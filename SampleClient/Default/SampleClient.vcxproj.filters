@@ -109,6 +109,12 @@
     <Filter Include="GameObject\AI\Header">
       <UniqueIdentifier>{98fd5b71-cb07-4a23-88f0-80d1b6f6f076}</UniqueIdentifier>
     </Filter>
+    <Filter Include="LuaFiles">
+      <UniqueIdentifier>{e2e6d417-5abe-4793-a29c-05884c540114}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles\ClientTest">
+      <UniqueIdentifier>{93d4e033-315c-4287-99e0-69a37013f150}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -465,5 +471,10 @@
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LuaFiles\ClientTest\asdf.lua">
+      <Filter>LuaFiles\ClientTest</Filter>
+    </None>
   </ItemGroup>
 </Project>
