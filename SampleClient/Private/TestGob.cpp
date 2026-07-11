@@ -117,12 +117,6 @@ HRESULT CTestGob::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	CWeapon::WEAPON_DESC DescWeapon{};
-	if (auto iter = CGameInstance::Get().ClonePrototype("WEAPON", "Prototype_GameObject_Weapon", &DescWeapon))
-	{
-		Uptr_cast
-		m_Partes[ETOUI(PARTES::WEAPON)] = std::move(iter);
-	}
 
 	return S_OK;
 }
@@ -149,10 +143,9 @@ void CTestGob::Update(E::_float fTimeDelta)
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
-
-
 	__super::LateUpdate(fTimeDelta);
 	GetTransform().Update();
+
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
 }
@@ -219,7 +212,6 @@ HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
-
 	return S_OK;
 }
 

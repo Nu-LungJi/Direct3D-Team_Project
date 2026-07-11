@@ -51,7 +51,7 @@ HRESULT CBTComposite::Add_Node(uint32_t iIndex, UPtr<CBTRoot> pNode)
 	if (iIndex >= m_Actions.size())
 		return E_FAIL;
 
-	if (m_Actions[iIndex] == nullptr)
+	if (m_Actions[iIndex] != nullptr)
 		return E_FAIL;
 	
 	m_Actions[iIndex] = std::move(pNode);

@@ -98,6 +98,7 @@ void CBTAttackAnimation::Update_Gui()
 		m_bPopup = true;
 	if (m_bPopup)
 	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
@@ -107,6 +108,7 @@ void CBTAttackAnimation::Update_Gui()
 			m_bPopup = false;
 			m_Value.iAnimIndex = iIndex;
 		}
+		ImGui::PopStyleColor();
 	}
 
 
@@ -129,6 +131,7 @@ void CBTAttackAnimation::Update_Gui()
 
 		ImGui::EndCombo();
 	}
+
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {

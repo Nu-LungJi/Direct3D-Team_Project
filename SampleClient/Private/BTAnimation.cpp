@@ -63,11 +63,12 @@ void CBTAnimation::Update_Gui()
 		m_bLoop = !m_bLoop;
 	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
 	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
-
+	
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)
 	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
@@ -77,6 +78,8 @@ void CBTAnimation::Update_Gui()
 			m_bPopup = false;
 			m_Value.iAnimIndex = iIndex;
 		}
+
+		ImGui::PopStyleColor();
 	}
 }
 nlohmann::json CBTAnimation::Save_Node()

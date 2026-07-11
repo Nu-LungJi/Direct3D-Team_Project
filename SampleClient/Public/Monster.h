@@ -20,8 +20,6 @@ private:
 	~CMonster() override;
 
 public:
-	void UpdateGUI() override;
-public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;

@@ -135,11 +135,13 @@ void CBTTurnAnimation::Update_Gui()
 			}
 		}
 	}
-	
+
 	if (m_bPopup && m_Value.iAnimIndex != -1)
 	{
 		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
 		ImGui::Text(MagicEnumToStringView(static_cast<TURN>(m_Value.iAnimIndex)).data());
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 			int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
@@ -150,8 +152,10 @@ void CBTTurnAnimation::Update_Gui()
 				m_iTurnAnimIndex[m_Value.iAnimIndex] = iIndex;
 				m_Value.iAnimIndex = -1;
 			}
+
+			ImGui::PopStyleColor();
 	}
-	
+
 }
 nlohmann::json CBTTurnAnimation::Save_Node()
 {

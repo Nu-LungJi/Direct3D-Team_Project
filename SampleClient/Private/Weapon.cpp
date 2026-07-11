@@ -67,9 +67,6 @@ HRESULT CWeapon::Initialize(void* pArg)
 		};
 	}
 
-
-
-
 	return S_OK;
 }
 

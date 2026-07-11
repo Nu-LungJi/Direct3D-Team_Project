@@ -55,8 +55,12 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 
 void CBTSelector::Abort()
 {
-	for(size_t i=0; i< m_Actions.size(); ++i)
-		m_Actions[i]->Abort();
+	for (size_t i = 0; i < m_Actions.size(); ++i)
+	{
+		if(nullptr != m_Actions[i])
+			m_Actions[i]->Abort();
+	}
+		
 }
 
 nlohmann::json CBTSelector::Save_Node()

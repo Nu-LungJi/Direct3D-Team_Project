@@ -33,6 +33,7 @@ private:
 
 public:
 	void UpdateGUI() override;
+	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -46,7 +47,7 @@ private:
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
 	CComCollider* m_pComCollider{};
-	UPtr<CGameObject> m_Partes[ETOUI(PARTES::END)]{};
+	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
@@ -54,8 +55,6 @@ private:
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
-
-
 
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};

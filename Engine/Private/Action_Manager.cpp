@@ -56,31 +56,18 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
 		{
-			CGameInstance;
-			//CGameInstance::Get().getpro
-			//CGameInstance::Get().GetPrototype()
-
-			CGameInstance::Get().GetPrototype(eType);
-			for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))
+			if (eType != NODEGROUP::SEQUENCE || eType != NODEGROUP::SELECTOR)
 			{
-				if (ImGui::Button(key.GetDbgStr()))
+				CGameInstance::Get().GetPrototype(eType);
+				for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))
 				{
-					m_SelectName = key.GetDbgStr();
-					m_bPopup = true;
+					if (ImGui::Button(key.GetDbgStr()))
+					{
+						m_SelectName = key.GetDbgStr();
+						m_bPopup = true;
+					}
 				}
 			}
-
-			//for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
-			//{
-			//	if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR)
-			//	{
-			//		if (ImGui::Button(iter.first.c_str()))
-			//		{
-			//			m_SelectName = iter.first;
-			//			m_bPopup = true;
-			//		}
-			//	}
-			//}
 		}
 		else
 		{
@@ -106,16 +93,13 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 					ImGui::CloseCurrentPopup();
 					ImGui::EndPopup();
 					m_bPopup = false;
-					
-					
-					auto pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(eType, m_SelectName, &NodeDesc));
 				
-					/*auto pNode = static_uptr_cast<CBTRoot>(std::move(pProto));*/
+					auto pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(eType, m_SelectName, &NodeDesc));
+
 					if (!pNode)
-					{
 						return nullptr;
-					}
-					return std::move(pNode);//Clone_Action(eType,m_SelectName, &NodeDesc);
+
+					return std::move(pNode);
 				}
 			}
 		}

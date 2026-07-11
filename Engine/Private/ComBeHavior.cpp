@@ -135,19 +135,24 @@ void CComBeHavior::Add_Node(CBTRoot* pParent,  uint32_t iSlot, UPtr<CBTRoot> pNo
 {
 
 	BEHAVIOR eType = pParent->Get_GuiNodeInfo().eMyType;
-
+	if (nullptr == pNode) return;
 	if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR)
 	{
+
+		pNode->Set_Handle(GetGameObject()->GetHandle());
+		pNode->Set_OwnerName(m_ComponentName);
+		RegistNode(pNode->Get_GuiNodeInfo().iID, pNode.get());
 		static_cast<CBTComposite*>(pParent)->Add_Node(iSlot,std::move(pNode));
 		
 	}
 	else if (eType == BEHAVIOR::DECORATOR)
 	{
+
+		pNode->Set_Handle(GetGameObject()->GetHandle());
+		pNode->Set_OwnerName(m_ComponentName);
+		RegistNode(pNode->Get_GuiNodeInfo().iID, pNode.get());
 		static_cast<CBTDecorator*>(pParent)->Set_Child(std::move(pNode));
 	}
-	pNode->Set_Handle(GetGameObject()->GetHandle());
-	pNode->Set_OwnerName(m_ComponentName);
-	RegistNode(pNode->Get_GuiNodeInfo().iID, pNode.get());
 }
 
 CBTComposite* CComBeHavior::Get_Selector()
