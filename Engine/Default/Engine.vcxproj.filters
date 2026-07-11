@@ -367,9 +367,6 @@
     <Filter Include="Particle\Trail">
       <UniqueIdentifier>{fa144d76-945b-4f75-9b1e-e904b23c45de}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\UIManager">
-      <UniqueIdentifier>{0a583505-4c42-45b5-8ff5-c8a7ae4d942c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI\TexUI">
       <UniqueIdentifier>{95b3224a-ec84-44dc-bea3-82786515b1a8}</UniqueIdentifier>
     </Filter>
@@ -393,6 +390,15 @@
     </Filter>
     <Filter Include="Particle\Patterns">
       <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\UI">
+      <UniqueIdentifier>{57cb4369-faf4-4ad0-a818-4a3a747de9b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\UI\MouseComponent">
+      <UniqueIdentifier>{8318dad6-1853-412a-83bd-17623d00c9b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Tween">
+      <UniqueIdentifier>{e99a0e3b-f69e-4691-9ba2-e52f19c81311}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -687,9 +693,6 @@
     <ClInclude Include="..\Public\UITex.h">
       <Filter>GameObject\UI\TexUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\UIManager.h">
-      <Filter>GameObject\UI\UIManager</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\ComModelInstance.h">
       <Filter>Component\Model\ComModelInstance</Filter>
     </ClInclude>
@@ -845,6 +848,15 @@
     </ClInclude>
     <ClInclude Include="..\Public\NavMeshManager.h">
       <Filter>NavMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIComponent.h">
+      <Filter>Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ButtonComponent.h">
+      <Filter>Component\UI\MouseComponent</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TweenComponent.h">
+      <Filter>Component\Tween</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1247,9 +1259,6 @@
     <ClCompile Include="..\Private\UITex.cpp">
       <Filter>GameObject\UI\TexUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\UIManager.cpp">
-      <Filter>GameObject\UI\UIManager</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClCompile>
@@ -1264,6 +1273,15 @@
     </ClCompile>
     <ClCompile Include="..\Private\NavMeshManager.cpp">
       <Filter>NavMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIComponent.cpp">
+      <Filter>Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ButtonComponent.cpp">
+      <Filter>Component\UI\MouseComponent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TweenComponent.cpp">
+      <Filter>Component\Tween</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

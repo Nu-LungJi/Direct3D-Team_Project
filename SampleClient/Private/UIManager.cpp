@@ -1,43 +1,36 @@
 #include "pch.h"
-#include "UIManager.h"
 #include "GameInstance.h"
-#include "UIObject.h"
-#include "FlipbookUI.h"
+#include "UIManager.h"
+#include "TextureUI.h"
+#include "EffectUI.h"
+#include "TextBox.h"
+#include "Button.h"
+#include <fstream>
 
-CUIManager::CUIManager()
+NS_USING(Client)
+
+UIManager::~UIManager()
 {
-}
-
-CUIManager::~CUIManager()
-{
-}
-
-void CUIManager::UpdateGUI()
-{
-	ImGui::Begin("CUIManager");
-
-
-
-	ImGui::End();
 
 }
 
-void CUIManager::Load()
+void UIManager::Update()
 {
 }
 
-void CUIManager::Find_UiDesc()
+std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
 {
-}
+	char path[256] = "";
+	strcpy_s(path, sizeof(path), g_BasePath.c_str());
+	strcat_s(path, sizeof(path), name.c_str());
+	strcat_s(path, sizeof(path), ".json");
 
-void CUIManager::LoadPrefab(char path[256])
-{
 	std::ifstream file(path);
 
 	if (!file.is_open())
 	{
 		MSG_BOX("파일 열기 실패");
-		return;
+		return std::nullopt;
 	}
 
 	nlohmann::ordered_json root;
@@ -48,9 +41,11 @@ void CUIManager::LoadPrefab(char path[256])
 	{
 		LoadUIRecursive(obj, nullptr);
 	}
+
+	return m_rootHandle;
 }
 
-E::CUIObject* CUIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, CUIObject* parent)
+E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
 {
 	int uiType = obj["UiType"];
 
@@ -60,6 +55,8 @@ E::CUIObject* CUIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, CUI
 	std::optional<CHandle> uiHandle = std::nullopt;
 
 	Desc.sObjectTag = obj["Name"];
+
+	int EffectType = obj["UI_EFFECT_TYPE"];
 
 	switch (uiType)
 	{
@@ -77,6 +74,24 @@ E::CUIObject* CUIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, CUI
 			flipInfo.Padding = obj["Padding"];
 			flipInfo.Duration = obj["Duration"];
 		}
+
+		if (EffectType == ETOUI(UI_EFFECT_TYPE::HOVER))
+		{
+			pUI->SetActive(false);
+			if (parent &&
+				*parent->GetUIType() == ETOUI(UI_TYPE::BUTTON))
+			{
+				static_cast<CButton*>(parent)->SetEffectHovered(*uiHandle);
+			}
+		}
+		else if (EffectType == ETOUI(UI_EFFECT_TYPE::CLICK))
+		{
+			if (parent &&
+				*parent->GetUIType() == ETOUI(UI_TYPE::BUTTON))
+			{
+				static_cast<CButton*>(parent)->SetEffectClicked(*uiHandle);
+			}
+		}
 		break;
 	case ETOUI(UI_TYPE::TEXT):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", "Layer_UI", &Desc);
@@ -85,7 +100,11 @@ E::CUIObject* CUIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, CUI
 			TEXT_INFO& textInfo = static_cast<CTextBox*>(pUI)->GetTextInfo();
 			//textInfo.Text = obj["Text"];
 		}
-
+		break;
+	case ETOUI(UI_TYPE::BUTTON):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_Button", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CButton>(*uiHandle);
+		break;
 	default:
 		break;
 	}
@@ -123,6 +142,8 @@ E::CUIObject* CUIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, CUI
 
 	if (parent == nullptr)
 	{
+		m_rootHandle = uiHandle;
+
 		uiInfo.fX = obj["X"];
 		uiInfo.fY = obj["Y"];
 	}
@@ -146,7 +167,26 @@ E::CUIObject* CUIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, CUI
 	return pUI;
 }
 
-UPtr<CUIManager> CUIManager::Create()
+void UIManager::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 {
-	return UPtr<CUIManager>(new CUIManager{});
+	Engine::CUIObject* targetUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*targetHandle);
+
+	std::vector<CHandle>  childHandles = targetUI->GetChildren();
+
+	for (auto childHandle : childHandles)
+	{
+		DeleteUIRecursive(childHandle);
+	}
+
+	if (targetUI->GetParent())
+	{
+		Engine::CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*targetUI->GetParent());
+
+		if (nullptr != parentUI)
+			parentUI->DeleteChild(targetUI->GetHandle());
+	}
+
+	targetUI->SetPendingDestroyCascade();
+
+	return;
 }

@@ -1,0 +1,10 @@
+#pragma once
+
+enum class BUTTON_EVENT
+{
+	NONE,
+	OPEN_INVENTORY,
+	OPEN_OPTION,
+	CHANGE_WEAPON,
+	QUIT_GAME,
+};

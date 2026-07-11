@@ -6,6 +6,9 @@
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "Resources.h"
+#include "Client_Defines.h"
+#include "UIManager.h"
+#include "MouseComponent.h"
 
 NS_USING(Client)
 
@@ -15,6 +18,11 @@ CEffectUI::CEffectUI()
 
 CEffectUI::~CEffectUI()
 {
+}
+
+HRESULT CEffectUI::InitializePrototype(void* pArg)
+{
+	return S_OK;
 }
 
 HRESULT CEffectUI::Initialize(void* pArg)
@@ -44,11 +52,17 @@ void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CEffectUI::Update(E::_float fTimeDelta)
 {
+	if (!m_isActive)
+		return;
+
 	CFlipbookUI::Update(fTimeDelta);
 }
 
 void CEffectUI::LateUpdate(E::_float fTimeDelta)
 {
+	if (!m_isActive)
+		return;
+
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
@@ -126,6 +140,16 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 
 
 	return S_OK;
+}
+
+void CEffectUI::PlayEffect(uint32_t uiState)
+{
+	switch (uiState)
+	{
+	case ETOUI(UI_STATE::HOVERED):
+		std::optional<CHandle> effect = GET_SINGLE(UIManager)->LoadPrefab("Magic");
+		break;
+	}
 }
 
 E::UPtr<CEffectUI> CEffectUI::Create()
