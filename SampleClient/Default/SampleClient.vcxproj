@@ -175,13 +175,18 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
+    <ClInclude Include="..\public\BTAttackAnimation.h" />
     <ClInclude Include="..\public\BTChase.h" />
+    <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
+    <ClInclude Include="..\public\BTDecHp.h" />
     <ClInclude Include="..\public\BTDecInvert.h" />
     <ClInclude Include="..\public\BTDecLier.h" />
+    <ClInclude Include="..\public\BTDecHit.h" />
     <ClInclude Include="..\public\BTOnlyFalse.h" />
     <ClInclude Include="..\public\BTOnlyTrue.h" />
     <ClInclude Include="..\public\BTTeleport.h" />
+    <ClInclude Include="..\public\BTTurnAnimation.h" />
     <ClInclude Include="..\public\BTTurnDirect.h" />
     <ClInclude Include="..\public\BTTurnSlow.h" />
     <ClInclude Include="..\public\BTDecSearch.h" />
@@ -236,6 +241,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\Public\TextureUI.h" />
+    <ClInclude Include="..\public\Weapon.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -248,12 +254,17 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
+    <ClCompile Include="..\private\BTAttackAnimation.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
+    <ClCompile Include="..\private\BTDamage.cpp" />
+    <ClCompile Include="..\private\BTDecHp.cpp" />
     <ClCompile Include="..\private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecLier.cpp" />
+    <ClCompile Include="..\private\BTDecHit.cpp" />
     <ClCompile Include="..\private\BTOnlyFalse.cpp" />
     <ClCompile Include="..\private\BTOnlyTrue.cpp" />
     <ClCompile Include="..\private\BTTeleport.cpp" />
+    <ClCompile Include="..\private\BTTurnAnimation.cpp" />
     <ClCompile Include="..\private\BTTurnDirect.cpp" />
     <ClCompile Include="..\private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\BTDecSearch.cpp" />
@@ -303,6 +314,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestPhysXCapsule.cpp" />
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\private\Weapon.cpp" />
     <ClCompile Include="..\public\BTDead.cpp" />
     <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">

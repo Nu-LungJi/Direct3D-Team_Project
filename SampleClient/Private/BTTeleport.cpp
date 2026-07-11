@@ -15,12 +15,12 @@ CBTTeleport::CBTTeleport(const CBTTeleport& rhs) : CBTActionNode(rhs)
 CBTTeleport::~CBTTeleport()
 {
 }
-HRESULT CBTTeleport::InitalizePrototype(void* pArg)
+HRESULT CBTTeleport::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
-	m_MasterName = "BTOnlyTrue";
+	m_MasterName = "BTTeleport";
 	return S_OK;
 }
 HRESULT CBTTeleport::Initalize(void* pArg)
@@ -48,14 +48,14 @@ void CBTTeleport::Update_Gui()
 E::UPtr<CBTTeleport> CBTTeleport::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTTeleport{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTTeleport");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTTeleport::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTTeleport::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTTeleport{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

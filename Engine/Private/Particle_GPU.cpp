@@ -246,9 +246,9 @@ void CParticle_GPU::DebugPrintDeadListCount()
     {
         uint32_t counterValue = *(uint32_t*)mapped.pData;
         m_iDeadCount = *(uint32_t*)mapped.pData;
-        char buf[64];
-        sprintf_s(buf, "DeadList counter = %u\n", counterValue);
-        OutputDebugStringA(buf);
+        //char buf[64];
+        //sprintf_s(buf, "DeadList counter = %u\n", counterValue);
+        //OutputDebugStringA(buf);
         pContext->Unmap(pCounterStaging.Get(), 0);
     }
 }

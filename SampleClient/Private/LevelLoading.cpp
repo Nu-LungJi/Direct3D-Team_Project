@@ -28,7 +28,7 @@
 #include "TextureUI.h"
 #include "EffectUI.h"
 #include "TextBox.h"
-
+#include "Weapon.h"
 #include "TestGob.h"
 NS_USING(Client)
 
@@ -185,7 +185,10 @@ void CLevelLoading::ThreadStart()
 				   return false;
 				}
 
-
+				if (FAILED(E::CGameInstance::Get().AddPrototype("WEAPON", "Prototype_GameObject_Weapon", CWeapon::Create())))
+				{
+					return false;
+				}
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
 				//{

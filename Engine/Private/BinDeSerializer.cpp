@@ -96,13 +96,10 @@ void CBinDeSerializer::Read(const std::string& key, ISerializable& outValue) {
 
 void CBinDeSerializer::Read(const std::string& key, StringID& outValue)
 {
-	// TODO
-	//size_t len = 0;
-	//ReadBytes(len);
-	//if (len > 0) {
-	//	outValue.assign(reinterpret_cast<char*>(m_buffer.data() + m_readPos), len);
-	//	m_readPos += len;
-	//}
+	std::string tempStr;
+	Read(key, tempStr); // 바로 위에 구현된 문자열 Read 호출
+
+	outValue = StringID(tempStr); // 다시 StringID로 복원!
 }
 
 // === 배열 및 맵 제어 ===

@@ -256,21 +256,11 @@ void CJsonDeSerializer::Read(const std::string& key, ISerializable& outValue)
 
 void CJsonDeSerializer::Read(const std::string& key, StringID& outValue)
 {
-	nlohmann::json& node = *m_nodeStack.back();
+	std::string tempStr;
 
-	if (node.is_array() && !m_arrayIndexStack.empty())
-	{
-		size_t& idx = m_arrayIndexStack.back();
-		if (idx < node.size())
-		{
-			if (!node[idx].is_null()) outValue = node[idx].get<std::string>();
-			idx++;
-		}
-	}
-	else if (node.is_object() && node.contains(key) && !node[key].is_null())
-	{
-		outValue = node[key].get<std::string>();
-	}
+	Read(key, tempStr);
+
+	outValue = StringID(tempStr);
 }
 
 size_t CJsonDeSerializer::StartArray(const std::string& key)

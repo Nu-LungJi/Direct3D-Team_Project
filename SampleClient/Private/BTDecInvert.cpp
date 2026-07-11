@@ -16,7 +16,7 @@ CBTDecInvert::~CBTDecInvert()
 }
 HRESULT CBTDecInvert::InitalizePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::DECORATOR;
 	m_MasterName = "BTDecInvert";
 	return S_OK;
@@ -53,7 +53,7 @@ E::UPtr<CBTDecInvert> CBTDecInvert::Create()
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTDecInvert::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTDecInvert::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTDecInvert{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

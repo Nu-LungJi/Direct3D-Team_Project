@@ -792,7 +792,7 @@ HRESULT CRenderer::Render_Alpha() {
         m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
         m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     }
 

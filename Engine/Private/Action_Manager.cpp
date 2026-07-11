@@ -6,6 +6,7 @@
 #include "BTSecqunce.h"
 #include "BTSelector.h"
 #include "ComAnimator.h"
+#include "BTComposite.h"
 CAction_Manager::CAction_Manager()
 {
 }
@@ -17,8 +18,9 @@ CAction_Manager::~CAction_Manager()
 HRESULT CAction_Manager::Initialize()
 {
 
-	Add_Action_Prototype(NODEGROUP::SELECTOR, "BTSelector", CBTSelector::Create(nullptr));
-	Add_Action_Prototype(NODEGROUP::SEQUENCE, "BTSequnce", CBTSecqunce::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::ROOT,		"BTRoot", CBTComposite::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::SELECTOR, "BTSelector", CBTSelector::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::SEQUENCE, "BTSequnce", CBTSecqunce::Create(nullptr));
 	return S_OK;
 }
 void CAction_Manager::Show_Action_NodeWidget(CBTRoot* pNode)
@@ -34,40 +36,7 @@ void CAction_Manager::Show_Action_NodeWidget(CBTRoot* pNode)
 		pAction->Update_Gui();
 	}
 }
-HRESULT CAction_Manager::Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction)
-{
-	if (nullptr == pAction)
-	{
-		MSG_BOX("Create Failed to Action Proto");
-		return E_FAIL;
-	}
 
-	auto iter = m_Prototype_Actions[ETOUI(eType)].find(strActionName);
-
-	if (iter != m_Prototype_Actions[ETOUI(eType)].end())
-	{
-		MSG_BOX("Create Failed to Action Proto : Is Same class");
-		return E_FAIL;
-	}
-	
-	m_Prototype_Actions[ETOUI(eType)][strActionName] = std::move(pAction);
-
-	return S_OK;
-}
-
-UPtr<class CBTRoot> CAction_Manager::Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg)
-{
-	auto iter = m_Prototype_Actions[ETOUI(eType)].find(strActionName);
-
-	if (iter == m_Prototype_Actions[ETOUI(eType)].end())
-	{
-		MSG_BOX("Create Failed Action Clone : Is not Class");
-		return nullptr;
-	}
-
-	auto pNode = iter->second->Clone(pArg);
-	return std::move(pNode);
-}
 
 
 UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
@@ -87,13 +56,14 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
 		{
-			for (auto& iter : m_Prototype_Actions[ETOUI(eType)])
+			if (eType != NODEGROUP::SEQUENCE || eType != NODEGROUP::SELECTOR)
 			{
-				if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR)
+				CGameInstance::Get().GetPrototype(eType);
+				for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))
 				{
-					if (ImGui::Button(iter.first.c_str()))
+					if (ImGui::Button(key.GetDbgStr()))
 					{
-						m_SelectName = iter.first;
+						m_SelectName = key.GetDbgStr();
 						m_bPopup = true;
 					}
 				}
@@ -123,7 +93,13 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 					ImGui::CloseCurrentPopup();
 					ImGui::EndPopup();
 					m_bPopup = false;
-					return Clone_Action(eType,m_SelectName, &NodeDesc);
+				
+					auto pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(eType, m_SelectName, &NodeDesc));
+
+					if (!pNode)
+						return nullptr;
+
+					return std::move(pNode);
 				}
 			}
 		}

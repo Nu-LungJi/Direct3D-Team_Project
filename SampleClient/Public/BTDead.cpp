@@ -14,9 +14,9 @@ CBTDead::CBTDead(const CBTDead& rhs) : CBTDecorator(rhs)
 CBTDead::~CBTDead()
 {
 }
-HRESULT CBTDead::InitalizePrototype(void* pArg)
+HRESULT CBTDead::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::DECORATOR;
 	m_MasterName = "BTDecSearch";
 	return S_OK;
@@ -55,7 +55,6 @@ HRESULT CBTDead::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	if (!LoadJsonValue(j, "Distance", m_fDist))
-
 		return S_OK;
 }
 void		CBTDead::Update_Gui()
@@ -66,14 +65,14 @@ void		CBTDead::Update_Gui()
 E::UPtr<CBTDead> CBTDead::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTDead{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTDead");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTDead::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTDead::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTDead{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

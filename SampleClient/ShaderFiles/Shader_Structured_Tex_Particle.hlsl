@@ -93,8 +93,7 @@ PS_OUT PSMain(VS_OUT In)
 
     float4 vTextureColor = g_Texture.Sample(LinearWrap, In.vTexcoord);
 
-    //if (vTextureColor.a <= 0.05f)
-    //    discard;
+
     //if (vTextureColor.x < 0.f)
     //    discard;
 

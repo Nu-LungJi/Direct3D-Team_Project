@@ -40,6 +40,7 @@ HRESULT CNodeEditor::Initialize()
 	m_NodesLink.push_back(GUINODE_LINK(2));
 	m_NodesLink.push_back(GUINODE_LINK(2));
 
+	Load_FileList();
 	return S_OK;
 }
 void CNodeEditor::UpdateGUI()
@@ -251,13 +252,16 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 
 	if (!m_bSaveLoad && ImGui::Button("Save"))
 	{
-		m_AddNodeName = "";
 		m_bSaveLoad = true;
 	}
-	if (!m_bSaveLoad && ImGui::Button("Load"))
+	ImGui::Text("LoadFile list");
+	for (auto& iter : m_LoadDataList)
 	{
-		m_pBeHavior->Load_Data("./Resources/json/Behavior/MoveTest2.json");
-		m_AddNodeName = "";
+		if (ImGui::Button(iter.first.c_str()))
+		{
+			m_pBeHavior->Load_Data(iter.second);
+
+		}
 	}
 	
 	if (m_bSaveLoad)
@@ -416,22 +420,23 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 						if ((*iter)->Get_GuiNodeInfo().iID == m_CurrentNode.iD)
 						{
 							//등록
-							m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
+							//m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
 
 							(*iter)->Get_GuiNodeLink().iStartIdx = iSlot;
 							(*iter)->Get_GuiNodeLink().ParentNode = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 							pCurNode->Get_GuiNodeLink().SlotEnd[iSlot] = (*iter)->Get_GuiNodeInfo().Get_DestInfo();
 
-							if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
-							{
-								auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
-								(*pSrc)[iSlot] = std::move((*iter));
-							}
-							else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-							{
-								auto pSrc = static_cast<CBTDecorator*>(pCurNode);
-								pSrc->Set_Child(std::move((*iter)));
-							}
+							m_pBeHavior->Add_Node(pCurNode, iSlot, std::move(*iter));
+							//if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+							//{
+							//	auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
+							//	(*pSrc)[iSlot] = std::move((*iter));
+							//}
+							//else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+							//{
+							//	auto pSrc = static_cast<CBTDecorator*>(pCurNode);
+							//	pSrc->Set_Child(std::move((*iter)));
+							//}
 							Reset_CurrentNode();
 							break;
 						}
@@ -509,7 +514,7 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 				if (nullptr != pSrc)
 				{
 
-					if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					if (pSrc->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION)
 					{
 						int32_t iPreSlot = m_CurrentNode.iSelectedSlot;
 						pCurNode->Get_GuiNodeLink().iStartIdx = iPreSlot; // 자식에 부모 담았고
@@ -517,17 +522,18 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 						pSrc->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 						pCurNode->Get_GuiNodeLink().ParentNode = pSrc->Get_GuiNodeInfo().Get_DestInfo();
 
-						m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
-						if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
-						{
-							auto pParn = static_cast<CBTComposite*>(pSrc);
-							(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
-						}
-						else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-						{
-							auto pParn = static_cast<CBTDecorator*>(pSrc);
-							pParn->Set_Child(std::move(pCurNode));
-						}
+						m_pBeHavior->Add_Node(pSrc, iPreSlot, std::move(pCurNode));
+						//m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
+						//if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+						//{
+						//	auto pParn = static_cast<CBTComposite*>(pSrc);
+						//	(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
+						//}
+						//else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
+						//{
+						//	auto pParn = static_cast<CBTDecorator*>(pSrc);
+						//	pParn->Set_Child(std::move(pCurNode));
+						//}
 					}
 				}
 				bFinishe = true;
@@ -591,6 +597,16 @@ void CNodeEditor::End_Canvas()
 	ImGui::EndGroup();
 
 	ImGui::End();
+}
+
+void CNodeEditor::Load_FileList()
+{
+	_string Path = "./Resources/json/Behavior/";
+	m_LoadDataList.clear();
+	for (auto& iter : std::filesystem::directory_iterator(Path))
+	{
+		m_LoadDataList.emplace(iter.path().filename().string(), iter.path().string());
+	}
 }
 
 void CNodeEditor::DragAllMove(CBTRoot* pRoot, _float2 vPos)
@@ -670,7 +686,7 @@ void CNodeEditor::SavePopUp()
 		
 			if (!bfalse)
 			{
-
+				Load_FileList();
 				m_bSaveLoad = false;
 				m_pBeHavior->Save_Data(m_AddNodeName);
 				MSG_BOX("Successed Save");
@@ -819,10 +835,12 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				return;
 			}
 
+			;
+
 			if (eType == BEHAVIOR::SELECTOR)
-				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc);
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc));
 			else if(eType == BEHAVIOR::SECQUNCE)
-				pNode = CGameInstance::Get().Clone_Action(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc);
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc));
 			if (nullptr == pNode)
 			{
 				ImGui::CloseCurrentPopup();
@@ -993,7 +1011,6 @@ void CNodeEditor::Add_NodeToTmp(UPtr<class CBTRoot>& pRoot)
 		MSG_BOX("Add Failed To Tmp Node");
 		return;
 	}
-		
 	m_pBeHavior->UnRegistNode(pRoot->Get_GuiNodeInfo().iID);
 
 	if (m_BTNodesTmp.empty())

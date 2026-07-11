@@ -13,8 +13,8 @@ public:
 public:
 	typedef struct tagGoblnedesc : CGameObject::GAMEOBJECT_DESC
 	{
-
-	}GOBLINE_DESC;
+		_string SocketName{};
+	}MONSTER_DESC;
 private:
 	CMonster();
 	~CMonster() override;
@@ -26,8 +26,16 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+public:
+
+	void Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 private:
-	CComBeHavior* m_pComBT{ nullptr };
+	CComBeHavior*				m_pComBT{ nullptr };
+	CGameObject*				m_Partes[ETOUI(PARTES::END)]{};
+	int32_t						m_iHp{};
+	_bool						m_bDead{ false };
+
+	_string						m_SocketName{};
 public:
 	static E::UPtr<CMonster> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -73,6 +73,12 @@ void CBinSerializer::Write(const std::string& key, const std::string& value) {
 	if (len > 0) m_buffer.insert(m_buffer.end(), value.begin(), value.end());
 }
 
+void CBinSerializer::Write(const std::string& key, const StringID& value)
+{
+	Write(key, std::string(value.GetDbgStr()));
+}
+
+
 void CBinSerializer::Write(const std::string& key, const _float2& value)
 {
 	PreWrite(key);
@@ -104,11 +110,6 @@ void CBinSerializer::Write(const std::string& key, const ISerializable& value) {
 	m_nodeStack.pop_back();
 }
 
-void CBinSerializer::Write(const std::string& key, const StringID& value)
-{
-	PreWrite(key);
-	WriteBytes(value.GetDbgStr());
-}
 
 // === 노드 제어 (스트림 패칭 기법) ===
 void CBinSerializer::StartArray(const std::string& key) {
