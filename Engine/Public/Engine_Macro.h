@@ -77,6 +77,7 @@ X(DECORATOR)            \
 X(EFFECT)               \
 X(SELECTOR)\
 X(SEQUENCE)\
+X(ROOT)\
 X(END)
 
 #define MOVE_M    \

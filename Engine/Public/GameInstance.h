@@ -10,6 +10,7 @@
 #include "LightManager.h"
 #include "NavMeshManager.h"
 #include "SerializeManager.h"
+#include "PrototypeManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -26,7 +27,6 @@ class CLevelManager;
 class CLevel;
 class CSoundManager;
 class CFontManager;
-class CPrototypeManager;
 class CPrototype;
 class CColliderManager;
 class CCollider;
@@ -176,6 +176,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
+	const CPrototypeManager::PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
@@ -245,23 +246,6 @@ public:
 
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
-
-	//const CCameraObject* GetCameraObject(const StringID& GroupID) const;
-	//HRESULT SetCameraObject(const StringID& GroupID, const CHandle& handle);
-
-	//CCameraObject* GetActiveGameCamera() const;
-	//HRESULT SetActiveGameCamera(const StringID& CameraID);
-	//CCameraObject* GetActiveUICamera() const;
-	//HRESULT SetActiveUICamera(const StringID& CameraID);
-
-	//CCameraObject* GetActiveGameCamera(const StringID& CameraID) const;
-	//CCameraObject* GetActiveUICamera(const StringID& CameraID) const;
-
-	//CCameraObject* GetGameCamera(const StringID& CameraID) const;
-	//CCameraObject* GetUICamera(const StringID& CameraID) const;
-
-	//HRESULT RegistGameCamera(const StringID& CameraID, const CHandle& handle);
-	//HRESULT RegistUICamera(const StringID& CameraID, const CHandle& handle);
 #pragma endregion
 
 #pragma region RENDERER
@@ -305,15 +289,15 @@ public:
 #pragma endregion
 
 #pragma region Action_Manager
-	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
 	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
-	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
 
 #pragma endregion
 
 #pragma region PARTICLE_MANAGER
 public:
+	HRESULT LoadParticleJson(const std::string& strJsonPath);
+
 	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop, _float fSpawnInterval);

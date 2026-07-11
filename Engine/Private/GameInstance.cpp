@@ -395,6 +395,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+
 	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
@@ -454,6 +455,11 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 
 
 #pragma region PARTICLE_MANAGER
+
+HRESULT CGameInstance::LoadParticleJson(const std::string& strJsonPath) {
+	return m_pParticleManager->LoadParticleJson(strJsonPath);
+}
+
 HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 	_bool bLoop, _float fSpawnInterval)
@@ -502,20 +508,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_PARTICLE) })))
-		{
-			return E_FAIL;
-		}
-	}
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_SPAWN_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PARTICLE_SPAWN) })))
-		{
-			return E_FAIL;
-		}
-	}
+
 
 
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI", E::CResCBuffer::Create()))
@@ -533,13 +526,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_INIT_PARTICLE) })))
-		{
-			return E_FAIL;
-		}
-	}
 
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE, E::CResCBuffer::Create()))
 	{
@@ -1037,6 +1023,8 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+
+
 	if (auto res = AddResourceT<E::CResStaticModel>(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL,
 		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
 
@@ -1048,7 +1036,39 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Axe_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx"))) {
 
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Mace_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResStaticModel>("TEST", "Static_Sword_Model_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
+
+		E::CResStaticModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }
 HRESULT CGameInstance::InitializePrototype()
@@ -1400,6 +1420,10 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
+const CPrototypeManager::PROTOTYPES* CGameInstance::GetPrototype(const StringID& svGroupTag) const
+{
+	return m_pPrototypeManager->GetPrototype(svGroupTag);
+}
 #pragma endregion
 
 
@@ -1643,10 +1667,7 @@ HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
 #pragma endregion
 
 #pragma region NODE_EDITOR
-HRESULT					CGameInstance::Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction)
-{
-	return m_pActionManager->Add_Action_Prototype(eType, strActionName, std::move(pAction));
-}
+
 UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
 {
 	return m_pActionManager->Show_ActioNode_List(eType, iNode, vNodePos, Handle);
@@ -1680,10 +1701,7 @@ _bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vN
 	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
 }
 #pragma endregion
-UPtr<class CBTRoot>	    CGameInstance::Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg)
-{
-	return m_pActionManager->Clone_Action(eType, strActionName, pArg);
-}
+
 #pragma endregion
 #pragma region ANIMATIONEDTIOR_MANAGER
 int32_t CGameInstance::GetAnimIndex(CHandle Handle)

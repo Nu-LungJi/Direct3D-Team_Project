@@ -10,10 +10,11 @@ void CComStaticModelInstance::UpdateGUI()
 {
 	static char szJsonName[MAX_PATH] = "StaticModel.json";
 
+	ImGui::InputText("Json Name", szJsonName, IM_ARRAYSIZE(szJsonName));
+
 	if (ImGui::Button("Save Json"))
 	{
 		std::string saveName = szJsonName;
-
 		if (saveName.empty())
 			return;
 
@@ -135,16 +136,63 @@ HRESULT CComStaticModelInstance::Save_Binary_Json(std::string outpath)
 
 	std::filesystem::path modelPath = m_pModel->GetPath();
 
+	// 모델 파일이 .bin이면 저장하지 않음
+	if (_stricmp(modelPath.extension().string().c_str(), ".bin") == 0)
+		return E_FAIL;
+
 	// 파일 이름만 저장
 	std::string fbxName = modelPath.filename().string();
 
+	if (fbxName.empty())
+		return E_FAIL;
 
 	nlohmann::json j;
 
-	j["fbx"] = fbxName;
+	// 기존 파일이 있으면 읽어와서 내용 유지
+	if (std::filesystem::exists(savePath))
+	{
+		std::ifstream inFile(savePath);
+		if (inFile.is_open())
+		{
+			try
+			{
+				inFile >> j;
+			}
+			catch (...)
+			{
+				j = nlohmann::json{}; // 파싱 실패하면 그냥 새로 시작
+			}
+			inFile.close();
+		}
+	}
+
+	// 기존 "fbx" 값을 리스트로 통일
+	std::vector<std::string> fbxList;
+
+	if (j.contains("fbx"))
+	{
+		if (j["fbx"].is_string())
+		{
+			fbxList.push_back(j["fbx"].get<std::string>());
+		}
+		else if (j["fbx"].is_array())
+		{
+			for (const auto& elem : j["fbx"])
+			{
+				if (elem.is_string())
+					fbxList.push_back(elem.get<std::string>());
+			}
+		}
+	}
+
+	// 중복 방지 후 새 이름 추가
+	if (std::find(fbxList.begin(), fbxList.end(), fbxName) == fbxList.end())
+		fbxList.push_back(fbxName);
+
+	// 배열로 저장
+	j["fbx"] = fbxList;
 
 	std::ofstream file(savePath, std::ios::out);
-
 	if (!file.is_open())
 		return E_FAIL;
 
@@ -153,7 +201,6 @@ HRESULT CComStaticModelInstance::Save_Binary_Json(std::string outpath)
 
 	return S_OK;
 }
- 
 
 // 모델의 단일 텍스쳐 반환
 SPtr<CResTexture2D> CComStaticModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {

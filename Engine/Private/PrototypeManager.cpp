@@ -77,6 +77,31 @@ void CPrototypeManager::DelPrototype(const StringID& sGroupTag)
 	}
 }
 
+const CPrototypeManager::PROTOTYPES* CPrototypeManager::GetPrototype(const StringID& svGroupTag) const
+{
+	auto iter = m_pPrototypes.find(svGroupTag);
+	if (iter != m_pPrototypes.end())
+	{
+		return &iter->second;
+	}
+	return nullptr;
+}
+
+//const std::unordered_map<StringID, UPtr<CPrototype>>& GetPrototype(const StringID& svGroupTag) const
+//{
+//	//std::unordered_map<StringID, CPrototype*> ret{};
+//	//auto iter = m_pPrototypes.find(svGroupTag);
+//	//if (iter != m_pPrototypes.end())
+//	//{
+//	//	for (const auto& [k, b] : iter->second)
+//	//	{
+//	//		ret.emplace(k, b.get());
+//	//	}
+//	//	return ret;
+//	//}
+//	//return ret;
+//}
+
 CPrototypeManager::PROTOTYPES* CPrototypeManager::Find_Group(const StringID& svGroupTag)
 {
 	auto iter = m_pPrototypes.find(svGroupTag);

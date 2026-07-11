@@ -38,10 +38,6 @@ HRESULT CAnimEdit_Manager::SetupTestModel()
 			m_hTestModel = layer->front();
 		}
 	}
-
-
-
-
 	return S_OK;
 }
 

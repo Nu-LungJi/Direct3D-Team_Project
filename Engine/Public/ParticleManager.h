@@ -16,6 +16,7 @@ enum class SPAWN_COMMAND_KIND
     STANDARD,   // 위치/속도/수명/크기/색 - 대부분의 파티클
     BEAM,       // 시작점/끝점/지속시간 - CBeam_CPU 계열
 	STAIR,
+	STRAIGHT,
 };
 
 struct STANDARD_PARAMS
@@ -29,6 +30,7 @@ struct STANDARD_PARAMS
     _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
+	_float	 fSpawnDelay = 0.f;
 };
 
 struct BEAM_PARAMS
@@ -42,6 +44,8 @@ struct BEAM_PARAMS
     _float   fDisplacementDamping = 0.25f;
     _float   flickerTimeInverval = 0.25f;
     _float   beamDuration = 0.f;
+	_float	 fSpawnDelay = 0.f;
+
 };
 struct STAIR_PARAMS
 {
@@ -53,6 +57,22 @@ struct STAIR_PARAMS
 	_float   life = 1.f;
 	_float4  color = { 1.f, 1.f, 1.f, 1.f };
 	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+	_float	 fSpawnDelay = 0.f;
+
+};
+struct STRAIGHT_PARAMS
+{
+	_float3  vStartPos = {};
+	uint32_t row = 1;
+	uint32_t col = 1;
+	_float   offSetX = 2.f;
+	_float   offsetZ = 1.5f;
+	_float   spawnDelay = 2.f;
+	_float   fSize = 1.f;
+	_float   fLife = 1.f;
+	_float4  color = { 1.f, 1.f, 1.f, 1.f };
+	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+
 };
 
 // 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
@@ -61,7 +81,7 @@ struct SPAWN_COMMAND
     SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // 이름은 기존 kind 그대로 사용해도 됨
     StringID sGroupTag;
     StringID sTypeTag;
-    std::variant<STANDARD_PARAMS, BEAM_PARAMS, STAIR_PARAMS> params;
+    std::variant<STANDARD_PARAMS, BEAM_PARAMS, STAIR_PARAMS, STRAIGHT_PARAMS> params;
 };
 struct PARTICLE_EFFECT_PRESET
 {
@@ -113,6 +133,9 @@ public:
     // 사전 등록 - [대분류][소분류]로 저장
     HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle);
 
+	// 정확히 지정해서 스폰
+
+
     // 정확히 지정해서 스폰
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
@@ -131,11 +154,22 @@ public:
         _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
         _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration);
 
-public:
-    // 조회 헬퍼
-    CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
-    bool HasGroup(const StringID& sGroupTag) const;
 
+public:
+	HRESULT Save_Binary_Json(std::string outpath, const std::string& fbxFullPath, const std::string& whatKind, const std::string& particleType,
+		const std::string& particleName, int iMaxParticles, int iBehaviorType, const std::string& VSGroup, const std::string& VSID,
+		const std::string& PSGroup, const std::string& PSID, const std::string& sGroupTag, const std::string& sResTag, 
+		const std::string& textureID1 = "", const std::string& textureID2 = "", const std::string& viBufferID1 ="",
+		const std::string& viBufferID2= "",
+		int RowCount = 1,
+		int ColCount = 1);
+	HRESULT LoadParticleJson(const std::string& strJsonPath);
+	HRESULT SaveCommandQueue(const std::string& strJsonPath);
+	HRESULT LoadCommandQueue(const std::string& strJsonPath);
+
+	// 조회 헬퍼
+	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
+	bool HasGroup(const StringID& sGroupTag) const;
 public:
     static UPtr<CParticleManager> Create();
 

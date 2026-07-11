@@ -66,14 +66,17 @@ namespace Engine
 	}CB_INIT_PARTICLE;
 	static_assert(sizeof(CB_INIT_PARTICLE) % 16 == 0);
 
-
 	typedef struct CB_ParticleUpdate
 	{
 		float    g_fTimeDelta;
 		uint32_t g_iNumInstances;
 		uint32_t g_iBehaviorType;
-		float    g_fPadding;
-	}CB_PER_PARTICLE;;
+		uint32_t g_iFlipbookRows;
+		uint32_t g_iFlipbookColumns;
+		uint32_t g_iTotalFrames;
+		float    g_fPadding1;
+		float    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+	} CB_PER_PARTICLE;
 	static_assert(sizeof(CB_PER_PARTICLE) % 16 == 0);
 
 	typedef struct CB_ParticleSpawn
@@ -81,7 +84,7 @@ namespace Engine
 		uint32_t    g_iSpawnCount;
 		uint32_t	g_iMaxParticles;
 		_float2     pad;
-		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
+		//PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_PARTICLE_SPAWN;
 	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
 

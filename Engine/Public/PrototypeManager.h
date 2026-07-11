@@ -5,6 +5,9 @@ NS_BEGIN(Engine)
 
 class CPrototypeManager final : public CEngineBase
 {
+public:
+	typedef std::unordered_map<StringID, UPtr<CPrototype>> PROTOTYPES;
+
 private:
 	explicit CPrototypeManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 	~CPrototypeManager() override;
@@ -15,11 +18,11 @@ public:
 public:
 	HRESULT Initialize();
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, UPtr<CPrototype> pPrototype);
+
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, void* pArg);
 	void DelPrototype(const StringID& sGroupTag);
-
+	const PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
 private:
-	typedef std::unordered_map<StringID, UPtr<CPrototype>> PROTOTYPES;
 	std::unordered_map<StringID, PROTOTYPES> m_pPrototypes{};
 
 private:

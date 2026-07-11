@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 namespace Engine
 {
 	typedef struct tagVertexCol
@@ -47,10 +47,13 @@ namespace Engine
 		_float life;
 		_float maxLife;
 		_float size;
+		_float startSize;
 		uint32_t alive;
 		uint32_t loop;
 		_float4 color;
 		_float4 emissive;
+		uint32_t frameIndex;
+		_float3 pad2;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{

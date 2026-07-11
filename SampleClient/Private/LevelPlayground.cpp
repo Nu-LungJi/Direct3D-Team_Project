@@ -50,11 +50,26 @@ HRESULT CLevelPlayground::Initialize()
 		CGameObject::GAMEOBJECT_DESC Desc{};
 		Desc.sObjectTag = "Gobline";
 		
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
-			"02_Gobline", &Desc))
+		auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline","02_Gobline", &Desc);
+		if (!Gobline.has_value())
 		{
-			int x = 0;
+			MSG_BOX("Craete Failed Gobline");
+			return E_FAIL;
 		}
+		//테스트 고블린 무기 테스트
+		Desc.sObjectTag = "Weapon";
+
+		auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon","03_Weapon", &Desc);
+		if (!Weapon.has_value())
+		{
+			MSG_BOX("Create Failed Weapon");
+			return E_FAIL;
+		}
+		auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CTestGob>(Gobline.value());
+		if (nullptr == pObj)
+			MSG_BOX("Gobline Get Failed to Handle");
+
+		pObj->Set_Partes(PARTES::WEAPON, Weapon.value());
 	}
 	{
 		//if(false)

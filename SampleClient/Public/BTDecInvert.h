@@ -23,7 +23,7 @@ private:
 	_bool				m_bEnter{ false };
 public:
 	static UPtr<CBTDecInvert> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

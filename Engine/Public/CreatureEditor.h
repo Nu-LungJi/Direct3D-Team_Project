@@ -6,7 +6,7 @@ NS_BEGIN(Engine)
 class CGameObject;
 
 class CCreatureEditor final : public CEngineBase
-{
+{//제작 예정
 public:
 
 

@@ -14,18 +14,18 @@ private:
 	~CBTAnimation() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT	InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initalize(void* pArg)override;
 public:
-	EVALUATE Evaluate(_float fTimeDelta) override;
-	virtual void		Update_Gui() override;
+	EVALUATE				Evaluate(_float fTimeDelta) override;
+	virtual void			Update_Gui() override;
 
-	virtual nlohmann::json			Save_Node()override;
+	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
-	_bool				m_bLoop{ false };
+	_bool				m_bLoop{ true }, m_bStart{true};
 public:
 	static UPtr<CBTAnimation> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
