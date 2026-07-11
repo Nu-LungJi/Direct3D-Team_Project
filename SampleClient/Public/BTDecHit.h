@@ -1,16 +1,16 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTDecorator.h"
 
 NS_BEGIN(Client)
-class CBTChase final : public CBTActionNode
+class CBTDecHit final : public CBTDecorator
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTChase, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTDecHit, CBTDecorator)
 private:
-	CBTChase();
-	CBTChase(const CBTChase& rhs);
-	~CBTChase() override;
+	CBTDecHit();
+	CBTDecHit(const CBTDecHit& rhs);
+	~CBTDecHit() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT InitializePrototype(void* pArg = nullptr);
@@ -21,7 +21,7 @@ public:
 private:
 	MOVE						m_eMove{};
 public:
-	static UPtr<CBTChase> Create();
+	static UPtr<CBTDecHit> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END

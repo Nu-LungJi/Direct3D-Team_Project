@@ -11,6 +11,7 @@ class CResModel;
 class CComModelInstance;
 class CComAnimator;
 class CComBeHavior;
+class CComCollider;
 NS_END
 
 NS_BEGIN(Client)
@@ -44,6 +45,7 @@ private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
+	CComCollider* m_pComCollider{};
 	UPtr<CGameObject> m_Partes[ETOUI(PARTES::END)]{};
 
 	// nonAnim

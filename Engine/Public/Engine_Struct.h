@@ -138,9 +138,10 @@ namespace Engine
 	{
 		uint32_t	iID{};
 		_string		Name{};
-		XMFLOAT2		vPos{},vSize{};
+		XMFLOAT2	vPos{},vSize{};
 		float		fValue{};
-		XMFLOAT4		vColor{};
+		XMFLOAT4	vColor{};
+		_bool		bAbort{ false };
 		BEHAVIOR    eMyType{};
 		tagimguinode()=default ;
 		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}

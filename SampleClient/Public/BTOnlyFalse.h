@@ -13,7 +13,7 @@ private:
 	~CBTOnlyFalse() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
@@ -22,7 +22,7 @@ private:
 	MOVE						m_eMove{};
 public:
 	static UPtr<CBTOnlyFalse> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

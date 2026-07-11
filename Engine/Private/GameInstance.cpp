@@ -1448,6 +1448,10 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
+const CPrototypeManager::PROTOTYPES* CGameInstance::GetPrototype(const StringID& svGroupTag) const
+{
+	return m_pPrototypeManager->GetPrototype(svGroupTag);
+}
 #pragma endregion
 
 
@@ -1688,10 +1692,7 @@ HRESULT	   CGameInstance::OpenBeHavior(CHandle Handle)
 #pragma endregion
 
 #pragma region NODE_EDITOR
-HRESULT					CGameInstance::Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction)
-{
-	return m_pActionManager->Add_Action_Prototype(eType, strActionName, std::move(pAction));
-}
+
 UPtr<class CBTRoot>	    CGameInstance::Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle)
 {
 	return m_pActionManager->Show_ActioNode_List(eType, iNode, vNodePos, Handle);
@@ -1725,10 +1726,7 @@ _bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vN
 	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
 }
 #pragma endregion
-UPtr<class CBTRoot>	    CGameInstance::Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg)
-{
-	return m_pActionManager->Clone_Action(eType, strActionName, pArg);
-}
+
 #pragma endregion
 #pragma region ANIMATIONEDTIOR_MANAGER
 int32_t CGameInstance::GetAnimIndex(CHandle Handle)

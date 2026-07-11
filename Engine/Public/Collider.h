@@ -52,6 +52,7 @@ protected:
 
 public:
 	virtual _bool Intersect(const CCollider& collider) const = 0;
+	virtual _bool Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const = 0;
 	virtual void Transform(_fmatrix wordMatrix) = 0;
 	//virtual void LocalTransform(_fmatrix wordMatrix) {};
 

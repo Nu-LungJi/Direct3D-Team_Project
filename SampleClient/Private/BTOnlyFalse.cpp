@@ -15,9 +15,9 @@ CBTOnlyFalse::CBTOnlyFalse(const CBTOnlyFalse& rhs) : CBTActionNode(rhs)
 CBTOnlyFalse::~CBTOnlyFalse()
 {
 }
-HRESULT CBTOnlyFalse::InitalizePrototype(void* pArg)
+HRESULT CBTOnlyFalse::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	m_eGroup = NODEGROUP::ACTION;
 	m_MasterName = "BTOnlyFalse";
@@ -44,14 +44,14 @@ void CBTOnlyFalse::Update_Gui()
 E::UPtr<CBTOnlyFalse> CBTOnlyFalse::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTOnlyFalse{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTOnlyFalse");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTOnlyFalse::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTOnlyFalse::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTOnlyFalse{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

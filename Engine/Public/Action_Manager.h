@@ -14,12 +14,10 @@ private:
 private:
 	HRESULT					Initialize();
 public:
-	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
-	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
 	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode,ImVec2 vNodePos, CHandle Handle);
 private:
-	std::map<_string, UPtr<class CBTRoot>>			m_Prototype_Actions[ETOUI(NODEGROUP::END)];
+	//std::map<_string, UPtr<class CBTRoot>>			m_Prototype_Actions[ETOUI(NODEGROUP::END)];
 
 	_string												m_SelectName{};
 	_bool												m_bPopup{ false };

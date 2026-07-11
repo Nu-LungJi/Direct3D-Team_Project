@@ -21,6 +21,7 @@ private:
 public:
 	 void Transform(_fmatrix wordMatrix) override;
 	 _bool Intersect(const CCollider& collider) const override;
+	 _bool Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const override;
 
 private:
 	HRESULT Initialize(_fmatrix mat);

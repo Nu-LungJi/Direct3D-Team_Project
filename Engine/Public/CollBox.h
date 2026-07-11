@@ -22,6 +22,7 @@ private:
 	HRESULT Initialize(const _float3& vCenter, const _float3& vExtents);
 	 void Transform(_fmatrix wordMatrix) override;
 	 _bool Intersect(const CCollider& collider) const override;
+	 _bool Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const override;
 
 private:
 	BoundingBox m_BoundingBoxLocal{};
