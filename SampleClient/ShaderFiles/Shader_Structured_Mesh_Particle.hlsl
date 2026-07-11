@@ -18,6 +18,8 @@ struct ParticleData
     uint loop;
     float4 color;
     float4 emissive;
+    uint frameIndex;
+    float3 pad2;
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);

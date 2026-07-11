@@ -313,6 +313,8 @@ public:
 
 #pragma region PARTICLE_MANAGER
 public:
+	HRESULT LoadParticleJson(const std::string& strJsonPath);
+
 	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop, _float fSpawnInterval);

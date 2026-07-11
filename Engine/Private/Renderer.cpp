@@ -522,9 +522,6 @@ HRESULT CRenderer::Draw() {
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
 
-	if (CGameInstance::Get().KeyDown(DIK_3)) {
-		ApplyFilter = !ApplyFilter;
-	}
 	// PostProcess
 	if (FAILED(Render_PostProcess()))     return E_FAIL;
 
@@ -829,10 +826,10 @@ HRESULT CRenderer::Render_Alpha() {
         return E_FAIL;
     }
 
-    if (FAILED(RenderParticle()))
-    {
-        return E_FAIL;
-    }
+    //if (FAILED(RenderParticle()))
+    //{
+    //    return E_FAIL;
+    //}
 
 	Unbind_Resources();
 
@@ -1150,7 +1147,7 @@ HRESULT CRenderer::RenderBlend()
 {
     ZoneScopedN("RenderBlend");
 
-    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD");
+    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
     m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::BLEND)])

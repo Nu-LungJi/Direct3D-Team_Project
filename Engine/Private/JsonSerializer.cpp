@@ -123,6 +123,14 @@ void CJsonSerializer::Write(const std::string& key, const std::string& value)
 	else                 node[key] = value;
 }
 
+void CJsonSerializer::Write(const std::string& key, const StringID& value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value.GetDbgStr());
+	else                 node[key] = value.GetDbgStr();
+}
+
 void CJsonSerializer::Write(const std::string& key, const ISerializable& value)
 {
 	nlohmann::json& node = *m_nodeStack.back();

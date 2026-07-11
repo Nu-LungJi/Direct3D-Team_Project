@@ -452,6 +452,11 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 
 
 #pragma region PARTICLE_MANAGER
+
+HRESULT CGameInstance::LoadParticleJson(const std::string& strJsonPath) {
+	return m_pParticleManager->LoadParticleJson(strJsonPath);
+}
+
 HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 	_bool bLoop, _float fSpawnInterval)
@@ -500,20 +505,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_PARTICLE) })))
-		{
-			return E_FAIL;
-		}
-	}
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_SPAWN_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PARTICLE_SPAWN) })))
-		{
-			return E_FAIL;
-		}
-	}
+
 
 
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI", E::CResCBuffer::Create()))
@@ -531,13 +523,6 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_INIT_PARTICLE) })))
-		{
-			return E_FAIL;
-		}
-	}
 
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE, E::CResCBuffer::Create()))
 	{

@@ -26,6 +26,7 @@ public:
 	virtual void Write(const std::string& key, const _float3& value) = 0;
 	virtual void Write(const std::string& key, const _float4& value) = 0;
 	virtual void Write(const std::string& key, const _float4x4& value) = 0;
+	virtual void Write(const std::string& key, const StringID& value) = 0;
 	virtual void Write(const std::string& key, const ISerializable& value) = 0;
 
 	template<typename T>
@@ -156,6 +157,8 @@ public:
 	virtual void Read(const std::string& key, _float4& outValue) = 0;
 	virtual void Read(const std::string& key, _float4x4& outValue) = 0;
 	virtual void Read(const std::string& key, ISerializable& outValue) = 0;
+	virtual void Read(const std::string& key, StringID& outValue) = 0;
+
 	template<typename T>
 	auto Read(const std::string& key, T& outValue)
 		-> std::enable_if_t<std::is_enum_v<T>>

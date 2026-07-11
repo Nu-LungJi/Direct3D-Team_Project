@@ -204,3 +204,13 @@ void CTrail_CPU::BuildTrailGeometry()
         m_vecVertices.push_back(vBottom);
     }
 }
+UPtr<CParticle> CTrail_CPU::Create(void* pArg)
+{
+	auto pInstance = E::ToUPtr(new CTrail_CPU{});
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Created : CTrail_CPU");
+		return nullptr;
+	}
+	return  pInstance;
+}

@@ -18,25 +18,24 @@ CParticle::~CParticle()
 
 HRESULT CParticle::LoadParticleTexture(std::pair<StringID, StringID> textureId)
 {
-
-	//if (auto res = CGameInstance::Get().AddResourceT<E::CResTestModel>("LOBJ", "Model_Resource", CResTestModel::Create("./Resources/SampleClient/Models/LightObject/LightObject.fbx"))) {
-	//	E::CResTestModel::DESC pDesc = { MODEL::NONANIM, XMMatrixIdentity() };
-	//	if (FAILED(res->Load(pDesc)))	return E_FAIL;
-	//}
-	//
-	//
-	//CComModelInstance::DESC Desc{};
-	//Desc.sGroupTag = "LOBJ";
-	//Desc.sResTag = "Model_Resource";
-	//
-	//if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-	//{
-	//	return E_FAIL;
-	//};
-
-
 	m_pParticleTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(textureId.first, textureId.second);
-	return m_pParticleTexture ? S_OK : E_FAIL;
+
+	if (!m_pParticleTexture)
+	{
+		OutputDebugStringA("텍스처를 찾을 수 없음!\n");
+		return E_FAIL;
+	}
+
+	// ---- GetDbgStr() 결과를 std::string으로 먼저 받아서 수명 보장 ----
+	std::string strID1 = textureId.first.GetDbgStr();
+	std::string strID2 = textureId.second.GetDbgStr();
+
+	char buf[256];
+	sprintf_s(buf, "텍스처 로드: ID1=%s, ID2=%s, SRV주소=%p\n",
+		strID1.c_str(), strID2.c_str(),
+		m_pParticleTexture->GetSRV().Get());
+	OutputDebugStringA(buf);
+	return S_OK;
 }
 void CParticle::RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList)
 {

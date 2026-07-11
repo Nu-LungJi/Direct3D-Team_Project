@@ -104,6 +104,12 @@ void CBinSerializer::Write(const std::string& key, const ISerializable& value) {
 	m_nodeStack.pop_back();
 }
 
+void CBinSerializer::Write(const std::string& key, const StringID& value)
+{
+	PreWrite(key);
+	WriteBytes(value.GetDbgStr());
+}
+
 // === 노드 제어 (스트림 패칭 기법) ===
 void CBinSerializer::StartArray(const std::string& key) {
 	PreWrite(key);

@@ -52,6 +52,8 @@ namespace Engine
 		uint32_t loop;
 		_float4 color;
 		_float4 emissive;
+		uint32_t frameIndex;
+		_float3 pad2;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{

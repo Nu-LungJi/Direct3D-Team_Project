@@ -22,6 +22,8 @@ struct ParticleData
     uint loop;
     float4 color;
     float4 emissive;
+    uint frameIndex;
+    float3 pad2;
 };
 
 cbuffer CB_SPAWN_COUNT : register(b6)
@@ -56,7 +58,6 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.alive = 1;
     p.color = s.color;
     p.emissive = s.emissive;
-    
     gParticles[index] = p;
 }
 

@@ -133,6 +133,9 @@ public:
     // 사전 등록 - [대분류][소분류]로 저장
     HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle);
 
+	// 정확히 지정해서 스폰
+
+
     // 정확히 지정해서 스폰
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
@@ -156,11 +159,17 @@ public:
 	HRESULT Save_Binary_Json(std::string outpath, const std::string& fbxFullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, int iBehaviorType, const std::string& VSGroup, const std::string& VSID,
 		const std::string& PSGroup, const std::string& PSID, const std::string& sGroupTag, const std::string& sResTag, 
-		const std::string& textureID1 = "", const std::string& textureID2 = "");
-	// 조회 헬퍼
-    CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
-    bool HasGroup(const StringID& sGroupTag) const;
+		const std::string& textureID1 = "", const std::string& textureID2 = "", const std::string& viBufferID1 ="",
+		const std::string& viBufferID2= "",
+		int RowCount = 1,
+		int ColCount = 1);
+	HRESULT LoadParticleJson(const std::string& strJsonPath);
+	HRESULT SaveCommandQueue(const std::string& strJsonPath);
+	HRESULT LoadCommandQueue(const std::string& strJsonPath);
 
+	// 조회 헬퍼
+	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
+	bool HasGroup(const StringID& sGroupTag) const;
 public:
     static UPtr<CParticleManager> Create();
 
@@ -175,6 +184,5 @@ private:
     std::vector<SPAWN_COMMAND> m_vecCommandQueue;
     // 큐 전체를 실행
     HRESULT ExecuteCommandQueue();
-	HRESULT LoadParticleModelJson(const std::string& strJsonPath, const std::string& strFbxRealFolder);
 };
 NS_END

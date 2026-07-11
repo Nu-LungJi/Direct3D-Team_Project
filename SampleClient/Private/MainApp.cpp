@@ -238,43 +238,43 @@ HRESULT CMainApp::Load_Particle_Resources()
 
 	{
 		//파티클 텍스쳐 로드
-		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_FLARE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_RingFlare_D.png")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				//return E_FAIL;
-			}
-		}
-
-		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBON", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_AncientMagicStreak_E.png")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				//return E_FAIL;
-			}
-		}
-		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_TRAIL", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				return E_FAIL;
-			}
-		}
-		// model-> cpu  용인지 gpu용인지 구분하고 메쉬를 쓰는지 텍스쳐를 쓰는지 구분을하고 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/ParticleMeshes/rock1.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
+		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_FLARE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_RingFlare_D.png")))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		MSG_BOX("");
+		//		//return E_FAIL;
+		//	}
+		//}
+		//
+		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBON", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_AncientMagicStreak_E.png")))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		MSG_BOX("");
+		//		//return E_FAIL;
+		//	}
+		//}
+		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_TRAIL", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		MSG_BOX("");
+		//		return E_FAIL;
+		//	}
+		//}
+		//// model-> cpu  용인지 gpu용인지 구분하고 메쉬를 쓰는지 텍스쳐를 쓰는지 구분을하고 
+		//if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
+		//	CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/ParticleMeshes/rock1.fbx"))) {
+		//
+		//	E::CResStaticModel::DESC pDesc{};
+		//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		//
+		//	if (FAILED(res->Load(pDesc)))
+		//	{
+		//		return E_FAIL;
+		//	}
+		//}
 
 	}
 
@@ -291,18 +291,13 @@ HRESULT CMainApp::Load_Particle_Resources()
 	}
 
 	{
+		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
 		//파티클 객채들 생성
 		//CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
-		CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());
-		CGameInstance::Get().Add_Particle("BEAM", "ATTACK", CParticle_Ribbon::Create());
-		CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
+		//CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());
+		//CGameInstance::Get().Add_Particle("BEAM", "ATTACK", CParticle_Ribbon::Create());
+		//CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
 
-		OutputDebugStringA(("sizeof(PARTICLE) = " + std::to_string(sizeof(PARTICLE)) + "\n").c_str());
-		OutputDebugStringA(("sizeof(PARTICLE_SPAWN_DATA) = " + std::to_string(sizeof(PARTICLE_SPAWN_DATA)) + "\n").c_str());
-		OutputDebugStringA(("sizeof(CB_PARTICLE_SPAWN) = " + std::to_string(sizeof(CB_PARTICLE_SPAWN)) + "\n").c_str());
-		OutputDebugStringA(("sizeof(CB_PER_PARTICLE) = " + std::to_string(sizeof(CB_PER_PARTICLE)) + "\n").c_str());
-		OutputDebugStringA(("sizeof(CParticle_Ribbon) = " + std::to_string(sizeof(CParticle_Ribbon)) + "\n").c_str());
-		OutputDebugStringA(("sizeof(CTrail_Example) = " + std::to_string(sizeof(CTrail_Example)) + "\n").c_str());
 	}
 	return S_OK;
 }
