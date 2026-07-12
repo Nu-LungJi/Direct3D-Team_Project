@@ -60,7 +60,7 @@ private:
 
 private:
 	// 애니메이션
-	//UI_ANIMCLIP m_CurrentClip;
+	UI_ANIMCLIP m_CurrentClip;
 
 private:
 	void CreateMode();

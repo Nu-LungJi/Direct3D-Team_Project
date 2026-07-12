@@ -2,6 +2,8 @@
 
 #include "GameObject.h"
 #include "UIComponent.h"
+#include "ButtonComponent.h"
+#include "TweenComponent.h"
 
 NS_BEGIN(Engine)
 
@@ -25,6 +27,24 @@ typedef struct tagUIInfo
 	uint32_t		EffectType{ 0 };				// 호버링이펙트, 클릭이펙트 등등
 	_float3			Color = { 0.f, 0.f, 0.f };		// 색
 }UI_INFO;
+
+/****************UI***********************/
+// 개별 애니메이션 트랙 데이터
+typedef struct tagUITweenTrack
+{
+	EUITweenTarget TargetType;
+	bool bUseCurrentStart; // 시작값을 현재 UI의 상태값으로 쓸 것인지?
+	float fStartValue;     // bUseCurrentStart가 false일 때 쓸 고정 시작값
+	float fEndValue;       // 목표값
+	float fDuration;       // 걸리는 시
+}UI_TWEENTRACK;
+
+// 애니메이션 클립
+typedef struct tagUIAnimClip
+{
+	std::string ClipName;
+	std::vector<UI_TWEENTRACK> Tracks;
+}UI_ANIMCLIP;
 
 class ENGINE_DLL CUIObject : public CGameObject
 {
@@ -61,6 +81,17 @@ public:
 
 protected:
 	std::vector<CUIComponent*> m_UIComponents;
+
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CButtonComponent* m_pComCButton = nullptr;
+	TweenComponent* m_pComTween = nullptr;
+public:
+	TweenComponent* GetTweenCom() { return m_pComTween; }
+
+	/* 이벤트 콜백 함수 */
+	std::function<void(CUIObject* pCaller)> OnClicked;
+	std::function<void(CUIObject* pCaller)> OnHoverEnter;
+	std::function<void(CUIObject* pCaller)> OnHoverExit;
 
 protected:
 	UI_INFO		m_UIINFO{};

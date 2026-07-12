@@ -39,16 +39,15 @@ private:
 private:
 	bool m_bOutline{};
 
-	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
-	CButtonComponent* m_pComCButton = nullptr;
-	TweenComponent* m_pComTween = nullptr;
-
 protected:
 	virtual void PlayEffect(uint32_t uiState) override;
 
 	CEffectUI* m_Effect_Hovered = nullptr;
 	CEffectUI* m_Effect_Clicked = nullptr;
 
+	float m_fHoverScale = 1.1f;
+	float m_fScaleDuration = 0.1f;
+	float m_fAlphaDuration = 0.3f;
 private:
 	std::vector<std::optional<CHandle>> m_vEffects;
 

@@ -18,6 +18,56 @@ void UIManager::Update()
 {
 }
 
+void UIManager::InitializeActions()
+{
+	// 크기를 1.1배로 키우는 애니메이션 액션
+	m_EventMap["ScaleUp"] = [](CUIObject* pCaller)
+	{
+		if (pCaller == nullptr) return;
+
+		// 1. 타겟 UI의 트윈 컴포넌트를 가져옵니다. 
+		// (pCaller에 GetTweenCom() 같은 Getter가 있다고 가정)
+		auto pTween = pCaller->GetTweenCom();
+		if (pTween != nullptr)
+		{
+			float startScale = pCaller->GetScaleRatio();
+
+			// 2. 콜백 내부 람다에서 pCaller를 캡처([pCaller])하여 사용합니다.
+			pTween->PlayTween(startScale, 1.1f, 0.1f,
+				[pCaller](float currentValue) {
+					pCaller->SetScaleRatio(currentValue);
+					pCaller->CalcUICoord();
+				});
+		}
+	};
+
+	// 알파값을 서서히 올리는 애니메이션 액션
+	m_EventMap["FadeIn"] = [](CUIObject* pCaller)
+	{
+		if (pCaller == nullptr) return;
+
+		auto pTween = pCaller->GetTweenCom();
+		if (pTween != nullptr)
+		{
+			float startAlpha = pCaller->GetAlphaRatio();
+
+			pTween->PlayTween(startAlpha, 1.0f, 0.3f,
+				[pCaller](float currentValue) {
+					pCaller->SetAlphaRatio(currentValue);
+				});
+		}
+	};
+}
+
+std::function<void(CUIObject* pCaller)> UIManager::GetAction(const std::string& actionName)
+{
+	auto iter = m_EventMap.find(actionName);
+	if (iter != m_EventMap.end())
+		return iter->second;
+
+	return nullptr;
+}
+
 std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
 {
 	char path[256] = "";

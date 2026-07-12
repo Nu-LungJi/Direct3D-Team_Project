@@ -34,25 +34,25 @@ HRESULT CButton::Initialize(void* pArg)
 	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
 
-	CComponent::DESC Desc{};
-	Desc.pGameObject = this;
-
-	if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &Desc, &m_pComCButton)))
 	{
-		return E_FAIL;
-	};
-
-	if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &Desc, &m_pComTween)))
-	{
-		return E_FAIL;
-	};
-
-	
-
-	{
+		/* Buffer */
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI" };
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerUI", &Desc, &m_pComCBufferPerUI)))
+		{
+			return E_FAIL;
+		};
+
+		/* Component */
+		CComponent::DESC CDesc{};
+		Desc.pGameObject = this;
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
+		{
+			return E_FAIL;
+		};
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &CDesc, &m_pComTween)))
 		{
 			return E_FAIL;
 		};
@@ -187,25 +187,41 @@ void CButton::PlayEffect(uint32_t uiState)
 	case ETOUI(UI_STATE::ENTER):
 		m_pComTween->ClearTweens();
 		{
-			_float startScale = this->GetScaleRatio();
-			m_pComTween->PlayTween(startScale, 1.1f, 0.1f,
-				[this](float currentValue) {
-					this->SetScaleRatio(currentValue);
-					this->CalcUICoord();
-				});
+			this->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("ScaleUp");
+			//_float startScale = this->GetScaleRatio();
+			//m_pComTween->PlayTween(startScale, 1.1f, 0.1f,
+			//	[this](float currentValue) {
+			//		this->SetScaleRatio(currentValue);
+			//		this->CalcUICoord();
+			//	});
+			OnHoverEnter(this);
 		}
 		if (m_Effect_Hovered != nullptr)
 		{
 			m_Effect_Hovered->SetActive(true);
+			m_Effect_Hovered->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
 
-			float startAlpha = m_Effect_Hovered->GetAlpha();
-			m_pComTween->PlayTween(startAlpha, 1.0f, 0.3f,
-				[this](float currentValue) {
-					m_Effect_Hovered->SetAlpha(currentValue);
-				});
+			//float startAlpha = m_Effect_Hovered->GetAlpha();
+			//m_pComTween->PlayTween(startAlpha, 1.0f, 0.3f,
+			//	[this](float currentValue) {
+			//		m_Effect_Hovered->SetAlpha(currentValue);
+			//	});
+			m_Effect_Hovered->OnHoverEnter(m_Effect_Hovered);
 		}
 		break;
 
+	case ETOUI(UI_STATE::CLICK):
+		//if (m_Effect_Clicked != nullptr)
+		//{
+		//	m_Effect_Clicked->SetActive(true);
+		//
+		//	float startAlpha = m_Effect_Clicked->GetAlpha();
+		//	m_pComTween->PlayTween(startAlpha, 1.0f, 0.3f,
+		//		[this](float currentValue) {
+		//			m_Effect_Clicked->SetAlpha(currentValue);
+		//		});
+		//}
+		break;
 	case ETOUI(UI_STATE::EXIT):
 		m_pComTween->ClearTweens();
 		{

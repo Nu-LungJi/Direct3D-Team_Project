@@ -9,7 +9,6 @@ class CComConstantBuffer;
 class MouseComponent;
 NS_END
 
-
 NS_BEGIN(Client)
 
 class CEffectUI final : public E::CFlipbookUI

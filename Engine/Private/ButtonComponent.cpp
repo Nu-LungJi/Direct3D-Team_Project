@@ -35,6 +35,10 @@ bool CButtonComponent::CheckPixelPerfectCollision(_float2 mousePos, bool bIsTopU
 		pOwner->PlayEffect(ETOUI(CUIObject::UI_STATE::HOVERED));
 	}
 
+	if (m_bIsHovered && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		pOwner->PlayEffect(ETOUI(CUIObject::UI_STATE::CLICK));
+	}
 
 	return false;
 }

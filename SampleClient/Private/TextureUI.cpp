@@ -33,9 +33,19 @@ HRESULT CTextureUI::Initialize(void* pArg)
 
 
 	{
+		/* Buffer */
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI" };
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerUI", &Desc, &m_pComCBufferPerUI)))
+		{
+			return E_FAIL;
+		};
+
+		/* Component */
+		CComponent::DESC CDesc{};
+		Desc.pGameObject = this;
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &CDesc, &m_pComTween)))
 		{
 			return E_FAIL;
 		};
