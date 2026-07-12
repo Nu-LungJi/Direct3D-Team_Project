@@ -894,6 +894,9 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTRandSelector.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1330,6 +1333,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRandSelector.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -15,7 +15,7 @@ namespace Engine
 	enum class STATE { RIGHT, UP, LOOK, POSITION, END };
 	enum class MODEL {STATIC, SKELETAL, END };
 	enum class NODETYPE {START,NODE_END ,END};
-	enum class BEHAVIOR {SELECTOR, SECQUNCE, DECORATOR, ACTION,END};
+	enum class BEHAVIOR {SELECTOR, SECQUNCE, DECORATOR, ACTION, RAND_SELECTOR,END};
 	enum class CollType { Box, OrientedBox, Sphere, Frustum };
 	//enum class VSYNC{ OFF, ON };
 

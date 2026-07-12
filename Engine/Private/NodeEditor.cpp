@@ -32,14 +32,6 @@ HRESULT CNodeEditor::Initialize()
 	if (nullptr == m_pNodeContext)
 		return E_FAIL;
 
-	//노드 테 스  트  용
-	m_Nodes.push_back(GUINODE(BEHAVIOR::SECQUNCE,0, "MainTex", _float2(40, 50), 0.5f, _float4(255, 100, 100, 1) ));
-	m_Nodes.push_back(GUINODE(BEHAVIOR::SECQUNCE,1, "BumpMap", _float2(40, 150), 0.42f, _float4(200, 100, 100, 1) ));
-	m_Nodes.push_back(GUINODE(BEHAVIOR::SELECTOR,2, "Combine", _float2(270, 80), 1.0f, _float4(0, 200, 100, 1)));
-
-	m_NodesLink.push_back(GUINODE_LINK(2));
-	m_NodesLink.push_back(GUINODE_LINK(2));
-
 	Load_FileList();
 	return S_OK;
 }
@@ -184,6 +176,12 @@ void CNodeEditor::Show_Editor()
 				{
 					m_eBTType = BEHAVIOR::SECQUNCE;
 					m_pNodeName = "Sequence";
+					m_bPopup = true;
+				}
+				else if (ImGui::MenuItem("Add_RandSelector"))
+				{
+					m_eBTType = BEHAVIOR::RAND_SELECTOR;
+					m_pNodeName = "Rand_Selector";
 					m_bPopup = true;
 				}
 				else if (ImGui::MenuItem("Add_Action"))
@@ -348,7 +346,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 					CurNode.bSelected = true;
 					CurNode.iD = pNode->iID;
 					m_CurrentNode = CurNode;
-					if (pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					if (pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE || pParentNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::RAND_SELECTOR)
 					{
 						auto& pSrc = (*(static_cast<CBTComposite*>(pParentNode)->Get_Nodes()))[iParentIndex];
 						pSrc->Get_GuiNodeLink().iStartIdx = -1;
@@ -388,7 +386,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 				//아 이거는 임시 저장소에 넣으면 안되네 이런
 				if (-1 != pLink->SlotEnd[iSlot].iDestNode && !m_CurrentNode.bSelected)
 				{	//부모기준으로 끊어도 동일하게 연결된 자식이 tmp로 빠지는걸로
-					if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+					if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::RAND_SELECTOR)
 					{
 						auto& pSrc = (*(static_cast<CBTComposite*>(pCurNode))->Get_Nodes())[iSlot];
 						pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
@@ -419,24 +417,10 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 							continue;
 						if ((*iter)->Get_GuiNodeInfo().iID == m_CurrentNode.iD)
 						{
-							//등록
-							//m_pBeHavior->RegistNode((*iter)->Get_GuiNodeInfo().iID, (*iter).get());
-
 							(*iter)->Get_GuiNodeLink().iStartIdx = iSlot;
 							(*iter)->Get_GuiNodeLink().ParentNode = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 							pCurNode->Get_GuiNodeLink().SlotEnd[iSlot] = (*iter)->Get_GuiNodeInfo().Get_DestInfo();
-
 							m_pBeHavior->Add_Node(pCurNode, iSlot, std::move(*iter));
-							//if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
-							//{
-							//	auto pSrc = ((static_cast<CBTComposite*>(pCurNode))->Get_Nodes());
-							//	(*pSrc)[iSlot] = std::move((*iter));
-							//}
-							//else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-							//{
-							//	auto pSrc = static_cast<CBTDecorator*>(pCurNode);
-							//	pSrc->Set_Child(std::move((*iter)));
-							//}
 							Reset_CurrentNode();
 							break;
 						}
@@ -455,7 +439,7 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 		}
 	}
 
-	if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+	if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::RAND_SELECTOR)
 	{
 		auto pNode = static_cast<CBTComposite*>(pCurNode);
 		for (size_t j = 0; j < pNode->Get_Nodes()->size(); ++j)
@@ -550,7 +534,7 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 	ImGui::PopID();
 	if (bFinishe) return true;
 
-	if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
+	if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::RAND_SELECTOR)
 	{
 		auto& pNodes = (*static_cast<CBTComposite*>(pCurNode.get())->Get_Nodes());
 		for (auto iter = pNodes.begin(); iter != pNodes.end(); ++iter)
@@ -616,7 +600,7 @@ void CNodeEditor::DragAllMove(CBTRoot* pRoot, _float2 vPos)
 	_float2 vCurrent = pRoot->Get_GuiNodeInfo().vPos;
 	pRoot->Get_GuiNodeInfo().vPos = _float2(vCurrent.x + vPos.x, vCurrent.y + vPos.y);
 	
-	if (eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::SECQUNCE)
+	if (eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::RAND_SELECTOR)
 	{
 		auto& pSrc = (*static_cast<CBTComposite*>(pRoot)->Get_Nodes());
 		if (pSrc.empty())
@@ -793,7 +777,7 @@ void CNodeEditor::ShowWidgetByType(CBTRoot* pNode)
 
 	if (eNodeType == BEHAVIOR::ACTION || eNodeType == BEHAVIOR::DECORATOR)
 		CGameInstance::Get().Show_Action_NodeWidget(pNode);
-	else if (eNodeType == BEHAVIOR::SELECTOR || eNodeType == BEHAVIOR::SECQUNCE)
+	else if (eNodeType == BEHAVIOR::SELECTOR || eNodeType == BEHAVIOR::SECQUNCE || eNodeType == BEHAVIOR::RAND_SELECTOR)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1.f));
 		if (ImGui::Button("Add Pin"))Pin(pNode, true);
@@ -841,6 +825,9 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SELECTOR,"BTSelector",&SequenceDesc));
 			else if(eType == BEHAVIOR::SECQUNCE)
 				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc));
+			else if (eType == BEHAVIOR::RAND_SELECTOR)
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::RAND_SELECTOR, "BTRandSelector", &SequenceDesc));
+
 			if (nullptr == pNode)
 			{
 				ImGui::CloseCurrentPopup();
@@ -941,9 +928,9 @@ void CNodeEditor::Recursive_Call_Node(class CBTRoot* pParent)
 	GUINODE* pNode_inp{ nullptr };
 	GUINODE* pNode_out{ nullptr };
 	BEHAVIOR eType = pParent->Get_GuiNodeInfo().eMyType;
-	if (BEHAVIOR::SELECTOR == eType || BEHAVIOR::SECQUNCE == eType)
+	if (BEHAVIOR::SELECTOR == eType || BEHAVIOR::SECQUNCE == eType || BEHAVIOR::RAND_SELECTOR == eType)
 	{
-		auto pNode = static_cast<CBTSelector*>(pParent);
+		auto pNode = static_cast<CBTComposite*>(pParent);
 		auto& pNodeArray = (*pNode->Get_Nodes());
 
 		for (size_t i = 0; i < pNodeArray.size(); ++i)

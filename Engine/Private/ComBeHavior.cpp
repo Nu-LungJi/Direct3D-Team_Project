@@ -52,7 +52,7 @@ void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
 	m_iNodeID = std::max(m_iNodeID,pNode->Get_GuiNodeInfo().iID);
     RegistNode(pNode->Get_GuiNodeInfo().iID, pNode);
 
-    if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR)
+    if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::RAND_SELECTOR)
     {
         auto& pSrc = (*static_cast<CBTComposite*>(pNode)->Get_Nodes());
         for (auto& iter : pSrc)
@@ -72,7 +72,7 @@ void CComBeHavior::ResetNode(CBTRoot* pNode)
 {
 	BEHAVIOR eType = pNode->Get_GuiNodeInfo().eMyType;
 	pNode->Abort();
-	if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR)
+	if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::RAND_SELECTOR)
 	{
 		auto& pSrc = *static_cast<CBTComposite*>(pNode)->Get_Nodes();
 		for (auto& iter : pSrc)
@@ -136,7 +136,7 @@ void CComBeHavior::Add_Node(CBTRoot* pParent,  uint32_t iSlot, UPtr<CBTRoot> pNo
 
 	BEHAVIOR eType = pParent->Get_GuiNodeInfo().eMyType;
 	if (nullptr == pNode) return;
-	if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR)
+	if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::RAND_SELECTOR)
 	{
 
 		pNode->Set_Handle(GetGameObject()->GetHandle());
@@ -173,8 +173,28 @@ void CComBeHavior::UnRegistNode(uint32_t iIndex)
 {
     auto iter = m_NodeMap.find(iIndex);
 
-    if (iter != m_NodeMap.end())
-        m_NodeMap.erase(iIndex);
+	if (iter != m_NodeMap.end())
+	{
+		BEHAVIOR eType = iter->second->Get_GuiNodeInfo().eMyType;
+		if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::RAND_SELECTOR)
+		{
+			auto& pSrc = *static_cast<CBTComposite*>(iter->second)->Get_Nodes();
+			for (auto& iter : pSrc)
+			{ if(nullptr != iter)
+				UnRegistNode(iter->Get_GuiNodeInfo().iID);
+			}
+		}
+		else if (eType == BEHAVIOR::DECORATOR)
+		{
+			auto& pSrc = static_cast<CBTDecorator*>(iter->second)->Get_Child();
+			if (nullptr != pSrc)
+				UnRegistNode(pSrc->Get_GuiNodeInfo().iID);
+		}
+
+
+		m_NodeMap.erase(iIndex);
+	}
+		
 }
 
 void CComBeHavior::AbortNode()
