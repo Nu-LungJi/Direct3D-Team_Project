@@ -236,6 +236,7 @@ HRESULT CMapMeshGpuCuller::BuildVisibleInstances(
 	pContext->CSSetConstantBuffers(0, 1, nullCBuffers);
 	pContext->CSSetShader(nullptr, nullptr, 0);
 
+	// AppendStructuredBuffer로 visible 인스턴스만 써둔 gpu버퍼를 복사 // gpu-gpu내 메모리 복사
 	pContext->CopyResource(m_pVisibleInstanceVertexBuffer.Get(), m_pVisibleInstanceBuffer->GetBuffer().Get());
 
 	return S_OK;
@@ -261,9 +262,11 @@ HRESULT CMapMeshGpuCuller::PrepareIndirectArgs(
 	args.StartInstanceLocation = startInstanceLocation;
 
 	pContext->UpdateSubresource(m_pIndirectArgsBuffer.Get(), 0, nullptr, &args, 0, 0);
+
 	// offset 4바이트 줘서 args.InstanceCount 복사해옴
-	pContext->CopyStructureCount(m_pIndirectArgsBuffer.Get(), sizeof(uint32_t), m_pVisibleInstanceBuffer->GetUAV().Get());
 	// cpu readback하는게 아니라 gpu내부에서 uav가 관리하는 내부카운터를 복사해오는것.
+	pContext->CopyStructureCount(m_pIndirectArgsBuffer.Get(), sizeof(uint32_t), m_pVisibleInstanceBuffer->GetUAV().Get());
+
 
 	return S_OK;
 }
