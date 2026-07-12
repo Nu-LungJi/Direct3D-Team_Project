@@ -264,6 +264,8 @@
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\HizBuffer.h" />
+    <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
     <ClInclude Include="..\Public\NavMeshManager.h" />
     <ClInclude Include="..\public\FlipbookUI.h" />
@@ -302,6 +304,7 @@
     <ClInclude Include="..\Public\ImguiManager.h" />
     <ClInclude Include="..\Public\IPhysicsListener.h" />
     <ClInclude Include="..\Public\IRenderable.h" />
+    <ClInclude Include="..\Public\HizOcclusionCuller.h" />
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
@@ -532,6 +535,9 @@
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\Private\HizBuffer.cpp" />
+    <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
+    <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\FlipbookUI.cpp" />
     <ClCompile Include="..\private\ParticlePattern.cpp" />
@@ -649,6 +655,15 @@
     <FxCompile Include="..\ShaderFiles\FullscreenQuad\FullscreenQuad.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizCopyDepth.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizMipPyramid.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGpuCull.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PBR\PS_PBR.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

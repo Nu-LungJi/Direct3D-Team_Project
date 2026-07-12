@@ -49,6 +49,9 @@ HRESULT CRenderer::Initialize()
     if (FAILED(Initialize_Debugging()))         return E_FAIL;
 #endif
 
+	if (FAILED(InitializeHizBuffer()))
+		return E_FAIL;
+
     return S_OK;
 }
 
@@ -510,6 +513,9 @@ HRESULT CRenderer::Draw() {
     // Diffuse + Normal + SMRO + Emissive
     if (FAILED(Render_NonAlpha()))       return E_FAIL;
 
+	// Hi-Z build: opaque depth 기반
+	if (FAILED(BuildCurrentHizBuffer())) return E_FAIL;
+
 	// HBAO
 	if (FAILED(Render_HBAO()))			 return E_FAIL;
 
@@ -547,6 +553,10 @@ HRESULT CRenderer::Draw() {
 
 void CRenderer::FrameEnd()
 {
+	// HizBuffer 교체
+	std::swap(m_pCurrentHizBuffer, m_pPrevHizBuffer);
+	m_bHasPrevHizBuffer = true;
+
     for (auto& vecRenderables : m_RenderObject)
     {
         vecRenderables.clear();
@@ -588,6 +598,13 @@ HRESULT CRenderer::Render_DepthMap() {
         m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
         m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
+
+		SPtr<CResDepthStencilState> DepthState =
+			CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				"DS_DEPTHWRITE");
+
+		m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 
         auto pGameCam = CGameInstance::Get().GetActiveCamera();
         if (nullptr == pGameCam)    return S_OK;
@@ -1099,7 +1116,7 @@ HRESULT CRenderer::Render_FullScreen()
     m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
     if (CGameInstance::Get().KeyPressing(DIK_N))
-    {
+	{
         ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetHBAO->GetSRV().Get() };
         m_pContext->PSSetShaderResources(0, 1, pSRVs);
     }
@@ -1416,6 +1433,44 @@ HRESULT CRenderer::Render_Debugging() {
     return S_OK;
 }
 #endif
+
+HRESULT CRenderer::InitializeHizBuffer()
+{
+	auto clientSize = CGameInstance::Get().GetClientScreenSize();
+
+	m_pCurrentHizBuffer = CHizBuffer::Create(
+		m_pDevice,
+		m_pContext,
+		static_cast<uint32_t>(clientSize.x),
+		static_cast<uint32_t>(clientSize.y));
+
+	if (m_pCurrentHizBuffer == nullptr)
+		return E_FAIL;
+
+	m_pPrevHizBuffer = CHizBuffer::Create(
+		m_pDevice,
+		m_pContext,
+		static_cast<uint32_t>(clientSize.x),
+		static_cast<uint32_t>(clientSize.y));
+
+	if (m_pPrevHizBuffer == nullptr)
+		return E_FAIL;
+
+	m_bHasPrevHizBuffer = false;
+
+	return S_OK;
+}
+
+HRESULT CRenderer::BuildCurrentHizBuffer()
+{
+	if (m_pCurrentHizBuffer == nullptr || m_pResDynTexTargetDepth == nullptr)
+		return E_FAIL;
+
+	ID3D11RenderTargetView* nullRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	m_pContext->OMSetRenderTargets(4, nullRTVs, nullptr);
+
+	return m_pCurrentHizBuffer->Build(m_pResDynTexTargetDepth->GetSRV().Get());
+}
 
 UPtr<CRenderer> CRenderer::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {

@@ -323,12 +323,16 @@ void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COO
 			continue;
 		}
 
-		if (!boundingFrustum.Intersects(iter->second.bounds))
+		const auto& selectedChunk = iter->second;
+		const BoundingBox& cullingBounds = selectedChunk.octreeNode
+			? selectedChunk.octreeNode->GetCullingBoundingBox()
+			: selectedChunk.bounds;
+
+		if (!boundingFrustum.Intersects(cullingBounds))
 		{
 			continue;
 		}
 
-		const auto& selectedChunk = iter->second;
 		if (const auto& octreeNode = selectedChunk.octreeNode)
 		{
 			octreeNode->OctreeFrustumCull(boundingFrustum);

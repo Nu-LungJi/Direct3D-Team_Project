@@ -14,8 +14,10 @@
 #include "ColliderManager.h"
 #include "Collider.h"
 #include "Renderer.h"
+#include "HizOcclusionCuller.h"
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
+#include "CameraObject.h"
 #include "UICamera.h"
 #include "ComBeHavior.h"
 #include "AnimEdit_Manager.h"
@@ -140,6 +142,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pRenderer = CRenderer::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pRenderer == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pHizOcclusionCuller = CHizOcclusionCuller::Create();
+	if (m_pHizOcclusionCuller == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -747,6 +755,27 @@ HRESULT CGameInstance::InitializeResources()
 		}
 	}
 	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_InitParticle", "./ShaderFiles/Particle/Shader_CS_Init.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizCopyDepth", "./ShaderFiles/Hiz/Shader_CS_HizCopyDepth.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizMipPyramid", "./ShaderFiles/Hiz/Shader_CS_HizMipPyramid.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -1563,6 +1592,33 @@ HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& han
 HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
 	return m_pRenderer->AddRenderObject(eRenderGroup, pRenderObject);
+}
+
+_bool CGameInstance::IsOcclusionCulled(const IRenderable* pRenderObject)
+{
+	if (m_pHizOcclusionCuller == nullptr || m_pRenderer == nullptr || !m_pRenderer->HasPrevHizBuffer())
+	{
+		return false;
+	}
+
+	auto* pCamera = GetActiveCamera();
+	if (pCamera == nullptr)
+	{
+		return false;
+	}
+
+	const _matrix matViewProj = pCamera->GetView() * pCamera->GetProj();
+	return m_pHizOcclusionCuller->IsOcclusionCulledCPU(pRenderObject, matViewProj, m_vClientScreenSize);
+}
+
+const CHizBuffer* CGameInstance::GetPrevHizBuffer() const
+{
+	if (m_pRenderer == nullptr || !m_pRenderer->HasPrevHizBuffer())
+	{
+		return nullptr;
+	}
+
+	return m_pRenderer->GetPrevHizBuffer();
 }
 #pragma endregion
 

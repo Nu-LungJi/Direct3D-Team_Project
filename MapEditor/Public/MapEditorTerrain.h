@@ -33,6 +33,9 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+
+	bool IsOcclusionCullable() const override;
+	bool GetOcclusionBounds(BoundingBox& outBounds) const override;
 public:
 	const std::vector<VTX_NORMAL_TEX>& GetVertices() const;
 	const std::vector<uint32_t>& GetIndices() const;

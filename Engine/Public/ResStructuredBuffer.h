@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Resource.h"
 NS_BEGIN(Engine)
 
@@ -11,8 +11,9 @@ public:
 	{
 		uint32_t iNumElements = 0;          // 파티클 최대 개수 (예: 1000)
 		uint32_t iStructureByteStride = 0;  // 구조체 1개의 크기 (sizeof(VTX_DROP_BLOCK_INSTANCED_DATA))
-		void* pInitialData = nullptr;    // 초기 데이터 배열 포인터 (생략 시 nullptr)
+		const void* pInitialData = nullptr;    // 초기 데이터 배열 포인터 (생략 시 nullptr)
 		_bool bAppendConsume = false;
+		uint32_t iBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 	} DESC;
 private:
 	explicit CResStructuredBuffer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
@@ -27,6 +28,7 @@ public:
 public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {})  override;
+	HRESULT UpdateData(const void* pData, uint32_t byteSize);
 
 private:
 	ComPtr<ID3D11Buffer> m_pBuffer{};

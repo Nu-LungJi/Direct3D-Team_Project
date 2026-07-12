@@ -4,14 +4,18 @@
 #include "ComStaticModelInstance.h"
 #include "ComModelInstance.h"
 #include "GameInstance.h"
+#include "MapMeshGpuCuller.h"
 #include "Resources.h"
 
 NS_USING(Engine)
 
-std::unordered_map<SPtr<CResStaticModel>, std::vector<MAPMESH_INSTANCE_DATA>> CMapMeshObject::s_InstanceBatches{};
+std::unordered_map<SPtr<CResStaticModel>, MAPMESH_INSTANCE_BATCH> CMapMeshObject::s_InstanceBatches{};
 SPtr<CResDynamicBuffer> CMapMeshObject::s_pInstanceBuffer{};
+SPtr<CResStructuredBuffer> CMapMeshObject::s_pOcclusionInputBuffer{};
+SPtr<CResStructuredBuffer> CMapMeshObject::s_pVisibleFlagBuffer{};
 size_t CMapMeshObject::s_iInstanceCapacity = 0;
 std::optional<CHandle> CMapMeshObject::s_hRenderRepresentative = {};
+UPtr<CMapMeshGpuCuller> CMapMeshObject::s_pGpuCuller{};
 _bool CMapMeshObject::s_bInstancingEnabled = true;
 CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_FrameStats{ true };
 CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_LastStats{ true };
@@ -107,6 +111,11 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	// ------------------------------------------- 인스턴싱 OFF --------------------------------------
 	if (!s_bInstancingEnabled)
 	{
+		//if (CGameInstance::Get().IsOcclusionCulled(this))
+		//{
+		//	return;
+		//}
+
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 		return;
 	}
@@ -116,8 +125,15 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 
 	// ------------------------------------------- 인스턴싱 ON --------------------------------------
 	MAPMESH_INSTANCE_DATA instanceData{};
+	MAPMESH_OCCLUSION_DATA occlusionData{};
 	XMStoreFloat4x4(&instanceData.world, GetTransform().GetLoadedCombinedWorldMatrix());
-	PushInstance(m_pComModelInstance->GetModel(), instanceData);
+
+	BoundingBox boundingBox;
+	if (!GetOcclusionBounds(boundingBox))
+		return;
+	occlusionData.worldCenter = boundingBox.Center;
+	occlusionData.worldExtents = boundingBox.Extents;
+	PushInstance(m_pComModelInstance->GetModel(), instanceData, occlusionData);
 
 	// 대표오브젝트 렌더러에 등록
 	if (!s_hRenderRepresentative.has_value())
@@ -138,6 +154,9 @@ HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 			return E_FAIL;
 		}
 
+		pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
+		pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+		pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
 		
 		{
 			CB_PER_OBJECT cbPerObject{};
@@ -196,6 +215,75 @@ void CMapMeshObject::UpdateGUI()
 	CGameObject::UpdateGUI();
 }
 
+bool CMapMeshObject::IsOcclusionCullable() const
+{
+	return !s_bInstancingEnabled &&
+		m_pComModelInstance != nullptr &&
+		m_pComModelInstance->GetModel() != nullptr;
+}
+
+bool CMapMeshObject::GetOcclusionBounds(BoundingBox& outBounds) const
+{
+	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
+		return false;
+
+	const auto& meshes = m_pComModelInstance->GetModel()->GetMeshes();
+	if (meshes.empty())
+		return false;
+
+	XMFLOAT3 minPos{
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max()
+	};
+
+	XMFLOAT3 maxPos{
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max()
+	};
+	bool hasBounds = false;
+
+	for (const auto& mesh : meshes)
+	{
+		if (mesh == nullptr)
+			continue;
+
+		hasBounds = true;
+
+		const auto& meshMin = mesh->GetMinPos();
+		const auto& meshMax = mesh->GetMaxPos();
+
+		minPos.x = std::min(minPos.x, meshMin.x);
+		minPos.y = std::min(minPos.y, meshMin.y);
+		minPos.z = std::min(minPos.z, meshMin.z);
+
+		maxPos.x = std::max(maxPos.x, meshMax.x);
+		maxPos.y = std::max(maxPos.y, meshMax.y);
+		maxPos.z = std::max(maxPos.z, meshMax.z);
+	}
+
+	if (!hasBounds)
+		return false;
+
+	XMFLOAT3 center{
+		(minPos.x + maxPos.x) * 0.5f,
+		(minPos.y + maxPos.y) * 0.5f,
+		(minPos.z + maxPos.z) * 0.5f
+	};
+
+	XMFLOAT3 extents{
+		(maxPos.x - minPos.x) * 0.5f,
+		(maxPos.y - minPos.y) * 0.5f,
+		(maxPos.z - minPos.z) * 0.5f
+	};
+
+	BoundingBox localBox(center, extents);
+	localBox.Transform(outBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
+
 HRESULT CMapMeshObject::SetModelResource(const std::string& modelGroupTag, const std::string& modelResTag)
 {
 	if (m_pComModelInstance == nullptr)
@@ -229,9 +317,9 @@ void CMapMeshObject::ClearInstancingData()
 {
 	s_FrameStats.bEnabled = s_bInstancingEnabled;
 	s_FrameStats.iInstances = 0;
-	for (const auto& [pModel, instances] : s_InstanceBatches)
+	for (const auto& [pModel, instancesBatch] : s_InstanceBatches)
 	{
-		s_FrameStats.iInstances += static_cast<uint32_t>(instances.size());
+		s_FrameStats.iInstances += static_cast<uint32_t>(instancesBatch.instances.size());
 	}
 	s_FrameStats.iBatches = static_cast<uint32_t>(s_InstanceBatches.size());
 	s_LastStats = s_FrameStats;
@@ -249,28 +337,40 @@ void CMapMeshObject::ReleaseInstancingResources()
 
 	s_pInstanceBuffer.reset();
 	s_iInstanceCapacity = 0;
+
+	s_pOcclusionInputBuffer.reset();
+	s_pVisibleFlagBuffer.reset();
+	s_pGpuCuller.reset();
 }
 
-HRESULT CMapMeshObject::PushInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData)
+HRESULT CMapMeshObject::PushInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData)
 {
 	if (pModel == nullptr)
 	{
 		return E_FAIL;
 	}
 
-	s_InstanceBatches[pModel].push_back(instanceData);
+	auto& batch = s_InstanceBatches[pModel];
+
+	occlusionData.instanceIndex = static_cast<uint32_t>(batch.instances.size());
+
+	batch.instances.push_back(instanceData);
+	batch.occlusionData.push_back(occlusionData);
+
 	++s_FrameStats.iInstances;
+
 	return S_OK;
 }
 
-HRESULT CMapMeshObject::EnsureInstanceBuffer(size_t instanceCount)
+HRESULT CMapMeshObject::EnsureInstanceResources(size_t instanceCount)
 {
 	if (instanceCount == 0)
-	{
 		return S_OK;
-	}
 
-	if (s_pInstanceBuffer && s_iInstanceCapacity >= instanceCount)
+	if (s_pInstanceBuffer &&
+		s_pOcclusionInputBuffer &&
+		s_pVisibleFlagBuffer &&
+		s_iInstanceCapacity >= instanceCount)
 	{
 		return S_OK;
 	}
@@ -281,28 +381,74 @@ HRESULT CMapMeshObject::EnsureInstanceBuffer(size_t instanceCount)
 		newCapacity *= 2;
 	}
 
-	auto pBuffer = CResDynamicBuffer::Create();
-	if (pBuffer == nullptr)
+	// 인스턴싱 렌더링용 vertex instance buffer 생성
 	{
-		return E_FAIL;
+		auto pBuffer = CResDynamicBuffer::Create();
+		if (pBuffer == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		CResDynamicBuffer::DESC bufferDesc{};
+		bufferDesc.desc = {
+			.ByteWidth = static_cast<UINT>(sizeof(MAPMESH_INSTANCE_DATA) * newCapacity),
+			.Usage = D3D11_USAGE_DYNAMIC,
+			.BindFlags = D3D11_BIND_VERTEX_BUFFER,
+			.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+			.MiscFlags = 0,
+			.StructureByteStride = 0,
+		};
+
+		if (FAILED(pBuffer->Load(bufferDesc)))
+		{
+			return E_FAIL;
+		}
+
+		s_pInstanceBuffer = pBuffer;
 	}
 
-	CResDynamicBuffer::DESC bufferDesc{};
-	bufferDesc.desc = {
-		.ByteWidth = static_cast<UINT>(sizeof(MAPMESH_INSTANCE_DATA) * newCapacity),
-		.Usage = D3D11_USAGE_DYNAMIC,
-		.BindFlags = D3D11_BIND_VERTEX_BUFFER,
-		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-		.MiscFlags = 0,
-		.StructureByteStride = 0,
-	};
-
-	if (FAILED(pBuffer->Load(bufferDesc)))
 	{
-		return E_FAIL;
+		auto pBuffer = CResStructuredBuffer::Create();
+		if (pBuffer == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		CResStructuredBuffer::DESC bufferDesc{};
+		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
+		bufferDesc.iStructureByteStride = sizeof(MAPMESH_OCCLUSION_DATA);
+		bufferDesc.pInitialData = nullptr;
+		bufferDesc.bAppendConsume = false;
+
+		if (FAILED(pBuffer->Load(bufferDesc)))
+		{
+			return E_FAIL;
+		}
+
+		s_pOcclusionInputBuffer = pBuffer;
 	}
 
-	s_pInstanceBuffer = pBuffer;
+	{
+		auto pBuffer = CResStructuredBuffer::Create();
+		if (pBuffer == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		CResStructuredBuffer::DESC bufferDesc{};
+		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
+		bufferDesc.iStructureByteStride = sizeof(uint32_t);
+		bufferDesc.pInitialData = nullptr;
+		bufferDesc.bAppendConsume = false;
+
+		if (FAILED(pBuffer->Load(bufferDesc)))
+		{
+			return E_FAIL;
+		}
+
+		s_pVisibleFlagBuffer = pBuffer;
+	}
+
 	s_iInstanceCapacity = newCapacity;
 	return S_OK;
 }
@@ -313,8 +459,6 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 	{
 		return S_OK;
 	}
-
-
 
 
 	const auto& vertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
@@ -330,26 +474,48 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 	pContext->VSSetShader(vertexShader->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(pixelShader->GetPixelShader().Get(), nullptr, 0);
 
-	for (auto& [pModel, instances] : s_InstanceBatches)
+	for (auto& [pModel, instanceBatch] : s_InstanceBatches)
 	{
-		if (pModel == nullptr || instances.empty())
+		if (pModel == nullptr || instanceBatch.instances.empty())
 		{
 			continue;
 		}
 
-		if (FAILED(EnsureInstanceBuffer(instances.size())))
+		if (s_pGpuCuller == nullptr)
+		{
+			s_pGpuCuller = CMapMeshGpuCuller::Create();
+			if (s_pGpuCuller == nullptr)
+			{
+				return E_FAIL;
+			}
+		}
+
+		if (FAILED(s_pGpuCuller->BuildVisibleInstances(
+			pContext,
+			instanceBatch.instances,
+			instanceBatch.occlusionData,
+			CGameInstance::Get().GetPrevHizBuffer(),
+			ctx.matViewProj,
+			CGameInstance::Get().GetClientScreenSize())))
 		{
 			return E_FAIL;
 		}
 
-		D3D11_MAPPED_SUBRESOURCE mapped{};
-		if (FAILED(pContext->Map(s_pInstanceBuffer->GetBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+#ifdef _DEBUG
+		// 디버그 확인용!! cpu readback이라 병목 발생
+		{
+			const uint32_t visibleInstanceCount = s_pGpuCuller->GetVisibleCountForDebug(pContext);
+			const uint32_t totalInstanceCount = static_cast<uint32_t>(instanceBatch.instances.size());
+			s_FrameStats.iVisibleInstances += visibleInstanceCount;
+			s_FrameStats.iCulledInstances += totalInstanceCount - std::min(visibleInstanceCount, totalInstanceCount);
+		}
+#endif
+
+		ID3D11Buffer* visibleInstanceBuffer = s_pGpuCuller->GetVisibleInstanceBuffer();
+		if (visibleInstanceBuffer == nullptr)
 		{
 			return E_FAIL;
 		}
-
-		std::memcpy(mapped.pData, instances.data(), sizeof(MAPMESH_INSTANCE_DATA) * instances.size());
-		pContext->Unmap(s_pInstanceBuffer->GetBuffer().Get(), 0);
 
 		const uint32_t numMeshes = pModel->Get_NumMeshes();
 		for (uint32_t i = 0; i < numMeshes; ++i)
@@ -362,7 +528,7 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 
 			ID3D11Buffer* vertexBuffers[] = {
 				viBuffer->GetVertexBuffer().Get(),
-				s_pInstanceBuffer->GetBuffer().Get()
+				visibleInstanceBuffer
 			};
 			uint32_t strides[] = {
 				viBuffer->GetVertexStride(),
@@ -389,7 +555,7 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 				//{
 				//	pContext->PSSetShaderResources(AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 1, textures[0].front()->GetSRV().GetAddressOf());
 				//}
-				// 
+				 
 				/*----------- 광윤 추가 -----------*/
 				m_pComModelInstance->Bind_Textures(pContext, i);
 				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
@@ -397,13 +563,17 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 			}
 			
 
-			pContext->DrawIndexedInstanced(
-				static_cast<UINT>(viBuffer->GetNumIndices()),
-				static_cast<UINT>(instances.size()),
+			if (FAILED(s_pGpuCuller->PrepareIndirectArgs(
+				pContext,
+				static_cast<uint32_t>(viBuffer->GetNumIndices()),
 				0,
 				0,
-				0
-			);    
+				0)))
+			{
+				return E_FAIL;
+			}
+
+			pContext->DrawIndexedInstancedIndirect(s_pGpuCuller->GetIndirectArgsBuffer(), 0);
 
 			++s_FrameStats.iDrawCalls;
 		}

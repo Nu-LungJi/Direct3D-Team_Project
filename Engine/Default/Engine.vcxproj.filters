@@ -394,6 +394,12 @@
     <Filter Include="Particle\Patterns">
       <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HizBuffer">
+      <UniqueIdentifier>{5845c6c7-4ded-47fc-8930-ee331e174fba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\Hiz">
+      <UniqueIdentifier>{e0e7be52-836f-4e14-a329-df3c1fdd8171}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Serialize">
       <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
     </Filter>
@@ -663,6 +669,9 @@
     <ClInclude Include="..\Public\Renderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HizOcclusionCuller.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\UICamera.h">
       <Filter>GameObject\Camera\UICamera</Filter>
     </ClInclude>
@@ -867,6 +876,9 @@
     <ClInclude Include="..\Public\NavMeshManager.h">
       <Filter>NavMesh</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HizBuffer.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ISerializable.h">
       <Filter>Serialize</Filter>
     </ClInclude>
@@ -893,6 +905,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapMeshGpuCuller.h">
+      <Filter>HizBuffer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1313,6 +1328,12 @@
     <ClCompile Include="..\Private\NavMeshManager.cpp">
       <Filter>NavMesh</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\HizBuffer.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HizOcclusionCuller.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\JsonSerializer.cpp">
       <Filter>Serialize\Serializer\Json</Filter>
     </ClCompile>
@@ -1330,6 +1351,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshGpuCuller.cpp">
+      <Filter>HizBuffer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1418,6 +1442,15 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizMipPyramid.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizCopyDepth.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGpuCull.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -29,14 +29,17 @@ public:
 	bool IsLeaf() const;
 
 	const BoundingBox& GetBoundingBox() const { return m_bounds; }
+	const BoundingBox& GetCullingBoundingBox() const { return m_cullingBounds; }
 	HRESULT RenderDebugOctree();
 	void SetDebugDrawOctree(_bool draw) { m_bDebugDrawOctree = draw; }
 
 private:
 	void Subdivide();
+	void RebuildCullingBounds();
 
 private:
-	BoundingBox m_bounds;
+	BoundingBox m_bounds; // 공간 분할용
+	BoundingBox m_cullingBounds; // 프러스텀 컬링용
 	std::vector<CHandle> m_hObjects;
 	std::array<UPtr<COctreeNode>, 8> m_childrenNode;
 	uint32_t m_depth = 0;

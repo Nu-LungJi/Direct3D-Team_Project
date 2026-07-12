@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine_Defines.h"
 #include "IRenderable.h"
+#include "HizBuffer.h"
+
 NS_BEGIN(Engine)
 class CGameObject;
 class CResOffscreenTexture;
@@ -41,6 +43,8 @@ private:
 public:
 	HRESULT Draw();
 	void FrameEnd();
+	const CHizBuffer* GetPrevHizBuffer() const { return m_bHasPrevHizBuffer ? m_pPrevHizBuffer.get() : nullptr; }
+	_bool HasPrevHizBuffer() const { return m_bHasPrevHizBuffer && m_pPrevHizBuffer != nullptr; }
 
 public:
 	void DrawPlayerInvenUIPass() { m_bDrawPlayerInvenUIPass = true; }
@@ -182,8 +186,23 @@ private:
 	RENDER_CTX		RenderContext = {};
 
 	SPtr<CResRasterizerState>	Rasterizer{};
+
+
+
+// Hi-Z buffer ownership
+private:
+	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
+	UPtr<CHizBuffer> m_pPrevHizBuffer = {}; // 컬링에 사용할 자료
+	_bool m_bHasPrevHizBuffer = false;
+
+private:
+	HRESULT InitializeHizBuffer();
+	HRESULT BuildCurrentHizBuffer(); // 다 그려진 후 depth를 Hiz버퍼에 copy & mipChain 구성
+
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };
 
 NS_END
+
+
