@@ -26,7 +26,6 @@ void UIManager::InitializeActions()
 		if (pCaller == nullptr) return;
 
 		// 1. 타겟 UI의 트윈 컴포넌트를 가져옵니다. 
-		// (pCaller에 GetTweenCom() 같은 Getter가 있다고 가정)
 		auto pTween = pCaller->GetTweenCom();
 		if (pTween != nullptr)
 		{

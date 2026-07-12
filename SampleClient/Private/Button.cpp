@@ -237,11 +237,11 @@ void CButton::PlayEffect(uint32_t uiState)
 
 		if (m_Effect_Hovered != nullptr)
 		{
-			float startAlpha = m_Effect_Hovered->GetAlpha();
+			float startAlpha = m_Effect_Hovered->GetAlphaRatio();
 
 			m_pComTween->PlayTween(startAlpha, 0.0f, 0.3f,
 				[this](float currentValue) {
-					m_Effect_Hovered->SetAlpha(currentValue);
+					m_Effect_Hovered->SetAlphaRatio(currentValue);
 				},
 					[this]() {
 					m_Effect_Hovered->SetActive(false);

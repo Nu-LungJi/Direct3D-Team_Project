@@ -107,12 +107,12 @@ public:
 
 	_bool GetActive() { return m_isActive; }
 	_bool GetVisible() { return m_isVisible; }
-	_float GetAlpha() { return m_UIINFO.AlphaRatio; }
+	_float GetAlphaRatio() { return m_UIINFO.AlphaRatio; }
 	_float GetScaleRatio() { return m_ScaleRatio; }
 
 	void SetActive(bool isActive) { m_isActive = isActive; }
 	void SetVisible(bool isVisible) { m_isVisible = isVisible; }
-	void SetAlpha(_float alpha) { m_UIINFO.AlphaRatio = alpha; }
+	void SetAlphaRatio(_float alpha) { m_UIINFO.AlphaRatio = alpha; }
 	void SetScaleRatio(_float scale) { m_ScaleRatio = scale; }
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
