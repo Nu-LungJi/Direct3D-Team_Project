@@ -278,7 +278,6 @@ void CGameInstance::UpdateGUI()
 
 
 	m_pRenderer->UpdateGUI();
-	m_pHizOcclusionCuller->UpdateGUI();
 
 	// 사운드 붙일때 부활
 	// m_pSoundManager->UpdateGUI();
@@ -433,12 +432,6 @@ void CGameInstance::Release_Engine()
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
-	//m_pHizOcclusionCuller->FrameStart();
-	//if (m_pRenderer->HasPrevHizBuffer())
-	//{
-	//	m_pHizOcclusionCuller->Prepare(m_pRenderer->GetPrevHizBuffer());
-	//}
-
 	{
 		ZoneScopedN("InputManager_Update");
 		m_pDInputManager->Update_InputDev();

@@ -18,6 +18,7 @@ Texture2D<float> gPrevHiz : register(t2);
 // RWStructureBuffer로 하면 비는 인덱스가 있음. AppendStructuredBuffer로 압축
 AppendStructuredBuffer<MAPMESH_INSTANCE_DATA> gVisibleInstances : register(u0);
 
+// 인스턴스마다 다른데이터가 아닌, 공통값은 상수버퍼로
 cbuffer CB_MapMeshGpuCull : register(b0)
 {
     float4x4 gMatViewProj;

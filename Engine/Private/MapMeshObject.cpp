@@ -503,12 +503,12 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 
 #ifdef _DEBUG
 		// 디버그 확인용!! cpu readback이라 병목 발생
-		//{
-		//	const uint32_t visibleInstanceCount = s_pGpuCuller->GetVisibleCountForDebug(pContext);
-		//	const uint32_t totalInstanceCount = static_cast<uint32_t>(instanceBatch.instances.size());
-		//	s_FrameStats.iVisibleInstances += visibleInstanceCount;
-		//	s_FrameStats.iCulledInstances += totalInstanceCount - std::min(visibleInstanceCount, totalInstanceCount);
-		//}
+		{
+			const uint32_t visibleInstanceCount = s_pGpuCuller->GetVisibleCountForDebug(pContext);
+			const uint32_t totalInstanceCount = static_cast<uint32_t>(instanceBatch.instances.size());
+			s_FrameStats.iVisibleInstances += visibleInstanceCount;
+			s_FrameStats.iCulledInstances += totalInstanceCount - std::min(visibleInstanceCount, totalInstanceCount);
+		}
 #endif
 
 		ID3D11Buffer* visibleInstanceBuffer = s_pGpuCuller->GetVisibleInstanceBuffer();
