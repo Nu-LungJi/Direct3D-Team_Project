@@ -20,6 +20,113 @@ _bool CMapMeshObject::s_bInstancingEnabled = true;
 CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_FrameStats{ true };
 CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_LastStats{ true };
 
+namespace
+{
+	SPtr<CResTexture2D> GetMapMeshTexture(const SPtr<CResStaticModel>& pModel, uint32_t meshIndex, AI_TEXTURE_TYPE materialType)
+	{
+		if (pModel == nullptr)
+		{
+			return nullptr;
+		}
+
+		auto& meshes = pModel->GetMeshes();
+		if (meshIndex >= meshes.size() || meshes[meshIndex] == nullptr)
+		{
+			return nullptr;
+		}
+
+		auto& materials = pModel->GetMaterials();
+		const uint32_t materialIndex = meshes[meshIndex]->Get_MaterialIndex();
+		if (materialIndex >= materials.size() || materials[materialIndex] == nullptr)
+		{
+			return nullptr;
+		}
+
+		auto textures = materials[materialIndex]->GetTextures();
+		if (textures[materialType].empty())
+		{
+			return nullptr;
+		}
+
+		return textures[materialType].front();
+	}
+
+	HRESULT BindMapMeshTextures(ID3D11DeviceContext* pContext, const SPtr<CResStaticModel>& pModel, uint32_t meshIndex)
+	{
+		if (pContext == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		SPtr<CResTexture2D> diffuseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE))
+		{
+			diffuseTexture = texture;
+		}
+
+		SPtr<CResTexture2D> normalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS))
+		{
+			normalTexture = texture;
+		}
+
+		SPtr<CResTexture2D> smroTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
+		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS))
+		{
+			smroTexture = texture;
+		}
+
+		SPtr<CResTexture2D> emissiveTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
+		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE))
+		{
+			emissiveTexture = texture;
+		}
+
+		if (diffuseTexture == nullptr || normalTexture == nullptr || smroTexture == nullptr || emissiveTexture == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		pContext->PSSetShaderResources(0, 1, diffuseTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(1, 1, normalTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(2, 1, smroTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(3, 1, emissiveTexture->GetSRV().GetAddressOf());
+
+		return S_OK;
+	}
+
+	HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext, _float3 emissiveColor, _float emissiveIntensity, _float objectAlpha)
+	{
+		if (pContext == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		auto materialConstantBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+		if (materialConstantBuffer == nullptr)
+		{
+			return E_FAIL;
+		}
+
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(pContext->Map(materialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		{
+			return E_FAIL;
+		}
+
+		CB_MATERIAL material{};
+		material.EmissiveColor = emissiveColor;
+		material.EmissiveIntensity = emissiveIntensity;
+		material.ObjectAlpha = objectAlpha;
+
+		memcpy(mapped.pData, &material, sizeof(CB_MATERIAL));
+		pContext->Unmap(materialConstantBuffer->GetCBuffer().Get(), 0);
+		pContext->PSSetConstantBuffers(3, 1, materialConstantBuffer->GetCBuffer().GetAddressOf());
+
+		return S_OK;
+	}
+}
+
 CMapMeshObject::CMapMeshObject()
 	: CGameObject{}
 {
@@ -227,59 +334,11 @@ bool CMapMeshObject::GetOcclusionBounds(BoundingBox& outBounds) const
 	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
 		return false;
 
-	const auto& meshes = m_pComModelInstance->GetModel()->GetMeshes();
-	if (meshes.empty())
+	const auto model = m_pComModelInstance->GetModel();
+	if (!model->HasLocalBounds())
 		return false;
 
-	XMFLOAT3 minPos{
-		std::numeric_limits<float>::max(),
-		std::numeric_limits<float>::max(),
-		std::numeric_limits<float>::max()
-	};
-
-	XMFLOAT3 maxPos{
-		-std::numeric_limits<float>::max(),
-		-std::numeric_limits<float>::max(),
-		-std::numeric_limits<float>::max()
-	};
-	bool hasBounds = false;
-
-	for (const auto& mesh : meshes)
-	{
-		if (mesh == nullptr)
-			continue;
-
-		hasBounds = true;
-
-		const auto& meshMin = mesh->GetMinPos();
-		const auto& meshMax = mesh->GetMaxPos();
-
-		minPos.x = std::min(minPos.x, meshMin.x);
-		minPos.y = std::min(minPos.y, meshMin.y);
-		minPos.z = std::min(minPos.z, meshMin.z);
-
-		maxPos.x = std::max(maxPos.x, meshMax.x);
-		maxPos.y = std::max(maxPos.y, meshMax.y);
-		maxPos.z = std::max(maxPos.z, meshMax.z);
-	}
-
-	if (!hasBounds)
-		return false;
-
-	XMFLOAT3 center{
-		(minPos.x + maxPos.x) * 0.5f,
-		(minPos.y + maxPos.y) * 0.5f,
-		(minPos.z + maxPos.z) * 0.5f
-	};
-
-	XMFLOAT3 extents{
-		(maxPos.x - minPos.x) * 0.5f,
-		(maxPos.y - minPos.y) * 0.5f,
-		(maxPos.z - minPos.z) * 0.5f
-	};
-
-	BoundingBox localBox(center, extents);
-	localBox.Transform(outBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+	model->GetLocalBounds().Transform(outBounds, GetTransform().GetLoadedCombinedWorldMatrix());
 
 	return true;
 }
@@ -540,27 +599,16 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 			pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 			pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-			auto& materials = pModel->GetMaterials();
-			const uint32_t materialIndex = viBuffer->Get_MaterialIndex();
-			if (materialIndex < materials.size() && materials[materialIndex])
+			if (FAILED(BindMapMeshTextures(pContext, pModel, i)))
 			{
-				// 광윤 : 아래는 m_pComModelInstance->Bind_Textures랑 비슷해서 주석쳤습니다. 텍스쳐 없으면 DefaultTexture 들어가게 만들었음
-				
-				//auto textures = materials[materialIndex]->GetTextures();
-				//if (!textures[AI_TEXTURE_TYPE::aiTextureType_DIFFUSE].empty())
-				//{
-				//	pContext->PSSetShaderResources(AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 1, textures[AI_TEXTURE_TYPE::aiTextureType_DIFFUSE].front()->GetSRV().GetAddressOf());
-				//}
-				//else if (!textures[0].empty())
-				//{
-				//	pContext->PSSetShaderResources(AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 1, textures[0].front()->GetSRV().GetAddressOf());
-				//}
-				 
-				/*----------- 광윤 추가 -----------*/
-				m_pComModelInstance->Bind_Textures(pContext, i);
-				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
-				/*---------------------------------*/
+				return E_FAIL;
 			}
+
+			if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
+			{
+				return E_FAIL;
+			}
+
 			
 
 			if (FAILED(s_pGpuCuller->PrepareIndirectArgs(
