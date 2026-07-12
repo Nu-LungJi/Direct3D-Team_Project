@@ -152,7 +152,6 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 
     if (!BoneMatrices.empty())
     {
-
         D3D11_MAPPED_SUBRESOURCE MappedResource{};
     
         if (FAILED(pContext->Map(m_Buffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource)))
@@ -278,8 +277,6 @@ UPtr<CPrototype> CComModelInstance::Clone(void* pArg)
     return pInstance;
 }
 
-
-
 void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 {
 	
@@ -382,8 +379,6 @@ void CComModelInstance::Unbind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext
 		pNullSRVs
 	);
 }
-
-
 
 void CComModelInstance::EnsureDebugBoneOffsetSize()
 {

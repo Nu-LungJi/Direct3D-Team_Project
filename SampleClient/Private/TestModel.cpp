@@ -6,6 +6,10 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "GameInstance.h"
+
+
+
+
 NS_USING(Client)
 
 CTestModel::CTestModel()
@@ -118,7 +122,40 @@ void CTestModel::Update(E::_float fTimeDelta)
 void CTestModel::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+	auto pModel = m_pComModelInstance->GetModel();
+
+	if (!pModel)
+		return;
+
+	//// 애니메이션 모델
+	//if (!pModel->GetAnimations().empty())
+	//{
+	//	GPU_ANIM_INSTANCE_DATA instanceData{};
+
+	//	instanceData.WorldMatrix =
+	//		*GetTransform().GetCombinedWorldMatrix();
+
+	//	instanceData.iAnimIndex =static_cast<uint32_t>(std::max(0,m_pModelAnimator->Get_CurrentAnimIndex()));
+
+	//	instanceData.fTrackPosition =m_pModelAnimator->Get_CurrentTrackPosition();
+
+	//	instanceData.iFlags = 0;
+
+	//	CGameInstance::Get().Add_AnimInstance(
+	//		m_pComModelInstance,
+	//		m_pResVertexShader,
+	//		m_pResPixelShader,
+	//		instanceData,
+	//		0
+	//	);
+
+
+	//	return;
+	//}
+
+
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND,this);
 }
 
 HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

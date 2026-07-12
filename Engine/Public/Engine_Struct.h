@@ -356,6 +356,6 @@ namespace Engine
 		float fTrackPosition = 0.f;
 		float fPadding = 0.f;
 
-	}GPU_ANIM_INSTANCE_DESC;
+	}GPU_ANIM_INSTANCE_DATA;
 	//----------------------------AnimationObject------------------------------------
 }
