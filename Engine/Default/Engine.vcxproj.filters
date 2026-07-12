@@ -930,6 +930,10 @@
     <ClInclude Include="..\public\LuaWatcher.h">
       <Filter>Lua\Watcher</Filter>
     </ClInclude>
+
+    <ClInclude Include="..\Public\ILuaScriptRelodable.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
