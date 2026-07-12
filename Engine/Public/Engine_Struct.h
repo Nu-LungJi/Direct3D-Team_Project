@@ -348,16 +348,63 @@ namespace Engine
 		uint32_t iSkinBoneCount = 0;
 	}GPU_MESH_SKIN_RANGE;
 
-	typedef	struct GPU_ANIM_INSTANCE_DESC
+	typedef struct GPU_ANIM_INSTANCE_DATA
 	{
-		_float4x4 WorldMatrix;
+		_float4x4 WorldMatrix{};
 
 		uint32_t iAnimIndex = 0;
 		uint32_t iFlags = 0;
 
-		float fTrackPosition = 0.f;
-		float fPadding = 0.f;
-
+		_float fTrackPosition = 0.f;
+		_float fPadding = 0.f;
 	}GPU_ANIM_INSTANCE_DATA;
+
+	typedef struct MODEL_INSTANCE_KEY
+	{
+		StringID modelGroup{};
+		StringID modelTag{};
+
+		_bool operator==(const MODEL_INSTANCE_KEY& rhs) const
+		{
+			return
+				modelGroup == rhs.modelGroup &&
+				modelTag == rhs.modelTag;
+		}
+	}MODEL_INSTANCE_KEY;
+	typedef struct MODEL_INSTANCE_KEY_HASH
+	{
+		size_t operator()(const MODEL_INSTANCE_KEY& Key) const
+		{
+			size_t Seed = 0;
+
+			auto HashCombine =
+				[&Seed](size_t Value)
+				{
+					Seed ^= Value
+						+ 0x9e3779b9
+						+ (Seed << 6)
+						+ (Seed >> 2);
+				};
+
+			HashCombine(
+				std::hash<StringID>{}(
+					Key.modelGroup));
+
+			HashCombine(
+				std::hash<StringID>{}(
+					Key.modelTag));
+
+			return Seed;
+		}
+	}MODEL_INSTANCE_KEY_HASH;
+	typedef struct MODEL_INSTANCE_BATCH
+	{
+		MODEL_INSTANCE_KEY Key{};
+		
+		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
+
+		_bool bActiveThisFrame = false;
+
+	}MODEL_INSTANCE_BATCH;
 	//----------------------------AnimationObject------------------------------------
 }

@@ -44,6 +44,8 @@
 #include "ParticleManager.h"
 #include "Particle.h"
 
+#include "Model_Instance_Manager.h"
+
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -224,6 +226,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
+	m_pModel_Instance_Manager = CModel_Instance_Manager::Create();
+	if (m_pModel_Instance_Manager == nullptr) {
+		return E_FAIL;
+	}
+	
 	return S_OK;
 }
 
@@ -403,6 +410,7 @@ void CGameInstance::Release_Engine()
 	m_pNodeEditor.reset();
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
+	m_pModel_Instance_Manager.reset();
 	m_pGameObjectManager->AllReset();
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
@@ -449,8 +457,10 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 
 	m_pRenderer->FrameEnd();
 	CMapMeshObject::ClearInstancingData();
+	m_pModel_Instance_Manager->Clear_Frame();
 	m_pColliderManager->FrameEnd();
 	m_pDbgLineRender->FrameEnd();
+
 }
 
 
@@ -534,13 +544,46 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INSTANCEANIMMODEL, E::CResCBuffer::Create()))
+
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
 	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(_float4x4)})))
+		E::CResStructuredBuffer::DESC Desc{};
+
+		Desc.iNumElements = 1;
+
+		Desc.iStructureByteStride = sizeof(E::GPU_ANIM_INSTANCE_DATA);
+
+		Desc.pInitialData = nullptr;
+
+		Desc.bAppendConsume = false;
+
+		if (FAILED(res->Load(Desc)))
 		{
 			return E_FAIL;
 		}
 	}
+
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX", E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+
+		Desc.iNumElements = 512;
+
+		Desc.iStructureByteStride =sizeof(_float4x4);
+
+		Desc.pInitialData =nullptr;
+
+		Desc.bAppendConsume =false;
+
+
+		if (FAILED(res->Load(Desc)))
+		{
+			return E_FAIL;
+		}
+	}
+
+
+
 
 	// LinearWrap
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP, CResSamplerState::Create()))
@@ -748,6 +791,15 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation", "./ShaderFiles/TestModel/Shader_Animation_Compute.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
 
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex", E::CResQuadTexBuffer::Create()))
 	{
@@ -1736,3 +1788,16 @@ int32_t CGameInstance::GetAnimIndex(CHandle Handle)
 	return m_pAnimEdit_Manager->GetAnimIndex(Handle);
 }
 #pragma endregion
+#pragma region INSTANCE_MANAGER
+void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, CComAnimator* pAnimator, const _float4x4& WorldMatrix, uint32_t iFlags) {
+	m_pModel_Instance_Manager->Add_Instance(pModelInstance, pAnimator, WorldMatrix, iFlags);
+}
+
+
+void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData) {
+
+	m_pModel_Instance_Manager->Add_Instance(pModelInstance, InstanceData);
+}
+#pragma endregion
+
+

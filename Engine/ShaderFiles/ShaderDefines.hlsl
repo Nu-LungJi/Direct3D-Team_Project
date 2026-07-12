@@ -153,10 +153,6 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
-cbuffer CB_INSTANCE_RENDER_DATA : register(b9)
-{
-    matrix g_WorldMatrices;
-};
 
 
 

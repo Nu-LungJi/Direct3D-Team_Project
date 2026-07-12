@@ -412,6 +412,15 @@
     <Filter Include="Serialize\TestCase">
       <UniqueIdentifier>{c5f4b517-bb73-4605-8016-a663b5b4c675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Instance">
+      <UniqueIdentifier>{b6e0ed74-80a4-4a0a-89ec-44b920106f17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AnimationObject">
+      <UniqueIdentifier>{fe5b2709-035e-451f-b8bd-24ec9f3bb823}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\TestModel\Compute">
+      <UniqueIdentifier>{0464bfd6-5af4-491a-81f0-6208e5bb7163}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -888,6 +897,13 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShadowCamera.h" />
+    <ClInclude Include="..\Public\Model_Instance_Manager.h">
+      <Filter>Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\AnimationObject.h">
+      <Filter>GameObject\AnimationObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1322,6 +1338,13 @@
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShadowCamera.cpp" />
+    <ClCompile Include="..\Private\Model_Instance_Manager.cpp">
+      <Filter>Instance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\AnimationObject.cpp">
+      <Filter>GameObject\AnimationObject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1409,6 +1432,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl">
+      <Filter>ShaderFiles\TestModel\Compute</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

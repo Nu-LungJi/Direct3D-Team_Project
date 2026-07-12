@@ -121,6 +121,9 @@ HRESULT CComModelInstance::Initialize(void* pArg)
     if (pArg != nullptr) {
         // 모델 Instance는 하나의 메모리를 모두 공유한다.
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
+		m_sGroupTag = pDesc->sGroupTag;
+		m_sResTag = pDesc->sResTag;
+
         m_pModel = CGameInstance::Get().GetResourceFirst<CResModel>(pDesc->sGroupTag, pDesc->sResTag);
         if (m_pModel == nullptr)
         {
@@ -357,11 +360,7 @@ HRESULT CComModelInstance::Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContex
 			return E_FAIL;
 	}
 
-	pContext->CSSetShaderResources(
-		0,
-		static_cast<UINT>(std::size(pSRVs)),
-		pSRVs
-	);
+	pContext->CSSetShaderResources(0,static_cast<UINT>(std::size(pSRVs)),pSRVs);
 
 	return S_OK;
 }

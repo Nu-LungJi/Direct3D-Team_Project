@@ -69,7 +69,7 @@ HRESULT CResCBuffer::CreateBuffer(const CBUFFER_DESC& desc)
 
     D3D11_SUBRESOURCE_DATA initData{};
     initData.pSysMem = desc.pInitData;
-
+	
     return m_pDevice->CreateBuffer(&bd, desc.pInitData ? &initData : nullptr, m_pCBuffer.GetAddressOf());
 }
 

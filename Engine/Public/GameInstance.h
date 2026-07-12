@@ -38,6 +38,7 @@ class CAction_Manager;
 class CPhysXManager;
 class CDbgLineRender;
 class CSerializeManager;
+class CModel_Instance_Manager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -347,6 +348,15 @@ public:
 	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
 #pragma endregion
 
+#pragma region INSTNACE_MANAGER
+public:
+	void Add_Instance(class CComModelInstance* pModelInstance, class CComAnimator* pAnimator, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
+
+
+	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
+
+#pragma endregion
+
 
 
 #pragma region SERIALIZE_MANAGER
@@ -416,6 +426,7 @@ private:
 	UPtr<CMapManager> m_pMapManager{};
 	UPtr<CNavMeshManager> m_pNavMeshManager{};
 	UPtr<CSerializeManager> m_pSerializeManager{};
+	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 };
 
 NS_END
