@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ComLuaScript.h"
 #include "GameInstance.h"
+#include "LuaEnv.h"
 
 NS_USING(Engine)
 
@@ -24,81 +25,83 @@ HRESULT CComLuaScript::Initialize(void* pArg)
 		MSG_BOX("Lua Com Need Source");
 		return E_FAIL;
 	}
-	m_pResLuaScript = pDesc->pResScript;
-	m_funcScriptLoad = pDesc->funcScriptLoad;
+
 	if (FAILED(CComponent::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
 
-	CGameInstance::Get().LuaRegisterComponent(m_pResLuaScript->GetPath(), this);
+	m_pLuaEnv = CLuaEnv::Create();
+	if (!m_pLuaEnv)
+	{
+		MSG_BOX("CLuaEnv Failed");
+		return E_FAIL;
+	}
 
-	LoadScript();
+	m_funcScriptLoad = pDesc->funcScriptLoad;
+	m_pLuaEnv->SetFuncOnCreateScript([this](CLuaEnv* luaEnv)
+		{
+			m_OnCreate = m_pLuaEnv->CacheLuaFunction("OnCreate");
+			m_OnDestroy = m_pLuaEnv->CacheLuaFunction("OnDestroy");
+			m_PriorityUpdate = m_pLuaEnv->CacheLuaFunction("PriorityUpdate");
+			m_FixedUpdate = m_pLuaEnv->CacheLuaFunction("FixedUpdate");
+			m_Update = m_pLuaEnv->CacheLuaFunction("Update");
+			m_LateUpdate = m_pLuaEnv->CacheLuaFunction("LateUpdate");
 
-	if (m_OnCreate.valid())
-		m_OnCreate();
+			if (m_funcScriptCreate)
+			{
+				m_funcScriptCreate(this);
+			}
+		});
+
+	m_funcScriptCreate = pDesc->funcScriptCreate;
+	m_pLuaEnv->SetFuncOnLoadScript([this](CLuaEnv* luaEnv)
+		{
+			m_OnCreate = m_pLuaEnv->GetCachedLuaFunction("OnCreate");
+			m_OnDestroy = m_pLuaEnv->GetCachedLuaFunction("OnDestroy");
+			m_PriorityUpdate = m_pLuaEnv->GetCachedLuaFunction("PriorityUpdate");
+			m_FixedUpdate = m_pLuaEnv->GetCachedLuaFunction("FixedUpdate");
+			m_Update = m_pLuaEnv->GetCachedLuaFunction("Update");
+			m_LateUpdate = m_pLuaEnv->GetCachedLuaFunction("LateUpdate");
+
+			m_pLuaEnv->GetEnv()["self"] = this;
+			m_pLuaEnv->GetEnv()["gameObject"] = GetGameObject();
+			m_pLuaEnv->GetEnv()["transform"] = &GetGameObject()->GetTransform();
+
+			if (m_funcScriptLoad)
+			{
+				m_funcScriptLoad(this);
+			}
+		});
+	m_pLuaEnv->LateInitialize(pDesc->pResScript);
+	
 	return S_OK;
 }
 
 void CComLuaScript::PriorityUpdate(_float fTimeDelta)
 {
-	CGameInstance::Get().LuaCallCacheFunction(m_PriorityUpdate, fTimeDelta);
+	m_pLuaEnv->CallCacheLuaFunction("PriorityUpdate", fTimeDelta);
+	//m_pLuaEnv->CallCacheLuaFunction("PriorityUpdate", fTimeDelta);
+	//CGameInstance::Get().LuaCallCacheFunction(m_PriorityUpdate, fTimeDelta);
 }
 
 void CComLuaScript::FixedUpdate(_float fTimeDelta)
 {
+	//m_pLuaEnv->CallCacheLuaFunction("FixedUpdate", fTimeDelta);
 	CGameInstance::Get().LuaCallCacheFunction(m_FixedUpdate, fTimeDelta);
 }
 
 void CComLuaScript::Update(_float fTimeDelta)
 {
+	//m_pLuaEnv->CallCacheLuaFunction("Update", fTimeDelta);
 	CGameInstance::Get().LuaCallCacheFunction(m_Update, fTimeDelta);
 }
 
 void CComLuaScript::LateUpdate(_float fTimeDelta)
 {
+	//m_pLuaEnv->CallCacheLuaFunction("LateUpdate", fTimeDelta);
 	CGameInstance::Get().LuaCallCacheFunction(m_LateUpdate, fTimeDelta);
 }
-
-void CComLuaScript::LuaScriptRelod()
-{
-	// 환경을 새로 덮어쓰고 다시 로드
-	LoadScript();
-}
-
-void CComLuaScript::LoadScript()
-{
-	m_Environment = CGameInstance::Get().LuaCreateEnvironment();
-
-	m_Environment["__ScriptPath"] = m_pResLuaScript->GetPath();
-
-	CGameInstance::Get().LuaScriptExecute(m_pResLuaScript->GetSource(), m_Environment, m_pResLuaScript->GetPath());
-
-	m_OnCreate = CGameInstance::Get().LuaCacheFunction(m_Environment, "OnCreate");
-	m_OnDestroy = CGameInstance::Get().LuaCacheFunction(m_Environment, "OnDestroy");
-
-	m_PriorityUpdate = CGameInstance::Get().LuaCacheFunction(m_Environment, "PriorityUpdate");
-	m_FixedUpdate = CGameInstance::Get().LuaCacheFunction(m_Environment, "FixedUpdate");
-
-	m_Update = CGameInstance::Get().LuaCacheFunction(m_Environment, "Update");
-	m_LateUpdate = CGameInstance::Get().LuaCacheFunction(m_Environment, "LateUpdate");
-
-	m_Environment["self"] = this;
-	m_Environment["gameObject"] = GetGameObject();
-	m_Environment["transform"] = &GetGameObject()->GetTransform();
-
-	if (m_funcScriptLoad)
-	{
-		m_funcScriptLoad(this);
-	}
-}
-
-//void CComLuaScript::CacheFunctions(_string_view name, sol::protected_function& out)
-//{
-//	sol::object obj = m_Environment[name];
-//	if (obj.valid() && obj.get_type() == sol::type::function)
-//		out = obj.as<sol::protected_function>();
-//}
 
 UPtr<CComLuaScript> CComLuaScript::Create()
 {
@@ -124,10 +127,5 @@ UPtr<CPrototype> CComLuaScript::Clone(void* pArg)
 
 void CComLuaScript::Free()
 {
-	// 프로토타입 등록된애들도 프리가 불림
-	if (m_pResLuaScript)
-	{
-		CGameInstance::Get().LuaUnregisterComponent(m_pResLuaScript->GetPath(), this);
-	}
 	CComponent::Free();
 }

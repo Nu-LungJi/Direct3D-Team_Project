@@ -436,6 +436,9 @@
     <Filter Include="LuaFiles\SomeFolder">
       <UniqueIdentifier>{bde2835c-1d45-44d2-aca4-56623b27cddf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Lua\LuaEnv">
+      <UniqueIdentifier>{8ba16c43-054b-4dbb-9c2a-aed24797421d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -930,9 +933,11 @@
     <ClInclude Include="..\public\LuaWatcher.h">
       <Filter>Lua\Watcher</Filter>
     </ClInclude>
-
     <ClInclude Include="..\Public\ILuaScriptRelodable.h">
       <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LuaEnv.h">
+      <Filter>Lua\LuaEnv</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1385,6 +1390,9 @@
     </ClCompile>
     <ClCompile Include="..\private\LuaWatcher.cpp">
       <Filter>Lua\Watcher</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaEnv.cpp">
+      <Filter>Lua\LuaEnv</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
