@@ -1,5 +1,6 @@
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
-
+#define BEHAVIOR_NONE       0
+#define BEHAVIOR_DISTORTION (1u << 0)
 struct ParticleData
 {
     float3 position;
@@ -9,12 +10,14 @@ struct ParticleData
     float maxLife;
     float size;
     float startSize;
+    float EndSize;
     uint alive;
     uint loop;
     float4 color;
     float4 emissive;
     uint frameIndex;
-    float3 pad2;
+    uint ownerID;
+    float pad2;
 };
 
 cbuffer CB_PER_PARTICLE : register(b5)
@@ -31,13 +34,14 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
 Texture2D g_Texture : register(t1);
-
+Texture2D g_BackgroundTex : register(t7);
 struct VS_OUT
 {
     float4 vPosition : SV_POSITION;
     float2 vTexcoord : TEXCOORD0;
     float4 vColor : COLOR0;
     float4 vEmissive : COLOR1;
+    float4 vScreenPos : TEXCOORD1;
 };
 
 VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
@@ -75,7 +79,7 @@ VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
 
     float4 vViewPos = mul(vWorldPos, g_matView);
     Out.vPosition = mul(vViewPos, g_matProj);
-
+    Out.vScreenPos = Out.vPosition;
     Out.vColor = p.color;
     Out.vEmissive = p.emissive;
 
@@ -92,14 +96,25 @@ PS_OUT PSMain(VS_OUT In)
     PS_OUT Out = (PS_OUT) 0;
 
     float4 vTextureColor = g_Texture.Sample(LinearWrap, In.vTexcoord);
+    if ((g_iBehaviorType & BEHAVIOR_DISTORTION) != 0)
+    {
+        float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+        screenUV.x = screenUV.x * 0.5f + 0.5f;
+        screenUV.y = -screenUV.y * 0.5f + 0.5f;
 
+        float2 distortion = vTextureColor.rg * 2.0f - 1.0f;
+        float distortionStrength = 0.03f * In.vColor.a;
+        distortion *= distortionStrength;
 
-    //if (vTextureColor.x < 0.f)
-    //    discard;
-
+        float4 distortedBackground = g_BackgroundTex.Sample(LinearWrap, screenUV + distortion);
+        Out.vDiffuse = distortedBackground;
+        return Out;
+    }
+    
     
     float4 vFinalColor = vTextureColor * In.vColor;
     clip(vFinalColor.a - 0.02f);
     Out.vDiffuse = float4(vFinalColor.xyz + In.vEmissive.xyz * In.vEmissive.w, vFinalColor.a);
+    
     return Out;
 }

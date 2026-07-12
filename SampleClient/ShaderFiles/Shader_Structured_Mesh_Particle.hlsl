@@ -14,12 +14,14 @@ struct ParticleData
     float maxLife;
     float size;
     float startSize;
+    float EndSize;
     uint alive;
     uint loop;
     float4 color;
     float4 emissive;
     uint frameIndex;
-    float3 pad2;
+    uint ownerID;
+    float pad2;
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
@@ -27,6 +29,7 @@ Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
+Texture2D NoiseMap : register(t5);
 SamplerState g_LinearSampler : register(s0);
 
 
@@ -37,6 +40,7 @@ struct VS_IN
     float3 vTangent : TANGENT;
     float3 vBinormal : BINORMAL;
     float2 vTexcoord : TEXCOORD0;
+
 };
 
 struct VS_OUT
@@ -49,6 +53,8 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE;
     float3 vWorldPos : TEXCOORD1; // 추가: 라이팅 계산에 필요
+    float life : TEXCOORD2;
+    float maxLife : TEXCOORD3;
 };
 
 VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
@@ -67,6 +73,8 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     Out.vBinormal = In.vBinormal;
     Out.vColor = p.alive ? p.color : float4(p.color.rgb, 0.0f);
     Out.vEmissive = p.emissive;
+    Out.life = p.life;
+    Out.maxLife = p.maxLife;
     return Out;
 }
 
@@ -170,9 +178,14 @@ PS_OUT PSMain(VS_OUT In)
     PS_OUT Out = (PS_OUT) 0;
 
     float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-    if (AlbedoTex.a == 0.0f)
+    if (AlbedoTex.a < 0.05f)
         discard;
+    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+    
+    float ratio = 1.0f - (In.life / In.maxLife);
 
+    if (noise.r < ratio) 
+        discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
     float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
@@ -229,6 +242,8 @@ PS_OUT PSMain(VS_OUT In)
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
 
+    
+    
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
 }

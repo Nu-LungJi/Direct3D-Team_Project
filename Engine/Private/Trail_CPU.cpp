@@ -150,6 +150,10 @@ HRESULT CTrail_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
     return E_FAIL; // AddPoint(start, end)로 직접 제어 - 이 인터페이스는 안 씀
 }
 
+void CTrail_CPU::ClearByOwner(uint32_t ownerID)
+{
+}
+
 void CTrail_CPU::BuildTrailGeometry()
 {
     m_vecVertices.clear();

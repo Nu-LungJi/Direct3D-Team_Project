@@ -894,6 +894,7 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShadowCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1331,6 +1332,7 @@
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShadowCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1418,6 +1420,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
+      <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

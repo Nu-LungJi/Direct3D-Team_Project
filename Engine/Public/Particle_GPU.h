@@ -41,27 +41,17 @@ public:
 
 		virtual void Serialize(ISerializer& serializer) const
 		{
-			//serializer.Write("testDesc", testDesc);
 			serializer.Write("iMaxParticles", iMaxParticles);
 			serializer.Write("iBehaviorType", iBehaviorType);
-			//serializer.Write("textureID", textureID);
 			serializer.Write("whatKind", whatKind);
-			//serializer.Write("VSID", VSID);
-			//serializer.Write("PSID", PSID);
-			//serializer.Write("sGroupTag", sGroupTag.GetDbgStr());
-			//serializer.Write("sResTag", sResTag.GetDbgStr());
 		}
 		virtual void Deserialize(IDeserializer& deserializer)
 		{
-			//deserializer.Read("testDesc", testDesc);
+
 			deserializer.Read("iMaxParticles", iMaxParticles);
 			deserializer.Read("iBehaviorType", iBehaviorType);
-			//deserializer.Read("textureID", textureID);
 			deserializer.Read("whatKind", whatKind);
-			//deserializer.Read("VSID", VSID);
-			//deserializer.Read("PSID", PSID);
-			//deserializer.Read("sGroupTag", sGroupTag);
-			//deserializer.Read("sResTag", sResTag);
+
 		}
     };
 
@@ -89,7 +79,7 @@ public:
 
     uint32_t GetDeadListCounterSync();
 	MESHORTEXTURE GetWhatKind() const { return m_Desc.whatKind; }
-
+	virtual void ClearByOwner(uint32_t ownerID) override;
 private:
     DESC m_Desc;
 
@@ -111,6 +101,8 @@ private:
 
     uint32_t                         m_iCurrentSpawnCount = 0;
     uint32_t                         m_iDeadCount = 0;
+	SPtr<CResComputeShader> m_pResClearByOwnerCS;
+	SPtr<CResCBuffer> m_pComClearCBuffer;
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

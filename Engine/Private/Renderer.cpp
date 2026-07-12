@@ -941,17 +941,21 @@ HRESULT CRenderer::Render_Alpha() {
         return E_FAIL;
     }
 
-    //if (FAILED(RenderParticle()))
-    //{
-    //    return E_FAIL;
-    //}
+
+
+
+
+
+	if (FAILED(RenderParticle()))
+	{
+		return E_FAIL;
+	}
+
+
 
 	Unbind_Resources();
 
-    m_pContext->CopyResource(m_pBackBufferTexture.Get(), CGameInstance::Get().GetBackBufferTexture().Get());
-   
-	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
-	m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
+
 
     return S_OK;
 }
@@ -1353,7 +1357,7 @@ HRESULT CRenderer::RenderParticle()
     //MRT
     //emissive
     const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
-        TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+        TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD");
 	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
 	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
     if (!blendState)
@@ -1361,6 +1365,7 @@ HRESULT CRenderer::RenderParticle()
     if (blendState)
         m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
+	m_pContext->PSSetShaderResources(7, 1, m_pResDynTexTargetPBR->GetSRV().GetAddressOf());
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::PARTICLE)])
     {
         if (pRenderObject->HasRenderPass(RenderContext.pass))
@@ -1371,6 +1376,9 @@ HRESULT CRenderer::RenderParticle()
 
     m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 	//m_pContext->RSSetState(nullptr);
+	ID3D11ShaderResourceView* nullSRV[] = {nullptr };
+
+	m_pContext->PSSetShaderResources(7, 1, nullSRV);
     return S_OK;
 }
 

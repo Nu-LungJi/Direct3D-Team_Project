@@ -47,7 +47,7 @@ VS_OUT VSMain(VS_IN In)
                       + vUp * In.vPosition.y * fScale;
 
     Out.vPosition = mul(float4(vWorldPos, 1.f), g_matViewProj);
-    Out.vTexcoord = In.uvOffset + In.vTexcoord * In.vTexcoord;
+    Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
     Out.vColor = In.vColor;
     Out.vEmissive = In.vInstEmissive;
     return Out;

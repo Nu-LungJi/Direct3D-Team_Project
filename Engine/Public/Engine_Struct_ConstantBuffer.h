@@ -95,5 +95,11 @@ namespace Engine
 		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
-
+	struct CB_CLEAR
+	{
+		uint32_t ownerID;
+		_float3 pad;
+	};
+	static_assert(sizeof(CB_CLEAR) % 16 == 0);
 }
+

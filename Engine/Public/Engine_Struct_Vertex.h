@@ -48,12 +48,14 @@ namespace Engine
 		_float maxLife;
 		_float size;
 		_float startSize;
+		_float endSize;
 		uint32_t alive;
 		uint32_t loop;
 		_float4 color;
 		_float4 emissive;
 		uint32_t frameIndex;
-		_float3 pad2;
+		uint32_t ownerID; 
+		_float pad2;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{

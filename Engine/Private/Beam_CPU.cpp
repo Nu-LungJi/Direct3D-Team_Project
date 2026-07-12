@@ -331,3 +331,7 @@ UPtr<CParticle> CBeam_CPU::Create(void* pArg)
 	}
 	return  pInstance;
 }
+void CBeam_CPU::ClearByOwner(uint32_t ownerID)
+{
+	// TODO: 필요 시 구현. 지금은 비워둬도 컴파일은 통과함
+}

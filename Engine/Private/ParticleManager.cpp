@@ -23,43 +23,10 @@ CParticleManager::~CParticleManager()
 
 void CParticleManager::UpdateGUI()
 {
-	/*
-				serializer.Write("iMaxParticles", iMaxParticles);
-			serializer.Write("iBehaviorType", iBehaviorType);
-			serializer.Write("PARTICLE_TYPE", type);
-			//serializer.Write("textureID", textureID);
-			serializer.Write("whatKind", whatKind);
-	*/
-	ImGui::Begin("SaveJson");
-	//if (ImGui::Button("Test Save"))
-	//{
-	//	CParticle_GPU::TESTDESC testDesc{};
-	//	testDesc.sStr = "hello";
-	//	testDesc.i = 123;
-	//
-	//
-	//	CParticle_GPU::DESC desc;
-	//	desc.testDesc.push_back(testDesc);
-	//	desc.testDesc.push_back(testDesc);
-	//	desc.testDesc.push_back(testDesc);
-	//	desc.iBehaviorType = 1;
-	//	desc.iMaxParticles = 500;
-	//	desc.type = PARTICLE_TYPE::FIRE_CPU;
-	//	desc.whatKind = MESHORTEXTURE::MESH;
-	//	CGameInstance::Get().JsonSerialize("TestParticle.json", desc);
-	//	int x = 0;
-	//}
-	//
-	//if (ImGui::Button("Test Load"))
-	//{
-	//	CParticle_GPU::DESC desc;
-	//	CGameInstance::Get().JsonDeSerialize("TestParticle.json", desc);
-	//	int x = 0;
-	//}
-	ImGui::End();
-	ImGui::Begin("SaveJson");
+	ImGui::Begin("SaveResourcesAsJson");
 	
-
+	static char szPresetName[128] = "";
+	static char szPresetSavePath[MAX_PATH] = "./Resources/json/Particle/Preset/ParticlePresets.json";
 	static const std::string kFbxListJsonPath = "./Resources/SampleClient/Models/ParticleModelJson/ParticleModel.json";
 	static const std::string kJsonFolder = "./Resources/json/Particle";
 
@@ -236,66 +203,113 @@ void CParticleManager::UpdateGUI()
 	ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
 
 	ImGui::Separator();
+	ImGui::Separator();
 
 	// ---- 4. 저장 ----
-	if (ImGui::Button("Save Json"))
-	{
-		std::string targetPath = (whatKindIndex == 1) ? selectedTexturePath : selectedFbxPath;
+	std::string targetPath = (whatKindIndex == 1) ? selectedTexturePath : selectedFbxPath;
+	std::string particleTypeStr = particleTypeNames[particleTypeIndex];
+	std::string particleNameStr = szParticleName;
+	std::string jsonNameStr = szJsonName;
 
-		if (!targetPath.empty())
+	auto IsCombinationSupported = [](int whatKindIdx, const std::string& particleType) -> bool
 		{
-			std::string saveName = szJsonName;
-			if (!saveName.empty())
-			{
-				std::filesystem::path savePath = std::filesystem::path(kJsonFolder) / saveName;
-				if (savePath.extension().empty())
-					savePath.replace_extension(".json");
+			if (whatKindIdx == 0) // MESH
+				return (particleType == "PARTICLE_GPU" || particleType == "PARTICLE_CPU");
+			else // TEXTURE
+				return (particleType == "PARTICLE_GPU" || particleType == "PARTICLE_CPU" || particleType == "BEAM_CPU");
+		};
 
-				std::string whatKindStr = (whatKindIndex == 0) ? "MESH" : "TEXTURE";
-				std::string particleTypeStr = particleTypeNames[particleTypeIndex];
-				std::string particleNameStr = szParticleName;
+	bool bSupported = IsCombinationSupported(whatKindIndex, particleTypeStr);
 
-				if (whatKindStr == "MESH") {
-					Save_Binary_Json(savePath.string(),
-						targetPath,
-						whatKindStr,
-						particleTypeStr,
-						particleNameStr,
-						iMaxParticles,
-						iBehaviorType,
-						szVSID1, szVSID2, szPSID1, szPSID2,
-						szGroupTag, szResTag);
-				}
-				else if (whatKindStr == "TEXTURE") {
+	std::vector<std::string> vecErrors;
 
-					if (particleTypeStr == "PARTICLE_CPU") {
-						Save_Binary_Json(savePath.string(),
-							targetPath,
-							whatKindStr,
-							particleTypeStr,
-							particleNameStr,
-							iMaxParticles,
-							iBehaviorType,
-							szVSID1, szVSID2, szPSID1, szPSID2,
-							szGroupTag, szResTag, szTextureID1, szTextureID2, szViBuffer1, szViBuffer2, iTexRow, iTexCol);
-					}
-					else {
-						Save_Binary_Json(savePath.string(),
-							targetPath,
-							whatKindStr,
-							particleTypeStr,
-							particleNameStr,
-							iMaxParticles,
-							iBehaviorType,
-							szVSID1, szVSID2, szPSID1, szPSID2,
-							szGroupTag, szResTag, szTextureID1, szTextureID2,"","", iTexRow, iTexCol);
-					}
-			
-				}
-			}
-		}
+	if (targetPath.empty())
+		vecErrors.push_back(whatKindIndex == 0 ? "Fbx 파일을 선택하세요." : "텍스처를 선택하세요.");
+
+	if (particleNameStr.empty())
+		vecErrors.push_back("Particle Name을 입력하세요.");
+
+	if (jsonNameStr.empty())
+		vecErrors.push_back("Json Name을 입력하세요.");
+
+	if (whatKindIndex == 0)
+	{
+		if (std::string(szGroupTag).empty())
+			vecErrors.push_back("GroupTag를 입력하세요.");
+		if (std::string(szResTag).empty())
+			vecErrors.push_back("ResTag를 입력하세요.");
+	}
+	else
+	{
+		if (std::string(szTextureID1).empty() || std::string(szTextureID2).empty())
+			vecErrors.push_back("TextureID1/2를 입력하세요.");
+
+		if (particleTypeStr == "PARTICLE_CPU" &&
+			(std::string(szViBuffer1).empty() || std::string(szViBuffer2).empty()))
+			vecErrors.push_back("VIBuffer1/2를 입력하세요. (PARTICLE_CPU 필수)");
 	}
 
+	if (!bSupported)
+		vecErrors.push_back("[미구현] " + std::string(whatKindIndex == 0 ? "MESH" : "TEXTURE") + " + " + particleTypeStr + " 조합은 아직 로드할 수 없습니다.");
+
+	bool bCanSave = vecErrors.empty();
+
+	for (auto& err : vecErrors)
+		ImGui::TextColored(ImVec4(1.f, 0.6f, 0.f, 1.f), "- %s", err.c_str());
+
+	if (bCanSave)
+	{
+		if (ImGui::Button("Save Json"))
+		{
+			HRESULT hr = E_FAIL;
+			std::filesystem::path savePath = std::filesystem::path(kJsonFolder) / jsonNameStr;
+			if (savePath.extension().empty())
+				savePath.replace_extension(".json");
+
+			std::string whatKindStr = (whatKindIndex == 0) ? "MESH" : "TEXTURE";
+
+			if (whatKindStr == "MESH") {
+				hr = Save_Binary_Json(savePath.string(),
+					targetPath, whatKindStr, particleTypeStr, particleNameStr,
+					iMaxParticles, iBehaviorType,
+					szVSID1, szVSID2, szPSID1, szPSID2,
+					szGroupTag, szResTag);
+			}
+			else {
+				if (particleTypeStr == "PARTICLE_CPU") {
+					hr = Save_Binary_Json(savePath.string(),
+						targetPath, whatKindStr, particleTypeStr, particleNameStr,
+						iMaxParticles, iBehaviorType,
+						szVSID1, szVSID2, szPSID1, szPSID2,
+						szGroupTag, szResTag, szTextureID1, szTextureID2,
+						szViBuffer1, szViBuffer2, iTexRow, iTexCol);
+				}
+				else {
+					hr = Save_Binary_Json(savePath.string(),
+						targetPath, whatKindStr, particleTypeStr, particleNameStr,
+						iMaxParticles, iBehaviorType,
+						szVSID1, szVSID2, szPSID1, szPSID2,
+						szGroupTag, szResTag, szTextureID1, szTextureID2,
+						"", "", iTexRow, iTexCol);
+				}
+			}
+
+			m_bLastResultSuccess = SUCCEEDED(hr);
+			m_sLastResultMsg = m_bLastResultSuccess
+				? ("저장 완료: " + savePath.string())
+				: "저장 실패: 값을 확인하세요.";
+		}
+	}
+	else
+	{
+		ImGui::TextDisabled("Save Json (조건을 먼저 충족하세요)");
+	}
+
+	if (!m_sLastResultMsg.empty())
+	{
+		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+			"%s", m_sLastResultMsg.c_str());
+	}
 	ImGui::End();
 	ImGui::Begin("CParticleManager");
 
@@ -331,6 +345,7 @@ void CParticleManager::UpdateGUI()
 		std::string sDisplayName;
 	};
 	std::vector<MatchedParticle> matchedList;
+
 
 	for (auto& [groupTag, typeMap] : m_Particles)
 	{
@@ -369,12 +384,27 @@ void CParticleManager::UpdateGUI()
 			matchedList.push_back({ groupTag, typeTag, typeTag.GetDbgStr() });
 		}
 	}
-
+	if (bNeedTypeIndexSync)
+	{
+		for (int i = 0; i < (int)matchedList.size(); ++i)
+		{
+			if (matchedList[i].sGroupTag == pendingSyncGroup && matchedList[i].sTypeTag == pendingSyncType)
+			{
+				typeIndex = i;
+				break;
+			}
+		}
+		bNeedTypeIndexSync = false;
+	}
 	StringID selectedGroup{};
 	StringID selectedType{};
 
+	static STANDARD_PARAMS previewParams{};
+	static bool bPreviewActive = false;
+	static StringID previewGroup, previewType;
 	if (!matchedList.empty())
 	{
+
 		std::vector<const char*> namesForCombo;
 		for (auto& m : matchedList)
 			namesForCombo.push_back(m.sDisplayName.c_str());
@@ -388,11 +418,217 @@ void CParticleManager::UpdateGUI()
 		auto pSelected = GetParticle(selectedGroup, selectedType);
 		if (dynamic_cast<CBeam_CPU*>(pSelected) != nullptr)
 			currentKind = SPAWN_COMMAND_KIND::BEAM;
+
+		if (selectedGroup != previewGroup || selectedType != previewType)
+		{
+			// 이전 미리보기 정리
+			if (bPreviewActive)
+			{
+				auto pOld = GetParticle(previewGroup, previewType);
+				if (pOld) pOld->ClearByOwner(PREVIEW_OWNER_ID);
+			}
+			previewGroup = selectedGroup;
+			previewType = selectedType;
+			bPreviewActive = false;
+		}
+
 	}
 	else
 	{
 		ImGui::Text("(No particles found for this category)");
 	}
+	ImGui::Separator();
+	ImGui::Text("=== Load Preset ===");
+
+	static int selectedPresetIndex = -1;
+	std::vector<std::string> presetNames;
+	for (auto& [name, preset] : m_ParticlePresets)
+		presetNames.push_back(name.GetDbgStr());
+
+	std::vector<const char*> presetNamesForCombo;
+	for (auto& name : presetNames)
+		presetNamesForCombo.push_back(name.c_str());
+
+	if (!presetNamesForCombo.empty())
+	{
+		selectedPresetIndex = std::clamp(selectedPresetIndex, -1, (int)presetNamesForCombo.size() - 1);
+
+		if (ImGui::Combo("Preset List", &selectedPresetIndex, presetNamesForCombo.data(), (int)presetNamesForCombo.size()))
+		{
+			const auto& preset = m_ParticlePresets[presetNames[selectedPresetIndex]];
+
+			groupTypeIndex = preset.groupTypeIndex;
+			whatKindFilterIndex = preset.whatKindFilterIndex;
+
+			previewParams.life = preset.maxLife;
+			previewParams.fSize = preset.fStartSize;
+			previewParams.fEndSize = preset.fEndSize;
+			previewParams.color = preset.StartColor;
+			previewParams.emissive = preset.Emissive;
+
+			bNeedTypeIndexSync = true;
+			pendingSyncGroup = preset.sGroupTag;
+			pendingSyncType = preset.sTypeTag;
+		}
+		ImGui::Separator();
+		if (selectedPresetIndex >= 0 && ImGui::Button("Delete Preset"))
+		{
+			const std::string& targetName = presetNames[selectedPresetIndex];
+
+			HRESULT hr = DeleteEffectPreset(szPresetSavePath, targetName);
+
+			if (SUCCEEDED(hr))
+			{
+				// ---- 메모리에서도 즉시 제거 ----
+				m_ParticlePresets.erase(targetName);
+				selectedPresetIndex = -1;   // 삭제했으니 선택 인덱스 리셋
+			}
+
+			m_bLastResultSuccess = SUCCEEDED(hr);
+			m_sLastResultMsg = m_bLastResultSuccess
+				? ("프리셋 삭제 완료: " + targetName)
+				: "프리셋 삭제 실패!";
+		}
+	}
+	else
+	{
+		ImGui::TextDisabled("(저장된 프리셋 없음)");
+	}
+
+	ImGui::Text("=== Live Preview ===");
+	ImGui::PushID("LivePreview");
+
+	ImGui::InputFloat3("Position", &previewParams.position.x);
+	ImGui::InputFloat3("Velocity", &previewParams.velocity.x);
+	ImGui::InputFloat("Life", &previewParams.life);
+	ImGui::InputFloat("StartSize", &previewParams.fSize);
+	ImGui::InputFloat("EndSize", &previewParams.fEndSize);
+	ImGui::ColorEdit4("Color", &previewParams.color.x);
+	ImGui::ColorEdit3("Emissive", &previewParams.emissive.x);
+	ImGui::InputFloat("Emissive Intensity", &previewParams.emissive.w);
+	ImGui::Checkbox("Loop", &previewParams.bLoop);
+	if (previewParams.bLoop)
+		ImGui::InputFloat("Spawn Interval", &previewParams.fSpawnInterval);
+
+	static STANDARD_PARAMS lastPreviewParams{};
+	bool bParamsChanged = std::memcmp(&previewParams, &lastPreviewParams, sizeof(STANDARD_PARAMS)) != 0;
+
+	bool bCheckboxToggled = ImGui::Checkbox("Preview Active", &bPreviewActive);
+
+	if (bCheckboxToggled && !bPreviewActive)
+	{
+		auto pParticle = GetParticle(previewGroup, previewType);
+		if (pParticle) pParticle->ClearByOwner(PREVIEW_OWNER_ID);
+	}
+
+	// ---- 값이 바뀌면: 항상 bLoop=false로 "1회성"만 스폰 (미리보기용 반복은 아래 타이머가 처리) ----
+	if (bPreviewActive && (bCheckboxToggled || bParamsChanged))
+	{
+		auto pParticle = GetParticle(previewGroup, previewType);
+		if (pParticle)
+		{
+			pParticle->ClearByOwner(PREVIEW_OWNER_ID);
+
+			PARTICLE_SPAWN_DATA data{};
+			data.position = previewParams.position;
+			data.velocity = previewParams.velocity;
+			data.life = previewParams.life;
+			data.fSize = previewParams.fSize;
+			data.fEndSize = previewParams.fEndSize;
+			data.color = previewParams.color;
+			data.emissive = previewParams.emissive;
+			data.ownerID = PREVIEW_OWNER_ID;
+
+			// 항상 bLoop=false로 호출 (루프 시스템에 안 태움)
+			Spawn(previewGroup, previewType, 1, &data, false, 0.f);
+		}
+	}
+
+	// ---- Loop가 켜져 있으면, 미리보기 전용 타이머로 직접 재스폰 ----
+	static float fPreviewLoopElapsed = 0.f;
+	if (bPreviewActive && previewParams.bLoop)
+	{
+		fPreviewLoopElapsed += ImGui::GetIO().DeltaTime;
+		if (fPreviewLoopElapsed >= previewParams.fSpawnInterval)
+		{
+			fPreviewLoopElapsed = 0.f;
+
+			auto pParticle = GetParticle(previewGroup, previewType);
+			if (pParticle)
+			{
+				PARTICLE_SPAWN_DATA data{};
+				data.position = previewParams.position;
+				data.velocity = previewParams.velocity;
+				data.life = previewParams.life;
+				data.fSize = previewParams.fSize;
+				data.fEndSize = previewParams.fEndSize;
+				data.color = previewParams.color;
+				data.emissive = previewParams.emissive;
+				data.ownerID = PREVIEW_OWNER_ID;
+
+				Spawn(previewGroup, previewType, 1, &data, false, 0.f);
+			}
+		}
+	}
+	else
+	{
+		fPreviewLoopElapsed = 0.f;
+	}
+
+	lastPreviewParams = previewParams;
+
+	//dfddf
+	ImGui::PopID();
+	// ---- Save as Preset ----
+
+
+	ImGui::Separator();
+	ImGui::Text("=== Save as Preset ===");
+	ImGui::InputText("Preset Name", szPresetName, IM_ARRAYSIZE(szPresetName));
+	ImGui::InputText("Preset Save Path", szPresetSavePath, IM_ARRAYSIZE(szPresetSavePath));
+
+	bool bCanSavePreset = !std::string(szPresetName).empty() && !matchedList.empty();
+
+	if (bCanSavePreset)
+	{
+		if (ImGui::Button("Save as Preset"))
+		{
+			PARTICLE_PRESET preset{};
+			preset.presetName = szPresetName;
+			preset.sGroupTag = selectedGroup;
+			preset.sTypeTag = selectedType;
+			preset.StartColor = previewParams.color;
+			preset.Emissive = previewParams.emissive;
+			preset.maxLife = previewParams.life;
+			preset.fStartSize = previewParams.fSize;
+			preset.fEndSize = previewParams.fEndSize;
+			preset.groupTypeIndex = groupTypeIndex;        
+			preset.whatKindFilterIndex = whatKindFilterIndex;
+			HRESULT hr = SaveEffectPreset(szPresetSavePath, preset);
+			
+			if (SUCCEEDED(hr))
+			{
+				// ---- 파일 저장 성공 시, 메모리(m_ParticlePresets)도 즉시 갱신 ----
+				m_ParticlePresets[preset.presetName] = preset;
+			}
+			m_bLastResultSuccess = SUCCEEDED(hr);
+			m_sLastResultMsg = m_bLastResultSuccess
+				? ("프리셋 저장 완료: " + preset.presetName)
+				: "프리셋 저장 실패!";
+		}
+	}
+	else
+	{
+		ImGui::TextDisabled("Save as Preset (Preset Name을 입력하고 파티클을 선택하세요)");
+	}
+
+	if (!m_sLastResultMsg.empty())
+	{
+		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+			"%s", m_sLastResultMsg.c_str());
+	}
+
+	ImGui::Separator();
 
 	ImGui::Separator();
 
@@ -415,7 +651,8 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputFloat3("Position", &pendingStandard.position.x);
 		ImGui::InputFloat3("Velocity", &pendingStandard.velocity.x);
 		ImGui::InputFloat("Life", &pendingStandard.life);
-		ImGui::InputFloat("Size", &pendingStandard.size);
+		ImGui::InputFloat("StartSize", &pendingStandard.fSize);
+		ImGui::InputFloat("EndSize", &pendingStandard.fEndSize);
 		ImGui::ColorEdit4("BaseColor", &pendingStandard.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingStandard.emissive.x);
 		ImGui::InputFloat("Emissive Intensity", &pendingStandard.emissive.w);
@@ -531,7 +768,7 @@ void CParticleManager::UpdateGUI()
 				cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
 				p.vStartPos.x, p.vStartPos.y, p.vStartPos.z, p.row, p.col);
 		}
-
+		
 		ImGui::SameLine();
 		if (ImGui::Button("Remove"))
 		{
@@ -560,12 +797,23 @@ void CParticleManager::UpdateGUI()
 
 	if (ImGui::Button("Save Queue"))
 	{
-		SaveCommandQueue(szQueueSavePath);
+		HRESULT hr = SaveCommandQueue(szQueueSavePath);
+		m_bLastResultSuccess = SUCCEEDED(hr);
+		m_sLastResultMsg = m_bLastResultSuccess ? "Queue Save Success!" : "Queue Save Failed!";
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load Queue"))
 	{
-		LoadCommandQueue(szQueueSavePath);
+		HRESULT hr = LoadCommandQueue(szQueueSavePath);
+		m_bLastResultSuccess = SUCCEEDED(hr);
+		m_sLastResultMsg = m_bLastResultSuccess
+			? ("Queue Load Success! (" + std::to_string(m_vecCommandQueue.size()))
+			: "Queue Load Failed!";
+	}
+	if (!m_sLastResultMsg.empty())
+	{
+		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+			"%s", m_sLastResultMsg.c_str());
 	}
 	ImGui::End();
 }
@@ -883,7 +1131,8 @@ HRESULT CParticleManager::ExecuteCommandQueue()
 				s.position = p.position;
 				s.velocity = p.velocity;
 				s.life = p.life;
-				s.size = p.size;
+				s.fSize = p.fSize;
+				s.fEndSize = p.fEndSize;
 				s.color = p.color;
 				s.emissive = p.emissive;
 				vec.push_back(s);
@@ -1323,7 +1572,8 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 			entry["position"] = { p.position.x, p.position.y, p.position.z };
 			entry["velocity"] = { p.velocity.x, p.velocity.y, p.velocity.z };
 			entry["life"] = p.life;
-			entry["size"] = p.size;
+			entry["StartSize"] = p.fSize;
+			entry["EndSize"] = p.fEndSize;
 			entry["color"] = { p.color.x, p.color.y, p.color.z, p.color.w };
 			entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 			entry["fSpawnDelay"] = p.fSpawnDelay;
@@ -1436,7 +1686,8 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.velocity = { vel[0], vel[1], vel[2] };
 
 			p.life = entry.value("life", 1.f);
-			p.size = entry.value("size", 1.f);
+			p.fSize = entry.value("StartSize", 1.f);
+			p.fEndSize = entry.value("EndSize", 1.f);
 
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			p.color = { col[0], col[1], col[2], col[3] };
@@ -1531,5 +1782,165 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 		m_vecCommandQueue.push_back(cmd);
 	}
 
+	return S_OK;
+}
+
+
+
+//////////////////
+
+HRESULT CParticleManager::SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset)
+{
+	nlohmann::json j;
+
+	if (std::filesystem::exists(strJsonPath))
+	{
+		std::ifstream inFile(strJsonPath);
+		if (inFile.is_open())
+		{
+			try { inFile >> j; }
+			catch (...) { j = nlohmann::json{}; }
+		}
+	}
+
+	if (!j.contains("presets") || !j["presets"].is_array())
+		j["presets"] = nlohmann::json::array();
+
+	nlohmann::json entry;
+	entry["presetName"] = preset.presetName;
+	entry["sGroupTag"] = preset.sGroupTag.GetDbgStr();
+	entry["sTypeTag"] = preset.sTypeTag.GetDbgStr();
+	entry["defaultColor"] = { preset.StartColor.x, preset.StartColor.y, preset.StartColor.z, preset.StartColor.w };
+	entry["defaultEmissive"] = { preset.Emissive.x, preset.Emissive.y, preset.Emissive.z, preset.Emissive.w };
+	entry["defaultLife"] = preset.maxLife;
+	entry["defaultSize"] = preset.fStartSize;
+	entry["defaultEndSize"] = preset.fEndSize;
+	entry["groupTypeIndex"] = preset.groupTypeIndex;
+	entry["whatKindFilterIndex"] = preset.whatKindFilterIndex;
+	// 같은 이름 있으면 덮어쓰기
+	bool bReplaced = false;
+	for (auto& e : j["presets"])
+	{
+		if (e.value("presetName", "") == preset.presetName)
+		{
+			e = entry;
+			bReplaced = true;
+			break;
+		}
+	}
+	if (!bReplaced)
+		j["presets"].push_back(entry);
+
+	std::filesystem::path savePath(strJsonPath);
+	if (!savePath.parent_path().empty())
+		std::filesystem::create_directories(savePath.parent_path());
+
+	std::ofstream file(savePath);
+	if (!file.is_open())
+		return E_FAIL;
+
+	file << j.dump(4);
+	return S_OK;
+}
+
+HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
+{
+	if (!std::filesystem::exists(strJsonPath))
+		return E_FAIL;
+
+	std::ifstream file(strJsonPath);
+	if (!file.is_open())
+		return E_FAIL;
+
+	nlohmann::json j;
+	try { file >> j; }
+	catch (...) { return E_FAIL; }
+
+	if (!j.contains("presets") || !j["presets"].is_array())
+		return E_FAIL;
+
+	for (const auto& entry : j["presets"])
+	{
+		PARTICLE_PRESET preset{};
+		preset.presetName = entry.value("presetName", "");
+		preset.sGroupTag = entry.value("sGroupTag", "");
+		preset.sTypeTag = entry.value("sTypeTag", "");
+
+
+
+		auto col = entry.value("defaultColor", std::vector<float>{1, 1, 1, 1});
+		preset.StartColor = { col[0], col[1], col[2], col[3] };
+
+		auto emi = entry.value("defaultEmissive", std::vector<float>{0, 0, 0, 0});
+		preset.Emissive = { emi[0], emi[1], emi[2], emi[3] };
+
+		preset.maxLife = entry.value("defaultLife", 1.f);
+		preset.fStartSize = entry.value("defaultSize", 1.f);
+		preset.fEndSize = entry.value("defaultEndSize", 1.f);
+		preset.groupTypeIndex = entry.value("groupTypeIndex", 0);
+		preset.whatKindFilterIndex = entry.value("whatKindFilterIndex", 0);
+		if (!preset.presetName.empty())
+			m_ParticlePresets[preset.presetName] = preset;
+	}
+
+	return S_OK;
+}
+HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float3& position, uint32_t count)
+{
+	auto it = m_ParticlePresets.find(presetName);
+	if (it == m_ParticlePresets.end()) {
+		OutputDebugStringA(("PlayEffect: 프리셋을 찾을 수 없음 - " + presetName + "\n").c_str());
+		return E_FAIL;
+	}
+
+	const auto& preset = it->second;
+
+	PARTICLE_SPAWN_DATA data{};
+	data.position = position;
+	data.life = preset.maxLife;
+	data.fSize = preset.fStartSize;
+	data.fEndSize = preset.fEndSize;
+	data.color = preset.StartColor;
+	data.emissive = preset.Emissive;
+
+	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
+}
+// ParticleManager.cpp
+HRESULT CParticleManager::DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName)
+{
+	if (!std::filesystem::exists(strJsonPath))
+		return E_FAIL;
+
+	nlohmann::json j;
+	std::ifstream inFile(strJsonPath);
+	if (inFile.is_open())
+	{
+		try { inFile >> j; }
+		catch (...) { return E_FAIL; }
+	}
+
+	if (!j.contains("presets") || !j["presets"].is_array())
+		return E_FAIL;
+
+	bool bRemoved = false;
+	auto& arr = j["presets"];
+	for (auto it = arr.begin(); it != arr.end(); ++it)
+	{
+		if (it->value("presetName", "") == presetName)
+		{
+			arr.erase(it);
+			bRemoved = true;
+			break;
+		}
+	}
+
+	if (!bRemoved)
+		return E_FAIL;
+
+	std::ofstream file(strJsonPath, std::ios::out | std::ios::trunc);
+	if (!file.is_open())
+		return E_FAIL;
+
+	file << j.dump(4);
 	return S_OK;
 }

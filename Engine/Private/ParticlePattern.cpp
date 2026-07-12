@@ -23,7 +23,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(
         );
         s.velocity = _float3(0.f, 0.f, 0.f);
         s.life = fLife;
-        s.size = fStepWidth;
+        s.fSize = fStepWidth;
         s.color = color;
         s.emissive = emissive;
     }
@@ -56,7 +56,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(
         );
         s.velocity = _float3(0.f, 0.f, 0.f);
         s.life = fLife;
-        s.size = fSize;
+        s.fSize = fSize;
         s.color = color;
         s.emissive = emissive;
     }
@@ -86,7 +86,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeGrid(
 			);
 			s.velocity = _float3(0.f, 0.f, 0.f);
 			s.life = fLife;
-			s.size = fSize;
+			s.fSize = fSize;
 			s.color = color;
 			s.emissive = emissive;
 		}
@@ -113,9 +113,9 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStrightGround(const _float
 				vStartPos.z + offsetZ * (_float)r
 			);
 
-			s.velocity = _float3(Randf(-1.f,1.f), Randf(0.f, 1.5f), Randf(1.f, 2.f));
+			s.velocity = _float3(Randf(-2.f,2.f), Randf(1.f, 3.f), Randf(0.f, 2.f));
 			s.life = fLife;
-			s.size = fSize;
+			s.fSize = fSize;
 			s.color = color;
 			s.emissive = emissive;
 			s.spawnDelay = spawnDelay * (_float)r;

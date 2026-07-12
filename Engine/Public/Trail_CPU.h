@@ -51,6 +51,7 @@ public:
     virtual void    LateUpdate(_float fTimeDelta) override;
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override; // 미사용
+	virtual void ClearByOwner(uint32_t ownerID) override;
 
 public:
     // 매 프레임 호출 - 무기 애니메이션 재생 중 칼날 밑동/칼끝의 현재 월드 좌표를 같이 넘긴다.

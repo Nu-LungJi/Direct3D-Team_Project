@@ -20,6 +20,8 @@ struct VS_IN
     float4 vInstRow3 : INSTANCE_WORLD3;
     float4 vInstColor : INSTANCE_COLOR;
     float4 vInstEmissive : INSTANCE_EMISSIVE;
+    float vInstLife : INSTANCE_LIFE;
+    float vInstMaxLife : INSTANCE_MAXLIFE; 
 };
 
 struct VS_OUT
@@ -32,6 +34,8 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : COLOR1;
     float3 vWorldPos : TEXCOORD1;
+    float life : TEXCOORD2;
+    float maxLife : TEXCOORD3;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -49,6 +53,8 @@ VS_OUT VSMain(VS_IN In)
     Out.vBinormal = normalize(mul(In.vBinormal, (float3x3) matWorld));
     Out.vColor = In.vInstColor;
     Out.vEmissive = In.vInstEmissive;
+    Out.life = In.vInstLife; 
+    Out.maxLife = In.vInstMaxLife;
     return Out;
 }
 
@@ -57,6 +63,7 @@ Texture2D   NormalMap    : register(t1);
 Texture2D   SMROMap      : register(t2);
 Texture2D   EmissiveMap : register(t3);
 Texture2D   DepthMap    : register(t4);
+Texture2D   NoiseMap    : register(t5);
 
 //SamplerState g_LinearSampler : register(s0);
 
@@ -181,7 +188,14 @@ PS_OUT PSMain(VS_OUT In)
     [branch]
     if (DepthData >= 1.0f)
         discard;
+    
+    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+    
+    float ratio = 1.0f - (In.life / In.maxLife);
 
+    if (noise.r < ratio) 
+        discard;
+    
     float3 DepthWorld = ReconstructWorldPos(In.vTexcoord, DepthData);
     
     float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;

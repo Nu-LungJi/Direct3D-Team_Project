@@ -18,6 +18,22 @@ enum class SPAWN_COMMAND_KIND
 	STAIR,
 	STRAIGHT,
 };
+typedef struct tagParticlePreset
+{
+	std::string presetName;
+	StringID sGroupTag;     
+	StringID sTypeTag;
+	uint32_t groupTypeIndex = 0;      // 0:PARTICLE_CPU, 1:PARTICLE_GPU, 2:BEAM_CPU, 3:RIBBON_CPU
+	uint32_t whatKindFilterIndex = 0;
+	_float maxLife = 1.f;
+	_float fStartSize = 1.f;
+	_float fEndSize = 1.f;
+	//EndColor는 보간 로직 만든 뒤에 추가
+	_float4 StartColor = { 1.f, 1.f, 1.f, 1.f };
+	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
+
+
+} PARTICLE_PRESET;
 
 struct STANDARD_PARAMS
 {
@@ -25,9 +41,10 @@ struct STANDARD_PARAMS
     _float3  position = {};
     _float3  velocity = {};
     _float   life = 1.f;
-    _float   size = 1.f;
+    _float   fSize = 1.f;
+    _float   fEndSize = 1.f;
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
-    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+    _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
 	_float	 fSpawnDelay = 0.f;
@@ -38,7 +55,7 @@ struct BEAM_PARAMS
     _float4  beamStart = {};
     _float4  beamEnd = {};
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
-    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+    _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
     int      iDisplacementIterations = 6;
     _float   fDisplacementAmplitude = 2.5f;
     _float   fDisplacementDamping = 0.25f;
@@ -56,7 +73,7 @@ struct STAIR_PARAMS
 	_float   fStepDepth = 2.f;
 	_float   life = 1.f;
 	_float4  color = { 1.f, 1.f, 1.f, 1.f };
-	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+	_float4  emissive = { 1.f, 1.f, 1.f, 0.f };
 	_float	 fSpawnDelay = 0.f;
 
 };
@@ -65,13 +82,14 @@ struct STRAIGHT_PARAMS
 	_float3  vStartPos = {};
 	uint32_t row = 1;
 	uint32_t col = 1;
-	_float   offSetX = 2.f;
-	_float   offsetZ = 1.5f;
+	_float   offSetX = 1.f;
+	_float   offsetZ = 1.f;
 	_float   spawnDelay = 2.f;
 	_float   fSize = 1.f;
+	_float   fEndSize = 1.f;
 	_float   fLife = 1.f;
 	_float4  color = { 1.f, 1.f, 1.f, 1.f };
-	_float4  emissive = { 1.f, 1.f, 1.f, 1.f };
+	_float4  emissive = { 1.f, 1.f, 1.f, 0.f };
 
 };
 
@@ -88,33 +106,7 @@ struct PARTICLE_EFFECT_PRESET
     std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
     std::vector<SPAWN_COMMAND> commands;  // 이 이펙트를 구성하는 여러 스폰 명령
 };
-//struct SPAWN_COMMAND
-//{
-//    SPAWN_COMMAND_KIND kind = SPAWN_COMMAND_KIND::STANDARD;
-//    StringID sGroupTag;
-//    StringID sTypeTag;
-//    //공용
-//    uint32_t count = 1;
-//    _float4  emissive = { 1.f, 1.f, 1.f, 1.f };
-//
-//    // STANDARD 용
-//    _float3  position = {};
-//    _float3  velocity = {};
-//    _float   life = 1.f;
-//    _float   size = 1.f;
-//    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-//    _bool    bLoop = false;
-//    _float   fSpawnInterval = 0.1f;
-//    
-//    // BEAM 용
-//    _float4  beamStart = {};
-//    _float4  beamEnd = {};
-//    int    iDisplacementIterations = 6;   // 재귀 세분화 횟수 → 세그먼트 개수 = 2^6 = 64개
-//    _float      fDisplacementAmplitude = 2.5f; // 첫 세분화 단계에서 중점을 얼마나 크게 흔들지
-//    _float      fDisplacementDamping = 0.25f;// 몇 초마다 지그재그 모양을 새로 뽑을지 (짧을수록 번개가 파르르 떠는 느낌)
-//    _float      flickerTimeInverval = 0.25f; // fFlickerInterval에 도달할 때마다 리셋되는 타이머 (지그재그 재생성 시점 체크용)
-//    _float   beamDuration = 0.f;
-//};
+
 class ENGINE_DLL CParticleManager final : public CEngineBase, public IRenderable
 {
 private:
@@ -166,23 +158,45 @@ public:
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);
+	HRESULT LoadParticlePresets(const std::string& strJsonPath);
+
 
 	// 조회 헬퍼
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
 	bool HasGroup(const StringID& sGroupTag) const;
 public:
     static UPtr<CParticleManager> Create();
+	HRESULT SpawnSimple(const StringID& sGroupTag, const StringID& sTypeTag,
+		const _float3& position,
+		const _float4& color = { 1.f, 1.f, 1.f, 1.f },
+		_float life = 1.f,
+		_float size = 1.f,
+		const _float3& velocity = { 0.f, 0.f, 0.f },
+		const _float4& emissive = { 0.f, 0.f, 0.f, 0.f });
 
+	// 여러 개를 한 번에, 위치만 다르게
+	HRESULT SpawnSimpleMulti(const StringID& sGroupTag, const StringID& sTypeTag,
+		const std::vector<_float3>& positions,
+		const _float4& color = { 1.f, 1.f, 1.f, 1.f },
+		_float life = 1.f,
+		_float size = 1.f);
+	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
+	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
+	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 private:
     // [대분류][소분류] -> 파티클 인스턴스
     std::unordered_map<StringID, std::unordered_map<StringID, UPtr<CParticle>>> m_Particles;
+	std::unordered_map<StringID, PARTICLE_PRESET> m_ParticlePresets;
     std::vector<PARTICLE_LOOP_REQUEST> m_LoopRequests;
+	std::vector<SPAWN_COMMAND> m_vecCommandQueue;
+	// 큐 전체를 실행
+	std::string m_sLastResultMsg;
+	bool m_bLastResultSuccess = false;
 
-
-
+	 bool bNeedTypeIndexSync = false;
+	 StringID pendingSyncGroup, pendingSyncType;
 private:
-    std::vector<SPAWN_COMMAND> m_vecCommandQueue;
-    // 큐 전체를 실행
     HRESULT ExecuteCommandQueue();
+
 };
 NS_END

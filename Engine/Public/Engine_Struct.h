@@ -193,11 +193,15 @@ namespace Engine
 		_float3 position;
 		_float3 velocity;
 		_float  life;
-		_float  size;
+		_float  fSize;
+		_float  fEndSize;
 		_float4 color;
 		_float4 emissive;
 		_float spawnDelay;
+		uint32_t ownerID = 0;
 	}PARTICLE_SPAWN_DATA;
+
+	constexpr uint32_t PREVIEW_OWNER_ID = 0xFFFFFFFF; //미리보기 전용 
 
 	typedef struct tagParticleEmitRequest
 	{

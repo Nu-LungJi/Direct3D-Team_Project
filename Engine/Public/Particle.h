@@ -25,6 +25,7 @@ public:
 	virtual void LateUpdate(E::_float fTimeDelta) = 0;
 	virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) = 0;
 	virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) = 0;
+	virtual void ClearByOwner(uint32_t ownerID) = 0;
 public:
 
 	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
@@ -42,6 +43,7 @@ protected:
 	SPtr<class CResVertexShader> m_pResVertexShader{};
 	UPtr<class CComStaticModelInstance> m_pComModelInstance{};
 	SPtr<class CResTexture2D> m_pParticleTexture;
+	SPtr<class CResTexture2D> m_pNoiseTexture;
 
 private:
 

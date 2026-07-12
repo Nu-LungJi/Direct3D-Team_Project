@@ -52,6 +52,7 @@ public:
     virtual void    LateUpdate(_float fTimeDelta) override;
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
+	virtual void ClearByOwner(uint32_t ownerID) override;
 
 public:
     int32_t AddBeam(const _float4& vStart, const _float4& vEnd,
