@@ -386,25 +386,26 @@ public:
 #pragma endregion
 
 #pragma region LUA_MANAGER
-	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& path);
+	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& chunkName = "InlineScript");
+	HRESULT LuaScriptExecute(const std::string& script, const std::string& chunkName = "InlineScript");
 	sol::environment LuaCreateEnvironment();
+
+	sol::protected_function LuaCacheFunction(const std::string& funcName);
+	sol::protected_function LuaCacheFunction(const sol::environment& env, const std::string& funcName);
+
 	template<typename... Args>
-	HRESULT LuaCall(sol::environment& env, std::string_view function, Args&&... args)
-	{ return m_pLuaManager->Call(env, function, std::forward<Args>(args)...); }
-	bool LuaHasFunction( sol::environment& env, std::string_view function) const;
-	template<typename T>
-	void LuaSetValue(sol::environment& env, std::string_view name, T&& value)
-	{ m_pLuaManager->SetValue(env, name, value); }
+	bool LuaCallCacheFunction(const sol::protected_function& func, Args&&... args)
+	{ return m_pLuaManager->CallCacheFunction(func, std::forward<Args>(args)...); }
 
 	template<typename T>
-	bool GetValue(sol::environment& env, std::string_view name, T& value)
-	{ return m_pLuaManager->GetValue(env, name, value); }
+	void LuaSetValue(std::string_view name, T&& value)
+	{ m_pLuaManager->SetValue(name, value); }
+
+	template<typename T>
+	bool LuaGetValue(std::string_view name, T& outValue)
+	{ return m_pLuaManager->GetValue(name, outValue); }
 
 	HRESULT LuaCompile(const std::string& script);
-
-	template<typename Ret, typename... Args>
-	HRESULT LuaCall(sol::environment& env, std::string_view function, Ret& ret, Args&&... args)
-	{ return m_pLuaManager->Call(env, function, ret, args); }
 
 	bool LuaIsEnvValid(const sol::environment& env) const;
 	bool LuaHasValue(const sol::environment& env, std::string_view name) const;

@@ -9,7 +9,7 @@ end
 function PriorityUpdate(dt)
     do
         if  Input.KeyDown(Key.L) then
-            Level.ChangeLevel("TO_LOGO")
+            --Level.ChangeLevel("TO_LOGO")
         end
 
         if Input.KeyDown(Key.C) then

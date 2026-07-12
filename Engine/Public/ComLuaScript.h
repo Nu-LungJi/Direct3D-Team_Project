@@ -36,7 +36,7 @@ public:
 protected:
 	void LoadScript(); // 환경 설정 + 실행 + 캐싱을 담당하는 공통 함수
 public:
-	void CacheFunctions(_string_view name, sol::protected_function& out);
+	//void CacheFunctions(_string_view name, sol::protected_function& out);
 protected:
 	sol::protected_function m_OnCreate;
 	sol::protected_function m_OnDestroy;

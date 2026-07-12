@@ -42,58 +42,22 @@ HRESULT CComLuaScript::Initialize(void* pArg)
 
 void CComLuaScript::PriorityUpdate(_float fTimeDelta)
 {
-	if (m_PriorityUpdate.valid())
-	{
-		auto result = m_PriorityUpdate(fTimeDelta);
-		if (!result.valid())
-		{
-			sol::error err = result;
-			std::string errorMsg = "[Lua Script Error] " + std::string(err.what()) + "\n";
-			OutputDebugStringA(errorMsg.c_str());
-		}
-	}
+	CGameInstance::Get().LuaCallCacheFunction(m_PriorityUpdate, fTimeDelta);
 }
 
 void CComLuaScript::FixedUpdate(_float fTimeDelta)
 {
-	if (m_FixedUpdate.valid())
-	{
-		auto result = m_FixedUpdate(fTimeDelta);
-		if (!result.valid())
-		{
-			sol::error err = result;
-			std::string errorMsg = "[Lua Script Error] " + std::string(err.what()) + "\n";
-			OutputDebugStringA(errorMsg.c_str());
-		}
-	}
+	CGameInstance::Get().LuaCallCacheFunction(m_FixedUpdate, fTimeDelta);
 }
 
 void CComLuaScript::Update(_float fTimeDelta)
 {
-	if (m_Update.valid())
-	{
-		auto result = m_Update(fTimeDelta);
-		if (!result.valid())
-		{
-			sol::error err = result;
-			std::string errorMsg = "[Lua Script Error] " + std::string(err.what()) + "\n";
-			OutputDebugStringA(errorMsg.c_str());
-		}
-	}
+	CGameInstance::Get().LuaCallCacheFunction(m_Update, fTimeDelta);
 }
 
 void CComLuaScript::LateUpdate(_float fTimeDelta)
 {
-	if (m_LateUpdate.valid())
-	{
-		auto result = m_LateUpdate(fTimeDelta);
-		if (!result.valid())
-		{
-			sol::error err = result;
-			std::string errorMsg = "[Lua Script Error] " + std::string(err.what()) + "\n";
-			OutputDebugStringA(errorMsg.c_str());
-		}
-	}
+	CGameInstance::Get().LuaCallCacheFunction(m_LateUpdate, fTimeDelta);
 }
 
 void CComLuaScript::Reload()
@@ -106,20 +70,18 @@ void CComLuaScript::LoadScript()
 {
 	m_Environment = CGameInstance::Get().LuaCreateEnvironment();
 
-	CGameInstance::Get().LuaSetValue(
-		m_Environment,
-		"__ScriptPath",
-		m_pResLuaScript->GetPath());
+	m_Environment["__ScriptPath"] = m_pResLuaScript->GetPath();
 
 	CGameInstance::Get().LuaScriptExecute(m_pResLuaScript->GetSource(), m_Environment, m_pResLuaScript->GetPath());
 
-	CacheFunctions("OnCreate", m_OnCreate);
-	CacheFunctions("OnDestroy", m_OnDestroy);
+	m_OnCreate = CGameInstance::Get().LuaCacheFunction(m_Environment, "OnCreate");
+	m_OnDestroy = CGameInstance::Get().LuaCacheFunction(m_Environment, "OnDestroy");
 
-	CacheFunctions("PriorityUpdate", m_PriorityUpdate);
-	CacheFunctions("FixedUpdate", m_FixedUpdate);
-	CacheFunctions("Update", m_Update);
-	CacheFunctions("LateUpdate", m_LateUpdate);
+	m_PriorityUpdate = CGameInstance::Get().LuaCacheFunction(m_Environment, "PriorityUpdate");
+	m_FixedUpdate = CGameInstance::Get().LuaCacheFunction(m_Environment, "FixedUpdate");
+
+	m_Update = CGameInstance::Get().LuaCacheFunction(m_Environment, "Update");
+	m_LateUpdate = CGameInstance::Get().LuaCacheFunction(m_Environment, "LateUpdate");
 
 	m_Environment["self"] = this;
 	m_Environment["gameObject"] = GetGameObject();
@@ -131,12 +93,12 @@ void CComLuaScript::LoadScript()
 	}
 }
 
-void CComLuaScript::CacheFunctions(_string_view name, sol::protected_function& out)
-{
-	sol::object obj = m_Environment[name];
-	if (obj.valid() && obj.get_type() == sol::type::function)
-		out = obj.as<sol::protected_function>();
-}
+//void CComLuaScript::CacheFunctions(_string_view name, sol::protected_function& out)
+//{
+//	sol::object obj = m_Environment[name];
+//	if (obj.valid() && obj.get_type() == sol::type::function)
+//		out = obj.as<sol::protected_function>();
+//}
 
 UPtr<CComLuaScript> CComLuaScript::Create()
 {

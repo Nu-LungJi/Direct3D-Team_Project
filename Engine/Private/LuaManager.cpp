@@ -27,11 +27,25 @@ CLuaManager::~CLuaManager()
 
 void CLuaManager::UpdateGUI()
 {
-
 	ImGui::Begin("CLuaManager");
 	
-	ImGui::End();
+	if (ImGui::Button("script test"))
+	{
+		CGameInstance::Get().LuaScriptExecute(R"( print("Hello Lua") )");
+	}
+	if (ImGui::Button("GetValue"))
+	{
+		std::string a;
+		CGameInstance::Get().LuaGetValue("test", a);
 
+		int x = 0;
+	}
+
+	if (ImGui::Button("SetValue"))
+	{
+		CGameInstance::Get().LuaSetValue("test", "18.f");
+	}
+	ImGui::End();
 }
 
 void CLuaManager::Update(_float fTimeDelta)
@@ -41,7 +55,12 @@ void CLuaManager::Update(_float fTimeDelta)
 
 HRESULT CLuaManager::Initialize()
 {
+#ifdef _DEBUG
 	m_pLuaWatcher = CLuaWatcher::Create();
+#endif // _DEBUG
+
+	
+
 	// Lua 기본 라이브러리
 	m_Lua.open_libraries(
 		sol::lib::base,
@@ -57,63 +76,26 @@ HRESULT CLuaManager::Initialize()
 	Initialize_PrintBinding();
 
 	// 디버거 시도하다 중단함
-	if(false)
+	if constexpr (false)
 	{
-		m_Lua.script("package.cpath = package.cpath .. ';./?.dll'");
-
-		// 2. 디버거 로드 및 포트 대기 (위에서 추천한 방식)
-		try
-		{
-			//m_Lua.require<sol::table>("emmy_core");
-
-			// 포트 점유 에러를 방지하기 위해 pcall로 감싸서 실행
-			m_Lua.script(R"(
-            local dbg = require('emmy_core')
-            local status = pcall(function() dbg.tcpListen('localhost', 9966) end)
-            if status then
-                -- 디버거 연결 대기 (필요할 때만 주석 해제)
-                -- dbg.waitIDE() 
-            end
-        )");
-
-			OutputDebugStringA("[Lua] EmmyLua Debugger Initialized.\n");
-		}
-		catch (const sol::error& e)
-		{
-			OutputDebugStringA(("[Lua] Debugger Load Failed: " + std::string(e.what()) + "\n").c_str());
-		}
+		Initialize_DebuggerBinding();
 	}
 
 	m_Lua.script(R"(
 		print("Hello Lua")
 	)");
 
-	RegisterType<CGameObject>();
-	RegisterType<CUIObject>();
-	RegisterType<CCameraObject>();
-	RegisterType<CUICamera>();
-	RegisterType<CFlyCamera>();
-
-	RegisterType<CComponent>();
-	RegisterType<CComLuaScript>();
-	RegisterType<CComCollider>();
-	RegisterType<CComTransform>();
-
-	RegisterType<CCollider>();
-	RegisterType<CCollBox>();
-	RegisterType<CCollSphere>();
-	RegisterType<CCollFrustum>();
-	RegisterType<CCollOrientedBox>();
-
+	// 엔진레벨 루아 타입 등록 
+	// 이등록은 캐스팅할때 필요함
+	Initialize_RegistType();
+	
 	Initialize_MathBinding();
+	Initialize_DefineBinding();
+	Initialize_ClassBindnig();
+	Initialize_GameInstanceBindnig();
 
-	Initialize_TableBinding();
 
-	Initialize_FunctionBinding();
 
-	Initialize_EngineGameObjectManagerBinding();
-
-	Initialize_DebugDrawBinding();
 	
 	
 	return S_OK;
@@ -154,17 +136,483 @@ HRESULT CLuaManager::Initialize_PrintBinding()
 	return S_OK;
 }
 
-HRESULT CLuaManager::Initialize_FunctionBinding()
+HRESULT CLuaManager::Initialize_RegistType()
 {
-	// 1. 최상위 부모
-	m_Lua.new_usertype<CEngineBase>("EngineBase",
-		sol::no_constructor,
-		"GetTypeString", &CEngineBase::GetTypeString,
-		"IsA", [](CEngineBase& self, const std::string& typeName) {
-			return self.IsA(STRID(typeName.c_str()));
+	RegisterType<CGameObject>();
+	RegisterType<CUIObject>();
+	RegisterType<CCameraObject>();
+	RegisterType<CUICamera>();
+	RegisterType<CFlyCamera>();
+
+	RegisterType<CComponent>();
+	RegisterType<CComLuaScript>();
+	RegisterType<CComCollider>();
+	RegisterType<CComTransform>();
+
+	RegisterType<CCollider>();
+	RegisterType<CCollBox>();
+	RegisterType<CCollSphere>();
+	RegisterType<CCollFrustum>();
+	RegisterType<CCollOrientedBox>();
+	return S_OK;
+}
+
+HRESULT CLuaManager::Initialize_DebuggerBinding()
+{
+	if (false)
+	{
+		m_Lua.script("package.cpath = package.cpath .. ';./?.dll'");
+
+		// 2. 디버거 로드 및 포트 대기 (위에서 추천한 방식)
+		try
+		{
+			//m_Lua.require<sol::table>("emmy_core");
+
+			// 포트 점유 에러를 방지하기 위해 pcall로 감싸서 실행
+			m_Lua.script(R"(
+            local dbg = require('emmy_core')
+            local status = pcall(function() dbg.tcpListen('localhost', 9966) end)
+            if status then
+                -- 디버거 연결 대기 (필요할 때만 주석 해제)
+                -- dbg.waitIDE() 
+            end
+        )");
+
+			OutputDebugStringA("[Lua] EmmyLua Debugger Initialized.\n");
+		}
+		catch (const sol::error& e)
+		{
+			OutputDebugStringA(("[Lua] Debugger Load Failed: " + std::string(e.what()) + "\n").c_str());
+		}
+	}
+	return S_OK;
+}
+
+HRESULT CLuaManager::Initialize_MathBinding()
+{
+#pragma region Vec2
+	m_Lua.new_usertype<_float2>(
+		"Vector2",
+
+		sol::constructors<_float2(), _float2(float, float)>(),
+
+		"x", &DirectX::XMFLOAT2::x,
+		"y", &DirectX::XMFLOAT2::y
+	);
+#pragma endregion
+
+#pragma region Vec3
+	m_Lua.new_usertype<_float3>(
+		"Vector3",
+		sol::constructors<_float3(), _float3(float, float, float)>(),
+		"x", &_float3::x,
+		"y", &_float3::y,
+		"z", &_float3::z,
+
+		sol::meta_function::to_string, [](const _float3& v) {
+			return "[ " + std::to_string(v.x) + ", "
+				+ std::to_string(v.y) + ", "
+				+ std::to_string(v.z) + " ]";
+		},
+
+		// SIMD 연산자
+		sol::meta_function::addition, [](const _float3& a, const _float3& b) {
+			_float3 res; XMStoreFloat3(&res, XMVectorAdd(XMLoadFloat3(&a), XMLoadFloat3(&b))); return res;
+		},
+		sol::meta_function::subtraction, [](const _float3& a, const _float3& b) {
+			_float3 res; XMStoreFloat3(&res, XMVectorSubtract(XMLoadFloat3(&a), XMLoadFloat3(&b))); return res;
+		},
+		sol::meta_function::multiplication, sol::overload(
+			[](const _float3& v, float s) { // 벡터 * 스칼라
+				_float3 res; XMStoreFloat3(&res, XMVectorScale(XMLoadFloat3(&v), s)); return res;
+			},
+			[](const _float3& a, const _float3& b) { // 벡터 * 벡터 (내적 아님, 요소별 곱)
+				_float3 res; XMStoreFloat3(&res, XMVectorMultiply(XMLoadFloat3(&a), XMLoadFloat3(&b))); return res;
+			}
+		),
+		"Length", [](const _float3& v) { return XMVectorGetX(XMVector3Length(XMLoadFloat3(&v))); },
+		"Normalize", [](const _float3& v) { _float3 res; XMStoreFloat3(&res, XMVector3Normalize(XMLoadFloat3(&v))); return res; }
+	);
+#pragma endregion
+	
+#pragma region Vec4
+	m_Lua.new_usertype<_float4>(
+		"Vector4",
+		sol::constructors<_float4(), _float4(float, float, float, float)>(),
+		"x", &_float4::x,
+		"y", &_float4::y,
+		"z", &_float4::z,
+		"w", &_float4::w,
+
+		sol::meta_function::addition, [](const _float4& a, const _float4& b) {
+			_float4 res; XMStoreFloat4(&res, XMVectorAdd(XMLoadFloat4(&a), XMLoadFloat4(&b))); return res;
+		},
+		sol::meta_function::subtraction, [](const _float4& a, const _float4& b) {
+			_float4 res; XMStoreFloat4(&res, XMVectorSubtract(XMLoadFloat4(&a), XMLoadFloat4(&b))); return res;
+		},
+		sol::meta_function::multiplication, [](const _float4& v, float s) {
+			_float4 res; XMStoreFloat4(&res, XMVectorScale(XMLoadFloat4(&v), s)); return res;
 		}
 	);
+#pragma endregion
 
+#pragma region Matrix
+	m_Lua.new_usertype<_float4x4>(
+		"Matrix",
+		sol::constructors<_float4x4()>(),
+
+		// 행렬 곱셈 (Matrix * Matrix)
+		sol::meta_function::multiplication, [](const _float4x4& a, const _float4x4& b) {
+			_float4x4 res;
+			XMStoreFloat4x4(&res, XMMatrixMultiply(XMLoadFloat4x4(&a), XMLoadFloat4x4(&b)));
+			return res;
+		},
+
+		"Get", [](const _float4x4& mat, int row, int col) { return mat.m[row][col]; },
+		"Set", [](_float4x4& mat, int row, int col, float value) { mat.m[row][col] = value; },
+		"Transpose", [](const _float4x4& mat) {
+			_float4x4 res;
+			XMStoreFloat4x4(&res, XMMatrixTranspose(XMLoadFloat4x4(&mat)));
+			return res;
+		},
+		"Inverse", [](const _float4x4& mat) {
+			_float4x4 res;
+			XMStoreFloat4x4(&res, XMMatrixInverse(nullptr, XMLoadFloat4x4(&mat)));
+			return res;
+		}
+	);
+#pragma endregion
+
+	return S_OK;
+}
+
+HRESULT CLuaManager::Initialize_GameInstanceBindnig()
+{
+#pragma region GameObjectManager
+	{
+		// "Object"라는 네임스페이스(테이블) 생성
+		sol::table objApi = m_Lua.create_named_table("Object");
+
+		// 1. 핸들로 오브젝트 가져오기 (가장 기본)
+		objApi.set_function("GetByHandle",
+			[this](const CHandle& handle) -> sol::object {
+				CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
+				if (pObj == nullptr) return sol::nil;
+
+				// 맵에서 찾아서 캐스팅 함수가 있는지 확인
+				auto it = m_TypeRegistry.find(StringID{ pObj->GetType() });
+				if (it != m_TypeRegistry.end()) {
+					// 등록된 타입이라면 전용 타입으로 캐스팅하여 반환
+					return it->second(pObj);
+				}
+
+				// 등록되지 않았다면 기본 타입으로 반환
+				return sol::make_object(m_Lua, pObj);
+			}
+		);
+
+objApi.set_function("GetLayer",
+	[this](const std::string& layerName) -> sol::table
+	{
+		// 1. 루아로 반환할 빈 테이블(배열) 생성
+		sol::table resultTable = m_Lua.create_table();
+
+		// 2. 레이어 내부 핸들 리스트 가져오기
+		// (참고: 내부 CGameObjectManager의 GetLayer가 string_view를 받는다고 가정하고 직접 호출합니다.
+		// 만약 CGameInstance를 거쳐야 한다면 string 기반의 GetGameObjectLayerByString 같은 함수를 하나 뚫어주세요!)
+		const std::vector<CHandle>* pHandles = CGameInstance::Get().GetGameObjectLayer(layerName);
+
+		// 레이어가 없거나 비어있으면 빈 테이블 반환
+		if (pHandles == nullptr || pHandles->empty())
+			return resultTable;
+
+		// 3. 핸들 순회 및 스마트 캐스팅
+		int index = 1; // 루아 배열은 인덱스가 1부터 시작!
+		for (const CHandle& handle : *pHandles)
+		{
+			CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
+			if (pObj)
+			{
+				// 만들어둔 타입 레지스트리를 활용해 진짜 타입으로 캐스팅!
+				auto it = m_TypeRegistry.find(StringID{ pObj->GetType() });
+				if (it != m_TypeRegistry.end()) {
+					resultTable[index++] = it->second(pObj);
+				}
+				else {
+					resultTable[index++] = sol::make_object(m_Lua, pObj);
+				}
+			}
+		}
+
+		// 4. 완성된 테이블(객체 배열) 반환
+		return resultTable;
+	}
+);
+
+// 2. 레이어 이름으로 첫 번째 오브젝트 가져오기 (예: 플레이어 찾기)
+objApi.set_function("GetFirst",
+	[this](const std::string& layerName) -> sol::object
+	{
+		// 1. CGameInstance에서 오브젝트 획득
+		CGameObject* pObj = CGameInstance::Get().GetFirstGameObjectByLayer<CGameObject>(layerName);
+
+		if (pObj == nullptr) return sol::nil;
+
+		// 2. 이미 구축해둔 m_TypeRegistry에서 실제 타입을 찾음
+		auto it = m_TypeRegistry.find(StringID{ pObj->GetType() });
+
+		if (it != m_TypeRegistry.end()) {
+			// 3. 등록된 타입(예: CPlayer)이 있다면 캐스팅하여 반환
+			return it->second(pObj);
+		}
+
+		// 4. 등록되지 않았다면 기본 GameObject 타입으로 반환
+		return sol::make_object(m_Lua, pObj);
+	}
+);
+
+// 3. 게임 오브젝트 생성 (AddGameObjectToLayer)
+objApi.set_function("Add",
+	[this](const std::string& levelIndex, const std::string& prototypeTag, const std::string& layerName, sol::optional<sol::object> argObj) -> sol::object
+	{
+		void* pArg = nullptr;
+
+		// 1. 루아에서 넘겨준 인자가 있고, 그것이 C++ 바인딩된 객체(userdata)라면
+		if (argObj.has_value() && argObj.value().is<sol::userdata>())
+		{
+			// userdata에서 포인터를 추출하여 void*로 형변환
+			pArg = const_cast<void*>(argObj.value().as<sol::userdata>().pointer());
+		}
+
+		// 2. 추출한 pArg를 넣어서 스폰 API 호출
+		auto result = CGameInstance::Get().AddGameObjectToLayer(
+			StringID(levelIndex),
+			StringID(prototypeTag),
+			layerName,
+			pArg
+		);
+
+		// 3. optional<CHandle> 처리
+		if (result.has_value()) {
+			return sol::make_object(m_Lua, result.value());
+		}
+		return sol::nil;
+	}
+);
+
+// 4. 오브젝트 전체 초기화 (씬 전환 등에서 사용)
+//objApi.set_function("AllReset",
+//	[]()
+//	{
+//		CGameInstance::Get()->GameObjectAllReset(); //[cite: 1]
+//	}
+//);
+	}
+#pragma endregion
+
+#pragma region Rand
+	{
+		sol::table mathTable = m_Lua.create_named_table("Rand");
+
+		mathTable.set_function("Randf", [](float min, float max) {
+			return Engine::Randf(min, max);
+			});
+
+		mathTable.set_function("RandInt", [](int min, int max) {
+			return Engine::RandInt(min, max);
+			});
+	}
+#pragma endregion
+
+#pragma region CollManager
+	{
+		{
+			sol::table collTable = m_Lua.create_named_table("Collision");
+
+			// 1. AddColliderGroup
+			// 루아: Collision.AddColliderGroup("Player", pCollider)
+			collTable.set_function("AddColliderGroup",
+				[](const std::string& groupTag, const CCollider* pCollider) {
+					CGameInstance::Get().AddColliderGroup(StringID(groupTag.c_str()), pCollider);
+				}
+			);
+
+			// 2. GetColliderGroup (가장 자주 쓸 함수!)
+			// 루아: local colls = Collision.GetColliderGroup("Monster")
+			collTable.set_function("GetColliderGroup",
+				[this](const std::string& groupTag) -> sol::object {
+					auto pGroup = CGameInstance::Get().GetColliderGroup(StringID(groupTag.c_str()));
+
+					if (pGroup == nullptr)
+						return sol::nil;
+
+					// sol::as_table을 사용하여 std::vector를 루아 배열로 자동 변환
+					return sol::make_object(m_Lua, sol::as_table(*pGroup));
+				}
+			);
+
+			// 3. IntersectColl
+			// 루아: if Collision.IntersectColl(col1, col2) then ...
+			collTable.set_function("IntersectColl",
+				[](const CCollider* pColl1, const CCollider* pColl2) -> bool {
+					return CGameInstance::Get().IntersectColl(pColl1, pColl2);
+				}
+			);
+
+			// 4. GetColliders (전체 맵 반환)
+			// 루아: local allGroups = Collision.GetColliders()
+			collTable.set_function("GetColliders",
+				[this]() -> sol::object {
+					auto pMap = CGameInstance::Get().GetColliders();
+					if (pMap == nullptr) return sol::nil;
+
+					// map을 table로 변환해서 반환 (전체 맵이라 다소 무거울 수 있음)
+					return sol::make_object(m_Lua, sol::as_table(*pMap));
+				}
+			);
+		}
+	}
+
+#pragma endregion
+
+#pragma region Input
+	{
+		sol::table inputTable = m_Lua.create_named_table("Input");
+
+		// 2. 테이블 안에 함수들을 등록합니다.
+		// 세 번째 인자로 싱글톤 인스턴스(&CGameInstance::Get())를 넘겨주면, 
+		// 루아에서 호출할 때 C++이 알아서 이 인스턴스를 self로 사용합니다.
+		inputTable.set_function("KeyPressing", &CGameInstance::KeyPressing, &CGameInstance::Get());
+		inputTable.set_function("KeyDown", &CGameInstance::KeyDown, &CGameInstance::Get());
+		inputTable.set_function("KeyUp", &CGameInstance::KeyUp, &CGameInstance::Get());
+
+		inputTable.set_function("MouseMove", &CGameInstance::MouseMove, &CGameInstance::Get());
+		inputTable.set_function("MousePressing", &CGameInstance::MousePressing, &CGameInstance::Get());
+		inputTable.set_function("MouseDown", &CGameInstance::MouseDown, &CGameInstance::Get());
+		inputTable.set_function("MouseUp", &CGameInstance::MouseUp, &CGameInstance::Get());
+	}
+#pragma endregion
+	
+#pragma region CameraManager
+	{
+		sol::table cameraTable = m_Lua.create_named_table("Camera");
+
+		// 2. [스마트 캐스팅 헬퍼 함수] CCameraObject를 받아서 알맞은 자식 타입으로 변환 후 반환
+		auto smartCastCamera = [this](CCameraObject* pCam) -> sol::object
+			{
+				if (pCam == nullptr) return sol::nil;
+
+				// 1단계: 정확한 타입 ID로 찾기 (가장 빠름)
+				auto it = m_TypeRegistry.find(StringID{ pCam->GetType() });
+				if (it != m_TypeRegistry.end()) {
+					return it->second(pCam);
+				}
+
+				// 3단계: 못 찾았다면 기본 CCameraObject로 반환
+				return sol::make_object(m_Lua, pCam);
+			};
+
+
+		// 3. 함수 바인딩 (헬퍼 함수 활용)
+		cameraTable.set_function("GetActiveCamera", sol::overload(
+			[this, smartCastCamera]() -> sol::object {
+				CCameraObject* pCam = CGameInstance::Get().GetActiveCamera();
+				return smartCastCamera(pCam);
+			},
+			[this, smartCastCamera](const std::string& cameraID) -> sol::object {
+				CCameraObject* pCam = CGameInstance::Get().GetActiveCamera(StringID(cameraID.c_str()));
+				return smartCastCamera(pCam);
+			}
+		));
+
+		cameraTable.set_function("GetCamera",
+			[this, smartCastCamera](const std::string& cameraID) -> sol::object {
+				CCameraObject* pCam = CGameInstance::Get().GetCamera(StringID(cameraID.c_str()));
+				return smartCastCamera(pCam);
+			}
+		);
+
+		// ※ SetActiveCamera는 HRESULT(성공/실패)를 반환하므로 캐스팅 없이 그대로 둡니다.
+		cameraTable.set_function("SetActiveCamera",
+			[](const std::string& cameraID) {
+				return CGameInstance::Get().SetActiveCamera(StringID(cameraID.c_str()));
+			}
+		);
+	}
+#pragma endregion
+	
+#pragma region LevelManager
+	{
+		sol::table levelTable = m_Lua.create_named_table("Level");
+
+		// 2. ChangeLevel 함수 바인딩
+		levelTable.set_function("ChangeLevel", [](const std::string& levelID) -> HRESULT {
+
+			return CGameInstance::Get().ChangeLevel(levelID);
+
+			});
+	}
+#pragma endregion
+
+#pragma region DbgLineRender
+	{
+		// 엔진의 DbgLineRender 인스턴스를 미리 캡처
+		auto pDbg = CGameInstance::Get().GetDbgLineRender();
+		if (!pDbg) return E_FAIL;
+
+		sol::table dbg = m_Lua.create_named_table("DbgLine");
+
+		// 1. 기본 설정
+		dbg.set_function("SetColor", [pDbg](const _float4& col) { pDbg->SetColor(col); });
+		dbg.set_function("GetColor", [pDbg]() { return pDbg->GetColor(); });
+
+		// 2. 라인 계열
+		dbg.set_function("AddLine", sol::overload(
+			[pDbg](const _float3& p0, const _float3& p1) { pDbg->AddLine(p0, p1); },
+			[pDbg](const _float3& p0, const _float3& p1, const _float4& col) { pDbg->AddLine(p0, p1, col); }
+		));
+
+		// 3. 도형 계열 (world 매트릭스를 Matrix 타입으로 직접 수신)
+		dbg.set_function("AddBox", [pDbg](const _float3& ext, const _float4x4& world) { pDbg->AddBox(ext, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddSphere", [pDbg](float r, const _float4x4& world) { pDbg->AddSphere(r, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddCapsule", [pDbg](float r, float h, const _float4x4& world) { pDbg->AddCapsule(r, h, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddCylinder", [pDbg](float r, float h, const _float4x4& world) { pDbg->AddCylinder(r, h, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddCone", [pDbg](float r, float h, const _float4x4& world) { pDbg->AddCone(r, h, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddFrustum", [pDbg](float fov, float asp, float n, float f, const _float4x4& world) { pDbg->AddFrustum(fov, asp, n, f, XMLoadFloat4x4(&world)); });
+
+		// 4. 라인/방향 계열
+		dbg.set_function("AddRay", [pDbg](const _float3& o, const _float3& d, float l) { pDbg->AddRay(o, d, l); });
+		dbg.set_function("AddArrow", [pDbg](const _float3& o, const _float3& d, float l, float hl, float ha) { pDbg->AddArrow(o, d, l, hl, ha); });
+
+		// 5. 부가 기능
+		dbg.set_function("AddGrid", [pDbg](uint32_t cnt, float size, const _float4x4& world) { pDbg->AddGrid(cnt, size, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddQuad", [pDbg](float w, float h, const _float4x4& world) { pDbg->AddQuad(w, h, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddTriangle", [pDbg](const _float3& p0, const _float3& p1, const _float3& p2) { pDbg->AddTriangle(p0, p1, p2); });
+		dbg.set_function("AddAxis", [pDbg](float len, const _float4x4& world) { pDbg->AddAxis(len, XMLoadFloat4x4(&world)); });
+		dbg.set_function("AddCircle", [pDbg](float r, const _float4x4& world, uint32_t s) { pDbg->AddCircle(r, XMLoadFloat4x4(&world), s); });
+		dbg.set_function("AddCross", [pDbg](const _float3& pos, float s) { pDbg->AddCross(pos, s); });
+
+	}
+#pragma endregion
+	
+	return S_OK;
+}
+
+HRESULT CLuaManager::Initialize_ClassBindnig()
+{
+#pragma region EngineBase
+	{
+		m_Lua.new_usertype<CEngineBase>("EngineBase",
+			sol::no_constructor,
+			"GetTypeString", &CEngineBase::GetTypeString,
+			"IsA", [](CEngineBase& self, const std::string& typeName) {
+				return self.IsA(STRID(typeName.c_str()));
+			}
+		);
+	}
+#pragma endregion
+
+#pragma region Collider
 	{
 		m_Lua.new_usertype<CCollider>("Collider",
 			// 1. 추상 클래스이므로 직접 new 생성 불가 명시
@@ -237,563 +685,245 @@ HRESULT CLuaManager::Initialize_FunctionBinding()
 			"GetLocalBoundingOrientedBox", &CCollOrientedBox::GetLocalBoundingOrientedBox,
 			"SetLocalBoundingOrientedBox", &CCollOrientedBox::SetLocalBoundingOrientedBox
 		);
+
+		m_Lua.new_usertype<CCollSphere>("CollSphere",
+			sol::no_constructor,
+			sol::base_classes, sol::bases<CCollider, CEngineBase>(),
+
+			// 1. 간단한 Getter
+			"GetBoundingSphere", &CCollSphere::GetBoundingSphere,
+			"GetLocalBoundingSphere", &CCollSphere::GetLocalBoundingSphere
+
+			// 2. SetLocalBoundingSphere (Wrapper: table -> _float3)
+			//"SetLocalBoundingSphere", [](CCollSphere* pSphere, sol::table center, float radius) {
+			//	_float3 vCenter{ center[1], center[2], center[3] };
+			//	pSphere->SetLocalBoundingSphere(vCenter, radius);
+			//}
+		);
 	}
+#pragma endregion
 
-	m_Lua.new_usertype<CCollSphere>("CollSphere",
-		sol::no_constructor,
-		sol::base_classes, sol::bases<CCollider, CEngineBase>(),
+#pragma region Components
 
-		// 1. 간단한 Getter
-		"GetBoundingSphere", &CCollSphere::GetBoundingSphere,
-		"GetLocalBoundingSphere", &CCollSphere::GetLocalBoundingSphere
-
-		// 2. SetLocalBoundingSphere (Wrapper: table -> _float3)
-		//"SetLocalBoundingSphere", [](CCollSphere* pSphere, sol::table center, float radius) {
-		//	_float3 vCenter{ center[1], center[2], center[3] };
-		//	pSphere->SetLocalBoundingSphere(vCenter, radius);
-		//}
-	);
-
-
-
-	m_Lua.new_usertype<CComponent>("Component",
-		sol::no_constructor, // 직접 생성이 불가능하므로 명시
-		sol::base_classes, sol::bases<CPrototype, CEngineBase>(), // CPrototype을 상속
-
-		// GameObject를 가져오는 함수 (루아에서는 GetOwner로 부르는 게 더 직관적일 수 있음)
-		"GetGameObject", &CComponent::GetGameObject
-	);
-
-	m_Lua.new_usertype<CComLuaScript>( "ComLuaScript",
-		sol::no_constructor,
-		sol::meta_function::to_string,
-		[](CComLuaScript&)
-		{
-			return std::string("ComLuaScript");
-		}
-	);
-
-	m_Lua.new_usertype<CGameObject>("GameObject",
-		sol::no_constructor,
-		sol::base_classes, sol::bases<CEngineBase>(), // CEngineBase 등록 후 상속 명시
-
-		// 컴포넌트 접근 (문자열 태그 기반)
-		"GetComponent", [this](CGameObject& self, const std::string& tag) -> sol::object
-		{
-			// 1. 일단 부모 타입(CComponent)으로 가져옴
-			CComponent* pCom = self.GetComponent<CComponent>(StringID(tag.c_str()));
-
-			if (pCom == nullptr) return sol::nil;
-
-			// 2. 기존에 만들어둔 m_TypeRegistry에서 타입 정보를 찾음
-			// pCom->GetType()은 CEngineBase의 가상함수이므로 정확한 자식 타입 ID를 반환함
-			auto it = m_TypeRegistry.find(StringID{ pCom->GetType() });
-
-			if (it != m_TypeRegistry.end()) {
-				// 3. 등록된 타입(예: CComTransform)이 있다면 캐스팅하여 반환
-				return it->second(pCom);
-			}
-
-			// 4. 등록되지 않았다면 기본 컴포넌트 타입으로 반환
-			return sol::make_object(m_Lua, pCom);
-		},
-
-		// Transform은 너무 자주 쓰이므로 따로 빼는 것이 좋음
-		"GetTransform", [](CGameObject& self) -> CComTransform& {
-			return self.GetTransform();
-		},
-
-		// 오브젝트 관리
-		"GetHandle", &CGameObject::GetHandle,
-		"DestroyCascade", &CGameObject::SetPendingDestroyCascade,
-		"GetTag", &CGameObject::GetObjectTag,
-		"SetTag", &CGameObject::SetObjectTag
-	);
-
-	m_Lua.new_usertype<CCameraObject>("CameraObject",
-		// 1. 부모 클래스(CGameObject) 상속 명시!
-		// 이렇게 해야 카메라 객체에서 GetComponent 등을 쓸 수 있습니다.
-		sol::no_constructor,
-		sol::base_classes, sol::bases<CGameObject, CEngineBase>(),
-
-		// 2. 행렬 반환 함수 (루아 쪽에 _matrix 타입이 바인딩되어 있어야 합니다)
-		"GetView", &CCameraObject::GetView,
-		"GetProj", &CCameraObject::GetProj,
-
-		// 3. GetRay: std::pair를 루아의 2개 반환값으로 자동 처리!
-		"GetRay", &CCameraObject::GetRay,
-
-		// 4. 행렬 업데이트 함수
-		"UpdateViewMatrix", &CCameraObject::UpdateViewMatrix,
-		"UpdateProjMatrix", &CCameraObject::UpdateProjMatrix
-	);
-
-	m_Lua.new_usertype<CFlyCamera>("FlyCamera",
-		// 생성자가 protected이므로 차단 (엔진 내부에서 Create로 생성하므로)
-		sol::no_constructor,
-
-		// [핵심] 부모 클래스가 CCameraObject와 CGameObject임을 명시!
-		// 이렇게 하면 GetRay()나 GetComponent()를 루아에서 그대로 쓸 수 있습니다.
-		sol::base_classes, sol::bases<CCameraObject, CGameObject, CEngineBase>(),
-
-		// CFlyCamera만의 고유 함수 바인딩 (필요한 경우에만 엽니다)
-		// 주의: CCollFrustum이 루아에 바인딩되어 있지 않다면 주석 처리하는 것이 좋습니다.
-		"GetFrustumCollider", &CFlyCamera::GetFrustumCollider
-	);
-
-
-	m_Lua.new_usertype<CUICamera>("UICamera",
-		// 생성자 차단 (엔진에서 Create로 생성)
-		sol::no_constructor,
-
-		// [핵심] CCameraObject와 CGameObject를 상속받았음을 명시
-		sol::base_classes, sol::bases<CCameraObject, CGameObject, CEngineBase>()
-	);
-
-	m_Lua.new_usertype<CComTransform>("Transform",
-		sol::no_constructor,
-		sol::base_classes, sol::bases<CComponent, CEngineBase>(),
-		sol::meta_function::to_string,
-		[](CComTransform&)
-		{
-			return std::string("Transform");
-		},
-
-		// Position
-		"GetPosition", &CComTransform::GetPosition,
-		"SetPosition", sol::overload(
-			static_cast<void(CComTransform::*)(const _float3&)>(&CComTransform::SetPosition)
-		),
-		"AddPosition",
-		[](CComTransform& t, const _float3& v)
-		{
-			//OutputDebugStringA("Lua -> AddPosition\n");
-			t.AddPosition(v);
-		},
-
-		// Rotation
-		"GetRotationEuler", &CComTransform::GetRotationEuler,
-		"SetRotationEuler", &CComTransform::SetRotationEuler,
-		"AddRotationEuler", &CComTransform::AddRotationEuler,
-
-		// Scale
-		"GetScale", &CComTransform::GetScale,
-		"SetScale", sol::overload(
-			static_cast<void(CComTransform::*)(const _float3&)>(&CComTransform::SetScale)
-		),
-
-		// Movement
-		"GoStraight", &CComTransform::GoStraight,
-		"GoBackward", &CComTransform::GoBackward,
-		"GoLeft", &CComTransform::GoLeft,
-		"GoRight", &CComTransform::GoRight,
-		"GoUp", &CComTransform::GoUp,
-		"GoDown", &CComTransform::GoDown,
-
-		"GetWorldMatrix", [](const CComTransform& t) {
-			return *t.GetWorldMatrix();
-		},
-		"GetCombinedWorldMatrix", [](const CComTransform& t) {
-			return *t.GetCombinedWorldMatrix();
-		},
-		"GetLoadedWorldMatrix", [](const CComTransform& t) {
-			_float4x4 mat;
-			XMStoreFloat4x4(&mat, t.GetLoadedWorldMatrix());
-			return mat;
-		},
-		"GetLoadedCombinedWorldMatrix", [](const CComTransform& t) {
-			_float4x4 mat;
-			XMStoreFloat4x4(&mat, t.GetLoadedCombinedWorldMatrix());
-			return mat;
-		},
-
-		// Etc
-		"LookAt", [](CComTransform& t, const _float3& pos)
-		{
-			t.LookAt(XMLoadFloat3(&pos));
-		},
-		"Chase", [](CComTransform& t, const _float3& pos, float dist, float limit)
-		{
-			t.Chase(XMLoadFloat3(&pos), dist, limit);
-		}
-	);
-
-	m_Lua.new_usertype<CComCollider>("ComCollider",
-		sol::no_constructor,
-		sol::base_classes, sol::bases<CComponent, CEngineBase>(),
-
-		// 1. 실제 충돌 연산용 Collider 객체 반환
-		"Get", & CComCollider::Get,
-
-		// 2. 변환 행렬 적용
-		"Transform", & CComCollider::Transform
-
-		
-	);
-
-
+#pragma region Component
 	{
-		sol::table inputTable = m_Lua.create_named_table("Input");
+		m_Lua.new_usertype<CComponent>("Component",
+			sol::no_constructor, // 직접 생성이 불가능하므로 명시
+			sol::base_classes, sol::bases<CPrototype, CEngineBase>(), // CPrototype을 상속
 
-		// 2. 테이블 안에 함수들을 등록합니다.
-		// 세 번째 인자로 싱글톤 인스턴스(&CGameInstance::Get())를 넘겨주면, 
-		// 루아에서 호출할 때 C++이 알아서 이 인스턴스를 self로 사용합니다.
-		inputTable.set_function("KeyPressing", &CGameInstance::KeyPressing, &CGameInstance::Get());
-		inputTable.set_function("KeyDown", &CGameInstance::KeyDown, &CGameInstance::Get());
-		inputTable.set_function("KeyUp", &CGameInstance::KeyUp, &CGameInstance::Get());
-
-		inputTable.set_function("MouseMove", &CGameInstance::MouseMove, &CGameInstance::Get());
-		inputTable.set_function("MousePressing", &CGameInstance::MousePressing, &CGameInstance::Get());
-		inputTable.set_function("MouseDown", &CGameInstance::MouseDown, &CGameInstance::Get());
-		inputTable.set_function("MouseUp", &CGameInstance::MouseUp, &CGameInstance::Get());
+			// GameObject를 가져오는 함수 (루아에서는 GetOwner로 부르는 게 더 직관적일 수 있음)
+			"GetGameObject", &CComponent::GetGameObject
+		);
 	}
+#pragma endregion
 
+#pragma region ComLuaScript
 	{
-		sol::table levelTable = m_Lua.create_named_table("Level");
-
-		// 2. ChangeLevel 함수 바인딩
-		levelTable.set_function("ChangeLevel", [](const std::string& levelID) -> HRESULT {
-
-			return CGameInstance::Get().ChangeLevel(levelID);
-
-			});
-	}
-
-	{
-		sol::table cameraTable = m_Lua.create_named_table("Camera");
-
-		// 2. [스마트 캐스팅 헬퍼 함수] CCameraObject를 받아서 알맞은 자식 타입으로 변환 후 반환
-		auto smartCastCamera = [this](CCameraObject* pCam) -> sol::object
+		m_Lua.new_usertype<CComLuaScript>("ComLuaScript",
+			sol::no_constructor,
+			sol::meta_function::to_string,
+			[](CComLuaScript&)
 			{
-				if (pCam == nullptr) return sol::nil;
+				return std::string("ComLuaScript");
+			}
+		);
+	}
+#pragma endregion
 
-				// 1단계: 정확한 타입 ID로 찾기 (가장 빠름)
-				auto it = m_TypeRegistry.find(StringID{ pCam->GetType() });
+#pragma region ComCollider
+	{
+		m_Lua.new_usertype<CComCollider>("ComCollider",
+			sol::no_constructor,
+			sol::base_classes, sol::bases<CComponent, CEngineBase>(),
+
+			// 1. 실제 충돌 연산용 Collider 객체 반환
+			"Get", &CComCollider::Get,
+
+			// 2. 변환 행렬 적용
+			"Transform", &CComCollider::Transform
+
+
+		);
+	}
+#pragma endregion
+
+#pragma region ComTransform
+	{
+		m_Lua.new_usertype<CComTransform>("Transform",
+			sol::no_constructor,
+			sol::base_classes, sol::bases<CComponent, CEngineBase>(),
+			sol::meta_function::to_string,
+			[](CComTransform&)
+			{
+				return std::string("Transform");
+			},
+
+			// Position
+			"GetPosition", &CComTransform::GetPosition,
+			"SetPosition", sol::overload(
+				static_cast<void(CComTransform::*)(const _float3&)>(&CComTransform::SetPosition)
+			),
+			"AddPosition",
+			[](CComTransform& t, const _float3& v)
+			{
+				//OutputDebugStringA("Lua -> AddPosition\n");
+				t.AddPosition(v);
+			},
+
+			// Rotation
+			"GetRotationEuler", &CComTransform::GetRotationEuler,
+			"SetRotationEuler", &CComTransform::SetRotationEuler,
+			"AddRotationEuler", &CComTransform::AddRotationEuler,
+
+			// Scale
+			"GetScale", &CComTransform::GetScale,
+			"SetScale", sol::overload(
+				static_cast<void(CComTransform::*)(const _float3&)>(&CComTransform::SetScale)
+			),
+
+			// Movement
+			"GoStraight", &CComTransform::GoStraight,
+			"GoBackward", &CComTransform::GoBackward,
+			"GoLeft", &CComTransform::GoLeft,
+			"GoRight", &CComTransform::GoRight,
+			"GoUp", &CComTransform::GoUp,
+			"GoDown", &CComTransform::GoDown,
+
+			"GetWorldMatrix", [](const CComTransform& t) {
+				return *t.GetWorldMatrix();
+			},
+			"GetCombinedWorldMatrix", [](const CComTransform& t) {
+				return *t.GetCombinedWorldMatrix();
+			},
+			"GetLoadedWorldMatrix", [](const CComTransform& t) {
+				_float4x4 mat;
+				XMStoreFloat4x4(&mat, t.GetLoadedWorldMatrix());
+				return mat;
+			},
+			"GetLoadedCombinedWorldMatrix", [](const CComTransform& t) {
+				_float4x4 mat;
+				XMStoreFloat4x4(&mat, t.GetLoadedCombinedWorldMatrix());
+				return mat;
+			},
+
+			// Etc
+			"LookAt", [](CComTransform& t, const _float3& pos)
+			{
+				t.LookAt(XMLoadFloat3(&pos));
+			},
+			"Chase", [](CComTransform& t, const _float3& pos, float dist, float limit)
+			{
+				t.Chase(XMLoadFloat3(&pos), dist, limit);
+			}
+		);
+	}
+#pragma endregion	
+
+#pragma endregion
+
+#pragma region GameObjects
+
+#pragma region GameObject
+	{
+		m_Lua.new_usertype<CGameObject>("GameObject",
+			sol::no_constructor,
+			sol::base_classes, sol::bases<CEngineBase>(), // CEngineBase 등록 후 상속 명시
+
+			// 컴포넌트 접근 (문자열 태그 기반)
+			"GetComponent", [this](CGameObject& self, const std::string& tag) -> sol::object
+			{
+				// 1. 일단 부모 타입(CComponent)으로 가져옴
+				CComponent* pCom = self.GetComponent<CComponent>(StringID(tag.c_str()));
+
+				if (pCom == nullptr) return sol::nil;
+
+				// 2. 기존에 만들어둔 m_TypeRegistry에서 타입 정보를 찾음
+				// pCom->GetType()은 CEngineBase의 가상함수이므로 정확한 자식 타입 ID를 반환함
+				auto it = m_TypeRegistry.find(StringID{ pCom->GetType() });
+
 				if (it != m_TypeRegistry.end()) {
-					return it->second(pCam);
+					// 3. 등록된 타입(예: CComTransform)이 있다면 캐스팅하여 반환
+					return it->second(pCom);
 				}
 
-				// 3단계: 못 찾았다면 기본 CCameraObject로 반환
-				return sol::make_object(m_Lua, pCam);
-			};
-
-
-		// 3. 함수 바인딩 (헬퍼 함수 활용)
-		cameraTable.set_function("GetActiveCamera", sol::overload(
-			[this, smartCastCamera]() -> sol::object {
-				CCameraObject* pCam = CGameInstance::Get().GetActiveCamera();
-				return smartCastCamera(pCam);
+				// 4. 등록되지 않았다면 기본 컴포넌트 타입으로 반환
+				return sol::make_object(m_Lua, pCom);
 			},
-			[this, smartCastCamera](const std::string& cameraID) -> sol::object {
-				CCameraObject* pCam = CGameInstance::Get().GetActiveCamera(StringID(cameraID.c_str()));
-				return smartCastCamera(pCam);
-			}
-		));
 
-		cameraTable.set_function("GetCamera",
-			[this, smartCastCamera](const std::string& cameraID) -> sol::object {
-				CCameraObject* pCam = CGameInstance::Get().GetCamera(StringID(cameraID.c_str()));
-				return smartCastCamera(pCam);
-			}
-		);
-
-		// ※ SetActiveCamera는 HRESULT(성공/실패)를 반환하므로 캐스팅 없이 그대로 둡니다.
-		cameraTable.set_function("SetActiveCamera",
-			[](const std::string& cameraID) {
-				return CGameInstance::Get().SetActiveCamera(StringID(cameraID.c_str()));
-			}
-		);
-	}
-
-
-
-	{
-		sol::table collTable = m_Lua.create_named_table("Collision");
-
-		// 1. AddColliderGroup
-		// 루아: Collision.AddColliderGroup("Player", pCollider)
-		collTable.set_function("AddColliderGroup",
-			[](const std::string& groupTag, const CCollider* pCollider) {
-				CGameInstance::Get().AddColliderGroup(StringID(groupTag.c_str()), pCollider);
-			}
-		);
-
-		// 2. GetColliderGroup (가장 자주 쓸 함수!)
-		// 루아: local colls = Collision.GetColliderGroup("Monster")
-		collTable.set_function("GetColliderGroup",
-			[this](const std::string& groupTag) -> sol::object {
-				auto pGroup = CGameInstance::Get().GetColliderGroup(StringID(groupTag.c_str()));
-
-				if (pGroup == nullptr)
-					return sol::nil;
-
-				// sol::as_table을 사용하여 std::vector를 루아 배열로 자동 변환
-				return sol::make_object(m_Lua, sol::as_table(*pGroup));
-			}
-		);
-
-		// 3. IntersectColl
-		// 루아: if Collision.IntersectColl(col1, col2) then ...
-		collTable.set_function("IntersectColl",
-			[](const CCollider* pColl1, const CCollider* pColl2) -> bool {
-				return CGameInstance::Get().IntersectColl(pColl1, pColl2);
-			}
-		);
-
-		// 4. GetColliders (전체 맵 반환)
-		// 루아: local allGroups = Collision.GetColliders()
-		collTable.set_function("GetColliders",
-			[this]() -> sol::object {
-				auto pMap = CGameInstance::Get().GetColliders();
-				if (pMap == nullptr) return sol::nil;
-
-				// map을 table로 변환해서 반환 (전체 맵이라 다소 무거울 수 있음)
-				return sol::make_object(m_Lua, sol::as_table(*pMap));
-			}
-		);
-	}
-
-
-	{
-		sol::table mathTable = m_Lua.create_named_table("Rand");
-
-		mathTable.set_function("Randf", [](float min, float max) {
-			return Engine::Randf(min, max);
-			});
-
-		mathTable.set_function("RandInt", [](int min, int max) {
-			return Engine::RandInt(min, max);
-			});
-	}
-	return S_OK;
-}
-
-HRESULT CLuaManager::Initialize_EngineGameObjectManagerBinding()
-{
-	// "Object"라는 네임스페이스(테이블) 생성
-	sol::table objApi = m_Lua.create_named_table("Object");
-
-	// 1. 핸들로 오브젝트 가져오기 (가장 기본)
-	objApi.set_function("GetByHandle",
-		[this](const CHandle& handle) -> sol::object {
-			CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
-			if (pObj == nullptr) return sol::nil;
-
-			// 맵에서 찾아서 캐스팅 함수가 있는지 확인
-			auto it = m_TypeRegistry.find(StringID{ pObj->GetType() });
-			if (it != m_TypeRegistry.end()) {
-				// 등록된 타입이라면 전용 타입으로 캐스팅하여 반환
-				return it->second(pObj);
-			}
-
-			// 등록되지 않았다면 기본 타입으로 반환
-			return sol::make_object(m_Lua, pObj);
-		}
-	);
-
-	objApi.set_function("GetLayer",
-		[this](const std::string& layerName) -> sol::table
-		{
-			// 1. 루아로 반환할 빈 테이블(배열) 생성
-			sol::table resultTable = m_Lua.create_table();
-
-			// 2. 레이어 내부 핸들 리스트 가져오기
-			// (참고: 내부 CGameObjectManager의 GetLayer가 string_view를 받는다고 가정하고 직접 호출합니다.
-			// 만약 CGameInstance를 거쳐야 한다면 string 기반의 GetGameObjectLayerByString 같은 함수를 하나 뚫어주세요!)
-			const std::vector<CHandle>* pHandles = CGameInstance::Get().GetGameObjectLayer(layerName);
-
-			// 레이어가 없거나 비어있으면 빈 테이블 반환
-			if (pHandles == nullptr || pHandles->empty())
-				return resultTable;
-
-			// 3. 핸들 순회 및 스마트 캐스팅
-			int index = 1; // 루아 배열은 인덱스가 1부터 시작!
-			for (const CHandle& handle : *pHandles)
-			{
-				CGameObject* pObj = CGameInstance::Get().GetGameObjectByHandle(handle);
-				if (pObj)
-				{
-					// 만들어둔 타입 레지스트리를 활용해 진짜 타입으로 캐스팅!
-					auto it = m_TypeRegistry.find(StringID{ pObj->GetType() });
-					if (it != m_TypeRegistry.end()) {
-						resultTable[index++] = it->second(pObj);
-					}
-					else {
-						resultTable[index++] = sol::make_object(m_Lua, pObj);
-					}
-				}
-			}
-
-			// 4. 완성된 테이블(객체 배열) 반환
-			return resultTable;
-		}
-	);
-
-	// 2. 레이어 이름으로 첫 번째 오브젝트 가져오기 (예: 플레이어 찾기)
-	objApi.set_function("GetFirst",
-		[this](const std::string& layerName) -> sol::object
-		{
-			// 1. CGameInstance에서 오브젝트 획득
-			CGameObject* pObj = CGameInstance::Get().GetFirstGameObjectByLayer<CGameObject>(layerName);
-
-			if (pObj == nullptr) return sol::nil;
-
-			// 2. 이미 구축해둔 m_TypeRegistry에서 실제 타입을 찾음
-			auto it = m_TypeRegistry.find(StringID{ pObj->GetType() });
-
-			if (it != m_TypeRegistry.end()) {
-				// 3. 등록된 타입(예: CPlayer)이 있다면 캐스팅하여 반환
-				return it->second(pObj);
-			}
-
-			// 4. 등록되지 않았다면 기본 GameObject 타입으로 반환
-			return sol::make_object(m_Lua, pObj);
-		}
-	);
-
-	// 3. 게임 오브젝트 생성 (AddGameObjectToLayer)
-	objApi.set_function("Add",
-		[this](const std::string& levelIndex, const std::string& prototypeTag, const std::string& layerName, sol::optional<sol::object> argObj) -> sol::object
-		{
-			void* pArg = nullptr;
-
-			// 1. 루아에서 넘겨준 인자가 있고, 그것이 C++ 바인딩된 객체(userdata)라면
-			if (argObj.has_value() && argObj.value().is<sol::userdata>())
-			{
-				// userdata에서 포인터를 추출하여 void*로 형변환
-				pArg = const_cast<void*>(argObj.value().as<sol::userdata>().pointer());
-			}
-
-			// 2. 추출한 pArg를 넣어서 스폰 API 호출
-			auto result = CGameInstance::Get().AddGameObjectToLayer(
-				StringID(levelIndex),
-				StringID(prototypeTag),
-				layerName,
-				pArg
-			);
-
-			// 3. optional<CHandle> 처리
-			if (result.has_value()) {
-				return sol::make_object(m_Lua, result.value());
-			}
-			return sol::nil;
-		}
-	);
-
-	// 4. 오브젝트 전체 초기화 (씬 전환 등에서 사용)
-	//objApi.set_function("AllReset",
-	//	[]()
-	//	{
-	//		CGameInstance::Get()->GameObjectAllReset(); //[cite: 1]
-	//	}
-	//);
-
-	return S_OK;
-}
-
-HRESULT CLuaManager::Initialize_MathBinding()
-{
-
-	m_Lua.new_usertype<_float2>(
-		"Vector2",
-
-		sol::constructors<_float2(), _float2(float, float)>(),
-
-		"x", &DirectX::XMFLOAT2::x,
-		"y", &DirectX::XMFLOAT2::y
-	);
-	{
-
-		sol::object obj = m_Lua["Vector3"];
-		std::string typeName = sol::type_name(m_Lua.lua_state(), obj.get_type());
-		OutputDebugStringA(("Vector3 is now: " + typeName + "\n").c_str());
-	}
-	m_Lua.new_usertype<_float3>(
-		"Vector3",
-		sol::constructors<_float3(), _float3(float, float, float)>(),
-		"x", &_float3::x,
-		"y", &_float3::y,
-		"z", &_float3::z,
-
-		sol::meta_function::to_string, [](const _float3& v) {
-			return "[ " + std::to_string(v.x) + ", "
-				+ std::to_string(v.y) + ", "
-				+ std::to_string(v.z) + " ]";
-		},
-
-		// SIMD 연산자
-		sol::meta_function::addition, [](const _float3& a, const _float3& b) {
-			_float3 res; XMStoreFloat3(&res, XMVectorAdd(XMLoadFloat3(&a), XMLoadFloat3(&b))); return res;
-		},
-		sol::meta_function::subtraction, [](const _float3& a, const _float3& b) {
-			_float3 res; XMStoreFloat3(&res, XMVectorSubtract(XMLoadFloat3(&a), XMLoadFloat3(&b))); return res;
-		},
-		sol::meta_function::multiplication, sol::overload(
-			[](const _float3& v, float s) { // 벡터 * 스칼라
-				_float3 res; XMStoreFloat3(&res, XMVectorScale(XMLoadFloat3(&v), s)); return res;
+			// Transform은 너무 자주 쓰이므로 따로 빼는 것이 좋음
+			"GetTransform", [](CGameObject& self) -> CComTransform& {
+				return self.GetTransform();
 			},
-			[](const _float3& a, const _float3& b) { // 벡터 * 벡터 (내적 아님, 요소별 곱)
-				_float3 res; XMStoreFloat3(&res, XMVectorMultiply(XMLoadFloat3(&a), XMLoadFloat3(&b))); return res;
-			}
-		),
-		"Length", [](const _float3& v) { return XMVectorGetX(XMVector3Length(XMLoadFloat3(&v))); },
-		"Normalize", [](const _float3& v) { _float3 res; XMStoreFloat3(&res, XMVector3Normalize(XMLoadFloat3(&v))); return res; }
-	);
 
-	sol::object obj = m_Lua["Vector3"];
-	std::string typeName = sol::type_name(m_Lua.lua_state(), obj.get_type());
-	OutputDebugStringA(("Vector3 is now: " + typeName + "\n").c_str());
+			// 오브젝트 관리
+			"GetHandle", &CGameObject::GetHandle,
+			"DestroyCascade", &CGameObject::SetPendingDestroyCascade,
+			"GetTag", &CGameObject::GetObjectTag,
+			"SetTag", &CGameObject::SetObjectTag
+		);
+	}
+#pragma endregion
 
+#pragma region CameraObject
+	{
+		m_Lua.new_usertype<CCameraObject>("CameraObject",
+			// 1. 부모 클래스(CGameObject) 상속 명시!
+			// 이렇게 해야 카메라 객체에서 GetComponent 등을 쓸 수 있습니다.
+			sol::no_constructor,
+			sol::base_classes, sol::bases<CGameObject, CEngineBase>(),
 
-	m_Lua.new_usertype<_float4>(
-		"Vector4",
-		sol::constructors<_float4(), _float4(float, float, float, float)>(),
-		"x", &_float4::x,
-		"y", &_float4::y,
-		"z", &_float4::z,
-		"w", &_float4::w,
+			// 2. 행렬 반환 함수 (루아 쪽에 _matrix 타입이 바인딩되어 있어야 합니다)
+			"GetView", &CCameraObject::GetView,
+			"GetProj", &CCameraObject::GetProj,
 
-		sol::meta_function::addition, [](const _float4& a, const _float4& b) {
-			_float4 res; XMStoreFloat4(&res, XMVectorAdd(XMLoadFloat4(&a), XMLoadFloat4(&b))); return res;
-		},
-		sol::meta_function::subtraction, [](const _float4& a, const _float4& b) {
-			_float4 res; XMStoreFloat4(&res, XMVectorSubtract(XMLoadFloat4(&a), XMLoadFloat4(&b))); return res;
-		},
-		sol::meta_function::multiplication, [](const _float4& v, float s) {
-			_float4 res; XMStoreFloat4(&res, XMVectorScale(XMLoadFloat4(&v), s)); return res;
-		}
-	);
+			// 3. GetRay: std::pair를 루아의 2개 반환값으로 자동 처리!
+			"GetRay", &CCameraObject::GetRay,
 
-	m_Lua.new_usertype<_float4x4>(
-		"Matrix",
-		sol::constructors<_float4x4()>(),
+			// 4. 행렬 업데이트 함수
+			"UpdateViewMatrix", &CCameraObject::UpdateViewMatrix,
+			"UpdateProjMatrix", &CCameraObject::UpdateProjMatrix
+		);
+	}
+#pragma endregion
 
-		// 행렬 곱셈 (Matrix * Matrix)
-		sol::meta_function::multiplication, [](const _float4x4& a, const _float4x4& b) {
-			_float4x4 res;
-			XMStoreFloat4x4(&res, XMMatrixMultiply(XMLoadFloat4x4(&a), XMLoadFloat4x4(&b)));
-			return res;
-		},
+#pragma region FlyCamera
+	{
+		m_Lua.new_usertype<CFlyCamera>("FlyCamera",
+			// 생성자가 protected이므로 차단 (엔진 내부에서 Create로 생성하므로)
+			sol::no_constructor,
 
-		"Get", [](const _float4x4& mat, int row, int col) { return mat.m[row][col]; },
-		"Set", [](_float4x4& mat, int row, int col, float value) { mat.m[row][col] = value; },
-		"Transpose", [](const _float4x4& mat) {
-			_float4x4 res;
-			XMStoreFloat4x4(&res, XMMatrixTranspose(XMLoadFloat4x4(&mat)));
-			return res;
-		},
-		"Inverse", [](const _float4x4& mat) {
-			_float4x4 res;
-			XMStoreFloat4x4(&res, XMMatrixInverse(nullptr, XMLoadFloat4x4(&mat)));
-			return res;
-		}
-	);
+			// [핵심] 부모 클래스가 CCameraObject와 CGameObject임을 명시!
+			// 이렇게 하면 GetRay()나 GetComponent()를 루아에서 그대로 쓸 수 있습니다.
+			sol::base_classes, sol::bases<CCameraObject, CGameObject, CEngineBase>(),
+
+			// CFlyCamera만의 고유 함수 바인딩 (필요한 경우에만 엽니다)
+			// 주의: CCollFrustum이 루아에 바인딩되어 있지 않다면 주석 처리하는 것이 좋습니다.
+			"GetFrustumCollider", &CFlyCamera::GetFrustumCollider
+		);
+	}
+#pragma endregion
+
+#pragma region UICamera
+	{
+		m_Lua.new_usertype<CUICamera>("UICamera",
+			// 생성자 차단 (엔진에서 Create로 생성)
+			sol::no_constructor,
+
+			// [핵심] CCameraObject와 CGameObject를 상속받았음을 명시
+			sol::base_classes, sol::bases<CCameraObject, CGameObject, CEngineBase>()
+		);
+	}
+#pragma endregion
+
+#pragma endregion
+
 	return S_OK;
 }
 
-HRESULT CLuaManager::Initialize_TableBinding()
+HRESULT CLuaManager::Initialize_DefineBinding()
 {
 
+#pragma region DIK_KEY
 	{
 #define LUA_KEY(luaName, dikName) key[#luaName] = DIK_##dikName
 
@@ -913,8 +1043,9 @@ HRESULT CLuaManager::Initialize_TableBinding()
 
 #undef LUA_KEY
 	}
+#pragma endregion
 
-
+#pragma region MOUSESTATE
 	// Mouse
 	{
 		{
@@ -933,49 +1064,38 @@ HRESULT CLuaManager::Initialize_TableBinding()
 			mouseMove["Z"] = MOUSEMOVESTATE::Z;
 		}
 	}
-
+#pragma endregion
+	
 	return S_OK;
 }
 
-HRESULT CLuaManager::Initialize_DebugDrawBinding()
+sol::protected_function CLuaManager::CacheFunction(const std::string& funcName)
 {
-	// 엔진의 DbgLineRender 인스턴스를 미리 캡처
-	auto pDbg = CGameInstance::Get().GetDbgLineRender();
-	if (!pDbg) return E_FAIL;
+	sol::object obj = m_Lua.globals()[funcName];
 
-	sol::table dbg = m_Lua.create_named_table("DbgLine");
+	if (obj.valid() && obj.get_type() == sol::type::function)
+		return obj.as<sol::protected_function>();
 
-	// 1. 기본 설정
-	dbg.set_function("SetColor", [pDbg](const _float4& col) { pDbg->SetColor(col); });
-	dbg.set_function("GetColor", [pDbg]() { return pDbg->GetColor(); });
+	return sol::protected_function(); // 유효하지 않은 빈 객체 반환
+}
 
-	// 2. 라인 계열
-	dbg.set_function("AddLine", sol::overload(
-		[pDbg](const _float3& p0, const _float3& p1) { pDbg->AddLine(p0, p1); },
-		[pDbg](const _float3& p0, const _float3& p1, const _float4& col) { pDbg->AddLine(p0, p1, col); }
-	));
+sol::protected_function CLuaManager::CacheFunction(const sol::environment& env, const std::string& funcName)
+{
+	// 1. Env에서 먼저 찾기
+	sol::object obj = env[funcName];
 
-	// 3. 도형 계열 (world 매트릭스를 Matrix 타입으로 직접 수신)
-	dbg.set_function("AddBox", [pDbg](const _float3& ext, const _float4x4& world) { pDbg->AddBox(ext, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddSphere", [pDbg](float r, const _float4x4& world) { pDbg->AddSphere(r, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddCapsule", [pDbg](float r, float h, const _float4x4& world) { pDbg->AddCapsule(r, h, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddCylinder", [pDbg](float r, float h, const _float4x4& world) { pDbg->AddCylinder(r, h, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddCone", [pDbg](float r, float h, const _float4x4& world) { pDbg->AddCone(r, h, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddFrustum", [pDbg](float fov, float asp, float n, float f, const _float4x4& world) { pDbg->AddFrustum(fov, asp, n, f, XMLoadFloat4x4(&world)); });
+	// 2. Env에 없거나 함수가 아니면, 전역(Globals) 공간에서 찾기 (선택적 폴백)
+	if (!obj.valid() || obj.get_type() != sol::type::function)
+	{
+		sol::state_view lua(env.lua_state());
+		obj = lua.globals()[funcName];
+	}
 
-	// 4. 라인/방향 계열
-	dbg.set_function("AddRay", [pDbg](const _float3& o, const _float3& d, float l) { pDbg->AddRay(o, d, l); });
-	dbg.set_function("AddArrow", [pDbg](const _float3& o, const _float3& d, float l, float hl, float ha) { pDbg->AddArrow(o, d, l, hl, ha); });
+	// 3. 최종 반환
+	if (obj.valid() && obj.get_type() == sol::type::function)
+		return obj.as<sol::protected_function>();
 
-	// 5. 부가 기능
-	dbg.set_function("AddGrid", [pDbg](uint32_t cnt, float size, const _float4x4& world) { pDbg->AddGrid(cnt, size, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddQuad", [pDbg](float w, float h, const _float4x4& world) { pDbg->AddQuad(w, h, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddTriangle", [pDbg](const _float3& p0, const _float3& p1, const _float3& p2) { pDbg->AddTriangle(p0, p1, p2); });
-	dbg.set_function("AddAxis", [pDbg](float len, const _float4x4& world) { pDbg->AddAxis(len, XMLoadFloat4x4(&world)); });
-	dbg.set_function("AddCircle", [pDbg](float r, const _float4x4& world, uint32_t s) { pDbg->AddCircle(r, XMLoadFloat4x4(&world), s); });
-	dbg.set_function("AddCross", [pDbg](const _float3& pos, float s) { pDbg->AddCross(pos, s); });
-
-	return S_OK;
+	return sol::protected_function(); // 유효하지 않은 빈 객체 반환
 }
 
 bool CLuaManager::HasFunction(sol::environment& env, std::string_view function) const
@@ -986,47 +1106,84 @@ bool CLuaManager::HasFunction(sol::environment& env, std::string_view function) 
 		obj.get_type() == sol::type::function;
 }
 
-HRESULT CLuaManager::Execute(const std::string& script, const sol::environment& env, const std::string& path)
+HRESULT CLuaManager::Execute(const std::string& script, const sol::environment& env, const std::string& chunkName)
 {
 	try
 	{
-		// 1. 상대 경로("./LuaFiles/Test.lua")를 절대 경로("C:\...\LuaFiles\Test.lua")로 변환
-		std::filesystem::path absolutePath = std::filesystem::absolute(path);
+		std::string formattedChunkName = chunkName;
 
-		// 2. 윈도우 경로 구분자(\)를 슬래시(/)로 통일하고 앞에 '@' 붙이기
-		std::string chunkName = "@" + absolutePath.generic_string();
+		// 파일 경로 형태(.lua)로 들어왔다면 절대 경로 처리
+		if (chunkName.find(".lua") != std::string::npos)
+		{
+			std::filesystem::path absolutePath = std::filesystem::absolute(chunkName);
+			formattedChunkName = "@" + absolutePath.generic_string();
+		}
+		else if (!chunkName.empty() && chunkName[0] != '@') // 단순 문자열이면 @ 추가
+		{
+			formattedChunkName = "@" + chunkName;
+		}
 
-		// 2. sol::script_pass_on_error 를 추가하여 오버로딩 모호성을 해결합니다.
 		auto result = m_Lua.safe_script(
 			script,
 			env,
-			sol::script_pass_on_error, // 에러 발생 시 프로그램 종료 없이 result로 반환하라는 정책
-			chunkName
+			sol::script_pass_on_error,
+			formattedChunkName
 		);
 
-		// 정상적으로 실행되었지만 루아 내부 스크립트 에러인 경우
 		if (!result.valid())
 		{
 			sol::error err = result;
-			OutputDebugStringA(("[Lua Result Error] " + std::string(err.what()) + "\n").c_str());
+			OutputDebugStringA(("[Lua Env Execute Error] " + std::string(err.what()) + "\n").c_str());
 			return E_FAIL;
 		}
 	}
-	catch (const sol::error& e)
-	{
-		OutputDebugStringA(("[Lua Exception] " + std::string(e.what()) + "\n").c_str());
-		return E_FAIL;
-	}
 	catch (const std::exception& e)
 	{
-		OutputDebugStringA(("[C++ Exception] " + std::string(e.what()) + "\n").c_str());
+		OutputDebugStringA(("[C++ Exception in Lua Env] " + std::string(e.what()) + "\n").c_str());
 		return E_FAIL;
 	}
 
-	//int value = result.get<int>();
 	return S_OK;
 }
 
+HRESULT CLuaManager::Execute(const std::string& script, const std::string& chunkName)
+{
+	try
+	{
+		std::string formattedChunkName = chunkName;
+
+		if (chunkName.find(".lua") != std::string::npos)
+		{
+			std::filesystem::path absolutePath = std::filesystem::absolute(chunkName);
+			formattedChunkName = "@" + absolutePath.generic_string();
+		}
+		else if (!chunkName.empty() && chunkName[0] != '@')
+		{
+			formattedChunkName = "@" + chunkName;
+		}
+
+		// env 매개변수 없이 m_Lua(글로벌 상태)에 바로 실행
+		auto result = m_Lua.safe_script(
+			script,
+			sol::script_pass_on_error,
+			formattedChunkName
+		);
+
+		if (!result.valid())
+		{
+			sol::error err = result;
+			OutputDebugStringA(("[Lua State Execute Error] " + std::string(err.what()) + "\n").c_str());
+			return E_FAIL;
+		}
+	}
+	catch (const std::exception& e)
+	{
+		OutputDebugStringA(("[C++ Exception in Lua State] " + std::string(e.what()) + "\n").c_str());
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
 // object 하나당 하나만들기 
 sol::environment CLuaManager::CreateEnvironment()
 {
@@ -1095,8 +1252,9 @@ void CLuaManager::EnvClear(sol::environment& env)
 
 void CLuaManager::UpdateHotReload()
 {
-	namespace fs = std::filesystem;
+	if (!m_pLuaWatcher) return;
 
+	namespace fs = std::filesystem;
 	auto changedFiles = m_pLuaWatcher->GetChangedFilesAndClear();
 	if (changedFiles.empty()) return;
 

@@ -20,17 +20,51 @@ public:
 private:
 	HRESULT Initialize();
 	HRESULT Initialize_PrintBinding();
-	HRESULT Initialize_FunctionBinding();
-	HRESULT Initialize_EngineGameObjectManagerBinding();
+	HRESULT Initialize_RegistType();
+	HRESULT Initialize_DebuggerBinding();
 	HRESULT Initialize_MathBinding();
-	HRESULT Initialize_TableBinding();
-	HRESULT Initialize_DebugDrawBinding();
+	HRESULT Initialize_GameInstanceBindnig();
+	HRESULT Initialize_ClassBindnig();
+	HRESULT Initialize_DefineBinding();
+
 public:
-	bool HasFunction(
-		sol::environment& env,
-		std::string_view function) const;
-	HRESULT Execute(const std::string& script, const sol::environment& env, const std::string& path);
+	sol::protected_function CacheFunction(const std::string& funcName);
+	sol::protected_function CacheFunction(const sol::environment& env, const std::string& funcName);
+	template<typename... Args>
+	bool CallCacheFunction(const sol::protected_function& func, Args&&... args)
+	{
+		// 1. 함수가 비어있거나 유효하지 않으면 패스
+		if (!func.valid())
+			return false;
+
+		// 2. 가변 인자를 풀어서(std::forward) 루아 함수 실행
+		auto result = func(std::forward<Args>(args)...);
+
+		// 3. 에러 발생 시 로그 출력
+		if (!result.valid())
+		{
+			sol::error err = result;
+			std::string errorMsg = "[Lua Script Error] " + std::string(err.what()) + "\n";
+			OutputDebugStringA(errorMsg.c_str());
+			return false; // 실행 실패
+		}
+
+		return true; // 실행 성공
+	}
+
+public:
+	bool HasFunction(sol::environment& env, std::string_view function) const;
+
+	//HRESULT Execute(const std::string& script, const sol::environment& env, const std::string& path);
+
+	// Env(독립된 환경) 내부에서 실행하는 버전
+	HRESULT Execute(const std::string& script, const sol::environment& env, const std::string& chunkName = "InlineScript");
+
+	// State(전역) 레벨에서 직접 실행하는 버전
+	HRESULT Execute(const std::string& script, const std::string& chunkName = "InlineScript");
+
 	sol::environment CreateEnvironment();
+
 	template<typename... Args>
 	HRESULT Call(sol::environment& env, std::string_view function, Args&&... args);
 
@@ -53,6 +87,26 @@ public:
 
 		value = obj.as<T>();
 		return true;
+	}
+
+	template<typename T>
+	void SetValue(std::string_view name, T&& value)
+	{
+		// 전역 테이블(globals)에 직접 값을 기록합니다.
+		m_Lua.globals()[name] = std::forward<T>(value);
+	}
+
+	template<typename T>
+	bool GetValue(std::string_view name, T& outValue)
+	{
+		// 전역 테이블에서 값을 찾아옵니다.
+		sol::object obj = m_Lua.globals()[name];
+		if (obj.valid() && obj.is<T>())
+		{
+			outValue = obj.as<T>();
+			return true;
+		}
+		return false;
 	}
 
 	HRESULT Compile(const std::string& script);

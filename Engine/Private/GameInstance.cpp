@@ -291,6 +291,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pSerializeManager->UpdateGUI();
 
+	m_pLuaManager->UpdateGUI();
 	if (ImGui::Button("ShaderRebuild"))
 	{
 		//TAG_RES_GRP_PERMANENT_SHADER
@@ -491,18 +492,27 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 #pragma endregion
 
 #pragma region LUA_MANAGER
-HRESULT CGameInstance::LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& path)
+HRESULT CGameInstance::LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& chunkName)
 {
-	return m_pLuaManager->Execute(script, env, path);
+	return m_pLuaManager->Execute(script, env, chunkName);
+}
+HRESULT CGameInstance::LuaScriptExecute(const std::string& script, const std::string& chunkName)
+{
+	return m_pLuaManager->Execute(script, chunkName);
 }
 sol::environment CGameInstance::LuaCreateEnvironment()
 {
 	return m_pLuaManager->CreateEnvironment();
 }
-bool CGameInstance::LuaHasFunction(sol::environment& env, std::string_view function) const
+sol::protected_function CGameInstance::LuaCacheFunction(const std::string& funcName)
 {
-	return m_pLuaManager->HasFunction(env, function);
+	return m_pLuaManager->CacheFunction(funcName);
 }
+sol::protected_function CGameInstance::LuaCacheFunction(const sol::environment& env, const std::string& funcName)
+{
+	return m_pLuaManager->CacheFunction(env, funcName);
+}
+
 HRESULT CGameInstance::LuaCompile(const std::string& script)
 {
 	return m_pLuaManager->Compile(script);
