@@ -40,17 +40,21 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 
 		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
 			return m_eDebug = EVALUATE::FAILED;
-		if (m_bStart)
-			pAnimator->SetPlay(true);
-		if (!m_bLoop)
-			Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
-
+	
+		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+
 		_bool bFinished = pAnimator->GetFinish();
 
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
 		{
+			if (m_bStart)
+			{
+				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
+				m_bStart = false;
+			}
+
 			if (m_eMove == MOVE::RIGHT)
 				pTransform->GoRight(m_Value.fSpeed * fTimeDelta);
 			else if (m_eMove == MOVE::LEFT)
@@ -66,6 +70,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			//Hit 종료는 애니매이션 끝나면
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
+			m_bStart = true;
 			if (!m_bLoop) //루프 한번만 도는거 초기화용
 				++m_iLoopCnt;
 			if (m_iLoopCnt >= 2)
@@ -118,12 +123,12 @@ void CBTAttackAnimation::Update_Gui()
 
 
 #define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M };
+	const _char* pMoveType[] = { MOVE_M "NONE"};
 #undef X
 	ImGui::Text("Move Selector");
 	if (ImGui::BeginCombo("##Move Seletor", pMoveType[(ETOUI(m_eMove))]))
 	{
-		for (uint32_t i = 0; i < 4; ++i)
+		for (uint32_t i = 0; i < ETOUI(MOVE::END)+1; ++i)
 		{
 			_bool bSelect = static_cast<int32_t>(m_eMove) == i;
 

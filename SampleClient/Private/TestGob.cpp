@@ -121,7 +121,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	
+	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
@@ -135,11 +135,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
-	for (uint32_t i = 0; i < ETOUI(PARTES::END); ++i)
-	{
-		if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_Partes[i]))
-			iter->PriorityUpdate(fTimeDelta);
-	}
+
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
@@ -155,11 +151,7 @@ void CTestGob::Update(E::_float fTimeDelta)
 
 	m_pBeHavior->Update(fTimeDelta);
 	m_pBeHavior->AbortNode();
-	for (uint32_t i = 0; i < ETOUI(PARTES::END); ++i)
-	{
-		if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_Partes[i]))
-			iter->Update(fTimeDelta);
-	}
+
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
@@ -168,11 +160,7 @@ void CTestGob::LateUpdate(E::_float fTimeDelta)
 	GetTransform().Update();
 
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
-	for (uint32_t i = 0; i < ETOUI(PARTES::END); ++i)
-	{
-		if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_Partes[i]))
-			iter->LateUpdate(fTimeDelta);
-	}
+
 }
 
 HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
