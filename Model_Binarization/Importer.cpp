@@ -1340,7 +1340,6 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 			continue;
 
 		std::ifstream file(jsonPath);
-
 		if (!file.is_open())
 			continue;
 
@@ -1352,19 +1351,37 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 			if (!j.contains("fbx"))
 				continue;
 
-			if (!j["fbx"].is_string())
-				continue;
+			// 문자열이든 배열이든 리스트로 통일해서 처리
+			std::vector<std::string> fbxList;
 
-			std::string fbxName = j["fbx"].get<std::string>();
+			if (j["fbx"].is_string())
+			{
+				fbxList.push_back(j["fbx"].get<std::string>());
+			}
+			else if (j["fbx"].is_array())
+			{
+				for (const auto& elem : j["fbx"])
+				{
+					if (elem.is_string())
+						fbxList.push_back(elem.get<std::string>());
+				}
+			}
+			else
+			{
+				continue; // 문자열도 배열도 아니면 스킵
+			}
 
-			if (fbxName.empty())
-				continue;
+			for (auto& fbxName : fbxList)
+			{
+				if (fbxName.empty())
+					continue;
 
-			// 혹시 경로까지 들어와도 파일 이름만 비교
-			fbxName = std::filesystem::path(fbxName).filename().string();
+				// 혹시 경로까지 들어와도 파일 이름만 비교
+				fbxName = std::filesystem::path(fbxName).filename().string();
 
-			// 대소문자 무시 비교용
-			fbxNames.insert(ToLowerFileName(fbxName));
+				// 대소문자 무시 비교용
+				fbxNames.insert(ToLowerFileName(fbxName));
+			}
 		}
 		catch (...)
 		{
@@ -1373,6 +1390,7 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 	}
 
 	return fbxNames;
+
 }
 
 HRESULT CImporter::ImportFBXFolder_ForMapJson(
@@ -1457,19 +1475,24 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
 			textureDir = MakeTextureOutputDir(basePath) / modelName;
+			std::filesystem::create_directories(textureDir);
+			std::filesystem::create_directories(modelDir);
 		}
 		else
 		{
 			textureDir = MakeTextureOutputDir(modelDir);
+			std::filesystem::create_directories(textureDir);
+			std::filesystem::create_directories(basePath);
 		}
 
-		std::filesystem::create_directories(textureDir);
+
 
 	
 		if (HasExtractedModelData(modelDir, modelName))
 			continue;
 
-		std::filesystem::create_directories(modelDir);
+
+
 
 		if (FAILED(AssimpFBX(inputPath)))
 		{
@@ -1483,12 +1506,20 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		// Textures/OriginData/Static/*.png
 		// -> Textures/Static/모델이름/*.png
 		// ------------------------------------------------------------
+		std::filesystem::path outputPath;
+
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
 			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
+			outputPath = modelDir / (modelName + ".bin");
+		}
+		else {
+			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
+			
+			outputPath = basePath / (modelName + ".bin");
+
 		}
 
-		std::filesystem::path outputPath = modelDir / (modelName + ".bin");
 
 		if (FAILED(ExportFBX(outputPath.string())))
 		{

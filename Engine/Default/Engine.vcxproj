@@ -318,6 +318,7 @@
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
     <ClInclude Include="..\public\PhysxManagerListener.h" />
+    <ClInclude Include="..\Public\ShadowCamera.h" />
     <ClInclude Include="..\public\TextUI.h" />
     <ClInclude Include="..\public\SerializeManager.h" />
     <ClInclude Include="..\Public\UITex.h">
@@ -614,6 +615,7 @@
     <ClCompile Include="..\Private\ResViewPort.cpp" />
     <ClCompile Include="..\private\SerializeManager.cpp" />
     <ClCompile Include="..\Private\ShaderManager.cpp" />
+    <ClCompile Include="..\Private\ShadowCamera.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
     <ClCompile Include="..\private\TextUI.cpp" />

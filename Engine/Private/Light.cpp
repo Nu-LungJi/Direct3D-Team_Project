@@ -17,6 +17,7 @@ void CLight::UpdateGUI()
 {
     CGameObject::UpdateGUI();
 }
+
 HRESULT CLight::InitializePrototype(void* pArg) {
     m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
     if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = "VSMain", .sTarget = "vs_5_0" })))
@@ -39,7 +40,6 @@ HRESULT CLight::InitializePrototype(void* pArg) {
         return E_FAIL;
     }
     
-#ifdef _DEBUG
     if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_Icon_DirectionalLight", CResTexture2D::Create("./Resources/Engine/Texture/Debugging/Icon_DirectionalLight.png"))) {
         res->Load();
     }
@@ -49,9 +49,8 @@ HRESULT CLight::InitializePrototype(void* pArg) {
     if (auto res = CGameInstance::Get().AddResource("LIGHT", "TEX2D_Icon_SpotLight", CResTexture2D::Create("./Resources/Engine/Texture/Debugging/Icon_SpotLight.png"))) {
         res->Load();
     } 
-#endif
-    
 }
+
 HRESULT CLight::Initialize(void* pArg)
 {
     if (FAILED(CGameObject::Initialize(pArg)))
@@ -75,11 +74,10 @@ HRESULT CLight::Initialize(void* pArg)
         if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComCollider_Frustum", &Desc, &m_pComColliderFrustum)))  return E_FAIL;
     }
 
-#ifdef _DEBUG       // DEBUG : Light Center Icon
+	// DEBUG : Light Center Icon
     m_pResDirectionalLightTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_DirectionalLight");
     m_pResPointLightTexture2D       = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_PointLight");
     m_pResSpotLightTexture2D        = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LIGHT", "TEX2D_Icon_SpotLight");
-#endif
     
 	return S_OK;
 }
@@ -88,8 +86,7 @@ void CLight::PriorityUpdate(E::_float fTimeDelta) {
 
 }
 void CLight::Update(E::_float fTimeDelta) {
-    m_pComTransform->Update();
-#ifdef _DEBUG       
+    m_pComTransform->Update();     
     auto CurrentCamera = CGameInstance::Get().GetActiveCamera();
     if (nullptr == CurrentCamera) return;
 
@@ -129,19 +126,12 @@ void CLight::Update(E::_float fTimeDelta) {
 		XMVectorSet(0.f, 0.f, 0.f, 1.f)
 		}));
 	m_pComTransform->SetPosition(XMVectorSetW(BBDMat.r[3], 1.f));
-
-#endif
-
 }
-void CLight::LateUpdate(E::_float fTimeDelta) {
-#ifdef _DEBUG     
+void CLight::LateUpdate(E::_float fTimeDelta) {    
     if (Debug_RenderFlag)
-        CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
-#endif
-        
+        CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);    
 }
 HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
-#ifdef _DEBUG
     {
         E::CB_PER_OBJECT cbPerObject{};
         cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
@@ -181,7 +171,7 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
         }
     }
     ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
-    pContext->PSSetShaderResources(1, 1, pSRVs);
+    pContext->PSSetShaderResources(1, 1, pSRVs); 
     pContext->PSSetShaderResources(2, 1, pSRVs);
     pContext->PSSetShaderResources(3, 1, pSRVs);
 
@@ -195,7 +185,6 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
     pContext->PSSetShaderResources(1, 1, pSRVs);
     pContext->PSSetShaderResources(2, 1, pSRVs);
     pContext->PSSetShaderResources(3, 1, pSRVs);
-#endif 
 
     return S_OK;
 }

@@ -13,7 +13,7 @@ private:
 	~CBTDead() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT	InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initalize(void* pArg) override;
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
@@ -25,7 +25,7 @@ private:
 	_float				m_fDist{ 10.f };
 public:
 	static UPtr<CBTDead> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

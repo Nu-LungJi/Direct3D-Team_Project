@@ -20,11 +20,12 @@ protected:
 	CBTActionNode(const CBTActionNode& pPrototype);
 	~CBTActionNode() override;
 
-	virtual HRESULT	InitalizePrototype(void* pArg) override;
-	virtual HRESULT Initalize(void* pArg) override;
+	 HRESULT					InitializePrototype(void* pArg) override;
+	 HRESULT					Initalize(void* pArg) override;
 public:
-	virtual void		Update_Gui();
-	ACTION_VALUE&		Get_Value() { return m_Value; }
+	void						Abort() override;
+	virtual void				Update_Gui();
+	ACTION_VALUE&				Get_Value() { return m_Value; }
 public:
 	virtual EVALUATE			Evaluate(_float fTimeDelta) PURE;
 	virtual nlohmann::json		Save_Node()override;
@@ -32,8 +33,6 @@ public:
 protected:
 	ACTION_VALUE			m_Value{};
 	_bool					m_bPopup{ false };
-public:
-	virtual UPtr<CBTRoot> Clone(void* pArg) PURE;
 };
 
 NS_END

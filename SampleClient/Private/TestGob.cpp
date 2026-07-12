@@ -6,7 +6,9 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
+#include "Weapon.h"
 #include "GameInstance.h"
+#include "ComCollider.h"
 NS_USING(Client)
 
 CTestGob::CTestGob()
@@ -71,6 +73,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	}
 
 	CComBeHavior::BEHAVIOR_DESC Desc{};
+	Desc.OwnerName = "Com_BT";
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
 	{
 		return E_FAIL;
@@ -105,28 +108,44 @@ HRESULT CTestGob::Initialize(void* pArg)
 		};
 	}
 
-
+	{
+		CComCollider::DESC Desc{};
+		Desc.eCollType = CollType::Box;
+		Desc.vExtents = {1.f, 1.f, 1.f};
+		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
+		{
+			return E_FAIL;
+		};
+	}
 
 	return S_OK;
 }
 
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
+	__super::PriorityUpdate(fTimeDelta);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
+	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
+	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
+
+
+	__super::Update(fTimeDelta);
+
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
 
 	m_pBeHavior->Update(fTimeDelta);
-
+	m_pBeHavior->AbortNode();
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
-
+	__super::LateUpdate(fTimeDelta);
 	GetTransform().Update();
+
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
 }
@@ -193,7 +212,6 @@ HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
-
 	return S_OK;
 }
 

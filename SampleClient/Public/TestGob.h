@@ -11,6 +11,7 @@ class CResModel;
 class CComModelInstance;
 class CComAnimator;
 class CComBeHavior;
+class CComCollider;
 NS_END
 
 NS_BEGIN(Client)
@@ -20,9 +21,11 @@ public:
 	DECLARE_DERIVED_TYPE(CTestGob, CGameObject)
 
 public:
-	typedef struct tagTerrainDesc : public CGameObject::GAMEOBJECT_DESC
+	typedef struct tagMonsterDesc : public CGameObject::GAMEOBJECT_DESC
 	{
-	}DESC;
+		_string SocketName;
+
+	}MONSTER_DESC;
 
 private:
 	CTestGob();
@@ -30,6 +33,7 @@ private:
 
 public:
 	void UpdateGUI() override;
+	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -42,14 +46,15 @@ private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
+	CComCollider* m_pComCollider{};
+	CHandle m_Partes[ETOUI(PARTES::END)]{};
+
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
-
-
 
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
@@ -63,6 +68,9 @@ private:
 	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
+	int32_t						m_iHp{};
+	_bool						m_bDead{ false };
+	_string						m_SocketName{};
 public:
 	static E::UPtr<CTestGob> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

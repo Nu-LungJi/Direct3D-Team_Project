@@ -14,9 +14,9 @@ CBTDecorator ::~CBTDecorator()
 }
 
 
-HRESULT CBTDecorator::InitalizePrototype(void* pArg)
+HRESULT CBTDecorator::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	
 	return S_OK;
 }
@@ -39,6 +39,9 @@ EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
     
 	m_eDebug = EVALUATE::FAILED;
     return EVALUATE::FAILED;
+}
+void CBTDecorator::Abort()
+{
 }
 void CBTDecorator::ResetDebug()
 {
@@ -81,7 +84,7 @@ HRESULT CBTDecorator::Load_json(const nlohmann::json& j)
 		{
 			if (LoadJsonEnum(j["Child"], "Group", eGroup))
 			{
-				auto pSrc = CGameInstance::Get().Clone_Action(eGroup, MasterName, nullptr);
+				auto pSrc = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(eGroup, MasterName, nullptr));
 				pSrc->Load_json(j["Child"]);
 				m_pDecorator = std::move(pSrc);
 			}

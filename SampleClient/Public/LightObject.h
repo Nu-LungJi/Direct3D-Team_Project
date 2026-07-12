@@ -38,6 +38,9 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
+	HRESULT RenderDefault(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) ;
+	HRESULT RenderShadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) ;
+private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
 

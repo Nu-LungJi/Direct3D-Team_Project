@@ -4,15 +4,15 @@
 
 NS_BEGIN(Client)
 
-class CParticle_Ribbon final : public CBeam_CPU
+class CParticle_Ribbon final 
 {
 public:
-    DECLARE_DERIVED_TYPE(CParticle_Ribbon, CBeam_CPU)
+
 
 private:
     explicit CParticle_Ribbon();
     virtual ~CParticle_Ribbon();
-    virtual HRESULT Initialize(void* pArg) override;
+    virtual HRESULT Initialize(void* pArg);
 
 public:
     static UPtr<CParticle> Create();

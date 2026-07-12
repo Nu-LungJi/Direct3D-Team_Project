@@ -73,13 +73,12 @@ private:
 	CComCollider*		m_pComColliderSphere{};
 	CComCollider*		m_pComColliderFrustum{};
 
-#ifdef _DEBUG	// Light 위치 나타내는 용 아이콘 텍스쳐
+	// Light 위치 나타내는 용 아이콘 텍스쳐
 	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D	{	};
 	SPtr<CResTexture2D>		m_pResPointLightTexture2D		{	};
 	SPtr<CResTexture2D>		m_pResSpotLightTexture2D		{	};
 
 	_bool	Debug_RenderFlag = { true };
-#endif
 
 public:
 	void UpdateGUI() override;

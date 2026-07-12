@@ -321,3 +321,13 @@ void CBeam_CPU::BuildBeamGeometry()
         m_vecDrawRanges.push_back(range);
     }
 }
+UPtr<CParticle> CBeam_CPU::Create(void* pArg)
+{
+	auto pInstance = E::ToUPtr(new CBeam_CPU{});
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Created : CBeam_CPU");
+		return nullptr;
+	}
+	return  pInstance;
+}

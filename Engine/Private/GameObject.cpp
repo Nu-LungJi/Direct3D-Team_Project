@@ -43,7 +43,8 @@ HRESULT CGameObject::Initialize(void* pArg)
         //{
         //    return E_FAIL;
         //}
-        //m_pComTransform = AddComponent("Com_Transform", static_uptr_cast<CComTransform>(std::move(pProto)));
+        //m_pComTransform = AddComponent("Com_Transform", 
+        // <CComTransform>(std::move(pProto)));
     }
 
     return S_OK;

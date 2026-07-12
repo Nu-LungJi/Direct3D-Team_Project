@@ -111,6 +111,7 @@ HRESULT CResTexture2D::Load(const std::any& arg)
     }
     else
     {
+
         hr = DirectX::CreateWICTextureFromFileEx(
             m_pDevice.Get(),
             m_pContext.Get(),

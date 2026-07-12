@@ -21,11 +21,16 @@ HRESULT CMonster::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
+	
 	return S_OK;
 }
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_iHp <= 0.f)
+	{
+		m_bDead = true;
+	}
 }
 
 void CMonster::Update(E::_float fTimeDelta)
@@ -38,6 +43,7 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	
 
 	return S_OK;
 }

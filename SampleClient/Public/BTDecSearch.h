@@ -13,20 +13,19 @@ private:
 	~CBTDecSearch() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE Evaluate(_float fTimeDelta) override;
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT							Load_json(const nlohmann::json& j) override;
-
-	virtual void		Update_Gui() override;
+	EVALUATE						Evaluate(_float fTimeDelta) override;
+	virtual void					Update_Gui() override;
 private:
-	_float				m_fValue{10.f};
+	_float				m_fDis{10.f};
 	_bool				m_bTrue{ false };
 public:
 	static UPtr<CBTDecSearch> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

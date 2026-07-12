@@ -65,6 +65,10 @@ namespace ParticlePattern
 		const _float4& color = _float4(1.f, 1.f, 1.f, 1.f),
 		const _float4& emissive = _float4(0.f, 0.f, 0.f, 0.f)
 		);
+
+	std::vector< PARTICLE_SPAWN_DATA> MakeStrightGround(const _float3& vStartPos, uint32_t row, uint32_t col, _float offSetX,_float offsetZ ,_float spawnDelay,
+		_float fSize, _float fLife = 1.f, const _float4& color = _float4(1.f, 1.f, 1.f, 1.f),
+		const _float4& emissive = _float4(0.f, 0.f, 0.f, 0.f));
 }
 
 NS_END

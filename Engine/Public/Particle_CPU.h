@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "Particle.h"
 
@@ -14,6 +14,8 @@ struct PARTICLE_CPU_DATA
     _float  fLifeTime = 1.f;
     _bool   bAlive = false;
     _float4 emissive;
+	_float spawnDelay;
+	uint32_t iFrameIndex = 0;
 };
 
 struct VTX_PARTICLE_INSTANCED_DATA
@@ -21,12 +23,14 @@ struct VTX_PARTICLE_INSTANCED_DATA
     _float4x4 matWorld;
     _float4   vColor;
     _float4 emissive;
+	_float2   vUVOffset; 
+	_float2   vUVSize;
 };
 
 // CPU 파티클 중간 추상 클래스.
 // 슬롯 관리(Spawn/재활용), 인스턴스 버퍼 업로드, 렌더링은 여기서 공통으로 처리하고,
 // "파티클이 실제로 어떻게 움직이는가"만 자식 클래스에게 맡긴다 (UpdateBehavior).
-class ENGINE_DLL CParticle_CPU : public CParticle
+class ENGINE_DLL CParticle_CPU final : public CParticle
 {
 public:
     struct DESC
@@ -38,16 +42,19 @@ public:
         std::pair<StringID, StringID> PSID;  // 픽셀 쉐이더
         PARTICLE_TYPE                  type;
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
-
+		uint32_t TexRows = 1;
+		uint32_t TexColumns = 1;
         //모델이면 넣어줌
         StringID sGroupTag;
         StringID sResTag;
     };
 public:
     DECLARE_DERIVED_TYPE(CParticle_CPU, CParticle)
-protected:
+private:
     explicit CParticle_CPU();
     virtual ~CParticle_CPU();
+
+
 public:
     virtual HRESULT Initialize(void* pArg) override;
     virtual void PriorityUpdate(E::_float fTimeDelta) override;
@@ -57,10 +64,9 @@ public:
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
     HRESULT Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
     HRESULT Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
-protected:
-    // 자식 클래스가 반드시 구현해야 하는 실제 움직임 로직.
-    // Simulate()가 살아있는 파티클 하나마다 이 함수를 호출해준다.
-    virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta) = 0;
+	MESHORTEXTURE GetWhatKind() const { return m_Desc.whatKind; }
+private:
+    virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
 private:
     // m_Particles를 순회하며 수명/UpdateBehavior 처리 후 m_vecInstancedData 재구성
     void Simulate(E::_float fTimeDelta);
@@ -76,6 +82,8 @@ protected:
     SPtr<CResSamplerState> m_pResSamplerState{};
 
     // m_pParticleTexture는 부모 CParticle이 CResTexture2D로 공통 소유
+public:
+	static UPtr<CParticle> Create(void* pArg);
 
 };
 NS_END

@@ -14,16 +14,15 @@ CBTDecTimer::CBTDecTimer(const CBTDecTimer& rhs) : CBTDecorator(rhs)
 CBTDecTimer::~CBTDecTimer()
 {
 }
-HRESULT CBTDecTimer::InitalizePrototype(void* pArg)
+HRESULT CBTDecTimer::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::DECORATOR;
-	m_MasterName = "BTDecSearch";
+	m_MasterName = "BTDecTimer";
 	return S_OK;
 }
 HRESULT CBTDecTimer::Initalize(void* pArg)
 {
-
 	__super::Initalize(pArg);
 
 	return S_OK;
@@ -32,23 +31,21 @@ HRESULT CBTDecTimer::Initalize(void* pArg)
 EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 {
 	m_fTick += fTimeDelta;
-	
+	EVALUATE result{ EVALUATE::END };
 	if (m_fWaitTime < m_fTick)
-		return EVALUATE::SUCCESS;
+		result = __super::Evaluate(fTimeDelta);
+	else
+		result = EVALUATE::RUN;
 
-	EVALUATE result = __super::Evaluate(fTimeDelta);
-
-	if (result != EVALUATE::RUN)
+	if (result == EVALUATE::SUCCESS)
 		m_fTick = 0.f;
 
 	return result;
 }
 nlohmann::json CBTDecTimer::Save_Node()
 {
-	nlohmann::json j;
-	j = __super::Save_Node();
+	nlohmann::json j= __super::Save_Node();
 	SaveJsonValue(j, "WaitTime", m_fWaitTime);
-	SaveJsonValue(j, "MaxTimeCnt", m_iMaxTimeCnt);
 	return j;
 }
 HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
@@ -57,31 +54,28 @@ HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
 	if (!LoadJsonValue(j, "WaitTime", m_fWaitTime))
 		MSG_BOX("Failed Load MaxTimeTickCnt : BTDecTimer");
 
-	if (!LoadJsonValue(j, "MaxTimeCnt", m_iMaxTimeCnt))
-		MSG_BOX("Failed Load MaxTimeCnt : BTDecTimer");
+
 	return S_OK;
 }
 void		CBTDecTimer::Update_Gui()
 {
-	ImGui::Text("TimerTick Cnt %2.f: ");
-	ImGui::DragFloat("##Timer", &m_fTimeTickCnt, 0, 100);
+	ImGui::Text("TimerTick Cnt");
+	ImGui::DragFloat("##Timer1", &m_fWaitTime, 0, 100);
 
-	ImGui::Text("Current Tick %2.f : ", &m_fTick);
+	ImGui::Text("Current Tick %2.f : ", m_fTick);
 
-	ImGui::Text("TimerMaxdCnt %d: ");
-	ImGui::DragInt("##Timer", &m_iMaxTimeCnt, 0, 100);
 }
 E::UPtr<CBTDecTimer> CBTDecTimer::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTDecTimer{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTDecTimer");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTDecTimer::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTDecTimer::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTDecTimer{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

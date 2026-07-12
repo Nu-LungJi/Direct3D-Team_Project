@@ -4,15 +4,15 @@
 
 NS_BEGIN(Client)
 
-class CTrail_Example final : public CTrail_CPU
+class CTrail_Example final
 {
 public:
-    DECLARE_DERIVED_TYPE(CTrail_Example, CTrail_CPU)
+
 
 private:
     explicit CTrail_Example();
     virtual ~CTrail_Example();
-    virtual HRESULT Initialize(void* pArg) override;
+    virtual HRESULT Initialize(void* pArg) ;
 
 public:
     static UPtr<CParticle> Create();
