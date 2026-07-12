@@ -690,7 +690,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl" />
-    <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl" />
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Volumetric.hlsl" />
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

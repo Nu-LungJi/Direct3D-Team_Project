@@ -355,6 +355,10 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	{
 		ZoneScopedN("LightManager_Update");
 		m_pLightManager->Update(fTimeDelta);
+	} 
+	{
+		ZoneScopedN("Renderer_Update");
+		m_pRenderer->Update(fTimeDelta);
 	}
 
 	m_pColliderManager->Update();

@@ -15,7 +15,7 @@ TextureCube PreFilterMap    : register(t8);
 Texture2D   LUTMap          : register(t9);
 
 static const float  ShadowSmoothness = 1.5f;
-static const float  ShadowBrightness = 0.25f;
+static const float  ShadowBrightness = 0.45f;
 static const float2 ShadowMapResolution = { 1280.f, 720.f };
 
 static const float2 PoissonDisk[8] =

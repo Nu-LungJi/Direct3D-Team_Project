@@ -15,7 +15,8 @@ private:
 	~CRenderer() override;
 
 public:
-	VOID	 UpdateGUI();
+	VOID		UpdateGUI();
+	VOID		Update(_float fTimeDelta);
 
 public:
 	HRESULT Initialize();
@@ -63,6 +64,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetDepth{};			// Depth
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
@@ -141,6 +143,7 @@ private:
 	HRESULT	Render_DepthMap();
 	HRESULT	Render_NonAlpha();
 	HRESULT	Render_Alpha();
+	HRESULT	Render_Effect();
 	HRESULT	Render_VolumetricEffect();
 	HRESULT Render_OffScreen();
 	HRESULT Render_UserInterface();
@@ -154,6 +157,8 @@ private:
 	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
 	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
+	_float	NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z);
+	inline _float saturate(_float val) { return val < 0.0f ? 0.0f : (val > 1.0f ? 1.0f : val); }
 	HRESULT Render_FullScreen();
 
 	VOID	Unbind_Resources();
@@ -181,7 +186,9 @@ private:
 
 	_bool						m_bRenderable = { false };
 
-	ComPtr<ID3D11ShaderResourceView> BlueNoiseTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	BlueNoiseTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	VolumeTexture = { nullptr };
+	ComPtr<ID3D11UnorderedAccessView>	VolumeUAV = { nullptr };
 
 private:
 	HRESULT RenderPriority();
@@ -191,17 +198,21 @@ private:
 	HRESULT RenderBlend();
 	HRESULT RenderLight();
 	HRESULT RenderSkybox();
+	HRESULT RenderEffect();
 	HRESULT RenderCollider();
 	HRESULT RenderParticle();
 	HRESULT RenderUI();
 
 	
 private:
-	_bool			ApplyFilter = { false };		// 필터 적용 ON-OFF
+	_bool			ApplyFilter = { true };		// 필터 적용 ON-OFF
+	_bool			ApplyVolumetric = { false };		// 볼류메트릭 효과 ON-OFF
 	RENDER_CTX		RenderContext = {};
 	_bool bApplyShadow = { true };
 	XMMATRIX	ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
+	_float			TimeAccumulation{};
+
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };
