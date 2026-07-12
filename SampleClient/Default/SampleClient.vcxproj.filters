@@ -306,6 +306,9 @@
     <ClInclude Include="..\public\Weapon.h">
       <Filter>GameObject\AI\Weapon</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -458,6 +461,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Weapon.cpp">
       <Filter>GameObject\AI\Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

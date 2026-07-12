@@ -12,6 +12,7 @@
 #include "BTDamage.h" //hp 깎기
 #include "BTTurnAnimation.h" // 회전 애니매이션이 너무 많아서 하나로 묶는용도
 #include "BTAttackAnimation.h" //애니매이션에 이동량 들어가야 될 경우 // 플래그 있음
+#include "BTRandMoveAnim.h"
 
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함
