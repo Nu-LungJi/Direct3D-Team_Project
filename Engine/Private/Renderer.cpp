@@ -1579,35 +1579,35 @@ HRESULT CRenderer::RenderCollider()
     return S_OK;
 }
 
-HRESULT CRenderer::RenderParticle()
-{
-    //MRT
-    //emissive
-    const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
-        TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD");
-	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
-	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
-    if (!blendState)
-        return E_FAIL;
-    if (blendState)
-        m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
-
-	m_pContext->PSSetShaderResources(7, 1, m_pResDynTexTargetPBR->GetSRV().GetAddressOf());
-    for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::PARTICLE)])
-    {
-        if (pRenderObject->HasRenderPass(RenderContext.pass))
-        {
-            pRenderObject->Render(m_pContext.Get(), RenderContext);
-        }
-    }
-
-    m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
-	//m_pContext->RSSetState(nullptr);
-	ID3D11ShaderResourceView* nullSRV[] = {nullptr };
-
-	m_pContext->PSSetShaderResources(7, 1, nullSRV);
-    return S_OK;
-}
+//HRESULT CRenderer::RenderParticle()
+//{
+//    //MRT
+//    //emissive
+//    const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
+//        TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD");
+//	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+//	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+//    if (!blendState)
+//        return E_FAIL;
+//    if (blendState)
+//        m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
+//
+//	m_pContext->PSSetShaderResources(7, 1, m_pResDynTexTargetPBR->GetSRV().GetAddressOf());
+//    for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::PARTICLE)])
+//    {
+//        if (pRenderObject->HasRenderPass(RenderContext.pass))
+//        {
+//            pRenderObject->Render(m_pContext.Get(), RenderContext);
+//        }
+//    }
+//
+//    m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+//	//m_pContext->RSSetState(nullptr);
+//	ID3D11ShaderResourceView* nullSRV[] = {nullptr };
+//
+//	m_pContext->PSSetShaderResources(7, 1, nullSRV);
+//    return S_OK;
+//}
 
 HRESULT CRenderer::RenderUI()
 {

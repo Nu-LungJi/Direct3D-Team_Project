@@ -374,7 +374,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
 
-	AddRenderObject(RENDERGROUP::PARTICLE, m_pParticleManager.get());
+	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
