@@ -100,12 +100,13 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matProj;
     matrix g_matViewProj;
     matrix g_matInvView;
+    matrix g_matInvProj;
     matrix g_matInvViewProj;
     matrix g_matShadowLightViewProj;
     float3 g_vCamPos;
-    float  g_PerPassPadding1;
+    float g_PerPassPadding1;
     float3 g_vShadowLightDir;
-    float  g_PerPassPadding2;
+    float g_PerPassPadding2;
 };
 
 cbuffer CB_BONES : register(b2)
@@ -127,6 +128,12 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     DynamicLight AffectedLight[MAX_LIGHT_COUNT];
     int          g_iLightCount;
     float3       g_fLightPadding;
+}
+
+cbuffer CB_TIME_BUFFER : register(b5)
+{
+    float g_fDeltaTime;
+    float g_fTimeAccumulation;
 }
 
 cbuffer CB_PER_UI : register(b7)

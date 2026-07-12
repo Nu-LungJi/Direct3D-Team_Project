@@ -15,7 +15,8 @@ private:
 	~CRenderer() override;
 
 public:
-	VOID	 UpdateGUI();
+	VOID		UpdateGUI();
+	VOID		Update(_float fTimeDelta);
 
 public:
 	HRESULT Initialize();
@@ -63,6 +64,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetDepth{};			// Depth
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
@@ -74,7 +76,6 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric{};
-
 
 private:
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
@@ -142,6 +143,7 @@ private:
 	HRESULT	Render_DepthMap();
 	HRESULT	Render_NonAlpha();
 	HRESULT	Render_Alpha();
+	HRESULT	Render_Effect();
 	HRESULT	Render_VolumetricEffect();
 	HRESULT Render_OffScreen();
 	HRESULT Render_UserInterface();
@@ -155,6 +157,8 @@ private:
 	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
 	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
+	_float	NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z);
+	inline _float saturate(_float val) { return val < 0.0f ? 0.0f : (val > 1.0f ? 1.0f : val); }
 	HRESULT Render_FullScreen();
 
 	VOID	Unbind_Resources();
@@ -163,6 +167,9 @@ private:
 	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+
+	ComPtr<ID3D11ShaderResourceView>	Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	ComPtr<ID3D11ShaderResourceView>	Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0, uint32_t _TexDepth = 0);
 
 	VOID	PostProcessGUI();
 
@@ -179,24 +186,33 @@ private:
 
 	_bool						m_bRenderable = { false };
 
+	ComPtr<ID3D11ShaderResourceView>	BlueNoiseTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	VolumeTexture = { nullptr };
+	ComPtr<ID3D11UnorderedAccessView>	VolumeUAV = { nullptr };
+
 private:
 	HRESULT RenderPriority();
 	HRESULT RenderNonBlend();
+	HRESULT RenderNonBlend_Instanced();
 	HRESULT	Render_HBAO();
 	HRESULT RenderBlend();
 	HRESULT RenderLight();
 	HRESULT RenderSkybox();
+	HRESULT RenderEffect();
 	HRESULT RenderCollider();
 	HRESULT RenderParticle();
 	HRESULT RenderUI();
 
 	
 private:
-	_bool			ApplyFilter = { false };		// 필터 적용 ON-OFF
+	_bool			ApplyFilter = { true };		// 필터 적용 ON-OFF
+	_bool			ApplyVolumetric = { false };		// 볼류메트릭 효과 ON-OFF
 	RENDER_CTX		RenderContext = {};
 	_bool bApplyShadow = { true };
 	XMMATRIX	ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
+	_float			TimeAccumulation{};
+
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };

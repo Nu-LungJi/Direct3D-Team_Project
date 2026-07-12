@@ -15,7 +15,7 @@ TextureCube PreFilterMap    : register(t8);
 Texture2D   LUTMap          : register(t9);
 
 static const float  ShadowSmoothness = 1.5f;
-static const float  ShadowBrightness = 0.25f;
+static const float  ShadowBrightness = 0.45f;
 static const float2 ShadowMapResolution = { 1280.f, 720.f };
 
 static const float2 PoissonDisk[8] =
@@ -76,20 +76,7 @@ float3 FresnelSchlick(float CTH, float3 MBR)
     return  MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
 
-float4 Convert_WorldPosByDepth(float _Depth, float2 _TexCoord)
-{
-    float4 NDCWorldPos;
-    
-    NDCWorldPos.x = _TexCoord.x * +2.f - 1.f;
-    NDCWorldPos.y = _TexCoord.y * -2.f + 1.f;
-    NDCWorldPos.z = _Depth;
-    NDCWorldPos.w = 1.f;
-    
-    // NDC -> ViewSpace(InvProj) -> WorldSpace(InvView)
-    float4 WorldPos = mul(NDCWorldPos, g_matInvViewProj);
-    
-    return float4(WorldPos.xyz / WorldPos.w, 1.f);
-}
+
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
 {
     float NDV = max(dot(N, V), 0.0);
@@ -250,6 +237,7 @@ PS_OUT PSMain(PS_IN IN)
     float3 WorldNormal = NormalMap.Sample(LinearWrap, IN.TexCoord).rgb;
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
+
     float3  V = normalize(g_vCamPos - DepthWorld.xyz);
     float   R = reflect(-V, WorldNormal);
 
@@ -375,6 +363,8 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + fEmissive;
+    
     OUT.Diffuse = float4(FinalColor, AlbedoTex.a);
+    
     return OUT;
 }

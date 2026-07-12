@@ -89,3 +89,18 @@ bool    Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout f
     
     return false;
 }
+float4 Convert_WorldPosByDepth(float _Depth, float2 _TexCoord)
+{
+    // Depth = NDC   -> (InvProj) -> WorldSpace(InvView)
+    float4 NDCWorldPos;
+    
+    // ViewSpace
+    NDCWorldPos.x = _TexCoord.x * +2.f - 1.f;
+    NDCWorldPos.y = _TexCoord.y * -2.f + 1.f;
+    NDCWorldPos.z = _Depth;
+    NDCWorldPos.w = 1.f;
+    
+    float4 WorldPos = mul(NDCWorldPos, g_matInvViewProj);
+    
+    return float4(WorldPos.xyz / WorldPos.w, 1.f);
+}
