@@ -522,14 +522,20 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL", E::CResCBuffer::Create()))
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_MATERIAL) })))
 		{
 			return E_FAIL;
 		}
 	}
-
+	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FOG) })))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE, E::CResCBuffer::Create()))
 	{

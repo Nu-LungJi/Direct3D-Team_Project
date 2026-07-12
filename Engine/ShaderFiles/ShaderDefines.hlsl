@@ -94,8 +94,6 @@ cbuffer CB_PER_OBJECT : register(b0)
 // 2. 프레임당 1회 갱신 (슬롯 b1)
 cbuffer CB_PER_PASS : register(b1)
 {
-    //DirectionalLight gDirLights;
-    
     matrix g_matView; // _float4x4와 1:1 대응
     matrix g_matProj;
     matrix g_matViewProj;
@@ -135,6 +133,17 @@ cbuffer CB_TIME_BUFFER : register(b5)
     float g_fDeltaTime;
     float g_fTimeAccumulation;
 }
+
+cbuffer CB_FOG : register(b6)
+{
+    float4x4 FogVolumeInvWorld;
+    float FogIntensity;
+    float3 FogColor;
+    float FogMaxHeight;
+    float FogStartPos;
+    float FogEndPos;
+    float FogDensity;
+}; 
 
 cbuffer CB_PER_UI : register(b7)
 {

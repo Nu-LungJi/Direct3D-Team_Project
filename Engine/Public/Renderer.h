@@ -155,6 +155,7 @@ private:
 	HRESULT	Render_PostProcess_Filter();
 
 	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
+	HRESULT	Bind_VolumetricFog();
 	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
 	_float	NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z);
@@ -172,6 +173,7 @@ private:
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0, uint32_t _TexDepth = 0);
 
 	VOID	PostProcessGUI();
+	VOID	VolumetricFogGUI();
 
 	HRESULT Initialize_Debugging();
 	HRESULT	Render_Debugging();
@@ -200,18 +202,24 @@ private:
 	HRESULT RenderSkybox();
 	HRESULT RenderEffect();
 	HRESULT RenderCollider();
-	HRESULT RenderParticle();
 	HRESULT RenderUI();
 
 	
 private:
 	_bool			ApplyFilter = { true };		// 필터 적용 ON-OFF
-	_bool			ApplyVolumetric = { false };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyVolumetric = { true };		// 볼류메트릭 효과 ON-OFF
 	RENDER_CTX		RenderContext = {};
 	_bool bApplyShadow = { true };
 	XMMATRIX	ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
 	_float			TimeAccumulation{};
+
+	_float	m_fFogIntensity{};
+	_float3	m_fFogColor{1.f, 1.f, 1.f};
+	_float	m_fFogMaxHeight{};
+	_float	m_fFogStartPos{};
+	_float	m_fFogEndPos{};
+	_float	m_fFogDensity{};
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

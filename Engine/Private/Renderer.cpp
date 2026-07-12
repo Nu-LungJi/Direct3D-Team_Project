@@ -17,6 +17,8 @@ void CRenderer::UpdateGUI()
     ImGui::End();
 
     PostProcessGUI();
+
+	VolumetricFogGUI();
 }
 VOID	CRenderer::Update(_float fTimeDelta) {
 	TimeAccumulation += fTimeDelta;
@@ -666,6 +668,29 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	return S_OK;
 }
 
+HRESULT CRenderer::Bind_VolumetricFog() {
+	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG");
+	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+	{
+		CB_FOG cbFog{};
+		cbFog.FogIntensity = m_fFogIntensity;
+		cbFog.FogColor = m_fFogColor;
+		cbFog.FogMaxHeight= m_fFogMaxHeight;
+		cbFog.FogStartPos = m_fFogStartPos;
+		cbFog.FogEndPos = m_fFogEndPos;
+		cbFog.FogDensity = m_fFogDensity;
+
+		memcpy(mappedSubResource.pData, &cbFog, sizeof(cbFog));
+		m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+	}
+	m_pContext->VSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->PSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+
+	return S_OK;
+}
+
 HRESULT CRenderer::Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam) {
 	if (_ActiveCam == nullptr) return E_FAIL;
 
@@ -713,7 +738,7 @@ HRESULT CRenderer::Draw() {
 	if (FAILED(Render_Effect()))			return E_FAIL;
 
 	// Volumetric
-	//if (FAILED(Render_VolumetricEffect())) return E_FAIL;
+	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
 
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
@@ -1144,13 +1169,15 @@ HRESULT CRenderer::Render_VolumetricEffect(){
 	ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get() };
 	m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	ID3D11ShaderResourceView* pSRVs[4] = {
+	ID3D11ShaderResourceView* pSRVs[5] = {
+			m_pResDynTexTargetEffect->GetSRV().Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
 			m_pResDynTexTargetShadow->GetSRV().Get(),
 			BlueNoiseTexture.Get(),
 			VolumeTexture.Get()
 	};
-	m_pContext->CSSetShaderResources(0, 4, pSRVs);
+	Bind_VolumetricFog();
+	m_pContext->CSSetShaderResources(0, 5, pSRVs);
 
 	uint32_t ScreenResolutionX = { 1280 };
 	uint32_t ScreenResolutionY = { 720 };
@@ -1163,8 +1190,8 @@ HRESULT CRenderer::Render_VolumetricEffect(){
 	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
 	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
 
-	ID3D11ShaderResourceView* NullSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
-	m_pContext->CSSetShaderResources(0, 4, NullSRVs);
+	ID3D11ShaderResourceView* NullSRVs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+	m_pContext->CSSetShaderResources(0, 5, NullSRVs);
 
 	return S_OK;
 }
@@ -1210,10 +1237,7 @@ HRESULT CRenderer::Render_OffScreen() {
 		}
 		{
 			ComPtr<ID3D11ShaderResourceView> pSRVs = { E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE")->GetSRV() };
-			if (ApplyVolumetric == true) {
-				pSRVs = m_pResDynTexUAVVolumetric->GetSRV();
-			}
-			m_pContext->PSSetShaderResources(1, 1, pSRVs.GetAddressOf());
+			m_pContext->PSSetShaderResources(1, 1, ApplyVolumetric ? m_pResDynTexUAVVolumetric->GetSRV().GetAddressOf() : pSRVs.GetAddressOf());
 		}
 
 		// Draw On OffScreen
@@ -1579,32 +1603,6 @@ HRESULT CRenderer::RenderCollider()
     return S_OK;
 }
 
-HRESULT CRenderer::RenderParticle()
-{
-    //MRT
-    //emissive
-    const auto& blendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
-        TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
-	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
-	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
-    if (!blendState)
-        return E_FAIL;
-    if (blendState)
-        m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
-
-    for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::PARTICLE)])
-    {
-        if (pRenderObject->HasRenderPass(RenderContext.pass))
-        {
-            pRenderObject->Render(m_pContext.Get(), RenderContext);
-        }
-    }
-
-    m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
-	//m_pContext->RSSetState(nullptr);
-    return S_OK;
-}
-
 HRESULT CRenderer::RenderUI()
 {
     auto& renderList = m_RenderObject[ETOUI(RENDERGROUP::UI)];
@@ -1663,6 +1661,35 @@ VOID	CRenderer::PostProcessGUI() {
     ImGui::End();
 }
 
+VOID CRenderer::VolumetricFogGUI(){
+	ImGui::Begin("VolumetricFog");
+
+	ImGui::SliderFloat("Intensity", &m_fFogIntensity, 0.f, 1.f, "%.2f");
+	if (ImGui::ColorEdit3("Color", (float*)&m_fFogColor))
+	{
+		if (m_fFogColor.x < 0.f) m_fFogColor.x = 0.f;
+		if (m_fFogColor.x > 1.f) m_fFogColor.x = 1.f;
+
+		if (m_fFogColor.y < 0.f) m_fFogColor.y = 0.f;
+		if (m_fFogColor.y > 1.f) m_fFogColor.y = 1.f;
+
+		if (m_fFogColor.z < 0.f) m_fFogColor.z = 0.f;
+		if (m_fFogColor.z > 1.f) m_fFogColor.z = 1.f;
+	}
+
+	ImGui::Separator();
+
+	ImGui::DragFloat("Start Distance", &m_fFogStartPos, 1.f, 0.f, 100.f, "%.1f");
+	ImGui::DragFloat("End Distance", &m_fFogEndPos, 1.f, m_fFogStartPos, 500.f, "%.1f");
+
+	ImGui::Separator();
+
+	ImGui::DragFloat("Max Height", &m_fFogMaxHeight, 0.5f, -30.f, 30.f, "%.1f");
+	ImGui::DragFloat("Density", &m_fFogDensity, 0.0001f, 0.f, 0.1f, "%.4f");
+	
+	ImGui::End();
+}
+
 HRESULT CRenderer::Initialize_Debugging()
 {
     m_pDebugBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
@@ -1690,7 +1717,7 @@ HRESULT CRenderer::Initialize_Debugging()
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetSMRO);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetEmissive);
 
-    m_pResDynTexTargetList.push_back(m_pResDynTexTargetEffect);
+    m_pResDynTexTargetList.push_back(m_pResDynTexUAVVolumetric);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetShadow);
 
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);

@@ -415,6 +415,12 @@
     <Filter Include="Serialize\TestCase">
       <UniqueIdentifier>{c5f4b517-bb73-4605-8016-a663b5b4c675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Volumetric">
+      <UniqueIdentifier>{3a4a0639-9eae-4888-8957-77e469aa351d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Camera\ShadowCamera">
+      <UniqueIdentifier>{794170c2-61af-41b9-a487-94d95b3cc2f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -894,7 +900,12 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ShadowCamera.h" />
+    <ClInclude Include="..\Public\ShadowCamera.h">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\VolumetricFog.h">
+      <Filter>GameObject\Volumetric</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1332,7 +1343,12 @@
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\ShadowCamera.cpp" />
+    <ClCompile Include="..\Private\ShadowCamera.cpp">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\VolumetricFog.cpp">
+      <Filter>GameObject\Volumetric</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">

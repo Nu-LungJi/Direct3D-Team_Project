@@ -36,7 +36,7 @@ float4 PSMain(PS_IN IN) : SV_TARGET
 {
     float4 BackGround = g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord);
     float4 OverTexture = g_OverDrawTexture.Sample(LinearWrap, IN.TexCoord);
-    return float4(BackGround.rgb, 1.f);
+
     float3 fogColor = OverTexture.rgb; // LightAccumulation
     float transmittance = OverTexture.a; // LightTransmittance
 
