@@ -46,6 +46,11 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
+	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
+	if (!m_pResSkinMeshCBuffer)
+	{
+		return E_FAIL;
+	}
 	
 	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
 	if (FAILED(m_pAnimComputeShader->Load()))
@@ -123,17 +128,7 @@ void CTestModel::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel->GetAnimations().empty())
 	{
-		GPU_ANIM_INSTANCE_DATA InstanceData{};
-
-		InstanceData.WorldMatrix =*GetTransform().GetCombinedWorldMatrix();
-
-		InstanceData.iAnimIndex =static_cast<uint32_t>(m_pModelAnimator->GetCurAnimState().iAnimIndex);
-
-		InstanceData.fTrackPosition =m_pModelAnimator->GetCurAnimState().fTrackPosition;
-
-		InstanceData.iFlags = 0;
-
-		CGameInstance::Get().Add_Instance(m_pComModelInstance,InstanceData);
+		CGameInstance::Get().Add_Instance(m_pComModelInstance,m_pModelAnimator,*GetTransform().GetCombinedWorldMatrix());
 
 		return;
 	}
@@ -150,7 +145,7 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
 		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
 		{
-			return E_FAIL;
+			return E_FAIL; 
 		}
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
@@ -280,6 +275,10 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	{
 		return E_FAIL;
 	}
+	if (FAILED(m_pComModelInstance->Bind_GPUSkinBones_VS(pContext)))
+	{
+		return E_FAIL;
+	}
 
 	// -------------------------------------------------
 	// Graphics Shader
@@ -329,6 +328,16 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(),viBuffer->GetIndexFormat(),0);
 
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+		E::GPU_SKIN_MESH_CONSTANTS skinConstants{};
+		skinConstants.iSkinBoneOffset = pModel->Get_GPUMeshSkinRange(iMeshIndex).iSkinBoneOffset;
+		D3D11_MAPPED_SUBRESOURCE mappedResource{};
+		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+			return E_FAIL;
+		memcpy(mappedResource.pData, &skinConstants, sizeof(skinConstants));
+		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+		ID3D11Buffer* pSkinMeshCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+		pContext->VSSetConstantBuffers(5, 1, &pSkinMeshCB);
 
 
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
@@ -492,9 +501,9 @@ HRESULT CTestModel::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 	if (!pContext)
 		return E_INVALIDARG;
 
-	ID3D11ShaderResourceView* pNullSRVs[2]{};
+	ID3D11ShaderResourceView* pNullSRVs[3]{};
 
-	pContext->VSSetShaderResources(6,2,pNullSRVs);
+	pContext->VSSetShaderResources(6,3,pNullSRVs);
 
 	return S_OK;
 }

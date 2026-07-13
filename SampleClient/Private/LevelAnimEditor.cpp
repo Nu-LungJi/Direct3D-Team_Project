@@ -8,7 +8,7 @@
 #include "TestModel.h"
 #include "Test_StaticModel.h"
 #include "LightObject.h"
-
+#include "ComAnimator.h"
 NS_USING(Client)
 
 CLevelAnimEditor::CLevelAnimEditor()
@@ -127,8 +127,6 @@ void CLevelAnimEditor::UpdateGUI()
 	{
 	
 
-
-
 		for (uint32_t i = 0; i < 10; ++i)
 		{
 			CTestModel::DESC Desc{};
@@ -154,6 +152,10 @@ void CLevelAnimEditor::UpdateGUI()
 		
 			pTransform.SetPosition(_float3{fRandomX,0.f,fRandomZ});
 			
+			auto anim = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+			
+
+			anim->Play_Anim((int32_t)Randf(0.f, 100.f), true, 0.2f);
 		}
 	}
 

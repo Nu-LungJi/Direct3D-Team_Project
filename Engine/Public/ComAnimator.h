@@ -324,6 +324,10 @@ public:
 	// ActionUpdate
 	HRESULT Update_Action(_float fTimeDelta);
 
+	HRESULT Update_Anim_GPU(_float fTimeDelta);
+
+	HRESULT Update_Action_GPU(_float fTimeDelta);
+
 
 	void	SetTrackPosition(_float fTrackPosition);
 

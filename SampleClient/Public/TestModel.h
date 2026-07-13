@@ -11,6 +11,7 @@ class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
 class CResModel;
+class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
 NS_END
@@ -61,6 +62,7 @@ private:
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
+	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 
 	SPtr<CResComputeShader> m_pAnimComputeShader{};
 

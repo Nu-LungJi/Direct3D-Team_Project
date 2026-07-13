@@ -15,10 +15,13 @@ RWStructuredBuffer<float4x4> gFinalBoneMatrices : register(u0);
 
 float4x4 QuaternionMatrix(float4 q)
 {
-    float x2=q.x+q.x, y2=q.y+q.y, z2=q.z+q.z;
-    float xx=q.x*x2, xy=q.x*y2, xz=q.x*z2, yy=q.y*y2, yz=q.y*z2, zz=q.z*z2;
-    float wx=q.w*x2, wy=q.w*y2, wz=q.w*z2;
-    return float4x4(1-yy-zz,xy+wz,xz-wy,0, xy-wz,1-xx-zz,yz+wx,0, xz+wy,yz-wx,1-xx-yy,0, 0,0,0,1);
+    float x2 = q.x + q.x, y2 = q.y + q.y, z2 = q.z + q.z;
+    float xx = q.x * x2, xy = q.x * y2, xz = q.x * z2, yy = q.y * y2, yz = q.y * z2, zz = q.z * z2;
+    float wx = q.w * x2, wy = q.w * y2, wz = q.w * z2;
+    return float4x4( 1-yy-zz, xy+wz , xz-wy , 0 , 
+                    xy-wz , 1-xx-zz , yz+wx , 0 , 
+                    xz+wy , yz-wx , 1-xx-yy , 0 ,
+                    0,      0,      0,      1);
 }
 
 float4x4 SampleLocal(uint boneIndex, GPU_ANIM_DESC animation, float time)
@@ -67,7 +70,7 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
     GPU_ANIM_INSTANCE_DATA instance = gInstances[instanceIndex];
 
     GPU_ANIM_DESC animation = gAnimations[instance.iAnimIndex];
-    // Bone의 개수가 추가 했을 경우
+    // Bone의 개수가 넘어 갔을 경우 512개
     if ( boneIndex >= animation.iBoneCount){
         gFinalBoneMatrices[outputIndex] = float4x4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
         return;

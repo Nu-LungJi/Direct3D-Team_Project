@@ -76,6 +76,7 @@ public:
 	ID3D11ShaderResourceView* Get_GPUBoneChannelMapSRV() const {return m_pGPUBoneChannelMap->GetSRV().Get();}
 
 	ID3D11ShaderResourceView* Get_GPUSkinBoneSRV() const {return m_pGPUSkinBones->GetSRV().Get();}
+	const GPU_MESH_SKIN_RANGE& Get_GPUMeshSkinRange(uint32_t iMeshIndex) const { return m_GPUMeshSkinRanges.at(iMeshIndex); }
 protected:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -110,6 +111,8 @@ private:
 	SPtr<CResStructuredBuffer> m_pGPUKeyFrames;
 	SPtr<CResStructuredBuffer> m_pGPUBoneChannelMap;
 	SPtr<CResStructuredBuffer> m_pGPUSkinBones;
+	SPtr<CResStructuredBuffer> m_pGPUMeshSkinRanges;
+	std::vector<GPU_MESH_SKIN_RANGE> m_GPUMeshSkinRanges;
 private:
 	_float4x4				m_PreTransformMatrix = {};
 private:

@@ -365,6 +365,19 @@ HRESULT CComModelInstance::Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContex
 	return S_OK;
 }
 
+HRESULT CComModelInstance::Bind_GPUSkinBones_VS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext || !m_pModel)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* pSRV = m_pModel->Get_GPUSkinBoneSRV();
+	if (!pSRV)
+		return E_FAIL;
+
+	pContext->VSSetShaderResources(8, 1, &pSRV);
+	return S_OK;
+}
+
 void CComModelInstance::Unbind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext)
 {
 	if (!pContext)

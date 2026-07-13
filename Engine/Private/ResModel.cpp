@@ -593,6 +593,8 @@ HRESULT CResModel::Ready_GPU_MeshSkin()
 		if (FAILED(res->Load(desc)))
 			return E_FAIL;
 
+		m_pGPUMeshSkinRanges = res;
+		m_GPUMeshSkinRanges = std::move(gpuMeshSkinRanges);
 	}
 
 	return S_OK;

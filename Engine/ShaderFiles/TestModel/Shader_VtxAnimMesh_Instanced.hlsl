@@ -12,6 +12,23 @@ struct GPU_ANIM_INSTANCE_DATA
 StructuredBuffer<GPU_ANIM_INSTANCE_DATA> g_AnimationInstances : register(t6);
 StructuredBuffer<float4x4> g_FinalBoneMatrices : register(t7);
 
+struct GPU_SKIN_BONE_DESC
+{
+    float4x4 OffsetMatrix;
+    uint iSkeletonBoneIndex;
+    uint iPadding0;
+    uint iPadding1;
+    uint iPadding2;
+};
+
+StructuredBuffer<GPU_SKIN_BONE_DESC> gSkinBones : register(t8);
+
+cbuffer CB_GPU_SKIN_MESH : register(b5)
+{
+    uint gSkinBoneOffset;
+    uint3 gSkinMeshPadding;
+};
+
 struct VS_IN
 {
     float3 vPosition : POSITION;
@@ -39,11 +56,15 @@ VS_OUT VSMain(VS_IN In, uint instanceId : SV_InstanceID)
     VS_OUT Out;
     float fWeightW = 1.f - (In.vBlendWeights.x + In.vBlendWeights.y + In.vBlendWeights.z);
     uint boneOffset = instanceId * 512;
+    GPU_SKIN_BONE_DESC skinBoneX = gSkinBones[gSkinBoneOffset + In.vBlendIndices.x];
+    GPU_SKIN_BONE_DESC skinBoneY = gSkinBones[gSkinBoneOffset + In.vBlendIndices.y];
+    GPU_SKIN_BONE_DESC skinBoneZ = gSkinBones[gSkinBoneOffset + In.vBlendIndices.z];
+    GPU_SKIN_BONE_DESC skinBoneW = gSkinBones[gSkinBoneOffset + In.vBlendIndices.w];
     float4x4 BoneMatrix =
-        g_FinalBoneMatrices[boneOffset + In.vBlendIndices.x] * In.vBlendWeights.x +
-        g_FinalBoneMatrices[boneOffset + In.vBlendIndices.y] * In.vBlendWeights.y +
-        g_FinalBoneMatrices[boneOffset + In.vBlendIndices.z] * In.vBlendWeights.z +
-        g_FinalBoneMatrices[boneOffset + In.vBlendIndices.w] * fWeightW;
+        mul(skinBoneX.OffsetMatrix, g_FinalBoneMatrices[boneOffset + skinBoneX.iSkeletonBoneIndex]) * In.vBlendWeights.x +
+        mul(skinBoneY.OffsetMatrix, g_FinalBoneMatrices[boneOffset + skinBoneY.iSkeletonBoneIndex]) * In.vBlendWeights.y +
+        mul(skinBoneZ.OffsetMatrix, g_FinalBoneMatrices[boneOffset + skinBoneZ.iSkeletonBoneIndex]) * In.vBlendWeights.z +
+        mul(skinBoneW.OffsetMatrix, g_FinalBoneMatrices[boneOffset + skinBoneW.iSkeletonBoneIndex]) * fWeightW;
 
     float4 vSkinnedPosition = mul(float4(In.vPosition, 1.f), BoneMatrix);
     float4 vSkinnedNormal = mul(float4(In.vNormal, 0.f), BoneMatrix);

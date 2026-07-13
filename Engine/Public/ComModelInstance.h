@@ -72,6 +72,7 @@ public:
 
 public:
 	HRESULT Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext);
+	HRESULT Bind_GPUSkinBones_VS(ID3D11DeviceContext* pContext);
 
 	void Unbind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext);
 private:
