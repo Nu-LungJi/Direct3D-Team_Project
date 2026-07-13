@@ -82,11 +82,11 @@ void CResourceManager::UpdateGUI()
 		static ImGuiTextFilter filterGrp;
 		static ImGuiTextFilter filterRes;
 
-		// 그룹 리스트 바로 위에 해당 필터 배치
 		filterGrp.Draw("GrpSearch");
 		filterRes.Draw("ResSearch");
 
-		for (const auto& Pair : m_Resources)
+		// [수정 포인트] 데이터를 비워야(.clear()) 하므로 const를 제거했습니다.
+		for (auto& Pair : m_Resources)
 		{
 			const char* groupName = Pair.first.GetDbgStr();
 
@@ -99,9 +99,24 @@ void CResourceManager::UpdateGUI()
 				groupResCount += Pair2.second.size();
 			}
 
-			if (ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount))
+			// if문을 bool 변수로 빼내어 버튼과 트리를 한 줄에 배치할 수 있게 만듭니다.
+			bool bGroupOpen = ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount);
+
+			// ---------------------------------------------------------
+			// [NEW] 대분류(Group) 클리어 버튼
+			// ---------------------------------------------------------
+			ImGui::SameLine();         // 트리 이름 바로 옆에 배치
+			ImGui::PushID(&Pair);      // 버튼 ID가 겹치지 않도록 고유 메모리 주소 부여
+			if (ImGui::SmallButton("Clear Group"))
 			{
-				for (const auto& Pair2 : Pair.second)
+				// 해당 대분류(Pair.first) 안에 있는 소분류(unordered_map) 데이터를 전부 비웁니다.
+				Pair.second.clear();
+			}
+			ImGui::PopID();
+
+			if (bGroupOpen)
+			{
+				for (auto& Pair2 : Pair.second) // const 제거
 				{
 					const char* subName = Pair2.first.GetDbgStr();
 
@@ -110,9 +125,25 @@ void CResourceManager::UpdateGUI()
 
 					size_t subResCount = Pair2.second.size();
 
-					if (ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, subResCount))
+					bool bSubOpen = ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, subResCount);
+
+					// ---------------------------------------------------------
+					// [NEW] 소분류(SubGroup) 클리어 버튼
+					// ---------------------------------------------------------
+					ImGui::SameLine();
+					ImGui::PushID(&Pair2);
+					if (ImGui::SmallButton("Clear"))
 					{
-						for (size_t i = 0; i < subResCount; ++i)
+						// 해당 소분류(Pair2.first) 안에 있는 리소스 배열(vector)을 비웁니다.
+						Pair2.second.clear();
+					}
+					ImGui::PopID();
+
+					if (bSubOpen)
+					{
+						// 클리어 버튼을 누른 프레임에서는 Pair2.second.size()가 즉시 0이 되므로 
+						// 아래 for문은 에러 없이 깔끔하게 스킵(패스)됩니다.
+						for (size_t i = 0; i < Pair2.second.size(); ++i)
 						{
 							ImGui::Text("%i-----", (int)i);
 							Pair2.second[i]->UpdateGUI();
