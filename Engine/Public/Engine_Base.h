@@ -27,6 +27,8 @@ namespace Engine
 		virtual _string_id GetType() const { return StaticType; }
 		virtual _string_view GetTypeString() const { return "CEngineBase"; }
 		virtual bool IsA(_string_id id) const { return id == StaticType; }
+		template<typename T> requires std::derived_from<T, CEngineBase>
+		bool Is() const { return IsA(T::StaticType); }
 	};
 
 	template<typename T>
