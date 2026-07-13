@@ -17,6 +17,7 @@ size_t CMapMeshObject::s_iInstanceCapacity = 0;
 std::optional<CHandle> CMapMeshObject::s_hRenderRepresentative = {};
 UPtr<CMapMeshGpuCuller> CMapMeshObject::s_pGpuCuller{};
 _bool CMapMeshObject::s_bInstancingEnabled = true;
+_bool CMapMeshObject::s_bDebugBoundsEnabled = false;
 CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_FrameStats{ true };
 CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_LastStats{ true };
 
@@ -211,6 +212,22 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
 	{
 		return;
+	}
+
+	if (s_bDebugBoundsEnabled)
+	{
+		BoundingBox debugBounds{};
+		if (GetOcclusionBounds(debugBounds))
+		{
+			auto* pDebugLine = CGameInstance::Get().GetDbgLineRender();
+			if (pDebugLine != nullptr)
+			{
+				pDebugLine->SetColor({ 1.f, 1.f, 0.f, 1.f });
+				pDebugLine->AddBox(debugBounds.Extents, XMMatrixTranslation(
+					debugBounds.Center.x, debugBounds.Center.y, debugBounds.Center.z));
+				pDebugLine->SetColor();
+			}
+		}
 	}
 
 	++s_FrameStats.iObjects;

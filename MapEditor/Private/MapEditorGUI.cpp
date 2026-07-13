@@ -2,10 +2,56 @@
 #include "MapEditorGUI.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
+#include "ResStaticModel.h"
+#include "ResStaticModelMesh.h"
 NS_USING(Client)
 
 namespace
 {
+	bool PickMapMeshSubMeshBounds(E::CMapMeshObject& object, E::_fvector worldRayOrigin,
+		E::_fvector worldRayDirection, float& outWorldDistance)
+	{
+		auto model = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
+			object.GetModelResourceGroup(), object.GetModelResourceTag());
+		if (!model)
+			return false;
+
+		object.GetTransform().Update();
+		const E::_matrix world = object.GetTransform().GetLoadedCombinedWorldMatrix();
+		E::_vector determinant{};
+		const E::_matrix inverseWorld = XMMatrixInverse(&determinant, world);
+		const E::_vector localOrigin = XMVector3TransformCoord(worldRayOrigin, inverseWorld);
+		const E::_vector localDirection = XMVector3Normalize(
+			XMVector3TransformNormal(worldRayDirection, inverseWorld));
+
+		bool picked = false;
+		outWorldDistance = FLT_MAX;
+		for (const auto& mesh : model->GetMeshes())
+		{
+			if (!mesh)
+				continue;
+
+			DirectX::BoundingBox localBounds{};
+			DirectX::BoundingBox::CreateFromPoints(localBounds,
+				XMLoadFloat3(&mesh->GetMinPos()), XMLoadFloat3(&mesh->GetMaxPos()));
+
+			float localDistance = 0.f;
+			if (!localBounds.Intersects(localOrigin, localDirection, localDistance))
+				continue;
+
+			const E::_vector worldHit = XMVector3TransformCoord(
+				localOrigin + localDirection * localDistance, world);
+			const float worldDistance = XMVectorGetX(XMVector3Length(worldHit - worldRayOrigin));
+			if (worldDistance < outWorldDistance)
+			{
+				outWorldDistance = worldDistance;
+				picked = true;
+			}
+		}
+
+		return picked;
+	}
+
 	std::string MakeMapPath(const char* mapName)
 	{
 		std::string cleanName = mapName;
@@ -151,6 +197,12 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	{
 		E::CMapMeshObject::SetInstancingEnabled(bMapMeshInstancing);
 	}
+
+	bool bMapMeshDebugBounds = E::CMapMeshObject::IsDebugBoundsEnabled();
+	if (ImGui::Checkbox("MapMesh BoundingBox", &bMapMeshDebugBounds))
+	{
+		E::CMapMeshObject::SetDebugBoundsEnabled(bMapMeshDebugBounds);
+	}
 	const auto& instancingStats = E::CMapMeshObject::GetInstancingStats();
 	ImGui::Text("Mode: %s", instancingStats.bEnabled ? "Instanced" : "Normal");
 	ImGui::Text("Objects: %u", instancingStats.iObjects);
@@ -177,6 +229,7 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	m_pResourceGUI->UpdateGUI(fTimeDelta);
 	m_pMapChunkGUI->UpdateGUI(fTimeDelta);
 	RenderGizmo();
+	PickMapMeshObject();
 }
 
 E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
@@ -291,6 +344,63 @@ void CMapEditorGUI::RenderGizmo()
 	{
 		ApplyMatrixToTransform(selectedTransform, gizmoMatrix);
 	}
+
+	const bool isUsingGizmo = ImGuizmo::IsUsing();
+	if (m_bWasUsingGizmo && !isUsingGizmo)
+	{
+		E::CGameInstance::Get().RebuildMapChunks();
+	}
+	m_bWasUsingGizmo = isUsingGizmo;
+}
+
+void CMapEditorGUI::PickMapMeshObject()
+{
+	const ImGuiIO& io = ImGui::GetIO();
+	if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) || io.WantCaptureMouse ||
+		ImGuizmo::IsOver() || ImGuizmo::IsUsing())
+	{
+		return;
+	}
+
+	auto* camera = E::CGameInstance::Get().GetActiveCamera();
+	auto* selectedHandle = GetSelectedHandle();
+	if (camera == nullptr || selectedHandle == nullptr)
+		return;
+
+	const E::_float2 mouse = E::CGameInstance::Get().GetMousePos();
+	const E::_float2 clientSize = E::CGameInstance::Get().GetClientScreenSize();
+	if (clientSize.x <= 0.f || clientSize.y <= 0.f)
+		return;
+
+	const E::_matrix identity = XMMatrixIdentity();
+	const E::_vector nearPoint = XMVector3Unproject(
+		XMVectorSet(mouse.x, mouse.y, 0.f, 1.f),
+		0.f, 0.f, clientSize.x, clientSize.y, 0.f, 1.f,
+		camera->GetProj(), camera->GetView(), identity);
+	const E::_vector farPoint = XMVector3Unproject(
+		XMVectorSet(mouse.x, mouse.y, 1.f, 1.f),
+		0.f, 0.f, clientSize.x, clientSize.y, 0.f, 1.f,
+		camera->GetProj(), camera->GetView(), identity);
+	const E::_vector rayDirection = XMVector3Normalize(farPoint - nearPoint);
+
+	const std::vector<E::CHandle> candidates =
+		E::CGameInstance::Get().CollectMapMeshPickCandidates(nearPoint, rayDirection);
+	float nearestDistance = FLT_MAX;
+	std::optional<E::CHandle> pickedHandle;
+	for (const E::CHandle& handle : candidates)
+	{
+		auto* object = E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(handle);
+		float distance = 0.f;
+		if (object && PickMapMeshSubMeshBounds(*object, nearPoint, rayDirection, distance) &&
+			distance < nearestDistance)
+		{
+			nearestDistance = distance;
+			pickedHandle = handle;
+		}
+	}
+
+	if (pickedHandle)
+		*selectedHandle = *pickedHandle;
 }
 
 //void CMapEditorGUI::AddDefaultCameraLight()

@@ -162,6 +162,34 @@ void COctreeNode::OctreeFrustumCull(const BoundingFrustum& cameraFrustum)
 	}
 }
 
+void COctreeNode::CollectRayCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection, std::vector<CHandle>& outHandles) const
+{
+	_float nodeDistance = 0.f;
+	if (!m_cullingBounds.Intersects(rayOrigin, rayDirection, nodeDistance))
+		return;
+
+	for (const CHandle& handle : m_hObjects)
+	{
+		CMapMeshObject* mapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
+		if (mapObject == nullptr)
+			continue;
+
+		BoundingBox objectBounds{};
+		_float objectDistance = 0.f;
+		if (mapObject->GetOcclusionBounds(objectBounds) &&
+			objectBounds.Intersects(rayOrigin, rayDirection, objectDistance))
+		{
+			outHandles.push_back(handle);
+		}
+	}
+
+	for (const auto& child : m_childrenNode)
+	{
+		if (child)
+			child->CollectRayCandidates(rayOrigin, rayDirection, outHandles);
+	}
+}
+
 bool COctreeNode::IsLeaf() const
 {
 	for (const auto& child : m_childrenNode)

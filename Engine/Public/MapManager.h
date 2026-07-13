@@ -87,6 +87,7 @@ public:
 public:
 	void RebuildChunks();
 	HRESULT RegisterMapMeshObject(const CHandle& hObject);
+	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_vChunkSize; }
 	void SetChunkStreaming(_bool enable) { m_bChunkStreaming = enable; }

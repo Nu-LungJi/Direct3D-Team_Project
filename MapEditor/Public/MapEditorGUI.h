@@ -26,6 +26,7 @@ public:
 private:
 	void DrawGizmoToolbar();
 	void RenderGizmo();
+	void PickMapMeshObject();
 	//void AddDefaultCameraLight();
 
 private:
@@ -37,6 +38,7 @@ private:
 	char m_MapName[64] = "LevelA";
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
+	bool m_bWasUsingGizmo = false;
 };
 
 NS_END

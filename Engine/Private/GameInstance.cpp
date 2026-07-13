@@ -1657,6 +1657,10 @@ HRESULT CGameInstance::RegisterMapMeshObjectToMapChunk(const CHandle& hObject)
 {
 	return m_pMapManager->RegisterMapMeshObject(hObject);
 }
+std::vector<CHandle> CGameInstance::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const
+{
+	return m_pMapManager->CollectMapMeshPickCandidates(rayOrigin, rayDirection);
+}
 const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();

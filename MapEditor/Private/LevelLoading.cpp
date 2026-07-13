@@ -44,7 +44,7 @@ namespace
 
 	bool LoadLevelAnimEditorStaticModels()
 	{
-		const std::filesystem::path staticModelDir = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+		const std::filesystem::path staticModelDir = E::PATH_MINSOO_FBX; //E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
 		if (!std::filesystem::exists(staticModelDir))
 		{
 			return false;
@@ -52,10 +52,10 @@ namespace
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
 		{
-			if (!entry.is_regular_file() || entry.path().extension() != ".bin")
-			{
-				continue;
-			}
+			//if (!entry.is_regular_file() || entry.path().extension() != ".bin")
+			//{
+			//	continue;
+			//}
 
 			const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
 			auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(

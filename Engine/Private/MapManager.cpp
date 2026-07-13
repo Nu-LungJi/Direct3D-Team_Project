@@ -844,6 +844,21 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	return S_OK;
 }
 
+std::vector<CHandle> CMapManager::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const
+{
+	std::vector<CHandle> candidates;
+
+	for (const auto& [coord, chunk] : m_Chunks)
+	{
+		if (chunk.loadState != EChunkLoadState::Loaded || !chunk.octreeNode)
+			continue;
+
+		chunk.octreeNode->CollectRayCandidates(rayOrigin, rayDirection, candidates);
+	}
+
+	return candidates;
+}
+
 #ifdef _DEBUG
 
 HRESULT CMapManager::RenderDebugMapChunk()
