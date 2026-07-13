@@ -7,6 +7,7 @@ namespace physx {
 	class PxDefaultCpuDispatcher;
 	class PxPvd;
 	class PxCooking;
+	class PxControllerManager;
 }
 
 NS_BEGIN(Engine)
@@ -39,13 +40,14 @@ public:
 public:
 	physx::PxScene* GetScene() const { return m_pScene; }
 	physx::PxPhysics* GetPhysics() const { return m_pPhysics; }
-
+	physx::PxControllerManager* GetControllerManager() const { return m_pControllerManager; }
 
 private:
 	void SyncPhysicsToComponents();
 	
 
 private:
+	physx::PxControllerManager* m_pControllerManager{};
 	physx::PxFoundation* m_pFoundation{};
 	physx::PxPhysics* m_pPhysics{};
 	physx::PxScene* m_pScene{};

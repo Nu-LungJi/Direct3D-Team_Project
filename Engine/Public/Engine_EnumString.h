@@ -26,6 +26,7 @@ namespace Engine
 		Prototype_Component_ComPxSphereCollider,
 		Prototype_Component_ComPxTriMeshCollider,
 		Prototype_Component_ComPxRigidBody,
+		Prototype_Component_ComPxCharacterController
 	};
 
 	enum class ES_EngineProtoGameObject

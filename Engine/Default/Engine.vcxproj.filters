@@ -439,6 +439,9 @@
     <Filter Include="Lua\LuaEnv">
       <UniqueIdentifier>{8ba16c43-054b-4dbb-9c2a-aed24797421d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\PhysX\CharacterController">
+      <UniqueIdentifier>{3ff22233-47fd-43dc-9f31-4bdf198f60e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -939,6 +942,9 @@
     <ClInclude Include="..\public\LuaEnv.h">
       <Filter>Lua\LuaEnv</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ComPxCharacterController.h">
+      <Filter>Component\PhysX\CharacterController</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1393,6 +1399,9 @@
     </ClCompile>
     <ClCompile Include="..\private\LuaEnv.cpp">
       <Filter>Lua\LuaEnv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCharacterController.cpp">
+      <Filter>Component\PhysX\CharacterController</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

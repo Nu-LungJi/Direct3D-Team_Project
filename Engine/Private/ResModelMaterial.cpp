@@ -99,7 +99,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 					return E_FAIL;
 				}
 
-				m_Materials[textureType].push_back(resTex);
+				m_Materials[textureType].emplace_back(resTex);
 			}
 		}
 
@@ -189,7 +189,7 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 				return E_FAIL;
 			}
 
-			m_Materials[i].push_back(resTex);
+			m_Materials[i].emplace_back(resTex);
 		}
 	}
 

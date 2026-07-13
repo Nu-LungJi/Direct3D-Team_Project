@@ -13,6 +13,7 @@
 
 #include "TestPhysXTerrain.h"
 #include "TestPhysXBox.h"
+#include "TestCharacter.h"
 
 NS_USING(Client)
 
@@ -61,6 +62,16 @@ HRESULT CLevelPhysX::Initialize()
 		CTestPhysX::DESC Desc{ };
 		Desc.sObjectTag = "TestPhysX";
 		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysX",
+			"00_OBJECTS", &Desc)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CTestCharacter::DESC Desc{ };
+		Desc.sObjectTag = "TestCharacter";
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestCharacter",
 			"00_OBJECTS", &Desc)))
 		{
 			return E_FAIL;

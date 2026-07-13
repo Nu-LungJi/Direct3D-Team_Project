@@ -39,6 +39,7 @@
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
+#include "ComPxCharacterController.h"
 
 #include "ComLuaScript.h"
 
@@ -1232,6 +1233,10 @@ HRESULT CGameInstance::InitializePrototype()
 		{
 			return E_FAIL;
 		}
+		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController, CComPxCharacterController::Create()))
+		{
+			return E_FAIL;
+		}
 	}
 
 	// 루아
@@ -1791,6 +1796,10 @@ physx::PxScene* CGameInstance::PxGetScene() const
 physx::PxPhysics* CGameInstance::PxGetPhysics() const
 {
 	return m_pPhysXManager->GetPhysics();
+}
+physx::PxControllerManager* CGameInstance::PxGetControllerManager() const
+{
+	return m_pPhysXManager->GetControllerManager();
 }
 _bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const
 {

@@ -115,6 +115,9 @@
     <Filter Include="LuaFiles\ClientTest">
       <UniqueIdentifier>{93d4e033-315c-4287-99e0-69a37013f150}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestPhysx\TestCharacter">
+      <UniqueIdentifier>{3cb1fd54-fa56-492c-b28e-6463c30a6f7d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -282,6 +285,9 @@
     <ClInclude Include="..\public\TextBox.h">
       <Filter>GameObject\UI</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestCharacter.h">
+      <Filter>GameObject\TestPhysx\TestCharacter</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -410,6 +416,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTTeleport.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestCharacter.cpp">
+      <Filter>GameObject\TestPhysx\TestCharacter</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

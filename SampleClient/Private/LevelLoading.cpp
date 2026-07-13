@@ -30,6 +30,8 @@
 #include "TextBox.h"
 
 #include "TestGob.h"
+
+#include "TestCharacter.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -430,6 +432,12 @@ void CLevelLoading::ThreadStart()
 
 				//TestPhysXCapsule
 				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXCapsule", CTestPhysXCapsule::Create())))
+				{
+					return false;
+				}
+
+				//TestCharacter
+				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestCharacter", CTestCharacter::Create())))
 				{
 					return false;
 				}
