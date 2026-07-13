@@ -163,7 +163,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-	m_pColliderManager = CColliderManager::Create(ppDevice.Get(), ppContext.Get());
+	m_pColliderManager = CColliderManager::Create();
 	if (m_pColliderManager == nullptr)
 	{
 		return E_FAIL;
@@ -387,7 +387,6 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	AddRenderObject(RENDERGROUP::BLEND, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
-	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
 
 
