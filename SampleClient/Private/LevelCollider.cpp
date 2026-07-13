@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 #include "TestCollider.h"
 #include "ComCollider.h"
+#include "LevelColliderLoader.h"
 
 NS_USING(Client)
 
@@ -198,5 +199,6 @@ UPtr<CLevelCollider> CLevelCollider::Create()
 
 void CLevelCollider::Free()
 {
+	CLevelColliderLoader::UnLoad();
 	CLevel::Free();
 }

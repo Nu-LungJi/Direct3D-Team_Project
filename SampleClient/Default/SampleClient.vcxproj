@@ -196,6 +196,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\Public\CTexUI.h" />
     <ClInclude Include="..\Public\FlipBook.h" />
+    <ClInclude Include="..\public\LevelColliderLoader.h" />
+    <ClInclude Include="..\public\LevelLogoLoader.h" />
+    <ClInclude Include="..\public\LevelPhysXLoader.h" />
+    <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
@@ -253,6 +257,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\Private\FlipBook.cpp" />
+    <ClCompile Include="..\private\LevelColliderLoader.cpp" />
+    <ClCompile Include="..\private\LevelLogoLoader.cpp" />
+    <ClCompile Include="..\private\LevelPhysXLoader.cpp" />
+    <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
     <ClCompile Include="..\Private\CTexUI.cpp" />

@@ -15,6 +15,8 @@
 #include "TestPhysXBox.h"
 #include "TestCharacter.h"
 
+#include "LevelPhysXLoader.h"
+
 NS_USING(Client)
 
 CLevelPhysX::CLevelPhysX()
@@ -169,6 +171,6 @@ Engine::UPtr<CLevelPhysX> CLevelPhysX::Create()
 
 void CLevelPhysX::Free()
 {
-	CGameInstance::Get().Clear_DynamicLightList();
+	CLevelPhysXLoader::UnLoad();
 	CLevel::Free();
 }

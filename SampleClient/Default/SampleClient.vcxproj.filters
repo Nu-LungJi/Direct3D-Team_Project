@@ -118,6 +118,24 @@
     <Filter Include="GameObject\TestPhysx\TestCharacter">
       <UniqueIdentifier>{3cb1fd54-fa56-492c-b28e-6463c30a6f7d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loader">
+      <UniqueIdentifier>{c8255284-90c7-4f8a-821f-03cb9cd94a69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\MainApp">
+      <UniqueIdentifier>{65da9466-6a8c-4617-8822-10b3bf6693b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level">
+      <UniqueIdentifier>{c720357e-a721-4456-87f8-1b7656358094}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Logo">
+      <UniqueIdentifier>{ecc1ad1e-cd7b-48fa-bdab-11c27e7b6eb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\PhysX">
+      <UniqueIdentifier>{40e6f9d6-50cf-4cdc-8b6d-a4c6b4265159}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Collider">
+      <UniqueIdentifier>{8796610b-99a8-4ba5-a276-28292e056fb3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -288,6 +306,18 @@
     <ClInclude Include="..\public\TestCharacter.h">
       <Filter>GameObject\TestPhysx\TestCharacter</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MainAppLoader.h">
+      <Filter>Loader\MainApp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelLogoLoader.h">
+      <Filter>Loader\Level\Logo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelPhysXLoader.h">
+      <Filter>Loader\Level\PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelColliderLoader.h">
+      <Filter>Loader\Level\Collider</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -419,6 +449,18 @@
     </ClCompile>
     <ClCompile Include="..\private\TestCharacter.cpp">
       <Filter>GameObject\TestPhysx\TestCharacter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MainAppLoader.cpp">
+      <Filter>Loader\MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelLogoLoader.cpp">
+      <Filter>Loader\Level\Logo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelPhysXLoader.cpp">
+      <Filter>Loader\Level\PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelColliderLoader.cpp">
+      <Filter>Loader\Level\Collider</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

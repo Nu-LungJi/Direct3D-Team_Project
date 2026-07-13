@@ -53,7 +53,7 @@ HRESULT CTestCollider::Initialize(void* pArg)
 
 	{
 		CComLuaScript::DESC Desc{};
-		Desc.pResScript = CGameInstance::Get().AddResourceT<CResLuaScript>("SampleClient_Lua", "Hi", CResLuaScript::CreateAndLoad("./LuaFiles/ClientTest/asdf.lua"));
+		Desc.pResScript = CGameInstance::Get().GetResourceFirst<CResLuaScript>("SampleClient_Lua", "Hi");
 		//Desc.pResScript = CGameInstance::Get().GetResourceFirst<CResLuaScript>(ES_EngineResMajorType::PERMANENT_LUA, ES_EngineResLuaScript::LUA_TEST);
 		//Desc.pResScript = CResLuaScript::CreateAndLoad("./LuaFiles/SomeFolder/Hi.lua");
 
