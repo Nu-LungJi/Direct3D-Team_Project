@@ -2,6 +2,10 @@
 #include "Hierarchy.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
+#include "EditorCommandManager.h"
+#include "CreateMapMeshCommand.h"
+#include "DeleteMapMeshCommand.h"
+#include "MapMeshCommandCommon.h"
 
 NS_USING(Client)
 
@@ -34,58 +38,45 @@ namespace
 
 	MapMeshObjectClipboard g_MapMeshClipboard{};
 
-	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject, const std::string& strLayerTag)
+	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject,
+		CEditorCommandManager* pCommandManager, const std::string& strLayerTag)
 	{
-		if (pSelectedObject == nullptr)
+		if (pSelectedObject == nullptr || pCommandManager == nullptr)
 		{
 			return;
 		}
 
 		static uint32_t s_iObjectIndex = 1;
 
-		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
-		Desc.sObjectTag = "MapMesh_" + std::to_string(s_iObjectIndex++);
-		Desc.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
-		Desc.modelResTag = E::TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL;
-		Desc.protoGroupTag = "PERMANENT";
-		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
-
-		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
-			Desc.protoGroupTag,
-			Desc.prototypeTag,
-			strLayerTag,
-			&Desc))
-		{
-			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
-			*pSelectedObject = hObject.value();
-		}
+		MAPMESH_OBJECT_SNAPSHOT snapshot{};
+		snapshot.objectTag = "MapMesh_" + std::to_string(s_iObjectIndex++);
+		snapshot.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
+		snapshot.modelResTag = E::TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL;
+		snapshot.layerTag = strLayerTag;
+		pCommandManager->Submit(
+			std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), pSelectedObject));
 	}
 
-	void AddMapMeshObjectFromModelResource(E::CHandle* pSelectedObject, const std::string& strLayerTag, const char* modelGroupTag, const char* modelResTag)
+	void AddMapMeshObjectFromModelResource(E::CHandle* pSelectedObject,
+		CEditorCommandManager* pCommandManager, const std::string& strLayerTag,
+		const char* modelGroupTag, const char* modelResTag)
 	{
-		if (pSelectedObject == nullptr || modelGroupTag == nullptr || modelResTag == nullptr)
+		if (pSelectedObject == nullptr || pCommandManager == nullptr ||
+			modelGroupTag == nullptr || modelResTag == nullptr)
 		{
 			return;
 		}
 
 		static uint32_t s_iDroppedObjectIndex = 1;
 
-		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
-		Desc.sObjectTag = std::string("MapMesh_") + modelResTag + "_" + std::to_string(s_iDroppedObjectIndex++);
-		Desc.modelGroupTag = modelGroupTag;
-		Desc.modelResTag = modelResTag;
-		Desc.protoGroupTag = "PERMANENT";
-		Desc.prototypeTag = "Prototype_GameObject_MapMeshObject";
-
-		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
-			Desc.protoGroupTag,
-			Desc.prototypeTag,
-			strLayerTag,
-			&Desc))
-		{
-			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
-			*pSelectedObject = hObject.value();
-		}
+		MAPMESH_OBJECT_SNAPSHOT snapshot{};
+		snapshot.objectTag = std::string("MapMesh_") + modelResTag + "_" +
+			std::to_string(s_iDroppedObjectIndex++);
+		snapshot.modelGroupTag = modelGroupTag;
+		snapshot.modelResTag = modelResTag;
+		snapshot.layerTag = strLayerTag;
+		pCommandManager->Submit(
+			std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), pSelectedObject));
 	}
 
 	_bool CopyMapMeshObject(const E::CHandle& handle)
@@ -108,40 +99,28 @@ namespace
 		return true;
 	}
 
-	void PasteMapMeshObject(E::CHandle* pSelectedObject, const std::string& strLayerTag)
+	void PasteMapMeshObject(E::CHandle* pSelectedObject,
+		CEditorCommandManager* pCommandManager, const std::string& strLayerTag)
 	{
-		if (pSelectedObject == nullptr || !g_MapMeshClipboard.bValid)
+		if (pSelectedObject == nullptr || pCommandManager == nullptr || !g_MapMeshClipboard.bValid)
 		{
 			return;
 		}
 
 		static uint32_t s_iPasteIndex = 1;
 
-		E::CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
-		Desc.sObjectTag = g_MapMeshClipboard.objectTag + "_Copy" + std::to_string(s_iPasteIndex++);
-		Desc.modelGroupTag = g_MapMeshClipboard.modelGroupTag;
-		Desc.modelResTag = g_MapMeshClipboard.modelResTag;
-		Desc.protoGroupTag = g_MapMeshClipboard.protoGroupTag;
-		Desc.prototypeTag = g_MapMeshClipboard.prototypeTag;
-
-		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
-			Desc.protoGroupTag,
-			Desc.prototypeTag,
-			strLayerTag,
-			&Desc))
-		{
-			auto* pPastedObject = E::CGameInstance::Get().GetGameObjectByHandle(hObject.value());
-			if (pPastedObject != nullptr)
-			{
-				auto& transform = pPastedObject->GetTransform();
-				transform.SetPosition(g_MapMeshClipboard.position);
-				transform.SetQuaternion(g_MapMeshClipboard.rotation);
-				transform.SetScale(g_MapMeshClipboard.scale);
-			}
-
-			E::CGameInstance::Get().RegisterMapMeshObjectToMapChunk(hObject.value());
-			*pSelectedObject = hObject.value();
-		}
+		MAPMESH_OBJECT_SNAPSHOT snapshot{};
+		snapshot.objectTag = g_MapMeshClipboard.objectTag + "_Copy" + std::to_string(s_iPasteIndex++);
+		snapshot.modelGroupTag = g_MapMeshClipboard.modelGroupTag;
+		snapshot.modelResTag = g_MapMeshClipboard.modelResTag;
+		snapshot.protoGroupTag = g_MapMeshClipboard.protoGroupTag;
+		snapshot.prototypeTag = g_MapMeshClipboard.prototypeTag;
+		snapshot.layerTag = strLayerTag;
+		snapshot.position = g_MapMeshClipboard.position;
+		snapshot.rotation = g_MapMeshClipboard.rotation;
+		snapshot.scale = g_MapMeshClipboard.scale;
+		pCommandManager->Submit(
+			std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), pSelectedObject));
 	}
 
 	std::optional<std::string> FindLayerNameByHandle(const E::CHandle& handle)
@@ -177,7 +156,8 @@ namespace
 		return std::nullopt;
 	}
 
-	void HandleHierarchyShortcuts(E::CHandle* pSelectedObject)
+	void HandleHierarchyShortcuts(E::CHandle* pSelectedObject,
+		CEditorCommandManager* pCommandManager)
 	{
 		if (pSelectedObject == nullptr)
 		{
@@ -199,7 +179,7 @@ namespace
 		{
 			if (auto pasteLayerName = FindDefaultPasteLayer(*pSelectedObject))
 			{
-				PasteMapMeshObject(pSelectedObject, pasteLayerName.value());
+				PasteMapMeshObject(pSelectedObject, pCommandManager, pasteLayerName.value());
 			}
 		}
 	}
@@ -285,7 +265,8 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 					const auto* modelPayload = static_cast<const ModelResourceDragPayload*>(payload->Data);
 					if (modelPayload != nullptr)
 					{
-						AddMapMeshObjectFromModelResource(GetSelectedHandle(), layerName, modelPayload->groupName, modelPayload->resourceName);
+						AddMapMeshObjectFromModelResource(GetSelectedHandle(), m_pCommandManager,
+							layerName, modelPayload->groupName, modelPayload->resourceName);
 					}
 				}
 				ImGui::EndDragDropTarget();
@@ -297,11 +278,11 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 			{
 				if (ImGui::MenuItem("Create MapMeshObject"))
 				{
-					AddDefaultMapMeshObject(GetSelectedHandle(), layerName);
+					AddDefaultMapMeshObject(GetSelectedHandle(), m_pCommandManager, layerName);
 				}
 				if (ImGui::MenuItem("Paste MapMeshObject", nullptr, false, g_MapMeshClipboard.bValid))
 				{
-					PasteMapMeshObject(GetSelectedHandle(), layerName);
+					PasteMapMeshObject(GetSelectedHandle(), m_pCommandManager, layerName);
 				}
 				ImGui::EndPopup();
 			}
@@ -335,16 +316,20 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 						}
 						if (ImGui::MenuItem("Paste MapMeshObject", nullptr, false, g_MapMeshClipboard.bValid))
 						{
-							PasteMapMeshObject(GetSelectedHandle(), layerName);
+							PasteMapMeshObject(GetSelectedHandle(), m_pCommandManager, layerName);
 						}
 						ImGui::Separator();
 						if (ImGui::MenuItem("Rename Object"))
 						{
 							OpenRenamePopup(handle, pObject->GetObjectTag());
 						}
-						if (ImGui::MenuItem("Delete Object"))
+						if (ImGui::MenuItem("Delete Object", nullptr, false, bCanCopyMapMesh))
 						{
-							pObject->SetPendingDestroyCascade(true);
+							if (auto snapshot = MakeMapMeshObjectSnapshot(handle); snapshot && m_pCommandManager)
+							{
+								m_pCommandManager->Submit(std::make_unique<CDeleteMapMeshCommand>(
+									handle, std::move(*snapshot), GetSelectedHandle()));
+							}
 						}
 						ImGui::EndPopup();
 					}
@@ -358,14 +343,15 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 	bool bHierarchyFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	if (bHierarchyFocused)
 	{
-		HandleHierarchyShortcuts(GetSelectedHandle());
+		HandleHierarchyShortcuts(GetSelectedHandle(), m_pCommandManager);
 	}
 
 	ImGui::EndChild();
 	DrawRenamePopup();
 }
 
-E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject)
+E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject,
+	CEditorCommandManager* pCommandManager)
 {
 	auto pInstance = E::UPtr<CHierarchy>(new CHierarchy{});
 	if (FAILED(pInstance->Initialize(pSelectedObject)))
@@ -373,6 +359,7 @@ E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject)
 		MSG_BOX("Failed to Created : CHierarchy");
 		return nullptr;
 	}
+	pInstance->m_pCommandManager = pCommandManager;
 
 	return pInstance;
 }

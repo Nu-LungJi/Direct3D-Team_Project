@@ -3,6 +3,9 @@
 #include "GameInstance.h"
 #include "MapPickingPass.h"
 #include "MapMeshObject.h"
+#include "EditorCommandManager.h"
+#include "DeleteMapMeshCommand.h"
+#include "MapMeshCommandCommon.h"
 NS_USING(Client)
 
 namespace
@@ -89,6 +92,9 @@ CMapEditorGUI::~CMapEditorGUI()
 
 void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 {
+	if (m_pCommandManager)
+		m_pCommandManager->ProcessOne();
+
 	ImGuizmo::BeginFrame();
 
 	ImGui::SetNextWindowSize(ImVec2(360.f, 520.f), ImGuiCond_FirstUseEver);
@@ -114,6 +120,8 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	{
 		const std::string mapPath = MakeMapPath(m_MapName);
 		CGameInstance::Get().LoadMap(mapPath, true);
+		if (m_pCommandManager)
+			m_pCommandManager->Clear();
 		if (m_pNavMeshGUI)
 		{
 			m_pNavMeshGUI->LoadNavMesh(mapPath);
@@ -141,6 +149,31 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
+	}
+
+	ImGui::Separator();
+	if (ImGui::Button("Undo", ImVec2(72.f, 0.f)) && m_pCommandManager)
+		m_pCommandManager->RequestUndo();
+	ImGui::SameLine();
+	if (ImGui::Button("Redo", ImVec2(72.f, 0.f)) && m_pCommandManager)
+		m_pCommandManager->RequestRedo();
+	ImGui::SameLine();
+	ImGui::TextDisabled("Ctrl+Z / Ctrl+Y");
+
+	const ImGuiIO& io = ImGui::GetIO();
+	if (m_pCommandManager && io.KeyCtrl && !io.WantTextInput)
+	{
+		if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z), false))
+		{
+			if (io.KeyShift)
+				m_pCommandManager->RequestRedo();
+			else
+				m_pCommandManager->RequestUndo();
+		}
+		else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Y), false))
+		{
+			m_pCommandManager->RequestRedo();
+		}
 	}
 
 	ImGui::Separator();
@@ -177,6 +210,7 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	ImGui::Separator();
 	m_pInspector->UpdateGUI(fTimeDelta);
+	DrawMapMeshContextMenu();
 
 	ImGui::PopStyleVar(2);
 	ImGui::End();
@@ -195,8 +229,12 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 		MSG_BOX("Failed to Created : CMapEditorGUI");
 		return nullptr;
 	}
+	pInstance->m_pCommandManager = CEditorCommandManager::Create();
+	if (pInstance->m_pCommandManager == nullptr)
+		return nullptr;
 
-	pInstance->m_pHierarchy = CHierarchy::Create(pSelectedObject);
+	pInstance->m_pHierarchy = CHierarchy::Create(
+		pSelectedObject, pInstance->m_pCommandManager.get());
 	if (pInstance->m_pHierarchy == nullptr)
 	{
 		return nullptr;
@@ -208,7 +246,8 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 		return nullptr;
 	}
 
-	pInstance->m_pResourceGUI = CResourceGUI::Create(pSelectedObject);
+	pInstance->m_pResourceGUI = CResourceGUI::Create(
+		pSelectedObject, pInstance->m_pCommandManager.get());
 	if (pInstance->m_pResourceGUI == nullptr)
 	{
 		return nullptr;
@@ -337,6 +376,57 @@ void CMapEditorGUI::PickMapMeshObject()
 		static_cast<uint32_t>(mouse.x), static_cast<uint32_t>(mouse.y)))
 	{
 		*selectedHandle = *picked;
+	}
+}
+
+void CMapEditorGUI::DrawMapMeshContextMenu()
+{
+	const E::_float2 mouse = E::CGameInstance::Get().GetMousePos();
+	const E::_float2 clientSize = E::CGameInstance::Get().GetClientScreenSize();
+	const bool mouseInClient = mouse.x >= 0.f && mouse.y >= 0.f &&
+		mouse.x < clientSize.x && mouse.y < clientSize.y;
+
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && mouseInClient &&
+		!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) &&
+		!ImGuizmo::IsOver() && !ImGuizmo::IsUsing() && m_pMapPickingPass)
+	{
+		m_ContextMapMeshHandle = m_pMapPickingPass->Pick(
+			static_cast<uint32_t>(mouse.x), static_cast<uint32_t>(mouse.y));
+		if (m_ContextMapMeshHandle)
+		{
+			if (auto* selectedHandle = GetSelectedHandle())
+				*selectedHandle = *m_ContextMapMeshHandle;
+			ImGui::OpenPopup("MapMesh Scene Context");
+		}
+	}
+
+	if (ImGui::BeginPopup("MapMesh Scene Context"))
+	{
+		auto* object = m_ContextMapMeshHandle
+			? E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(*m_ContextMapMeshHandle)
+			: nullptr;
+
+		if (object != nullptr)
+		{
+			ImGui::TextUnformatted(object->GetObjectTag().data());
+			ImGui::Separator();
+			if (ImGui::MenuItem("Delete Object"))
+			{
+				if (auto snapshot = MakeMapMeshObjectSnapshot(*m_ContextMapMeshHandle);
+					snapshot && m_pCommandManager)
+				{
+					m_pCommandManager->Submit(std::make_unique<CDeleteMapMeshCommand>(
+						*m_ContextMapMeshHandle, std::move(*snapshot), GetSelectedHandle()));
+				}
+				m_ContextMapMeshHandle.reset();
+			}
+		}
+		else
+		{
+			ImGui::TextDisabled("Object no longer exists.");
+		}
+
+		ImGui::EndPopup();
 	}
 }
 

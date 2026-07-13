@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "ResourceGUI.h"
+#include "EditorCommandManager.h"
+#include "CreateMapMeshCommand.h"
+#include "MapMeshCommandCommon.h"
 #include "GameInstance.h"
+#include "MapMeshObject.h"
 #include "Resources.h"
 #include "ResCBuffer.h"
 #include "ResPixelShader.h"
@@ -490,6 +494,9 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 			strcpy_s(payload.groupName, item.groupName.c_str());
 			strcpy_s(payload.resourceName, item.resourceTag.c_str());
 			ImGui::SetDragDropPayload(PAYLOAD_MODEL_RESOURCE, &payload, sizeof(payload));
+			m_DragModelGroup = item.groupName;
+			m_DragModelTag = item.resourceTag;
+			m_bDraggingModel = true;
 			ImGui::Text("Create MapMeshObject");
 			ImGui::Text("%s / %s", payload.groupName, payload.resourceName);
 			ImGui::EndDragDropSource();
@@ -529,10 +536,67 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 	}
 
 	ImGui::EndChild();
+	HandleModelDropToScene();
 	ImGui::End();
 }
 
-E::UPtr<CResourceGUI> CResourceGUI::Create(E::CHandle* pSelectedObject)
+void CResourceGUI::HandleModelDropToScene()
+{
+	if (!m_bDraggingModel || !ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+		return;
+
+	const bool droppedOnScene = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+	if (droppedOnScene)
+	{
+		auto* camera = E::CGameInstance::Get().GetActiveCamera();
+		const E::_float2 mouse = E::CGameInstance::Get().GetMousePos();
+		const E::_float2 clientSize = E::CGameInstance::Get().GetClientScreenSize();
+		if (camera != nullptr && clientSize.x > 0.f && clientSize.y > 0.f &&
+			mouse.x >= 0.f && mouse.y >= 0.f && mouse.x < clientSize.x && mouse.y < clientSize.y)
+		{
+			const E::_matrix identity = XMMatrixIdentity();
+			const E::_vector nearPoint = XMVector3Unproject(
+				XMVectorSet(mouse.x, mouse.y, 0.f, 1.f),
+				0.f, 0.f, clientSize.x, clientSize.y, 0.f, 1.f,
+				camera->GetProj(), camera->GetView(), identity);
+			const E::_vector farPoint = XMVector3Unproject(
+				XMVectorSet(mouse.x, mouse.y, 1.f, 1.f),
+				0.f, 0.f, clientSize.x, clientSize.y, 0.f, 1.f,
+				camera->GetProj(), camera->GetView(), identity);
+			const E::_vector worldPosition = nearPoint +
+				XMVector3Normalize(farPoint - nearPoint) * m_fSceneDropDistance;
+
+			E::_float3 position{};
+			XMStoreFloat3(&position, worldPosition);
+			CreateDroppedMapMeshObject(position);
+		}
+	}
+
+	m_bDraggingModel = false;
+	m_DragModelGroup.clear();
+	m_DragModelTag.clear();
+}
+
+void CResourceGUI::CreateDroppedMapMeshObject(const E::_float3& worldPosition)
+{
+	if (m_DragModelGroup.empty() || m_DragModelTag.empty() || m_pCommandManager == nullptr)
+		return;
+
+	static uint32_t s_iSceneDropIndex = 1;
+
+	MAPMESH_OBJECT_SNAPSHOT snapshot{};
+	snapshot.objectTag = "MapMesh_" + m_DragModelTag + "_" +
+		std::to_string(s_iSceneDropIndex++);
+	snapshot.modelGroupTag = m_DragModelGroup;
+	snapshot.modelResTag = m_DragModelTag;
+	snapshot.layerTag = E::MAPMESHOBJECTLAYER;
+	snapshot.position = worldPosition;
+	m_pCommandManager->Submit(
+		std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
+}
+
+E::UPtr<CResourceGUI> CResourceGUI::Create(E::CHandle* pSelectedObject,
+	CEditorCommandManager* pCommandManager)
 {
 	auto pInstance = E::UPtr<CResourceGUI>(new CResourceGUI{});
 	if (FAILED(pInstance->Initialize(pSelectedObject)))
@@ -540,6 +604,7 @@ E::UPtr<CResourceGUI> CResourceGUI::Create(E::CHandle* pSelectedObject)
 		MSG_BOX("Failed to Created : CResourceGUI");
 		return nullptr;
 	}
+	pInstance->m_pCommandManager = pCommandManager;
 
 	return pInstance;
 }

@@ -55,6 +55,12 @@
     <Filter Include="GUIWindow\MapEditorGUI\MapPickingPass">
       <UniqueIdentifier>{fa6affad-094c-4da5-a516-96237ab2400d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Command">
+      <UniqueIdentifier>{d272076d-727f-48a2-8d00-eb61a5d181bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Command\CreateDeleteCommand">
+      <UniqueIdentifier>{ec3e2b73-d4e0-4b03-a8ba-bdcedcae1923}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -123,6 +129,21 @@
     <ClInclude Include="..\Public\MapPickingPass.h">
       <Filter>GUIWindow\MapEditorGUI\MapPickingPass</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\IEditorCommand.h">
+      <Filter>Command</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\EditorCommandManager.h">
+      <Filter>Command</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CreateMapMeshCommand.h">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\DeleteMapMeshCommand.h">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapMeshCommandCommon.h">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -189,12 +210,24 @@
     <ClCompile Include="..\Private\MapPickingPass.cpp">
       <Filter>GUIWindow\MapEditorGUI\MapPickingPass</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\EditorCommandManager.cpp">
+      <Filter>Command</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CreateMapMeshCommand.cpp">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\DeleteMapMeshCommand.cpp">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshCommandCommon.cpp">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-	<FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
-	  <Filter>GUIWindow\MapEditorGUI\MapPickingPass</Filter>
-	</FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

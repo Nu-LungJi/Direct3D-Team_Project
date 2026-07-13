@@ -3,6 +3,8 @@
 
 NS_BEGIN(Client)
 
+class CEditorCommandManager;
+
 class CHierarchy : public CGUIWindow
 {
 public:
@@ -16,7 +18,11 @@ public:
 	virtual void UpdateGUI(E::_float fTimeDelta) override;
 
 public:
-	static E::UPtr<CHierarchy> Create(E::CHandle* pSelectedObject);
+	static E::UPtr<CHierarchy> Create(E::CHandle* pSelectedObject,
+		CEditorCommandManager* pCommandManager);
+
+private:
+	CEditorCommandManager* m_pCommandManager = nullptr;
 };
 
 NS_END

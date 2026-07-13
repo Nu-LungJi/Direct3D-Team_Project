@@ -9,6 +9,7 @@
 NS_BEGIN(Client)
 
 class CMapPickingPass;
+class CEditorCommandManager;
 
 class CMapEditorGUI : public CGUIWindow
 {
@@ -29,9 +30,11 @@ private:
 	void DrawGizmoToolbar();
 	void RenderGizmo();
 	void PickMapMeshObject();
+	void DrawMapMeshContextMenu();
 	//void AddDefaultCameraLight();
 
 private:
+	E::UPtr<CEditorCommandManager> m_pCommandManager{};
 	E::UPtr<CHierarchy> m_pHierarchy{};
 	E::UPtr<CInspector> m_pInspector{};
 	E::UPtr<CResourceGUI> m_pResourceGUI{};
@@ -42,6 +45,7 @@ private:
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
 	bool m_bWasUsingGizmo = false;
+	std::optional<E::CHandle> m_ContextMapMeshHandle{};
 };
 
 NS_END
