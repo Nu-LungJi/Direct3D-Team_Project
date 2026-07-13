@@ -549,7 +549,7 @@ HRESULT CGameInstance::InitializeResources()
 	{
 		E::CResStructuredBuffer::DESC Desc{};
 
-		Desc.iNumElements = 1;
+		Desc.iNumElements = 512;
 
 		Desc.iStructureByteStride = sizeof(E::GPU_ANIM_INSTANCE_DATA);
 
@@ -567,7 +567,7 @@ HRESULT CGameInstance::InitializeResources()
 	{
 		E::CResStructuredBuffer::DESC Desc{};
 
-		Desc.iNumElements = 512;
+		Desc.iNumElements = 512 * 512;
 
 		Desc.iStructureByteStride =sizeof(_float4x4);
 
@@ -1024,14 +1024,21 @@ HRESULT CGameInstance::InitializeResources()
 		}
 
 
-		if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
+	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
 				return E_FAIL;
 			}
+	}
+	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxAnimMesh_Instanced.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
 		}
-		if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
+	}
+	if (auto res = AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{
 			if (FAILED(res->Load()))
 			{
@@ -1798,6 +1805,10 @@ void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_AN
 
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, InstanceData);
 }
+
+const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
+	return m_pModel_Instance_Manager->Get_ActiveBatches();
+};
 #pragma endregion
 
 

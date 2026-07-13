@@ -75,21 +75,17 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 		return;
 
 
-	//if (!pBatch->pRepresentativeModelInstance)
-	//{
-	//	pBatch->pRepresentativeModelInstance = pModelInstance;
-	//}
+	
+	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
 
-	//pBatch->Instances.push_back(InstanceData);
+	pBatch->Instances.push_back(InstanceData);
+	++m_iTotalInstanceCount;
 
-	//++m_iTotalInstanceCount;
-
-	//if (!pBatch->bActiveThisFrame)
-	//{
-	//	pBatch->bActiveThisFrame = true;
-
-	//	m_ActiveBatches.push_back(pBatch);
-	//}
+	if (!pBatch->bActiveThisFrame)
+	{
+		pBatch->bActiveThisFrame = true;
+		m_ActiveBatches.push_back(pBatch);
+	}
 }
 
 MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelInstance* pModelInstance)
@@ -122,10 +118,6 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelIn
 
 	pBatch->Key =Key;
 
-	//pBatch->pModel =pModel;
-
-	//pBatch->pRepresentativeModelInstance =pModelInstance;
-
 	// 인스턴스 개수 대충 넣은거
 	pBatch->Instances.reserve(16);
 
@@ -144,6 +136,7 @@ void CModel_Instance_Manager::Clear_Frame()
 			continue;
 
 		pBatch->Instances.clear();
+		pBatch->ObjectHandle;
 
 
 		pBatch->bActiveThisFrame = false;
@@ -156,31 +149,23 @@ void CModel_Instance_Manager::Clear_Frame()
 
 void CModel_Instance_Manager::UpdateGUI()
 {
-	if (!ImGui::Begin(
-		"Model Instance Manager"))
+	if (!ImGui::Begin("Model Instance Manager"))
 	{
 		ImGui::End();
 		return;
 	}
 
-	ImGui::Text(
-		"Registered Batch Count : %zu",
-		m_InstanceBatches.size());
+	ImGui::Text("Registered Batch Count : %zu",m_InstanceBatches.size());
 
-	ImGui::Text(
-		"Active Batch Count : %zu",
-		m_ActiveBatches.size());
+	ImGui::Text("Active Batch Count : %zu",m_ActiveBatches.size());
 
-	ImGui::Text(
-		"Total Instance Count : %u",
-		m_iTotalInstanceCount);
+	ImGui::Text("Total Instance Count : %u",m_iTotalInstanceCount);
 
 	ImGui::Separator();
 
 	uint32_t iBatchIndex = 0;
 
-	for (const MODEL_INSTANCE_BATCH* pBatch :
-		m_ActiveBatches)
+	for (const MODEL_INSTANCE_BATCH* pBatch :m_ActiveBatches)
 	{
 		if (!pBatch)
 			continue;

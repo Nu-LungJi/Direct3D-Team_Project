@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Handle.h"
 
 namespace Engine
 {
+
 	typedef struct tagEngineDesc
 	{
 		HWND hWnd;
@@ -397,10 +399,12 @@ namespace Engine
 			return Seed;
 		}
 	}MODEL_INSTANCE_KEY_HASH;
+
 	typedef struct MODEL_INSTANCE_BATCH
 	{
 		MODEL_INSTANCE_KEY Key{};
 		
+		CHandle		ObjectHandle;
 		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
 
 		_bool bActiveThisFrame = false;

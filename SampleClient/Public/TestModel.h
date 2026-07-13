@@ -50,18 +50,17 @@ public:
 	HRESULT Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext);
 
 	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
+
+	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
 	
 private:
 	CComModelInstance*   m_pComModelInstance{};
 	CComAnimator*		 m_pModelAnimator{};
 
-	// nonAnim
-	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
-	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
-
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
+	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
 
 	SPtr<CResComputeShader> m_pAnimComputeShader{};
 

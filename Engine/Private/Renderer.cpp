@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AnimationObject.h"
 #include "Renderer.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
@@ -1380,36 +1381,20 @@ HRESULT CRenderer::RenderNonBlend() {
 
 HRESULT CRenderer::RenderNonBlend_Instanced() {
 	ZoneScopedN("RenderNonBlend_Instanced");
-	//for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::NONBLEND_INSTANCED)])
-	//{
-	//	if (pRenderObject->HasRenderPass(RenderContext.pass))
-	//	{
-	//		pRenderObject->Render(m_pContext.Get(), RenderContext);
-	//	}
-	//}
+	const auto& ActiveBatches = CGameInstance::Get().Get_ActiveBatches();
 
+	for (MODEL_INSTANCE_BATCH* pBatch : ActiveBatches)
+	{
+		if (!pBatch || pBatch->Instances.empty() )
+			continue;
 
-	//const auto& ActiveBatches = CGameInstance::Get().Get_ActiveBatches();
+		auto* pAnimationObject = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle);
+		if (!pAnimationObject || !pAnimationObject->HasRenderPass(RenderContext.pass))
+			continue;
 
-	//for (MODEL_INSTANCE_BATCH* pBatch : ActiveBatches)
-	//{
-	//	if (!pBatch)
-	//		continue;
-
-	//	if (!pBatch->pModel)
-	//		continue;
-
-	//	if (!pBatch->pRepresentativeModelInstance)
-	//		continue;
-
-	//	if (pBatch->Instances.empty())
-	//		continue;
-
-	//	if(pBatch->HasRenderPass(RenderContext.pass))
-
-	//	if (FAILED(RenderInstance(*pBatch)))
-	//		return E_FAIL;
-	//}
+		if (FAILED(pAnimationObject->Render_Instanced(m_pContext.Get(), RenderContext, *pBatch)))
+			return E_FAIL;
+	}
 
 	return S_OK;
 

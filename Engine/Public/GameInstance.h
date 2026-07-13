@@ -354,7 +354,7 @@ public:
 
 
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
-
+	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
 #pragma endregion
 
 

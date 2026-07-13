@@ -29,20 +29,6 @@ void CTestModel::UpdateGUI()
 
 HRESULT CTestModel::InitializePrototype(void* pArg)
 {
-
-	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
-	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
-	if (FAILED(m_pResVertexNonAnimShader->Load()))
-	{
-		return E_FAIL;
-	}
-	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
-	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
-	if (FAILED(m_pResPixelNonAnimShader->Load()))
-	{
-		return E_FAIL;
-	}
-
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
 	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
@@ -52,6 +38,11 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
 	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelShader->Load()))
+	{
+		return E_FAIL;
+	}
+	m_pResVertexInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_Instanced");
+	if (!m_pResVertexInstancedShader || FAILED(m_pResVertexInstancedShader->Load()))
 	{
 		return E_FAIL;
 	}
@@ -168,15 +159,9 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);
 		
 	}
-	const auto& vs = 
-		!m_pComModelInstance->GetModel()->GetAnimations().empty()
-		? m_pResVertexShader
-		: m_pResVertexNonAnimShader;
+	const auto& vs = m_pResVertexShader;
 	
-	const auto& ps = 
-		!m_pComModelInstance->GetModel()->GetAnimations().empty()
-		? m_pResPixelShader
-		: m_pResPixelNonAnimShader;
+	const auto& ps = m_pResPixelShader;
 
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -234,11 +219,9 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	if (iInstanceCount == 0)
 		return S_OK;
 
-	if (!Batch)
-		return E_FAIL;
 
-	if (!m_pAnimComputeShader ||
-		!m_pAnimComputeShader->GetComputeShader())
+
+	if (!m_pAnimComputeShader ||!m_pAnimComputeShader->GetComputeShader())
 	{
 		return E_FAIL;
 	}
@@ -247,53 +230,37 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	// Compute Shader
 	// -------------------------------------------------
 
-	if (FAILED(Update_InstanceBuffer(
-		pContext,
-		Batch.Instances)))
+	if (FAILED(Update_InstanceBuffer(pContext,Batch.Instances)))
 	{
 		return E_FAIL;
 	}
 
 	// CS t0 ~ t5
-	if (FAILED(
-		m_pComModelInstance
-		->Bind_GPUAnimationSRVs_CS(
-			pContext)))
+	if (FAILED(m_pComModelInstance->Bind_GPUAnimationSRVs_CS(pContext)))
 	{
 		return E_FAIL;
 	}
 
 	// CS t6
-	if (FAILED(Bind_InstanceBuffer_CS(
-		pContext)))
+	if (FAILED(Bind_InstanceBuffer_CS(pContext)))
 	{
 		return E_FAIL;
 	}
 
 	// CS u0
-	if (FAILED(Bind_FinalBoneUAV_CS(
-		pContext)))
+	if (FAILED(Bind_FinalBoneUAV_CS(pContext)))
 	{
 		return E_FAIL;
 	}
 
-	pContext->CSSetShader(
-		m_pAnimComputeShader
-		->GetComputeShader()
-		.Get(),
-		nullptr,
-		0);
+	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(),nullptr,0);
 
 	/*
 	 * 한 Thread Group = 한 인스턴스라는 전제.
 	 */
-	pContext->Dispatch(
-		iInstanceCount,
-		1,
-		1);
+	pContext->Dispatch(iInstanceCount,1,1);
 
-	if (FAILED(Unbind_AnimationCompute(
-		pContext)))
+	if (FAILED(Unbind_AnimationCompute(pContext)))
 	{
 		return E_FAIL;
 	}
@@ -303,15 +270,13 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	// -------------------------------------------------
 
 	// VS t6 = InstanceData
-	if (FAILED(Bind_InstanceBuffer_VS(
-		pContext)))
+	if (FAILED(Bind_InstanceBuffer_VS(pContext)))
 	{
 		return E_FAIL;
 	}
 
 	// VS t7 = Compute 결과 FinalBoneMatrix
-	if (FAILED(Bind_FinalBoneSRV_VS(
-		pContext)))
+	if (FAILED(Bind_FinalBoneSRV_VS(pContext)))
 	{
 		return E_FAIL;
 	}
@@ -320,40 +285,26 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	// Graphics Shader
 	// -------------------------------------------------
 
-	const auto& vs =
-		m_pResVertexShader;
+	const auto& vs =m_pResVertexInstancedShader;
 
-	const auto& ps =
-		m_pResPixelShader;
+	const auto& ps =m_pResPixelShader;
 
 	if (!vs || !ps)
 		return E_FAIL;
 
-	pContext->IASetInputLayout(
-		vs->GetInputLayout().Get());
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 
-	pContext->VSSetShader(
-		vs->GetVertexShader().Get(),
-		nullptr,
-		0);
+	pContext->VSSetShader(vs->GetVertexShader().Get(),nullptr,0);
 
-	pContext->PSSetShader(
-		ps->GetPixelShader().Get(),
-		nullptr,
-		0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(),nullptr,0);
 
-	const auto& pModel =
-		Batch.pModel;
+	auto pModel =CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup,Batch.Key.modelTag);
 
-	const uint32_t iNumMeshes =
-		pModel->Get_NumMeshes();
+	const uint32_t iNumMeshes =pModel->Get_NumMeshes();
 
-	for (uint32_t iMeshIndex = 0;
-		iMeshIndex < iNumMeshes;
-		++iMeshIndex)
+	for (uint32_t iMeshIndex = 0;iMeshIndex < iNumMeshes;++iMeshIndex)
 	{
-		const auto& viBuffer =
-			pModel->GetMeshes()[iMeshIndex];
+		const auto& viBuffer =pModel->GetMeshes()[iMeshIndex];
 
 		if (!viBuffer)
 			continue;
@@ -373,54 +324,20 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 			0
 		};
 
-		pContext->IASetVertexBuffers(
-			0,
-			1,
-			vertexBuffers,
-			strides,
-			offsets);
+		pContext->IASetVertexBuffers(0,1,vertexBuffers,strides,offsets);
 
-		pContext->IASetIndexBuffer(
-			viBuffer->GetIndexBuffer().Get(),
-			viBuffer->GetIndexFormat(),
-			0);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(),viBuffer->GetIndexFormat(),0);
 
-		pContext->IASetPrimitiveTopology(
-			viBuffer->GetPrimitiveType());
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		/*
-		 * 여기서 메시별 SkinBone offset 또는
-		 * BlendIndex 매핑 정보를 VS에 전달해야 함.
-		 */
 
-		if (FAILED(
-			m_pComModelInstance->Bind_Textures(
-				pContext,
-				iMeshIndex)))
-		{
-			return E_FAIL;
-		}
+		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
-		if (FAILED(
-			m_pComModelInstance->Bind_Materials(
-				pContext,
-				{ 1.f, 1.f, 1.f },
-				0.f,
-				1.f)))
-		{
-			return E_FAIL;
-		}
-
-		pContext->DrawIndexedInstanced(
-			viBuffer->GetNumIndices(),
-			iInstanceCount,
-			0,
-			0,
-			0);
+		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(),iInstanceCount,0,0,0);
 	}
 
-	if (FAILED(Unbind_AnimationVS(
-		pContext)))
+	if (FAILED(Unbind_AnimationVS(pContext)))
 	{
 		return E_FAIL;
 	}
@@ -460,18 +377,8 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 
 	pContext->VSSetShaderResources(6,1,&pNullSRV);
 
-	D3D11_MAPPED_SUBRESOURCE MappedResource{};
-
-	if (FAILED(pContext->Map(pBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource)))
-	{
-		return E_FAIL;
-	}
-
 	const size_t iCopySize =sizeof(GPU_ANIM_INSTANCE_DATA) *m_iCurrentInstanceCount;
-
-	memcpy(MappedResource.pData,Instances.data(),iCopySize);
-
-	pContext->Unmap(pBuffer,0);
+	pContext->UpdateSubresource(pBuffer, 0, nullptr, Instances.data(), 0, 0);
 
 	return S_OK;
 
@@ -518,7 +425,6 @@ HRESULT CTestModel::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
 }
 HRESULT CTestModel::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 {
-
 	// CS t0 ~ t6 SRV 해제
 	ID3D11ShaderResourceView* pNullSRVs[7] =
 	{
@@ -581,7 +487,17 @@ HRESULT CTestModel::Bind_FinalBoneSRV_VS( ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
+HRESULT CTestModel::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext)
+		return E_INVALIDARG;
 
+	ID3D11ShaderResourceView* pNullSRVs[2]{};
+
+	pContext->VSSetShaderResources(6,2,pNullSRVs);
+
+	return S_OK;
+}
 
 E::UPtr<CTestModel> CTestModel::Create()
 {
