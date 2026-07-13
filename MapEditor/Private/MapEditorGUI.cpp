@@ -6,6 +6,7 @@
 #include "EditorCommandManager.h"
 #include "DeleteMapMeshCommand.h"
 #include "MapMeshCommandCommon.h"
+#include "EditorSelection.h"
 NS_USING(Client)
 
 namespace
@@ -94,6 +95,11 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 {
 	if (m_pCommandManager)
 		m_pCommandManager->ProcessOne();
+	if (m_pSelection)
+	{
+		m_pSelection->SyncFromPrimary();
+		m_pSelection->PruneInvalid();
+	}
 
 	ImGuizmo::BeginFrame();
 
@@ -107,27 +113,66 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	if (ImGui::Button("Level Save", ImVec2(112.f, 0.f)))
 	{
-		const std::string mapPath = MakeMapPath(m_MapName);
-		CGameInstance::Get().SaveMap(mapPath);
-		if (m_pNavMeshGUI)
-		{
-			m_pNavMeshGUI->SaveNavMesh(mapPath);
-		}
-		ImGui::OpenPopup("SaveCheck");
+		ImGui::OpenPopup("Confirm Level Save");
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Level Load", ImVec2(112.f, 0.f)))
 	{
-		const std::string mapPath = MakeMapPath(m_MapName);
-		CGameInstance::Get().LoadMap(mapPath, true);
-		if (m_pCommandManager)
-			m_pCommandManager->Clear();
-		if (m_pNavMeshGUI)
-		{
-			m_pNavMeshGUI->LoadNavMesh(mapPath);
-		}
-		//AddDefaultCameraLight();
+		ImGui::OpenPopup("Confirm Level Load");
+	}
+
+	if (m_bOpenSaveComplete)
+	{
+		ImGui::OpenPopup("SaveCheck");
+		m_bOpenSaveComplete = false;
+	}
+	if (m_bOpenLoadComplete)
+	{
 		ImGui::OpenPopup("LoadCheck");
+		m_bOpenLoadComplete = false;
+	}
+
+	if (ImGui::BeginPopupModal("Confirm Level Save", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Save level '%s'?", m_MapName);
+		ImGui::Separator();
+		if (ImGui::Button("Yes", ImVec2(100.f, 0.f)))
+		{
+			const std::string mapPath = MakeMapPath(m_MapName);
+			CGameInstance::Get().SaveMap(mapPath);
+			if (m_pNavMeshGUI)
+				m_pNavMeshGUI->SaveNavMesh(mapPath);
+			m_bOpenSaveComplete = true;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("No", ImVec2(100.f, 0.f)))
+			ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+	}
+
+	if (ImGui::BeginPopupModal("Confirm Level Load", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Load level '%s'?", m_MapName);
+		ImGui::TextDisabled("Unsaved changes will be lost.");
+		ImGui::Separator();
+		if (ImGui::Button("Yes", ImVec2(100.f, 0.f)))
+		{
+			const std::string mapPath = MakeMapPath(m_MapName);
+			CGameInstance::Get().LoadMap(mapPath, true);
+			if (m_pCommandManager)
+				m_pCommandManager->Clear();
+			if (m_pSelection)
+				m_pSelection->Clear();
+			if (m_pNavMeshGUI)
+				m_pNavMeshGUI->LoadNavMesh(mapPath);
+			m_bOpenLoadComplete = true;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("No", ImVec2(100.f, 0.f)))
+			ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
 	}
 
 	if (ImGui::BeginPopupModal("SaveCheck", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -177,6 +222,8 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	}
 
 	ImGui::Separator();
+	if (m_pSelection)
+		ImGui::Text("Selected Objects: %zu", m_pSelection->GetCount());
 	DrawGizmoToolbar();
 
 	ImGui::Separator();
@@ -232,9 +279,10 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 	pInstance->m_pCommandManager = CEditorCommandManager::Create();
 	if (pInstance->m_pCommandManager == nullptr)
 		return nullptr;
+	pInstance->m_pSelection = std::make_unique<CEditorSelection>(pSelectedObject);
 
 	pInstance->m_pHierarchy = CHierarchy::Create(
-		pSelectedObject, pInstance->m_pCommandManager.get());
+		pSelectedObject, pInstance->m_pCommandManager.get(), pInstance->m_pSelection.get());
 	if (pInstance->m_pHierarchy == nullptr)
 	{
 		return nullptr;
@@ -276,6 +324,10 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 void CMapEditorGUI::DrawGizmoToolbar()
 {
+	const bool multiSelection = m_pSelection && m_pSelection->GetCount() > 1;
+	if (multiSelection)
+		m_GizmoOperation = ImGuizmo::TRANSLATE;
+
 	ImGui::TextDisabled("Gizmo");
 	ImGui::SameLine();
 	if (DrawModeButton("T", m_GizmoOperation == ImGuizmo::TRANSLATE, "Translate"))
@@ -283,12 +335,14 @@ void CMapEditorGUI::DrawGizmoToolbar()
 		m_GizmoOperation = ImGuizmo::TRANSLATE;
 	}
 	ImGui::SameLine();
-	if (DrawModeButton("R", m_GizmoOperation == ImGuizmo::ROTATE, "Rotate"))
+	if (DrawModeButton("R", m_GizmoOperation == ImGuizmo::ROTATE,
+		multiSelection ? "Rotate is available for single selection" : "Rotate") && !multiSelection)
 	{
 		m_GizmoOperation = ImGuizmo::ROTATE;
 	}
 	ImGui::SameLine();
-	if (DrawModeButton("S", m_GizmoOperation == ImGuizmo::SCALE, "Scale"))
+	if (DrawModeButton("S", m_GizmoOperation == ImGuizmo::SCALE,
+		multiSelection ? "Scale is available for single selection" : "Scale") && !multiSelection)
 	{
 		m_GizmoOperation = ImGuizmo::SCALE;
 	}
@@ -318,8 +372,7 @@ void CMapEditorGUI::RenderGizmo()
 		return;
 	}
 
-	auto* pSelectedObject = GetSelectedObject();
-	if (pSelectedObject == nullptr)
+	if (m_pSelection == nullptr || m_pSelection->GetCount() == 0)
 	{
 		return;
 	}
@@ -329,9 +382,43 @@ void CMapEditorGUI::RenderGizmo()
 	XMStoreFloat4x4(&view, pActiveCamera->GetView());
 	XMStoreFloat4x4(&proj, pActiveCamera->GetProj());
 
-	auto& selectedTransform = pSelectedObject->GetTransform();
-	selectedTransform.Update();
-	E::_float4x4 gizmoMatrix = *selectedTransform.GetWorldMatrix();
+	const bool multiSelection = m_pSelection->GetCount() > 1;
+	E::CGameObject* pSelectedObject = GetSelectedObject();
+	E::_float3 pivotPosition{};
+	E::_float4x4 gizmoMatrix{};
+
+	if (multiSelection)
+	{
+		size_t validCount = 0;
+		for (const auto& handle : m_pSelection->GetHandles())
+		{
+			if (auto* object = E::CGameInstance::Get().GetGameObjectByHandle(handle))
+			{
+				const auto& position = object->GetTransform().GetPosition();
+				pivotPosition.x += position.x;
+				pivotPosition.y += position.y;
+				pivotPosition.z += position.z;
+				++validCount;
+			}
+		}
+		if (validCount == 0)
+			return;
+
+		const float inverseCount = 1.f / static_cast<float>(validCount);
+		pivotPosition.x *= inverseCount;
+		pivotPosition.y *= inverseCount;
+		pivotPosition.z *= inverseCount;
+		XMStoreFloat4x4(&gizmoMatrix,
+			XMMatrixTranslation(pivotPosition.x, pivotPosition.y, pivotPosition.z));
+	}
+	else
+	{
+		if (pSelectedObject == nullptr)
+			return;
+		auto& selectedTransform = pSelectedObject->GetTransform();
+		selectedTransform.Update();
+		gizmoMatrix = *selectedTransform.GetWorldMatrix();
+	}
 
 	ImGuiViewport* pViewport = ImGui::GetMainViewport();
 	const ImVec2 viewportPos = pViewport->Pos;
@@ -340,9 +427,33 @@ void CMapEditorGUI::RenderGizmo()
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
 	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
-	if (ImGuizmo::Manipulate(&view._11, &proj._11, m_GizmoOperation, m_GizmoMode, &gizmoMatrix._11))
+	const auto operation = multiSelection ? ImGuizmo::TRANSLATE : m_GizmoOperation;
+	const auto mode = multiSelection ? ImGuizmo::WORLD : m_GizmoMode;
+	if (ImGuizmo::Manipulate(&view._11, &proj._11, operation, mode, &gizmoMatrix._11))
 	{
-		ApplyMatrixToTransform(selectedTransform, gizmoMatrix);
+		if (multiSelection)
+		{
+			const E::_float3 delta{
+				gizmoMatrix._41 - pivotPosition.x,
+				gizmoMatrix._42 - pivotPosition.y,
+				gizmoMatrix._43 - pivotPosition.z
+			};
+			for (const auto& handle : m_pSelection->GetHandles())
+			{
+				if (auto* object = E::CGameInstance::Get().GetGameObjectByHandle(handle))
+				{
+					auto& transform = object->GetTransform();
+					const auto& position = transform.GetPosition();
+					transform.SetPosition(E::_float3{
+						position.x + delta.x, position.y + delta.y, position.z + delta.z });
+					transform.Update();
+				}
+			}
+		}
+		else
+		{
+			ApplyMatrixToTransform(pSelectedObject->GetTransform(), gizmoMatrix);
+		}
 	}
 
 	const bool isUsingGizmo = ImGuizmo::IsUsing();
@@ -375,7 +486,17 @@ void CMapEditorGUI::PickMapMeshObject()
 	if (const auto picked = m_pMapPickingPass->Pick(
 		static_cast<uint32_t>(mouse.x), static_cast<uint32_t>(mouse.y)))
 	{
-		*selectedHandle = *picked;
+		if (m_pSelection)
+		{
+			if (io.KeyCtrl)
+				m_pSelection->Toggle(*picked);
+			else
+				m_pSelection->SelectSingle(*picked);
+		}
+		else
+		{
+			*selectedHandle = *picked;
+		}
 	}
 }
 
@@ -394,7 +515,9 @@ void CMapEditorGUI::DrawMapMeshContextMenu()
 			static_cast<uint32_t>(mouse.x), static_cast<uint32_t>(mouse.y));
 		if (m_ContextMapMeshHandle)
 		{
-			if (auto* selectedHandle = GetSelectedHandle())
+			if (m_pSelection)
+				m_pSelection->SelectSingle(*m_ContextMapMeshHandle);
+			else if (auto* selectedHandle = GetSelectedHandle())
 				*selectedHandle = *m_ContextMapMeshHandle;
 			ImGui::OpenPopup("MapMesh Scene Context");
 		}

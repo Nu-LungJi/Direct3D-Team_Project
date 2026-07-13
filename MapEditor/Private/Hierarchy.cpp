@@ -6,6 +6,7 @@
 #include "CreateMapMeshCommand.h"
 #include "DeleteMapMeshCommand.h"
 #include "MapMeshCommandCommon.h"
+#include "EditorSelection.h"
 
 NS_USING(Client)
 
@@ -297,11 +298,23 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 						continue;
 					}
 
-					const bool bSelected = (handle == *pSelectedObject);
+					const bool bSelected = m_pSelection
+						? m_pSelection->IsSelected(handle)
+						: (handle == *pSelectedObject);
 					ImGui::PushID(static_cast<int>(handle.GetIndex()));
 					if (ImGui::Selectable(pObject->GetObjectTag().data(), bSelected))
 					{
-						*pSelectedObject = handle;
+						if (m_pSelection)
+						{
+							if (ImGui::GetIO().KeyCtrl)
+								m_pSelection->Toggle(handle);
+							else
+								m_pSelection->SelectSingle(handle);
+						}
+						else
+						{
+							*pSelectedObject = handle;
+						}
 					}
 					ImGui::PopID();
 
@@ -351,7 +364,7 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 }
 
 E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject,
-	CEditorCommandManager* pCommandManager)
+	CEditorCommandManager* pCommandManager, CEditorSelection* pSelection)
 {
 	auto pInstance = E::UPtr<CHierarchy>(new CHierarchy{});
 	if (FAILED(pInstance->Initialize(pSelectedObject)))
@@ -360,6 +373,7 @@ E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject,
 		return nullptr;
 	}
 	pInstance->m_pCommandManager = pCommandManager;
+	pInstance->m_pSelection = pSelection;
 
 	return pInstance;
 }

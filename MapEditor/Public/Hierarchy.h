@@ -4,6 +4,7 @@
 NS_BEGIN(Client)
 
 class CEditorCommandManager;
+class CEditorSelection;
 
 class CHierarchy : public CGUIWindow
 {
@@ -19,10 +20,11 @@ public:
 
 public:
 	static E::UPtr<CHierarchy> Create(E::CHandle* pSelectedObject,
-		CEditorCommandManager* pCommandManager);
+		CEditorCommandManager* pCommandManager, CEditorSelection* pSelection);
 
 private:
 	CEditorCommandManager* m_pCommandManager = nullptr;
+	CEditorSelection* m_pSelection = nullptr;
 };
 
 NS_END
