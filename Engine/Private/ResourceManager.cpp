@@ -26,41 +26,135 @@ void CResourceManager::UpdateGUI()
 {
 	ImGui::Begin("CResourceManager");
 
-	static ImGuiTextFilter filterGrp;
-	static ImGuiTextFilter filterRes;
-	filterGrp.Draw("GrpSearch");
-	filterRes.Draw("ResSearch");
+	// =========================================================
+	// 0. [NEW] 실시간 메모리 사용량 표시 (1초마다 갱신)
+	// =========================================================
+	static PROCESS_MEMORY_COUNTERS_EX pmc{};
+	static float memUpdateTimer = 1.0f; // 처음 켤 때 바로 갱신되도록 1.0으로 초기화
+	memUpdateTimer += ImGui::GetIO().DeltaTime;
 
+	// 1초(1.0f)마다 메모리 정보 갱신
+	if (memUpdateTimer >= 1.0f)
+	{
+		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+		memUpdateTimer = 0.0f; // 타이머 초기화
+	}
+
+	const double MB = 1024.0 * 1024.0;
+	ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "[System Memory Usage]");
+	ImGui::Text("  WS: %8.2f MB  |  Peak: %8.2f MB", pmc.WorkingSetSize / MB, pmc.PeakWorkingSetSize / MB);
+	ImGui::Text("  Private: %8.2f MB  |  PageFile: %8.2f MB", pmc.PrivateUsage / MB, pmc.PagefileUsage / MB);
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	// =========================================================
+	// 1. 전체 카운트 사전 계산
+	// =========================================================
+	size_t totalResCount = 0;
 	for (const auto& Pair : m_Resources)
 	{
-		const char* groupName = Pair.first.GetDbgStr();
-
-		if (!filterGrp.PassFilter(groupName))
-			continue;
-
-		if (ImGui::TreeNode(groupName))
+		for (const auto& Pair2 : Pair.second)
 		{
+			totalResCount += Pair2.second.size();
+		}
+	}
+
+	size_t totalPathKeys = m_PathLookup.size();
+	size_t totalPathItems = 0;
+	for (const auto& PathPair : m_PathLookup)
+	{
+		totalPathItems += PathPair.second.size();
+	}
+
+	// =========================================================
+	// 2. 전체 통계 정보 표시 (맨 위)
+	// =========================================================
+	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
+	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
+	ImGui::Separator();
+	ImGui::Spacing(); // 약간의 여백
+
+	// =========================================================
+	// 3. 그룹 / 서브그룹 리소스 리스트 (중간)
+	// =========================================================
+	if (ImGui::CollapsingHeader("Group/SubGroup Resources", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		static ImGuiTextFilter filterGrp;
+		static ImGuiTextFilter filterRes;
+
+		// 그룹 리스트 바로 위에 해당 필터 배치
+		filterGrp.Draw("GrpSearch");
+		filterRes.Draw("ResSearch");
+
+		for (const auto& Pair : m_Resources)
+		{
+			const char* groupName = Pair.first.GetDbgStr();
+
+			if (!filterGrp.PassFilter(groupName))
+				continue;
+
+			size_t groupResCount = 0;
 			for (const auto& Pair2 : Pair.second)
 			{
-				const char* subName = Pair2.first.GetDbgStr();
-
-				if (!filterRes.PassFilter(subName))
-					continue;
-
-				if (ImGui::TreeNode(subName))
-				{
-					for (size_t i = 0; i < Pair2.second.size(); ++i)
-					{
-						// 필요하면 여기까지 필터 적용 가능
-						ImGui::Text("%i-----", (int)i);
-						Pair2.second[i]->UpdateGUI();
-					}
-
-					ImGui::TreePop();
-				}
+				groupResCount += Pair2.second.size();
 			}
 
-			ImGui::TreePop();
+			if (ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount))
+			{
+				for (const auto& Pair2 : Pair.second)
+				{
+					const char* subName = Pair2.first.GetDbgStr();
+
+					if (!filterRes.PassFilter(subName))
+						continue;
+
+					size_t subResCount = Pair2.second.size();
+
+					if (ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, subResCount))
+					{
+						for (size_t i = 0; i < subResCount; ++i)
+						{
+							ImGui::Text("%i-----", (int)i);
+							Pair2.second[i]->UpdateGUI();
+						}
+						ImGui::TreePop();
+					}
+				}
+				ImGui::TreePop();
+			}
+		}
+	}
+
+	ImGui::Spacing(); // 그룹과 패스 리스트 사이의 여백
+
+	// =========================================================
+	// 4. Path Lookup 리스트 (맨 아래)
+	// =========================================================
+	if (ImGui::CollapsingHeader("PathLookup List", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		static ImGuiTextFilter filterPath;
+
+		// 패스 리스트 바로 위에 해당 필터 배치
+		filterPath.Draw("PathSearch");
+
+		for (const auto& PathPair : m_PathLookup)
+		{
+			const char* pathStr = PathPair.first.c_str();
+
+			if (!filterPath.PassFilter(pathStr))
+				continue;
+
+			size_t pathResCount = PathPair.second.size();
+
+			if (ImGui::TreeNode((void*)&PathPair, "[%s] (Count: %zu)", pathStr, pathResCount))
+			{
+				for (size_t i = 0; i < pathResCount; ++i)
+				{
+					ImGui::Text("%i-----", (int)i);
+					PathPair.second[i]->UpdateGUI();
+				}
+				ImGui::TreePop();
+			}
 		}
 	}
 
