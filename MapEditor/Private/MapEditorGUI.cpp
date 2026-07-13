@@ -1,57 +1,12 @@
 #include "pch.h"
 #include "MapEditorGUI.h"
 #include "GameInstance.h"
+#include "MapPickingPass.h"
 #include "MapMeshObject.h"
-#include "ResStaticModel.h"
-#include "ResStaticModelMesh.h"
 NS_USING(Client)
 
 namespace
 {
-	bool PickMapMeshSubMeshBounds(E::CMapMeshObject& object, E::_fvector worldRayOrigin,
-		E::_fvector worldRayDirection, float& outWorldDistance)
-	{
-		auto model = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
-			object.GetModelResourceGroup(), object.GetModelResourceTag());
-		if (!model)
-			return false;
-
-		object.GetTransform().Update();
-		const E::_matrix world = object.GetTransform().GetLoadedCombinedWorldMatrix();
-		E::_vector determinant{};
-		const E::_matrix inverseWorld = XMMatrixInverse(&determinant, world);
-		const E::_vector localOrigin = XMVector3TransformCoord(worldRayOrigin, inverseWorld);
-		const E::_vector localDirection = XMVector3Normalize(
-			XMVector3TransformNormal(worldRayDirection, inverseWorld));
-
-		bool picked = false;
-		outWorldDistance = FLT_MAX;
-		for (const auto& mesh : model->GetMeshes())
-		{
-			if (!mesh)
-				continue;
-
-			DirectX::BoundingBox localBounds{};
-			DirectX::BoundingBox::CreateFromPoints(localBounds,
-				XMLoadFloat3(&mesh->GetMinPos()), XMLoadFloat3(&mesh->GetMaxPos()));
-
-			float localDistance = 0.f;
-			if (!localBounds.Intersects(localOrigin, localDirection, localDistance))
-				continue;
-
-			const E::_vector worldHit = XMVector3TransformCoord(
-				localOrigin + localDirection * localDistance, world);
-			const float worldDistance = XMVectorGetX(XMVector3Length(worldHit - worldRayOrigin));
-			if (worldDistance < outWorldDistance)
-			{
-				outWorldDistance = worldDistance;
-				picked = true;
-			}
-		}
-
-		return picked;
-	}
-
 	std::string MakeMapPath(const char* mapName)
 	{
 		std::string cleanName = mapName;
@@ -271,6 +226,12 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 		return nullptr;
 	}
 
+	pInstance->m_pMapPickingPass = CMapPickingPass::Create();
+	if (pInstance->m_pMapPickingPass == nullptr)
+	{
+		return nullptr;
+	}
+
 	return pInstance;
 }
 
@@ -362,45 +323,21 @@ void CMapEditorGUI::PickMapMeshObject()
 		return;
 	}
 
-	auto* camera = E::CGameInstance::Get().GetActiveCamera();
 	auto* selectedHandle = GetSelectedHandle();
-	if (camera == nullptr || selectedHandle == nullptr)
+	if (selectedHandle == nullptr || m_pMapPickingPass == nullptr)
 		return;
 
 	const E::_float2 mouse = E::CGameInstance::Get().GetMousePos();
 	const E::_float2 clientSize = E::CGameInstance::Get().GetClientScreenSize();
-	if (clientSize.x <= 0.f || clientSize.y <= 0.f)
+	if (clientSize.x <= 0.f || clientSize.y <= 0.f ||
+		mouse.x < 0.f || mouse.y < 0.f || mouse.x >= clientSize.x || mouse.y >= clientSize.y)
 		return;
 
-	const E::_matrix identity = XMMatrixIdentity();
-	const E::_vector nearPoint = XMVector3Unproject(
-		XMVectorSet(mouse.x, mouse.y, 0.f, 1.f),
-		0.f, 0.f, clientSize.x, clientSize.y, 0.f, 1.f,
-		camera->GetProj(), camera->GetView(), identity);
-	const E::_vector farPoint = XMVector3Unproject(
-		XMVectorSet(mouse.x, mouse.y, 1.f, 1.f),
-		0.f, 0.f, clientSize.x, clientSize.y, 0.f, 1.f,
-		camera->GetProj(), camera->GetView(), identity);
-	const E::_vector rayDirection = XMVector3Normalize(farPoint - nearPoint);
-
-	const std::vector<E::CHandle> candidates =
-		E::CGameInstance::Get().CollectMapMeshPickCandidates(nearPoint, rayDirection);
-	float nearestDistance = FLT_MAX;
-	std::optional<E::CHandle> pickedHandle;
-	for (const E::CHandle& handle : candidates)
+	if (const auto picked = m_pMapPickingPass->Pick(
+		static_cast<uint32_t>(mouse.x), static_cast<uint32_t>(mouse.y)))
 	{
-		auto* object = E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(handle);
-		float distance = 0.f;
-		if (object && PickMapMeshSubMeshBounds(*object, nearPoint, rayDirection, distance) &&
-			distance < nearestDistance)
-		{
-			nearestDistance = distance;
-			pickedHandle = handle;
-		}
+		*selectedHandle = *picked;
 	}
-
-	if (pickedHandle)
-		*selectedHandle = *pickedHandle;
 }
 
 //void CMapEditorGUI::AddDefaultCameraLight()

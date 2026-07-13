@@ -52,6 +52,9 @@
     <Filter Include="GUIWindow\MapEditorGUI\NavMesh">
       <UniqueIdentifier>{25439a9b-5cd4-486d-abeb-aaedaa816293}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\MapPickingPass">
+      <UniqueIdentifier>{fa6affad-094c-4da5-a516-96237ab2400d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -117,6 +120,9 @@
     <ClInclude Include="..\Public\NavMeshGUI.h">
       <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapPickingPass.h">
+      <Filter>GUIWindow\MapEditorGUI\MapPickingPass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">
@@ -180,8 +186,14 @@
     <ClCompile Include="..\Private\NavMeshGUI.cpp">
       <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\MapPickingPass.cpp">
+      <Filter>GUIWindow\MapEditorGUI\MapPickingPass</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+	<FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
+	  <Filter>GUIWindow\MapEditorGUI\MapPickingPass</Filter>
+	</FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>

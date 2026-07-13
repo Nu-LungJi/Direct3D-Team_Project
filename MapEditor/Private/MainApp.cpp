@@ -68,6 +68,24 @@ HRESULT CMainApp::Initialize()
 			if (FAILED(res->Load()))
 				return E_FAIL;
 		}
+
+		if (auto res = CGameInstance::Get().AddResource(
+			"MAP_EDITOR_SHADER",
+			"VS_MAP_PICKING",
+			CResVertexShader::Create("./ShaderFiles/MapPicking.hlsl")))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
+
+		if (auto res = CGameInstance::Get().AddResource(
+			"MAP_EDITOR_SHADER",
+			"PS_MAP_PICKING",
+			CResPixelShader::Create("./ShaderFiles/MapPicking.hlsl")))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
 	}
 
 	return S_OK;

@@ -8,6 +8,8 @@
 
 NS_BEGIN(Client)
 
+class CMapPickingPass;
+
 class CMapEditorGUI : public CGUIWindow
 {
 public:
@@ -35,6 +37,7 @@ private:
 	E::UPtr<CResourceGUI> m_pResourceGUI{};
 	E::UPtr<CMapChunkGUI> m_pMapChunkGUI{};
 	E::UPtr<CNavMeshGUI> m_pNavMeshGUI{};
+	E::UPtr<CMapPickingPass> m_pMapPickingPass{};
 	char m_MapName[64] = "LevelA";
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
