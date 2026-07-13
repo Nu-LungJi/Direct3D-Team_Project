@@ -440,10 +440,6 @@ private:
 	void MouseFix() const;
 
 private:
-	HRESULT InitializeResources();
-	HRESULT InitializePrototype();
-
-private:
 	UPtr<CGraphicDevice> m_pGraphicDevice{};
 	UPtr<CImguiManager> m_pImguiManager{};
 	UPtr<CResourceManager> m_pResourceManager{};

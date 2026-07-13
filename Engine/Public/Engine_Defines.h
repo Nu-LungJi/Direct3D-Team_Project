@@ -20,6 +20,10 @@ using namespace Microsoft::WRL;
 #include <dinput.h>
 #pragma warning(disable : 4251)
 #include <d3dcompiler.h>
+#include <source_location>
+
+// 메모리로깅시필요
+#include <Psapi.h>
 
 #include <shared_mutex>
 #include <cstdint>

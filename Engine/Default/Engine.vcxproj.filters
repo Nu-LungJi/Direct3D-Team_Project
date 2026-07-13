@@ -442,6 +442,9 @@
     <Filter Include="Component\PhysX\CharacterController">
       <UniqueIdentifier>{3ff22233-47fd-43dc-9f31-4bdf198f60e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameInstance\InitLoader">
+      <UniqueIdentifier>{dc18b041-0cd4-4748-b556-231b40d41ccd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -945,6 +948,9 @@
     <ClInclude Include="..\public\ComPxCharacterController.h">
       <Filter>Component\PhysX\CharacterController</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\GameInstanceInitLoader.h">
+      <Filter>GameInstance\InitLoader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1402,6 +1408,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ComPxCharacterController.cpp">
       <Filter>Component\PhysX\CharacterController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\GameInstanceInitLoader.cpp">
+      <Filter>GameInstance\InitLoader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
