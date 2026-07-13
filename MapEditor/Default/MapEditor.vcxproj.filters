@@ -135,6 +135,9 @@
     <ClInclude Include="..\Public\EditorCommandManager.h">
       <Filter>Command</Filter>
     </ClInclude>
+	<ClInclude Include="..\Public\EditorSelection.h">
+	  <Filter>GUIWindow\MapEditorGUI</Filter>
+	</ClInclude>
     <ClInclude Include="..\Public\CreateMapMeshCommand.h">
       <Filter>Command\CreateDeleteCommand</Filter>
     </ClInclude>
@@ -213,6 +216,9 @@
     <ClCompile Include="..\Private\EditorCommandManager.cpp">
       <Filter>Command</Filter>
     </ClCompile>
+	<ClCompile Include="..\Private\EditorSelection.cpp">
+	  <Filter>GUIWindow\MapEditorGUI</Filter>
+	</ClCompile>
     <ClCompile Include="..\Private\CreateMapMeshCommand.cpp">
       <Filter>Command\CreateDeleteCommand</Filter>
     </ClCompile>

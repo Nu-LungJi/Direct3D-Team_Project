@@ -158,6 +158,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\CreateMapMeshCommand.h" />
     <ClInclude Include="..\Public\DeleteMapMeshCommand.h" />
     <ClInclude Include="..\Public\EditorCommandManager.h" />
+	<ClInclude Include="..\Public\EditorSelection.h" />
     <ClInclude Include="..\Public\GUIWindow.h" />
     <ClInclude Include="..\Public\Hierarchy.h" />
     <ClInclude Include="..\Public\IEditorCommand.h" />
@@ -186,6 +187,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\CreateMapMeshCommand.cpp" />
     <ClCompile Include="..\Private\DeleteMapMeshCommand.cpp" />
     <ClCompile Include="..\Private\EditorCommandManager.cpp" />
+	<ClCompile Include="..\Private\EditorSelection.cpp" />
     <ClCompile Include="..\Private\GUIWindow.cpp" />
     <ClCompile Include="..\Private\Hierarchy.cpp" />
     <ClCompile Include="..\Private\Inspector.cpp" />

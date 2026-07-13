@@ -75,6 +75,9 @@ public:
 	void LateUpdate(_float fTimeDelta);
 
 public:
+	void ClearAllChunk(); // 씬 전환할 때 Clear하셈
+
+public:
 	HRESULT SaveMap(const std::string& path); // 메타 + 모든 청크 저장
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true); // 메타 + 모든 청크 불러오기
 	HRESULT SaveChunk(const MAPCHUNK_COORD& coord, const std::string& chunkPath); // 청크 단위 저장

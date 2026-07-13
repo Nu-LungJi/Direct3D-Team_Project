@@ -1682,6 +1682,10 @@ void CGameInstance::SetDebugDrawMapChunk(_bool draw)
 {
 	return m_pMapManager->SetDebugDrawMapChunk(draw);
 }
+void CGameInstance::ClearAllChunk()
+{
+	m_pMapManager->ClearAllChunk();
+}
 #endif
 #pragma endregion
 

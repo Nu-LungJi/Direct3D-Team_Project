@@ -345,6 +345,11 @@ void CMapManager::LateUpdate(_float fTimeDelta)
 
 }
 
+void CMapManager::ClearAllChunk()
+{
+	m_Chunks.clear();
+}
+
 HRESULT CMapManager::SaveMap(const std::string& path)
 {
 	RebuildChunks();

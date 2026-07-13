@@ -345,6 +345,7 @@ public:
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
 #endif
+	void ClearAllChunk();
 #pragma endregion
 
 public:
