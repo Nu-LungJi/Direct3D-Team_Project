@@ -6,7 +6,8 @@ NS_USING(Engine)
 CResource::CResource(const _string& sPath)
 	: m_sPath{ sPath }
 {
-
+	auto tag = std::string{ GetTypeString() } + m_sPath;
+	LogMemoryUsage(tag.c_str());
 }
 
 CResource::~CResource()

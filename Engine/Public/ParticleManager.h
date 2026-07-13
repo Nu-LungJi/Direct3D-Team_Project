@@ -1,5 +1,7 @@
 #pragma once
 #include "Engine_Defines.h"
+#include "ParticleParams.h"
+
 NS_BEGIN(Engine)
 class CParticle;
 
@@ -11,13 +13,7 @@ struct PARTICLE_LOOP_REQUEST
     _float                            fSpawnInterval = 0.1f;
     _float                            fElapsed = 0.f;
 };
-enum class SPAWN_COMMAND_KIND
-{
-    STANDARD,   // 위치/속도/수명/크기/색 - 대부분의 파티클
-    BEAM,       // 시작점/끝점/지속시간 - CBeam_CPU 계열
-	STAIR,
-	STRAIGHT,
-};
+
 typedef struct tagParticlePreset
 {
 	std::string presetName;
@@ -37,6 +33,14 @@ typedef struct tagParticlePreset
 
 struct STANDARD_PARAMS
 {
+	bool bRandomPos = false;
+	_float3 posMin = { 0,0,0 };
+	_float3 posMax = { 0,0,0 };
+
+	bool bRandomVel = false;
+	_float3 velMin = { 0,0,0 };
+	_float3 velMax = { 0,0,0 };
+
     uint32_t count = 1;
     _float3  position = {};
     _float3  velocity = {};
@@ -64,42 +68,17 @@ struct BEAM_PARAMS
 	_float	 fSpawnDelay = 0.f;
 
 };
-struct STAIR_PARAMS
-{
-	_float3  vStartPos = {};
-	uint32_t iStepCount = 5;
-	_float   fStepWidth = 2.f;
-	_float   fStepHeight = 1.5f;
-	_float   fStepDepth = 2.f;
-	_float   life = 1.f;
-	_float4  color = { 1.f, 1.f, 1.f, 1.f };
-	_float4  emissive = { 1.f, 1.f, 1.f, 0.f };
-	_float	 fSpawnDelay = 0.f;
 
-};
-struct STRAIGHT_PARAMS
-{
-	_float3  vStartPos = {};
-	uint32_t row = 1;
-	uint32_t col = 1;
-	_float   offSetX = 1.f;
-	_float   offsetZ = 1.f;
-	_float   spawnDelay = 2.f;
-	_float   fSize = 1.f;
-	_float   fEndSize = 1.f;
-	_float   fLife = 1.f;
-	_float4  color = { 1.f, 1.f, 1.f, 1.f };
-	_float4  emissive = { 1.f, 1.f, 1.f, 0.f };
-
-};
 
 // 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
+enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
+
 struct SPAWN_COMMAND
 {
-    SPAWN_COMMAND_KIND sGroupTag_KindTag = SPAWN_COMMAND_KIND::STANDARD; // 이름은 기존 kind 그대로 사용해도 됨
-    StringID sGroupTag;
-    StringID sTypeTag;
-    std::variant<STANDARD_PARAMS, BEAM_PARAMS, STAIR_PARAMS, STRAIGHT_PARAMS> params;
+	SPAWN_COMMAND_KIND sGroupTag_KindTag{};
+	StringID sGroupTag{};
+	StringID sTypeTag{};
+	std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant> params;
 };
 struct PARTICLE_EFFECT_PRESET
 {
@@ -125,7 +104,6 @@ public:
     // 사전 등록 - [대분류][소분류]로 저장
     HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle);
 
-	// 정확히 지정해서 스폰
 
 
     // 정확히 지정해서 스폰
@@ -161,28 +139,16 @@ public:
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 
 
+	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
+	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
+	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
+	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
 	// 조회 헬퍼
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
 	bool HasGroup(const StringID& sGroupTag) const;
 public:
     static UPtr<CParticleManager> Create();
-	HRESULT SpawnSimple(const StringID& sGroupTag, const StringID& sTypeTag,
-		const _float3& position,
-		const _float4& color = { 1.f, 1.f, 1.f, 1.f },
-		_float life = 1.f,
-		_float size = 1.f,
-		const _float3& velocity = { 0.f, 0.f, 0.f },
-		const _float4& emissive = { 0.f, 0.f, 0.f, 0.f });
 
-	// 여러 개를 한 번에, 위치만 다르게
-	HRESULT SpawnSimpleMulti(const StringID& sGroupTag, const StringID& sTypeTag,
-		const std::vector<_float3>& positions,
-		const _float4& color = { 1.f, 1.f, 1.f, 1.f },
-		_float life = 1.f,
-		_float size = 1.f);
-	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
-	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
-	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 private:
     // [대분류][소분류] -> 파티클 인스턴스
     std::unordered_map<StringID, std::unordered_map<StringID, UPtr<CParticle>>> m_Particles;

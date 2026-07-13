@@ -415,6 +415,9 @@
     <Filter Include="Serialize\TestCase">
       <UniqueIdentifier>{c5f4b517-bb73-4605-8016-a663b5b4c675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particle\Param">
+      <UniqueIdentifier>{33454004-46ff-4e0e-a3fc-bcaf43f4b418}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -895,6 +898,12 @@
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\ShadowCamera.h" />
+    <ClInclude Include="ParticleParams.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleParamImGui.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

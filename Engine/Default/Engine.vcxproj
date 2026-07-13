@@ -390,6 +390,8 @@
     <ClInclude Include="..\Public\SerDeTestCase.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ParticleParams.h" />
+    <ClInclude Include="ParticleParamImGui.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">

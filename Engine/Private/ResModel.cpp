@@ -91,8 +91,8 @@ HRESULT CResModel::Load(const std::any& arg)
 	}
 
 
-	if (FAILED(Ready_Animation()))
-		return E_FAIL;
+	//if (FAILED(Ready_Animation()))
+	//	return E_FAIL;
 
 	m_eState = STATE::LOADED;
 	return S_OK;
@@ -194,6 +194,7 @@ HRESULT CResModel::Ready_Animation()
 
 	std::filesystem::path folderPath = modelPath.parent_path();
 
+	int count = 0;
 	for (const auto& entry : std::filesystem::directory_iterator(folderPath))
 	{
 		if (!entry.is_regular_file())
@@ -219,10 +220,11 @@ HRESULT CResModel::Ready_Animation()
 		}
 
 		pAnimation->SetAnimName(fileName);
-		m_Animations.push_back(pAnimation);
-	
+		m_Animations.emplace_back(pAnimation);
+		count++;
 	}
 
+	count++;
 
 	return S_OK;
 }

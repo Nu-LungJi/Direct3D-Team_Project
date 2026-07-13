@@ -36,7 +36,7 @@ public:
 	std::vector<KEYFRAME>&	Get_KeyFrames() { return m_KeyFrames; }
 
 private:
-	char				m_szName[MAX_PATH] = {};
+	//char				m_szName[MAX_PATH] = {};
 	int32_t				m_iBoneIndex = {};
 	uint32_t			m_iNumKeyFrames = {};
 	std::vector<KEYFRAME>	m_KeyFrames;
