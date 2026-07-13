@@ -1,7 +1,12 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "ResourceGUI.h"
 #include "GameInstance.h"
 #include "Resources.h"
+#include "ResCBuffer.h"
+#include "ResPixelShader.h"
+#include "ResVertexShader.h"
+#include "ResOffscreenTexture.h"
+#include "ResModelMaterial.h"
 
 NS_USING(Client)
 
@@ -18,6 +23,7 @@ namespace
 		std::string path{};
 		std::string state{};
 		bool bCanCreateMapMeshObject = false;
+		E::SPtr<E::CResStaticModel> staticModel{};
 	};
 
 	struct ModelResourceDragPayload
@@ -85,6 +91,10 @@ namespace
 			item.icon = "SM";
 			item.color = ImVec4(0.18f, 0.56f, 0.68f, 1.f);
 			item.bCanCreateMapMeshObject = resource->IsA(E::CResStaticModel::StaticType);
+			if (item.bCanCreateMapMeshObject)
+			{
+				item.staticModel = std::static_pointer_cast<E::CResStaticModel>(resource);
+			}
 		}
 		else if (resource->IsA(E::CResModel::StaticType) || resource->IsA(E::CResModelMesh::StaticType) || resource->IsA(E::CResModelMaterial::StaticType) || resource->IsA(E::CResModelAnim::StaticType) || resource->IsA(E::CResModelChanel::StaticType) || resource->IsA(E::CResModelBone::StaticType))
 		{
@@ -177,7 +187,211 @@ namespace
 	}
 }
 
+class Client::CModelThumbnailCache final : public CEngineBase
+{
+public:
+	DECLARE_DERIVED_TYPE(CModelThumbnailCache, CEngineBase)
+private:
+	struct Thumbnail
+	{
+		E::SPtr<E::CResOffscreenTexture> color{};
+	};
+
+public:
+	void BeginFrame()
+	{
+		m_bRenderedThisFrame = false;
+	}
+
+	ID3D11ShaderResourceView* Request(const std::string& key, const E::SPtr<E::CResStaticModel>& model)
+	{
+		if (const auto it = m_Cache.find(key); it != m_Cache.end())
+		{
+			return it->second.color->GetSRV().Get();
+		}
+
+		if (m_bRenderedThisFrame || model == nullptr || model->GetState() != E::CResource::STATE::LOADED || !model->HasLocalBounds())
+		{
+			return nullptr;
+		}
+
+		m_bRenderedThisFrame = true;
+		Thumbnail thumbnail{};
+		if (FAILED(CreateTarget(thumbnail)) || FAILED(RenderModel(model, thumbnail)))
+		{
+			return nullptr;
+		}
+
+		auto [it, inserted] = m_Cache.emplace(key, std::move(thumbnail));
+		return it->second.color->GetSRV().Get();
+	}
+
+private:
+	HRESULT CreateTarget(Thumbnail& thumbnail)
+	{
+		constexpr UINT SIZE = 128;
+		thumbnail.color = E::CResOffscreenTexture::Create();
+		if (thumbnail.color == nullptr || FAILED(thumbnail.color->Load(E::CResOffscreenTexture::DESC{ SIZE, SIZE })))
+		{
+			return E_FAIL;
+		}
+		if (m_pSharedDSV != nullptr)
+		{
+			return S_OK;
+		}
+
+		auto device = E::CGameInstance::Get().GetGraphicDevice();
+		D3D11_TEXTURE2D_DESC depthDesc{};
+		depthDesc.Width = SIZE;
+		depthDesc.Height = SIZE;
+		depthDesc.MipLevels = 1;
+		depthDesc.ArraySize = 1;
+		depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		depthDesc.SampleDesc.Count = 1;
+		depthDesc.Usage = D3D11_USAGE_DEFAULT;
+		depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		if (FAILED(device->CreateTexture2D(&depthDesc, nullptr, m_pSharedDepth.GetAddressOf())))
+		{
+			return E_FAIL;
+		}
+		return device->CreateDepthStencilView(m_pSharedDepth.Get(), nullptr, m_pSharedDSV.GetAddressOf());
+	}
+
+	HRESULT RenderModel(const E::SPtr<E::CResStaticModel>& model, Thumbnail& thumbnail)
+	{
+		auto context = E::CGameInstance::Get().GetGraphicDeviceContext();
+		auto vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
+		auto ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+		auto objectCB = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT);
+		auto passCB = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
+		auto materialCB = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+		if (!context || !vs || !ps || !objectCB || !passCB || !materialCB)
+		{
+			return E_FAIL;
+		}
+
+		ID3D11RenderTargetView* oldRTV = nullptr;
+		ID3D11DepthStencilView* oldDSV = nullptr;
+		context->OMGetRenderTargets(1, &oldRTV, &oldDSV);
+		UINT oldViewportCount = 1;
+		D3D11_VIEWPORT oldViewport{};
+		context->RSGetViewports(&oldViewportCount, &oldViewport);
+
+		ID3D11RenderTargetView* targetRTV = thumbnail.color->GetRTV().Get();
+		context->OMSetRenderTargets(1, &targetRTV, m_pSharedDSV.Get());
+		const float clearColor[4] = { 0.10f, 0.11f, 0.13f, 1.f };
+		context->ClearRenderTargetView(targetRTV, clearColor);
+		context->ClearDepthStencilView(m_pSharedDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		D3D11_VIEWPORT viewport{ 0.f, 0.f, 128.f, 128.f, 0.f, 1.f };
+		context->RSSetViewports(1, &viewport);
+
+		const auto& bounds = model->GetLocalBounds();
+		const E::_float3 center = bounds.Center;
+		const float radius = std::max(DirectX::XMVectorGetX(DirectX::XMVector3Length(DirectX::XMLoadFloat3(&bounds.Extents))), 0.01f);
+		const E::_vector direction = DirectX::XMVector3Normalize(DirectX::XMVectorSet(1.f, 0.65f, -1.f, 0.f));
+		const E::_vector target = DirectX::XMLoadFloat3(&center);
+		const E::_vector eye = DirectX::XMVectorSubtract(target, DirectX::XMVectorScale(direction, radius * 2.7f));
+		const E::_matrix view = DirectX::XMMatrixLookAtLH(eye, target, DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f));
+		const E::_matrix proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(35.f), 1.f, std::max(0.01f, radius * 0.02f), radius * 8.f);
+
+		E::CB_PER_OBJECT objectData{};
+		DirectX::XMStoreFloat4x4(&objectData.matWorld, DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&objectData.matWVP, view * proj);
+		E::CB_PER_PASS passData{};
+		DirectX::XMStoreFloat4x4(&passData.matView, view);
+		DirectX::XMStoreFloat4x4(&passData.matProj, proj);
+		DirectX::XMStoreFloat4x4(&passData.matViewProj, view * proj);
+		DirectX::XMStoreFloat4x4(&passData.matInvView, DirectX::XMMatrixInverse(nullptr, view));
+		DirectX::XMStoreFloat4x4(&passData.matInvViewProj, DirectX::XMMatrixInverse(nullptr, view * proj));
+		DirectX::XMStoreFloat3(&passData.vCamPos, eye);
+		E::CB_MATERIAL materialData{ { 1.f, 1.f, 1.f }, 0.f, 1.f, {} };
+
+		if (FAILED(UpdateBuffer(context.Get(), objectCB->GetCBuffer().Get(), objectData)) ||
+			FAILED(UpdateBuffer(context.Get(), passCB->GetCBuffer().Get(), passData)) ||
+			FAILED(UpdateBuffer(context.Get(), materialCB->GetCBuffer().Get(), materialData)))
+		{
+			RestoreTarget(context.Get(), oldRTV, oldDSV, oldViewportCount, oldViewport);
+			return E_FAIL;
+		}
+
+		ID3D11Buffer* objectBuffer = objectCB->GetCBuffer().Get();
+		ID3D11Buffer* passBuffer = passCB->GetCBuffer().Get();
+		ID3D11Buffer* materialBuffer = materialCB->GetCBuffer().Get();
+		context->IASetInputLayout(vs->GetInputLayout().Get());
+		context->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+		context->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+		context->VSSetConstantBuffers(0, 1, &objectBuffer);
+		context->VSSetConstantBuffers(1, 1, &passBuffer);
+		context->PSSetConstantBuffers(3, 1, &materialBuffer);
+
+		const auto& meshes = model->GetMeshes();
+		for (uint32_t i = 0; i < meshes.size(); ++i)
+		{
+			const auto& mesh = meshes[i];
+			if (!mesh) continue;
+			ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+			UINT stride = mesh->GetVertexStride();
+			UINT offset = 0;
+			context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			context->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+			context->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+			BindTextures(context.Get(), model, i);
+			context->DrawIndexed(mesh->GetNumIndices(), 0, 0);
+		}
+
+		ID3D11ShaderResourceView* nullSRVs[4]{};
+		context->PSSetShaderResources(0, 4, nullSRVs);
+		RestoreTarget(context.Get(), oldRTV, oldDSV, oldViewportCount, oldViewport);
+		return S_OK;
+	}
+
+	template<typename T>
+	static HRESULT UpdateBuffer(ID3D11DeviceContext* context, ID3D11Buffer* buffer, const T& data)
+	{
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(context->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) return E_FAIL;
+		memcpy(mapped.pData, &data, sizeof(T));
+		context->Unmap(buffer, 0);
+		return S_OK;
+	}
+
+	static void RestoreTarget(ID3D11DeviceContext* context, ID3D11RenderTargetView* rtv, ID3D11DepthStencilView* dsv, UINT viewportCount, const D3D11_VIEWPORT& viewport)
+	{
+		context->OMSetRenderTargets(1, &rtv, dsv);
+		if (viewportCount > 0) context->RSSetViewports(1, &viewport);
+		if (rtv) rtv->Release();
+		if (dsv) dsv->Release();
+	}
+
+	static void BindTextures(ID3D11DeviceContext* context, const E::SPtr<E::CResStaticModel>& model, uint32_t meshIndex)
+	{
+		const AI_TEXTURE_TYPE types[4] = { AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, AI_TEXTURE_TYPE::aiTextureType_NORMALS, AI_TEXTURE_TYPE::aiTextureType_METALNESS, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE };
+		const char* defaults[4] = { "TEX_DEFAULT_DIFFUSE", "TEX_DEFAULT_NORMAL", "TEX_DEFAULT_SMRO", "TEX_DEFAULT_EMISSIVE" };
+		ID3D11ShaderResourceView* srvs[4]{};
+		const auto& mesh = model->GetMeshes()[meshIndex];
+		const auto& materials = model->GetMaterials();
+		for (size_t i = 0; i < 4; ++i)
+		{
+			auto texture = E::CGameInstance::Get().GetResourceFirst<E::CResTexture2D>("DEFAULT_TEXTURE", defaults[i]);
+			if (mesh->Get_MaterialIndex() < materials.size() && materials[mesh->Get_MaterialIndex()])
+			{
+				auto textures = materials[mesh->Get_MaterialIndex()]->GetTextures();
+				if (!textures[types[i]].empty()) texture = textures[types[i]].front();
+			}
+			srvs[i] = texture ? texture->GetSRV().Get() : nullptr;
+		}
+		context->PSSetShaderResources(0, 4, srvs);
+	}
+
+private:
+	std::unordered_map<std::string, Thumbnail> m_Cache{};
+	ComPtr<ID3D11Texture2D> m_pSharedDepth{};
+	ComPtr<ID3D11DepthStencilView> m_pSharedDSV{};
+	bool m_bRenderedThisFrame = false;
+};
+
 CResourceGUI::CResourceGUI()
+	: m_pThumbnailCache{ E::ToUPtr(new CModelThumbnailCache{}) }
 {
 }
 
@@ -187,6 +401,7 @@ CResourceGUI::~CResourceGUI()
 
 void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 {
+	m_pThumbnailCache->BeginFrame();
 	ImGui::SetNextWindowSize(ImVec2(560.f, 420.f), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Resources");
 
@@ -254,11 +469,20 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 
 		const float cursorX = ImGui::GetCursorPosX();
 		ImGui::SetCursorPosX(cursorX + (cellWidth - iconSize) * 0.5f);
-		ImGui::PushStyleColor(ImGuiCol_Button, item.color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(item.color.x + 0.08f, item.color.y + 0.08f, item.color.z + 0.08f, 1.f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(item.color.x * 0.82f, item.color.y * 0.82f, item.color.z * 0.82f, 1.f));
-		ImGui::Button(item.icon, ImVec2(iconSize, iconSize));
-		ImGui::PopStyleColor(3);
+		const std::string thumbnailKey = item.groupName + "\x1f" + item.resourceTag;
+		ID3D11ShaderResourceView* thumbnail = item.staticModel ? m_pThumbnailCache->Request(thumbnailKey, item.staticModel) : nullptr;
+		if (thumbnail != nullptr)
+		{
+			ImGui::ImageButton(reinterpret_cast<ImTextureID>(thumbnail), ImVec2(iconSize, iconSize));
+		}
+		else
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, item.color);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(item.color.x + 0.08f, item.color.y + 0.08f, item.color.z + 0.08f, 1.f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(item.color.x * 0.82f, item.color.y * 0.82f, item.color.z * 0.82f, 1.f));
+			ImGui::Button(item.icon, ImVec2(iconSize, iconSize));
+			ImGui::PopStyleColor(3);
+		}
 
 		if (item.bCanCreateMapMeshObject && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 		{

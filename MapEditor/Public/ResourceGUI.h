@@ -3,6 +3,8 @@
 
 NS_BEGIN(Client)
 
+class CModelThumbnailCache;
+
 class CResourceGUI : public CGUIWindow
 {
 public:
@@ -21,6 +23,7 @@ public:
 private:
 	char m_SearchBuffer[128]{};
 	int m_SelectedCategory{};
+	E::UPtr<CModelThumbnailCache> m_pThumbnailCache{};
 
 };
 
