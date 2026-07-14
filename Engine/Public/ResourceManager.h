@@ -21,10 +21,11 @@ private:
 	std::unordered_map<StringID, RESOURCES> m_Resources{};
 
 public:
-	const std::vector<CResource*>* GetResourcesByPath(const _string& sPath) const;;
-	void RemovePathLookup(const _string& sPath, CResource* pRes);
+	std::unordered_map<_string, std::vector<SPtr<CResource>>> GetResourcesByPath() ;
+	std::vector<SPtr<CResource>> GetResourcesByPath(const _string& sPath) ;
+	void RemovePathLookup(const _string& sPath, SPtr<CResource> pRes);
 private:
-	std::unordered_map<_string, std::vector<CResource*>> m_PathLookup{};
+	std::unordered_map<_string, std::vector<WPtr<CResource>>> m_PathLookup{};
 
 public:
 	SPtr<CResource> AddResource(const StringID& sGroupTag, const StringID& sResTag, _string_id eAssetType, const _string& sPath, void* pArg);
@@ -38,19 +39,42 @@ public:
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const;
 
-	std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) { return _FindResource(sGroupTag, sResTag); };
-	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const { return _FindResource(sGroupTag, sResTag); };
-	std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) { return FindGroup(sGroupTag); };
-	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const { return FindGroup(sGroupTag); };
-	const std::unordered_map<StringID, RESOURCES>& GetResources() const { return m_Resources; }
+	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const
+	{
+		if (auto p = _FindResource(sGroupTag, sResTag))
+			return *p;
+		return {};
+	};
+	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const
+	{
+		if (auto p = FindGroup(sGroupTag))
+			return *p;
+		return {};
+	};
+	void ForEachResource(const StringID& sGroupTag, const StringID& sResTag, std::function<void(const std::vector<SPtr<CResource>>*)> callback) const
+	{
+		if (auto p = _FindResource(sGroupTag, sResTag))
+			callback(p);
+	}
+	void ForEachResource(const StringID& sGroupTag, std::function<void(const RESOURCES*)> callback) const
+	{
+		if (auto p = FindGroup(sGroupTag))
+			callback(p);
+	}
+
+	void ForEachResource(std::function<void(const std::unordered_map<StringID, RESOURCES>&)> callback) const;
+	std::unordered_map<StringID, RESOURCES> GetResources() const { return m_Resources; }
+
 	HRESULT LoadResource(const StringID& sGroupTag);
 	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
+	//HRESULT UnLoadResource(const StringID& sGroupTag);
+	//HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
 	void DelResource(const StringID& sGroupTag);
 	void DelResource(const StringID& sGroupTag, const StringID& sResTag);
 
 private:
+	//const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResourcePtr(const StringID& sGroupTag) const { return FindGroup(sGroupTag); };
+	const std::vector<SPtr<CResource>>* GetResourcePtr(const StringID& sGroupTag, const StringID& sResTag) const { return _FindResource(sGroupTag, sResTag); };
 	RESOURCES* FindGroup(const StringID& sGroupTag) ;
 	const RESOURCES* FindGroup(const StringID& sGroupTag) const;
 	std::vector<SPtr<CResource>>* _FindResource(const StringID& sGroupTag, const StringID& sResTag);

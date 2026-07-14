@@ -27,17 +27,16 @@ void CResourceManager::UpdateGUI()
 	ImGui::Begin("CResourceManager");
 
 	// =========================================================
-	// 0. [NEW] 실시간 메모리 사용량 표시 (1초마다 갱신)
+	// 0. 실시간 메모리 사용량 표시
 	// =========================================================
 	static PROCESS_MEMORY_COUNTERS_EX pmc{};
-	static float memUpdateTimer = 1.0f; // 처음 켤 때 바로 갱신되도록 1.0으로 초기화
+	static float memUpdateTimer = 1.0f;
 	memUpdateTimer += ImGui::GetIO().DeltaTime;
 
-	// 1초(1.0f)마다 메모리 정보 갱신
 	if (memUpdateTimer >= 1.0f)
 	{
 		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-		memUpdateTimer = 0.0f; // 타이머 초기화
+		memUpdateTimer = 0.0f;
 	}
 
 	const double MB = 1024.0 * 1024.0;
@@ -48,34 +47,31 @@ void CResourceManager::UpdateGUI()
 	ImGui::Spacing();
 
 	// =========================================================
-	// 1. 전체 카운트 사전 계산
+	// 1. 통계 정보 계산
 	// =========================================================
 	size_t totalResCount = 0;
 	for (const auto& Pair : m_Resources)
-	{
 		for (const auto& Pair2 : Pair.second)
-		{
 			totalResCount += Pair2.second.size();
-		}
-	}
 
 	size_t totalPathKeys = m_PathLookup.size();
 	size_t totalPathItems = 0;
 	for (const auto& PathPair : m_PathLookup)
-	{
 		totalPathItems += PathPair.second.size();
-	}
 
-	// =========================================================
-	// 2. 전체 통계 정보 표시 (맨 위)
-	// =========================================================
 	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
 	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
 	ImGui::Separator();
-	ImGui::Spacing(); // 약간의 여백
+	ImGui::Spacing();
 
 	// =========================================================
-	// 3. 그룹 / 서브그룹 리소스 리스트 (중간)
+	// 2. [수정] 삭제 예약 버퍼 (반복자 무효화 방지)
+	// =========================================================
+	std::vector<StringID> groupsToDelete;
+	std::vector<std::pair<StringID, StringID>> subGroupsToDelete;
+
+	// =========================================================
+	// 3. 그룹 / 서브그룹 리소스 리스트
 	// =========================================================
 	if (ImGui::CollapsingHeader("Group/SubGroup Resources", ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -85,7 +81,6 @@ void CResourceManager::UpdateGUI()
 		filterGrp.Draw("GrpSearch");
 		filterRes.Draw("ResSearch");
 
-		// [수정 포인트] 데이터를 비워야(.clear()) 하므로 const를 제거했습니다.
 		for (auto& Pair : m_Resources)
 		{
 			const char* groupName = Pair.first.GetDbgStr();
@@ -93,56 +88,56 @@ void CResourceManager::UpdateGUI()
 			if (!filterGrp.PassFilter(groupName))
 				continue;
 
-			size_t groupResCount = 0;
-			for (const auto& Pair2 : Pair.second)
+			// 하위 검색 필터링 체크
+			bool bAnyChildMatches = filterRes.IsActive() == false;
+			if (!bAnyChildMatches)
 			{
-				groupResCount += Pair2.second.size();
+				for (auto& Pair2 : Pair.second)
+				{
+					if (filterRes.PassFilter(Pair2.first.GetDbgStr()))
+					{
+						bAnyChildMatches = true; break;
+					}
+				}
 			}
+			if (!bAnyChildMatches) continue;
 
-			// if문을 bool 변수로 빼내어 버튼과 트리를 한 줄에 배치할 수 있게 만듭니다.
+			// 노드 그리기
+			size_t groupResCount = 0;
+			for (const auto& Pair2 : Pair.second) groupResCount += Pair2.second.size();
+
 			bool bGroupOpen = ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount);
 
-			// ---------------------------------------------------------
-			// [NEW] 대분류(Group) 클리어 버튼
-			// ---------------------------------------------------------
-			ImGui::SameLine();         // 트리 이름 바로 옆에 배치
-			ImGui::PushID(&Pair);      // 버튼 ID가 겹치지 않도록 고유 메모리 주소 부여
+			ImGui::SameLine();
+			ImGui::PushID(&Pair);
 			if (ImGui::SmallButton("Clear Group"))
 			{
-				// 해당 대분류(Pair.first) 안에 있는 소분류(unordered_map) 데이터를 전부 비웁니다.
-				Pair.second.clear();
+				// 즉시 삭제하지 않고 리스트에 담음
+				groupsToDelete.push_back(Pair.first);
 			}
 			ImGui::PopID();
 
 			if (bGroupOpen)
 			{
-				for (auto& Pair2 : Pair.second) // const 제거
+				for (auto& Pair2 : Pair.second)
 				{
 					const char* subName = Pair2.first.GetDbgStr();
-
 					if (!filterRes.PassFilter(subName))
 						continue;
 
-					size_t subResCount = Pair2.second.size();
+					bool bSubOpen = ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, Pair2.second.size());
 
-					bool bSubOpen = ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, subResCount);
-
-					// ---------------------------------------------------------
-					// [NEW] 소분류(SubGroup) 클리어 버튼
-					// ---------------------------------------------------------
 					ImGui::SameLine();
 					ImGui::PushID(&Pair2);
 					if (ImGui::SmallButton("Clear"))
 					{
-						// 해당 소분류(Pair2.first) 안에 있는 리소스 배열(vector)을 비웁니다.
-						Pair2.second.clear();
+						// 즉시 삭제하지 않고 리스트에 담음
+						subGroupsToDelete.push_back({ Pair.first, Pair2.first });
 					}
 					ImGui::PopID();
 
 					if (bSubOpen)
 					{
-						// 클리어 버튼을 누른 프레임에서는 Pair2.second.size()가 즉시 0이 되므로 
-						// 아래 for문은 에러 없이 깔끔하게 스킵(패스)됩니다.
 						for (size_t i = 0; i < Pair2.second.size(); ++i)
 						{
 							ImGui::Text("%i-----", (int)i);
@@ -156,35 +151,58 @@ void CResourceManager::UpdateGUI()
 		}
 	}
 
-	ImGui::Spacing(); // 그룹과 패스 리스트 사이의 여백
+	// =========================================================
+	// 4. [수정] 루프가 끝난 뒤 안전하게 삭제 실행
+	// =========================================================
+	for (const auto& gID : groupsToDelete)
+		DelResource(gID); // 내부에서 RemovePathLookup을 호출하여 PathLookup까지 동기화함
+
+	for (const auto& pairID : subGroupsToDelete)
+		DelResource(pairID.first, pairID.second);
 
 	// =========================================================
-	// 4. Path Lookup 리스트 (맨 아래)
+	// 5. Path Lookup 리스트
 	// =========================================================
+	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("PathLookup List", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		static ImGuiTextFilter filterPath;
-
-		// 패스 리스트 바로 위에 해당 필터 배치
 		filterPath.Draw("PathSearch");
 
-		for (const auto& PathPair : m_PathLookup)
+		// 직접 m_PathLookup을 순회합니다. (매우 빠르고 가벼움)
+		for (auto& PathPair : m_PathLookup)
 		{
-			const char* pathStr = PathPair.first.c_str();
+			const _string& path = PathPair.first;
+			const auto& weakVec = PathPair.second;
 
-			if (!filterPath.PassFilter(pathStr))
+			if (!filterPath.PassFilter(path.c_str()))
 				continue;
 
-			size_t pathResCount = PathPair.second.size();
-
-			if (ImGui::TreeNode((void*)&PathPair, "[%s] (Count: %zu)", pathStr, pathResCount))
+			// 1. 살아있는 리소스 개수 먼저 파악 (노드 레이블에 표시할 Count용)
+			size_t liveCount = 0;
+			for (const auto& wp : weakVec)
 			{
-				for (size_t i = 0; i < pathResCount; ++i)
+				if (!wp.expired()) liveCount++;
+			}
+
+			// 2. 살아있는 리소스가 있을 때만 그리기
+			if (liveCount > 0)
+			{
+				// [핵심] 첫 번째 인자로 경로 문자열 포인터(path.c_str())를 전달하여 ID를 고정합니다.
+				// 이렇게 하면 리스트가 새로 그려져도 ImGui가 "아, 이 노드구나" 하고 상태를 기억합니다.
+				if (ImGui::TreeNode(path.c_str(), "[%s] (Count: %zu)", path.c_str(), liveCount))
 				{
-					ImGui::Text("%i-----", (int)i);
-					PathPair.second[i]->UpdateGUI();
+					for (size_t i = 0; i < weakVec.size(); ++i)
+					{
+						// 3. lock()을 통해 즉석에서 살아있는지 확인
+						if (SPtr<CResource> pRes = weakVec[i].lock())
+						{
+							ImGui::Text("%i-----", (int)i);
+							pRes->UpdateGUI();
+						}
+					}
+					ImGui::TreePop();
 				}
-				ImGui::TreePop();
 			}
 		}
 	}
@@ -197,21 +215,79 @@ void CResourceManager::Initialize()
 	
 }
 
-const std::vector<CResource*>* CResourceManager::GetResourcesByPath(const _string& sPath) const
+std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetResourcesByPath() 
 {
-	auto it = m_PathLookup.find(sPath);
+	// [주의] 전체 순회하며 수정하므로 비용이 큽니다.
+		// [중요] std::unique_lock<std::shared_mutex> lock(m_Mutex); 필수!
 
-	// 경로가 맵에 존재하지 않으면 nullptr 반환
-	if (it == m_PathLookup.end())
+	std::unordered_map<_string, std::vector<SPtr<CResource>>> result;
+
+	for (auto it = m_PathLookup.begin(); it != m_PathLookup.end(); )
 	{
-		return nullptr;
+		auto& vec = it->second;
+
+		// 1. 해당 경로의 벡터에서 죽은 것들 정리
+		vec.erase(
+			std::remove_if(vec.begin(), vec.end(), [](const std::weak_ptr<CResource>& wp) {
+				return wp.expired();
+				}),
+			vec.end()
+		);
+
+		// 2. 살아있는 것들만 결과에 담기
+		for (const auto& weakRes : vec)
+		{
+			if (SPtr<CResource> sharedRes = weakRes.lock())
+			{
+				result[it->first].push_back(sharedRes);
+			}
+		}
+
+		// 3. 빈 경로면 키 삭제 및 반복자 처리
+		if (vec.empty())
+			it = m_PathLookup.erase(it);
+		else
+			++it;
 	}
 
-	// 찾은 벡터의 주소를 반환
-	return &it->second;
+	return result;
 }
 
-void CResourceManager::RemovePathLookup(const _string& sPath, CResource* pRes)
+std::vector<SPtr<CResource>> CResourceManager::GetResourcesByPath(const _string& sPath) 
+{
+	auto it = m_PathLookup.find(sPath);
+	if (it == m_PathLookup.end())
+		return {};
+
+	auto& vec = it->second;
+
+	// Erase-Remove Idiom으로 죽은(expired) 것들 한 번에 정리
+	vec.erase(
+		std::remove_if(vec.begin(), vec.end(), [](const std::weak_ptr<CResource>& wp) {
+			return wp.expired(); // lock()보다 expired()가 더 빠르고 명확합니다.
+			}),
+		vec.end()
+	);
+
+	// 결과 벡터 생성
+	std::vector<SPtr<CResource>> result;
+	result.reserve(vec.size());
+	for (const auto& weakRes : vec)
+	{
+		if (SPtr<CResource> sharedRes = weakRes.lock())
+		{
+			result.push_back(sharedRes);
+		}
+	}
+
+	// 경로에 더 이상 남은 리소스가 없으면 키 삭제
+	if (vec.empty())
+		m_PathLookup.erase(it);
+
+	return result;
+}
+
+void CResourceManager::RemovePathLookup(const _string& sPath, SPtr<CResource> pRes)
 {
 	if (m_bIsShutdown)
 		return;
@@ -222,7 +298,17 @@ void CResourceManager::RemovePathLookup(const _string& sPath, CResource* pRes)
 		auto& vec = it->second;
 
 		// erase-remove idiom: 해당 포인터와 일치하는 것만 삭제
-		vec.erase(std::remove(vec.begin(), vec.end(), pRes), vec.end());
+		vec.erase(
+			std::remove_if(vec.begin(), vec.end(),
+				[&pRes](const std::weak_ptr<CResource>& wp) {
+					SPtr<CResource> locked = wp.lock();
+					// 1. 찾고자 하는 타겟(pRes)이거나
+					// 2. 이미 메모리에서 해제되어 껍데기만 남은 weak_ptr(nullptr)이면 같이 지워라!
+					return locked == pRes || locked == nullptr;
+				}
+			),
+			vec.end()
+		);
 
 		// 더 이상 해당 경로를 쓰는 리소스가 없으면 키 자체를 제거 (메모리 최적화)
 		if (vec.empty())
@@ -285,7 +371,7 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 			if (!resPath.empty())
 			{
 				// 동일한 경로를 가진 리소스가 여러 개일 수 있으므로 vector에 추가
-				m_PathLookup[resPath].push_back(pAsset.get());
+				m_PathLookup[resPath].push_back(pAsset);
 			}
 		}
 		
@@ -298,7 +384,7 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 
 SPtr<CResource> CResourceManager::GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
 {
-	if (auto p = GetResource(sGroupTag, sResTag))
+	if (auto p = GetResourcePtr(sGroupTag, sResTag))
 	{
 		if (!p->empty())
 		{
@@ -337,6 +423,11 @@ SPtr<CResource> CResourceManager::GetResourceFirst(const StringID& sGroupTag, co
 //	return S_OK;
 //}
 
+void CResourceManager::ForEachResource(std::function<void(const std::unordered_map<StringID, RESOURCES>&)> callback) const
+{
+	callback(m_Resources);
+}
+
 HRESULT CResourceManager::LoadResource(const StringID& sGroupTag)
 {
 	HRESULT hr = S_OK;
@@ -365,39 +456,53 @@ HRESULT CResourceManager::LoadResource(const StringID& sGroupTag, const StringID
 	return hr;
 }
 
-HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag)
-{
-	HRESULT hr = S_OK;
-	for (auto& Pair : *FindGroup(sGroupTag))
-	{
-		if (FAILED(UnLoadResource(sGroupTag, Pair.first)))
-		{
-			hr = E_FAIL;
-		}
-	}
-
-	return hr;
-}
-
-HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag, const StringID& sResTag)
-{
-	HRESULT hr = S_OK;
-	for (auto& pAsset : *_FindResource(sGroupTag, sResTag))
-	{
-		if (FAILED(pAsset->Unload()))
-		{
-			hr = E_FAIL;
-		}
-	}
-
-	return hr;
-}
+//HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag)
+//{
+//	HRESULT hr = S_OK;
+//	for (auto& Pair : *FindGroup(sGroupTag))
+//	{
+//		if (FAILED(UnLoadResource(sGroupTag, Pair.first)))
+//		{
+//			hr = E_FAIL;
+//		}
+//	}
+//
+//	return hr;
+//}
+//
+//HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag, const StringID& sResTag)
+//{
+//	HRESULT hr = S_OK;
+//	for (auto& pAsset : *_FindResource(sGroupTag, sResTag))
+//	{
+//		if (FAILED(pAsset->Unload()))
+//		{
+//			hr = E_FAIL;
+//		}
+//	}
+//
+//	return hr;
+//}
 
 void CResourceManager::DelResource(const StringID& sGroupTag)
 {
 	auto iter = m_Resources.find(sGroupTag);
 	if (iter != m_Resources.end())
 	{
+		// 1. 해당 그룹 내의 모든 리소스에 대해 RemovePathLookup 호출
+		for (auto& subGroup : iter->second)
+		{
+			for (auto& res : subGroup.second)
+			{
+				if (res)
+				{
+					// 리소스의 경로를 찾아서 PathLookup에서 제거 요청
+					RemovePathLookup(res->GetPath(), res);
+				}
+			}
+		}
+
+		// 2. 이제 안전하게 메인 저장소에서 삭제
 		m_Resources.erase(iter);
 	}
 }
@@ -405,14 +510,24 @@ void CResourceManager::DelResource(const StringID& sGroupTag)
 void CResourceManager::DelResource(const StringID& sGroupTag, const StringID& sResTag)
 {
 	auto pGroup = FindGroup(sGroupTag);
-	if (pGroup)
-	{
-		auto iter = pGroup->find(sResTag);
-		if (iter != pGroup->end())
-		{
-			pGroup->erase(iter);
-		}
-	}
+    if (pGroup)
+    {
+        auto iter = pGroup->find(sResTag);
+        if (iter != pGroup->end())
+        {
+            // 1. 해당 리소스 벡터 내의 모든 리소스에 대해 RemovePathLookup 호출
+            for (auto& res : iter->second)
+            {
+                if (res)
+                {
+                    RemovePathLookup(res->GetPath(), res);
+                }
+            }
+
+            // 2. 메인 저장소에서 삭제
+            pGroup->erase(iter);
+        }
+    }
 	
 }
 

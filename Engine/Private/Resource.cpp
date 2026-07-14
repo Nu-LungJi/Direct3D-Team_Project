@@ -41,10 +41,10 @@ _string CResource::GetStateStr() const
 
 void CResource::Free()
 {
-	if (!m_sPath.empty())
-	{
-		CGameInstance::Get().RemoveResourcePathLookup(m_sPath, this);
-	}
+	//if (!m_sPath.empty())
+	//{
+	//	CGameInstance::Get().RemoveResourcePathLookup(m_sPath, this);
+	//}
 	CEngineBase::Free();
 }
 

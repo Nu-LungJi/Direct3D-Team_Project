@@ -1308,12 +1308,12 @@ void CLuaManager::UpdateHotReload()
 void CLuaManager::OnFileChanged(const std::string& path)
 {
 	// 1. 매니저를 통해 해당 경로의 리소스 리스트를 바로 획득
-	auto* pResList = CGameInstance::Get().GetResourcesByPath(path);
+	auto pResList = CGameInstance::Get().GetResourcesByPath(path);
 
-	if (!pResList) return; // 해당 경로에 리소스가 없음
+	if (pResList.empty()) return; // 해당 경로에 리소스가 없음
 
 	// 2. 리스트 순회하며 리로드
-	for (auto pRes : *pResList)
+	for (auto pRes : pResList)
 	{
 		// 리소스가 LuaScript인지 확인하고 캐스팅
 		if (auto pLuaRes = Cast<CResLuaScript>(pRes))

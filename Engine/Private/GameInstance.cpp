@@ -290,21 +290,21 @@ void CGameInstance::UpdateGUI()
 	m_pSerializeManager->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
-	if (ImGui::Button("ShaderRebuild"))
-	{
-		//TAG_RES_GRP_PERMANENT_SHADER
-		if (auto resources = GetResource(TAG_RES_GRP_PERMANENT_SHADER))
-		{
-			for (auto& [_, res] : *resources)
-			{
-				if (!res.empty())
-				{
-					res.front()->Unload();
-					res.front()->Load();
-				}
-			}
-		}
-	}
+	//if (ImGui::Button("ShaderRebuild"))
+	//{
+	//	//TAG_RES_GRP_PERMANENT_SHADER
+	//	if (auto resources = GetResource(TAG_RES_GRP_PERMANENT_SHADER))
+	//	{
+	//		for (auto& [res] : resources)
+	//		{
+	//			if (!res.empty())
+	//			{
+	//				res.front()->Unload();
+	//				res.front()->Load();
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
@@ -608,34 +608,50 @@ SPtr<CResource> CGameInstance::AddResource(const StringID& sGroupTag, const Stri
 {
 	return m_pResourceManager->AddResource(sGroupTag, sResTag, pAsset);
 }
-const std::vector<SPtr<CResource>>* CGameInstance::GetResource(const StringID& sGroupTag, const StringID& sResTag) const
+std::vector<SPtr<CResource>> CGameInstance::GetResource(const StringID& sGroupTag, const StringID& sResTag) const
 {
 	return m_pResourceManager->GetResource(sGroupTag, sResTag);
 }
-const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* CGameInstance::GetResource(const StringID& sGroupTag) const
+std::unordered_map<StringID, std::vector<SPtr<CResource>>> CGameInstance::GetResource(const StringID& sGroupTag) const
 {
 	return m_pResourceManager->GetResource(sGroupTag);
 }
-const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& CGameInstance::GetResources() const
+//const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* CGameInstance::GetResource(const StringID& sGroupTag) const
+//{
+//	return m_pResourceManager->GetResource(sGroupTag);
+//}
+std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> CGameInstance::GetResources() const
 {
 	return m_pResourceManager->GetResources();
 }
-HRESULT CGameInstance::LoadResource(const StringID& sGroupTag)
+void CGameInstance::ForEachResource(const StringID& sGroupTag, std::function<void(const std::unordered_map<StringID, std::vector<SPtr<CResource>>>*)> callback) const
 {
-	return m_pResourceManager->LoadResource(sGroupTag);
+	return m_pResourceManager->ForEachResource(sGroupTag, callback);
 }
-HRESULT CGameInstance::LoadResource(const StringID& sGroupTag, const StringID& sResTag)
+void CGameInstance::ForEachResource(const StringID& sGroupTag, const StringID& sResTag, std::function<void(const std::vector<SPtr<CResource>>*)> callback) const
 {
-	return m_pResourceManager->LoadResource(sGroupTag, sResTag);
+	return m_pResourceManager->ForEachResource(sGroupTag, sResTag, callback);
 }
-HRESULT CGameInstance::UnLoadResource(const StringID& sGroupTag)
+void CGameInstance::ForEachResource(std::function<void(const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>&)> callback) const
 {
-	return m_pResourceManager->UnLoadResource(sGroupTag);
+	return m_pResourceManager->ForEachResource(callback);
 }
-HRESULT CGameInstance::UnLoadResource(const StringID& sGroupTag, const StringID& sResTag)
-{
-	return m_pResourceManager->UnLoadResource(sGroupTag, sResTag);
-}
+//HRESULT CGameInstance::LoadResource(const StringID& sGroupTag)
+//{
+//	return m_pResourceManager->LoadResource(sGroupTag);
+//}
+//HRESULT CGameInstance::LoadResource(const StringID& sGroupTag, const StringID& sResTag)
+//{
+//	return m_pResourceManager->LoadResource(sGroupTag, sResTag);
+//}
+//HRESULT CGameInstance::UnLoadResource(const StringID& sGroupTag)
+//{
+//	return m_pResourceManager->UnLoadResource(sGroupTag);
+//}
+//HRESULT CGameInstance::UnLoadResource(const StringID& sGroupTag, const StringID& sResTag)
+//{
+//	return m_pResourceManager->UnLoadResource(sGroupTag, sResTag);
+//}
 void CGameInstance::DelResource(const StringID& sGroupTag)
 {
 	m_pResourceManager->DelResource(sGroupTag);
@@ -644,12 +660,12 @@ void CGameInstance::DelResource(const StringID& sGroupTag, const StringID& sResT
 {
 	m_pResourceManager->DelResource(sGroupTag, sResTag);
 }
-const std::vector<CResource*>* CGameInstance::GetResourcesByPath(const _string& sPath) const
+std::vector<SPtr<CResource>> CGameInstance::GetResourcesByPath(const _string& sPath) const
 {
-	if (!m_pResourceManager) return nullptr;
+	if (!m_pResourceManager) return {};
 	return m_pResourceManager->GetResourcesByPath(sPath);
 }
-void CGameInstance::RemoveResourcePathLookup(const _string& sPath, CResource* pRes)
+void CGameInstance::RemoveResourcePathLookup(const _string& sPath, SPtr<CResource> pRes)
 {
 	if (!m_pResourceManager) return;
 	m_pResourceManager->RemovePathLookup(sPath, pRes);

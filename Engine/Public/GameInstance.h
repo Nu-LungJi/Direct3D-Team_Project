@@ -84,31 +84,28 @@ public:
 	SPtr<CResource> AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset);
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, const _string& sPath, void* pArg = nullptr)
-	{
-		return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, sPath, pArg);
-	}
+	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, sPath, pArg); }
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset)
-	{
-		return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset);
-	}
+	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset); }
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
-	{
-		return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag);
-	}
-	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
-	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const;
-	const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& GetResources() const;
-	HRESULT LoadResource(const StringID& sGroupTag);
-	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
+	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
+	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
+	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const;
+	std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> GetResources() const;
+	void ForEachResource(const StringID& sGroupTag, std::function<void(const std::unordered_map<StringID, std::vector<SPtr<CResource>>>*)> callback) const;
+	void ForEachResource(const StringID& sGroupTag, const StringID& sResTag, std::function<void(const std::vector<SPtr<CResource>>*)> callback) const;
+	void ForEachResource(std::function<void(const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>&)> callback) const;
+	//HRESULT LoadResource(const StringID& sGroupTag);
+	//HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
+	//HRESULT UnLoadResource(const StringID& sGroupTag);
+	//HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
 	void DelResource(const StringID& sGroupTag);
 	void DelResource(const StringID& sGroupTag, const StringID& sResTag);
 
-	const std::vector<CResource*>* GetResourcesByPath(const _string& sPath) const;
-	void RemoveResourcePathLookup(const _string& sPath, CResource* pRes);
+	std::vector<SPtr<CResource>> GetResourcesByPath(const _string& sPath) const;
+	void RemoveResourcePathLookup(const _string& sPath, SPtr<CResource> pRes);
 #pragma endregion
 
 #pragma region LEVEL_MANAGER
