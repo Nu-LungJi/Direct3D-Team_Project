@@ -40,6 +40,7 @@ public:
 private:
 	void Subdivide();
 	void RebuildCullingBounds();
+	void SetAllObjectsVisibleRecursive();
 
 private:
 	BoundingBox m_bounds; // 공간 분할용

@@ -129,30 +129,39 @@ void COctreeNode::CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds
 
 void COctreeNode::OctreeFrustumCull(const BoundingFrustum& cameraFrustum)
 {
-	// 카메라 프러스텀과 교차안하면 그냥 리턴 	// 교차 안하면 암것도안함 (고려대상에서 버림)
-	if (!m_cullingBounds.Intersects(cameraFrustum))
+	const ContainmentType containment = cameraFrustum.Contains(m_cullingBounds);
+
+	// 교차안하면 바로 리턴
+	if (containment == DirectX::DISJOINT)
 	{
 		m_bInCameraFrustum = false; //디버그 렌더용
 		return;
 	}
+	if (containment == DirectX::CONTAINS)
+	{
+		m_bInCameraFrustum = true;
+		SetAllObjectsVisibleRecursive();
+		return;
+	}
 
+	// 옥트리 노드랑 프러스텀 걸쳐있을 때
 	// 카메라 프러스텀과 교차한다면
 	{
 		m_bInCameraFrustum = true; //디버그 렌더용
 		//if (m_depth >= m_maxDepth) // 리프노드라면
 		//{
-			for (const auto& handle : m_hObjects)
-			{
-				CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
-				if (mapObj == nullptr)
-					continue;
+		for (const auto& handle : m_hObjects)
+		{
+			CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
+			if (mapObj == nullptr)
+				continue;
 
-				BoundingBox objBox{};
-				if (!mapObj->GetOcclusionBounds(objBox) || objBox.Intersects(cameraFrustum))
-					mapObj->SetRenderEnable(true);
-			}
-			//return;
-		//}
+			BoundingBox objBox{};
+			if (!mapObj->GetOcclusionBounds(objBox) || objBox.Intersects(cameraFrustum))
+				mapObj->SetRenderEnable(true);
+		}
+		//return;
+	//}
 
 		for (const auto& child : m_childrenNode)
 		{
@@ -276,6 +285,26 @@ void COctreeNode::RebuildCullingBounds()
 			continue;
 
 		BoundingBox::CreateMerged(m_cullingBounds, m_cullingBounds, childNode->m_cullingBounds);
+	}
+}
+
+void COctreeNode::SetAllObjectsVisibleRecursive()
+{
+	for (auto& myObjHandle : m_hObjects)
+	{
+		CMapMeshObject* myObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(myObjHandle);
+		if (myObj)
+		{
+			myObj->SetRenderEnable(true);
+		}
+	}
+
+	for (auto& myChild : m_childrenNode)
+	{
+		if (myChild)
+		{
+			myChild->SetAllObjectsVisibleRecursive();
+		}
 	}
 }
 
