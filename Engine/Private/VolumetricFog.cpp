@@ -22,7 +22,6 @@ VOID CVolumetricFog::PriorityUpdate(_float fTimeDelta) {
 
 VOID CVolumetricFog::Update(_float fTimeDelta) {
 
-
 }
 
 VOID CVolumetricFog::LateUpdate(_float fTimeDelta) {

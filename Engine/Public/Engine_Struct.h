@@ -72,6 +72,9 @@ namespace Engine
 	typedef struct tagDynamicLight {
 		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
 
+		XMFLOAT4X4		g_LightViewProj;
+		XMFLOAT4X4		g_InvViewProj;
+
 		_float3  LightDirection;
 		_float3  LightColor;
 		_float   LightIntensity;
@@ -82,7 +85,7 @@ namespace Engine
 		_float   InnerAttanuation;
 		_float   OuterAttanuation;
 
-		_float2  LightPadding;
+		_float2   LightPadding;
 	} DYNAMIC_LIGHT;
 
 	typedef struct tagPostProcess
@@ -177,7 +180,6 @@ namespace Engine
 		tagimguiCurrentNode(GUINODE* pNode, GUINODE_LINK* pLink, int32_t iSlot)
 		{
 			pCurrentNode = pNode; pCurrentLink = pLink;  iSelectedSlot = iSlot;
-
 		}
 		GUINODE* pCurrentNode{ nullptr };
 		GUINODE_LINK* pCurrentLink{ nullptr };
@@ -213,9 +215,6 @@ namespace Engine
 		_float4 vColor;
 		_float4 vEmissive;
 	}BEAM_VERTEX;
-
-
-
 
 	typedef struct ChunkHeader
 	{

@@ -382,6 +382,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
+	//m_pLightManager->Render_ShadowMap();
+
 	if (FAILED(m_pRenderer->Draw()))
 	{
 		return E_FAIL;
@@ -670,8 +672,6 @@ HRESULT CGameInstance::InitializeResources()
 		GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 		GetGraphicDeviceContext()->CSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 	}
-	
-	
 
 	//ShaderFiles
 	if (auto res = AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
@@ -751,7 +751,14 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Shadow", "./ShaderFiles/RayMarching/CS_Shadow.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
 	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex", E::CResQuadTexBuffer::Create()))
 	{
 		if (FAILED(res->Load()))
@@ -1598,12 +1605,24 @@ HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& han
 
 
 #pragma region RENDERER
-HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
-{
+HRESULT CGameInstance::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject) {
 	return m_pRenderer->AddRenderObject(eRenderGroup, pRenderObject);
 }
 HRESULT	CGameInstance::Reset_DefaultShader(RENDERGROUP _Group) {
 	return m_pRenderer->Reset_DefaultShader(_Group);
+}
+
+SPtr<CResDynamicTexture2D>	CGameInstance::Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
+	return m_pRenderer->Generate_RenderTarget(_sResTag, _Format, _BindFlags, _TexWidth, _TexHeight);
+}
+SPtr<CResDynamicTexture2D>	CGameInstance::Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth, uint32_t _TexHeight) {
+	return m_pRenderer->Generate_DepthStencil_RenderTarget(_sResTag, _TexFormat, _DSVFormat, _SRVFormat, _TexWidth, _TexHeight);
+}
+SPtr<CResDynamicTexture2D>	CGameInstance::Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
+	return m_pRenderer->Generate_UnorderedAccessView(_sResTag, _TexFormat, _BindFlags, _TexWidth, _TexHeight);
+}
+SPtr<CResViewPort>			CGameInstance::Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth, uint32_t _TexHeight) {
+	return m_pRenderer->Generate_ViewPort(_sResTag, _TexWidth, _TexHeight);
 }
 #pragma endregion
 
@@ -1686,6 +1705,14 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 VOID	CGameInstance::Clear_DynamicLightList() {
 	m_pLightManager->Clear_DynamicLightList();
 }
+HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject) {
+	return m_pLightManager->Add_ShadowRenderGroup(_ATYPE, pRenderObject);
+}
+HRESULT	CGameInstance::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
+	const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth) {
+	return m_pLightManager->Render_ObjectShadow(_Diffuse, _Normal, _SMRO, _Emissive, _Ambient, _Depth);
+}
+
 #pragma endregion
 #pragma endregion
 
