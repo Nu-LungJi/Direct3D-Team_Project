@@ -247,6 +247,14 @@ HRESULT CMainApp::Load_Particle_Resources()
 				//return E_FAIL;
 			}
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
 		//파티클 텍스쳐 로드
 	
 		

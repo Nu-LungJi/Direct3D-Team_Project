@@ -466,6 +466,10 @@ HRESULT CGameInstance::LoadParticleJson(const std::string& strJsonPath) {
 HRESULT CGameInstance::LoadParticlePresets(const std::string& strJsonPath) {
 	return m_pParticleManager->LoadParticlePresets(strJsonPath);
 }
+CParticle* CGameInstance::GetParticle(const StringID& sGroupTag, const StringID& sTypeTag)
+{
+	return m_pParticleManager->GetParticle(sGroupTag,sTypeTag);
+}
 HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 	_bool bLoop, _float fSpawnInterval)

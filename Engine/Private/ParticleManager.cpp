@@ -35,6 +35,18 @@ void CParticleManager::UpdateGUI()
 {
 	ImGui::Begin("SaveResourcesAsJson");
 	
+	if (ImGui::Button("Pattern execute")) {
+		Spawn(0,"./Resources/json/Particle/SpawnQueue.json", _fvector{ 0,0,0,0 }, _fvector{ 0, 0, 0, 0 });
+	}
+	if (ImGui::Button("Erase")) {
+		
+		for (auto& particle : m_Particles) {
+			for (auto& real : particle.second) {
+				real.second->ClearByOwner(0);
+			}
+		}
+	
+	}
 	static char szPresetName[128] = "";
 	static char szPresetSavePath[MAX_PATH] = "./Resources/json/Particle/Preset/ParticlePresets.json";
 	static const std::string kFbxListJsonPath = "./Resources/SampleClient/Models/ParticleModelJson/ParticleModel.json";
@@ -53,7 +65,7 @@ void CParticleManager::UpdateGUI()
 	static char szTextureID1[128] = "SAMPLE_CLINET_TEXTURE";
 	static char szTextureID2[128] = "TEX_RIBBON";
 	static int iMaxParticles = 1000;
-	static int iBehaviorType = 1;
+	static uint32_t iBehaviorType = 0;
 	static char szVSID1[128] = "SAMPLE_CLIENT_SHADER";
 	static char szVSID2[128] = "VS_VTX_GPU_PARTICLE_MESH";
 	static char szPSID1[128] = "SAMPLE_CLIENT_SHADER";
@@ -92,6 +104,13 @@ void CParticleManager::UpdateGUI()
 	static float fRandomMaxVelZ = 1;
 	static _bool randomPos = false;
 	static _bool randomVel = false;
+	static _bool none = false;
+	static _bool distortion = false;
+	static _bool billboard = false;
+	static _bool gravity = false;
+
+	static _float4 rotaion = _float4(0,0,0,0);
+
 	// ---- 0. WhatKind 대분류 선택 ----
 	const char* whatKindNames[] = { "MESH", "TEXTURE" };
 	ImGui::Combo("WhatKind", &whatKindIndex, whatKindNames, IM_ARRAYSIZE(whatKindNames));
@@ -225,13 +244,11 @@ void CParticleManager::UpdateGUI()
 	ImGui::Combo("Particle Type", &particleTypeIndex, particleTypeNames, IM_ARRAYSIZE(particleTypeNames));
 	ImGui::InputText("Particle Name (e.g. ROCK1_CPU)", szParticleName, IM_ARRAYSIZE(szParticleName));
 	ImGui::InputInt("MaxParticles", &iMaxParticles);
-	ImGui::InputInt("BehaviorType", &iBehaviorType);
 	ImGui::InputText("VSID1", szVSID1, IM_ARRAYSIZE(szVSID1));
 	ImGui::InputText("VSID2", szVSID2, IM_ARRAYSIZE(szVSID2));
 	ImGui::InputText("PSID1", szPSID1, IM_ARRAYSIZE(szPSID1));
 	ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
 
-	ImGui::Separator();
 	ImGui::Separator();
 
 	// ---- 4. 저장 ----
@@ -245,7 +262,7 @@ void CParticleManager::UpdateGUI()
 			if (whatKindIdx == 0) // MESH
 				return (particleType == "PARTICLE_GPU" || particleType == "PARTICLE_CPU");
 			else // TEXTURE
-				return (particleType == "PARTICLE_GPU" || particleType == "PARTICLE_CPU" || particleType == "BEAM_CPU");
+				return (particleType == "PARTICLE_GPU" || particleType == "PARTICLE_CPU" || particleType == "BEAM_CPU" || particleType == "TRAIL_CPU");
 		};
 
 	bool bSupported = IsCombinationSupported(whatKindIndex, particleTypeStr);
@@ -300,7 +317,7 @@ void CParticleManager::UpdateGUI()
 			if (whatKindStr == "MESH") {
 				hr = Save_Binary_Json(savePath.string(),
 					targetPath, whatKindStr, particleTypeStr, particleNameStr,
-					iMaxParticles, iBehaviorType,
+					iMaxParticles,
 					szVSID1, szVSID2, szPSID1, szPSID2,
 					szGroupTag, szResTag);
 			}
@@ -308,7 +325,7 @@ void CParticleManager::UpdateGUI()
 				if (particleTypeStr == "PARTICLE_CPU") {
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
-						iMaxParticles, iBehaviorType,
+						iMaxParticles,
 						szVSID1, szVSID2, szPSID1, szPSID2,
 						szGroupTag, szResTag, szTextureID1, szTextureID2,
 						szViBuffer1, szViBuffer2, iTexRow, iTexCol);
@@ -316,7 +333,7 @@ void CParticleManager::UpdateGUI()
 				else {
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
-						iMaxParticles, iBehaviorType,
+						iMaxParticles,
 						szVSID1, szVSID2, szPSID1, szPSID2,
 						szGroupTag, szResTag, szTextureID1, szTextureID2,
 						"", "", iTexRow, iTexCol);
@@ -410,6 +427,11 @@ void CParticleManager::UpdateGUI()
 				if (pCPU->GetWhatKind() != wantedKind)
 					continue;
 			}
+			//else if (auto pCPU = dynamic_cast<CBeam_CPU*>(pParticle))
+			//{
+			//	if (pCPU->GetWhatKind() != wantedKind)
+			//		continue;
+			//}
 
 			matchedList.push_back({ groupTag, typeTag, typeTag.GetDbgStr() });
 		}
@@ -495,7 +517,11 @@ void CParticleManager::UpdateGUI()
 			previewParams.fEndSize = preset.fEndSize;
 			previewParams.color = preset.StartColor;
 			previewParams.emissive = preset.Emissive;
-
+	
+			previewParams.rotation = _float4(XMConvertToRadians(preset.rotation.x),
+				XMConvertToRadians(preset.rotation.y),
+				XMConvertToRadians(preset.rotation.z),
+				XMConvertToRadians(preset.rotation.w));
 			bNeedTypeIndexSync = true;
 			pendingSyncGroup = preset.sGroupTag;
 			pendingSyncType = preset.sTypeTag;
@@ -529,31 +555,56 @@ void CParticleManager::UpdateGUI()
 	ImGui::Text("=== Live Preview ===");
 	ImGui::PushID("LivePreview");
 
+	ImGui::Checkbox("Distortion", &distortion);
+	ImGui::Checkbox("BILLBOARD", &billboard);
+	ImGui::Checkbox("GRAVITY", &gravity);
+	ImGui::Checkbox("None", &none);
+
+	if (none)
+	{
+		distortion = false;
+		billboard = false;
+		gravity = false;
+	}
+
+	// 매번 NONE으로 리셋 후 체크된 것만 OR
+	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
+	if (distortion)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
+	if (billboard)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
+	if (gravity)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
+
+	ImGui::Separator();
+
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
 	if (previewParams.bRandomPos) {
-		ImGui::InputFloat3("PosMin", &previewParams.posMin.x);
-		ImGui::InputFloat3("PosMax", &previewParams.posMax.x);
+		ImGui::DragFloat3("PosMin", &previewParams.posMin.x, 0.01f);
+		ImGui::DragFloat3("PosMax", &previewParams.posMax.x, 0.01f);
 	}
 	else
-		ImGui::InputFloat3("Position", &previewParams.position.x);
+		ImGui::DragFloat3("Position", &previewParams.position.x, 0.01f);
 
 	ImGui::Checkbox("RandomVelocity?", &previewParams.bRandomVel);
 	if (previewParams.bRandomVel) {
-		ImGui::InputFloat3("VelMin", &previewParams.velMin.x);
-		ImGui::InputFloat3("VelMax", &previewParams.velMax.x);
+		ImGui::DragFloat3("VelMin", &previewParams.velMin.x, 0.01f);
+		ImGui::DragFloat3("VelMax", &previewParams.velMax.x, 0.01f);
 	}
 	else
-		ImGui::InputFloat3("Velocity", &previewParams.velocity.x);
+		ImGui::DragFloat3("Velocity", &previewParams.velocity.x, 0.01f);
 
-	ImGui::InputFloat("Life", &previewParams.life);
-	ImGui::InputFloat("StartSize", &previewParams.fSize);
-	ImGui::InputFloat("EndSize", &previewParams.fEndSize);
+	ImGui::DragFloat("Life", &previewParams.life, 0.01f);
+	ImGui::DragFloat("StartSize", &previewParams.fSize, 0.01f);
+	ImGui::DragFloat("EndSize", &previewParams.fEndSize, 0.01f);
+	ImGui::DragFloat4("Rotation", &previewParams.rotation.x, 0.01f);
 	ImGui::ColorEdit4("Color", &previewParams.color.x);
 	ImGui::ColorEdit3("Emissive", &previewParams.emissive.x);
-	ImGui::InputFloat("Emissive Intensity", &previewParams.emissive.w);
+	ImGui::DragFloat("Emissive Intensity", &previewParams.emissive.w, 0.01f);
 	ImGui::Checkbox("Loop", &previewParams.bLoop);
 	if (previewParams.bLoop)
-		ImGui::InputFloat("Spawn Interval", &previewParams.fSpawnInterval);
+		ImGui::DragFloat("Spawn Interval", &previewParams.fSpawnInterval, 0.01f);
+	
 
 	static STANDARD_PARAMS lastPreviewParams{};
 	bool bParamsChanged = std::memcmp(&previewParams, &lastPreviewParams, sizeof(STANDARD_PARAMS)) != 0;
@@ -578,9 +629,14 @@ void CParticleManager::UpdateGUI()
 			data.life = p.life;
 			data.fSize = p.fSize;
 			data.fEndSize = p.fEndSize;
+			data.rotation = _float4(XMConvertToRadians(p.rotation.x),
+					XMConvertToRadians(p.rotation.y),
+					XMConvertToRadians(p.rotation.z),
+					XMConvertToRadians(p.rotation.w));
 			data.color = p.color;
 			data.emissive = p.emissive;
 			data.ownerID = PREVIEW_OWNER_ID;
+			data.iBehaviorType = p.iBehaviorType;
 			return data;
 		};
 
@@ -638,10 +694,11 @@ void CParticleManager::UpdateGUI()
 				data.life = previewParams.life;
 				data.fSize = previewParams.fSize;
 				data.fEndSize = previewParams.fEndSize;
+				data.rotation = previewParams.rotation;
 				data.color = previewParams.color;
 				data.emissive = previewParams.emissive;
 				data.ownerID = PREVIEW_OWNER_ID;
-
+				data.iBehaviorType = previewParams.iBehaviorType;
 				Spawn(previewGroup, previewType, 1, &data, false, 0.f);
 			}
 		}
@@ -677,8 +734,11 @@ void CParticleManager::UpdateGUI()
 			preset.maxLife = previewParams.life;
 			preset.fStartSize = previewParams.fSize;
 			preset.fEndSize = previewParams.fEndSize;
+			preset.rotation = previewParams.rotation;
 			preset.groupTypeIndex = groupTypeIndex;        
 			preset.whatKindFilterIndex = whatKindFilterIndex;
+			preset.iBehaviorType = previewParams.iBehaviorType;
+			
 			HRESULT hr = SaveEffectPreset(szPresetSavePath, preset);
 			
 			if (SUCCEEDED(hr))
@@ -716,56 +776,81 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 
+
+	ImGui::Checkbox("Distortion", &distortion);
+	ImGui::Checkbox("BILLBOARD", &billboard);
+	ImGui::Checkbox("GRAVITY", &gravity);
+	ImGui::Checkbox("None", &none);
+
+	if (none)
+	{
+		distortion = false;
+		billboard = false;
+		gravity = false;
+	}
+
+	// 매번 NONE으로 리셋 후 체크된 것만 OR
+	pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
+	if (distortion)
+		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
+	if (billboard)
+		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
+	if (gravity)
+		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
+
+	ImGui::Separator();
 	if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
 	{
 		ImGui::Text("Standard Particle Params");
+
 		int countInput = (int)pendingStandard.count;
 		ImGui::InputInt("Count", &countInput);
 		pendingStandard.count = (uint32_t)std::clamp(countInput, 1, (int)MAX_SPAWN_PER_CALL);
 
 		ImGui::Checkbox("RandomPos?", &pendingStandard.bRandomPos);
 		if (pendingStandard.bRandomPos) {
-			ImGui::InputFloat3("PosMin", &pendingStandard.posMin.x);
-			ImGui::InputFloat3("PosMax", &pendingStandard.posMax.x);
+			ImGui::DragFloat3("PosMin", &pendingStandard.posMin.x, 0.01f);
+			ImGui::DragFloat3("PosMax", &pendingStandard.posMax.x, 0.01f);
 		}
 		else
-			ImGui::InputFloat3("Position", &pendingStandard.position.x);
+			ImGui::DragFloat3("Position", &pendingStandard.position.x, 0.01f);
 
 		ImGui::Checkbox("RandomVelocity?", &pendingStandard.bRandomVel);
 		if (pendingStandard.bRandomVel) {
-			ImGui::InputFloat3("VelMin", &pendingStandard.velMin.x);
-			ImGui::InputFloat3("VelMax", &pendingStandard.velMax.x);
+			ImGui::DragFloat3("VelMin", &pendingStandard.velMin.x, 0.01f);
+			ImGui::DragFloat3("VelMax", &pendingStandard.velMax.x, 0.01f);
 		}
 		else
-			ImGui::InputFloat3("Position", &pendingStandard.velocity.x);
+			ImGui::DragFloat3("Velocity", &pendingStandard.velocity.x, 0.01f);
 
 
-		ImGui::InputFloat("Life", &pendingStandard.life);
-		ImGui::InputFloat("StartSize", &pendingStandard.fSize);
-		ImGui::InputFloat("EndSize", &pendingStandard.fEndSize);
+		ImGui::DragFloat("Life", &pendingStandard.life, 0.01f);
+		ImGui::DragFloat("StartSize", &pendingStandard.fSize, 0.01f);
+		ImGui::DragFloat("EndSize", &pendingStandard.fEndSize, 0.01f);
+		ImGui::DragFloat4("Rotation", &pendingStandard.rotation.x, 0.01f);
 		ImGui::ColorEdit4("BaseColor", &pendingStandard.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingStandard.emissive.x);
-		ImGui::InputFloat("Emissive Intensity", &pendingStandard.emissive.w);
-		ImGui::InputFloat("SpawnDelay", &pendingStandard.fSpawnDelay);
+		ImGui::DragFloat("Emissive Intensity", &pendingStandard.emissive.w, 0.01f);
+		ImGui::DragFloat("SpawnDelay", &pendingStandard.fSpawnDelay, 0.01f);
 		ImGui::Checkbox("Loop", &pendingStandard.bLoop);
 
 		if (pendingStandard.bLoop)
-			ImGui::InputFloat("Spawn Interval", &pendingStandard.fSpawnInterval);
+			ImGui::DragFloat("Spawn Interval", &pendingStandard.fSpawnInterval, 0.01f);
 	}
 	else if (currentKind == SPAWN_COMMAND_KIND::BEAM)
 	{
 		ImGui::Text("Beam Params");
-		ImGui::InputFloat4("Start Pos", &pendingBeam.beamStart.x);
-		ImGui::InputFloat4("End Pos", &pendingBeam.beamEnd.x);
+		ImGui::DragFloat4("Start Pos", &pendingBeam.beamStart.x, 0.01f);
+		ImGui::DragFloat4("End Pos", &pendingBeam.beamEnd.x, 0.01f);
 		ImGui::InputInt("DisplacementIterations", &pendingBeam.iDisplacementIterations);
-		ImGui::InputFloat("DisplacementAmplitude", &pendingBeam.fDisplacementAmplitude);
-		ImGui::InputFloat("DisplacementDamping", &pendingBeam.fDisplacementDamping);
-		ImGui::InputFloat("flickerTimeInverval", &pendingBeam.flickerTimeInverval);
-		ImGui::InputFloat("Duration", &pendingBeam.beamDuration);
-		ImGui::InputFloat("SpawnDelay", &pendingBeam.fSpawnDelay);
+		ImGui::DragFloat("DisplacementAmplitude", &pendingBeam.fDisplacementAmplitude, 0.01f);
+		ImGui::DragFloat("DisplacementDamping", &pendingBeam.fDisplacementDamping, 0.01f);
+		ImGui::DragFloat("flickerTimeInverval", &pendingBeam.flickerTimeInverval, 0.01f);
+		ImGui::DragFloat("Duration", &pendingBeam.beamDuration, 0.01f);
+		ImGui::DragFloat("SpawnDelay", &pendingBeam.fSpawnDelay, 0.01f);
 		ImGui::ColorEdit4("BaseColor", &pendingBeam.color.x);
 		ImGui::ColorEdit3("Emissive Color", &pendingBeam.emissive.x);
-		ImGui::InputFloat("Emissive Intensity", &pendingBeam.emissive.w);
+		ImGui::DragFloat("Emissive Intensity", &pendingBeam.emissive.w, 0.01f);
 	}
 	else if (currentKind == SPAWN_COMMAND_KIND::PATTERN)
 	{
@@ -794,6 +879,7 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 
+
 	ImGui::Text("Spawn Queue (%zu)", m_vecCommandQueue.size());
 	for (int i = 0; i < (int)m_vecCommandQueue.size(); ++i)
 	{
@@ -816,13 +902,22 @@ void CParticleManager::UpdateGUI()
 		}
 		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::PATTERN)
 		{
-			const auto& pv = std::get<PatternParamVariant>(cmd.params);
-			std::visit([&](const auto& p)
-				{
-					ImGui::Text("[%s/%s] PATTERN(%s)",
-						cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
-						PATTERN_KIND_NAMES[pv.index()]);
-				}, pv);
+			if (std::holds_alternative<PatternParamVariant>(cmd.params))
+			{
+				const auto& pv = std::get<PatternParamVariant>(cmd.params);
+				std::visit([&](const auto& p)
+					{
+						ImGui::Text("[%s/%s] PATTERN(%s)",
+							cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
+							PATTERN_KIND_NAMES[pv.index()]);
+					}, pv);
+			}
+			else
+			{
+				ImGui::Text("[%s/%s] PATTERN (baked, %zu particles)",
+					cmd.sGroupTag.GetDbgStr(), cmd.sTypeTag.GetDbgStr(),
+					std::get<std::vector<PARTICLE_SPAWN_DATA>>(cmd.params).size());
+			}
 		}
 		
 		ImGui::SameLine();
@@ -846,7 +941,7 @@ void CParticleManager::UpdateGUI()
 
 	if (ImGui::Button("Execute Spawn (All)"))
 	{
-		ExecuteCommandQueue();
+		ExecuteCommandQueue(m_vecCommandQueue);
 	}
 
 	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/SpawnQueue.json";
@@ -960,60 +1055,7 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 	return hr;
 }
 
-HRESULT CParticleManager::SpawnRandomInGroup(const StringID& sGroupTag,
-	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
-	_bool bLoop, _float fSpawnInterval)
-{
-	if (pSpawnData == nullptr || count == 0)
-		return E_FAIL;
 
-	auto groupIt = m_Particles.find(sGroupTag);
-	if (groupIt == m_Particles.end() || groupIt->second.empty())
-		return E_FAIL;
-
-	auto& typeMap = groupIt->second;
-	uint32_t randIndex = rand() % (uint32_t)typeMap.size();
-
-	auto it = typeMap.begin();
-	std::advance(it, randIndex);
-
-	HRESULT hr = it->second->Spawn(count, pSpawnData);
-	if (FAILED(hr))
-		return hr;
-
-	if (bLoop)
-	{
-		PARTICLE_LOOP_REQUEST req{};
-		req.sGroupTag = sGroupTag;
-		req.sTypeTag = it->first;
-		req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
-		req.fSpawnInterval = fSpawnInterval;
-		req.fElapsed = 0.f;
-
-		m_LoopRequests.push_back(std::move(req));
-	}
-
-	return hr;
-}
-
-HRESULT CParticleManager::SpawnAllInGroup(const StringID& sGroupTag,
-	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
-{
-	if (pSpawnData == nullptr || count == 0)
-		return E_FAIL;
-
-	auto groupIt = m_Particles.find(sGroupTag);
-	if (groupIt == m_Particles.end() || groupIt->second.empty())
-		return E_FAIL;
-
-	HRESULT hr = S_OK;
-	for (auto& [typeTag, particle] : groupIt->second)
-	{
-		if (FAILED(particle->Spawn(count, pSpawnData)))
-			hr = E_FAIL;
-	}
-	return hr;
-}
 
 HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
@@ -1034,7 +1076,6 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& particleType,
 	const std::string& particleName,
 	int iMaxParticles,
-	int iBehaviorType,
 	const std::string& VSGroup,
 	const std::string& VSID,
 	const std::string& PSGroup,
@@ -1085,7 +1126,6 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	newEntry["particleType"] = particleType;
 	newEntry["particleName"] = particleName;
 	newEntry["iMaxParticles"] = iMaxParticles;
-	newEntry["iBehaviorType"] = iBehaviorType;
 	newEntry["VSGroup"] = VSGroup;
 	newEntry["VSID"] = VSID;
 	newEntry["PSGroup"] = PSGroup;
@@ -1169,12 +1209,12 @@ UPtr<CParticleManager> CParticleManager::Create()
 	return UPtr<CParticleManager>(new CParticleManager{});
 }
 
-HRESULT CParticleManager::ExecuteCommandQueue()
+HRESULT CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
 {
     HRESULT hr = S_OK;
     std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
 
-    for (auto& cmd : m_vecCommandQueue)
+    for (auto& cmd : queue)
     {
         if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STANDARD)
         {
@@ -1192,8 +1232,15 @@ HRESULT CParticleManager::ExecuteCommandQueue()
                 s.life = p.life;
                 s.fSize = p.fSize;
                 s.fEndSize = p.fEndSize;
+				s.rotation = _float4(
+					XMConvertToRadians(p.rotation.x),
+					XMConvertToRadians(p.rotation.y),
+					XMConvertToRadians(p.rotation.z),
+					XMConvertToRadians(p.rotation.w));
                 s.color = p.color;
                 s.emissive = p.emissive;
+				s.iBehaviorType = p.iBehaviorType;
+				s.ownerID = cmd.ownerId;
                 vec.push_back(s);
             }
         }
@@ -1210,13 +1257,28 @@ HRESULT CParticleManager::ExecuteCommandQueue()
             }
             else hr = E_FAIL;
         }
-        else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::PATTERN)
-        {
-            const auto& pv = std::get<PatternParamVariant>(cmd.params);
-            auto spawnList = BuildSpawnData(pv); // 패턴 종류 상관없이 한 줄
-            auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
-            vec.insert(vec.end(), spawnList.begin(), spawnList.end());
-        }
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::PATTERN)
+		{
+			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
+
+			if (std::holds_alternative<PatternParamVariant>(cmd.params))
+			{
+				// "Add to List" 경로: 아직 패턴 파라미터 상태
+				const auto& pv = std::get<PatternParamVariant>(cmd.params);
+				auto spawnList = BuildSpawnData(pv);
+				for (auto& s : spawnList)
+					s.ownerID = cmd.ownerId;
+				vec.insert(vec.end(), spawnList.begin(), spawnList.end());
+			}
+			else if (std::holds_alternative<std::vector<PARTICLE_SPAWN_DATA>>(cmd.params))
+			{
+				// Spawn(json, startPos, endPos) 경로: 이미 변환+오프셋 적용된 상태
+				auto& spawnList = std::get<std::vector<PARTICLE_SPAWN_DATA>>(cmd.params);
+				for (auto& s : spawnList)
+					s.ownerID = cmd.ownerId;
+				vec.insert(vec.end(), spawnList.begin(), spawnList.end());
+			}
+		}
     }
 
     for (auto& [key, spawnList] : batched)
@@ -1275,7 +1337,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			std::string sGroupTag = entry.value("sGroupTag", "");
 			std::string sResTag = entry.value("sResTag", "Static_Model_Resource");
 			int iMaxParticles = entry.value("iMaxParticles", 1000);
-			int iBehaviorType = entry.value("iBehaviorType", 0);
 			std::string VSGroup = entry.value("VSGroup", "");
 			std::string VSID = entry.value("VSID", "");
 			std::string PSGroup = entry.value("PSGroup", "");
@@ -1307,7 +1368,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			{
 				CParticle_GPU::DESC desc{};
 				desc.iMaxParticles = iMaxParticles;
-				desc.iBehaviorType = iBehaviorType;
 				desc.whatKind = MESHORTEXTURE::MESH;
 				desc.sGroupTag = sGroupTag;
 				desc.sResTag = sResTag;
@@ -1398,7 +1458,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			std::string particleName = entry.value("particleName", "");
 			std::string sGroupTag = entry.value("sGroupTag", "");
 			int iMaxParticles = entry.value("iMaxParticles", 1000);
-			int iBehaviorType = entry.value("iBehaviorType", 0);
 			std::string VSGroup = entry.value("VSGroup", "");
 			std::string VSID = entry.value("VSID", "");
 			std::string PSGroup = entry.value("PSGroup", "");
@@ -1432,7 +1491,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				CParticle_GPU::DESC desc{};
 				
 				desc.iMaxParticles = iMaxParticles;
-				desc.iBehaviorType = iBehaviorType;
 				desc.whatKind = MESHORTEXTURE::TEX;
 				desc.textureID = { textureID1, textureID2 };
 				desc.TexRows = RowCount;
@@ -1483,9 +1541,18 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				particle = CBeam_CPU::Create(&desc);
 				//PARTICLE_TYPE
 			}
-			else if (particleType == "RIBBON_CPU")
+			else if (particleType == "TRAIL_CPU")
 			{
-				//particle = CTrail_CPU::Create(&desc);
+				CTrail_CPU::DESC desc;
+		
+				desc.textureID = { textureID1, textureID2 };
+				if (!VSGroup.empty() && !VSID.empty())
+					desc.VSID = { VSGroup, VSID };
+
+				if (!PSGroup.empty() && !PSID.empty())
+					desc.PSID = { PSGroup, PSID };
+
+				particle = CTrail_CPU::Create(&desc);
 			}
 			else
 			{
@@ -1618,11 +1685,18 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["life"] = p.life;
 				entry["StartSize"] = p.fSize;
 				entry["EndSize"] = p.fEndSize;
+				entry["Rotation"] = { p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w};
 				entry["color"] = { p.color.x, p.color.y, p.color.z, p.color.w };
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 				entry["fSpawnDelay"] = p.fSpawnDelay;
 				entry["bLoop"] = p.bLoop;
 				entry["fSpawnInterval"] = p.fSpawnInterval;
+				entry["bRandomPos"] = p.bRandomPos;
+				entry["posMin"] = { p.posMin.x, p.posMin.y, p.posMin.z };
+				entry["posMax"] = { p.posMax.x, p.posMax.y, p.posMax.z };
+				entry["bRandomVel"] = p.bRandomVel;
+				entry["velMin"] = { p.velMin.x, p.velMin.y, p.velMin.z };
+				entry["velMax"] = { p.velMax.x, p.velMax.y, p.velMax.z };
 				break;
 			}
 			case SPAWN_COMMAND_KIND::BEAM:
@@ -1642,11 +1716,19 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 			}
 			case SPAWN_COMMAND_KIND::PATTERN:
 			{
-				const auto& pv = std::get<PatternParamVariant>(cmd.params);
-				entry["patternKindIndex"] = (int)pv.index();
-				nlohmann::json paramJson;
-				SaveParam(pv, paramJson);
-				entry["patternParams"] = paramJson;
+				if (std::holds_alternative<PatternParamVariant>(cmd.params))
+				{
+					const auto& pv = std::get<PatternParamVariant>(cmd.params);
+					entry["patternKindIndex"] = (int)pv.index();
+					nlohmann::json paramJson;
+					SaveParam(pv, paramJson);
+					entry["patternParams"] = paramJson;
+				}
+				else
+				{
+					// baked 데이터는 패턴 정보가 없으므로 저장 불가 - 스킵
+					continue;
+				}
 				break;
 			}
 		
@@ -1704,16 +1786,32 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			STANDARD_PARAMS p{};
 			p.count = entry.value("count", 1u);
 
+
+			p.bRandomPos = entry.value("bRandomPos", false);
+			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
+			p.posMin = { posMin[0], posMin[1], posMin[2] };
+			auto posMax = entry.value("posMax", std::vector<float>{0, 0, 0});
+			p.posMax = { posMax[0], posMax[1], posMax[2] };
+
 			auto pos = entry.value("position", std::vector<float>{0, 0, 0});
 			p.position = { pos[0], pos[1], pos[2] };
 
+			p.bRandomVel = entry.value("bRandomVel", false);
+			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
+			p.velMin = { velMin[0], velMin[1], velMin[2] };
+			auto velMax = entry.value("velMax", std::vector<float>{0, 0, 0});
+			p.velMax = { velMax[0], velMax[1], velMax[2] };
+
 			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
 			p.velocity = { vel[0], vel[1], vel[2] };
+
 
 			p.life = entry.value("life", 1.f);
 			p.fSize = entry.value("StartSize", 1.f);
 			p.fEndSize = entry.value("EndSize", 1.f);
 
+			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0,0});
+			p.rotation = { rot[0], rot[1], rot[2],rot[3]};
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			p.color = { col[0], col[1], col[2], col[3] };
 
@@ -1806,6 +1904,8 @@ HRESULT CParticleManager::SaveEffectPreset(const std::string& strJsonPath, const
 	entry["defaultEndSize"] = preset.fEndSize;
 	entry["groupTypeIndex"] = preset.groupTypeIndex;
 	entry["whatKindFilterIndex"] = preset.whatKindFilterIndex;
+	entry["behaviorType"] = preset.iBehaviorType;
+	entry["rotation"] = { preset.rotation.x, preset.rotation.y, preset.rotation.z, preset.rotation.w };
 	// 같은 이름 있으면 덮어쓰기
 	bool bReplaced = false;
 	for (auto& e : j["presets"])
@@ -1866,13 +1966,149 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 		preset.maxLife = entry.value("defaultLife", 1.f);
 		preset.fStartSize = entry.value("defaultSize", 1.f);
 		preset.fEndSize = entry.value("defaultEndSize", 1.f);
+		auto rot = entry.value("rotation", std::vector<float>{0, 0, 0, 0});
+		preset.rotation = { rot[0], rot[1], rot[2], rot[3] };
 		preset.groupTypeIndex = entry.value("groupTypeIndex", 0);
 		preset.whatKindFilterIndex = entry.value("whatKindFilterIndex", 0);
+		preset.iBehaviorType = entry.value("behaviorType", 0);
 		if (!preset.presetName.empty())
 			m_ParticlePresets[preset.presetName] = preset;
 	}
 
 	return S_OK;
+}
+HRESULT CParticleManager::Spawn(uint32_t owenrId, const std::string& strJsonPath,_fvector startPos, _fvector endPos )
+{
+	if (!std::filesystem::exists(strJsonPath))
+		return E_FAIL;
+
+	std::ifstream file(strJsonPath);
+	if (!file.is_open())
+		return E_FAIL;
+
+	nlohmann::json j;
+	try
+	{
+		file >> j;
+	}
+	catch (...)
+	{
+		return E_FAIL;
+	}
+
+	if (!j.contains("commands") || !j["commands"].is_array())
+		return E_FAIL;
+
+	std::vector<SPAWN_COMMAND> localQueue;
+	for (const auto& entry : j["commands"])
+	{
+		SPAWN_COMMAND cmd{};
+		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
+		cmd.sGroupTag = entry.value("sGroupTag", "");
+		cmd.sTypeTag = entry.value("sTypeTag", "");
+		cmd.ownerId = owenrId;
+		switch (cmd.sGroupTag_KindTag)
+		{
+		case SPAWN_COMMAND_KIND::STANDARD:
+		{
+			STANDARD_PARAMS p{};
+			p.count = entry.value("count", 1u);
+
+			p.bRandomPos = entry.value("bRandomPos", false);
+			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
+			p.posMin = { posMin[0], posMin[1], posMin[2] };
+			XMStoreFloat3(&p.posMin, XMLoadFloat3(&p.posMin) + startPos);   // 랜덤 범위도 startPos만큼 이동
+			auto posMax = entry.value("posMax", std::vector<float>{0, 0, 0});
+			p.posMax = { posMax[0], posMax[1], posMax[2] };
+			XMStoreFloat3(&p.posMax, XMLoadFloat3(&p.posMax) + startPos);
+
+			auto pos = entry.value("position", std::vector<float>{0, 0, 0});
+			p.position = { pos[0], pos[1], pos[2] };
+			XMStoreFloat3(&p.position, XMLoadFloat3(&p.position) + startPos);
+
+			p.bRandomVel = entry.value("bRandomVel", false);
+			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
+			p.velMin = { velMin[0], velMin[1], velMin[2] };
+			auto velMax = entry.value("velMax", std::vector<float>{0, 0, 0});
+			p.velMax = { velMax[0], velMax[1], velMax[2] };
+
+			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
+			p.velocity = { vel[0], vel[1], vel[2] };
+
+			p.life = entry.value("life", 1.f);
+			p.fSize = entry.value("StartSize", 1.f);
+			p.fEndSize = entry.value("EndSize", 1.f);
+
+			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
+			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
+			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
+			p.color = { col[0], col[1], col[2], col[3] };
+
+			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
+			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
+
+			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
+			p.bLoop = entry.value("bLoop", false);
+			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
+
+			cmd.params = p;
+			break;
+		}
+		case SPAWN_COMMAND_KIND::BEAM:
+		{
+			BEAM_PARAMS p{};
+
+			auto bs = entry.value("beamStart", std::vector<float>{0, 0, 0, 0});
+			p.beamStart = { bs[0], bs[1], bs[2], bs[3] };
+			XMStoreFloat4(&p.beamStart, XMLoadFloat4(&p.beamStart) + startPos);
+
+			auto be = entry.value("beamEnd", std::vector<float>{0, 0, 0, 0});
+			p.beamEnd = { be[0], be[1], be[2], be[3] };
+			XMStoreFloat4(&p.beamEnd, XMLoadFloat4(&p.beamEnd) + endPos);
+			p.iDisplacementIterations = entry.value("iDisplacementIterations", 0);
+			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.f);
+			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.f);
+			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
+			p.beamDuration = entry.value("beamDuration", 0.f);
+			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
+
+			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
+			p.color = { col[0], col[1], col[2], col[3] };
+
+			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
+			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
+		
+			cmd.params = p;
+			break;
+		}
+		case SPAWN_COMMAND_KIND::PATTERN:
+		{
+			int kindIdx = entry.value("patternKindIndex", 0);
+			PatternParamVariant pv = MakeDefaultPatternParam(kindIdx);
+			const auto& paramJson = entry["patternParams"];
+			std::visit([&](auto& p) { LoadParam(p, paramJson); }, pv);
+
+			// JSON에 저장된 기본 위치값 위에, 런타임 startPos/endPos로 덮어씀
+			ApplyStartEndToPattern(pv, startPos, endPos);
+
+			auto spawnList = BuildSpawnData(pv);
+
+			cmd.sGroupTag_KindTag = SPAWN_COMMAND_KIND::PATTERN;
+			cmd.params = spawnList;
+			break;
+		}
+		default:
+			continue;
+		}
+
+		 localQueue.push_back(cmd);
+	}
+
+
+	ExecuteCommandQueue(localQueue);
+
+	return S_OK;
+
 }
 HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float3& position, uint32_t count)
 {
@@ -1891,7 +2127,8 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 	data.fEndSize = preset.fEndSize;
 	data.color = preset.StartColor;
 	data.emissive = preset.Emissive;
-
+	data.iBehaviorType = preset.iBehaviorType;
+	data.rotation = preset.rotation;
 	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
 }
 // ParticleManager.cpp
@@ -1952,4 +2189,32 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return {};
 			}
 		}, v);
+}
+void CParticleManager::ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos)
+{
+	std::visit([&](auto& p)
+		{
+			using T = std::decay_t<decltype(p)>;
+
+			if constexpr (std::is_same_v<T, SStairsParam>)
+			{
+				
+				XMStoreFloat3(&p.vStartPos, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SCircleParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SSpiralParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SStraightGroundParam>)
+			{
+				XMStoreFloat3(&p.vStartPos, startPos);
+			}
+			//XMStoreFloat3(&p.vStartPos, startPos);
+			//XMStoreFloat3(&p.vEndPos, endPos);
+
+		}, pv);
 }

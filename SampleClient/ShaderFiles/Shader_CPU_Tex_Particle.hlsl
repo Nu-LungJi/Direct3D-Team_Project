@@ -1,4 +1,4 @@
-#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
 struct VS_IN

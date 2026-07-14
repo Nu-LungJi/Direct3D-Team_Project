@@ -41,22 +41,31 @@ namespace Engine
 	} VTX_POINT_PARTICLE;
 
 	typedef struct tagParticle {
-		_float3 position;
-		_float  pad1;
-		_float3 velocity;
-		_float life;
-		_float maxLife;
-		_float size;
-		_float startSize;
-		_float endSize;
+		_float3  position;
+		_float   pad1;
+		_float3  velocity;
+		_float   life;
+		_float   maxLife;
+		_float   size;
+		_float   startSize;
+		_float   endSize;
+		_float4  rotation;
 		uint32_t alive;
 		uint32_t loop;
-		_float4 color;
-		_float4 emissive;
+		_float2  pad2;         // 추가 필요: loop→color (8바이트)
+		_float4  color;
+		_float4  emissive;
 		uint32_t frameIndex;
-		uint32_t ownerID; 
-		_float pad2;
+		uint32_t ownerID;
+		uint32_t iBehaviorType = 0;
 	}PARTICLE;
+	static_assert(sizeof(PARTICLE) == 124, "size mismatch");
+	static_assert(offsetof(PARTICLE, velocity) == 16, "velocity offset");
+	static_assert(offsetof(PARTICLE, rotation) == 48, "rotation offset");
+	static_assert(offsetof(PARTICLE, color) == 80, "color offset");
+	static_assert(offsetof(PARTICLE, emissive) == 96, "emissive offset");
+	static_assert(offsetof(PARTICLE, iBehaviorType) == 120, "behaviorType offset");
+
 	typedef struct tagFireInstancedData
 	{
 		_float4x4 matWorld{};

@@ -27,7 +27,6 @@ public:
     struct DESC final: public ISerializable
     {
         uint32_t     iMaxParticles = 1000;   
-        int32_t      iBehaviorType ;      //  (HLSL 쪽 분기 인덱스)
         std::pair<StringID, StringID> textureID;  // 파티클 텍스처
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
         std::pair<StringID, StringID> VSID;  // 버텍스 쉐이더
@@ -42,14 +41,12 @@ public:
 		virtual void Serialize(ISerializer& serializer) const
 		{
 			serializer.Write("iMaxParticles", iMaxParticles);
-			serializer.Write("iBehaviorType", iBehaviorType);
 			serializer.Write("whatKind", whatKind);
 		}
 		virtual void Deserialize(IDeserializer& deserializer)
 		{
 
 			deserializer.Read("iMaxParticles", iMaxParticles);
-			deserializer.Read("iBehaviorType", iBehaviorType);
 			deserializer.Read("whatKind", whatKind);
 
 		}

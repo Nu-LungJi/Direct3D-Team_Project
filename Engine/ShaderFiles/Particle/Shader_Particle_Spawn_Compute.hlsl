@@ -1,34 +1,5 @@
-struct SPAWN_DATA
-{
-    float3 position;
-    float3 velocity;
-    float life;
-    float size;
-    float endSize;
-    float4 color;
-    float4 emissive;
-    float spawnDelay;
-    uint ownerID;
-};
+#include "../Particle/Particle_Common_Struct_Func.hlsl"
 
-struct ParticleData
-{
-    float3 position;
-    float pad1;
-    float3 velocity;
-    float life;
-    float maxLife;
-    float size;
-    float startSize;
-    float EndSize;
-    uint alive;
-    uint loop;
-    float4 color;
-    float4 emissive;
-    uint frameIndex;
-    uint ownerID;
-    float pad2;
-};
 
 cbuffer CB_SPAWN_COUNT : register(b6)
 {
@@ -59,11 +30,14 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.maxLife = s.life;
     p.startSize = s.size;
     p.EndSize = s.endSize;
+    p.rotation = s.rotation;
     p.size = s.size;
     p.alive = 1;
     p.color = s.color;
     p.emissive = s.emissive;
     p.ownerID = s.ownerID;
+    p.iBehaviorType = s.iBehaviorType;
+   
     
     gParticles[index] = p;
 }

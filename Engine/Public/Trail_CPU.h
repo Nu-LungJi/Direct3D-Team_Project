@@ -18,7 +18,7 @@ struct TRAIL_VERTEX
 {
     _float3 vPosition;
     _float2 vUV;
-    _float4 vColor = { 1.f, 1.f, 1.f, 1.f };
+    _float4 vColor;
 };
 
 // 무기 궤적 트레일.
@@ -36,8 +36,8 @@ public:
         std::pair<StringID, StringID> PSID;
         PARTICLE_TYPE type;
         TRAIL_TYPE  tType;
-        _float   fMaxDuration = 1.25f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
-        uint32_t iMaxFrames = 64;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
+        _float   fMaxDuration = 1.f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
+        uint32_t iMaxFrames = 700;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
     };
 
 private:
@@ -54,13 +54,17 @@ public:
 	virtual void ClearByOwner(uint32_t ownerID) override;
 
 public:
-    // 매 프레임 호출 - 무기 애니메이션 재생 중 칼날 밑동/칼끝의 현재 월드 좌표를 같이 넘긴다.
+	_float DistanceSq(const _float3& a, const _float3& b);
+	// 매 프레임 호출 - 무기 애니메이션 재생 중 칼날 밑동/칼끝의 현재 월드 좌표를 같이 넘긴다.
     void AddPoint(const _float3& vStart, const _float3& vEnd);
 
     void Clear();
     uint32_t Debug_GetFrameCount() const { return (uint32_t)m_dequeFrames.size(); }
     uint32_t Debug_GetVertexCount() const { return (uint32_t)m_vecVertices.size(); }
-
+	virtual void SetPosition(const _float3& pos) override;
+	virtual void SetVelocity(const _float3& vel) override;
+	virtual void SetSize(const _float& size) override;
+	virtual void SetColor(const _float4& color) override;
 private:
     void BuildTrailGeometry();
 
@@ -69,10 +73,30 @@ private:
     TRAIL_TYPE m_eTrailType;
     std::deque<TRAIL_FRAME>  m_dequeFrames; // 앞(front)이 최신, 뒤(back)가 가장 오래된 프레임
     std::vector<TRAIL_VERTEX> m_vecVertices;
-
+	_bool m_bHasLastPoint = false;
+	_float3 m_vLastStart{};
+	_float3 m_vLastEnd{};
+	_float4 m_vColor{1.f,1.f,1.f,1.f};
     SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
+    SPtr<class CResCBuffer> m_pScrollCBuffer;
+	_float m_fTimeSinceLastAdd = 0.f;
+	_float   m_fSampleInterval = 1.f / 60.f;
+
+	_float m_fIdleTime = 0.f;          // AddPoint 호출 안 된지 얼마나 됐는지
+	_float m_fIdleThreshold = 0.1f;    // 이 시간 이상 AddPoint 없으면 "멈췄다"고 판단
+	_float m_fRetractInterval = 0.02f; // 멈춘 뒤, 이 간격마다 꼬리 1프레임씩 강제 제거
+	_float m_fTimeSinceLastRetract = 0.f;
+	_float m_ScrollOffset = 0.2f;
+	//_float m_ScrollSpeed = 5.4f;
+	_float totalLength = 0.0f;
+
 public:
 	static UPtr<CParticle> Create(void* pArg);
+	float EaseOutQuad(float x);
+	float EaseOutCubic(float x);
+	float EaseOutPow(float x, float n);
+	float EaseOutExpo(float x);
+	float EaseOutSine(float x);
 };
 
 NS_END

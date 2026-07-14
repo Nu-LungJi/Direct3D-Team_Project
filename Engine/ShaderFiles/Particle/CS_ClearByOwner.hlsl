@@ -1,20 +1,6 @@
-struct ParticleData
-{
-    float3 position;
-    float pad1;
-    float3 velocity;
-    float life;
-    float maxLife;
-    float size;
-    float startSize;
-    uint alive;
-    uint loop;
-    float4 color;
-    float4 emissive;
-    uint frameIndex;
-    uint ownerID;
-    float2 pad2;
-};
+#include "../Particle/Particle_Common_Struct_Func.hlsl"
+
+
 
 cbuffer CB_CLEAR : register(b7)
 {

@@ -38,13 +38,15 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].life = 0.f;
         initParticles[i].maxLife = 0.f;
         initParticles[i].size = 1.f;
-        initParticles[i].endSize = 1.f;
         initParticles[i].startSize = 1.f;
+        initParticles[i].endSize = 1.f;
+		initParticles[i].rotation = { 0,0,0,0 };
         initParticles[i].color = _float4(1.f, 1.f, 1.f, 0.f);
         initParticles[i].alive = false;
         initParticles[i].loop = false;
         initParticles[i].emissive = { 0,0,0,0 };
 		initParticles[i].frameIndex = 0;
+		initParticles[i].iBehaviorType = 0;
     }
 
     std::vector<uint32_t> initDeadIndices(m_iNumElements);
@@ -315,7 +317,6 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     CB_PER_PARTICLE cb{};
     cb.g_fTimeDelta = fTimeDelta;
     cb.g_iNumInstances = m_iNumElements;
-    cb.g_iBehaviorType = m_Desc.iBehaviorType;
 	cb.g_iFlipbookColumns = m_Desc.TexColumns;
 	cb.g_iFlipbookRows = m_Desc.TexRows;
 	cb.g_iTotalFrames = m_Desc.TexRows * m_Desc.TexColumns;
@@ -376,7 +377,8 @@ HRESULT CParticle_GPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 
-
+	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
     pContext->VSSetShaderResources(4, 1, &pParticleSRV);
 
@@ -425,6 +427,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		pContext->VSSetShaderResources(4, 1, nullSRV);
 	}
+	pContext->OMSetDepthStencilState(nullptr, 0);
 
     return S_OK;
 }

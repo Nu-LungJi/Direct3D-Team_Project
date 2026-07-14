@@ -77,16 +77,20 @@ namespace Engine
 
 	typedef struct CB_ParticleUpdate
 	{
-		float    g_fTimeDelta;
+		_float    g_fTimeDelta;
 		uint32_t g_iNumInstances;
-		uint32_t g_iBehaviorType;
 		uint32_t g_iFlipbookRows;
 		uint32_t g_iFlipbookColumns;
 		uint32_t g_iTotalFrames;
-		float    g_fPadding1;
-		float    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+		_float3    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
-	static_assert(sizeof(CB_PER_PARTICLE) % 16 == 0);
+	typedef struct CB_SCROLL
+	{
+		_float    g_fScrollOffset;
+		_float    g_fScrollSpeed;
+		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+	} CB_SCROLL;
+	static_assert(sizeof(CB_SCROLL) % 16 == 0);
 
 	typedef struct CB_ParticleSpawn
 	{

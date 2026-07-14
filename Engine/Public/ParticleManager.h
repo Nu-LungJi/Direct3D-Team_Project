@@ -5,6 +5,7 @@
 NS_BEGIN(Engine)
 class CParticle;
 
+
 struct PARTICLE_LOOP_REQUEST
 {
     StringID                          sGroupTag;
@@ -24,10 +25,12 @@ typedef struct tagParticlePreset
 	_float maxLife = 1.f;
 	_float fStartSize = 1.f;
 	_float fEndSize = 1.f;
+	_float4   rotation = { 0.f, 0.f, 0.f, 0.f };
+
 	//EndColor는 보간 로직 만든 뒤에 추가
 	_float4 StartColor = { 1.f, 1.f, 1.f, 1.f };
 	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
-
+	uint32_t iBehaviorType = 0;
 
 } PARTICLE_PRESET;
 
@@ -47,11 +50,13 @@ struct STANDARD_PARAMS
     _float   life = 1.f;
     _float   fSize = 1.f;
     _float   fEndSize = 1.f;
+    _float4   rotation = { 0.f, 0.f, 0.f, 0.f };
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
     _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
 	_float	 fSpawnDelay = 0.f;
+	uint32_t	iBehaviorType;
 };
 
 struct BEAM_PARAMS
@@ -66,6 +71,7 @@ struct BEAM_PARAMS
     _float   flickerTimeInverval = 0.25f;
     _float   beamDuration = 0.f;
 	_float	 fSpawnDelay = 0.f;
+	uint32_t ownerId = 0;
 
 };
 
@@ -75,10 +81,11 @@ enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
 
 struct SPAWN_COMMAND
 {
-	SPAWN_COMMAND_KIND sGroupTag_KindTag{};
-	StringID sGroupTag{};
-	StringID sTypeTag{};
-	std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant> params;
+    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
+    StringID sGroupTag{};
+    StringID sTypeTag{};
+	uint32_t ownerId = 0;
+    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
 };
 struct PARTICLE_EFFECT_PRESET
 {
@@ -111,14 +118,7 @@ public:
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 
-    // 대분류 안에서 랜덤하게 하나 골라 스폰 (예: "stone" 안에서 아무 파편이나)
-    HRESULT SpawnRandomInGroup(const StringID& sGroupTag,
-        uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
-        _bool bLoop = false, _float fSpawnInterval = 0.1f);
 
-    // 대분류 전체에 동시에 스폰 (필요하다면)
-    HRESULT SpawnAllInGroup(const StringID& sGroupTag,
-        uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData);
 
     HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
         _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
@@ -127,7 +127,7 @@ public:
 
 public:
 	HRESULT Save_Binary_Json(std::string outpath, const std::string& fbxFullPath, const std::string& whatKind, const std::string& particleType,
-		const std::string& particleName, int iMaxParticles, int iBehaviorType, const std::string& VSGroup, const std::string& VSID,
+		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
 		const std::string& PSGroup, const std::string& PSID, const std::string& sGroupTag, const std::string& sResTag, 
 		const std::string& textureID1 = "", const std::string& textureID2 = "", const std::string& viBufferID1 ="",
 		const std::string& viBufferID2= "",
@@ -138,11 +138,13 @@ public:
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 
+	HRESULT Spawn(uint32_t owenrId, const std::string& strJsonPath, _fvector startPos, _fvector endPos);
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
 	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
 	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
+	void ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos);
 	// 조회 헬퍼
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
 	bool HasGroup(const StringID& sGroupTag) const;
@@ -162,7 +164,7 @@ private:
 	 bool bNeedTypeIndexSync = false;
 	 StringID pendingSyncGroup, pendingSyncType;
 private:
-    HRESULT ExecuteCommandQueue();
+    HRESULT ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 
 };
 NS_END
