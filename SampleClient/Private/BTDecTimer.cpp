@@ -60,10 +60,10 @@ EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 	m_fTick += fTimeDelta;
 	EVALUATE result{ EVALUATE::END };
 	//m_bRun 이 true 일떄만 해당노드 재진입
-	if (m_eTimer == TIMER::PAUSE)
+	if (m_eTimer == TIMER::PAUSE) //타이머 지나기 전까지 하위노드 실행 안됨 RUN 또는 FAILED 반환
 		result = PAUSE(fTimeDelta);
 	else if (m_eTimer == TIMER::NEXT)
-		result = NEXT(fTimeDelta);
+		result = NEXT(fTimeDelta); // 타이머 지나는 동안 하위노드 실행
 	
 
 	return result;

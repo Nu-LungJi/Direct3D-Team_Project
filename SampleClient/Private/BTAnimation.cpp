@@ -86,7 +86,7 @@ void CBTAnimation::Update_Gui()
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" };
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
 	if (ImGui::TreeNode("EndFlag"))
 	{
 

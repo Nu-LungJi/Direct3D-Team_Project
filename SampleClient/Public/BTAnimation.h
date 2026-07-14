@@ -25,7 +25,7 @@ public:
 private:
 	_bool				m_bLoop{ true }, m_bStart{true};
 
-	uint32_t			m_iEndFlag{};
+	uint32_t			m_iEndFlag{}, m_iStartFlag{};
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

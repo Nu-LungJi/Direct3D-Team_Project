@@ -21,6 +21,7 @@ public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
 	virtual void					Update_Gui() override;
 private:
+	_bool						m_bDeadCheck{ false };
 	_float						m_CurrentHp{ 40 }, m_MaxHp{ 100 }, m_fdivided{ 1.f };
 public:
 	static UPtr<CBTDecHp> Create();

@@ -183,6 +183,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTDecInvert.h" />
     <ClInclude Include="..\public\BTDecLier.h" />
     <ClInclude Include="..\public\BTDecHit.h" />
+    <ClInclude Include="..\public\BTHitAnimMonster.h" />
     <ClInclude Include="..\public\BTOnlyFalse.h" />
     <ClInclude Include="..\public\BTOnlyTrue.h" />
     <ClInclude Include="..\public\BTRandMoveAnim.h" />
@@ -193,6 +194,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTDecSearch.h" />
     <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\public\BTMove.h" />
+    <ClInclude Include="..\public\BTCreatureFlag.h" />
     <ClInclude Include="..\public\EffectUI.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
@@ -250,6 +252,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecLier.cpp" />
     <ClCompile Include="..\private\BTDecHit.cpp" />
+    <ClCompile Include="..\private\BTHitAnimMonster.cpp" />
     <ClCompile Include="..\private\BTOnlyFalse.cpp" />
     <ClCompile Include="..\private\BTOnlyTrue.cpp" />
     <ClCompile Include="..\private\BTRandMoveAnim.cpp" />
@@ -259,6 +262,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\BTDecSearch.cpp" />
     <ClCompile Include="..\private\BTMove.cpp" />
+    <ClCompile Include="..\private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\private\EffectUI.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>

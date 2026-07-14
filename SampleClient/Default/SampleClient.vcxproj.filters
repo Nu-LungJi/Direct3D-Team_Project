@@ -309,6 +309,12 @@
     <ClInclude Include="..\public\BTRandMoveAnim.h">
       <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTCreatureFlag.h">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -464,6 +470,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTRandMoveAnim.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTCreatureFlag.cpp">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

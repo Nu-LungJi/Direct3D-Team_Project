@@ -13,6 +13,8 @@
 #include "BTTurnAnimation.h" // 회전 애니매이션이 너무 많아서 하나로 묶는용도
 #include "BTAttackAnimation.h" //애니매이션에 이동량 들어가야 될 경우 // 플래그 있음
 #include "BTRandMoveAnim.h" //랜덤 움직임 필요한경우
+#include "BTAttackAnimation.h"
+#include "BTCreatureFlag.h"// 개별 플래그 세팅용
 
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함
