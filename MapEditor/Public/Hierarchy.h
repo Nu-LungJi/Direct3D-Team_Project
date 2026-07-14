@@ -25,6 +25,7 @@ public:
 private:
 	CEditorCommandManager* m_pCommandManager = nullptr;
 	CEditorSelection* m_pSelection = nullptr;
+	std::optional<E::CHandle> m_RangeAnchor{};
 };
 
 NS_END

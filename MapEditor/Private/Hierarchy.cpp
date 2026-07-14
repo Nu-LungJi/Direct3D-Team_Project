@@ -290,8 +290,9 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 
 			if (bOpen)
 			{
-				for (const auto& handle : handles)
+				for (size_t handleIndex = 0; handleIndex < handles.size(); ++handleIndex)
 				{
+					const auto& handle = handles[handleIndex];
 					auto* pObject = E::CGameInstance::Get().GetGameObjectByHandle(handle);
 					if (pObject == nullptr)
 					{
@@ -306,10 +307,31 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 					{
 						if (m_pSelection)
 						{
-							if (ImGui::GetIO().KeyCtrl)
+							const ImGuiIO& io = ImGui::GetIO();
+							if (io.KeyShift && m_RangeAnchor.has_value())
+							{
+								const auto anchorIter = std::find(handles.begin(), handles.end(), *m_RangeAnchor);
+								if (anchorIter != handles.end())
+								{
+									const size_t anchorIndex = static_cast<size_t>(std::distance(handles.begin(), anchorIter));
+									m_pSelection->SelectRange(handles, anchorIndex, handleIndex, io.KeyCtrl);
+								}
+								else
+								{
+									m_pSelection->SelectSingle(handle);
+									m_RangeAnchor = handle;
+								}
+							}
+							else if (io.KeyCtrl)
+							{
 								m_pSelection->Toggle(handle);
+								m_RangeAnchor = handle;
+							}
 							else
+							{
 								m_pSelection->SelectSingle(handle);
+								m_RangeAnchor = handle;
+							}
 						}
 						else
 						{

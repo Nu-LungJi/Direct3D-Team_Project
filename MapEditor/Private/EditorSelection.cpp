@@ -88,6 +88,36 @@ void CEditorSelection::Toggle(const E::CHandle& handle)
 		SetPrimary(m_SelectedHandles.back());
 }
 
+void CEditorSelection::SelectRange(const std::vector<E::CHandle>& handles,
+	size_t firstIndex, size_t lastIndex, _bool additive)
+{
+	if (handles.empty() || firstIndex >= handles.size() || lastIndex >= handles.size())
+		return;
+
+	const size_t clickedIndex = lastIndex;
+	if (firstIndex > lastIndex)
+		std::swap(firstIndex, lastIndex);
+
+	if (!additive)
+		m_SelectedHandles.clear();
+
+	for (size_t index = firstIndex; index <= lastIndex; ++index)
+	{
+		const E::CHandle& handle = handles[index];
+		if (E::CGameInstance::Get().GetGameObjectByHandle(handle) == nullptr || IsSelected(handle))
+			continue;
+		m_SelectedHandles.push_back(handle);
+	}
+
+	// The clicked end of the range becomes the primary object for the inspector
+	// and multi-object gizmo pivot, while the hierarchy anchor remains unchanged.
+	const E::CHandle& clickedHandle = handles[clickedIndex];
+	if (IsSelected(clickedHandle))
+		SetPrimary(clickedHandle);
+	else if (m_SelectedHandles.empty())
+		SetPrimary(E::CHandle{});
+}
+
 void CEditorSelection::Clear()
 {
 	m_SelectedHandles.clear();

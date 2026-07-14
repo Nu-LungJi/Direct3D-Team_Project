@@ -13,6 +13,8 @@ public:
 	void PruneInvalid();
 	void SelectSingle(const E::CHandle& handle);
 	void Toggle(const E::CHandle& handle);
+	void SelectRange(const std::vector<E::CHandle>& handles, size_t firstIndex,
+		size_t lastIndex, _bool additive);
 	void Clear();
 
 	_bool IsSelected(const E::CHandle& handle) const;
