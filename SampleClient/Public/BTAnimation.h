@@ -24,6 +24,8 @@ public:
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
 	_bool				m_bLoop{ true }, m_bStart{true};
+
+	uint32_t			m_iEndFlag{};
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

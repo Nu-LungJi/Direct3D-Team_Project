@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTDecHp.h"
 #include "ComBeHavior.h"
+#include "TestGob.h"
 NS_USING(Client)
 
 CBTDecHp::CBTDecHp()
@@ -27,16 +28,19 @@ HRESULT CBTDecHp::Initalize(void* pArg)
 {
 
 	__super::Initalize(pArg);
-
-	
 	return S_OK;
 }
 EVALUATE CBTDecHp::Evaluate(_float fTimeDelta)
 {
-	if(m_CurrentHp <= m_MaxHp / m_fdivided)
+	auto pBT = Get_ComBT();
+	if (nullptr == pBT) return m_eDebug = EVALUATE::FAILED;
+	auto pObj = static_cast<CTestGob*>(pBT->GetGameObject());
+	if (nullptr == pObj) return m_eDebug = EVALUATE::FAILED;
+	
+	if(pObj->Get_CurrentHp() <= pObj->Get_MaxHp() / m_fdivided)
 		return __super::Evaluate(fTimeDelta);
 	
-	return EVALUATE::FAILED;
+	return m_eDebug = EVALUATE::FAILED;
 }
 nlohmann::json CBTDecHp::Save_Node()
 {
@@ -54,6 +58,8 @@ HRESULT CBTDecHp::Load_json(const nlohmann::json& j)
 
 void CBTDecHp::Update_Gui()
 {
+	ImGui::Text("Divided");
+	ImGui::DragFloat("##Divided", &m_fdivided, 0, 10);
 }
 E::UPtr<CBTDecHp> CBTDecHp::Create()
 {

@@ -71,7 +71,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-
+	m_iHp = m_iMaxHp = 100;
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
@@ -135,7 +135,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
-
+	if (CGameInstance::Get().KeyDown(DIK_1))
+		Set_Damage(10);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)

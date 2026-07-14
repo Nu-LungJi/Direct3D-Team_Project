@@ -27,7 +27,7 @@ private:
 private:
 	_float3						m_vDir{}, m_vFinishPos{};
 	_bool						m_bInit{ false };
-	_float						m_fDis{};
+	_float						m_fDis{}, m_fClamp{};
 public:
 	static UPtr<CBTRandMoveAnim> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

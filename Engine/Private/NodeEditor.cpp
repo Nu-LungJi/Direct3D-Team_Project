@@ -502,22 +502,9 @@ _bool CNodeEditor::Draw_TmpNode(int32_t& iNode_hovered_in_list, int32_t& iNode_h
 					{
 						int32_t iPreSlot = m_CurrentNode.iSelectedSlot;
 						pCurNode->Get_GuiNodeLink().iStartIdx = iPreSlot; // 자식에 부모 담았고
-
 						pSrc->Get_GuiNodeLink().SlotEnd[iPreSlot] = pCurNode->Get_GuiNodeInfo().Get_DestInfo();
 						pCurNode->Get_GuiNodeLink().ParentNode = pSrc->Get_GuiNodeInfo().Get_DestInfo();
-
 						m_pBeHavior->Add_Node(pSrc, iPreSlot, std::move(pCurNode));
-						//m_pBeHavior->RegistNode(pCurNode->Get_GuiNodeInfo().iID, pCurNode.get());
-						//if (pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pSrc->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE)
-						//{
-						//	auto pParn = static_cast<CBTComposite*>(pSrc);
-						//	(*pParn->Get_Nodes())[iPreSlot] = std::move(pCurNode);
-						//}
-						//else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
-						//{
-						//	auto pParn = static_cast<CBTDecorator*>(pSrc);
-						//	pParn->Set_Child(std::move(pCurNode));
-						//}
 					}
 				}
 				bFinishe = true;

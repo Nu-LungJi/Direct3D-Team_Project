@@ -46,7 +46,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 		if (m_GuiNode.bAbort)
 		{
 			//애니매이션 겹침 방지
-			Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
+		//	Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
+			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 		}
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
@@ -82,18 +83,48 @@ void CBTAnimation::Update_Gui()
 
 		ImGui::PopStyleColor();
 	}
+
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
+	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" };
+	if (ImGui::TreeNode("EndFlag"))
+	{
+
+		uint32_t iEndFlag = { m_iEndFlag };
+		for (uint32_t i = 0; i < std::size(Flag); ++i)
+		{
+			uint32_t iEnd = 1u << i;
+
+			bool bChecked = (iEndFlag & iEnd) != 0;
+
+			if (ImGui::Checkbox((std::string(Flag[i]) + "##End").c_str(), &bChecked))
+			{
+				if (bChecked)
+					iEndFlag |= iEnd;
+				else
+					iEndFlag &= ~iEnd;
+			}
+		}
+		m_iEndFlag = iEndFlag;
+
+		ImGui::TreePop();
+	}
+
+	ImGui::PopStyleColor(2);
 }
 nlohmann::json CBTAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 	
 	SaveJsonValue(j, "Loop", m_bLoop);
+	SaveJsonValue(j ,"EndFlag", m_iEndFlag);
 	return j;
 }
 HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonValue(j, "Loop", m_bLoop);
+	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	return S_OK;
 }
 E::UPtr<CBTAnimation> CBTAnimation::Create()

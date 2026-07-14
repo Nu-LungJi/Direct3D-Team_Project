@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "BTDecorator.h"
 
+enum class TIMER {PAUSE, NEXT};
 NS_BEGIN(Client)
 class CBTDecTimer final : public CBTDecorator
 {
@@ -16,6 +17,8 @@ private:
 	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 	
+	EVALUATE						PAUSE(_float fTimeDelta);
+	EVALUATE						NEXT(_float fTimeDelta);
 public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
 	void							Abort() override;
@@ -26,6 +29,7 @@ public:
 private:
 	_bool							m_bRun{ true };
 	_float							m_fWaitTime{}, m_fTick{};
+	TIMER							m_eTimer{ TIMER::PAUSE };
 public:
 	static UPtr<CBTDecTimer> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

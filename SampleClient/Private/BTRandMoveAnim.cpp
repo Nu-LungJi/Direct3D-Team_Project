@@ -38,7 +38,9 @@ void CBTRandMoveAnim::Abort()
 nlohmann::json CBTRandMoveAnim::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
+	
 
+	SaveJsonValue(j, "Clamp", m_fClamp);
 	SaveJsonValue(j, "Distance", m_fDis);
 	return j;
 }
@@ -47,6 +49,7 @@ HRESULT CBTRandMoveAnim::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonValue(j, "Distance", m_fDis);
+	LoadJsonValue(j, "Clamp", m_fClamp);
 	return S_OK;
 }
 
@@ -84,7 +87,7 @@ void CBTRandMoveAnim::RandomDirSelect()
 	{
 		if (auto pObj = iter->GetGameObject())
 		{
-			vCurDir = pObj->GetTransform().GetState(STATE::LOOK);
+			vCurDir = XMVector3Normalize(pObj->GetTransform().GetState(STATE::LOOK));
 			vCurPos = pObj->GetTransform().GetState(STATE::POSITION);
 			
 		}
@@ -111,13 +114,14 @@ EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 	_vector vCurPos = pTransform->GetState(STATE::POSITION);
 	_float fDis = XMVectorGetX(XMVector3Length(vCurPos - XMLoadFloat3(&m_vFinishPos)));
 
-	if (fDis <= 1.f)
+	_float fMove = m_fClamp * fTimeDelta;
+	if (fDis <= fMove)
 	{
 		m_bInit = false;
 		return EVALUATE::SUCCESS;
 	}
 		
-	vCurPos += XMLoadFloat3(&m_vDir) * -0.8f * fTimeDelta;
+	vCurPos += XMLoadFloat3(&m_vDir) * -m_fClamp * fTimeDelta;
 	pTransform->SetPosition(XMVectorSetW(vCurPos, 1.f));
 	return EVALUATE::RUN;
 }
@@ -125,6 +129,9 @@ void CBTRandMoveAnim::Update_Gui()
 {
 	ImGui::Text("Distance");
 	ImGui::DragFloat("##Distance", &m_fDis, 0, 100);
+
+	ImGui::Text("Clamp");
+	ImGui::DragFloat("##Clamp", &m_fClamp, 0, 1);
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)

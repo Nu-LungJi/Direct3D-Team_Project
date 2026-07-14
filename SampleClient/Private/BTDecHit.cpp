@@ -35,7 +35,7 @@ EVALUATE CBTDecHit::Evaluate(_float fTimeDelta)
 {
 	if (auto pBT = Get_ComBT())
 	{
-		if (Check_Flag(ETOUI(BTFLAG::HIT)))
+		if (Check_Flag(ETOUI(BTFLAG::HIT) | ETOUI(BTFLAG::SUPERARMOR)))
 			return EVALUATE::SUCCESS;
 
 		if (auto pCam = CGameInstance::Get().GetActiveCamera())

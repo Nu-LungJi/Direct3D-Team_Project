@@ -145,42 +145,50 @@ void CBTAttackAnimation::Update_Gui()
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	ImGui::Text("StartFlag");
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = {"HIT","ATTACK","ABORT","SUPERARMOR","THORW" };
-	for (uint32_t i = 0; i < std::size(Flag); ++i)
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" };
+	if (ImGui::TreeNode("StartFlag"))
 	{
-		uint32_t iFlag = 1u << i;
 		
-		bool bChecked = (iStart & iFlag) != 0;
-
-		if (ImGui::Checkbox((std::string(Flag[i]) + "##Start").c_str(), &bChecked))
+		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
-			if (bChecked)
-				iStart |= iFlag;
-			else
-				iStart &= ~iFlag;
-		}
-	}
-	m_iStartFlag = iStart;
+			uint32_t iFlag = 1u << i;
 
-	ImGui::Text("EndFlag");
-	uint32_t iEndFlag = { m_iEndFlag };
-	for (uint32_t i = 0; i < std::size(Flag); ++i)
+			bool bChecked = (iStart & iFlag) != 0;
+
+			if (ImGui::Checkbox((std::string(Flag[i]) + "##Start").c_str(), &bChecked))
+			{
+				if (bChecked)
+					iStart |= iFlag;
+				else
+					iStart &= ~iFlag;
+			}
+		}
+		m_iStartFlag = iStart;
+		ImGui::TreePop();
+	}
+	if (ImGui::TreeNode("EndFlag"))
 	{
-		uint32_t iEnd = 1u << i;
 
-		bool bChecked = (iEndFlag & iEnd) != 0;
-
-		if (ImGui::Checkbox((std::string(Flag[i]) + "##End").c_str(), &bChecked))
+		uint32_t iEndFlag = { m_iEndFlag };
+		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
-			if (bChecked)
-				iEndFlag |= iEnd;
-			else
-				iEndFlag &= ~iEnd;
+			uint32_t iEnd = 1u << i;
+
+			bool bChecked = (iEndFlag & iEnd) != 0;
+
+			if (ImGui::Checkbox((std::string(Flag[i]) + "##End").c_str(), &bChecked))
+			{
+				if (bChecked)
+					iEndFlag |= iEnd;
+				else
+					iEndFlag &= ~iEnd;
+			}
 		}
+		m_iEndFlag = iEndFlag;
+
+		ImGui::TreePop();
 	}
-	m_iEndFlag = iEndFlag;
 
 	ImGui::PopStyleColor(2);
 }

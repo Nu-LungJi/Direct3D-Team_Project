@@ -28,6 +28,31 @@ HRESULT CBTDecTimer::Initalize(void* pArg)
 	return S_OK;
 }
 
+EVALUATE CBTDecTimer::PAUSE(_float fTimeDelta)
+{
+	EVALUATE result{EVALUATE::END};
+	if (m_fWaitTime > m_fTick)
+		return result = m_bRun == true ? EVALUATE::RUN : EVALUATE::FAILED;
+
+	result = __super::Evaluate(fTimeDelta);
+	if (result != EVALUATE::RUN)
+		m_fTick = 0.f;
+
+	return result;
+}
+
+EVALUATE CBTDecTimer::NEXT(_float fTimeDelta)
+{
+	if (m_fWaitTime > m_fTick)
+	{
+		__super::Evaluate(fTimeDelta);
+		return EVALUATE::RUN;
+	}
+
+	m_fTick = 0.f;
+	return EVALUATE::SUCCESS;
+}
+
 EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 {
 	if (Check_Flag(ETOUI(BTFLAG::ATTACK)))
@@ -35,12 +60,11 @@ EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 	m_fTick += fTimeDelta;
 	EVALUATE result{ EVALUATE::END };
 	//m_bRun 이 true 일떄만 해당노드 재진입
-	if (m_fWaitTime > m_fTick)
-		return result = m_bRun == true ? EVALUATE::RUN : EVALUATE::FAILED;
-
-	result = __super::Evaluate(fTimeDelta);
-	if (result != EVALUATE::RUN)
-		m_fTick = 0.f;
+	if (m_eTimer == TIMER::PAUSE)
+		result = PAUSE(fTimeDelta);
+	else if (m_eTimer == TIMER::NEXT)
+		result = NEXT(fTimeDelta);
+	
 
 	return result;
 }
@@ -58,6 +82,7 @@ nlohmann::json CBTDecTimer::Save_Node()
 	nlohmann::json j= __super::Save_Node();
 	SaveJsonValue(j, "WaitTime", m_fWaitTime);
 	SaveJsonValue(j, "Run", m_bRun);
+	SaveJsonEnum(j, "TimerType", m_eTimer);
 	return j;
 }
 HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
@@ -66,6 +91,7 @@ HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
 	if (!LoadJsonValue(j, "WaitTime", m_fWaitTime))
 		MSG_BOX("Failed Load MaxTimeTickCnt : BTDecTimer");
 
+	LoadJsonEnum(j, "TimerType", m_eTimer);
 	LoadJsonValue(j, "Run", m_bRun);
 	return S_OK;
 }
@@ -80,6 +106,33 @@ void		CBTDecTimer::Update_Gui()
 		m_bRun = !m_bRun;
 	ImGui::SameLine(50.f);  m_bRun == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
 
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
+	const _char* pName[] = { MagicEnumToStringView(TIMER::PAUSE).data(), MagicEnumToStringView(TIMER::NEXT).data()};
+	if (ImGui::TreeNode("Timer Type"))
+	{
+		ImGui::Text("TYPE : "); ImGui::SameLine(70.f);
+		
+		if (ImGui::BeginCombo("##Timer Type", pName[ETOUI(m_eTimer)]))
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
+			for (int i = 0; i < IM_ARRAYSIZE(pName); i++)
+			{
+				// 3. 선택 가능한 항목 생성
+				const bool is_selected = (ETOUI(m_eTimer) == i);
+				if (ImGui::Selectable(pName[i], is_selected))
+					m_eTimer = static_cast<TIMER>(i); // 클릭 시 인덱스 업데이트
+
+				// 선택된 항목에 포커스 자동 이동
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::PopStyleColor();
+			ImGui::EndCombo();
+		}
+		ImGui::TreePop();
+	}
+	ImGui::PopStyleColor();
 }
 E::UPtr<CBTDecTimer> CBTDecTimer::Create()
 {
