@@ -33,6 +33,9 @@ HRESULT CBTDecHit::Initalize(void* pArg)
 
 EVALUATE CBTDecHit::Evaluate(_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyDown(DIK_2))
+		return EVALUATE::SUCCESS;
+	else return EVALUATE::FAILED;
 	if (auto pBT = Get_ComBT())
 	{
 		if (Check_Flag(ETOUI(BTFLAG::HIT) | ETOUI(BTFLAG::SUPERARMOR)))

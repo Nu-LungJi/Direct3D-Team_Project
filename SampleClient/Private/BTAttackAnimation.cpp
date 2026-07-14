@@ -34,13 +34,13 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 {
 	if (auto pBT = Get_ComBT())
 	{
-
+		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-
+		
 		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
 			return m_eDebug = EVALUATE::FAILED;
-	
+		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 
@@ -51,18 +51,21 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		{
 			if (m_bStart)
 			{
+				m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
 				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 				m_bStart = false;
 			}
-
+			_float fAnimRange = m_fRatio.y - m_fRatio.x;
+			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
+			_float fMove = t * fTimeDelta * fAnimRange * m_Value.fSpeed;
 			if (m_eMove == MOVE::RIGHT)
-				pTransform->GoRight(m_Value.fSpeed * fTimeDelta);
+				pTransform->GoRight(fMove);
 			else if (m_eMove == MOVE::LEFT)
-				pTransform->GoLeft(m_Value.fSpeed * fTimeDelta);
+				pTransform->GoLeft(fMove);
 			else if (m_eMove == MOVE::STRAIGHT)
-				pTransform->GoStraight(m_Value.fSpeed * fTimeDelta);
+				pTransform->GoStraight(fMove);
 			else if (m_eMove == MOVE::BACKWARD)
-				pTransform->GoBackward(m_Value.fSpeed * fTimeDelta);
+				pTransform->GoBackward(fMove);
 		}
 
 		if (m_bLoop || bFinished)
@@ -71,13 +74,13 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
-			if (!m_bLoop) //루프 한번만 도는거 초기화용
-				++m_iLoopCnt;
-			if (m_iLoopCnt >= 2)
-			{
-				m_iLoopCnt = 0;
-				return m_eDebug = EVALUATE::FAILED;
-			}
+			//if (!m_bLoop) //루프 한번만 도는거 초기화용
+			//	++m_iLoopCnt;
+			//if (m_iLoopCnt >= 2)
+			//{
+			//	m_iLoopCnt = 0;
+			//	return m_eDebug = EVALUATE::FAILED;
+			//}
 			
 			return m_eDebug = EVALUATE::SUCCESS;
 		}

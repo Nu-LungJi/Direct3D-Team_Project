@@ -45,6 +45,8 @@ EVALUATE CBTCreatureFlag::Evaluate(_float fTimeDelta)
 void CBTCreatureFlag::Update_Gui()
 {
 	FLAGTYPE eType[3] = { FLAGTYPE::ADD,FLAGTYPE::DEL, FLAGTYPE::RESET };
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
+	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1, 0, 0, 1));
 	if(ImGui::TreeNode("FlagType"))
 	{
 		for (uint32_t i = 0; i < 3; ++i)
@@ -80,7 +82,7 @@ void CBTCreatureFlag::Update_Gui()
 		m_iFlag = iStart;
 		ImGui::TreePop();
 	}
-
+	ImGui::PopStyleColor(2);
 }
 nlohmann::json CBTCreatureFlag::Save_Node()
 {

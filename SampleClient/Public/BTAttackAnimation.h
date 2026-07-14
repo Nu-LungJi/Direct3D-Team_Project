@@ -25,6 +25,7 @@ public:
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 	_float2				m_fRatio{  };
+	_float				m_fDis{};
 	uint32_t			m_iLoopCnt{ 0 }, m_iStartFlag{}, m_iEndFlag{};
 	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bRatioInvert{ false };
 public:
