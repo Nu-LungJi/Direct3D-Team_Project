@@ -498,6 +498,79 @@ SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag
     }
     return nullptr;
 }
+VOID CRenderer::Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	D3D11_TEXTURE2D_DESC TEXDesc{};
+	TEXDesc.Width = _Resolution;
+	TEXDesc.Height = _Resolution;
+	TEXDesc.MipLevels = 1;
+	TEXDesc.ArraySize = _MaxLightCount;
+	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	TEXDesc.SampleDesc = { .Count = 1, .Quality = 0 };
+	TEXDesc.Usage = D3D11_USAGE_DEFAULT;
+	TEXDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	TEXDesc.CPUAccessFlags = 0;
+	TEXDesc.MiscFlags = 0;
+
+	m_pDevice->CreateTexture2D(&TEXDesc, nullptr, _TextureArray);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+	SRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	SRVDesc.Texture2DArray.MostDetailedMip = 0;
+	SRVDesc.Texture2DArray.MipLevels = 1;
+	SRVDesc.Texture2DArray.FirstArraySlice = 0;
+	SRVDesc.Texture2DArray.ArraySize = _MaxLightCount;
+
+	m_pDevice->CreateShaderResourceView(*_TextureArray, &SRVDesc, _SRV);
+
+	_ShadowDSVList->resize(_MaxLightCount);
+	for (UINT i = 0; i < _MaxLightCount; ++i)
+	{
+		D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
+		DSVDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+		DSVDesc.Texture2DArray.MipSlice = 0;
+		DSVDesc.Texture2DArray.FirstArraySlice = i;
+		DSVDesc.Texture2DArray.ArraySize = 1;
+
+		m_pDevice->CreateDepthStencilView(*_TextureArray, &DSVDesc, &(*_ShadowDSVList)[i]);
+	}
+}
+
+VOID CRenderer::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	D3D11_TEXTURE2D_DESC TEXDesc{};
+	TEXDesc.Width = _Resolution;
+	TEXDesc.Height = _Resolution;
+	TEXDesc.MipLevels = 1;
+	TEXDesc.ArraySize = _MaxLightCount;
+	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	TEXDesc.SampleDesc = { .Count = 1, .Quality = 0 };
+	TEXDesc.Usage = D3D11_USAGE_DEFAULT;
+	TEXDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	TEXDesc.CPUAccessFlags = 0;
+	TEXDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	m_pDevice->CreateTexture2D(&TEXDesc, nullptr, _TextureArray);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+	SRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	SRVDesc.Texture2DArray.MostDetailedMip = 0;
+	SRVDesc.Texture2DArray.MipLevels = 1;
+	SRVDesc.Texture2DArray.FirstArraySlice = 0;
+	SRVDesc.Texture2DArray.ArraySize = _MaxLightCount;
+
+	m_pDevice->CreateShaderResourceView(*_TextureArray, &SRVDesc, _SRV);
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
+	DSVDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+	DSVDesc.Texture2DArray.MipSlice = 0;
+	DSVDesc.Texture2DArray.FirstArraySlice = 0;
+	DSVDesc.Texture2DArray.ArraySize = 6; 
+
+	m_pDevice->CreateDepthStencilView(*_TextureArray, &DSVDesc, _ShadowDSV);
+}
 
 ComPtr<ID3D11ShaderResourceView> CRenderer::Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
 
@@ -717,7 +790,7 @@ HRESULT CRenderer::Draw() {
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
     if (bApplyShadow)
-        //if (FAILED(Render_Shadow()))	return E_FAIL;
+        if (FAILED(Render_Shadow()))	return E_FAIL;
 
     // DepthMap
     if (FAILED(Render_DepthMap()))       return E_FAIL;
@@ -984,88 +1057,82 @@ HRESULT CRenderer::Render_Lighting() {
 	//	m_pResDynTexTargetNormal->GetSRV(),
 	//	m_pResDynTexTargetSMRO->GetSRV(),
 	//	m_pResDynTexTargetEmissive->GetSRV(),
-	//	m_pResDynTexTargetDepth->GetSRV(),
 	//	m_pResDynTexTargetHBAO->GetSRV(),
+	//	m_pResDynTexTargetDepth->GetSRV(),
 	//};
 	//CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
+	//
 	//return S_OK;
+	CGameInstance::Get().Bind_DynamicLight();
 
-	//{   // Diffuse
-	//	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDiffuse->GetSRV().Get() };
-	//	m_pContext->PSSetShaderResources(0, 1, pSRVs);
-	//}
-	//{   // Normal
-	//	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetNormal->GetSRV().Get() };
-	//	m_pContext->PSSetShaderResources(1, 1, pSRVs);
-	//}
-	//{   // SMRO
-	//	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetSMRO->GetSRV().Get() };
-	//	m_pContext->PSSetShaderResources(2, 1, pSRVs);
-	//}
-	//{   // Emissive
-	//	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetEmissive->GetSRV().Get() };
-	//	m_pContext->PSSetShaderResources(3, 1, pSRVs);
-	//}
-	//{   // Depth
-	//	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDepth->GetSRV().Get() };
-	//	m_pContext->PSSetShaderResources(4, 1, pSRVs);
-	//}
-	//{   // HBAO
-	//	auto WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
-	//	//m_pResDynTexTargetHBAO
-	//	ID3D11ShaderResourceView* pSRVs[1] = { WhiteResource->GetSRV().Get() };
-	//	m_pContext->PSSetShaderResources(5, 1, pSRVs);
-	//}
-	
+	ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
+	m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-	{
-		CGameInstance::Get().Bind_DynamicLight();
+	_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
+	m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
+	m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
-		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+	m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 
-		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+	const auto& FullScreenBuffer = m_pFullscreenVIBuffer;
+	m_pContext->VSSetShader(m_pPBRVertexShader->GetVertexShader().Get(), nullptr, 0);
+	m_pContext->PSSetShader(m_pPBRPixelShader->GetPixelShader().Get(), nullptr, 0);
 
-		SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
-		m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
+	m_pContext->IASetInputLayout(m_pPBRVertexShader->GetInputLayout().Get());
 
-		const auto& FullScreenBuffer = m_pFullscreenVIBuffer;
-		m_pContext->VSSetShader(m_pPBRVertexShader->GetVertexShader().Get(), nullptr, 0);
-		m_pContext->PSSetShader(m_pPBRPixelShader->GetPixelShader().Get(), nullptr, 0);
+	ID3D11Buffer* vertexBuffers[] = {
+		FullScreenBuffer->GetVertexBuffer().Get()
+	};
+	uint32_t strides[] = {
+		FullScreenBuffer->GetVertexStride()
+	};
+	uint32_t offsets[] = {
+		0
+	};
+	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+	m_pContext->IASetIndexBuffer(FullScreenBuffer->GetIndexBuffer().Get(), FullScreenBuffer->GetIndexFormat(), 0);
+	m_pContext->IASetPrimitiveTopology(FullScreenBuffer->GetPrimitiveType());
 
-		m_pContext->IASetInputLayout(m_pPBRVertexShader->GetInputLayout().Get());
-
-		ID3D11Buffer* vertexBuffers[] = {
-			FullScreenBuffer->GetVertexBuffer().Get()
-		};
-		uint32_t strides[] = {
-			FullScreenBuffer->GetVertexStride()
-		};
-		uint32_t offsets[] = {
-			0
-		};
-		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		m_pContext->IASetIndexBuffer(FullScreenBuffer->GetIndexBuffer().Get(), FullScreenBuffer->GetIndexFormat(), 0);
-		m_pContext->IASetPrimitiveTopology(FullScreenBuffer->GetPrimitiveType());
-
-		
-		{   // Shadow
-			ComPtr<ID3D11ShaderResourceView> ShadowResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE")->GetSRV();
-			if (bApplyShadow) {
-				ShadowResource = m_pResDynTexTargetShadow->GetSRV();
-			}
-			m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());
-		}
-
-		// Draw On PBRScreen
-		m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
-
-		Unbind_Resources();
-
+	{   // Diffuse
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDiffuse->GetSRV().Get() };
+		m_pContext->PSSetShaderResources(0, 1, pSRVs);
 	}
+	{   // Normal
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetNormal->GetSRV().Get() };
+		m_pContext->PSSetShaderResources(1, 1, pSRVs);
+	}
+	{   // SMRO
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetSMRO->GetSRV().Get() };
+		m_pContext->PSSetShaderResources(2, 1, pSRVs);
+	}
+	{   // Emissive
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetEmissive->GetSRV().Get() };
+		m_pContext->PSSetShaderResources(3, 1, pSRVs);
+	}
+	{   // Depth
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDepth->GetSRV().Get() };
+		m_pContext->PSSetShaderResources(4, 1, pSRVs);
+	}
+	{   // HBAO
+		auto WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
+		//m_pResDynTexTargetHBAO
+		ID3D11ShaderResourceView* pSRVs[1] = { WhiteResource->GetSRV().Get() };
+		m_pContext->PSSetShaderResources(5, 1, pSRVs);
+	}
+	{   // Shadow
+		ComPtr<ID3D11ShaderResourceView> ShadowResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE")->GetSRV();
+		if (bApplyShadow) {
+			ShadowResource = m_pResDynTexTargetShadow->GetSRV();
+		}
+		m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());
+	}
+
+	// Draw On PBRScreen
+	m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
+
+	Unbind_Resources();
     
     
     return S_OK;
@@ -1091,7 +1158,10 @@ HRESULT CRenderer::Render_Alpha() {
         m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
         m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
     }
-
+	{
+		ComPtr<ID3D11ShaderResourceView> pSRVs = { CGameInstance::Get().Get_CombinedResource()->GetSRV().Get()};
+		m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
+	}
     if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
     if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
@@ -1106,7 +1176,7 @@ HRESULT CRenderer::Render_Alpha() {
 
 	Unbind_Resources();
 
-    m_pContext->CopyResource(m_pBackBufferTexture.Get(), CGameInstance::Get().GetBackBufferTexture().Get());
+	m_pContext->CopyResource(m_pBackBufferTexture.Get(), CGameInstance::Get().GetBackBufferTexture().Get());
 
     return S_OK;
 }
@@ -1724,15 +1794,13 @@ HRESULT CRenderer::Initialize_Debugging()
 
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetDiffuse);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetNormal);
+
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetSMRO);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetEmissive);
 
-    m_pResDynTexTargetList.push_back(m_pResDynTexUAVVolumetric);
-    m_pResDynTexTargetList.push_back(m_pResDynTexTargetShadow);
-
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess);
-
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess);
+	m_pResDynTexTargetList.push_back(nullptr);
 	
     for (uint32_t i = 0; i < m_pResDynTexTargetList.size(); i++)
     {
@@ -1749,6 +1817,8 @@ HRESULT CRenderer::Initialize_Debugging()
 }
 
 HRESULT CRenderer::Render_Debugging() {
+	if (nullptr == m_pResDynTexTargetList[6]) { m_pResDynTexTargetList[6] = CGameInstance::Get().Get_CombinedResource(); }
+
     if (CGameInstance::Get().KeyDown(DIK_F3))
         m_bRenderable = !m_bRenderable;
 

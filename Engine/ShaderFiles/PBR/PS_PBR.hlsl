@@ -230,64 +230,72 @@ PS_OUT PSMain(PS_IN IN)
         return OUT;
     }
     
-    float4 DepthWorld  = Convert_WorldPosByDepth(DepthData, IN.TexCoord);
+    float4 DepthWorld = Convert_WorldPosByDepth(DepthData, IN.TexCoord);
     
     float ShadowFactor = Compute_SmoothShadow(DepthWorld, IN.TexCoord, IN.Position.xy);
-    //float ShadowFactor = ShadowMap.Sample(LinearWrap, IN.TexCoord).r;           // CS_Shadow.hlsl Output
     
     float3 WorldNormal = NormalMap.Sample(LinearWrap, IN.TexCoord).rgb;
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
+
+    float3 V = normalize(g_vCamPos - DepthWorld.xyz);
+    float R = reflect(-V, WorldNormal);
+
+    float NDV = max(dot(WorldNormal, V), 0.f);
+    float3 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord).rgb;
     
-    float3  V = normalize(g_vCamPos - DepthWorld.xyz);
-    float   R = reflect(-V, WorldNormal);
-    
-    float   NDV   = max(dot(WorldNormal, V), 0.f);
-    float3  AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord).rgb;
-    
-    float3  Albedo   = pow(AlbedoTex.rgb, 2.2f);
-    float3  SMRO     = SMROMap.Sample(LinearWrap, IN.TexCoord);
-    float   Metallic  = SMRO.r;
-    float   Roughness = SMRO.g;
-    
+    float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+    float3 SMRO = SMROMap.Sample(LinearWrap, IN.TexCoord);
+    float Metallic = SMRO.r;
+    float Roughness = SMRO.g;
+   
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
     
     float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-    float3 L, Radiance;
-    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+    
     // Multiple Light Process
-    if (Compute_DynamicLight(DepthWorld.xyz, L, Radiance))
+    [unroll(MAX_LIGHT_COUNT)]
+    for (int i = 0; i < LightCount; ++i)
     {
+        float3 L, Radiance;
+    
+        [branch]
+        if (!Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i],  L, Radiance))
+            continue;
+    
         float RawNDL = dot(WorldNormal, L);
-        
+    
+        [branch]
         if (RawNDL > 0.f)
         {
             float NDL = clamp(RawNDL, 0.f, 1.f);
-
+    
             float3 H = normalize(V + L);
             float D = DistributionGGX(WorldNormal, H, Roughness);
             float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
-
+    
             float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
-
+    
             float3 Specular = D * F * V_Spec;
 
             float3 kS = F;
-            float3 kD = (1.0f - kS) * (1.0f - Metallic);
+            float3 kD = (1.0 - kS) * (1.0 - Metallic);
             float3 Diffuse = kD * Albedo / PI;
-            
-            LightAccumulation = (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
+    
+            LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
         }
     }
-        
-    float3 Emissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb * EmissiveColor * EmissiveIntensity;;
+    
+
+    
+    float3 Emissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
     
     // Enviroment Light Process
     float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
     
     float AO = AmbientMap.Sample(LinearWrap, IN.TexCoord).r;
-    
+
     LightAccumulation *= ShadowFactor;
     LightAccumulation *= AO;
     
@@ -307,14 +315,14 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     
     float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);
-    float3 V    = normalize(g_vCamPos - IN.WorldPos.xyz);
-    float  R    = reflect(-V, WorldNormal);
-    float  NDV  = max(dot(WorldNormal, V), 0.f);
-    
+    float3 V = normalize(g_vCamPos - IN.WorldPos.xyz);
+    float R = reflect(-V, WorldNormal);
+    float NDV = max(dot(WorldNormal, V), 0.f);
+
     float3 SMRO = SMROMap.Sample(LinearWrap, IN.TexCoord);
-    float fMetallic     = SMRO.r * MetallicIntensity;
-    float fRoughness    = SMRO.g * RoughnessIntensity;
-    float fAmbient      = SMRO.b * AmbientIntensity;
+    float fMetallic = SMRO.r * MetallicIntensity;
+    float fRoughness = SMRO.g * RoughnessIntensity;
+    float fAmbient = SMRO.b * AmbientIntensity;
     
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
@@ -322,12 +330,12 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     float3 LightAccumulation = float3(0.f, 0.f, 0.f);
     
     [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < g_iLightCount; ++i)
+    for (int i = 0; i < LightCount; ++i)
     {
         float3 L, Radiance;
     
         [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], IN.WorldPos.xyz, L, Radiance))
+        if (!Compute_DynamicLight(IN.WorldPos.xyz, AffectedLight[i], L, Radiance))
             continue;
     
         float RawNDL = dot(WorldNormal, L);
@@ -344,7 +352,7 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
             float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
     
             float3 Specular = D * F * V_Spec;
-    
+
             float3 kS = F;
             float3 kD = (1.0 - kS) * (1.0 - fMetallic);
             float3 Diffuse = kD * Albedo / PI;
@@ -359,5 +367,6 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     float3 FinalColor = ConstantAmbient + LightAccumulation + fEmissive;
     
     OUT.Diffuse = float4(FinalColor, AlbedoTex.a);
+    
     return OUT;
 }

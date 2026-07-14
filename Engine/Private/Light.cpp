@@ -48,6 +48,8 @@ HRESULT CLight::Initialize_ShadowMap() {
 	m_pResDynTexStaticShadowMap		= CGameInstance::Get().Generate_DepthStencil_RenderTarget("DynTex2D_StaticShadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
 	if (nullptr == m_pResDynTexStaticShadowMap)		return E_FAIL;
 
+
+
 	return S_OK;
 }
 
@@ -87,25 +89,61 @@ VOID CLight::Update_Collider() {
 		m_fOuterAttanuation = m_fOuterAttanuation <= 0.f ? 1.f : m_fOuterAttanuation;
 		m_fLightRange = m_fLightRange <= fNearZ ? fNearZ + 0.01f : m_fLightRange;
 
-		XMMATRIX LightView = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, LookVec), UpVec);
-		XMMATRIX LightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_fOuterAttanuation * 2.f), 1.f, fNearZ, m_fLightRange);
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, LookVec), UpVec));
+		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(m_fOuterAttanuation * 2.f), 1.f, fNearZ, m_fLightRange));
 
-		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(LightProj);
-		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, LightView));
+		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
+		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView)));
 
-		XMStoreFloat4x4(&LightViewProj, XMMatrixMultiply(LightView, LightProj));
+		XMStoreFloat4x4(&LightViewProj, XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 	else if (m_LightType == LIGHT_TYPE::POINT) {
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 	}
+}
 
-	
+HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
+
+	if (m_LightType == LIGHT_TYPE::DIRECTIONAL || m_LightType == LIGHT_TYPE::SPOTLIGHT) {
+		pContext->GSSetShader(nullptr, nullptr, 0);
+		pContext->PSSetShader(nullptr, nullptr, 0);
+	}
+	else {
+		// pContext->GSSetShader(m_pPointShadowGS, nullptr, 0);
+		// pContext->PSSetShader(m_pPointShadowPS, nullptr, 0);
+	}
+
+	RENDER_CTX RCTX{};
+	RCTX.pass = RENDERPASS::SHADOW;						RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition()); 
+	RCTX.matView = XMLoadFloat4x4(&LightView);			RCTX.matProj = XMLoadFloat4x4(&LightProj);
+	RCTX.matViewProj = XMLoadFloat4x4(&LightViewProj);
+
+	for (auto& GOBJ : m_pRenderable_DynamicObjectList) {
+		GOBJ->Render(pContext, RCTX);
+	}
+	for (auto& GOBJ : m_pRenderable_StaticObjectList) {
+		GOBJ->Render(pContext, RCTX);
+	}
+
+	if (m_LightType == LIGHT_TYPE::POINT) {
+		pContext->GSSetShader(nullptr, nullptr, 0);
+		pContext->PSSetShader(nullptr, nullptr, 0);
+	}
+	return S_OK;
 }
 
 _bool CLight::Check_ObjectInArea() {
 
 	return true;
+}
+VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
+	if (_ATYPE == ACTORTYPE::DYNAMIC) {
+		m_pRenderable_DynamicObjectList.push_back(pRenderObject);
+	}
+	else {
+		m_pRenderable_StaticObjectList.push_back(pRenderObject);
+	}
 }
 
 VOID CLight::Render_StaticShadow(ID3D11DeviceContext* pContext) {
