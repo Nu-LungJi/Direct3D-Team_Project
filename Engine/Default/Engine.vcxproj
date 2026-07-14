@@ -145,13 +145,13 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;_DEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;IMGUI_DEFINE_MATH_OPERATORS;_DEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;IMGUI_DEFINE_MATH_OPERATORS;FFX_DX11;_DEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\imgui-1.83\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\fsr2_2\include\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\imgui-1.83\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -159,8 +159,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
     <FxCompile>
@@ -174,12 +174,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;NDEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;IMGUI_DEFINE_MATH_OPERATORS;NDEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;IMGUI_DEFINE_MATH_OPERATORS;FFX_DX11;NDEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\include\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;$(SolutionDir)ThirdParty\fsr2_2\include\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\tweeny-3.2.1\include￦;$(SolutionDir)ThirdParty\fmod_2_03_12\inc\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\physx-5.6.1\include\;%(AdditionalIncludeDirectories);$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\physx-5.6.1\include\</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -187,8 +187,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
     <FxCompile>
@@ -270,6 +270,7 @@
     <ClInclude Include="..\public\LuaEnv.h" />
     <ClInclude Include="..\public\LuaManager.h" />
     <ClInclude Include="..\public\LuaWatcher.h" />
+    <ClInclude Include="..\public\MyFSR2_2.h" />
     <ClInclude Include="..\public\ResLuaScript.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
     <ClInclude Include="..\Public\NavMeshManager.h" />
@@ -547,6 +548,7 @@
     <ClCompile Include="..\private\LuaEnv.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
     <ClCompile Include="..\private\LuaWatcher.cpp" />
+    <ClCompile Include="..\private\MyFSR2_2.cpp" />
     <ClCompile Include="..\private\ResLuaScript.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\FlipbookUI.cpp" />

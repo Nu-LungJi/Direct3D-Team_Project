@@ -5,6 +5,7 @@
 #include "Resources.h"
 #include "MyGFSDK_SSAO.h"
 #include "UIObject.h"
+#include "MyFSR2_2.h"
 
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice } , m_pContext{ pContext } { }
@@ -28,6 +29,8 @@ HRESULT CRenderer::Initialize()
     if (FAILED(InitializeBackBuffer()))         return E_FAIL;
 
     if (FAILED(InitializeGFSDK_SSAO()))         return E_FAIL;
+
+	if (FAILED(InitializeFSR2_2()))				return E_FAIL;
 
     if (FAILED(InitializeOffscreen()))          return E_FAIL;
 
@@ -299,6 +302,16 @@ HRESULT CRenderer::InitializeGFSDK_SSAO()
     }
 	m_pResDynTexTargetHBAO = Generate_RenderTarget("DynTex2D_HBAO_PLUS", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
     return S_OK;
+}
+
+HRESULT CRenderer::InitializeFSR2_2()
+{
+	m_pFSR2_2 = CMyFSR2_2::Create();
+	if (!m_pFSR2_2)
+	{
+		return E_FAIL;
+	}
+	return S_OK;
 }
 
 HRESULT CRenderer::InitializeBloom() {

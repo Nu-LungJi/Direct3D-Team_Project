@@ -445,6 +445,9 @@
     <Filter Include="GameInstance\InitLoader">
       <UniqueIdentifier>{dc18b041-0cd4-4748-b556-231b40d41ccd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Renderer\FSR2_2">
+      <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -951,6 +954,9 @@
     <ClInclude Include="..\public\GameInstanceInitLoader.h">
       <Filter>GameInstance\InitLoader</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MyFSR2_2.h">
+      <Filter>Renderer\FSR2_2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1411,6 +1417,9 @@
     </ClCompile>
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp">
       <Filter>GameInstance\InitLoader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyFSR2_2.cpp">
+      <Filter>Renderer\FSR2_2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

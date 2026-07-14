@@ -7,6 +7,7 @@ class CResOffscreenTexture;
 class CResDynamicTexture2D;
 
 class CMyGFSDK_SSAO;
+class CMyFSR2_2;
 
 class CRenderer final : public CEngineBase
 {
@@ -35,6 +36,7 @@ private:
 
 	HRESULT InitilizePostProcess();
 	HRESULT InitializeGFSDK_SSAO();
+	HRESULT InitializeFSR2_2();
 	HRESULT InitializeBloom();
 	
 	
@@ -123,6 +125,7 @@ private:	// PostProcess Variable
 
 private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
+	UPtr<CMyFSR2_2> m_pFSR2_2{};
 
 private:
 	HRESULT Render_ShadowMap();
