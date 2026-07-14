@@ -25,6 +25,8 @@ public:
 private:
 	void HandleModelDropToScene();
 	void CreateDroppedMapMeshObject(const E::_float3& worldPosition);
+	void SelectAndImportWholeMapManifest();
+	_bool ImportWholeMapManifest(const std::filesystem::path& manifestPath);
 
 private:
 	char m_SearchBuffer[128]{};
@@ -35,6 +37,8 @@ private:
 	bool m_bDraggingModel = false;
 	float m_fSceneDropDistance = 20.f;
 	CEditorCommandManager* m_pCommandManager = nullptr;
+	std::string m_WholeMapImportStatus{};
+	float m_fWholeMapScale = 0.3f;
 };
 
 NS_END

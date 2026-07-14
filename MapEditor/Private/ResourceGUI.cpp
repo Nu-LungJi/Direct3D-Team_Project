@@ -11,6 +11,8 @@
 #include "ResVertexShader.h"
 #include "ResOffscreenTexture.h"
 #include "ResModelMaterial.h"
+#include <commdlg.h>
+#include <nlohmann/json.hpp>
 
 NS_USING(Client)
 
@@ -47,6 +49,42 @@ namespace
 	{
 		const char* text = id.GetDbgStr();
 		return text != nullptr ? text : "<unnamed>";
+	}
+
+	std::string MakeStaticModelResourceTag(const std::filesystem::path& rootPath,
+		const std::filesystem::path& binPath)
+	{
+		std::filesystem::path relativePath = binPath.lexically_relative(rootPath);
+		const bool isOutsideRoot = !relativePath.empty() && *relativePath.begin() == "..";
+		if (relativePath.empty() || isOutsideRoot)
+		{
+			// The manifest may be selected from the external team-resource tree
+			// while MapEditor loaded the copied Resources tree. Both use the same
+			// logical path below Models/Static, so rebuild that suffix here.
+			relativePath.clear();
+			bool foundStatic = false;
+			for (const auto& part : binPath)
+			{
+				if (!foundStatic)
+				{
+					if (_stricmp(part.string().c_str(), "Static") == 0)
+						foundStatic = true;
+					continue;
+				}
+				relativePath /= part;
+			}
+		}
+		if (relativePath.empty())
+			relativePath = binPath.filename();
+		relativePath.replace_extension();
+
+		std::string resourceTag = relativePath.string();
+		for (char& ch : resourceTag)
+		{
+			if (!std::isalnum(static_cast<unsigned char>(ch)))
+				ch = '_';
+		}
+		return resourceTag;
 	}
 
 	const char* GetResourceStateName(E::CResource::STATE state)
@@ -411,6 +449,19 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 
 	ImGui::SetNextItemWidth(220.f);
 	ImGui::InputTextWithHint("##ResourceSearch", "Search resources...", m_SearchBuffer, sizeof(m_SearchBuffer));
+	ImGui::SameLine();
+	if (ImGui::Button("Import Whole Map Manifest"))
+	{
+		SelectAndImportWholeMapManifest();
+	}
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(80.f);
+	if (ImGui::DragFloat("Whole Map Scale", &m_fWholeMapScale, 0.01f, 0.01f, 100.f, "%.2f"))
+		m_fWholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+	if (!m_WholeMapImportStatus.empty())
+	{
+		ImGui::TextWrapped("%s", m_WholeMapImportStatus.c_str());
+	}
 
 	if (ImGui::BeginTabBar("##ResourceCategories"))
 	{
@@ -593,6 +644,119 @@ void CResourceGUI::CreateDroppedMapMeshObject(const E::_float3& worldPosition)
 	snapshot.position = worldPosition;
 	m_pCommandManager->Submit(
 		std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
+}
+
+void CResourceGUI::SelectAndImportWholeMapManifest()
+{
+	char selectedPath[MAX_PATH]{};
+	OPENFILENAMEA dialog{};
+	dialog.lStructSize = sizeof(dialog);
+	dialog.hwndOwner = g_hWnd;
+	dialog.lpstrFilter = "Whole Map Manifest (*_RenderChunks.json)\0*_RenderChunks.json\0JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+	dialog.lpstrFile = selectedPath;
+	dialog.nMaxFile = MAX_PATH;
+	dialog.lpstrInitialDir = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+	dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+
+	if (!GetOpenFileNameA(&dialog))
+		return;
+
+	ImportWholeMapManifest(selectedPath);
+}
+
+_bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifestPath)
+{
+	if (m_pCommandManager == nullptr)
+	{
+		m_WholeMapImportStatus = "Whole-map import failed: command manager is unavailable.";
+		return false;
+	}
+
+	std::ifstream file(manifestPath);
+	if (!file.is_open())
+	{
+		m_WholeMapImportStatus = "Whole-map import failed: cannot open manifest.";
+		return false;
+	}
+
+	nlohmann::json manifest;
+	try
+	{
+		file >> manifest;
+	}
+	catch (const std::exception& exception)
+	{
+		m_WholeMapImportStatus = std::string("Whole-map import failed: ") + exception.what();
+		return false;
+	}
+
+	if (!manifest.contains("chunks") || !manifest["chunks"].is_array())
+	{
+		m_WholeMapImportStatus = "Whole-map import failed: chunks array is missing.";
+		return false;
+	}
+
+	const std::filesystem::path resourceRoot = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+	const std::string modelName = manifest.value("modelName", manifestPath.stem().string());
+	uint32_t createdCount = 0;
+	uint32_t skippedCount = 0;
+
+	for (const auto& chunk : manifest["chunks"])
+	{
+		if (!chunk.contains("file") || !chunk["file"].is_string() ||
+			!chunk.contains("localOrigin") || !chunk["localOrigin"].is_array() ||
+			chunk["localOrigin"].size() != 3)
+		{
+			++skippedCount;
+			continue;
+		}
+
+		const std::filesystem::path binPath = manifestPath.parent_path() /
+			chunk["file"].get<std::string>();
+		const std::string resourceTag = MakeStaticModelResourceTag(resourceRoot, binPath);
+		const auto modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
+			E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);
+		if (modelResource == nullptr)
+		{
+			++skippedCount;
+			continue;
+		}
+
+		const auto& origin = chunk["localOrigin"];
+		MAPMESH_OBJECT_SNAPSHOT snapshot{};
+		snapshot.objectTag = "WholeMap_" + modelName + "_" +
+			std::to_string(chunk.value("x", 0)) + "_" +
+			std::to_string(chunk.value("y", 0)) + "_" +
+			std::to_string(chunk.value("z", 0));
+		snapshot.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
+		snapshot.modelResTag = resourceTag;
+		snapshot.layerTag = E::MAPMESHOBJECTLAYER;
+
+		const float wholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+
+		snapshot.position = {
+			origin[0].get<float>() * wholeMapScale,
+			origin[1].get<float>() * wholeMapScale,
+			origin[2].get<float>() * wholeMapScale
+		};
+
+		snapshot.scale = {
+			wholeMapScale,
+			wholeMapScale,
+			wholeMapScale
+		};
+
+		m_pCommandManager->Submit(
+			std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
+		++createdCount;
+	}
+
+	m_WholeMapImportStatus = "Whole-map import: " + std::to_string(createdCount) +
+		" chunks created";
+	if (skippedCount > 0)
+		m_WholeMapImportStatus += ", " + std::to_string(skippedCount) + " skipped";
+	m_WholeMapImportStatus += ".";
+	return createdCount > 0;
 }
 
 E::UPtr<CResourceGUI> CResourceGUI::Create(E::CHandle* pSelectedObject,
