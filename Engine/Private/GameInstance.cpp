@@ -616,42 +616,12 @@ std::unordered_map<StringID, std::vector<SPtr<CResource>>> CGameInstance::GetRes
 {
 	return m_pResourceManager->GetResource(sGroupTag);
 }
-//const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* CGameInstance::GetResource(const StringID& sGroupTag) const
-//{
-//	return m_pResourceManager->GetResource(sGroupTag);
-//}
+
 std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> CGameInstance::GetResources() const
 {
 	return m_pResourceManager->GetResources();
 }
-void CGameInstance::ForEachResource(const StringID& sGroupTag, std::function<void(const std::unordered_map<StringID, std::vector<SPtr<CResource>>>*)> callback) const
-{
-	return m_pResourceManager->ForEachResource(sGroupTag, callback);
-}
-void CGameInstance::ForEachResource(const StringID& sGroupTag, const StringID& sResTag, std::function<void(const std::vector<SPtr<CResource>>*)> callback) const
-{
-	return m_pResourceManager->ForEachResource(sGroupTag, sResTag, callback);
-}
-void CGameInstance::ForEachResource(std::function<void(const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>&)> callback) const
-{
-	return m_pResourceManager->ForEachResource(callback);
-}
-//HRESULT CGameInstance::LoadResource(const StringID& sGroupTag)
-//{
-//	return m_pResourceManager->LoadResource(sGroupTag);
-//}
-//HRESULT CGameInstance::LoadResource(const StringID& sGroupTag, const StringID& sResTag)
-//{
-//	return m_pResourceManager->LoadResource(sGroupTag, sResTag);
-//}
-//HRESULT CGameInstance::UnLoadResource(const StringID& sGroupTag)
-//{
-//	return m_pResourceManager->UnLoadResource(sGroupTag);
-//}
-//HRESULT CGameInstance::UnLoadResource(const StringID& sGroupTag, const StringID& sResTag)
-//{
-//	return m_pResourceManager->UnLoadResource(sGroupTag, sResTag);
-//}
+
 void CGameInstance::DelResource(const StringID& sGroupTag)
 {
 	m_pResourceManager->DelResource(sGroupTag);

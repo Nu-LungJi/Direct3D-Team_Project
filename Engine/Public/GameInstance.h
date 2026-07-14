@@ -94,13 +94,7 @@ public:
 	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
 	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const;
 	std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> GetResources() const;
-	void ForEachResource(const StringID& sGroupTag, std::function<void(const std::unordered_map<StringID, std::vector<SPtr<CResource>>>*)> callback) const;
-	void ForEachResource(const StringID& sGroupTag, const StringID& sResTag, std::function<void(const std::vector<SPtr<CResource>>*)> callback) const;
-	void ForEachResource(std::function<void(const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>&)> callback) const;
-	//HRESULT LoadResource(const StringID& sGroupTag);
-	//HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
-	//HRESULT UnLoadResource(const StringID& sGroupTag);
-	//HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
+
 	void DelResource(const StringID& sGroupTag);
 	void DelResource(const StringID& sGroupTag, const StringID& sResTag);
 

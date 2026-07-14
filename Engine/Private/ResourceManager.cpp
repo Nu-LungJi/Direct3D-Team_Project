@@ -49,20 +49,24 @@ void CResourceManager::UpdateGUI()
 	// =========================================================
 	// 1. 통계 정보 계산
 	// =========================================================
-	size_t totalResCount = 0;
-	for (const auto& Pair : m_Resources)
-		for (const auto& Pair2 : Pair.second)
-			totalResCount += Pair2.second.size();
+	{
+		std::shared_lock<std::shared_mutex> lock(m_Mutex);// lock
 
-	size_t totalPathKeys = m_PathLookup.size();
-	size_t totalPathItems = 0;
-	for (const auto& PathPair : m_PathLookup)
-		totalPathItems += PathPair.second.size();
+		size_t totalResCount = 0;
+		for (const auto& Pair : m_Resources)
+			for (const auto& Pair2 : Pair.second)
+				totalResCount += Pair2.second.size();
 
-	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
-	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
-	ImGui::Separator();
-	ImGui::Spacing();
+		size_t totalPathKeys = m_PathLookup.size();
+		size_t totalPathItems = 0;
+		for (const auto& PathPair : m_PathLookup)
+			totalPathItems += PathPair.second.size();
+
+		ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
+		ImGui::Separator();
+		ImGui::Spacing();
+	}
 
 	// =========================================================
 	// 2. [수정] 삭제 예약 버퍼 (반복자 무효화 방지)
@@ -73,80 +77,84 @@ void CResourceManager::UpdateGUI()
 	// =========================================================
 	// 3. 그룹 / 서브그룹 리소스 리스트
 	// =========================================================
-	if (ImGui::CollapsingHeader("Group/SubGroup Resources", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		static ImGuiTextFilter filterGrp;
-		static ImGuiTextFilter filterRes;
+		std::shared_lock<std::shared_mutex> lock(m_Mutex);// lock
 
-		filterGrp.Draw("GrpSearch");
-		filterRes.Draw("ResSearch");
-
-		for (auto& Pair : m_Resources)
+		if (ImGui::CollapsingHeader("Group/SubGroup Resources", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			const char* groupName = Pair.first.GetDbgStr();
+			static ImGuiTextFilter filterGrp;
+			static ImGuiTextFilter filterRes;
 
-			if (!filterGrp.PassFilter(groupName))
-				continue;
+			filterGrp.Draw("GrpSearch");
+			filterRes.Draw("ResSearch");
 
-			// 하위 검색 필터링 체크
-			bool bAnyChildMatches = filterRes.IsActive() == false;
-			if (!bAnyChildMatches)
+			for (auto& Pair : m_Resources)
 			{
-				for (auto& Pair2 : Pair.second)
+				const char* groupName = Pair.first.GetDbgStr();
+
+				if (!filterGrp.PassFilter(groupName))
+					continue;
+
+				// 하위 검색 필터링 체크
+				bool bAnyChildMatches = filterRes.IsActive() == false;
+				if (!bAnyChildMatches)
 				{
-					if (filterRes.PassFilter(Pair2.first.GetDbgStr()))
+					for (auto& Pair2 : Pair.second)
 					{
-						bAnyChildMatches = true; break;
-					}
-				}
-			}
-			if (!bAnyChildMatches) continue;
-
-			// 노드 그리기
-			size_t groupResCount = 0;
-			for (const auto& Pair2 : Pair.second) groupResCount += Pair2.second.size();
-
-			bool bGroupOpen = ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount);
-
-			ImGui::SameLine();
-			ImGui::PushID(&Pair);
-			if (ImGui::SmallButton("Clear Group"))
-			{
-				// 즉시 삭제하지 않고 리스트에 담음
-				groupsToDelete.push_back(Pair.first);
-			}
-			ImGui::PopID();
-
-			if (bGroupOpen)
-			{
-				for (auto& Pair2 : Pair.second)
-				{
-					const char* subName = Pair2.first.GetDbgStr();
-					if (!filterRes.PassFilter(subName))
-						continue;
-
-					bool bSubOpen = ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, Pair2.second.size());
-
-					ImGui::SameLine();
-					ImGui::PushID(&Pair2);
-					if (ImGui::SmallButton("Clear"))
-					{
-						// 즉시 삭제하지 않고 리스트에 담음
-						subGroupsToDelete.push_back({ Pair.first, Pair2.first });
-					}
-					ImGui::PopID();
-
-					if (bSubOpen)
-					{
-						for (size_t i = 0; i < Pair2.second.size(); ++i)
+						if (filterRes.PassFilter(Pair2.first.GetDbgStr()))
 						{
-							ImGui::Text("%i-----", (int)i);
-							Pair2.second[i]->UpdateGUI();
+							bAnyChildMatches = true; break;
 						}
-						ImGui::TreePop();
 					}
 				}
-				ImGui::TreePop();
+				if (!bAnyChildMatches) continue;
+
+				// 노드 그리기
+				size_t groupResCount = 0;
+				for (const auto& Pair2 : Pair.second) groupResCount += Pair2.second.size();
+
+				bool bGroupOpen = ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount);
+
+				ImGui::SameLine();
+				ImGui::PushID(&Pair);
+				if (ImGui::SmallButton("Clear Group"))
+				{
+					// 즉시 삭제하지 않고 리스트에 담음
+					groupsToDelete.push_back(Pair.first);
+				}
+				ImGui::PopID();
+
+				if (bGroupOpen)
+				{
+					for (auto& Pair2 : Pair.second)
+					{
+						const char* subName = Pair2.first.GetDbgStr();
+						if (!filterRes.PassFilter(subName))
+							continue;
+
+						bool bSubOpen = ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, Pair2.second.size());
+
+						ImGui::SameLine();
+						ImGui::PushID(&Pair2);
+						if (ImGui::SmallButton("Clear"))
+						{
+							// 즉시 삭제하지 않고 리스트에 담음
+							subGroupsToDelete.push_back({ Pair.first, Pair2.first });
+						}
+						ImGui::PopID();
+
+						if (bSubOpen)
+						{
+							for (size_t i = 0; i < Pair2.second.size(); ++i)
+							{
+								ImGui::Text("%i-----", (int)i);
+								Pair2.second[i]->UpdateGUI();
+							}
+							ImGui::TreePop();
+						}
+					}
+					ImGui::TreePop();
+				}
 			}
 		}
 	}
@@ -166,6 +174,8 @@ void CResourceManager::UpdateGUI()
 	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("PathLookup List", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		std::shared_lock<std::shared_mutex> lock(m_Mutex);
+
 		static ImGuiTextFilter filterPath;
 		filterPath.Draw("PathSearch");
 
@@ -215,8 +225,34 @@ void CResourceManager::Initialize()
 	
 }
 
+std::vector<SPtr<CResource>> CResourceManager::GetResource(const StringID& sGroupTag, const StringID& sResTag) const
+{
+	std::shared_lock<std::shared_mutex> lock(m_Mutex);
+
+	if (auto p = _FindResource(sGroupTag, sResTag))
+		return *p;
+	return {};
+}
+
+std::unordered_map<StringID, std::vector<SPtr<CResource>>> CResourceManager::GetResource(const StringID& sGroupTag) const
+{
+	std::shared_lock<std::shared_mutex> lock(m_Mutex);
+
+	if (auto p = FindGroup(sGroupTag))
+		return *p;
+	return {};
+}
+
+std::unordered_map<StringID, CResourceManager::RESOURCES> CResourceManager::GetResources() const
+{
+	std::shared_lock<std::shared_mutex> lock(m_Mutex); 
+	return m_Resources;
+}
+
 std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetResourcesByPath() 
 {
+	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+
 	// [주의] 전체 순회하며 수정하므로 비용이 큽니다.
 		// [중요] std::unique_lock<std::shared_mutex> lock(m_Mutex); 필수!
 
@@ -255,6 +291,8 @@ std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetR
 
 std::vector<SPtr<CResource>> CResourceManager::GetResourcesByPath(const _string& sPath) 
 {
+	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+
 	auto it = m_PathLookup.find(sPath);
 	if (it == m_PathLookup.end())
 		return {};
@@ -288,6 +326,12 @@ std::vector<SPtr<CResource>> CResourceManager::GetResourcesByPath(const _string&
 }
 
 void CResourceManager::RemovePathLookup(const _string& sPath, SPtr<CResource> pRes)
+{
+	std::unique_lock<std::shared_mutex> lock(m_Mutex); 
+	_RemovePathLookup(sPath, pRes);
+}
+
+void CResourceManager::_RemovePathLookup(const _string& sPath, SPtr<CResource> pRes)
 {
 	if (m_bIsShutdown)
 		return;
@@ -337,6 +381,8 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 }
 SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset)
 {
+	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+
 	auto pGroup = FindGroup(sGroupTag);
 	if (pGroup)
 	{
@@ -384,6 +430,8 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 
 SPtr<CResource> CResourceManager::GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
 {
+	std::shared_lock<std::shared_mutex> lock(m_Mutex);
+
 	if (auto p = GetResourcePtr(sGroupTag, sResTag))
 	{
 		if (!p->empty())
@@ -423,38 +471,34 @@ SPtr<CResource> CResourceManager::GetResourceFirst(const StringID& sGroupTag, co
 //	return S_OK;
 //}
 
-void CResourceManager::ForEachResource(std::function<void(const std::unordered_map<StringID, RESOURCES>&)> callback) const
-{
-	callback(m_Resources);
-}
 
-HRESULT CResourceManager::LoadResource(const StringID& sGroupTag)
-{
-	HRESULT hr = S_OK;
-	for (auto& Pair : *FindGroup(sGroupTag))
-	{
-		if (FAILED(LoadResource(sGroupTag, Pair.first)))
-		{
-			hr = E_FAIL;
-		}
-	}
-
-	return hr;
-}
-
-HRESULT CResourceManager::LoadResource(const StringID& sGroupTag, const StringID& sResTag)
-{
-	HRESULT hr = S_OK;
-	for (auto& pAsset : *_FindResource(sGroupTag, sResTag))
-	{
-		if (FAILED(pAsset->Load()))
-		{
-			hr = E_FAIL;
-		}
-	}
-
-	return hr;
-}
+//HRESULT CResourceManager::LoadResource(const StringID& sGroupTag)
+//{
+//	HRESULT hr = S_OK;
+//	for (auto& Pair : *FindGroup(sGroupTag))
+//	{
+//		if (FAILED(LoadResource(sGroupTag, Pair.first)))
+//		{
+//			hr = E_FAIL;
+//		}
+//	}
+//
+//	return hr;
+//}
+//
+//HRESULT CResourceManager::LoadResource(const StringID& sGroupTag, const StringID& sResTag)
+//{
+//	HRESULT hr = S_OK;
+//	for (auto& pAsset : *_FindResource(sGroupTag, sResTag))
+//	{
+//		if (FAILED(pAsset->Load()))
+//		{
+//			hr = E_FAIL;
+//		}
+//	}
+//
+//	return hr;
+//}
 
 //HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag)
 //{
@@ -486,6 +530,8 @@ HRESULT CResourceManager::LoadResource(const StringID& sGroupTag, const StringID
 
 void CResourceManager::DelResource(const StringID& sGroupTag)
 {
+	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+
 	auto iter = m_Resources.find(sGroupTag);
 	if (iter != m_Resources.end())
 	{
@@ -497,7 +543,7 @@ void CResourceManager::DelResource(const StringID& sGroupTag)
 				if (res)
 				{
 					// 리소스의 경로를 찾아서 PathLookup에서 제거 요청
-					RemovePathLookup(res->GetPath(), res);
+					_RemovePathLookup(res->GetPath(), res);
 				}
 			}
 		}
@@ -509,6 +555,8 @@ void CResourceManager::DelResource(const StringID& sGroupTag)
 
 void CResourceManager::DelResource(const StringID& sGroupTag, const StringID& sResTag)
 {
+	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+
 	auto pGroup = FindGroup(sGroupTag);
     if (pGroup)
     {
@@ -520,7 +568,7 @@ void CResourceManager::DelResource(const StringID& sGroupTag, const StringID& sR
             {
                 if (res)
                 {
-                    RemovePathLookup(res->GetPath(), res);
+                    _RemovePathLookup(res->GetPath(), res);
                 }
             }
 
@@ -610,9 +658,13 @@ UPtr<CResourceManager> CResourceManager::Create(ComPtr<ID3D11Device> pDevice, Co
 
 void CResourceManager::Free()
 {
+	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+
+	// 루아매니저 와처 타이밍이슈
 	m_bIsShutdown = true;
 
 	m_Resources.clear();
+	m_PathLookup.clear();
 
 	CEngineBase::Free();
 }
