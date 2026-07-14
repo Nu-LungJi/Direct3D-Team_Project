@@ -1381,19 +1381,14 @@ HRESULT CRenderer::RenderNonBlend() {
 
 HRESULT CRenderer::RenderNonBlend_Instanced() {
 	ZoneScopedN("RenderNonBlend_Instanced");
-	const auto& ActiveBatches = CGameInstance::Get().Get_ActiveBatches();
 
-	for (MODEL_INSTANCE_BATCH* pBatch : ActiveBatches)
+
+	for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::NONBLEND_INSTANCED)])
 	{
-		if (!pBatch || pBatch->Instances.empty() )
-			continue;
-
-		auto* pAnimationObject = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle);
-		if (!pAnimationObject || !pAnimationObject->HasRenderPass(RenderContext.pass))
-			continue;
-
-		if (FAILED(pAnimationObject->Render_Instanced(m_pContext.Get(), RenderContext, *pBatch)))
-			return E_FAIL;
+		if (pRenderObject->HasRenderPass(RenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), RenderContext);
+		}
 	}
 
 	return S_OK;

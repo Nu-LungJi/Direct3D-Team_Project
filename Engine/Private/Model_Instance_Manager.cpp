@@ -2,6 +2,7 @@
 #include "Model_Instance_Manager.h"
 
 #include "ComAnimator.h"
+#include "AnimationObject.h"
 #include "ComModelInstance.h"
 #include "ResModel.h"
 
@@ -215,6 +216,27 @@ void CModel_Instance_Manager::UpdateGUI()
 
 	ImGui::End();
 
+}
+
+HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	
+
+	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches)
+	{
+		if (!pBatch || pBatch->Instances.empty() )
+			continue;
+
+		auto* pAnimationObject = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle);
+		
+		if (pAnimationObject == nullptr)
+			return E_FAIL;
+
+		if (FAILED(pAnimationObject->Render_Instanced(pContext, ctx, *pBatch)))
+			return E_FAIL;
+	}
+
+	return S_OK;
 }
 
 UPtr<CModel_Instance_Manager> CModel_Instance_Manager::Create()

@@ -312,19 +312,6 @@ void CResModelMaterial::Free()
 		textures.clear();
 	}
 
-	//for (auto& textures : m_Materials)
-	//{
-	//	for (auto& texture : textures)
-	//	{
-	//		// 캐시 1 + 현재 머티리얼 1만 남은 경우
-	//		if (texture && texture.use_count() == 2)
-	//		{
-	//			CGameInstance::Get().DelResource("ONLY_MINSU_NO_TOUCH",
-	//				texture->GetPath());
-	//		}
-	//	}
-	//}
-
 	for (auto& textures : m_Materials)
 	{
 

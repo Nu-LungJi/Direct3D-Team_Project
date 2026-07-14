@@ -9,7 +9,10 @@ class CComModelInstance;
 class CResModel;
 
 
-class CModel_Instance_Manager final : public CEngineBase
+
+
+
+class CModel_Instance_Manager final : public CEngineBase, public IRenderable
 {
 private:
 	CModel_Instance_Manager();
@@ -45,6 +48,10 @@ public:
 
 public:
 	void UpdateGUI();
+
+public:
+	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	bool HasRenderPass(RENDERPASS ePass) const override { return ePass == RENDERPASS::DEFAULT; };
 
 private:
 	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComModelInstance* pModelInstance);
