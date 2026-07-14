@@ -28,7 +28,9 @@ public:
 
 	VOID	Clear_DynamicLightList() { m_LightHandleList.clear(); }
 
-	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
+	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+
+	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pUAVComBinedOutput; }
 
 #ifdef _DEBUG
 public:
@@ -52,11 +54,15 @@ private:
 
 	SPtr<CResComputeShader>				m_pShadowComputeShader	= { nullptr };
 	SPtr<CResComputeShader>				m_pPBRComputeShader		= { nullptr };
-	SPtr<CResDynamicTexture2D>			m_pUAVShadowOutput		= { nullptr };
+	SPtr<CResDynamicTexture2D>			m_pUAVComBinedOutput	= { nullptr };
 	SPtr<CResViewPort>					m_pShadowViewPort{};
 
-	std::vector<IRenderable*>			m_pRenderable_StaticObjectList{};
-	std::vector<IRenderable*>			m_pRenderable_DynamicObjectList{};
+	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
+	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
+
+	std::vector<ID3D11DepthStencilView*>	m_pShadowMapList;
+	ComPtr<ID3D11Texture2D>					m_pShadowTextureArray = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>		m_pShadowSRV = { nullptr };
 
 	// Light 위치 나타내는 용 아이콘 텍스쳐
 	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };

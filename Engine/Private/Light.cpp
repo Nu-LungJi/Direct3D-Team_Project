@@ -99,13 +99,19 @@ VOID CLight::Update_Collider() {
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 	}
-
-	
 }
 
 _bool CLight::Check_ObjectInArea() {
 
 	return true;
+}
+VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
+	if (_ATYPE == ACTORTYPE::DYNAMIC) {
+		m_pRenderable_DynamicObjectList.push_back(pRenderObject);
+	}
+	else {
+		m_pRenderable_StaticObjectList.push_back(pRenderObject);
+	}
 }
 
 VOID CLight::Render_StaticShadow(ID3D11DeviceContext* pContext) {

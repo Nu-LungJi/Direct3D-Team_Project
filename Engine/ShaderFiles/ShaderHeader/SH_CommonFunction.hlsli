@@ -47,7 +47,7 @@ float3   Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InN
 
 bool Compute_DynamicLight(float3 _WorldPosition, out float3 L, out float3 Radiance)
 {
-    // Directional Light PBR
+   // Directional Light PBR
     [flatten]
     if (LightType == LIGHT_DIRECTIONAL)
     {
@@ -65,7 +65,8 @@ bool Compute_DynamicLight(float3 _WorldPosition, out float3 L, out float3 Radian
         [flatten]
         if (Distance > LightRange)
             return false;
-
+        
+        // Decrease By Distance
         float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
         float DistanceByRange = Distance / LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
@@ -80,12 +81,14 @@ bool Compute_DynamicLight(float3 _WorldPosition, out float3 L, out float3 Radian
         
         float3 LightVector = LightPosition - _WorldPosition;
         float Distance = length(LightVector);
+        
         [flatten]
         if (Distance > LightRange)
             return false;
         
         // Decrease By Distance
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        //float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        float Attenuation = 1.f / max(Distance, 0.0001f);
         float DistanceByRange = Distance / LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
         float DistanceFade = Attenuation * Window * Window;
@@ -98,7 +101,7 @@ bool Compute_DynamicLight(float3 _WorldPosition, out float3 L, out float3 Radian
         float DeNum = InnerAttanuation - OuterAttanuation;
         float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
         
-        Radiance = LightColor * LightIntensity * (DistanceFade * ConeFade * ConeFade);
+        Radiance = LightColor * LightIntensity * (DistanceFade);// * ConeFade * ConeFade);
     }
     else
     {

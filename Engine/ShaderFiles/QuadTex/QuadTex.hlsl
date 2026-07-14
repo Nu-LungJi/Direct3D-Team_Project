@@ -26,6 +26,15 @@ PS_IN VSMain(VS_IN vin)
 
     return output;
 }
+PS_IN VSMain_Shadow(VS_IN vin)
+{
+    PS_IN output;
+    output.posH = mul(float4(vin.posL, 1.f), AffectedLight[0].g_LightViewProj);
+
+    output.uv = vin.uv;
+
+    return output;
+}
 PS_IN VSMain_BillBoard(VS_IN IN)
 {
     PS_IN output;
