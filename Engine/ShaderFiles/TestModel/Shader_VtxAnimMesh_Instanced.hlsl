@@ -9,6 +9,7 @@ struct GPU_ANIM_INSTANCE_DATA
     float fPadding;
 };
 
+
 StructuredBuffer<GPU_ANIM_INSTANCE_DATA> g_AnimationInstances : register(t6);
 StructuredBuffer<float4x4> g_FinalBoneMatrices : register(t7);
 

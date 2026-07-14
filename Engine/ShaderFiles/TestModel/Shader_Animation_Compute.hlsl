@@ -2,7 +2,7 @@ struct GPU_BONE_DESC { float4x4 BindLocalMatrix; int iParentBoneIndex; uint iDep
 struct GPU_ANIM_DESC { uint iChannelOffset; uint iChannelCount; uint iBoneChannelMapOffset; uint iBoneCount; float fDuration; float3 Padding; };
 struct GPU_CHANNEL_DESC { uint iBoneIndex; uint iKeyFrameOffset; uint iKeyFrameCount; uint Padding; };
 struct GPU_KEYFRAME_DESC { float3 vScale; float fTrackPosition; float4 vRotation; float3 vTranslation; float Padding; };
-struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; float fPadding; };
+struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; uint RootBoneIndex; };
 
 StructuredBuffer<GPU_BONE_DESC> gBones : register(t0);
 StructuredBuffer<GPU_ANIM_DESC> gAnimations : register(t1);
@@ -24,7 +24,7 @@ float4x4 QuaternionMatrix(float4 q)
                     0,      0,      0,      1);
 }
 
-float4x4 SampleLocal(uint boneIndex, GPU_ANIM_DESC animation, float time)
+float4x4 SampleLocal(uint boneIndex, uint RootBoneIndex, GPU_ANIM_DESC animation, float time)
 {
     uint channelIndex = gBoneChannelMap[animation.iBoneChannelMapOffset+boneIndex];
     if(channelIndex==0xffffffff)
@@ -58,7 +58,10 @@ float4x4 SampleLocal(uint boneIndex, GPU_ANIM_DESC animation, float time)
         rotationB = -rotationB;
     float4x4 result = mul(float4x4(scale.x,0,0,0, 0,scale.y,0,0, 0,0,scale.z,0, 0,0,0,1),QuaternionMatrix(normalize(lerp(a.vRotation,rotationB,t))));
     result[3] = float4(lerp(a.vTranslation,b.vTranslation,t),1);
-
+    if (boneIndex == RootBoneIndex)
+    {
+        result[3].xyz = 0.0f;
+    }
     return result;
 }
 
@@ -71,16 +74,17 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
 
     GPU_ANIM_DESC animation = gAnimations[instance.iAnimIndex];
     // Bone의 개수가 넘어 갔을 경우 512개
-    if ( boneIndex >= animation.iBoneCount){
+    if (boneIndex >= animation.iBoneCount)
+    {
         gFinalBoneMatrices[outputIndex] = float4x4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
         return;
     }
 
-    float4x4 combined = SampleLocal(boneIndex,animation,instance.fTrackPosition);
+    float4x4 combined = SampleLocal(boneIndex, instance.RootBoneIndex,animation, instance.fTrackPosition);
 
     int parentIndex = gBones[boneIndex].iParentBoneIndex;
     while(parentIndex>=0){
-        combined=mul(combined,SampleLocal((uint)parentIndex,animation,instance.fTrackPosition));
+        combined = mul(combined, SampleLocal((uint) parentIndex, instance.RootBoneIndex, animation, instance.fTrackPosition));
         parentIndex=gBones[parentIndex].iParentBoneIndex;
     }
 

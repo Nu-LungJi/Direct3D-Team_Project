@@ -306,6 +306,30 @@ void CLevelLoading::ThreadStart()
 		//	int a = 0;
 		//	//return false;
 		//}
+		
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return ;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return ;
+			}
+		}
+
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
 			{
 		

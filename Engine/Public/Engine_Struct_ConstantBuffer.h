@@ -97,4 +97,5 @@ namespace Engine
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 
+
 }

@@ -114,6 +114,7 @@ cbuffer CB_BONES : register(b2)
      matrix g_BoneMatrices[512];
 };
 
+
 cbuffer CB_MATERIAL : register(b3)
 {
     float3  EmissiveColor;

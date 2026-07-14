@@ -292,6 +292,7 @@ namespace Engine
 
 	//----------------------------AnimationObject------------------------------------
 
+
 	typedef struct GPU_BONE_DESC
 	{
 		_float4x4 BindLocalMatrix;
@@ -367,7 +368,8 @@ namespace Engine
 		uint32_t iFlags = 0;
 
 		_float fTrackPosition = 0.f;
-		_float fPadding = 0.f;
+		
+		uint32_t iRootBoneIndex = 0;
 	}GPU_ANIM_INSTANCE_DATA;
 
 	typedef struct MODEL_INSTANCE_KEY

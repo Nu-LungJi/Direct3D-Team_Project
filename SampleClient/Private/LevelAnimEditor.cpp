@@ -184,6 +184,15 @@ Engine::UPtr<CLevelAnimEditor> CLevelAnimEditor::Create()
 
 void CLevelAnimEditor::Free()
 {
+	//
+	//	
+
+
+
+
+	CGameInstance::Get().DelResource("TEST", "Model_Resource");
+	CGameInstance::Get().DelResource("TEST", "Static_Model_Resource");
+
 	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
 }

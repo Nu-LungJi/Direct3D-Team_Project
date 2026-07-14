@@ -361,6 +361,10 @@ public:
 	{
 		return m_ActionTime;
 	}
+
+	uint32_t GetRootBoneIndex() const {
+		return m_iRootBoneIndex;
+	}
 private:
 	CComModelInstance* m_pModelInstance;
 

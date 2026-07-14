@@ -35,12 +35,19 @@ public:
 public:
 
 private:
+	HRESULT AcquireCachedTexture(const _string& texturePath, SPtr<CResTexture2D>& outTexture);
+
 	uint32_t			m_iMaterialTypeNum{};
 
 private:
 	std::vector<SPtr<CResTexture2D>>			m_Materials[ENG_AI_TEXTURE_TYPE_MAX];
+	
 public:
 	static SPtr<CResModelMaterial> Create(const _string& sPath = {});
+
+private:
+	void Free() override;
+
 };
 
 NS_END

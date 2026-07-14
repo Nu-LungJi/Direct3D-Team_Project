@@ -63,6 +63,7 @@ private:
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
+	
 
 	SPtr<CResComputeShader> m_pAnimComputeShader{};
 
