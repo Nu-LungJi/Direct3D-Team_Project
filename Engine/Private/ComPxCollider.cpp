@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ComPxCollider.h"
+#include "ComPxRigidBody.h"
 
 #ifdef _DEBUG
 // 라이브러리 설정 전후로 매크로 잠시 해제
@@ -97,8 +98,16 @@ void CComPxCollider::Free()
 {
 	if (m_pShape)
 	{
+		if (m_pComRigidBody)
+		{
+			if (auto* pActor = m_pComRigidBody->GetActor())
+				pActor->detachShape(*m_pShape);
+		}
+
 		m_pShape->release();
 		m_pShape = nullptr;
 	}
+
+	m_pComRigidBody = nullptr;
     CComponent::Free();
 }
