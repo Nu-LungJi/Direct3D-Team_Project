@@ -1928,37 +1928,6 @@ HRESULT CRenderer::InitializeHizBuffer()
 	m_bHasPrevHizBuffer = false;
 
 	return S_OK;
-	for (uint32_t IDX = 0; IDX < 9; ++IDX) {
-
-		if (IDX != 8 && (IDX >= m_pResDynTexTargetList.size() || !m_pResDynTexTargetList[IDX]))
-			continue;
-
-		m_WorldMatrix = XMLoadFloat4x4(&m_fDebugWorldMatrix[IDX]);
-
-		if (SUCCEEDED(m_pContext->Map(pCbPerObject->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-		{
-			CB_PER_OBJECT cbPerPass{};
-
-			XMStoreFloat4x4(&cbPerPass.matWorld, m_WorldMatrix);
-			XMStoreFloat4x4(&cbPerPass.matWVP, m_WorldMatrix * m_ViewMatrix * m_ProjMatrix);
-
-			memcpy(MRES.pData, &cbPerPass, sizeof(cbPerPass));
-			m_pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
-		}
-		auto pCBufferPtr = pCbPerObject->GetCBuffer().GetAddressOf();
-		m_pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-		m_pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-
-		if (IDX == 8) {
-			m_pContext->PSSetShaderResources(0, 1, m_pBackBufferSRV.GetAddressOf());
-		}
-		else {
-			m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetList[IDX]->GetSRV().GetAddressOf());
-		}
-
-		m_pContext->DrawIndexed(m_pDebugBuffer->GetNumIndices(), 0, 0);
-	}
-	return S_OK;
 }
 
 HRESULT CRenderer::BuildCurrentHizBuffer()
