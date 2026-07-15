@@ -115,6 +115,18 @@
     <Filter Include="GameObject\UI\Button">
       <UniqueIdentifier>{b95f98b8-dda0-492c-83ef-ee45acfd798b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AI\BTAction\Animation">
+      <UniqueIdentifier>{0c92c0fc-4203-4f78-9eb9-2d20f0136749}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTAction\Motion">
+      <UniqueIdentifier>{38c8a81f-3437-4879-8896-b4e4554b4868}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTAction\Flow">
+      <UniqueIdentifier>{8a77751f-c453-4a14-aebf-b39ce0f10d61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Weapon">
+      <UniqueIdentifier>{50e39d0c-599b-4df9-ba40-d3d9e2609a76}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -210,23 +222,14 @@
     <ClInclude Include="..\public\Particle_Ribbon.h">
       <Filter>Particles</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTMove.h">
-      <Filter>GameObject\AI\BTAction</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\TestModel.h">
       <Filter>GameObject\TestModel\Anim</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Test_StaticModel.h">
       <Filter>GameObject\TestModel\NonAnim</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTAnimation.h">
-      <Filter>GameObject\AI\BTAction</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Monster.h">
       <Filter>GameObject\AI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTTurnSlow.h">
-      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTDecSearch.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
@@ -246,26 +249,53 @@
     <ClInclude Include="..\public\BTDead.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTTurnDirect.h">
-      <Filter>GameObject\AI\BTAction</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\BTDecLier.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTChase.h">
-      <Filter>GameObject\AI\BTAction</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTDecInvert.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTOnlyFalse.h">
-      <Filter>GameObject\AI\BTAction</Filter>
+    <ClInclude Include="..\public\TextBox.h">
+      <Filter>GameObject\UI</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTOnlyTrue.h">
-      <Filter>GameObject\AI\BTAction</Filter>
+    <ClInclude Include="..\public\BTDecHit.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecHp.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTMove.h">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDamage.h">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnSlow.h">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTTeleport.h">
-      <Filter>GameObject\AI\BTAction</Filter>
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnDirect.h">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTChase.h">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTOnlyTrue.h">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTOnlyFalse.h">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TextureUI.h">
       <Filter>GameObject\UI\TexUI</Filter>
@@ -278,6 +308,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\UIManager.h">
       <Filter>GameObject\UI</Filter>
+	</ClInclude>
+    <ClInclude Include="..\public\Weapon.h">
+      <Filter>GameObject\AI\Weapon</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
@@ -330,9 +363,6 @@
     <ClCompile Include="..\Private\LevelAnimEditor.cpp">
       <Filter>Level\AnimationEditor</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTMove.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\LevelLightMap.cpp">
       <Filter>Level\LightMap</Filter>
     </ClCompile>
@@ -378,26 +408,53 @@
     <ClCompile Include="..\public\BTDead.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTTurnDirect.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\BTDecLier.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTChase.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTDecInvert.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTOnlyFalse.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
+    <ClCompile Include="..\private\BTDecHit.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTOnlyTrue.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
+    <ClCompile Include="..\private\BTDecHp.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMove.cpp">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDamage.cpp">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTTeleport.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnSlow.cpp">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTChase.cpp">
+      <Filter>GameObject\AI\BTAction\Motion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTOnlyFalse.cpp">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTOnlyTrue.cpp">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Weapon.cpp">
+      <Filter>GameObject\AI\Weapon</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>
@@ -431,9 +488,6 @@
     <ClCompile Include="..\private\Particle_Fire_GPU.cpp">
       <Filter>Particles</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTTurnSlow.cpp">
-      <Filter>GameObject\AI\BTAction</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\BTDecSearch.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
@@ -441,6 +495,9 @@
   <ItemGroup>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelUIEditor.cpp">
+      <Filter>Level\UiEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Monster.cpp">
       <Filter>GameObject\AI</Filter>

@@ -43,6 +43,11 @@ _bool CCollBox::Intersect(const CCollider& collider) const
 	return false;
 }
 
+_bool CCollBox::Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const
+{
+	return m_BoundingBoxWorld.Intersects(XMLoadFloat3(&vOrigin), XMLoadFloat3(&vDir), fDist);
+}
+
 UPtr<CCollBox> CCollBox::Create(const _float3& vCenter, const _float3& vExtents)
 {
 	auto pInstance = ToUPtr(new CCollBox{});

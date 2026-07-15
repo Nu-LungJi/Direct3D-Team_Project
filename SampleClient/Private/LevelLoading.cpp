@@ -28,6 +28,7 @@
 #include "TextureUI.h"
 #include "EffectUI.h"
 #include "TextBox.h"
+#include "Weapon.h"
 #include "Button.h"
 
 #include "TestGob.h"
@@ -186,7 +187,10 @@ void CLevelLoading::ThreadStart()
 				   return false;
 				}
 
-
+				if (FAILED(E::CGameInstance::Get().AddPrototype("WEAPON", "Prototype_GameObject_Weapon", CWeapon::Create())))
+				{
+					return false;
+				}
 				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				//if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
 				//{
@@ -266,26 +270,26 @@ void CLevelLoading::ThreadStart()
 
 			std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI";
 
-			// 1. 해당 폴더가 존재하는지 먼저 확인 (안전장치)
+			// 1. �ش� ������ �����ϴ��� ���� Ȯ�� (������ġ)
 			if (fs::exists(targetDir) && fs::is_directory(targetDir))
 			{
-				// 2. 폴더 내의 모든 파일을 순회
+				// 2. ���� ���� ��� ������ ��ȸ
 				for (const auto& entry : fs::directory_iterator(targetDir))
 				{
-					// 3. 파일이면서 확장자가 .png 인지 확인
+					// 3. �����̸鼭 Ȯ���ڰ� .png ���� Ȯ��
 					if (entry.is_regular_file() && entry.path().extension() == ".png")
 					{
-						// 4. 파일 이름만 추출 (예: "UI_T_NurtureMeterDiamond_Back_4k")
+						// 4. ���� �̸��� ���� (��: "UI_T_NurtureMeterDiamond_Back_4k")
 						std::string fileName = entry.path().stem().string();
 
-						// 5. 리소스 태그 조합 (예: "TEX_UI_T_NurtureMeterDiamond_Back_4k")
+						// 5. ���ҽ� �±� ���� (��: "TEX_UI_T_NurtureMeterDiamond_Back_4k")
 						std::string resTag = "TEX_" + fileName;
 
-						// 6. 전체 파일 경로 추출 (운영체제에 맞게 경로가 조합됨)
-						// generic_string()을 쓰면 윈도우에서도 역슬래시(\) 대신 슬래시(/)로 경로를 반환합니다.
+						// 6. ��ü ���� ��� ���� (�ü���� �°� ��ΰ� ���յ�)
+						// generic_string()�� ���� �����쿡���� ��������(\) ��� ������(/)�� ��θ� ��ȯ�մϴ�.
 						std::string fullPath = entry.path().generic_string();
 
-						// 7. 엔진에 리소스 추가 및 로드
+						// 7. ������ ���ҽ� �߰� �� �ε�
 						if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", resTag, E::CResTexture2D::Create(fullPath)))
 						{
 							res->Load();
@@ -332,6 +336,30 @@ void CLevelLoading::ThreadStart()
 		//	int a = 0;
 		//	//return false;
 		//}
+		
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return ;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return ;
+			}
+		}
+
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
 			{
 		
@@ -341,6 +369,10 @@ void CLevelLoading::ThreadStart()
 				}
 
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_TestStaticModel", CTest_StaticModel::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_TestStaticModel2", CTest_StaticModel::Create())))
 				{
 					return false;
 				}

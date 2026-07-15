@@ -15,12 +15,12 @@ CResDynamicTexture2D::~CResDynamicTexture2D()
 
 HRESULT CResDynamicTexture2D::CreateSRV(const D3D11_SHADER_RESOURCE_VIEW_DESC& desc, size_t idx)
 {
-    return m_pDevice->CreateShaderResourceView(m_pTexture.Get(), &desc, &m_pSRV[idx]);
+	return m_pDevice->CreateShaderResourceView(m_pTexture.Get(), &desc, &m_pSRV[idx]);
 }
 
 HRESULT CResDynamicTexture2D::CreateSRV(size_t idx)
 {
-    return m_pDevice->CreateShaderResourceView(m_pTexture.Get(), 0, &m_pSRV[idx]);
+	return m_pDevice->CreateShaderResourceView(m_pTexture.Get(), 0, &m_pSRV[idx]);
 }
 
 HRESULT CResDynamicTexture2D::CreateUAV(const D3D11_UNORDERED_ACCESS_VIEW_DESC& desc, size_t idx)

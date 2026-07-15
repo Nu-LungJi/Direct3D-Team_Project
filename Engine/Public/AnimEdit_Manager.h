@@ -2,11 +2,10 @@
 #pragma once
 
 #include "Engine_Defines.h"
+#include "ComAnimator.h"
 
 NS_BEGIN(Engine)
 class CGameObject;
-class CComAnimator;
-class CComAnimMontage;
 
 class CAnimEdit_Manager final : public CEngineBase
 {
@@ -47,16 +46,23 @@ public:
 	void IMGUI_Select_AnimType();
 	void IMGUI_Slider_Animation();
 	void IMGUI_Select_Animation();
-	void IMGUI_Select_Detail_Data();
+
 
 	void IMGUI_Speed_Animation();
 
 	void IMGUI_File_Rename(const std::string& Path, const std::string& fileName, const std::string& newfileName);
+private:
+	void IMGUI_TopBar_Action(CGameObject* pSampleObj,CComAnimator* pComAnimator);
 
-	//------------------------------------------------------AnimMontage--------------------------------------------------------
-	void IMGUI_Slider_AnimMontage();
-	void IMGUI_Select_AnimMontage();
-	void IMGUI_Detail_AnimMontage();
+	void IMGUI_ActionEditor();
+	_bool SaveActions(const CComAnimator& animator, const std::filesystem::path& path) const;
+	_bool LoadActions(CComAnimator& animator, const std::filesystem::path& path);
+	void RefreshActionLastTime(CComAnimator::ACTIONSTRUCT& action, CGameObject* pSampleObj) const;
+
+private:
+	int32_t m_iSelectedActionIndex = -1;
+	std::filesystem::path m_ActionFilePath{ "./Resources/SampleClient/Actions/Actions.json" };
+	std::string m_ActionStatus;
 public:
 	//-------------------------------------------------------Anim---------------------------------------------------------
 	// helper 함수들
@@ -68,12 +74,6 @@ public:
 	std::vector<BAKE_SAMPLE> BuildBakeSamples(float fSourceDuration, float fTickPerSecond, float fSampleFPS);
 	KEYFRAME SampleChannelKeyFrame(CResModelChanel* pChannel, float fTrackPosition);
 
-	//-------------------------------------------------------Animmontage---------------------------------------------------------
-private:
-	std::unordered_map<std::string, CComAnimMontage*> m_mapAnimMontages;
-
-	CComAnimMontage* m_pCurrentMontage = nullptr;
-	std::string   m_strCurrentMontageName;
 
 
 public:

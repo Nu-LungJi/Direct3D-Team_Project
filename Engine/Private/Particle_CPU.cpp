@@ -29,6 +29,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
     m_eType = pDesc->type;
+
     m_Particles.assign(m_iNumElements, PARTICLE_CPU_DATA{});
 
     if (auto res = CResDynamicBuffer::Create())
@@ -119,6 +120,7 @@ void CParticle_CPU::PriorityUpdate(E::_float fTimeDelta)
 
 void CParticle_CPU::Update(E::_float fTimeDelta)
 {
+	ProcessPendingSpawns(fTimeDelta);
     Simulate(fTimeDelta);
 
 }
@@ -126,19 +128,18 @@ void CParticle_CPU::Update(E::_float fTimeDelta)
 void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 {
 }
-static int a = 0;
+
 
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
     m_vecInstancedData.clear();
-
+	uint32_t totalFrames = m_Desc.TexRows * m_Desc.TexColumns;
     for (auto& p : m_Particles)
     {
 
         if (!p.bAlive)
             continue;
 
-        a++;
         p.fAge += fTimeDelta;
         if (p.fAge >= p.fLifeTime)
         {
@@ -150,6 +151,16 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 
         if (m_vecInstancedData.size() >= m_iNumElements)
             continue;
+		if (totalFrames > 1)
+		{
+			float ageRatio = std::clamp(p.fAge / p.fLifeTime, 0.f, 1.f);
+			uint32_t frame = (uint32_t)(ageRatio * totalFrames);
+			p.iFrameIndex = std::min(frame, totalFrames - 1);
+		}
+		else
+		{
+			p.iFrameIndex = 0;
+		}
 
         VTX_PARTICLE_INSTANCED_DATA inst{};
         _matrix matScale = XMMatrixScaling(p.fSize, p.fSize, p.fSize);
@@ -157,6 +168,20 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
         XMStoreFloat4x4(&inst.matWorld, matScale * matWorld);
         inst.vColor = p.vColor;
         inst.emissive = p.emissive;
+	
+		if (m_Desc.TexColumns > 0 && m_Desc.TexRows > 0)
+		{
+			uint32_t col = p.iFrameIndex % m_Desc.TexColumns;
+			uint32_t row = p.iFrameIndex / m_Desc.TexColumns;
+
+			inst.vUVSize = _float2(1.0f / m_Desc.TexColumns, 1.0f / m_Desc.TexRows);
+			inst.vUVOffset = _float2(col * inst.vUVSize.x, row * inst.vUVSize.y);
+		}
+		else
+		{
+			inst.vUVSize = _float2(1.0f, 1.0f);
+			inst.vUVOffset = _float2(0.0f, 0.0f);
+		}
 
         m_vecInstancedData.push_back(inst);
     }
@@ -182,7 +207,7 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
         m_Particles[i].fSize = src.size;
         m_Particles[i].vColor = src.color;
         m_Particles[i].emissive = src.emissive;
-
+		m_Particles[i].spawnDelay = src.spawnDelay;
         ++iSpawned;
     }
 
@@ -283,6 +308,10 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
     return S_OK;
 }
 
+void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
+{
+}
+
 
 HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
@@ -327,4 +356,14 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     pContext->PSSetShaderResources(0, 1, nullSRV);
 
     return S_OK;
+}
+UPtr<CParticle> CParticle_CPU::Create(void* pArg)
+{
+	auto pInstance = E::ToUPtr(new CParticle_CPU{});
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Created : CParticle_CPU");
+		return nullptr;
+	}
+	return  pInstance;
 }

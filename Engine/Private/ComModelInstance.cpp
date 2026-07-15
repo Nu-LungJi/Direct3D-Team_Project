@@ -121,6 +121,9 @@ HRESULT CComModelInstance::Initialize(void* pArg)
     if (pArg != nullptr) {
         // 모델 Instance는 하나의 메모리를 모두 공유한다.
         CComModelInstance::DESC* pDesc = reinterpret_cast<CComModelInstance::DESC*>(pArg);
+		m_sGroupTag = pDesc->sGroupTag;
+		m_sResTag = pDesc->sResTag;
+
         m_pModel = CGameInstance::Get().GetResourceFirst<CResModel>(pDesc->sGroupTag, pDesc->sResTag);
         if (m_pModel == nullptr)
         {
@@ -152,7 +155,6 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 
     if (!BoneMatrices.empty())
     {
-
         D3D11_MAPPED_SUBRESOURCE MappedResource{};
     
         if (FAILED(pContext->Map(m_Buffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource)))
@@ -278,8 +280,6 @@ UPtr<CPrototype> CComModelInstance::Clone(void* pArg)
     return pInstance;
 }
 
-
-
 void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 {
 	
@@ -339,7 +339,58 @@ void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 	}
 }
 
+HRESULT CComModelInstance::Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext || !m_pModel)
+		return E_FAIL;
 
+	ID3D11ShaderResourceView* pSRVs[] =
+	{
+		m_pModel->Get_GPUBoneSRV(),            // t0
+		m_pModel->Get_GPUAnimationSRV(),       // t1
+		m_pModel->Get_GPUChannelSRV(),         // t2
+		m_pModel->Get_GPUKeyFrameSRV(),        // t3
+		m_pModel->Get_GPUBoneChannelMapSRV(),  // t4
+		m_pModel->Get_GPUSkinBoneSRV()         // t5
+	};
+
+	for (ID3D11ShaderResourceView* pSRV : pSRVs)
+	{
+		if (!pSRV)
+			return E_FAIL;
+	}
+
+	pContext->CSSetShaderResources(0,static_cast<UINT>(std::size(pSRVs)),pSRVs);
+
+	return S_OK;
+}
+
+HRESULT CComModelInstance::Bind_GPUSkinBones_VS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext || !m_pModel)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* pSRV = m_pModel->Get_GPUSkinBoneSRV();
+	if (!pSRV)
+		return E_FAIL;
+
+	pContext->VSSetShaderResources(8, 1, &pSRV);
+	return S_OK;
+}
+
+void CComModelInstance::Unbind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext)
+{
+	if (!pContext)
+		return;
+
+	ID3D11ShaderResourceView* pNullSRVs[6]{};
+
+	pContext->CSSetShaderResources(
+		0,
+		6,
+		pNullSRVs
+	);
+}
 
 void CComModelInstance::EnsureDebugBoneOffsetSize()
 {

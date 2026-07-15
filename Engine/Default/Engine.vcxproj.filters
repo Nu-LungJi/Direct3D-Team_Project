@@ -349,9 +349,6 @@
     <Filter Include="Component\Model\ComModelInstance">
       <UniqueIdentifier>{f96b322a-def0-42b5-b018-9b2180faac69}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\Model\ComAnimMontage">
-      <UniqueIdentifier>{21a90845-ab5e-4613-9e21-afc67bec6f01}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\Model\ComAnimator">
       <UniqueIdentifier>{f72128ce-6417-4102-85a1-b6d875c091b8}</UniqueIdentifier>
     </Filter>
@@ -426,6 +423,15 @@
     </Filter>
     <Filter Include="Component\UI\ButtonComponent">
       <UniqueIdentifier>{8318dad6-1853-412a-83bd-17623d00c9b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Instance">
+      <UniqueIdentifier>{b6e0ed74-80a4-4a0a-89ec-44b920106f17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AnimationObject">
+      <UniqueIdentifier>{fe5b2709-035e-451f-b8bd-24ec9f3bb823}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\TestModel\Compute">
+      <UniqueIdentifier>{0464bfd6-5af4-491a-81f0-6208e5bb7163}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -729,9 +735,6 @@
     <ClInclude Include="..\Public\ComAnimator.h">
       <Filter>Component\Model\ComAnimator</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ComAnimMontage.h">
-      <Filter>Component\Model\ComAnimMontage</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\AnimEdit_Manager.h">
       <Filter>AnimationEditor</Filter>
     </ClInclude>
@@ -920,6 +923,13 @@
     </ClInclude>
     <ClInclude Include="..\Public\MapMeshGpuCuller.h">
       <Filter>HizBuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ShadowCamera.h" />
+    <ClInclude Include="..\Public\Model_Instance_Manager.h">
+      <Filter>Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\AnimationObject.h">
+      <Filter>GameObject\AnimationObject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1160,9 +1170,6 @@
     <ClCompile Include="..\Private\ComAnimator.cpp">
       <Filter>Component\Model\ComAnimator</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\ComAnimMontage.cpp">
-      <Filter>Component\Model\ComAnimMontage</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp">
       <Filter>AnimationEditor</Filter>
     </ClCompile>
@@ -1373,6 +1380,13 @@
     <ClCompile Include="..\Private\TweenComponent.cpp">
       <Filter>Component\Tween</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShadowCamera.cpp" />
+    <ClCompile Include="..\Private\Model_Instance_Manager.cpp">
+      <Filter>Instance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\AnimationObject.cpp">
+      <Filter>GameObject\AnimationObject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1425,6 +1439,9 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
       <Filter>ShaderFiles\DeferredRendering</Filter>
     </FxCompile>
@@ -1469,6 +1486,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGpuCull.hlsl">
       <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl">
+      <Filter>ShaderFiles\TestModel\Compute</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

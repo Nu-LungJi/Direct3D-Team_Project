@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AnimationObject.h"
 #include "Renderer.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
@@ -16,9 +17,7 @@ void CRenderer::UpdateGUI()
 
     ImGui::End();
 
-#ifdef _DEBUG
     PostProcessGUI();
-#endif
 }
 
 HRESULT CRenderer::Initialize()
@@ -49,6 +48,9 @@ HRESULT CRenderer::Initialize()
     if (FAILED(Initialize_Debugging()))         
 		return E_FAIL;
 #endif
+	if (FAILED(InitializeVolumetricEffect()))	return E_FAIL;
+	
+
 
 	if (FAILED(InitializeHizBuffer()))
 		return E_FAIL;
@@ -112,7 +114,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_OverDraw", .sTarget = "ps_5_0" })))    return E_FAIL;
 	}
-
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_RayMarching", "./ShaderFiles/RayMarching/CS_RayMarching.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
 
     return S_OK;
 }
@@ -178,13 +183,16 @@ HRESULT CRenderer::InitializeOffscreen()
 
 HRESULT CRenderer::InitializeShadow()
 {
-    UINT iShadowWidth   = 2048 * 2;
-    UINT iShadowHeight  = 2048 * 2;
+	uint32_t ShadowMapResolutionX = { 1280 * 4 };
+	uint32_t ShadowMapResolutionY = { 720 * 4 };
 
-    m_pShadowTex2D      = Generate_DepthStencil_RenderTarget("DynTex2D_Shadow", DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_FLOAT, iShadowWidth, iShadowHeight);
-    m_pShadowViewPort   = Generate_ViewPort("VP_Shadow", iShadowWidth, iShadowHeight);
+	m_pResDynTexTargetShadow = Generate_DepthStencil_RenderTarget("DynTex2D_Shadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
+
+	if (nullptr == m_pResDynTexTargetShadow)        return E_FAIL;
+
+	m_pShadowViewPort   = Generate_ViewPort("VP_ShadowMap", ShadowMapResolutionX, ShadowMapResolutionY); 
     
-    return S_OK;
+	return S_OK;
 }
 
 HRESULT CRenderer::InitializeFullscreen()
@@ -327,6 +335,21 @@ HRESULT CRenderer::InitializeBloom() {
 
 	return S_OK;
 }
+HRESULT CRenderer::InitializeVolumetricEffect() {
+
+	m_pResDynTexTargetVolumetric = Generate_RenderTarget("DynTex2D_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	
+	m_pVolumetricComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_RayMarching");
+
+	m_pResDynTexUAVVolumetric = Generate_UnorderedAccessView("UAV_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+
+	if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.png", nullptr, BlueNoiseTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create BlueNoiseTexture Texture File.");
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
 #pragma endregion
 
 #pragma region  EXTRAFUNCTION
@@ -395,7 +418,7 @@ SPtr<CResDynamicTexture2D> CRenderer::Generate_DepthStencil_RenderTarget(const S
         dsvDesc.ViewDimension               = D3D11_DSV_DIMENSION_TEXTURE2D;
         dsvDesc.Texture2D.MipSlice          = 0;
         if (FAILED(Resource->CreateDSV(dsvDesc))) return nullptr;
-
+		
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
         srvDesc.Format                      = _SRVFormat;
         srvDesc.ViewDimension               = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -407,6 +430,50 @@ SPtr<CResDynamicTexture2D> CRenderer::Generate_DepthStencil_RenderTarget(const S
     }
 
     return nullptr;
+}
+
+SPtr<CResDynamicTexture2D> CRenderer::Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
+	auto vClientScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+	if (_TexWidth == 0)     _TexWidth = vClientScreenSize.x;
+	if (_TexHeight == 0)    _TexHeight = vClientScreenSize.y;
+
+	if (auto Resource = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_TEXTURE, _sResTag, E::CResDynamicTexture2D::Create()))
+	{
+		CResDynamicTexture2D::DESC Desc{};
+		Desc.texDesc = {
+			.Width = _TexWidth,
+			.Height = _TexHeight,
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = _TexFormat,
+			.SampleDesc = {.Count = 1, .Quality = 0 },
+			.Usage = D3D11_USAGE_DEFAULT,
+			.BindFlags = _BindFlags,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0
+		};
+		CResDynamicTexture2D::DESC DynTex2DDesc{};
+		DynTex2DDesc.texDesc = Desc.texDesc;
+		if (FAILED(Resource->Load(Desc)))    return nullptr;
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
+		UAVDesc.Format				= _TexFormat;
+		UAVDesc.ViewDimension		= D3D11_UAV_DIMENSION_TEXTURE2D;
+		UAVDesc.Texture2D.MipSlice	= 0;
+		if (FAILED(Resource->CreateUAV(UAVDesc)))	 return nullptr;
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format				= _TexFormat;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		if (FAILED(Resource->CreateSRV(srvDesc))) return nullptr;
+		return Resource;
+	}
+
+	return nullptr;
+
 }
 
 SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth, uint32_t _TexHeight){
@@ -426,6 +493,66 @@ SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag
     return nullptr;
 }
 
+ComPtr<ID3D11ShaderResourceView> CRenderer::Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
+
+	if (_TexWidth == 0)     _TexWidth = 1;
+	if (_TexHeight == 0)    _TexHeight = 1;
+
+	D3D11_TEXTURE2D_DESC Tex2dDesc = {};
+	Tex2dDesc.Width = _TexWidth;
+	Tex2dDesc.Height = _TexHeight;
+	Tex2dDesc.MipLevels = 1;
+	Tex2dDesc.ArraySize = 1;
+	Tex2dDesc.Format = _TexFormat;
+	Tex2dDesc.SampleDesc.Count = 1;
+	Tex2dDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	Tex2dDesc.BindFlags = _BindFlags;
+
+	ComPtr<ID3D11ShaderResourceView> SRV = { nullptr };
+	ComPtr<ID3D11Texture2D> Tex2D = { nullptr };
+
+	if (FAILED(m_pDevice->CreateTexture2D(&Tex2dDesc, nullptr, Tex2D.GetAddressOf())))			return nullptr;
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc{};
+	SRVDesc.Format = _TexFormat;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	SRVDesc.Texture2D.MipLevels = 1;
+	SRVDesc.Texture2D.MostDetailedMip = 0;
+	if(FAILED(m_pDevice->CreateShaderResourceView(Tex2D.Get(), &SRVDesc, SRV.GetAddressOf())))	return nullptr;
+
+	return SRV;
+}
+
+ComPtr<ID3D11ShaderResourceView> CRenderer::Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth) {
+
+	if (_TexWidth == 0)     _TexWidth = 1;
+	if (_TexHeight == 0)    _TexHeight = 1;
+	if (_TexDepth == 0)    _TexDepth = 1;
+
+	D3D11_TEXTURE3D_DESC Tex3dDesc = {};
+	Tex3dDesc.Width = _TexWidth;
+	Tex3dDesc.Height = _TexHeight;
+	Tex3dDesc.Depth = _TexDepth;
+	Tex3dDesc.MipLevels = 1;
+	Tex3dDesc.Format = _TexFormat;
+	Tex3dDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	Tex3dDesc.BindFlags = _BindFlags;
+
+	ComPtr<ID3D11ShaderResourceView> SRV = { nullptr };
+	ComPtr<ID3D11Texture3D> Tex3D = { nullptr };
+
+	if (FAILED(m_pDevice->CreateTexture3D(&Tex3dDesc, nullptr, Tex3D.GetAddressOf())))			return nullptr;
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc{};
+	SRVDesc.Format = _TexFormat;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
+	SRVDesc.Texture3D.MipLevels = 1;
+	SRVDesc.Texture3D.MostDetailedMip = 0;
+	if (FAILED(m_pDevice->CreateShaderResourceView(Tex3D.Get(), &SRVDesc, SRV.GetAddressOf())))	return nullptr;
+
+	return SRV;
+}
+
 HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
 {
 	if (eRenderGroup >= RENDERGROUP::END ||
@@ -434,6 +561,22 @@ HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRende
 
 	m_RenderObject[ETOUI(eRenderGroup)].push_back(pRenderObject);
 	return S_OK;
+}
+
+HRESULT CRenderer::Reset_DefaultShader(RENDERGROUP _Group) {
+
+	if		(RENDERGROUP::NONBLEND == _Group) {
+		m_pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
+		m_pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
+	}
+	else if (RENDERGROUP::BLEND == _Group) {
+		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
+		m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
+	}
+
+    return S_OK;
 }
 
 VOID	CRenderer::Unbind_Resources()
@@ -449,37 +592,43 @@ VOID	CRenderer::Unbind_Resources()
 	m_pContext->PSSetShaderResources(3, 1, pSRVs);
 	m_pContext->PSSetShaderResources(4, 1, pSRVs);
 	m_pContext->PSSetShaderResources(5, 1, pSRVs);
+	m_pContext->PSSetShaderResources(6, 1, pSRVs);
 
 	m_pContext->IASetInputLayout(nullptr);
-	m_pContext->VSSetShader(nullptr, nullptr, 0);
+	//m_pContext->VSSetShader(nullptr, nullptr, 0);
 	m_pContext->PSSetShader(nullptr, nullptr, 0);
 }
 
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
 	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	if (RenderContext.pass == RENDERPASS::SHADOW) {
+
+		ShadowLightVP = _ActiveCam->GetView() * _ActiveCam->GetProj();
+	}
 	if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
 	{
 		CB_PER_PASS cbPerPass{};
-		XMStoreFloat4x4(&cbPerPass.matProj, _ActiveCam->GetProj());
 		XMStoreFloat4x4(&cbPerPass.matView, _ActiveCam->GetView());
+		XMStoreFloat4x4(&cbPerPass.matProj, _ActiveCam->GetProj());
+
 		XMStoreFloat4x4(&cbPerPass.matViewProj, _ActiveCam->GetView() * _ActiveCam->GetProj());
+
 		XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, _ActiveCam->GetView()));
-		XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
+		XMStoreFloat4x4(&cbPerPass.matInvProj, XMMatrixInverse(nullptr, _ActiveCam->GetProj()));
+
+		XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixMultiply(XMLoadFloat4x4(&cbPerPass.matInvProj), XMLoadFloat4x4(&cbPerPass.matInvView)));
+
 		cbPerPass.vCamPos = _ActiveCam->GetTransform().GetPosition();
 
-		//auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
-
-		//if (nullptr != pShadowCamera) {
-		//    XMStoreFloat4x4(&cbPerPass.matShadowLightViewProj, pShadowCamera->GetView() * pShadowCamera->GetProj());
-		//}
+		XMStoreFloat4x4(&cbPerPass.matShadowLightViewProj, ShadowLightVP);
 
 		memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
 		m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
 	}
 	m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
 	m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->GSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
 
 	return S_OK;
 }
@@ -504,9 +653,8 @@ HRESULT CRenderer::Draw() {
 
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
-    _bool bApplyShadow = false;
     if (bApplyShadow)
-        if (FAILED(Render_ShadowMap()))  return E_FAIL;
+        if (FAILED(Render_Shadow()))	return E_FAIL;
 
     // DepthMap
     if (FAILED(Render_DepthMap()))       return E_FAIL;
@@ -526,27 +674,27 @@ HRESULT CRenderer::Draw() {
 	// Trensparent + PBR
 	if (FAILED(Render_Alpha()))          return E_FAIL;
 
+	// Volumetric
+	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
+
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
 
-	if (CGameInstance::Get().KeyDown(DIK_3)) {
-		ApplyFilter = !ApplyFilter;
-	}
 	// PostProcess
 	if (FAILED(Render_PostProcess()))     return E_FAIL;
+
     {
         m_pLastTex2DBeforeFullScreenDraw = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
     }
 
 	// UI
 	if (FAILED(Render_UserInterface()))     return E_FAIL;
-	
+
     // FullScreen : Final
     if (FAILED(Render_FullScreen()))        return E_FAIL;
 
-#ifdef _DEBUG
+	// Debugging
     if (FAILED(Render_Debugging()))      return E_FAIL;
-#endif
 
     return S_OK;
 }
@@ -563,41 +711,75 @@ void CRenderer::FrameEnd()
     }
 }
 
-HRESULT CRenderer::Render_ShadowMap(){
-    // UnBind Shadow Map
+HRESULT CRenderer::Render_Shadow(){
+	{
+		ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
+		m_pContext->PSSetShaderResources(6, 1, pNullSRV); // 6번 슬롯을 NULL로 청소
+	}
+
     {
-        ID3D11ShaderResourceView* pShadowSRVs[1] = { nullptr };
-        m_pContext->PSSetShaderResources(4, 1, pShadowSRVs);
+		ID3D11DepthStencilState* pDSS = nullptr;
+		m_pContext->OMSetDepthStencilState(pDSS, 0);
+
+		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
+
+		m_pContext->ClearDepthStencilView(m_pResDynTexTargetShadow->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
     }
 
     // RenderTarget/DepthStencil Setting + ViewPort Setting
     {
-        ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-        m_pContext->OMSetRenderTargets(1, pRTVs, m_pShadowTex2D->GetDSV().Get());
-        m_pContext->ClearDepthStencilView(m_pShadowTex2D->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
+		ID3D11RenderTargetView* pRTVs[1] = { nullptr };
+        m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetShadow->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
-    }
+
+		m_pContext->IASetInputLayout(m_pDebugVertexShader->GetInputLayout().Get());
+		m_pContext->VSSetShader(m_pDebugVertexShader->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(nullptr, nullptr, 0);
+
+		ID3D11Buffer* vertexBuffers[] = { m_pDebugBuffer->GetVertexBuffer().Get() };
+		uint32_t strides[] = { m_pDebugBuffer->GetVertexStride() };
+		uint32_t offsets[] = { 0 };
+
+		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+		m_pContext->IASetIndexBuffer(m_pDebugBuffer->GetIndexBuffer().Get(), m_pDebugBuffer->GetIndexFormat(), 0);
+		m_pContext->IASetPrimitiveTopology(m_pDebugBuffer->GetPrimitiveType());
+    }		
     {
         auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
-        if (nullptr == pShadowCamera) return E_FAIL;
+        if (nullptr == pShadowCamera) return S_OK;
 
         if (FAILED(Reset_RenderContext(RENDERPASS::SHADOW, pShadowCamera))) return E_FAIL;
 
-        if (FAILED(Bind_CameraAttribute(pShadowCamera))) return E_FAIL;
+        if (FAILED(Bind_CameraAttribute(pShadowCamera)))					return E_FAIL;
 
-        if (FAILED(RenderNonBlend()))                 return E_FAIL;
-    }
-
+        if (FAILED(RenderNonBlend()))										return E_FAIL;
+	} 
+	// UnBind RenderTargets / ShaderResource / Shader
+	{
+		ID3D11RenderTargetView* pRTVs[1] = { nullptr };
+		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+	}
+	
     return S_OK;
 }
 
 HRESULT CRenderer::Render_DepthMap() {
     ZoneScopedN("Render_DepthMap");
     {
-        ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
-        m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+		{
+			ID3D11DepthStencilState* pDSS = nullptr;
+			m_pContext->OMSetDepthStencilState(pDSS, 0);
+
+			SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+			m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
+
+			m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		}
+
+        ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetDepth->GetRTV().Get()};
+        m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-        m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 
 		SPtr<CResDepthStencilState> DepthState =
 			CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
@@ -617,8 +799,12 @@ HRESULT CRenderer::Render_DepthMap() {
             m_pContext->PSSetShader(nullptr, nullptr, 0);       // Depth 기록, PS 제외
         }
 
-        if (FAILED(RenderNonBlend()))            return E_FAIL;
+        if (FAILED(RenderNonBlend()))				return E_FAIL;
 
+		{
+			ID3D11RenderTargetView* pNullRTVs[1] = { nullptr };
+			m_pContext->OMSetRenderTargets(1, pNullRTVs, nullptr);
+		}
     }
 
     return S_OK;
@@ -665,6 +851,8 @@ HRESULT CRenderer::Render_NonAlpha() {
 
     if (FAILED(RenderNonBlend()))       return E_FAIL;
 
+	if (FAILED(RenderNonBlend_Instanced()))  return E_FAIL;
+	
     if (FAILED(RenderLight()))          return E_FAIL;
 
 	Unbind_Resources();
@@ -792,8 +980,17 @@ HRESULT CRenderer::Render_Lighting() {
         m_pContext->PSSetShaderResources(4, 1, pSRVs);
     }
 	{   // HBAO
-		ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetHBAO->GetSRV().Get() };
+		auto WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
+		//m_pResDynTexTargetHBAO
+		ID3D11ShaderResourceView* pSRVs[1] = { WhiteResource->GetSRV().Get() };
 		m_pContext->PSSetShaderResources(5, 1, pSRVs);
+	}
+	{   // Shadow
+		ComPtr<ID3D11ShaderResourceView> ShadowResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE")->GetSRV();
+		if (bApplyShadow) {
+			ShadowResource = m_pResDynTexTargetShadow->GetSRV();
+		}
+		m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());
 	}
 
     // Draw On PBRScreen
@@ -808,11 +1005,11 @@ HRESULT CRenderer::Render_Alpha() {
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
     ZoneScopedN("Render_Alpha");
     {
-        ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get()};
-        m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+        ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get()};
+        m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
         m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+        SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
         m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     }
 
@@ -825,37 +1022,68 @@ HRESULT CRenderer::Render_Alpha() {
         m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
     }
 
-	
-
     if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 
     if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
 
-    if (FAILED(RenderBlend()))
-    {
-        return E_FAIL;
-    }
-    
-    if (FAILED(RenderSkybox()))
-    {
-        return E_FAIL;
-    }
+    if (FAILED(RenderBlend()))				return E_FAIL;
 
-    if (FAILED(RenderCollider()))
-    {
-        return E_FAIL;
-    }
+    if (FAILED(RenderSkybox()))				return E_FAIL;
 
-    if (FAILED(RenderParticle()))
-    {
-        return E_FAIL;
-    }
+    if (FAILED(RenderCollider()))			return E_FAIL;
+
+    if (FAILED(RenderParticle()))			return E_FAIL;
 
 	Unbind_Resources();
 
     m_pContext->CopyResource(m_pBackBufferTexture.Get(), CGameInstance::Get().GetBackBufferTexture().Get());
    
+	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+	m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
+
     return S_OK;
+}
+
+HRESULT CRenderer::Render_VolumetricEffect(){
+
+	ZoneScopedN("Render_VolumetricEffect");
+	ID3D11RenderTargetView* NullRTV[1] = { nullptr };
+	m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
+
+	const auto& cs = m_pVolumetricComputeShader;
+
+	m_pContext->CSSetShader(cs->GetComputeShader().Get(), nullptr, 0);
+
+	ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get() };
+	m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+
+	ID3D11ShaderResourceView* pSRVs[3] = {
+			m_pResDynTexTargetDepth->GetSRV().Get(),
+			m_pResDynTexTargetShadow->GetSRV().Get(),
+			BlueNoiseTexture.Get()
+	};
+	m_pContext->CSSetShaderResources(0, 3, pSRVs);
+	//{   // Shadow
+	//	ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetShadow->GetSRV().Get() };
+	//	m_pContext->CSSetShaderResources(1, 1, pSRVs);
+	//}
+
+
+	uint32_t ScreenResolutionX = { 1280 };
+	uint32_t ScreenResolutionY = { 720 };
+
+	UINT GroupX = (ScreenResolutionX + 15) / 16;
+	UINT GroupY = (ScreenResolutionY + 15) / 16;
+	UINT GroupZ = 1;
+	m_pContext->Dispatch(GroupX, GroupY, GroupZ);
+	
+	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
+	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
+
+	ID3D11ShaderResourceView* NullSRVs[3] = { nullptr, nullptr, nullptr };
+	m_pContext->CSSetShaderResources(0, 3, NullSRVs);
+
+	return S_OK;
 }
 
 HRESULT CRenderer::Render_OffScreen() {
@@ -897,6 +1125,10 @@ HRESULT CRenderer::Render_OffScreen() {
 			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetPBR->GetSRV().Get() };
 			m_pContext->PSSetShaderResources(0, 1, pSRVs);
 		}
+		{
+			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexUAVVolumetric->GetSRV().Get() };
+			m_pContext->PSSetShaderResources(1, 1, pSRVs);
+		}
 
 		// Draw On OffScreen
 		m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -913,6 +1145,9 @@ HRESULT CRenderer::Render_PostProcess() {
 	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 	auto pCbPostProcess = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess");
+
+	_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
+	m_pContext->ClearRenderTargetView(m_pBackBufferRTV.Get(), reinterpret_cast<float*>(&clearColor));
 
 	D3D11_MAPPED_SUBRESOURCE MRES;
 	if (SUCCEEDED(m_pContext->Map(pCbPostProcess->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
@@ -957,6 +1192,7 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 	//////////////////////////// Bright Pass /////////////////////////////////
 	ID3D11RenderTargetView* BRPRTV[1] = { m_pResDynTexTargetPostProcess->GetRTV().Get() };
 	m_pContext->OMSetRenderTargets(1, BRPRTV, nullptr);
+	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 	m_pContext->PSSetShader(BrightPassPS->GetPixelShader().Get(), nullptr, 0);
 	m_pContext->PSSetShaderResources(0, 1, m_pOffScreenTex2D->GetSRV().GetAddressOf());
@@ -1021,8 +1257,8 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 		0
 	};
 	
-	m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPostProcess->GetSRV().GetAddressOf());    // Combined Texture
-	m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());                  // LUT Texture
+	m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPostProcess->GetSRV().GetAddressOf());		// Combined Texture
+	m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());								// LUT Texture
 
 	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
 
@@ -1093,7 +1329,7 @@ HRESULT CRenderer::Render_FullScreen()
         ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pBackBufferRTV.Get() };
     m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, nullptr);
 
-    _float4 clearColor = { 1.f, 0.f, 1.f, 1.f };
+    _float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
     m_pContext->ClearRenderTargetView(m_pBackBufferRTV.Get(), reinterpret_cast<float*>(&clearColor));
 
     const auto& vs = m_pFullscreenVS;
@@ -1131,12 +1367,13 @@ HRESULT CRenderer::Render_FullScreen()
 
     m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
-	
     ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
     m_pContext->PSSetShaderResources(0, 1, pNullSRVs);
 
     return S_OK;
 }
+
+
 
 HRESULT CRenderer::RenderPriority()
 {
@@ -1152,8 +1389,7 @@ HRESULT CRenderer::RenderPriority()
     return S_OK;
 }
 
-HRESULT CRenderer::RenderNonBlend()
-{
+HRESULT CRenderer::RenderNonBlend() {
     ZoneScopedN("RenderNonBlend");
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::NONBLEND)])
     {
@@ -1166,11 +1402,27 @@ HRESULT CRenderer::RenderNonBlend()
     return S_OK;
 }
 
+HRESULT CRenderer::RenderNonBlend_Instanced() {
+	ZoneScopedN("RenderNonBlend_Instanced");
+
+
+	for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::NONBLEND_INSTANCED)])
+	{
+		if (pRenderObject->HasRenderPass(RenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), RenderContext);
+		}
+	}
+
+	return S_OK;
+
+}
+
 HRESULT CRenderer::RenderBlend()
 {
     ZoneScopedN("RenderBlend");
 
-    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND_ADD");
+    auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
     m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::BLEND)])
@@ -1293,7 +1545,6 @@ HRESULT CRenderer::RenderUI()
 }
 #pragma endregion
 
-#ifdef _DEBUG
 VOID	CRenderer::PostProcessGUI() {
     ImGui::Begin("PostProcess");
 
@@ -1335,11 +1586,14 @@ HRESULT CRenderer::Initialize_Debugging()
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetNormal);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetSMRO);
     m_pResDynTexTargetList.push_back(m_pResDynTexTargetEmissive);
-    m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
-    m_pResDynTexTargetList.push_back(m_pResDynTexTargetHBAO);
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess); 
-	m_pResDynTexTargetList.push_back(m_pLastTex2DBeforeFullScreenDraw);
 
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetDepth);
+    m_pResDynTexTargetList.push_back(m_pResDynTexTargetShadow);
+
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPostProcess);
+
+	
     for (uint32_t i = 0; i < m_pResDynTexTargetList.size(); i++)
     {
         _float fScreenPosX = vDebugViewStartPoint.x + (static_cast<_float>(i % 2) * vDebugViewSize.x);
@@ -1360,32 +1614,13 @@ HRESULT CRenderer::Render_Debugging() {
 
     if (!m_bRenderable) return S_OK;
 
+	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+
     XMFLOAT2	vViewportSize = { m_pBackBufferViewPort->GetViewPort().Width, m_pBackBufferViewPort->GetViewPort().Height };
 
     XMMATRIX    m_WorldMatrix, m_ViewMatrix, m_ProjMatrix;
-    m_ViewMatrix = XMMatrixIdentity();
+	m_ViewMatrix = XMMatrixIdentity();
     m_ProjMatrix = XMMatrixOrthographicLH(vViewportSize.x, vViewportSize.y, 0.f, 1.f);
-
-    auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
-    D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-    if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-    {
-        CB_PER_PASS cbPerPass{};
-
-        XMStoreFloat4x4(&cbPerPass.matProj, m_ProjMatrix);
-        XMStoreFloat4x4(&cbPerPass.matView, m_ViewMatrix);
-        XMStoreFloat4x4(&cbPerPass.matViewProj, m_ViewMatrix * m_ProjMatrix);
-        XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, m_ViewMatrix));
-        XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixInverse(nullptr, XMLoadFloat4x4(&cbPerPass.matViewProj)));
-        cbPerPass.vCamPos = XMFLOAT3(0.f, 0.f, -1.f);
-
-        memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
-        m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-    }
-    auto pPBufferPtr = pCbPerPass->GetCBuffer().GetAddressOf();
-    m_pContext->VSSetConstantBuffers(1, 1, pPBufferPtr);
-    m_pContext->PSSetConstantBuffers(1, 1, pPBufferPtr);
-    m_pContext->GSSetConstantBuffers(1, 1, pPBufferPtr);
 
     m_pContext->IASetInputLayout(m_pDebugVertexShader->GetInputLayout().Get());
     m_pContext->VSSetShader(m_pDebugVertexShader->GetVertexShader().Get(), nullptr, 0);
@@ -1403,26 +1638,26 @@ HRESULT CRenderer::Render_Debugging() {
     D3D11_MAPPED_SUBRESOURCE MRES;
 
     for (uint32_t IDX = 0; IDX < 9; ++IDX) {
-
+	
         if (IDX != 8 && (IDX >= m_pResDynTexTargetList.size() || !m_pResDynTexTargetList[IDX]))
             continue;
-
+	
         m_WorldMatrix = XMLoadFloat4x4(&m_fDebugWorldMatrix[IDX]);
-
+	
         if (SUCCEEDED(m_pContext->Map(pCbPerObject->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
         {
             CB_PER_OBJECT cbPerPass{};
-
+	
             XMStoreFloat4x4(&cbPerPass.matWorld, m_WorldMatrix);
             XMStoreFloat4x4(&cbPerPass.matWVP, m_WorldMatrix * m_ViewMatrix * m_ProjMatrix);
-
+	
             memcpy(MRES.pData, &cbPerPass, sizeof(cbPerPass));
             m_pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
         }
         auto pCBufferPtr = pCbPerObject->GetCBuffer().GetAddressOf();
         m_pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-        m_pContext->GSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+	
         if (IDX == 8) {
             m_pContext->PSSetShaderResources(0, 1, m_pBackBufferSRV.GetAddressOf());
         }
@@ -1432,10 +1667,8 @@ HRESULT CRenderer::Render_Debugging() {
         
         m_pContext->DrawIndexed(m_pDebugBuffer->GetNumIndices(), 0, 0);
     }
-
     return S_OK;
 }
-#endif
 
 HRESULT CRenderer::InitializeHizBuffer()
 {

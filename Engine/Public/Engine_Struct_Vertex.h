@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 namespace Engine
 {
 	typedef struct tagVertexCol
@@ -47,10 +47,13 @@ namespace Engine
 		_float life;
 		_float maxLife;
 		_float size;
+		_float startSize;
 		uint32_t alive;
 		uint32_t loop;
 		_float4 color;
 		_float4 emissive;
+		uint32_t frameIndex;
+		_float3 pad2;
 	}PARTICLE;
 	typedef struct tagFireInstancedData
 	{
@@ -94,17 +97,6 @@ namespace Engine
 		XMUINT4		vBlendIndices;
 		XMFLOAT4	vBlendWeights;
 
-
-		//static constexpr uint32_t		iNumElements = { 7 };
-		//static constexpr D3D11_INPUT_ELEMENT_DESC		Elements[iNumElements] = {
-		//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "BLENDINDEX", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		//	{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 72, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-		//};
 	}VTXANIMMESH;
 
 

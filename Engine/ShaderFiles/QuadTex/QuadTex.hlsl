@@ -37,9 +37,9 @@ float4 PSMain(PS_IN input)  : SV_TARGET0
 }
 float4 PSMain_NonAlpha(PS_IN input) : SV_TARGET0
 {
-    return g_DiffuseTexture.Sample(LinearWrap, input.uv);;
+    return g_DiffuseTexture.Sample(LinearWrap, input.uv);
 }
 float4 PSMain_TextureOverDraw(PS_IN input) : SV_TARGET0
 {
-    return g_DiffuseTexture.Sample(LinearWrap, input.uv);;
+    return g_DiffuseTexture.Sample(LinearWrap, input.uv);
 }

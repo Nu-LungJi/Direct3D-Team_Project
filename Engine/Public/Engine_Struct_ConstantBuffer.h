@@ -8,11 +8,13 @@ namespace Engine
 		_float4x4  matProj{};            // 투영 행렬 (Perspective 또는 Ortho)
 		_float4x4  matViewProj{};        // 곱해진 행렬 (VS에서 연산 절약)
 		_float4x4  matInvView{};			// 뷰 역행렬 (빌보드 계산이나 월드 좌표 복원용)
+		_float4x4  matInvProj{};
 		_float4x4  matInvViewProj{};
-		_float3 vCamPos{};
 		_float4x4  matShadowLightViewProj{};
-		_float3 vShadowLightDir{};
-		_float2 _pad{};
+		_float3	   vCamPos{};
+		_float	   _pad1{};
+		_float3	   vShadowLightDir{};
+		_float	   _pad2{};
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
 
@@ -65,14 +67,17 @@ namespace Engine
 	}CB_INIT_PARTICLE;
 	static_assert(sizeof(CB_INIT_PARTICLE) % 16 == 0);
 
-
 	typedef struct CB_ParticleUpdate
 	{
 		float    g_fTimeDelta;
 		uint32_t g_iNumInstances;
 		uint32_t g_iBehaviorType;
-		float    g_fPadding;
-	}CB_PER_PARTICLE;;
+		uint32_t g_iFlipbookRows;
+		uint32_t g_iFlipbookColumns;
+		uint32_t g_iTotalFrames;
+		float    g_fPadding1;
+		float    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+	} CB_PER_PARTICLE;
 	static_assert(sizeof(CB_PER_PARTICLE) % 16 == 0);
 
 	typedef struct CB_ParticleSpawn
@@ -80,7 +85,7 @@ namespace Engine
 		uint32_t    g_iSpawnCount;
 		uint32_t	g_iMaxParticles;
 		_float2     pad;
-		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
+		//PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_PARTICLE_SPAWN;
 	static_assert(sizeof(CB_PARTICLE_SPAWN) % 16 == 0);
 
@@ -91,5 +96,6 @@ namespace Engine
 		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
+
 
 }

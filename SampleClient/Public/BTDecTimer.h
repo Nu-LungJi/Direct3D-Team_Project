@@ -13,7 +13,7 @@ private:
 	~CBTDecTimer() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 
 public:
@@ -23,11 +23,10 @@ public:
 
 	virtual void					Update_Gui() override;
 private:
-	_float							m_fTick{}, m_fTimeTickCnt{};
-	int32_t							m_fWaitTime{}, m_iMaxTimeCnt{};
+	_float							m_fWaitTime{}, m_fTick{};
 public:
 	static UPtr<CBTDecTimer> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

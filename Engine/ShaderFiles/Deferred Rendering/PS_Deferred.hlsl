@@ -32,14 +32,22 @@ struct PS_OUT
     float4 Diffuse : SV_TARGET;
 };
 
-float4 PSMain_OverDraw(PS_IN IN) : SV_TARGET
+float4 PSMain(PS_IN IN) : SV_TARGET
 {
     float4 BackGround = g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord);
     float4 OverTexture = g_OverDrawTexture.Sample(LinearWrap, IN.TexCoord);
-   
-    return lerp(BackGround, OverTexture, OverTexture.a);
+    return float4(BackGround.rgb, 1.f);
+    float3 fogColor = OverTexture.rgb; // LightAccumulation
+    float transmittance = OverTexture.a; // LightTransmittance
+
+    // 안개 투과율만큼 원래 씬을 어둡게 만들고, 그 위에 쌓인 안개 광량을 더해줍니다.
+    float3 finalRGB = (BackGround.rgb * transmittance) + fogColor;
+        
+    return float4(finalRGB.rgb, BackGround.a); //lerp(BackGround, OverTexture, OverTexture.a);
+
 }
-float4 PSMain(PS_IN IN) : SV_TARGET
+float4 PSMain_OverDraw(PS_IN IN) : SV_TARGET
 {
     return float4(g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord).rgb, 1.f);
+
 }

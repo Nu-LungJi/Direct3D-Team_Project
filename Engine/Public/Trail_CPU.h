@@ -26,7 +26,7 @@ struct TRAIL_VERTEX
 // 검이 실제로 휩쓸고 지나간 면(스윕 서피스)을 그린다.
 // 두 점이 이미 폭의 양 끝을 정의해주므로, 빔/단일점 트레일과 달리
 // 카메라를 향한 폭 벡터를 따로 계산할 필요가 없다.
-class ENGINE_DLL CTrail_CPU  : public CParticle
+class ENGINE_DLL CTrail_CPU final : public CParticle
 {
 public:
     struct DESC
@@ -40,7 +40,7 @@ public:
         uint32_t iMaxFrames = 64;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
     };
 
-protected:
+private:
     CTrail_CPU();
     virtual ~CTrail_CPU();
 
@@ -70,6 +70,8 @@ private:
     std::vector<TRAIL_VERTEX> m_vecVertices;
 
     SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
+public:
+	static UPtr<CParticle> Create(void* pArg);
 };
 
 NS_END

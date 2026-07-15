@@ -16,9 +16,9 @@ CBTActionNode::~CBTActionNode()
 }
 
 
-HRESULT CBTActionNode::InitalizePrototype(void* pArg)
+HRESULT CBTActionNode::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 
 	return S_OK;
 }
@@ -31,6 +31,10 @@ HRESULT CBTActionNode::Initalize(void* pArg)
     __super::Initalize(pArg);
     
     return S_OK;
+}
+
+void CBTActionNode::Abort()
+{
 }
 
 void CBTActionNode::Update_Gui()

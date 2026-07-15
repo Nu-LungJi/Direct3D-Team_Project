@@ -100,20 +100,20 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matProj;
     matrix g_matViewProj;
     matrix g_matInvView;
+    matrix g_matInvProj;
     matrix g_matInvViewProj;
-    float3 g_vCamPos;
-    float g_fDayFactor; //
-    matrix g_matSkyRotation;
-    matrix g_matStarRotation;
     matrix g_matShadowLightViewProj;
+    float3 g_vCamPos;
+    float  g_PerPassPadding1;
     float3 g_vShadowLightDir;
-
+    float  g_PerPassPadding2;
 };
 
 cbuffer CB_BONES : register(b2)
 {
      matrix g_BoneMatrices[512];
 };
+
 
 cbuffer CB_MATERIAL : register(b3)
 {
@@ -153,6 +153,9 @@ cbuffer PostProcessBuffer : register(b8)
     
     float3 Padding;
 };
+
+
+
 
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);

@@ -2,7 +2,7 @@
 #include "Engine_Defines.h"
 #include "Particle.h"
 NS_BEGIN(Engine)
-class ENGINE_DLL CBeam_CPU : public CParticle
+class ENGINE_DLL CBeam_CPU final: public CParticle
 {
 public:
     struct DESC
@@ -42,7 +42,7 @@ public:
         std::vector<_float3> vecJaggedPoints;
     };
 
-protected:
+private:
     CBeam_CPU();
     virtual ~CBeam_CPU();
 public:
@@ -78,5 +78,7 @@ private:
     std::vector<BEAM_DRAW_RANGE> m_vecDrawRanges;
 
     SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
+public:
+	static UPtr<CParticle> Create(void* pArg);
 };
 NS_END

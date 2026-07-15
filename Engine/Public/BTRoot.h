@@ -1,12 +1,14 @@
 #pragma once
+#include "Prototype.h"
 #include "Engine_Defines.h"
 #include "GameInstance.h"
+#include "ComBeHavior.h"
 //뿌리
 NS_BEGIN(Engine)
-class  CBTRoot : public CEngineBase
+class ENGINE_DLL  CBTRoot : public CPrototype
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTRoot, CEngineBase)
+	DECLARE_DERIVED_TYPE(CBTRoot, CPrototype)
 public:
 	typedef struct tagbtroot
 	{
@@ -23,31 +25,36 @@ protected:
 	CBTRoot(const CBTRoot& rhs);
 	~CBTRoot() override;
 
-	virtual HRESULT InitalizePrototype(void* pArg = nullptr);
-	virtual HRESULT Initalize(void* pArg);
+	HRESULT						InitializePrototype(void* pArg = nullptr) override;
+	virtual HRESULT				Initalize(void* pArg);
 public:
-	GUINODE&		Get_GuiNodeInfo() { return m_GuiNode; }
-	GUINODE_LINK&	Get_GuiNodeLink() { return m_GuiLink; }
-	void			Set_Handle(CHandle Handle) { m_Handle = Handle; }
-	CHandle&		Get_Handle() { return m_Handle; }
-	virtual void			ResetDebug() { m_eDebug = EVALUATE::END; }
-	EVALUATE				GetDebugType() const {return m_eDebug;}
+	GUINODE&					Get_GuiNodeInfo() { return m_GuiNode; }
+	GUINODE_LINK&				Get_GuiNodeLink() { return m_GuiLink; }
+	void						Set_Handle(CHandle Handle) { m_Handle = Handle; }
+	CHandle&					Get_Handle() { return m_Handle; }
+	virtual void				ResetDebug() { m_eDebug = EVALUATE::END; }
+	EVALUATE					GetDebugType() const {return m_eDebug;}
+
 public:
 	virtual nlohmann::json		Save_Node();
 	virtual HRESULT				Load_json(const nlohmann::json& j);
 public:
-	virtual EVALUATE		Evaluate(_float fTimeDelta) PURE;
+	virtual EVALUATE			Evaluate(_float fTimeDelta) PURE;
+	virtual void				Abort() PURE;
+	void						Set_OwnerName(const _string& strOwnerName) { m_OwnerName = strOwnerName; }
+	class CComBeHavior*			Get_ComBT();
+	void						Set_Abort();
 protected:
 	GUINODE								m_GuiNode;
 	GUINODE_LINK						m_GuiLink;
 	CHandle								m_Handle;
-	_string								m_MasterName;
+	_string								m_MasterName, m_OwnerName;
 	NODEGROUP							m_eGroup{};
 
 	EVALUATE							m_eDebug{};
 public:
 	template<typename T1> 
-	class CComponent* Get_Component(const CHandle & Handle, const _string& name)
+	T1* Get_Component(const CHandle & Handle, const _string& name)
 	{
 		if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(Handle))
 		{
@@ -59,8 +66,6 @@ public:
 		}
 		return nullptr;
 	}
-public:
-	virtual UPtr<CBTRoot>Clone(void* pArg) PURE;
 };
 
 NS_END

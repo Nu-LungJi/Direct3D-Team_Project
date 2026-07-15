@@ -28,7 +28,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
     // 예전: m_iNumElements = 1000; (하드코딩) → 이제 DESC에서 주입
     m_iNumElements = m_Desc.iMaxParticles;
-    m_eType = pDesc->type;
+
     // 파티클을 다 죽은 상태로 초기화
     std::vector<PARTICLE> initParticles(m_iNumElements);
     for (uint32_t i = 0; i < m_iNumElements; i++)
@@ -37,21 +37,28 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].velocity = _float3(0.f, 0.f, 0.f);
         initParticles[i].life = 0.f;
         initParticles[i].maxLife = 0.f;
-        initParticles[i].size = 0.5f;
-        initParticles[i].color = _float4(1, 1, 1, 1);
+        initParticles[i].size = 1.f;
+        initParticles[i].startSize = 1.f;
+        initParticles[i].color = _float4(1.f, 1.f, 1.f, 0.f);
         initParticles[i].alive = false;
         initParticles[i].loop = false;
-        initParticles[i].emissive = { 1,1,1,1 };
+        initParticles[i].emissive = { 0,0,0,0 };
+		initParticles[i].frameIndex = 0;
     }
 
     std::vector<uint32_t> initDeadIndices(m_iNumElements);
     for (uint32_t i = 0; i < m_iNumElements; i++)
         initDeadIndices[i] = i;
 
-    //Init 버퍼
-    m_pComInitCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_INIT_PARTICLE);
-    if (!m_pComInitCBuffer)
-        return E_FAIL;
+
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_INIT_PARTICLE);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComInitCBuffer = res;
+	}
 
     // 파티클 구조체 버퍼
     if (auto res = CResStructuredBuffer::Create())
@@ -93,14 +100,26 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
             return E_FAIL;
         m_pSpawnListBuffer = res;
     }
-    {
-        m_pComCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PARTICLE);
-        if (!m_pComCBuffer)
-            return E_FAIL;
 
-        m_pComSpawnCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_SPAWN_PARTICLE);
-        if (!m_pComSpawnCBuffer)
-            return E_FAIL;
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_PER_PARTICLE);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComCBuffer = res;
+	}
+
+    {
+  
+		if (auto res = CResCBuffer::Create())
+		{
+			CResCBuffer::CBUFFER_DESC bufDesc{};
+			bufDesc.byteWidth = sizeof(CB_PARTICLE_SPAWN);
+			if (FAILED(res->Load(bufDesc)))
+				return E_FAIL;
+			m_pComSpawnCBuffer = res;
+		}
     }
   
 
@@ -227,9 +246,9 @@ void CParticle_GPU::DebugPrintDeadListCount()
     {
         uint32_t counterValue = *(uint32_t*)mapped.pData;
         m_iDeadCount = *(uint32_t*)mapped.pData;
-        char buf[64];
-        sprintf_s(buf, "DeadList counter = %u\n", counterValue);
-        OutputDebugStringA(buf);
+        //char buf[64];
+        //sprintf_s(buf, "DeadList counter = %u\n", counterValue);
+        //OutputDebugStringA(buf);
         pContext->Unmap(pCounterStaging.Get(), 0);
     }
 }
@@ -239,9 +258,15 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
+
+	ProcessPendingSpawns(fTimeDelta);
     auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
+
+
+
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
 
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
@@ -277,6 +302,10 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     cb.g_fTimeDelta = fTimeDelta;
     cb.g_iNumInstances = m_iNumElements;
     cb.g_iBehaviorType = m_Desc.iBehaviorType;
+	cb.g_iFlipbookColumns = m_Desc.TexColumns;
+	cb.g_iFlipbookRows = m_Desc.TexRows;
+	cb.g_iTotalFrames = m_Desc.TexRows * m_Desc.TexColumns;
+
 
     {
         D3D11_MAPPED_SUBRESOURCE mapped{};
@@ -304,7 +333,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
 
-   // DebugPrintDeadListCount();
+    DebugPrintDeadListCount();
 }
 
 void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
@@ -350,7 +379,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.0f, 1.1f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.0f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
 		}
 
         // 핵심: DrawIndexed → DrawIndexedInstanced
@@ -381,9 +410,9 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 
     ID3D11ShaderResourceView* pSRV = m_pParticleStructuredBuffer->GetSRV().Get();
     pContext->VSSetShaderResources(0, 1, &pSRV);
+	pContext->VSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
 
     pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-
     pContext->DrawInstanced(4, m_iNumElements, 0, 0);
 
     ID3D11ShaderResourceView* nullSRV2[] = { nullptr, nullptr };
@@ -391,12 +420,18 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     pContext->VSSetShaderResources(0, 2, nullSRV2);
     pContext->PSSetShaderResources(1, 1, nullSRV1);
 
+	ID3D11Buffer* nullCB[] = { nullptr };
+	pContext->VSSetConstantBuffers(5, 1, nullCB);
     return S_OK;
 }
 
 
 HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
+	char buf[64];
+	sprintf_s(buf, "Spawn called: count=%u\n", count);
+	OutputDebugStringA(buf);
+
     if (pSpawnData == nullptr || count == 0)
         return E_FAIL;
 
@@ -412,8 +447,11 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
     auto context = CGameInstance::Get().GetGraphicDeviceContext();
 
-    std::vector<PARTICLE_SPAWN_DATA> fullData(count);
-    memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
+    //std::vector<PARTICLE_SPAWN_DATA> fullData(count);
+    //memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
+
+	std::vector<PARTICLE_SPAWN_DATA> fullData(MAX_SPAWN_PER_CALL);
+	memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
 
     context->UpdateSubresource(m_pSpawnListBuffer->GetBuffer().Get(), 0, nullptr, fullData.data(), 0, 0);
 
@@ -453,4 +491,15 @@ uint32_t CParticle_GPU::GetDeadListCounterSync()
         pContext->Unmap(pCounterStaging.Get(), 0);
     }
     return counterValue;
+}
+
+UPtr<CParticle> CParticle_GPU::Create(void* pArg)
+{
+	auto pInstance = E::ToUPtr(new CParticle_GPU{});
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Created : CParticle_GPU");
+		return nullptr;
+	}
+	return  pInstance;
 }

@@ -229,6 +229,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\public\Action_Manager.h" />
+    <ClInclude Include="..\Public\AnimationObject.h" />
     <ClInclude Include="..\Public\AnimEdit_Manager.h" />
     <ClInclude Include="..\Public\BaseApp.h" />
     <ClInclude Include="..\public\Beam_CPU.h" />
@@ -238,7 +239,6 @@
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
-    <ClInclude Include="..\Public\ComAnimMontage.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
     <ClInclude Include="..\public\ComBeHavior.h" />
     <ClInclude Include="..\public\BTRoot.h" />
@@ -267,6 +267,7 @@
     <ClInclude Include="..\Public\HizBuffer.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
+    <ClInclude Include="..\Public\Model_Instance_Manager.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
     <ClInclude Include="..\Public\NavMeshManager.h" />
     <ClInclude Include="..\public\FlipbookUI.h" />
@@ -323,6 +324,7 @@
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
     <ClInclude Include="..\public\PhysxManagerListener.h" />
+    <ClInclude Include="..\Public\ShadowCamera.h" />
     <ClInclude Include="..\public\TextUI.h" />
     <ClInclude Include="..\public\SerializeManager.h" />
     <ClInclude Include="..\Public\TweenComponent.h" />
@@ -501,6 +503,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp" />
+    <ClCompile Include="..\Private\AnimationObject.cpp" />
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp" />
     <ClCompile Include="..\Private\BaseApp.cpp" />
     <ClCompile Include="..\private\Beam_CPU.cpp" />
@@ -510,7 +513,6 @@
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
-    <ClCompile Include="..\Private\ComAnimMontage.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
     <ClCompile Include="..\private\ComBeHavior.cpp" />
     <ClCompile Include="..\private\BTRoot.cpp" />
@@ -541,6 +543,7 @@
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\ButtonComponent.cpp" />
+    <ClCompile Include="..\Private\Model_Instance_Manager.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
     <ClCompile Include="..\private\FlipbookUI.cpp" />
     <ClCompile Include="..\private\ParticlePattern.cpp" />
@@ -625,6 +628,7 @@
     <ClCompile Include="..\Private\ResViewPort.cpp" />
     <ClCompile Include="..\private\SerializeManager.cpp" />
     <ClCompile Include="..\Private\ShaderManager.cpp" />
+    <ClCompile Include="..\Private\ShadowCamera.cpp" />
     <ClCompile Include="..\Private\SoundManager.cpp" />
     <ClCompile Include="..\private\ResStructuredBuffer.cpp" />
     <ClCompile Include="..\private\TextUI.cpp" />
@@ -716,7 +720,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">

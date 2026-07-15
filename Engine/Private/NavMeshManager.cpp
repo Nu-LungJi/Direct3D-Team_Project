@@ -25,6 +25,7 @@ CNavMeshManager::~CNavMeshManager()
 
 HRESULT CNavMeshManager::Initialize()
 {
+	  
 	return S_OK;
 }
 _bool CNavMeshManager::Build(

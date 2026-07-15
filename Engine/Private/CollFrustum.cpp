@@ -35,6 +35,11 @@ _bool CCollFrustum::Intersect(const CCollider& collider) const
 	return false;
 }
 
+_bool CCollFrustum::Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const
+{
+	return m_BoundingFrustumWorld.Intersects(XMLoadFloat3(&vOrigin), XMLoadFloat3(&vDir), fDist);
+}
+
 HRESULT CCollFrustum::Initialize(_fmatrix mat)
 {
     m_BoundingFrustumWorld = m_BoundingFrustumLocal = BoundingFrustum{ mat };
