@@ -388,7 +388,16 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 	pContext->VSSetShaderResources(6,1,&pNullSRV);
 
 	const size_t iCopySize =sizeof(GPU_ANIM_INSTANCE_DATA) *m_iCurrentInstanceCount;
-	pContext->UpdateSubresource(pBuffer, 0, nullptr, Instances.data(), 0, 0);
+
+	D3D11_BOX updateBox{};
+	updateBox.left = 0;
+	updateBox.right = static_cast<UINT>(iCopySize);
+	updateBox.top = 0;
+	updateBox.bottom = 1;
+	updateBox.front = 0;
+	updateBox.back = 1;
+
+	pContext->UpdateSubresource(pBuffer, 0, &updateBox, Instances.data(), 0, 0);
 
 	return S_OK;
 

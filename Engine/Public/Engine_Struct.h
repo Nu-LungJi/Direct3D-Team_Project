@@ -388,6 +388,18 @@ namespace Engine
 		uint32_t iPadding2 = 0;
 	}GPU_SKIN_MESH_CONSTANTS;
 
+
+	//struct GPU_ANIM_INSTANCE_DATA { 
+	// float4x4 WorldMatrix; 
+	// uint iAnimIndex; 
+	// uint iFlags; 
+	// float fTrackPosition; 
+	// uint RootBoneIndex; 
+	// uint iPrevAnimIndex; 
+	// float fPrevTrackPosition; 
+	// float fBlendWeight;
+	// uint bBlending; };
+
 	typedef struct GPU_ANIM_INSTANCE_DATA
 	{
 		_float4x4 WorldMatrix{};

@@ -93,8 +93,8 @@ HRESULT CResModel::Load(const std::any& arg)
 	}
 
 
-	//if (FAILED(Ready_Animation()))
-	//	return E_FAIL;
+	if (FAILED(Ready_Animation()))
+		return E_FAIL;
 
 	if (FAILED(Ready_GPU_Ready()))
 		return E_FAIL;
