@@ -31,12 +31,17 @@ struct LOCAL_POSE
     float3 vTranslation;
 };
 
-float4x4 MakeLocalMatrix(LOCAL_POSE pose)
+float4x4 MakeLocalMatrix(LOCAL_POSE pose, int boneIndex)
 {
-    float4x4 result = mul(
-        float4x4(pose.vScale.x, 0, 0, 0, 0, pose.vScale.y, 0, 0, 0, 0, pose.vScale.z, 0, 0, 0, 0, 1),
-        QuaternionMatrix(normalize(pose.vRotation)));
+    float4x4 result = mul(float4x4(pose.vScale.x, 0, 0, 0, 0, pose.vScale.y, 0, 0, 0, 0, pose.vScale.z, 0, 0, 0, 0, 1),QuaternionMatrix(normalize(pose.vRotation)));
     result[3] = float4(pose.vTranslation, 1);
+    
+    if (gBones[boneIndex].iParentBoneIndex < 0)
+    {
+        result = mul(result, gAnimations[0].PreTransformMatrix);
+    }
+
+    
     return result;
 }
 
@@ -126,15 +131,12 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
         LOCAL_POSE previousPose = SampleLocalPose(boneIndex, instance.RootBoneIndex, previousAnimation, instance.fPrevTrackPosition);
         localPose = BlendPose(previousPose, localPose, saturate(instance.fBlendWeight));
     }
-    float4x4 local = MakeLocalMatrix(localPose);
+    int parentIndex = gBones[boneIndex].iParentBoneIndex;
+    float4x4 local = MakeLocalMatrix(localPose, parentIndex);
 
     float4x4 combined = local;
-    int parentIndex = gBones[boneIndex].iParentBoneIndex;
-    if (parentIndex < 0)
-    {
-        combined = mul(local, animation.PreTransformMatrix);
-    }
-    
+
+
     while(parentIndex>=0){
         LOCAL_POSE parentPose = SampleLocalPose((uint) parentIndex, instance.RootBoneIndex, animation, instance.fTrackPosition);
         if (instance.bBlending != 0)
@@ -143,10 +145,11 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
             LOCAL_POSE previousParentPose = SampleLocalPose((uint) parentIndex, instance.RootBoneIndex, previousAnimation, instance.fPrevTrackPosition);
             parentPose = BlendPose(previousParentPose, parentPose, saturate(instance.fBlendWeight));
         }
-        float4x4 parentLocal = MakeLocalMatrix(parentPose);
+        float4x4 parentLocal = MakeLocalMatrix(parentPose, parentIndex);
         combined = mul(combined, parentLocal);
-        parentIndex=gBones[parentIndex].iParentBoneIndex;
+        parentIndex = gBones[parentIndex].iParentBoneIndex;
     }
-
+    
+   
     gFinalBoneMatrices[outputIndex]=combined;
 }

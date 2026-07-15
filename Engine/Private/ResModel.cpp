@@ -327,6 +327,7 @@ HRESULT CResModel::Ready_GPU_Animation()
 
 		GPU_ANIM_DESC gpuAnim{};
 
+		gpuAnim.PreTransformMatrix = m_PreTransformMatrix;
 		// 이 애니메이션의 Channel이 시작되는 전역 위치
 		gpuAnim.iChannelOffset = static_cast<uint32_t>(gpuChannels.size());
 
@@ -339,7 +340,6 @@ HRESULT CResModel::Ready_GPU_Animation()
 		const auto& channels = pAnimation->GetChannels();
 
 		gpuAnim.iChannelCount = static_cast<uint32_t>(channels.size());
-		gpuAnim.PreTransformMatrix = m_PreTransformMatrix;
 
 		/*
 		 * 현재 애니메이션용 BoneChannelMap 공간 생성

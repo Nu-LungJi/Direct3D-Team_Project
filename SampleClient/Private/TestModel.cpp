@@ -398,6 +398,7 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 	updateBox.bottom = 1;
 	updateBox.front = 0;
 	updateBox.back = 1;
+
 	pContext->UpdateSubresource(pBuffer, 0, &updateBox, Instances.data(), 0, 0);
 
 	return S_OK;
