@@ -87,52 +87,52 @@ float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float3 _InNor
     return normalize(LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N);
 }
 
-bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout float3 L, inout float3 Radiance)
-{
-    [branch]
-    if (_Light.LightType == LIGHT_DIRECTIONAL)
-    {
-        L = normalize(-_Light.LightDirection);
-        Radiance = _Light.LightColor * _Light.LightIntensity;
-        return true;
-    }
-    else if (_Light.LightType == LIGHT_POINT)
-    {
-        float3 LightVector = _Light.Position - _WorldPosition;
-        float Distance = length(LightVector);
-        if (Distance > _Light.LightRange) return false;
-
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-        float DistanceByRange = Distance / _Light.LightRange;
-        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-
-        L = normalize(LightVector);
-        Radiance = _Light.LightColor * _Light.LightIntensity * (Attenuation * Window * Window);
-        return true;
-    }
-    else if (_Light.LightType == LIGHT_SPOTLIGHT)
-    {
-        float3 LightVector = _Light.Position - _WorldPosition;
-        float Distance = length(LightVector);
-        if (Distance > _Light.LightRange) return false;
-
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-        float DistanceByRange = Distance / _Light.LightRange;
-        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-        float DistanceFade = Attenuation * Window * Window;
-
-        L = normalize(LightVector);
-
-        float CosAngle = dot(-L, normalize(_Light.LightDirection));
-        float Num   = CosAngle - _Light.OuterAttanuation;
-        float DeNum = _Light.InnerAttanuation - _Light.OuterAttanuation;
-        float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
-
-        Radiance = _Light.LightColor * _Light.LightIntensity * (DistanceFade * ConeFade * ConeFade);
-        return true;
-    }
-    return false;
-}
+//bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout float3 L, inout float3 Radiance)
+//{
+//    [branch]
+//    if (_Light.LightType == LIGHT_DIRECTIONAL)
+//    {
+//        L = normalize(-_Light.LightDirection);
+//        Radiance = _Light.LightColor * _Light.LightIntensity;
+//        return true;
+//    }
+//    else if (_Light.LightType == LIGHT_POINT)
+//    {
+//        float3 LightVector = _Light.Position - _WorldPosition;
+//        float Distance = length(LightVector);
+//        if (Distance > _Light.LightRange) return false;
+//
+//        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+//        float DistanceByRange = Distance / _Light.LightRange;
+//        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
+//
+//        L = normalize(LightVector);
+//        Radiance = _Light.LightColor * _Light.LightIntensity * (Attenuation * Window * Window);
+//        return true;
+//    }
+//    else if (_Light.LightType == LIGHT_SPOTLIGHT)
+//    {
+//        float3 LightVector = _Light.Position - _WorldPosition;
+//        float Distance = length(LightVector);
+//        if (Distance > _Light.LightRange) return false;
+//
+//        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+//        float DistanceByRange = Distance / _Light.LightRange;
+//        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
+//        float DistanceFade = Attenuation * Window * Window;
+//
+//        L = normalize(LightVector);
+//
+//        float CosAngle = dot(-L, normalize(_Light.LightDirection));
+//        float Num   = CosAngle - _Light.OuterAttanuation;
+//        float DeNum = _Light.InnerAttanuation - _Light.OuterAttanuation;
+//        float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
+//
+//        Radiance = _Light.LightColor * _Light.LightIntensity * (DistanceFade * ConeFade * ConeFade);
+//        return true;
+//    }
+//    return false;
+//}
 
 float DistributionGGX(float3 N, float3 H, float _Roughness)
 {
@@ -176,75 +176,76 @@ PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
     
-    float DepthData = DepthMap.Sample(LinearWrap, In.vTexcoord).r;
-    
-    [branch]
-    if (DepthData >= 1.0f)
-        discard;
+    //float DepthData = DepthMap.Sample(LinearWrap, In.vTexcoord).r;
+    //
+    //[branch]
+    //if (DepthData >= 1.0f)
+    //    discard;
+    //
+    //float3 DepthWorld = ReconstructWorldPos(In.vTexcoord, DepthData);
+    //
+    //float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
+    //if (AlbedoTex.a == 0.0f)
+    //    discard;
+    //
+    //float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+    //
+    //float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
+    //WorldNormal = normalize(WorldNormal * NormalIntensity);
+    //
+    //float3 V = normalize(g_vCamPos - DepthWorld); //In.vWorldPos);
+    //float  NDV = max(dot(WorldNormal, V), 0.f);
+    //
+    //float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
+    //float fMetallic  = SMRO.r * MetallicIntensity;
+    //float fRoughness = SMRO.g * RoughnessIntensity;
+    //float fAmbient   = SMRO.b * AmbientIntensity;
+    //
+    //float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
+    //
+    //float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+    //
+    //[unroll(MAX_LIGHT_COUNT)]
+    //for (int i = 0; i < g_iLightCount; ++i)
+    //{
+    //    float3 L, Radiance;
+    //
+    //    [branch]
+    //    if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
+    //        continue;
+    //
+    //    float RawNDL = dot(WorldNormal, L);
+    //
+    //    [branch]
+    //    if (RawNDL > 0.f)
+    //    {
+    //        float NDL = clamp(RawNDL, 0.f, 1.f);
+    //
+    //        float3 H = normalize(V + L);
+    //        float D = DistributionGGX(WorldNormal, H, fRoughness);
+    //        float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+    //        float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
+    //
+    //        float3 Specular = D * F * V_Spec * SpecularIntensity;
+    //
+    //        float3 kS = F;
+    //        float3 kD = (1.0 - kS) * (1.0 - fMetallic);
+    //        float3 Diffuse = kD * Albedo / PI;
+    //
+    //        LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
+    //    }
+    //}
+    //
+    //// 인스턴스별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
+    //float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
+    //texEmissive = pow(texEmissive, 2.2f);
+    //float3 instEmissive = In.vEmissive.rgb * In.vEmissive.a;
+    //
+    //float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
+    //float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
 
-    float3 DepthWorld = ReconstructWorldPos(In.vTexcoord, DepthData);
-    
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-    if (AlbedoTex.a == 0.0f)
-        discard;
-
-    float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
-
-    float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
-    WorldNormal = normalize(WorldNormal * NormalIntensity);
-
-    float3 V = normalize(g_vCamPos - DepthWorld); //In.vWorldPos);
-    float  NDV = max(dot(WorldNormal, V), 0.f);
-
-    float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
-    float fMetallic  = SMRO.r * MetallicIntensity;
-    float fRoughness = SMRO.g * RoughnessIntensity;
-    float fAmbient   = SMRO.b * AmbientIntensity;
-
-    float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
-
-    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-
-    [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < g_iLightCount; ++i)
-    {
-        float3 L, Radiance;
-
-        [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
-            continue;
-
-        float RawNDL = dot(WorldNormal, L);
-
-        [branch]
-        if (RawNDL > 0.f)
-        {
-            float NDL = clamp(RawNDL, 0.f, 1.f);
-
-            float3 H = normalize(V + L);
-            float D = DistributionGGX(WorldNormal, H, fRoughness);
-            float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
-            float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
-
-            float3 Specular = D * F * V_Spec * SpecularIntensity;
-
-            float3 kS = F;
-            float3 kD = (1.0 - kS) * (1.0 - fMetallic);
-            float3 Diffuse = kD * Albedo / PI;
-
-            LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
-        }
-    }
-
-    // 인스턴스별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
-    float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
-    texEmissive = pow(texEmissive, 2.2f);
-    float3 instEmissive = In.vEmissive.rgb * In.vEmissive.a;
-
-    float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
-    float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
-
-    Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+    //Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+    Out.vDiffuse = float4(1.f, 1.f, 1.f, 1.f);
     return Out;
     
 }

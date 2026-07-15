@@ -5,7 +5,7 @@ namespace Engine
 	enum class WINMODE { FULL, WIN };
 	enum class MOUSEKEYSTATE { LB, RB, MB, END };
 	enum class MOUSEMOVESTATE { X, Y, Z, END };
-	enum class RENDERGROUP { PRIORITY, NONBLEND, NONBLEND_INSTANCED, BLEND, LIGHT, SKYBOX, COLLIDER, PARTICLE, UI, END };
+	enum class RENDERGROUP { PRIORITY, NONBLEND, NONBLEND_INSTANCED, BLEND, LIGHT, EFFECT, SKYBOX, COLLIDER, UI, END };
 	enum class RENDERPASS : uint32_t
 	{
 		DEFAULT = 1 << 0,	// 1
@@ -29,6 +29,8 @@ namespace Engine
 	enum class PARTICLE_TYPE { FIRE_CPU,FIRE_GPU,RIBBON,TRAIL,END };
 	enum class TRAIL_TYPE { POINT,PLANE,END };
 	enum class MESHORTEXTURE{ MESH, TEX, END};
+
+	enum class ACTORTYPE { STATIC, DYNAMIC, END };
 
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
 	static const uint32_t MAX_SPAWN_PER_CALL = 1000;

@@ -4,17 +4,17 @@ namespace Engine
 	typedef struct tagConstantBufferPerPass
 	{
 		//DIRECTIONAL_LIGHT dirLight{};
-		_float4x4  matView{};            // 뷰 행렬
-		_float4x4  matProj{};            // 투영 행렬 (Perspective 또는 Ortho)
-		_float4x4  matViewProj{};        // 곱해진 행렬 (VS에서 연산 절약)
-		_float4x4  matInvView{};			// 뷰 역행렬 (빌보드 계산이나 월드 좌표 복원용)
-		_float4x4  matInvProj{};
-		_float4x4  matInvViewProj{};
-		_float4x4  matShadowLightViewProj{};
-		_float3	   vCamPos{};
-		_float	   _pad1{};
-		_float3	   vShadowLightDir{};
-		_float	   _pad2{};
+		_float4x4	matView{};            // 뷰 행렬
+		_float4x4	matProj{};            // 투영 행렬 (Perspective 또는 Ortho)
+		_float4x4	matViewProj{};        // 곱해진 행렬 (VS에서 연산 절약)
+		_float4x4	matInvView{};			// 뷰 역행렬 (빌보드 계산이나 월드 좌표 복원용)
+		_float4x4	matInvProj{};
+		_float4x4	matInvViewProj{};
+		_float4x4	matShadowLightViewProj{};
+		_float3		vCamPos{};
+		_float		_pad1{};
+		_float3		vShadowLightDir{};
+		_float		_pad2{};
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
 
@@ -52,11 +52,32 @@ namespace Engine
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
 
+	typedef struct tagConstantBufferTime
+	{
+		_float	DeltaTime;
+		_float	TimeAccumulation;
+		_float2 TimePadding;
+	} CB_TIME;
+	static_assert(sizeof(CB_TIME) % 16 == 0);
+
+	typedef struct tagConstantBufferFog
+	{
+		_float4x4	FogVolumeInvWorld;
+		_float		FogIntensity;
+		_float3		FogColor;
+		_float		FogMaxHeight;
+		_float		FogStartPos;
+		_float		FogEndPos;
+		_float		FogDensity;
+	} CB_FOG;
+	static_assert(sizeof(CB_FOG) % 16 == 0);
+
 	typedef struct tagConstantBufferLight
 	{
-		DYNAMIC_LIGHT AffectedLight[MAX_LIGHT_COUNT];
-		uint32_t      g_iLightCount;
-		XMFLOAT3      g_fLightPadding;
+		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
+		XMFLOAT4X4		g_InvViewProj;
+		uint32_t		LightCount;
+		_float3			LightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 

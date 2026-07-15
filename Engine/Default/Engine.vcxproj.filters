@@ -433,6 +433,12 @@
     <Filter Include="ShaderFiles\TestModel\Compute">
       <UniqueIdentifier>{0464bfd6-5af4-491a-81f0-6208e5bb7163}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Volumetric">
+      <UniqueIdentifier>{3a4a0639-9eae-4888-8957-77e469aa351d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Camera\ShadowCamera">
+      <UniqueIdentifier>{794170c2-61af-41b9-a487-94d95b3cc2f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -934,6 +940,12 @@
     <ClInclude Include="..\public\BTRandSelector.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShadowCamera.h">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\VolumetricFog.h">
+      <Filter>GameObject\Volumetric</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1393,6 +1405,12 @@
     <ClCompile Include="..\private\BTRandSelector.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShadowCamera.cpp">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\VolumetricFog.cpp">
+      <Filter>GameObject\Volumetric</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1481,7 +1499,10 @@
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">
       <Filter>ShaderFiles\PostProcess</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Volumetric.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Shadow.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizMipPyramid.hlsl">
@@ -1495,6 +1516,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl">
       <Filter>ShaderFiles\TestModel\Compute</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PBR\CS_PBR.hlsl">
+      <Filter>ShaderFiles\PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\CS_PostProcess.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

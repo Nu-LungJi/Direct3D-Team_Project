@@ -1,5 +1,21 @@
 #include "../ShaderDefines.hlsl"
 
+float4 Convert_WorldPosByDepth(float _Depth, float2 _TexCoord)
+{
+    // Depth = NDC   -> (InvProj) -> WorldSpace(InvView)
+    float4 NDCWorldPos;
+    
+    // ViewSpace
+    NDCWorldPos.x = _TexCoord.x * +2.f - 1.f;
+    NDCWorldPos.y = _TexCoord.y * -2.f + 1.f;
+    NDCWorldPos.z = _Depth;
+    NDCWorldPos.w = 1.f;
+    
+    float4 WorldPos = mul(NDCWorldPos, g_matInvViewProj);
+    
+    return float4(WorldPos.xyz / WorldPos.w, 1.f);
+}
+
 float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
 {
     float3 Normal = normalize(_Normal);
@@ -11,7 +27,7 @@ float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
     
     return float3x3(Tangent, BiNormal, Normal);
 }
-float3  Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
+float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
 {
     float3 LocalNormal = _NormalTex.Sample(LinearWrap, _TexCoord).rgb;
     LocalNormal = normalize(LocalNormal * 2.f - 1.f);
@@ -27,79 +43,63 @@ float3  Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNo
 
     return normalize(worldNormal);
 }
-bool    Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout float3 L, inout float3 Radiance)
+
+
+bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 L, out float3 Radiance)
 {
-    // Directional Light PBR
-    [branch]
-    if (_Light.LightType == LIGHT_DIRECTIONAL)
+    [flatten]
+    if (Light.LightType == LIGHT_DIRECTIONAL)   // Directional Light PBR
     {
-        L = normalize(-_Light.LightDirection);
-        Radiance = _Light.LightColor * _Light.LightIntensity;
-        return true;
+        L = normalize(-Light.LightDirection.xyz);
+        Radiance = Light.LightColor * Light.LightIntensity;
     }
-    // Point Light PBR
-    else if (_Light.LightType == LIGHT_POINT)
+    else if (Light.LightType == LIGHT_POINT)    // Point Light PBR
     {
         float MinimumDistance = 1.f;
-        
-        float3 LightVector = _Light.Position - _WorldPosition;
+    
+        float3 LightVector = Light.Position - _WorldPosition;
         float Distance = length(LightVector);
-        
-        if (Distance > _Light.LightRange)
+    
+        [flatten]
+        if (Distance > Light.LightRange)
             return false;
-
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-        float DistanceByRange = Distance / _Light.LightRange;
-        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-        
-        L = normalize(LightVector);
-        Radiance = _Light.LightColor * _Light.LightIntensity * (Attenuation * Window * Window);
-
-        return true;
-    }
-    // SpotLight Light PBR
-    else if (_Light.LightType == LIGHT_SPOTLIGHT)
-    {
-        float MinimumDistance = 1.f;
-        
-        float3 LightVector = _Light.Position - _WorldPosition;
-        float Distance = length(LightVector);
-        
-        if (Distance > _Light.LightRange)
-            return false;
-        
+    
         // Decrease By Distance
         float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-        float DistanceByRange = Distance / _Light.LightRange;
+        float DistanceByRange = Distance / Light.LightRange;
+        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
+    
+        L = normalize(LightVector);
+        Radiance = Light.LightColor * Light.LightIntensity * (Attenuation * Window * Window);
+    }
+    else if (Light.LightType == LIGHT_SPOTLIGHT)    // SpotLight Light PBR
+    {
+        float MinimumDistance = 1.f;
+    
+        float3 LightVector = Light.Position - _WorldPosition;
+        float Distance = length(LightVector);
+    
+        [flatten]
+        if (Distance > Light.LightRange)
+            return false;
+    
+        // Decrease By Distance
+        //float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        float DistanceByRange = Distance / Light.LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
         float DistanceFade = Attenuation * Window * Window;
-        
+    
         L = normalize(LightVector);
-        
-         // Decrease By SpotLight Cone
-        float CosAngle = dot(-L, normalize(_Light.LightDirection));
-        float Num = CosAngle - _Light.OuterAttanuation;
-        float DeNum = _Light.InnerAttanuation - _Light.OuterAttanuation;
+    
+        // Decrease By SpotLight Cone
+        float CosAngle = dot(-L, normalize(Light.LightDirection));
+        float Num = CosAngle - Light.OuterAttanuation;
+        float DeNum = Light.InnerAttanuation - Light.OuterAttanuation;
         float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
-        
-        Radiance = _Light.LightColor * _Light.LightIntensity * (DistanceFade * ConeFade * ConeFade);
-        
-        return true;
+    
+        Radiance = Light.LightColor * Light.LightIntensity * DistanceFade * ConeFade;
     }
     
-    return false;
-}
-float4 Convert_WorldPosByDepth(float _Depth, float2 _TexCoord)
-{
-    float4 NDCWorldPos;
-    
-    NDCWorldPos.x = _TexCoord.x * +2.f - 1.f;
-    NDCWorldPos.y = _TexCoord.y * -2.f + 1.f;
-    NDCWorldPos.z = _Depth;
-    NDCWorldPos.w = 1.f;
-    
-    // NDC -> ViewSpace(InvProj) -> WorldSpace(InvView)
-    float4 WorldPos = mul(NDCWorldPos, g_matInvViewProj);
-    
-    return float4(WorldPos.xyz / WorldPos.w, 1.f);
+    return true;
 }

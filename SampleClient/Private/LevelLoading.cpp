@@ -162,7 +162,6 @@ void CLevelLoading::ThreadStart()
 		}
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
 			{
-
 				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
 				{
 					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
