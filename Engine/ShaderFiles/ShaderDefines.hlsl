@@ -1,14 +1,14 @@
 
-const static float  PI = 3.14159265359f;
-const static int    MAX_LIGHT_COUNT = 8;
+const static float PI = 3.14159265359f;
+const static int MAX_LIGHT_COUNT = 8;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float  NormalIntensity      = 1.f;
-const static float  RoughnessIntensity   = 1.f;
-const static float  MetallicIntensity    = 1.f;
-const static float  AmbientIntensity     = 1.f;
-const static float  SpecularIntensity    = 1.f;
+const static float NormalIntensity = 1.f;
+const static float RoughnessIntensity = 1.f;
+const static float MetallicIntensity = 1.f;
+const static float AmbientIntensity = 1.f;
+const static float SpecularIntensity = 1.f;
 
 #define MAX_LIGHT_COUNT     8
 
@@ -55,23 +55,24 @@ struct SpotLight
     float3 att;
     float _pad;
 };
-
 struct DynamicLight
 {
-    uint    LightType;      // Directional, Point, SpotLight
-    
-    float3  LightDirection;
-    float3  LightColor;
-    float   LightIntensity;
-    float   LightRange;
-    
-    float3  Position;
-    
-    float   InnerAttanuation;
-    float   OuterAttanuation;
-    
-    float2  LightPadding;
+    float4x4 g_LightViewProj;
+
+    float3 LightDirection;
+    float LightIntensity;
+    float3 LightColor;
+    float LightRange;
+
+    float3 Position;
+    uint LightType;
+
+    float InnerAttanuation;
+    float OuterAttanuation;
+
+    float2 LightPadding;
 };
+
 struct Material
 {
     float4 ambient;
@@ -94,8 +95,6 @@ cbuffer CB_PER_OBJECT : register(b0)
 // 2. 프레임당 1회 갱신 (슬롯 b1)
 cbuffer CB_PER_PASS : register(b1)
 {
-    //DirectionalLight gDirLights;
-    
     matrix g_matView; // _float4x4와 1:1 대응
     matrix g_matProj;
     matrix g_matViewProj;
@@ -104,38 +103,56 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matInvViewProj;
     matrix g_matShadowLightViewProj;
     float3 g_vCamPos;
-    float  g_PerPassPadding1;
+    float g_PerPassPadding1;
     float3 g_vShadowLightDir;
-    float  g_PerPassPadding2;
+    float g_PerPassPadding2;
 };
 
 cbuffer CB_BONES : register(b2)
 {
-     matrix g_BoneMatrices[512];
+    matrix g_BoneMatrices[512];
 };
 
 
 cbuffer CB_MATERIAL : register(b3)
 {
-    float3  EmissiveColor;
-    float   EmissiveIntensity;
+    float3 EmissiveColor;
+    float EmissiveIntensity;
     
-    float   ObjectAlpha;
-    float3  ObjectPadding;
+    float ObjectAlpha;
+    float3 ObjectPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4)
 {
     DynamicLight AffectedLight[MAX_LIGHT_COUNT];
-    int          g_iLightCount;
-    float3       g_fLightPadding;
+    float4x4 g_InvViewProj;
+    uint LightCount;
+    float3 LightPadding;
 }
+
+cbuffer CB_TIME_BUFFER : register(b5)
+{
+    float g_fDeltaTime;
+    float g_fTimeAccumulation;
+}
+
+cbuffer CB_FOG : register(b6)
+{
+    float4x4 FogVolumeInvWorld;
+    float FogIntensity;
+    float3 FogColor;
+    float FogMaxHeight;
+    float FogStartPos;
+    float FogEndPos;
+    float FogDensity;
+}; 
 
 cbuffer CB_PER_UI : register(b7)
 {
     float2 g_ui_texCoord;
     float2 g_ui_uvSize;
-    float4 g_ui_color; 
+    float4 g_ui_color;
     //uint g_ui_texIndex; 
     //float2 g_ui_borderUV; 
     //float _pad_perui; 
@@ -164,4 +181,4 @@ SamplerState PointClamp                 : register(s3);
 SamplerState PointWrapNoMip             : register(s4);
 SamplerState AnisotropicWrap            : register(s5);
 
-SamplerComparisonState  ShadowSampler   : register(s6);
+SamplerComparisonState ShadowSampler : register(s6);

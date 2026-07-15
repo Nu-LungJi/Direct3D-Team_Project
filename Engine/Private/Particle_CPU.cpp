@@ -52,6 +52,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
     if (!m_pResSamplerState)
         return E_FAIL;
+	m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLINET_TEXTURE", "TEX_NOISE");
 
     //m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
     //if (FAILED(m_pResVertexShader->Load()))
@@ -129,28 +130,32 @@ void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 {
 }
 
-
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
-    m_vecInstancedData.clear();
+	m_vecInstancedData.clear();
 	uint32_t totalFrames = m_Desc.TexRows * m_Desc.TexColumns;
-    for (auto& p : m_Particles)
-    {
 
-        if (!p.bAlive)
-            continue;
+	// 카메라의 역-뷰 행렬에서 camRight/camUp 추출 (한 번만 가져오면 됨)
+	
 
-        p.fAge += fTimeDelta;
-        if (p.fAge >= p.fLifeTime)
-        {
-            p.bAlive = false;
-            continue;
-        }
 
-        UpdateBehavior(p, fTimeDelta);
+	for (auto& p : m_Particles)
+	{
+		if (!p.bAlive)
+			continue;
 
-        if (m_vecInstancedData.size() >= m_iNumElements)
-            continue;
+		p.fAge += fTimeDelta;
+		if (p.fAge >= p.fLifeTime)
+		{
+			p.bAlive = false;
+			continue;
+		}
+
+		UpdateBehavior(p, fTimeDelta);
+
+		if (m_vecInstancedData.size() >= m_iNumElements)
+			continue;
+
 		if (totalFrames > 1)
 		{
 			float ageRatio = std::clamp(p.fAge / p.fLifeTime, 0.f, 1.f);
@@ -162,18 +167,47 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			p.iFrameIndex = 0;
 		}
 
-        VTX_PARTICLE_INSTANCED_DATA inst{};
-        _matrix matScale = XMMatrixScaling(p.fSize, p.fSize, p.fSize);
-        _matrix matWorld = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
-        XMStoreFloat4x4(&inst.matWorld, matScale * matWorld);
-        inst.vColor = p.vColor;
-        inst.emissive = p.emissive;
-	
+		VTX_PARTICLE_INSTANCED_DATA inst{};
+		_matrix matScale = XMMatrixScaling(p.fSize, p.fSize, p.fSize);
+		_matrix matTrans = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
+
+		_matrix matWorld;
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_BILLBOARD) != 0 && m_Desc.whatKind == MESHORTEXTURE::TEX)
+		{
+			auto camera = CGameInstance::Get().GetActiveCamera();
+			if (!camera)
+				return;
+			_matrix matView = camera->GetView();
+			_matrix matInvView = XMMatrixInverse(nullptr, matView);
+			XMVECTOR camRight = matInvView.r[0];
+			XMVECTOR camUp = matInvView.r[1];
+			XMVECTOR camForward = matInvView.r[2];
+
+			// 카메라를 향하는 회전 행렬 (camRight, camUp, camForward를 그대로 축으로 사용)
+			_matrix matBillboardRot = XMMatrixIdentity();
+			matBillboardRot.r[0] = camRight;
+			matBillboardRot.r[1] = camUp;
+			matBillboardRot.r[2] = camForward;
+			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+
+			matWorld = matScale * matBillboardRot * matTrans;
+		}
+		else
+		{
+			_matrix matRotation = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
+			matWorld = matScale * matRotation * matTrans;
+		}
+
+		XMStoreFloat4x4(&inst.matWorld, matWorld);
+		inst.vColor = p.vColor;
+		inst.emissive = p.emissive;
+		inst.life = p.fAge > 0.f ? (p.fLifeTime - p.fAge) : p.fLifeTime;
+		inst.maxLife = p.fLifeTime;
+
 		if (m_Desc.TexColumns > 0 && m_Desc.TexRows > 0)
 		{
 			uint32_t col = p.iFrameIndex % m_Desc.TexColumns;
 			uint32_t row = p.iFrameIndex / m_Desc.TexColumns;
-
 			inst.vUVSize = _float2(1.0f / m_Desc.TexColumns, 1.0f / m_Desc.TexRows);
 			inst.vUVOffset = _float2(col * inst.vUVSize.x, row * inst.vUVSize.y);
 		}
@@ -183,10 +217,30 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			inst.vUVOffset = _float2(0.0f, 0.0f);
 		}
 
-        m_vecInstancedData.push_back(inst);
-    }
+		m_vecInstancedData.push_back(inst);
+	}
 }
+void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
+{
+	//if ((p.iBehaviorType & CParticle::BEHAVIOR_BILLBOARD) != 0) {
+	//
+	//}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_DISTORTION) != 0) {
 
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_GRAVITY) != 0) {
+		const float kGravity = -9.8f;
+
+		p.vVelocity.y += kGravity * fTimeDelta;
+
+		// 기존 위치에 이동량을 더해야 함
+		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+		XMStoreFloat3(&p.vPosition, vPos);
+	}
+	
+}
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
     if (pSpawnData == nullptr || count == 0)
@@ -200,19 +254,25 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
         const auto& src = pSpawnData[iSpawned];
         m_Particles[i].vPosition = src.position;
-       // m_Particles[i].vVelocity = src.velocity;
+		m_Particles[i].vVelocity = src.velocity;
         m_Particles[i].fLifeTime = src.life;
         m_Particles[i].fAge = 0.f;
         m_Particles[i].bAlive = true;
-        m_Particles[i].fSize = src.size;
+        m_Particles[i].fSize = src.fSize;
+        m_Particles[i].fEndSize = src.fEndSize;
         m_Particles[i].vColor = src.color;
         m_Particles[i].emissive = src.emissive;
 		m_Particles[i].spawnDelay = src.spawnDelay;
+		m_Particles[i].ownerID = src.ownerID;
+		m_Particles[i].rotation = src.rotation;
+		m_Particles[i].iBehaviorType = src.iBehaviorType;
         ++iSpawned;
     }
 
     return (iSpawned == count) ? S_OK : E_FAIL;
 }
+
+
 HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 
@@ -232,6 +292,13 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
     if (m_vecInstancedData.empty())
         return S_OK;
+
+	if (m_pNoiseTexture)
+	{
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(5, 1, &pNoiseSRV);
+
+	}
 
     const auto& vs = m_pResVertexShader;
     const auto& ps = m_pResPixelShader;
@@ -299,17 +366,15 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         //m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
         //m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
 
-        pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
+      //  pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
 
         pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
     }
+	ID3D11ShaderResourceView* nullNoiseSRV[] = { nullptr };
+	pContext->PSSetShaderResources(5, 1, nullNoiseSRV);
 
 
     return S_OK;
-}
-
-void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
-{
 }
 
 
@@ -317,6 +382,11 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 {
     if (m_vecInstancedData.empty())
         return S_OK;
+
+
+
+	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
+	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 
     const auto& viBuffer = CGameInstance::Get().GetResourceFirst<CResVIBuffer>(m_viBufferID.first, m_viBufferID.second);
 
@@ -355,6 +425,7 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     pContext->PSSetShaderResources(0, 1, nullSRV);
 
+	pContext->OMSetDepthStencilState(nullptr, 0);
     return S_OK;
 }
 UPtr<CParticle> CParticle_CPU::Create(void* pArg)
@@ -366,4 +437,43 @@ UPtr<CParticle> CParticle_CPU::Create(void* pArg)
 		return nullptr;
 	}
 	return  pInstance;
+}
+void CParticle_CPU::ClearByOwner(uint32_t ownerID)
+{
+	for (auto& p : m_Particles)
+	{
+		if (p.bAlive && p.ownerID == ownerID)
+			p.bAlive = false;
+	}
+}
+
+void CParticle_CPU::SetPosition(const _float3& pos)
+{
+	if (m_Particles.empty())
+		return;
+
+	m_Particles[0].vPosition = pos;
+}
+
+void CParticle_CPU::SetVelocity(const _float3& vel)
+{
+	if (m_Particles.empty())
+		return;
+
+	m_Particles[0].vVelocity = vel;
+}
+
+void CParticle_CPU::SetSize(const _float& size)
+{
+	if (m_Particles.empty())
+		return;
+
+	m_Particles[0].fSize = size;
+}
+void CParticle_CPU::SetColor(const _float4& color)
+{
+	if (m_Particles.empty())
+		return;
+
+	m_Particles[0].vColor = color;
 }

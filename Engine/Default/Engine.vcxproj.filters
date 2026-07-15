@@ -364,9 +364,6 @@
     <Filter Include="Particle\Trail">
       <UniqueIdentifier>{fa144d76-945b-4f75-9b1e-e904b23c45de}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\UI\UIManager">
-      <UniqueIdentifier>{0a583505-4c42-45b5-8ff5-c8a7ae4d942c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI\TexUI">
       <UniqueIdentifier>{95b3224a-ec84-44dc-bea3-82786515b1a8}</UniqueIdentifier>
     </Filter>
@@ -391,6 +388,12 @@
     <Filter Include="Particle\Patterns">
       <UniqueIdentifier>{8d80bf88-9b49-4a3b-bbcd-adac93f3ef9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HizBuffer">
+      <UniqueIdentifier>{5845c6c7-4ded-47fc-8930-ee331e174fba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\Hiz">
+      <UniqueIdentifier>{e0e7be52-836f-4e14-a329-df3c1fdd8171}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Serialize">
       <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
     </Filter>
@@ -412,6 +415,15 @@
     <Filter Include="Serialize\TestCase">
       <UniqueIdentifier>{c5f4b517-bb73-4605-8016-a663b5b4c675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\UI">
+      <UniqueIdentifier>{57cb4369-faf4-4ad0-a818-4a3a747de9b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Tween">
+      <UniqueIdentifier>{e99a0e3b-f69e-4691-9ba2-e52f19c81311}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\UI\ButtonComponent">
+      <UniqueIdentifier>{8318dad6-1853-412a-83bd-17623d00c9b8}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Instance">
       <UniqueIdentifier>{b6e0ed74-80a4-4a0a-89ec-44b920106f17}</UniqueIdentifier>
     </Filter>
@@ -420,6 +432,48 @@
     </Filter>
     <Filter Include="ShaderFiles\TestModel\Compute">
       <UniqueIdentifier>{0464bfd6-5af4-491a-81f0-6208e5bb7163}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Volumetric">
+      <UniqueIdentifier>{3a4a0639-9eae-4888-8957-77e469aa351d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Camera\ShadowCamera">
+      <UniqueIdentifier>{794170c2-61af-41b9-a487-94d95b3cc2f3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle\Param">
+      <UniqueIdentifier>{33454004-46ff-4e0e-a3fc-bcaf43f4b418}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lua">
+      <UniqueIdentifier>{dfd76b79-cecb-4cca-9ac8-e0ce39ef16d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Lua">
+      <UniqueIdentifier>{1c8d7925-0f83-447f-a69c-11d8567da66e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Lua\Script">
+      <UniqueIdentifier>{1ba4e867-2138-473d-9756-d729dd3de5b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles">
+      <UniqueIdentifier>{b542ee9a-40cf-4a50-9d8a-b0feb91d0b38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Lua">
+      <UniqueIdentifier>{b39ae02f-5cb2-4ba1-b7b3-e4646aac4b23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lua\Watcher">
+      <UniqueIdentifier>{9d20ff6d-a821-4923-8d6b-f0880f32157f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles\SomeFolder">
+      <UniqueIdentifier>{bde2835c-1d45-44d2-aca4-56623b27cddf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lua\LuaEnv">
+      <UniqueIdentifier>{8ba16c43-054b-4dbb-9c2a-aed24797421d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\CharacterController">
+      <UniqueIdentifier>{3ff22233-47fd-43dc-9f31-4bdf198f60e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameInstance\InitLoader">
+      <UniqueIdentifier>{dc18b041-0cd4-4748-b556-231b40d41ccd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\FSR2_2">
+      <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -669,6 +723,9 @@
     <ClInclude Include="..\Public\Renderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HizOcclusionCuller.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\UICamera.h">
       <Filter>GameObject\Camera\UICamera</Filter>
     </ClInclude>
@@ -713,9 +770,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\UITex.h">
       <Filter>GameObject\UI\TexUI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\UIManager.h">
-      <Filter>GameObject\UI\UIManager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\ComModelInstance.h">
       <Filter>Component\Model\ComModelInstance</Filter>
@@ -834,9 +888,6 @@
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Beam_CPU.h">
-      <Filter>Particle\Beam</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\CreatureEditor.h">
       <Filter>CreatureEditor</Filter>
     </ClInclude>
@@ -870,6 +921,18 @@
     <ClInclude Include="..\Public\NavMeshManager.h">
       <Filter>NavMesh</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\UIComponent.h">
+      <Filter>Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ButtonComponent.h">
+      <Filter>Component\UI\ButtonComponent</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TweenComponent.h">
+      <Filter>Component\Tween</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\HizBuffer.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ISerializable.h">
       <Filter>Serialize</Filter>
     </ClInclude>
@@ -897,12 +960,63 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshGpuCuller.h">
+      <Filter>HizBuffer</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ShadowCamera.h" />
     <ClInclude Include="..\Public\Model_Instance_Manager.h">
       <Filter>Instance</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\AnimationObject.h">
       <Filter>GameObject\AnimationObject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTRandSelector.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ShadowCamera.h">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\VolumetricFog.h">
+      <Filter>GameObject\Volumetric</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleParams.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleParamImGui.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Beam_CPU.h">
+      <Filter>Particle\Beam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LuaManager.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResLua.h">
+      <Filter>Resource\Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResLuaScript.h">
+      <Filter>Resource\Lua\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComLuaScript.h">
+      <Filter>Component\Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LuaWatcher.h">
+      <Filter>Lua\Watcher</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ILuaScriptRelodable.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LuaEnv.h">
+      <Filter>Lua\LuaEnv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxCharacterController.h">
+      <Filter>Component\PhysX\CharacterController</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\GameInstanceInitLoader.h">
+      <Filter>GameInstance\InitLoader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyFSR2_2.h">
+      <Filter>Renderer\FSR2_2</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1302,9 +1416,6 @@
     <ClCompile Include="..\Private\UITex.cpp">
       <Filter>GameObject\UI\TexUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\UIManager.cpp">
-      <Filter>GameObject\UI\UIManager</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\BTDecorator.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode\Decorator</Filter>
     </ClCompile>
@@ -1319,6 +1430,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\NavMeshManager.cpp">
       <Filter>NavMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HizBuffer.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HizOcclusionCuller.cpp">
+      <Filter>HizBuffer</Filter>
     </ClCompile>
     <ClCompile Include="..\private\JsonSerializer.cpp">
       <Filter>Serialize\Serializer\Json</Filter>
@@ -1338,12 +1455,60 @@
     <ClCompile Include="..\private\ObjectFactory.cpp">
       <Filter>Serialize\Factory</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\MapMeshGpuCuller.cpp">
+      <Filter>HizBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIComponent.cpp">
+      <Filter>Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ButtonComponent.cpp">
+      <Filter>Component\UI\ButtonComponent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TweenComponent.cpp">
+      <Filter>Component\Tween</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\ShadowCamera.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp">
       <Filter>Instance</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\AnimationObject.cpp">
       <Filter>GameObject\AnimationObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRandSelector.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ShadowCamera.cpp">
+      <Filter>GameObject\Camera\ShadowCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\VolumetricFog.cpp">
+      <Filter>GameObject\Volumetric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaManager.cpp">
+      <Filter>Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResLua.cpp">
+      <Filter>Resource\Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResLuaScript.cpp">
+      <Filter>Resource\Lua\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComLuaScript.cpp">
+      <Filter>Component\Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaWatcher.cpp">
+      <Filter>Lua\Watcher</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaEnv.cpp">
+      <Filter>Lua\LuaEnv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCharacterController.cpp">
+      <Filter>Component\PhysX\CharacterController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\GameInstanceInitLoader.cpp">
+      <Filter>GameInstance\InitLoader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyFSR2_2.cpp">
+      <Filter>Renderer\FSR2_2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1433,16 +1598,46 @@
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">
       <Filter>ShaderFiles\PostProcess</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\RayMarching\CS_RayMarching.hlsl">
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Volumetric.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Shadow.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizMipPyramid.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizCopyDepth.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGpuCull.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl">
       <Filter>ShaderFiles\TestModel\Compute</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PBR\CS_PBR.hlsl">
+      <Filter>ShaderFiles\PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\CS_PostProcess.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
+      <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
       <Filter>ShaderFiles\ShaderHeader</Filter>
+    </None>
+    <None Include="..\LuaFiles\Test.lua">
+      <Filter>LuaFiles</Filter>
+    </None>
+    <None Include="..\LuaFiles\SomeFolder\Hi.lua">
+      <Filter>LuaFiles\SomeFolder</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -10,12 +10,16 @@ struct PARTICLE_CPU_DATA
     _float3 vVelocity;
     _float4 vColor = { 1.f, 1.f, 1.f, 1.f };
     _float  fSize = 1.f;
+    _float  fEndSize = 1.f;
+    _float4  rotation = { 0.f, 0.f, 0.f, 0.f };
     _float  fAge = 0.f;
     _float  fLifeTime = 1.f;
     _bool   bAlive = false;
     _float4 emissive;
 	_float spawnDelay;
 	uint32_t iFrameIndex = 0;
+	uint32_t ownerID = 0;
+	uint32_t iBehaviorType = 0;
 };
 
 struct VTX_PARTICLE_INSTANCED_DATA
@@ -25,6 +29,8 @@ struct VTX_PARTICLE_INSTANCED_DATA
     _float4 emissive;
 	_float2   vUVOffset; 
 	_float2   vUVSize;
+	_float    life;
+	_float    maxLife;
 };
 
 // CPU 파티클 중간 추상 클래스.
@@ -65,6 +71,11 @@ public:
     HRESULT Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
     HRESULT Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
 	MESHORTEXTURE GetWhatKind() const { return m_Desc.whatKind; }
+	virtual void ClearByOwner(uint32_t ownerID) override;
+	virtual void SetPosition(const _float3& pos) override;
+	virtual void SetVelocity(const _float3& vel) override;
+	virtual void SetSize(const _float& size) override;
+	virtual void SetColor(const _float4& color) override;
 private:
     virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
 private:

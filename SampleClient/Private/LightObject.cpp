@@ -10,10 +10,10 @@
 NS_USING(Client)
 
 CLightObject::CLightObject() : CGameObject{} {}
-CLightObject::~CLightObject()  {}
+CLightObject::~CLightObject() {}
 
 void CLightObject::UpdateGUI() {
-    CGameObject::UpdateGUI();
+	CGameObject::UpdateGUI();
 }
 
 HRESULT CLightObject::InitializePrototype(void* pArg) {
@@ -23,13 +23,13 @@ HRESULT CLightObject::InitializePrototype(void* pArg) {
 	//m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	//if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
 
-	m_pResVertexShader	= CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR_BLEND");
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR_BLEND");
 	if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
-	
-	m_pResPixelShader	= CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR_BLEND");
+
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR_BLEND");
 	if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
 
-	m_pResSamplerState	= CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	if (!m_pResSamplerState)				return E_FAIL;
 
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LOBJ", "Model_Resource", CResModel::Create("./Resources/SampleClient/Models/Skeleton/LightObject/SK_LightObject.bin"))) {
@@ -91,6 +91,7 @@ void CLightObject::Update(E::_float fTimeDelta) {
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
+	CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::STATIC, this);
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
@@ -138,7 +139,7 @@ HRESULT CLightObject::RenderDefault(ID3D11DeviceContext* pContext, const E::REND
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 		{
-			m_pComModelInstance->Bind_Textures(pContext, i);	
+			m_pComModelInstance->Bind_Textures(pContext, i);
 			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha
 		}
 
@@ -185,11 +186,6 @@ HRESULT CLightObject::RenderShadow(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		{
-			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
-		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}

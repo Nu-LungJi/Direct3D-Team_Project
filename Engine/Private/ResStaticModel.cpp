@@ -97,10 +97,16 @@ HRESULT CResStaticModel::Load(const std::any& arg)
 		};
 
 
+		BuildLocalBoundsFromMeshes();
 	}
-	if (ext == ".fbx") {
-		LoadAssimp();
+	else if (ext == ".fbx") {
+		if (FAILED(LoadAssimp()))
+		{
+			return E_FAIL;
+		}
+		return S_OK;
 	}
+
 	m_eState = STATE::LOADED;
 	return S_OK;
 }
@@ -108,6 +114,8 @@ HRESULT CResStaticModel::Load(const std::any& arg)
 HRESULT CResStaticModel::Unload(const std::any& arg)
 {
 
+	m_LocalBounds = {};
+	m_bHasLocalBounds = false;
 	m_eState = STATE::UNLOAD;
 	return S_OK;
 }
@@ -155,6 +163,8 @@ HRESULT CResStaticModel::LoadAssimp()
 	{
 		ProcessAssimpNode(pScene->mRootNode, pScene);
 	}
+
+	BuildLocalBoundsFromMeshes();
 
 	m_eState = STATE::LOADED;
 	return S_OK;
@@ -215,6 +225,66 @@ HRESULT CResStaticModel::Ready_Materials(const _string& strModelFilePath, _char*
 	}
 
 	return S_OK;
+}
+
+void CResStaticModel::BuildLocalBoundsFromMeshes()
+{
+	XMFLOAT3 minPos{
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max()
+	};
+
+	XMFLOAT3 maxPos{
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max()
+	};
+
+	bool hasBounds = false;
+
+	for (const auto& mesh : m_Meshes)
+	{
+		if (mesh == nullptr)
+		{
+			continue;
+		}
+
+		hasBounds = true;
+
+		const auto& meshMin = mesh->GetMinPos();
+		const auto& meshMax = mesh->GetMaxPos();
+
+		minPos.x = std::min(minPos.x, meshMin.x);
+		minPos.y = std::min(minPos.y, meshMin.y);
+		minPos.z = std::min(minPos.z, meshMin.z);
+
+		maxPos.x = std::max(maxPos.x, meshMax.x);
+		maxPos.y = std::max(maxPos.y, meshMax.y);
+		maxPos.z = std::max(maxPos.z, meshMax.z);
+	}
+
+	if (!hasBounds)
+	{
+		m_LocalBounds = {};
+		m_bHasLocalBounds = false;
+		return;
+	}
+
+	const XMFLOAT3 center{
+		(minPos.x + maxPos.x) * 0.5f,
+		(minPos.y + maxPos.y) * 0.5f,
+		(minPos.z + maxPos.z) * 0.5f
+	};
+
+	const XMFLOAT3 extents{
+		(maxPos.x - minPos.x) * 0.5f,
+		(maxPos.y - minPos.y) * 0.5f,
+		(maxPos.z - minPos.z) * 0.5f
+	};
+
+	m_LocalBounds = BoundingBox(center, extents);
+	m_bHasLocalBounds = true;
 }
 
 

@@ -50,8 +50,7 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
 	pTransform->SetQuaternion(quat);
 
-	m_eDebug = EVALUATE::SUCCESS;
-	return EVALUATE::SUCCESS;
+	return m_eDebug =  EVALUATE::SUCCESS;
 }
 void CBTTurnDirect::Update_Gui()
 {

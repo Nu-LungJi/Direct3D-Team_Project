@@ -1,4 +1,4 @@
-﻿// SampleClient.cpp : 애플리케이션에 대한 진입점을 정의합니다.
+// SampleClient.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 
 #include "pch.h"
@@ -49,7 +49,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
 
     auto pMainApp = Client::CMainApp::Create();
-
 
     if (pMainApp == nullptr)
     {

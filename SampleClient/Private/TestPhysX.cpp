@@ -123,7 +123,7 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 					if (!outResult.pGameObject->IsA(CTestPhysXTerrain::StaticType)
 						&& !outResult.pGameObject->IsA(CTestPhysX::StaticType))
 					{
-						outResult.pGameObject->SetPendingDestroyCascade();
+						//outResult.pGameObject->SetPendingDestroyCascade();
 					}
 				}
 			}
@@ -137,7 +137,7 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 						if (!result.pGameObject->IsA(CTestPhysXTerrain::StaticType)
 							&& !result.pGameObject->IsA(CTestPhysX::StaticType))
 						{
-							result.pGameObject->SetPendingDestroyCascade();
+							//result.pGameObject->SetPendingDestroyCascade();
 						}
 					}
 				}

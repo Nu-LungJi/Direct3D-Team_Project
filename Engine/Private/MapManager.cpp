@@ -323,12 +323,16 @@ void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COO
 			continue;
 		}
 
-		if (!boundingFrustum.Intersects(iter->second.bounds))
+		const auto& selectedChunk = iter->second;
+		const BoundingBox& cullingBounds = selectedChunk.octreeNode
+			? selectedChunk.octreeNode->GetCullingBoundingBox()
+			: selectedChunk.bounds;
+
+		if (!boundingFrustum.Intersects(cullingBounds))
 		{
 			continue;
 		}
 
-		const auto& selectedChunk = iter->second;
 		if (const auto& octreeNode = selectedChunk.octreeNode)
 		{
 			octreeNode->OctreeFrustumCull(boundingFrustum);
@@ -339,6 +343,11 @@ void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COO
 void CMapManager::LateUpdate(_float fTimeDelta)
 {
 
+}
+
+void CMapManager::ClearAllChunk()
+{
+	m_Chunks.clear();
 }
 
 HRESULT CMapManager::SaveMap(const std::string& path)
@@ -838,6 +847,21 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	pObj->SetRenderEnable(true);
 
 	return S_OK;
+}
+
+std::vector<CHandle> CMapManager::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const
+{
+	std::vector<CHandle> candidates;
+
+	for (const auto& [coord, chunk] : m_Chunks)
+	{
+		if (chunk.loadState != EChunkLoadState::Loaded || !chunk.octreeNode)
+			continue;
+
+		chunk.octreeNode->CollectRayCandidates(rayOrigin, rayDirection, candidates);
+	}
+
+	return candidates;
 }
 
 #ifdef _DEBUG

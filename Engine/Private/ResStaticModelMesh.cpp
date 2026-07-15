@@ -84,6 +84,9 @@ HRESULT CResStaticModelMesh::LoadAssimp(std::string name,uint32_t materialIndex,
 
 	m_iVertexStride = sizeof(VTXMESH);
 
+	m_vMinPos = { FLT_MAX, FLT_MAX, FLT_MAX };
+	m_vMaxPos = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+
 	// ------------------------------------------------------------
 	// PreTransform 적용
 	// ------------------------------------------------------------
@@ -98,6 +101,14 @@ HRESULT CResStaticModelMesh::LoadAssimp(std::string name,uint32_t materialIndex,
 				PreTransformMatrix
 			)
 		);
+
+		m_vMinPos.x = std::min(m_vMinPos.x, v.vPosition.x);
+		m_vMinPos.y = std::min(m_vMinPos.y, v.vPosition.y);
+		m_vMinPos.z = std::min(m_vMinPos.z, v.vPosition.z);
+
+		m_vMaxPos.x = std::max(m_vMaxPos.x, v.vPosition.x);
+		m_vMaxPos.y = std::max(m_vMaxPos.y, v.vPosition.y);
+		m_vMaxPos.z = std::max(m_vMaxPos.z, v.vPosition.z);
 
 		XMStoreFloat3(
 			&v.vNormal,
@@ -197,10 +208,8 @@ HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransf
     pPoint += sizeof(uint32_t);
 
 
-	memcpy(&m_vMinPos, pPoint, sizeof(XMFLOAT3));
 	pPoint += sizeof(XMFLOAT3);
 
-	memcpy(&m_vMaxPos, pPoint, sizeof(XMFLOAT3));
 	pPoint += sizeof(XMFLOAT3);
 
 	uint32_t vCount = *(uint32_t*)pPoint;
@@ -227,11 +236,21 @@ HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransf
     m_eIndexFormat = DXGI_FORMAT_R32_UINT;
     m_ePrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+	m_vMinPos = { FLT_MAX, FLT_MAX, FLT_MAX };
+	m_vMaxPos = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
 
     for (size_t i = 0; i < m_iNumVertices; i++)
     {
 
         XMStoreFloat3(&(*vertexes)[i].vPosition, XMVector3TransformCoord(XMLoadFloat3(&(*vertexes)[i].vPosition), PreTransformMatrix));
+
+		m_vMinPos.x = std::min(m_vMinPos.x, (*vertexes)[i].vPosition.x);
+		m_vMinPos.y = std::min(m_vMinPos.y, (*vertexes)[i].vPosition.y);
+		m_vMinPos.z = std::min(m_vMinPos.z, (*vertexes)[i].vPosition.z);
+
+		m_vMaxPos.x = std::max(m_vMaxPos.x, (*vertexes)[i].vPosition.x);
+		m_vMaxPos.y = std::max(m_vMaxPos.y, (*vertexes)[i].vPosition.y);
+		m_vMaxPos.z = std::max(m_vMaxPos.z, (*vertexes)[i].vPosition.z);
 
         XMStoreFloat3(&(*vertexes)[i].vNormal, XMVector3TransformNormal(XMLoadFloat3(&(*vertexes)[i].vNormal), PreTransformMatrix));
 

@@ -72,19 +72,20 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
+		XMFLOAT4X4	g_LightViewProj;
 
-		_float3  LightDirection;
-		_float3  LightColor;
-		_float   LightIntensity;
-		_float   LightRange;
+		_float3		LightDirection;
+		_float		LightIntensity;
+		_float3		LightColor;
+		_float		LightRange;
 
-		_float3  Position;
+		_float3		Position;
+		uint32_t	LightType;
 
-		_float   InnerAttanuation;
-		_float   OuterAttanuation;
+		_float		InnerAttanuation;
+		_float		OuterAttanuation;
 
-		_float2  LightPadding;
+		_float2		LightPadding;
 	} DYNAMIC_LIGHT;
 
 	typedef struct tagPostProcess
@@ -112,7 +113,7 @@ namespace Engine
 		float		fTrackPosition;
 	}KEYFRAME;
 
-	
+
 
 	///////BeHavior//////
 	typedef struct tagactionvalue
@@ -120,8 +121,8 @@ namespace Engine
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{}, fTime{1.f}, fTick{};
-	
+		_float   fSpeed{}, fTime{ 1.f }, fTick{};
+
 	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{
@@ -140,14 +141,14 @@ namespace Engine
 	{
 		uint32_t	iID{};
 		_string		Name{};
-		XMFLOAT2	vPos{},vSize{};
+		XMFLOAT2	vPos{}, vSize{};
 		float		fValue{};
 		XMFLOAT4	vColor{};
 		_bool		bAbort{ false };
 		BEHAVIOR    eMyType{};
-		tagimguinode()=default ;
-		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
-		XMFLOAT2 GetStartSlotPos()  { return XMFLOAT2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
+		tagimguinode() = default;
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color; }
+		XMFLOAT2 GetStartSlotPos() { return XMFLOAT2(vPos.x + vSize.x * 0.5f, vPos.y); }
 		XMFLOAT2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
 			return XMFLOAT2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
 		}
@@ -166,7 +167,7 @@ namespace Engine
 		int32_t					iStartIdx{ -1 };
 		DEST_NODE				ParentNode;
 		std::vector<DEST_NODE>  SlotEnd{};
-		
+
 		tagimguinodelink() = default;
 		tagimguinodelink(int32_t iEnd)
 		{
@@ -179,7 +180,6 @@ namespace Engine
 		tagimguiCurrentNode(GUINODE* pNode, GUINODE_LINK* pLink, int32_t iSlot)
 		{
 			pCurrentNode = pNode; pCurrentLink = pLink;  iSelectedSlot = iSlot;
-
 		}
 		GUINODE* pCurrentNode{ nullptr };
 		GUINODE_LINK* pCurrentLink{ nullptr };
@@ -192,14 +192,24 @@ namespace Engine
 
 	typedef struct tagParticleSpawnData
 	{
-		_float3 position;
-		_float3 velocity;
-		_float  life;
-		_float  size;
-		_float4 color;
-		_float4 emissive;
-		_float spawnDelay;
-	}PARTICLE_SPAWN_DATA;
+		_float3  position;
+		_float   pad0;        // HLSL이 velocity를 16으로 밀어내기 위해 넣는 패딩
+		_float3  velocity;
+		_float   life;
+		_float   fSize;
+		_float   fEndSize;
+		_float2  pad1;        // HLSL이 color를 48로 밀어내기 위해 넣는 패딩 (8바이트)
+		_float4 rotation;
+		_float4  color;
+		_float4  emissive;
+		_float   spawnDelay;
+		uint32_t ownerID = 0;
+		uint32_t iBehaviorType = 0;
+		_float pad2;
+	} PARTICLE_SPAWN_DATA;
+	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
+
+	constexpr uint32_t PREVIEW_OWNER_ID = 0xFFFFFFFF; //미리보기 전용 
 
 	typedef struct tagParticleEmitRequest
 	{
@@ -207,7 +217,7 @@ namespace Engine
 		_bool    bLoop;
 		_float   fSpawnInterval;
 	} PARTICLE_EMIT_REQUEST;
-	
+
 	typedef struct tagBeamVertex
 	{
 		_float3 vPosition;
@@ -215,9 +225,6 @@ namespace Engine
 		_float4 vColor;
 		_float4 vEmissive;
 	}BEAM_VERTEX;
-
-
-
 
 	typedef struct ChunkHeader
 	{
@@ -238,7 +245,7 @@ namespace Engine
 	}MODEL_FILE_HEADER;
 
 	typedef struct tagParticleSpecies {
-		
+
 	}PARTICLE_SPECIES;
 
 	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
@@ -254,11 +261,19 @@ namespace Engine
 		}
 	}MAPCHUNK_COORD;
 
-	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+	//----------------------------MapMeshObject 인스턴싱------------------------
 	typedef struct tagMapMeshInstanceData
 	{
 		_float4x4 world;
 	} MAPMESH_INSTANCE_DATA;
+
+	typedef struct tagMapMeshOcclusionData
+	{
+		_float3		worldCenter;
+		_float		padding0;
+		_float3		worldExtents;
+		uint32_t	instanceIndex;
+	} MAPMESH_OCCLUSION_DATA;
 
 	typedef struct tagMapMeshBatchKey
 	{
@@ -279,6 +294,12 @@ namespace Engine
 			const size_t h2 = std::hash<std::string>{}(key.modelTag);
 			return h1 ^ (h2 << 1);
 		}
+	};
+
+	struct MAPMESH_INSTANCE_BATCH
+	{
+		std::vector<MAPMESH_INSTANCE_DATA> instances;
+		std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
 	};
 
 	//class CResStaticModel;
@@ -370,6 +391,18 @@ namespace Engine
 		uint32_t iPadding1 = 0;
 		uint32_t iPadding2 = 0;
 	}GPU_SKIN_MESH_CONSTANTS;
+
+
+	//struct GPU_ANIM_INSTANCE_DATA { 
+	// float4x4 WorldMatrix; 
+	// uint iAnimIndex; 
+	// uint iFlags; 
+	// float fTrackPosition; 
+	// uint RootBoneIndex; 
+	// uint iPrevAnimIndex; 
+	// float fPrevTrackPosition; 
+	// float fBlendWeight;
+	// uint bBlending; };
 
 	typedef struct GPU_ANIM_INSTANCE_DATA
 	{

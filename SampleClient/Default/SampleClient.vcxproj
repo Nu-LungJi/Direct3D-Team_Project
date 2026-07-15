@@ -119,7 +119,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -147,7 +147,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -183,8 +183,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTDecInvert.h" />
     <ClInclude Include="..\public\BTDecLier.h" />
     <ClInclude Include="..\public\BTDecHit.h" />
+    <ClInclude Include="..\public\BTHitAnimMonster.h" />
     <ClInclude Include="..\public\BTOnlyFalse.h" />
     <ClInclude Include="..\public\BTOnlyTrue.h" />
+    <ClInclude Include="..\public\BTRandMoveAnim.h" />
     <ClInclude Include="..\public\BTTeleport.h" />
     <ClInclude Include="..\public\BTTurnAnimation.h" />
     <ClInclude Include="..\public\BTTurnDirect.h" />
@@ -192,6 +194,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTDecSearch.h" />
     <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\public\BTMove.h" />
+    <ClInclude Include="..\Public\Button.h" />
+    <ClInclude Include="..\public\BTCreatureFlag.h" />
     <ClInclude Include="..\public\EffectUI.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
@@ -199,8 +203,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
-    <ClInclude Include="..\Public\CTexUI.h" />
-    <ClInclude Include="..\Public\FlipBook.h" />
+    <ClInclude Include="..\public\LevelColliderLoader.h" />
+    <ClInclude Include="..\public\LevelLogoLoader.h" />
+    <ClInclude Include="..\public\LevelPhysXLoader.h" />
+    <ClInclude Include="..\public\MainAppLoader.h" />
+    <ClInclude Include="..\public\TestCharacter.h" />
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\public\LevelCollider.h" />
@@ -241,6 +248,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\Public\TextureUI.h" />
+    <ClInclude Include="..\Public\UIManager.h" />
+    <ClInclude Include="..\Public\UI_Enums.h" />
     <ClInclude Include="..\public\Weapon.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -261,22 +270,30 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecLier.cpp" />
     <ClCompile Include="..\private\BTDecHit.cpp" />
+    <ClCompile Include="..\private\BTHitAnimMonster.cpp" />
     <ClCompile Include="..\private\BTOnlyFalse.cpp" />
     <ClCompile Include="..\private\BTOnlyTrue.cpp" />
+    <ClCompile Include="..\private\BTRandMoveAnim.cpp" />
     <ClCompile Include="..\private\BTTeleport.cpp" />
     <ClCompile Include="..\private\BTTurnAnimation.cpp" />
     <ClCompile Include="..\private\BTTurnDirect.cpp" />
     <ClCompile Include="..\private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\BTDecSearch.cpp" />
     <ClCompile Include="..\private\BTMove.cpp" />
+    <ClCompile Include="..\Private\Button.cpp" />
+    <ClCompile Include="..\private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\private\EffectUI.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
-    <ClCompile Include="..\Private\FlipBook.cpp" />
+    <ClCompile Include="..\Private\LevelUIEditor.cpp" />
+    <ClCompile Include="..\private\LevelColliderLoader.cpp" />
+    <ClCompile Include="..\private\LevelLogoLoader.cpp" />
+    <ClCompile Include="..\private\LevelPhysXLoader.cpp" />
+    <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\private\TestCharacter.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
-    <ClCompile Include="..\Private\CTexUI.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
     <ClCompile Include="..\private\LevelCollider.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
@@ -314,9 +331,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestPhysXCapsule.cpp" />
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\Private\UIManager.cpp" />
     <ClCompile Include="..\private\Weapon.cpp" />
     <ClCompile Include="..\public\BTDead.cpp" />
-    <ClCompile Include="LevelUIEditor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -339,6 +356,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl" />
     <FxCompile Include="..\Bin\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LuaFiles\ClientTest\asdf.lua" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>
