@@ -1778,6 +1778,10 @@ HRESULT CGameInstance::RegisterMapMeshObjectToMapChunk(const CHandle& hObject)
 {
 	return m_pMapManager->RegisterMapMeshObject(hObject);
 }
+std::vector<CHandle> CGameInstance::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const
+{
+	return m_pMapManager->CollectMapMeshPickCandidates(rayOrigin, rayDirection);
+}
 const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();
@@ -1798,6 +1802,10 @@ _bool CGameInstance::IsMapChunkStreaming() const
 void CGameInstance::SetDebugDrawMapChunk(_bool draw)
 {
 	return m_pMapManager->SetDebugDrawMapChunk(draw);
+}
+void CGameInstance::ClearAllChunk()
+{
+	m_pMapManager->ClearAllChunk();
 }
 #endif
 #pragma endregion

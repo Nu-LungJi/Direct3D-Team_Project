@@ -75,6 +75,9 @@ public:
 	void LateUpdate(_float fTimeDelta);
 
 public:
+	void ClearAllChunk(); // 씬 전환할 때 Clear하셈
+
+public:
 	HRESULT SaveMap(const std::string& path); // 메타 + 모든 청크 저장
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true); // 메타 + 모든 청크 불러오기
 	HRESULT SaveChunk(const MAPCHUNK_COORD& coord, const std::string& chunkPath); // 청크 단위 저장
@@ -87,6 +90,7 @@ public:
 public:
 	void RebuildChunks();
 	HRESULT RegisterMapMeshObject(const CHandle& hObject);
+	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_vChunkSize; }
 	void SetChunkStreaming(_bool enable) { m_bChunkStreaming = enable; }

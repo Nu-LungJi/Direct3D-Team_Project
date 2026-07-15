@@ -129,36 +129,73 @@ void COctreeNode::CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds
 
 void COctreeNode::OctreeFrustumCull(const BoundingFrustum& cameraFrustum)
 {
-	// 카메라 프러스텀과 교차안하면 그냥 리턴 	// 교차 안하면 암것도안함 (고려대상에서 버림)
-	if (!m_cullingBounds.Intersects(cameraFrustum))
+	const ContainmentType containment = cameraFrustum.Contains(m_cullingBounds);
+
+	// 교차안하면 바로 리턴
+	if (containment == DirectX::DISJOINT)
 	{
 		m_bInCameraFrustum = false; //디버그 렌더용
 		return;
 	}
+	if (containment == DirectX::CONTAINS)
+	{
+		m_bInCameraFrustum = true;
+		SetAllObjectsVisibleRecursive();
+		return;
+	}
 
+	// 옥트리 노드랑 프러스텀 걸쳐있을 때
 	// 카메라 프러스텀과 교차한다면
 	{
 		m_bInCameraFrustum = true; //디버그 렌더용
 		//if (m_depth >= m_maxDepth) // 리프노드라면
 		//{
-			for (const auto& handle : m_hObjects)
-			{
-				CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
-				if (mapObj == nullptr)
-					continue;
+		for (const auto& handle : m_hObjects)
+		{
+			CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
+			if (mapObj == nullptr)
+				continue;
 
-				BoundingBox objBox{};
-				if (!mapObj->GetOcclusionBounds(objBox) || objBox.Intersects(cameraFrustum))
-					mapObj->SetRenderEnable(true);
-			}
-			//return;
-		//}
+			BoundingBox objBox{};
+			if (!mapObj->GetOcclusionBounds(objBox) || objBox.Intersects(cameraFrustum))
+				mapObj->SetRenderEnable(true);
+		}
+		//return;
+	//}
 
 		for (const auto& child : m_childrenNode)
 		{
 			if (child)
 				child->OctreeFrustumCull(cameraFrustum);
 		}
+	}
+}
+
+void COctreeNode::CollectRayCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection, std::vector<CHandle>& outHandles) const
+{
+	_float nodeDistance = 0.f;
+	if (!m_cullingBounds.Intersects(rayOrigin, rayDirection, nodeDistance))
+		return;
+
+	for (const CHandle& handle : m_hObjects)
+	{
+		CMapMeshObject* mapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
+		if (mapObject == nullptr)
+			continue;
+
+		BoundingBox objectBounds{};
+		_float objectDistance = 0.f;
+		if (mapObject->GetOcclusionBounds(objectBounds) &&
+			objectBounds.Intersects(rayOrigin, rayDirection, objectDistance))
+		{
+			outHandles.push_back(handle);
+		}
+	}
+
+	for (const auto& child : m_childrenNode)
+	{
+		if (child)
+			child->CollectRayCandidates(rayOrigin, rayDirection, outHandles);
 	}
 }
 
@@ -248,6 +285,26 @@ void COctreeNode::RebuildCullingBounds()
 			continue;
 
 		BoundingBox::CreateMerged(m_cullingBounds, m_cullingBounds, childNode->m_cullingBounds);
+	}
+}
+
+void COctreeNode::SetAllObjectsVisibleRecursive()
+{
+	for (auto& myObjHandle : m_hObjects)
+	{
+		CMapMeshObject* myObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(myObjHandle);
+		if (myObj)
+		{
+			myObj->SetRenderEnable(true);
+		}
+	}
+
+	for (auto& myChild : m_childrenNode)
+	{
+		if (myChild)
+		{
+			myChild->SetAllObjectsVisibleRecursive();
+		}
 	}
 }
 

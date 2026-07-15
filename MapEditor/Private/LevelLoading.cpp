@@ -44,7 +44,7 @@ namespace
 
 	bool LoadLevelAnimEditorStaticModels()
 	{
-		const std::filesystem::path staticModelDir = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+		const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
 		if (!std::filesystem::exists(staticModelDir))
 		{
 			return false;
@@ -52,7 +52,7 @@ namespace
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
 		{
-			if (!entry.is_regular_file() || entry.path().extension() != ".bin")
+			if (!entry.is_regular_file() || _stricmp(entry.path().extension().string().c_str(), ".bin") != 0)
 			{
 				continue;
 			}
