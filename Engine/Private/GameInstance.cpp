@@ -504,7 +504,6 @@ void CGameInstance::MouseFix() const
 
 HRESULT CGameInstance::InitializeResources()
 {
-	LogMemoryUsage("befoer InitializeResources");
 	if (auto res = AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS, E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PER_PASS) })))
@@ -1121,7 +1120,6 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	LogMemoryUsage("befoer InitializeResources");
 	return S_OK;
 }
 HRESULT CGameInstance::InitializePrototype()
