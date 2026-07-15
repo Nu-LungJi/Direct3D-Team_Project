@@ -6,6 +6,8 @@ NS_BEGIN(Client)
 
 class CLevelCollider final : public Engine::CLevel
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevelCollider, CLevel)
 private:
 	CLevelCollider();
 	~CLevelCollider() override;

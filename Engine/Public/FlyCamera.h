@@ -27,8 +27,6 @@ public:
 	const CCollFrustum* GetFrustumCollider() const;
 
 private:
-	void MouseFix() const;
-private:
 	_bool m_bFix{ false };
 
 private:

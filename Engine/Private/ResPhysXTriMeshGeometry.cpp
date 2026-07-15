@@ -84,3 +84,13 @@ SPtr<CResPhysXTriMeshGeometry> CResPhysXTriMeshGeometry::Create()
 {
 	return ToSPtr(new CResPhysXTriMeshGeometry{ "" });
 }
+
+void CResPhysXTriMeshGeometry::Free()
+{
+	if (m_pTriMesh)
+	{
+		m_pTriMesh->release();
+		m_pTriMesh = nullptr;
+	}
+	CResPhysXGeometry::Free();
+}

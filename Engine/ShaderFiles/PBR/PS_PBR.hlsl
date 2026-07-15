@@ -1,21 +1,21 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
 
 // Base Texture
-Texture2D   AlbedoMap       : register(t0);
-Texture2D   NormalMap       : register(t1);
-Texture2D   SMROMap         : register(t2);
-Texture2D   EmissiveMap     : register(t3);
-Texture2D   DepthMap        : register(t4);
-Texture2D   AmbientMap      : register(t5);
-Texture2D   ShadowMap       : register(t6);
+Texture2D AlbedoMap : register(t0);
+Texture2D NormalMap : register(t1);
+Texture2D SMROMap : register(t2);
+Texture2D EmissiveMap : register(t3);
+Texture2D DepthMap : register(t4);
+Texture2D AmbientMap : register(t5);
+Texture2D ShadowMap : register(t6);
 
 // Image Based Lighting
-TextureCube IrridianceMap   : register(t7);
-TextureCube PreFilterMap    : register(t8);
-Texture2D   LUTMap          : register(t9);
+TextureCube IrridianceMap : register(t7);
+TextureCube PreFilterMap : register(t8);
+Texture2D LUTMap : register(t9);
 
-static const float  ShadowSmoothness = 1.5f;
-static const float  ShadowBrightness = 0.45f;
+static const float ShadowSmoothness = 1.5f;
+static const float ShadowBrightness = 0.45f;
 static const float2 ShadowMapResolution = { 1280.f, 720.f };
 
 static const float2 PoissonDisk[8] =
@@ -32,12 +32,12 @@ struct PS_IN
 struct PS_IN_BLEND
 {
     float4 Position : SV_POSITION;
-    float4 Normal   : NORMAL;
-    float4 Tangent  : TANGENT;
+    float4 Normal : NORMAL;
+    float4 Tangent : TANGENT;
     float4 Binormal : BINORMAL;
     float2 TexCoord : TEXCOORD0;
     float4 WorldPos : TEXCOORD1;
-    float4 ProjPos  : TEXCOORD2;
+    float4 ProjPos : TEXCOORD2;
 };
 
 struct PS_OUT
@@ -45,7 +45,7 @@ struct PS_OUT
     vector Diffuse : SV_TARGET0;
 };
 
-float  DistributionGGX(float3 N, float3 H, float _Roughness)
+float DistributionGGX(float3 N, float3 H, float _Roughness)
 {
     float R = _Roughness * _Roughness;
     float R2 = R * R;
@@ -59,7 +59,7 @@ float  DistributionGGX(float3 N, float3 H, float _Roughness)
 	
     return Num / max(0.000001f, Denom);
 }
-float  VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
+float VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
 {
     float R = _Roughness * _Roughness;
     float R2 = R * R;
@@ -67,13 +67,13 @@ float  VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
     float lambdaV = NDL * sqrt(max((-NDY * R2 + NDY) * NDY + R2, 0.001f));
     float lambdaL = NDY * sqrt(max((-NDL * R2 + NDL) * NDL + R2, 0.001f));
     
-    float  Denom = lambdaV + lambdaL;
+    float Denom = lambdaV + lambdaL;
     return Denom > 0.0f ? 0.5f / Denom : 0.0f;
 }
 float3 FresnelSchlick(float CTH, float3 MBR)
 {
-    float   ClampCTH = clamp(CTH, 0.0f, 1.0f);
-    return  MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
+    float ClampCTH = clamp(CTH, 0.0f, 1.0f);
+    return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
 
 
@@ -116,7 +116,7 @@ float Compute_NormalShadow(float4 _WorldPos, float2 _TexCoord)
     ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
     
     float CurrentPixelDepth = LightPos.z;
-    CurrentPixelDepth -= 0.0005f;           // Depth Bias
+    CurrentPixelDepth -= 0.0005f; // Depth Bias
     
     float ShadowMapDepth = ShadowMap.Sample(LinearWrap, ShadowMapUV).r;
     
@@ -161,8 +161,8 @@ float Compute_PCFShadow(float4 _WorldPos, float2 _TexCoord)
         [unroll]
         for (int y = -1; y <= 1; ++y)
         {
-            float2  SamplingPos = float2(x, y) * TexelSize;
-            float   ShadowMapDepth = ShadowMap.SampleCmpLevelZero(ShadowSampler, ShadowMapUV + SamplingPos, CurrentPixelDepth).r;
+            float2 SamplingPos = float2(x, y) * TexelSize;
+            float ShadowMapDepth = ShadowMap.SampleCmpLevelZero(ShadowSampler, ShadowMapUV + SamplingPos, CurrentPixelDepth).r;
             
             [branch]
             if (CurrentPixelDepth - 0.0005f > ShadowMapDepth)
@@ -230,24 +230,23 @@ PS_OUT PSMain(PS_IN IN)
         return OUT;
     }
     
-    float4 DepthWorld  = Convert_WorldPosByDepth(DepthData, IN.TexCoord);
+    float4 DepthWorld = Convert_WorldPosByDepth(DepthData, IN.TexCoord);
     
     float ShadowFactor = Compute_SmoothShadow(DepthWorld, IN.TexCoord, IN.Position.xy);
     
     float3 WorldNormal = NormalMap.Sample(LinearWrap, IN.TexCoord).rgb;
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
+    float3 V = normalize(g_vCamPos - DepthWorld.xyz);
+    float R = reflect(-V, WorldNormal);
 
-    float3  V = normalize(g_vCamPos - DepthWorld.xyz);
-    float   R = reflect(-V, WorldNormal);
-
-    float   NDV   = max(dot(WorldNormal, V), 0.f);
-    float3  AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord).rgb;
+    float NDV = max(dot(WorldNormal, V), 0.f);
+    float3 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord).rgb;
     
-    float3  Albedo   = pow(AlbedoTex.rgb, 2.2f);
-    float3  SMRO     = SMROMap.Sample(LinearWrap, IN.TexCoord);
-    float   Metallic  = SMRO.r;
-    float   Roughness = SMRO.g;
+    float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+    float3 SMRO = SMROMap.Sample(LinearWrap, IN.TexCoord);
+    float Metallic = SMRO.r;
+    float Roughness = SMRO.g;
    
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
@@ -256,12 +255,12 @@ PS_OUT PSMain(PS_IN IN)
     
     // Multiple Light Process
     [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < g_iLightCount; ++i)
+    for (int i = 0; i < LightCount; ++i)
     {
         float3 L, Radiance;
     
         [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld.xyz, L, Radiance))
+        if (!Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
             continue;
     
         float RawNDL = dot(WorldNormal, L);
@@ -286,7 +285,8 @@ PS_OUT PSMain(PS_IN IN)
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
         }
     }
-        
+    
+    
     float3 Emissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
     
     // Enviroment Light Process
@@ -313,14 +313,14 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     
     float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);
-    float3 V    = normalize(g_vCamPos - IN.WorldPos.xyz);
-    float  R    = reflect(-V, WorldNormal);
-    float  NDV  = max(dot(WorldNormal, V), 0.f);
+    float3 V = normalize(g_vCamPos - IN.WorldPos.xyz);
+    float R = reflect(-V, WorldNormal);
+    float NDV = max(dot(WorldNormal, V), 0.f);
 
     float3 SMRO = SMROMap.Sample(LinearWrap, IN.TexCoord);
-    float fMetallic     = SMRO.r * MetallicIntensity;
-    float fRoughness    = SMRO.g * RoughnessIntensity;
-    float fAmbient      = SMRO.b * AmbientIntensity;
+    float fMetallic = SMRO.r * MetallicIntensity;
+    float fRoughness = SMRO.g * RoughnessIntensity;
+    float fAmbient = SMRO.b * AmbientIntensity;
     
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
@@ -328,12 +328,12 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     float3 LightAccumulation = float3(0.f, 0.f, 0.f);
     
     [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < g_iLightCount; ++i)
+    for (int i = 0; i < LightCount; ++i)
     {
         float3 L, Radiance;
     
         [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], IN.WorldPos.xyz, L, Radiance))
+        if (!Compute_DynamicLight(IN.WorldPos.xyz, AffectedLight[i], L, Radiance))
             continue;
     
         float RawNDL = dot(WorldNormal, L);

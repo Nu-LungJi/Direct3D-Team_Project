@@ -130,6 +130,13 @@ namespace Engine
 #endif
 			}
 
+			explicit StringID(_string_id h) : hash(h)
+			{
+#ifndef STRID_NODBG
+				str = "RuntimeCreatedID"; // 디버깅 시 식별 가능한 문자열 할당
+#endif
+			}
+
 			// 리터럴 문자열 생성자
 			constexpr StringID(const _char* s)
 				: hash(STRID(s))
@@ -211,6 +218,13 @@ namespace Engine
 				 static thread_local wchar_t buffer[32];
 				 swprintf(buffer, 32, L"%llu", hash);
 				 return buffer;
+#endif
+			}
+
+			explicit WStringID(_string_id h) : hash(h)
+			{
+#ifndef STRID_NODBG
+				str = L"RuntimeCreatedID"; // 디버깅 시 식별 가능한 문자열 할당
 #endif
 			}
 

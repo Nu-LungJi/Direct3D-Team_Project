@@ -30,7 +30,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
     m_eState = STATE::LOADING;
 
     auto resources = CGameInstance::Get().GetResource(argDesc->textureId.first, argDesc->textureId.second);
-    if (!resources || resources->empty())
+    if (resources.empty())
     {
         m_eState = STATE::LOADFAIL;
         MSG_BOX_STR(_wstring{ L"CResTexture2DArray No resources Faield Path:" + StringToWString(m_sPath) }.c_str());
@@ -38,7 +38,7 @@ HRESULT CResTexture2DArray::Load(const std::any& arg)
     }
 
     std::vector<SPtr<CResTexture2D>> textures;
-    for (const auto& resource : *resources)
+    for (const auto& resource : resources)
     {
         if (!resource->IsA(CResTexture2D::StaticType))
         {

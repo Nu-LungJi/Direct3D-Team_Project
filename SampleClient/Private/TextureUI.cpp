@@ -3,6 +3,8 @@
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
+#include "UIManager.h"
+#include "Client_Defines.h"
 
 NS_USING(Client)
 
@@ -15,6 +17,13 @@ CTextureUI::~CTextureUI()
 {
 }
 
+HRESULT CTextureUI::InitializePrototype(void* pArg)
+{
+
+
+	return S_OK;
+}
+
 HRESULT CTextureUI::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
@@ -24,9 +33,19 @@ HRESULT CTextureUI::Initialize(void* pArg)
 
 
 	{
+		/* Buffer */
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI" };
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerUI", &Desc, &m_pComCBufferPerUI)))
+		{
+			return E_FAIL;
+		};
+
+		/* Component */
+		CComponent::DESC CDesc{};
+		Desc.pGameObject = this;
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &CDesc, &m_pComTween)))
 		{
 			return E_FAIL;
 		};
@@ -43,19 +62,35 @@ void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CTextureUI::Update(E::_float fTimeDelta)
 {
+	if (!m_isActive)
+		return;
+
 	CUIObject::Update(fTimeDelta);
 
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 	if (m_bMouseTracking)
 	{
-		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 		m_UIINFO.fX = mousePos.x;
 		m_UIINFO.fY = mousePos.y;
 		CalcUICoord();
+	}
+
+	for (auto& pComponent : m_UIComponents)
+	{
+		pComponent->Update(fTimeDelta, mousePos);
+	}
+
+	if (m_pComTween != nullptr)
+	{
+		m_pComTween->Tick(fTimeDelta);
 	}
 }
 
 void CTextureUI::LateUpdate(E::_float fTimeDelta)
 {
+	if (!m_isActive)
+		return;
+
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
 }
@@ -90,7 +125,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = { 0.f, 0.f };
 		perUI.uvSize = { 0.f, 0.f };
-		perUI.color = { 0.f, 0.f, 0.f, m_UIINFO.Alpha };
+		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -132,6 +167,21 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	return S_OK;
 }
 
+void CTextureUI::PlayerEffect(uint32_t uiState)
+{
+	if (m_pComTween == nullptr)
+		return;
+
+	if (uiState & ETOUI(UI_STATE::APPEAR))
+	{
+		ClearEffectTweens();
+		if (Appear) Appear(this);
+	}
+
+	if (m_bInputLocked)
+		return;
+}
+
 void CTextureUI::Creating()
 {
 }
@@ -151,6 +201,34 @@ void CTextureUI::EndHovering()
 
 void CTextureUI::Ending()
 {
+}
+
+void CTextureUI::PlayEffect(uint32_t uiState)
+{
+	m_EffectTag = "Magic";
+
+	if (ETOUI(UI_EFFECT_TYPE::NONE) == m_UIINFO.EffectType)
+	{
+		switch (uiState)
+		{
+		case ETOUI(UI_STATE::ENTER):
+			m_vEffects.push_back(GET_SINGLE(UIManager)->LoadPrefab(m_EffectTag));
+			break;
+		case ETOUI(UI_STATE::EXIT):
+			m_vEffects.push_back(GET_SINGLE(UIManager)->LoadPrefab(m_EffectTag));
+			break;
+		case ETOUI(UI_STATE::NONE):
+			for (auto pEffect : m_vEffects)
+			{
+				GET_SINGLE(UIManager)->DeleteUIRecursive(pEffect);
+			}
+			break;
+		}
+	}
+	else if (ETOUI(UI_EFFECT_TYPE::HOVER) == m_UIINFO.EffectType)
+	{
+
+	}
 }
 
 E::UPtr<CTextureUI> CTextureUI::Create()

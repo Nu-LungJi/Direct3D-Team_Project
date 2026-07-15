@@ -147,6 +147,8 @@ Engine::UPtr<CLevelMapEditor> CLevelMapEditor::Create()
 
 void CLevelMapEditor::Free()
 {
+	E::CGameInstance::Get().ClearAllChunk();
+	E::CGameInstance::Get().GetNavMeshManager()->Clear();
 	E::CGameInstance::Get().DelPrototype("LEVEL_MAPEDITOR");
 	E::CGameInstance::Get().DelResource("LEVEL_MAPEDITOR");
 	CLevel::Free();

@@ -57,19 +57,6 @@ HRESULT CLevelPlayground::Initialize()
 			return E_FAIL;
 		}
 		//테스트 고블린 무기 테스트
-		Desc.sObjectTag = "Weapon";
-
-		auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon","03_Weapon", &Desc);
-		if (!Weapon.has_value())
-		{
-			MSG_BOX("Create Failed Weapon");
-			return E_FAIL;
-		}
-		auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CTestGob>(Gobline.value());
-		if (nullptr == pObj)
-			MSG_BOX("Gobline Get Failed to Handle");
-
-		pObj->Set_Partes(PARTES::WEAPON, Weapon.value());
 	}
 	{
 		//if(false)
@@ -128,7 +115,7 @@ HRESULT CLevelPlayground::Initialize()
 	//	}
 	//}
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
 
 
 	return S_OK;

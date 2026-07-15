@@ -54,17 +54,30 @@ namespace Engine
 
 	typedef struct tagConstantBufferTime
 	{
-		_float DeltaTime;
-		_float TimeAccumulation;
+		_float	DeltaTime;
+		_float	TimeAccumulation;
 		_float2 TimePadding;
 	} CB_TIME;
 	static_assert(sizeof(CB_TIME) % 16 == 0);
 
+	typedef struct tagConstantBufferFog
+	{
+		_float4x4	FogVolumeInvWorld;
+		_float		FogIntensity;
+		_float3		FogColor;
+		_float		FogMaxHeight;
+		_float		FogStartPos;
+		_float		FogEndPos;
+		_float		FogDensity;
+	} CB_FOG;
+	static_assert(sizeof(CB_FOG) % 16 == 0);
+
 	typedef struct tagConstantBufferLight
 	{
-		DYNAMIC_LIGHT AffectedLight[MAX_LIGHT_COUNT];
-		uint32_t      g_iLightCount;
-		XMFLOAT3      g_fLightPadding;
+		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
+		XMFLOAT4X4		g_InvViewProj;
+		uint32_t		LightCount;
+		_float3			LightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 

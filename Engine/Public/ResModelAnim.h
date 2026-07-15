@@ -24,8 +24,7 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
-	_bool Update_TransformationMatrices(_float fTimeDelta, const std::vector<SPtr<CResModelBone>>& Bones, _bool isLoop);
-	_bool ExtractRootMotionDelta(_float fPrevTrackPosition, _float fCurrTrackPosition, uint32_t iRootBoneIndex, _float3& vOutDelta);
+
 	SPtr<CResModelChanel> FindRootChannel(uint32_t iRootBoneIndex);
 	void RebuildCurrentKeyFrameIndices();
 

@@ -155,12 +155,19 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\Client_Defines.h" />
+    <ClInclude Include="..\Public\CreateMapMeshCommand.h" />
+    <ClInclude Include="..\Public\DeleteMapMeshCommand.h" />
+    <ClInclude Include="..\Public\EditorCommandManager.h" />
+	<ClInclude Include="..\Public\EditorSelection.h" />
     <ClInclude Include="..\Public\GUIWindow.h" />
     <ClInclude Include="..\Public\Hierarchy.h" />
+    <ClInclude Include="..\Public\IEditorCommand.h" />
+	<ClInclude Include="..\Public\MapMeshCommandCommon.h" />
     <ClInclude Include="..\Public\Inspector.h" />
     <ClInclude Include="..\Public\MapEditorTerrain.h" />
     <ClInclude Include="..\Public\MapChunkGUI.h" />
     <ClInclude Include="..\Public\MapEditorGUI.h" />
+    <ClInclude Include="..\Public\MapPickingPass.h" />
     <ClInclude Include="..\Public\NavMeshGUI.h" />
     <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h" />
     <ClInclude Include="..\Public\ResourceGUI.h" />
@@ -177,12 +184,18 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Private\CreateMapMeshCommand.cpp" />
+    <ClCompile Include="..\Private\DeleteMapMeshCommand.cpp" />
+    <ClCompile Include="..\Private\EditorCommandManager.cpp" />
+	<ClCompile Include="..\Private\EditorSelection.cpp" />
     <ClCompile Include="..\Private\GUIWindow.cpp" />
     <ClCompile Include="..\Private\Hierarchy.cpp" />
     <ClCompile Include="..\Private\Inspector.cpp" />
     <ClCompile Include="..\Private\MapEditorTerrain.cpp" />
     <ClCompile Include="..\Private\MapChunkGUI.cpp" />
     <ClCompile Include="..\Private\MapEditorGUI.cpp" />
+	<ClCompile Include="..\Private\MapMeshCommandCommon.cpp" />
+    <ClCompile Include="..\Private\MapPickingPass.cpp" />
     <ClCompile Include="..\Private\NavMeshGUI.cpp" />
     <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp" />
     <ClCompile Include="..\Private\ResourceGUI.cpp" />
@@ -205,6 +218,10 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

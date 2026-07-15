@@ -113,7 +113,7 @@ PS_OUT PSMain(VS_OUT In)
     float3 LightAccumulation = float3(0.f, 0.f, 0.f);
 
     [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < g_iLightCount; ++i)
+    for (int i = 0; i < LightCount; ++i)
     {
         float3 L, Radiance;
 
@@ -151,7 +151,8 @@ PS_OUT PSMain(VS_OUT In)
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
 
-    Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+    //Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+    Out.vDiffuse = float4(1.f, 1.f, 1.f, 1.f);
     return Out;
     
 }

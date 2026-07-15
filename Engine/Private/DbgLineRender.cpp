@@ -783,13 +783,26 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
     m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 
+	const uint32_t vertexCount = std::min(
+		static_cast<uint32_t>(m_Vertices.size()),
+		m_iVertexCnt);
+
 
     {
         D3D11_MAPPED_SUBRESOURCE mappedResource;
-        if (SUCCEEDED(m_pContext->Map(viBuffer->GetVertexBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))) {
-            memcpy(mappedResource.pData, m_Vertices.data(), sizeof(VTX_COL) * m_Vertices.size());
-            m_pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
-        }
+		if (SUCCEEDED(m_pContext->Map(
+			viBuffer->GetVertexBuffer().Get(),
+			0,
+			D3D11_MAP_WRITE_DISCARD,
+			0,
+			&mappedResource)))
+		{
+			memcpy(mappedResource.pData,
+				m_Vertices.data(),
+				sizeof(VTX_COL) * vertexCount);
+
+			m_pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
+		}
     }
 	ComPtr<ID3D11DepthStencilState> aa = {nullptr};
 	m_pContext->OMGetDepthStencilState(aa.GetAddressOf(), 0);
@@ -797,7 +810,7 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 	auto ds = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
 
 	m_pContext->OMSetDepthStencilState(ds->GetDepthStencilState().Get(), 0);
-    m_pContext->Draw((uint32_t)m_Vertices.size(), 0);
+	m_pContext->Draw(vertexCount, 0);
 	m_pContext->OMSetDepthStencilState(aa.Get(), 0);
 	
 

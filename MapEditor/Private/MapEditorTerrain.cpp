@@ -196,6 +196,64 @@ HRESULT CMapEditorTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER
 	return S_OK;
 }
 
+bool CMapEditorTerrain::IsOcclusionCullable() const
+{
+	return m_pResMapEditorTerrainVIBuffer != nullptr &&
+		!m_pResMapEditorTerrainVIBuffer->GetVertices().empty();
+}
+
+bool CMapEditorTerrain::GetOcclusionBounds(BoundingBox& outBounds) const
+{
+	if (m_pResMapEditorTerrainVIBuffer == nullptr)
+		return false;
+
+	const auto& vertices = m_pResMapEditorTerrainVIBuffer->GetVertices();
+	if (vertices.empty())
+		return false;
+
+	XMFLOAT3 minPos{
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max()
+	};
+
+	XMFLOAT3 maxPos{
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::max()
+	};
+
+	for (const auto& vertex : vertices)
+	{
+		const auto& pos = vertex.pos;
+
+		minPos.x = std::min(minPos.x, pos.x);
+		minPos.y = std::min(minPos.y, pos.y);
+		minPos.z = std::min(minPos.z, pos.z);
+
+		maxPos.x = std::max(maxPos.x, pos.x);
+		maxPos.y = std::max(maxPos.y, pos.y);
+		maxPos.z = std::max(maxPos.z, pos.z);
+	}
+
+	const XMFLOAT3 center{
+		(minPos.x + maxPos.x) * 0.5f,
+		(minPos.y + maxPos.y) * 0.5f,
+		(minPos.z + maxPos.z) * 0.5f
+	};
+
+	const XMFLOAT3 extents{
+		(maxPos.x - minPos.x) * 0.5f,
+		(maxPos.y - minPos.y) * 0.5f,
+		(maxPos.z - minPos.z) * 0.5f
+	};
+
+	BoundingBox localBox(center, extents);
+	localBox.Transform(outBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
+
 E::UPtr<CMapEditorTerrain> CMapEditorTerrain::Create()
 {
 	auto pInstance = E::ToUPtr(new CMapEditorTerrain{});

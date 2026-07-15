@@ -21,7 +21,7 @@ CTestPhysXTerrain::~CTestPhysXTerrain()
 
 HRESULT CTestPhysXTerrain::InitializePrototype(void* pArg)
 {
-	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain");
+	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("SAMPLE_CLIENT_BUFFER_PHYSX", "VIBUFFER_Terrain");
 	//m_pResTerrainVIBuffer = CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp");
 	if (!m_pResTerrainVIBuffer)
 	{
@@ -29,7 +29,7 @@ HRESULT CTestPhysXTerrain::InitializePrototype(void* pArg)
 	}
 
 	//"SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0"
-	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0");
+	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLIENT_TEX_PHYSX", "TEX2D_Terrain_Tile0");
 	//m_pResTerrainTexture2D = CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds");
 	if (!m_pResTerrainTexture2D)
 	{

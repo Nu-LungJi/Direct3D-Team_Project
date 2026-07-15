@@ -1,6 +1,9 @@
 #pragma once
-#include "GameObject.h"
+#include "AnimationObject.h"
 #include "Client_Defines.h"
+
+
+
 NS_BEGIN(Engine)
 class CComConstantBuffer;
 class CResTexture2D;
@@ -8,15 +11,16 @@ class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
 class CResModel;
+class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
 NS_END
 
 NS_BEGIN(Client)
-class CTestModel final : public CGameObject
+class CTestModel final : public CAnimationObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CTestModel, CGameObject)
+	DECLARE_DERIVED_TYPE(CTestModel, CAnimationObject)
 
 public:
 	typedef struct tagTerrainDesc: public CGameObject::GAMEOBJECT_DESC
@@ -36,18 +40,33 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	HRESULT Render_Instanced(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx,const E::MODEL_INSTANCE_BATCH& Batch) override;
+	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 
+	HRESULT Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext);
+	HRESULT Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext);
+
+	HRESULT Unbind_AnimationCompute(ID3D11DeviceContext* pContext);
+
+	HRESULT Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext);
+
+	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
+
+	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
+	
 private:
 	CComModelInstance*   m_pComModelInstance{};
 	CComAnimator*		 m_pModelAnimator{};
 
-	// nonAnim
-	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
-	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
-
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
+	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
+	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
+	
+
+	SPtr<CResComputeShader> m_pAnimComputeShader{};
+
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
@@ -60,6 +79,7 @@ private:
 	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity	= 0.f;
 
+	uint32_t m_iCurrentInstanceCount = 0.f;
 public:  
 	static E::UPtr<CTestModel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

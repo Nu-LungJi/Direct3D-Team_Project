@@ -31,9 +31,12 @@ private:
 
 	HRESULT Ready_Meshes(_char* ptr);
 	HRESULT Ready_Materials(const _string& strModelFilePath, _char* ptr);
+	void BuildLocalBoundsFromMeshes();
 public:
 	uint32_t Get_NumMeshes() const { return m_iNumMeshes; }
 	const _float4x4& Get_PreTransformMatrix() { return m_PreTransformMatrix; }
+	const BoundingBox& GetLocalBounds() const { return m_LocalBounds; }
+	bool HasLocalBounds() const { return m_bHasLocalBounds; }
 
 
 public:
@@ -62,6 +65,8 @@ private:
 
 private:
 	_float4x4				m_PreTransformMatrix = {};
+	BoundingBox				m_LocalBounds = {};
+	bool					m_bHasLocalBounds = false;
 
 
 public:

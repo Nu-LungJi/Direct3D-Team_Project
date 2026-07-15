@@ -74,3 +74,8 @@ SPtr<CResPhysXBoxGeometry> CResPhysXBoxGeometry::Create(const DESC& desc)
 	}
 	return pInstance;
 }
+
+void CResPhysXBoxGeometry::Free()
+{	
+	CResPhysXGeometry::Free();
+}
