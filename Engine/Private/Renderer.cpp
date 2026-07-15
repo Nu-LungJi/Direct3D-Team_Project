@@ -51,10 +51,8 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeBloom()))				return E_FAIL;
 
-#ifdef _DEBUG
-    if (FAILED(Initialize_Debugging()))         
-		return E_FAIL;
-#endif
+    if (FAILED(Initialize_Debugging()))         return E_FAIL;
+
 	if (FAILED(InitializeVolumetricEffect()))	return E_FAIL;
 	
 
