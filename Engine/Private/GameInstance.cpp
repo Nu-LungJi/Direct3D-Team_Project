@@ -444,6 +444,7 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 		ZoneScopedN("InputManager_Update");
 		m_pDInputManager->Update_InputDev();
 	}
+	m_iFrameCnt++;
 
 	m_pLevelManager->FrameStart(fTimeDelta);
 	m_pGameObjectManager->FrameStart();

@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include "CameraObject.h"
+#include "GameInstance.h"
+#include "ffx_fsr2.h"
 
 NS_USING(Engine)
 
@@ -16,6 +18,17 @@ CCameraObject::CCameraObject(const CCameraObject& Prototype)
 
 CCameraObject::~CCameraObject()
 {
+}
+
+void CCameraObject::FSRCameraJitter()
+{
+	auto frameIndex = CGameInstance::Get().GetFrameCnt();
+	int32_t fsrIndex = static_cast<int32_t>(frameIndex % INT32_MAX);
+	const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(1280, 1920);
+	float jitterX = 0.0f, jitterY = 0.0f;
+	ffxFsr2GetJitterOffset(&jitterX, &jitterY, fsrIndex, jitterPhaseCount);
+	m_pairCameraJitter.first = jitterX;
+	m_pairCameraJitter.second = jitterY;
 }
 
 HRESULT CCameraObject::Initialize(void* pArg)

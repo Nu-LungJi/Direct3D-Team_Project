@@ -422,10 +422,12 @@ public:
 		POINT pt; GetCursorPos(&pt); ScreenToClient(m_hWnd, &pt);
 		return { (float)pt.x, (float)pt.y };
 	}
+	uint64_t GetFrameCnt() const { return m_iFrameCnt; }
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
 	HWND m_hWnd{};
 	_bool m_bMouseFix{};
+	uint64_t m_iFrameCnt{};
 
 private:
 	void MouseFix() const;

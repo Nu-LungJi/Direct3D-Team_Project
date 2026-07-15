@@ -3,6 +3,8 @@
 #include "ffx_fsr2.h"
 #include "ffx_fsr2_dx11.h"
 
+#include "GameInstance.h"
+
 NS_BEGIN(Engine)
 
 struct CMyFSR2_2::Impl
@@ -69,7 +71,7 @@ HRESULT CMyFSR2_2::Initialize()
 	}
 	return S_OK;
 }
-void CMyFSR2_2::Execute(const ExecuteDesc& desc)
+HRESULT CMyFSR2_2::Execute(const ExecuteDesc& desc)
 {
 	FfxFsr2DispatchDescription dispatchDesc{};
 	// 1. 커맨드 리스트 (DX11 디바이스 컨텍스트 래퍼)
@@ -77,20 +79,20 @@ void CMyFSR2_2::Execute(const ExecuteDesc& desc)
 
 
 	// 2. 리소스 설정 (Wrapper 함수 사용)
-	//dispatchDesc.color = ffxGetResourceDX11(pColorSRV, ...);
-	//dispatchDesc.depth = ffxGetResourceDX11(pDepthSRV, ...);
-	//dispatchDesc.motionVectors = ffxGetResourceDX11(pMotionVecSRV, ...);
-	//dispatchDesc.output = ffxGetResourceDX11(pOutputUAV, ...);
+	dispatchDesc.color = ffxGetResourceDX11(&m_pImpl->context, desc.pColorTex2D, L"desc.pColorTex2D");
+	dispatchDesc.depth = ffxGetResourceDX11(&m_pImpl->context, desc.pDepthTex2D, L"desc.pDepthTex2D");
+	dispatchDesc.motionVectors = ffxGetResourceDX11(&m_pImpl->context, desc.pMotionVectorTex2D, L"desc.pMotionVectorTex2D");
+	dispatchDesc.output = ffxGetResourceDX11(&m_pImpl->context, desc.pOutputUAVTex2D, L"desc.pOutputUAVTex2D");
 
 	// 3. 카메라/프레임 정보
 	dispatchDesc.renderSize = { 1280, 720 };
 	dispatchDesc.jitterOffset = { desc.fCurrentJitterX, desc.fCurrentJitterY };
 	dispatchDesc.motionVectorScale = { -1280.0f, -720.0f }; // 엔진 모션벡터 사양에 맞게
-	dispatchDesc.frameTimeDelta = desc.fDeltaTime * 1000.0f;
+	dispatchDesc.frameTimeDelta = desc.fDeltaTime * 1000.0f; // ms변환
 	dispatchDesc.cameraNear = desc.fNear;
 	dispatchDesc.cameraFar = desc.fFar;
 	dispatchDesc.cameraFovAngleVertical = desc.fFov;
-	dispatchDesc.reset = false;
+	dispatchDesc.reset = desc.bCameraReset;
 
 	// 4. 선명도
 	dispatchDesc.enableSharpening = true;
@@ -98,12 +100,13 @@ void CMyFSR2_2::Execute(const ExecuteDesc& desc)
 
 	// FSR 2.2 디스패치 실행
 	FfxErrorCode errorCode = ffxFsr2ContextDispatch(&m_pImpl->context, &dispatchDesc);
-
 	if (errorCode != FFX_OK)
 	{
-		// 디버깅을 위해 에러 로그 확인
-		OutputDebugStringA("FSR 2.2 Dispatch Failed!\n");
+		MSG_BOX("FSR 2.2 Dispatch Failed!");
+		return E_FAIL;
 	}
+
+	return S_OK;
 }
 UPtr<CMyFSR2_2> CMyFSR2_2::Create()
 {
