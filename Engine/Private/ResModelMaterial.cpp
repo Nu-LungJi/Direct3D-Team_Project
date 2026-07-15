@@ -41,7 +41,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 		uint32_t textureTypeCount = *(uint32_t*)pPoint;
 		pPoint += sizeof(uint32_t);
 
-		
+
 
 		for (size_t i = 0; i < textureTypeCount; i++)
 		{
@@ -100,7 +100,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				if (b_cache) {
 
 					auto resTex = CGameInstance::Get().GetResourceFirst<CResTexture2D>("ONLY_MINSU_NO_TOUCH", texPath.string());
-					
+
 					m_Materials[textureType].push_back(resTex);
 				}
 				else {
@@ -122,7 +122,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 					m_Materials[textureType].push_back(resTex);
 				}
 
-			
+
 			}
 		}
 
