@@ -32,8 +32,6 @@ public:
 
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pUAVComBinedOutput; }
 
-	VOID	Initialize_ShadowResource(uint32_t _Resolution, uint32_t _MaxLightCount);
-
 #ifdef _DEBUG
 public:
 	HRESULT	Initialize_DebugRender();
@@ -47,8 +45,6 @@ private:
 	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
 	SPtr<CResTexture2D>		m_pResPointLightTexture2D = { nullptr };
 	SPtr<CResTexture2D>		m_pResSpotLightTexture2D = { nullptr };
-
-
 #endif
 private:
 	ComPtr<ID3D11Device>				m_pDevice				= { nullptr };

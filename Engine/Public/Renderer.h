@@ -15,20 +15,27 @@ private:
 	~CRenderer() override;
 
 public:
+	HRESULT		Initialize();
 	VOID		UpdateGUI();
 	VOID		Update(_float fTimeDelta);
 
+	HRESULT		AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
+	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
+
+	HRESULT		Draw();
+	void		FrameEnd();
+
 public:
-	HRESULT Initialize();
-
-	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
-
-	
+	void DrawPlayerInvenUIPass() { m_bDrawPlayerInvenUIPass = true; }
 
 public:
-	HRESULT	Reset_DefaultShader(RENDERGROUP _Group);
+	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
-
+	VOID	Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 
 private:
 	HRESULT InitializeShaderResource();
@@ -46,21 +53,6 @@ private:
 	HRESULT InitializeBloom();
 	HRESULT InitializeVolumetricEffect();
 	
-public:
-	HRESULT Draw();
-	void FrameEnd();
-
-public:
-	void DrawPlayerInvenUIPass() { m_bDrawPlayerInvenUIPass = true; }
-
-public:
-	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
-	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
-	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
-	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
-
-	VOID	Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
 
@@ -212,22 +204,22 @@ private:
 	HRESULT RenderCollider();
 	HRESULT RenderUI();
 
-	
 private:
-	_bool			ApplyFilter = { true };		// 필터 적용 ON-OFF
+	_bool			ApplyFilter = { true };			// 필터 적용 ON-OFF
 	_bool			ApplyVolumetric = { true };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyShadow = { true };			// 그림자 ON-OFF
 	RENDER_CTX		RenderContext = {};
-	_bool bApplyShadow = { true };
-	XMMATRIX	ShadowLightVP{};
+	XMMATRIX		ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
 	_float			TimeAccumulation{};
 
-	_float	m_fFogIntensity{};
-	_float3	m_fFogColor{1.f, 1.f, 1.f};
-	_float	m_fFogMaxHeight{};
-	_float	m_fFogStartPos{};
-	_float	m_fFogEndPos{};
-	_float	m_fFogDensity{};
+private:
+	_float			m_fFogIntensity{};
+	_float3			m_fFogColor{1.f, 1.f, 1.f};
+	_float			m_fFogMaxHeight{};
+	_float			m_fFogStartPos{};
+	_float			m_fFogEndPos{};
+	_float			m_fFogDensity{};
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
