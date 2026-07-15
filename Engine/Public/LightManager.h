@@ -15,7 +15,7 @@ public:
 	
 	VOID	Update(_float fTimeDelta);
 	VOID	UpdateGUI();
-	HRESULT	Render_ShadowMap();
+	HRESULT	Capture_ShadowMap();
 	HRESULT	Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
 		const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth);
 
@@ -32,10 +32,23 @@ public:
 
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pUAVComBinedOutput; }
 
+	VOID	Initialize_ShadowResource(uint32_t _Resolution, uint32_t _MaxLightCount);
+
 #ifdef _DEBUG
 public:
 	HRESULT	Initialize_DebugRender();
 	HRESULT Render_DebugIcon();
+
+private:
+	SPtr<CResVertexShader>	m_pResDebugVertexShader	= { nullptr };
+	SPtr<CResPixelShader>	m_pResDebugPixelShader = { nullptr };
+
+	// Light 위치 나타내는 용 아이콘 텍스쳐
+	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
+	SPtr<CResTexture2D>		m_pResPointLightTexture2D = { nullptr };
+	SPtr<CResTexture2D>		m_pResSpotLightTexture2D = { nullptr };
+
+
 #endif
 private:
 	ComPtr<ID3D11Device>				m_pDevice				= { nullptr };
@@ -62,12 +75,8 @@ private:
 
 	std::vector<ID3D11DepthStencilView*>	m_pShadowMapList;
 	ComPtr<ID3D11Texture2D>					m_pShadowTextureArray = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>		m_pShadowSRV = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>		m_pShadowSRV	= { nullptr };
 
-	// Light 위치 나타내는 용 아이콘 텍스쳐
-	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
-	SPtr<CResTexture2D>		m_pResPointLightTexture2D		= { nullptr };
-	SPtr<CResTexture2D>		m_pResSpotLightTexture2D		= { nullptr };
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

@@ -83,6 +83,8 @@ private:
 	std::vector<CGameObject*>	m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>	m_pRenderable_DynamicObjectList{};
 
+	XMFLOAT4X4	LightView{};
+	XMFLOAT4X4	LightProj{};
 	XMFLOAT4X4	LightViewProj{};
 	XMFLOAT4X4	InvViewProj{};
 
@@ -93,6 +95,8 @@ public:
 
 	_bool	Check_ObjectInArea();
 	VOID	Update_Collider();
+
+	HRESULT Capture_ShadowMap(ID3D11DeviceContext* pContext);
 
 	VOID	Render_StaticShadow (ID3D11DeviceContext* pContext);
 	VOID	Render_DynamicShadow(ID3D11DeviceContext* pContext);

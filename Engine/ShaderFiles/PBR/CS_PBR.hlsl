@@ -160,8 +160,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     WorldNormal = normalize(WorldNormal * 2.f - 1.f);
     
     float3  AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
-    //float3  Albedo = pow(AlbedoTex.rgb, 2.2f);
-    float3 Albedo = AlbedoTex.rgb;
+    float3  Albedo = pow(AlbedoTex.rgb, 2.2f);
+
     float3  MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f);
     float   Metallic    = MultipleTex.r;
     float   Roughness   = MultipleTex.g;
@@ -176,11 +176,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 
     float3  LightAccumulation = float3(0.f, 0.f, 0.f);
 
-    
+    float3 Diffuse;
     for (uint i = 0; i < LightCount; ++i)
     {
         float3 L, Radiance;
-        if (Compute_DynamicLight(DepthWorld.xyz, L, Radiance))
+        if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
         {
             float RawNDL = dot(WorldNormal, L);
 
@@ -198,7 +198,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 
                 float3 kS = F;
                 float3 kD = (1.0f - kS) * (1.0f - Metallic);
-                float3 Diffuse = kD * Albedo / PI;
+                 Diffuse = kD * Albedo / PI;
             
                 float ShadowFactor = Compute_SmoothShadow(DepthWorld, TexCoord, float2(ID.xy));
 
@@ -206,6 +206,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
             }
         }
     }
+    OUTPUT[ID.xy] = float4(Diffuse, 1.f);
+    return;
     
         
     float AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
