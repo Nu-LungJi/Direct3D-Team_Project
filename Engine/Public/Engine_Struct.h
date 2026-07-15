@@ -70,20 +70,22 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		XMFLOAT4X4	g_LightViewProj;
+		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
 
-		_float3		LightDirection;
-		_float		LightIntensity;
-		_float3		LightColor;
-		_float		LightRange;
+		XMFLOAT4X4		g_LightViewProj;
+		XMFLOAT4X4		g_InvViewProj;
 
-		_float3		Position;
-		uint32_t	LightType;
+		_float3  LightDirection;
+		_float3  LightColor;
+		_float   LightIntensity;
+		_float   LightRange;
 
-		_float		InnerAttanuation;
-		_float		OuterAttanuation;
+		_float3  Position;
 
-		_float2		LightPadding;
+		_float   InnerAttanuation;
+		_float   OuterAttanuation;
+
+		_float2   LightPadding;
 	} DYNAMIC_LIGHT;
 
 	typedef struct tagPostProcess
