@@ -6,6 +6,7 @@ namespace Engine
 		PERMANENT,
 		CAMERAS,
 		PHYSX,
+		UI,
 	};
 
 	enum class ES_EngineProtoComponent

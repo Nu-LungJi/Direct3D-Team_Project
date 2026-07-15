@@ -5,7 +5,6 @@
 #include "LevelLoading.h"
 #include "Resources.h"
 
-
 NS_USING(Client)
 
 CMainApp::CMainApp()

@@ -1,36 +1,39 @@
 #include "pch.h"
-#include "TextureUI.h"
+#include "Button.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
 #include "UIManager.h"
 #include "Client_Defines.h"
+#include "EffectUI.h"
+#include "ButtonComponent.h"
+#include "TweenComponent.h"
+#include "UIObject.h"
 
 NS_USING(Client)
 
-CTextureUI::CTextureUI()
+CButton::CButton()
 {
 
 }
 
-CTextureUI::~CTextureUI()
+CButton::~CButton()
 {
 }
 
-HRESULT CTextureUI::InitializePrototype(void* pArg)
+HRESULT CButton::InitializePrototype(void* pArg)
 {
 
 
 	return S_OK;
 }
 
-HRESULT CTextureUI::Initialize(void* pArg)
+HRESULT CButton::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
 
 	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
-
 
 	{
 		/* Buffer */
@@ -45,29 +48,59 @@ HRESULT CTextureUI::Initialize(void* pArg)
 		CComponent::DESC CDesc{};
 		Desc.pGameObject = this;
 
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
+		{
+			return E_FAIL;
+		};
+
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &CDesc, &m_pComTween)))
 		{
 			return E_FAIL;
 		};
 	}
 
-	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
+	m_UIINFO.UIType = ETOUI(UI_TYPE::BUTTON);
+	m_UIINFO.AlphaRatio = 0.f;
 
 	return S_OK;
 }
 
-void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
+void CButton::PriorityUpdate(E::_float fTimeDelta)
 {
+	//if (!m_EffectLoad)
+	//{
+	//	this->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("ScaleUp");
+	//	this->OnHoverExit = GET_SINGLE(UIManager)->GetAction("ScaleDown");
+	//	this->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("Create");
+	//
+	//	if (m_Effect_Hovered != nullptr)
+	//	{
+	//		m_Effect_Hovered->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
+	//		m_Effect_Hovered->OnHoverExit = GET_SINGLE(UIManager)->GetAction("FadeOut");
+	//	}
+	//
+	//	this->OnClicked = GET_SINGLE(UIManager)->GetAction("ScaleUpDown");
+	//
+	//	if (m_Effect_Clicked != nullptr)
+	//	{
+	//		m_Effect_Clicked->OnClicked = GET_SINGLE(UIManager)->GetAction("FadInOut");
+	//	}
+	//
+	//	m_EffectLoad = true;
+	//}
 }
 
-void CTextureUI::Update(E::_float fTimeDelta)
+void CButton::Update(E::_float fTimeDelta)
 {
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
 	if (!m_isActive)
 		return;
 
 	CUIObject::Update(fTimeDelta);
 
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+
 	if (m_bMouseTracking)
 	{
 		m_UIINFO.fX = mousePos.x;
@@ -86,7 +119,7 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	}
 }
 
-void CTextureUI::LateUpdate(E::_float fTimeDelta)
+void CButton::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_isActive)
 		return;
@@ -95,7 +128,7 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 	GetTransform().Update();
 }
 
-HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CButton::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = "LEVEL_UIEDITOR";
 
@@ -167,7 +200,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	return S_OK;
 }
 
-void CTextureUI::PlayerEffect(uint32_t uiState)
+void CButton::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
 		return;
@@ -180,74 +213,91 @@ void CTextureUI::PlayerEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
-}
 
-void CTextureUI::Creating()
-{
-}
-
-void CTextureUI::StartHovering()
-{
-}
-
-void CTextureUI::Hovering()
-{
-
-}
-
-void CTextureUI::EndHovering()
-{
-}
-
-void CTextureUI::Ending()
-{
-}
-
-void CTextureUI::PlayEffect(uint32_t uiState)
-{
-	m_EffectTag = "Magic";
-
-	if (ETOUI(UI_EFFECT_TYPE::NONE) == m_UIINFO.EffectType)
+	if (uiState & ETOUI(UI_STATE::ENTER))
 	{
-		switch (uiState)
+		ClearEffectTweens();
+		if (OnHoverEnter) OnHoverEnter(this);
+
+		if (m_Effect_Hovered != nullptr)
 		{
-		case ETOUI(UI_STATE::ENTER):
-			m_vEffects.push_back(GET_SINGLE(UIManager)->LoadPrefab(m_EffectTag));
-			break;
-		case ETOUI(UI_STATE::EXIT):
-			m_vEffects.push_back(GET_SINGLE(UIManager)->LoadPrefab(m_EffectTag));
-			break;
-		case ETOUI(UI_STATE::NONE):
-			for (auto pEffect : m_vEffects)
-			{
-				GET_SINGLE(UIManager)->DeleteUIRecursive(pEffect);
-			}
-			break;
+			ClearHoveredEffect();
+			m_Effect_Hovered->OnHoverEnter(m_Effect_Hovered);
 		}
 	}
-	else if (ETOUI(UI_EFFECT_TYPE::HOVER) == m_UIINFO.EffectType)
-	{
 
+	if (uiState & ETOUI(UI_STATE::EXIT))
+	{
+		ClearEffectTweens();
+		if (OnHoverExit) OnHoverExit(this);
+
+		if (m_Effect_Hovered != nullptr)
+		{
+			ClearHoveredEffect();
+			m_Effect_Hovered->OnHoverExit(m_Effect_Hovered);
+		}
+	}
+
+	if (uiState & ETOUI(UI_STATE::CLICK))
+	{
+		ClearEffectTweens();
+		if (OnClicked) OnClicked(this);
+		if (OnClickedAction) OnClickedAction(ClickTargetName);
+
+		if (m_Effect_Clicked != nullptr)
+		{
+			if (GetSafeUI(m_Effect_Clicked->GetHandle()))
+			{
+				ClearClickEffect();
+				m_Effect_Clicked->OnClicked(m_Effect_Clicked);
+			}
+		}
 	}
 }
 
-E::UPtr<CTextureUI> CTextureUI::Create()
+void CButton::ClearEffectTweens()
 {
-	auto pInstance = E::ToUPtr(new CTextureUI{});
+	m_pComTween->ClearTweens();
+}
+
+void CButton::ClearHoveredEffect()
+{
+	if (m_Effect_Hovered != nullptr)
+	{
+		if (nullptr != m_Effect_Hovered->GetTweenCom())
+			m_Effect_Hovered->GetTweenCom()->ClearTweens();
+	}
+}
+
+void CButton::ClearClickEffect()
+{
+	if (m_Effect_Clicked != nullptr)
+	{
+		if (GetSafeUI(m_Effect_Clicked->GetHandle()))
+		{
+			if (nullptr != m_Effect_Clicked->GetTweenCom())
+				m_Effect_Clicked->GetTweenCom()->ClearTweens();
+		}
+	}
+}
+
+E::UPtr<CButton> CButton::Create()
+{
+	auto pInstance = E::ToUPtr(new CButton{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTexUI");
+		MSG_BOX("Failed to Created : CButton");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTextureUI::Clone(void* pArg)
+E::UPtr<E::CPrototype> CButton::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTextureUI{ *this });
+	auto	pInstance = E::ToUPtr(new CButton{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTextureUI");
+		MSG_BOX("Failed to Cloned : CButton");
 		return nullptr;
 	}
 

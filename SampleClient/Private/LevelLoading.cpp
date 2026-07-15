@@ -28,6 +28,7 @@
 #include "TextureUI.h"
 #include "EffectUI.h"
 #include "TextBox.h"
+#include "Button.h"
 
 #include "TestGob.h"
 NS_USING(Client)
@@ -226,7 +227,7 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
-
+		
 		/* FlipBook */
 		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_LoadingWidget_Flame", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Flame.png")))
 		{
@@ -260,20 +261,44 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
+		{
+			namespace fs = std::filesystem;
+
+			std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI";
+
+			// 1. 해당 폴더가 존재하는지 먼저 확인 (안전장치)
+			if (fs::exists(targetDir) && fs::is_directory(targetDir))
+			{
+				// 2. 폴더 내의 모든 파일을 순회
+				for (const auto& entry : fs::directory_iterator(targetDir))
+				{
+					// 3. 파일이면서 확장자가 .png 인지 확인
+					if (entry.is_regular_file() && entry.path().extension() == ".png")
+					{
+						// 4. 파일 이름만 추출 (예: "UI_T_NurtureMeterDiamond_Back_4k")
+						std::string fileName = entry.path().stem().string();
+
+						// 5. 리소스 태그 조합 (예: "TEX_UI_T_NurtureMeterDiamond_Back_4k")
+						std::string resTag = "TEX_" + fileName;
+
+						// 6. 전체 파일 경로 추출 (운영체제에 맞게 경로가 조합됨)
+						// generic_string()을 쓰면 윈도우에서도 역슬래시(\) 대신 슬래시(/)로 경로를 반환합니다.
+						std::string fullPath = entry.path().generic_string();
+
+						// 7. 엔진에 리소스 추가 및 로드
+						if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", resTag, E::CResTexture2D::Create(fullPath)))
+						{
+							res->Load();
+						}
+					}
+				}
+			}
+		}
+	
 		
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
 			{
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_BackGround", CBackGround::Create())))
-				{
-					return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", CTexUI::Create())))
-				{
-					return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", CFlipBook::Create())))
 				{
 					return false;
 				}
@@ -286,6 +311,10 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", CTextBox::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_Button", CButton::Create())))
 				{
 					return false;
 				}

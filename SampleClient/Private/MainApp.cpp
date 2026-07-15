@@ -11,6 +11,8 @@
 #include "Trail_Example.h"
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
+#include "Client_Defines.h"
+#include "UIManager.h"
 
 
 NS_USING(Client)
@@ -128,6 +130,9 @@ HRESULT CMainApp::Initialize()
 		MSG_BOX("Failed Action Node To MainApp");
 		return E_FAIL;
 	}
+
+	GET_SINGLE(UIManager)->Initialize(m_pDevice, m_pContext);
+
 	return S_OK;
 }
 
