@@ -6,6 +6,7 @@
 #include "Resources.h"
 #include "MyGFSDK_SSAO.h"
 #include "UIObject.h"
+#include "MyFSR2_2.h"
 
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext } {}
@@ -32,7 +33,9 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeGFSDK_SSAO()))         return E_FAIL;
 
-	if (FAILED(InitializeOffscreen()))          return E_FAIL;
+	if (FAILED(InitializeFSR2_2()))				return E_FAIL;
+
+    if (FAILED(InitializeOffscreen()))          return E_FAIL;
 
 	if (FAILED(InitializeShadow()))             return E_FAIL;
 
@@ -324,6 +327,16 @@ HRESULT CRenderer::InitializeGFSDK_SSAO()
 	return S_OK;
 }
 
+HRESULT CRenderer::InitializeFSR2_2()
+{
+	m_pFSR2_2 = CMyFSR2_2::Create();
+	if (!m_pFSR2_2)
+	{
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
 HRESULT CRenderer::InitializeBloom() {
 
 	m_pResDynTexTargetBrightPass = Generate_RenderTarget("DynTex2D_BrightPass", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
@@ -507,7 +520,7 @@ SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag
 	}
 	return nullptr;
 }
-VOID CRenderer::Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+VOID CRenderer::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
 	D3D11_TEXTURE2D_DESC TEXDesc{};
 	TEXDesc.Width = _Resolution;
 	TEXDesc.Height = _Resolution;

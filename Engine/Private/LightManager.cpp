@@ -6,7 +6,7 @@
 #include "CollFrustum.h"
 
 CLightManager::CLightManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice(pDevice), m_pContext(pContext) {}
-CLightManager::~CLightManager() {}
+CLightManager::~CLightManager() { }
 
 HRESULT CLightManager::Initialize_LightManager() {
 
@@ -250,10 +250,10 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[i]);
 		if (nullptr == LightOBJ)	continue;
 
-		m_pContext->ClearDepthStencilView(m_pShadowMapList[i], D3D11_CLEAR_DEPTH, 1.0f, 0);
+		m_pContext->ClearDepthStencilView(m_pShadowMapList[i].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 		ID3D11RenderTargetView* NullRTV = nullptr;
-		m_pContext->OMSetRenderTargets(1, &NullRTV, m_pShadowMapList[i]);
+		m_pContext->OMSetRenderTargets(1, &NullRTV, m_pShadowMapList[i].Get());
 
 		D3D11_MAPPED_SUBRESOURCE MRES = {};
 		if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))

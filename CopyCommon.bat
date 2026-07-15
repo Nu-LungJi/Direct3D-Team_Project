@@ -12,6 +12,10 @@ xcopy /E /I /Y /D .\Engine\Bin\Engine.lib .\EngineSDK\Lib\
 xcopy /E /I /Y /D .\%TargetFolder%\ShaderFiles\*.* .\%TargetFolder%\Bin\ShaderFiles\
 xcopy /E /I /Y /D .\Engine\ShaderFiles\*.* .\%TargetFolder%\Bin\ShaderFiles\
 
+:: Lua Copy
+xcopy /E /I /Y /D .\%TargetFolder%\LuaFiles\*.* .\%TargetFolder%\Bin\LuaFiles\
+xcopy /E /I /Y /D .\Engine\LuaFiles\*.* .\%TargetFolder%\Bin\LuaFiles\
+
 :: ThirdParty
 xcopy /E /I /Y /D .\ThirdParty\fmod_2_03_12\lib\x64\fmod.dll .\%TargetFolder%\Bin\
 xcopy /E /I /Y /D .\ThirdParty\HBAOPlus-3.1.0\lib\GFSDK_SSAO_D3D11.win64.dll .\%TargetFolder%\Bin\

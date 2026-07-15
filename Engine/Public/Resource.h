@@ -36,6 +36,9 @@ public:
 protected:
 	const _string m_sPath;
 	STATE m_eState{ STATE::UNLOAD };
+
+protected:
+	void Free() override;
 };
 
 NS_END

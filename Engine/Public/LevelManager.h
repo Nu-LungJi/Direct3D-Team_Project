@@ -18,6 +18,7 @@ public:
 	};
 
 public:
+	HRESULT ChangeLevel(const _string& ID);
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
 	void Update(_float fTimeDelta);
 	HRESULT Render();
@@ -26,6 +27,7 @@ public:
 	void FrameEnd(_float fTimeDelta);
 
 private:
+	std::string m_sChangeLevel{};
 	UPtr<CLevel> m_pCurrentLevel{};
 
 	UPtr<CLevel> m_pLevelBeforeLevelChange{};

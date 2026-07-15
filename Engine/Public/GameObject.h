@@ -119,8 +119,8 @@ public:
 		{
 			return nullptr;
 		}
-
-		if (T::StaticType == m_Components[iter->second].second->GetType())
+		
+		if (m_Components[iter->second].second->IsA(T::StaticType))
 		{
 			return static_cast<T*>(m_Components[iter->second].second.get());
 		}

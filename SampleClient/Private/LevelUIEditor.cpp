@@ -53,15 +53,23 @@ HRESULT CLevelUIEditor::Initialize()
 	//m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Ready_4k");
 	//m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Outer_4k");
 
-	const auto* pResourceMap = E::CGameInstance::Get().GetResource("LEVEL_UIEDITOR");
+	//const auto* pResourceMap = E::CGameInstance::Get().GetResource("LEVEL_UIEDITOR");
 
-	if (pResourceMap != nullptr)
+	//if (pResourceMap != nullptr)
+	//{
+	//	m_vResTag.clear();
+	//	for (const auto& pair : *pResourceMap)
+	//	{
+	//		m_vResTag.push_back(pair.first.GetDbgStr());
+	//	}
+	//}
+
+	// SY가 수정함
+	const auto pResourceMap = E::CGameInstance::Get().GetResource("LEVEL_UIEDITOR");
+	m_vResTag.clear();
+	for (const auto& pair : pResourceMap)
 	{
-		m_vResTag.clear();
-		for (const auto& pair : *pResourceMap)
-		{
-			m_vResTag.push_back(pair.first.GetDbgStr());
-		}
+		m_vResTag.push_back(pair.first.GetDbgStr());
 	}
 
 	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Flame");

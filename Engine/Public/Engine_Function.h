@@ -2,11 +2,37 @@
 
 namespace Engine
 {
-#include <windows.h>
-#include <psapi.h>
-#pragma comment(lib, "psapi.lib")
+	inline void LogMemoryUsageImpl(const char* file, int line, const char* func, const char* tag = "")
+	{
+		PROCESS_MEMORY_COUNTERS_EX pmc{};
+		if (GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc)))
+		{
+			SYSTEMTIME st;
+			GetLocalTime(&st);
 
-	
+			const char* fileName = strrchr(file, '\\');
+			if (!fileName) fileName = strrchr(file, '/');
+			fileName = fileName ? fileName + 1 : file;
+
+			const double MB = 1024.0 * 1024.0;
+			char buf[1024];
+			sprintf_s(buf,
+				"[%02d:%02d:%02d.%03d] [TID:%04lu] [MEM%s%s]\n"
+				"  -> Loc : %s(%d) - %s()\n"
+				"  -> Mem : WS: %8.2f MB (Peak: %8.2f MB) | Private: %8.2f MB | PF: %8.2f MB\n",
+				st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
+				GetCurrentThreadId(),
+				tag[0] ? ":" : "", tag,
+				fileName, line, func,
+				pmc.WorkingSetSize / MB,
+				pmc.PeakWorkingSetSize / MB,
+				pmc.PrivateUsage / MB,
+				pmc.PagefileUsage / MB
+			);
+			OutputDebugStringA(buf);
+		}
+	}
+
 	template<class T>
 	constexpr std::string_view MagicEnumToStringView(T&& t)
 	{
@@ -27,9 +53,15 @@ namespace Engine
 
 	inline float Randf(float min, float max)
 	{
-		return min +
-			(max - min) *
-			(rand() / (float)RAND_MAX);
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> dist(min, max);
+		return dist(gen);
+
+		//return min +
+		//	(max - min) *
+		//	(rand() / (float)RAND_MAX);
 	}
 
 	inline int RandInt(int min, int max)

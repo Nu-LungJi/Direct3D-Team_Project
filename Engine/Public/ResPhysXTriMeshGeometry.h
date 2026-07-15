@@ -33,6 +33,9 @@ private:
 	physx::PxTriangleMesh* m_pTriMesh{};
 public:
 	static SPtr<CResPhysXTriMeshGeometry> Create();
+
+private:
+	void Free() override;
 };
 
 NS_END

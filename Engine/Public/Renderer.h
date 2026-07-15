@@ -9,6 +9,7 @@ class CResOffscreenTexture;
 class CResDynamicTexture2D;
 
 class CMyGFSDK_SSAO;
+class CMyFSR2_2;
 
 class CRenderer final : public CEngineBase
 {
@@ -45,6 +46,7 @@ private:
 
 	HRESULT InitilizePostProcess();
 	HRESULT InitializeGFSDK_SSAO();
+	HRESULT InitializeFSR2_2();
 	HRESULT InitializeBloom();
 	HRESULT InitializeVolumetricEffect();
 
@@ -63,7 +65,7 @@ public:
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
-	VOID	Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
@@ -154,6 +156,7 @@ private:	// PostProcess Variable
 
 private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
+	UPtr<CMyFSR2_2> m_pFSR2_2{};
 
 private:
 	HRESULT Render_Shadow();

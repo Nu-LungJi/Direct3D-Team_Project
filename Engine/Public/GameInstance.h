@@ -11,10 +11,12 @@
 #include "NavMeshManager.h"
 #include "SerializeManager.h"
 #include "PrototypeManager.h"
+#include "LuaManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
 class PxPhysics;
+class PxControllerManager;
 NS_END
 
 struct FMOD_SOUND;
@@ -40,6 +42,7 @@ class CAction_Manager;
 class CPhysXManager;
 class CDbgLineRender;
 class CSerializeManager;
+class ILuaScriptRelodable;
 class CModel_Instance_Manager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
@@ -84,33 +87,28 @@ public:
 	SPtr<CResource> AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset);
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, const _string& sPath, void* pArg = nullptr)
-	{
-		return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, sPath, pArg);
-	}
+	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, sPath, pArg); }
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset)
-	{
-		return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset);
-	}
+	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset); }
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
-	{
-		return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag);
-	}
-	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
-	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const;
-	const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& GetResources() const;
-	HRESULT LoadResource(const StringID& sGroupTag);
-	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
+	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
+	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
+	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const;
+	std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> GetResources() const;
+
 	void DelResource(const StringID& sGroupTag);
 	void DelResource(const StringID& sGroupTag, const StringID& sResTag);
+
+	std::vector<SPtr<CResource>> GetResourcesByPath(const _string& sPath) const;
+	void RemoveResourcePathLookup(const _string& sPath, SPtr<CResource> pRes);
 #pragma endregion
 
 #pragma region LEVEL_MANAGER
 public:
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
+	HRESULT ChangeLevel(const _string& ID);
 	void RegisterLevelChangeFunc(const _string& ID, _Func func);
 #pragma endregion
 
@@ -263,7 +261,7 @@ public:
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
-	VOID	Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 
 #pragma endregion
@@ -357,6 +355,7 @@ public:
 	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
 	physx::PxScene* PxGetScene() const;
 	physx::PxPhysics* PxGetPhysics() const;
+	physx::PxControllerManager* PxGetControllerManager() const;
 
 	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
 	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
@@ -408,8 +407,43 @@ public:
 	}
 #pragma endregion
 
+#pragma region LUA_MANAGER
+	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& chunkName = "InlineScript");
+	HRESULT LuaScriptExecute(const std::string& script, const std::string& chunkName = "InlineScript");
+	sol::environment LuaCreateEnvironment();
+
+	sol::protected_function LuaCacheFunction(const std::string& funcName);
+	sol::protected_function LuaCacheFunction(const sol::environment& env, const std::string& funcName);
+
+	template<typename... Args>
+	bool LuaCallCacheFunction(const sol::protected_function& func, Args&&... args)
+	{ return m_pLuaManager->CallCacheFunction(func, std::forward<Args>(args)...); }
+
+	template<typename T>
+	void LuaSetValue(std::string_view name, T&& value)
+	{ m_pLuaManager->SetValue(name, value); }
+
+	template<typename T>
+	bool LuaGetValue(std::string_view name, T& outValue)
+	{ return m_pLuaManager->GetValue(name, outValue); }
+
+	HRESULT LuaCompile(const std::string& script);
+
+	bool LuaIsEnvValid(const sol::environment& env) const;
+	bool LuaHasValue(const sol::environment& env, std::string_view name) const;
+	void LuaRemoveValue(sol::environment& env, std::string_view name);
+	void LuaEnvDump(const sol::environment& env) const;
+	void LuaEnvClear(sol::environment& env);
+	void LuaRegisterComponent(const std::string& path, ILuaScriptRelodable* pComp);
+	void LuaUnregisterComponent(const std::string& path, ILuaScriptRelodable* pComp);
+	void LuaRegisterExtension(std::function<void(sol::state&)> extensionFunc);
+	template<typename T>
+	void LuaRegisterType() { m_pLuaManager->RegisterType<T>(); }
+#pragma endregion
+
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
+	_float2 GetDisplayScreenSize() const { return m_vDisplayScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
 	_bool GetMouseFix() const { return m_bMouseFix; }
 
@@ -417,17 +451,16 @@ public:
 		POINT pt; GetCursorPos(&pt); ScreenToClient(m_hWnd, &pt);
 		return { (float)pt.x, (float)pt.y };
 	}
+	uint64_t GetFrameCnt() const { return m_iFrameCnt; }
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
+	_float2 m_vDisplayScreenSize{ 1920.f, 1280.f };
 	HWND m_hWnd{};
 	_bool m_bMouseFix{};
+	uint64_t m_iFrameCnt{};
 
 private:
 	void MouseFix() const;
-
-private:
-	HRESULT InitializeResources();
-	HRESULT InitializePrototype();
 
 private:
 	UPtr<CGraphicDevice> m_pGraphicDevice{};
@@ -460,6 +493,7 @@ private:
 	UPtr<CMapManager> m_pMapManager{};
 	UPtr<CNavMeshManager> m_pNavMeshManager{};
 	UPtr<CSerializeManager> m_pSerializeManager{};
+	UPtr<CLuaManager> m_pLuaManager{};
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 };
 

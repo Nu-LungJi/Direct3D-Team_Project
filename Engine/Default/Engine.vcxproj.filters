@@ -442,6 +442,39 @@
     <Filter Include="Particle\Param">
       <UniqueIdentifier>{33454004-46ff-4e0e-a3fc-bcaf43f4b418}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Lua">
+      <UniqueIdentifier>{dfd76b79-cecb-4cca-9ac8-e0ce39ef16d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Lua">
+      <UniqueIdentifier>{1c8d7925-0f83-447f-a69c-11d8567da66e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Lua\Script">
+      <UniqueIdentifier>{1ba4e867-2138-473d-9756-d729dd3de5b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles">
+      <UniqueIdentifier>{b542ee9a-40cf-4a50-9d8a-b0feb91d0b38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Lua">
+      <UniqueIdentifier>{b39ae02f-5cb2-4ba1-b7b3-e4646aac4b23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lua\Watcher">
+      <UniqueIdentifier>{9d20ff6d-a821-4923-8d6b-f0880f32157f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles\SomeFolder">
+      <UniqueIdentifier>{bde2835c-1d45-44d2-aca4-56623b27cddf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lua\LuaEnv">
+      <UniqueIdentifier>{8ba16c43-054b-4dbb-9c2a-aed24797421d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\CharacterController">
+      <UniqueIdentifier>{3ff22233-47fd-43dc-9f31-4bdf198f60e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameInstance\InitLoader">
+      <UniqueIdentifier>{dc18b041-0cd4-4748-b556-231b40d41ccd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\FSR2_2">
+      <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -955,6 +988,36 @@
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LuaManager.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResLua.h">
+      <Filter>Resource\Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResLuaScript.h">
+      <Filter>Resource\Lua\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComLuaScript.h">
+      <Filter>Component\Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LuaWatcher.h">
+      <Filter>Lua\Watcher</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ILuaScriptRelodable.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LuaEnv.h">
+      <Filter>Lua\LuaEnv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxCharacterController.h">
+      <Filter>Component\PhysX\CharacterController</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\GameInstanceInitLoader.h">
+      <Filter>GameInstance\InitLoader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyFSR2_2.h">
+      <Filter>Renderer\FSR2_2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1420,6 +1483,33 @@
     <ClCompile Include="..\Private\VolumetricFog.cpp">
       <Filter>GameObject\Volumetric</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LuaManager.cpp">
+      <Filter>Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResLua.cpp">
+      <Filter>Resource\Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResLuaScript.cpp">
+      <Filter>Resource\Lua\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComLuaScript.cpp">
+      <Filter>Component\Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaWatcher.cpp">
+      <Filter>Lua\Watcher</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaEnv.cpp">
+      <Filter>Lua\LuaEnv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxCharacterController.cpp">
+      <Filter>Component\PhysX\CharacterController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\GameInstanceInitLoader.cpp">
+      <Filter>GameInstance\InitLoader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyFSR2_2.cpp">
+      <Filter>Renderer\FSR2_2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1542,6 +1632,12 @@
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
       <Filter>ShaderFiles\ShaderHeader</Filter>
+    </None>
+    <None Include="..\LuaFiles\Test.lua">
+      <Filter>LuaFiles</Filter>
+    </None>
+    <None Include="..\LuaFiles\SomeFolder\Hi.lua">
+      <Filter>LuaFiles\SomeFolder</Filter>
     </None>
   </ItemGroup>
 </Project>

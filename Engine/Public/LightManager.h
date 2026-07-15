@@ -71,7 +71,7 @@ private:
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
 
-	std::vector<ID3D11DepthStencilView*>	m_pShadowMapList;
+	std::vector<ComPtr<ID3D11DepthStencilView>>	m_pShadowMapList;
 	ComPtr<ID3D11Texture2D>					m_pShadowTextureArray = { nullptr };
 	ComPtr<ID3D11ShaderResourceView>		m_pShadowSRV = { nullptr };
 

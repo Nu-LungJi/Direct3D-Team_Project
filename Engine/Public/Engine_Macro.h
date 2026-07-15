@@ -15,6 +15,18 @@
 //        return hr; \
 //    }
 
+#ifdef _DEBUG
+#define LOG_MEMORY(...) LogMemoryUsageImpl(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#else
+#define LOG_MEMORY(...) ((void)0)
+#endif
+
+#ifdef _DEBUG
+#define DEBUG_BREAK() __debugbreak()
+#else
+#define DEBUG_BREAK() ((void)0)
+#endif
+
 #define CHECK_HR(hr, fmt, ...) \
     do { \
         HRESULT _hr = (hr); \

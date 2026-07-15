@@ -4,6 +4,7 @@
 #include "ComCollider.h"
 
 NS_BEGIN(Engine)
+class CComLuaScript;
 NS_END
 NS_BEGIN(Client)
 
@@ -38,7 +39,7 @@ private:
 	std::vector<CComCollider*> m_vecComCollider{};
 	StringID m_CollGroupID{};
 	_bool m_bController{};
-
+	CComLuaScript* m_pComLuaScript{};
 public:
 	static E::UPtr<CTestCollider> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
