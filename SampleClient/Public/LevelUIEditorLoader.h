@@ -2,7 +2,7 @@
 #include "Engine_Defines.h"
 NS_BEGIN(Client)
 
-class LevelUIEditorLoader
+class CLevelUIEditorLoader
 {
 public:
 	static std::future<bool> Load();
