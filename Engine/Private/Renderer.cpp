@@ -499,6 +499,25 @@ SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag
 	return nullptr;
 }
 VOID CRenderer::Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	/////////////////////////////////////
+	if (_TextureArray && *_TextureArray) {
+		(*_TextureArray)->Release();
+		*_TextureArray = nullptr;
+	}
+	if (_SRV && *_SRV) {
+		(*_SRV)->Release();
+		*_SRV = nullptr;
+	}
+	if (_ShadowDSVList) {
+		for (auto& DSV : *_ShadowDSVList) {
+			if (DSV) {
+				DSV->Release();
+				DSV = nullptr;
+			}
+		}
+		_ShadowDSVList->clear();
+	}
+	////////////////////////////////////
 	D3D11_TEXTURE2D_DESC TEXDesc{};
 	TEXDesc.Width = _Resolution;
 	TEXDesc.Height = _Resolution;
@@ -570,6 +589,37 @@ VOID CRenderer::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Text
 	DSVDesc.Texture2DArray.ArraySize = 6;
 
 	m_pDevice->CreateDepthStencilView(*_TextureArray, &DSVDesc, _ShadowDSV);
+}
+
+VOID CRenderer::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution){
+	D3D11_TEXTURE2D_DESC TEXDesc{};
+	TEXDesc.Width = _Resolution;
+	TEXDesc.Height = _Resolution;
+	TEXDesc.MipLevels = 1;
+	TEXDesc.ArraySize = 1;
+	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	TEXDesc.SampleDesc = { .Count = 1, .Quality = 0 };
+	TEXDesc.Usage = D3D11_USAGE_DEFAULT;
+	TEXDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	TEXDesc.CPUAccessFlags = 0;
+	TEXDesc.MiscFlags = 0;
+
+	m_pDevice->CreateTexture2D(&TEXDesc, nullptr, _Texture);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+	SRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	SRVDesc.Texture2DArray.MostDetailedMip = 0;
+	SRVDesc.Texture2DArray.MipLevels = 1;
+
+	m_pDevice->CreateShaderResourceView(*_Texture, &SRVDesc, _SRV);
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
+	DSVDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	DSVDesc.Texture2DArray.MipSlice = 0;
+
+	m_pDevice->CreateDepthStencilView(*_Texture, &DSVDesc, _ShadowDSV);
 }
 
 ComPtr<ID3D11ShaderResourceView> CRenderer::Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {

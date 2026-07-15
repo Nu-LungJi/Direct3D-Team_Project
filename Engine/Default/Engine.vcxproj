@@ -701,7 +701,7 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl" />
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_Shadow.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_Volumetric.hlsl" />

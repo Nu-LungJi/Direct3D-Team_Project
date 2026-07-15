@@ -11,7 +11,7 @@ const static float AmbientIntensity = 1.f;
 const static float SpecularIntensity = 1.f;
 
 #define MAX_LIGHT_COUNT     8
-
+#define MAX_LIGHT_MAPCOUNT  6
 #define LIGHT_DIRECTIONAL   0
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
@@ -57,7 +57,7 @@ struct SpotLight
 };
 struct DynamicLight
 {
-    float4x4 g_LightViewProj;
+    float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
     float3 LightDirection;
     float LightIntensity;

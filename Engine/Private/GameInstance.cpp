@@ -751,10 +751,7 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Shadow", "./ShaderFiles/RayMarching/CS_Shadow.hlsl"))
-	{
-		if (FAILED(res->Load()))    return E_FAIL;
-	}
+
 	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
@@ -1630,6 +1627,10 @@ VOID	CGameInstance::Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>
 VOID	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
 	m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
+VOID	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution) {
+	m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _Resolution);
+}
+
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER

@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace Engine
 {
 	typedef struct tagEngineDesc
@@ -70,7 +69,7 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		XMFLOAT4X4	g_LightViewProj;
+		XMFLOAT4X4	g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
 		_float3		LightDirection;
 		_float		LightIntensity;
@@ -111,15 +110,13 @@ namespace Engine
 		float		fTrackPosition;
 	}KEYFRAME;
 
-
-
 	///////BeHavior//////
 	typedef struct tagactionvalue
 	{
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{}, fTime{ 1.f }, fTick{};
+		_float   fSpeed{}, fTime{ 1.f }, fTick{}; 
 
 	}ACTION_VALUE;
 	typedef struct tagdestnode

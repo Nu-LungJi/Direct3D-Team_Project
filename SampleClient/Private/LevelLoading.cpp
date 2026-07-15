@@ -188,14 +188,6 @@ void CLevelLoading::ThreadStart()
 				{
 					return false;
 				}
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				//if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
-				//{
-				//	int a = 0;
-				//	//return false;
-				//}
-
-
 
 				return  true;
 			});
