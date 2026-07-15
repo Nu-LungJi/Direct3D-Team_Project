@@ -79,6 +79,11 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	{
 		pComponent->Update(fTimeDelta, mousePos);
 	}
+
+	if (m_pComTween != nullptr)
+	{
+		m_pComTween->Tick(fTimeDelta);
+	}
 }
 
 void CTextureUI::LateUpdate(E::_float fTimeDelta)
@@ -164,12 +169,17 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 void CTextureUI::PlayerEffect(uint32_t uiState)
 {
-	switch (uiState)
+	if (m_pComTween == nullptr)
+		return;
+
+	if (uiState & ETOUI(UI_STATE::APPEAR))
 	{
-	case ETOUI(UI_STATE::HOVERED):
-		GET_SINGLE(UIManager)->LoadPrefab("Magic");
-		break;
+		ClearEffectTweens();
+		if (Appear) Appear(this);
 	}
+
+	if (m_bInputLocked)
+		return;
 }
 
 void CTextureUI::Creating()

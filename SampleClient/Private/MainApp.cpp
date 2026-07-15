@@ -11,6 +11,8 @@
 #include "Trail_Example.h"
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
+#include "Client_Defines.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -122,6 +124,8 @@ HRESULT CMainApp::Initialize()
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 
 	}
+
+	GET_SINGLE(UIManager)->Initialize(m_pDevice, m_pContext);
 
 	return S_OK;
 }

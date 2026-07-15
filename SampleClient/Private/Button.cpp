@@ -8,6 +8,7 @@
 #include "EffectUI.h"
 #include "ButtonComponent.h"
 #include "TweenComponent.h"
+#include "UIObject.h"
 
 NS_USING(Client)
 
@@ -59,12 +60,34 @@ HRESULT CButton::Initialize(void* pArg)
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::BUTTON);
+	m_UIINFO.AlphaRatio = 0.f;
 
 	return S_OK;
 }
 
 void CButton::PriorityUpdate(E::_float fTimeDelta)
 {
+	//if (!m_EffectLoad)
+	//{
+	//	this->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("ScaleUp");
+	//	this->OnHoverExit = GET_SINGLE(UIManager)->GetAction("ScaleDown");
+	//	this->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("Create");
+	//
+	//	if (m_Effect_Hovered != nullptr)
+	//	{
+	//		m_Effect_Hovered->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
+	//		m_Effect_Hovered->OnHoverExit = GET_SINGLE(UIManager)->GetAction("FadeOut");
+	//	}
+	//
+	//	this->OnClicked = GET_SINGLE(UIManager)->GetAction("ScaleUpDown");
+	//
+	//	if (m_Effect_Clicked != nullptr)
+	//	{
+	//		m_Effect_Clicked->OnClicked = GET_SINGLE(UIManager)->GetAction("FadInOut");
+	//	}
+	//
+	//	m_EffectLoad = true;
+	//}
 }
 
 void CButton::Update(E::_float fTimeDelta)
@@ -182,73 +205,79 @@ void CButton::PlayEffect(uint32_t uiState)
 	if (m_pComTween == nullptr)
 		return;
 
-	switch (uiState)
+	if (uiState & ETOUI(UI_STATE::APPEAR))
 	{
-	case ETOUI(UI_STATE::ENTER):
-		m_pComTween->ClearTweens();
-		{
-			this->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("ScaleUp");
-			//_float startScale = this->GetScaleRatio();
-			//m_pComTween->PlayTween(startScale, 1.1f, 0.1f,
-			//	[this](float currentValue) {
-			//		this->SetScaleRatio(currentValue);
-			//		this->CalcUICoord();
-			//	});
-			OnHoverEnter(this);
-		}
+		ClearEffectTweens();
+		if (Appear) Appear(this);
+	}
+
+	if (m_bInputLocked)
+		return;
+
+	if (uiState & ETOUI(UI_STATE::ENTER))
+	{
+		ClearEffectTweens();
+		if (OnHoverEnter) OnHoverEnter(this);
+
 		if (m_Effect_Hovered != nullptr)
 		{
-			m_Effect_Hovered->SetActive(true);
-			m_Effect_Hovered->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
-
-			//float startAlpha = m_Effect_Hovered->GetAlpha();
-			//m_pComTween->PlayTween(startAlpha, 1.0f, 0.3f,
-			//	[this](float currentValue) {
-			//		m_Effect_Hovered->SetAlpha(currentValue);
-			//	});
+			ClearHoveredEffect();
 			m_Effect_Hovered->OnHoverEnter(m_Effect_Hovered);
 		}
-		break;
+	}
 
-	case ETOUI(UI_STATE::CLICK):
-		//if (m_Effect_Clicked != nullptr)
-		//{
-		//	m_Effect_Clicked->SetActive(true);
-		//
-		//	float startAlpha = m_Effect_Clicked->GetAlpha();
-		//	m_pComTween->PlayTween(startAlpha, 1.0f, 0.3f,
-		//		[this](float currentValue) {
-		//			m_Effect_Clicked->SetAlpha(currentValue);
-		//		});
-		//}
-		break;
-	case ETOUI(UI_STATE::EXIT):
-		m_pComTween->ClearTweens();
-		{
-			_float startScale = this->GetScaleRatio();
-
-			m_pComTween->PlayTween(startScale, 1.f, 0.1f,
-				// 매 프레임 알파값을 적용하는 Update 람다
-				[this](float currentValue) {
-					this->SetScaleRatio(currentValue);
-					this->CalcUICoord();
-				});
-		}
+	if (uiState & ETOUI(UI_STATE::EXIT))
+	{
+		ClearEffectTweens();
+		if (OnHoverExit) OnHoverExit(this);
 
 		if (m_Effect_Hovered != nullptr)
 		{
-			float startAlpha = m_Effect_Hovered->GetAlphaRatio();
-
-			m_pComTween->PlayTween(startAlpha, 0.0f, 0.3f,
-				[this](float currentValue) {
-					m_Effect_Hovered->SetAlphaRatio(currentValue);
-				},
-					[this]() {
-					m_Effect_Hovered->SetActive(false);
-				});
+			ClearHoveredEffect();
+			m_Effect_Hovered->OnHoverExit(m_Effect_Hovered);
 		}
+	}
 
-		break;
+	if (uiState & ETOUI(UI_STATE::CLICK))
+	{
+		ClearEffectTweens();
+		if (OnClicked) OnClicked(this);
+		if (OnClickedAction) OnClickedAction(ClickTargetName);
+
+		if (m_Effect_Clicked != nullptr)
+		{
+			if (GetSafeUI(m_Effect_Clicked->GetHandle()))
+			{
+				ClearClickEffect();
+				m_Effect_Clicked->OnClicked(m_Effect_Clicked);
+			}
+		}
+	}
+}
+
+void CButton::ClearEffectTweens()
+{
+	m_pComTween->ClearTweens();
+}
+
+void CButton::ClearHoveredEffect()
+{
+	if (m_Effect_Hovered != nullptr)
+	{
+		if (nullptr != m_Effect_Hovered->GetTweenCom())
+			m_Effect_Hovered->GetTweenCom()->ClearTweens();
+	}
+}
+
+void CButton::ClearClickEffect()
+{
+	if (m_Effect_Clicked != nullptr)
+	{
+		if (GetSafeUI(m_Effect_Clicked->GetHandle()))
+		{
+			if (nullptr != m_Effect_Clicked->GetTweenCom())
+				m_Effect_Clicked->GetTweenCom()->ClearTweens();
+		}
 	}
 }
 

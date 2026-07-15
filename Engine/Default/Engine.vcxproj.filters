@@ -394,11 +394,11 @@
     <Filter Include="Component\UI">
       <UniqueIdentifier>{57cb4369-faf4-4ad0-a818-4a3a747de9b1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Component\UI\MouseComponent">
-      <UniqueIdentifier>{8318dad6-1853-412a-83bd-17623d00c9b8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\Tween">
       <UniqueIdentifier>{e99a0e3b-f69e-4691-9ba2-e52f19c81311}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\UI\ButtonComponent">
+      <UniqueIdentifier>{8318dad6-1853-412a-83bd-17623d00c9b8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -853,7 +853,7 @@
       <Filter>Component\UI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\ButtonComponent.h">
-      <Filter>Component\UI\MouseComponent</Filter>
+      <Filter>Component\UI\ButtonComponent</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TweenComponent.h">
       <Filter>Component\Tween</Filter>
@@ -1278,7 +1278,7 @@
       <Filter>Component\UI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ButtonComponent.cpp">
-      <Filter>Component\UI\MouseComponent</Filter>
+      <Filter>Component\UI\ButtonComponent</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\TweenComponent.cpp">
       <Filter>Component\Tween</Filter>

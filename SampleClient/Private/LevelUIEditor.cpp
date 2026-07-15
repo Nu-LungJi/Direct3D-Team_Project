@@ -45,11 +45,24 @@ HRESULT CLevelUIEditor::Initialize()
 	m_iButtonMode = 0;
 	count = 0;
 
+	CGameInstance::Get().GetGameObjectLayer("Layer_UI");
+
 	m_vResTag.push_back("TEX_SHM");
 	m_vResTag.push_back("TEX_MAP");
-	m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Back_4k");
-	m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Ready_4k");
-	m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Outer_4k");
+	//m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Back_4k");
+	//m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Ready_4k");
+	//m_vResTag.push_back("TEX_UI_T_NurtureMeterDiamond_Outer_4k");
+
+	const auto* pResourceMap = E::CGameInstance::Get().GetResource("LEVEL_UIEDITOR");
+
+	if (pResourceMap != nullptr)
+	{
+		m_vResTag.clear();
+		for (const auto& pair : *pResourceMap)
+		{
+			m_vResTag.push_back(pair.first.GetDbgStr());
+		}
+	}
 
 	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Flame");
 	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Houses");
@@ -175,6 +188,7 @@ HRESULT CLevelUIEditor::Initialize()
 	}
 
 	GET_SINGLE(UIManager)->InitializeActions();
+	GET_SINGLE(UIManager)->InitializeFunc();
 
 	return S_OK;
 }
@@ -196,42 +210,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 	if (bP)
 	{
-		// debug용 
-		if(false)
-		{
-			count++;
-			CUIObject::UIOBJECT_DESC Desc{};
-			Desc.sObjectTag = "UI_" + std::to_string(count);
-			Desc.fSizeX = 200.f;
-			Desc.fSizeY = 200.f;
-			Desc.fX = clientSize.x * 0.5f;
-			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 1.f;
-			Desc.ResTag = "TEX_MAP";
-			Desc.ResWeight = count;
-			Desc.UIType = ETOUI(UI_TYPE::TEXUI);
-
-			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
-		}
-
 		if (false)
-		{
-			count++;
-			CUIObject::UIOBJECT_DESC Desc{};
-			Desc.sObjectTag = "UI_" + std::to_string(count);
-			Desc.fSizeX = 200.f;
-			Desc.fSizeY = 200.f;
-			Desc.fX = clientSize.x * 0.5f;
-			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 1.f;
-			Desc.ResTag = "TEX_MAP";
-			Desc.ResWeight = count;
-			Desc.UIType = ETOUI(UI_TYPE::TEXUI);
-
-			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
-		}
-
-		if (true)
 		{
 			count++;
 			CTextUI::TEXT_DESC desc{};
@@ -338,6 +317,8 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	default:
 		break;
 	}
+
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 }
 
 HRESULT CLevelUIEditor::Render()
@@ -704,9 +685,122 @@ void CLevelUIEditor::PrefabMode()
 	{
 		StateView();
 	}
+
+	// ---------------------------------------------------------
+	// 4. Event & Action Settings (새로 추가된 구역)
+	// ---------------------------------------------------------
+	if (ImGui::CollapsingHeader("Event & Action Settings", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		// 검색과 스크롤이 지원되는 고급 콤보박스 람다
+		auto DrawEventCombo = [](const char* label, std::string& current_item, const std::vector<std::string>* items) {
+			ImGui::SetNextItemWidth(200.0f);
+
+			// ImGuiComboFlags_HeightLarge를 주어 팝업이 너무 작게 열리는 것을 방지
+			if (ImGui::BeginCombo(label, current_item.empty() ? "None" : current_item.c_str(), ImGuiComboFlags_HeightLarge))
+			{
+				// ImGui 내장 텍스트 필터 (콤보 팝업은 한 번에 하나만 열리므로 static 공유가 안전함)
+				static ImGuiTextFilter filter;
+
+				// 콤보박스가 처음 열릴 때 필터를 초기화하고, 즉시 타이핑할 수 있게 포커스를 줌
+				if (ImGui::IsWindowAppearing()) {
+					filter.Clear();
+					ImGui::SetKeyboardFocusHere();
+				}
+
+				// 상단 고정 검색창 (클릭하지 않아도 바로 타이핑 가능)
+				filter.Draw("##Search", ImGui::GetContentRegionAvail().x);
+				ImGui::Separator();
+
+				// None 항목은 검색어와 무관하게 항상 최상단에 고정
+				if (ImGui::Selectable("None", current_item.empty())) {
+					current_item = "";
+					ImGui::CloseCurrentPopup();
+				}
+
+				if (items) {
+					// 검색 결과가 많을 때 검색창은 상단에 고정하고 리스트만 스크롤되도록 Child 영역 생성
+					ImGui::BeginChild("##ComboList", ImVec2(0, 200), false);
+					for (const auto& item : *items) {
+
+						// 필터(검색어)에 맞지 않는 문자열은 렌더링 건너뛰기
+						if (!filter.PassFilter(item.c_str()))
+							continue;
+
+						bool is_selected = (current_item == item);
+						if (ImGui::Selectable(item.c_str(), is_selected)) {
+							current_item = item;
+							ImGui::CloseCurrentPopup(); // 항목 선택 시 팝업 닫기
+						}
+
+						// 방향키로 탐색할 때 현재 선택된 항목에 포커스
+						if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndChild();
+				}
+				ImGui::EndCombo();
+			}
+		};
+
+		// 변경할 이벤트 구조체의 포인터를 가져옵니다.
+		// 타겟 UI가 있으면 타겟 UI의 이벤트를, 없으면 에디터 자신이 들고 있는 이벤트를 수정합니다.
+		UI_EVENT* pTargetEvent = &m_UIEVENT;
+		if (Target_UI.has_value()) {
+			Engine::CUIObject* pTargetObj = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+			if (pTargetObj) {
+				// [참고] CUIObject 안에 m_UIEVENT가 public이거나, 
+				// UI_EVENT& GetUIEvent() { return m_UIEVENT; } 처럼 참조형 반환 함수가 있어야 합니다.
+				pTargetEvent = &pTargetObj->GetUIEvent();
+			}
+		}
+
+		// UIManager에서 벡터 포인터 가져오기
+		std::vector<std::string>* pFuncNames = GET_SINGLE(UIManager)->GetFuncNames();
+		std::vector<std::string>* pEventNames = GET_SINGLE(UIManager)->GetEventNames();
+
+		// 기능 함수 1개 (m_vFuncNames)
+		DrawEventCombo("Click Function", pTargetEvent->ClickFunc, pFuncNames);
+
+		ImGui::Spacing();
+
+		// 이펙트 액션 5개 (m_vEventNames)
+		DrawEventCombo("Click Action", pTargetEvent->ClickAction, pEventNames);
+		DrawEventCombo("Enter Action", pTargetEvent->EnterAction, pEventNames);
+		DrawEventCombo("Exit Action", pTargetEvent->ExitAction, pEventNames);
+		DrawEventCombo("Appear Action", pTargetEvent->AppearAction, pEventNames);
+		DrawEventCombo("Disappear Action", pTargetEvent->DisappearAction, pEventNames);
+	}
+
+
+	// ---------------------------------------------------------
+	// 4. Event & Action Settings (하이라키)
+	// ---------------------------------------------------------
+	if (ImGui::CollapsingHeader("Global UI Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		// 스크롤이 가능하도록 영역 지정 (UI가 많아질 것을 대비)
+		ImGui::BeginChild("HierarchyTreeBox", ImVec2(0, 200), true);
+
+		// [중요] 엔진 구조에서 '최상위 부모 UI(Root UI)' 리스트를 가져와야 해.
+		// UIManager나 CGameInstance에서 최상위 UI 목록을 가져오는 함수가 있다고 가정할게.
+		// (예: m_vRootUIs, 혹은 전체 씬 객체 중 GetParent() == nullopt 인 것들)
+
+		std::vector<CHandle> rootUIHandles = GET_SINGLE(UIManager)->GetRootUIHandles();
+
+		for (CHandle rootHandle : rootUIHandles)
+		{
+			DrawHierarchyNode(rootHandle); // 여기서부터 재귀적으로 쭉 그려짐
+		}
+
+		// 빈 공간을 클릭하면 선택 해제 (원한다면 추가)
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered())
+		{
+			Target_UI = std::nullopt;
+		}
+
+		ImGui::EndChild();
+	}
 	
 	// ---------------------------------------------------------
-	// 4. Resource / Image Selector
+	// 5. Resource / Image Selector
 	// ---------------------------------------------------------
 	if (ImGui::CollapsingHeader("Texture Resources"))
 	{
@@ -733,21 +827,29 @@ void CLevelUIEditor::PrefabMode()
 						selectUI->SetPendingDestroyCascade();
 						m_oSelectHandle = std::nullopt;
 					}
-	
+					const D3D11_TEXTURE2D_DESC& texDesc = srv->GetTexture2DDesc();
+
 					CTextureUI::UIOBJECT_DESC Desc{};
 					Desc.sObjectTag = "Select_Image";
-					Desc.fSizeX = m_UIINFO.SizeX;
-					Desc.fSizeY = m_UIINFO.SizeY;
+
+					Desc.fSizeX = static_cast<float>(texDesc.Width);
+					Desc.fSizeY = static_cast<float>(texDesc.Height);
+
 					Desc.fX = g_iWinSizeX * 0.5f;
 					Desc.fY = g_iWinSizeY * 0.5f;
 					Desc.fAlpha = m_UIINFO.Alpha * 0.3f;
 					Desc.ResTag = m_vResTag[i];
 					Desc.UIType = ETOUI(UI_TYPE::TEXUI);
 					Desc.ResWeight = 10000;
-	
+
 					m_oSelectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", "Layer_UI_Texture", &Desc);
 					CTextureUI* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*m_oSelectHandle);
 					selectUI->SetMouseTracking(true);
+
+					// (선택 사항) 만약 방금 생성한 UI의 크기 데이터를 에디터 프로퍼티 창에도 
+					// 바로 갱신해서 띄워주고 싶다면 아래 코드를 추가하세요.
+					 m_UIINFO.SizeX = static_cast<float>(texDesc.Width);
+					 m_UIINFO.SizeY = static_cast<float>(texDesc.Height);
 				}
 
 				if (ImGui::IsItemHovered())
@@ -1372,6 +1474,13 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 
 	obj["Color"] = { uiInfo.Color.x, uiInfo.Color.y, uiInfo.Color.z };
 
+	obj["ClickFunc"] = pUI->GetUIEvent().ClickFunc;
+	obj["ClickAction"] = pUI->GetUIEvent().ClickAction;
+	obj["EnterAction"] = pUI->GetUIEvent().EnterAction;
+	obj["ExitAction"] = pUI->GetUIEvent().ExitAction;
+	obj["AppearAction"] = pUI->GetUIEvent().AppearAction;
+	obj["DisappearAction"] = pUI->GetUIEvent().DisappearAction;
+
 	switch (uiInfo.UIType)
 	{
 	case ETOUI(UI_TYPE::TEXUI):
@@ -1450,10 +1559,10 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 		break;
 	}
 
-	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
-
 	if (pUI == nullptr)
 		return nullptr;
+
+	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
 
 	uiInfo.EffectType = obj["UI_EFFECT_TYPE"];
 	uiInfo.Name = obj["Name"];
@@ -1481,6 +1590,27 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 	auto color = obj["Color"];
 	uiInfo.Color = { color[0], color[1], color[2] };
 
+	UI_EVENT& eventInfo = pUI->GetUIEvent();
+
+	eventInfo.ClickFunc = obj.value("ClickFunc", "");
+	eventInfo.ClickAction = obj.value("ClickAction", "");
+	eventInfo.EnterAction = obj.value("EnterAction", "");
+	eventInfo.ExitAction = obj.value("ExitAction", "");
+	eventInfo.AppearAction = obj.value("AppearAction", "");
+	eventInfo.DisappearAction = obj.value("DisappearAction", "");
+
+	// [추가] 로드한 문자열을 바탕으로 실제 함수(콜백)를 UI 객체에 매핑
+	// (단, "None"이거나 비어있으면 매핑하지 않음)
+	auto bindAction = [](const std::string& actionStr, std::function<void(CUIObject*)>& targetFunc) {
+		if (!actionStr.empty() && actionStr != "None") {
+			targetFunc = GET_SINGLE(UIManager)->GetAction(actionStr);
+		}
+	};
+
+	bindAction(eventInfo.ClickAction, pUI->OnClicked);
+	bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
+	bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
+
 	if (parent == nullptr)
 	{
 		uiInfo.fX = obj["X"];
@@ -1492,7 +1622,7 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 		parent->AddChildren(pUI->GetHandle());
 
 		uiInfo.LocalX = obj["LocalX"];
-		uiInfo.LocalY = obj["LocalY"];
+		uiInfo.LocalY = obj["LocalY"]; 
 	}
 
 	// 부모 기준으로 다시 계산
@@ -1830,6 +1960,83 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 
 	ImGui::EndChild();
 	ImGui::End();
+}
+
+void CLevelUIEditor::DrawHierarchyNode(CHandle uiHandle)
+{
+	Engine::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(uiHandle);
+	if (pUI == nullptr) return;
+
+	// 1. 트리 노드 스타일 플래그 설정
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
+		| ImGuiTreeNodeFlags_OpenOnDoubleClick
+		| ImGuiTreeNodeFlags_SpanAvailWidth;
+
+	// 현재 선택된 UI라면 파란색으로 하이라이트
+	if (Target_UI.has_value() && Target_UI.value() == uiHandle)
+		flags |= ImGuiTreeNodeFlags_Selected;
+
+	// 자식이 없으면 잎(Leaf) 노드로 설정해서 열기 화살표를 숨김
+	const auto& children = pUI->GetChildren();
+	if (children.empty())
+		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+	// 2. 트리 노드 그리기 (객체 포인터를 ID로 사용해서 이름이 겹쳐도 버그 안 나게 함)
+	bool bIsOpen = ImGui::TreeNodeEx((void*)pUI, flags, "%s", pUI->GetName());
+
+	// 3. 노드를 클릭했을 때 Target_UI 변경 
+	// (IsItemToggledOpen을 체크해서 화살표를 눌러서 트리를 열 때는 선택되지 않게 방지)
+	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+	{
+		ResetProperty(uiHandle);
+	}
+
+	// 4. 자식이 있고, 트리가 열려있다면 재귀 호출로 자식들을 쭉 그림
+	if (bIsOpen && !children.empty())
+	{
+		for (CHandle childHandle : children)
+		{
+			DrawHierarchyNode(childHandle);
+		}
+		ImGui::TreePop(); // 자식이 있는 노드가 열려있을 때만 Pop 해줌
+	}
+}
+
+void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandle)
+{
+	// 1. 타겟 갱신
+	Target_UI = newTargetHandle;
+
+	// 2. 선택이 해제된 경우 (빈 공간 클릭 등), 에디터 변수를 기본값으로 초기화
+	if (Target_UI == std::nullopt)
+	{
+		m_UIINFO = UI_INFO{};		// 구조체 기본값으로 싹 초기화
+		m_FLIPINFO = FLIP_INFO{};
+		return;
+	}
+
+	// 3. 엔진에서 실제 UI 객체 포인터 가져오기
+	Engine::CUIObject* pTargetUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+	if (pTargetUI == nullptr)
+		return;
+
+	//Target_Parent_UI = pTargetUI->GetParent();
+
+	// 4. 공통 프로퍼티 동기화 (TextureUI, FlipbookUI 등 모든 CUIObject 공통)
+	m_UIINFO = pTargetUI->GetUIInfo();
+	strcpy_s(m_cName, sizeof(m_cName), m_UIINFO.Name.c_str());
+
+	// 5. 타입별 특수 프로퍼티 동기화 (플립북일 경우 FLIP_INFO 갱신)
+	if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::FLIPBOOK))
+	{
+		// CUIObject를 CFlipbookUI로 안전하게 캐스팅해서 가져옴
+		CFlipbookUI* pFlipbook = static_cast<CFlipbookUI*>(pTargetUI);
+		m_FLIPINFO = pFlipbook->GetFlipInfo();
+	}
+	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::TEXUI))
+	{
+		// TextureUI 전용으로 동기화할 데이터가 나중에 생긴다면 여기에 추가
+	}
 }
 
 Engine::UPtr<CLevelUIEditor> CLevelUIEditor::Create()

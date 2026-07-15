@@ -35,6 +35,8 @@ HRESULT CUIObject::Initialize(void* pArg)
 
 	CalcUICoord();
 
+	m_CurrentState = UI_STATE::APPEAR;
+
 	return S_OK;
 }
 
@@ -74,6 +76,11 @@ void CUIObject::LateUpdate(_float fTimeDelta)
 
 void CUIObject::PlayEffect(uint32_t uiState)
 {
+}
+
+void CUIObject::ClearEffectTweens()
+{
+	m_pComTween->ClearTweens();
 }
 
 void CUIObject::DeleteChild(CHandle childHandle)

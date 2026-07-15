@@ -39,6 +39,16 @@ typedef struct tagUITweenTrack
 	float fDuration;       // 걸리는 시
 }UI_TWEENTRACK;
 
+typedef struct tagUIEventString
+{
+	std::string ClickFunc;
+	std::string ClickAction;
+	std::string EnterAction;
+	std::string ExitAction;
+	std::string AppearAction;
+	std::string DisappearAction;
+}UI_EVENT;
+
 // 애니메이션 클립
 typedef struct tagUIAnimClip
 {
@@ -52,7 +62,16 @@ public:
 	DECLARE_DERIVED_TYPE(CUIObject, CGameObject)
 
 public:
-	enum class UI_STATE { ENTER, HOVERED, EXIT, CLICK, APPEAR, DISAPPEAR, NONE };
+	enum class UI_STATE
+	{
+		NONE = 0,
+		ENTER = 1 << 0, // 1
+		HOVERED = 1 << 1, // 2
+		EXIT = 1 << 2, // 4
+		CLICK = 1 << 3, // 8
+		APPEAR = 1 << 4, // 16
+		DISAPPEAR = 1 << 5  // 32
+	};
 
 public:
 	typedef struct tagUIObjectDesc : public CGameObject::GAMEOBJECT_DESC
@@ -92,18 +111,39 @@ public:
 	std::function<void(CUIObject* pCaller)> OnClicked;
 	std::function<void(CUIObject* pCaller)> OnHoverEnter;
 	std::function<void(CUIObject* pCaller)> OnHoverExit;
+	std::function<void(CUIObject* pCaller)> Appear;
+	std::function<void(CUIObject* pCaller)> Disappear;
+
+	std::function<void(std::string text)> OnClickedAction;
+
+	void ClearEffectTweens();
 
 protected:
 	UI_INFO		m_UIINFO{};
+	UI_EVENT	m_UIEVENT{};
 	UI_STATE	m_CurrentState = UI_STATE::NONE;
 	uint32_t	m_AnimState = 0;
 	_bool		m_isActive = true;
 	_bool		m_isVisible = true;
 	_float		m_ScaleRatio = 1.f;
 
+	bool m_bInputLocked = false;
+
 public:
 	const UI_INFO& GetUIInfo() const { return m_UIINFO; }
 	UI_INFO& GetUIInfo() { return m_UIINFO; }
+
+	const UI_EVENT& GetUIEvent() const { return m_UIEVENT; }
+	UI_EVENT& GetUIEvent() { return m_UIEVENT; }
+
+	_bool	GetInputLcok() { return m_bInputLocked; }
+	void	SetInputLcok(_bool inputlock) { m_bInputLocked = inputlock; }
+
+	_float2 GetPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
+	void	SetPos(_float2 pos) { m_UIINFO.fX = pos.x; m_UIINFO.fY = pos.y; }
+	_float2	GetLocalPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
+	void	SetLocalPos(_float2 pos) { m_UIINFO.LocalX = pos.x; m_UIINFO.LocalY = pos.y; }
+	void	SetAlpha(_float alpha) { m_UIINFO.Alpha = alpha; }
 
 	_bool GetActive() { return m_isActive; }
 	_bool GetVisible() { return m_isVisible; }

@@ -19,7 +19,9 @@ public:
 private:
 	bool PtInRect(_float2 mousePos);
 private:
-	bool m_bIsHovered = false;
+	bool m_bIsHovered	= false;
+	bool m_bAppear		= true;
+	bool m_bDisppear	= false;
 
 public:
 	virtual HRESULT		Initialize(void* pArg) override;

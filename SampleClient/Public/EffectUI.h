@@ -3,6 +3,7 @@
 #include "UIObject.h"
 #include "FlipbookUI.h"
 #include "Client_Defines.h"
+#include "FlipbookUI.h"
 
 NS_BEGIN(Engine)
 class CComConstantBuffer;
@@ -14,7 +15,7 @@ NS_BEGIN(Client)
 class CEffectUI final : public E::CFlipbookUI
 {
 public:
-	DECLARE_DERIVED_TYPE(CFlipBook, CUIObject)
+	DECLARE_DERIVED_TYPE(CEffectUI, CFlipbookUI)
 
 private:
 	CEffectUI();

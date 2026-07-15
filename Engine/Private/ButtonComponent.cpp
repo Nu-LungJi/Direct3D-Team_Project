@@ -20,27 +20,50 @@ bool CButtonComponent::CheckPixelPerfectCollision(_float2 mousePos, bool bIsTopU
 
 	bool bCurrentCollision = bIsTopUI && PtInRect(mousePos);
 
-	if (!m_bIsHovered && bCurrentCollision) 
+	uint32_t currentStates = 0;
+
+	if (m_bAppear)
+	{
+		m_bAppear = false;
+		currentStates |= ETOUI(CUIObject::UI_STATE::APPEAR);
+	}
+
+	if (m_bDisppear)
+	{
+		m_bDisppear = false;
+		currentStates |= ETOUI(CUIObject::UI_STATE::DISAPPEAR);
+	}
+
+	if (pOwner->GetInputLcok())
+		return false;
+
+
+	if (!m_bIsHovered && bCurrentCollision)
 	{
 		m_bIsHovered = true;
-		pOwner->PlayEffect(ETOUI(CUIObject::UI_STATE::ENTER));
+		currentStates |= ETOUI(CUIObject::UI_STATE::ENTER); // 상태 추가
 	}
 	else if (m_bIsHovered && !bCurrentCollision)
 	{
 		m_bIsHovered = false;
-		pOwner->PlayEffect(ETOUI(CUIObject::UI_STATE::EXIT));
+		currentStates |= ETOUI(CUIObject::UI_STATE::EXIT);  // 상태 추가
 	}
 	else if (bCurrentCollision)
 	{
-		pOwner->PlayEffect(ETOUI(CUIObject::UI_STATE::HOVERED));
+		currentStates |= ETOUI(CUIObject::UI_STATE::HOVERED);
 	}
 
-	if (m_bIsHovered && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (bCurrentCollision && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
-		pOwner->PlayEffect(ETOUI(CUIObject::UI_STATE::CLICK));
+		currentStates |= ETOUI(CUIObject::UI_STATE::CLICK); // 상태 추가
 	}
 
-	return false;
+	if (currentStates != 0)
+	{
+		pOwner->PlayEffect(currentStates);
+	}
+
+	return bCurrentCollision;
 }
 
 bool CButtonComponent::PtInRect(_float2 mousePos)

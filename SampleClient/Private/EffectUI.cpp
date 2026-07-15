@@ -68,6 +68,11 @@ void CEffectUI::Update(E::_float fTimeDelta)
 		return;
 
 	CFlipbookUI::Update(fTimeDelta);
+
+	if (m_pComTween != nullptr)
+	{
+		m_pComTween->Tick(fTimeDelta);
+	}
 }
 
 void CEffectUI::LateUpdate(E::_float fTimeDelta)

@@ -23,7 +23,6 @@ public:
 	enum class UiEditorMode { ARRANGE, PREFAB, FLIPBOOK, END };
 	enum class UiButtonMode { DEFAULT, CREATE, SELECT, END };
 
-
 private:
 	explicit CLevelUIEditor();
 	~CLevelUIEditor() override;
@@ -44,6 +43,7 @@ private:
 	uint32_t m_iButtonMode;
 private:
 	UI_INFO		m_UIINFO{};
+	UI_EVENT	m_UIEVENT{};
 	FLIP_INFO	m_FLIPINFO{};
 
 	char m_cName[128] = "";
@@ -94,6 +94,8 @@ private:
 	void RefreshJsonFileList();
 	void DrawJsonFileLoader(uint32_t EditorMode);
 
+	void DrawHierarchyNode(CHandle uiHandle);
+	void ResetProperty(std::optional<Engine::CHandle> newTargetHandle);
 private:
 	std::vector<JsonFileInfo> g_JsonFiles;
 	std::vector<JsonFileInfo> g_ImageFiles;
