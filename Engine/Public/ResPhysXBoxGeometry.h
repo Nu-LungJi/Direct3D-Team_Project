@@ -33,6 +33,9 @@ private:
 public:
 	static SPtr<CResPhysXBoxGeometry> Create();
 	static SPtr<CResPhysXBoxGeometry> Create(const DESC& desc);
+
+private:
+	void Free() override;
 };
 
 NS_END

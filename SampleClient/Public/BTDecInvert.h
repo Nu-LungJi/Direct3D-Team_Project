@@ -16,14 +16,14 @@ private:
 	HRESULT InitalizePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE			 Evaluate(_float fTimeDelta) override;
+	EVALUATE						Evaluate(_float fTimeDelta) override;
 
-	virtual void		Update_Gui() override;
+	virtual void					Update_Gui() override;
 private:
 	_bool				m_bEnter{ false };
 public:
 	static UPtr<CBTDecInvert> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

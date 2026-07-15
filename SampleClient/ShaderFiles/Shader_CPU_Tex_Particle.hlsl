@@ -1,4 +1,4 @@
-#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
 struct VS_IN
@@ -16,6 +16,8 @@ struct VS_IN
     float4 vWorld3 : INSTANCE_WORLD3;
     float4 vColor : INSTANCE_COLOR0;
     float4 vInstEmissive : INSTANCE_EMISSIVE;
+    float2 uvOffset : INSTANCE_UVOFFSET;
+    float2 uvSize : INSTANCE_UVSIZE;
 };
 
 struct VS_OUT
@@ -45,7 +47,7 @@ VS_OUT VSMain(VS_IN In)
                       + vUp * In.vPosition.y * fScale;
 
     Out.vPosition = mul(float4(vWorldPos, 1.f), g_matViewProj);
-    Out.vTexcoord = In.vTexcoord;
+    Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
     Out.vColor = In.vColor;
     Out.vEmissive = In.vInstEmissive;
     return Out;
@@ -66,8 +68,8 @@ PS_OUT PSMain(VS_OUT In)
     PS_OUT Out = (PS_OUT) 0;
 
     float4 texColor = g_ParticleTexture.Sample(g_Sampler, In.vTexcoord) * In.vColor;
-    if (texColor.a <= 0.01f)
-        discard;
+    //if (texColor.a <= 0.01f)
+    //    discard;
 
     float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
     float3 FinalColor = texColor.rgb + instEmissive;

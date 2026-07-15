@@ -32,14 +32,21 @@ struct PS_OUT
     float4 Diffuse : SV_TARGET;
 };
 
-float4 PSMain_OverDraw(PS_IN IN) : SV_TARGET
+float4 PSMain(PS_IN IN) : SV_TARGET
 {
     float4 BackGround = g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord);
     float4 OverTexture = g_OverDrawTexture.Sample(LinearWrap, IN.TexCoord);
-   
-    return lerp(BackGround, OverTexture, OverTexture.a);
+
+    float3 fogColor = OverTexture.rgb;      // LightAccumulation
+    float transmittance = OverTexture.a;    // LightTransmittance
+    
+    float3 finalRGB = (BackGround.rgb * transmittance) + fogColor;
+        
+    return float4(finalRGB.rgb, BackGround.a); //lerp(BackGround, OverTexture, OverTexture.a);
+
 }
-float4 PSMain(PS_IN IN) : SV_TARGET
+float4 PSMain_OverDraw(PS_IN IN) : SV_TARGET
 {
     return float4(g_BackGroundTexture.Sample(LinearWrap, IN.TexCoord).rgb, 1.f);
+
 }

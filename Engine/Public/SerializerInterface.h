@@ -27,8 +27,8 @@ public:
 	virtual void Write(const std::string& key, const _float3& value) = 0;
 	virtual void Write(const std::string& key, const _float4& value) = 0;
 	virtual void Write(const std::string& key, const _float4x4& value) = 0;
-	virtual void Write(const std::string& key, const ISerializable& value) = 0;
 	virtual void Write(const std::string& key, const StringID& value) = 0;
+	virtual void Write(const std::string& key, const ISerializable& value) = 0;
 
 	template<typename T>
 	auto Write(const std::string& key, T value)

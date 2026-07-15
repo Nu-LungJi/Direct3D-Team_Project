@@ -13,18 +13,18 @@ private:
 	~CBTMove() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
 	virtual nlohmann::json			Save_Node()override;
-	HRESULT					Load_json(const nlohmann::json& j) override;
-	EVALUATE Evaluate(_float fTimeDelta) override;
-	virtual void		Update_Gui() override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
+	EVALUATE						Evaluate(_float fTimeDelta) override;
+	virtual void					Update_Gui() override;
 private:
 	MOVE						m_eMove{};
 public:
 	static UPtr<CBTMove> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

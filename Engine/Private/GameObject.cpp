@@ -36,6 +36,16 @@ HRESULT CGameObject::Initialize(void* pArg)
         {
             return E_FAIL;
         }
+
+
+		CComCollider::DESC Desc{};
+		Desc.eCollType = CollType::Box;
+		Desc.vCenter	= { 0.f, 0.f, 0.f };
+		Desc.vExtents	= { 1.f, 1.f, 1.f };
+		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "Com_Collider", &Desc, &m_pComCollider)))
+		{
+			return E_FAIL;
+		}
         //CComponent::DESC componentDesc{};
         //componentDesc.pGameObject = this;
         //auto pProto = CGameInstance::Get().ClonePrototype("PERMANENT", "Prototype_Component_Transform", &componentDesc);
@@ -43,7 +53,8 @@ HRESULT CGameObject::Initialize(void* pArg)
         //{
         //    return E_FAIL;
         //}
-        //m_pComTransform = AddComponent("Com_Transform", static_uptr_cast<CComTransform>(std::move(pProto)));
+        //m_pComTransform = AddComponent("Com_Transform", 
+        // <CComTransform>(std::move(pProto)));
     }
 
     return S_OK;

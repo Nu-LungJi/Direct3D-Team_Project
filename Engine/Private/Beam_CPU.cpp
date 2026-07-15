@@ -92,7 +92,14 @@ void CBeam_CPU::Update(_float fTimeDelta)
         if (beam.fFlickerTimer >= beam.fFlickerInterval)
         {
             beam.fFlickerTimer = 0.f;
-            RegenerateJaggedPath(beam);
+
+			if (m_Desc.geometryType == 0) {
+				RegenerateJaggedPath(beam);
+
+			}
+			//else if (m_Desc.geometryType == 1) {
+			//	RegenerateSinPath(beam);
+			//}
             bNeedRebuild = true;
         }
     }
@@ -182,14 +189,58 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
             beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
             beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
             
-            RegenerateJaggedPath(beam);
+			if (m_Desc.geometryType == 0) {
+				RegenerateJaggedPath(beam);
+
+			}
+			else if (m_Desc.geometryType == 1) {
+				RegenerateSinPath(beam);
+			}
             BuildBeamGeometry();
             return (int32_t)i;
         }
     }
     return -1;
 }
+int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd)
+{
 
+	for (uint32_t i = 0; i < m_vecBeams.size(); ++i)
+	{
+		if (!m_vecBeams[i].bActive)
+		{
+			auto& beam = m_vecBeams[i];
+			beam.bActive = true;
+			beam.vStartPos = vStart;
+			beam.vEndPos = vEnd;
+			beam.fElapsedTime = 0.f;
+			beam.fDuration = m_fDuration;
+			beam.vEmissive = m_vEmissive;
+			beam.fDisplacementAmplitude = m_fDisplacementAmplitude;   	//변위를 몇 겹으로(예: 여러 주파수의 사인파를 겹쳐서) 계산할지. 값이 클수록 더 복잡하고 디테일한 떨림 패턴이 나옴
+			beam.iDisplacementIterations = m_iDisplacementIterations; 		//빔이 원래 직선에서 얼마나 크게 흔들릴지(진폭). 값이 클수록 더 크게 출렁임.
+			beam.fDisplacementDamping = m_fDisplacementDamping;  //반복(iteration)마다 진폭을 얼마나 감쇠시킬지. 1보다 작은 값이면 고주파 성분일수록 흔들림이 약해져서 자연스러운 지글거림이 됨.
+			beam.fFlickerInterval = m_fFlickerInterval;     //빔이 깜빡이는(flicker) 주기. 예를 들어 0.05초마다 한 번씩 랜덤하게 위치/밝기를 갱신하는 식의 전기 스파크 느낌을 낼 때 쓰는 간격.
+			beam.fFlickerTimer = m_fFlickerInterval;  	//다음 깜빡임까지 남은 시간을 세는 카운트다운 타이머.
+			beam.vColor = m_vColor;
+
+			// 이 빔만의 세그먼트 개수를 여기서 계산하고, 배열 크기도 그에 맞게 재조정
+			beam.iSegmentCount = 1u << beam.iDisplacementIterations;
+			beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
+			beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
+
+			if (m_Desc.geometryType == 0) {
+				RegenerateJaggedPath(beam);
+
+			}
+			else if (m_Desc.geometryType == 1) {
+				RegenerateSinPath(beam);
+			}
+			BuildBeamGeometry();
+			return (int32_t)i;
+		}
+	}
+	return -1;
+}
 void CBeam_CPU::SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration)
 {
     if (beamIndex >= m_vecBeams.size())
@@ -320,4 +371,89 @@ void CBeam_CPU::BuildBeamGeometry()
 	
         m_vecDrawRanges.push_back(range);
     }
+}
+
+void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
+{
+	XMVECTOR start = XMLoadFloat4(&beam.vStartPos);
+	XMVECTOR end = XMLoadFloat4(&beam.vEndPos);
+
+	XMVECTOR segDir = XMVector3Normalize(end - start);
+
+	XMVECTOR worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	if (fabsf(XMVectorGetX(XMVector3Dot(segDir, worldUp))) > 0.99f)
+		worldUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+
+	XMVECTOR right1 = XMVector3Normalize(XMVector3Cross(segDir, worldUp));
+	XMVECTOR right2 = XMVector3Normalize(XMVector3Cross(segDir, right1));
+
+	// 빔마다 한 번만 랜덤으로 정하면 더 좋음
+	float phase1 = Randf(0.f, XM_2PI);
+	float phase2 = Randf(0.f, XM_2PI);
+
+	for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)
+	{
+		float t = (float)i / beam.iSegmentCount;
+
+		XMVECTOR basePos = XMVectorLerp(start, end, t);
+
+		float envelope = sinf(t * XM_PI);
+
+		float wave1 = sinf(t * XM_2PI + phase1);
+		float wave2 = cosf(t * XM_2PI + phase2);
+
+		XMVECTOR offset =
+			right1 * (wave1 * beam.fDisplacementAmplitude * envelope) +
+			right2 * (wave2 * beam.fDisplacementAmplitude * envelope);
+
+		XMStoreFloat3(&beam.vecJaggedPoints[i], basePos + offset);
+	}
+}
+
+//void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
+//{
+//	XMVECTOR start = XMLoadFloat4(&beam.vStartPos);
+//	XMVECTOR end = XMLoadFloat4(&beam.vEndPos);
+//	XMVECTOR segDir = XMVector3Normalize(end - start);
+//
+//	XMVECTOR worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+//	if (fabsf(XMVectorGetX(XMVector3Dot(segDir, worldUp))) > 0.99f)
+//		worldUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+//
+//	XMVECTOR right1 = XMVector3Normalize(XMVector3Cross(segDir, worldUp));
+//	XMVECTOR right2 = XMVector3Normalize(XMVector3Cross(segDir, right1));
+//	float fLength = XMVectorGetX(XMVector3Length(end - start));
+//
+//	for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)
+//	{
+//		float t = (_float)i / (_float)beam.iSegmentCount; // 0~1
+//
+//		// 직선 경로 위의 기준점
+//		XMVECTOR basePos = XMVectorLerp(start, end, t);
+//
+//		// 사인파: t(길이 방향)에 파수(주파수)를 곱하고, 시간에 따라 위상(phase)을 흘려서 출렁이게 함
+//		float fWave = sinf(t * beam.fWaveFrequency * XM_2PI + fTimeAccum * beam.fWaveSpeed);
+//
+//		// 시작/끝점은 흔들리지 않도록 envelope 처리 (양 끝에서 0에 수렴)
+//		float fEnvelope = sinf(t * XM_PI); // t=0,1일 때 0, t=0.5일 때 1
+//
+//		XMVECTOR offset = right1 * (fWave * beam.fDisplacementAmplitude * fEnvelope);
+//
+//		XMVECTOR finalPos = basePos + offset;
+//		XMStoreFloat3(&beam.vecJaggedPoints[i], finalPos);
+//	}
+//}
+UPtr<CParticle> CBeam_CPU::Create(void* pArg)
+{
+	auto pInstance = E::ToUPtr(new CBeam_CPU{});
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Created : CBeam_CPU");
+		return nullptr;
+	}
+	return  pInstance;
+}
+void CBeam_CPU::ClearByOwner(uint32_t ownerID)
+{
+	// TODO: 필요 시 구현. 지금은 비워둬도 컴파일은 통과함
 }

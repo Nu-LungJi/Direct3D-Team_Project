@@ -5,7 +5,7 @@ CBTRoot::CBTRoot()
 {
 }
 
-CBTRoot::CBTRoot(const CBTRoot& rhs) : CEngineBase(rhs)
+CBTRoot::CBTRoot(const CBTRoot& rhs) : CPrototype(rhs)
 {
 	m_eGroup = rhs.m_eGroup;
 	m_MasterName = rhs.m_MasterName;
@@ -15,7 +15,7 @@ CBTRoot::~CBTRoot()
 {
 }
 
-HRESULT CBTRoot::InitalizePrototype(void* pArg)
+HRESULT CBTRoot::InitializePrototype(void* pArg)
 {
 	
 	return S_OK;
@@ -40,7 +40,8 @@ nlohmann::json CBTRoot::Save_Node()
 
 	SaveJsonValue(j, "ID", m_GuiNode.iID);
 	SaveJsonValue(j, "fValue", m_GuiNode.fValue);
-	
+	SaveJsonValue(j, "Abort", m_GuiNode.bAbort);
+
 	SaveJsonEnum(j, "Group", m_eGroup);
 	SaveJsonEnum(j, "GuiNode_BeHaviorType", m_GuiNode.eMyType);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "GuiNode_Pos", m_GuiNode.vPos);
@@ -60,16 +61,60 @@ HRESULT				CBTRoot::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "ID", m_GuiNode.iID);
 	LoadJsonValue(j, "fValue", m_GuiNode.fValue);
 
+	LoadJsonValue(j, "Abort", m_GuiNode.bAbort);
 	LoadJsonEnum(j, "Group", m_eGroup);
 	LoadJsonEnum(j, "GuiNode_BeHaviorType", m_GuiNode.eMyType);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "GuiNode_Pos", m_GuiNode.vPos);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "GuiNode_Size", m_GuiNode.vSize);
 	JsonSaveLoadManager::LoadJsonTypeFloat4(j, "GuiNode_Color", m_GuiNode.vColor);
 	JsonSaveLoadManager::LoadJsonTypeString(j, "GuiNode_Name", m_GuiNode.Name);
-
+	
+	if (m_GuiNode.Name == "Selector Root")
+		int32_t i = 0;
 	LoadJsonEnum(j, "GuiLink_ParentNodeEnum", m_GuiLink.ParentNode.eType);
 	LoadJsonValue(j, "GuiLink_StartIndex", m_GuiLink.iStartIdx);
 	LoadJsonValue(j, "GuiLink_StartParentNode", m_GuiLink.ParentNode);
 	JsonSaveLoadManager::LoadJsonTypeString(j, "MasterName", m_MasterName);
 	return S_OK;
+}
+void CBTRoot::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
+{
+	if (auto iter = Get_ComBT())
+	{
+		iter->Set_Flag(iFlag, eType);
+	}
+}
+CComBeHavior* CBTRoot::Get_ComBT()
+{
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>(m_OwnerName))
+		{
+			return pComBt;
+		}
+	}
+	return nullptr;
+
+}
+_bool CBTRoot::Check_Flag(uint32_t iFlag)
+{
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>(m_OwnerName))
+		{
+			return pComBt->Check_Flag(iFlag);
+		}
+	}
+	
+}
+
+uint32_t CBTRoot::Get_Flag()
+{
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>(m_OwnerName))
+		{
+			return pComBt->Get_Flag();
+		}
+	}
 }

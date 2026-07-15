@@ -6,6 +6,8 @@ NS_BEGIN(Client)
 
 class CLevelPhysX final : public Engine::CLevel
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevelPhysX, CLevel)
 private:
 	CLevelPhysX();
 	~CLevelPhysX() override;

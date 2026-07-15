@@ -21,6 +21,11 @@ private:
 public:
 	 void Transform(_fmatrix wordMatrix) override;
 	 _bool Intersect(const CCollider& collider) const override;
+	 _bool Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const override;
+
+	 void	GetCorners(_float3* Corners) const;
+
+	 void	Set_FrustumVolume(XMMATRIX _InvViewProjMatrix) { InvViewProjMatrix = _InvViewProjMatrix; };
 
 private:
 	HRESULT Initialize(_fmatrix mat);
@@ -28,6 +33,8 @@ private:
 private:
 	BoundingFrustum m_BoundingFrustumLocal{};
 	BoundingFrustum m_BoundingFrustumWorld{};
+
+	XMMATRIX		InvViewProjMatrix;
 
 public:
 	static UPtr<CCollFrustum> Create(_fmatrix mat);

@@ -10,10 +10,13 @@
 #include "LightManager.h"
 #include "NavMeshManager.h"
 #include "SerializeManager.h"
+#include "PrototypeManager.h"
+#include "LuaManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
 class PxPhysics;
+class PxControllerManager;
 NS_END
 
 struct FMOD_SOUND;
@@ -26,7 +29,6 @@ class CLevelManager;
 class CLevel;
 class CSoundManager;
 class CFontManager;
-class CPrototypeManager;
 class CPrototype;
 class CColliderManager;
 class CCollider;
@@ -40,6 +42,8 @@ class CAction_Manager;
 class CPhysXManager;
 class CDbgLineRender;
 class CSerializeManager;
+class ILuaScriptRelodable;
+class CModel_Instance_Manager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -83,33 +87,28 @@ public:
 	SPtr<CResource> AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset);
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, const _string& sPath, void* pArg = nullptr)
-	{
-		return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, sPath, pArg);
-	}
+	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, sPath, pArg); }
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset)
-	{
-		return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset);
-	}
+	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset); }
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
-	{
-		return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag);
-	}
-	const std::vector<SPtr<CResource>>* GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
-	const std::unordered_map<StringID, std::vector<SPtr<CResource>>>* GetResource(const StringID& sGroupTag) const;
-	const std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>>& GetResources() const;
-	HRESULT LoadResource(const StringID& sGroupTag);
-	HRESULT LoadResource(const StringID& sGroupTag, const StringID& sResTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag);
-	HRESULT UnLoadResource(const StringID& sGroupTag, const StringID& sResTag);
+	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
+	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
+	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const;
+	std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> GetResources() const;
+
 	void DelResource(const StringID& sGroupTag);
 	void DelResource(const StringID& sGroupTag, const StringID& sResTag);
+
+	std::vector<SPtr<CResource>> GetResourcesByPath(const _string& sPath) const;
+	void RemoveResourcePathLookup(const _string& sPath, SPtr<CResource> pRes);
 #pragma endregion
 
 #pragma region LEVEL_MANAGER
 public:
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
+	HRESULT ChangeLevel(const _string& ID);
 	void RegisterLevelChangeFunc(const _string& ID, _Func func);
 #pragma endregion
 
@@ -178,6 +177,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
+	const CPrototypeManager::PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
@@ -247,23 +247,6 @@ public:
 
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
-
-	//const CCameraObject* GetCameraObject(const StringID& GroupID) const;
-	//HRESULT SetCameraObject(const StringID& GroupID, const CHandle& handle);
-
-	//CCameraObject* GetActiveGameCamera() const;
-	//HRESULT SetActiveGameCamera(const StringID& CameraID);
-	//CCameraObject* GetActiveUICamera() const;
-	//HRESULT SetActiveUICamera(const StringID& CameraID);
-
-	//CCameraObject* GetActiveGameCamera(const StringID& CameraID) const;
-	//CCameraObject* GetActiveUICamera(const StringID& CameraID) const;
-
-	//CCameraObject* GetGameCamera(const StringID& CameraID) const;
-	//CCameraObject* GetUICamera(const StringID& CameraID) const;
-
-	//HRESULT RegistGameCamera(const StringID& CameraID, const CHandle& handle);
-	//HRESULT RegistUICamera(const StringID& CameraID, const CHandle& handle);
 #pragma endregion
 
 #pragma region RENDERER
@@ -271,6 +254,16 @@ public:
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 	_bool IsOcclusionCulled(const IRenderable* pRenderObject);
 	const CHizBuffer* GetPrevHizBuffer() const;
+	HRESULT	Reset_DefaultShader(RENDERGROUP _Group);
+
+	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
+
+	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+
 #pragma endregion
 
 
@@ -293,6 +286,12 @@ public:
 	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 
 	VOID	Clear_DynamicLightList();
+
+	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+
+	HRESULT	Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
+		const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth);
+	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER
@@ -308,15 +307,15 @@ public:
 #pragma endregion
 
 #pragma region Action_Manager
-	HRESULT					Add_Action_Prototype(NODEGROUP eType, const _string& strActionName, UPtr<class CBTRoot> pAction);
 	UPtr<class CBTRoot>		Show_ActioNode_List(NODEGROUP eType, uint32_t& iNode, ImVec2 vNodePos, CHandle Handle);
 	void					Show_Action_NodeWidget(CBTRoot* pNode);
-	UPtr<class CBTRoot>	    Clone_Action(NODEGROUP eType, const _string& strActionName, void* pArg);
 
 #pragma endregion
 
 #pragma region PARTICLE_MANAGER
 public:
+	HRESULT LoadParticleJson(const std::string& strJsonPath);
+
 	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop, _float fSpawnInterval);
@@ -326,6 +325,10 @@ public:
 	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
 		_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration = 1.f);
+
+	HRESULT LoadParticlePresets(const std::string& strJsonPath);
+
+	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
 #pragma endregion
 
 #pragma region MAP_MANAGER
@@ -337,6 +340,7 @@ public:
 	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
 	HRESULT RegisterMapMeshObjectToMapChunk(const CHandle& hObject);
+	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
@@ -344,12 +348,14 @@ public:
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
 #endif
+	void ClearAllChunk();
 #pragma endregion
 
 public:
 	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
 	physx::PxScene* PxGetScene() const;
 	physx::PxPhysics* PxGetPhysics() const;
+	physx::PxControllerManager* PxGetControllerManager() const;
 
 	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
 	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
@@ -366,26 +372,78 @@ public:
 	CNavMeshManager* GetNavMeshManager() const { return m_pNavMeshManager.get(); }
 #pragma endregion
 
+#pragma region INSTNACE_MANAGER
+public:
+	void Add_Instance(class CComModelInstance* pModelInstance, class CComAnimator* pAnimator, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
+
+
+	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
+	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
+#pragma endregion
+
 
 
 #pragma region SERIALIZE_MANAGER
 public:
 	template<typename T>
 	HRESULT BinDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "BIN")
-	{ return m_pSerializeManager->BinDeSerialize(path, outValue, rootName); }
+	{
+		return m_pSerializeManager->BinDeSerialize(path, outValue, rootName);
+	}
 	template<typename T>
 	HRESULT BinSerialize(const std::string& path, const T& value, const std::string& rootName = "BIN")
-	{ return m_pSerializeManager->BinSerialize(path, value, rootName); }
+	{
+		return m_pSerializeManager->BinSerialize(path, value, rootName);
+	}
 	template<typename T>
 	HRESULT JsonDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "JSON")
-	{ return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName); }
+	{
+		return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName);
+	}
 	template<typename T>
 	HRESULT JsonSerialize(const std::string& path, const T& value, const std::string& rootName = "JSON")
-	{ return m_pSerializeManager->JsonSerialize(path, value, rootName); }
+	{
+		return m_pSerializeManager->JsonSerialize(path, value, rootName);
+	}
+#pragma endregion
+
+#pragma region LUA_MANAGER
+	HRESULT LuaScriptExecute(const std::string& script, const sol::environment& env, const std::string& chunkName = "InlineScript");
+	HRESULT LuaScriptExecute(const std::string& script, const std::string& chunkName = "InlineScript");
+	sol::environment LuaCreateEnvironment();
+
+	sol::protected_function LuaCacheFunction(const std::string& funcName);
+	sol::protected_function LuaCacheFunction(const sol::environment& env, const std::string& funcName);
+
+	template<typename... Args>
+	bool LuaCallCacheFunction(const sol::protected_function& func, Args&&... args)
+	{ return m_pLuaManager->CallCacheFunction(func, std::forward<Args>(args)...); }
+
+	template<typename T>
+	void LuaSetValue(std::string_view name, T&& value)
+	{ m_pLuaManager->SetValue(name, value); }
+
+	template<typename T>
+	bool LuaGetValue(std::string_view name, T& outValue)
+	{ return m_pLuaManager->GetValue(name, outValue); }
+
+	HRESULT LuaCompile(const std::string& script);
+
+	bool LuaIsEnvValid(const sol::environment& env) const;
+	bool LuaHasValue(const sol::environment& env, std::string_view name) const;
+	void LuaRemoveValue(sol::environment& env, std::string_view name);
+	void LuaEnvDump(const sol::environment& env) const;
+	void LuaEnvClear(sol::environment& env);
+	void LuaRegisterComponent(const std::string& path, ILuaScriptRelodable* pComp);
+	void LuaUnregisterComponent(const std::string& path, ILuaScriptRelodable* pComp);
+	void LuaRegisterExtension(std::function<void(sol::state&)> extensionFunc);
+	template<typename T>
+	void LuaRegisterType() { m_pLuaManager->RegisterType<T>(); }
 #pragma endregion
 
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
+	_float2 GetDisplayScreenSize() const { return m_vDisplayScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
 	_bool GetMouseFix() const { return m_bMouseFix; }
 
@@ -393,17 +451,16 @@ public:
 		POINT pt; GetCursorPos(&pt); ScreenToClient(m_hWnd, &pt);
 		return { (float)pt.x, (float)pt.y };
 	}
+	uint64_t GetFrameCnt() const { return m_iFrameCnt; }
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
+	_float2 m_vDisplayScreenSize{ 1920.f, 1280.f };
 	HWND m_hWnd{};
 	_bool m_bMouseFix{};
+	uint64_t m_iFrameCnt{};
 
 private:
 	void MouseFix() const;
-
-private:
-	HRESULT InitializeResources();
-	HRESULT InitializePrototype();
 
 private:
 	UPtr<CGraphicDevice> m_pGraphicDevice{};
@@ -436,6 +493,8 @@ private:
 	UPtr<CMapManager> m_pMapManager{};
 	UPtr<CNavMeshManager> m_pNavMeshManager{};
 	UPtr<CSerializeManager> m_pSerializeManager{};
+	UPtr<CLuaManager> m_pLuaManager{};
+	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 };
 
 NS_END

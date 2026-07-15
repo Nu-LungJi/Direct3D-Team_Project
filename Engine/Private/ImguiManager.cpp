@@ -39,6 +39,7 @@ CImguiManager::~CImguiManager()
 HRESULT CImguiManager::Ready_Imgui(HWND hWnd, ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
 	//ImGui_ImplWin32_EnableDpiAwareness();
+
 	float main_scale = ImGui_ImplWin32_GetDpiScaleForMonitor(::MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY));
 
 	IMGUI_CHECKVERSION();
@@ -48,6 +49,7 @@ HRESULT CImguiManager::Ready_Imgui(HWND hWnd, ID3D11Device* pDevice, ID3D11Devic
 	style.ScaleAllSizes(main_scale);
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // 키보드 컨트롤 활성화
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 	io.FontGlobalScale = main_scale;
@@ -70,6 +72,7 @@ HRESULT CImguiManager::Ready_Imgui(HWND hWnd, ID3D11Device* pDevice, ID3D11Devic
 
 	return S_OK;
 }
+//CGameInstance::Get().ImguiEnableDocking(true, true);
 
 void CImguiManager::Update_Imgui()
 {

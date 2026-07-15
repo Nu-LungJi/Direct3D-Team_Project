@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Handle.h"
 
 namespace Engine
 {
+
 	typedef struct tagEngineDesc
 	{
 		HWND hWnd;
@@ -70,19 +72,20 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
+		XMFLOAT4X4	g_LightViewProj;
 
-		_float3  LightDirection;
-		_float3  LightColor;
-		_float   LightIntensity;
-		_float   LightRange;
+		_float3		LightDirection;
+		_float		LightIntensity;
+		_float3		LightColor;
+		_float		LightRange;
 
-		_float3  Position;
+		_float3		Position;
+		uint32_t	LightType;
 
-		_float   InnerAttanuation;
-		_float   OuterAttanuation;
+		_float		InnerAttanuation;
+		_float		OuterAttanuation;
 
-		_float2  LightPadding;
+		_float2		LightPadding;
 	} DYNAMIC_LIGHT;
 
 	typedef struct tagPostProcess
@@ -110,7 +113,7 @@ namespace Engine
 		float		fTrackPosition;
 	}KEYFRAME;
 
-	
+
 
 	///////BeHavior//////
 	typedef struct tagactionvalue
@@ -118,8 +121,8 @@ namespace Engine
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{}, fTime{1.f}, fTick{};
-	
+		_float   fSpeed{}, fTime{ 1.f }, fTick{};
+
 	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{
@@ -138,13 +141,14 @@ namespace Engine
 	{
 		uint32_t	iID{};
 		_string		Name{};
-		XMFLOAT2		vPos{},vSize{};
+		XMFLOAT2	vPos{}, vSize{};
 		float		fValue{};
-		XMFLOAT4		vColor{};
+		XMFLOAT4	vColor{};
+		_bool		bAbort{ false };
 		BEHAVIOR    eMyType{};
-		tagimguinode()=default ;
-		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
-		XMFLOAT2 GetStartSlotPos()  { return XMFLOAT2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
+		tagimguinode() = default;
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color; }
+		XMFLOAT2 GetStartSlotPos() { return XMFLOAT2(vPos.x + vSize.x * 0.5f, vPos.y); }
 		XMFLOAT2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
 			return XMFLOAT2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
 		}
@@ -163,7 +167,7 @@ namespace Engine
 		int32_t					iStartIdx{ -1 };
 		DEST_NODE				ParentNode;
 		std::vector<DEST_NODE>  SlotEnd{};
-		
+
 		tagimguinodelink() = default;
 		tagimguinodelink(int32_t iEnd)
 		{
@@ -176,7 +180,6 @@ namespace Engine
 		tagimguiCurrentNode(GUINODE* pNode, GUINODE_LINK* pLink, int32_t iSlot)
 		{
 			pCurrentNode = pNode; pCurrentLink = pLink;  iSelectedSlot = iSlot;
-
 		}
 		GUINODE* pCurrentNode{ nullptr };
 		GUINODE_LINK* pCurrentLink{ nullptr };
@@ -189,13 +192,24 @@ namespace Engine
 
 	typedef struct tagParticleSpawnData
 	{
-		_float3 position;
-		_float3 velocity;
-		_float  life;
-		_float  size;
-		_float4 color;
-		_float4 emissive;
-	}PARTICLE_SPAWN_DATA;
+		_float3  position;
+		_float   pad0;        // HLSL이 velocity를 16으로 밀어내기 위해 넣는 패딩
+		_float3  velocity;
+		_float   life;
+		_float   fSize;
+		_float   fEndSize;
+		_float2  pad1;        // HLSL이 color를 48로 밀어내기 위해 넣는 패딩 (8바이트)
+		_float4 rotation;
+		_float4  color;
+		_float4  emissive;
+		_float   spawnDelay;
+		uint32_t ownerID = 0;
+		uint32_t iBehaviorType = 0;
+		_float pad2;
+	} PARTICLE_SPAWN_DATA;
+	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
+
+	constexpr uint32_t PREVIEW_OWNER_ID = 0xFFFFFFFF; //미리보기 전용 
 
 	typedef struct tagParticleEmitRequest
 	{
@@ -203,7 +217,7 @@ namespace Engine
 		_bool    bLoop;
 		_float   fSpawnInterval;
 	} PARTICLE_EMIT_REQUEST;
-	
+
 	typedef struct tagBeamVertex
 	{
 		_float3 vPosition;
@@ -211,9 +225,6 @@ namespace Engine
 		_float4 vColor;
 		_float4 vEmissive;
 	}BEAM_VERTEX;
-
-
-
 
 	typedef struct ChunkHeader
 	{
@@ -234,7 +245,7 @@ namespace Engine
 	}MODEL_FILE_HEADER;
 
 	typedef struct tagParticleSpecies {
-		
+
 	}PARTICLE_SPECIES;
 
 	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
@@ -297,5 +308,163 @@ namespace Engine
 	//	CResStaticModel* model = nullptr;
 	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
 	//} MAPMESH_BATCH;
-	//----------------------------MapMeshObject 인스턴싱------------------------
+	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+
+
+	//----------------------------AnimationObject------------------------------------
+
+
+	typedef struct GPU_BONE_DESC
+	{
+		_float4x4 BindLocalMatrix;
+
+		// Bind pose도 애니메이션 키와 같은 SRT 형태로 보관한다.
+		// GPU 블렌딩 시 행렬 원소를 직접 보간하지 않기 위해 사용한다.
+		_float3 BindScale{ 1.f, 1.f, 1.f };
+		_float4 BindRotation{ 0.f, 0.f, 0.f, 1.f };
+		_float3 BindTranslation{ 0.f, 0.f, 0.f };
+		float   fBindPadding = 0.f;
+
+		int32_t  iParentBoneIndex = -1;
+		uint32_t iDepth = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+	}GPU_BONE_DESC;
+
+	typedef struct GPU_ANIM_DESC
+	{
+		uint32_t iChannelOffset = 0;
+		uint32_t iChannelCount = 0;
+
+		uint32_t iBoneChannelMapOffset = 0;
+		uint32_t iBoneCount = 0;
+
+		float fDuration = 0.f;
+		float fPadding0 = 0.f;
+		float fPadding1 = 0.f;
+		float fPadding2 = 0.f;
+	}GPU_ANIM_DESC;
+
+	typedef struct GPU_CHANNEL_DESC
+	{
+		uint32_t iBoneIndex = 0;
+		uint32_t iKeyFrameOffset = 0;
+		uint32_t iKeyFrameCount = 0;
+		uint32_t iPadding = 0;
+	}GPU_CHANNEL_DESC;
+
+	typedef struct GPU_KEYFRAME_DESC
+	{
+		_float3 vScale{ 1.f, 1.f, 1.f };
+		float fTrackPosition = 0.f;
+
+		_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
+
+		_float3 vTranslation{ 0.f, 0.f, 0.f };
+		float fPadding = 0.f;
+	}GPU_KEYFRAME_DESC;
+
+	typedef struct GPU_SKIN_BONE_DESC
+	{
+		_float4x4 OffsetMatrix;
+
+		uint32_t iSkeletonBoneIndex = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+		uint32_t iPadding2 = 0;
+	}GPU_SKIN_BONE_DESC;
+
+	typedef struct GPU_MESH_SKIN_RANGE
+	{
+		uint32_t iSkinBoneOffset = 0;
+		uint32_t iSkinBoneCount = 0;
+	}GPU_MESH_SKIN_RANGE;
+
+	typedef struct GPU_SKIN_MESH_CONSTANTS
+	{
+		uint32_t iSkinBoneOffset = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+		uint32_t iPadding2 = 0;
+	}GPU_SKIN_MESH_CONSTANTS;
+
+
+	//struct GPU_ANIM_INSTANCE_DATA { 
+	// float4x4 WorldMatrix; 
+	// uint iAnimIndex; 
+	// uint iFlags; 
+	// float fTrackPosition; 
+	// uint RootBoneIndex; 
+	// uint iPrevAnimIndex; 
+	// float fPrevTrackPosition; 
+	// float fBlendWeight;
+	// uint bBlending; };
+
+	typedef struct GPU_ANIM_INSTANCE_DATA
+	{
+		_float4x4 WorldMatrix{};
+
+		uint32_t iAnimIndex = 0;
+		uint32_t iFlags = 0;
+
+		_float fTrackPosition = 0.f;
+		
+		uint32_t iRootBoneIndex = 0;
+
+		uint32_t iPrevAnimIndex = 0;
+		_float fPrevTrackPosition = 0.f;
+		_float fBlendWeight = 1.f;
+		uint32_t bBlending = 0;
+	}GPU_ANIM_INSTANCE_DATA;
+
+	typedef struct MODEL_INSTANCE_KEY
+	{
+		StringID modelGroup{};
+		StringID modelTag{};
+
+		_bool operator==(const MODEL_INSTANCE_KEY& rhs) const
+		{
+			return
+				modelGroup == rhs.modelGroup &&
+				modelTag == rhs.modelTag;
+		}
+	}MODEL_INSTANCE_KEY;
+	typedef struct MODEL_INSTANCE_KEY_HASH
+	{
+		size_t operator()(const MODEL_INSTANCE_KEY& Key) const
+		{
+			size_t Seed = 0;
+
+			auto HashCombine =
+				[&Seed](size_t Value)
+				{
+					Seed ^= Value
+						+ 0x9e3779b9
+						+ (Seed << 6)
+						+ (Seed >> 2);
+				};
+
+			HashCombine(
+				std::hash<StringID>{}(
+					Key.modelGroup));
+
+			HashCombine(
+				std::hash<StringID>{}(
+					Key.modelTag));
+
+			return Seed;
+		}
+	}MODEL_INSTANCE_KEY_HASH;
+
+	typedef struct MODEL_INSTANCE_BATCH
+	{
+		MODEL_INSTANCE_KEY Key{};
+		
+		CHandle		ObjectHandle;
+		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
+
+		_bool bActiveThisFrame = false;
+
+	}MODEL_INSTANCE_BATCH;
+	//----------------------------AnimationObject------------------------------------
 }

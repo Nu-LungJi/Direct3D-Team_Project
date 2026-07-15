@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "BTDecorator.h"
 
+enum class TIMER {PAUSE, NEXT, TIMEOUT,TIMEIN_SUCCESS};
 NS_BEGIN(Client)
 class CBTDecTimer final : public CBTDecorator
 {
@@ -13,21 +14,27 @@ private:
 	~CBTDecTimer() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitalizePrototype(void* pArg = nullptr);
+	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
-
+	
+	EVALUATE						PAUSE(_float fTimeDelta); //일정 시간동안 대기후 실행
+	EVALUATE						NEXT(_float fTimeDelta); //일정 시간동안 바로 실행
+	EVALUATE						TimeOut(_float fTimeDelta); //일정 시간안에 성공 못하면 FAILED
+	EVALUATE						TimeInSuccess(_float fTimeDelta);//성공시 일정 시간동안 재진입 금지
 public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
-	virtual nlohmann::json			Save_Node()override;
-	HRESULT					Load_json(const nlohmann::json& j) override;
+	void							Abort() override;
+	void							Update_Gui() override;
 
-	virtual void					Update_Gui() override;
+	virtual nlohmann::json			Save_Node()override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
-	_float							m_fTick{}, m_fTimeTickCnt{};
-	int32_t							m_fWaitTime{}, m_iMaxTimeCnt{};
+	_bool							m_bRun{ true };
+	_float							m_fWaitTime{}, m_fTick{};
+	TIMER							m_eTimer{ TIMER::PAUSE };
 public:
 	static UPtr<CBTDecTimer> Create();
-	UPtr<CBTRoot> Clone(void* pArg)override;
+	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END
 

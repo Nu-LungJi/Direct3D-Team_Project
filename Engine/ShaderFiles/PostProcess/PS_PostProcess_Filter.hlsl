@@ -150,8 +150,8 @@ PS_OUT PSMain(PS_IN IN)
     float3 FinalColor = ChromaticAberration(DistortedCoord);
     
     // ToneMapping
-    //FinalColor = ToneMap_ACESFilm(FinalColor);
-    FinalColor = ToneMap_Reinhard(FinalColor);
+     FinalColor = ToneMap_ACESFilm(FinalColor);
+    //FinalColor = ToneMap_Reinhard(FinalColor);
     //FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
     
     // LUT ColorGrading
@@ -159,7 +159,6 @@ PS_OUT PSMain(PS_IN IN)
     
     // Vignette
     FinalColor = Vignetting(FinalColor, IN.TexCoord);
-    
     OUT.Diffuse = float4(pow(FinalColor, 1.f / 2.2f), 1.f);
     
     return OUT;

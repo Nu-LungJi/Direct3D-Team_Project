@@ -35,6 +35,31 @@ _bool CCollFrustum::Intersect(const CCollider& collider) const
 	return false;
 }
 
+_bool CCollFrustum::Intersect(const _float3& vOrigin, const _float3& vDir, _float& fDist) const
+{
+	return m_BoundingFrustumWorld.Intersects(XMLoadFloat3(&vOrigin), XMLoadFloat3(&vDir), fDist);
+}
+void CCollFrustum::GetCorners(_float3* Corners) const
+{
+	XMMATRIX InvViewProj = InvViewProjMatrix;
+	XMVECTOR NdcCorners[8] = {
+		XMVectorSet(-1.f,  1.f, 0.f, 1.f),
+		XMVectorSet(1.f,  1.f, 0.f, 1.f),
+		XMVectorSet(1.f, -1.f, 0.f, 1.f),
+		XMVectorSet(-1.f, -1.f, 0.f, 1.f),
+	
+		XMVectorSet(-1.f,  1.f, 1.f, 1.f),
+		XMVectorSet(1.f,  1.f, 1.f, 1.f),
+		XMVectorSet(1.f, -1.f, 1.f, 1.f),
+		XMVectorSet(-1.f, -1.f, 1.f, 1.f)
+	};
+	
+	for (int i = 0; i < 8; ++i)
+	{
+		XMVECTOR WorldPos = XMVector3TransformCoord(NdcCorners[i], InvViewProj);
+		XMStoreFloat3(&Corners[i], WorldPos);
+	}
+}
 HRESULT CCollFrustum::Initialize(_fmatrix mat)
 {
     m_BoundingFrustumWorld = m_BoundingFrustumLocal = BoundingFrustum{ mat };

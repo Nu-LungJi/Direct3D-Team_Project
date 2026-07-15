@@ -15,9 +15,9 @@ CBTTurnDirect::CBTTurnDirect(const CBTTurnDirect& rhs) : CBTActionNode(rhs)
 CBTTurnDirect::~CBTTurnDirect()
 {
 }
-HRESULT CBTTurnDirect::InitalizePrototype(void* pArg)
+HRESULT CBTTurnDirect::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::ACTION;
 	m_MasterName = "BTTurnDirect";
 	return S_OK;
@@ -31,7 +31,7 @@ HRESULT CBTTurnDirect::Initalize(void* pArg)
 
 EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 {
-	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+	auto pTransform (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
 	if (pTransform == nullptr)
 	{
@@ -50,8 +50,7 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
 	pTransform->SetQuaternion(quat);
 
-	m_eDebug = EVALUATE::SUCCESS;
-	return EVALUATE::SUCCESS;
+	return m_eDebug =  EVALUATE::SUCCESS;
 }
 void CBTTurnDirect::Update_Gui()
 {
@@ -61,14 +60,14 @@ void CBTTurnDirect::Update_Gui()
 E::UPtr<CBTTurnDirect> CBTTurnDirect::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTTurnDirect{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTTurnDirect");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTTurnDirect::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTTurnDirect::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTTurnDirect{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

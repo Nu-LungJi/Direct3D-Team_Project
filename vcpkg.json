@@ -7,6 +7,8 @@
     "directxtex",
     "directxtk",
     "recastnavigation",
-    "magic-enum"
+    "magic-enum",
+	"lua",
+	"sol2"
   ]
 }

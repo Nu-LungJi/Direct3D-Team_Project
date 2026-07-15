@@ -14,9 +14,9 @@ CBTDecLier::CBTDecLier(const CBTDecLier& rhs) : CBTDecorator(rhs)
 CBTDecLier::~CBTDecLier()
 {
 }
-HRESULT CBTDecLier::InitalizePrototype(void* pArg)
+HRESULT CBTDecLier::InitializePrototype(void* pArg)
 {
-	__super::InitalizePrototype(pArg);
+	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::DECORATOR;
 	m_MasterName = "BTDecLier";
 	return S_OK;
@@ -47,14 +47,14 @@ void		CBTDecLier::Update_Gui()
 E::UPtr<CBTDecLier> CBTDecLier::Create()
 {
 	auto pInstance = E::ToUPtr(new CBTDecLier{});
-	if (FAILED(pInstance->InitalizePrototype()))
+	if (FAILED(pInstance->InitializePrototype()))
 	{
 		MSG_BOX("Failed to Created : CBTDecLier");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CBTRoot> CBTDecLier::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTDecLier::Clone(void* pArg)
 {
 	auto	pInstance = E::ToUPtr(new CBTDecLier{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))

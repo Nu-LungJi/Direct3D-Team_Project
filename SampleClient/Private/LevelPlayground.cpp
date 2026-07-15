@@ -50,11 +50,13 @@ HRESULT CLevelPlayground::Initialize()
 		CGameObject::GAMEOBJECT_DESC Desc{};
 		Desc.sObjectTag = "Gobline";
 		
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline",
-			"02_Gobline", &Desc))
+		auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline","02_Gobline", &Desc);
+		if (!Gobline.has_value())
 		{
-			int x = 0;
+			MSG_BOX("Craete Failed Gobline");
+			return E_FAIL;
 		}
+		//테스트 고블린 무기 테스트
 	}
 	{
 		//if(false)
@@ -113,7 +115,7 @@ HRESULT CLevelPlayground::Initialize()
 	//	}
 	//}
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
 
 
 	return S_OK;

@@ -2,6 +2,32 @@
 #include "Importer.h"
 #include "Bone.h"
 #include "Mesh.h"
+#include <assimp/config.h>
+#include <cmath>
+
+namespace
+{
+	struct WHOLE_MAP_CHUNK_KEY
+	{
+		int32_t x{};
+		int32_t y{};
+		int32_t z{};
+
+		bool operator==(const WHOLE_MAP_CHUNK_KEY&) const = default;
+	};
+
+	struct WHOLE_MAP_CHUNK_KEY_HASH
+	{
+		size_t operator()(const WHOLE_MAP_CHUNK_KEY& key) const noexcept
+		{
+			const size_t hx = std::hash<int32_t>{}(key.x);
+			const size_t hy = std::hash<int32_t>{}(key.y);
+			const size_t hz = std::hash<int32_t>{}(key.z);
+			const size_t hxy = hx ^ (hy + 0x9e3779b9u + (hx << 6) + (hx >> 2));
+			return hxy ^ (hz + 0x9e3779b9u + (hxy << 6) + (hxy >> 2));
+		}
+	};
+}
 
 CImporter::CImporter()
 {
@@ -189,6 +215,486 @@ HRESULT CImporter::AssimpFBX(const std::string& fbxFileName)
         Ready_Animation(pScene);
 
     return S_OK;
+}
+
+HRESULT CImporter::ImportWholeMapFBX(
+	const std::string& fbxFileName,
+	const std::string& outputDirectory,
+	float chunkSize)
+{
+	if (fbxFileName.empty() || outputDirectory.empty() ||
+		!std::isfinite(chunkSize) || chunkSize <= 0.f)
+	{
+		return E_INVALIDARG;
+	}
+
+	const std::filesystem::path inputPath(fbxFileName);
+	if (!std::filesystem::is_regular_file(inputPath))
+		return E_FAIL;
+
+	Clear();
+	m_index = 0;
+	m_FBXSourceDir = inputPath.parent_path();
+
+	uint32_t flags = 0;
+	flags |= aiProcess_ConvertToLeftHanded;
+	flags |= aiProcess_GlobalScale;
+	flags |= aiProcess_ImproveCacheLocality;
+	flags |= aiProcessPreset_TargetRealtime_Fast;
+	// This path is static-map-only. Baking the complete node hierarchy makes all
+	// vertices and bounds share the FBX root-local coordinate system.
+	flags |= aiProcess_PreTransformVertices;
+
+	Assimp::Importer importer;
+	// Bake node transforms into root-local vertex positions without Assimp's
+	// default global merge of meshes that share a material. Spatial chunking and
+	// material batching must happen explicitly after this import step.
+	importer.SetPropertyBool(AI_CONFIG_PP_PTV_KEEP_HIERARCHY, true);
+	const aiScene* scene = importer.ReadFile(inputPath.string(), flags);
+	if (scene == nullptr || !scene->HasMeshes())
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
+	{
+		if (scene->mMeshes[i] != nullptr && scene->mMeshes[i]->HasBones())
+		{
+			Clear();
+			return E_FAIL;
+		}
+	}
+
+	Ready_Mesh(scene, false);
+
+	// PreTransformVertices is only used for root-local geometry. Read materials
+	// from an unmodified scene so FBX texture slots and original material indices
+	// are preserved in the chunk binaries.
+	Assimp::Importer materialImporter;
+	const uint32_t materialFlags = flags & ~static_cast<uint32_t>(aiProcess_PreTransformVertices);
+	const aiScene* materialScene = materialImporter.ReadFile(inputPath.string(), materialFlags);
+	if (materialScene == nullptr || !materialScene->HasMaterials() ||
+		materialScene->mNumMaterials != scene->mNumMaterials ||
+		FAILED(Ready_Material(materialScene)))
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	uint32_t sourceTextureReferenceCount = 0;
+	for (uint32_t materialIndex = 0; materialIndex < materialScene->mNumMaterials; ++materialIndex)
+	{
+		const aiMaterial* material = materialScene->mMaterials[materialIndex];
+		if (material == nullptr)
+			continue;
+		for (uint32_t textureType = 0; textureType < AI_TEXTURE_TYPE_MAX; ++textureType)
+			sourceTextureReferenceCount += material->GetTextureCount(static_cast<aiTextureType>(textureType));
+	}
+	std::cout << "Whole-map source materials: " << materialScene->mNumMaterials
+		<< ", texture references: " << sourceTextureReferenceCount << '\n';
+	if (sourceTextureReferenceCount == 0)
+	{
+		std::cout << "Materials contain no Assimp file-texture slots. Sample names:\n";
+		for (uint32_t materialIndex = 0; materialIndex < (std::min)(materialScene->mNumMaterials, 10u); ++materialIndex)
+		{
+			aiString materialName;
+			if (materialScene->mMaterials[materialIndex]->Get(AI_MATKEY_NAME, materialName) == AI_SUCCESS)
+				std::cout << "  [" << materialIndex << "] " << materialName.C_Str() << '\n';
+		}
+	}
+
+	struct MERGED_BATCH
+	{
+		std::shared_ptr<CMesh> mesh{};
+		std::unordered_map<const CMesh*, std::unordered_map<uint32_t, uint32_t>> vertexRemaps{};
+	};
+
+	using MATERIAL_BATCHES = std::unordered_map<uint32_t, MERGED_BATCH>;
+	std::unordered_map<WHOLE_MAP_CHUNK_KEY, MATERIAL_BATCHES, WHOLE_MAP_CHUNK_KEY_HASH> chunkBatches;
+	uint64_t sourceIndexCount = 0;
+
+	for (const auto& sourceMesh : Meshes)
+	{
+		if (sourceMesh == nullptr || sourceMesh->m_vertices == nullptr || sourceMesh->m_indices == nullptr ||
+			sourceMesh->m_vertices->empty() || sourceMesh->m_indices->empty())
+		{
+			continue;
+		}
+
+		if (sourceMesh->m_indices->size() % 3 != 0)
+		{
+			Clear();
+			return E_FAIL;
+		}
+
+		sourceIndexCount += sourceMesh->m_indices->size();
+		for (size_t triangleStart = 0; triangleStart < sourceMesh->m_indices->size(); triangleStart += 3)
+		{
+			const uint32_t sourceIndices[3] = {
+				(*sourceMesh->m_indices)[triangleStart],
+				(*sourceMesh->m_indices)[triangleStart + 1],
+				(*sourceMesh->m_indices)[triangleStart + 2]
+			};
+			if (sourceIndices[0] >= sourceMesh->m_vertices->size() ||
+				sourceIndices[1] >= sourceMesh->m_vertices->size() ||
+				sourceIndices[2] >= sourceMesh->m_vertices->size())
+			{
+				Clear();
+				return E_FAIL;
+			}
+
+			const auto& p0 = (*sourceMesh->m_vertices)[sourceIndices[0]].vPosition;
+			const auto& p1 = (*sourceMesh->m_vertices)[sourceIndices[1]].vPosition;
+			const auto& p2 = (*sourceMesh->m_vertices)[sourceIndices[2]].vPosition;
+			const XMFLOAT3 triangleCenter{
+				(p0.x + p1.x + p2.x) / 3.f,
+				(p0.y + p1.y + p2.y) / 3.f,
+				(p0.z + p1.z + p2.z) / 3.f
+			};
+			const WHOLE_MAP_CHUNK_KEY key{
+				static_cast<int32_t>(std::floor(triangleCenter.x / chunkSize)),
+				static_cast<int32_t>(std::floor(triangleCenter.y / chunkSize)),
+				static_cast<int32_t>(std::floor(triangleCenter.z / chunkSize))
+			};
+
+			auto& batch = chunkBatches[key][sourceMesh->m_materialIndex];
+			if (batch.mesh == nullptr)
+			{
+				batch.mesh = std::make_shared<CMesh>();
+				batch.mesh->m_name = "Merged_Material_" + std::to_string(sourceMesh->m_materialIndex);
+				batch.mesh->m_materialIndex = sourceMesh->m_materialIndex;
+				batch.mesh->m_min = { FLT_MAX, FLT_MAX, FLT_MAX };
+				batch.mesh->m_max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+				batch.mesh->m_vertices = std::make_shared<std::vector<VTXMESH>>();
+				batch.mesh->m_indices = std::make_shared<std::vector<uint32_t>>();
+			}
+
+			auto& sourceVertexRemap = batch.vertexRemaps[sourceMesh.get()];
+			for (const uint32_t sourceIndex : sourceIndices)
+			{
+				auto remapIt = sourceVertexRemap.find(sourceIndex);
+				uint32_t mergedIndex = 0;
+				if (remapIt == sourceVertexRemap.end())
+				{
+					mergedIndex = static_cast<uint32_t>(batch.mesh->m_vertices->size());
+					const VTXMESH& vertex = (*sourceMesh->m_vertices)[sourceIndex];
+					batch.mesh->m_vertices->push_back(vertex);
+					sourceVertexRemap.emplace(sourceIndex, mergedIndex);
+					batch.mesh->m_min.x = (std::min)(batch.mesh->m_min.x, vertex.vPosition.x);
+					batch.mesh->m_min.y = (std::min)(batch.mesh->m_min.y, vertex.vPosition.y);
+					batch.mesh->m_min.z = (std::min)(batch.mesh->m_min.z, vertex.vPosition.z);
+					batch.mesh->m_max.x = (std::max)(batch.mesh->m_max.x, vertex.vPosition.x);
+					batch.mesh->m_max.y = (std::max)(batch.mesh->m_max.y, vertex.vPosition.y);
+					batch.mesh->m_max.z = (std::max)(batch.mesh->m_max.z, vertex.vPosition.z);
+				}
+				else
+				{
+					mergedIndex = remapIt->second;
+				}
+				batch.mesh->m_indices->push_back(mergedIndex);
+			}
+		}
+	}
+
+	using CHUNK_MESHES = std::vector<std::shared_ptr<CMesh>>;
+	std::unordered_map<WHOLE_MAP_CHUNK_KEY, CHUNK_MESHES, WHOLE_MAP_CHUNK_KEY_HASH> chunks;
+	uint64_t mergedIndexCount = 0;
+	for (auto& [key, materialBatches] : chunkBatches)
+	{
+		std::vector<uint32_t> materialIndices;
+		materialIndices.reserve(materialBatches.size());
+		for (const auto& [materialIndex, unused] : materialBatches)
+			materialIndices.push_back(materialIndex);
+		std::sort(materialIndices.begin(), materialIndices.end());
+
+		auto& chunkMeshes = chunks[key];
+		chunkMeshes.reserve(materialIndices.size());
+		for (const uint32_t materialIndex : materialIndices)
+		{
+			auto& mergedMesh = materialBatches.at(materialIndex).mesh;
+			mergedIndexCount += mergedMesh->m_indices->size();
+			chunkMeshes.push_back(std::move(mergedMesh));
+		}
+	}
+
+	if (mergedIndexCount != sourceIndexCount)
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	if (chunks.empty())
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	std::vector<WHOLE_MAP_CHUNK_KEY> sortedKeys;
+	sortedKeys.reserve(chunks.size());
+	for (const auto& [key, unused] : chunks)
+		sortedKeys.push_back(key);
+
+	std::sort(sortedKeys.begin(), sortedKeys.end(), [](const auto& lhs, const auto& rhs)
+	{
+		if (lhs.z != rhs.z)
+			return lhs.z < rhs.z;
+		if (lhs.y != rhs.y)
+			return lhs.y < rhs.y;
+		return lhs.x < rhs.x;
+	});
+
+	const std::filesystem::path outputDir(outputDirectory);
+	std::error_code directoryError;
+	std::filesystem::create_directories(outputDir, directoryError);
+	if (directoryError)
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	const std::string modelName = inputPath.stem().string();
+	nlohmann::json manifest;
+	manifest["format"] = "whole_map_render_chunks_v3";
+	manifest["source"] = inputPath.filename().string();
+	manifest["modelName"] = modelName;
+	manifest["chunkSize"] = chunkSize;
+	manifest["coordinateSpace"] = "fbx_root_local_xyz";
+	manifest["assignment"] = "triangle_centroid";
+	manifest["vertexSpace"] = "chunk_origin_relative";
+	manifest["sourceMeshCount"] = Meshes.size();
+	manifest["sourceIndexCount"] = sourceIndexCount;
+	manifest["mergedIndexCount"] = mergedIndexCount;
+	manifest["chunks"] = nlohmann::json::array();
+
+	for (const WHOLE_MAP_CHUNK_KEY& key : sortedKeys)
+	{
+		const auto& chunkMeshes = chunks.at(key);
+
+		// Rebase each render chunk around the center of its actual geometry. The
+		// saved origin must be applied as the MapMeshObject's local position at
+		// runtime (before the whole-map world transform).
+		XMFLOAT3 sourceMin{ FLT_MAX, FLT_MAX, FLT_MAX };
+		XMFLOAT3 sourceMax{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
+		for (const auto& mesh : chunkMeshes)
+		{
+			sourceMin.x = (std::min)(sourceMin.x, mesh->m_min.x);
+			sourceMin.y = (std::min)(sourceMin.y, mesh->m_min.y);
+			sourceMin.z = (std::min)(sourceMin.z, mesh->m_min.z);
+			sourceMax.x = (std::max)(sourceMax.x, mesh->m_max.x);
+			sourceMax.y = (std::max)(sourceMax.y, mesh->m_max.y);
+			sourceMax.z = (std::max)(sourceMax.z, mesh->m_max.z);
+		}
+
+		const XMFLOAT3 localOrigin{
+			(sourceMin.x + sourceMax.x) * 0.5f,
+			(sourceMin.y + sourceMax.y) * 0.5f,
+			(sourceMin.z + sourceMax.z) * 0.5f
+		};
+
+		for (const auto& mesh : chunkMeshes)
+		{
+			for (VTXMESH& vertex : *mesh->m_vertices)
+			{
+				vertex.vPosition.x -= localOrigin.x;
+				vertex.vPosition.y -= localOrigin.y;
+				vertex.vPosition.z -= localOrigin.z;
+			}
+
+			mesh->m_min.x -= localOrigin.x;
+			mesh->m_min.y -= localOrigin.y;
+			mesh->m_min.z -= localOrigin.z;
+			mesh->m_max.x -= localOrigin.x;
+			mesh->m_max.y -= localOrigin.y;
+			mesh->m_max.z -= localOrigin.z;
+		}
+
+		const std::string fileName =
+			"SM_" + modelName + "_Chunk_" + std::to_string(key.x) + "_" +
+			std::to_string(key.y) + "_" + std::to_string(key.z) + ".bin";
+		const std::filesystem::path chunkPath = outputDir / fileName;
+
+		if (FAILED(ExportStaticMeshSubset(chunkPath, chunkMeshes)))
+		{
+			Clear();
+			return E_FAIL;
+		}
+
+		XMFLOAT3 minBounds{ FLT_MAX, FLT_MAX, FLT_MAX };
+		XMFLOAT3 maxBounds{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
+		for (const auto& mesh : chunkMeshes)
+		{
+			minBounds.x = (std::min)(minBounds.x, mesh->m_min.x);
+			minBounds.y = (std::min)(minBounds.y, mesh->m_min.y);
+			minBounds.z = (std::min)(minBounds.z, mesh->m_min.z);
+			maxBounds.x = (std::max)(maxBounds.x, mesh->m_max.x);
+			maxBounds.y = (std::max)(maxBounds.y, mesh->m_max.y);
+			maxBounds.z = (std::max)(maxBounds.z, mesh->m_max.z);
+		}
+
+		manifest["chunks"].push_back({
+			{ "x", key.x },
+			{ "y", key.y },
+			{ "z", key.z },
+			{ "file", fileName },
+			{ "meshCount", chunkMeshes.size() },
+			{ "localOrigin", { localOrigin.x, localOrigin.y, localOrigin.z } },
+			{ "localMin", { minBounds.x, minBounds.y, minBounds.z } },
+			{ "localMax", { maxBounds.x, maxBounds.y, maxBounds.z } }
+		});
+	}
+
+	manifest["chunkCount"] = sortedKeys.size();
+	const std::filesystem::path manifestPath = outputDir / (modelName + "_RenderChunks.json");
+	std::ofstream manifestFile(manifestPath);
+	if (!manifestFile.is_open())
+	{
+		Clear();
+		return E_FAIL;
+	}
+	manifestFile << manifest.dump(2);
+	if (!manifestFile.good())
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	std::cout << "Whole-map conversion complete: " << sortedKeys.size()
+		<< " chunks written to " << outputDir.string() << '\n';
+	Clear();
+	return S_OK;
+}
+
+HRESULT CImporter::ExportStaticMeshSubset(
+	const std::filesystem::path& outpath,
+	const std::vector<std::shared_ptr<CMesh>>& meshes) const
+{
+	if (meshes.empty())
+		return E_INVALIDARG;
+
+	std::ofstream file(outpath, std::ios::binary);
+	if (!file.is_open())
+		return E_FAIL;
+
+	std::vector<char> localMeshBuffer;
+	std::vector<char> localMaterialBuffer;
+	const auto append = [](std::vector<char>& buffer, const void* data, size_t size)
+	{
+		const size_t oldSize = buffer.size();
+		buffer.resize(oldSize + size);
+		memcpy(buffer.data() + oldSize, data, size);
+	};
+
+	// A render chunk only needs the materials referenced by its merged meshes.
+	// Remap sparse FBX material indices to a compact chunk-local range.
+	std::vector<uint32_t> usedMaterialIndices;
+	usedMaterialIndices.reserve(meshes.size());
+	for (const auto& mesh : meshes)
+	{
+		if (mesh == nullptr || mesh->m_materialIndex >= Materials.size() ||
+			Materials[mesh->m_materialIndex] == nullptr)
+		{
+			return E_FAIL;
+		}
+		usedMaterialIndices.push_back(mesh->m_materialIndex);
+	}
+	std::sort(usedMaterialIndices.begin(), usedMaterialIndices.end());
+	usedMaterialIndices.erase(
+		std::unique(usedMaterialIndices.begin(), usedMaterialIndices.end()),
+		usedMaterialIndices.end());
+
+	std::unordered_map<uint32_t, uint32_t> materialRemap;
+	materialRemap.reserve(usedMaterialIndices.size());
+	for (uint32_t localIndex = 0; localIndex < usedMaterialIndices.size(); ++localIndex)
+		materialRemap.emplace(usedMaterialIndices[localIndex], localIndex);
+
+	MODEL_FILE_HEADER header{};
+	header.bHasBone = false;
+	header.bHasAnimation = false;
+	header.MeshCount = static_cast<uint32_t>(meshes.size());
+	header.MaterialCount = static_cast<uint32_t>(usedMaterialIndices.size());
+	header.AnimationCount = 0;
+	header.BoneCount = 0;
+	file.write(reinterpret_cast<const char*>(&header), sizeof(header));
+
+	for (const auto& mesh : meshes)
+	{
+		if (mesh == nullptr || mesh->m_vertices == nullptr || mesh->m_indices == nullptr)
+			return E_FAIL;
+
+		const uint32_t nameLength = static_cast<uint32_t>(mesh->m_name.size());
+		const uint32_t vertexCount = static_cast<uint32_t>(mesh->m_vertices->size());
+		const uint32_t indexCount = static_cast<uint32_t>(mesh->m_indices->size());
+		const uint32_t meshSize =
+			sizeof(uint32_t) + nameLength +
+			sizeof(uint32_t) +
+			sizeof(XMFLOAT3) * 2 +
+			sizeof(uint32_t) * 2 +
+			static_cast<uint32_t>(sizeof(VTXMESH) * vertexCount) +
+			static_cast<uint32_t>(sizeof(uint32_t) * indexCount);
+
+		append(localMeshBuffer, &meshSize, sizeof(meshSize));
+		append(localMeshBuffer, &nameLength, sizeof(nameLength));
+		append(localMeshBuffer, mesh->m_name.data(), nameLength);
+		const uint32_t localMaterialIndex = materialRemap.at(mesh->m_materialIndex);
+		append(localMeshBuffer, &localMaterialIndex, sizeof(localMaterialIndex));
+		append(localMeshBuffer, &mesh->m_min, sizeof(mesh->m_min));
+		append(localMeshBuffer, &mesh->m_max, sizeof(mesh->m_max));
+		append(localMeshBuffer, &vertexCount, sizeof(vertexCount));
+		append(localMeshBuffer, &indexCount, sizeof(indexCount));
+		append(localMeshBuffer, mesh->m_vertices->data(), sizeof(VTXMESH) * vertexCount);
+		append(localMeshBuffer, mesh->m_indices->data(), sizeof(uint32_t) * indexCount);
+	}
+
+	ChunkHeader meshChunk{ ChunkType::CHUNK_MESH, static_cast<uint32_t>(localMeshBuffer.size()) };
+	file.write(reinterpret_cast<const char*>(&meshChunk), sizeof(meshChunk));
+	file.write(localMeshBuffer.data(), static_cast<std::streamsize>(localMeshBuffer.size()));
+
+	for (const uint32_t sourceMaterialIndex : usedMaterialIndices)
+	{
+		const auto& material = Materials[sourceMaterialIndex];
+		if (material == nullptr)
+			return E_FAIL;
+
+		uint32_t materialSize = sizeof(uint32_t) * 2;
+		for (const auto& textureGroup : material->m_textures)
+		{
+			materialSize += sizeof(uint32_t);
+			for (const auto& texture : textureGroup)
+			{
+				materialSize += sizeof(uint32_t) * 3;
+				materialSize += static_cast<uint32_t>(texture.File.size() + texture.Ext.size());
+			}
+		}
+
+		append(localMaterialBuffer, &materialSize, sizeof(materialSize));
+		const uint32_t localMaterialIndex = materialRemap.at(sourceMaterialIndex);
+		append(localMaterialBuffer, &localMaterialIndex, sizeof(localMaterialIndex));
+		const uint32_t textureTypeCount = static_cast<uint32_t>(material->m_textures.size());
+		append(localMaterialBuffer, &textureTypeCount, sizeof(textureTypeCount));
+
+		for (const auto& textureGroup : material->m_textures)
+		{
+			const uint32_t textureCount = static_cast<uint32_t>(textureGroup.size());
+			append(localMaterialBuffer, &textureCount, sizeof(textureCount));
+			for (const auto& texture : textureGroup)
+			{
+				append(localMaterialBuffer, &texture.m_textureType, sizeof(texture.m_textureType));
+				const uint32_t fileLength = static_cast<uint32_t>(texture.File.size());
+				append(localMaterialBuffer, &fileLength, sizeof(fileLength));
+				append(localMaterialBuffer, texture.File.data(), fileLength);
+				const uint32_t extensionLength = static_cast<uint32_t>(texture.Ext.size());
+				append(localMaterialBuffer, &extensionLength, sizeof(extensionLength));
+				append(localMaterialBuffer, texture.Ext.data(), extensionLength);
+			}
+		}
+	}
+
+	ChunkHeader materialChunk{ ChunkType::CHUNK_MATERIAL, static_cast<uint32_t>(localMaterialBuffer.size()) };
+	file.write(reinterpret_cast<const char*>(&materialChunk), sizeof(materialChunk));
+	file.write(localMaterialBuffer.data(), static_cast<std::streamsize>(localMaterialBuffer.size()));
+
+	return file.good() ? S_OK : E_FAIL;
 }
 HRESULT CImporter::ExportFBX(const std::string& outpath)
 {
@@ -1340,7 +1846,6 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 			continue;
 
 		std::ifstream file(jsonPath);
-
 		if (!file.is_open())
 			continue;
 
@@ -1352,19 +1857,37 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 			if (!j.contains("fbx"))
 				continue;
 
-			if (!j["fbx"].is_string())
-				continue;
+			// 문자열이든 배열이든 리스트로 통일해서 처리
+			std::vector<std::string> fbxList;
 
-			std::string fbxName = j["fbx"].get<std::string>();
+			if (j["fbx"].is_string())
+			{
+				fbxList.push_back(j["fbx"].get<std::string>());
+			}
+			else if (j["fbx"].is_array())
+			{
+				for (const auto& elem : j["fbx"])
+				{
+					if (elem.is_string())
+						fbxList.push_back(elem.get<std::string>());
+				}
+			}
+			else
+			{
+				continue; // 문자열도 배열도 아니면 스킵
+			}
 
-			if (fbxName.empty())
-				continue;
+			for (auto& fbxName : fbxList)
+			{
+				if (fbxName.empty())
+					continue;
 
-			// 혹시 경로까지 들어와도 파일 이름만 비교
-			fbxName = std::filesystem::path(fbxName).filename().string();
+				// 혹시 경로까지 들어와도 파일 이름만 비교
+				fbxName = std::filesystem::path(fbxName).filename().string();
 
-			// 대소문자 무시 비교용
-			fbxNames.insert(ToLowerFileName(fbxName));
+				// 대소문자 무시 비교용
+				fbxNames.insert(ToLowerFileName(fbxName));
+			}
 		}
 		catch (...)
 		{
@@ -1373,6 +1896,7 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 	}
 
 	return fbxNames;
+
 }
 
 HRESULT CImporter::ImportFBXFolder_ForMapJson(
@@ -1457,19 +1981,24 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
 			textureDir = MakeTextureOutputDir(basePath) / modelName;
+			std::filesystem::create_directories(textureDir);
+			std::filesystem::create_directories(modelDir);
 		}
 		else
 		{
 			textureDir = MakeTextureOutputDir(modelDir);
+			std::filesystem::create_directories(textureDir);
+			std::filesystem::create_directories(basePath);
 		}
 
-		std::filesystem::create_directories(textureDir);
+
 
 	
 		if (HasExtractedModelData(modelDir, modelName))
 			continue;
 
-		std::filesystem::create_directories(modelDir);
+
+
 
 		if (FAILED(AssimpFBX(inputPath)))
 		{
@@ -1483,12 +2012,20 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		// Textures/OriginData/Static/*.png
 		// -> Textures/Static/모델이름/*.png
 		// ------------------------------------------------------------
+		std::filesystem::path outputPath;
+
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
 			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
+			outputPath = modelDir / (modelName + ".bin");
+		}
+		else {
+			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
+			
+			outputPath = basePath / (modelName + ".bin");
+
 		}
 
-		std::filesystem::path outputPath = modelDir / (modelName + ".bin");
 
 		if (FAILED(ExportFBX(outputPath.string())))
 		{

@@ -6,7 +6,6 @@ NS_USING(Engine)
 CResource::CResource(const _string& sPath)
 	: m_sPath{ sPath }
 {
-
 }
 
 CResource::~CResource()
@@ -37,6 +36,15 @@ _string CResource::GetStateStr() const
 	}
 
 	return {};
+}
+
+void CResource::Free()
+{
+	//if (!m_sPath.empty())
+	//{
+	//	CGameInstance::Get().RemoveResourcePathLookup(m_sPath, this);
+	//}
+	CEngineBase::Free();
 }
 
 void CResource::UpdateGUI()

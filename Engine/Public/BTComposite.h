@@ -13,7 +13,7 @@ protected:
 	CBTComposite(const CBTComposite& rhs);
 	 ~CBTComposite() override;
 
-	 virtual HRESULT InitalizePrototype(void* pArg = nullptr) { m_MasterName = "Root"; return S_OK; }
+	 HRESULT InitializePrototype(void* pArg = nullptr) override { m_MasterName = "Root"; return S_OK; }
 	 virtual HRESULT Initalize(void* pArg) override;
 protected:
 	typedef struct strnodevalue
@@ -27,10 +27,11 @@ public:
 	std::vector<UPtr<CBTRoot>>* Get_Nodes() { return &m_Actions; }
 	
 	virtual EVALUATE		Evaluate(_float fTimeDelta) { return EVALUATE::SUCCESS; }
+	void					Abort() override;
 	void					Tick(_float fTimeDelta);
-	void			ResetDebug() override;
+	void					ResetDebug() override;
 public:
-	HRESULT					Add_Node(void* pArg = nullptr, UPtr<CBTRoot> pNode = nullptr);
+	HRESULT					Add_Node(uint32_t iIndex, UPtr<CBTRoot> pNode);
 	virtual nlohmann::json  Save_Node() override;
 	virtual HRESULT			Load_json(const nlohmann::json& j);
 protected:
@@ -39,6 +40,7 @@ protected:
 	std::vector<UPtr<CBTRoot>>			  m_Actions;
 public:
 	static  UPtr<CBTComposite> Create(void* pArg);
-	virtual UPtr<CBTRoot>Clone(void* pArg) { return nullptr; }
+
+	UPtr<CPrototype> Clone(void* pArg) override;
 };
 NS_END

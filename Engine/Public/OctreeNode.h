@@ -21,10 +21,14 @@ protected:
 	~COctreeNode() override;
 
 public:
+	const std::vector<CHandle>& GetObjectHandles() { return m_hObjects; }
+
+public:
 	HRESULT Initialize(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth);
 	void BuildOctree(const std::vector<CHandle>& hObjects);
 	void CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds) const;
 	void OctreeFrustumCull(const BoundingFrustum& cameraFrustum);
+	void CollectRayCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection, std::vector<CHandle>& outHandles) const;
 
 	bool IsLeaf() const;
 
@@ -36,6 +40,7 @@ public:
 private:
 	void Subdivide();
 	void RebuildCullingBounds();
+	void SetAllObjectsVisibleRecursive();
 
 private:
 	BoundingBox m_bounds; // 공간 분할용

@@ -27,17 +27,10 @@ namespace Engine
 		virtual _string_id GetType() const { return StaticType; }
 		virtual _string_view GetTypeString() const { return "CEngineBase"; }
 		virtual bool IsA(_string_id id) const { return id == StaticType; }
+		template<typename T> requires std::derived_from<T, CEngineBase>
+		bool Is() const { return IsA(T::StaticType); }
 	};
 
-	template<typename T>
-	T* Cast(CEngineBase* obj)
-	{
-		if (obj && obj->IsA(T::StaticType))
-		{
-			return static_cast<T*>(obj);
-		}
-		return nullptr;
-	}
 
 	typedef struct _declspec(dllexport) tagEngineBaseDeleter
 	{
@@ -53,6 +46,39 @@ namespace Engine
 	template <typename T>
 	using WPtr = std::weak_ptr<T>;
 
+
+	template<typename T>
+	T* Cast(CEngineBase* obj)
+	{
+		if (obj && obj->IsA(T::StaticType))
+		{
+			return static_cast<T*>(obj);
+		}
+		return nullptr;
+	}
+
+	template<typename T, typename U>
+	SPtr<T> Cast(const SPtr<U>& obj)
+	{
+		if (obj && obj->IsA(T::StaticType))
+		{
+			return std::static_pointer_cast<T>(obj); // SPtr 전용 캐스팅
+		}
+		return nullptr;
+	}
+
+	template<typename T, typename U>
+	UPtr<T> Cast(UPtr<U>&& obj)
+	{
+		if (obj && obj->IsA(T::StaticType))
+		{
+			// 원본 UPtr에서 소유권을 포기(release)하고 새로운 타입의 UPtr로 감쌉니다.
+			return UPtr<T>(static_cast<T*>(obj.release()));
+		}
+		// 주의: 캐스팅에 실패하면 nullptr이 반환되며, 원본 객체는 메모리에서 소멸됩니다!
+		return nullptr;
+	}
+
 	template <typename T>
 	UPtr<T> ToUPtr(T* p)
 	{
@@ -63,6 +89,16 @@ namespace Engine
 	SPtr<T> ToSPtr(T* p)
 	{
 		return SPtr<T>(p, ENGINE_BASE_DELETER{});
+	}
+
+	template<typename Derived, typename Base>
+	UPtr<Derived> engine_uptr_cast(UPtr<Base>&& base)
+	{
+		if (!Cast<Derived>(base.get()))
+		{
+			return nullptr;
+		}
+		return UPtr<Derived>(Cast<Derived>(base.release()));
 	}
 
 	template<typename Derived, typename Base>

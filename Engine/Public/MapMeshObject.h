@@ -68,6 +68,8 @@ public:
 	static _bool IsInstancingEnabled() { return s_bInstancingEnabled; }
 	static void SetInstancingEnabled(_bool bEnabled);
 	static const INSTANCING_STATS& GetInstancingStats() { return s_LastStats; }
+	static _bool IsDebugBoundsEnabled() { return s_bDebugBoundsEnabled; }
+	static void SetDebugBoundsEnabled(_bool bEnabled) { s_bDebugBoundsEnabled = bEnabled; }
 
 	static void ClearInstancingData(); // 매 프레임 인스턴싱 데이터 clear
 	static void ReleaseInstancingResources(); // 종료할 때 인스턴싱 버퍼 해제
@@ -97,6 +99,7 @@ private:
 
 	// 드로우 콜 확인용
 	static _bool s_bInstancingEnabled; // 인스턴싱 On/Off
+	static _bool s_bDebugBoundsEnabled;
 	static INSTANCING_STATS s_FrameStats;
 	static INSTANCING_STATS s_LastStats;
 
