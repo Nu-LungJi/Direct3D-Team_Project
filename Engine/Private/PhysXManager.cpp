@@ -204,8 +204,32 @@ HRESULT CPhysXManager::Initialize()
 #ifdef _DEBUG
         recordMemoryAllocations = true;
         m_pPvd = physx::PxCreatePvd(*m_pFoundation);
-        physx::PxPvdTransport* pPvdTransport = physx::PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
-        m_pPvd->connect(*pPvdTransport, PxPvdInstrumentationFlag::eALL);
+		if (m_pPvd)
+		{
+			physx::PxPvdTransport* pPvdTransport =
+				physx::PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+
+			if (pPvdTransport)
+			{
+				if (!m_pPvd->connect(*pPvdTransport, PxPvdInstrumentationFlag::eALL))
+				{
+					OutputDebugStringA("PhysX PVD connection failed. Continuing without PVD.\n");
+					m_pPvd->release();
+					m_pPvd = nullptr;
+					pPvdTransport->release();
+				}
+			}
+			else
+			{
+				OutputDebugStringA("PhysX PVD transport creation failed. Continuing without PVD.\n");
+				m_pPvd->release();
+				m_pPvd = nullptr;
+			}
+		}
+		else
+		{
+			OutputDebugStringA("PhysX PVD creation failed. Continuing without PVD.\n");
+		}
 #endif // DEBUG
 
         // ToleranceScale: 현실의 물리 법칙을 얼마나 정밀하게 계산할 것인가
