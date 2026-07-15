@@ -5,81 +5,15 @@
 #include "Resources.h"
 #include "LevelLogo.h"
 #include "LevelMapEditor.h"
-#include "Particle.h"
-
-#include "TestGuizmo.h"
 #include "MapMeshObject.h"
-#include "ResMapEditorTerrainVIBuffer.h"
-#include "MapEditorTerrain.h"
 
 #include <cctype>
 #include <filesystem>
 
+#include "LevelLogoLoader.h"
+#include "LevelMapEditorLoader.h"
+
 NS_USING(Client)
-
-namespace
-{
-	std::string MakeStaticModelResourceTag(const std::filesystem::path& rootPath, const std::filesystem::path& binPath)
-	{
-		std::filesystem::path relativePath = binPath.lexically_relative(rootPath);
-		if (relativePath.empty())
-		{
-			relativePath = binPath.filename();
-		}
-
-		relativePath.replace_extension();
-
-		std::string resourceTag = relativePath.string();
-		for (char& ch : resourceTag)
-		{
-			const unsigned char value = static_cast<unsigned char>(ch);
-			if (!std::isalnum(value))
-			{
-				ch = '_';
-			}
-		}
-
-		return resourceTag;
-	}
-
-	bool LoadLevelAnimEditorStaticModels()
-	{
-		const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
-		if (!std::filesystem::exists(staticModelDir))
-		{
-			return false;
-		}
-
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
-		{
-			if (!entry.is_regular_file() || _stricmp(entry.path().extension().string().c_str(), ".bin") != 0)
-			{
-				continue;
-			}
-
-			const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
-			auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
-				E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL,
-				resourceTag,
-				E::CResStaticModel::Create(entry.path().string()));
-
-			if (!res)
-			{
-				return false;
-			}
-
-			E::CResStaticModel::DESC desc{};
-			desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-			if (FAILED(res->Load(desc)))
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-}
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
 	: m_pDevice{ pDevice }
@@ -161,71 +95,17 @@ void CLevelLoading::ThreadStart()
 	{
 	case LEVEL::LOGO:
 	{
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LOGO", [this]()
-			{
-				/*if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOGO", "Prototype_GameObject_BackGround", CBackGround::Create())))
-				{
-					return false;
-				}*/
-
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				return  true;
-			});
-
 		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
 		{
 			res->Load();
 		}
+
+		m_futLoadFinish = CLevelLogoLoader::Load();
 	}
 	break;
 	case LEVEL::MAPEDITOR:
 	{
-
-		// 터레인 띄우려고 SampleClient에서 복붙해옴
-		{
-			if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
-			{
-				if (FAILED(res->Load()))
-				{
-					MSG_BOX("터레인 타일 png 로드안됨!");
-				}
-			}
-
-			if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResMapEditorTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
-			{
-				if (FAILED(res->Load(CResMapEditorTerrainVIBuffer::DESC{})))
-				{
-					MSG_BOX("터레인 VI버퍼 로드안됨!");
-				}
-			}
-		}
-
-		if (!LoadLevelAnimEditorStaticModels())
-		{
-			MSG_BOX("스태틱모델 로드안됨!");
-		}
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [this]()
-			{
-			
-				// 터레인
-				if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_MapEditorTerrain", CMapEditorTerrain::Create())))
-				{
-					return false;
-				}
-
-				////TestGuizmo
-				//if (FAILED(CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_TestGuizmo", CTestGuizmo::Create())))
-				//{
-				//	return false;
-				//}
-
-				return true;
-			});
-
-		//if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
-		//{
-		//	res->Load();
-		//}
+		m_futLoadFinish = CLevelMapEditorLoader::Load();
 	}
 	break;
 	default:

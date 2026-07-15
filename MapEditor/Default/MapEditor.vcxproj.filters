@@ -61,6 +61,18 @@
     <Filter Include="Command\CreateDeleteCommand">
       <UniqueIdentifier>{ec3e2b73-d4e0-4b03-a8ba-bdcedcae1923}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loader">
+      <UniqueIdentifier>{46c7aa2a-6a33-49b0-9ddb-28e8db8c43a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\MainApp">
+      <UniqueIdentifier>{7f46bdf9-eec7-4d79-a549-5888ba1d0732}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level">
+      <UniqueIdentifier>{a992b72c-9d48-4e38-a25d-a063fbfc878d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Logo">
+      <UniqueIdentifier>{fe0ec777-23ab-46a1-8e7a-e7c8db511225}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -135,9 +147,9 @@
     <ClInclude Include="..\Public\EditorCommandManager.h">
       <Filter>Command</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\EditorSelection.h">
-	  <Filter>GUIWindow\MapEditorGUI</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\EditorSelection.h">
+      <Filter>GUIWindow\MapEditorGUI</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\CreateMapMeshCommand.h">
       <Filter>Command\CreateDeleteCommand</Filter>
     </ClInclude>
@@ -146,6 +158,15 @@
     </ClInclude>
     <ClInclude Include="..\Public\MapMeshCommandCommon.h">
       <Filter>Command\CreateDeleteCommand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MainAppLoader.h">
+      <Filter>Loader\MainApp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelMapEditorLoader.h">
+      <Filter>Loader\Level</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelLogoLoader.h">
+      <Filter>Loader\Logo</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -216,9 +237,9 @@
     <ClCompile Include="..\Private\EditorCommandManager.cpp">
       <Filter>Command</Filter>
     </ClCompile>
-	<ClCompile Include="..\Private\EditorSelection.cpp">
-	  <Filter>GUIWindow\MapEditorGUI</Filter>
-	</ClCompile>
+    <ClCompile Include="..\Private\EditorSelection.cpp">
+      <Filter>GUIWindow\MapEditorGUI</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\CreateMapMeshCommand.cpp">
       <Filter>Command\CreateDeleteCommand</Filter>
     </ClCompile>
@@ -227,6 +248,15 @@
     </ClCompile>
     <ClCompile Include="..\Private\MapMeshCommandCommon.cpp">
       <Filter>Command\CreateDeleteCommand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MainAppLoader.cpp">
+      <Filter>Loader\MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelMapEditorLoader.cpp">
+      <Filter>Loader\Level</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLogoLoader.cpp">
+      <Filter>Loader\Logo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
