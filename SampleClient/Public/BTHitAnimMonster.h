@@ -3,20 +3,20 @@
 #include "BTActionNode.h"
 
 NS_BEGIN(Client)
-class CBTAttackAnimation final : public CBTActionNode
+class CBTHitAnimMonster final : public CBTActionNode
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTAttackAnimation, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTHitAnimMonster, CBTActionNode)
 private:
-	CBTAttackAnimation();
+	CBTHitAnimMonster();
 
-	CBTAttackAnimation(const CBTAttackAnimation& rhs);
-	~CBTAttackAnimation() override;
+	CBTHitAnimMonster(const CBTHitAnimMonster& rhs);
+	~CBTHitAnimMonster() override;
 	// CBTActionNode을(를) 통해 상속됨
 
 	HRESULT							InitializePrototype(void* pArg = nullptr) override;
 	HRESULT							Initalize(void* pArg)override;
-public:	
+public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
 	virtual void					Update_Gui() override;
 
@@ -25,11 +25,10 @@ public:
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 	_float2				m_fRatio{  };
-	_float				m_fDis{};
 	uint32_t			m_iLoopCnt{ 0 }, m_iStartFlag{}, m_iEndFlag{};
 	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bRatioInvert{ false };
 public:
-	static UPtr<CBTAttackAnimation> Create();
+	static UPtr<CBTHitAnimMonster> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
 };
 NS_END

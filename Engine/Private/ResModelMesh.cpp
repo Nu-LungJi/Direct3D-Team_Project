@@ -37,9 +37,6 @@ HRESULT CResModelMesh::Load(const std::any& arg)
      
         if (FAILED(Ready_AnimMesh(pModel, ptr)))
             return E_FAIL;
-
-  
-
     }
    
 

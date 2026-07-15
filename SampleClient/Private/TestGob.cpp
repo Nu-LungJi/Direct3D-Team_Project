@@ -71,7 +71,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-
+	m_iHp = m_iMaxHp = 100;
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
@@ -117,13 +117,26 @@ HRESULT CTestGob::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
+	CWeapon::WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.ParentHandle = GetHandle();
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon");
+		return E_FAIL;
+	}
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	return S_OK;
 }
 
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
+	if (CGameInstance::Get().KeyDown(DIK_1))
+		Set_Damage(10);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
@@ -139,6 +152,7 @@ void CTestGob::Update(E::_float fTimeDelta)
 
 	m_pBeHavior->Update(fTimeDelta);
 	m_pBeHavior->AbortNode();
+
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)

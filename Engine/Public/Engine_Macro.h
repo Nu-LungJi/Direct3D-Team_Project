@@ -78,6 +78,7 @@ X(EFFECT)               \
 X(SELECTOR)\
 X(SEQUENCE)\
 X(ROOT)\
+X(RAND_SELECTOR)\
 X(END)
 
 #define MOVE_M    \

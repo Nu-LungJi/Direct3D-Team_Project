@@ -238,6 +238,7 @@
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
+    <ClInclude Include="..\public\BTRandSelector.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
     <ClInclude Include="..\public\ComBeHavior.h" />
@@ -512,6 +513,7 @@
     <ClCompile Include="..\Private\BTActionNode.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
+    <ClCompile Include="..\private\BTRandSelector.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
     <ClCompile Include="..\private\ComBeHavior.cpp" />

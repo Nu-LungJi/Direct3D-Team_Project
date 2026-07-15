@@ -41,7 +41,10 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
-
+public:
+	const int32_t			Get_CurrentHp() { return m_iHp; }
+	const int32_t			Get_MaxHp()	  { return m_iMaxHp; }
+	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -68,7 +71,7 @@ private:
 	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
-	int32_t						m_iHp{};
+	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bDead{ false };
 	_string						m_SocketName{};
 public:

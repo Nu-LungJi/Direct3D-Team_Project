@@ -30,7 +30,7 @@ public:
 public:
 	void					Update(_float fTimeDelta);					
 	void					UpdateGUI()	override;
-
+	
 public:
 	uint32_t&				Get_NodeID() { return m_iNodeID; }
 	class CBTComposite*		Get_Selector();
@@ -40,16 +40,19 @@ public:
 	void					UnRegistNode(uint32_t iindex);
 	void					AbortNode();
 	void					Set_JsonFileName(const _string& Name) { m_FileName = Name; }
-	_bool					Get_Hit() {return m_bHit;}
-	void					Set_Abort() { m_bAbort = true; }
-	void					Set_Hit(_bool bHit) { m_bAbort = m_bHit = bHit; }
+
+	_bool					Check_Flag(uint32_t iFlag);
+	void					Set_Flag(uint32_t iFlag, FLAGTYPE eType);
+	uint32_t				Get_Flag() { return m_iFlag; }
 private:
 	_string									m_ComponentName;
 	UPtr<class CBTComposite>				m_Root;
 	std::map<uint32_t,CBTRoot*>				m_NodeMap;
 	uint32_t								m_iNodeID{ 0 };
 	_string									m_FileName{};
-	_bool									m_bAbort{ false }, m_bHit{ false };
+
+	
+	uint32_t								m_iFlag{ 0 };
 public:
 	static UPtr<CComBeHavior>Create();
 	virtual UPtr<CPrototype> Clone(void* pArg) override;

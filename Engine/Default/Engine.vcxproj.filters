@@ -931,6 +931,9 @@
     <ClInclude Include="..\Public\AnimationObject.h">
       <Filter>GameObject\AnimationObject</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTRandSelector.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1386,6 +1389,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\AnimationObject.cpp">
       <Filter>GameObject\AnimationObject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRandSelector.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

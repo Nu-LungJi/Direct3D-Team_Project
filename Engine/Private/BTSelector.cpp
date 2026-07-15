@@ -38,19 +38,17 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
-			m_eDebug = EVALUATE::SUCCESS;
-			return EVALUATE::SUCCESS;
+			return m_eDebug  = EVALUATE::SUCCESS;
         }
         else if (eValuate == EVALUATE::RUN)
 		{
 			m_NodeValue.iPreSecquenceIndex = i;
-            return  EVALUATE::RUN;
+            return m_eDebug =  EVALUATE::RUN;
         }
  
 
     }
-	m_eDebug = EVALUATE::FAILED;
-	return EVALUATE::FAILED;
+	return m_eDebug =  EVALUATE::FAILED;
 }
 
 void CBTSelector::Abort()

@@ -1,46 +1,46 @@
 #include "pch.h"
-#include "BTAttackAnimation.h"
+#include "BTHitAnimMonster.h"
 #include "ComAnimator.h" 
 NS_USING(Client)
 
-CBTAttackAnimation::CBTAttackAnimation()
+CBTHitAnimMonster::CBTHitAnimMonster()
 {
 
 }
-CBTAttackAnimation::CBTAttackAnimation(const CBTAttackAnimation& rhs) : CBTActionNode(rhs)
+CBTHitAnimMonster::CBTHitAnimMonster(const CBTHitAnimMonster& rhs) : CBTActionNode(rhs)
 {
 
 }
 
-CBTAttackAnimation::~CBTAttackAnimation()
+CBTHitAnimMonster::~CBTHitAnimMonster()
 {
-	
+
 }
-HRESULT CBTAttackAnimation::InitializePrototype(void* pArg)
+HRESULT CBTHitAnimMonster::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
 	m_eGroup = NODEGROUP::ANIMATION;
-	m_MasterName = "BTAttackAnimation";
+	m_MasterName = "BTHitAnimMonster";
 	return S_OK;
 }
-HRESULT CBTAttackAnimation::Initalize(void* pArg)
+HRESULT CBTHitAnimMonster::Initalize(void* pArg)
 {
 	__super::Initalize(pArg);
 
 	return S_OK;
 }
 
-EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
+EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 {
 	if (auto pBT = Get_ComBT())
 	{
-		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
+
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-		
+
 		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
 			return m_eDebug = EVALUATE::FAILED;
-		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
+
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 
@@ -51,21 +51,18 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		{
 			if (m_bStart)
 			{
-				m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
 				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 				m_bStart = false;
 			}
-			_float fAnimRange = m_fRatio.y - m_fRatio.x;
-			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
-			_float fMove = t * fTimeDelta * fAnimRange * m_Value.fSpeed;
+
 			if (m_eMove == MOVE::RIGHT)
-				pTransform->GoRight(fMove);
+				pTransform->GoRight(m_Value.fSpeed * fTimeDelta);
 			else if (m_eMove == MOVE::LEFT)
-				pTransform->GoLeft(fMove);
+				pTransform->GoLeft(m_Value.fSpeed * fTimeDelta);
 			else if (m_eMove == MOVE::STRAIGHT)
-				pTransform->GoStraight(fMove);
+				pTransform->GoStraight(m_Value.fSpeed * fTimeDelta);
 			else if (m_eMove == MOVE::BACKWARD)
-				pTransform->GoBackward(fMove);
+				pTransform->GoBackward(m_Value.fSpeed * fTimeDelta);
 		}
 
 		if (m_bLoop || bFinished)
@@ -74,20 +71,20 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
-			//if (!m_bLoop) //루프 한번만 도는거 초기화용
-			//	++m_iLoopCnt;
-			//if (m_iLoopCnt >= 2)
-			//{
-			//	m_iLoopCnt = 0;
-			//	return m_eDebug = EVALUATE::FAILED;
-			//}
-			
+			if (!m_bLoop) //루프 한번만 도는거 초기화용
+				++m_iLoopCnt;
+			if (m_iLoopCnt >= 2)
+			{
+				m_iLoopCnt = 0;
+				return m_eDebug = EVALUATE::FAILED;
+			}
+
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}
 	return m_eDebug = EVALUATE::RUN;
 }
-void CBTAttackAnimation::Update_Gui()
+void CBTHitAnimMonster::Update_Gui()
 {
 	ImGui::Text("Move Speed");
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
@@ -126,12 +123,12 @@ void CBTAttackAnimation::Update_Gui()
 
 
 #define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M "NONE"};
+	const _char* pMoveType[] = { MOVE_M "NONE" };
 #undef X
 	ImGui::Text("Move Selector");
 	if (ImGui::BeginCombo("##Move Seletor", pMoveType[(ETOUI(m_eMove))]))
 	{
-		for (uint32_t i = 0; i < ETOUI(MOVE::END)+1; ++i)
+		for (uint32_t i = 0; i < ETOUI(MOVE::END) + 1; ++i)
 		{
 			_bool bSelect = static_cast<int32_t>(m_eMove) == i;
 
@@ -152,7 +149,7 @@ void CBTAttackAnimation::Update_Gui()
 	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
 	if (ImGui::TreeNode("StartFlag"))
 	{
-		
+
 		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
 			uint32_t iFlag = 1u << i;
@@ -195,7 +192,7 @@ void CBTAttackAnimation::Update_Gui()
 
 	ImGui::PopStyleColor(2);
 }
-nlohmann::json CBTAttackAnimation::Save_Node()
+nlohmann::json CBTHitAnimMonster::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 
@@ -209,7 +206,7 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return j;
 }
-HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
+HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
@@ -221,22 +218,22 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return S_OK;
 }
-E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()
+E::UPtr<CBTHitAnimMonster> CBTHitAnimMonster::Create()
 {
-	auto pInstance = E::ToUPtr(new CBTAttackAnimation{});
+	auto pInstance = E::ToUPtr(new CBTHitAnimMonster{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CBTAttackAnimation");
+		MSG_BOX("Failed to Created : CBTHitAnimMonster");
 		return nullptr;
 	}
 	return  pInstance;
 }
-E::UPtr<E::CPrototype> CBTAttackAnimation::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBTHitAnimMonster::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CBTAttackAnimation{ *this });
+	auto	pInstance = E::ToUPtr(new CBTHitAnimMonster{ *this });
 	if (FAILED(pInstance->Initalize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CBTAttackAnimation");
+		MSG_BOX("Failed to Cloned : CBTHitAnimMonster");
 		return nullptr;
 	}
 

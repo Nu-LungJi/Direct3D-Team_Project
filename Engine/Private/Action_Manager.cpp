@@ -7,6 +7,7 @@
 #include "BTSelector.h"
 #include "ComAnimator.h"
 #include "BTComposite.h"
+#include "BTRandSelector.h"
 CAction_Manager::CAction_Manager()
 {
 }
@@ -17,10 +18,10 @@ CAction_Manager::~CAction_Manager()
 
 HRESULT CAction_Manager::Initialize()
 {
-
-	CGameInstance::Get().AddPrototype(NODEGROUP::ROOT,		"BTRoot", CBTComposite::Create(nullptr));
-	CGameInstance::Get().AddPrototype(NODEGROUP::SELECTOR, "BTSelector", CBTSelector::Create(nullptr));
-	CGameInstance::Get().AddPrototype(NODEGROUP::SEQUENCE, "BTSequnce", CBTSecqunce::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::ROOT,			"BTRoot",		  CBTComposite::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::SELECTOR,		"BTSelector",	  CBTSelector::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::SEQUENCE,		"BTSequnce",	  CBTSecqunce::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::RAND_SELECTOR, "BTRandSelector", CBTRandSelector::Create(nullptr));
 	return S_OK;
 }
 void CAction_Manager::Show_Action_NodeWidget(CBTRoot* pNode)
@@ -56,7 +57,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
 		{
-			if (eType != NODEGROUP::SEQUENCE || eType != NODEGROUP::SELECTOR)
+			if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR && eType != NODEGROUP::RAND_SELECTOR)
 			{
 				CGameInstance::Get().GetPrototype(eType);
 				for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))

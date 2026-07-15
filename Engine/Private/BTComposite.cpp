@@ -67,6 +67,7 @@ nlohmann::json CBTComposite::Save_Node()
 		if ((*iter) == nullptr)
 		{
 			iter = m_Actions.erase(iter);
+			continue;
 		}
 		++iter;
 	}
