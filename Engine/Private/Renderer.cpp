@@ -1123,7 +1123,7 @@ HRESULT CRenderer::Render_Lighting() {
 	}
 	{   // Shadow
 		ComPtr<ID3D11ShaderResourceView> ShadowResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE")->GetSRV();
-		if (bApplyShadow) {
+		if (ApplyShadow) {
 			ShadowResource = m_pResDynTexTargetShadow->GetSRV();
 		}
 		m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());

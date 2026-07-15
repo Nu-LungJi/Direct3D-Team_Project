@@ -55,23 +55,6 @@ struct SpotLight
     float3 att;
     float _pad;
 };
-struct DynamicLight
-{
-    float4x4 g_LightViewProj;
-
-    float3  LightDirection;
-    float   LightIntensity;
-    float3  LightColor;
-    float   LightRange;
-
-    float3  Position;
-    uint    LightType;
-
-    float   InnerAttanuation;
-    float   OuterAttanuation;
-
-    float2  LightPadding;
-};
 
 struct Material
 {
@@ -124,10 +107,26 @@ cbuffer CB_MATERIAL : register(b3)
 
 cbuffer CB_LIGHT_BUFFER : register(b4)
 {
-    DynamicLight    AffectedLight[MAX_LIGHT_COUNT];
-    float4x4        g_InvViewProj;
-    uint            LightCount;
-    float3          LightPadding;
+    uint LightType; // Directional, Point, SpotLight
+    
+    float4x4 LightViewProj;
+    float4x4 InvViewProj;
+    
+    float3  LightDirection;
+    float3  LightColor;
+    float   LightIntensity;
+    float   LightRange;
+    
+    float3  LightPosition;
+    
+    float   InnerAttanuation;
+    float   OuterAttanuation;
+    
+    bool    FirstLightFlag;
+    bool    LightPadding2[3];
+    
+    float   LightPadding;
+
 }
 
 cbuffer CB_TIME_BUFFER : register(b5)

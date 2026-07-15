@@ -53,10 +53,6 @@ public:
 	VOID			Set_LightOuterAttenuation(_float _Attenuation)	{ m_fOuterAttanuation = _Attenuation;	}
 	_float			Get_LightOuterAttenuation()						{ return m_fOuterAttanuation;			}
 
-	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
-
-	VOID			Set_ShadowMapIndex(uint32_t _Index) { ShadowMapIndex = _Index; }
-
 private:
 	LIGHT_TYPE		m_LightType{LIGHT_TYPE::DIRECTIONAL};
 
@@ -80,23 +76,17 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexStaticShadowMap{};
 	SPtr<CResDynamicTexture2D>	m_pResDynTexDynamicShadowMap{};
 
-	std::vector<CGameObject*>	m_pRenderable_StaticObjectList{};
-	std::vector<CGameObject*>	m_pRenderable_DynamicObjectList{};
+	std::vector<IRenderable*>	m_pRenderable_StaticObjectList{};
+	std::vector<IRenderable*>	m_pRenderable_DynamicObjectList{};
 
-	XMFLOAT4X4	LightView{};
-	XMFLOAT4X4	LightProj{};
 	XMFLOAT4X4	LightViewProj{};
 	XMFLOAT4X4	InvViewProj{};
-
-	uint32_t		ShadowMapIndex{};
 
 public:
 	VOID	UpdateGUI() override;
 
 	_bool	Check_ObjectInArea();
 	VOID	Update_Collider();
-
-	HRESULT Capture_ShadowMap(ID3D11DeviceContext* pContext);
 
 	VOID	Render_StaticShadow (ID3D11DeviceContext* pContext);
 	VOID	Render_DynamicShadow(ID3D11DeviceContext* pContext);
@@ -105,6 +95,9 @@ public:
 	const SPtr<CResDynamicTexture2D>& Get_StaticShadowMap()		{ return m_pResDynTexStaticShadowMap;  }
 
 	VOID	Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow);
+
+	VOID	Add_StaticShadowGroup(IRenderable* _OBJ)  { m_pRenderable_StaticObjectList.push_back(_OBJ);  }
+	VOID	Add_DynamicShadowGroup(IRenderable* _OBJ) { m_pRenderable_DynamicObjectList.push_back(_OBJ); }
 
 	XMFLOAT4X4	Get_LightViewProj() { return LightViewProj; }
 
