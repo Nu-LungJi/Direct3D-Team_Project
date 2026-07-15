@@ -34,6 +34,9 @@ CComPxSphereCollider::~CComPxSphereCollider()
 HRESULT CComPxSphereCollider::Initialize(void* pArg)
 {
     auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	m_pResSphereGeo = pDesc->pResSphereGeo;
 	if (!m_pResSphereGeo)
 	{
@@ -44,9 +47,18 @@ HRESULT CComPxSphereCollider::Initialize(void* pArg)
         return E_FAIL;
     }
 	
-    m_pShape = CGameInstance::Get().PxGetPhysics()->createShape(
-		*m_pResSphereGeo->GetSphereGeometry(),
-		*m_pResMaterial->GetMaterial());
+	auto* pPhysics = CGameInstance::Get().PxGetPhysics();
+	if (!pPhysics)
+		return E_FAIL;
+
+	auto* pGeometry = m_pResSphereGeo->GetSphereGeometry();
+	auto* pMaterial = m_pResMaterial->GetMaterial();
+	if (!pGeometry || !pMaterial)
+		return E_FAIL;
+
+	m_pShape = pPhysics->createShape(*pGeometry, *pMaterial);
+	if (!m_pShape)
+		return E_FAIL;
 
     if (pDesc->bIsTrigger)
     {
@@ -63,6 +75,9 @@ HRESULT CComPxSphereCollider::Initialize(void* pArg)
 
     m_pShape->userData = this;
     auto pActor = m_pComRigidBody->GetActor();
+	if (!pActor)
+		return E_FAIL;
+
     pActor->attachShape(*m_pShape);
 
     if (auto* dynamic = pActor->is<PxRigidDynamic>())

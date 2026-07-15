@@ -33,6 +33,9 @@ CComPxCapsuleCollider::~CComPxCapsuleCollider()
 HRESULT CComPxCapsuleCollider::Initialize(void* pArg)
 {
 	auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	m_pResCapsuleGeo = pDesc->pResCapsuleGeo;
 	if (!m_pResCapsuleGeo)
 	{
@@ -44,7 +47,18 @@ HRESULT CComPxCapsuleCollider::Initialize(void* pArg)
 	}
 
 
-	m_pShape = CGameInstance::Get().PxGetPhysics()->createShape(*m_pResCapsuleGeo->GetCapsuleGeometry(), *m_pResMaterial->GetMaterial());
+	auto* pPhysics = CGameInstance::Get().PxGetPhysics();
+	if (!pPhysics)
+		return E_FAIL;
+
+	auto* pGeometry = m_pResCapsuleGeo->GetCapsuleGeometry();
+	auto* pMaterial = m_pResMaterial->GetMaterial();
+	if (!pGeometry || !pMaterial)
+		return E_FAIL;
+
+	m_pShape = pPhysics->createShape(*pGeometry, *pMaterial);
+	if (!m_pShape)
+		return E_FAIL;
 
 	if (pDesc->bIsTrigger)
 	{
@@ -61,6 +75,9 @@ HRESULT CComPxCapsuleCollider::Initialize(void* pArg)
 
 	m_pShape->userData = this;
 	auto pActor = m_pComRigidBody->GetActor();
+	if (!pActor)
+		return E_FAIL;
+
 	pActor->attachShape(*m_pShape);
 
 	if (auto* dynamic = pActor->is<PxRigidDynamic>())

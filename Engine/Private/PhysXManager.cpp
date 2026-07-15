@@ -186,6 +186,12 @@ static physx::PxFilterFlags MyFilterShader(
 HRESULT CPhysXManager::Initialize()
 {
     m_pListener = CPhysxManagerListener::Create();
+	if (!m_pListener)
+	{
+		MSG_BOX("Failed to create PhysX simulation event listener");
+		return E_FAIL;
+	}
+
     // Foundation 생성
     {
         m_pFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocator, gDefaultErrorCallback);

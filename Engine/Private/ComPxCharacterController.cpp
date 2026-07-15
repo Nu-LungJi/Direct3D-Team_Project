@@ -92,6 +92,9 @@ CComPxCharacterController::~CComPxCharacterController() { }
 HRESULT CComPxCharacterController::Initialize(void* pArg)
 {
 	auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	if (FAILED(CComponent::Initialize(pArg)))
 		return E_FAIL;
 
@@ -105,6 +108,8 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	m_pImpl = std::make_unique<CComPxCharacterController::Impl>();
 	m_pImpl->pOwner = this;
 	PxControllerManager* pManager = CGameInstance::Get().PxGetControllerManager();
+	if (!pManager)
+		return E_FAIL;
 
 	PxCapsuleControllerDesc desc;
 	desc.reportCallback = m_pImpl.get();
@@ -115,6 +120,8 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	desc.slopeLimit = pDesc->fSlopeLimit; // 캐릭터가 미끄러지지 않고 걸어 올라갈 수 있는 최대 경사면의 각도입니다. 수치 입력은 코사인(Cosine) 값
 	desc.contactOffset = 0.001f; // 캡슐 표면을 감싸는 보이지 않는 '버퍼 존(Skin Width)'의 두께입니다.
 	desc.material = pDesc->pResMaterial->GetMaterial(); //[cite: 10]
+	if (!desc.material)
+		return E_FAIL;
 	desc.position = PxExtendedVec3(pDesc->vPosition.x, pDesc->vPosition.y, pDesc->vPosition.z);
 
 	// 캐릭터의 위쪽 방향 설정 (일반적으로 Y축)

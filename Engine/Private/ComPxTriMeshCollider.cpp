@@ -33,6 +33,9 @@ CComPxTriMeshCollider::~CComPxTriMeshCollider()
 HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 {
     auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
     if (pDesc->pResTriMesh == nullptr)
         return E_FAIL;
 
@@ -43,7 +46,12 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 
     m_pResTriMesh = pDesc->pResTriMesh;
     auto* pPhysics = CGameInstance::Get().PxGetPhysics();
-    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(m_pResTriMesh->GetTriMesh()), *m_pResMaterial->GetMaterial());
+	auto* pTriMesh = m_pResTriMesh->GetTriMesh();
+	auto* pMaterial = m_pResMaterial->GetMaterial();
+	if (!pPhysics || !pTriMesh || !pMaterial)
+		return E_FAIL;
+
+    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh), *pMaterial);
     if (m_pShape == nullptr)
         return E_FAIL;
 
@@ -63,6 +71,8 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
     m_pShape->userData = this;
 
     auto pActor = m_pComRigidBody->GetActor();
+	if (!pActor)
+		return E_FAIL;
 
     //if (pActor->is<PxRigidDynamic>() != nullptr)
     //{

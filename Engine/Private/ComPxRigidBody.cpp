@@ -93,6 +93,9 @@ CComPxRigidBody::~CComPxRigidBody()
 HRESULT CComPxRigidBody::Initialize(void* pArg)
 {
     auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
     m_eType = pDesc->eType;
     if (FAILED(CComponent::Initialize(pArg)))
     {
@@ -118,6 +121,9 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
     case TYPE::DYNAMIC:
     {
         PxRigidDynamic* pDynamic = pPhysics->createRigidDynamic(tPose);
+		if (!pDynamic)
+			return E_FAIL;
+
         pDynamic->setMass(pDesc->fMass);
         pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
         m_pActor = pDynamic;
@@ -127,6 +133,9 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
     case TYPE::KINEMATIC:
     {
         PxRigidDynamic* pDynamic = pPhysics->createRigidDynamic(tPose);
+		if (!pDynamic)
+			return E_FAIL;
+
         pDynamic->setMass(pDesc->fMass);
         pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
         m_pActor = pDynamic;
@@ -139,8 +148,12 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
         return E_FAIL;
 
 
+	auto* pScene = CGameInstance::Get().PxGetScene();
+	if (!pScene)
+		return E_FAIL;
+
     m_pActor->userData = this;
-    CGameInstance::Get().PxGetScene()->addActor(*m_pActor);
+	pScene->addActor(*m_pActor);
     return S_OK;
 }
 UPtr<CComPxRigidBody> CComPxRigidBody::Create()
