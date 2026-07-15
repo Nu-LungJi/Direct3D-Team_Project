@@ -26,14 +26,29 @@ PS_IN VSMain(VS_IN vin)
 
     return output;
 }
+PS_IN VSMain_Shadow(VS_IN vin)
+{
+    PS_IN output;
+    output.posH = mul(float4(vin.posL, 1.f), AffectedLight[0].g_LightViewProj);
+
+    output.uv = vin.uv;
+
+    return output;
+}
 PS_IN VSMain_BillBoard(VS_IN IN)
 {
     PS_IN output;
     matrix matWV = mul(g_matWorld, g_matView);
     
-    matWV._11 = 1.0f; matWV._12 = 0.0f; matWV._13 = 0.0f;
-    matWV._21 = 0.0f; matWV._22 = 1.0f; matWV._23 = 0.0f;
-    matWV._31 = 0.0f; matWV._32 = 0.0f; matWV._33 = 1.0f;
+    matWV._11 = 1.0f;
+    matWV._12 = 0.0f;
+    matWV._13 = 0.0f;
+    matWV._21 = 0.0f;
+    matWV._22 = 1.0f;
+    matWV._23 = 0.0f;
+    matWV._31 = 0.0f;
+    matWV._32 = 0.0f;
+    matWV._33 = 1.0f;
     
     float4 vPosCamera = mul(float4(IN.posL, 1.0f), matWV);
     output.posH = mul(vPosCamera, g_matProj);
@@ -43,10 +58,11 @@ PS_IN VSMain_BillBoard(VS_IN IN)
 }
 
 // Pixel Shader : 불투명(NONBLEND) 오브젝트 그릴 때는 사용X(Normal, SMRO, Emissive에서 안 그려져서 정상적으로 렌더X)
-float4 PSMain(PS_IN IN)  : SV_TARGET0
+float4 PSMain(PS_IN IN) : SV_TARGET0
 {
     float4 TexColor = g_DiffuseTexture.Sample(LinearWrap, IN.uv);
-    if (TexColor.a == 0.01f)  discard;
+    if (TexColor.a == 0.01f)
+        discard;
     
     return TexColor;
 }

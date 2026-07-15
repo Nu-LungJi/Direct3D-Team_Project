@@ -1,14 +1,14 @@
 
-const static float  PI = 3.14159265359f;
-const static int    MAX_LIGHT_COUNT = 8;
+const static float PI = 3.14159265359f;
+const static int MAX_LIGHT_COUNT = 8;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float  NormalIntensity      = 1.f;
-const static float  RoughnessIntensity   = 1.f;
-const static float  MetallicIntensity    = 1.f;
-const static float  AmbientIntensity     = 1.f;
-const static float  SpecularIntensity    = 1.f;
+const static float NormalIntensity = 1.f;
+const static float RoughnessIntensity = 1.f;
+const static float MetallicIntensity = 1.f;
+const static float AmbientIntensity = 1.f;
+const static float SpecularIntensity = 1.f;
 
 #define MAX_LIGHT_COUNT     8
 
@@ -55,6 +55,23 @@ struct SpotLight
     float3 att;
     float _pad;
 };
+struct DynamicLight
+{
+    float4x4 g_LightViewProj;
+
+    float3 LightDirection;
+    float LightIntensity;
+    float3 LightColor;
+    float LightRange;
+
+    float3 Position;
+    uint LightType;
+
+    float InnerAttanuation;
+    float OuterAttanuation;
+
+    float2 LightPadding;
+};
 
 struct Material
 {
@@ -93,40 +110,24 @@ cbuffer CB_PER_PASS : register(b1)
 
 cbuffer CB_BONES : register(b2)
 {
-     matrix g_BoneMatrices[512];
+    matrix g_BoneMatrices[512];
 };
 
 cbuffer CB_MATERIAL : register(b3)
 {
-    float3  EmissiveColor;
-    float   EmissiveIntensity;
+    float3 EmissiveColor;
+    float EmissiveIntensity;
     
-    float   ObjectAlpha;
-    float3  ObjectPadding;
+    float ObjectAlpha;
+    float3 ObjectPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4)
 {
-    uint LightType; // Directional, Point, SpotLight
-    
-    float4x4 LightViewProj;
-    float4x4 InvViewProj;
-    
-    float3  LightDirection;
-    float3  LightColor;
-    float   LightIntensity;
-    float   LightRange;
-    
-    float3  LightPosition;
-    
-    float   InnerAttanuation;
-    float   OuterAttanuation;
-    
-    bool    FirstLightFlag;
-    bool    LightPadding2[3];
-    
-    float   LightPadding;
-
+    DynamicLight AffectedLight[MAX_LIGHT_COUNT];
+    float4x4 g_InvViewProj;
+    uint LightCount;
+    float3 LightPadding;
 }
 
 cbuffer CB_TIME_BUFFER : register(b5)
@@ -150,7 +151,7 @@ cbuffer CB_PER_UI : register(b7)
 {
     float2 g_ui_texCoord;
     float2 g_ui_uvSize;
-    float4 g_ui_color; 
+    float4 g_ui_color;
     //uint g_ui_texIndex; 
     //float2 g_ui_borderUV; 
     //float _pad_perui; 
@@ -169,11 +170,11 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
-SamplerState LinearWrap                 : register(s0);
-SamplerState LinearClamp                : register(s1);
-SamplerState PointWrap                  : register(s2);
-SamplerState PointClamp                 : register(s3);
-SamplerState PointWrapNoMip             : register(s4);
-SamplerState AnisotropicWrap            : register(s5);
+SamplerState LinearWrap : register(s0);
+SamplerState LinearClamp : register(s1);
+SamplerState PointWrap : register(s2);
+SamplerState PointClamp : register(s3);
+SamplerState PointWrapNoMip : register(s4);
+SamplerState AnisotropicWrap : register(s5);
 
-SamplerComparisonState  ShadowSampler   : register(s6);
+SamplerComparisonState ShadowSampler : register(s6);

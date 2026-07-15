@@ -355,7 +355,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	{
 		ZoneScopedN("LightManager_Update");
 		m_pLightManager->Update(fTimeDelta);
-	} 
+	}
 	{
 		ZoneScopedN("Renderer_Update");
 		m_pRenderer->Update(fTimeDelta);
@@ -382,7 +382,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	//m_pLightManager->Render_ShadowMap();
+	//m_pLightManager->Capture_ShadowMap();
 
 	if (FAILED(m_pRenderer->Draw()))
 	{
@@ -576,7 +576,7 @@ HRESULT CGameInstance::InitializeResources()
 			.MinLOD = 0,
 			.MaxLOD = D3D11_FLOAT32_MAX,
 			}))) {
-				return E_FAIL;
+			return E_FAIL;
 		}
 		GetGraphicDeviceContext()->PSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
 		GetGraphicDeviceContext()->CSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
@@ -667,7 +667,7 @@ HRESULT CGameInstance::InitializeResources()
 		sampDesc.BorderColor[0] = 1.f;
 
 		sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-		if (FAILED(res->Load(sampDesc)))				return E_FAIL; 
+		if (FAILED(res->Load(sampDesc)))				return E_FAIL;
 
 		GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 		GetGraphicDeviceContext()->CSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
@@ -1030,7 +1030,7 @@ HRESULT CGameInstance::InitializeResources()
 		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
 		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) *XMMatrixRotationY(XMConvertToRadians(180.f));
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
 		if (FAILED(res->Load(pDesc)))
 		{
@@ -1110,7 +1110,7 @@ HRESULT CGameInstance::InitializeResources()
 }
 HRESULT CGameInstance::InitializePrototype()
 {
-	
+
 	if (AddPrototype(ES_EngineProtoMajorType::PERMANENT, ES_EngineProtoComponent::Prototype_Component_Transform, CComTransform::Create()))
 	{
 		return E_FAIL;
@@ -1133,7 +1133,7 @@ HRESULT CGameInstance::InitializePrototype()
 	{
 		return E_FAIL;
 	}
-	
+
 	if (AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_FlyCamera, CFlyCamera::Create()))
 	{
 		return E_FAIL;
@@ -1162,11 +1162,11 @@ HRESULT CGameInstance::InitializePrototype()
 		return E_FAIL;
 	}
 
-	
+
 
 	// 피직스관련
 	{
-		
+
 		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, CComPxBoxCollider::Create()))
 		{
 			return E_FAIL;
@@ -1177,7 +1177,7 @@ HRESULT CGameInstance::InitializePrototype()
 		}
 		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
 		{
-			return E_FAIL; 
+			return E_FAIL;
 		}
 		if (AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxTriMeshCollider, CComPxTriMeshCollider::Create()))
 		{
@@ -1624,6 +1624,12 @@ SPtr<CResDynamicTexture2D>	CGameInstance::Generate_UnorderedAccessView(const Str
 SPtr<CResViewPort>			CGameInstance::Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth, uint32_t _TexHeight) {
 	return m_pRenderer->Generate_ViewPort(_sResTag, _TexWidth, _TexHeight);
 }
+VOID	CGameInstance::Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	m_pRenderer->Generate_Texture2DArray(_ShadowDSVList, _TextureArray, _SRV, _Resolution, _MaxLightCount);
+}
+VOID	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
+}
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER
@@ -1705,7 +1711,7 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 VOID	CGameInstance::Clear_DynamicLightList() {
 	m_pLightManager->Clear_DynamicLightList();
 }
-HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject) {
+HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	return m_pLightManager->Add_ShadowRenderGroup(_ATYPE, pRenderObject);
 }
 HRESULT	CGameInstance::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,

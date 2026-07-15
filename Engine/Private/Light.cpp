@@ -6,47 +6,49 @@
 #include "CollSphere.h"
 #include "CollFrustum.h"
 
-CLight::CLight()	: CGameObject{}	{}
+CLight::CLight() : CGameObject{} {}
 CLight::~CLight() {}
 
 
 void	CLight::UpdateGUI()
 {
-    CGameObject::UpdateGUI();
+	CGameObject::UpdateGUI();
 }
 
 HRESULT CLight::InitializePrototype(VOID* pArg) {
 
-	
+
 	return S_OK;
 }
 
 HRESULT CLight::Initialize(VOID* pArg)
 {
-    if (FAILED(CGameObject::Initialize(pArg)))			return E_FAIL;
+	if (FAILED(CGameObject::Initialize(pArg)))			return E_FAIL;
 	if (FAILED(Initialize_ShadowMap()))					return E_FAIL;
 
-	m_pColliderSphere  = CCollSphere ::Create(m_pComTransform->GetPosition(), 10.f);
+	m_pColliderSphere = CCollSphere::Create(m_pComTransform->GetPosition(), 10.f);
 	m_pColliderFrustum = CCollFrustum::Create(XMMatrixIdentity());
 
-    {
-        CComConstantBuffer::DESC Desc{};
-        Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-        if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))	return E_FAIL;
-    }
-	
+	{
+		CComConstantBuffer::DESC Desc{};
+		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))	return E_FAIL;
+	}
+
 	return S_OK;
 }
 HRESULT CLight::Initialize_ShadowMap() {
 	// 2K Resolution
-	uint32_t ShadowMapResolutionX	= { 1280 * 2 };
-	uint32_t ShadowMapResolutionY	= { 720  * 2 };
+	uint32_t ShadowMapResolutionX = { 1280 * 2 };
+	uint32_t ShadowMapResolutionY = { 720 * 2 };
 
-	m_pResDynTexDynamicShadowMap	= CGameInstance::Get().Generate_DepthStencil_RenderTarget("DynTex2D_DynamicShadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
+	m_pResDynTexDynamicShadowMap = CGameInstance::Get().Generate_DepthStencil_RenderTarget("DynTex2D_DynamicShadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
 	if (nullptr == m_pResDynTexDynamicShadowMap)	return E_FAIL;
-	
-	m_pResDynTexStaticShadowMap		= CGameInstance::Get().Generate_DepthStencil_RenderTarget("DynTex2D_StaticShadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
+
+	m_pResDynTexStaticShadowMap = CGameInstance::Get().Generate_DepthStencil_RenderTarget("DynTex2D_StaticShadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
 	if (nullptr == m_pResDynTexStaticShadowMap)		return E_FAIL;
+
+
 
 	return S_OK;
 }
@@ -87,25 +89,61 @@ VOID CLight::Update_Collider() {
 		m_fOuterAttanuation = m_fOuterAttanuation <= 0.f ? 1.f : m_fOuterAttanuation;
 		m_fLightRange = m_fLightRange <= fNearZ ? fNearZ + 0.01f : m_fLightRange;
 
-		XMMATRIX LightView = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, LookVec), UpVec);
-		XMMATRIX LightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_fOuterAttanuation * 2.f), 1.f, fNearZ, m_fLightRange);
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, LookVec), UpVec));
+		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(m_fOuterAttanuation * 2.f), 1.f, fNearZ, m_fLightRange));
 
-		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(LightProj);
-		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, LightView));
+		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
+		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView)));
 
-		XMStoreFloat4x4(&LightViewProj, XMMatrixMultiply(LightView, LightProj));
+		XMStoreFloat4x4(&LightViewProj, XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 	else if (m_LightType == LIGHT_TYPE::POINT) {
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 	}
+}
 
-	
+HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
+
+	if (m_LightType == LIGHT_TYPE::DIRECTIONAL || m_LightType == LIGHT_TYPE::SPOTLIGHT) {
+		pContext->GSSetShader(nullptr, nullptr, 0);
+		pContext->PSSetShader(nullptr, nullptr, 0);
+	}
+	else {
+		// pContext->GSSetShader(m_pPointShadowGS, nullptr, 0);
+		// pContext->PSSetShader(m_pPointShadowPS, nullptr, 0);
+	}
+
+	RENDER_CTX RCTX{};
+	RCTX.pass = RENDERPASS::SHADOW;						RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
+	RCTX.matView = XMLoadFloat4x4(&LightView);			RCTX.matProj = XMLoadFloat4x4(&LightProj);
+	RCTX.matViewProj = XMLoadFloat4x4(&LightViewProj);
+
+	for (auto& GOBJ : m_pRenderable_DynamicObjectList) {
+		GOBJ->Render(pContext, RCTX);
+	}
+	for (auto& GOBJ : m_pRenderable_StaticObjectList) {
+		GOBJ->Render(pContext, RCTX);
+	}
+
+	if (m_LightType == LIGHT_TYPE::POINT) {
+		pContext->GSSetShader(nullptr, nullptr, 0);
+		pContext->PSSetShader(nullptr, nullptr, 0);
+	}
+	return S_OK;
 }
 
 _bool CLight::Check_ObjectInArea() {
 
 	return true;
+}
+VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
+	if (_ATYPE == ACTORTYPE::DYNAMIC) {
+		m_pRenderable_DynamicObjectList.push_back(pRenderObject);
+	}
+	else {
+		m_pRenderable_StaticObjectList.push_back(pRenderObject);
+	}
 }
 
 VOID CLight::Render_StaticShadow(ID3D11DeviceContext* pContext) {
@@ -119,7 +157,7 @@ VOID CLight::Render_DynamicShadow(ID3D11DeviceContext* pContext) {
 	}
 }
 
-VOID CLight::Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow){
+VOID CLight::Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow) {
 	if (_DrawStaticShadow == true) {
 		pContext->ClearDepthStencilView(m_pResDynTexStaticShadowMap->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 		pContext->OMSetRenderTargets(0, nullptr, m_pResDynTexStaticShadowMap->GetDSV().Get());
@@ -132,21 +170,21 @@ VOID CLight::Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStat
 
 UPtr<CLight>	 CLight::Create()
 {
-    auto pInstance = ToUPtr(new CLight{});
-    if (FAILED(pInstance->InitializePrototype(nullptr)))    {
-        MSG_BOX("Failed to Create: CLight");
-        return nullptr;
-    }
+	auto pInstance = ToUPtr(new CLight{});
+	if (FAILED(pInstance->InitializePrototype(nullptr))) {
+		MSG_BOX("Failed to Create: CLight");
+		return nullptr;
+	}
 
-    return pInstance;
+	return pInstance;
 }
 UPtr<CPrototype> CLight::Clone(void* pArg)
 {
-    auto pInstance = ToUPtr(new CLight{ *this });
-    if (FAILED(pInstance->Initialize(pArg)))    {
-        MSG_BOX("Failed to Cloned: CLight");
-        return nullptr;
-    }
+	auto pInstance = ToUPtr(new CLight{ *this });
+	if (FAILED(pInstance->Initialize(pArg))) {
+		MSG_BOX("Failed to Cloned: CLight");
+		return nullptr;
+	}
 
-    return pInstance;
+	return pInstance;
 }

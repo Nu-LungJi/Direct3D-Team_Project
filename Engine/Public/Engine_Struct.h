@@ -70,22 +70,20 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		uint32_t LightType;			// <= Engine_Enum ~ LIGHT_TYPE 활용하기
+		XMFLOAT4X4	g_LightViewProj;
 
-		XMFLOAT4X4		g_LightViewProj;
-		XMFLOAT4X4		g_InvViewProj;
+		_float3		LightDirection;
+		_float		LightIntensity;
+		_float3		LightColor;
+		_float		LightRange;
 
-		_float3  LightDirection;
-		_float3  LightColor;
-		_float   LightIntensity;
-		_float   LightRange;
+		_float3		Position;
+		uint32_t	LightType;
 
-		_float3  Position;
+		_float		InnerAttanuation;
+		_float		OuterAttanuation;
 
-		_float   InnerAttanuation;
-		_float   OuterAttanuation;
-
-		_float2   LightPadding;
+		_float2		LightPadding;
 	} DYNAMIC_LIGHT;
 
 	typedef struct tagPostProcess
@@ -113,7 +111,7 @@ namespace Engine
 		float		fTrackPosition;
 	}KEYFRAME;
 
-	
+
 
 	///////BeHavior//////
 	typedef struct tagactionvalue
@@ -121,8 +119,8 @@ namespace Engine
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{}, fTime{1.f}, fTick{};
-	
+		_float   fSpeed{}, fTime{ 1.f }, fTick{};
+
 	}ACTION_VALUE;
 	typedef struct tagdestnode
 	{
@@ -141,14 +139,14 @@ namespace Engine
 	{
 		uint32_t	iID{};
 		_string		Name{};
-		XMFLOAT2	vPos{},vSize{};
+		XMFLOAT2	vPos{}, vSize{};
 		float		fValue{};
 		XMFLOAT4	vColor{};
 		_bool		bAbort{ false };
 		BEHAVIOR    eMyType{};
-		tagimguinode()=default ;
-		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color;}
-		XMFLOAT2 GetStartSlotPos()  { return XMFLOAT2(vPos.x + vSize.x*0.5f, vPos.y ) ;}
+		tagimguinode() = default;
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color; }
+		XMFLOAT2 GetStartSlotPos() { return XMFLOAT2(vPos.x + vSize.x * 0.5f, vPos.y); }
 		XMFLOAT2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
 			return XMFLOAT2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);
 		}
@@ -167,7 +165,7 @@ namespace Engine
 		int32_t					iStartIdx{ -1 };
 		DEST_NODE				ParentNode;
 		std::vector<DEST_NODE>  SlotEnd{};
-		
+
 		tagimguinodelink() = default;
 		tagimguinodelink(int32_t iEnd)
 		{
@@ -207,7 +205,7 @@ namespace Engine
 		_bool    bLoop;
 		_float   fSpawnInterval;
 	} PARTICLE_EMIT_REQUEST;
-	
+
 	typedef struct tagBeamVertex
 	{
 		_float3 vPosition;
@@ -235,7 +233,7 @@ namespace Engine
 	}MODEL_FILE_HEADER;
 
 	typedef struct tagParticleSpecies {
-		
+
 	}PARTICLE_SPECIES;
 
 	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
