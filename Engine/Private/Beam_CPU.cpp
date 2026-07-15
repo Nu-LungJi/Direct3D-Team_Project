@@ -92,7 +92,14 @@ void CBeam_CPU::Update(_float fTimeDelta)
         if (beam.fFlickerTimer >= beam.fFlickerInterval)
         {
             beam.fFlickerTimer = 0.f;
-            RegenerateJaggedPath(beam);
+
+			if (m_Desc.geometryType == 0) {
+				RegenerateJaggedPath(beam);
+
+			}
+			//else if (m_Desc.geometryType == 1) {
+			//	RegenerateSinPath(beam);
+			//}
             bNeedRebuild = true;
         }
     }
@@ -182,7 +189,13 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
             beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
             beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
             
-            RegenerateJaggedPath(beam);
+			if (m_Desc.geometryType == 0) {
+				RegenerateJaggedPath(beam);
+
+			}
+			else if (m_Desc.geometryType == 1) {
+				RegenerateSinPath(beam);
+			}
             BuildBeamGeometry();
             return (int32_t)i;
         }
@@ -215,7 +228,13 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd)
 			beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
 			beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
 
-			RegenerateJaggedPath(beam);
+			if (m_Desc.geometryType == 0) {
+				RegenerateJaggedPath(beam);
+
+			}
+			else if (m_Desc.geometryType == 1) {
+				RegenerateSinPath(beam);
+			}
 			BuildBeamGeometry();
 			return (int32_t)i;
 		}
@@ -354,36 +373,42 @@ void CBeam_CPU::BuildBeamGeometry()
     }
 }
 
-//void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
-//{
-//	XMVECTOR start = XMLoadFloat4(&beam.vStartPos);
-//	XMVECTOR end = XMLoadFloat4(&beam.vEndPos);
-//	XMVECTOR segDir = XMVector3Normalize(end - start);
-//	XMVECTOR worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
-//	if (fabsf(XMVectorGetX(XMVector3Dot(segDir, worldUp))) > 0.99f)
-//		worldUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
-//
-//	XMVECTOR right1 = XMVector3Normalize(XMVector3Cross(segDir, worldUp));
-//	XMVECTOR right2 = XMVector3Normalize(XMVector3Cross(segDir, right1));
-//
-//	for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)
-//	{
-//		float t = (_float)i / (_float)beam.iSegmentCount; // 0~1
-//
-//		XMVECTOR basePos = XMVectorLerp(start, end, t);
-//
-//		// 시간(fTimeAccum) 없이, 생성 시 뽑아둔 fWavePhase/fWaveFrequency로 고정된 파형
-//		float fWave = sinf(t * beam.fWaveFrequency * XM_2PI + beam.fWavePhase);
-//
-//		// 양 끝은 흔들리지 않도록 (start/end 고정)
-//		float fEnvelope = sinf(t * XM_PI);
-//
-//		XMVECTOR offset = right1 * (fWave * beam.fDisplacementAmplitude * fEnvelope);
-//
-//		XMVECTOR finalPos = basePos + offset;
-//		XMStoreFloat3(&beam.vecJaggedPoints[i], finalPos);
-//	}
-//}
+void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
+{
+	XMVECTOR start = XMLoadFloat4(&beam.vStartPos);
+	XMVECTOR end = XMLoadFloat4(&beam.vEndPos);
+
+	XMVECTOR segDir = XMVector3Normalize(end - start);
+
+	XMVECTOR worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	if (fabsf(XMVectorGetX(XMVector3Dot(segDir, worldUp))) > 0.99f)
+		worldUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+
+	XMVECTOR right1 = XMVector3Normalize(XMVector3Cross(segDir, worldUp));
+	XMVECTOR right2 = XMVector3Normalize(XMVector3Cross(segDir, right1));
+
+	// 빔마다 한 번만 랜덤으로 정하면 더 좋음
+	float phase1 = Randf(0.f, XM_2PI);
+	float phase2 = Randf(0.f, XM_2PI);
+
+	for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)
+	{
+		float t = (float)i / beam.iSegmentCount;
+
+		XMVECTOR basePos = XMVectorLerp(start, end, t);
+
+		float envelope = sinf(t * XM_PI);
+
+		float wave1 = sinf(t * XM_2PI + phase1);
+		float wave2 = cosf(t * XM_2PI + phase2);
+
+		XMVECTOR offset =
+			right1 * (wave1 * beam.fDisplacementAmplitude * envelope) +
+			right2 * (wave2 * beam.fDisplacementAmplitude * envelope);
+
+		XMStoreFloat3(&beam.vecJaggedPoints[i], basePos + offset);
+	}
+}
 
 //void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
 //{

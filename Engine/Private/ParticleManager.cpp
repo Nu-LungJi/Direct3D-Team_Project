@@ -110,6 +110,7 @@ void CParticleManager::UpdateGUI()
 	static _bool gravity = false;
 
 	static _float4 rotaion = _float4(0,0,0,0);
+	static int iGeometryType = 0;
 
 	// ---- 0. WhatKind 대분류 선택 ----
 	const char* whatKindNames[] = { "MESH", "TEXTURE" };
@@ -169,10 +170,7 @@ void CParticleManager::UpdateGUI()
 			textureFileList = ScanTextureFolder(kTextureRealFolder);
 
 		ImGui::Text("Textures:");
-		ImGui::InputText("VIBuffer1 if CPUTEX", szViBuffer1, IM_ARRAYSIZE(szViBuffer1));
-		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
-		ImGui::InputInt("TexRowCount", &iTexRow);
-		ImGui::InputInt("TexColCount", &iTexCol);
+
 
 		const float thumbnailSize = 64.0f;
 		const float cellPadding = 10.0f;
@@ -243,20 +241,33 @@ void CParticleManager::UpdateGUI()
 	ImGui::InputText("Json Name", szJsonName, IM_ARRAYSIZE(szJsonName));
 	ImGui::Combo("Particle Type", &particleTypeIndex, particleTypeNames, IM_ARRAYSIZE(particleTypeNames));
 	ImGui::InputText("Particle Name (e.g. ROCK1_CPU)", szParticleName, IM_ARRAYSIZE(szParticleName));
+
 	ImGui::InputInt("MaxParticles", &iMaxParticles);
 	ImGui::InputText("VSID1", szVSID1, IM_ARRAYSIZE(szVSID1));
 	ImGui::InputText("VSID2", szVSID2, IM_ARRAYSIZE(szVSID2));
 	ImGui::InputText("PSID1", szPSID1, IM_ARRAYSIZE(szPSID1));
 	ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
 
+	ImGui::InputInt("TexRowCount", &iTexRow);
+	ImGui::InputInt("TexColCount", &iTexCol);
+
+
 	ImGui::Separator();
 
 	// ---- 4. 저장 ----
+	std::string particleNameStr = szParticleName;
 	std::string targetPath = (whatKindIndex == 1) ? selectedTexturePath : selectedFbxPath;
 	std::string particleTypeStr = particleTypeNames[particleTypeIndex];
-	std::string particleNameStr = szParticleName;
 	std::string jsonNameStr = szJsonName;
 
+	if (particleTypeStr == "BEAM_CPU") {
+		ImGui::Text("Beam GeometryType");
+		ImGui::InputInt("GeometryType", &iGeometryType);
+	}
+	else {
+		ImGui::InputText("VIBuffer1 if CPUTEX", szViBuffer1, IM_ARRAYSIZE(szViBuffer1));
+		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
+	}
 	auto IsCombinationSupported = [](int whatKindIdx, const std::string& particleType) -> bool
 		{
 			if (whatKindIdx == 0) // MESH
@@ -303,6 +314,7 @@ void CParticleManager::UpdateGUI()
 	for (auto& err : vecErrors)
 		ImGui::TextColored(ImVec4(1.f, 0.6f, 0.f, 1.f), "- %s", err.c_str());
 
+
 	if (bCanSave)
 	{
 		if (ImGui::Button("Save Json"))
@@ -329,6 +341,14 @@ void CParticleManager::UpdateGUI()
 						szVSID1, szVSID2, szPSID1, szPSID2,
 						szGroupTag, szResTag, szTextureID1, szTextureID2,
 						szViBuffer1, szViBuffer2, iTexRow, iTexCol);
+				}
+				else if (particleTypeStr == "BEAM_CPU") {
+					hr = Save_Beam_Json(savePath.string(),
+						targetPath, whatKindStr, particleTypeStr, particleNameStr,
+						iMaxParticles,
+						szVSID1, szVSID2, szPSID1, szPSID2, iGeometryType,
+						szTextureID1, szTextureID2, 
+						iTexRow, iTexCol);///////////////DFD
 				}
 				else {
 					hr = Save_Binary_Json(savePath.string(),
@@ -1156,6 +1176,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 		return E_FAIL;
 	}
 
+
 	if (!j.contains(arrayKey) || !j[arrayKey].is_array())
 		j[arrayKey] = nlohmann::json::array();
 
@@ -1287,6 +1308,104 @@ HRESULT CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
             hr = E_FAIL;
     }
     return hr;
+}
+HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, 
+	const std::string& particleType, const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
+	const std::string& PSGroup, const std::string& PSID, int geometryType, const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount)
+{
+	if (outpath.empty() || FullPath.empty())
+		return E_FAIL;
+
+	std::filesystem::path savePath(outpath);
+
+	if (savePath.extension().empty())
+		savePath.replace_extension(".json");
+
+	if (!savePath.parent_path().empty())
+		std::filesystem::create_directories(savePath.parent_path());
+
+	std::string fbxName = std::filesystem::path(FullPath).filename().string();
+
+	if (fbxName.empty())
+		return E_FAIL;
+
+	std::string fullPath = FullPath;
+
+	nlohmann::json j;
+
+	if (std::filesystem::exists(savePath))
+	{
+		std::ifstream inFile(savePath);
+		if (inFile.is_open())
+		{
+			try { inFile >> j; }
+			catch (...) { j = nlohmann::json{}; }
+			inFile.close();
+		}
+	}
+
+	nlohmann::json newEntry;
+	newEntry["path"] = fullPath;
+	newEntry["whatKind"] = whatKind;
+	newEntry["particleType"] = particleType;
+	newEntry["particleName"] = particleName;
+	newEntry["iMaxParticles"] = iMaxParticles;
+	newEntry["VSGroup"] = VSGroup;
+	newEntry["VSID"] = VSID;
+	newEntry["PSGroup"] = PSGroup;
+	newEntry["PSID"] = PSID;
+
+	std::string arrayKey;
+
+	if (whatKind == "TEXTURE")
+	{
+		arrayKey = "textures";
+		newEntry["TextureID1"] = textureID1;
+		newEntry["TextureID2"] = textureID2;
+		newEntry["RowCount"] = RowCount;
+		newEntry["ColCount"] = ColCount;
+		newEntry["GeometryType"] = geometryType;
+	}
+	//else if (whatKind == "MESH")
+	//{
+	//	arrayKey = "models";
+	//	newEntry["sGroupTag"] = sGroupTag;
+	//	newEntry["sResTag"] = sResTag;
+	//}
+	else
+	{
+		return E_FAIL;
+	}
+
+
+	if (!j.contains(arrayKey) || !j[arrayKey].is_array())
+		j[arrayKey] = nlohmann::json::array();
+
+	bool bReplaced = false;
+	for (auto& entry : j[arrayKey])
+	{
+		if (entry.contains("path") && entry["path"].is_string() &&
+			entry.contains("particleType") && entry["particleType"].is_string() &&
+			entry["path"].get<std::string>() == fullPath &&
+			entry["particleType"].get<std::string>() == particleType)
+		{
+			entry = newEntry;
+			bReplaced = true;
+			break;
+		}
+	}
+
+	if (!bReplaced)
+		j[arrayKey].push_back(newEntry);
+
+	std::ofstream file(savePath, std::ios::out);
+	if (!file.is_open())
+		return E_FAIL;
+
+	file << j.dump(4);
+	file.close();
+
+	return S_OK;
 }
 HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 {
@@ -1530,8 +1649,10 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
         PARTICLE_TYPE type;
 		*/
 	
+				int geometryType = entry.value("GeometryType", 0);
 
 				CBeam_CPU::DESC desc;
+				desc.geometryType = geometryType;
 				desc.textureID = { textureID1, textureID2 };
 				if (!VSGroup.empty() && !VSID.empty())
 					desc.VSID = { VSGroup, VSID };
@@ -1544,7 +1665,8 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			else if (particleType == "TRAIL_CPU")
 			{
 				CTrail_CPU::DESC desc;
-		
+
+
 				desc.textureID = { textureID1, textureID2 };
 				if (!VSGroup.empty() && !VSID.empty())
 					desc.VSID = { VSGroup, VSID };
@@ -1712,6 +1834,8 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["fSpawnDelay"] = p.fSpawnDelay;
 				entry["color"] = { p.color.x, p.color.y, p.color.z, p.color.w };
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
+				entry["GeometryType"] = p.geometryType;
+
 				break;
 			}
 			case SPAWN_COMMAND_KIND::PATTERN:
@@ -1841,6 +1965,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
 			p.beamDuration = entry.value("beamDuration", 0.f);
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
+			p.geometryType = entry.value("GeometryType", 0.f);
 
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			p.color = { col[0], col[1], col[2], col[3] };
@@ -2071,7 +2196,7 @@ HRESULT CParticleManager::Spawn(uint32_t owenrId, const std::string& strJsonPath
 			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
 			p.beamDuration = entry.value("beamDuration", 0.f);
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-
+			p.geometryType = entry.value("GeometryType", 0.f);
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			p.color = { col[0], col[1], col[2], col[3] };
 

@@ -72,6 +72,7 @@ struct BEAM_PARAMS
     _float   beamDuration = 0.f;
 	_float	 fSpawnDelay = 0.f;
 	uint32_t ownerId = 0;
+	uint32_t geometryType = 0;
 
 };
 
@@ -133,6 +134,10 @@ public:
 		const std::string& viBufferID2= "",
 		int RowCount = 1,
 		int ColCount = 1);
+
+	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
+		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
+		const std::string& PSGroup, const std::string& PSID, int geometryType,const std::string& textureID1 = "", const std::string& textureID2 = "",int RowCount = 1,int ColCount = 1);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);

@@ -80,7 +80,7 @@ void CWeapon::Update(E::_float fTimeDelta)
 	_float3 vstart, vend;
 	vstart = m_pComTransform->GetPosition();
 	vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	auto a = CGameInstance::Get().GetParticle("PLAYER_RIBBON", "PLAYER_RIBBON");
+	auto a = CGameInstance::Get().GetParticle("PRACTRAIL", "PRACTRAIL");
 	static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
 	if (CGameInstance::Get().KeyDown(DIK_O)) {
 		//static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.5f, 0.5f, 0.5f, 1.f));

@@ -10,6 +10,7 @@ struct TRAIL_FRAME
     _float3 vStart; // 칼날 밑동(손잡이 쪽) 월드 위치
     _float3 vEnd;   // 칼날 끝(칼끝) 월드 위치
     _float  fAge = 0.f;
+	_float  fDistance = 0.f;
 };
 
 // 트레일 전용 정점 - BEAM_VERTEX와 달리 색상(알파)을 갖고 있어서
@@ -19,6 +20,7 @@ struct TRAIL_VERTEX
     _float3 vPosition;
     _float2 vUV;
     _float4 vColor;
+    _float4 vEmissive;
 };
 
 // 무기 궤적 트레일.
@@ -34,10 +36,10 @@ public:
         std::pair<StringID, StringID> textureID;
         std::pair<StringID, StringID> VSID;
         std::pair<StringID, StringID> PSID;
-        PARTICLE_TYPE type;
-        TRAIL_TYPE  tType;
+        TRAIL_TYPE  tType = TRAIL_TYPE::END;
         _float   fMaxDuration = 1.f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
         uint32_t iMaxFrames = 700;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
+
     };
 
 private:
@@ -65,6 +67,7 @@ public:
 	virtual void SetVelocity(const _float3& vel) override;
 	virtual void SetSize(const _float& size) override;
 	virtual void SetColor(const _float4& color) override;
+	void SetEmissive(const _float4& emissive) { m_vEmissive = emissive; }
 private:
     void BuildTrailGeometry();
 
@@ -77,6 +80,7 @@ private:
 	_float3 m_vLastStart{};
 	_float3 m_vLastEnd{};
 	_float4 m_vColor{1.f,1.f,1.f,1.f};
+	_float4 m_vEmissive{ 0.f, 0.f, 0.f, 0.f };
     SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
     SPtr<class CResCBuffer> m_pScrollCBuffer;
 	_float m_fTimeSinceLastAdd = 0.f;
@@ -89,7 +93,7 @@ private:
 	_float m_ScrollOffset = 0.2f;
 	//_float m_ScrollSpeed = 5.4f;
 	_float totalLength = 0.0f;
-
+	_float m_fTotalDistance = 0.f;
 public:
 	static UPtr<CParticle> Create(void* pArg);
 	float EaseOutQuad(float x);

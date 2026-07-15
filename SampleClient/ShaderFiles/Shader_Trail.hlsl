@@ -42,7 +42,7 @@ Texture2D g_NoiseTexture : register(t1);
 
 float4 PSMain(VS_OUT In) : SV_TARGET
 {
-    float2 vTrailUV = float2(In.vUV.x * 2.f -/**time?* */ g_fScrollOffset, In.vUV.y);
+    float2 vTrailUV = float2(In.vUV.x * 2.f, In.vUV.y);
     float4 vTexColor = g_TrailTexture.Sample(LinearWrap, vTrailUV);
     if (all(vTexColor.rgb < 0.1f))
         discard;

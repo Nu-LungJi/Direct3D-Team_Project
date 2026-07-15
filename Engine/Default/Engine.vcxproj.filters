@@ -834,9 +834,6 @@
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Beam_CPU.h">
-      <Filter>Particle\Beam</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\CreatureEditor.h">
       <Filter>CreatureEditor</Filter>
     </ClInclude>
@@ -903,6 +900,9 @@
     </ClInclude>
     <ClInclude Include="ParticleParamImGui.h">
       <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Beam_CPU.h">
+      <Filter>Particle\Beam</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

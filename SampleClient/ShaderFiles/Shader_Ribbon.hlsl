@@ -51,10 +51,9 @@ PS_OUT PSMain(VS_OUT In)
     
     if (texColor.a <= 0.01f)
         discard;
-    if (texColor.x < 0.2f)
-        discard;
+
     float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
-    float3 FinalColor = texColor.rgb + instEmissive;
+    float3 FinalColor = texColor.rgb * instEmissive;
 
     Out.vDiffuse = float4(FinalColor, texColor.a);
     

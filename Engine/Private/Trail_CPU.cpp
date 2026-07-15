@@ -22,8 +22,8 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
         return E_FAIL;
 
     m_Desc = *pDesc;
-    m_eType = pDesc->type;
-
+	m_vColor = _float4(1,1,1,0);
+	m_vEmissive = _float4(0, 0, 0, 0);
 
     // 프레임 하나당 정점 2개(밑동/칼끝) - 정점 자체가 이미 폭의 양 끝
     uint32_t iMaxVertices = m_Desc.iMaxFrames * 2;
@@ -118,18 +118,33 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 	if (m_bHasLastPoint && m_fTimeSinceLastAdd < m_fSampleInterval)
 		return;
 
+
+	if (m_bHasLastPoint)
+	{
+		_float3 prevCenter = { (m_vLastStart.x + m_vLastEnd.x) * 0.5f,
+								(m_vLastStart.y + m_vLastEnd.y) * 0.5f,
+								(m_vLastStart.z + m_vLastEnd.z) * 0.5f };
+		_float3 currCenter = { (vStart.x + vEnd.x) * 0.5f,
+								(vStart.y + vEnd.y) * 0.5f,
+								(vStart.z + vEnd.z) * 0.5f };
+
+		XMVECTOR v0 = XMLoadFloat3(&prevCenter);
+		XMVECTOR v1 = XMLoadFloat3(&currCenter);
+		m_fTotalDistance += XMVectorGetX(XMVector3Length(v1 - v0));
+	}
 	m_bHasLastPoint = true;
 	m_vLastStart = vStart;
 	m_vLastEnd = vEnd;
-
-
-	m_fTimeSinceLastAdd = 0.f;   // ← 추가
-	m_fIdleTime = 0.f;              // 새 포인트 들어오면 "멈춤" 상태 해제
+	m_fTimeSinceLastAdd = 0.f;
+	m_fIdleTime = 0.f;
 	m_fTimeSinceLastRetract = 0.f;
+
+
 	TRAIL_FRAME frame;
 	frame.vStart = vStart;
 	frame.vEnd = vEnd;
 	frame.fAge = 0.f;
+	frame.fDistance = m_fTotalDistance;
 
 	m_dequeFrames.push_front(frame);
 
@@ -162,11 +177,6 @@ void CTrail_CPU::SetColor(const _float4& color)
 	m_vColor.x = color.x;
 	m_vColor.y = color.y;
 	m_vColor.z = color.z;
-	for (auto& vertice : m_vecVertices) {
-		vertice.vColor.x = m_vColor.x;
-		vertice.vColor.y = m_vColor.y;
-		vertice.vColor.z = m_vColor.z;
-	}
 }
 
 HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
@@ -251,40 +261,11 @@ void CTrail_CPU::BuildTrailGeometry()
     if (iCount < 2)
         return;
 
-	std::vector<float> accumulatedLength(iCount);
 
-	accumulatedLength[0] = 0.f;
-	float totalLength = 0.f;
 	float fUVTileScale = 0.5f;
 
 
-	for (uint32_t i = 1; i < iCount; ++i)
-	{
-		const auto& prev = m_dequeFrames[i - 1];
-		const auto& curr = m_dequeFrames[i];
 
-		_float3 prevCenter =
-		{
-			(prev.vStart.x + prev.vEnd.x) * 0.5f,
-			(prev.vStart.y + prev.vEnd.y) * 0.5f,
-			(prev.vStart.z + prev.vEnd.z) * 0.5f
-		};
-
-		_float3 currCenter =
-		{
-			(curr.vStart.x + curr.vEnd.x) * 0.5f,
-			(curr.vStart.y + curr.vEnd.y) * 0.5f,
-			(curr.vStart.z + curr.vEnd.z) * 0.5f
-		};
-
-		XMVECTOR v0 = XMLoadFloat3(&prevCenter);
-		XMVECTOR v1 = XMLoadFloat3(&currCenter);
-
-		totalLength += XMVectorGetX(XMVector3Length(v1 - v0));
-
-		accumulatedLength[i] = totalLength;
-	}
-	m_ScrollOffset = fmodf(totalLength * fUVTileScale , 1.f);
 	for (uint32_t i = 0; i < iCount; ++i)
 	{
 		const auto& frame = m_dequeFrames[i];
@@ -302,7 +283,7 @@ void CTrail_CPU::BuildTrailGeometry()
 		//float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
 		//float fLifeRatio = 1.f - fAgeRatio;
 
-		float t = accumulatedLength[i] * fUVTileScale;
+		float t = frame.fDistance * fUVTileScale;
 
 		// 폭은 시간 기준
 		float fWidthScale = fLifeRatio;
@@ -331,12 +312,14 @@ void CTrail_CPU::BuildTrailGeometry()
 		TRAIL_VERTEX vTop{};
 		vTop.vPosition = vTip;
 		vTop.vUV = { t, 0.f };
+		vTop.vEmissive = m_vEmissive;
 		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), fLifeRatio));
 
 
 		TRAIL_VERTEX vBottom{};
 		vBottom.vPosition = vBase;
 		vBottom.vUV = { t, 1.f };
+		vBottom.vEmissive = m_vEmissive;
 		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), fLifeRatio));
 
 
