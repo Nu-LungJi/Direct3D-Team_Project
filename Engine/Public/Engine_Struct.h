@@ -312,11 +312,15 @@ namespace Engine
 
 	typedef struct GPU_ANIM_DESC
 	{
+		_float4x4 PreTransformMatrix;
+
 		uint32_t iChannelOffset = 0;
 		uint32_t iChannelCount = 0;
 
 		uint32_t iBoneChannelMapOffset = 0;
 		uint32_t iBoneCount = 0;
+
+
 
 		float fDuration = 0.f;
 		float fPadding0 = 0.f;

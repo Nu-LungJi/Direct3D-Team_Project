@@ -339,6 +339,7 @@ HRESULT CResModel::Ready_GPU_Animation()
 		const auto& channels = pAnimation->GetChannels();
 
 		gpuAnim.iChannelCount = static_cast<uint32_t>(channels.size());
+		gpuAnim.PreTransformMatrix = m_PreTransformMatrix;
 
 		/*
 		 * 현재 애니메이션용 BoneChannelMap 공간 생성
