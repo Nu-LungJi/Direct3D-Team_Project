@@ -21,17 +21,22 @@ public:
 	void UpdateGUI();
 
 public:
-	void Enqueue(_string_view svTaskName, _Func func)
+	_bool Enqueue(_string_view svTaskName, _Func func)
 	{
 		{
 			std::lock_guard<std::mutex> lock(m_Mutex);
+			if (m_bStop)
+			{
+				return false;
+			}
 
 			WORKER_TASK task{};
 			task.sTaskName = svTaskName;
-			task.func = func;
-			m_Tasks.push_back(task);
+			task.func = std::move(func);
+			m_Tasks.push_back(std::move(task));
 		}
 		m_Condition.notify_one();
+		return true;
 	}
 
 	template<typename Func, typename... Args>

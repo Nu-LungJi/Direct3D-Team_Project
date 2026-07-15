@@ -803,9 +803,9 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 
 
 #pragma region WORKER_MANAGER
-void CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
+_bool CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
 {
-	m_pWorkerManager->Enqueue(svTaskName, func);
+	return m_pWorkerManager->Enqueue(svTaskName, func);
 }
 #pragma endregion
 
