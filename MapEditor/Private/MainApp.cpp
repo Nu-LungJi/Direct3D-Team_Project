@@ -86,6 +86,8 @@ HRESULT CMainApp::Initialize()
 		}
 	}
 
+	CGameInstance::Get().ImguiEnableDocking(true, true);
+
 	return S_OK;
 }
 
