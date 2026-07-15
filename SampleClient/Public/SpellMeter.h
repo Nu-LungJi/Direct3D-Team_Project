@@ -10,14 +10,14 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CTextureUI final : public E::CUITex
+class CSpellMeter final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CTextureUI, E::CUITex)
+	DECLARE_DERIVED_TYPE(CSpellMeter, E::CUITex)
 
 private:
-	CTextureUI();
-	~CTextureUI() override;
+	CSpellMeter();
+	~CSpellMeter() override;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
@@ -30,15 +30,8 @@ public:
 private:
 	virtual void PlayEffect(uint32_t uiState);
 
-public:
-	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
 private:
-	_bool m_bMouseTracking{false};
-
-private:
-	bool m_bOutline{};
-
-	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CComConstantBuffer* m_pComCBufferPerSpellMeter = nullptr;
 	CButtonComponent* m_pComCButton = nullptr;
 
 private:
@@ -46,9 +39,13 @@ private:
 
 private:
 	std::string m_EffectTag;
+	_float s_fAccumulatedTime;
+	_float m_fCurrentAmount;
 
+private:
+	void StartCooldown(float fCooldownTime);
 public:
-	static E::UPtr<CTextureUI> Create();
+	static E::UPtr<CSpellMeter> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

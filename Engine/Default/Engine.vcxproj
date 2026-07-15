@@ -695,6 +695,7 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli" />

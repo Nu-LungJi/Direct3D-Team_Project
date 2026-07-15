@@ -115,6 +115,9 @@
     <Filter Include="GameObject\UI\Button">
       <UniqueIdentifier>{b95f98b8-dda0-492c-83ef-ee45acfd798b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\Spell">
+      <UniqueIdentifier>{e46f670f-9eb8-4e4d-a6d8-f55d80303b0a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -285,6 +288,9 @@
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\SpellMeter.h">
+      <Filter>GameObject\UI\Spell</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -416,6 +422,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Button.cpp">
       <Filter>GameObject\UI\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\SpellMeter.cpp">
+      <Filter>GameObject\UI\Spell</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

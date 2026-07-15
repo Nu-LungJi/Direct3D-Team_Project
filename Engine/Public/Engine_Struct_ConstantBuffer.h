@@ -92,4 +92,16 @@ namespace Engine
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 
+	struct CB_SpellMeter
+	{
+		float fAmount;         
+		float fDistSpeed;       
+		float fDistStrength;    
+		float fTime;          
+
+		_float4 vFillColor;    
+		_float4 vEmptyColor;    
+		_float4 vRippleColor;  
+	}CB_SPELLMETER;
+	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 }

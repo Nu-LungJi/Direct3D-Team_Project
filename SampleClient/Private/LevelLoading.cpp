@@ -29,6 +29,7 @@
 #include "EffectUI.h"
 #include "TextBox.h"
 #include "Button.h"
+#include "SpellMeter.h"
 
 #include "TestGob.h"
 NS_USING(Client)
@@ -294,6 +295,31 @@ void CLevelLoading::ThreadStart()
 				}
 			}
 		}
+
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "T_WaterCaustics_Disorder_A", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_WaterCaustics_Disorder_A.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "UI_T_arrestomomentum", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_arrestomomentum.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "UI_T_spellmeter_Generic", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_spellmeter_Generic.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "VFX_T_Wavy_N", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_Wavy_N.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "VFX_T_WispyNoise_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_WispyNoise_D.png")))
+		{
+			res->Load();
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "T_CollectionsMeterLine_A", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_CollectionsMeterLine_A.png")))
+		{
+			res->Load();
+		}
 	
 		
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
@@ -315,6 +341,10 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_Button", CButton::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
 				{
 					return false;
 				}
