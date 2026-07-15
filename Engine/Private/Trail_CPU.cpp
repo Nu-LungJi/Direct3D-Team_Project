@@ -69,6 +69,7 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
         return E_FAIL;
 
     m_vecVertices.reserve(iMaxVertices);
+	m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONDISTORTION");
 
     return S_OK;
 }
@@ -146,6 +147,68 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 	frame.fAge = 0.f;
 	frame.fDistance = m_fTotalDistance;
 
+	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
+	{
+		XMMATRIX view = CGameInstance::Get().GetActiveCamera()->GetView();
+		XMMATRIX invView = XMMatrixInverse(nullptr, view);
+
+		XMVECTOR camPos = invView.r[3];
+		XMVECTOR camRight = XMVector3Normalize(invView.r[0]);
+
+		XMVECTOR start = XMLoadFloat3(&vStart);
+		XMVECTOR end = XMLoadFloat3(&vEnd);
+		XMVECTOR mid = (start + end) * 0.5f;
+
+		XMVECTOR viewDir = XMVector3Normalize(mid - camPos);
+
+		XMVECTOR pathDir;
+
+		if (!m_dequeFrames.empty())
+		{
+			const auto& prev = m_dequeFrames.front();
+
+			XMVECTOR prevMid =
+				(XMLoadFloat3(&prev.vStart) +
+					XMLoadFloat3(&prev.vEnd)) * 0.5f;
+
+			XMVECTOR delta = mid - prevMid;
+
+			// 움직이지 않았으면 이전 WidthDir 유지
+			if (XMVectorGetX(XMVector3LengthSq(delta)) < 1e-6f)
+			{
+				frame.vWidthDir = prev.vWidthDir;
+			}
+			else
+			{
+				pathDir = XMVector3Normalize(delta);
+
+				XMVECTOR widthDir = XMVector3Cross(viewDir, pathDir);
+
+				if (XMVectorGetX(XMVector3LengthSq(widthDir)) < 1e-6f)
+				{
+					widthDir = camRight;
+				}
+				else
+				{
+					widthDir = XMVector3Normalize(widthDir);
+
+					if (XMVectorGetX(XMVector3Dot(camRight, widthDir)) < 0.f)
+						widthDir = -widthDir;
+				}
+
+				XMStoreFloat3(&frame.vWidthDir, widthDir);
+			}
+		}
+		else
+		{
+			frame.vWidthDir = { 1.f, 0.f, 0.f };
+		}
+	}
+	else
+	{
+		frame.vWidthDir = { 0.f,0.f,0.f };
+	}
+
 	m_dequeFrames.push_front(frame);
 
 	while (m_dequeFrames.size() > m_Desc.iMaxFrames)
@@ -204,7 +267,9 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
     pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
 
-
+	const auto& rasterizer = CGameInstance::Get().GetResourceFirst<CResRasterizerState>(
+		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 
 
     {
@@ -226,11 +291,12 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 
     pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
     pContext->PSSetShaderResources(1, 1, m_pNoiseTexture->GetSRV().GetAddressOf());
+    pContext->PSSetShaderResources(2, 1, m_pDistortionTexture->GetSRV().GetAddressOf());
 
     pContext->Draw((UINT)m_vecVertices.size(), 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr };
-    pContext->PSSetShaderResources(0, 2, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr};
+    pContext->PSSetShaderResources(0, 3, nullSRV);
 
 	ID3D11Buffer* nullCBuffer[] = { nullptr };
 	pContext->PSSetConstantBuffers(0, 1, nullCBuffer);
@@ -240,7 +306,7 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 	//	const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
 	//	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 	//}
-
+	pContext->RSSetState(nullptr);
     return S_OK;
 }
 
@@ -255,59 +321,90 @@ void CTrail_CPU::ClearByOwner(uint32_t ownerID)
 
 void CTrail_CPU::BuildTrailGeometry()
 {
-    m_vecVertices.clear();
+	m_vecVertices.clear();
 
-    uint32_t iCount = (uint32_t)m_dequeFrames.size();
-    if (iCount < 2)
-        return;
 
+	uint32_t iCount = (uint32_t)m_dequeFrames.size();
+	if (iCount < 2)
+		return;
 
 	float fUVTileScale = 0.5f;
 
+	// 카메라 월드 위치 + 역행렬을 루프 밖에서 한 번만 계산 (재사용)
+	//_float3 vCamPos = { 0.f, 0.f, 0.f };
+	//XMVECTOR camRight = XMVectorSet(1.f, 0.f, 0.f, 0.f); // 기본값 (LOCAL 모드에선 안 쓰임)
 
+	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
+	{
+		XMMATRIX matView = CGameInstance::Get().GetActiveCamera()->GetView();
+		XMMATRIX matViewInv = XMMatrixInverse(nullptr, matView);
+		//XMStoreFloat3(&vCamPos, matViewInv.r[3]);
+		//camRight = XMVector3Normalize(matViewInv.r[0]);
+	}
+
+	//XMVECTOR prevWidthDir = XMVectorZero();
+	//bool hasPrevWidth = false;
 
 	for (uint32_t i = 0; i < iCount; ++i)
 	{
 		const auto& frame = m_dequeFrames[i];
-		float fAgeRatio = frame.fAge / m_Desc.fMaxDuration; // 0(방금 생김) ~ 1(수명 다함)
-
-		// "얼마나 죽었는지"를 이즈 아웃으로 계산 → 초반에 빨리 죽고, 후반은 천천히 남은 채 유지되다 사라짐
-		float fDeath = powf(fAgeRatio, 3.f);   // EaseIn cubic (그냥 pow만 써도 됨)
+		float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
+		float fDeath = powf(fAgeRatio, 3.f);
 		float fLifeRatio = 1.f - fDeath;
-    // 알파: 초반에 빨리 옅어짐
-		//float fWidthScale = powf(fLifeRatio, 2.f); // 폭: 거의 안 줄다가 막판에만
-
-		//float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
-		//float fLifeRatio = 1.f - fAgeRatio;
-		//fLifeRatio = powf(fLifeRatio, 10.f);
-		//float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
-		//float fLifeRatio = 1.f - fAgeRatio;
-
 		float t = frame.fDistance * fUVTileScale;
-
-		// 폭은 시간 기준
 		float fWidthScale = fLifeRatio;
-		//float fWidthScale = 1.f;
-		_float3 vMid =
-		{
-			(frame.vStart.x + frame.vEnd.x) * 0.5f,
-			(frame.vStart.y + frame.vEnd.y) * 0.5f,
-			(frame.vStart.z + frame.vEnd.z) * 0.5f
-		};
 
-		_float3 vTip =
-		{
-			vMid.x + (frame.vEnd.x - vMid.x) * fWidthScale,
-			vMid.y + (frame.vEnd.y - vMid.y) * fWidthScale,
-			vMid.z + (frame.vEnd.z - vMid.z) * fWidthScale
-		};
+		_float3 vTip, vBase;
 
-		_float3 vBase =
+		if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::LOCAL)
 		{
-			vMid.x + (frame.vStart.x - vMid.x) * fWidthScale,
-			vMid.y + (frame.vStart.y - vMid.y) * fWidthScale,
-			vMid.z + (frame.vStart.z - vMid.z) * fWidthScale
-		};
+			_float3 vMid =
+			{
+				(frame.vStart.x + frame.vEnd.x) * 0.5f,
+				(frame.vStart.y + frame.vEnd.y) * 0.5f,
+				(frame.vStart.z + frame.vEnd.z) * 0.5f
+			};
+
+			vTip =
+			{
+				vMid.x + (frame.vEnd.x - vMid.x) * fWidthScale,
+				vMid.y + (frame.vEnd.y - vMid.y) * fWidthScale,
+				vMid.z + (frame.vEnd.z - vMid.z) * fWidthScale
+			};
+
+			vBase =
+			{
+				vMid.x + (frame.vStart.x - vMid.x) * fWidthScale,
+				vMid.y + (frame.vStart.y - vMid.y) * fWidthScale,
+				vMid.z + (frame.vStart.z - vMid.z) * fWidthScale
+			};
+		}
+		else // VIEW
+		{
+			XMVECTOR vStartVec = XMLoadFloat3(&frame.vStart);
+			XMVECTOR vEndVec = XMLoadFloat3(&frame.vEnd);
+
+			XMVECTOR vMidVec = (vStartVec + vEndVec) * 0.5f;
+
+			float fHalfWidth =
+				XMVectorGetX(
+					XMVector3Length(vEndVec - vStartVec)) * 0.5f;
+
+			XMVECTOR vWidthDir =
+				XMLoadFloat3(&frame.vWidthDir);
+
+			float fScaledHalfWidth =
+				fHalfWidth * fWidthScale;
+
+			XMVECTOR vTipVec =
+				vMidVec + vWidthDir * fScaledHalfWidth;
+
+			XMVECTOR vBaseVec =
+				vMidVec - vWidthDir * fScaledHalfWidth;
+
+			XMStoreFloat3(&vTip, vTipVec);
+			XMStoreFloat3(&vBase, vBaseVec);
+		}
 
 		TRAIL_VERTEX vTop{};
 		vTop.vPosition = vTip;
@@ -315,18 +412,15 @@ void CTrail_CPU::BuildTrailGeometry()
 		vTop.vEmissive = m_vEmissive;
 		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), fLifeRatio));
 
-
 		TRAIL_VERTEX vBottom{};
 		vBottom.vPosition = vBase;
 		vBottom.vUV = { t, 1.f };
 		vBottom.vEmissive = m_vEmissive;
 		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), fLifeRatio));
 
-
 		m_vecVertices.push_back(vTop);
 		m_vecVertices.push_back(vBottom);
 	}
-
 }
 UPtr<CParticle> CTrail_CPU::Create(void* pArg)
 {

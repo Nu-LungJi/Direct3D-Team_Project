@@ -114,5 +114,20 @@ namespace Engine
 		_float3 pad;
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
+
+	struct CB_TRAIL_OPTION 
+	{
+		float g_fNoiseStrength; // 0~1
+		float g_fDistortion; // 0~0.1
+		float g_fGlowStrength; // 0~3
+		float g_fLengthGlow; // 0~2
+
+		float g_fDissolve;
+		float g_fUseNoise;
+		float g_fUseDistortion;
+		float g_fUseDissolve;
+	};
+	static_assert(sizeof(CB_TRAIL_OPTION) % 16 == 0);
+
 }
 
