@@ -28,7 +28,7 @@ float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
 {
     float4 LightPos = mul(_WorldPos, g_matShadowLightViewProj);
     
-    float2 ShadowMapUV;
+    float2 ShadowMapUV;  
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
     ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
     
