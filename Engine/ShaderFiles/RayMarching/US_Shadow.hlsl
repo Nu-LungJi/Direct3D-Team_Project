@@ -26,13 +26,15 @@ struct GS_OUT
 [maxvertexcount(18)]
 void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
 {
+    DynamicLight DLight = AffectedLight[Face];
+    
     for (int Face = 0; Face < 6; ++Face)
     {
         GS_OUT OUT;
         OUT.LayerIndex = Face;
         for (int v = 0; v < 3; ++v)
         {
-            OUT.Position = mul(IN[v].WorldPos, g_InvViewProj[Face]);
+            OUT.Position = mul(IN[v].WorldPos, AffectedLight[Face].g_LightViewProj[Face]);
             _OutStream.Append(OUT);
         }
         

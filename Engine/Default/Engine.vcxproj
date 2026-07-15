@@ -398,7 +398,6 @@
     <ClInclude Include="..\public\Trail_CPU.h" />
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
-   
     <ClInclude Include="..\Public\VolumetricFog.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
@@ -747,7 +746,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl" />
-    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Shadow.hlsl">
+    <FxCompile Include="..\ShaderFiles\RayMarching\US_Shadow.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>

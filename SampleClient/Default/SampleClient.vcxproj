@@ -204,6 +204,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\public\LevelColliderLoader.h" />
+    <ClInclude Include="..\Public\LevelLightMapLoader.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
     <ClInclude Include="..\public\LevelPhysXLoader.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
@@ -287,6 +288,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClCompile>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
+    <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
     <ClCompile Include="..\private\LevelColliderLoader.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />

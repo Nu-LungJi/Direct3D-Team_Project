@@ -862,12 +862,7 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Shadow", "./ShaderFiles/RayMarching/CS_Shadow.hlsl"))
-	{
-		if (FAILED(res->Load()))    return E_FAIL;
-	}
-
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}

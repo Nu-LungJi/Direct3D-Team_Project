@@ -520,7 +520,7 @@ SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag
 	}
 	return nullptr;
 }
-VOID CRenderer::Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+VOID CRenderer::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
 	/////////////////////////////////////
 	if (_TextureArray && *_TextureArray) {
 		(*_TextureArray)->Release();

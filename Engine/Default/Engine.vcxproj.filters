@@ -1601,7 +1601,7 @@
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_Volumetric.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\RayMarching\CS_Shadow.hlsl">
+    <FxCompile Include="..\ShaderFiles\RayMarching\US_Shadow.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_HizMipPyramid.hlsl">
