@@ -89,23 +89,20 @@ void CWeapon::Update(E::_float fTimeDelta)
 	vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
 	auto a = CGameInstance::Get().GetParticle("PRACTRAIL", "PRACTRAIL");
 	static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-	//if (CGameInstance::Get().KeyDown(DIK_O)) {
-	//	//static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.5f, 0.5f, 0.5f, 1.f));
-	//	static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-	//}
-//	//m_pComModelInstance->GetModel()->get
-	//if(CGameInstance::Get().KeyPressing(DIK_P))
-	//	m_pComTransform->GoStraight(fTimeDelta*5);
-	////if (CGameInstance::Get().KeyPressing(DIK_P))
-	////	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
-	//if (CGameInstance::Get().KeyPressing(DIK_I))	
-	//	m_pComTransform->GoUp(fTimeDelta * 5);
-	////if (CGameInstance::Get().KeyPressing(DIK_O))
-	////	m_pComTransform->GoRight(fTimeDelta * 5);
-	//if (CGameInstance::Get().KeyDown(DIK_L)) {
-	//		static_cast<CTrail_CPU*>(a)->AddPoint(_float3(5.f, 5.f, 5.f) , _float3(5.f, 5.3f, 5.f));
-	//	static_cast<CTrail_CPU*>(a)->AddPoint(_float3(10.f, 5.f, 5.f), _float3(10.f, 5.3f, 5.f));
-	//}
+	if (CGameInstance::Get().KeyDown(DIK_O)) {
+		//static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.5f, 0.5f, 0.5f, 1.f));
+		static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
+	}
+
+	if(CGameInstance::Get().KeyPressing(DIK_P))
+		m_pComTransform->GoStraight(fTimeDelta*15);
+	//if (CGameInstance::Get().KeyPressing(DIK_P))
+	//	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
+	if (CGameInstance::Get().KeyPressing(DIK_I))	
+		m_pComTransform->GoUp(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_O))
+		m_pComTransform->GoRight(fTimeDelta *15);
+
 	Weapon_Throw(fTimeDelta);
 }
 
