@@ -109,7 +109,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -134,7 +134,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -158,11 +158,11 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\CreateMapMeshCommand.h" />
     <ClInclude Include="..\Public\DeleteMapMeshCommand.h" />
     <ClInclude Include="..\Public\EditorCommandManager.h" />
-	<ClInclude Include="..\Public\EditorSelection.h" />
+    <ClInclude Include="..\Public\EditorSelection.h" />
     <ClInclude Include="..\Public\GUIWindow.h" />
     <ClInclude Include="..\Public\Hierarchy.h" />
     <ClInclude Include="..\Public\IEditorCommand.h" />
-	<ClInclude Include="..\Public\MapMeshCommandCommon.h" />
+    <ClInclude Include="..\Public\MapMeshCommandCommon.h" />
     <ClInclude Include="..\Public\Inspector.h" />
     <ClInclude Include="..\Public\MapEditorTerrain.h" />
     <ClInclude Include="..\Public\MapChunkGUI.h" />
@@ -187,14 +187,14 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\CreateMapMeshCommand.cpp" />
     <ClCompile Include="..\Private\DeleteMapMeshCommand.cpp" />
     <ClCompile Include="..\Private\EditorCommandManager.cpp" />
-	<ClCompile Include="..\Private\EditorSelection.cpp" />
+    <ClCompile Include="..\Private\EditorSelection.cpp" />
     <ClCompile Include="..\Private\GUIWindow.cpp" />
     <ClCompile Include="..\Private\Hierarchy.cpp" />
     <ClCompile Include="..\Private\Inspector.cpp" />
     <ClCompile Include="..\Private\MapEditorTerrain.cpp" />
     <ClCompile Include="..\Private\MapChunkGUI.cpp" />
     <ClCompile Include="..\Private\MapEditorGUI.cpp" />
-	<ClCompile Include="..\Private\MapMeshCommandCommon.cpp" />
+    <ClCompile Include="..\Private\MapMeshCommandCommon.cpp" />
     <ClCompile Include="..\Private\MapPickingPass.cpp" />
     <ClCompile Include="..\Private\NavMeshGUI.cpp" />
     <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp" />
