@@ -365,6 +365,14 @@ public:
 	uint32_t GetRootBoneIndex() const {
 		return m_iRootBoneIndex;
 	}
+
+	_bool IsBlending() const { return m_bBlending && m_PrevAnimState.IsValid(); }
+	const ANIMSTRUCT& GetPrevAnimState() const { return m_PrevAnimState; }
+	_float GetBlendWeight() const
+	{
+		return m_fBlendDuration > 0.f ? std::clamp(m_fBlendTime / m_fBlendDuration, 0.f, 1.f) : 1.f;
+	}
+	void Advance_GPUBlend(_float fTimeDelta);
 private:
 	CComModelInstance* m_pModelInstance;
 

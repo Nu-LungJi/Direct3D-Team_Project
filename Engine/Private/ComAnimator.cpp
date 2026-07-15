@@ -11,7 +11,7 @@ NS_USING(Engine)
 void CComAnimator::UpdateGUI()
 {
 	//if (ImGui::Button("save")) {
-	//	CGameInstance::Get().JsonSerialize("./Test.json", m_CurAnimState);
+	//	CGameInstance::Get( ).JsonSerialize("./Test.json", m_CurAnimState);
 	//}
 	//if (ImGui::Button("load")) {
 	//	ANIMSTRUCT m_Cur;
@@ -280,6 +280,7 @@ HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
 	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
 
 	Update_AnimState(fTimeDelta, m_CurAnimState);
+	Advance_GPUBlend(fTimeDelta);
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
 
@@ -365,6 +366,7 @@ HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
 	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
 
 	Update_ActionState(fTimeDelta, m_CurAnimState);
+	Advance_GPUBlend(fTimeDelta);
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
 
@@ -1002,6 +1004,20 @@ void CComAnimator::Blend_Anim(_float fTimeDelta)
 		m_fBlendTime = 0.f;
 		m_fBlendDuration = 0.f;
     }
+}
+
+void CComAnimator::Advance_GPUBlend(_float fTimeDelta)
+{
+	if (!m_bBlending)
+		return;
+
+	m_fBlendTime += fTimeDelta;
+	if (GetBlendWeight() >= 1.f)
+	{
+		m_bBlending = false;
+		m_fBlendTime = 0.f;
+		m_fBlendDuration = 0.f;
+	}
 }
 
 void CComAnimator::SetTrackPosition(_float fTrackPosition)

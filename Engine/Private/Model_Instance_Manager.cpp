@@ -64,6 +64,15 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 
 	InstanceData.iRootBoneIndex = pAnimator->GetRootBoneIndex();
 
+	if (pAnimator->IsBlending())
+	{
+		const auto& PrevAnimState = pAnimator->GetPrevAnimState();
+		InstanceData.iPrevAnimIndex = static_cast<uint32_t>(PrevAnimState.iAnimIndex);
+		InstanceData.fPrevTrackPosition = PrevAnimState.fTrackPosition;
+		InstanceData.fBlendWeight = pAnimator->GetBlendWeight();
+		InstanceData.bBlending = 1;
+	}
+
 	Add_Instance(pModelInstance, InstanceData);
 }
 

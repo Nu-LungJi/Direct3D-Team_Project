@@ -297,6 +297,13 @@ namespace Engine
 	{
 		_float4x4 BindLocalMatrix;
 
+		// Bind pose도 애니메이션 키와 같은 SRT 형태로 보관한다.
+		// GPU 블렌딩 시 행렬 원소를 직접 보간하지 않기 위해 사용한다.
+		_float3 BindScale{ 1.f, 1.f, 1.f };
+		_float4 BindRotation{ 0.f, 0.f, 0.f, 1.f };
+		_float3 BindTranslation{ 0.f, 0.f, 0.f };
+		float   fBindPadding = 0.f;
+
 		int32_t  iParentBoneIndex = -1;
 		uint32_t iDepth = 0;
 		uint32_t iPadding0 = 0;
@@ -370,6 +377,11 @@ namespace Engine
 		_float fTrackPosition = 0.f;
 		
 		uint32_t iRootBoneIndex = 0;
+
+		uint32_t iPrevAnimIndex = 0;
+		_float fPrevTrackPosition = 0.f;
+		_float fBlendWeight = 1.f;
+		uint32_t bBlending = 0;
 	}GPU_ANIM_INSTANCE_DATA;
 
 	typedef struct MODEL_INSTANCE_KEY

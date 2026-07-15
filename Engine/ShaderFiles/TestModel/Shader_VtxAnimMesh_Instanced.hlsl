@@ -6,7 +6,11 @@ struct GPU_ANIM_INSTANCE_DATA
     uint iAnimIndex;
     uint iFlags;
     float fTrackPosition;
-    float fPadding;
+    uint RootBoneIndex;
+    uint iPrevAnimIndex;
+    float fPrevTrackPosition;
+    float fBlendWeight;
+    uint bBlending;
 };
 
 

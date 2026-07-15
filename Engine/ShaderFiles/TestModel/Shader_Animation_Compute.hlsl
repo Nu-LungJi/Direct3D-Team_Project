@@ -1,8 +1,8 @@
-struct GPU_BONE_DESC { float4x4 BindLocalMatrix; int iParentBoneIndex; uint iDepth; uint iPadding0; uint iPadding1; };
+struct GPU_BONE_DESC { float4x4 BindLocalMatrix; float3 BindScale; float4 BindRotation; float3 BindTranslation; float fBindPadding; int iParentBoneIndex; uint iDepth; uint iPadding0; uint iPadding1; };
 struct GPU_ANIM_DESC { uint iChannelOffset; uint iChannelCount; uint iBoneChannelMapOffset; uint iBoneCount; float fDuration; float3 Padding; };
 struct GPU_CHANNEL_DESC { uint iBoneIndex; uint iKeyFrameOffset; uint iKeyFrameCount; uint Padding; };
 struct GPU_KEYFRAME_DESC { float3 vScale; float fTrackPosition; float4 vRotation; float3 vTranslation; float Padding; };
-struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; uint RootBoneIndex; };
+struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; uint RootBoneIndex; uint iPrevAnimIndex; float fPrevTrackPosition; float fBlendWeight; uint bBlending; };
 
 StructuredBuffer<GPU_BONE_DESC> gBones : register(t0);
 StructuredBuffer<GPU_ANIM_DESC> gAnimations : register(t1);
@@ -24,16 +24,43 @@ float4x4 QuaternionMatrix(float4 q)
                     0,      0,      0,      1);
 }
 
-float4x4 SampleLocal(uint boneIndex, uint RootBoneIndex, GPU_ANIM_DESC animation, float time)
+struct LOCAL_POSE
 {
+    float3 vScale;
+    float4 vRotation;
+    float3 vTranslation;
+};
+
+float4x4 MakeLocalMatrix(LOCAL_POSE pose)
+{
+    float4x4 result = mul(
+        float4x4(pose.vScale.x, 0, 0, 0, 0, pose.vScale.y, 0, 0, 0, 0, pose.vScale.z, 0, 0, 0, 0, 1),
+        QuaternionMatrix(normalize(pose.vRotation)));
+    result[3] = float4(pose.vTranslation, 1);
+    return result;
+}
+
+LOCAL_POSE SampleLocalPose(uint boneIndex, uint RootBoneIndex, GPU_ANIM_DESC animation, float time)
+{
+    LOCAL_POSE result;
     uint channelIndex = gBoneChannelMap[animation.iBoneChannelMapOffset+boneIndex];
     if(channelIndex==0xffffffff)
-        return gBones[boneIndex].BindLocalMatrix;
+    {
+        result.vScale = gBones[boneIndex].BindScale;
+        result.vRotation = gBones[boneIndex].BindRotation;
+        result.vTranslation = gBones[boneIndex].BindTranslation;
+        return result;
+    }
 
     GPU_CHANNEL_DESC channel = gChannels[channelIndex];
 
     if(channel.iKeyFrameCount==0)
-        return gBones[boneIndex].BindLocalMatrix;
+    {
+        result.vScale = gBones[boneIndex].BindScale;
+        result.vRotation = gBones[boneIndex].BindRotation;
+        result.vTranslation = gBones[boneIndex].BindTranslation;
+        return result;
+    }
 
     uint keyIndex=channel.iKeyFrameCount-1;
 
@@ -51,17 +78,29 @@ float4x4 SampleLocal(uint boneIndex, uint RootBoneIndex, GPU_ANIM_DESC animation
     GPU_KEYFRAME_DESC b = gKeyFrames[channel.iKeyFrameOffset+min(keyIndex+1,channel.iKeyFrameCount-1)];
 
     float t = saturate((time-a.fTrackPosition)/max(b.fTrackPosition-a.fTrackPosition,0.00001));
-    float3 scale = lerp(a.vScale,b.vScale,t);
+    result.vScale = lerp(a.vScale,b.vScale,t);
     // FXC does not provide an HLSL slerp intrinsic.  Use shortest-path NLERP.
     float4 rotationB = b.vRotation;
     if (dot(a.vRotation, rotationB) < 0.0f)
         rotationB = -rotationB;
-    float4x4 result = mul(float4x4(scale.x,0,0,0, 0,scale.y,0,0, 0,0,scale.z,0, 0,0,0,1),QuaternionMatrix(normalize(lerp(a.vRotation,rotationB,t))));
-    result[3] = float4(lerp(a.vTranslation,b.vTranslation,t),1);
+    result.vRotation = normalize(lerp(a.vRotation,rotationB,t));
+    result.vTranslation = lerp(a.vTranslation,b.vTranslation,t);
     if (boneIndex == RootBoneIndex)
     {
-        result[3].xyz = 0.0f;
+        result.vTranslation = 0.0f;
     }
+    return result;
+}
+
+LOCAL_POSE BlendPose(LOCAL_POSE a, LOCAL_POSE b, float weight)
+{
+    LOCAL_POSE result;
+    result.vScale = lerp(a.vScale, b.vScale, weight);
+    float4 rotationB = b.vRotation;
+    if (dot(a.vRotation, rotationB) < 0.0f)
+        rotationB = -rotationB;
+    result.vRotation = normalize(lerp(a.vRotation, rotationB, weight));
+    result.vTranslation = lerp(a.vTranslation, b.vTranslation, weight);
     return result;
 }
 
@@ -73,18 +112,34 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
     GPU_ANIM_INSTANCE_DATA instance = gInstances[instanceIndex];
 
     GPU_ANIM_DESC animation = gAnimations[instance.iAnimIndex];
-    // BoneÀÇ °³¼ö°¡ ³Ñ¾î °¬À» °æ¿ì 512°³
+    // Boneì˜ ê°œìˆ˜ê°€ ë„˜ì–´ ê°”ì„ ê²½ìš° 512ê°œ
     if (boneIndex >= animation.iBoneCount)
     {
         gFinalBoneMatrices[outputIndex] = float4x4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
         return;
     }
 
-    float4x4 combined = SampleLocal(boneIndex, instance.RootBoneIndex,animation, instance.fTrackPosition);
+    LOCAL_POSE localPose = SampleLocalPose(boneIndex, instance.RootBoneIndex, animation, instance.fTrackPosition);
+    if (instance.bBlending != 0)
+    {
+        GPU_ANIM_DESC previousAnimation = gAnimations[instance.iPrevAnimIndex];
+        LOCAL_POSE previousPose = SampleLocalPose(boneIndex, instance.RootBoneIndex, previousAnimation, instance.fPrevTrackPosition);
+        localPose = BlendPose(previousPose, localPose, saturate(instance.fBlendWeight));
+    }
+    float4x4 local = MakeLocalMatrix(localPose);
 
+    float4x4 combined = local;
     int parentIndex = gBones[boneIndex].iParentBoneIndex;
     while(parentIndex>=0){
-        combined = mul(combined, SampleLocal((uint) parentIndex, instance.RootBoneIndex, animation, instance.fTrackPosition));
+        LOCAL_POSE parentPose = SampleLocalPose((uint) parentIndex, instance.RootBoneIndex, animation, instance.fTrackPosition);
+        if (instance.bBlending != 0)
+        {
+            GPU_ANIM_DESC previousAnimation = gAnimations[instance.iPrevAnimIndex];
+            LOCAL_POSE previousParentPose = SampleLocalPose((uint) parentIndex, instance.RootBoneIndex, previousAnimation, instance.fPrevTrackPosition);
+            parentPose = BlendPose(previousParentPose, parentPose, saturate(instance.fBlendWeight));
+        }
+        float4x4 parentLocal = MakeLocalMatrix(parentPose);
+        combined = mul(combined, parentLocal);
         parentIndex=gBones[parentIndex].iParentBoneIndex;
     }
 

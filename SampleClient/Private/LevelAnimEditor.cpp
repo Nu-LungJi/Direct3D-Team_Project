@@ -155,7 +155,7 @@ void CLevelAnimEditor::UpdateGUI()
 			auto anim = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
 			
 
-			anim->Play_Anim((int32_t)Randf(0.f, 100.f), true, 0.2f);
+			anim->Play_Anim((int32_t)Randf(0.f, 1.f), true, 0.2f);
 		}
 	}
 

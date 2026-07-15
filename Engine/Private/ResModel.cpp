@@ -259,6 +259,19 @@ HRESULT CResModel::Ready_GPU_Bone()
 
 		gpuBone.BindLocalMatrix =*pBone->Get_TransformationMatrixPtr();
 
+		_vector vScale{};
+		_vector vRotation{};
+		_vector vTranslation{};
+		if (!XMMatrixDecompose(&vScale, &vRotation, &vTranslation,
+			XMLoadFloat4x4(&gpuBone.BindLocalMatrix)))
+		{
+			return E_FAIL;
+		}
+
+		XMStoreFloat3(&gpuBone.BindScale, vScale);
+		XMStoreFloat4(&gpuBone.BindRotation, XMQuaternionNormalize(vRotation));
+		XMStoreFloat3(&gpuBone.BindTranslation, vTranslation);
+
 		gpuBone.iParentBoneIndex =pBone->GetParendBoneIndex();
 
 		gpuBone.iDepth = pBone->Get_Depth();
