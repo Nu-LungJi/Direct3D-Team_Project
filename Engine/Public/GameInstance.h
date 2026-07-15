@@ -415,6 +415,7 @@ public:
 
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
+	_float2 GetDisplayScreenSize() const { return m_vDisplayScreenSize; }
 	HWND GetHwnd() const { return m_hWnd; }
 	_bool GetMouseFix() const { return m_bMouseFix; }
 
@@ -425,6 +426,7 @@ public:
 	uint64_t GetFrameCnt() const { return m_iFrameCnt; }
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
+	_float2 m_vDisplayScreenSize{ 1920.f, 1280.f };
 	HWND m_hWnd{};
 	_bool m_bMouseFix{};
 	uint64_t m_iFrameCnt{};

@@ -22,9 +22,11 @@ CCameraObject::~CCameraObject()
 
 void CCameraObject::FSRCameraJitter()
 {
+	auto clientSize = CGameInstance::Get().GetClientScreenSize();
+	auto displaySize = CGameInstance::Get().GetDisplayScreenSize();
 	auto frameIndex = CGameInstance::Get().GetFrameCnt();
-	int32_t fsrIndex = static_cast<int32_t>(frameIndex % INT32_MAX);
-	const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(1280, 1920);
+	auto fsrIndex = static_cast<int32_t>(frameIndex % INT32_MAX);
+	const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(clientSize.x, displaySize.x);
 	float jitterX = 0.0f, jitterY = 0.0f;
 	ffxFsr2GetJitterOffset(&jitterX, &jitterY, fsrIndex, jitterPhaseCount);
 	m_pairCameraJitter.first = jitterX;

@@ -26,12 +26,16 @@ HRESULT CMyFSR2_2::Initialize()
 	
 	FfxFsr2ContextDescription fsrDesc = {};
 
+	_float2 clientSize = CGameInstance::Get().GetClientScreenSize();
+	_float2 displaySize = CGameInstance::Get().GetDisplayScreenSize();
+
+
 	// 1. 기본 설정
 	fsrDesc.flags = FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE | FFX_FSR2_ENABLE_AUTO_EXPOSURE;
-	fsrDesc.maxRenderSize.width = 1280;
-	fsrDesc.maxRenderSize.height = 720;
-	fsrDesc.displaySize.width = 1920;
-	fsrDesc.displaySize.height = 1080;
+	fsrDesc.maxRenderSize.width = clientSize.x;
+	fsrDesc.maxRenderSize.height = clientSize.y;
+	fsrDesc.displaySize.width = displaySize.x;
+	fsrDesc.displaySize.height = displaySize.y;
 
 	// 2. Device (DX11 디바이스 포인터)
 	// FfxDevice는 내부적으로 void*로 정의된 경우가 많으므로 캐스팅해서 넣습니다.
@@ -84,10 +88,14 @@ HRESULT CMyFSR2_2::Execute(const ExecuteDesc& desc)
 	dispatchDesc.motionVectors = ffxGetResourceDX11(&m_pImpl->context, desc.pMotionVectorTex2D, L"desc.pMotionVectorTex2D");
 	dispatchDesc.output = ffxGetResourceDX11(&m_pImpl->context, desc.pOutputUAVTex2D, L"desc.pOutputUAVTex2D");
 
+
+	_float2 clientSize = CGameInstance::Get().GetClientScreenSize();
+	
+
 	// 3. 카메라/프레임 정보
-	dispatchDesc.renderSize = { 1280, 720 };
+	dispatchDesc.renderSize = { (uint32_t)clientSize.x, (uint32_t)clientSize.y };
 	dispatchDesc.jitterOffset = { desc.fCurrentJitterX, desc.fCurrentJitterY };
-	dispatchDesc.motionVectorScale = { -1280.0f, -720.0f }; // 엔진 모션벡터 사양에 맞게
+	dispatchDesc.motionVectorScale = { -clientSize.x, -clientSize.y }; // 엔진 모션벡터 사양에 맞게
 	dispatchDesc.frameTimeDelta = desc.fDeltaTime * 1000.0f; // ms변환
 	dispatchDesc.cameraNear = desc.fNear;
 	dispatchDesc.cameraFar = desc.fFar;
