@@ -24,6 +24,12 @@ public:
 
 	HRESULT ImportFBXFolder(const std::string& strLevelName,const std::string& strSourceFolder);
 	HRESULT AssimpFBX(const std::string& fbxFileName);
+	// Whole-map-only path. Splits a static FBX in root-local XYZ space and writes
+	// one regular static-model binary per render chunk plus a JSON manifest.
+	HRESULT ImportWholeMapFBX(
+		const std::string& fbxFileName,
+		const std::string& outputDirectory,
+		float chunkSize);
 	
 	
 	HRESULT	ExportFBX(const std::string& outpath);
@@ -68,6 +74,10 @@ public:
 		const std::filesystem::path& dstDir
 	) const;
 private:
+	HRESULT ExportStaticMeshSubset(
+		const std::filesystem::path& outpath,
+		const std::vector<std::shared_ptr<CMesh>>& meshes) const;
+
 	std::unordered_set<std::string> LoadMapFBXNamesFromJsonFolder(
 		const std::string& strJsonFolder
 	);

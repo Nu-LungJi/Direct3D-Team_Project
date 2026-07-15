@@ -113,6 +113,7 @@ cbuffer CB_BONES : register(b2)
     matrix g_BoneMatrices[512];
 };
 
+
 cbuffer CB_MATERIAL : register(b3)
 {
     float3 EmissiveColor;
@@ -170,11 +171,14 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
-SamplerState LinearWrap : register(s0);
-SamplerState LinearClamp : register(s1);
-SamplerState PointWrap : register(s2);
-SamplerState PointClamp : register(s3);
-SamplerState PointWrapNoMip : register(s4);
-SamplerState AnisotropicWrap : register(s5);
+
+
+
+SamplerState LinearWrap                 : register(s0);
+SamplerState LinearClamp                : register(s1);
+SamplerState PointWrap                  : register(s2);
+SamplerState PointClamp                 : register(s3);
+SamplerState PointWrapNoMip             : register(s4);
+SamplerState AnisotropicWrap            : register(s5);
 
 SamplerComparisonState ShadowSampler : register(s6);

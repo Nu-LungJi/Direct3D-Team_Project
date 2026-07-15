@@ -1,12 +1,15 @@
 #pragma once
 #include "Engine_Defines.h"
 #include "IRenderable.h"
+#include "HizBuffer.h"
+
 NS_BEGIN(Engine)
 class CGameObject;
 class CResOffscreenTexture;
 class CResDynamicTexture2D;
 
 class CMyGFSDK_SSAO;
+class CMyFSR2_2;
 
 class CRenderer final : public CEngineBase
 {
@@ -43,12 +46,15 @@ private:
 
 	HRESULT InitilizePostProcess();
 	HRESULT InitializeGFSDK_SSAO();
+	HRESULT InitializeFSR2_2();
 	HRESULT InitializeBloom();
 	HRESULT InitializeVolumetricEffect();
 
 public:
 	HRESULT Draw();
 	void FrameEnd();
+	const CHizBuffer* GetPrevHizBuffer() const { return m_bHasPrevHizBuffer ? m_pPrevHizBuffer.get() : nullptr; }
+	_bool HasPrevHizBuffer() const { return m_bHasPrevHizBuffer && m_pPrevHizBuffer != nullptr; }
 
 public:
 	void DrawPlayerInvenUIPass() { m_bDrawPlayerInvenUIPass = true; }
@@ -59,7 +65,7 @@ public:
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
-	VOID	Generate_Texture2DArray(std::vector<ID3D11DepthStencilView*>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	VOID	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution);
 private:
@@ -151,6 +157,7 @@ private:	// PostProcess Variable
 
 private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
+	UPtr<CMyFSR2_2> m_pFSR2_2{};
 
 private:
 	HRESULT Render_Shadow();
@@ -221,6 +228,19 @@ private:
 	_bool bApplyShadow = { true };
 	XMMATRIX	ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
+
+
+
+// Hi-Z buffer ownership
+private:
+	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
+	UPtr<CHizBuffer> m_pPrevHizBuffer = {}; // 컬링에 사용할 자료
+	_bool m_bHasPrevHizBuffer = false;
+
+private:
+	HRESULT InitializeHizBuffer();
+	HRESULT BuildCurrentHizBuffer(); // 다 그려진 후 depth를 Hiz버퍼에 copy & mipChain 구성
+
 	_float			TimeAccumulation{};
 
 	_float	m_fFogIntensity{};
@@ -235,3 +255,5 @@ public:
 };
 
 NS_END
+
+

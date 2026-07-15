@@ -1,7 +1,10 @@
 #pragma once
 
+#include "Handle.h"
+
 namespace Engine
 {
+
 	typedef struct tagEngineDesc
 	{
 		HWND hWnd;
@@ -187,14 +190,24 @@ namespace Engine
 
 	typedef struct tagParticleSpawnData
 	{
-		_float3 position;
-		_float3 velocity;
-		_float  life;
-		_float  size;
-		_float4 color;
-		_float4 emissive;
-		_float spawnDelay;
-	}PARTICLE_SPAWN_DATA;
+		_float3  position;
+		_float   pad0;        // HLSL이 velocity를 16으로 밀어내기 위해 넣는 패딩
+		_float3  velocity;
+		_float   life;
+		_float   fSize;
+		_float   fEndSize;
+		_float2  pad1;        // HLSL이 color를 48로 밀어내기 위해 넣는 패딩 (8바이트)
+		_float4 rotation;
+		_float4  color;
+		_float4  emissive;
+		_float   spawnDelay;
+		uint32_t ownerID = 0;
+		uint32_t iBehaviorType = 0;
+		_float pad2;
+	} PARTICLE_SPAWN_DATA;
+	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
+
+	constexpr uint32_t PREVIEW_OWNER_ID = 0xFFFFFFFF; //미리보기 전용 
 
 	typedef struct tagParticleEmitRequest
 	{
@@ -246,11 +259,19 @@ namespace Engine
 		}
 	}MAPCHUNK_COORD;
 
-	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+	//----------------------------MapMeshObject 인스턴싱------------------------
 	typedef struct tagMapMeshInstanceData
 	{
 		_float4x4 world;
 	} MAPMESH_INSTANCE_DATA;
+
+	typedef struct tagMapMeshOcclusionData
+	{
+		_float3		worldCenter;
+		_float		padding0;
+		_float3		worldExtents;
+		uint32_t	instanceIndex;
+	} MAPMESH_OCCLUSION_DATA;
 
 	typedef struct tagMapMeshBatchKey
 	{
@@ -273,6 +294,12 @@ namespace Engine
 		}
 	};
 
+	struct MAPMESH_INSTANCE_BATCH
+	{
+		std::vector<MAPMESH_INSTANCE_DATA> instances;
+		std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
+	};
+
 	//class CResStaticModel;
 	//typedef struct tagMapMeshBatch
 	//{
@@ -280,4 +307,162 @@ namespace Engine
 	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
 	//} MAPMESH_BATCH;
 	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+
+
+	//----------------------------AnimationObject------------------------------------
+
+
+	typedef struct GPU_BONE_DESC
+	{
+		_float4x4 BindLocalMatrix;
+
+		// Bind pose도 애니메이션 키와 같은 SRT 형태로 보관한다.
+		// GPU 블렌딩 시 행렬 원소를 직접 보간하지 않기 위해 사용한다.
+		_float3 BindScale{ 1.f, 1.f, 1.f };
+		_float4 BindRotation{ 0.f, 0.f, 0.f, 1.f };
+		_float3 BindTranslation{ 0.f, 0.f, 0.f };
+		float   fBindPadding = 0.f;
+
+		int32_t  iParentBoneIndex = -1;
+		uint32_t iDepth = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+	}GPU_BONE_DESC;
+
+	typedef struct GPU_ANIM_DESC
+	{
+		uint32_t iChannelOffset = 0;
+		uint32_t iChannelCount = 0;
+
+		uint32_t iBoneChannelMapOffset = 0;
+		uint32_t iBoneCount = 0;
+
+		float fDuration = 0.f;
+		float fPadding0 = 0.f;
+		float fPadding1 = 0.f;
+		float fPadding2 = 0.f;
+	}GPU_ANIM_DESC;
+
+	typedef struct GPU_CHANNEL_DESC
+	{
+		uint32_t iBoneIndex = 0;
+		uint32_t iKeyFrameOffset = 0;
+		uint32_t iKeyFrameCount = 0;
+		uint32_t iPadding = 0;
+	}GPU_CHANNEL_DESC;
+
+	typedef struct GPU_KEYFRAME_DESC
+	{
+		_float3 vScale{ 1.f, 1.f, 1.f };
+		float fTrackPosition = 0.f;
+
+		_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
+
+		_float3 vTranslation{ 0.f, 0.f, 0.f };
+		float fPadding = 0.f;
+	}GPU_KEYFRAME_DESC;
+
+	typedef struct GPU_SKIN_BONE_DESC
+	{
+		_float4x4 OffsetMatrix;
+
+		uint32_t iSkeletonBoneIndex = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+		uint32_t iPadding2 = 0;
+	}GPU_SKIN_BONE_DESC;
+
+	typedef struct GPU_MESH_SKIN_RANGE
+	{
+		uint32_t iSkinBoneOffset = 0;
+		uint32_t iSkinBoneCount = 0;
+	}GPU_MESH_SKIN_RANGE;
+
+	typedef struct GPU_SKIN_MESH_CONSTANTS
+	{
+		uint32_t iSkinBoneOffset = 0;
+		uint32_t iPadding0 = 0;
+		uint32_t iPadding1 = 0;
+		uint32_t iPadding2 = 0;
+	}GPU_SKIN_MESH_CONSTANTS;
+
+
+	//struct GPU_ANIM_INSTANCE_DATA { 
+	// float4x4 WorldMatrix; 
+	// uint iAnimIndex; 
+	// uint iFlags; 
+	// float fTrackPosition; 
+	// uint RootBoneIndex; 
+	// uint iPrevAnimIndex; 
+	// float fPrevTrackPosition; 
+	// float fBlendWeight;
+	// uint bBlending; };
+
+	typedef struct GPU_ANIM_INSTANCE_DATA
+	{
+		_float4x4 WorldMatrix{};
+
+		uint32_t iAnimIndex = 0;
+		uint32_t iFlags = 0;
+
+		_float fTrackPosition = 0.f;
+		
+		uint32_t iRootBoneIndex = 0;
+
+		uint32_t iPrevAnimIndex = 0;
+		_float fPrevTrackPosition = 0.f;
+		_float fBlendWeight = 1.f;
+		uint32_t bBlending = 0;
+	}GPU_ANIM_INSTANCE_DATA;
+
+	typedef struct MODEL_INSTANCE_KEY
+	{
+		StringID modelGroup{};
+		StringID modelTag{};
+
+		_bool operator==(const MODEL_INSTANCE_KEY& rhs) const
+		{
+			return
+				modelGroup == rhs.modelGroup &&
+				modelTag == rhs.modelTag;
+		}
+	}MODEL_INSTANCE_KEY;
+	typedef struct MODEL_INSTANCE_KEY_HASH
+	{
+		size_t operator()(const MODEL_INSTANCE_KEY& Key) const
+		{
+			size_t Seed = 0;
+
+			auto HashCombine =
+				[&Seed](size_t Value)
+				{
+					Seed ^= Value
+						+ 0x9e3779b9
+						+ (Seed << 6)
+						+ (Seed >> 2);
+				};
+
+			HashCombine(
+				std::hash<StringID>{}(
+					Key.modelGroup));
+
+			HashCombine(
+				std::hash<StringID>{}(
+					Key.modelTag));
+
+			return Seed;
+		}
+	}MODEL_INSTANCE_KEY_HASH;
+
+	typedef struct MODEL_INSTANCE_BATCH
+	{
+		MODEL_INSTANCE_KEY Key{};
+		
+		CHandle		ObjectHandle;
+		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
+
+		_bool bActiveThisFrame = false;
+
+	}MODEL_INSTANCE_BATCH;
+	//----------------------------AnimationObject------------------------------------
 }

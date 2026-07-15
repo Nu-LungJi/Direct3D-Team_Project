@@ -8,6 +8,19 @@ NS_USING(Engine)
 
 
 
+void CComAnimator::UpdateGUI()
+{
+	//if (ImGui::Button("save")) {
+	//	CGameInstance::Get( ).JsonSerialize("./Test.json", m_CurAnimState);
+	//}
+	//if (ImGui::Button("load")) {
+	//	ANIMSTRUCT m_Cur;
+	//	CGameInstance::Get().JsonDeSerialize("./Test.json", m_Cur);
+	//	Play_Anim(m_Cur.iAnimIndex, m_Cur.bLoop);
+	//	m_bPlay = true;
+	//}
+}
+
 CComAnimator::CComAnimator()
 {
 
@@ -43,16 +56,19 @@ HRESULT CComAnimator::Initialize(void* pArg)
 
 HRESULT CComAnimator::Update(_float fTimeDelta)
 {
+
     if (m_bPlay) {
         switch (m_iPlayAnimationType) {
-        case ANIMTYPE::MONTAGE: {
-			if (m_iPlayAnimMonatgueIndex < 0)
-				break;
-			
-        }break;
         case ANIMTYPE::ANIM: {
 				
-			Update_Anim(fTimeDelta);
+			//Update_Anim(fTimeDelta);
+			Update_Anim_GPU(fTimeDelta);
+        }
+         break;
+		case ANIMTYPE::ACTION: {
+				
+			//Update_Action(fTimeDelta);
+			Update_Action_GPU(fTimeDelta);
         }
          break;
         }
@@ -108,9 +124,30 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
 			m_vRootMotionDelta.y = 0.f;
 			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
+
+		
+	/*		_vector qPrevRotation{};
+	
+
+			_vector vCurrScale;
+			_vector qCurrRotation;
+			_vector vCurrTranslation;
+
+			if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+			{
+				qPrevRotation = XMQuaternionNormalize(qPrevRotation);
+				qCurrRotation = XMQuaternionNormalize(qCurrRotation);
+
+
+				_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
+
+				qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
+
+
+				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+			}*/
 		}
 	}
-
 	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
 
 
@@ -128,6 +165,264 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 	return S_OK;
 
 
+}
+
+HRESULT CComAnimator::Update_Action(_float fTimeDelta)
+{
+	if (m_pModelInstance == nullptr)
+		return E_FAIL;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return E_FAIL;
+
+	auto& Anims = pModel->GetAnimations();
+
+	if (m_CurAnimState.iAnimIndex < 0 ||m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+	{
+		return E_FAIL;
+	}
+
+	auto pResAnim = Anims[m_CurAnimState.iAnimIndex];
+	if (pResAnim == nullptr)
+		return E_FAIL;
+
+
+	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
+
+	Update_ActionState(fTimeDelta, m_CurAnimState);
+
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+
+	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	{
+		auto pRootChannel = pResAnim->FindRootChannel(m_iRootBoneIndex);
+
+		if (pRootChannel)
+		{
+			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
+			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
+
+			_float3 vPrevPos{};
+			_float3 vCurrPos{};
+
+			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
+			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
+
+			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
+			m_vRootMotionDelta.y = 0.f;
+			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
+
+
+			/*		_vector qPrevRotation{};
+
+
+					_vector vCurrScale;
+					_vector qCurrRotation;
+					_vector vCurrTranslation;
+
+					if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+					{
+						qPrevRotation = XMQuaternionNormalize(qPrevRotation);
+						qCurrRotation = XMQuaternionNormalize(qCurrRotation);
+
+
+						_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
+
+						qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
+
+
+						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+					}*/
+		}
+	}
+
+	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
+
+
+	Build_BoneMatrices_CPU(fTimeDelta);
+
+	if (pResAnim->GetDuration() > 0.f)
+	{
+		m_fRatio = m_CurAnimState.fTrackPosition / pResAnim->GetDuration();
+	}
+	else
+	{
+		m_fRatio = 0.f;
+	}
+
+	return S_OK;
+
+}
+
+HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
+	if (m_pModelInstance == nullptr)
+		return E_FAIL;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return E_FAIL;
+
+	auto& Anims = pModel->GetAnimations();
+
+	if (m_CurAnimState.iAnimIndex < 0 ||
+		m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+	{
+		return E_FAIL;
+	}
+
+	auto pAnim = Anims[m_CurAnimState.iAnimIndex];
+	if (pAnim == nullptr)
+		return E_FAIL;
+
+
+	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
+
+	Update_AnimState(fTimeDelta, m_CurAnimState);
+	Advance_GPUBlend(fTimeDelta);
+
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+
+	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	{
+		auto pRootChannel = pAnim->FindRootChannel(m_iRootBoneIndex);
+
+		if (pRootChannel)
+		{
+			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
+			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
+
+			_float3 vPrevPos{};
+			_float3 vCurrPos{};
+
+			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
+			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
+
+			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
+			m_vRootMotionDelta.y = 0.f;
+			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
+
+
+			/*		_vector qPrevRotation{};
+
+
+					_vector vCurrScale;
+					_vector qCurrRotation;
+					_vector vCurrTranslation;
+
+					if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+					{
+						qPrevRotation = XMQuaternionNormalize(qPrevRotation);
+						qCurrRotation = XMQuaternionNormalize(qCurrRotation);
+
+
+						_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
+
+						qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
+
+
+						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+					}*/
+		}
+	}
+
+
+	if (pAnim->GetDuration() > 0.f)
+	{
+		m_fRatio = m_CurAnimState.fTrackPosition / pAnim->GetDuration();
+	}
+	else
+	{
+		m_fRatio = 0.f;
+	}
+
+	return S_OK;
+
+
+}
+
+HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
+
+	if (m_pModelInstance == nullptr)
+		return E_FAIL;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return E_FAIL;
+
+	auto& Anims = pModel->GetAnimations();
+
+	if (m_CurAnimState.iAnimIndex < 0 || m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+	{
+		return E_FAIL;
+	}
+
+	auto pResAnim = Anims[m_CurAnimState.iAnimIndex];
+	if (pResAnim == nullptr)
+		return E_FAIL;
+
+
+	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
+
+	Update_ActionState(fTimeDelta, m_CurAnimState);
+	Advance_GPUBlend(fTimeDelta);
+
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+
+	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	{
+		auto pRootChannel = pResAnim->FindRootChannel(m_iRootBoneIndex);
+
+		if (pRootChannel)
+		{
+			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
+			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
+
+			_float3 vPrevPos{};
+			_float3 vCurrPos{};
+
+			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
+			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
+
+			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
+			m_vRootMotionDelta.y = 0.f;
+			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
+
+
+			/*		_vector qPrevRotation{};
+
+
+					_vector vCurrScale;
+					_vector qCurrRotation;
+					_vector vCurrTranslation;
+
+					if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+					{
+						qPrevRotation = XMQuaternionNormalize(qPrevRotation);
+						qCurrRotation = XMQuaternionNormalize(qCurrRotation);
+
+
+						_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
+
+						qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
+
+
+						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+					}*/
+		}
+	}
+
+	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
+
+
+	if (pResAnim->GetDuration() > 0.f)
+	{
+		m_fRatio = m_CurAnimState.fTrackPosition / pResAnim->GetDuration();
+	}
+	else
+	{
+		m_fRatio = 0.f;
+	}
 }
 
 void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDuration)
@@ -161,10 +456,7 @@ void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDurat
 	m_CurAnimState.bFinished = false;
 
 	// 해당 애니메이션 채널 수만큼 키프레임 인덱스 준비
-	m_CurAnimState.KeyFrameIndices.resize(
-		Anims[iAnimIndex]->GetNumChannel(),
-		0
-	);
+	m_CurAnimState.KeyFrameIndices.resize(Anims[iAnimIndex]->GetNumChannel(),0);
 
 	// 블렌딩 시작 여부
 	if (m_PrevAnimState.iAnimIndex >= 0 && fBlendDuration > 0.f)
@@ -186,6 +478,71 @@ void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDurat
 
 	m_iPlayAnimationType = ANIMTYPE::ANIM;
 	m_bPlay = true;
+}
+
+void CComAnimator::Play_Action(int32_t iActionIndex, _float fBlendDuration)
+{
+	if (m_pModelInstance == nullptr)
+		return;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return;
+
+	auto& ResAnims = pModel->GetAnimations();
+
+	// Action 인덱스 검사
+	if (iActionIndex < 0 || iActionIndex >= static_cast<int32_t>(m_Actions.size()))
+		return;
+	if (m_Actions[iActionIndex].Anims.empty())
+		return;
+	if (m_Actions[iActionIndex].Anims.front().iAnimIndex < 0 ||
+		m_Actions[iActionIndex].Anims.front().iAnimIndex >= static_cast<int32_t>(ResAnims.size()))
+		return;
+
+	m_curActionsAnim = 0;
+	m_curActions = iActionIndex;
+	m_ActionTime = 0.f;
+	// 같은 애니메이션이면 다시 세팅하지 않음
+	if (m_CurAnimState.iAnimIndex == m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex)
+		return;
+
+	// 이전 상태 저장
+	m_PrevAnimState = m_CurAnimState;
+
+	// 현재 상태 새로 세팅
+	m_CurAnimState.Reset();
+
+	m_CurAnimState.iAnimIndex = m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex;
+	m_CurAnimState.fTrackPosition = 0.f;
+	m_CurAnimState.fSpeed = m_Actions[m_curActions].Anims[m_curActionsAnim].fSpeed;
+	m_CurAnimState.bLoop = false;
+	m_CurAnimState.bFinished = false;
+
+	// 해당 애니메이션 채널 수만큼 키프레임 인덱스 준비
+	m_CurAnimState.KeyFrameIndices.resize(ResAnims[m_CurAnimState.iAnimIndex]->GetNumChannel(), 0);
+
+	// 블렌딩 시작 여부
+	if (m_PrevAnimState.iAnimIndex >= 0 && fBlendDuration > 0.f)
+	{
+		m_bBlending = true                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ;
+		m_fBlendTime = 0.f;
+		m_fBlendDuration = fBlendDuration;
+
+		// 복사 
+		m_BlendStartLocalMatrices = m_LocalBoneMatrices;
+	}
+	else
+	{
+		m_bBlending = false;
+		m_fBlendTime = 0.f;
+		m_fBlendDuration = 0.f;
+
+	}
+
+	m_iPlayAnimationType = ANIMTYPE::ACTION;
+	m_bPlay = true;
+
 }
 
 void CComAnimator::Update_AnimState(_float fTimeDelta, ANIMSTRUCT& AnimState)
@@ -236,6 +593,115 @@ void CComAnimator::Update_AnimState(_float fTimeDelta, ANIMSTRUCT& AnimState)
 	{
 		// 혹시 외부에서 TrackPosition을 되감았을 경우 방어
 		std::fill(AnimState.KeyFrameIndices.begin(),AnimState.KeyFrameIndices.end(),0);
+	}
+}
+
+void CComAnimator::Update_ActionState(_float fTimeDelta, ANIMSTRUCT& AnimState)
+{
+	if (m_pModelInstance == nullptr)
+		return;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return;
+
+	if (m_Actions.size() == 0 || m_Actions[0].Anims.size() == 0)
+		return;
+
+	auto& ResAnims = pModel->GetAnimations();
+
+	if (AnimState.iAnimIndex < 0 || AnimState.iAnimIndex >= static_cast<int32_t>(ResAnims.size()))
+	{
+		return;
+	}
+
+	auto pResAnim = ResAnims[AnimState.iAnimIndex];
+	if (pResAnim == nullptr)
+		return;
+
+	_float fPrevTrackPosition = AnimState.fTrackPosition;
+
+	AnimState.fTrackPosition += pResAnim->GetTickPerSecond() * fTimeDelta * AnimState.fSpeed;
+	m_ActionTime += pResAnim->GetTickPerSecond() * fTimeDelta * AnimState.fSpeed;
+	
+
+	const _float fDuration = pResAnim->GetDuration();
+
+	if (fDuration <= 0.f)
+		return;
+
+	if (AnimState.fTrackPosition >= fDuration)
+	{
+		AnimState.fTrackPosition = fDuration;
+		AnimState.bFinished = true;
+		if (m_curActionsAnim < 0 || m_curActions < 0) {
+			m_curActionsAnim = 0;
+			m_iPlayAnimationType = ANIMTYPE::ACTION;
+			m_curActions = 0;
+			m_ActionTime = 0.f;
+			m_bPlay = false;
+		}
+		else if (m_curActionsAnim + 1 >= static_cast<int32_t>(m_Actions[m_curActions].Anims.size())) {
+			m_curActionsAnim = 0;			
+			m_iPlayAnimationType = ANIMTYPE::ACTION;
+			m_curActions = 0;
+			m_ActionTime = 0.f;
+			m_bPlay = false;
+		}
+		else {
+			{
+				m_curActionsAnim += 1;
+				if (m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex < 0 ||
+					m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex >= static_cast<int32_t>(ResAnims.size()))
+				{
+					m_bPlay = false;
+					return;
+				}
+
+				// 이전 상태 저장
+				m_PrevAnimState = m_CurAnimState;
+
+				// 현재 상태 새로 세팅
+				m_CurAnimState.Reset();
+
+				m_CurAnimState.iAnimIndex = m_Actions[m_curActions].Anims[m_curActionsAnim].iAnimIndex;
+				m_CurAnimState.fTrackPosition = 0.f;
+				m_CurAnimState.fSpeed = m_Actions[m_curActions].Anims[m_curActionsAnim].fSpeed;
+				m_CurAnimState.bLoop = false;
+				m_CurAnimState.bFinished = false;
+
+				// 해당 애니메이션 채널 수만큼 키프레임 인덱스 준비
+				m_CurAnimState.KeyFrameIndices.resize(ResAnims[m_CurAnimState.iAnimIndex]->GetNumChannel(), 0);
+
+				// 블렌딩 시작 여부
+				if (m_PrevAnimState.iAnimIndex >= 0 && 0.2f > 0.f)
+				{
+					m_bBlending = true;
+					m_fBlendTime = 0.f;
+					m_fBlendDuration = 0.2f;
+
+					// 복사 
+					m_BlendStartLocalMatrices = m_LocalBoneMatrices;
+				}
+				else
+				{
+					m_bBlending = false;
+					m_fBlendTime = 0.f;
+					m_fBlendDuration = 0.f;
+
+				}
+
+				m_iPlayAnimationType = ANIMTYPE::ACTION;
+				m_bPlay = true;
+			}
+		}
+		
+		
+	}
+	else if (AnimState.fTrackPosition < fPrevTrackPosition)
+	{
+		// 혹시 외부에서 TrackPosition을 되감았을 경우 방어
+		std::fill(AnimState.KeyFrameIndices.begin(), AnimState.KeyFrameIndices.end(), 0);
 	}
 }
 
@@ -379,6 +845,15 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 		);
 	}
 
+
+
+	if (m_bRootMotion && iBoneIndex == m_iRootBoneIndex)
+	{
+		//matLocal.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+
+		vTranslation = XMVectorZero();
+		vRotation = RemoveYRotation(vRotation);
+	}
 	_matrix matLocal =
 		XMMatrixAffineTransformation(
 			vScale,
@@ -386,12 +861,6 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 			vRotation,
 			vTranslation
 		);
-
-	if (m_bRootMotion && iBoneIndex == m_iRootBoneIndex)
-	{
-		matLocal.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
-	}
-
 	XMStoreFloat4x4(&OutLocalBoneMatrices[iBoneIndex],matLocal);
 }
 
@@ -457,6 +926,36 @@ _matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _flo
 
 }
 
+_vector CComAnimator::RemoveYRotation(_vector qRotation)
+{
+	qRotation = XMQuaternionNormalize(qRotation);
+
+	// Quaternion의 Y축 회전 성분(Twist)만 추출
+	_vector qTwistY = XMVectorSet(
+		0.f,
+		XMVectorGetY(qRotation),
+		0.f,
+		XMVectorGetW(qRotation)
+	);
+
+	const float fLengthSq =
+		XMVectorGetX(XMVector4LengthSq(qTwistY));
+
+	if (fLengthSq < 0.000001f)
+		return qRotation;
+
+	qTwistY = XMQuaternionNormalize(qTwistY);
+
+	// 원본 회전에서 Y축 회전만 제거
+	// DirectXMath의 Multiply는 두 번째 인자가 왼쪽에 곱해짐
+	_vector qResult = XMQuaternionMultiply(
+		XMQuaternionInverse(qTwistY),
+		qRotation
+	);
+
+	return XMQuaternionNormalize(qResult);
+}
+
 void CComAnimator::Blend_Anim(_float fTimeDelta)
 {
 	if (!m_bBlending)
@@ -469,8 +968,6 @@ void CComAnimator::Blend_Anim(_float fTimeDelta)
 		m_fBlendTime / m_fBlendDuration : 1.f;
 
     fRatio = std::min(std::max(fRatio, 0.f), 1.f);
-
-
 
     for (size_t i = 0; i < m_LocalBoneMatrices.size(); ++i)
     {
@@ -508,27 +1005,68 @@ void CComAnimator::Blend_Anim(_float fTimeDelta)
     }
 }
 
-HRESULT CComAnimator::AnimEditor_Play_AnimResource(_float fTimeDelta, uint32_t iModelAnimNum)
+void CComAnimator::Advance_GPUBlend(_float fTimeDelta)
 {
-	auto pModel = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag)->GetModel();
-    
-    if(pModel == nullptr)
-		return E_FAIL;
+	if (!m_bBlending)
+		return;
 
-    auto& pAnim = pModel->GetAnimations();
-    auto& m_PreTransformMatrix = pModel->Get_PreTransformMatrix();
+	m_fBlendTime += fTimeDelta;
+	if (GetBlendWeight() >= 1.f)
+	{
+		m_bBlending = false;
+		m_fBlendTime = 0.f;
+		m_fBlendDuration = 0.f;
+	}
+}
 
-    _bool           isFinished = { false };
+void CComAnimator::SetTrackPosition(_float fTrackPosition)
+{
+	if (m_pModelInstance == nullptr)
+		return;
 
-    /* 뼈들의 m_TransformationMatrix를 갱신해준다. */
-    isFinished = pAnim[iModelAnimNum]->Update_TransformationMatrices(fTimeDelta, pModel->GetBones(), false);
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return;
 
-	for (auto& pBone : pModel->GetBones())
-    {
-        pBone->Update_CombinedTransformationMatrix(pModel->GetBones(), XMLoadFloat4x4(&m_PreTransformMatrix));
-    }
+	auto& Anims = pModel->GetAnimations();
 
-    return isFinished;
+	if (m_CurAnimState.iAnimIndex < 0 ||
+		m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+	{
+		return;
+	}
+
+	auto pAnim = Anims[m_CurAnimState.iAnimIndex];
+	if (pAnim == nullptr)
+		return;
+
+	_float fDuration = pAnim->GetDuration();
+	
+	if (fDuration <= 0.f)
+		return;
+
+	m_CurAnimState.fDuration = fDuration;
+	fTrackPosition = std::clamp(fTrackPosition, 0.f, fDuration);
+
+	m_CurAnimState.fTrackPosition = fTrackPosition;
+
+	std::fill(
+		m_CurAnimState.KeyFrameIndices.begin(),
+		m_CurAnimState.KeyFrameIndices.end(),
+		0
+	);
+
+
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+
+	m_bBlending = false;
+	m_fBlendTime = 0.f;
+	m_fBlendDuration = 0.f;
+
+
+	Build_BoneMatrices_CPU(0.f);
+
+	m_fRatio = m_CurAnimState.fTrackPosition / fDuration;
 }
 
 

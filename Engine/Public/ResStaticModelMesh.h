@@ -28,6 +28,9 @@ public:
 	HRESULT Load(const std::any& arg = {}) override;
 	HRESULT Unload(const std::any& arg = {}) override;
 
+	const XMFLOAT3& GetMinPos() const { return m_vMinPos; }
+	const XMFLOAT3& GetMaxPos() const { return m_vMaxPos; }
+
 public:
 	HRESULT LoadAssimp(std::string name, uint32_t materialIndex, const XMFLOAT3& minPos, const XMFLOAT3& maxPos, std::vector<VTXMESH>&& vertices, std::vector<uint32_t>&& indices, _fmatrix PreTransformMatrix);
 private:

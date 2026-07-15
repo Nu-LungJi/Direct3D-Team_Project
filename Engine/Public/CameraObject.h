@@ -35,6 +35,7 @@ public:
 	_matrix GetView() const { return XMLoadFloat4x4(&m_matView); }
 	_matrix GetProj() const { return XMLoadFloat4x4(&m_matProj); }
 	const _float4* GetFrustumFarCorner() const { return m_FrustumFarCorner; }
+	
 
 	std::pair<_float3, _float3> GetRay() const
 	{
@@ -68,6 +69,12 @@ public:
 public:
 	HRESULT UpdateViewMatrix();
 	HRESULT UpdateProjMatrix();
+
+public:
+	void FSRCameraJitter();
+	std::pair<float, float> GetFSRCameraJitter() const { return m_pairCameraJitter; }
+private:
+	std::pair<float, float> m_pairCameraJitter{};
 
 protected:
 	CAMERA_DESC m_cameraDesc{};

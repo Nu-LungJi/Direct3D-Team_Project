@@ -77,11 +77,11 @@ HRESULT				CBTRoot::Load_json(const nlohmann::json& j)
 	JsonSaveLoadManager::LoadJsonTypeString(j, "MasterName", m_MasterName);
 	return S_OK;
 }
-void CBTRoot::Set_Abort()
+void CBTRoot::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
 {
-	if (auto iter =Get_ComBT())
+	if (auto iter = Get_ComBT())
 	{
-		iter->Set_Abort();
+		iter->Set_Flag(iFlag, eType);
 	}
 }
 CComBeHavior* CBTRoot::Get_ComBT()
@@ -95,4 +95,26 @@ CComBeHavior* CBTRoot::Get_ComBT()
 	}
 	return nullptr;
 
+}
+_bool CBTRoot::Check_Flag(uint32_t iFlag)
+{
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>(m_OwnerName))
+		{
+			return pComBt->Check_Flag(iFlag);
+		}
+	}
+	
+}
+
+uint32_t CBTRoot::Get_Flag()
+{
+	if (auto pObj = CGameInstance::Get().GetGameObjectByHandle(m_Handle))
+	{
+		if (auto pComBt = pObj->GetComponent<CComBeHavior>(m_OwnerName))
+		{
+			return pComBt->Get_Flag();
+		}
+	}
 }

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTDecHp.h"
 #include "ComBeHavior.h"
+#include "TestGob.h"
 NS_USING(Client)
 
 CBTDecHp::CBTDecHp()
@@ -27,22 +28,55 @@ HRESULT CBTDecHp::Initalize(void* pArg)
 {
 
 	__super::Initalize(pArg);
-
+	return S_OK;
+}
+EVALUATE CBTDecHp::Evaluate(_float fTimeDelta)
+{
+	auto pBT = Get_ComBT();
+	if (nullptr == pBT) return m_eDebug = EVALUATE::FAILED;
+	auto pObj = static_cast<CTestGob*>(pBT->GetGameObject());
+	if (nullptr == pObj) return m_eDebug = EVALUATE::FAILED;
 	
+	if (!m_bDeadCheck)
+	{
+		if (pObj->Get_CurrentHp() <= pObj->Get_MaxHp() / m_fdivided)
+			return __super::Evaluate(fTimeDelta);
+	}
+	else if (m_bDeadCheck)
+	{
+		if (pObj->Get_CurrentHp() <= 0)
+			return __super::Evaluate(fTimeDelta);
+
+	}
+	
+	return m_eDebug = EVALUATE::FAILED;
+}
+nlohmann::json CBTDecHp::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	SaveJsonValue(j, "divided", m_fdivided);
+	SaveJsonValue(j, "DeadCheck", m_bDeadCheck);
+		return j;
+}
+
+HRESULT CBTDecHp::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "divided", m_fdivided);
+	LoadJsonValue(j, "DeadCheck", m_bDeadCheck);
 	return S_OK;
 }
 
-
-EVALUATE CBTDecHp::Evaluate(_float fTimeDelta)
-{
-
-	if(m_CurrentHp <= m_MaxHp / m_GuiNode.fValue)
-		return __super::Evaluate(fTimeDelta);
-	
-	return EVALUATE::FAILED;
-}
 void CBTDecHp::Update_Gui()
 {
+	ImGui::Text("Divided");
+	ImGui::DragFloat("##Divided", &m_fdivided, 0, 10);
+
+	if (ImGui::Button("Dead : "))
+		m_bDeadCheck = !m_bDeadCheck;
+	ImGui::SameLine(60);
+	m_bDeadCheck == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	
 }
 E::UPtr<CBTDecHp> CBTDecHp::Create()
 {

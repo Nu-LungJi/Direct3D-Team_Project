@@ -85,21 +85,44 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 					texPath = ddsPath;
 				}
 
-				auto resTex = CResTexture2D::Create(texPath.string());
-
-				if (resTex == nullptr)
+				_bool b_cache = false;
+				auto pvecRes = CGameInstance::Get().GetResource("ONLY_MINSU_NO_TOUCH", texPath.string());
+				if (pvecRes.empty())
 				{
-					m_eState = STATE::LOADFAIL;
-					return E_FAIL;
+					b_cache = false;
+				}
+				else
+				{
+					b_cache = true;
 				}
 
-				if (FAILED(resTex->Load()))
-				{
-					m_eState = STATE::LOADFAIL;
-					return E_FAIL;
+
+				if (b_cache) {
+
+					auto resTex = CGameInstance::Get().GetResourceFirst<CResTexture2D>("ONLY_MINSU_NO_TOUCH", texPath.string());
+					
+					m_Materials[textureType].push_back(resTex);
+				}
+				else {
+					auto resTex = CResTexture2D::Create(texPath.string());
+					CGameInstance::Get().AddResource("ONLY_MINSU_NO_TOUCH", texPath.string(), resTex);
+
+					if (resTex == nullptr)
+					{
+						m_eState = STATE::LOADFAIL;
+						return E_FAIL;
+					}
+
+					if (FAILED(resTex->Load()))
+					{
+						m_eState = STATE::LOADFAIL;
+						return E_FAIL;
+					}
+
+					m_Materials[textureType].push_back(resTex);
 				}
 
-				m_Materials[textureType].push_back(resTex);
+			
 			}
 		}
 
@@ -175,7 +198,10 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 				texPath = ddsPath;
 			}
 
+
+
 			auto resTex = CResTexture2D::Create(texPath.string());
+			CGameInstance::Get().AddResource("ONLY_MINSU_NO_TOUCH", texPath.string(), resTex);
 
 			if (resTex == nullptr)
 			{
@@ -189,7 +215,7 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 				return E_FAIL;
 			}
 
-			m_Materials[i].push_back(resTex);
+			m_Materials[i].emplace_back(resTex);
 		}
 	}
 
@@ -269,3 +295,114 @@ SPtr<CResModelMaterial> CResModelMaterial::Create(const _string& sPath)
 {
 	return ToSPtr(new CResModelMaterial{ sPath });
 }
+
+void CResModelMaterial::Free()
+{
+	//std::unordered_set<_string> cacheKeys;
+
+	//// [수정 1] 분리되어 있던 두 루프를 하나로 합침 (Dead Code 버그 해결)
+	//for (auto& textures : m_Materials)
+	//{
+	//	for (auto& texture : textures)
+	//	{
+	//		if (texture)
+	//		{
+	//			_string path = texture->GetPath();
+	//			cacheKeys.insert(path);
+
+	//			// [수정 2] 값 반환으로 인한 use_count 증가를 피하기 위해, 
+	//			// GetResource를 호출하기 *전*에 현재 텍스처의 카운트를 확인합니다.
+	//			// (현재 Material 1 + Manager 캐시 1 = 총 2인 상태)
+	//			if (texture.use_count() == 2)
+	//			{
+	//				// 이제 값으로 리턴받습니다. (이 순간 복사가 발생해 내부 카운트는 3이 됩니다)
+	//				auto cached = CGameInstance::Get().GetResource("ONLY_MINSU_NO_TOUCH", path);
+
+	//				if (!cached.empty())
+	//				{
+	//					// [수정 3] 매니저 내부에서 텍스처가 파괴되며 발생하는 데드락(멈춤) 방지
+	//					auto keepAlive = texture;
+	//					CGameInstance::Get().DelResource("ONLY_MINSU_NO_TOUCH", path);
+	//				}
+	//			}
+	//		}
+	//	}
+	//	// 모든 검사가 끝난 후 현재 재질의 텍스처 레퍼런스 제거
+	//	textures.clear();
+	//}
+
+	//// The material's texture references are gone now.
+	//// Only evict a cache entry when it is its sole remaining owner.
+	//for (const auto& cacheKey : cacheKeys)
+	//{
+	//	// 값으로 리턴받습니다. (Manager 캐시 1 + 현재 지역변수 cached 1 = 총 2)
+	//	auto cached = CGameInstance::Get().GetResource("ONLY_MINSU_NO_TOUCH", cacheKey);
+
+	//	if (cached.size() == 1 && cached[0])
+	//	{
+	//		// [수정 4] Manager에만 유일하게 남은 상태라면, 
+	//		// Manager(1) + 방금 값으로 복사받은 cached[0](1) = 총 2여야 정상입니다.
+	//		// (기존 코드의 1이 아닌 2로 체크해야 합니다)
+	//		if (cached[0].use_count() == 2)
+	//		{
+	//			auto keepAlive = cached[0]; // 데드락 방지
+	//			CGameInstance::Get().DelResource("ONLY_MINSU_NO_TOUCH", cacheKey);
+	//		}
+	//	}
+	//}
+
+	__super::Free();
+}
+
+//void CResModelMaterial::Free()
+//{
+//	std::unordered_set<_string> cacheKeys;
+//	for (auto& textures : m_Materials)
+//	{
+//		for (auto& texture : textures)
+//		{
+//			if (texture)
+//				cacheKeys.insert(texture->GetPath());
+//		}
+//		textures.clear();
+//	}
+//
+//	for (auto& textures : m_Materials)
+//	{
+//
+//		for (auto& texture : textures)
+//		{
+//			if (const auto* cached = CGameInstance::Get().GetResource(
+//				"ONLY_MINSU_NO_TOUCH", texture->GetPath());
+//				cached && !cached->empty())
+//			{
+//				// manager 1 + 이 material의 texture 1일 때만 제거
+//				if (texture.use_count() == 2)
+//				{
+//					CGameInstance::Get().DelResource(
+//						"ONLY_MINSU_NO_TOUCH",
+//						texture->GetPath());
+//				}
+//			}
+//		}
+//		
+//	}
+//
+//
+//
+//	// The material's texture references are gone now.  Only evict a cache
+//	// entry when it is its sole remaining owner.
+//	for (const auto& cacheKey : cacheKeys)
+//	{
+//		const auto* cached = CGameInstance::Get().GetResource(
+//			"ONLY_MINSU_NO_TOUCH", cacheKey);
+//
+//		if (cached && cached->size() == 1 && (*cached)[0] && (*cached)[0].use_count() == 1)
+//		{
+//			CGameInstance::Get().DelResource("ONLY_MINSU_NO_TOUCH", cacheKey);
+//		}
+//	}
+//
+//	__super::Free();
+//
+//}

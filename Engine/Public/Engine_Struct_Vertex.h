@@ -41,20 +41,31 @@ namespace Engine
 	} VTX_POINT_PARTICLE;
 
 	typedef struct tagParticle {
-		_float3 position;
-		_float  pad1;
-		_float3 velocity;
-		_float life;
-		_float maxLife;
-		_float size;
-		_float startSize;
+		_float3  position;
+		_float   pad1;
+		_float3  velocity;
+		_float   life;
+		_float   maxLife;
+		_float   size;
+		_float   startSize;
+		_float   endSize;
+		_float4  rotation;
 		uint32_t alive;
 		uint32_t loop;
-		_float4 color;
-		_float4 emissive;
+		_float2  pad2;         // 추가 필요: loop→color (8바이트)
+		_float4  color;
+		_float4  emissive;
 		uint32_t frameIndex;
-		_float3 pad2;
+		uint32_t ownerID;
+		uint32_t iBehaviorType = 0;
 	}PARTICLE;
+	static_assert(sizeof(PARTICLE) == 124, "size mismatch");
+	static_assert(offsetof(PARTICLE, velocity) == 16, "velocity offset");
+	static_assert(offsetof(PARTICLE, rotation) == 48, "rotation offset");
+	static_assert(offsetof(PARTICLE, color) == 80, "color offset");
+	static_assert(offsetof(PARTICLE, emissive) == 96, "emissive offset");
+	static_assert(offsetof(PARTICLE, iBehaviorType) == 120, "behaviorType offset");
+
 	typedef struct tagFireInstancedData
 	{
 		_float4x4 matWorld{};
@@ -97,17 +108,6 @@ namespace Engine
 		XMUINT4		vBlendIndices;
 		XMFLOAT4	vBlendWeights;
 
-
-		//static constexpr uint32_t		iNumElements = { 7 };
-		//static constexpr D3D11_INPUT_ELEMENT_DESC		Elements[iNumElements] = {
-		//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		//	{ "BLENDINDEX", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		//	{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 72, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-		//};
 	}VTXANIMMESH;
 
 

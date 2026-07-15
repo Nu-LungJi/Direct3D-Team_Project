@@ -6,6 +6,9 @@ NS_BEGIN(Engine)
 
 class ENGINE_DLL CLevel : public CEngineBase
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevel, CEngineBase)
+
 protected:
 	explicit CLevel();
 	virtual ~CLevel();

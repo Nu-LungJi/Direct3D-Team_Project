@@ -29,7 +29,16 @@
 #include "EffectUI.h"
 #include "TextBox.h"
 #include "Weapon.h"
+#include "Button.h"
+
 #include "TestGob.h"
+
+#include "TestCharacter.h"
+
+#include "LevelLogoLoader.h"
+#include "LevelPhysXLoader.h"
+#include "LevelColliderLoader.h"
+
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -127,21 +136,22 @@ void CLevelLoading::ThreadStart()
 	{
 	case LEVEL::LOGO:
 	{
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LOGO", [this]()
-			{
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOGO", "Prototype_GameObject_BackGround", CBackGround::Create())))
-				{
-					return false;
-				}
+		m_futLoadFinish = CLevelLogoLoader::Load();
+		//m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LOGO", [this]()
+		//	{
+		//		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOGO", "Prototype_GameObject_BackGround", CBackGround::Create())))
+		//		{
+		//			return false;
+		//		}
 
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				return  true;
-			});
+		//		//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		//		return  true;
+		//	});
 
-		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
-		{
-			res->Load();
-		}
+		//if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
+		//{
+		//	res->Load();
+		//}
 	}
 	break;
 	case LEVEL::PLAYGROUND:
@@ -220,7 +230,7 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
-
+		
 		/* FlipBook */
 		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "Flipbook_LoadingWidget_Flame", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Flame.png")))
 		{
@@ -254,20 +264,44 @@ void CLevelLoading::ThreadStart()
 		{
 			res->Load();
 		}
+		{
+			namespace fs = std::filesystem;
+
+			std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI";
+
+			// 1. �ش� ������ �����ϴ��� ���� Ȯ�� (������ġ)
+			if (fs::exists(targetDir) && fs::is_directory(targetDir))
+			{
+				// 2. ���� ���� ��� ������ ��ȸ
+				for (const auto& entry : fs::directory_iterator(targetDir))
+				{
+					// 3. �����̸鼭 Ȯ���ڰ� .png ���� Ȯ��
+					if (entry.is_regular_file() && entry.path().extension() == ".png")
+					{
+						// 4. ���� �̸��� ���� (��: "UI_T_NurtureMeterDiamond_Back_4k")
+						std::string fileName = entry.path().stem().string();
+
+						// 5. ���ҽ� �±� ���� (��: "TEX_UI_T_NurtureMeterDiamond_Back_4k")
+						std::string resTag = "TEX_" + fileName;
+
+						// 6. ��ü ���� ��� ���� (�ü���� �°� ��ΰ� ���յ�)
+						// generic_string()�� ���� �����쿡���� ��������(\) ��� ������(/)�� ��θ� ��ȯ�մϴ�.
+						std::string fullPath = entry.path().generic_string();
+
+						// 7. ������ ���ҽ� �߰� �� �ε�
+						if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", resTag, E::CResTexture2D::Create(fullPath)))
+						{
+							res->Load();
+						}
+					}
+				}
+			}
+		}
+	
 		
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_UIEDITOR", [this]()
 			{
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_BackGround", CBackGround::Create())))
-				{
-					return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TexUI", CTexUI::Create())))
-				{
-					return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_FlipBook", CFlipBook::Create())))
 				{
 					return false;
 				}
@@ -280,6 +314,10 @@ void CLevelLoading::ThreadStart()
 					return false;
 				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", CTextBox::Create())))
+				{
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_Button", CButton::Create())))
 				{
 					return false;
 				}
@@ -297,6 +335,30 @@ void CLevelLoading::ThreadStart()
 		//	int a = 0;
 		//	//return false;
 		//}
+		
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return ;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				return ;
+			}
+		}
+
 		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_ANIM", [this]()
 			{
 		
@@ -321,15 +383,7 @@ void CLevelLoading::ThreadStart()
 		break;
 	case LEVEL::COLLIDER:
 	{
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_COLLIDER", [this]()
-			{
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_COLLIDER", "Prototype_GameObject_TestCollider", CTestCollider::Create())))
-				{
-					return false;
-				}
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				return  true;
-			});
+		m_futLoadFinish = CLevelColliderLoader::Load();
 	}
 	break;
 	case LEVEL::LIGHTMAP:
@@ -378,61 +432,7 @@ void CLevelLoading::ThreadStart()
 	break;
 	case LEVEL::PHYSX:
 	{
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				//return E_FAIL;
-			}
-		}
-
-
-
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PHYSX", [this]()
-			{
-				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
-				{
-					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
-					{
-						//MSG_BOX("");
-						return false;
-					}
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
-				{
-					return false;
-				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysX", CTestPhysX::Create())))
-				{
-					return false;
-				}
-				//TestPhysXTerrain
-				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXTerrain", CTestPhysXTerrain::Create())))
-				{
-					return false;
-				}
-
-				//TestPhysXBox
-				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox", CTestPhysXBox::Create())))
-				{
-					return false;
-				}
-
-				//TestPhysXBall
-				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBall", CTestPhysXBall::Create())))
-				{
-					return false;
-				}
-
-				//TestPhysXCapsule
-				if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXCapsule", CTestPhysXCapsule::Create())))
-				{
-					return false;
-				}
-				return  true;
-			});
+		m_futLoadFinish = CLevelPhysXLoader::Load();
 	}
 	break;
 	default:

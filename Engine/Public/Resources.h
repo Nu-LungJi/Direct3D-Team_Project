@@ -61,6 +61,8 @@
 #include "ResPhysXCapsuleGeometry.h"
 #include "ResPhysXMaterial.h"
 
+#include "ResLuaScript.h"
+
 enum class ES_EngineResMajorType
 {
 	PERMANENT_BUFFER,
@@ -68,6 +70,7 @@ enum class ES_EngineResMajorType
 	PERMANENT_TEXTURE,
 	PERMANENT_STATE,
 	PERMANENT_VP,
+	PERMANENT_LUA,
 };
 
 enum class ES_EngineResRasterizerState
@@ -106,6 +109,11 @@ enum class ES_EngineResVertexShader
 enum class ES_EngineResPixelShader
 {
 	PS_QuadTex
+};
+
+enum class ES_EngineResLuaScript
+{
+	LUA_TEST,
 };
 
 /*

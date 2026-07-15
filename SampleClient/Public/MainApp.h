@@ -19,9 +19,6 @@ private:
 
 private:
 	HRESULT Initialize();
-	HRESULT Load_Particle_Resources();
-	//HRESULT ReadyWSClient();
-	HRESULT Create_ActionNode();
 
 public:
 	static Engine::UPtr<CMainApp> Create();

@@ -264,6 +264,13 @@ HRESULT CPhysXManager::Initialize()
             return E_FAIL;
         }
 
+		m_pControllerManager = PxCreateControllerManager(*m_pScene);
+		if (!m_pControllerManager)
+		{
+			MSG_BOX("Failed to create PhysX Controller Manager");
+			return E_FAIL;
+		}
+
         // for debug
         {
             m_pScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f); // 전체 스케일
@@ -343,6 +350,13 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 void CPhysXManager::Free()
 {
     // 해제는 생성의 역순
+	if (m_pControllerManager)
+	{
+		// Manager가 릴리즈되면서 관리하던 모든 Controller 객체도 내부적으로 정리됩니다.
+		m_pControllerManager->release();
+		m_pControllerManager = nullptr;
+	}
+
     if (m_pScene) m_pScene->release();
 
     if (m_pPhysics) m_pPhysics->release();

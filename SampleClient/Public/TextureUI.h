@@ -5,6 +5,7 @@
 
 NS_BEGIN(Engine)
 class CComConstantBuffer;
+class CButtonComponent;
 NS_END
 
 NS_BEGIN(Client)
@@ -19,11 +20,15 @@ private:
 	~CTextureUI() override;
 
 public:
+	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+
+private:
+	virtual void PlayerEffect(uint32_t uiState);
 
 protected:
 	virtual void Creating();
@@ -41,6 +46,16 @@ private:
 	bool m_bOutline{};
 
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CButtonComponent* m_pComCButton = nullptr;
+
+protected:
+	virtual void PlayEffect(uint32_t uiState);
+
+private:
+	std::vector<std::optional<CHandle>> m_vEffects;
+
+private:
+	std::string m_EffectTag;
 
 public:
 	static E::UPtr<CTextureUI> Create();

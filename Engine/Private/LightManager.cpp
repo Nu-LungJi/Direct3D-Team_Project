@@ -6,7 +6,7 @@
 #include "CollFrustum.h"
 
 CLightManager::CLightManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice(pDevice), m_pContext(pContext) {}
-CLightManager::~CLightManager() {}
+CLightManager::~CLightManager() { }
 
 HRESULT CLightManager::Initialize_LightManager() {
 

@@ -7,6 +7,8 @@ NS_BEGIN(Client)
 
 class CLevelAnimEditor final : public Engine::CLevel
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevelAnimEditor, CLevel)
 private:
 	CLevelAnimEditor();
 	~CLevelAnimEditor() override;
@@ -23,6 +25,8 @@ public:
 public:
 	static UPtr<CLevelAnimEditor> Create();
 
+private:
+	int32_t iTestCount{1};
 private:
 	void Free() override;
 };

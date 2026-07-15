@@ -45,6 +45,10 @@ public:
 
 	std::string GetBoneName() { return m_szName; }
 
+	uint32_t Get_Depth() const{return m_iDepth;}
+
+	void Set_Depth(uint32_t iDepth){m_iDepth = iDepth;}
+
 public:
 	void Update_CombinedTransformationMatrix(const std::vector<SPtr<CResModelBone>>& Bones, _fmatrix PreTransformMatrix);
 
@@ -52,11 +56,13 @@ public:
 	_bool Compare_Name(const _char* pBoneName) {
 		return !strcmp(pBoneName, m_szName);
 	}
+
 private:
 	_char			m_szName[MAX_PATH] = {  };
 	_float4x4		m_TransformationMatrix = { }; /* 이 뼈만의 상태행렬 */
 	_float4x4		m_CombinedTransformationMatrix = {}; /* 부모 뼈의 상태를 포함한 최종 행렬 */
 	int32_t			m_iParentBoneIndex = { -1 };
+	uint32_t		m_iDepth = 0;
 public:
 	static SPtr<CResModelBone> Create(const _string& sPath = {});
 };

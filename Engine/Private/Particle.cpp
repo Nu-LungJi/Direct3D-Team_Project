@@ -35,6 +35,7 @@ HRESULT CParticle::LoadParticleTexture(std::pair<StringID, StringID> textureId)
 		strID1.c_str(), strID2.c_str(),
 		m_pParticleTexture->GetSRV().Get());
 	OutputDebugStringA(buf);
+
 	return S_OK;
 }
 void CParticle::RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList)

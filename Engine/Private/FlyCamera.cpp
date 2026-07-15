@@ -11,7 +11,8 @@ CFlyCamera::CFlyCamera()
 }
 
 CFlyCamera::CFlyCamera(const CFlyCamera& Prototype)
-    : CCameraObject{ Prototype }
+    : CCameraObject{ 
+		Prototype }
 {
 }
 
@@ -176,28 +177,6 @@ void CFlyCamera::LateUpdate(E::_float fTimeDelta)
 const CCollFrustum* CFlyCamera::GetFrustumCollider() const
 {
     return static_cast<const CCollFrustum*>(m_pCollider.get());
-}
-
-void CFlyCamera::MouseFix() const
-{
-    RECT rect;
-    GetClientRect(CGameInstance::Get().GetHwnd(), &rect);
-    //POINT ul = { rect.left, rect.top };
-    //POINT lr = { rect.right, rect.bottom };
-    //ClientToScreen(CGameInstance::Get().GetHwnd(), &ul);
-    //ClientToScreen(CGameInstance::Get().GetHwnd(), &lr);
-
-    //RECT clipRect = { ul.x, ul.y, lr.x, lr.y };
-
-    //ClipCursor(&clipRect); 
-
-    POINT center;
-    center.x = (rect.right - rect.left) / 2;
-    center.y = (rect.bottom - rect.top) / 2;
-
-    ClientToScreen(CGameInstance::Get().GetHwnd(), &center);
-    SetCursorPos(center.x, center.y);
-
 }
 
 Engine::UPtr<CFlyCamera> CFlyCamera::Create()
