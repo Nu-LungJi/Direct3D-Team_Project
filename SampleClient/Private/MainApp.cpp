@@ -40,6 +40,7 @@ HRESULT CMainApp::Initialize()
 	{
 		return E_FAIL;
 	}
+	CGameInstance::Get().ImguiEnableDocking(true, true);
 
 	if (CBaseApp::StartLevel(CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO)))
 	{
@@ -82,6 +83,7 @@ HRESULT CMainApp::Initialize()
 
 	// TODO   SampleClinet  초기 이니셜라이즈
 	{
+	
 		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
 			if (FAILED(res->Load()))
@@ -241,16 +243,26 @@ HRESULT CMainApp::Load_Particle_Resources()
 	}
 
 	{
+		//노이즈 텍스쳐
+		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_NoiseGreypack03_D.png")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
 		//파티클 텍스쳐 로드
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_FLARE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_RingFlare_D.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		//return E_FAIL;
-		//	}
-		//}
-		//
+	
+		
 		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBON", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_AncientMagicStreak_E.png")))
 		//{
 		//	if (FAILED(res->Load()))
@@ -296,6 +308,7 @@ HRESULT CMainApp::Load_Particle_Resources()
 
 	{
 		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
+		CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 		//파티클 객채들 생성
 		//CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
 		//CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());

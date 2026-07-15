@@ -52,7 +52,6 @@ void CNodeEditor::NodeEditorUpdate()
 			m_pBeHavior = pComBt;
 			m_BTNodesMain = pComBt->Get_Selector()->Get_Nodes();
 
-			CGameInstance::Get().ImguiEnableDocking(true, true);
 			//ImGui::PushFont(m_FontRegular);
 			Show_Editor();
 			//ImGui::PopFont();

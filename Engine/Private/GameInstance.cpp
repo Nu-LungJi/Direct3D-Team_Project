@@ -346,7 +346,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 
 
-	//m_pParticleManager->Update(fTimeDelta);
+
 	m_pAnimEdit_Manager->Update(fTimeDelta);
 	m_pParticleManager->Update(fTimeDelta);
 
@@ -392,7 +392,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pNavMeshManager->DrawDebug();
 
 	AddRenderObject(RENDERGROUP::NONBLEND_INSTANCED, m_pModel_Instance_Manager.get());
-	AddRenderObject(RENDERGROUP::BLEND, m_pParticleManager.get());
+	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pColliderManager.get());
 }
@@ -486,7 +486,13 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 HRESULT CGameInstance::LoadParticleJson(const std::string& strJsonPath) {
 	return m_pParticleManager->LoadParticleJson(strJsonPath);
 }
-
+HRESULT CGameInstance::LoadParticlePresets(const std::string& strJsonPath) {
+	return m_pParticleManager->LoadParticlePresets(strJsonPath);
+}
+CParticle* CGameInstance::GetParticle(const StringID& sGroupTag, const StringID& sTypeTag)
+{
+	return m_pParticleManager->GetParticle(sGroupTag,sTypeTag);
+}
 HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 	uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 	_bool bLoop, _float fSpawnInterval)
@@ -841,6 +847,13 @@ HRESULT CGameInstance::InitializeResources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner", "./ShaderFiles/Particle/CS_ClearByOwner.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation", "./ShaderFiles/TestModel/Shader_Animation_Compute.hlsl"))
 	{
@@ -1012,6 +1025,20 @@ HRESULT CGameInstance::InitializeResources()
 		D3D11_DEPTH_STENCIL_DESC depthDesc{};
 		depthDesc.DepthEnable = TRUE;
 		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthDesc.StencilEnable = FALSE;
+		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		res->Load(depthDesc);
+	}
+	if (auto res = AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+
+		//  핵심: ALL이 아니라 ZERO로 변경 (깊이 쓰기 차단!)
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 		depthDesc.StencilEnable = FALSE;
 		depthDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;

@@ -439,6 +439,9 @@
     <Filter Include="GameObject\Camera\ShadowCamera">
       <UniqueIdentifier>{794170c2-61af-41b9-a487-94d95b3cc2f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particle\Param">
+      <UniqueIdentifier>{33454004-46ff-4e0e-a3fc-bcaf43f4b418}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -852,9 +855,6 @@
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Beam_CPU.h">
-      <Filter>Particle\Beam</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\CreatureEditor.h">
       <Filter>CreatureEditor</Filter>
     </ClInclude>
@@ -945,6 +945,15 @@
     </ClInclude>
     <ClInclude Include="..\Public\VolumetricFog.h">
       <Filter>GameObject\Volumetric</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleParams.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleParamImGui.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Beam_CPU.h">
+      <Filter>Particle\Beam</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1522,6 +1531,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\CS_PostProcess.hlsl">
       <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
+      <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

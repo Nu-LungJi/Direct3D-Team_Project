@@ -1201,41 +1201,20 @@ HRESULT CRenderer::Render_Effect()
 {
 	ZoneScopedN("Render_Effect");
 	{
-		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+		m_pContext->CopyResource(
+			m_pResDynTexTargetEffect->GetTexture().Get(),
+			m_pResDynTexTargetPBR->GetTexture().Get());
 
-		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 	}
-
-	const auto& vs = m_pFullscreenVS;
-	const auto& ps = m_pFullscreenPS;
-	const auto& viBuffer = m_pFullscreenVIBuffer;
-
-	m_pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-	m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
-
-	ID3D11Buffer* vertexBuffers[] = {
-		   viBuffer->GetVertexBuffer().Get()
-	};
-	uint32_t strides[] = {
-		   viBuffer->GetVertexStride()
-	};
-	uint32_t offsets[] = {
-		   0
-	};
-
-	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-	m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-	m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+	{
+		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
+		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());
+		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+	}
 
 	{
 		ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPBR->GetSRV() };
-		m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
+		m_pContext->PSSetShaderResources(7, 1, pSRVs.GetAddressOf());
 	}
 
 	auto pGameCam = CGameInstance::Get().GetActiveCamera();
@@ -1248,7 +1227,9 @@ HRESULT CRenderer::Render_Effect()
 
 	if (FAILED(RenderEffect()))										return E_FAIL;
 
-	m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+	//m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+
+
 
 	Unbind_Resources();
 

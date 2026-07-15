@@ -399,6 +399,8 @@
     <ClInclude Include="..\Public\SerDeTestCase.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ParticleParams.h" />
+    <ClInclude Include="ParticleParamImGui.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
@@ -682,6 +684,8 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl" />
     <FxCompile Include="..\ShaderFiles\PBR\PS_PBR.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

@@ -2,6 +2,11 @@
 
 namespace Engine
 {
+#include <windows.h>
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
+
+	
 	template<class T>
 	constexpr std::string_view MagicEnumToStringView(T&& t)
 	{

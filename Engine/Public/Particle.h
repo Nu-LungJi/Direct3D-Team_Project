@@ -11,8 +11,10 @@ public:
 	enum PARTICLE_BEHAVIOR : uint32_t
 	{
 		BEHAVIOR_NONE = 0,
-		BEHAVIOR_SHRINK = 1 << 0, // 시간에 따라 크기 축소
-		// BEHAVIOR_FADE = 1 << 1, // 나중에 다른 행동 추가 시 이런 식으로 확장
+		BEHAVIOR_DISTORTION = 1 << 1, 
+		BEHAVIOR_BILLBOARD = 1 << 2,
+		BEHAVIOR_GRAVITY = 1 << 3,
+
 	};
 
 protected:
@@ -25,7 +27,12 @@ public:
 	virtual void LateUpdate(E::_float fTimeDelta) = 0;
 	virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) = 0;
 	virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) = 0;
+	virtual void ClearByOwner(uint32_t ownerID) = 0;
 public:
+	virtual void SetPosition(const _float3& pos) {}
+	virtual void SetVelocity(const _float3& vel) {}
+	virtual void SetSize(const _float& size) {}
+	virtual void SetColor(const _float4& color) {}
 
 	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
 
@@ -42,6 +49,7 @@ protected:
 	SPtr<class CResVertexShader> m_pResVertexShader{};
 	UPtr<class CComStaticModelInstance> m_pComModelInstance{};
 	SPtr<class CResTexture2D> m_pParticleTexture;
+	SPtr<class CResTexture2D> m_pNoiseTexture;
 
 private:
 

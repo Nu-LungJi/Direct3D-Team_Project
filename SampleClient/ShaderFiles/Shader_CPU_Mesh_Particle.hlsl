@@ -1,4 +1,4 @@
-#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
 #define MAX_LIGHT_COUNT     8
@@ -20,6 +20,8 @@ struct VS_IN
     float4 vInstRow3 : INSTANCE_WORLD3;
     float4 vInstColor : INSTANCE_COLOR;
     float4 vInstEmissive : INSTANCE_EMISSIVE;
+    float vInstLife : INSTANCE_LIFE;
+    float vInstMaxLife : INSTANCE_MAXLIFE; 
 };
 
 struct VS_OUT
@@ -32,6 +34,8 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : COLOR1;
     float3 vWorldPos : TEXCOORD1;
+    float life : TEXCOORD2;
+    float maxLife : TEXCOORD3;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -49,6 +53,8 @@ VS_OUT VSMain(VS_IN In)
     Out.vBinormal = normalize(mul(In.vBinormal, (float3x3) matWorld));
     Out.vColor = In.vInstColor;
     Out.vEmissive = In.vInstEmissive;
+    Out.life = In.vInstLife; 
+    Out.maxLife = In.vInstMaxLife;
     return Out;
 }
 
@@ -57,6 +63,7 @@ Texture2D   NormalMap    : register(t1);
 Texture2D   SMROMap      : register(t2);
 Texture2D   EmissiveMap : register(t3);
 Texture2D   DepthMap    : register(t4);
+Texture2D   NoiseMap    : register(t5);
 
 //SamplerState g_LinearSampler : register(s0);
 
@@ -65,184 +72,84 @@ struct PS_OUT
     float4 vDiffuse : SV_TARGET0;
 };
 
-float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
-{
-    float3 Normal = normalize(_Normal);
-    float3 Tangent = normalize(_Tangent);
-    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
-    float3 BiNormal = normalize(cross(Normal, Tangent));
-    return float3x3(Tangent, BiNormal, Normal);
-}
-
-float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float3 _InNormal, float3 _InTangent)
-{
-    float3 LocalNormal = _NormalTex.Sample(LinearWrap, _TexCoord).rgb;
-    LocalNormal = normalize(LocalNormal * 2.f - 1.f);
-
-    float3 N = normalize(_InNormal);
-    float3 T = normalize(_InTangent);
-    T = normalize(T - dot(T, N) * N);
-    float3 B = normalize(cross(N, T));
-
-    return normalize(LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N);
-}
-
-//bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout float3 L, inout float3 Radiance)
-//{
-//    [branch]
-//    if (_Light.LightType == LIGHT_DIRECTIONAL)
-//    {
-//        L = normalize(-_Light.LightDirection);
-//        Radiance = _Light.LightColor * _Light.LightIntensity;
-//        return true;
-//    }
-//    else if (_Light.LightType == LIGHT_POINT)
-//    {
-//        float3 LightVector = _Light.Position - _WorldPosition;
-//        float Distance = length(LightVector);
-//        if (Distance > _Light.LightRange) return false;
-//
-//        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-//        float DistanceByRange = Distance / _Light.LightRange;
-//        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-//
-//        L = normalize(LightVector);
-//        Radiance = _Light.LightColor * _Light.LightIntensity * (Attenuation * Window * Window);
-//        return true;
-//    }
-//    else if (_Light.LightType == LIGHT_SPOTLIGHT)
-//    {
-//        float3 LightVector = _Light.Position - _WorldPosition;
-//        float Distance = length(LightVector);
-//        if (Distance > _Light.LightRange) return false;
-//
-//        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-//        float DistanceByRange = Distance / _Light.LightRange;
-//        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-//        float DistanceFade = Attenuation * Window * Window;
-//
-//        L = normalize(LightVector);
-//
-//        float CosAngle = dot(-L, normalize(_Light.LightDirection));
-//        float Num   = CosAngle - _Light.OuterAttanuation;
-//        float DeNum = _Light.InnerAttanuation - _Light.OuterAttanuation;
-//        float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
-//
-//        Radiance = _Light.LightColor * _Light.LightIntensity * (DistanceFade * ConeFade * ConeFade);
-//        return true;
-//    }
-//    return false;
-//}
-
-float DistributionGGX(float3 N, float3 H, float _Roughness)
-{
-    float R = _Roughness * _Roughness;
-    float R2 = R * R;
-    float NDH = max(0.f, dot(N, H));
-    float NDH2 = NDH * NDH;
-    float Num = R2;
-    float Denom = (NDH2 * (R2 - 1.0) + 1.0);
-    Denom = PI * Denom * Denom;
-    return Num / max(0.000001f, Denom);
-}
-
-float VisibilitySmithJointGGX(float NdotV, float NdotL, float roughness)
-{
-    float a = roughness * roughness;
-    float a2 = a * a;
-    float lambdaV = NdotL * sqrt(max((-NdotV * a2 + NdotV) * NdotV + a2, 0.001f));
-    float lambdaL = NdotV * sqrt(max((-NdotL * a2 + NdotL) * NdotL + a2, 0.001f));
-    float Denom = lambdaV + lambdaL;
-    return Denom > 0.0f ? 0.5f / Denom : 0.0f;
-}
-
-float3 FresnelSchlick(float CTH, float3 MBR)
-{
-    float ClampCTH = clamp(CTH, 0.0f, 1.0f);
-    return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
-}
-float3 ReconstructWorldPos(float2 uv, float depth)
-{
-    float x = uv.x * 2.0f - 1.0f;
-    float y = (1.0f - uv.y) * 2.0f - 1.0f;
-    float z = depth;
-
-    float4 ndcPos = float4(x, y, z, 1.0f);
-    
-    float4 worldPos = mul(ndcPos, g_matInvViewProj);
-    return worldPos.xyz / worldPos.w;
-}
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
     
-    //float DepthData = DepthMap.Sample(LinearWrap, In.vTexcoord).r;
-    //
-    //[branch]
-    //if (DepthData >= 1.0f)
-    //    discard;
-    //
-    //float3 DepthWorld = ReconstructWorldPos(In.vTexcoord, DepthData);
-    //
-    //float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-    //if (AlbedoTex.a == 0.0f)
-    //    discard;
-    //
-    //float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
-    //
-    //float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
-    //WorldNormal = normalize(WorldNormal * NormalIntensity);
-    //
-    //float3 V = normalize(g_vCamPos - DepthWorld); //In.vWorldPos);
-    //float  NDV = max(dot(WorldNormal, V), 0.f);
-    //
-    //float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
-    //float fMetallic  = SMRO.r * MetallicIntensity;
-    //float fRoughness = SMRO.g * RoughnessIntensity;
-    //float fAmbient   = SMRO.b * AmbientIntensity;
-    //
-    //float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
-    //
-    //float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-    //
-    //[unroll(MAX_LIGHT_COUNT)]
-    //for (int i = 0; i < g_iLightCount; ++i)
-    //{
-    //    float3 L, Radiance;
-    //
-    //    [branch]
-    //    if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
-    //        continue;
-    //
-    //    float RawNDL = dot(WorldNormal, L);
-    //
-    //    [branch]
-    //    if (RawNDL > 0.f)
-    //    {
-    //        float NDL = clamp(RawNDL, 0.f, 1.f);
-    //
-    //        float3 H = normalize(V + L);
-    //        float D = DistributionGGX(WorldNormal, H, fRoughness);
-    //        float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
-    //        float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
-    //
-    //        float3 Specular = D * F * V_Spec * SpecularIntensity;
-    //
-    //        float3 kS = F;
-    //        float3 kD = (1.0 - kS) * (1.0 - fMetallic);
-    //        float3 Diffuse = kD * Albedo / PI;
-    //
-    //        LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
-    //    }
-    //}
-    //
-    //// 인스턴스별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
-    //float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
-    //texEmissive = pow(texEmissive, 2.2f);
-    //float3 instEmissive = In.vEmissive.rgb * In.vEmissive.a;
-    //
-    //float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
-    //float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
+    float DepthData = DepthMap.Sample(LinearWrap, In.vTexcoord).r;
+    
+    [branch]
+    if (DepthData >= 1.0f)
+        discard;
+    
+    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+    
+    float ratio = 1.0f - (In.life / In.maxLife);
+
+    if (noise.r < ratio) 
+        discard;
+    
+    float3 DepthWorld = ReconstructWorldPos(In.vTexcoord, DepthData);
+    
+    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
+    if (AlbedoTex.a == 0.0f)
+        discard;
+
+    float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+
+    float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
+    WorldNormal = normalize(WorldNormal * NormalIntensity);
+
+    float3 V = normalize(g_vCamPos - DepthWorld); //In.vWorldPos);
+    float  NDV = max(dot(WorldNormal, V), 0.f);
+
+    float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
+    float fMetallic  = SMRO.r * MetallicIntensity;
+    float fRoughness = SMRO.g * RoughnessIntensity;
+    float fAmbient   = SMRO.b * AmbientIntensity;
+
+    float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
+
+    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+
+    [unroll(MAX_LIGHT_COUNT)]
+    for (int i = 0; i < g_iLightCount; ++i)
+    {
+        float3 L, Radiance;
+
+        [branch]
+        if (!Compute_DynamicLight(AffectedLight[i], DepthWorld, L, Radiance))
+            continue;
+
+        float RawNDL = dot(WorldNormal, L);
+
+        [branch]
+        if (RawNDL > 0.f)
+        {
+            float NDL = clamp(RawNDL, 0.f, 1.f);
+
+            float3 H = normalize(V + L);
+            float D = DistributionGGX(WorldNormal, H, fRoughness);
+            float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+            float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
+
+            float3 Specular = D * F * V_Spec * SpecularIntensity;
+
+            float3 kS = F;
+            float3 kD = (1.0 - kS) * (1.0 - fMetallic);
+            float3 Diffuse = kD * Albedo / PI;
+
+            LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
+        }
+    }
+
+    // 인스턴스별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
+    float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
+    texEmissive = pow(texEmissive, 2.2f);
+    float3 instEmissive = In.vEmissive.rgb * In.vEmissive.a;
+
+    float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
+    float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
 
     //Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     Out.vDiffuse = float4(1.f, 1.f, 1.f, 1.f);

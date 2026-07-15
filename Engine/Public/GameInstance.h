@@ -327,6 +327,10 @@ public:
 	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
 		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
 		_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration = 1.f);
+
+	HRESULT LoadParticlePresets(const std::string& strJsonPath);
+
+	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
 #pragma endregion
 
 #pragma region MAP_MANAGER
