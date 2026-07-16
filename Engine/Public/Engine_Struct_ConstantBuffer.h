@@ -127,5 +127,14 @@ namespace Engine
 		_float3 pad;
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
+
+	typedef struct CB_PART_ATTACHMENT
+	{
+		_float4x4 m_preTransform;
+		uint32_t gParentInstanceIndex;
+		uint32_t gParentBoneIndex;
+		_float2  gPartAttachmentPadding;
+	}CB_PART_ATTACHMENT;
+	static_assert(sizeof(CB_PART_ATTACHMENT) % 16 == 0);
 }
 

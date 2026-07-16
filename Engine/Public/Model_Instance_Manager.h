@@ -28,6 +28,7 @@ public:
 
 	void Add_Instance(CComModelInstance* pModelInstance,const GPU_ANIM_INSTANCE_DATA& InstanceData);
 
+
 public:
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const
 	{

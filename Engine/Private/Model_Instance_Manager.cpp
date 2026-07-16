@@ -89,9 +89,12 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 
 	
 	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
-
+	// Instance 번호를 알기 위해 다시 Object에 등록을 해줘야 한다.
+	CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle)->SetInstanceModelNum(m_iTotalInstanceCount);
 	pBatch->Instances.push_back(InstanceData);
 	++m_iTotalInstanceCount;
+
+
 
 	if (!pBatch->bActiveThisFrame)
 	{
@@ -99,6 +102,8 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 		m_ActiveBatches.push_back(pBatch);
 	}
 }
+
+
 
 MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelInstance* pModelInstance)
 {
@@ -148,8 +153,6 @@ void CModel_Instance_Manager::Clear_Frame()
 			continue;
 
 		pBatch->Instances.clear();
-		pBatch->ObjectHandle;
-
 
 		pBatch->bActiveThisFrame = false;
 	}

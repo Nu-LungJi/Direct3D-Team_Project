@@ -173,6 +173,7 @@ cbuffer PostProcessBuffer : register(b8)
 
 cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
 {
+    float4x4 preTransform;
     uint gParentInstanceIndex;
     uint gParentBoneIndex;
     float2 gPartAttachmentPadding;

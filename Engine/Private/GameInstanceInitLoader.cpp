@@ -225,8 +225,15 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PART_ATTACHMENT, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(E::CB_PART_ATTACHMENT) })))
+		{
+			return E_FAIL;
+		}
+	}
 
-		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
 		{
 			E::CResStructuredBuffer::DESC Desc{};
 	
@@ -928,6 +935,23 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 				return E_FAIL;
 			}
 		}
+
+
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PartObject", "./ShaderFiles/TestModel/Shader_VtxPartObject.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PartObject", "./ShaderFiles/TestModel/Shader_VtxPartObject.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
 	}
 	return S_OK;
 }
@@ -1029,40 +1053,6 @@ HRESULT CGameInstanceInitLoader::LoadStaticModel()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Axe_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Mace_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
-		
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-		
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Sword_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
+	
 	return S_OK;
 }
