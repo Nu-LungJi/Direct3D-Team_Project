@@ -9,6 +9,7 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 
+#include "LevelLogoLoader.h"
 
 NS_USING(Client)
 
@@ -163,7 +164,6 @@ Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 
 void CLevelLogo::Free()
 {
-	E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
-	E::CGameInstance::Get().DelResource("LEVEL_LOGO");
+	CLevelLogoLoader::UnLoad();
 	CLevel::Free();
 }

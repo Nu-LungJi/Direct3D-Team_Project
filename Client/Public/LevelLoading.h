@@ -25,10 +25,6 @@ private:
 	void LoadingCheck();
 
 private:
-	HRESULT LoadingOverWorldLevel();
-
-
-private:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
 
