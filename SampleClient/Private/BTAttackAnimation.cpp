@@ -58,13 +58,18 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			}
 
 			m_fTime += fTimeDelta;
-			_float tt = m_fTime / m_fRatio.y;
-
+	
+			
+			_float tt = (pAnimator->GetPlayAnimRatio() - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
+			if (tt < 0.f)
+				tt = 0;
+			if (tt > 1.f)
+				tt = 1.f;
 			if (auto pBT = Get_ComBT())
 			{
 				if (auto pSrc = pBT->GetGameObject())
 				{
-					_float fEmissive = 0 + (m_fRatio.x - 0) * tt;
+					_float fEmissive = std::lerp(0,0.5, tt);
 					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
@@ -164,7 +169,7 @@ void CBTAttackAnimation::Update_Gui()
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
 	if (ImGui::TreeNode("StartFlag"))
 	{
 		
