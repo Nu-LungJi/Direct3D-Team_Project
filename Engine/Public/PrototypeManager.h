@@ -21,9 +21,10 @@ public:
 
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, void* pArg);
 	void DelPrototype(const StringID& sGroupTag);
-	const PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
+	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 private:
 	std::unordered_map<StringID, PROTOTYPES> m_pPrototypes{};
+	mutable std::shared_mutex m_PrototypeMutex{};
 
 private:
 	ComPtr<ID3D11Device> m_pDevice{};

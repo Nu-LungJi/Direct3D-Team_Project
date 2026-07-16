@@ -177,7 +177,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
-	const CPrototypeManager::PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
+	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER

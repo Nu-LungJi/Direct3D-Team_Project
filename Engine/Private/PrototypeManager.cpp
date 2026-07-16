@@ -12,16 +12,27 @@ CPrototypeManager::~CPrototypeManager()
 
 void CPrototypeManager::UpdateGUI()
 {
+	std::vector<std::pair<StringID, std::vector<StringID>>> prototypeTags{};
+	{
+		std::shared_lock lock{ m_PrototypeMutex };
+		prototypeTags.reserve(m_pPrototypes.size());
+		for (const auto& [groupID, prototypes] : m_pPrototypes)
+		{
+			auto& [groupTag, tags] = prototypeTags.emplace_back(groupID, std::vector<StringID>{});
+			tags.reserve(prototypes.size());
+			for (const auto& [prototypeID, prototype] : prototypes)
+				tags.emplace_back(prototypeID);
+		}
+	}
+
 	ImGui::Begin("CPrototype_Manager");
 
-	for (const auto& [groupID, protoes] : m_pPrototypes)
+	for (const auto& [groupID, tags] : prototypeTags)
 	{
 		if (ImGui::TreeNode(groupID.GetDbgStr()))
 		{
-			for (const auto& [protoID, proto] : protoes)
-			{
+			for (const auto& protoID : tags)
 				ImGui::Text(protoID.GetDbgStr());
-			}
 
 			ImGui::TreePop();
 		}
@@ -39,27 +50,18 @@ HRESULT CPrototypeManager::Initialize()
 
 HRESULT CPrototypeManager::AddPrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, UPtr<CPrototype> pPrototype)
 {
-	//if (Find_Prototype(svGroupTag, svPrototypeTag))
-	//{
-	//	return E_FAIL;
-	//}
+	if (!pPrototype)
+		return E_INVALIDARG;
 
-	auto group = Find_Group(svGroupTag);
-	if (group)
-	{
-		group->emplace(svPrototypeTag, std::move(pPrototype));
-	}
-	else
-	{
-		CPrototypeManager::PROTOTYPES newPrototypes{};
-		newPrototypes.emplace(svPrototypeTag, std::move(pPrototype));
-		m_pPrototypes.emplace(svGroupTag, std::move(newPrototypes));
-	}
+	std::unique_lock lock{ m_PrototypeMutex };
+	auto& group = m_pPrototypes[svGroupTag];
+	group.insert_or_assign(svPrototypeTag, std::move(pPrototype));
 	return S_OK;
 }
 
 UPtr<CPrototype> CPrototypeManager::ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, void* pArg)
 {
+	std::shared_lock lock{ m_PrototypeMutex };
 	CPrototype* pPrototype = Find_Prototype(svGroupTag, svPrototypeTag);
 	if (pPrototype == nullptr)
 	{
@@ -70,6 +72,7 @@ UPtr<CPrototype> CPrototypeManager::ClonePrototype(const StringID& svGroupTag, c
 
 void CPrototypeManager::DelPrototype(const StringID& sGroupTag)
 {
+	std::unique_lock lock{ m_PrototypeMutex };
 	auto iter = m_pPrototypes.find(sGroupTag);
 	if (iter != m_pPrototypes.end())
 	{
@@ -77,14 +80,18 @@ void CPrototypeManager::DelPrototype(const StringID& sGroupTag)
 	}
 }
 
-const CPrototypeManager::PROTOTYPES* CPrototypeManager::GetPrototype(const StringID& svGroupTag) const
+std::vector<StringID> CPrototypeManager::GetPrototypeTags(const StringID& svGroupTag) const
 {
+	std::vector<StringID> tags{};
+	std::shared_lock lock{ m_PrototypeMutex };
 	auto iter = m_pPrototypes.find(svGroupTag);
-	if (iter != m_pPrototypes.end())
-	{
-		return &iter->second;
-	}
-	return nullptr;
+	if (iter == m_pPrototypes.end())
+		return tags;
+
+	tags.reserve(iter->second.size());
+	for (const auto& [prototypeTag, prototype] : iter->second)
+		tags.emplace_back(prototypeTag);
+	return tags;
 }
 
 //const std::unordered_map<StringID, UPtr<CPrototype>>& GetPrototype(const StringID& svGroupTag) const
