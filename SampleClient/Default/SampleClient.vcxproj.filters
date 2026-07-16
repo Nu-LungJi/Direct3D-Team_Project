@@ -335,7 +335,7 @@
     </ClInclude>
     <ClInclude Include="..\Public\UIManager.h">
       <Filter>GameObject\UI</Filter>
-	</ClInclude>
+    </ClInclude>
     <ClInclude Include="..\public\Weapon.h">
       <Filter>GameObject\AI\Weapon</Filter>
     </ClInclude>
@@ -571,9 +571,6 @@
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
     </ClCompile>
-    <ClCompile Include="LevelUIEditor.cpp">
-      <Filter>Level\UiEditor</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Monster.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
@@ -604,6 +601,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_BladeTrail.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

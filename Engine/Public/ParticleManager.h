@@ -75,7 +75,14 @@ struct BEAM_PARAMS
 	uint32_t geometryType = 0;
 
 };
-
+struct TextureSlotState
+{
+	std::string label;              // "Diffuse", "Normal", "Distortion", "Noise"
+	char szTextureID1[128] = "SAMPLE_CLINET_TEXTURE";
+	char szTextureID2[128] = "";
+	int selectedIndex = -1;
+	std::string selectedPath;
+};
 
 // 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
 enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
@@ -133,7 +140,12 @@ public:
 		const std::string& textureID1 = "", const std::string& textureID2 = "", const std::string& viBufferID1 ="",
 		const std::string& viBufferID2= "",
 		int RowCount = 1,
-		int ColCount = 1);
+		int ColCount = 1, const std::string& normalTexID1 = "", const std::string& normalTexID2 = "",
+		const std::string& distortionTexID1 = "", const std::string& distortionTexID2 = "",
+		const std::string& noiseTexID1 = "", const std::string& noiseTexID2 = "",
+		const std::string& normalTexPath = "",
+		const std::string& distortionTexPath = "",
+		const std::string& noiseTexPath = "");
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -168,6 +180,7 @@ private:
 
 	 bool bNeedTypeIndexSync = false;
 	 StringID pendingSyncGroup, pendingSyncType;
+
 private:
     HRESULT ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 

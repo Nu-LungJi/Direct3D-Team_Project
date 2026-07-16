@@ -46,6 +46,9 @@ public:
         std::pair<StringID, StringID> textureID;  // 파티클 텍스처 (CResTexture2D 하나)
         std::pair<StringID, StringID> VSID;  // 버텍스 쉐이더
         std::pair<StringID, StringID> PSID;  // 픽셀 쉐이더
+		std::pair<StringID, StringID> normalTextureID;
+		std::pair<StringID, StringID> distortionTextureID;
+		std::pair<StringID, StringID> noiseTextureID;
         PARTICLE_TYPE                  type;
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
 		uint32_t TexRows = 1;

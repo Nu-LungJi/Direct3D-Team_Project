@@ -56,7 +56,16 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	}
 
 
-	m_pNoiseTexture = m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE");
+	if (m_Desc.normalTextureID.first != "") {
+		m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
+	}
+	if (m_Desc.distortionTextureID.first != "") {
+		m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.distortionTextureID.first, m_Desc.distortionTextureID.second);
+	}
+	if (m_Desc.noiseTextureID.first != "") {
+		m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+	}
+
     m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
     if (FAILED(m_pResVertexShader->Load()))
         return E_FAIL;
@@ -69,7 +78,6 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
         return E_FAIL;
 
     m_vecVertices.reserve(iMaxVertices);
-	m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONDISTORTION");
 
     return S_OK;
 }
@@ -242,6 +250,7 @@ void CTrail_CPU::SetColor(const _float4& color)
 	m_vColor.z = color.z;
 }
 
+
 HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
     if (m_vecVertices.size() < 4) // 최소 프레임 2개(=4정점)는 있어야 스윕 면이 성립
@@ -289,14 +298,29 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-    pContext->PSSetShaderResources(1, 1, m_pNoiseTexture->GetSRV().GetAddressOf());
-    pContext->PSSetShaderResources(2, 1, m_pDistortionTexture->GetSRV().GetAddressOf());
+    pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+
+	if (m_pNormalTexture)
+	{
+		ID3D11ShaderResourceView* pNormalSRV = m_pNormalTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(2, 1, &pNormalSRV);
+	}
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(3, 1, &pDistortionSRV);
+	}
+	if (m_pNoiseTexture)
+	{
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
+	}
+
 
     pContext->Draw((UINT)m_vecVertices.size(), 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr};
-    pContext->PSSetShaderResources(0, 3, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr,nullptr};
+    pContext->PSSetShaderResources(0, 4, nullSRV);
 
 	ID3D11Buffer* nullCBuffer[] = { nullptr };
 	pContext->PSSetConstantBuffers(0, 1, nullCBuffer);
@@ -349,7 +373,8 @@ void CTrail_CPU::BuildTrailGeometry()
 	{
 		const auto& frame = m_dequeFrames[i];
 		float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
-		float fDeath = powf(fAgeRatio, 3.f);
+		float fDeath = powf(fAgeRatio, 1.2f);
+		//float fDeath = fAgeRatio;
 		float fLifeRatio = 1.f - fDeath;
 		float t = frame.fDistance * fUVTileScale;
 		float fWidthScale = fLifeRatio;

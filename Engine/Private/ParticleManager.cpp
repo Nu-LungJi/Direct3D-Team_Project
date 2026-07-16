@@ -33,20 +33,26 @@ CParticleManager::~CParticleManager()
 
 void CParticleManager::UpdateGUI()
 {
-	ImGui::Begin("SaveResourcesAsJson");
-	
-	if (ImGui::Button("Pattern execute")) {
-		Spawn(0,"./Resources/json/Particle/SpawnQueue.json", _fvector{ 0,0,0,0 }, _fvector{ 0, 0, 0, 0 });
-	}
-	if (ImGui::Button("Erase")) {
-		
-		for (auto& particle : m_Particles) {
-			for (auto& real : particle.second) {
-				real.second->ClearByOwner(0);
-			}
-		}
-	
-	}
+	static TextureSlotState slotDiffuse{ "Diffuse",    "SAMPLE_CLINET_TEXTURE", "TEX_RIBBON" };
+	static TextureSlotState slotNormal{ "Normal",     "SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNORMAL" };
+	static TextureSlotState slotDistortion{ "Distortion", "SAMPLE_CLINET_TEXTURE", "TEX_RIBBONDISTORTION" };
+	static TextureSlotState slotNoise{ "Noise",      "SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE" };
+
+	static TextureSlotState* slots[] = { &slotDiffuse, &slotNormal, &slotDistortion, &slotNoise };
+	static int activeSlotIndex = 0;
+
+	// ---- 슬롯별 폴더 경로 (인덱스가 slots[]와 1:1 대응) ----
+	static const std::string kTextureFolders[4] = {
+		"./Resources/SampleClient/Textures/EffectParticle/Diffuse",
+		"./Resources/SampleClient/Textures/EffectParticle/Normal",
+		"./Resources/SampleClient/Textures/EffectParticle/Distortion",
+		"./Resources/SampleClient/Textures/EffectParticle/Noise"
+	};
+
+	// ---- 슬롯별 파일 목록 (크기 4로 미리 확보) ----
+	static std::vector<std::vector<std::string>> textureFileList(4);
+	static bool bTextureScanned = false;
+
 	static char szPresetName[128] = "";
 	static char szPresetSavePath[MAX_PATH] = "./Resources/json/Particle/Preset/ParticlePresets.json";
 	static const std::string kFbxListJsonPath = "./Resources/SampleClient/Models/ParticleModelJson/ParticleModel.json";
@@ -62,8 +68,6 @@ void CParticleManager::UpdateGUI()
 	static int particleTypeIndex = 0;
 	const char* particleTypeNames[] = { "PARTICLE_CPU", "PARTICLE_GPU", "BEAM_CPU", "TRAIL_CPU" };
 	static char szParticleName[128] = "";
-	static char szTextureID1[128] = "SAMPLE_CLINET_TEXTURE";
-	static char szTextureID2[128] = "TEX_RIBBON";
 	static int iMaxParticles = 1000;
 	static uint32_t iBehaviorType = 0;
 	static char szVSID1[128] = "SAMPLE_CLIENT_SHADER";
@@ -75,42 +79,29 @@ void CParticleManager::UpdateGUI()
 	static char szViBuffer1[128] = "SAMPLE_CLIENT_PARTICLEBF";
 	static char szViBuffer2[128] = "VIBUF_ParticleQuad";
 
-	static const std::string kTextureRealFolder = "./Resources/SampleClient/Textures/EffectParticle";
-	static std::vector<std::string> textureFileList;
-	static bool bTextureScanned = false;
-	static int selectedTextureIndex = -1;
-	static std::string selectedTexturePath;
-
-
 	int iTexRow = 1;
 	int iTexCol = 1;
 
-	static float fRandomMinPosX = 0;
-	static float fRandomMaxPosX = 1;
-
-	static float fRandomMinPosY = 0;
-	static float fRandomMaxPosY = 1;
-
-	static float fRandomMinPosZ = 0;
-	static float fRandomMaxPosZ = 1;
-
-	static float fRandomMinVelX = 0;
-	static float fRandomMaxVelX = 1;
-
-	static float fRandomMinVelY = 0;
-	static float fRandomMaxVelY = 1;
-
-	static float fRandomMinVelZ = 0;
-	static float fRandomMaxVelZ = 1;
-	static _bool randomPos = false;
-	static _bool randomVel = false;
 	static _bool none = false;
 	static _bool distortion = false;
 	static _bool billboard = false;
 	static _bool gravity = false;
 
-	static _float4 rotaion = _float4(0,0,0,0);
+	static _float4 rotaion = _float4(0, 0, 0, 0);
 	static int iGeometryType = 0;
+
+	ImGui::Begin("SaveResourcesAsJson");
+
+	if (ImGui::Button("Pattern execute")) {
+		Spawn(0, "./Resources/json/Particle/SpawnQueue.json", _fvector{ 0,0,0,0 }, _fvector{ 0, 0, 0, 0 });
+	}
+	if (ImGui::Button("Erase")) {
+		for (auto& particle : m_Particles) {
+			for (auto& real : particle.second) {
+				real.second->ClearByOwner(0);
+			}
+		}
+	}
 
 	// ---- 0. WhatKind 대분류 선택 ----
 	const char* whatKindNames[] = { "MESH", "TEXTURE" };
@@ -162,27 +153,66 @@ void CParticleManager::UpdateGUI()
 	{
 		if (!bTextureScanned)
 		{
-			textureFileList = ScanTextureFolder(kTextureRealFolder);
+			for (int s = 0; s < 4; ++s)
+				textureFileList[s] = ScanTextureFolder(kTextureFolders[s]);
 			bTextureScanned = true;
 		}
 
 		if (ImGui::Button("Rescan Texture Folder"))
-			textureFileList = ScanTextureFolder(kTextureRealFolder);
+		{
+			for (int s = 0; s < 4; ++s)
+				textureFileList[s] = ScanTextureFolder(kTextureFolders[s]);
+		}
 
-		ImGui::Text("Textures:");
+		// ---- 슬롯 선택 탭 ----
+		if (ImGui::BeginTabBar("TextureSlots"))
+		{
+			for (int s = 0; s < 4; ++s)
+			{
+				if (ImGui::BeginTabItem(slots[s]->label.c_str()))
+				{
+					activeSlotIndex = s;
+					ImGui::EndTabItem();
+				}
+			}
+			ImGui::EndTabBar();
+		}
 
+		TextureSlotState& slot = *slots[activeSlotIndex];
+		_bool bOptionalSlot = (activeSlotIndex != 0); // Diffuse(0번)만 필수
 
+		if (bOptionalSlot)
+		{
+			if (slot.selectedPath.empty())
+			{
+				ImGui::TextColored(ImVec4(0.5f, 0.8f, 0.5f, 1.f), "(사용 안 함)");
+			}
+			else
+			{
+				if (ImGui::Button("None (사용 안 함)"))
+				{
+					slot.selectedIndex = -1;
+					slot.selectedPath.clear();
+				}
+				ImGui::SameLine();
+				ImGui::Text("현재: %s", slot.selectedPath.c_str());
+			}
+			ImGui::Separator();
+		}
+
+		// ---- 지금 활성화된 탭의 폴더/파일목록만 순회 ----
 		const float thumbnailSize = 64.0f;
 		const float cellPadding = 10.0f;
 		const float cellWidth = thumbnailSize + cellPadding;
-		int columns = 4;
-		float windowWidth = ImGui::GetContentRegionAvail().x;
-		columns = std::max(1, (int)(windowWidth / cellWidth));
+		int columns = std::max(1, (int)(ImGui::GetContentRegionAvail().x / cellWidth));
+
+		const std::string& currentFolder = kTextureFolders[activeSlotIndex];
+		auto& currentFileList = textureFileList[activeSlotIndex];
 
 		int i = 0;
-		for (auto& texName : textureFileList)
+		for (auto& texName : currentFileList)
 		{
-			std::string fullPath = kTextureRealFolder + "/" + texName;
+			std::string fullPath = currentFolder + "/" + texName;
 			ID3D11ShaderResourceView* pSRV = GetOrLoadTextureThumbnail(fullPath);
 
 			ImGui::PushID(i);
@@ -192,26 +222,25 @@ void CParticleManager::UpdateGUI()
 			{
 				if (ImGui::ImageButton((ImTextureID)pSRV, ImVec2(thumbnailSize, thumbnailSize)))
 				{
-					selectedTextureIndex = i;
-					selectedTexturePath = fullPath;
+					slot.selectedIndex = i;
+					slot.selectedPath = fullPath;
 				}
 			}
 			else
 			{
 				if (ImGui::Button("No Img", ImVec2(thumbnailSize, thumbnailSize)))
 				{
-					selectedTextureIndex = i;
-					selectedTexturePath = fullPath;
+					slot.selectedIndex = i;
+					slot.selectedPath = fullPath;
 				}
 			}
 
 			ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + thumbnailSize);
 			ImGui::TextWrapped("%s", texName.c_str());
 			ImGui::PopTextWrapPos();
-
 			ImGui::EndGroup();
 
-			if (selectedTextureIndex == i)
+			if (slot.selectedIndex == i)
 			{
 				ImVec2 minPos = ImGui::GetItemRectMin();
 				ImVec2 maxPos = ImGui::GetItemRectMax();
@@ -219,20 +248,29 @@ void CParticleManager::UpdateGUI()
 			}
 
 			ImGui::PopID();
-
-			if ((i + 1) % columns != 0)
-				ImGui::SameLine(0.0f, cellPadding);
-
+			if ((i + 1) % columns != 0) ImGui::SameLine(0.0f, cellPadding);
 			i++;
 		}
 
 		ImGui::NewLine();
+		if (!slot.selectedPath.empty())
+			ImGui::Text("Selected (%s): %s", slot.label.c_str(), slot.selectedPath.c_str());
 
-		if (!selectedTexturePath.empty())
-			ImGui::Text("Selected Texture: %s", selectedTexturePath.c_str());
+		ImGui::InputText((slot.label + " TextureID1").c_str(), slot.szTextureID1, IM_ARRAYSIZE(slot.szTextureID1));
+		ImGui::InputText((slot.label + " TextureID2").c_str(), slot.szTextureID2, IM_ARRAYSIZE(slot.szTextureID2));
 
-		ImGui::InputText("TextureID1", szTextureID1, IM_ARRAYSIZE(szTextureID1));
-		ImGui::InputText("TextureID2", szTextureID2, IM_ARRAYSIZE(szTextureID2));
+		// ---- 다른 슬롯들 요약 표시 ----
+		ImGui::Separator();
+		ImGui::Text("Summary:");
+		for (int s = 0; s < 4; ++s)
+		{
+			if (s == 0)
+				ImGui::BulletText("%s: %s", slots[s]->label.c_str(),
+					slots[s]->selectedPath.empty() ? "(미선택)" : slots[s]->selectedPath.c_str());
+			else
+				ImGui::BulletText("%s: %s", slots[s]->label.c_str(),
+					slots[s]->selectedPath.empty() ? "(사용 안 함)" : slots[s]->selectedPath.c_str());
+		}
 	}
 
 	ImGui::Separator();
@@ -251,12 +289,12 @@ void CParticleManager::UpdateGUI()
 	ImGui::InputInt("TexRowCount", &iTexRow);
 	ImGui::InputInt("TexColCount", &iTexCol);
 
-
 	ImGui::Separator();
 
 	// ---- 4. 저장 ----
 	std::string particleNameStr = szParticleName;
-	std::string targetPath = (whatKindIndex == 1) ? selectedTexturePath : selectedFbxPath;
+	// Diffuse 슬롯이 실질적인 "대표 텍스처 경로"
+	std::string targetPath = (whatKindIndex == 1) ? slotDiffuse.selectedPath : selectedFbxPath;
 	std::string particleTypeStr = particleTypeNames[particleTypeIndex];
 	std::string jsonNameStr = szJsonName;
 
@@ -268,6 +306,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputText("VIBuffer1 if CPUTEX", szViBuffer1, IM_ARRAYSIZE(szViBuffer1));
 		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
 	}
+
 	auto IsCombinationSupported = [](int whatKindIdx, const std::string& particleType) -> bool
 		{
 			if (whatKindIdx == 0) // MESH
@@ -281,7 +320,7 @@ void CParticleManager::UpdateGUI()
 	std::vector<std::string> vecErrors;
 
 	if (targetPath.empty())
-		vecErrors.push_back(whatKindIndex == 0 ? "Fbx 파일을 선택하세요." : "텍스처를 선택하세요.");
+		vecErrors.push_back(whatKindIndex == 0 ? "Fbx 파일을 선택하세요." : "Diffuse 텍스처를 선택하세요.");
 
 	if (particleNameStr.empty())
 		vecErrors.push_back("Particle Name을 입력하세요.");
@@ -298,8 +337,8 @@ void CParticleManager::UpdateGUI()
 	}
 	else
 	{
-		if (std::string(szTextureID1).empty() || std::string(szTextureID2).empty())
-			vecErrors.push_back("TextureID1/2를 입력하세요.");
+		if (std::string(slotDiffuse.szTextureID1).empty() || std::string(slotDiffuse.szTextureID2).empty())
+			vecErrors.push_back("Diffuse TextureID1/2를 입력하세요.");
 
 		if (particleTypeStr == "PARTICLE_CPU" &&
 			(std::string(szViBuffer1).empty() || std::string(szViBuffer2).empty()))
@@ -313,7 +352,6 @@ void CParticleManager::UpdateGUI()
 
 	for (auto& err : vecErrors)
 		ImGui::TextColored(ImVec4(1.f, 0.6f, 0.f, 1.f), "- %s", err.c_str());
-
 
 	if (bCanSave)
 	{
@@ -339,24 +377,44 @@ void CParticleManager::UpdateGUI()
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
 						szVSID1, szVSID2, szPSID1, szPSID2,
-						szGroupTag, szResTag, szTextureID1, szTextureID2,
-						szViBuffer1, szViBuffer2, iTexRow, iTexCol);
+						szGroupTag, szResTag,
+						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
+						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID1,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID2,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID1,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID2,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID1,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID2,
+						slotNormal.selectedPath,
+						slotDistortion.selectedPath,
+						slotNoise.selectedPath);
 				}
 				else if (particleTypeStr == "BEAM_CPU") {
 					hr = Save_Beam_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
 						szVSID1, szVSID2, szPSID1, szPSID2, iGeometryType,
-						szTextureID1, szTextureID2, 
-						iTexRow, iTexCol);///////////////DFD
+						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
+						iTexRow, iTexCol);
 				}
 				else {
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
 						szVSID1, szVSID2, szPSID1, szPSID2,
-						szGroupTag, szResTag, szTextureID1, szTextureID2,
-						"", "", iTexRow, iTexCol);
+						szGroupTag, szResTag,
+						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
+						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID1,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID2,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID1,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID2,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID1,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID2,
+						slotNormal.selectedPath,
+						slotDistortion.selectedPath,
+						slotNoise.selectedPath);
 				}
 			}
 
@@ -364,6 +422,19 @@ void CParticleManager::UpdateGUI()
 			m_sLastResultMsg = m_bLastResultSuccess
 				? ("저장 완료: " + savePath.string())
 				: "저장 실패: 값을 확인하세요.";
+
+			if (m_bLastResultSuccess)
+			{
+				// 저장 성공 후 슬롯 초기화
+				slotDiffuse.selectedIndex = -1;
+				slotDiffuse.selectedPath.clear();
+				slotNormal.selectedIndex = -1;
+				slotNormal.selectedPath.clear();
+				slotDistortion.selectedIndex = -1;
+				slotDistortion.selectedPath.clear();
+				slotNoise.selectedIndex = -1;
+				slotNoise.selectedPath.clear();
+			}
 		}
 	}
 	else
@@ -377,10 +448,14 @@ void CParticleManager::UpdateGUI()
 			"%s", m_sLastResultMsg.c_str());
 	}
 	ImGui::End();
+
+	// ================================================================
+	// ---- 아래 "CParticleManager" 윈도우는 기존 코드 그대로 (변경 없음) ----
+	// ================================================================
 	ImGui::Begin("CParticleManager");
 
-	static int whatKindFilterIndex = 0; // 0: MESH, 1: TEXTURE
-	static int groupTypeIndex = 0;      // PARTICLE_CPU / PARTICLE_GPU / BEAM_CPU / RIBBON_CPU
+	static int whatKindFilterIndex = 0;
+	static int groupTypeIndex = 0;
 	static int typeIndex = 0;
 	static SPAWN_COMMAND_KIND currentKind = SPAWN_COMMAND_KIND::STANDARD;
 	static int patternKindIndex = 0;
@@ -389,22 +464,18 @@ void CParticleManager::UpdateGUI()
 	static STANDARD_PARAMS pendingStandard{};
 	static BEAM_PARAMS     pendingBeam{};
 
-
-	// ---- 0. WhatKind 필터 ----
 	if (ImGui::RadioButton("MESH", whatKindFilterIndex == 0)) { whatKindFilterIndex = 0; typeIndex = 0; }
 	ImGui::SameLine();
 	if (ImGui::RadioButton("TEXTURE", whatKindFilterIndex == 1)) { whatKindFilterIndex = 1; typeIndex = 0; }
 
 	ImGui::Separator();
 
-	// ---- 1. Group: 파티클 타입(카테고리) 콤보 ----
 	const char* groupTypeNames[] = { "PARTICLE_CPU", "PARTICLE_GPU", "BEAM_CPU", "RIBBON_CPU" };
 	if (ImGui::Combo("Group (ParticleType)", &groupTypeIndex, groupTypeNames, IM_ARRAYSIZE(groupTypeNames)))
 		typeIndex = 0;
 
 	ImGui::Separator();
 
-	// ---- 2. Type: 선택된 카테고리에 맞는 실제 파티클 이름 목록 ----
 	struct MatchedParticle
 	{
 		StringID sGroupTag;
@@ -412,7 +483,6 @@ void CParticleManager::UpdateGUI()
 		std::string sDisplayName;
 	};
 	std::vector<MatchedParticle> matchedList;
-
 
 	for (auto& [groupTag, typeMap] : m_Particles)
 	{
@@ -447,11 +517,6 @@ void CParticleManager::UpdateGUI()
 				if (pCPU->GetWhatKind() != wantedKind)
 					continue;
 			}
-			//else if (auto pCPU = dynamic_cast<CBeam_CPU*>(pParticle))
-			//{
-			//	if (pCPU->GetWhatKind() != wantedKind)
-			//		continue;
-			//}
 
 			matchedList.push_back({ groupTag, typeTag, typeTag.GetDbgStr() });
 		}
@@ -476,7 +541,6 @@ void CParticleManager::UpdateGUI()
 	static StringID previewGroup, previewType;
 	if (!matchedList.empty())
 	{
-
 		std::vector<const char*> namesForCombo;
 		for (auto& m : matchedList)
 			namesForCombo.push_back(m.sDisplayName.c_str());
@@ -493,7 +557,6 @@ void CParticleManager::UpdateGUI()
 
 		if (selectedGroup != previewGroup || selectedType != previewType)
 		{
-			// 이전 미리보기 정리
 			if (bPreviewActive)
 			{
 				auto pOld = GetParticle(previewGroup, previewType);
@@ -503,7 +566,6 @@ void CParticleManager::UpdateGUI()
 			previewType = selectedType;
 			bPreviewActive = false;
 		}
-
 	}
 	else
 	{
@@ -537,7 +599,7 @@ void CParticleManager::UpdateGUI()
 			previewParams.fEndSize = preset.fEndSize;
 			previewParams.color = preset.StartColor;
 			previewParams.emissive = preset.Emissive;
-	
+
 			previewParams.rotation = _float4(XMConvertToRadians(preset.rotation.x),
 				XMConvertToRadians(preset.rotation.y),
 				XMConvertToRadians(preset.rotation.z),
@@ -555,9 +617,8 @@ void CParticleManager::UpdateGUI()
 
 			if (SUCCEEDED(hr))
 			{
-				// ---- 메모리에서도 즉시 제거 ----
 				m_ParticlePresets.erase(targetName);
-				selectedPresetIndex = -1;   // 삭제했으니 선택 인덱스 리셋
+				selectedPresetIndex = -1;
 			}
 
 			m_bLastResultSuccess = SUCCEEDED(hr);
@@ -570,7 +631,6 @@ void CParticleManager::UpdateGUI()
 	{
 		ImGui::TextDisabled("(저장된 프리셋 없음)");
 	}
-
 
 	ImGui::Text("=== Live Preview ===");
 	ImGui::PushID("LivePreview");
@@ -587,7 +647,6 @@ void CParticleManager::UpdateGUI()
 		gravity = false;
 	}
 
-	// 매번 NONE으로 리셋 후 체크된 것만 OR
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
@@ -624,7 +683,6 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("Loop", &previewParams.bLoop);
 	if (previewParams.bLoop)
 		ImGui::DragFloat("Spawn Interval", &previewParams.fSpawnInterval, 0.01f);
-	
 
 	static STANDARD_PARAMS lastPreviewParams{};
 	bool bParamsChanged = std::memcmp(&previewParams, &lastPreviewParams, sizeof(STANDARD_PARAMS)) != 0;
@@ -650,9 +708,9 @@ void CParticleManager::UpdateGUI()
 			data.fSize = p.fSize;
 			data.fEndSize = p.fEndSize;
 			data.rotation = _float4(XMConvertToRadians(p.rotation.x),
-					XMConvertToRadians(p.rotation.y),
-					XMConvertToRadians(p.rotation.z),
-					XMConvertToRadians(p.rotation.w));
+				XMConvertToRadians(p.rotation.y),
+				XMConvertToRadians(p.rotation.z),
+				XMConvertToRadians(p.rotation.w));
 			data.color = p.color;
 			data.emissive = p.emissive;
 			data.ownerID = PREVIEW_OWNER_ID;
@@ -694,45 +752,7 @@ void CParticleManager::UpdateGUI()
 	lastPreviewParams = previewParams;
 	ImGui::PopID();
 
-	// ---- Save as Preset ----
 	ImGui::Separator();
-
-	// ---- Loop가 켜져 있으면, 미리보기 전용 타이머로 직접 재스폰 ----
-	if (bPreviewActive && previewParams.bLoop)
-	{
-		fPreviewLoopElapsed += ImGui::GetIO().DeltaTime;
-		if (fPreviewLoopElapsed >= previewParams.fSpawnInterval)
-		{
-			fPreviewLoopElapsed = 0.f;
-
-			auto pParticle = GetParticle(previewGroup, previewType);
-			if (pParticle)
-			{
-				PARTICLE_SPAWN_DATA data{};
-				data.position = previewParams.position;
-				data.velocity = previewParams.velocity;
-				data.life = previewParams.life;
-				data.fSize = previewParams.fSize;
-				data.fEndSize = previewParams.fEndSize;
-				data.rotation = previewParams.rotation;
-				data.color = previewParams.color;
-				data.emissive = previewParams.emissive;
-				data.ownerID = PREVIEW_OWNER_ID;
-				data.iBehaviorType = previewParams.iBehaviorType;
-				Spawn(previewGroup, previewType, 1, &data, false, 0.f);
-			}
-		}
-	}
-	else
-	{
-		fPreviewLoopElapsed = 0.f;
-	}
-
-	lastPreviewParams = previewParams;
-
-	//dfddf
-	// ---- Save as Preset ----
-
 
 	ImGui::Separator();
 	ImGui::Text("=== Save as Preset ===");
@@ -755,15 +775,14 @@ void CParticleManager::UpdateGUI()
 			preset.fStartSize = previewParams.fSize;
 			preset.fEndSize = previewParams.fEndSize;
 			preset.rotation = previewParams.rotation;
-			preset.groupTypeIndex = groupTypeIndex;        
+			preset.groupTypeIndex = groupTypeIndex;
 			preset.whatKindFilterIndex = whatKindFilterIndex;
 			preset.iBehaviorType = previewParams.iBehaviorType;
-			
+
 			HRESULT hr = SaveEffectPreset(szPresetSavePath, preset);
-			
+
 			if (SUCCEEDED(hr))
 			{
-				// ---- 파일 저장 성공 시, 메모리(m_ParticlePresets)도 즉시 갱신 ----
 				m_ParticlePresets[preset.presetName] = preset;
 			}
 			m_bLastResultSuccess = SUCCEEDED(hr);
@@ -784,7 +803,6 @@ void CParticleManager::UpdateGUI()
 	}
 
 	ImGui::Separator();
-
 	ImGui::Separator();
 
 	{
@@ -795,7 +813,6 @@ void CParticleManager::UpdateGUI()
 	}
 
 	ImGui::Separator();
-
 
 	ImGui::Checkbox("Distortion", &distortion);
 	ImGui::Checkbox("BILLBOARD", &billboard);
@@ -809,7 +826,6 @@ void CParticleManager::UpdateGUI()
 		gravity = false;
 	}
 
-	// 매번 NONE으로 리셋 후 체크된 것만 OR
 	pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
 		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
@@ -842,7 +858,6 @@ void CParticleManager::UpdateGUI()
 		}
 		else
 			ImGui::DragFloat3("Velocity", &pendingStandard.velocity.x, 0.01f);
-
 
 		ImGui::DragFloat("Life", &pendingStandard.life, 0.01f);
 		ImGui::DragFloat("StartSize", &pendingStandard.fSize, 0.01f);
@@ -878,7 +893,7 @@ void CParticleManager::UpdateGUI()
 		if (ImGui::Combo("Pattern Kind", &patternKindIndex, PATTERN_KIND_NAMES, IM_ARRAYSIZE(PATTERN_KIND_NAMES)))
 			pendingPattern = MakeDefaultPatternParam(patternKindIndex);
 
-		DrawImGui(pendingPattern); // 타입에 맞는 편집 UI가 자동 렌더링
+		DrawImGui(pendingPattern);
 	}
 	if (ImGui::Button("Add to List") && !matchedList.empty())
 	{
@@ -898,7 +913,6 @@ void CParticleManager::UpdateGUI()
 	}
 
 	ImGui::Separator();
-
 
 	ImGui::Text("Spawn Queue (%zu)", m_vecCommandQueue.size());
 	for (int i = 0; i < (int)m_vecCommandQueue.size(); ++i)
@@ -939,14 +953,13 @@ void CParticleManager::UpdateGUI()
 					std::get<std::vector<PARTICLE_SPAWN_DATA>>(cmd.params).size());
 			}
 		}
-		
+
 		ImGui::SameLine();
 		if (ImGui::Button("Remove"))
 		{
 			m_vecCommandQueue.erase(m_vecCommandQueue.begin() + i);
 			ImGui::PopID();
 			break;
-			
 		}
 
 		ImGui::PopID();
@@ -1107,7 +1120,11 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& viBufferID1,
 	const std::string& viBufferID2,
 	int RowCount,
-	int ColCount)
+	int ColCount, const std::string& normalTexID1, const std::string& normalTexID2,
+	const std::string& distortionTexID1, const std::string& distortionTexID2 ,
+	const std::string& noiseTexID1 , const std::string& noiseTexID2, const std::string& normalTexPath,
+	const std::string& distortionTexPath,
+	const std::string& noiseTexPath)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1151,6 +1168,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	newEntry["PSGroup"] = PSGroup;
 	newEntry["PSID"] = PSID;
 
+	
 	std::string arrayKey;
 
 	if (whatKind == "TEXTURE")
@@ -1160,10 +1178,33 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 		newEntry["TextureID2"] = textureID2;
 		newEntry["RowCount"] = RowCount;
 		newEntry["ColCount"] = ColCount;
-		if (particleType == "PARTICLE_CPU") {
+
+		// ---- 추가 텍스처들: 값이 있을 때만 저장 ----
+		if (!normalTexID1.empty())
+		{
+			newEntry["NormalTextureID1"] = normalTexID1;
+			newEntry["NormalTextureID2"] = normalTexID2;
+			newEntry["NormalTexturePath"] = normalTexPath;
+		}
+		if (!distortionTexID1.empty())
+		{
+			newEntry["DistortionTextureID1"] = distortionTexID1;
+			newEntry["DistortionTextureID2"] = distortionTexID2;
+			newEntry["DistortionTexturePath"] = distortionTexPath;   // ← 여기로 이동
+		}
+		if (!noiseTexID1.empty())
+		{
+			newEntry["NoiseTextureID1"] = noiseTexID1;
+			newEntry["NoiseTextureID2"] = noiseTexID2;
+			newEntry["NoiseTexturePath"] = noiseTexPath;             // ← 여기로 이동, particleType 조건 없이 항상 저장
+		}
+
+		if (particleType == "PARTICLE_CPU")
+		{
 			newEntry["VIBufferID1"] = viBufferID1;
 			newEntry["VIBufferID2"] = viBufferID2;
 		}
+
 	}
 	else if (whatKind == "MESH")
 	{
@@ -1409,6 +1450,29 @@ HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string&
 }
 HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 {
+	// LoadParticleJson 안, "textures" 배열 for문 시작 직전에 추가
+	auto LoadAuxTexture = [](const nlohmann::json& entry,
+		const char* pathKey, const char* id1Key, const char* id2Key,
+		std::pair<StringID, StringID>& outID) -> void
+		{
+			if (!entry.contains(pathKey))
+				return;
+
+			std::string path = entry[pathKey].get<std::string>();
+			std::string id1 = entry.value(id1Key, "");
+			std::string id2 = entry.value(id2Key, "");
+
+			if (path.empty() || id1.empty() || id2.empty())
+				return;
+
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResTexture2D>(
+				id1, id2, E::CResTexture2D::Create(path)))
+			{
+				res->Load();
+			}
+			outID = { id1, id2 };
+		};
+
 	if (!std::filesystem::exists(strJsonPath))
 		return E_FAIL;
 
@@ -1608,17 +1672,18 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			if (particleType == "PARTICLE_GPU")
 			{
 				CParticle_GPU::DESC desc{};
-				
 				desc.iMaxParticles = iMaxParticles;
 				desc.whatKind = MESHORTEXTURE::TEX;
 				desc.textureID = { textureID1, textureID2 };
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
-				if (!VSGroup.empty() && !VSID.empty())
-					desc.VSID = { VSGroup, VSID };
+				if (!VSGroup.empty() && !VSID.empty()) desc.VSID = { VSGroup, VSID };
+				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
 
-				if (!PSGroup.empty() && !PSID.empty())
-					desc.PSID = { PSGroup, PSID };
+				// ---- 추가 텍스처 로드 ----
+				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
+				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
+				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 
 				particle = CParticle_GPU::Create(&desc);
 			}
@@ -1632,47 +1697,46 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.whatKind = MESHORTEXTURE::TEX;
 				desc.textureID = { textureID1, textureID2 };
 				desc.viBufferID = { VIBufferID1, VIBufferID2 };
-				if (!VSGroup.empty() && !VSID.empty())
-					desc.VSID = { VSGroup, VSID };
-
-				if (!PSGroup.empty() && !PSID.empty())
-					desc.PSID = { PSGroup, PSID };
+				if (!VSGroup.empty() && !VSID.empty()) desc.VSID = { VSGroup, VSID };
+				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
+
+				// ---- 추가 텍스처 로드 ----
+				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
+				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
+				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
+
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
 			{
-				/*   std::pair<StringID, StringID> textureID;
-        std::pair<StringID, StringID> VSID;
-        std::pair<StringID, StringID> PSID;
-        PARTICLE_TYPE type;
-		*/
-	
 				int geometryType = entry.value("GeometryType", 0);
 
 				CBeam_CPU::DESC desc;
 				desc.geometryType = geometryType;
 				desc.textureID = { textureID1, textureID2 };
-				if (!VSGroup.empty() && !VSID.empty())
-					desc.VSID = { VSGroup, VSID };
+				if (!VSGroup.empty() && !VSID.empty()) desc.VSID = { VSGroup, VSID };
+				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
 
-				if (!PSGroup.empty() && !PSID.empty())
-					desc.PSID = { PSGroup, PSID };
+				// ---- 추가 텍스처 로드 ----
+				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
+				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
+				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
+
 				particle = CBeam_CPU::Create(&desc);
-				//PARTICLE_TYPE
 			}
 			else if (particleType == "TRAIL_CPU")
 			{
 				CTrail_CPU::DESC desc;
-
-
 				desc.textureID = { textureID1, textureID2 };
-				if (!VSGroup.empty() && !VSID.empty())
-					desc.VSID = { VSGroup, VSID };
+				if (!VSGroup.empty() && !VSID.empty()) desc.VSID = { VSGroup, VSID };
+				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
 
-				if (!PSGroup.empty() && !PSID.empty())
-					desc.PSID = { PSGroup, PSID };
+				// ---- 추가 텍스처 로드 ----
+				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
+				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
+				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 
 				particle = CTrail_CPU::Create(&desc);
 			}

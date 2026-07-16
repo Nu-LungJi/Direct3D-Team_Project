@@ -37,21 +37,21 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].velocity = _float3(0.f, 0.f, 0.f);
         initParticles[i].life = 0.f;
         initParticles[i].maxLife = 0.f;
-        initParticles[i].size = 1.f;
-        initParticles[i].startSize = 1.f;
-        initParticles[i].endSize = 1.f;
+		initParticles[i].size = 1.f;
+		initParticles[i].startSize = 1.f;
+		initParticles[i].endSize = 1.f;
 		initParticles[i].rotation = { 0,0,0,0 };
-        initParticles[i].color = _float4(1.f, 1.f, 1.f, 0.f);
-        initParticles[i].alive = false;
-        initParticles[i].loop = false;
-        initParticles[i].emissive = { 0,0,0,0 };
+		initParticles[i].color = _float4(1.f, 1.f, 1.f, 0.f);
+		initParticles[i].alive = false;
+		initParticles[i].loop = false;
+		initParticles[i].emissive = { 0,0,0,0 };
 		initParticles[i].frameIndex = 0;
 		initParticles[i].iBehaviorType = 0;
-    }
+	}
 
-    std::vector<uint32_t> initDeadIndices(m_iNumElements);
-    for (uint32_t i = 0; i < m_iNumElements; i++)
-        initDeadIndices[i] = i;
+	std::vector<uint32_t> initDeadIndices(m_iNumElements);
+	for (uint32_t i = 0; i < m_iNumElements; i++)
+		initDeadIndices[i] = i;
 
 
 	if (auto res = CResCBuffer::Create())
@@ -63,46 +63,46 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		m_pComInitCBuffer = res;
 	}
 
-    // 파티클 구조체 버퍼
-    if (auto res = CResStructuredBuffer::Create())
-    {
-        CResStructuredBuffer::DESC bufDesc{};
-        bufDesc.iNumElements = m_iNumElements;
-        bufDesc.iStructureByteStride = sizeof(PARTICLE);
-        bufDesc.pInitialData = initParticles.data();
-        bufDesc.bAppendConsume = false;
-        if (FAILED(res->Load(bufDesc)))
-            return E_FAIL;
-        m_pParticleStructuredBuffer = res;
-    }
+	// 파티클 구조체 버퍼
+	if (auto res = CResStructuredBuffer::Create())
+	{
+		CResStructuredBuffer::DESC bufDesc{};
+		bufDesc.iNumElements = m_iNumElements;
+		bufDesc.iStructureByteStride = sizeof(PARTICLE);
+		bufDesc.pInitialData = initParticles.data();
+		bufDesc.bAppendConsume = false;
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pParticleStructuredBuffer = res;
+	}
 
-    // 죽은 파티클 인덱스 버퍼
-    if (auto res = CResStructuredBuffer::Create())
-    {
-        CResStructuredBuffer::DESC bufDesc{};
-        bufDesc.iNumElements = m_iNumElements;
-        bufDesc.iStructureByteStride = sizeof(uint32_t);
-        bufDesc.pInitialData = initDeadIndices.data();
-        bufDesc.bAppendConsume = true;
-        if (FAILED(res->Load(bufDesc)))
-            return E_FAIL;
-        m_pDeadListBuffer = res;
-    }
+	// 죽은 파티클 인덱스 버퍼
+	if (auto res = CResStructuredBuffer::Create())
+	{
+		CResStructuredBuffer::DESC bufDesc{};
+		bufDesc.iNumElements = m_iNumElements;
+		bufDesc.iStructureByteStride = sizeof(uint32_t);
+		bufDesc.pInitialData = initDeadIndices.data();
+		bufDesc.bAppendConsume = true;
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pDeadListBuffer = res;
+	}
 
-    // 스폰 데이터 버퍼
-    if (auto res = CResStructuredBuffer::Create())
-    {
-        std::vector<PARTICLE_SPAWN_DATA> initSpawnData(MAX_SPAWN_PER_CALL);
+	// 스폰 데이터 버퍼
+	if (auto res = CResStructuredBuffer::Create())
+	{
+		std::vector<PARTICLE_SPAWN_DATA> initSpawnData(MAX_SPAWN_PER_CALL);
 
-        CResStructuredBuffer::DESC bufDesc{};
-        bufDesc.iNumElements = MAX_SPAWN_PER_CALL;
-        bufDesc.iStructureByteStride = sizeof(PARTICLE_SPAWN_DATA);
-        bufDesc.pInitialData = initSpawnData.data();
-        bufDesc.bAppendConsume = false;
-        if (FAILED(res->Load(bufDesc)))
-            return E_FAIL;
-        m_pSpawnListBuffer = res;
-    }
+		CResStructuredBuffer::DESC bufDesc{};
+		bufDesc.iNumElements = MAX_SPAWN_PER_CALL;
+		bufDesc.iStructureByteStride = sizeof(PARTICLE_SPAWN_DATA);
+		bufDesc.pInitialData = initSpawnData.data();
+		bufDesc.bAppendConsume = false;
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pSpawnListBuffer = res;
+	}
 
 	if (auto res = CResCBuffer::Create())
 	{
@@ -113,8 +113,8 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		m_pComCBuffer = res;
 	}
 
-    {
-  
+	{
+
 		if (auto res = CResCBuffer::Create())
 		{
 			CResCBuffer::CBUFFER_DESC bufDesc{};
@@ -123,7 +123,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 				return E_FAIL;
 			m_pComSpawnCBuffer = res;
 		}
-    }
+	}
 	m_pResClearByOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner");
 	if (FAILED(m_pResClearByOwnerCS->Load()))
 		return E_FAIL;
@@ -137,7 +137,6 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		m_pComClearCBuffer = res;
 	}
 
-	m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLINET_TEXTURE", "TEX_NOISE");
 
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
@@ -150,6 +149,16 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         if (FAILED(m_pResPixelShader->Load()))
             return E_FAIL;
     
+		if (m_Desc.normalTextureID.first != "") {
+			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
+		}
+		if (m_Desc.distortionTextureID.first != "") {
+			m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.distortionTextureID.first, m_Desc.distortionTextureID.second);
+		}
+		if (m_Desc.noiseTextureID.first != "") {
+			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+		}
+
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
 
@@ -166,7 +175,9 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
             return E_FAIL;
 
 
-
+		if (m_Desc.noiseTextureID.first != "") {
+			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+		}
 
         // 모델 인스턴스는 컴포넌트 프로토타입 clone이 필요하다면 아래처럼
         // (AddComponentFromProto 대신, GameObject 없이도 쓸 수 있는 형태로)
@@ -388,11 +399,15 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
     pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
     pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
+
 	if (m_pNoiseTexture)
 	{
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(5, 1, &pNoiseSRV);
 	}
+
+	
+
 
     auto pModel = m_pComModelInstance->GetModel();
     uint32_t iNumMeshes = pModel->Get_NumMeshes();
@@ -453,13 +468,30 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 	pContext->PSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
 
     pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-    pContext->PSSetShaderResources(2, 1, m_pNoiseTexture->GetSRV().GetAddressOf());
+
+
+	if (m_pNormalTexture)
+	{
+		ID3D11ShaderResourceView* pNormalSRV = m_pNormalTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(2, 1, &pNormalSRV);
+	}
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(3, 1, &pDistortionSRV);
+	}
+	if (m_pNoiseTexture)
+	{
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
+	}
+
     pContext->DrawInstanced(4, m_iNumElements, 0, 0);
 
-    ID3D11ShaderResourceView* nullSRV2[] = { nullptr, nullptr };
-    ID3D11ShaderResourceView* nullSRV1[] = { nullptr,nullptr };
-    pContext->VSSetShaderResources(0, 2, nullSRV2);
-    pContext->PSSetShaderResources(2, 2, nullSRV1);
+    ID3D11ShaderResourceView* nullSRV1[] = { nullptr, nullptr };
+    ID3D11ShaderResourceView* nullSRV2[] = { nullptr,nullptr ,nullptr,nullptr,nullptr,nullptr};
+    pContext->VSSetShaderResources(0, 2, nullSRV1);
+    pContext->PSSetShaderResources(0, 6, nullSRV2);
 
 	ID3D11Buffer* nullCB[] = { nullptr };
 	pContext->VSSetConstantBuffers(5, 1, nullCB);

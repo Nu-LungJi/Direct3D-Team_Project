@@ -46,8 +46,11 @@ public:
         std::pair<StringID, StringID> textureID;
         std::pair<StringID, StringID> VSID;
         std::pair<StringID, StringID> PSID;
+		std::pair<StringID, StringID> normalTextureID;
+		std::pair<StringID, StringID> distortionTextureID;
+		std::pair<StringID, StringID> noiseTextureID;
         TRAIL_TYPE  tType = TRAIL_TYPE::END;
-        _float   fMaxDuration = 0.3f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
+        _float   fMaxDuration = 1.f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
         uint32_t iMaxFrames = 700;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
 		TRAIL_ALIGN_MODE eAlignMode = TRAIL_ALIGN_MODE::VIEW;
     };
@@ -91,17 +94,13 @@ private:
 	_float3 m_vLastEnd{};
 	_float4 m_vColor{1.f,0.f,0.f,1.f};
 	_float4 m_vEmissive{ 1.f, 0.f, 1.f, 1.f };
-    SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
-    SPtr<class CResCBuffer> m_pScrollCBuffer;
 	_float m_fTimeSinceLastAdd = 0.f;
 	_float   m_fSampleInterval = 1.f / 60.f;
-
 	_float m_fIdleTime = 0.f;          // AddPoint 호출 안 된지 얼마나 됐는지
 	_float m_fIdleThreshold = 0.1f;    // 이 시간 이상 AddPoint 없으면 "멈췄다"고 판단
 	_float m_fRetractInterval = 0.02f; // 멈춘 뒤, 이 간격마다 꼬리 1프레임씩 강제 제거
 	_float m_fTimeSinceLastRetract = 0.f;
 	_float m_ScrollOffset = 0.2f;
-	//_float m_ScrollSpeed = 5.4f;
 	_float totalLength = 0.0f;
 	_float m_fTotalDistance = 0.f;
 public:
@@ -113,6 +112,8 @@ public:
 	float EaseOutSine(float x);
 private:
 	SPtr<class CResTexture2D> m_pDistortionTexture;
+	SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
+	SPtr<class CResCBuffer> m_pScrollCBuffer;
 };
 
 NS_END

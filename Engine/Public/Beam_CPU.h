@@ -10,6 +10,9 @@ public:
         std::pair<StringID, StringID> textureID;
         std::pair<StringID, StringID> VSID;
         std::pair<StringID, StringID> PSID;
+		std::pair<StringID, StringID> normalTextureID;
+		std::pair<StringID, StringID> distortionTextureID;
+		std::pair<StringID, StringID> noiseTextureID;
         PARTICLE_TYPE type;
         _float      fWidth = 1.f;
         _float      fScrollSpeed = 1.f;
@@ -20,6 +23,8 @@ public:
         uint32_t    iMaxBeams = 16;
         uint32_t    iMaxDisplacementIterations = 10;  // 버퍼 크기 산정용 - 실제 사용 가능한 최댓값
 		uint32_t    geometryType = 0; // 0은 기본 번개 모양 1은 부드러운 곡선 모양
+
+
     };
 
     struct BEAM_INSTANCE
