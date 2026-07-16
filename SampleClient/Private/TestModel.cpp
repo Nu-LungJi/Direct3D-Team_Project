@@ -364,6 +364,7 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	}
 
 
+
 	if (FAILED(Unbind_AnimationVS(pContext)))
 	{
 		return E_FAIL;

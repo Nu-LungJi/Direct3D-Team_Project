@@ -8,8 +8,10 @@
 #include "GameInstance.h"
 NS_USING(Client)
 
+
+
 CTestPartObject::CTestPartObject()
-	: CGameObject{}
+	: CAnimationObject{}
 {
 }
 
@@ -19,7 +21,7 @@ CTestPartObject::~CTestPartObject()
 
 void CTestPartObject::UpdateGUI()
 {
-	CGameObject::UpdateGUI();
+	CAnimationObject::UpdateGUI();
 
 }
 
@@ -112,6 +114,8 @@ void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 
+	//CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
 }
 
 HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext,  const E::RENDER_CTX& ctx)
@@ -143,6 +147,11 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext,  const E::RENDER_
 		pContext->PSSetConstantBuffers(9, 1, m_pComCBufferPartObject->GetAdressOfBuffer());
 	}
 
+	if (FAILED(BindParentAnimationBuffers(pContext)))
+	{
+		return E_FAIL;
+	}
+
 	const auto& vs = m_pResVertexNonAnimShader;
 	const auto& ps = m_pResPixelNonAnimShader;
 
@@ -172,7 +181,7 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext,  const E::RENDER_
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(),  0, 0);
@@ -182,8 +191,13 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext,  const E::RENDER_
 	return S_OK;
 }
 
-HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext, const uint32_t iInstanced, const E::RENDER_CTX& ctx)
+HRESULT  CTestPartObject::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) 
 {
+	const uint32_t iInstanceCount = Batch.Instances.size();
+
+	if (iInstanceCount == 0)
+		return S_OK;
+
 	{
 		E::CB_PER_OBJECT cbPerObject{};
 		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
@@ -211,6 +225,11 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext, const uint32_t iI
 		pContext->PSSetConstantBuffers(9, 1, m_pComCBufferPartObject->GetAdressOfBuffer());
 	}
 
+	if (FAILED(BindParentAnimationBuffers(pContext)))
+	{
+		return E_FAIL;
+	}
+
 	const auto& vs = m_pResVertexNonAnimShader;
 	const auto& ps = m_pResPixelNonAnimShader;
 
@@ -240,13 +259,36 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext, const uint32_t iI
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanced,0,0, 0);
 	}
 
 
+	return S_OK;
+}
+
+
+HRESULT  CTestPartObject::BindParentAnimationBuffers(ID3D11DeviceContext* pContext)
+{
+	if (pContext == nullptr)
+		return E_INVALIDARG;
+
+	auto instanceBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
+	auto finalBoneBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
+
+	if (!instanceBuffer || !finalBoneBuffer)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* instanceSRV = instanceBuffer->GetSRV().Get();
+	ID3D11ShaderResourceView* finalBoneSRV = finalBoneBuffer->GetSRV().Get();
+	if (!instanceSRV || !finalBoneSRV)
+		return E_FAIL;
+
+
+	pContext->VSSetShaderResources(6, 1, &instanceSRV);
+	pContext->VSSetShaderResources(7, 1, &finalBoneSRV);
 	return S_OK;
 }
 

@@ -1,6 +1,6 @@
 
 #pragma once
-#include "GameObject.h"
+#include "AnimationObject.h"
 #include "Client_Defines.h"
 NS_BEGIN(Engine)
 class CComConstantBuffer;
@@ -13,10 +13,10 @@ class CComStaticModelInstance;
 NS_END
 
 NS_BEGIN(Client)
-class CTestPartObject final : public CGameObject
+class CTestPartObject final : public CAnimationObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CTestPartObject, CGameObject)
+	DECLARE_DERIVED_TYPE(CTestPartObject, CAnimationObject)
 
 public:
 	typedef struct tagPartObjectDesc : public CGameObject::GAMEOBJECT_DESC
@@ -44,8 +44,10 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext,  const E::RENDER_CTX& ctx) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const uint32_t iInstanced, const E::RENDER_CTX& ctx) ;
+	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
 
+public:
+	HRESULT BindParentAnimationBuffers(ID3D11DeviceContext* pContext);
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
 	// nonAnim

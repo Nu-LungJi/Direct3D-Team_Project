@@ -76,12 +76,52 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	Add_Instance(pModelInstance, InstanceData);
 }
 
+
+void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,  const _float4x4& WorldMatrix, uint32_t iFlags)
+{
+	if (!pModelInstance)
+	{
+		return;
+	}
+
+	const auto& pModel = pModelInstance->GetModel();
+
+	if (!pModel)
+		return;
+
+
+	GPU_ANIM_INSTANCE_DATA InstanceData{};
+
+	InstanceData.WorldMatrix = WorldMatrix;
+
+	InstanceData.iAnimIndex = -1;
+
+	InstanceData.iFlags = iFlags;
+
+	InstanceData.fTrackPosition = -1;
+
+	InstanceData.iRootBoneIndex =-1;
+
+
+
+	Add_Instance(pModelInstance, InstanceData);
+}
+
+
 void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData)
 {
 	if (!pModelInstance)
 		return;
 
 	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance);
+
+	if (InstanceData.iAnimIndex == -1) {
+		pBatch->bModelStatic = true;
+	}
+	else {
+		pBatch->bModelStatic = false;
+
+	}
 
 	if (!pBatch)
 		return;
@@ -239,13 +279,27 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 		if (!pBatch || pBatch->Instances.empty() )
 			continue;
 
-		auto* pAnimationObject = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle);
-		
-		if (pAnimationObject == nullptr)
-			return E_FAIL;
+		if (!pBatch->bModelStatic)
+		{
+			auto* pAnimationObject = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle);
 
-		if (FAILED(pAnimationObject->Render_Instanced(pContext, ctx, *pBatch)))
-			return E_FAIL;
+			if (pAnimationObject == nullptr)
+				return E_FAIL;
+
+			if (FAILED(pAnimationObject->Render_Instanced(pContext, ctx, *pBatch)))
+				return E_FAIL;
+		}
+		else {
+			auto* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
+
+			if (pObject == nullptr)
+				return E_FAIL;
+
+			if (FAILED(pObject->Render(pContext, ctx, *pBatch)))
+				return E_FAIL;
+		}
+
+
 	}
 
 	return S_OK;

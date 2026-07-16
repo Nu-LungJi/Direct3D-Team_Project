@@ -25,6 +25,8 @@ public:
 public:
 	void Add_Instance(CComModelInstance* pModelInstance,CComAnimator* pAnimator,const _float4x4& WorldMatrix,uint32_t iFlags = 0);
 
+	void Add_Instance(CComModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags);
+
 
 	void Add_Instance(CComModelInstance* pModelInstance,const GPU_ANIM_INSTANCE_DATA& InstanceData);
 

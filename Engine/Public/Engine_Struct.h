@@ -464,9 +464,13 @@ namespace Engine
 		
 		CHandle		ObjectHandle;
 		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
+		
+		_bool bModelStatic = false;
 
 		_bool bActiveThisFrame = false;
 
 	}MODEL_INSTANCE_BATCH;
+
+
 	//----------------------------AnimationObject------------------------------------
 }
