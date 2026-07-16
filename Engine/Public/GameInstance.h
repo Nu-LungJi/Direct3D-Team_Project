@@ -91,6 +91,9 @@ public:
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset)
 	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset); }
+	template<typename T, typename CreateFunc>
+	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc)
+	{ return m_pResourceManager->GetOrCreateResourceByPath<T>(sPath, std::forward<CreateFunc>(createFunc)); }
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
 	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
