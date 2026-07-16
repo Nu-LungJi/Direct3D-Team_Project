@@ -271,8 +271,10 @@ void CResourceManager::UpdateGUI()
 					{
 						if (const auto& pRes = resources[i])
 						{
-							const _string state = pRes->GetStateStr();
-							ImGui::Text("[%zu] State: %s", i, state.c_str());
+							ImGui::Text("%i-----", (int)i);
+							pRes->UpdateGUI();
+							//const _string state = pRes->GetStateStr();
+							//ImGui::Text("[%zu] State: %s", i, state.c_str());
 						}
 					}
 					ImGui::TreePop();
