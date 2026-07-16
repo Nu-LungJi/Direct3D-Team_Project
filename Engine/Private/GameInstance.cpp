@@ -1121,10 +1121,18 @@ void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, CComAnimator
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, pAnimator, WorldMatrix, iFlags);
 }
 
+void CGameInstance::Add_Instance(CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags) {
+	m_pModel_Instance_Manager->Add_Instance(pModelInstance, WorldMatrix, iFlags);
+}
+
 
 void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData) {
 
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, InstanceData);
+}
+
+void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData) {
+	m_pModel_Instance_Manager->Add_Part_Instance(pModelInstance, InstanceData);
 }
 
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {

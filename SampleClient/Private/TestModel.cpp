@@ -223,6 +223,8 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx,const E::MODEL_INSTANCE_BATCH& Batch)
 {
+	ZoneScopedN("Render TestModel");
+
 	if (!pContext)
 		return E_INVALIDARG;
 

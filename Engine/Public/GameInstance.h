@@ -377,9 +377,11 @@ public:
 #pragma region INSTNACE_MANAGER
 public:
 	void Add_Instance(class CComModelInstance* pModelInstance, class CComAnimator* pAnimator, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
+	void Add_Instance(class CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
 
 
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
+	void Add_Part_Instance(class CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
 #pragma endregion
 

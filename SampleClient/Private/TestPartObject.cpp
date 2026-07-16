@@ -11,7 +11,7 @@ NS_USING(Client)
 
 
 CTestPartObject::CTestPartObject()
-	: CAnimationObject{}
+	: CGameObject{}
 {
 }
 
@@ -21,7 +21,7 @@ CTestPartObject::~CTestPartObject()
 
 void CTestPartObject::UpdateGUI()
 {
-	CAnimationObject::UpdateGUI();
+	CGameObject::UpdateGUI();
 
 }
 
@@ -114,6 +114,11 @@ void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 
+
+	E::GPU_PART_INSTANCE_DATA instanceData{};
+	if (SUCCEEDED(BuildPartInstanceData(instanceData)))
+		CGameInstance::Get().Add_Part_Instance(m_pComModelInstance, instanceData);
+
 	//CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
 }
@@ -193,10 +198,13 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext,  const E::RENDER_
 
 HRESULT  CTestPartObject::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) 
 {
-	const uint32_t iInstanceCount = Batch.Instances.size();
+	ZoneScopedN("Render PartObject");
+	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.PartInstances.size());
 
 	if (iInstanceCount == 0)
 		return S_OK;
+	if (FAILED(UpdatePartInstanceBuffer(pContext, Batch.PartInstances)))
+		return E_FAIL;
 
 	{
 		E::CB_PER_OBJECT cbPerObject{};
@@ -262,7 +270,7 @@ HRESULT  CTestPartObject::Render_Instanced(ID3D11DeviceContext* pContext, const 
 			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
-		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanced,0,0, 0);
+		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
 
@@ -277,18 +285,47 @@ HRESULT  CTestPartObject::BindParentAnimationBuffers(ID3D11DeviceContext* pConte
 
 	auto instanceBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 	auto finalBoneBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
+	auto partInstanceBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_PART_INSTANCE");
 
-	if (!instanceBuffer || !finalBoneBuffer)
+	if (!instanceBuffer || !finalBoneBuffer || !partInstanceBuffer)
 		return E_FAIL;
 
 	ID3D11ShaderResourceView* instanceSRV = instanceBuffer->GetSRV().Get();
 	ID3D11ShaderResourceView* finalBoneSRV = finalBoneBuffer->GetSRV().Get();
-	if (!instanceSRV || !finalBoneSRV)
+	ID3D11ShaderResourceView* partInstanceSRV = partInstanceBuffer->GetSRV().Get();
+	if (!instanceSRV || !finalBoneSRV || !partInstanceSRV)
 		return E_FAIL;
 
 
 	pContext->VSSetShaderResources(6, 1, &instanceSRV);
 	pContext->VSSetShaderResources(7, 1, &finalBoneSRV);
+	pContext->VSSetShaderResources(8, 1, &partInstanceSRV);
+	return S_OK;
+}
+
+HRESULT CTestPartObject::BuildPartInstanceData(E::GPU_PART_INSTANCE_DATA& outData) const
+{
+	auto* pOwner = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(m_hOwner);
+	if (!pOwner)
+		return E_FAIL;
+	outData.WorldMatrix = *GetTransform().GetCombinedWorldMatrix();
+	outData.iParentInstanceIndex = pOwner->GetInstanceModelNum();
+	outData.iParentBoneIndex = m_iBoneIndex;
+	return S_OK;
+}
+
+HRESULT CTestPartObject::UpdatePartInstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<E::GPU_PART_INSTANCE_DATA>& instances)
+{
+	if (instances.empty() || instances.size() > 512)
+		return E_FAIL;
+	auto buffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_PART_INSTANCE");
+	if (!buffer || !buffer->GetBuffer())
+		return E_FAIL;
+	D3D11_BOX box{};
+	box.right = static_cast<UINT>(sizeof(E::GPU_PART_INSTANCE_DATA) * instances.size());
+	box.bottom = 1;
+	box.back = 1;
+	pContext->UpdateSubresource(buffer->GetBuffer().Get(), 0, &box, instances.data(), 0, 0);
 	return S_OK;
 }
 

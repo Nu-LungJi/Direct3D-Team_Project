@@ -11,6 +11,8 @@
 
 NS_BEGIN(Engine)
 
+struct MODEL_INSTANCE_BATCH;
+
 class ENGINE_DLL CGameObject : public CPrototype,
 								public IRenderable,
 								public IPhysicsListener,
@@ -44,6 +46,11 @@ public:
 
 public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	virtual HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx, const MODEL_INSTANCE_BATCH& Batch)
+	{
+		return E_NOTIMPL;
+	}
+	virtual void SetInstanceModelNum(uint32_t iInstanceNum) {}
 	bool HasRenderPass(RENDERPASS ePass) const override { return (m_RenderPassFlags & static_cast<uint32_t>(ePass)) != 0; };
 
 protected:

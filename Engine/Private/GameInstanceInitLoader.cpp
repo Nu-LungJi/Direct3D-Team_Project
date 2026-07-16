@@ -251,6 +251,16 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_PART_INSTANCE", E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+		Desc.iNumElements = 512;
+		Desc.iStructureByteStride = sizeof(E::GPU_PART_INSTANCE_DATA);
+		Desc.pInitialData = nullptr;
+		Desc.bAppendConsume = false;
+		if (FAILED(res->Load(Desc))) return E_FAIL;
+	}
+
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX", E::CResStructuredBuffer::Create()))
 	{
 		E::CResStructuredBuffer::DESC Desc{};

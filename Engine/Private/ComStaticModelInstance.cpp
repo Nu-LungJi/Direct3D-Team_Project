@@ -48,6 +48,8 @@ HRESULT CComStaticModelInstance::Initialize(void* pArg)
     if (pArg != nullptr) {
         CComStaticModelInstance::DESC* pDesc = reinterpret_cast<CComStaticModelInstance::DESC*>(pArg);
         m_pModel = CGameInstance::Get().GetResourceFirst<CResStaticModel>(pDesc->sGroupTag, pDesc->sResTag);
+		m_sGroupTag = pDesc->sGroupTag;
+		m_sResTag = pDesc->sResTag;
         //"PERMANENT", "Prototype_Component_StaticModelInstance"
         if (m_pModel == nullptr)
         {
