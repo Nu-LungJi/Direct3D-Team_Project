@@ -154,6 +154,9 @@
     <Filter Include="Loader\Level\Collider">
       <UniqueIdentifier>{8796610b-99a8-4ba5-a276-28292e056fb3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loader\Level\Creature">
+      <UniqueIdentifier>{1f4a808a-15ad-47ac-8081-adaeb71e748c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -335,7 +338,7 @@
     </ClInclude>
     <ClInclude Include="..\Public\UIManager.h">
       <Filter>GameObject\UI</Filter>
-	</ClInclude>
+    </ClInclude>
     <ClInclude Include="..\public\Weapon.h">
       <Filter>GameObject\AI\Weapon</Filter>
     </ClInclude>
@@ -368,6 +371,9 @@
     </ClInclude>
     <ClInclude Include="..\public\LevelColliderLoader.h">
       <Filter>Loader\Level\Collider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelPlayGroundLoader.h">
+      <Filter>Loader\Level\Creature</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -549,6 +555,9 @@
     <ClCompile Include="..\private\LevelColliderLoader.cpp">
       <Filter>Loader\Level\Collider</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LevelPlayGroundLoader.cpp">
+      <Filter>Loader\Level\Creature</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">
@@ -570,9 +579,6 @@
   <ItemGroup>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction</Filter>
-    </ClCompile>
-    <ClCompile Include="LevelUIEditor.cpp">
-      <Filter>Level\UiEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Monster.cpp">
       <Filter>GameObject\AI</Filter>

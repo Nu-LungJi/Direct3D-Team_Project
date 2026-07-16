@@ -86,8 +86,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "TEST";
-		Desc.sResTag = "Model_Resource";
+		Desc.sGroupTag = "LEVEL_PLAYGROUND";
+		Desc.sResTag = "Model_Resource_TombProtector";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -119,7 +119,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
 		MSG_BOX("Create Failed Weapon");
@@ -148,6 +148,9 @@ void CTestGob::Update(E::_float fTimeDelta)
 		m_pModelAnimator->Update(fTimeDelta);
 
 	m_pBeHavior->Update(fTimeDelta);
+	if(m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
+		m_fEmissive = 0;
+
 	m_pBeHavior->AbortNode();
 
 }
@@ -230,7 +233,7 @@ HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -374,7 +377,7 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 
 
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, m_fEmissive, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
@@ -420,7 +423,15 @@ HRESULT CTestGob::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std
 	pContext->VSSetShaderResources(6, 1, &pNullSRV);
 
 	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
-	pContext->UpdateSubresource(pBuffer, 0, nullptr, Instances.data(), 0, 0);
+	D3D11_BOX updateBox{};
+	updateBox.left = 0;
+	updateBox.right = static_cast<UINT>(iCopySize);
+	updateBox.top = 0;
+	updateBox.bottom = 1;
+	updateBox.front = 0;
+	updateBox.back = 1;
+
+	pContext->UpdateSubresource(pBuffer, 0, &updateBox, Instances.data(), 0, 0);
 
 	return S_OK;
 

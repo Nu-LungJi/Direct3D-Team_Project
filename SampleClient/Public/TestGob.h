@@ -56,6 +56,8 @@ public:
 	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
 
 public:
+	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
+	_float					Get_Emissive() { return m_fEmissive; }
 	const int32_t			Get_CurrentHp() { return m_iHp; }
 	const int32_t			Get_MaxHp()	  { return m_iMaxHp; }
 	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
@@ -90,6 +92,7 @@ private:
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
 
+	_float						m_fEmissive{};
 	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bDead{ false };
 	_string						m_SocketName{};

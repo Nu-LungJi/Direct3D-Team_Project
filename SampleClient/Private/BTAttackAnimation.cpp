@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTAttackAnimation.h"
 #include "ComAnimator.h" 
+#include "TestGob.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -55,6 +56,19 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 				m_bStart = false;
 			}
+
+			m_fTime += fTimeDelta;
+			_float tt = m_fTime / m_fRatio.y;
+
+			if (auto pBT = Get_ComBT())
+			{
+				if (auto pSrc = pBT->GetGameObject())
+				{
+					_float fEmissive = 0 + (m_fRatio.x - 0) * tt;
+					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
+				}
+			}
+
 			_float fAnimRange = m_fRatio.y - m_fRatio.x;
 			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
 			_float fMove = t * fTimeDelta * fAnimRange * m_Value.fSpeed;
@@ -74,6 +88,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
+			m_fTime = 0.f;
 			//if (!m_bLoop) //루프 한번만 도는거 초기화용
 			//	++m_iLoopCnt;
 			//if (m_iLoopCnt >= 2)
@@ -194,6 +209,10 @@ void CBTAttackAnimation::Update_Gui()
 	}
 
 	ImGui::PopStyleColor(2);
+}
+void CBTAttackAnimation::Abort()
+{
+	m_fTime = 0.f;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {

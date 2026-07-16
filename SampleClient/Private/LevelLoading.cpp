@@ -38,7 +38,7 @@
 #include "LevelLogoLoader.h"
 #include "LevelPhysXLoader.h"
 #include "LevelColliderLoader.h"
-
+#include "LevelPlayGroundLoader.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -156,59 +156,7 @@ void CLevelLoading::ThreadStart()
 	break;
 	case LEVEL::PLAYGROUND:
 	{
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				//return E_FAIL;
-			}
-		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
-		{
-			return;
-		}
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAYGROUND", [this]()
-			{
-				if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
-				{
-					if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
-					{
-						//MSG_BOX("");
-						return false;
-					}
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
-				{
-					return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", CTestGob::Create())))
-				{
-					return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel", CTestModel::Create())))
-				{
-				   return false;
-				}
-
-				if (FAILED(E::CGameInstance::Get().AddPrototype("WEAPON", "Prototype_GameObject_Weapon", CWeapon::Create())))
-				{
-					return false;
-				}
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				//if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
-				//{
-				//	int a = 0;
-				//	//return false;
-				//}
-
-
-
-				return  true;
-			});
+		m_futLoadFinish = CLevelPlayGroundLoader::Load();
 	}
 	break;
 	case LEVEL::UIEDITOR:

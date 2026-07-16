@@ -987,17 +987,6 @@ HRESULT CGameInstanceInitLoader::LoadModel()
 
 HRESULT CGameInstanceInitLoader::LoadAnimModel()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
-
-		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
 
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
 		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
@@ -1038,41 +1027,6 @@ HRESULT CGameInstanceInitLoader::LoadStaticModel()
 			return E_FAIL;
 		}
 	}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Axe_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Mace_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
-		
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-		
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Sword_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
+	
 	return S_OK;
 }
