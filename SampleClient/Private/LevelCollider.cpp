@@ -201,6 +201,5 @@ UPtr<CLevelCollider> CLevelCollider::Create()
 
 void CLevelCollider::Free()
 {
-	CLevelColliderLoader::UnLoad();
 	CLevel::Free();
 }

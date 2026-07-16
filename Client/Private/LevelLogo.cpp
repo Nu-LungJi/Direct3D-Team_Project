@@ -165,6 +165,5 @@ Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 
 void CLevelLogo::Free()
 {
-	CLevelLogoLoader::UnLoad();
 	CLevel::Free();
 }

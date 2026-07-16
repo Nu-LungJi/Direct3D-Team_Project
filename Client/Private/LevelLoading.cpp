@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "LevelLoading.h"
 #include "GameInstance.h"
 #include "Resources.h"
@@ -21,6 +21,11 @@ CLevelLoading::~CLevelLoading()
 {
 }
 
+bool CLevelLoading::IsLevelChangeLocked() const
+{
+	return m_ePhase != PHASE::COMPLETE && m_ePhase != PHASE::FAILED;
+}
+
 HRESULT CLevelLoading::Initialize()
 {
 	const uint32_t iCurrentLevelID = Engine::CGameInstance::Get().GetCurrentLevelID();
@@ -35,15 +40,20 @@ HRESULT CLevelLoading::Initialize()
 
 void CLevelLoading::Update(E::_float fTimeDelta)
 {
-	if (!m_bThreadStart)
+	switch (m_ePhase)
 	{
-		m_bThreadStart = true;
-
-		ThreadStart();
+	case PHASE::READY:
+		StartUnload();
+		break;
+	case PHASE::UNLOADING:
+		CheckUnload();
+		break;
+	case PHASE::LOADING:
+		CheckLoad();
+		break;
+	default:
+		break;
 	}
-
-	LoadingCheck();
-
 }
 
 HRESULT CLevelLoading::Render()
@@ -88,8 +98,50 @@ HRESULT CLevelLoading::LoadEnd()
 	return S_OK;
 }
 
-void CLevelLoading::ThreadStart()
+void CLevelLoading::StartUnload()
 {
+	if (!m_ePreviousLevelIndex || *m_ePreviousLevelIndex == LEVEL::LOADING)
+	{
+		StartLoad();
+		return;
+	}
+
+	m_ePhase = PHASE::UNLOADING;
+	switch (*m_ePreviousLevelIndex)
+	{
+	case LEVEL::LOGO:
+		m_futUnloadFinish = CLevelLogoLoader::UnLoad();
+		break;
+	case LEVEL::PERCIVAL:
+		m_futUnloadFinish = CLevelPercivalLoader::UnLoad();
+		break;
+	default:
+		StartLoad();
+		break;
+	}
+}
+
+void CLevelLoading::CheckUnload()
+{
+	if (!m_futUnloadFinish.valid())
+		return;
+
+	if (m_futUnloadFinish.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+		return;
+
+	if (!m_futUnloadFinish.get())
+	{
+		m_ePhase = PHASE::FAILED;
+		MSG_BOX("UNLOADING FAILED");
+		return;
+	}
+
+	StartLoad();
+}
+
+void CLevelLoading::StartLoad()
+{
+	m_ePhase = PHASE::LOADING;
 	switch (m_eNextLevelIndex)
 	{
 	case LEVEL::LOGO:
@@ -103,24 +155,28 @@ void CLevelLoading::ThreadStart()
 	}
 	break;
 	default:
+		m_ePhase = PHASE::COMPLETE;
 		m_bLoadEnd = true;
 		break;
 	}
 
 }
 
-void CLevelLoading::LoadingCheck()
+void CLevelLoading::CheckLoad()
 {
 	if (m_futLoadFinish.valid())
 	{
 		if (m_futLoadFinish.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
 		{
-			m_bLoadEnd = m_futLoadFinish.get();
-
-			if (!m_bLoadEnd)
+			if (!m_futLoadFinish.get())
 			{
-				MSG_BOX("LOADING FAILD");
+				m_ePhase = PHASE::FAILED;
+				MSG_BOX("LOADING FAILED");
+				return;
 			}
+
+			m_ePhase = PHASE::COMPLETE;
+			m_bLoadEnd = true;
 		}
 	}
 }

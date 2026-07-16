@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine_Defines.h"
 
@@ -16,6 +16,7 @@ protected:
 
 public:
 	uint32_t GetLevelID() const { return m_iLevelID; }
+	virtual bool IsLevelChangeLocked() const { return false; }
 
 	virtual HRESULT Initialize();
 	virtual void Update(_float fTimeDelta);

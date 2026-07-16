@@ -190,10 +190,8 @@ void CLevelAnimEditor::Free()
 	//	
 
 	
-	CLevelAnimatorLoader::UnLoad();
 
 
 
-	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
 }

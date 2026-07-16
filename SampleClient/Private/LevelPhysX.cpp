@@ -172,6 +172,5 @@ Engine::UPtr<CLevelPhysX> CLevelPhysX::Create()
 
 void CLevelPhysX::Free()
 {
-	CLevelPhysXLoader::UnLoad();
 	CLevel::Free();
 }

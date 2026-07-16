@@ -116,6 +116,5 @@ Engine::UPtr<CLevelPercival> CLevelPercival::Create()
 
 void CLevelPercival::Free()
 {
-	CLevelPercivalLoader::UnLoad();
 	CLevel::Free();
 }

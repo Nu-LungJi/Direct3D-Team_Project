@@ -2082,7 +2082,5 @@ Engine::UPtr<CLevelUIEditor> CLevelUIEditor::Create()
 
 void CLevelUIEditor::Free()
 {
-	E::CGameInstance::Get().DelPrototype("LEVEL_UIEditor");
-	E::CGameInstance::Get().DelResource("LEVEL_UIEditor");
 	CLevel::Free();
 }

@@ -85,7 +85,7 @@ std::future<bool> CLevelPhysXLoader::Load()
 			return  true;
 		});
 }
-HRESULT CLevelPhysXLoader::UnLoad()
+std::future<bool> CLevelPhysXLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 
@@ -97,5 +97,8 @@ HRESULT CLevelPhysXLoader::UnLoad()
 	E::CGameInstance::Get().DelResource("LIGHT");
 
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_PHYSX", []()
+		{
+			return true;
+		});
 }

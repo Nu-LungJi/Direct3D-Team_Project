@@ -151,6 +151,5 @@ Engine::UPtr<CLevelLightMap> CLevelLightMap::Create()
 
 void CLevelLightMap::Free()
 {
-	CLevelLightMapLoader::UnLoad();
 	CLevel::Free();
 }

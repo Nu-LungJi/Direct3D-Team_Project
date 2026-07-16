@@ -21,10 +21,13 @@ std::future<bool> CLevelPercivalLoader::Load()
 		});
 }
 
-HRESULT CLevelPercivalLoader::UnLoad()
+std::future<bool> CLevelPercivalLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 	
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_PERCIVAL", []()
+		{
+			return true;
+		});
 }
