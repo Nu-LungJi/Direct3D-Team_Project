@@ -226,23 +226,23 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+	
+		Desc.iNumElements = 512;
+	
+		Desc.iStructureByteStride = sizeof(E::GPU_ANIM_INSTANCE_DATA);
+	
+		Desc.pInitialData = nullptr;
+	
+		Desc.bAppendConsume = false;
+	
+		if (FAILED(res->Load(Desc)))
 		{
-			E::CResStructuredBuffer::DESC Desc{};
-	
-			Desc.iNumElements = 512;
-	
-			Desc.iStructureByteStride = sizeof(E::GPU_ANIM_INSTANCE_DATA);
-	
-			Desc.pInitialData = nullptr;
-	
-			Desc.bAppendConsume = false;
-	
-			if (FAILED(res->Load(Desc)))
-			{
-				return E_FAIL;
-			}
+			return E_FAIL;
 		}
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX", E::CResStructuredBuffer::Create()))
 	{
@@ -262,6 +262,15 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 			return E_FAIL;
 		}
 	}
+
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_SpellMeter", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_SPELLMETER) })))
+		{
+			return E_FAIL;
+		}
+	}
+
 	return S_OK;
 }
 
@@ -821,23 +830,7 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizCopyDepth", "./ShaderFiles/Hiz/Shader_CS_HizCopyDepth.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizMipPyramid", "./ShaderFiles/Hiz/Shader_CS_HizMipPyramid.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizCopyDepth", "./ShaderFiles/Hiz/Shader_CS_HizCopyDepth.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -845,7 +838,23 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner", "./ShaderFiles/Particle/CS_ClearByOwner.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizMipPyramid", "./ShaderFiles/Hiz/Shader_CS_HizMipPyramid.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner", "./ShaderFiles/Particle/CS_ClearByOwner.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -866,6 +875,16 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl")) // 스펠이펙트
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+
+
 
 	// model shader
 	{
