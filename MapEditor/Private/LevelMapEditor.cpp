@@ -10,6 +10,7 @@
 #include "TestGuizmo.h"
 #include "MapMeshObject.h"
 #include "MapEditorTerrain.h"
+#include "LevelMapEditorLoader.h"
 
 NS_USING(Client)
 
@@ -26,21 +27,21 @@ HRESULT CLevelMapEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
-	{
-		CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
-		Desc.sObjectTag = "DefaultMapMeshObject";
-		Desc.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
-		Desc.modelResTag = E::TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL;
-		if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_MapMeshObject",
-			E::MAPMESHOBJECTLAYER, &Desc))
-		{
-			m_SelectedObject = hObject.value();
-		}
-		else
-		{
-			return E_FAIL;
-		}
-	}
+	//{
+	//	CMapMeshObject::MAP_MESH_OBJECT_DESC Desc{};
+	//	Desc.sObjectTag = "DefaultMapMeshObject";
+	//	Desc.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
+	//	Desc.modelResTag = E::TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL;
+	//	if (auto hObject = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_MapMeshObject",
+	//		E::MAPMESHOBJECTLAYER, &Desc))
+	//	{
+	//		m_SelectedObject = hObject.value();
+	//	}
+	//	else
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
 
 	// MapEditorTerrain
 	{
@@ -147,9 +148,6 @@ Engine::UPtr<CLevelMapEditor> CLevelMapEditor::Create()
 
 void CLevelMapEditor::Free()
 {
-	E::CGameInstance::Get().ClearAllChunk();
-	E::CGameInstance::Get().GetNavMeshManager()->Clear();
-	E::CGameInstance::Get().DelPrototype("LEVEL_MAPEDITOR");
-	E::CGameInstance::Get().DelResource("LEVEL_MAPEDITOR");
+	CLevelMapEditorLoader::UnLoad();
 	CLevel::Free();
 }

@@ -1004,29 +1004,6 @@ HRESULT CGameInstanceInitLoader::LoadAnimModel()
 
 HRESULT CGameInstanceInitLoader::LoadStaticModel()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
-
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
-
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL,
-		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
-
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
 	
 	return S_OK;
 }

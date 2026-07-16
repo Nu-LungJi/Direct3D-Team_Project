@@ -18,20 +18,6 @@ NS_USING(Client)
 
 namespace
 {
-	struct ResourceViewItem
-	{
-		const char* category{};
-		const char* icon{};
-		ImVec4 color{};
-		std::string groupName{};
-		std::string resourceTag{};
-		std::string resourceName{};
-		std::string path{};
-		std::string state{};
-		bool bCanCreateMapMeshObject = false;
-		E::SPtr<E::CResStaticModel> staticModel{};
-	};
-
 	struct ModelResourceDragPayload
 	{
 		char groupName[128]{};
@@ -104,9 +90,9 @@ namespace
 		}
 	}
 
-	ResourceViewItem MakeViewItem(const E::StringID& groupId, const E::StringID& resourceId, const E::SPtr<E::CResource>& resource, size_t index, size_t count)
+	Client::ResourceViewItem MakeViewItem(const E::StringID& groupId, const E::StringID& resourceId, const E::SPtr<E::CResource>& resource, size_t index, size_t count)
 	{
-		ResourceViewItem item{};
+		Client::ResourceViewItem item{};
 		item.groupName = SafeDbgStr(groupId);
 		item.resourceTag = SafeDbgStr(resourceId);
 		item.resourceName = item.resourceTag;
@@ -204,7 +190,7 @@ namespace
 		return lowerText.find(lowerPattern) != std::string::npos;
 	}
 
-	bool PassFilter(const ResourceViewItem& item, int categoryIndex, std::string_view searchText)
+	bool PassFilter(const Client::ResourceViewItem& item, int categoryIndex, std::string_view searchText)
 	{
 		if (categoryIndex > 0 && item.category != std::string_view{ CATEGORY_NAMES[categoryIndex] })
 		{
@@ -440,12 +426,50 @@ CResourceGUI::CResourceGUI()
 CResourceGUI::~CResourceGUI()
 {
 }
+HRESULT CResourceGUI::CachingAllResource()
+{
+	m_Items.clear();
+	if(m_Items.capacity() < 500)
+		m_Items.reserve(500);
 
+	const auto& resourceGroups = E::CGameInstance::Get().GetResources();
+	for (const auto& [groupId, resources] : resourceGroups)
+	{
+		for (const auto& [resourceId, resourceList] : resources)
+		{
+			for (size_t i = 0; i < resourceList.size(); ++i)
+			{
+				m_Items.emplace_back(MakeViewItem(groupId, resourceId, resourceList[i], i, resourceList.size()));
+			}
+		}
+	}
+
+	std::sort(m_Items.begin(), m_Items.end(), [](const ResourceViewItem& lhs, const ResourceViewItem& rhs)
+		{
+			if (lhs.category != rhs.category)
+			{
+				return std::string_view{ lhs.category } < std::string_view{ rhs.category };
+			}
+			if (lhs.groupName != rhs.groupName)
+			{
+				return lhs.groupName < rhs.groupName;
+			}
+			return lhs.resourceName < rhs.resourceName;
+		});
+
+
+
+	return S_OK;
+}
 void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 {
 	m_pThumbnailCache->BeginFrame();
 	ImGui::SetNextWindowSize(ImVec2(560.f, 420.f), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Resources");
+	if (!ImGui::Begin("Resources"))
+	{
+		ImGui::End();
+		return;
+	}
 
 	ImGui::SetNextItemWidth(220.f);
 	ImGui::InputTextWithHint("##ResourceSearch", "Search resources...", m_SearchBuffer, sizeof(m_SearchBuffer));
@@ -458,9 +482,18 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::SetNextItemWidth(80.f);
 	if (ImGui::DragFloat("Whole Map Scale", &m_fWholeMapScale, 0.01f, 0.01f, 100.f, "%.2f"))
 		m_fWholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+	ImGui::SetNextItemWidth(300.f);
+	ImGui::DragFloat3("Whole Map Origin", &m_vWholeMapOrigin.x, 0.1f, 0.f, 0.f, "%.2f");
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Origin"))
+		m_vWholeMapOrigin = {};
 	if (!m_WholeMapImportStatus.empty())
 	{
 		ImGui::TextWrapped("%s", m_WholeMapImportStatus.c_str());
+	}
+	if (ImGui::Button("Refresh Resouce List"))
+	{
+		CachingAllResource();
 	}
 
 	if (ImGui::BeginTabBar("##ResourceCategories"))
@@ -476,31 +509,6 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 		ImGui::EndTabBar();
 	}
 
-	std::vector<ResourceViewItem> items{};
-	const auto& resourceGroups = E::CGameInstance::Get().GetResources();
-	for (const auto& [groupId, resources] : resourceGroups)
-	{
-		for (const auto& [resourceId, resourceList] : resources)
-		{
-			for (size_t i = 0; i < resourceList.size(); ++i)
-			{
-				items.push_back(MakeViewItem(groupId, resourceId, resourceList[i], i, resourceList.size()));
-			}
-		}
-	}
-
-	std::sort(items.begin(), items.end(), [](const ResourceViewItem& lhs, const ResourceViewItem& rhs)
-		{
-			if (lhs.category != rhs.category)
-			{
-				return std::string_view{ lhs.category } < std::string_view{ rhs.category };
-			}
-			if (lhs.groupName != rhs.groupName)
-			{
-				return lhs.groupName < rhs.groupName;
-			}
-			return lhs.resourceName < rhs.resourceName;
-		});
 
 	ImGui::Separator();
 	ImGui::BeginChild("##ResourceGrid", ImVec2(0.f, 0.f), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -510,78 +518,102 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 	constexpr float cellHeight = 112.f;
 	const float availableWidth = std::max(ImGui::GetContentRegionAvail().x, cellWidth);
 	const int columns = std::max(1, static_cast<int>(availableWidth / cellWidth));
-	int visibleIndex = 0;
 
-	for (const auto& item : items)
+	m_FilteredItemIndices.clear();
+	if (m_FilteredItemIndices.capacity() < m_Items.size())
+		m_FilteredItemIndices.reserve(m_Items.size());
+
+	for (size_t i = 0; i < m_Items.size(); ++i)
 	{
-		if (!PassFilter(item, m_SelectedCategory, m_SearchBuffer))
-		{
-			continue;
-		}
+		if (PassFilter(m_Items[i], m_SelectedCategory, m_SearchBuffer))
+			m_FilteredItemIndices.push_back(i);
+	}
 
-		ImGui::PushID(visibleIndex);
-		ImGui::BeginGroup();
+	const int itemCount = static_cast<int>(m_FilteredItemIndices.size());
+	const int rowCount = (itemCount + columns - 1) / columns;
 
-		const float cursorX = ImGui::GetCursorPosX();
-		ImGui::SetCursorPosX(cursorX + (cellWidth - iconSize) * 0.5f);
-		const std::string thumbnailKey = item.groupName + "\x1f" + item.resourceTag;
-		ID3D11ShaderResourceView* thumbnail = item.staticModel ? m_pThumbnailCache->Request(thumbnailKey, item.staticModel) : nullptr;
-		if (thumbnail != nullptr)
+	ImGuiListClipper clipper;
+	clipper.Begin(rowCount, cellHeight);
+	while (clipper.Step())
+	{
+		for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
 		{
-			ImGui::ImageButton(reinterpret_cast<ImTextureID>(thumbnail), ImVec2(iconSize, iconSize));
-		}
-		else
-		{
-			ImGui::PushStyleColor(ImGuiCol_Button, item.color);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(item.color.x + 0.08f, item.color.y + 0.08f, item.color.z + 0.08f, 1.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(item.color.x * 0.82f, item.color.y * 0.82f, item.color.z * 0.82f, 1.f));
-			ImGui::Button(item.icon, ImVec2(iconSize, iconSize));
-			ImGui::PopStyleColor(3);
-		}
+			const ImVec2 rowStart = ImGui::GetCursorPos();
 
-		if (item.bCanCreateMapMeshObject && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-		{
-			ModelResourceDragPayload payload{};
-			strcpy_s(payload.groupName, item.groupName.c_str());
-			strcpy_s(payload.resourceName, item.resourceTag.c_str());
-			ImGui::SetDragDropPayload(PAYLOAD_MODEL_RESOURCE, &payload, sizeof(payload));
-			m_DragModelGroup = item.groupName;
-			m_DragModelTag = item.resourceTag;
-			m_bDraggingModel = true;
-			ImGui::Text("Create MapMeshObject");
-			ImGui::Text("%s / %s", payload.groupName, payload.resourceName);
-			ImGui::EndDragDropSource();
-		}
-
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::BeginTooltip();
-			ImGui::Text("Name: %s", item.resourceName.c_str());
-			ImGui::Text("Type: %s", item.category);
-			ImGui::Text("Group: %s", item.groupName.c_str());
-			ImGui::Text("State: %s", item.state.c_str());
-			if (!item.path.empty())
+			for (int column = 0; column < columns; ++column)
 			{
-				ImGui::TextWrapped("Path: %s", item.path.c_str());
+				const int visibleIndex = row * columns + column;
+				if (visibleIndex >= itemCount)
+					break;
+
+				const auto& item = m_Items[m_FilteredItemIndices[visibleIndex]];
+				ImGui::SetCursorPos(ImVec2(rowStart.x + column * cellWidth, rowStart.y));
+
+				ImGui::PushID(visibleIndex);
+				ImGui::BeginGroup();
+
+				const float cursorX = ImGui::GetCursorPosX();
+				ImGui::SetCursorPosX(cursorX + (cellWidth - iconSize) * 0.5f);
+				ID3D11ShaderResourceView* thumbnail = nullptr;
+				if (item.staticModel)
+				{
+					const std::string thumbnailKey = item.groupName + "\x1f" + item.resourceTag;
+					thumbnail = m_pThumbnailCache->Request(thumbnailKey, item.staticModel);
+				}
+				if (thumbnail != nullptr)
+				{
+					ImGui::ImageButton(reinterpret_cast<ImTextureID>(thumbnail), ImVec2(iconSize, iconSize));
+				}
+				else
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, item.color);
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(item.color.x + 0.08f, item.color.y + 0.08f, item.color.z + 0.08f, 1.f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(item.color.x * 0.82f, item.color.y * 0.82f, item.color.z * 0.82f, 1.f));
+					ImGui::Button(item.icon, ImVec2(iconSize, iconSize));
+					ImGui::PopStyleColor(3);
+				}
+
+				if (item.bCanCreateMapMeshObject && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+				{
+					ModelResourceDragPayload payload{};
+					strcpy_s(payload.groupName, item.groupName.c_str());
+					strcpy_s(payload.resourceName, item.resourceTag.c_str());
+					ImGui::SetDragDropPayload(PAYLOAD_MODEL_RESOURCE, &payload, sizeof(payload));
+					m_DragModelGroup = item.groupName;
+					m_DragModelTag = item.resourceTag;
+					m_bDraggingModel = true;
+					ImGui::Text("Create MapMeshObject");
+					ImGui::Text("%s / %s", payload.groupName, payload.resourceName);
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					ImGui::Text("Name: %s", item.resourceName.c_str());
+					ImGui::Text("Type: %s", item.category);
+					ImGui::Text("Group: %s", item.groupName.c_str());
+					ImGui::Text("State: %s", item.state.c_str());
+					if (!item.path.empty())
+					{
+						ImGui::TextWrapped("Path: %s", item.path.c_str());
+					}
+					ImGui::EndTooltip();
+				}
+
+				ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + cellWidth - 6.f);
+				DrawCenteredText(item.resourceName.c_str(), cellWidth - 6.f);
+				ImGui::PopTextWrapPos();
+
+				ImGui::EndGroup();
+				ImGui::PopID();
 			}
-			ImGui::EndTooltip();
-		}
 
-		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + cellWidth - 6.f);
-		DrawCenteredText(item.resourceName.c_str(), cellWidth - 6.f);
-		ImGui::PopTextWrapPos();
-
-		ImGui::EndGroup();
-		ImGui::PopID();
-
-		++visibleIndex;
-		if (visibleIndex % columns != 0)
-		{
-			ImGui::SameLine();
+			ImGui::SetCursorPos(ImVec2(rowStart.x, rowStart.y + cellHeight));
 		}
 	}
 
-	if (visibleIndex == 0)
+	if (itemCount == 0)
 	{
 		ImGui::TextDisabled("No resources found.");
 	}
@@ -735,9 +767,9 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 		const float wholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
 
 		snapshot.position = {
-			origin[0].get<float>() * wholeMapScale,
-			origin[1].get<float>() * wholeMapScale,
-			origin[2].get<float>() * wholeMapScale
+			m_vWholeMapOrigin.x + origin[0].get<float>() * wholeMapScale,
+			m_vWholeMapOrigin.y + origin[1].get<float>() * wholeMapScale,
+			m_vWholeMapOrigin.z + origin[2].get<float>() * wholeMapScale
 		};
 
 		snapshot.scale = {
@@ -763,7 +795,7 @@ E::UPtr<CResourceGUI> CResourceGUI::Create(E::CHandle* pSelectedObject,
 	CEditorCommandManager* pCommandManager)
 {
 	auto pInstance = E::UPtr<CResourceGUI>(new CResourceGUI{});
-	if (FAILED(pInstance->Initialize(pSelectedObject)))
+	if (FAILED(pInstance->Initialize(pSelectedObject)) || FAILED(pInstance->CachingAllResource()))
 	{
 		MSG_BOX("Failed to Created : CResourceGUI");
 		return nullptr;
