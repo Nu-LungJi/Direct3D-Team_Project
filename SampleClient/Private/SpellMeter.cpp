@@ -64,8 +64,6 @@ void CSpellMeter::Update(E::_float fTimeDelta)
 	if(CGameInstance::Get().KeyDown(DIK_Q))
 		StartCooldown(5.0f);
 
-	m_isActive = true;
-
 	if (!m_isActive)
 		return;
 
@@ -133,9 +131,11 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		perSpellMeter.fTime = s_fAccumulatedTime;
 
 		// 색상
-		perSpellMeter.vFillColor = { 0.396f, 0.187f, 0.046f, 1.0f }; // 채워진 마법 색상
+		//perSpellMeter.vFillColor = { 0.396f, 0.187f, 0.046f, 1.0f }; // 채워진 마법 색상
+		perSpellMeter.vFillColor = { 0.f, 0.f, 1.f, 1.0f }; // 채워진 마법 색상
 		perSpellMeter.vEmptyColor = { 0.023f, 0.024f, 0.019f, 1.0f }; // 빈 배경 (매우 어두운 색)
 		perSpellMeter.vRippleColor = { 1.0f, 1.0f, 1.0f, 1.0f };       // 경계선 파동 (흰색 발광)
+		perSpellMeter.vWispyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
 
 		// 3. 버퍼 업데이트 및 쉐이더로 전송
 		if (FAILED(m_pComCBufferPerSpellMeter->MapDiscard(pContext, &perSpellMeter, sizeof(perSpellMeter))))
@@ -171,15 +171,19 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		const auto& causticSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_T_WaterCaustics_Disorder_A");
 		const auto& wispySrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_VFX_T_WispyNoise_D");
 		const auto& normalSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_VFX_T_Wavy_N");
+		const auto& rippleSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_T_CollectionsMeterLine_A");
+		const auto& iconSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_arrestomomentum");
 
-		ID3D11ShaderResourceView* srvs[4] = {
+		ID3D11ShaderResourceView* srvs[6] = {
 			baseSrv->GetSRV().Get(),      // t0: 다이아몬드
 			causticSrv->GetSRV().Get(),   // t1: 코스틱
 			wispySrv->GetSRV().Get(),     // t2: 위스피 노이즈
-			normalSrv->GetSRV().Get()     // t3: 웨이비 노말맵
+			normalSrv->GetSRV().Get(),     // t3: 웨이비 노말맵
+			rippleSrv->GetSRV().Get(),
+			iconSrv->GetSRV().Get()
 		};
 
-		pContext->PSSetShaderResources(0, 4, srvs);
+		pContext->PSSetShaderResources(0, 6, srvs);
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

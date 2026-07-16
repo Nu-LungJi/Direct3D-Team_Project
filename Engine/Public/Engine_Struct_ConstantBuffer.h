@@ -138,6 +138,7 @@ namespace Engine
 		_float4 vFillColor;
 		_float4 vEmptyColor;
 		_float4 vRippleColor;
+		_float4 vWispyColor;
 	}CB_SPELLMETER;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 }

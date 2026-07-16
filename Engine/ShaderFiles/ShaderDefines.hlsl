@@ -181,6 +181,7 @@ cbuffer CB_SPELLMETER : register(b9)
     float4 g_FillColor;     
     float4 g_EmptyColor;    
     float4 g_RippleColor;   
+    float4 g_WispyColor;
 };
 
 SamplerState LinearWrap                 : register(s0);
