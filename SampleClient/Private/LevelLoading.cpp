@@ -59,6 +59,10 @@ CLevelLoading::~CLevelLoading()
 
 HRESULT CLevelLoading::Initialize()
 {
+	const uint32_t iCurrentLevelID = Engine::CGameInstance::Get().GetCurrentLevelID();
+	if (iCurrentLevelID != Engine::CLevel::INVALID_LEVEL_ID)
+		m_ePreviousLevelIndex = static_cast<LEVEL>(iCurrentLevelID);
+
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
 

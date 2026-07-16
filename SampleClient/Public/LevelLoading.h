@@ -32,6 +32,7 @@ private:
 	ComPtr<ID3D11DeviceContext> m_pContext{};
 
 private:
+	std::optional<LEVEL> m_ePreviousLevelIndex{};
 	const LEVEL m_eNextLevelIndex;
 
 	bool m_bThreadStart{ false };
