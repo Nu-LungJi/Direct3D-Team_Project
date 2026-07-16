@@ -169,6 +169,9 @@
     <Filter Include="Loader\Level\LightMap">
       <UniqueIdentifier>{9a676caf-9a8e-4a44-952d-5ffa5948d377}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\LightObject\LightTerrain">
+      <UniqueIdentifier>{8c6ec420-6258-4dd1-afce-8e979f1663f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -399,6 +402,9 @@
     <ClInclude Include="..\Public\SpellMeter.h">
       <Filter>GameObject\UI\Spell</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LightTerrain.h">
+      <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -593,6 +599,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\SpellMeter.cpp">
       <Filter>GameObject\UI\Spell</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightTerrain.cpp">
+      <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

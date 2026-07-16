@@ -30,7 +30,7 @@ HRESULT CLevelLightMap::Initialize()
 	{
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
 		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
@@ -40,7 +40,7 @@ HRESULT CLevelLightMap::Initialize()
 	{
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject2";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
 		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
@@ -52,7 +52,7 @@ HRESULT CLevelLightMap::Initialize()
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
 
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_Terrain",
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_Terrain",
 			"02_Terrain", &Desc)))
 		{
 			return E_FAIL;

@@ -1006,17 +1006,17 @@ HRESULT CGameInstanceInitLoader::LoadModel()
 HRESULT CGameInstanceInitLoader::LoadAnimModel()
 {
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
+	//if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+	//	CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
 
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+	//	E::CResStaticModel::DESC pDesc{};
+	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
+	//	if (FAILED(res->Load(pDesc)))
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
 	return S_OK;
 }
 
