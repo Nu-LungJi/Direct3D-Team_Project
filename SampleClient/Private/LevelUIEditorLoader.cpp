@@ -7,6 +7,7 @@
 #include "TextureUI.h"
 #include "Button.h"
 #include "TextBox.h"
+#include "SpellMeter.h"
 
 NS_USING(Client)
 std::future<bool> CLevelUIEditorLoader::Load()
@@ -71,31 +72,48 @@ std::future<bool> CLevelUIEditorLoader::Load()
 	{
 		res->Load();
 	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_T_WaterCaustics_Disorder_A", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_WaterCaustics_Disorder_A.png")))
+	{
+		res->Load();
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_spellmeter_Generic", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_spellmeter_Generic.png")))
+	{
+		res->Load();
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_VFX_T_Wavy_N", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_Wavy_N.png")))
+	{
+		res->Load();
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_VFX_T_WispyNoise_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_WispyNoise_D.png")))
+	{
+		res->Load();
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_T_CollectionsMeterLine_A", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_CollectionsMeterLine_A.png")))
+	{
+		res->Load();
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_arrestomomentum", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_arrestomomentum.png")))
+	{
+		res->Load();
+	}
 	{
 		namespace fs = std::filesystem;
 
 		std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI";
 
-		// 1. �ش� ������ �����ϴ��� ���� Ȯ�� (������ġ)
 		if (fs::exists(targetDir) && fs::is_directory(targetDir))
 		{
-			// 2. ���� ���� ��� ������ ��ȸ
 			for (const auto& entry : fs::directory_iterator(targetDir))
 			{
-				// 3. �����̸鼭 Ȯ���ڰ� .png ���� Ȯ��
 				if (entry.is_regular_file() && entry.path().extension() == ".png")
 				{
-					// 4. ���� �̸��� ���� (��: "UI_T_NurtureMeterDiamond_Back_4k")
 					std::string fileName = entry.path().stem().string();
 
-					// 5. ���ҽ� �±� ���� (��: "TEX_UI_T_NurtureMeterDiamond_Back_4k")
+
 					std::string resTag = "TEX_" + fileName;
 
-					// 6. ��ü ���� ��� ���� (�ü���� �°� ��ΰ� ���յ�)
-					// generic_string()�� ���� �����쿡���� ��������(\) ��� ������(/)�� ��θ� ��ȯ�մϴ�.
 					std::string fullPath = entry.path().generic_string();
 
-					// 7. ������ ���ҽ� �߰� �� �ε�
 					if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", resTag, E::CResTexture2D::Create(fullPath)))
 					{
 						res->Load();
@@ -126,6 +144,10 @@ std::future<bool> CLevelUIEditorLoader::Load()
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_Button", CButton::Create())))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
 			{
 				return false;
 			}

@@ -218,6 +218,25 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 	if (bP)
 	{
+		if (true)
+		{
+			CTextureUI::UIOBJECT_DESC Desc{};
+
+			count++;
+			Desc.sObjectTag = "UI_" + std::to_string(count);
+			Desc.Name = "UI_" + std::to_string(count);
+			Desc.fSizeX = 100.f;
+			Desc.fSizeY = 100.f;
+			Desc.fX = clientSize.x * 0.5f;
+			Desc.fY = clientSize.y * 0.5f;
+			Desc.fAlpha = 1.f;
+			Desc.ResTag = "";
+			Desc.UIType = ETOUI(UI_TYPE::SPELLMETER);
+			Desc.ResWeight = count;
+
+			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
+		}
+
 		if (false)
 		{
 			count++;

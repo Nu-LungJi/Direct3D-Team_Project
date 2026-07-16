@@ -30,6 +30,7 @@
 #include "TextBox.h"
 #include "Weapon.h"
 #include "Button.h"
+#include "SpellMeter.h"
 
 #include "TestGob.h"
 

@@ -157,6 +157,9 @@
     <Filter Include="Loader\Level\UIEditor">
       <UniqueIdentifier>{2f9e16e6-e99a-4f0a-b3ff-f6899d11a981}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\Spell">
+      <UniqueIdentifier>{e46f670f-9eb8-4e4d-a6d8-f55d80303b0a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -375,6 +378,9 @@
     <ClInclude Include="..\Public\LevelUIEditorLoader.h">
       <Filter>Loader\Level\UIEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\SpellMeter.h">
+      <Filter>GameObject\UI\Spell</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -557,6 +563,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LevelUIEditorLoader.cpp">
       <Filter>Loader\Level\UIEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\SpellMeter.cpp">
+      <Filter>GameObject\UI\Spell</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

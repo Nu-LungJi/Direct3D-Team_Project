@@ -127,5 +127,17 @@ namespace Engine
 		_float3 pad;
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
-}
 
+	typedef struct CB_SpellMeter
+	{
+		float fAmount;
+		float fDistSpeed;
+		float fDistStrength;
+		float fTime;
+
+		_float4 vFillColor;
+		_float4 vEmptyColor;
+		_float4 vRippleColor;
+	}CB_SPELLMETER;
+	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
+}
