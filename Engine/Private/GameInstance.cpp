@@ -830,9 +830,9 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
-const CPrototypeManager::PROTOTYPES* CGameInstance::GetPrototype(const StringID& svGroupTag) const
+std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
-	return m_pPrototypeManager->GetPrototype(svGroupTag);
+	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
 }
 #pragma endregion
 
