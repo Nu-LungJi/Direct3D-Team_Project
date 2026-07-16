@@ -88,6 +88,24 @@ void CEditorSelection::Toggle(const E::CHandle& handle)
 		SetPrimary(m_SelectedHandles.back());
 }
 
+void CEditorSelection::SelectMany(const std::vector<E::CHandle>& handles)
+{
+	m_SelectedHandles.clear();
+	for (const E::CHandle& handle : handles)
+	{
+		if (E::CGameInstance::Get().GetGameObjectByHandle(handle) != nullptr &&
+			!IsSelected(handle))
+		{
+			m_SelectedHandles.push_back(handle);
+		}
+	}
+
+	if (m_SelectedHandles.empty())
+		SetPrimary(E::CHandle{});
+	else
+		SetPrimary(m_SelectedHandles.back());
+}
+
 void CEditorSelection::SelectRange(const std::vector<E::CHandle>& handles,
 	size_t firstIndex, size_t lastIndex, _bool additive)
 {

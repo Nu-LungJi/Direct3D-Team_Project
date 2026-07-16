@@ -324,10 +324,6 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 void CMapEditorGUI::DrawGizmoToolbar()
 {
-	const bool multiSelection = m_pSelection && m_pSelection->GetCount() > 1;
-	if (multiSelection)
-		m_GizmoOperation = ImGuizmo::TRANSLATE;
-
 	ImGui::TextDisabled("Gizmo");
 	ImGui::SameLine();
 	if (DrawModeButton("T", m_GizmoOperation == ImGuizmo::TRANSLATE, "Translate"))
@@ -335,14 +331,12 @@ void CMapEditorGUI::DrawGizmoToolbar()
 		m_GizmoOperation = ImGuizmo::TRANSLATE;
 	}
 	ImGui::SameLine();
-	if (DrawModeButton("R", m_GizmoOperation == ImGuizmo::ROTATE,
-		multiSelection ? "Rotate is available for single selection" : "Rotate") && !multiSelection)
+	if (DrawModeButton("R", m_GizmoOperation == ImGuizmo::ROTATE, "Rotate"))
 	{
 		m_GizmoOperation = ImGuizmo::ROTATE;
 	}
 	ImGui::SameLine();
-	if (DrawModeButton("S", m_GizmoOperation == ImGuizmo::SCALE,
-		multiSelection ? "Scale is available for single selection" : "Scale") && !multiSelection)
+	if (DrawModeButton("S", m_GizmoOperation == ImGuizmo::SCALE, "Scale"))
 	{
 		m_GizmoOperation = ImGuizmo::SCALE;
 	}
@@ -408,8 +402,26 @@ void CMapEditorGUI::RenderGizmo()
 		pivotPosition.x *= inverseCount;
 		pivotPosition.y *= inverseCount;
 		pivotPosition.z *= inverseCount;
-		XMStoreFloat4x4(&gizmoMatrix,
-			XMMatrixTranslation(pivotPosition.x, pivotPosition.y, pivotPosition.z));
+
+		if (!m_bWasUsingGizmo)
+		{
+			XMStoreFloat4x4(&m_MultiGizmoStartMatrix,
+				XMMatrixTranslation(pivotPosition.x, pivotPosition.y, pivotPosition.z));
+			m_MultiGizmoCurrentMatrix = m_MultiGizmoStartMatrix;
+			m_MultiGizmoStartTransforms.clear();
+
+			for (const auto& handle : m_pSelection->GetHandles())
+			{
+				if (auto* object = E::CGameInstance::Get().GetGameObjectByHandle(handle))
+				{
+					object->GetTransform().Update();
+					m_MultiGizmoStartTransforms.emplace_back(
+						handle, *object->GetTransform().GetWorldMatrix());
+				}
+			}
+		}
+
+		gizmoMatrix = m_MultiGizmoCurrentMatrix;
 	}
 	else
 	{
@@ -427,26 +439,24 @@ void CMapEditorGUI::RenderGizmo()
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
 	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
-	const auto operation = multiSelection ? ImGuizmo::TRANSLATE : m_GizmoOperation;
+	const auto operation = m_GizmoOperation;
 	const auto mode = multiSelection ? ImGuizmo::WORLD : m_GizmoMode;
 	if (ImGuizmo::Manipulate(&view._11, &proj._11, operation, mode, &gizmoMatrix._11))
 	{
 		if (multiSelection)
 		{
-			const E::_float3 delta{
-				gizmoMatrix._41 - pivotPosition.x,
-				gizmoMatrix._42 - pivotPosition.y,
-				gizmoMatrix._43 - pivotPosition.z
-			};
-			for (const auto& handle : m_pSelection->GetHandles())
+			m_MultiGizmoCurrentMatrix = gizmoMatrix;
+
+			const XMMATRIX startPivot = XMLoadFloat4x4(&m_MultiGizmoStartMatrix);
+			const XMMATRIX manipulatedPivot = XMLoadFloat4x4(&m_MultiGizmoCurrentMatrix);
+			const XMMATRIX groupDelta = XMMatrixInverse(nullptr, startPivot) * manipulatedPivot;
+			for (const auto& [handle, startWorld] : m_MultiGizmoStartTransforms)
 			{
 				if (auto* object = E::CGameInstance::Get().GetGameObjectByHandle(handle))
 				{
-					auto& transform = object->GetTransform();
-					const auto& position = transform.GetPosition();
-					transform.SetPosition(E::_float3{
-						position.x + delta.x, position.y + delta.y, position.z + delta.z });
-					transform.Update();
+					E::_float4x4 transformed{};
+					XMStoreFloat4x4(&transformed, XMLoadFloat4x4(&startWorld) * groupDelta);
+					ApplyMatrixToTransform(object->GetTransform(), transformed);
 				}
 			}
 		}
@@ -460,6 +470,9 @@ void CMapEditorGUI::RenderGizmo()
 	if (m_bWasUsingGizmo && !isUsingGizmo)
 	{
 		E::CGameInstance::Get().RebuildMapChunks();
+		m_MultiGizmoStartTransforms.clear();
+		m_MultiGizmoStartMatrix = {};
+		m_MultiGizmoCurrentMatrix = {};
 	}
 	m_bWasUsingGizmo = isUsingGizmo;
 }
