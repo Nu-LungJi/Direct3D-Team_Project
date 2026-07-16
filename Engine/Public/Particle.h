@@ -49,6 +49,8 @@ protected:
 	SPtr<class CResVertexShader> m_pResVertexShader{};
 	UPtr<class CComStaticModelInstance> m_pComModelInstance{};
 	SPtr<class CResTexture2D> m_pParticleTexture;
+	SPtr<class CResTexture2D> m_pNormalTexture;
+	SPtr<class CResTexture2D> m_pDistortionTexture;
 	SPtr<class CResTexture2D> m_pNoiseTexture;
 
 private:

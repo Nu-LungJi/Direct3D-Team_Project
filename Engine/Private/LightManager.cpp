@@ -10,9 +10,9 @@ CLightManager::~CLightManager() { }
 
 HRESULT CLightManager::Initialize_LightManager() {
 
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light", E::CResCBuffer::Create()))
+	if (m_pLightConstantBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light", E::CResCBuffer::Create()))
 	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LIGHT) })))    return E_FAIL;
+		if (FAILED(m_pLightConstantBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LIGHT) })))    return E_FAIL;
 	}
 
 	m_pResLightTexBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
@@ -32,7 +32,18 @@ HRESULT CLightManager::Initialize_LightManager() {
 
 	m_pShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap", ShadowMapResolutionX, ShadowMapResolutionY);
 
-	CGameInstance::Get().Generate_Texture2DArray(&m_pShadowMapList, &m_pShadowTextureArray, &m_pShadowSRV, ShadowMapResolutionX, 8);
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResGeometryShader>(TAG_RES_GRP_PERMANENT_SHADER, "GS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
 
 #ifdef _DEBUG
 	if (FAILED(Initialize_DebugRender()))	return E_FAIL;
@@ -233,44 +244,56 @@ HRESULT CLightManager::Capture_ShadowMap() {
 	m_pContext->GSSetShader(nullptr, nullptr, 0);
 	m_pContext->PSSetShader(nullptr, nullptr, 0);
 
-	ID3D11Buffer* vertexBuffers[] = { m_pResLightTexBuffer->GetVertexBuffer().Get() };
-	uint32_t strides[] = { m_pResLightTexBuffer->GetVertexStride() };
-	uint32_t offsets[] = { 0 };
-
-	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-	m_pContext->IASetIndexBuffer(m_pResLightTexBuffer->GetIndexBuffer().Get(), m_pResLightTexBuffer->GetIndexFormat(), 0);
-	m_pContext->IASetPrimitiveTopology(m_pResLightTexBuffer->GetPrimitiveType());
-
 	uint32_t LightCount = 0;
-
-	auto LightConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light");
 
 	for (uint32_t i = 0; i < m_LightHandleList.size(); ++i) {
 		// Need Culling - Frustum & Distance
 		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[i]);
 		if (nullptr == LightOBJ)	continue;
 
-		m_pContext->ClearDepthStencilView(m_pShadowMapList[i].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-		ID3D11RenderTargetView* NullRTV = nullptr;
-		m_pContext->OMSetRenderTargets(1, &NullRTV, m_pShadowMapList[i].Get());
-
 		D3D11_MAPPED_SUBRESOURCE MRES = {};
-		if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+		if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
 			CB_LIGHT CBLight{};
-			CBLight.AffectedLight[0].g_LightViewProj = LightOBJ->Get_LightViewProj();
-			CBLight.AffectedLight[0].LightType = static_cast<uint32_t>(LightOBJ->Get_LightType());
+			if (LightOBJ->Get_LightType() == LIGHT_TYPE::DIRECTIONAL || LightOBJ->Get_LightType() == LIGHT_TYPE::SPOTLIGHT) {
+				CBLight.AffectedLight[0].g_LightViewProj[0] = LightOBJ->Get_LightViewProj();
+			}
+			else {
+				for (int Face = 0; Face < 6; ++Face)
+					CBLight.AffectedLight[0].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
+			}
+
+			CBLight.AffectedLight[0].LightType = ETOUI(LightOBJ->Get_LightType());
+			CBLight.LightCount = 1;
+			CBLight.CurrentLightIndex = 0;
 
 			memcpy(MRES.pData, &CBLight, sizeof(CB_LIGHT));
-			m_pContext->Unmap(LightConstantBuffer->GetCBuffer().Get(), 0);
+			m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 		}
 
-		m_pContext->VSSetConstantBuffers(4, 1, LightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->VSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		
+		if (LightOBJ->Is_StaticDirty()){
+			auto StaticShadowDSV = LightOBJ->Get_StaticShadowDSV();
+			if (StaticShadowDSV) {
+				m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
+				m_pContext->OMSetRenderTargets(1, &NullRTV, StaticShadowDSV.Get());
 
-		LightOBJ->Capture_ShadowMap(m_pContext.Get());
+				LightOBJ->Capture_ShadowMap(m_pContext.Get());
+				m_pContext->GSSetShader(nullptr, nullptr, 0);
+			}
+			LightOBJ->Set_StaticDirty(false);
+		}
 
-		LightOBJ->Set_ShadowMapIndex(i);
+		auto DynamicShadowDSV = LightOBJ->Get_DynamicShadowDSV();
+		if (DynamicShadowDSV) {
+			m_pContext->ClearDepthStencilView(DynamicShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
+			m_pContext->OMSetRenderTargets(1, &NullRTV, DynamicShadowDSV.Get());
+
+			LightOBJ->Capture_ShadowMap(m_pContext.Get());
+		}
+		m_pContext->GSSetShader(nullptr, nullptr, 0);
 	}
 
 	m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
@@ -292,7 +315,7 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 	uint32_t ScreenResolutionX = { 1280 };
 	uint32_t ScreenResolutionY = { 720 };
 
-	auto LightConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light");
+	auto LightConstantBuffer = CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light");
 
 	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
 	if (nullptr == ActiveCamera) return E_FAIL;
@@ -324,7 +347,7 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 
 		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightOBJ->Get_LightType());
 		XMStoreFloat4x4(&LightBuffer.g_InvViewProj, InvViewProj);
-		LightBuffer.AffectedLight[LightCount].g_LightViewProj = LightOBJ->Get_LightViewProj();
+		LightBuffer.AffectedLight[LightCount].g_LightViewProj[0] = LightOBJ->Get_LightViewProj();
 
 		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
 		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
@@ -339,6 +362,7 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 		LightCount++;
 	}
 	LightBuffer.LightCount = LightCount;
+
 	D3D11_MAPPED_SUBRESOURCE MRES;
 	if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 	{
@@ -451,12 +475,12 @@ VOID CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _
 }
 VOID CLightManager::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
 	CLight::DESC LDesc{};
-	if (m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00" + m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 100)    LDesc.sObjectTag = "Light_Clone0" + m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 1000)   LDesc.sObjectTag = "Light_Clone" + m_LightHandleList.size();
+	if		(m_LightHandleList.size() < 10)		LDesc.sObjectTag = "Light_Clone00"	+ m_LightHandleList.size();
+	else if (m_LightHandleList.size() < 100)    LDesc.sObjectTag = "Light_Clone0"	+ m_LightHandleList.size();
+	else if (m_LightHandleList.size() < 1000)   LDesc.sObjectTag = "Light_Clone"	+ m_LightHandleList.size();
 
 	auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
-	if (!(LightHandle))	return;
+	if (!LightHandle)	return;
 
 	auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
 	LightOBJ->Set_LightType(LIGHT_TYPE::SPOTLIGHT);
@@ -483,7 +507,6 @@ HRESULT CLightManager::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRen
 	}
 	return S_OK;
 }
-
 
 
 #ifdef _DEBUG

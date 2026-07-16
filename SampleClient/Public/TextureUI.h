@@ -28,14 +28,7 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
-	virtual void PlayerEffect(uint32_t uiState);
-
-protected:
-	virtual void Creating();
-	virtual void StartHovering();
-	virtual void Hovering();
-	virtual void EndHovering();
-	virtual void Ending();
+	virtual void PlayEffect(uint32_t uiState);
 
 public:
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
@@ -47,9 +40,6 @@ private:
 
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
 	CButtonComponent* m_pComCButton = nullptr;
-
-protected:
-	virtual void PlayEffect(uint32_t uiState);
 
 private:
 	std::vector<std::optional<CHandle>> m_vEffects;

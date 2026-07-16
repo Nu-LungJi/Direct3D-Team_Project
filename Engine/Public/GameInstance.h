@@ -159,7 +159,7 @@ public:
 
 #pragma region WORKER_MANAGER
 public:
-	void WorkerEnqueue(_string_view svTaskName, _Func func);
+	_bool WorkerEnqueue(_string_view svTaskName, _Func func);
 	template<typename Func, typename... Args>
 	auto WorkerEnqueueWithFuture(_string_view svTaskName, Func&& f, Args&&... args)
 		-> std::future<std::invoke_result_t<Func, Args...>>
@@ -263,6 +263,8 @@ public:
 
 	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution);
+	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution);
 
 #pragma endregion
 

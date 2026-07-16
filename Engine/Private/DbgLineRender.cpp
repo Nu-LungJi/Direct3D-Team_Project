@@ -5,6 +5,22 @@
 
 NS_USING(Engine)
 
+namespace
+{
+    uint32_t PackDbgLineColor(const _float4& color)
+    {
+        const auto PackChannel = [](_float value)
+        {
+            return static_cast<uint32_t>(std::clamp(value, 0.f, 1.f) * 255.f + 0.5f);
+        };
+
+        return PackChannel(color.x)
+            | (PackChannel(color.y) << 8)
+            | (PackChannel(color.z) << 16)
+            | (PackChannel(color.w) << 24);
+    }
+}
+
 CDbgLineRender::CDbgLineRender(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
     : m_pDevice { pDevice }
     , m_pContext{ pContext }
@@ -15,25 +31,55 @@ CDbgLineRender::~CDbgLineRender()
 {
 }
 
+void CDbgLineRender::SetColor(const _float4& vColor)
+{
+    m_vColor = vColor;
+    m_iPackedColor = PackDbgLineColor(vColor);
+}
+
+_bool CDbgLineRender::CanAddVertices(size_t iVertexCount) const
+{
+    const size_t iCurrentCount = std::min<size_t>(
+        m_DepthVertices.size() + m_NoDepthVertices.size(), m_iVertexCnt);
+    return iVertexCount <= m_iVertexCnt - iCurrentCount;
+}
+
+std::vector<VTX_DBG_LINE>& CDbgLineRender::GetCurrentVertices()
+{
+    return m_eDepthMode == DBG_LINE_DEPTH_MODE::ENABLED
+        ? m_DepthVertices
+        : m_NoDepthVertices;
+}
+
+const std::vector<VTX_DBG_LINE>& CDbgLineRender::GetCurrentVertices() const
+{
+    return m_eDepthMode == DBG_LINE_DEPTH_MODE::ENABLED
+        ? m_DepthVertices
+        : m_NoDepthVertices;
+}
+
 void CDbgLineRender::AddLine(const _float3& p0, const _float3& p1)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
-    m_Vertices.push_back({ p0, m_vColor });
-    m_Vertices.push_back({ p1, m_vColor });
+    auto& vertices = GetCurrentVertices();
+    vertices.push_back({ p0, m_iPackedColor });
+    vertices.push_back({ p1, m_iPackedColor });
 }
 
 void CDbgLineRender::AddLine(const _float3& p0, const _float3& p1, const _float4& col)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
-    m_Vertices.push_back({ p0, col });
-    m_Vertices.push_back({ p1, col });
+    auto& vertices = GetCurrentVertices();
+    const uint32_t color = PackDbgLineColor(col);
+    vertices.push_back({ p0, color });
+    vertices.push_back({ p1, color });
 }
 
 void CDbgLineRender::AddBox(const _float3& halfExtent, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     static constexpr _float3 local[8] =
     {
@@ -75,7 +121,7 @@ void CDbgLineRender::AddBox(const _float3& halfExtent, FXMMATRIX world)
 
 void CDbgLineRender::AddSphere(float radius, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     constexpr uint32_t SliceCount = 24;
     constexpr uint32_t StackCount = 12;
@@ -153,7 +199,7 @@ void CDbgLineRender::AddCapsule(
     float halfHeight,
     FXMMATRIX world = XMMatrixIdentity())
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     constexpr uint32_t SliceCount = 24;
     constexpr uint32_t ArcCount = 12;
@@ -298,7 +344,7 @@ void CDbgLineRender::AddCapsule(
 
 void CDbgLineRender::AddCylinder(float radius, float halfHeight, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     constexpr uint32_t SliceCount = 24;
     constexpr float TWO_PI = XM_2PI;
@@ -345,7 +391,7 @@ void CDbgLineRender::AddCylinder(float radius, float halfHeight, FXMMATRIX world
 
 void CDbgLineRender::AddCone(float radius, float height, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     constexpr uint32_t Slice = 24;
 
@@ -412,7 +458,7 @@ void CDbgLineRender::AddCone(float radius, float height, FXMMATRIX world)
 
 void CDbgLineRender::AddFrustum(float fovY, float aspect, float nearZ, float farZ, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     const float tanHalf = tanf(fovY * 0.5f);
 
@@ -462,7 +508,7 @@ void CDbgLineRender::AddFrustum(float fovY, float aspect, float nearZ, float far
 
 void CDbgLineRender::AddRay(const _float3& origin, const _float3& direction, float length)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     XMVECTOR o = XMLoadFloat3(&origin);
     XMVECTOR d = XMVector3Normalize(XMLoadFloat3(&direction));
@@ -475,7 +521,7 @@ void CDbgLineRender::AddRay(const _float3& origin, const _float3& direction, flo
 
 void CDbgLineRender::AddArrow(const _float3& origin, const _float3& direction, float length, float headLength, float headAngleDeg)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     XMVECTOR dir = XMVector3Normalize(XMLoadFloat3(&direction));
     XMVECTOR start = XMLoadFloat3(&origin);
@@ -517,7 +563,7 @@ void CDbgLineRender::AddArrow(const _float3& origin, const _float3& direction, f
 
 void CDbgLineRender::AddGrid(uint32_t halfCount, float cellSize, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     const float extent = static_cast<float>(halfCount) * cellSize;
 
@@ -559,7 +605,7 @@ void CDbgLineRender::AddGrid(uint32_t halfCount, float cellSize, FXMMATRIX world
 
 void CDbgLineRender::AddQuad(float width, float height, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     const float hx = width * 0.5f;
     const float hy = height * 0.5f;
@@ -588,7 +634,7 @@ void CDbgLineRender::AddQuad(float width, float height, FXMMATRIX world)
 
 void CDbgLineRender::AddTriangle(const _float3& p0, const _float3& p1, const _float3& p2)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     AddLine(p0, p1);
     AddLine(p1, p2);
@@ -597,7 +643,7 @@ void CDbgLineRender::AddTriangle(const _float3& p0, const _float3& p1, const _fl
 
 void CDbgLineRender::AddAxis(float length, FXMMATRIX world)
 {
-	if (m_Vertices.size() >= m_iVertexCnt)
+	if (!CanAddVertices(2))
 		return;
 
 	XMVECTOR origin = XMVector3TransformCoord(XMVectorZero(), world);
@@ -642,7 +688,7 @@ void CDbgLineRender::AddCircle(
     FXMMATRIX world,
     uint32_t slice)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     if (slice < 3)
         return;
@@ -678,7 +724,7 @@ void CDbgLineRender::AddCross(
     const _float3& p,
     float size)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     AddLine(
         { p.x - size, p.y, p.z },
@@ -695,7 +741,10 @@ void CDbgLineRender::AddCross(
 
 void CDbgLineRender::AddTriangleMesh(const _float3* vertices, uint32_t vertexCount, const uint32_t* indices, uint32_t triangleCount, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
+
+    if (!vertices || !indices)
+        return;
 
     for (uint32_t i = 0; i < triangleCount; ++i)
     {
@@ -703,13 +752,25 @@ void CDbgLineRender::AddTriangleMesh(const _float3* vertices, uint32_t vertexCou
         uint32_t i1 = indices[i * 3 + 1];
         uint32_t i2 = indices[i * 3 + 2];
 
-        AddTriangle(vertices[i0], vertices[i1], vertices[i2]);
+        if (i0 >= vertexCount || i1 >= vertexCount || i2 >= vertexCount)
+            continue;
+
+        XMVECTOR v0 = XMVector3TransformCoord(XMLoadFloat3(&vertices[i0]), world);
+        XMVECTOR v1 = XMVector3TransformCoord(XMLoadFloat3(&vertices[i1]), world);
+        XMVECTOR v2 = XMVector3TransformCoord(XMLoadFloat3(&vertices[i2]), world);
+
+        _float3 p0, p1, p2;
+        XMStoreFloat3(&p0, v0);
+        XMStoreFloat3(&p1, v1);
+        XMStoreFloat3(&p2, v2);
+
+        AddTriangle(p0, p1, p2);
     }
 }
 
 void CDbgLineRender::AddConvexHull(const _float3* vertices, uint32_t vertexCount, const uint32_t* indices, uint32_t triangleCount, FXMMATRIX world)
 {
-    if (m_Vertices.size() >= m_iVertexCnt) return;
+    if (!CanAddVertices(2)) return;
 
     if (!vertices || !indices)
         return;
@@ -745,28 +806,56 @@ void CDbgLineRender::AddConvexHull(const _float3* vertices, uint32_t vertexCount
 
 void CDbgLineRender::AddBuiltedVertices(const std::vector<VTX_COL>& vecVertices)
 {
-    if (m_Vertices.size() >= m_iVertexCnt + vecVertices.size()) return;
+    if (!CanAddVertices(vecVertices.size())) return;
 
+    auto& vertices = GetCurrentVertices();
+    const size_t iOldSize = vertices.size();
+    vertices.resize(iOldSize + vecVertices.size());
 
+    for (size_t i = 0; i < vecVertices.size(); ++i)
+    {
+        vertices[iOldSize + i] = {
+            vecVertices[i].pos,
+            PackDbgLineColor(vecVertices[i].color)
+        };
+    }
+}
 
-    m_Vertices.insert(m_Vertices.end(), vecVertices.begin(), vecVertices.end());
+void CDbgLineRender::AddPackedLineVertices(const void* pVertexData, size_t iVertexCount)
+{
+    if (!pVertexData || !CanAddVertices(iVertexCount))
+        return;
+
+    auto& vertices = GetCurrentVertices();
+    const size_t iOldSize = vertices.size();
+    vertices.resize(iOldSize + iVertexCount);
+
+    memcpy(
+        vertices.data() + iOldSize,
+        pVertexData,
+        sizeof(VTX_DBG_LINE) * iVertexCount);
 }
 
 
 
 HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
-    if (!m_bRender)
+    const uint32_t depthVertexCount = static_cast<uint32_t>(m_DepthVertices.size());
+    const uint32_t noDepthVertexCount = static_cast<uint32_t>(m_NoDepthVertices.size());
+    if (!m_bRender || (depthVertexCount == 0 && noDepthVertexCount == 0))
     {
         return S_OK;
     }
+
+    if (!pContext || !m_pDbgBuffer || !m_pDbgVShader || !m_pDbgPShader)
+        return E_FAIL;
 
     const auto& vs = m_pDbgVShader;
     const auto& ps = m_pDbgPShader;
     const auto& viBuffer = m_pDbgBuffer;
 
-    m_pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-    m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+    pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+    pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
     ID3D11Buffer* vertexBuffers[] = {
         viBuffer->GetVertexBuffer().Get()
@@ -777,50 +866,73 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
     uint32_t offsets[] = {
         0
     };
-    m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
-    m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+    pContext->IASetInputLayout(vs->GetInputLayout().Get());
+    pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
     //m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-    m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-
-	const uint32_t vertexCount = std::min(
-		static_cast<uint32_t>(m_Vertices.size()),
-		m_iVertexCnt);
+    pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 
     {
-        D3D11_MAPPED_SUBRESOURCE mappedResource;
-		if (SUCCEEDED(m_pContext->Map(
+        D3D11_MAPPED_SUBRESOURCE mappedResource{};
+		if (FAILED(pContext->Map(
 			viBuffer->GetVertexBuffer().Get(),
 			0,
 			D3D11_MAP_WRITE_DISCARD,
 			0,
 			&mappedResource)))
-		{
-			memcpy(mappedResource.pData,
-				m_Vertices.data(),
-				sizeof(VTX_COL) * vertexCount);
+            return E_FAIL;
 
-			m_pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
-		}
+		auto* pDst = static_cast<VTX_DBG_LINE*>(mappedResource.pData);
+		if (depthVertexCount > 0)
+			memcpy(pDst, m_DepthVertices.data(), sizeof(VTX_DBG_LINE) * depthVertexCount);
+
+		if (noDepthVertexCount > 0)
+			memcpy(pDst + depthVertexCount, m_NoDepthVertices.data(), sizeof(VTX_DBG_LINE) * noDepthVertexCount);
+
+		pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
     }
-	ComPtr<ID3D11DepthStencilState> aa = {nullptr};
-	m_pContext->OMGetDepthStencilState(aa.GetAddressOf(), 0);
-	
-	auto ds = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
 
-	m_pContext->OMSetDepthStencilState(ds->GetDepthStencilState().Get(), 0);
-	m_pContext->Draw(vertexCount, 0);
-	m_pContext->OMSetDepthStencilState(aa.Get(), 0);
-	
+    if (!m_pDepthState)
+    {
+        m_pDepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
+            TAG_RES_GRP_PERMANENT_STATE, "DS_DBG_LINE_DEPTH_ON");
+        if (!m_pDepthState)
+            return E_FAIL;
+    }
 
+    if (!m_pNoDepthState)
+    {
+        m_pNoDepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
+            TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
+        if (!m_pNoDepthState)
+            return E_FAIL;
+    }
+
+	ComPtr<ID3D11DepthStencilState> previousDepthState{};
+    UINT previousStencilRef = 0;
+	pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
+
+	if (depthVertexCount > 0)
+	{
+		pContext->OMSetDepthStencilState(m_pDepthState->GetDepthStencilState().Get(), 0);
+		pContext->Draw(depthVertexCount, 0);
+	}
+
+	if (noDepthVertexCount > 0)
+	{
+		pContext->OMSetDepthStencilState(m_pNoDepthState->GetDepthStencilState().Get(), 0);
+		pContext->Draw(noDepthVertexCount, depthVertexCount);
+	}
+	pContext->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
 
     return S_OK;
 }
 
 void CDbgLineRender::FrameEnd()
 {
-    m_Vertices.clear();
+    m_DepthVertices.clear();
+    m_NoDepthVertices.clear();
+    m_eDepthMode = DBG_LINE_DEPTH_MODE::DISABLED;
 }
 
 HRESULT CDbgLineRender::Initialize()
@@ -850,7 +962,7 @@ HRESULT CDbgLineRender::Initialize()
         CResDynamicVIBuffer::DESC desc{};
         desc.ePrimitiveType = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
 
-        desc.iVertexStride = sizeof(VTX_COL);
+        desc.iVertexStride = sizeof(VTX_DBG_LINE);
         desc.iNumVertices = m_iVertexCnt;
         desc.vertexDesc = {
             .ByteWidth = desc.iVertexStride * desc.iNumVertices,
@@ -866,7 +978,8 @@ HRESULT CDbgLineRender::Initialize()
 
         m_pDbgBuffer = res;
     }
-    m_Vertices.reserve(m_iVertexCnt);
+    m_DepthVertices.reserve(m_iVertexCnt / 2);
+    m_NoDepthVertices.reserve(m_iVertexCnt / 2);
     return S_OK;
 }
 

@@ -84,28 +84,37 @@ void CWeapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CWeapon::Update(E::_float fTimeDelta)
 {
-	//_float3 vstart, vend;
-	//vstart = m_pComTransform->GetPosition();
-	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	//auto a = CGameInstance::Get().GetParticle("PRACTRAIL", "PRACTRAIL");
-	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-	//if (CGameInstance::Get().KeyDown(DIK_O)) {
-	//	//static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.5f, 0.5f, 0.5f, 1.f));
-	//	static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-	//}
-//	//m_pComModelInstance->GetModel()->get
-	//if(CGameInstance::Get().KeyPressing(DIK_P))
-	//	m_pComTransform->GoStraight(fTimeDelta*5);
-	////if (CGameInstance::Get().KeyPressing(DIK_P))
-	////	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
-	//if (CGameInstance::Get().KeyPressing(DIK_I))	
-	//	m_pComTransform->GoUp(fTimeDelta * 5);
-	////if (CGameInstance::Get().KeyPressing(DIK_O))
-	////	m_pComTransform->GoRight(fTimeDelta * 5);
-	//if (CGameInstance::Get().KeyDown(DIK_L)) {
-	//		static_cast<CTrail_CPU*>(a)->AddPoint(_float3(5.f, 5.f, 5.f) , _float3(5.f, 5.3f, 5.f));
-	//	static_cast<CTrail_CPU*>(a)->AddPoint(_float3(10.f, 5.f, 5.f), _float3(10.f, 5.3f, 5.f));
-	//}
+	_float3 vstart, vend;
+	vstart = m_pComTransform->GetPosition();
+	vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
+	auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
+	static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
+
+	if (CGameInstance::Get().KeyPressing(DIK_HOME))
+		m_pComTransform->GoUp(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_END))
+		m_pComTransform->GoDown(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_UP))
+		m_pComTransform->GoStraight(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
+		m_pComTransform->GoRight(fTimeDelta * -15);
+	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
+		m_pComTransform->GoBackward(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		m_pComTransform->GoRight(fTimeDelta * 15);
+
+
+	if (CGameInstance::Get().KeyDown(DIK_K)) {
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
+	
+	}
+
+
+	//if (CGameInstance::Get().KeyPressing(DIK_P))
+	//	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
+
+
 	Weapon_Throw(fTimeDelta);
 }
 
@@ -189,7 +198,7 @@ HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

@@ -28,6 +28,7 @@ NS_BEGIN(Engine)
     X(uint32_t, iCount, 12) \
     X(_float, fSize, 1.f) \
     X(_float, fLife, 1.f) \
+	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)

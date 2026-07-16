@@ -4,24 +4,6 @@
 
 NS_BEGIN(Engine)
 
-// 한 프레임에 기록된 무기 궤적 한 쌍(칼날 밑동~칼끝) + 그 순간부터 흐른 시간
-struct TRAIL_FRAME
-{
-    _float3 vStart; // 칼날 밑동(손잡이 쪽) 월드 위치
-    _float3 vEnd;   // 칼날 끝(칼끝) 월드 위치
-    _float  fAge = 0.f;
-	_float  fDistance = 0.f;
-};
-
-// 트레일 전용 정점 - BEAM_VERTEX와 달리 색상(알파)을 갖고 있어서
-// 나이 든 프레임일수록 투명해지는 걸 정점 단위로 표현할 수 있다.
-struct TRAIL_VERTEX
-{
-    _float3 vPosition;
-    _float2 vUV;
-    _float4 vColor;
-    _float4 vEmissive;
-};
 
 // 무기 궤적 트레일.
 // 매 프레임 (밑동, 칼끝) 두 점을 기록해서, 그 쌍을 다음 프레임의 쌍과 이어붙이는 방식으로
@@ -31,15 +13,46 @@ struct TRAIL_VERTEX
 class ENGINE_DLL CTrail_CPU final : public CParticle
 {
 public:
+	// 한 프레임에 기록된 무기 궤적 한 쌍(칼날 밑동~칼끝) + 그 순간부터 흐른 시간
+	struct TRAIL_FRAME
+	{
+		_float3 vStart; // 칼날 밑동(손잡이 쪽) 월드 위치
+		_float3 vEnd;   // 칼날 끝(칼끝) 월드 위치
+		_float3 vWidthDir;
+		_float  fAge = 0.f;
+		_float  fDistance = 0.f;
+	};
+
+
+
+	// 트레일 전용 정점 - BEAM_VERTEX와 달리 색상(알파)을 갖고 있어서
+	// 나이 든 프레임일수록 투명해지는 걸 정점 단위로 표현할 수 있다.
+	struct TRAIL_VERTEX
+	{
+		_float3 vPosition;
+		_float2 vUV;
+		_float4 vColor;
+		_float4 vEmissive;
+	};
+
+
+	enum class TRAIL_ALIGN_MODE
+	{
+		LOCAL,  // 검 궤적: 실제 vStart/vEnd 방향 그대로
+		VIEW    // 마법 리본: 카메라 빌보드
+	};
     struct DESC
     {
         std::pair<StringID, StringID> textureID;
         std::pair<StringID, StringID> VSID;
         std::pair<StringID, StringID> PSID;
+		std::pair<StringID, StringID> normalTextureID;
+		std::pair<StringID, StringID> distortionTextureID;
+		std::pair<StringID, StringID> noiseTextureID;
         TRAIL_TYPE  tType = TRAIL_TYPE::END;
         _float   fMaxDuration = 1.f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
         uint32_t iMaxFrames = 700;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
-
+		TRAIL_ALIGN_MODE eAlignMode = TRAIL_ALIGN_MODE::VIEW;
     };
 
 private:
@@ -79,19 +92,15 @@ private:
 	_bool m_bHasLastPoint = false;
 	_float3 m_vLastStart{};
 	_float3 m_vLastEnd{};
-	_float4 m_vColor{1.f,1.f,1.f,1.f};
-	_float4 m_vEmissive{ 0.f, 0.f, 0.f, 0.f };
-    SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
-    SPtr<class CResCBuffer> m_pScrollCBuffer;
+	_float4 m_vColor{1.f,0.f,0.f,1.f};
+	_float4 m_vEmissive{ 1.f, 0.f, 1.f, 1.f };
 	_float m_fTimeSinceLastAdd = 0.f;
 	_float   m_fSampleInterval = 1.f / 60.f;
-
 	_float m_fIdleTime = 0.f;          // AddPoint 호출 안 된지 얼마나 됐는지
 	_float m_fIdleThreshold = 0.1f;    // 이 시간 이상 AddPoint 없으면 "멈췄다"고 판단
 	_float m_fRetractInterval = 0.02f; // 멈춘 뒤, 이 간격마다 꼬리 1프레임씩 강제 제거
 	_float m_fTimeSinceLastRetract = 0.f;
 	_float m_ScrollOffset = 0.2f;
-	//_float m_ScrollSpeed = 5.4f;
 	_float totalLength = 0.0f;
 	_float m_fTotalDistance = 0.f;
 public:
@@ -101,6 +110,10 @@ public:
 	float EaseOutPow(float x, float n);
 	float EaseOutExpo(float x);
 	float EaseOutSine(float x);
+private:
+	SPtr<class CResTexture2D> m_pDistortionTexture;
+	SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
+	SPtr<class CResCBuffer> m_pScrollCBuffer;
 };
 
 NS_END

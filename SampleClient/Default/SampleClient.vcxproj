@@ -119,7 +119,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -147,7 +147,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -200,15 +200,20 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTDecTimer.h" />
+    <ClInclude Include="..\Public\LevelAnimatorLoader.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\public\LevelColliderLoader.h" />
     <ClInclude Include="..\public\LevelPlayGroundLoader.h" />
+    <ClInclude Include="..\Public\LevelLightMapLoader.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
     <ClInclude Include="..\public\LevelPhysXLoader.h" />
+    <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
+    <ClInclude Include="..\Public\LightTerrain.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
+    <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
     <ClInclude Include="..\public\LevelCollider.h" />
@@ -287,12 +292,17 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
+    <ClCompile Include="..\Private\LevelAnimatorLoader.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\private\LevelPlayGroundLoader.cpp" />
+    <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
+    <ClCompile Include="..\Private\LightTerrain.cpp" />
+    <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\private\LevelColliderLoader.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
     <ClCompile Include="..\private\LevelPhysXLoader.cpp" />
+    <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
@@ -350,6 +360,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_BladeTrail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
