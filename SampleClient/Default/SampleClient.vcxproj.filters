@@ -127,6 +127,9 @@
     <Filter Include="GameObject\AI\Weapon">
       <UniqueIdentifier>{50e39d0c-599b-4df9-ba40-d3d9e2609a76}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestModel\TestPartObject">
+      <UniqueIdentifier>{934d84f5-eb14-48c0-b109-fe5108d69dea}</UniqueIdentifier>
+    </Filter>
     <Filter Include="LuaFiles">
       <UniqueIdentifier>{e2e6d417-5abe-4793-a29c-05884c540114}</UniqueIdentifier>
     </Filter>
@@ -342,6 +345,9 @@
     <ClInclude Include="..\public\Weapon.h">
       <Filter>GameObject\AI\Weapon</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TestPartObject.h">
+      <Filter>GameObject\TestModel\TestPartObject</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -512,6 +518,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Weapon.cpp">
       <Filter>GameObject\AI\Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TestPartObject.cpp">
+      <Filter>GameObject\TestModel\TestPartObject</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelUIEditor.cpp">
       <Filter>Level\UiEditor</Filter>

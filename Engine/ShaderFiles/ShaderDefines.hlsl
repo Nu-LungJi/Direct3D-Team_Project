@@ -171,7 +171,12 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
-
+cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
+{
+    uint gParentInstanceIndex;
+    uint gParentBoneIndex;
+    float2 gPartAttachmentPadding;
+};
 
 
 SamplerState LinearWrap                 : register(s0);

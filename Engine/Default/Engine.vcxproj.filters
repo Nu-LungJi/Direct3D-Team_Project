@@ -1628,6 +1628,9 @@
     <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
