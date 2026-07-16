@@ -13,6 +13,7 @@ struct PARTICLE_LOOP_REQUEST
     std::vector<PARTICLE_SPAWN_DATA>  vecSpawnData;
     _float                            fSpawnInterval = 0.1f;
     _float                            fElapsed = 0.f;
+	uint32_t						  iUserId;
 };
 
 typedef struct tagParticlePreset
@@ -123,7 +124,7 @@ public:
 
     // 정확히 지정해서 스폰
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
-        uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+        uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData, 
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 
 
@@ -151,6 +152,7 @@ public:
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
 		const std::string& PSGroup, const std::string& PSID, int geometryType,const std::string& textureID1 = "", const std::string& textureID2 = "",int RowCount = 1,int ColCount = 1);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
+	ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
@@ -165,9 +167,10 @@ public:
 	// 조회 헬퍼
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
 	bool HasGroup(const StringID& sGroupTag) const;
+	HRESULT ClearLoopRequests();
+	HRESULT DeleteLoopRequests(uint32_t userId);
 public:
     static UPtr<CParticleManager> Create();
-
 private:
     // [대분류][소분류] -> 파티클 인스턴스
     std::unordered_map<StringID, std::unordered_map<StringID, UPtr<CParticle>>> m_Particles;
@@ -182,7 +185,10 @@ private:
 	 StringID pendingSyncGroup, pendingSyncType;
 
 private:
-    HRESULT ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
+    uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
+	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> s_TextureThumbnailCache;
 
+private:
+	uint32_t m_iNextOwnerId = 1;
 };
 NS_END

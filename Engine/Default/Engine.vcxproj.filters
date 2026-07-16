@@ -882,9 +882,6 @@
     <ClInclude Include="..\public\Particle_CPU.h">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Particle_GPU.h">
-      <Filter>Particle</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
@@ -1017,6 +1014,9 @@
     </ClInclude>
     <ClInclude Include="..\public\MyFSR2_2.h">
       <Filter>Renderer\FSR2_2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Particle_GPU.h">
+      <Filter>Particle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

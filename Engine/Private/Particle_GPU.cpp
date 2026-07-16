@@ -47,6 +47,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		initParticles[i].emissive = { 0,0,0,0 };
 		initParticles[i].frameIndex = 0;
 		initParticles[i].iBehaviorType = 0;
+		initParticles[i].originalPosition = _float3(0.f, 0.f, 0.f);
 	}
 
 	std::vector<uint32_t> initDeadIndices(m_iNumElements);
@@ -286,7 +287,6 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
 
-	ProcessPendingSpawns(fTimeDelta);
     auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 
 
@@ -356,6 +356,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
 
     pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
+	ProcessPendingSpawns(fTimeDelta);
 
     DebugPrintDeadListCount();
 }
@@ -485,7 +486,6 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
 	}
-
     pContext->DrawInstanced(4, m_iNumElements, 0, 0);
 
     ID3D11ShaderResourceView* nullSRV1[] = { nullptr, nullptr };

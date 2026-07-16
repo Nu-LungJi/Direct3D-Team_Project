@@ -11,7 +11,7 @@ NS_USING(Engine)
 
 std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
 std::vector<std::string> ScanTextureFolder(const std::string& strFbxFolder);
-ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& strFbxFolder);
+
 
 void DrawPatternEditor(PatternParamVariant& current)
 {
@@ -90,18 +90,15 @@ void CParticleManager::UpdateGUI()
 	static _float4 rotaion = _float4(0, 0, 0, 0);
 	static int iGeometryType = 0;
 
-	ImGui::Begin("SaveResourcesAsJson");
+
 
 	if (ImGui::Button("Pattern execute")) {
 		Spawn(0, "./Resources/json/Particle/SpawnQueue.json", _fvector{ 0,0,0,0 }, _fvector{ 0, 0, 0, 0 });
 	}
-	if (ImGui::Button("Erase")) {
-		for (auto& particle : m_Particles) {
-			for (auto& real : particle.second) {
-				real.second->ClearByOwner(0);
-			}
-		}
-	}
+
+	ImGui::Begin("SaveResourcesAsJson");
+
+
 
 	// ---- 0. WhatKind 대분류 선택 ----
 	const char* whatKindNames[] = { "MESH", "TEXTURE" };
@@ -449,11 +446,18 @@ void CParticleManager::UpdateGUI()
 	}
 	ImGui::End();
 
-	// ================================================================
-	// ---- 아래 "CParticleManager" 윈도우는 기존 코드 그대로 (변경 없음) ----
-	// ================================================================
+
 	ImGui::Begin("CParticleManager");
 
+
+	if (ImGui::Button("Erase")) {
+		for (auto& particle : m_Particles) {
+			for (auto& real : particle.second) {
+				real.second->ClearByOwner((m_iNextOwnerId-1));
+			}
+		}
+		DeleteLoopRequests(m_iNextOwnerId -1);
+	}
 	static int whatKindFilterIndex = 0;
 	static int groupTypeIndex = 0;
 	static int typeIndex = 0;
@@ -683,6 +687,11 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("Loop", &previewParams.bLoop);
 	if (previewParams.bLoop)
 		ImGui::DragFloat("Spawn Interval", &previewParams.fSpawnInterval, 0.01f);
+	
+	if (ImGui::Button("Loop Clear")) {
+		DeleteLoopRequests(PREVIEW_OWNER_ID);
+	}
+
 
 	static STANDARD_PARAMS lastPreviewParams{};
 	bool bParamsChanged = std::memcmp(&previewParams, &lastPreviewParams, sizeof(STANDARD_PARAMS)) != 0;
@@ -715,6 +724,7 @@ void CParticleManager::UpdateGUI()
 			data.emissive = p.emissive;
 			data.ownerID = PREVIEW_OWNER_ID;
 			data.iBehaviorType = p.iBehaviorType;
+			data.originalPosition = p.position;
 			return data;
 		};
 
@@ -901,6 +911,7 @@ void CParticleManager::UpdateGUI()
 		cmd.sGroupTag_KindTag = currentKind;
 		cmd.sGroupTag = selectedGroup;
 		cmd.sTypeTag = selectedType;
+	
 
 		if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
 			cmd.params = pendingStandard;
@@ -974,7 +985,7 @@ void CParticleManager::UpdateGUI()
 
 	if (ImGui::Button("Execute Spawn (All)"))
 	{
-		ExecuteCommandQueue(m_vecCommandQueue);
+		uint32_t newOwnerId = ExecuteCommandQueue(m_vecCommandQueue);
 	}
 
 	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/SpawnQueue.json";
@@ -1081,7 +1092,7 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		req.vecSpawnData.assign(pSpawnData, pSpawnData + count);
 		req.fSpawnInterval = fSpawnInterval;
 		req.fElapsed = 0.f;
-
+		req.iUserId = pSpawnData->ownerID;
 		m_LoopRequests.push_back(std::move(req));
 	}
 
@@ -1266,89 +1277,117 @@ bool CParticleManager::HasGroup(const StringID& sGroupTag) const
 	return m_Particles.find(sGroupTag) != m_Particles.end();
 }
 
+HRESULT CParticleManager::ClearLoopRequests()
+{
+	m_LoopRequests.clear();
+	return S_OK;
+}
+
+HRESULT CParticleManager::DeleteLoopRequests(uint32_t userId)
+{
+	auto iter = m_LoopRequests.begin();
+	for (iter; iter != m_LoopRequests.end();) {
+		if ((*iter).iUserId == userId) {
+			iter = m_LoopRequests.erase(iter);
+		}
+		else {
+			iter++;
+		}
+	}
+	return S_OK;
+}
+
 UPtr<CParticleManager> CParticleManager::Create()
 {
 	return UPtr<CParticleManager>(new CParticleManager{});
 }
 
-HRESULT CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
+uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
 {
-    HRESULT hr = S_OK;
-    std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
+	if (queue.empty())
+		return -1	; 
+	uint32_t ownerId = m_iNextOwnerId++; // 호출할 때마다 무조건 새 ID 발급
 
-    for (auto& cmd : queue)
-    {
-        if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STANDARD)
-        {
-            const auto& p = std::get<STANDARD_PARAMS>(cmd.params);
-            auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
-            for (uint32_t i = 0; i < p.count; ++i)
-            {
-                PARTICLE_SPAWN_DATA s{};
-                s.position = p.bRandomPos
-                    ? _float3(Randf(p.posMin.x, p.posMax.x), Randf(p.posMin.y, p.posMax.y), Randf(p.posMin.z, p.posMax.z))
-                    : p.position;
-                s.velocity = p.bRandomVel
-                    ? _float3(Randf(p.velMin.x, p.velMax.x), Randf(p.velMin.y, p.velMax.y), Randf(p.velMin.z, p.velMax.z))
-                    : p.velocity;
-                s.life = p.life;
-                s.fSize = p.fSize;
-                s.fEndSize = p.fEndSize;
+	std::map<std::pair<StringID, StringID>, std::vector<PARTICLE_SPAWN_DATA>> batched;
+	std::map<std::pair<StringID, StringID>, float> loopIntervals;
+
+	for (auto& cmd : queue)
+	{
+		cmd.ownerId = ownerId; // 여기서 무조건 덮어씀, 호출자가 뭘 넘겼든 무시
+
+		if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::STANDARD)
+		{
+			const auto& p = std::get<STANDARD_PARAMS>(cmd.params);
+			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
+
+		/*	if (p.bLoop)
+				loopIntervals[{cmd.sGroupTag, cmd.sTypeTag}] = p.fSpawnInterval;*/
+
+			for (uint32_t i = 0; i < p.count; ++i)
+			{
+				PARTICLE_SPAWN_DATA s{};
+				s.position = p.bRandomPos
+					? _float3(Randf(p.posMin.x, p.posMax.x), Randf(p.posMin.y, p.posMax.y), Randf(p.posMin.z, p.posMax.z))
+					: p.position;
+				s.velocity = p.bRandomVel
+					? _float3(Randf(p.velMin.x, p.velMax.x), Randf(p.velMin.y, p.velMax.y), Randf(p.velMin.z, p.velMax.z))
+					: p.velocity;
+				s.life = p.life;
+				s.fSize = p.fSize;
+				s.fEndSize = p.fEndSize;
 				s.rotation = _float4(
-					XMConvertToRadians(p.rotation.x),
-					XMConvertToRadians(p.rotation.y),
-					XMConvertToRadians(p.rotation.z),
-					XMConvertToRadians(p.rotation.w));
-                s.color = p.color;
-                s.emissive = p.emissive;
+					XMConvertToRadians(p.rotation.x), XMConvertToRadians(p.rotation.y),
+					XMConvertToRadians(p.rotation.z), XMConvertToRadians(p.rotation.w));
+				s.color = p.color;
+				s.emissive = p.emissive;
 				s.iBehaviorType = p.iBehaviorType;
-				s.ownerID = cmd.ownerId;
-                vec.push_back(s);
-            }
-        }
-        else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::BEAM)
-        {
-            const auto& p = std::get<BEAM_PARAMS>(cmd.params);
-            auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
-            if (pParticle)
-            {
-                auto pBeam = static_cast<CBeam_CPU*>(pParticle);
-                pBeam->AddBeam(p.beamStart, p.beamEnd,
-                    p.fDisplacementAmplitude, (uint32_t)p.iDisplacementIterations, p.fDisplacementDamping,
-                    p.flickerTimeInverval, p.color, p.emissive, p.beamDuration);
-            }
-            else hr = E_FAIL;
-        }
+				s.ownerID = ownerId;
+				s.originalPosition = p.position;
+				s.loop = p.bLoop;
+				vec.push_back(s);
+			}
+		}
+		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::BEAM)
+		{
+			const auto& p = std::get<BEAM_PARAMS>(cmd.params);
+			auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
+			if (pParticle)
+			{
+				auto pBeam = static_cast<CBeam_CPU*>(pParticle);
+				pBeam->AddBeam(p.beamStart, p.beamEnd,
+					p.fDisplacementAmplitude, (uint32_t)p.iDisplacementIterations, p.fDisplacementDamping,
+					p.flickerTimeInverval, p.color, p.emissive, p.beamDuration);
+			}
+		}
 		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::PATTERN)
 		{
 			auto& vec = batched[{cmd.sGroupTag, cmd.sTypeTag}];
 
 			if (std::holds_alternative<PatternParamVariant>(cmd.params))
 			{
-				// "Add to List" 경로: 아직 패턴 파라미터 상태
 				const auto& pv = std::get<PatternParamVariant>(cmd.params);
 				auto spawnList = BuildSpawnData(pv);
 				for (auto& s : spawnList)
-					s.ownerID = cmd.ownerId;
+					s.ownerID = ownerId;
 				vec.insert(vec.end(), spawnList.begin(), spawnList.end());
 			}
 			else if (std::holds_alternative<std::vector<PARTICLE_SPAWN_DATA>>(cmd.params))
 			{
-				// Spawn(json, startPos, endPos) 경로: 이미 변환+오프셋 적용된 상태
 				auto& spawnList = std::get<std::vector<PARTICLE_SPAWN_DATA>>(cmd.params);
 				for (auto& s : spawnList)
-					s.ownerID = cmd.ownerId;
+					s.ownerID = ownerId;
 				vec.insert(vec.end(), spawnList.begin(), spawnList.end());
 			}
 		}
-    }
+	}
 
-    for (auto& [key, spawnList] : batched)
-    {
-        if (FAILED(Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data())))
-            hr = E_FAIL;
-    }
-    return hr;
+	for (auto& [key, spawnList] : batched)
+	{
+		Spawn(key.first, key.second, (uint32_t)spawnList.size(), spawnList.data(), false, 0.f);
+		// bIsLoop, fInterval 둘 다 false/0 고정 — m_LoopRequests 경로는 완전히 안 씀
+	}
+
+	return ownerId; // ---- 호출자에게 발급된 오너 ID를 돌려줌 ----
 }
 HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, 
 	const std::string& particleType, const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -1827,9 +1866,9 @@ std::vector<std::string> ScanTextureFolder(const std::string& strTextureFolder)
 	return result;
 }
 
-static std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> s_TextureThumbnailCache;
 
-ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath)
+
+ID3D11ShaderResourceView* CParticleManager::GetOrLoadTextureThumbnail(const std::string& fullPath)
 {
 	auto it = s_TextureThumbnailCache.find(fullPath);
 	if (it != s_TextureThumbnailCache.end())
@@ -2318,6 +2357,7 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 	data.emissive = preset.Emissive;
 	data.iBehaviorType = preset.iBehaviorType;
 	data.rotation = preset.rotation;
+	data.originalPosition = position;
 	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
 }
 // ParticleManager.cpp

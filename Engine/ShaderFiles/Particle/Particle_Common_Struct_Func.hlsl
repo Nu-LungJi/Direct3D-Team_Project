@@ -20,7 +20,8 @@ struct SPAWN_DATA
     uint ownerID;
     uint iBehaviorType;
     float pad2;
-    
+    uint loop;
+    float3 originalPosition; // 원래 스폰 위치
 };
 
 
@@ -33,16 +34,19 @@ struct ParticleData
     float maxLife;
     float size;
     float startSize;
-    float EndSize;
+    float endSize;
     float4 rotation;
     uint alive;
     uint loop;
-    float2 pad2;
+    float2 pad2; // 추가 필요: loop→color (8바이트)
     float4 color;
     float4 emissive;
     uint frameIndex;
     uint ownerID;
-    uint iBehaviorType;
+    uint iBehaviorType ;
+    float pad3;
+    float3 originalPosition; // 원래 스폰 위치
+    float pad4;
 };
 float3 RotateXYZ(float3 pos, float4 rotation)
 {

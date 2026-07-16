@@ -12,14 +12,16 @@ struct PARTICLE_CPU_DATA
     _float  fSize = 1.f;
     _float  fEndSize = 1.f;
     _float4  rotation = { 0.f, 0.f, 0.f, 0.f };
-    _float  fAge = 0.f;
-    _float  fLifeTime = 1.f;
+    _float  life = 0.f;
+    _float  fMaxLife = 1.f;
     _bool   bAlive = false;
     _float4 emissive;
 	_float spawnDelay;
 	uint32_t iFrameIndex = 0;
 	uint32_t ownerID = 0;
 	uint32_t iBehaviorType = 0;
+	_float3 originalPosition = { 0.f, 0.f, 0.f };
+	_bool loop = false;
 };
 
 struct VTX_PARTICLE_INSTANCED_DATA

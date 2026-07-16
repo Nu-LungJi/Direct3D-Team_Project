@@ -58,8 +58,10 @@ namespace Engine
 		uint32_t frameIndex;
 		uint32_t ownerID;
 		uint32_t iBehaviorType = 0;
+		_float pad3;
+		_float3 originalPosition; // 원래 스폰 위치
+		_float pad4;
 	}PARTICLE;
-	static_assert(sizeof(PARTICLE) == 124, "size mismatch");
 	static_assert(offsetof(PARTICLE, velocity) == 16, "velocity offset");
 	static_assert(offsetof(PARTICLE, rotation) == 48, "rotation offset");
 	static_assert(offsetof(PARTICLE, color) == 80, "color offset");

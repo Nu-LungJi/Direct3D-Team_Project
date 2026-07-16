@@ -193,19 +193,21 @@ namespace Engine
 	typedef struct tagParticleSpawnData
 	{
 		_float3  position;
-		_float   pad0;        // HLSL이 velocity를 16으로 밀어내기 위해 넣는 패딩
+		_float   pad0;
 		_float3  velocity;
 		_float   life;
 		_float   fSize;
 		_float   fEndSize;
-		_float2  pad1;        // HLSL이 color를 48로 밀어내기 위해 넣는 패딩 (8바이트)
-		_float4 rotation;
+		_float2   pad1;     
+		_float4  rotation;
 		_float4  color;
 		_float4  emissive;
 		_float   spawnDelay;
 		uint32_t ownerID = 0;
 		uint32_t iBehaviorType = 0;
-		_float pad2;
+		_float   pad2;
+		_bool    loop;
+		_float3  originalPosition;
 	} PARTICLE_SPAWN_DATA;
 	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
 
