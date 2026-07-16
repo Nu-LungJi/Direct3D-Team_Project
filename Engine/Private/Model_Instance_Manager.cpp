@@ -63,7 +63,7 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	InstanceData.fTrackPosition = AnimState.fTrackPosition;
 
 	InstanceData.iRootBoneIndex = pAnimator->GetRootBoneIndex();
-
+	
 	if (pAnimator->IsBlending())
 	{
 		const auto& PrevAnimState = pAnimator->GetPrevAnimState();

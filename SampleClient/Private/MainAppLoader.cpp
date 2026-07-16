@@ -185,7 +185,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		//파티클 텍스쳐 로드
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_FLARE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_RingFlare_D.png")))
+		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONDISTORTION", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/T_FX_Distortion_Ring3_N.png")))
 		//{
 		//	if (FAILED(res->Load()))
 		//	{
@@ -227,22 +227,22 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		//노이즈 텍스쳐
-		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_NoiseGreypack03_D.png")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				//return E_FAIL;
-			}
-		}
-		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("");
-				//return E_FAIL;
-			}
-		}
+		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_NoiseGreypack03_D.png")))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		MSG_BOX("");
+		//		//return E_FAIL;
+		//	}
+		//}
+		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
+		//{
+		//	if (FAILED(res->Load()))
+		//	{
+		//		MSG_BOX("");
+		//		//return E_FAIL;
+		//	}
+		//}
 	}
 
 	{

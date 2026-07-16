@@ -4,9 +4,16 @@
 #include "IRenderable.h"
 
 NS_BEGIN(Engine)
+enum class DBG_LINE_DEPTH_MODE : uint8_t
+{
+    DISABLED,
+    ENABLED
+};
+
 class CResVertexShader;
 class CResDynamicVIBuffer;
 class CResPixelShader;
+class CResDepthStencilState;
 class ENGINE_DLL CDbgLineRender  final : public CEngineBase, public IRenderable
 {
 private:
@@ -17,8 +24,11 @@ public:
     void FrameEnd();
 
 public:
-    void SetColor(const _float4& vColor = { 0.f, 0.f, 0.f, 1.f }) { m_vColor = vColor; };
+    void SetColor(const _float4& vColor = { 0.f, 0.f, 0.f, 1.f });
     const _float4& GetColor() const { return m_vColor; }
+    void SetDepthMode(DBG_LINE_DEPTH_MODE eMode) { m_eDepthMode = eMode; }
+    DBG_LINE_DEPTH_MODE GetDepthMode() const { return m_eDepthMode; }
+    void SetDepthTest(_bool bEnable) { SetDepthMode(bEnable ? DBG_LINE_DEPTH_MODE::ENABLED : DBG_LINE_DEPTH_MODE::DISABLED); }
 public:
     void AddLine(
         const _float3& p0,
@@ -113,6 +123,7 @@ public:
         FXMMATRIX world = XMMatrixIdentity());
 
     void AddBuiltedVertices(const std::vector<VTX_COL>& vecVertices);
+    void AddPackedLineVertices(const void* pVertexData, size_t iVertexCount);
 
 
 public:
@@ -121,6 +132,9 @@ public:
 
 private:
 	HRESULT Initialize();
+	_bool CanAddVertices(size_t iVertexCount) const;
+	std::vector<VTX_DBG_LINE>& GetCurrentVertices();
+	const std::vector<VTX_DBG_LINE>& GetCurrentVertices() const;
 
 private:
 	ComPtr<ID3D11Device> m_pDevice{};
@@ -128,13 +142,18 @@ private:
 
     _bool m_bRender{ true };
     _float4 m_vColor{0.f, 0.f, 0.f, 1.f};
+    uint32_t m_iPackedColor{ 0xFF000000u };
+    DBG_LINE_DEPTH_MODE m_eDepthMode{ DBG_LINE_DEPTH_MODE::DISABLED };
 
     const uint32_t m_iVertexCnt{ 1000000 };
 
     SPtr<CResDynamicVIBuffer> m_pDbgBuffer{};
     SPtr<CResVertexShader> m_pDbgVShader{};
     SPtr<CResPixelShader> m_pDbgPShader{};
-    std::vector<VTX_COL> m_Vertices{};
+    SPtr<CResDepthStencilState> m_pDepthState{};
+    SPtr<CResDepthStencilState> m_pNoDepthState{};
+    std::vector<VTX_DBG_LINE> m_DepthVertices{};
+    std::vector<VTX_DBG_LINE> m_NoDepthVertices{};
 
 public:
 	static UPtr<CDbgLineRender> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

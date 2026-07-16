@@ -31,6 +31,9 @@ public:
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
         std::pair<StringID, StringID> VSID;  // 버텍스 쉐이더
         std::pair<StringID, StringID> PSID;  // 픽셀 쉐이더
+		std::pair<StringID, StringID> normalTextureID;
+		std::pair<StringID, StringID> distortionTextureID;
+		std::pair<StringID, StringID> noiseTextureID;
         //모델이면 넣어줌
         StringID sGroupTag;
         StringID sResTag;

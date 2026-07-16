@@ -23,7 +23,8 @@ CTestGob::~CTestGob()
 void CTestGob::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
-
+	ImGui::DragFloat3("Emissive", reinterpret_cast<_float*>(&m_fEmissiveColor), 1.0, 100);
+	ImGui::DragInt("HP", &m_iHp, 0, 1);
 }
 
 HRESULT CTestGob::InitializePrototype(void* pArg)
@@ -86,8 +87,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "TEST";
-		Desc.sResTag = "Model_Resource";
+		Desc.sGroupTag = "LEVEL_PLAYGROUND";
+		Desc.sResTag = "Model_Resource_TombProtector";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -119,7 +120,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("WEAPON", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
 		MSG_BOX("Create Failed Weapon");
@@ -134,6 +135,7 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 	__super::PriorityUpdate(fTimeDelta);
 	if (CGameInstance::Get().KeyDown(DIK_1))
 		Set_Damage(10);
+	Flag_Check(fTimeDelta);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
@@ -148,6 +150,9 @@ void CTestGob::Update(E::_float fTimeDelta)
 		m_pModelAnimator->Update(fTimeDelta);
 
 	m_pBeHavior->Update(fTimeDelta);
+	if(m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
+		m_fEmissive = 0;
+	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
 
 }
@@ -156,7 +161,7 @@ void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
 	GetTransform().Update();
-
+	IsHit();
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)
@@ -372,7 +377,7 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		ID3D11Buffer* pSkinMeshCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &pSkinMeshCB);
 
-
+		
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
 		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
@@ -420,12 +425,19 @@ HRESULT CTestGob::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std
 	pContext->VSSetShaderResources(6, 1, &pNullSRV);
 
 	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
-	pContext->UpdateSubresource(pBuffer, 0, nullptr, Instances.data(), 0, 0);
+	D3D11_BOX updateBox{};
+	updateBox.left = 0;
+	updateBox.right = static_cast<UINT>(iCopySize);
+	updateBox.top = 0;
+	updateBox.bottom = 1;
+	updateBox.front = 0;
+	updateBox.back = 1;
+
+	pContext->UpdateSubresource(pBuffer, 0, &updateBox, Instances.data(), 0, 0);
 
 	return S_OK;
 
 }
-
 HRESULT CTestGob::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
 {
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
@@ -491,7 +503,6 @@ HRESULT CTestGob::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-
 HRESULT CTestGob::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 {
 
@@ -510,7 +521,6 @@ HRESULT CTestGob::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-
 HRESULT CTestGob::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
 {
 
@@ -539,6 +549,56 @@ HRESULT CTestGob::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 	pContext->VSSetShaderResources(6, 3, pNullSRVs);
 
 	return S_OK;
+}
+void CTestGob::IsHit()
+{
+	if (CGameInstance::Get().KeyDown(DIK_2))
+	{
+		uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
+		m_pBeHavior->Set_Flag(iFlag, FLAGTYPE::ADD);
+	}
+	if (auto pCam = CGameInstance::Get().GetActiveCamera())
+	{
+		const auto& [vOri, vDir] = pCam->GetRay();
+		_float fDist{};
+	
+			for (const auto& coll :*CGameInstance::Get().GetColliderGroup("CollTestGob"))
+			{
+				if (coll->Intersect(vOri, vDir, fDist))
+				{
+					uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
+					m_pBeHavior->Set_Flag(iFlag,FLAGTYPE::ADD);
+					return;
+				}
+			}
+		
+	}
+}
+void CTestGob::Flag_Check(_float fTimeDelta)
+{
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
+	{
+		m_bEmissive = true;
+		StartEmissive();
+	}
+}
+void CTestGob::EmissiveFadeOut(_float fTimeDelta)
+{
+	if (m_bEmissive)
+	{
+		m_bWork = true;
+		m_fTimeTick += fTimeDelta;
+
+		_float t = m_fTimeTick / 0.5f;
+
+		m_fEmissive = std::lerp(m_fPreEmissive,0,t);
+		if (t >= 1.f)
+		{
+			m_bWork = m_bEmissive = false; m_fEmissive = 0;
+		}
+			
+	}
+
 }
 E::UPtr<CTestGob> CTestGob::Create()
 {

@@ -4,7 +4,7 @@
 #include "GameInstance.h"
 #include "BackGround.h"
 #include "ResTerrainVIBuffer.h"
-#include "Terrain.h"
+#include "LightTerrain.h"
 #include "LightObject.h"
 #include "TestModel.h"
 
@@ -12,7 +12,7 @@ NS_USING(Client)
 
 std::future<bool> CLevelLightMapLoader::Load()
 {
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+	if (auto res = CGameInstance::Get().AddResource("LIGHT_SC", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -20,14 +20,14 @@ std::future<bool> CLevelLightMapLoader::Load()
 			//return E_FAIL;
 		}
 	}
-	if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_LightObject", CLightObject::Create())))
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT_SC", "Prototype_GameObject_LightObject", CLightObject::Create())))
 	{
 		int a = 0;
 		//return false;
 	}
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LIGHTMAP", []()
 		{
-			if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+			if (auto res = CGameInstance::Get().AddResource("LIGHT_SC", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
 			{
 				if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
 				{
@@ -36,11 +36,11 @@ std::future<bool> CLevelLightMapLoader::Load()
 				}
 			}
 
-			if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Terrain", CTerrain::Create())))
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT_SC", "Prototype_GameObject_Terrain", CLightTerrain::Create())))
 			{
 				return false;
 			}
-			if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_TestModel", CTestModel::Create())))
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LIGHT_SC", "Prototype_GameObject_TestModel", CTestModel::Create())))
 			{
 				return false;
 			}

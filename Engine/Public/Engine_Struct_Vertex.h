@@ -7,6 +7,16 @@ namespace Engine
 		_float4 color;
 	} VTX_COL;
 
+	typedef struct tagVertexDbgLine
+	{
+		_float3 pos{};
+		uint32_t color{};
+	} VTX_DBG_LINE;
+
+	static_assert(sizeof(VTX_DBG_LINE) == 16);
+	static_assert(offsetof(VTX_DBG_LINE, pos) == 0);
+	static_assert(offsetof(VTX_DBG_LINE, color) == 12);
+
 	typedef struct tagVertexTex
 	{
 		_float3 pos;

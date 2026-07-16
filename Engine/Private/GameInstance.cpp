@@ -348,15 +348,25 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	// lua hot reload
 	{
+		ZoneScopedN("LuaManager_Update");
 		m_pLuaManager->Update(fTimeDelta);
 	}
 
 
 
-	m_pAnimEdit_Manager->Update(fTimeDelta);
-	m_pParticleManager->Update(fTimeDelta);
+	{
+		ZoneScopedN("AnimEdit_Update");
+		m_pAnimEdit_Manager->Update(fTimeDelta);
+	}
 
 	{
+		ZoneScopedN("ParticleManager_Update");
+		m_pParticleManager->Update(fTimeDelta);
+	}
+	
+
+	{
+		ZoneScopedN("PhysXManager_Update");
 		m_pPhysXManager->Update(fTimeDelta);
 	}
 
@@ -801,9 +811,9 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 
 
 #pragma region WORKER_MANAGER
-void CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
+_bool CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
 {
-	m_pWorkerManager->Enqueue(svTaskName, func);
+	return m_pWorkerManager->Enqueue(svTaskName, func);
 }
 #pragma endregion
 

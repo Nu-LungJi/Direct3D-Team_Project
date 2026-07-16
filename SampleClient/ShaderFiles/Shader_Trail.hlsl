@@ -1,12 +1,31 @@
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
+float g_fNoiseStrength = 0.3f; // 0~1
+float g_fGlowStrength = 0.7f; // 0~3
+float g_fLengthGlow = 0.3f; // 0~2
 
+float g_fDissolve = 0;
+float g_fUseNoise = 0;
+float g_fUseDistortion = 0;
+float g_fUseDissolve = 0;
 cbuffer CB_SCROLL : register(b0)
 {
     float g_fScrollOffset;
     float3 _pad;
 };
 
+//cbuffer CB_TRAIL_OPTION : register(b1)
+//{
+//    float g_fNoiseStrength; // 0~1
+//    float g_fDistortion; // 0~0.1
+//    float g_fGlowStrength; // 0~3
+//    float g_fLengthGlow; // 0~2
+//
+//    float g_fDissolve;
+//    float g_fUseNoise;
+//    float g_fUseDistortion;
+//    float g_fUseDissolve;
+//};
 
 
 struct VS_IN
@@ -23,6 +42,7 @@ struct VS_OUT
     float2 vUV : TEXCOORD0;
     float4 vColor : COLOR0;
     float4 vEmissive : COLOR1;
+    float4 vScreenPos : TEXCOORD1;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -33,73 +53,103 @@ VS_OUT VSMain(VS_IN In)
     Out.vUV = In.vUV;
     Out.vColor = In.vColor;
     Out.vEmissive = In.vEmissive;
+    Out.vScreenPos = Out.vPosition;
     return Out;
 }
 
-Texture2D g_TrailTexture : register(t0);
-//SamplerState g_Sampler : register(s0);
-Texture2D g_NoiseTexture : register(t1);
+Texture2D g_DiffuseTexture : register(t1);
+Texture2D g_NormalTexture : register(t2);
+Texture2D g_DistortionTexture : register(t3);
+Texture2D g_NoiseTexture : register(t4);
+Texture2D g_BackgroundTex : register(t7);
 
-float4 PSMain(VS_OUT In) : SV_TARGET
+
+
+struct PS_OUT
 {
-    float2 vTrailUV = float2(In.vUV.x * 2.f, In.vUV.y);
-    float4 vTexColor = g_TrailTexture.Sample(LinearWrap, vTrailUV);
-    if (all(vTexColor.rgb < 0.1f))
-        discard;
+    float4 vDiffuse : SV_TARGET0;
+};
+//
+PS_OUT PSMain(VS_OUT In) : SV_TARGET
+{
+    PS_OUT Out = (PS_OUT) 0;
 
-      
-    // 폭 방향(U, 0~1) 기준으로 중심은 밝고 가장자리는 부드럽게 사라지는 글로우 코어.
-    // 텍스처 자체가 이미 그라디언트라면 이 보정은 살짝만 줘도 되고,
-    // 텍스처가 단순한 흰 띠라면 이 계산이 대부분의 느낌을 만들어준다.
-    float fDistFromCenter = abs(In.vUV.y - 0.5f) * 2.f; // 0(중심)~1(가장자리)
-
-// 가장자리 쪽에서만 완만하게 줄어들도록 시작점을 뒤로 미룸
-    float fEdgeFade = 1.f - smoothstep(0.5f, 1.f, fDistFromCenter);
-
-// 코어 글로우(밝기용)는 기존처럼 중심에서 밝게
-    float fCoreGlow = 1.f - smoothstep(0.f, 1.f, fDistFromCenter);
-
-    float4 vFinalColor = vTexColor * In.vColor;
-    vFinalColor.rgb *= (0.5f + fCoreGlow * 1.5f);
-    vFinalColor.a *= fEdgeFade; // 알파는 더 넓은 구간까지 유지되다 가장자리 근처에서만 페이드
-
-
-    return float4(vFinalColor.xyz + In.vEmissive.xyz * In.vEmissive.w,In.vColor.a);
     
+    float2 uv = In.vUV;
+    float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+    float4 distortionTex = g_DistortionTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+        
+    if (all(tex.rgb < 0.1f))
+        discard;
+    float noise = g_NoiseTexture.Sample(LinearWrap,float2(uv.x * 2 + g_fScrollOffset, uv.y)).r;
+
+    float center = 1 - smoothstep(0,1,abs(uv.y - 0.5) * 2);
+
+    center = pow(center, 0.8);
+
+    float glow = 1 +center *g_fGlowStrength;
+    
+    float lengthGlow = pow(In.vColor.a, 2); 
+    glow *= 1 + lengthGlow * g_fLengthGlow;
+    if (g_fUseNoise > 0.5)
+    {
+        glow *= 1 + (noise - 0.5) * g_fNoiseStrength;
+    }
+    
+    if (g_fUseDissolve > 0.5)
+    {
+        float progress =1 - In.vColor.a;
+
+        float alpha =smoothstep(0,0.15,noise - progress);
+
+        tex.a *= alpha;
+    }
+    
+    float edge =1 -smoothstep(0.5,1,abs(uv.y - 0.5) * 2);
+    tex.a *= edge;
+    
+    float4 color =tex *In.vColor;
+
+    color.rgb *= glow;
+    color.rgb *= In.vColor.a;
+
+    color.rgb +=In.vEmissive.rgb *In.vEmissive.a * In.vColor.a;
+    color.a *= In.vColor.a;
+        float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+
+    
+    if (g_fUseDistortion > 0.5)
+    {
+        clip(color.a - 0.02);
+
+    // 왜곡 텍스처에서 실제 방향 벡터를 샘플링 (스크롤도 같이 적용 가능)
+        float2 distortionUV = float2(uv.x * 2 + g_fScrollOffset, uv.y);
+        float2 distortionSample = g_DistortionTexture.Sample(LinearWrap, distortionUV).rg;
+
+    // 0~1 범위를 -1~1로 remap 해서 양방향 왜곡이 되게
+        float2 distortion = (distortionSample * 2.0f - 1.0f) * 5.f; // 0.05 = 왜곡 강도, 조절 필요
+
+    // 트레일 알파가 강한 곳일수록 더 많이 왜곡되도록
+        distortion *= color.a;
+
+        float2 distortedUV = screenUV * float2(0.5, -0.5) + 0.5 + distortion;
+
+        float4 background = g_BackgroundTex.Sample(LinearClamp, distortedUV);
+        
+
+    // 배경 굴절 위에 원본 트레일 색상을 얹어서 같이 보이게
+        background.rgb += color.rgb;
+        background.a = saturate(background.a + color.a);
+
+        Out.vDiffuse = background;
+
+        return Out;
+    }
+    else
+    {
+        Out.vDiffuse = color;
+    }
+    
+    return Out;
+
 }
-//Texture2D g_TrailTexture : register(t0);
-//Texture2D g_NoiseTexture : register(t1);
-
-
-//
-//float4 PSMain(VS_OUT In) : SV_TARGET
-//{
-//    float4 vTexColor = g_TrailTexture.Sample(LinearWrap, In.vUV);
-//    if (all(vTexColor.rgb < 0.1f))
-//        discard;
-//
-//    // 노이즈 UV: 길이 방향(U)으로 스크롤 오프셋을 더해서 흐르는 느낌 부여
-//    float2 vNoiseUV = float2(In.vUV.x * 2.f + g_fScrollOffset, In.vUV.y);
-//    float fNoise = g_NoiseTexture.Sample(LinearWrap, vNoiseUV).r;
-//
-//    // In.vColor.a = CPU에서 넘어온 fLifeRatio (1=방금생김 ~ 0=수명다함)
-//    float fAgeProgress = 1.f - In.vColor.a; // 0(방금생김)~1(수명다함)
-//
-//    // 디졸브: 노이즈보다 나이가 더 많이 진행되면 그 픽셀부터 사라짐
-//    float fDissolveMask = fNoise - fAgeProgress;
-//    float fSoftness = 0.15f;
-//    float fDissolveAlpha = smoothstep(0.f, fSoftness, fDissolveMask);
-//
-//    float fDistFromCenter = abs(In.vUV.y - 0.5f) * 2.f;
-//    float fEdgeFade = 1.f - smoothstep(0.5f, 1.f, fDistFromCenter);
-//    float fCoreGlow = 1.f - smoothstep(0.f, 1.f, fDistFromCenter);
-//
-//    float4 vFinalColor = vTexColor * In.vColor;
-//    vFinalColor.rgb *= (0.5f + fCoreGlow * 1.5f);
-//    vFinalColor.a *= fEdgeFade * fDissolveAlpha;
-//
-//    if (vFinalColor.a <= 0.01f)
-//        discard;
-//
-//    return float4(vFinalColor.xyz + In.vEmissive.xyz * In.vEmissive.w, vFinalColor.a);
-//}

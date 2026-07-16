@@ -167,7 +167,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	return S_OK;
 }
 
-void CTextureUI::PlayerEffect(uint32_t uiState)
+void CTextureUI::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
 		return;
@@ -180,55 +180,6 @@ void CTextureUI::PlayerEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
-}
-
-void CTextureUI::Creating()
-{
-}
-
-void CTextureUI::StartHovering()
-{
-}
-
-void CTextureUI::Hovering()
-{
-
-}
-
-void CTextureUI::EndHovering()
-{
-}
-
-void CTextureUI::Ending()
-{
-}
-
-void CTextureUI::PlayEffect(uint32_t uiState)
-{
-	m_EffectTag = "Magic";
-
-	if (ETOUI(UI_EFFECT_TYPE::NONE) == m_UIINFO.EffectType)
-	{
-		switch (uiState)
-		{
-		case ETOUI(UI_STATE::ENTER):
-			m_vEffects.push_back(GET_SINGLE(UIManager)->LoadPrefab(m_EffectTag));
-			break;
-		case ETOUI(UI_STATE::EXIT):
-			m_vEffects.push_back(GET_SINGLE(UIManager)->LoadPrefab(m_EffectTag));
-			break;
-		case ETOUI(UI_STATE::NONE):
-			for (auto pEffect : m_vEffects)
-			{
-				GET_SINGLE(UIManager)->DeleteUIRecursive(pEffect);
-			}
-			break;
-		}
-	}
-	else if (ETOUI(UI_EFFECT_TYPE::HOVER) == m_UIINFO.EffectType)
-	{
-
-	}
 }
 
 E::UPtr<CTextureUI> CTextureUI::Create()

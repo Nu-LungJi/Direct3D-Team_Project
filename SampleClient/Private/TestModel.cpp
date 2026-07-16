@@ -387,8 +387,10 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 
 	pContext->VSSetShaderResources(6,1,&pNullSRV);
 
-	const size_t iCopySize =sizeof(GPU_ANIM_INSTANCE_DATA) *m_iCurrentInstanceCount;
+	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
 
+	// pDstBox가 nullptr이면 D3D11은 버퍼 전체(현재 512개)를 복사한다.
+	// Instances에는 이번 배치의 원소만 있으므로, 유효한 원소 범위만 갱신해야 한다.
 	D3D11_BOX updateBox{};
 	updateBox.left = 0;
 	updateBox.right = static_cast<UINT>(iCopySize);
