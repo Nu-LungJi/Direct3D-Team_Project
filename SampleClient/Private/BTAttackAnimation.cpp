@@ -33,6 +33,11 @@ HRESULT CBTAttackAnimation::Initalize(void* pArg)
 
 EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 {
+	if (m_iLoopCnt >= 1)
+	{
+		m_iLoopCnt = 0;
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
 	if (auto pBT = Get_ComBT())
 	{
 		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
@@ -94,13 +99,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			m_fTime = 0.f;
-			//if (!m_bLoop) //루프 한번만 도는거 초기화용
-			//	++m_iLoopCnt;
-			//if (m_iLoopCnt >= 2)
-			//{
-			//	m_iLoopCnt = 0;
-			//	return m_eDebug = EVALUATE::FAILED;
-			//}
+			if (!m_bLoop) //루프 한번만 도는거 초기화용
+				++m_iLoopCnt;
 			
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
@@ -119,13 +119,11 @@ void CBTAttackAnimation::Update_Gui()
 
 	if (ImGui::Button("Enable Ratio : "))
 		m_bRatio = !m_bRatio;
-	ImGui::SameLine(110.f);
-	m_bRatio == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Abort : %s", m_bRatio ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Loop Change"))
 		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
-	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;

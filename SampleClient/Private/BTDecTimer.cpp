@@ -126,7 +126,6 @@ void CBTDecTimer::Abort()
 		if (Check_Flag(ETOUI(BTFLAG::HIT)))
 		{
 			m_bRun = true;
-			m_fTick = 0.f;
 		}
 	}
 		

@@ -119,8 +119,7 @@ void CBTTurnAnimation::Update_Gui()
 
 	if (ImGui::Button("Loop Change"))
 		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
-	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
 	
 	if (!m_bPopup)
 	{

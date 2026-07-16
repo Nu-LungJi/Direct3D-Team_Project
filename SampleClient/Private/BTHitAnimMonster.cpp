@@ -32,6 +32,11 @@ HRESULT CBTHitAnimMonster::Initalize(void* pArg)
 
 EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 {
+	if (m_iLoopCnt >= 1)
+	{
+		m_iLoopCnt = 0;
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
 	if (auto pBT = Get_ComBT())
 	{
 
@@ -68,6 +73,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (m_bLoop || bFinished)
 		{
+			if (!m_bLoop) //루프 한번만 도는거 초기화용
+				++m_iLoopCnt;
 			//Hit 종료는 애니매이션 끝나면
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);

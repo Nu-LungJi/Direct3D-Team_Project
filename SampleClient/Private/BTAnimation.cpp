@@ -31,6 +31,11 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
+	if (m_iLoopCnt >= 1)
+	{
+		m_iLoopCnt = 0;
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
 	auto pAnimator =(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	
 	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
@@ -48,7 +53,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 			//애니매이션 겹침 방지
 		//	Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
-		}
+		}if (!m_bLoop) //루프 한번만 도는거 초기화용
+			++m_iLoopCnt;
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
@@ -58,13 +64,11 @@ void CBTAnimation::Update_Gui()
 {
 	if (ImGui::Button("Abort : ")) 
 		m_GuiNode.bAbort = !m_GuiNode.bAbort;
-	ImGui::SameLine(50.f);
-	m_GuiNode.bAbort == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Abort : %s", m_GuiNode.bAbort ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Loop Change"))
 		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
-	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
 	
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;

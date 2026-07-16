@@ -35,12 +35,12 @@ EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
 	if (m_NodeValue.bCur)
 		iRand = m_NodeValue.iPreSecquenceIndex;
 
+	if (iRand >= m_Actions.size())
+		return EVALUATE::FAILED;
 
 	if (m_Actions.empty() || nullptr == m_Actions[iRand])
 		return EVALUATE::FAILED;
-	
-	if (iRand == 1)
-		int32_t i = 0;
+
 	EVALUATE eValuate = m_Actions[iRand]->Evaluate(fTimeDelta);
 	if (eValuate == EVALUATE::SUCCESS)
 	{
@@ -64,7 +64,6 @@ void CBTRandSelector::Abort()
 		if (nullptr != m_Actions[i])
 			m_Actions[i]->Abort();
 	}
-	m_NodeValue.bCur = false;
 }
 
 nlohmann::json CBTRandSelector::Save_Node()
