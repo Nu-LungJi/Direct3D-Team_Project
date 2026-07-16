@@ -6,6 +6,7 @@
 
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
+
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);

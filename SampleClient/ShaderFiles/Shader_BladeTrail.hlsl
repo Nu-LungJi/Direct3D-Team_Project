@@ -6,7 +6,7 @@ float g_fLengthGlow = 0.3f; // 0~2
 
 float g_fDissolve = 0;
 float g_fUseNoise = 0;
-float g_fUseDistortion = 0;
+float g_fUseDistortion = 1;
 float g_fUseDissolve = 0;
 cbuffer CB_SCROLL : register(b0)
 {
@@ -57,11 +57,10 @@ VS_OUT VSMain(VS_IN In)
     return Out;
 }
 
-Texture2D g_DiffuseTexture : register(t1);
-Texture2D g_NormalTexture : register(t2);
-Texture2D g_DistortionTexture : register(t3);
-Texture2D g_NoiseTexture : register(t4);
+Texture2D g_TrailTexture : register(t0);
+Texture2D g_NoiseTexture : register(t1);
 Texture2D g_BackgroundTex : register(t7);
+Texture2D g_DistortionTexture : register(t2);
 
 
 
@@ -76,9 +75,9 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 
     
     float2 uv = In.vUV;
-    float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+    float4 tex = g_TrailTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
     float4 distortionTex = g_DistortionTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
-        
+  
     if (all(tex.rgb < 0.1f))
         discard;
     float noise = g_NoiseTexture.Sample(LinearWrap,float2(uv.x * 2 + g_fScrollOffset, uv.y)).r;
@@ -89,8 +88,9 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 
     float glow = 1 +center *g_fGlowStrength;
     
-    float lengthGlow = pow(In.vColor.a, 2); 
-    glow *= 1 + lengthGlow * g_fLengthGlow;
+    float lengthGlow = pow(1 - uv.x,2);
+
+    glow *= 1 +lengthGlow * g_fLengthGlow;
     if (g_fUseNoise > 0.5)
     {
         glow *= 1 + (noise - 0.5) * g_fNoiseStrength;
@@ -111,12 +111,11 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
     float4 color =tex *In.vColor;
 
     color.rgb *= glow;
-    color.rgb *= In.vColor.a;
 
-    color.rgb +=In.vEmissive.rgb *In.vEmissive.a * In.vColor.a;
+    color.rgb +=In.vEmissive.rgb *In.vEmissive.a;
     color.a *= In.vColor.a;
         float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
-
+    
     
     if (g_fUseDistortion > 0.5)
     {
@@ -142,14 +141,16 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
         background.a = saturate(background.a + color.a);
 
         Out.vDiffuse = background;
+        
+        distortion = distortionTex.rg * 2 - 1;
 
+        Out.vDiffuse = float4(abs(distortion), 0, 1);
         return Out;
     }
     else
     {
         Out.vDiffuse = color;
     }
-    
     return Out;
 
 }

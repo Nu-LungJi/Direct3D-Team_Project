@@ -657,6 +657,9 @@
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_BladeTrail.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LuaFiles\ClientTest\asdf.lua">

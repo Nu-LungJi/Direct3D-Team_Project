@@ -193,11 +193,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 
-	//m_pParticleManager = CParticleManager::Create();
-	//if (m_pParticleManager == nullptr)
-	//{
-	//	return E_FAIL;
-	//}
+	m_pParticleManager = CParticleManager::Create();
+	if (m_pParticleManager == nullptr)
+	{
+		return E_FAIL;
+	}
 
 	m_pFontManager = CFontManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pFontManager == nullptr)
@@ -284,7 +284,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pColliderManager->UpdateGUI();
 
-	//m_pParticleManager->UpdateGUI();
+	m_pParticleManager->UpdateGUI();
 
 	m_pLightManager->UpdateGUI();
 
@@ -361,7 +361,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	{
 		ZoneScopedN("ParticleManager_Update");
-		//m_pParticleManager->Update(fTimeDelta);
+		m_pParticleManager->Update(fTimeDelta);
 	}
 	
 
@@ -402,7 +402,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pNavMeshManager->DrawDebug();
 
 	AddRenderObject(RENDERGROUP::NONBLEND_INSTANCED, m_pModel_Instance_Manager.get());
-	//AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
+	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 }
 
@@ -437,7 +437,7 @@ void CGameInstance::Release_Engine()
 	
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
-	//m_pParticleManager.reset();
+	m_pParticleManager.reset();
 	m_pWorkerManager.reset();
 	m_pLightManager.reset();
 	m_pCameraManager.reset();

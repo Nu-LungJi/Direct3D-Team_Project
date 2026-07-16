@@ -53,7 +53,10 @@ VS_OUT VSMain(VS_IN In)
     return Out;
 }
 
-Texture2D g_ParticleTexture : register(t0);
+Texture2D g_DiffuseTexture : register(t1);
+Texture2D g_NormalTexture : register(t2);
+Texture2D g_DistortionTexture : register(t3);
+Texture2D g_NoiseTexture : register(t4);
 SamplerState g_Sampler : register(s0);
 
 struct PS_OUT
@@ -67,7 +70,7 @@ PS_OUT PSMain(VS_OUT In)
  
     PS_OUT Out = (PS_OUT) 0;
 
-    float4 texColor = g_ParticleTexture.Sample(g_Sampler, In.vTexcoord) * In.vColor;
+    float4 texColor = g_DiffuseTexture.Sample(g_Sampler, In.vTexcoord) * In.vColor;
     //if (texColor.a <= 0.01f)
     //    discard;
 

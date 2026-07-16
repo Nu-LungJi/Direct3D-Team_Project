@@ -14,7 +14,10 @@ cbuffer CB_PER_PARTICLE : register(b5)
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);
-Texture2D g_Texture : register(t1);
+Texture2D g_DiffuseTexture : register(t1);
+Texture2D g_NormalTexture : register(t2);
+Texture2D g_DistortionTexture : register(t3);
+Texture2D g_NoiseTexture : register(t4);
 Texture2D g_BackgroundTex : register(t7);
 struct VS_OUT
 {
@@ -109,7 +112,7 @@ PS_OUT PSMain(VS_OUT In)
         Out.vDiffuse = 0;
         return Out;
     }
-    float4 vTextureColor = g_Texture.Sample(LinearWrap, In.vTexcoord);
+    float4 vTextureColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
     {
         clip(In.vColor.a - 0.02f);
