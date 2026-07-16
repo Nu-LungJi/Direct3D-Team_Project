@@ -159,7 +159,7 @@ public:
 
 #pragma region WORKER_MANAGER
 public:
-	void WorkerEnqueue(_string_view svTaskName, _Func func);
+	_bool WorkerEnqueue(_string_view svTaskName, _Func func);
 	template<typename Func, typename... Args>
 	auto WorkerEnqueueWithFuture(_string_view svTaskName, Func&& f, Args&&... args)
 		-> std::future<std::invoke_result_t<Func, Args...>>

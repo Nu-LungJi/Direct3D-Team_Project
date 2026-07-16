@@ -193,11 +193,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 
-	m_pParticleManager = CParticleManager::Create();
-	if (m_pParticleManager == nullptr)
-	{
-		return E_FAIL;
-	}
+	//m_pParticleManager = CParticleManager::Create();
+	//if (m_pParticleManager == nullptr)
+	//{
+	//	return E_FAIL;
+	//}
 
 	m_pFontManager = CFontManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pFontManager == nullptr)
@@ -284,7 +284,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pColliderManager->UpdateGUI();
 
-	m_pParticleManager->UpdateGUI();
+	//m_pParticleManager->UpdateGUI();
 
 	m_pLightManager->UpdateGUI();
 
@@ -348,15 +348,25 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	// lua hot reload
 	{
+		ZoneScopedN("LuaManager_Update");
 		m_pLuaManager->Update(fTimeDelta);
 	}
 
 
 
-	m_pAnimEdit_Manager->Update(fTimeDelta);
-	m_pParticleManager->Update(fTimeDelta);
+	{
+		ZoneScopedN("AnimEdit_Update");
+		m_pAnimEdit_Manager->Update(fTimeDelta);
+	}
 
 	{
+		ZoneScopedN("ParticleManager_Update");
+		//m_pParticleManager->Update(fTimeDelta);
+	}
+	
+
+	{
+		ZoneScopedN("PhysXManager_Update");
 		m_pPhysXManager->Update(fTimeDelta);
 	}
 
@@ -392,7 +402,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pNavMeshManager->DrawDebug();
 
 	AddRenderObject(RENDERGROUP::NONBLEND_INSTANCED, m_pModel_Instance_Manager.get());
-	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
+	//AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
 }
 
@@ -427,7 +437,7 @@ void CGameInstance::Release_Engine()
 	
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
-	m_pParticleManager.reset();
+	//m_pParticleManager.reset();
 	m_pWorkerManager.reset();
 	m_pLightManager.reset();
 	m_pCameraManager.reset();
@@ -801,9 +811,9 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 
 
 #pragma region WORKER_MANAGER
-void CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
+_bool CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
 {
-	m_pWorkerManager->Enqueue(svTaskName, func);
+	return m_pWorkerManager->Enqueue(svTaskName, func);
 }
 #pragma endregion
 

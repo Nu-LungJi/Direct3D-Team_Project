@@ -57,11 +57,11 @@ HRESULT CMainAppLoader::Load()
 		}
 
 
-		if (FAILED(Load_Particle_Resources()))
-		{
-			MSG_BOX("Failed Load_Particle_Resources");
-			return E_FAIL;
-		}
+		//if (FAILED(Load_Particle_Resources()))
+		//{
+		//	MSG_BOX("Failed Load_Particle_Resources");
+		//	return E_FAIL;
+		//}
 
 		if (FAILED(Load_PhysX_Resource()))
 		{
