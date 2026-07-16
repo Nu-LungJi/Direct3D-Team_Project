@@ -1,7 +1,10 @@
 #pragma once
-#include "Engine_Defines.h"
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
-NS_BEGIN(Engine)
+namespace Engine
+{
 
 class CHandle {
 public:
@@ -21,4 +24,4 @@ private:
 	uint32_t m_iGeneration{ std::numeric_limits<uint32_t>::max() };
 };
 
-NS_END
+}

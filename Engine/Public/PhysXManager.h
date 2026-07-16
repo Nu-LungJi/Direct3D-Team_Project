@@ -1,6 +1,10 @@
 #pragma once
 #include "Engine_Defines.h"
+#include "Handle.h"
+#include <mutex>
+#include <shared_mutex>
 namespace physx {
+	class PxActor;
 	class PxFoundation;
 	class PxPhysics;
 	class PxScene;
@@ -8,10 +12,12 @@ namespace physx {
 	class PxPvd;
 	class PxCooking;
 	class PxControllerManager;
+	class PxShape;
 }
 
 NS_BEGIN(Engine)
 class CPhysxManagerListener;
+class CGameObject;
 class ENGINE_DLL CPhysXManager final: public CEngineBase
 {
 private:
@@ -42,6 +48,16 @@ public:
 	physx::PxPhysics* GetPhysics() const { return m_pPhysics; }
 	physx::PxControllerManager* GetControllerManager() const { return m_pControllerManager; }
 
+public:
+	_bool RegisterActor(const physx::PxActor* pActor, const PHYSX_ACTOR_USER_DATA& userData);
+	void UnregisterActor(const physx::PxActor* pActor);
+	std::optional<PHYSX_ACTOR_USER_DATA> FindActorUserData(const physx::PxActor* pActor) const;
+	CGameObject* FindGameObject(const physx::PxActor* pActor) const;
+
+	_bool RegisterShape(const physx::PxShape* pShape, const PHYSX_SHAPE_USER_DATA& userData);
+	void UnregisterShape(const physx::PxShape* pShape);
+	std::optional<PHYSX_SHAPE_USER_DATA> FindShapeUserData(const physx::PxShape* pShape) const;
+
 private:
 	void SyncPhysicsToComponents();
 	
@@ -56,6 +72,11 @@ private:
 
 private:
 	UPtr<CPhysxManagerListener> m_pListener{};
+
+private:
+	mutable std::shared_mutex m_UserDataRegistryMutex{};
+	std::unordered_map<const physx::PxActor*, PHYSX_ACTOR_USER_DATA> m_ActorUserDataRegistry{};
+	std::unordered_map<const physx::PxShape*, PHYSX_SHAPE_USER_DATA> m_ShapeUserDataRegistry{};
 
 private:
 	_bool m_bDbgRender{ true };

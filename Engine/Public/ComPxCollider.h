@@ -37,6 +37,7 @@ protected:
 
 protected:
 	HRESULT Initialize(void* pArg) override;
+	_bool RegisterShape(PHYSX_SHAPE_TYPE eType, uint32_t iSubIndex = std::numeric_limits<uint32_t>::max());
 
 protected:
 	CComPxRigidBody* m_pComRigidBody{};

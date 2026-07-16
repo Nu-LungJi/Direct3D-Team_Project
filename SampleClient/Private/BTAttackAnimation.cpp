@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTAttackAnimation.h"
 #include "ComAnimator.h" 
+#include "TestGob.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -55,6 +56,24 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 				m_bStart = false;
 			}
+
+			m_fTime += fTimeDelta;
+	
+			
+			_float tt = (pAnimator->GetPlayAnimRatio() - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
+			if (tt < 0.f)
+				tt = 0;
+			if (tt > 1.f)
+				tt = 1.f;
+			if (auto pBT = Get_ComBT())
+			{
+				if (auto pSrc = pBT->GetGameObject())
+				{
+					_float fEmissive = std::lerp(0,0.5, tt);
+					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
+				}
+			}
+
 			_float fAnimRange = m_fRatio.y - m_fRatio.x;
 			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
 			_float fMove = t * fTimeDelta * fAnimRange * m_Value.fSpeed;
@@ -74,6 +93,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
+			m_fTime = 0.f;
 			//if (!m_bLoop) //루프 한번만 도는거 초기화용
 			//	++m_iLoopCnt;
 			//if (m_iLoopCnt >= 2)
@@ -149,7 +169,7 @@ void CBTAttackAnimation::Update_Gui()
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
 	if (ImGui::TreeNode("StartFlag"))
 	{
 		
@@ -194,6 +214,10 @@ void CBTAttackAnimation::Update_Gui()
 	}
 
 	ImGui::PopStyleColor(2);
+}
+void CBTAttackAnimation::Abort()
+{
+	m_fTime = 0.f;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {

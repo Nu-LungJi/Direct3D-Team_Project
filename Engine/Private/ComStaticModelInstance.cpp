@@ -85,7 +85,7 @@ VOID CComStaticModelInstance::Bind_Textures(ID3D11DeviceContext* pContext, uint3
 	pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
 }
 
-VOID CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float _ObjectAlpha)
+VOID CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float3 _DissolveColor, _float _DissolveIntensity, _float _ObjectAlpha)
 {
 	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
 	D3D11_MAPPED_SUBRESOURCE MRES;
@@ -95,6 +95,10 @@ VOID CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _flo
 
 		CMMAT.EmissiveColor		= _EmissiveColor;
 		CMMAT.EmissiveIntensity = _EmissiveIntensity;
+
+		CMMAT.DissolveColor		= _DissolveColor;
+		CMMAT.DissolveIntensity = _DissolveIntensity;
+
 		CMMAT.ObjectAlpha		= _ObjectAlpha;
 
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));

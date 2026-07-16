@@ -174,8 +174,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch (wParam)
         {
-        case VK_ES
-            E:
+		case VK_ESCAPE:
             PostQuitMessage(0);
             break;
         }

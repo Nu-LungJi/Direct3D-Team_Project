@@ -287,7 +287,8 @@ PS_OUT PSMain(PS_IN IN)
     }
     
     
-    float3 Emissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
+    float3 BaseEmissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
+    
     
     // Enviroment Light Process
     float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
@@ -297,7 +298,7 @@ PS_OUT PSMain(PS_IN IN)
     LightAccumulation *= ShadowFactor;
     LightAccumulation *= AO;
     
-    OUT.Diffuse = float4(LightAccumulation + Emissive, 1.f);
+    OUT.Diffuse = float4(LightAccumulation + BaseEmissive, 1.f);
     return OUT;
 }
 
