@@ -69,7 +69,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			{
 				if (auto pSrc = pBT->GetGameObject())
 				{
-					_float fEmissive = std::lerp(0,0.5, tt);
+					_float fEmissive = std::lerp(0.f,0.5f, tt);
 					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
