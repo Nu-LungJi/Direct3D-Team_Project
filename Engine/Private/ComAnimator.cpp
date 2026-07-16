@@ -126,7 +126,7 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
 
 		
-	/*		_vector qPrevRotation{};
+		/*	_vector qPrevRotation{};
 	
 
 			_vector vCurrScale;
@@ -779,6 +779,52 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	
 }
 
+_bool CComAnimator::Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition,std::vector<_float4x4>& OutCombinedBoneMatrices) const
+{
+	if (m_pModelInstance == nullptr)
+		return false;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return false;
+
+	const auto& Bones = pModel->GetBones();
+	const auto& Anims = pModel->GetAnimations();
+	if (iAnimIndex < 0 || iAnimIndex >= (int32_t)(Anims.size()) || Anims[iAnimIndex] == nullptr)
+		return false;
+
+	const auto& pAnim = Anims[iAnimIndex];
+	fTrackPosition = std::clamp(fTrackPosition, 0.f, pAnim->GetDuration());
+
+	std::vector<_float4x4> localBoneMatrices(Bones.size());
+	for (size_t i = 0; i < Bones.size(); ++i)
+		XMStoreFloat4x4(&localBoneMatrices[i], Bones[i]->Get_TransformationMatrix());
+
+	for (const auto& pChannel : pAnim->GetChannels())
+	{
+		if (pChannel == nullptr)
+			continue;
+
+		const int32_t iBoneIndex = pChannel->Get_BoneIndex();
+		if (iBoneIndex < 0 || iBoneIndex >= static_cast<int32_t>(localBoneMatrices.size()))
+			continue;
+
+		XMStoreFloat4x4(&localBoneMatrices[iBoneIndex],Evaluate_ChannelMatrix_CPU(pChannel.get(), fTrackPosition));
+	}
+
+	OutCombinedBoneMatrices.resize(Bones.size());
+	const _matrix matPreTransform = XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
+	for (size_t i = 0; i < Bones.size(); ++i)
+	{
+		const int32_t iParentIndex = Bones[i]->GetParendBoneIndex();
+		const _matrix matLocal = XMLoadFloat4x4(&localBoneMatrices[i]);
+		const _matrix matCombined = iParentIndex < 0 ? matLocal * matPreTransform : matLocal * XMLoadFloat4x4(&OutCombinedBoneMatrices[iParentIndex]);
+		XMStoreFloat4x4(&OutCombinedBoneMatrices[i], matCombined);
+	}
+
+	return true;
+}
+
 void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPosition,uint32_t& iCurrentKeyFrameIndex,std::vector<_float4x4>& OutLocalBoneMatrices)
 {
 	if (pChannel == nullptr)
@@ -864,7 +910,7 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 	XMStoreFloat4x4(&OutLocalBoneMatrices[iBoneIndex],matLocal);
 }
 
-_matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition)  {
+_matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition) const {
 	// 이 함수는 처음 Load 해 올때만 Root Bone Transform 빼오기 위해서 만든 함수
 	if (pChannel->Get_KeyFrames().empty())
 		return XMMatrixIdentity();

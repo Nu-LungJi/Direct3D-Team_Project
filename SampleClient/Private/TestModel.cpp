@@ -50,7 +50,7 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	if (!m_pResSkinMeshCBuffer)
 	{
 		return E_FAIL;
-	}
+	} 
 
 	
 	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
@@ -125,6 +125,7 @@ void CTestModel::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestModel::Update(E::_float fTimeDelta)
 {
+	ZoneScopedN("Update TestModel");
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 		

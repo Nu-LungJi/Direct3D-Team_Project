@@ -475,6 +475,9 @@
     <Filter Include="Renderer\FSR2_2">
       <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\Model\ComSocket">
+      <UniqueIdentifier>{41fbef30-0861-4a12-87af-d96a9c20c674}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1018,6 +1021,9 @@
     <ClInclude Include="..\public\MyFSR2_2.h">
       <Filter>Renderer\FSR2_2</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ComSocket.h">
+      <Filter>Component\Model\ComSocket</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1509,6 +1515,9 @@
     </ClCompile>
     <ClCompile Include="..\private\MyFSR2_2.cpp">
       <Filter>Renderer\FSR2_2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComSocket.cpp">
+      <Filter>Component\Model\ComSocket</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
