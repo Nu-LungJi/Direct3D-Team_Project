@@ -381,6 +381,9 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 }
 SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset)
 {
+	if (!pAsset)
+		return nullptr;
+
 	std::unique_lock<std::shared_mutex> lock(m_Mutex);
 
 	auto pGroup = FindGroup(sGroupTag);
