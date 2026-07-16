@@ -595,6 +595,16 @@ HRESULT CGameInstanceInitLoader::LoadDepthStencilState()
 		if (FAILED(res->Load(depthDesc))) return E_FAIL;
 	}
 
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DBG_LINE_DEPTH_ON", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		depthDesc.StencilEnable = FALSE;
+		if (FAILED(res->Load(depthDesc))) return E_FAIL;
+	}
+
 		if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH", E::CResDepthStencilState::Create()))
 		{
 			D3D11_DEPTH_STENCIL_DESC depthDesc{};

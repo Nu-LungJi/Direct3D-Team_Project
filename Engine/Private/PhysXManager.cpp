@@ -203,21 +203,45 @@ _bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNor
 
 void CPhysXManager::UpdateDebugRender(_float fTimeDelta)
 {
-    if (m_bDbgRender)
-    {
-        const PxRenderBuffer& renderBuffer = m_pScene->getRenderBuffer();
-        const PxU32 nbLines = renderBuffer.getNbLines();
-        const PxDebugLine* lines = renderBuffer.getLines();
+	if (m_bDbgRender)
+	{
+		const PxRenderBuffer& renderBuffer = m_pScene->getRenderBuffer();
+		const PxU32 nbLines = renderBuffer.getNbLines();
+		const PxDebugLine* lines = renderBuffer.getLines();
 
-        // TODO:순회가 아니라 memcpy방식으로 수정
-        for (PxU32 i = 0; i < nbLines; i++) {
-            const PxDebugLine& line = lines[i];
-            CGameInstance::Get().GetDbgLineRender()
-                ->AddLine(
-                    _float3{ line.pos0.x, line.pos0.y, line.pos0.z },
-                    _float3{ line.pos1.x, line.pos1.y, line.pos1.z }, ColorIntToFloat4(line.color0));
-        }
-    }
+		static_assert(sizeof(PxVec3) == sizeof(_float3));
+		static_assert(sizeof(PxDebugLine) == sizeof(VTX_DBG_LINE) * 2);
+		static_assert(offsetof(PxDebugLine, pos0) == 0);
+		static_assert(offsetof(PxDebugLine, color0) == 12);
+		static_assert(offsetof(PxDebugLine, pos1) == 16);
+		static_assert(offsetof(PxDebugLine, color1) == 28);
+		if (nbLines > 0 && lines)
+		{
+			auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
+			const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+
+			pDbgLineRender->SetDepthTest(true);
+			pDbgLineRender->AddPackedLineVertices(
+				lines,
+				static_cast<size_t>(nbLines) * 2);
+			pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+		}
+	}
+	//if (m_bDbgRender)
+	//{
+	//	const PxRenderBuffer& renderBuffer = m_pScene->getRenderBuffer();
+	//	const PxU32 nbLines = renderBuffer.getNbLines();
+	//	const PxDebugLine* lines = renderBuffer.getLines();
+
+	//	// TODO:순회가 아니라 memcpy방식으로 수정
+	//	for (PxU32 i = 0; i < nbLines; i++) {
+	//		const PxDebugLine& line = lines[i];
+	//		CGameInstance::Get().GetDbgLineRender()
+	//			->AddLine(
+	//				_float3{ line.pos0.x, line.pos0.y, line.pos0.z },
+	//				_float3{ line.pos1.x, line.pos1.y, line.pos1.z }, ColorIntToFloat4(line.color0));
+	//	}
+	//}
 }
 
 void CPhysXManager::Update(_float fTimeDeta)
