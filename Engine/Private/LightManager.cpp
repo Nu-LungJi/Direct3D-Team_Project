@@ -18,9 +18,6 @@ HRESULT CLightManager::Initialize_LightManager() {
 	m_pResLightTexBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 	if (nullptr == m_pResLightTexBuffer)	return E_FAIL;
 
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex");
-	if (nullptr == m_pResVertexShader)		return E_FAIL;
-
 	m_pPBRComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR");
 	if (nullptr == m_pPBRComputeShader)		return E_FAIL;
 
@@ -32,18 +29,19 @@ HRESULT CLightManager::Initialize_LightManager() {
 
 	m_pShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap", ShadowMapResolutionX, ShadowMapResolutionY);
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	if (m_pPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
-		if (FAILED(res->Load()))    return E_FAIL;
+		if (FAILED(m_pPointLightVS->Load()))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	if (m_pPointLightPS = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
-		if (FAILED(res->Load()))    return E_FAIL;
+		if (FAILED(m_pPointLightPS->Load()))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResGeometryShader>(TAG_RES_GRP_PERMANENT_SHADER, "GS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	if (m_pPointLightGS = CGameInstance::Get().AddResourceT<E::CResGeometryShader>(TAG_RES_GRP_PERMANENT_SHADER, "GS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
-		if (FAILED(res->Load()))    return E_FAIL;
+		if (FAILED(m_pPointLightGS->Load()))    return E_FAIL;
 	}
+
 
 #ifdef _DEBUG
 	if (FAILED(Initialize_DebugRender()))	return E_FAIL;
@@ -239,31 +237,43 @@ HRESULT CLightManager::Capture_ShadowMap() {
 	m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
 	m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
 
-	m_pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
-	m_pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+	m_pContext->IASetInputLayout(m_pPointLightVS->GetInputLayout().Get());
+	m_pContext->VSSetShader(m_pPointLightVS->GetVertexShader().Get(), nullptr, 0);
 	m_pContext->GSSetShader(nullptr, nullptr, 0);
 	m_pContext->PSSetShader(nullptr, nullptr, 0);
 
 	uint32_t LightCount = 0;
 
 	for (uint32_t i = 0; i < m_LightHandleList.size(); ++i) {
-		// Need Culling - Frustum & Distance
 		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_LightHandleList[i]);
-		if (nullptr == LightOBJ)	continue;
+		if (nullptr == LightOBJ) continue;
+
+		const LIGHT_TYPE LightType = LightOBJ->Get_LightType();
+		const bool bIsPointLight = (LightType == LIGHT_TYPE::POINT);
+
+		if (bIsPointLight) {
+			m_pContext->GSSetShader(m_pPointLightGS->GetGeometryShader().Get(), nullptr, 0);
+			m_pContext->PSSetShader(m_pPointLightPS->GetPixelShader().Get(), nullptr, 0);
+		}
+		else {
+			m_pContext->GSSetShader(nullptr, nullptr, 0);
+			m_pContext->PSSetShader(nullptr, nullptr, 0);
+		}
 
 		D3D11_MAPPED_SUBRESOURCE MRES = {};
 		if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
 			CB_LIGHT CBLight{};
-			if (LightOBJ->Get_LightType() == LIGHT_TYPE::DIRECTIONAL || LightOBJ->Get_LightType() == LIGHT_TYPE::SPOTLIGHT) {
-				CBLight.AffectedLight[0].g_LightViewProj[0] = LightOBJ->Get_LightViewProj();
+			if (bIsPointLight) {
+				for (int Face = 0; Face < 6; ++Face) {
+					CBLight.AffectedLight[0].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
+				}
 			}
 			else {
-				for (int Face = 0; Face < 6; ++Face)
-					CBLight.AffectedLight[0].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
+				CBLight.AffectedLight[0].g_LightViewProj[0] = LightOBJ->Get_LightViewProj();
 			}
 
-			CBLight.AffectedLight[0].LightType = ETOUI(LightOBJ->Get_LightType());
+			CBLight.AffectedLight[0].LightType = ETOUI(LightType);
 			CBLight.LightCount = 1;
 			CBLight.CurrentLightIndex = 0;
 
@@ -273,15 +283,13 @@ HRESULT CLightManager::Capture_ShadowMap() {
 
 		m_pContext->VSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 		m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-		
-		if (LightOBJ->Is_StaticDirty()){
+
+		if (LightOBJ->Is_StaticDirty()) {
 			auto StaticShadowDSV = LightOBJ->Get_StaticShadowDSV();
 			if (StaticShadowDSV) {
 				m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 				m_pContext->OMSetRenderTargets(1, &NullRTV, StaticShadowDSV.Get());
-
 				LightOBJ->Capture_ShadowMap(m_pContext.Get());
-				m_pContext->GSSetShader(nullptr, nullptr, 0);
 			}
 			LightOBJ->Set_StaticDirty(false);
 		}
@@ -290,12 +298,14 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		if (DynamicShadowDSV) {
 			m_pContext->ClearDepthStencilView(DynamicShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 			m_pContext->OMSetRenderTargets(1, &NullRTV, DynamicShadowDSV.Get());
-
 			LightOBJ->Capture_ShadowMap(m_pContext.Get());
 		}
-		m_pContext->GSSetShader(nullptr, nullptr, 0);
-	}
 
+		if (bIsPointLight) {
+			m_pContext->GSSetShader(nullptr, nullptr, 0);
+			m_pContext->PSSetShader(nullptr, nullptr, 0);
+		}
+	}
 	m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
 
 	return S_OK;

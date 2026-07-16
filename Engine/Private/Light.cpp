@@ -55,6 +55,12 @@ HRESULT CLight::Initialize(VOID* pArg)
 	uint32_t ShadowMapResolutionX = { 1280 * 2 };
 	uint32_t ShadowMapResolutionY = { 720 * 2 };
 
+	CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
+	CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
+
+	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), 
+		DynamicLight.LightType, 1280)))	return E_FAIL;
+
 	return S_OK;
 }
 
@@ -136,22 +142,20 @@ VOID CLight::Update_Collider() {
 }
 
 HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
-
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) || DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
-		pContext->GSSetShader(nullptr, nullptr, 0);
-		pContext->PSSetShader(nullptr, nullptr, 0);
-	}
-	else {
-		// pContext->GSSetShader(m_pPointShadowGS, nullptr, 0);
-		// pContext->PSSetShader(m_pPointShadowPS, nullptr, 0);
-	}
-
 	RENDER_CTX RCTX{};
 	RCTX.pass = RENDERPASS::SHADOW;
 	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
-	RCTX.matView = XMLoadFloat4x4(&LightView);
-	RCTX.matProj = XMLoadFloat4x4(&LightProj);
-	RCTX.matViewProj = XMLoadFloat4x4(&LightViewProj);
+	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
+		XMMATRIX Identity = XMMatrixIdentity();
+		RCTX.matView = Identity;
+		RCTX.matProj = Identity;
+		RCTX.matViewProj = Identity;
+	}
+	else {
+		RCTX.matView = XMLoadFloat4x4(&LightView);
+		RCTX.matProj = XMLoadFloat4x4(&LightProj);
+		RCTX.matViewProj = XMLoadFloat4x4(&LightViewProj);
+	}
 
 	for (auto& GOBJ : m_pRenderable_DynamicObjectList) {
 		GOBJ->Render(pContext, RCTX);
@@ -160,10 +164,6 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
 		GOBJ->Render(pContext, RCTX);
 	}
 
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		pContext->GSSetShader(nullptr, nullptr, 0);
-		pContext->PSSetShader(nullptr, nullptr, 0);
-	}
 	return S_OK;
 }
 

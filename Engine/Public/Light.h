@@ -98,11 +98,14 @@ private:
 	ComPtr<ID3D11ShaderResourceView>	m_pDynamicShadowSRV		= { nullptr };
 
 	ComPtr<ID3D11Texture2D>				m_pFinalShadowTexture	= { nullptr };	
-	ComPtr<ID3D11UnorderedAccessView>	m_pFinalShadowUAV = { nullptr };
+	ComPtr<ID3D11UnorderedAccessView>	m_pFinalShadowUAV		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pFinalShadowSRV		= { nullptr };
 
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
+
+
+
 
 	XMFLOAT4X4							LightView{};
 	XMFLOAT4X4							LightProj{};

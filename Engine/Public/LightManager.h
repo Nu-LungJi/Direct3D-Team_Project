@@ -63,6 +63,10 @@ private:
 	SPtr<CResPixelShader>				m_pResPixelShader = { nullptr };
 	SPtr<CResQuadTexBuffer>				m_pResLightTexBuffer = { nullptr };
 
+	SPtr<CResVertexShader>				m_pPointLightVS = { nullptr };
+	SPtr<CResGeometryShader>			m_pPointLightGS = { nullptr };
+	SPtr<CResPixelShader>				m_pPointLightPS = { nullptr };
+
 	SPtr<CResComputeShader>				m_pShadowComputeShader = { nullptr };
 	SPtr<CResComputeShader>				m_pPBRComputeShader = { nullptr };
 	SPtr<CResDynamicTexture2D>			m_pUAVComBinedOutput = { nullptr };

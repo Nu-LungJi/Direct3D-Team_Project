@@ -176,9 +176,6 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
-
-
-
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);
 SamplerState PointWrap                  : register(s2);
@@ -186,4 +183,4 @@ SamplerState PointClamp                 : register(s3);
 SamplerState PointWrapNoMip             : register(s4);
 SamplerState AnisotropicWrap            : register(s5);
 
-SamplerComparisonState ShadowSampler : register(s6);
+SamplerComparisonState ShadowSampler    : register(s6);

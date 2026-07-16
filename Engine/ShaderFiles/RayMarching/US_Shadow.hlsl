@@ -20,7 +20,8 @@ VS_OUT VSMain(VS_IN IN)
 struct GS_OUT
 {
     float4  Position    : SV_POSITION;
-    uint    LayerIndex  : SV_RenderTargetArrayIndex; 
+    float3  WorldPos    : POSITION;
+    uint    LayerIndex  : SV_RenderTargetArrayIndex;
 };
 
 [maxvertexcount(18)]
@@ -35,6 +36,7 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
         for (int v = 0; v < 3; ++v)
         {
             OUT.Position = mul(IN[v].WorldPos, DLight.g_LightViewProj[Face]);
+            OUT.WorldPos = IN[v].WorldPos.xyz;
             _OutStream.Append(OUT);
         }
         
@@ -42,6 +44,12 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
     }
 }
 
-void PSMain(GS_OUT OUT)
+float PSMain(GS_OUT OUT) : SV_DEPTH
 {
+    DynamicLight Light = AffectedLight[CurrentLightIndex];
+    
+    float3 LightToPixel = OUT.WorldPos.xyz - Light.Position;
+    float Distance = length(LightToPixel);
+    
+    return Distance / Light.LightRange;
 }

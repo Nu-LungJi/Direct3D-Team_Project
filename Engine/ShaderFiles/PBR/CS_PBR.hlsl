@@ -9,13 +9,12 @@ Texture2D<float4> AmbientMap : register(t4);
 
 Texture2D<float> DepthMap : register(t5);
 Texture2D<float> FinalShadowMap : register(t6);
+TextureCube<float> FinalShadowCubeMap : register(t7);
 
 // Image Based Lighting
 TextureCube IrridianceMap : register(t8);
 TextureCube PreFilterMap : register(t9);
 Texture2D<float4> LUTMap : register(t10);
-
-Texture2D<float> DefaultNoiseTexture : register(t13);
 
 RWTexture2D<float4> OUTPUT : register(u0);
 
@@ -114,11 +113,42 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
     float3 LightToPixel = _WorldPos.xyz - _Light.Position;
     float  Distance = length(LightToPixel);
     
-    float CurrentPixelDepth = Distance;
+    float  CurrentPixelDepth = Distance / _Light.LightRange;
     CurrentPixelDepth -= 0.0005f; // Depth Bias
     
+    float  InvDistance  = 1.0f / max(Distance, 0.0001f);
+    float3 Direction    = LightToPixel * InvDistance;
+    float3 BaseUP       = abs(Direction.z) < 0.999f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
     
-    return 0.f;
+    float3 TangentX     = cross(Direction, BaseUP);
+    float3 TangentY     = cross(Direction, TangentX);
+    
+    float  RandomNoise  = Get_GradientNoise(_PixelPos);
+    float  RandomAngle  = RandomNoise * 2.f * PI;
+    
+    float  CosAngle     = cos(RandomAngle);
+    float  SinAngle     = sin(RandomAngle);
+    float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
+    
+    float FilterRadius  = (ShadowSmoothness * 0.05f) / _Light.LightRange;
+    
+    float FinalShadowFactor = { 0.f };
+    
+    [unroll]
+    for (int i = 0; i < 8; ++i)
+    {
+        float2 RotatedOffset = mul(PoissonDisk[i], RotationMat);
+        
+        float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
+        
+        float3 SampleUV = Direction + Offset3D;
+
+        FinalShadowFactor += FinalShadowCubeMap.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
+    }
+    
+    FinalShadowFactor /= 8.f;
+    
+    return lerp(ShadowBrightness, 1.0f, FinalShadowFactor);
 }
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
@@ -164,9 +194,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 
     float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
     
-    float3 WorldNormal = NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
-    WorldNormal = normalize(WorldNormal * 2.f - 1.f);
-    
+    float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
+
     float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
@@ -224,25 +253,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     }
     float3  BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
-    /// -- Dissolve -- ///
-    float   DissolveFactor = DefaultNoiseTexture[ID.xy].r - DissolveIntensity;
-    
-    if (DissolveFactor <= 0.f)
-    {
-        OUTPUT[ID.xy] = float4(0.f, 0.f, 0.f, 0.f);
-        return;
-    }
-    float DissolveEdge = 1.f - smoothstep(0.f, DissolveEdgeWidth, DissolveFactor);
-    
-    float3  DissolveEmissive = DissolveColor.rgb * DissolveEdge;
-    float3  FinalEmissive = lerp(BaseEmissive, DissolveEmissive, DissolveEdge * 0.8);
-    /// -- Dissolve -- ///
-    
     float   AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
     
     float3  Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
     float3  BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
-    float3  ExtraColor = BaseAmbient + FinalEmissive;
+    float3  ExtraColor = BaseAmbient + BaseEmissive;
 
     OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
     return;
