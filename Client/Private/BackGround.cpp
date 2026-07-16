@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "BackGround.h"
 #include "GameInstance.h"
-#include "CameraObject.h"
 #include "Resources.h"
+
 NS_USING(Client)
 
 CBackGround::CBackGround()

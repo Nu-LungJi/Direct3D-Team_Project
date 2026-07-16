@@ -207,8 +207,13 @@
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
+    <ClInclude Include="..\public\LevelLogoLoader.h" />
+    <ClInclude Include="..\public\LevelPercival.h" />
+    <ClInclude Include="..\public\LevelPercivalLoader.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
+    <ClInclude Include="..\public\MainAppLoader.h" />
+    <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -219,7 +224,11 @@
     <ClCompile Include="..\Private\BackGround.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
     <ClCompile Include="..\Private\LevelLogo.cpp" />
+    <ClCompile Include="..\private\LevelLogoLoader.cpp" />
+    <ClCompile Include="..\private\LevelPercival.cpp" />
+    <ClCompile Include="..\private\LevelPercivalLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
+    <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

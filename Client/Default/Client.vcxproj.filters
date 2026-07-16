@@ -25,6 +25,33 @@
     <Filter Include="GameObject\BackGround">
       <UniqueIdentifier>{15eddfb1-d987-49ac-82be-bfbf83665119}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loader">
+      <UniqueIdentifier>{d2e546e7-0ff2-4c81-95f1-3544ce454ba0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\MainApp">
+      <UniqueIdentifier>{63ff0f8a-3fda-49d1-8c0a-f4dd543b8b5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level">
+      <UniqueIdentifier>{33a60ce7-2ce6-4ab6-a142-d5a88bbd9dda}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Logo">
+      <UniqueIdentifier>{7e9f7d17-14d6-4c04-adaf-777151b4c6b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LuaFiles">
+      <UniqueIdentifier>{b4064650-231e-4716-9e83-871a50b3ff8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles">
+      <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Percival">
+      <UniqueIdentifier>{7facda9e-60d6-4cfe-b47c-0708369e1fd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Percival">
+      <UniqueIdentifier>{1d100ce6-9a11-43e7-95c8-4e2e46e144f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{ea673d2d-2797-484e-8c21-2bc2a74e811d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -60,6 +87,21 @@
     <ClInclude Include="..\Public\BackGround.h">
       <Filter>GameObject\BackGround</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LevelLogoLoader.h">
+      <Filter>Loader\Level\Logo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MainAppLoader.h">
+      <Filter>Loader\MainApp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelPercival.h">
+      <Filter>Level\Percival</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelPercivalLoader.h">
+      <Filter>Loader\Level\Percival</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Client_Resources.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -92,6 +134,18 @@
     </ClCompile>
     <ClCompile Include="..\Private\BackGround.cpp">
       <Filter>GameObject\BackGround</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelLogoLoader.cpp">
+      <Filter>Loader\Level\Logo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MainAppLoader.cpp">
+      <Filter>Loader\MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelPercival.cpp">
+      <Filter>Level\Percival</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelPercivalLoader.cpp">
+      <Filter>Loader\Level\Percival</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
