@@ -2,6 +2,7 @@
 #include "LevelLightMap.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 
 #include "FlyCamera.h"
 
@@ -16,6 +17,7 @@
 NS_USING(Client)
 
 CLevelLightMap::CLevelLightMap()
+	: CLevel{ ETOUI(LEVEL::LIGHTMAP) }
 {
 }
 

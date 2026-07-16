@@ -2,6 +2,7 @@
 #include "LevelPlayground.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 #include "FlyCamera.h"
 #include "ResCBuffer.h"
 #include "BackGround.h"
@@ -15,7 +16,7 @@
 NS_USING(Client)
 
 CLevelPlayground::CLevelPlayground()
-
+	: CLevel{ ETOUI(LEVEL::PLAYGROUND) }
 {
 }
 

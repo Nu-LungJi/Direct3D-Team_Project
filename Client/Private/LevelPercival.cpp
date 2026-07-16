@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "LevelPercival.h"
 #include "GameInstance.h"
+#include "Level_Defines.h"
 #include "FlyCamera.h"
 
 #include "ResCBuffer.h"
@@ -12,7 +13,7 @@
 NS_USING(Client)
 
 CLevelPercival::CLevelPercival()
-
+	: CLevel{ ETOUI(LEVEL::PERCIVAL) }
 {
 }
 

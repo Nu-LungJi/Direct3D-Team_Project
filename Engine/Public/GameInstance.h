@@ -112,6 +112,7 @@ public:
 public:
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
 	HRESULT ChangeLevel(const _string& ID);
+	uint32_t GetCurrentLevelID() const;
 	void RegisterLevelChangeFunc(const _string& ID, _Func func);
 #pragma endregion
 

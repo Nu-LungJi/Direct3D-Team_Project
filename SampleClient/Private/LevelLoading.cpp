@@ -46,7 +46,8 @@
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
-	: m_pDevice{ pDevice }
+	: CLevel{ ETOUI(LEVEL::LOADING) }
+	, m_pDevice{ pDevice }
 	, m_pContext{ pContext }
 	, m_eNextLevelIndex(eNextLevelIndex)
 {

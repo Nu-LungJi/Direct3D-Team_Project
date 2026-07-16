@@ -43,6 +43,11 @@ HRESULT CLevelManager::ChangeLevel(UPtr<CLevel> pNewLevel)
 	return S_OK;
 }
 
+uint32_t CLevelManager::GetCurrentLevelID() const
+{
+	return m_pCurrentLevel ? m_pCurrentLevel->GetLevelID() : CLevel::INVALID_LEVEL_ID;
+}
+
 void CLevelManager::Update(_float fTimeDelta)
 {
 	if (m_pCurrentLevel == nullptr)

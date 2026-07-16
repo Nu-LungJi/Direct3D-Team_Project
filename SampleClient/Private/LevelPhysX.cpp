@@ -2,6 +2,7 @@
 #include "LevelPhysX.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 
 #include "FlyCamera.h"
 
@@ -20,7 +21,7 @@
 NS_USING(Client)
 
 CLevelPhysX::CLevelPhysX()
-
+	: CLevel{ ETOUI(LEVEL::PHYSX) }
 {
 }
 

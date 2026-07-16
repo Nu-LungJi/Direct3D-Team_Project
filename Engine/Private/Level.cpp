@@ -3,7 +3,8 @@
 
 NS_USING(Engine)
 
-CLevel::CLevel()
+CLevel::CLevel(uint32_t iLevelID)
+	: m_iLevelID{ iLevelID }
 {
 }
 

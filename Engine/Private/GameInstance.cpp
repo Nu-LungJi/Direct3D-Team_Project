@@ -734,6 +734,10 @@ HRESULT CGameInstance::ChangeLevel(const _string& ID)
 {
 	return m_pLevelManager->ChangeLevel(ID);
 }
+uint32_t CGameInstance::GetCurrentLevelID() const
+{
+	return m_pLevelManager ? m_pLevelManager->GetCurrentLevelID() : CLevel::INVALID_LEVEL_ID;
+}
 void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 {
 	m_pLevelManager->RegisterLevelChangeFunc(ID, func);
