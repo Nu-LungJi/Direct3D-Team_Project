@@ -200,6 +200,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTDecTimer.h" />
+    <ClInclude Include="..\Public\LevelAnimatorLoader.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
@@ -287,6 +288,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
+    <ClCompile Include="..\Private\LevelAnimatorLoader.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
     <ClCompile Include="..\private\LevelPlayGroundLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />

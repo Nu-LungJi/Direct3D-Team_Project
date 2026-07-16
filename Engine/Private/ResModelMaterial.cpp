@@ -217,6 +217,9 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 
 			m_Materials[i].emplace_back(resTex);
 		}
+
+		
+	
 	}
 
 	m_eState = STATE::LOADED;
