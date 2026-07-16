@@ -1,9 +1,40 @@
 #pragma once
 
-//#include "Handle.h"
+#include "Handle.h"
 namespace Engine
 {
 	class CGameObject;
+
+	enum class PHYSX_ACTOR_TYPE : uint8_t
+	{
+		RIGID_BODY,
+		CHARACTER_CONTROLLER,
+		RAGDOLL_BONE,
+		ARTICULATION_LINK
+	};
+
+	enum class PHYSX_SHAPE_TYPE : uint8_t
+	{
+		BOX,
+		SPHERE,
+		CAPSULE,
+		TRIANGLE_MESH,
+		RAGDOLL
+	};
+
+	struct PHYSX_ACTOR_USER_DATA
+	{
+		CHandle hGameObject{};
+		PHYSX_ACTOR_TYPE eType{ PHYSX_ACTOR_TYPE::RIGID_BODY };
+		uint32_t iSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
+	struct PHYSX_SHAPE_USER_DATA
+	{
+		CHandle hGameObject{};
+		PHYSX_SHAPE_TYPE eType{ PHYSX_SHAPE_TYPE::BOX };
+		uint32_t iSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
 	enum CollisionLayer {
 		LAYER_PLAYER = (1 << 0),
 		LAYER_TRIGGER = (1 << 1),
@@ -35,8 +66,4 @@ namespace Engine
 		CGameObject* pGameObject{};
 	};
 
-	//struct PHYSIX_USER_DATA
-	//{
-	//	CHandle hObject;
-	//};
 }

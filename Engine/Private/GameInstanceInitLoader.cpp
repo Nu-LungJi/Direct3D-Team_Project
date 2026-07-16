@@ -226,23 +226,23 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+	
+		Desc.iNumElements = 512;
+	
+		Desc.iStructureByteStride = sizeof(E::GPU_ANIM_INSTANCE_DATA);
+	
+		Desc.pInitialData = nullptr;
+	
+		Desc.bAppendConsume = false;
+	
+		if (FAILED(res->Load(Desc)))
 		{
-			E::CResStructuredBuffer::DESC Desc{};
-	
-			Desc.iNumElements = 512;
-	
-			Desc.iStructureByteStride = sizeof(E::GPU_ANIM_INSTANCE_DATA);
-	
-			Desc.pInitialData = nullptr;
-	
-			Desc.bAppendConsume = false;
-	
-			if (FAILED(res->Load(Desc)))
-			{
-				return E_FAIL;
-			}
+			return E_FAIL;
 		}
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX", E::CResStructuredBuffer::Create()))
 	{
@@ -262,6 +262,15 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 			return E_FAIL;
 		}
 	}
+
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_SpellMeter", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_SPELLMETER) })))
+		{
+			return E_FAIL;
+		}
+	}
+
 	return S_OK;
 }
 
@@ -595,6 +604,16 @@ HRESULT CGameInstanceInitLoader::LoadDepthStencilState()
 		if (FAILED(res->Load(depthDesc))) return E_FAIL;
 	}
 
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DBG_LINE_DEPTH_ON", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		depthDesc.StencilEnable = FALSE;
+		if (FAILED(res->Load(depthDesc))) return E_FAIL;
+	}
+
 		if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH", E::CResDepthStencilState::Create()))
 		{
 			D3D11_DEPTH_STENCIL_DESC depthDesc{};
@@ -629,6 +648,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			return E_FAIL;
 		}
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// LinearClamp
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_CLAMP, CResSamplerState::Create()))
@@ -645,6 +665,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			return E_FAIL;
 		}
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(1, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// PointWrap
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP, CResSamplerState::Create()))
@@ -664,6 +685,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 		if (FAILED(res->Load(samplerDesc))) return E_FAIL;
 
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// PointClamp
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_CLAMP, CResSamplerState::Create()))
@@ -680,6 +702,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			return E_FAIL;
 		}
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// PointWrapNoMip
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_POINT_WRAP_NOMIP, CResSamplerState::Create()))
@@ -696,6 +719,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			return E_FAIL;
 		}
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(4, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// AnisotropicWrap
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_ANISOTROPIC_WRAP, CResSamplerState::Create()))
@@ -714,6 +738,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			return E_FAIL;
 		}
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(5, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(5, 1, res->GetSamplerState().GetAddressOf());
 	}
 	// ShadowSampler
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
@@ -736,6 +761,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 		}
 
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
+		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 	}
 	return S_OK;
 }
@@ -821,23 +847,7 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizCopyDepth", "./ShaderFiles/Hiz/Shader_CS_HizCopyDepth.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizMipPyramid", "./ShaderFiles/Hiz/Shader_CS_HizMipPyramid.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizCopyDepth", "./ShaderFiles/Hiz/Shader_CS_HizCopyDepth.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -845,7 +855,23 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner", "./ShaderFiles/Particle/CS_ClearByOwner.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_HizMipPyramid", "./ShaderFiles/Hiz/Shader_CS_HizMipPyramid.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner", "./ShaderFiles/Particle/CS_ClearByOwner.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -862,15 +888,20 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Shadow", "./ShaderFiles/RayMarching/CS_Shadow.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl")) // 스펠이펙트
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
-	{
-		if (FAILED(res->Load()))    return E_FAIL;
-	}
+
 
 	// model shader
 	{
@@ -956,6 +987,10 @@ HRESULT CGameInstanceInitLoader::LoadTexture()
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultNoise.png")))
+		{
+			if (FAILED(res->Load()))return E_FAIL;
+		}
 	}
 	return S_OK;
 }
@@ -987,92 +1022,23 @@ HRESULT CGameInstanceInitLoader::LoadModel()
 
 HRESULT CGameInstanceInitLoader::LoadAnimModel()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
-		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+	//if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
+	//	CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
 
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
+	//	E::CResStaticModel::DESC pDesc{};
+	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/HorseStatue.fbx"))) {
-
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
+	//	if (FAILED(res->Load(pDesc)))
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
 	return S_OK;
 }
 
 HRESULT CGameInstanceInitLoader::LoadStaticModel()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Model_Resource",
-		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
-
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
-
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, TAG_RES_MAPEDITOR_DEFAULT_STATIC_MODEL,
-		CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_HorseStatue.bin"))) {
-
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			return E_FAIL;
-		}
-	}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Axe_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Mace_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
-		
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-		
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Sword_Model_Resource",
-			CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				return E_FAIL;
-			}
-		}
+	
 	return S_OK;
 }

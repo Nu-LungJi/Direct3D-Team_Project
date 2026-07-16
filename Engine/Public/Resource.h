@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine_Defines.h"
+#include <atomic>
 
 NS_BEGIN(Engine)
 
@@ -26,7 +27,7 @@ public:
 
 public:
 	const _string& GetPath() const { return m_sPath; }
-	STATE GetState() const { return m_eState; }
+	STATE GetState() const { return m_eState.load(std::memory_order_acquire); }
 	_string GetStateStr() const;
 
 public:
@@ -35,7 +36,7 @@ public:
 
 protected:
 	const _string m_sPath;
-	STATE m_eState{ STATE::UNLOAD };
+	std::atomic<STATE> m_eState{ STATE::UNLOAD };
 
 protected:
 	void Free() override;

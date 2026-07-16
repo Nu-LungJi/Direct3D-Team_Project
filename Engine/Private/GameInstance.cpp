@@ -348,15 +348,25 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	// lua hot reload
 	{
+		ZoneScopedN("LuaManager_Update");
 		m_pLuaManager->Update(fTimeDelta);
 	}
 
 
 
-	m_pAnimEdit_Manager->Update(fTimeDelta);
-	m_pParticleManager->Update(fTimeDelta);
+	{
+		ZoneScopedN("AnimEdit_Update");
+		m_pAnimEdit_Manager->Update(fTimeDelta);
+	}
 
 	{
+		ZoneScopedN("ParticleManager_Update");
+		m_pParticleManager->Update(fTimeDelta);
+	}
+	
+
+	{
+		ZoneScopedN("PhysXManager_Update");
 		m_pPhysXManager->Update(fTimeDelta);
 	}
 
@@ -399,7 +409,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	//m_pLightManager->Capture_ShadowMap();
+	m_pLightManager->Capture_ShadowMap();
 
 	if (FAILED(m_pRenderer->Draw()))
 	{
@@ -544,8 +554,6 @@ HRESULT CGameInstance::LuaCompile(const std::string& script)
 {
 	return m_pLuaManager->Compile(script);
 }
-
-
 void CGameInstance::LuaRegisterComponent(const std::string& path, ILuaScriptRelodable* pComp)
 {
 	m_pLuaManager->RegisterComponent(path, pComp);
@@ -803,9 +811,9 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 
 
 #pragma region WORKER_MANAGER
-void CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
+_bool CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
 {
-	m_pWorkerManager->Enqueue(svTaskName, func);
+	return m_pWorkerManager->Enqueue(svTaskName, func);
 }
 #pragma endregion
 
@@ -947,6 +955,13 @@ VOID	CGameInstance::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStenci
 VOID	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
 	m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
+VOID	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution) {
+	m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _Resolution);
+}
+HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution) {
+	return m_pRenderer->Generate_ShadowMapOutput(_ShadowUAV, _Texture, _ShadowSRV, _LTYPE, _Resolution);
+}
+
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER

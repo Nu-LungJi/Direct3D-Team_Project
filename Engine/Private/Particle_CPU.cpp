@@ -72,6 +72,15 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
         if (FAILED(m_pResPixelShader->Load()))
             return E_FAIL;
 
+		if (m_Desc.normalTextureID.first != "") {
+			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
+		}
+		if (m_Desc.distortionTextureID.first != "") {
+			m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.distortionTextureID.first, m_Desc.distortionTextureID.second);
+		}
+		if (m_Desc.noiseTextureID.first != "") {
+			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+		}
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
 
@@ -87,7 +96,9 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
         if (FAILED(m_pResPixelShader->Load()))
             return E_FAIL;
 
-
+		if (m_Desc.noiseTextureID.first != "") {
+			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+		}
         m_pComCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT);
         if (!m_pComCBuffer)
             return E_FAIL;
@@ -418,12 +429,31 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
         }
     }
 
-    pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+    pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+
+
+	if (m_pNormalTexture)
+	{
+		ID3D11ShaderResourceView* pNormalSRV = m_pNormalTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(2, 1, &pNormalSRV);
+	}
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(3, 1, &pDistortionSRV);
+	}
+	if (m_pNoiseTexture)
+	{
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
+	}
+
+
 
     pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr };
-    pContext->PSSetShaderResources(0, 1, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr };
+    pContext->PSSetShaderResources(0, 4, nullSRV);
 
 	pContext->OMSetDepthStencilState(nullptr, 0);
     return S_OK;
