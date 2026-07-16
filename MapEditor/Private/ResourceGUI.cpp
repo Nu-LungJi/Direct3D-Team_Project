@@ -482,6 +482,11 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::SetNextItemWidth(80.f);
 	if (ImGui::DragFloat("Whole Map Scale", &m_fWholeMapScale, 0.01f, 0.01f, 100.f, "%.2f"))
 		m_fWholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+	ImGui::SetNextItemWidth(300.f);
+	ImGui::DragFloat3("Whole Map Origin", &m_vWholeMapOrigin.x, 0.1f, 0.f, 0.f, "%.2f");
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Origin"))
+		m_vWholeMapOrigin = {};
 	if (!m_WholeMapImportStatus.empty())
 	{
 		ImGui::TextWrapped("%s", m_WholeMapImportStatus.c_str());
@@ -762,9 +767,9 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 		const float wholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
 
 		snapshot.position = {
-			origin[0].get<float>() * wholeMapScale,
-			origin[1].get<float>() * wholeMapScale,
-			origin[2].get<float>() * wholeMapScale
+			m_vWholeMapOrigin.x + origin[0].get<float>() * wholeMapScale,
+			m_vWholeMapOrigin.y + origin[1].get<float>() * wholeMapScale,
+			m_vWholeMapOrigin.z + origin[2].get<float>() * wholeMapScale
 		};
 
 		snapshot.scale = {

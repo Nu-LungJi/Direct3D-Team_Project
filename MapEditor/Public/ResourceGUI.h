@@ -60,6 +60,7 @@ private:
 	CEditorCommandManager* m_pCommandManager = nullptr;
 	std::string m_WholeMapImportStatus{};
 	float m_fWholeMapScale = 0.3f;
+	E::_float3 m_vWholeMapOrigin{};
 private:
 	std::vector<ResourceViewItem> m_Items{};
 	std::vector<size_t> m_FilteredItemIndices{};
