@@ -88,6 +88,8 @@ void CColliderManager::Update()
 
 	// 기존 색상 캐싱
 	auto cachecol = pLineRender->GetColor();
+	auto depthMode = pLineRender->GetDepthMode();
+	pLineRender->SetDepthTest(true);
 
 	for (const auto& [key, val] : m_DbgRenders)
 	{
@@ -156,6 +158,7 @@ void CColliderManager::Update()
 
 	// 렌더링 완료 후 캐싱해둔 색상으로 복구
 	pLineRender->SetColor(cachecol);
+	pLineRender->SetDepthMode(depthMode);
 	for (const auto& [key, coll] : m_Colliders)
 	{
 		auto [iter, inserted] = m_DbgRenders.try_emplace(key, true);
