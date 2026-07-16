@@ -76,7 +76,8 @@ HRESULT CComPxBoxCollider::Initialize(void* pArg)
         m_pShape->setLocalPose(tLocalPose);
     }
 
-    m_pShape->userData = this;
+	if (!RegisterShape(PHYSX_SHAPE_TYPE::BOX))
+		return E_FAIL;
     auto pActor = m_pComRigidBody->GetActor();
 	if (!pActor)
 		return E_FAIL;

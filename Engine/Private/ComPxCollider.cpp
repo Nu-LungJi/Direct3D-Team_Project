@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
+#include "PhysXManager.h"
 
 #ifdef _DEBUG
 // 라이브러리 설정 전후로 매크로 잠시 해제
@@ -94,15 +95,34 @@ HRESULT CComPxCollider::Initialize(void* pArg)
     return S_OK;
 }
 
+_bool CComPxCollider::RegisterShape(PHYSX_SHAPE_TYPE eType, uint32_t iSubIndex)
+{
+	if (!m_pShape || !GetGameObject())
+		return false;
+
+	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+	if (!pPhysXManager)
+		return false;
+
+	PHYSX_SHAPE_USER_DATA userData{};
+	userData.hGameObject = GetGameObject()->GetHandle();
+	userData.eType = eType;
+	userData.iSubIndex = iSubIndex;
+
+	m_pShape->userData = nullptr;
+	return pPhysXManager->RegisterShape(m_pShape, userData);
+}
+
 void CComPxCollider::Free()
 {
 	if (m_pShape)
 	{
-		if (m_pComRigidBody)
-		{
-			if (auto* pActor = m_pComRigidBody->GetActor())
-				pActor->detachShape(*m_pShape);
-		}
+		if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+			pPhysXManager->UnregisterShape(m_pShape);
+
+		m_pShape->userData = nullptr;
+		if (auto* pActor = m_pShape->getActor())
+			pActor->detachShape(*m_pShape);
 
 		m_pShape->release();
 		m_pShape = nullptr;

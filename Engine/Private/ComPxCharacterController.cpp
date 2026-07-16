@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ComPxCharacterController.h"
+#include "PhysXManager.h"
 
 #ifdef _DEBUG
 // 라이브러리 설정 전후로 매크로 잠시 해제
@@ -128,11 +129,21 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	desc.upDirection = PxVec3(0, 1, 0);
 
 	// 이 컴포넌트의 포인터를 UserData에 넣어 충돌 콜백에서 활용
-	desc.userData = this;
+	desc.userData = nullptr;
 
 	m_pController = pManager->createController(desc);
 	if (m_pController == nullptr)
 		return E_FAIL;
+
+	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+	auto* pActor = m_pController->getActor();
+	PHYSX_ACTOR_USER_DATA userData{};
+	userData.hGameObject = GetGameObject()->GetHandle();
+	userData.eType = PHYSX_ACTOR_TYPE::CHARACTER_CONTROLLER;
+	if (!pPhysXManager || !pActor || !pPhysXManager->RegisterActor(pActor, userData))
+		return E_FAIL;
+
+	pActor->userData = nullptr;
 	return S_OK;
 }
 
@@ -190,6 +201,14 @@ void CComPxCharacterController::Free()
 {
 	if (m_pController)
 	{
+		if (auto* pActor = m_pController->getActor())
+		{
+			if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+				pPhysXManager->UnregisterActor(pActor);
+
+			pActor->userData = nullptr;
+		}
+
 		m_pController->release();
 		m_pController = nullptr;
 	}

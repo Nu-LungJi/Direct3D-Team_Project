@@ -29,6 +29,79 @@ CPhysXManager::~CPhysXManager()
 {
 }
 
+_bool CPhysXManager::RegisterActor(const physx::PxActor* pActor, const PHYSX_ACTOR_USER_DATA& userData)
+{
+	if (!pActor)
+		return false;
+
+	std::unique_lock lock{ m_UserDataRegistryMutex };
+	m_ActorUserDataRegistry.insert_or_assign(pActor, userData);
+	return true;
+}
+
+void CPhysXManager::UnregisterActor(const physx::PxActor* pActor)
+{
+	if (!pActor)
+		return;
+
+	std::unique_lock lock{ m_UserDataRegistryMutex };
+	m_ActorUserDataRegistry.erase(pActor);
+}
+
+std::optional<PHYSX_ACTOR_USER_DATA> CPhysXManager::FindActorUserData(const physx::PxActor* pActor) const
+{
+	if (!pActor)
+		return std::nullopt;
+
+	std::shared_lock lock{ m_UserDataRegistryMutex };
+	const auto iter = m_ActorUserDataRegistry.find(pActor);
+	if (iter == m_ActorUserDataRegistry.end())
+		return std::nullopt;
+
+	return iter->second;
+}
+
+CGameObject* CPhysXManager::FindGameObject(const physx::PxActor* pActor) const
+{
+	const auto userData = FindActorUserData(pActor);
+	if (!userData)
+		return nullptr;
+
+	return CGameInstance::Get().GetGameObjectByHandle(userData->hGameObject);
+}
+
+_bool CPhysXManager::RegisterShape(const physx::PxShape* pShape, const PHYSX_SHAPE_USER_DATA& userData)
+{
+	if (!pShape)
+		return false;
+
+	std::unique_lock lock{ m_UserDataRegistryMutex };
+	m_ShapeUserDataRegistry.insert_or_assign(pShape, userData);
+	return true;
+}
+
+void CPhysXManager::UnregisterShape(const physx::PxShape* pShape)
+{
+	if (!pShape)
+		return;
+
+	std::unique_lock lock{ m_UserDataRegistryMutex };
+	m_ShapeUserDataRegistry.erase(pShape);
+}
+
+std::optional<PHYSX_SHAPE_USER_DATA> CPhysXManager::FindShapeUserData(const physx::PxShape* pShape) const
+{
+	if (!pShape)
+		return std::nullopt;
+
+	std::shared_lock lock{ m_UserDataRegistryMutex };
+	const auto iter = m_ShapeUserDataRegistry.find(pShape);
+	if (iter == m_ShapeUserDataRegistry.end())
+		return std::nullopt;
+
+	return iter->second;
+}
+
 void CPhysXManager::UpdateGUI()
 {
     ImGui::Begin("CPhysXManager");
@@ -65,16 +138,7 @@ _bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedD
 		outResult.vHitNormal = { block.normal.x, block.normal.y, block.normal.z };
 		outResult.fDistance = block.distance;
 
-		if (block.actor && block.actor->userData)
-		{
-			if (auto pComponent = Cast<CComponent>(static_cast<CEngineBase*>(block.actor->userData)))
-			{
-				if (auto pObj = pComponent->GetGameObject())
-				{
-					outResult.pGameObject = pObj;
-				}
-			}
-		}
+		outResult.pGameObject = FindGameObject(block.actor);
 		return true;
 	}
 
@@ -108,21 +172,15 @@ _bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNor
 		{
 			const physx::PxRaycastHit& hit = hitBuffer.getAnyHit(i);
 
-			if (hit.actor && hit.actor->userData)
+			if (auto* pObj = FindGameObject(hit.actor))
 			{
-				if (auto pComponent = Cast<CComponent>(static_cast<CEngineBase*>(hit.actor->userData)))
-				{
-					if (auto pObj = pComponent->GetGameObject())
-					{
-						PHYSIX_RAYCAST_RESULT outResult{};
-						outResult.bHit = true;
-						outResult.vHitpos = { hit.position.x, hit.position.y, hit.position.z };
-						outResult.vHitNormal = { hit.normal.x, hit.normal.y, hit.normal.z };
-						outResult.fDistance = hit.distance;
-						outResult.pGameObject = pObj;
-						outVecResult.push_back(outResult);
-					}
-				}
+				PHYSIX_RAYCAST_RESULT outResult{};
+				outResult.bHit = true;
+				outResult.vHitpos = { hit.position.x, hit.position.y, hit.position.z };
+				outResult.vHitNormal = { hit.normal.x, hit.normal.y, hit.normal.z };
+				outResult.fDistance = hit.distance;
+				outResult.pGameObject = pObj;
+				outVecResult.push_back(outResult);
 			}
 		} // end for
 
@@ -344,12 +402,7 @@ void CPhysXManager::SyncPhysicsToComponents()
             continue;
         }
 
-        auto pComponent = Cast<CComponent>(static_cast<CEngineBase*>(actor->userData));
-        if (!pComponent)
-        {
-            continue;
-        }
-        auto pObj = pComponent->GetGameObject();
+		auto* pObj = FindGameObject(actor);
         if (!pObj)
         {
             continue;
@@ -379,6 +432,12 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 
 void CPhysXManager::Free()
 {
+	{
+		std::unique_lock lock{ m_UserDataRegistryMutex };
+		m_ShapeUserDataRegistry.clear();
+		m_ActorUserDataRegistry.clear();
+	}
+
     // 해제는 생성의 역순
 	if (m_pControllerManager)
 	{

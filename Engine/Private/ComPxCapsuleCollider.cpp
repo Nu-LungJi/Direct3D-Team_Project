@@ -73,7 +73,8 @@ HRESULT CComPxCapsuleCollider::Initialize(void* pArg)
 		m_pShape->setLocalPose(tLocalPose);
 	}
 
-	m_pShape->userData = this;
+	if (!RegisterShape(PHYSX_SHAPE_TYPE::CAPSULE))
+		return E_FAIL;
 	auto pActor = m_pComRigidBody->GetActor();
 	if (!pActor)
 		return E_FAIL;
