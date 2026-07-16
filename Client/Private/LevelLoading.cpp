@@ -3,7 +3,9 @@
 #include "GameInstance.h"
 #include "Resources.h"
 #include "LevelLogo.h"
-#include "BackGround.h"
+#include "LevelLogoLoader.h"
+#include "LevelPercival.h"
+#include "LevelPercivalLoader.h"
 
 NS_USING(Client)
 
@@ -67,6 +69,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::LOGO:
 		pNewLevel = CLevelLogo::Create();
 		break;
+	case LEVEL::PERCIVAL:
+		pNewLevel = CLevelPercival::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -84,26 +89,14 @@ void CLevelLoading::ThreadStart()
 	{
 	case LEVEL::LOGO:
 	{
-		m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LOGO", [this]()
-			{
-				if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOGO", "Prototype_GameObject_BackGround", CBackGround::Create())))
-				{
-					return false;
-				}
-
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				return  true;
-			});
-
-		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/Client/Texture/SHM.png")))
-		{
-			res->Load();
-		}
-
+		m_futLoadFinish = CLevelLogoLoader::Load();
 	}
 	break;
-	
-
+	case LEVEL::PERCIVAL:
+	{
+		m_futLoadFinish = CLevelPercivalLoader::Load();
+	}
+	break;
 	default:
 		m_bLoadEnd = true;
 		break;
