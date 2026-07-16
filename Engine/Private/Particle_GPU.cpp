@@ -409,7 +409,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
         pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.0f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.0f, 1.f }, 0.f, {1.f, 1.f, 1.f}, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ��
 		}
 
         // 핵심: DrawIndexed → DrawIndexedInstanced

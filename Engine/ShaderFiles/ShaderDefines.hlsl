@@ -11,7 +11,7 @@ const static float AmbientIntensity = 1.f;
 const static float SpecularIntensity = 1.f;
 
 #define MAX_LIGHT_COUNT     8
-
+#define MAX_LIGHT_MAPCOUNT  6
 #define LIGHT_DIRECTIONAL   0
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
@@ -57,7 +57,7 @@ struct SpotLight
 };
 struct DynamicLight
 {
-    float4x4 g_LightViewProj;
+    float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
     float3 LightDirection;
     float LightIntensity;
@@ -116,11 +116,15 @@ cbuffer CB_BONES : register(b2)
 
 cbuffer CB_MATERIAL : register(b3)
 {
-    float3 EmissiveColor;
-    float EmissiveIntensity;
+    float3  EmissiveColor;
+    float   EmissiveIntensity;
     
-    float ObjectAlpha;
-    float3 ObjectPadding;
+    float3  DissolveColor;
+    float   DissolveIntensity;
+    
+    float   ObjectAlpha;
+    
+    float3  MaterialPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4)
@@ -128,6 +132,7 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     DynamicLight AffectedLight[MAX_LIGHT_COUNT];
     float4x4 g_InvViewProj;
     uint LightCount;
+    uint CurrentLightIndex;
     float3 LightPadding;
 }
 

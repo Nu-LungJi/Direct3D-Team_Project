@@ -39,6 +39,8 @@
 #include "LevelColliderLoader.h"
 #include "LevelPlayGroundLoader.h"
 #include "LevelAnimatorLoader.h"
+#include "LevelLightMapLoader.h"
+
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -301,12 +303,7 @@ void CLevelLoading::ThreadStart()
 	break;
 	case LEVEL::LIGHTMAP:
 	{
-		//"LIGHT", "Prototype_GameObject_TestModel"
-		//"LIGHT", "Prototype_GameObject_Terrain"
-		//"SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0" p
-		//"LIGHT", "Prototype_GameObject_LightObject"
-		//"SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain"
-
+		m_futLoadFinish = CLevelLightMapLoader::Load();
 	}
 	break;
 	case LEVEL::PHYSX:

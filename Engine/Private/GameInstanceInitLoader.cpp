@@ -862,12 +862,7 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Shadow", "./ShaderFiles/RayMarching/CS_Shadow.hlsl"))
-	{
-		if (FAILED(res->Load()))    return E_FAIL;
-	}
-
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
@@ -953,6 +948,10 @@ HRESULT CGameInstanceInitLoader::LoadTexture()
 			if (FAILED(res->Load()))return E_FAIL;
 		}
 		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		{
+			if (FAILED(res->Load()))return E_FAIL;
+		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultNoise.png")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}

@@ -29,7 +29,7 @@ PS_IN VSMain(VS_IN vin)
 PS_IN VSMain_Shadow(VS_IN vin)
 {
     PS_IN output;
-    output.posH = mul(float4(vin.posL, 1.f), AffectedLight[0].g_LightViewProj);
+    output.posH = mul(float4(vin.posL, 1.f), AffectedLight[0].g_LightViewProj[0]);
 
     output.uv = vin.uv;
 
