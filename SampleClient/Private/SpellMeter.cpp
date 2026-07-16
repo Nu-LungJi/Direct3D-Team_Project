@@ -47,7 +47,7 @@ HRESULT CSpellMeter::Initialize(void* pArg)
 		};
 	}
 
-	m_UIINFO.UIType = ETOUI(UI_TYPE::SKILLMETER);
+	m_UIINFO.UIType = ETOUI(UI_TYPE::SPELLMETER);
 	m_fCurrentAmount = 1.f;
 	s_fAccumulatedTime = 0.f;
 
