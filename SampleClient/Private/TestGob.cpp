@@ -230,7 +230,7 @@ HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, {1.f, 1.f, 1.f}, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -374,7 +374,7 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 
 
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}

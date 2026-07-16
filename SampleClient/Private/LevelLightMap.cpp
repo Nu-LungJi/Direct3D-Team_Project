@@ -58,7 +58,7 @@ HRESULT CLevelLightMap::Initialize()
 			return E_FAIL;
 		}
 	}	
-	
+
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
@@ -107,7 +107,7 @@ HRESULT CLevelLightMap::Initialize()
 	}
 
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 5.f);
 	CGameInstance::Get().Add_SpotLight({ 20.f, 6.5f, 10.f }, { 1.f, 0.f, 0.f }, 100.f, 20.f, 10.f, 20.f);
 	return S_OK;
 }

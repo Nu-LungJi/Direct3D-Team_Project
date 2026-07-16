@@ -346,7 +346,7 @@ private:
 		DirectX::XMStoreFloat4x4(&passData.matInvView, DirectX::XMMatrixInverse(nullptr, view));
 		DirectX::XMStoreFloat4x4(&passData.matInvViewProj, DirectX::XMMatrixInverse(nullptr, view * proj));
 		DirectX::XMStoreFloat3(&passData.vCamPos, eye);
-		E::CB_MATERIAL materialData{ { 1.f, 1.f, 1.f }, 0.f, 1.f, {} };
+		E::CB_MATERIAL materialData{ { 1.f, 1.f, 1.f }, 0.f, {1.f, 1.f, 1.f}, 0.f, 1.f, {} };
 
 		if (FAILED(UpdateBuffer(context.Get(), objectCB->GetCBuffer().Get(), objectData)) ||
 			FAILED(UpdateBuffer(context.Get(), passCB->GetCBuffer().Get(), passData)) ||

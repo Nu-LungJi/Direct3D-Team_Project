@@ -265,6 +265,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 
 			CBLight.AffectedLight[0].LightType = ETOUI(LightOBJ->Get_LightType());
 			CBLight.LightCount = 1;
+			CBLight.CurrentLightIndex = 0;
 
 			memcpy(MRES.pData, &CBLight, sizeof(CB_LIGHT));
 			m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
@@ -276,23 +277,22 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		if (LightOBJ->Is_StaticDirty()){
 			auto StaticShadowDSV = LightOBJ->Get_StaticShadowDSV();
 			if (StaticShadowDSV) {
-				m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+				m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 				m_pContext->OMSetRenderTargets(1, &NullRTV, StaticShadowDSV.Get());
 
 				LightOBJ->Capture_ShadowMap(m_pContext.Get());
+				m_pContext->GSSetShader(nullptr, nullptr, 0);
 			}
 			LightOBJ->Set_StaticDirty(false);
 		}
 
 		auto DynamicShadowDSV = LightOBJ->Get_DynamicShadowDSV();
 		if (DynamicShadowDSV) {
-			m_pContext->ClearDepthStencilView(DynamicShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+			m_pContext->ClearDepthStencilView(DynamicShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 			m_pContext->OMSetRenderTargets(1, &NullRTV, DynamicShadowDSV.Get());
 
 			LightOBJ->Capture_ShadowMap(m_pContext.Get());
 		}
-
-		LightOBJ->Set_ShadowMapIndex(i);
 		m_pContext->GSSetShader(nullptr, nullptr, 0);
 	}
 

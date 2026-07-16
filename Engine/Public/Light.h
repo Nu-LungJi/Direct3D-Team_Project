@@ -62,11 +62,11 @@ public:
 	XMFLOAT4X4		Get_LightViewProj(uint32_t _Index)							{ return DynamicLight.g_LightViewProj[_Index];								}
 	XMMATRIX		Get_LoadedLightViewProj(uint32_t _Index)					{ return XMLoadFloat4x4(&DynamicLight.g_LightViewProj[_Index]);				}
 
-	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	HRESULT			Generate_ShadowMapOutput(ID3D11DeviceContext* pContext, uint32_t _LTYPE, uint32_t _Resolution, uint32_t _BindFlags);
 
-	VOID			Set_ShadowMapIndex(uint32_t _Index) { ShadowMapIndex = _Index; }
+	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 	
-	VOID			Change_LightType(LIGHT_TYPE _LTYPE);
+	HRESULT			Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYPE);
 
 	_bool			Is_StaticDirty()				{ return DirtyFlag;  }
 	VOID			Set_StaticDirty(_bool _Flag)	{ DirtyFlag = _Flag; }
@@ -78,6 +78,8 @@ public:
 	ComPtr<ID3D11Texture2D>				Get_StaticShadowTexture()	{ return m_pStaticShadowTexture.Get();	}
 	ComPtr<ID3D11DepthStencilView>		Get_StaticShadowDSV()		{ return m_pStaticShadowDSV.Get();		}
 	ComPtr<ID3D11ShaderResourceView>	Get_StaticShadowSRV()		{ return m_pStaticShadowSRV.Get();		}
+
+	ComPtr<ID3D11Texture2D>				Get_FinalShadowTexture()	{ return m_pFinalShadowTexture.Get();	}
 
 private:
 	DYNAMIC_LIGHT						DynamicLight{};
@@ -95,8 +97,8 @@ private:
 	ComPtr<ID3D11DepthStencilView>		m_pDynamicShadowDSV		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pDynamicShadowSRV		= { nullptr };
 
-	ComPtr<ID3D11Texture2D>				m_pFinalShadowTexture	= { nullptr };
-	ComPtr<ID3D11DepthStencilView>		m_pFinalShadowDSV		= { nullptr };
+	ComPtr<ID3D11Texture2D>				m_pFinalShadowTexture	= { nullptr };	
+	ComPtr<ID3D11UnorderedAccessView>	m_pFinalShadowUAV = { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pFinalShadowSRV		= { nullptr };
 
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
@@ -108,7 +110,6 @@ private:
 	XMFLOAT4X4							InvViewProj{};
 
 	_bool								DirtyFlag = { true };
-	uint32_t							ShadowMapIndex{};
 
 public:
 	VOID		UpdateGUI() override;

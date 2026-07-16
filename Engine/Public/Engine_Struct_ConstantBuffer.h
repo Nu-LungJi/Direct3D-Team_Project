@@ -45,6 +45,10 @@ namespace Engine
 	{
 		_float3  EmissiveColor;
 		_float   EmissiveIntensity;
+
+		_float3  DissolveColor;
+		_float   DissolveIntensity;
+
 		_float	 ObjectAlpha;
 
 		_float3  ObjectPadding;
@@ -77,7 +81,8 @@ namespace Engine
 		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
 		XMFLOAT4X4		g_InvViewProj;
 		uint32_t		LightCount;
-		_float3			LightPadding;
+		uint32_t		CurrentLightIndex;
+		_float2			LightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 

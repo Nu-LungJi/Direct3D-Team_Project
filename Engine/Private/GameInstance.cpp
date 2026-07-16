@@ -399,7 +399,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	//m_pLightManager->Capture_ShadowMap();
+	m_pLightManager->Capture_ShadowMap();
 
 	if (FAILED(m_pRenderer->Draw()))
 	{
@@ -947,6 +947,9 @@ VOID	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11
 }
 VOID	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution) {
 	m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _Resolution);
+}
+HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution) {
+	return m_pRenderer->Generate_ShadowMapOutput(_ShadowUAV, _Texture, _ShadowSRV, _LTYPE, _Resolution);
 }
 
 #pragma endregion

@@ -951,6 +951,10 @@ HRESULT CGameInstanceInitLoader::LoadTexture()
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultNoise.png")))
+		{
+			if (FAILED(res->Load()))return E_FAIL;
+		}
 	}
 	return S_OK;
 }

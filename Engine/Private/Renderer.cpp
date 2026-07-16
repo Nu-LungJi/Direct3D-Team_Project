@@ -51,17 +51,11 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeBloom()))				return E_FAIL;
 
-#ifdef _DEBUG
-    if (FAILED(Initialize_Debugging()))         
-		return E_FAIL;
-#endif
+    if (FAILED(Initialize_Debugging()))         return E_FAIL;
+
 	if (FAILED(InitializeVolumetricEffect()))	return E_FAIL;
-	
 
-
-	if (FAILED(InitializeHizBuffer()))
-		return E_FAIL;
-
+	if (FAILED(InitializeHizBuffer()))			return E_FAIL;
 
 	return S_OK;
 }
@@ -70,7 +64,7 @@ HRESULT CRenderer::Initialize()
 HRESULT CRenderer::InitializeShaderResource()
 {
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_BrightPass", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
-	{
+	{ 
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_BrightPass", .sTarget = "ps_5_0" })))    return E_FAIL;
 	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_VerticalBlur", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
@@ -503,7 +497,48 @@ SPtr<CResDynamicTexture2D> CRenderer::Generate_UnorderedAccessView(const StringI
 	return nullptr;
 
 }
+HRESULT CRenderer::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution) {
 
+	if (nullptr == _ShadowUAV || nullptr == _Texture || nullptr == _ShadowSRV) return E_FAIL;
+
+	D3D11_TEXTURE2D_DESC Tex2dDesc = {};
+	Tex2dDesc.Width = _Resolution;
+	Tex2dDesc.Height = _Resolution;
+	Tex2dDesc.MipLevels = 1;
+	Tex2dDesc.ArraySize = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? MAX_LIGHT_MAPCOUNT : 1;
+	Tex2dDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	Tex2dDesc.Usage = D3D11_USAGE_DEFAULT;
+	Tex2dDesc.SampleDesc = { .Count = 1, .Quality = 0 };
+	Tex2dDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	Tex2dDesc.MiscFlags = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
+
+	if (FAILED(m_pDevice->CreateTexture2D(&Tex2dDesc, nullptr, _Texture)))			return E_FAIL;
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc{};
+	SRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	if (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) {
+		SRVDesc.TextureCube.MipLevels = 1;
+		SRVDesc.TextureCube.MostDetailedMip = 0;
+		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	}
+	else {
+		SRVDesc.Texture2D.MipLevels = 1;
+		SRVDesc.Texture2D.MostDetailedMip = 0;
+		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	}
+	if (FAILED(m_pDevice->CreateShaderResourceView(*_Texture, &SRVDesc, _ShadowSRV)))	return E_FAIL;
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
+	UAVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	UAVDesc.ViewDimension = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? D3D11_UAV_DIMENSION_TEXTURE2DARRAY : D3D11_UAV_DIMENSION_TEXTURE2D;
+	UAVDesc.Texture2DArray.FirstArraySlice = 0;
+	UAVDesc.Texture2DArray.ArraySize = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? 6 : 1;
+	UAVDesc.Texture2DArray.MipSlice = 0;
+
+	if (FAILED(m_pDevice->CreateUnorderedAccessView(*_Texture, &UAVDesc, _ShadowUAV)))	 return E_FAIL;
+
+	return S_OK;
+}
 SPtr<CResViewPort>         CRenderer::Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth, uint32_t _TexHeight) {
 	if (auto Resource = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_VP, _sResTag, E::CResViewPort::Create()))
 	{
@@ -1208,6 +1243,9 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());
 	}
 
+	SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
+	m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+
 	// Draw On PBRScreen
 	m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
 
@@ -1748,7 +1786,7 @@ HRESULT CRenderer::RenderCollider()
 	{
 		if (pRenderObject->HasRenderPass(RenderContext.pass))
 		{
-			pRenderObject->Render(m_pContext.Get(), RenderContext);
+				pRenderObject->Render(m_pContext.Get(), RenderContext);
 		}
 	}
 

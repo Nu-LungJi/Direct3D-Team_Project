@@ -116,11 +116,15 @@ cbuffer CB_BONES : register(b2)
 
 cbuffer CB_MATERIAL : register(b3)
 {
-    float3 EmissiveColor;
-    float EmissiveIntensity;
+    float3  EmissiveColor;
+    float   EmissiveIntensity;
     
-    float ObjectAlpha;
-    float3 ObjectPadding;
+    float3  DissolveColor;
+    float   DissolveIntensity;
+    
+    float   ObjectAlpha;
+    
+    float3  MaterialPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4)
@@ -128,6 +132,7 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     DynamicLight AffectedLight[MAX_LIGHT_COUNT];
     float4x4 g_InvViewProj;
     uint LightCount;
+    uint CurrentLightIndex;
     float3 LightPadding;
 }
 

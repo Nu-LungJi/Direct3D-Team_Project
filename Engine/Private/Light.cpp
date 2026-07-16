@@ -171,25 +171,28 @@ _bool CLight::Check_ObjectInArea() {
 
 	return true;
 }
-VOID CLight::Change_LightType(LIGHT_TYPE _LTYPE) {
-	if (DynamicLight.LightType == ETOUI(_LTYPE)) return;
+HRESULT CLight::Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYPE) {
+	if (DynamicLight.LightType == ETOUI(_LTYPE)) return E_FAIL;
 	DynamicLight.LightType = ETOUI(_LTYPE);
 
-	Safe_Release(m_pStaticShadowTexture);  Safe_Release(m_pStaticShadowDSV);  Safe_Release(m_pStaticShadowSRV);
-	Safe_Release(m_pDynamicShadowTexture); Safe_Release(m_pDynamicShadowDSV); Safe_Release(m_pDynamicShadowSRV);
+	Safe_Release(m_pStaticShadowTexture);	Safe_Release(m_pStaticShadowDSV);	Safe_Release(m_pStaticShadowSRV);
+	Safe_Release(m_pDynamicShadowTexture);	Safe_Release(m_pDynamicShadowDSV);	Safe_Release(m_pDynamicShadowSRV);
+	Safe_Release(m_pFinalShadowTexture);	Safe_Release(m_pFinalShadowUAV);	Safe_Release(m_pFinalShadowSRV);
 
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1024, 6);
-		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1024, 6);
-		CGameInstance::Get().Generate_CubeMap(m_pFinalShadowDSV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), 1024, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
 	}
 	else {
-		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1024);
-		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1024);
-		CGameInstance::Get().Generate_ShadowTexture(m_pFinalShadowDSV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), 1024);
+		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280);
+		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280);
 	}
 
+	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 1280)))	return E_FAIL;
+
 	DirtyFlag = true;
+	   
+	return S_OK;
 }
 
 VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
