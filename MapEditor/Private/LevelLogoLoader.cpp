@@ -9,6 +9,11 @@ NS_USING(Client)
 
 std::future<bool> CLevelLogoLoader::Load()
 {
+	if (auto res = E::CGameInstance::Get().AddResource("MAPEDITOR_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
+	{
+		res->Load();
+	}
+
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", []()
 		{
 			return true;
@@ -19,9 +24,7 @@ HRESULT CLevelLogoLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 
-	E::CGameInstance::Get().DelResource("TEX_SHM");
-	//E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_BUFFER_PHYSX");
-	//E::CGameInstance::Get().DelPrototype("SAMPLE_CLIENT_PHYSX");
+	E::CGameInstance::Get().DelResource("MAPEDITOR_LOGO");
 
 	CGameInstance::Get().Clear_DynamicLightList();
 	E::CGameInstance::Get().DelResource("LIGHT");

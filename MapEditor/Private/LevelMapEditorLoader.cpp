@@ -77,26 +77,26 @@ std::future<bool> CLevelMapEditorLoader::Load()
 {
 	// 터레인 띄우려고 SampleClient에서 복붙해옴
 	{
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+		if (auto res = CGameInstance::Get().AddResource("MAPEDITOR", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
 		{
 			if (FAILED(res->Load()))
 			{
-				MSG_BOX("터레인 타일 png 로드안됨!");
+				MSG_BOX("Terrain Tile Png Load Failed");
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain", CResMapEditorTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
+		if (auto res = CGameInstance::Get().AddResource("MAPEDITOR", "VIBUFFER_Terrain", CResMapEditorTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
 		{
 			if (FAILED(res->Load(CResMapEditorTerrainVIBuffer::DESC{})))
 			{
-				MSG_BOX("터레인 VI버퍼 로드안됨!");
+				MSG_BOX("Terrain VIBuffer Load Failed");
 			}
 		}
 	}
 
 	if (!LoadLevelAnimEditorStaticModels())
 	{
-		MSG_BOX("스태틱모델 로드안됨!");
+		MSG_BOX("StaticModel Load Failed");
 	}
 
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", []()

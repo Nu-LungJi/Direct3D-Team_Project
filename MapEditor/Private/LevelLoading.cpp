@@ -95,11 +95,6 @@ void CLevelLoading::ThreadStart()
 	{
 	case LEVEL::LOGO:
 	{
-		if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
-		{
-			res->Load();
-		}
-
 		m_futLoadFinish = CLevelLogoLoader::Load();
 	}
 	break;

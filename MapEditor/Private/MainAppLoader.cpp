@@ -12,7 +12,7 @@ HRESULT CMainAppLoader::Load()
 	// 터레인 띄우려고 SampleClient에서 복붙해온 셰이더
 	{
 		if (auto res = CGameInstance::Get().AddResource(
-			"SAMPLE_CLIENT_SHADER",
+			"MAP_EDITOR_SHADER",
 			"VS_VTX_NOR_TEX",
 			CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
@@ -21,7 +21,7 @@ HRESULT CMainAppLoader::Load()
 		}
 
 		if (auto res = CGameInstance::Get().AddResource(
-			"SAMPLE_CLIENT_SHADER",
+			"MAP_EDITOR_SHADER",
 			"PS_VTX_NOR_TEX",
 			CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
 		{
