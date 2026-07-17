@@ -1,4 +1,4 @@
-#include"pch.h"
+﻿#include"pch.h"
 #include "GameInstance.h"
 #include "TestCharacter.h"
 #include "Collider.h"
@@ -133,19 +133,19 @@ void CTestCharacter::OnSleep()
 	int x = 0;
 }
 
-void CTestCharacter::OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestCharacter::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestCharacter::OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestCharacter::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestCharacter::OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestCharacter::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 
-void CTestCharacter::OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestCharacter::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 

@@ -119,12 +119,16 @@ std::future<bool> CLevelPlayGroundLoader::Load()
 	});
 			
 }
-HRESULT CLevelPlayGroundLoader::UnLoad()
+std::future<bool> CLevelPlayGroundLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 	E::CGameInstance::Get().DelPrototype("LEVEL_PLAYGROUND");
 	E::CGameInstance::Get().DelResource("LEVEL_PLAYGROUND");
+	CGameInstance::Get().Clear_DynamicLightList();
 
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_PLAYGROUND", []()
+		{
+			return true;
+		});
 }

@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #include "Handle.h"
 namespace Engine
 {
 	class CGameObject;
 
-	enum class PHYSX_ACTOR_TYPE : uint8_t
+	enum class PX_ACTOR_TYPE : uint8_t
 	{
 		RIGID_BODY,
 		CHARACTER_CONTROLLER,
@@ -13,7 +13,7 @@ namespace Engine
 		ARTICULATION_LINK
 	};
 
-	enum class PHYSX_SHAPE_TYPE : uint8_t
+	enum class PX_SHAPE_TYPE : uint8_t
 	{
 		BOX,
 		SPHERE,
@@ -22,42 +22,47 @@ namespace Engine
 		RAGDOLL
 	};
 
-	struct PHYSX_ACTOR_USER_DATA
+	struct PX_ACTOR_USER_DATA
 	{
 		CHandle hGameObject{};
-		PHYSX_ACTOR_TYPE eType{ PHYSX_ACTOR_TYPE::RIGID_BODY };
+		PX_ACTOR_TYPE eType{ PX_ACTOR_TYPE::RIGID_BODY };
 		uint32_t iSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
-	struct PHYSX_SHAPE_USER_DATA
+	struct PX_SHAPE_USER_DATA
 	{
 		CHandle hGameObject{};
-		PHYSX_SHAPE_TYPE eType{ PHYSX_SHAPE_TYPE::BOX };
+		PX_SHAPE_TYPE eType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
-	enum CollisionLayer {
-		LAYER_PLAYER = (1 << 0),
-		LAYER_TRIGGER = (1 << 1),
-		LAYER_ENEMY = (1 << 2)
+
+	inline constexpr uint32_t PX_DEFAULT_LAYER = 1u;
+	inline constexpr uint32_t PX_ALL_LAYERS = std::numeric_limits<uint32_t>::max();
+
+	struct PX_FILTER_DESC
+	{
+		uint32_t iLayer{ PX_DEFAULT_LAYER };
+		uint32_t iSimulationMask{ PX_ALL_LAYERS };
+		uint32_t iQueryMask{ PX_ALL_LAYERS };
 	};
 
-	struct PHYSX_SYNC_DATA
+	struct PX_SYNC_DATA
 	{
 		_float3 vPos{};
 		_float4 vQuat{};
 	};
 
-	struct PHYSIX_ON_COLLISION_DATA
+	struct PX_ON_COLLISION_DATA
 	{
 		bool hello;
 	};
 
-	struct PHYSIX_ON_TRIGGER_DATA
+	struct PX_ON_TRIGGER_DATA
 	{
 		bool hello;
 	};
 
-	struct PHYSIX_RAYCAST_RESULT
+	struct PX_RAYCAST_RESULT
 	{
 		_bool bHit{ false };
 		_float3 vHitpos{}; // 충돌 지점

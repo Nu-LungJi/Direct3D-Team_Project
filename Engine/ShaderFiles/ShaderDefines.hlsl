@@ -182,6 +182,13 @@ cbuffer CB_SPELLMETER : register(b9)
     float g_DistSpeed;      
     float g_DistStrength;   
     float g_Time;           
+cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
+{
+    float4x4 preTransform;
+    uint gParentInstanceIndex;
+    uint gParentBoneIndex;
+    float2 gPartAttachmentPadding;
+};
 
     float4 g_FillColor;     
     float4 g_EmptyColor;    

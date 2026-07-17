@@ -7,7 +7,7 @@ class CLevelAnimatorLoader
 {
 public:
 	static std::future<bool> Load();
-	static HRESULT UnLoad();
+	static std::future<bool> UnLoad();
 };
 
 NS_END

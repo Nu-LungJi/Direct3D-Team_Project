@@ -109,6 +109,7 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 	Update_AnimState(fTimeDelta, m_CurAnimState);
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
 
 	if (m_bRootMotion && m_iRootBoneIndex >= 0)
 	{
@@ -130,26 +131,20 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
 
 		
-	/*		_vector qPrevRotation{};
-	
-
+			_vector vPrevScale;
+			_vector qPrevRotation;
+			_vector vPrevTranslation;
 			_vector vCurrScale;
 			_vector qCurrRotation;
 			_vector vCurrTranslation;
-
-			if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&
+				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
 			{
-				qPrevRotation = XMQuaternionNormalize(qPrevRotation);
-				qCurrRotation = XMQuaternionNormalize(qCurrRotation);
-
-
-				_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
-
-				qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
-
-
+				const _vector qDeltaRotation = XMQuaternionNormalize(
+					XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
 				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-			}*/
+				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+			}
 		}
 	}
 	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
@@ -217,6 +212,21 @@ HRESULT CComAnimator::Update_Action(_float fTimeDelta)
 			m_vRootMotionDelta.y = 0.f;
 			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
 
+			_vector vPrevScale;
+			_vector qPrevRotation;
+			_vector vPrevTranslation;
+			_vector vCurrScale;
+			_vector qCurrRotation;
+			_vector vCurrTranslation;
+			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&
+				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+			{
+				const _vector qDeltaRotation = XMQuaternionNormalize(
+					XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
+				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+			}
+
 
 			/*		_vector qPrevRotation{};
 
@@ -237,7 +247,7 @@ HRESULT CComAnimator::Update_Action(_float fTimeDelta)
 
 
 						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-					}*/
+			}*/
 		}
 	}
 
@@ -286,6 +296,7 @@ HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
 	Advance_GPUBlend(fTimeDelta);
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
 
 	if (m_bRootMotion && m_iRootBoneIndex >= 0)
 	{
@@ -307,26 +318,18 @@ HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
 			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
 
 
-			/*		_vector qPrevRotation{};
-
-
-					_vector vCurrScale;
-					_vector qCurrRotation;
-					_vector vCurrTranslation;
-
-					if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-					{
-						qPrevRotation = XMQuaternionNormalize(qPrevRotation);
-						qCurrRotation = XMQuaternionNormalize(qCurrRotation);
-
-
-						_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
-
-						qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
-
-
-						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-					}*/
+			_vector vPrevScale;
+			_vector qPrevRotation;
+			_vector vPrevTranslation;
+			_vector vCurrScale;
+			_vector qCurrRotation;
+			_vector vCurrTranslation;
+			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+			{
+				const _vector qDeltaRotation = XMQuaternionNormalize(XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
+				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+			}
 		}
 	}
 
@@ -372,6 +375,7 @@ HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
 	Advance_GPUBlend(fTimeDelta);
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
 
 	if (m_bRootMotion && m_iRootBoneIndex >= 0)
 	{
@@ -413,6 +417,21 @@ HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
 
 						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
 					}*/
+
+			_vector vPrevScale;
+			_vector qPrevRotation;
+			_vector vPrevTranslation;
+			_vector vCurrScale;
+			_vector qCurrRotation;
+			_vector vCurrTranslation;
+			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&
+				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
+			{
+				const _vector qDeltaRotation = XMQuaternionNormalize(
+					XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
+				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+			}
 		}
 	}
 
@@ -783,6 +802,67 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	
 }
 
+_bool CComAnimator::Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain,_float4x4& outMatrix) const
+{
+	if (m_pModelInstance == nullptr)
+		return false;
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (pModel == nullptr)
+		return false;
+
+	const auto& Bones = pModel->GetBones();
+	const auto& Anims = pModel->GetAnimations();
+	if (iAnimIndex < 0 || iAnimIndex >= (int32_t)(Anims.size()) || Anims[iAnimIndex] == nullptr)
+		return false;
+
+
+	const auto& pAnim = Anims[iAnimIndex];
+	fTrackPosition = std::clamp(fTrackPosition, 0.f, pAnim->GetDuration());
+	if (boneChain.empty())
+		return false;
+
+
+	const _matrix preTransform =XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
+	_matrix combined = preTransform;
+
+
+	for (uint32_t boneIndex : boneChain)
+	{
+		if (boneIndex >= Bones.size())
+			return false;
+
+		_matrix local = Bones[boneIndex]->Get_TransformationMatrix();
+		if (auto* pChannel = pAnim->GetChannelByBoneIndex(boneIndex))
+			local = Evaluate_ChannelMatrix_CPU(pChannel, fTrackPosition);
+
+
+		if (m_bRootMotion && static_cast<int32_t>(boneIndex) == m_iRootBoneIndex)
+		{
+			_vector vScale;
+			_vector vRotation;
+			_vector vTranslation;
+			if (!XMMatrixDecompose(&vScale, &vRotation, &vTranslation, local))
+				return false;
+
+			local = XMMatrixAffineTransformation(
+				vScale,
+				XMVectorSet(0.f, 0.f, 0.f, 1.f),
+				RemoveYRotation(vRotation),
+				XMVectorZero());
+		}
+
+		combined = local * combined;
+
+	}
+
+	XMStoreFloat4x4(&outMatrix, combined);
+
+
+
+	return true;
+}
+
 void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPosition,uint32_t& iCurrentKeyFrameIndex,std::vector<_float4x4>& OutLocalBoneMatrices)
 {
 	if (pChannel == nullptr)
@@ -868,7 +948,7 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 	XMStoreFloat4x4(&OutLocalBoneMatrices[iBoneIndex],matLocal);
 }
 
-_matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition)  {
+_matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition) const {
 	// 이 함수는 처음 Load 해 올때만 Root Bone Transform 빼오기 위해서 만든 함수
 	if (pChannel->Get_KeyFrames().empty())
 		return XMMatrixIdentity();
@@ -930,7 +1010,7 @@ _matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _flo
 
 }
 
-_vector CComAnimator::RemoveYRotation(_vector qRotation)
+_vector CComAnimator::RemoveYRotation(_vector qRotation) const
 {
 	qRotation = XMQuaternionNormalize(qRotation);
 

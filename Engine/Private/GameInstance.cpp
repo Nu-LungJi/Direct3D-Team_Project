@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "GameInstance.h"
 
 #include "TimeProvider.h"
@@ -734,6 +734,10 @@ HRESULT CGameInstance::ChangeLevel(const _string& ID)
 {
 	return m_pLevelManager->ChangeLevel(ID);
 }
+uint32_t CGameInstance::GetCurrentLevelID() const
+{
+	return m_pLevelManager ? m_pLevelManager->GetCurrentLevelID() : CLevel::INVALID_LEVEL_ID;
+}
 void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 {
 	m_pLevelManager->RegisterLevelChangeFunc(ID, func);
@@ -830,9 +834,9 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
-const CPrototypeManager::PROTOTYPES* CGameInstance::GetPrototype(const StringID& svGroupTag) const
+std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
-	return m_pPrototypeManager->GetPrototype(svGroupTag);
+	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
 }
 #pragma endregion
 
@@ -1099,11 +1103,11 @@ physx::PxControllerManager* CGameInstance::PxGetControllerManager() const
 {
 	return m_pPhysXManager->GetControllerManager();
 }
-_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const
+_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
 {
 	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
 }
-_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
 {
 	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
 }
@@ -1121,10 +1125,18 @@ void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, CComAnimator
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, pAnimator, WorldMatrix, iFlags);
 }
 
+void CGameInstance::Add_Instance(CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags) {
+	m_pModel_Instance_Manager->Add_Instance(pModelInstance, WorldMatrix, iFlags);
+}
+
 
 void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData) {
 
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, InstanceData);
+}
+
+void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData) {
+	m_pModel_Instance_Manager->Add_Part_Instance(pModelInstance, InstanceData);
 }
 
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {

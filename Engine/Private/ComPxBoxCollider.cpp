@@ -1,19 +1,15 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ComPxBoxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ResPhysXBoxGeometry.h"
 #include "ResPhysXMaterial.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 using namespace physx;
 
@@ -76,7 +72,7 @@ HRESULT CComPxBoxCollider::Initialize(void* pArg)
         m_pShape->setLocalPose(tLocalPose);
     }
 
-	if (!RegisterShape(PHYSX_SHAPE_TYPE::BOX))
+	if (!RegisterShape(PX_SHAPE_TYPE::BOX))
 		return E_FAIL;
     auto pActor = m_pComRigidBody->GetActor();
 	if (!pActor)

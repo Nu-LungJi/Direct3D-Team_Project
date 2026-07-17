@@ -419,16 +419,29 @@ namespace Engine
 		uint32_t bBlending = 0;
 	}GPU_ANIM_INSTANCE_DATA;
 
+	constexpr uint32_t INVALID_ANIM_INDEX = UINT32_MAX;
+
+	typedef struct GPU_PART_INSTANCE_DATA
+	{
+		_float4x4 WorldMatrix{};
+		uint32_t iParentInstanceIndex = 0;
+		uint32_t iParentBoneIndex = 0;
+		_bool    bAttach;
+		_float   pad;
+	} GPU_PART_INSTANCE_DATA;
+
 	typedef struct MODEL_INSTANCE_KEY
 	{
 		StringID modelGroup{};
 		StringID modelTag{};
+		_bool bStaticModel = false;
 
 		_bool operator==(const MODEL_INSTANCE_KEY& rhs) const
 		{
 			return
 				modelGroup == rhs.modelGroup &&
-				modelTag == rhs.modelTag;
+				modelTag == rhs.modelTag &&
+				bStaticModel == rhs.bStaticModel;
 		}
 	}MODEL_INSTANCE_KEY;
 	typedef struct MODEL_INSTANCE_KEY_HASH
@@ -454,6 +467,8 @@ namespace Engine
 				std::hash<StringID>{}(
 					Key.modelTag));
 
+			HashCombine(std::hash<_bool>{}(Key.bStaticModel));
+
 			return Seed;
 		}
 	}MODEL_INSTANCE_KEY_HASH;
@@ -464,9 +479,14 @@ namespace Engine
 		
 		CHandle		ObjectHandle;
 		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
+		std::vector<GPU_PART_INSTANCE_DATA> PartInstances;
+		
+		_bool bModelStatic = false;
 
 		_bool bActiveThisFrame = false;
 
 	}MODEL_INSTANCE_BATCH;
+
+
 	//----------------------------AnimationObject------------------------------------
 }

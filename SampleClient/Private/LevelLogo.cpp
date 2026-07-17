@@ -2,6 +2,7 @@
 #include "LevelLogo.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 
 #include "FlyCamera.h"
 
@@ -13,7 +14,7 @@
 NS_USING(Client)
 
 CLevelLogo::CLevelLogo()
-
+	: CLevel{ ETOUI(LEVEL::LOGO) }
 {
 }
 
@@ -118,6 +119,5 @@ Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 
 void CLevelLogo::Free()
 {
-	CLevelLogoLoader::UnLoad();
 	CLevel::Free();
 }
