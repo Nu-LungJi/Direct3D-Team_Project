@@ -1,6 +1,5 @@
 #pragma once
 #include "Component.h"
-#include "IPxCharacterControllerListener.h"
 #include "ResPhysXMaterial.h"
 NS_BEGIN(physx)
 class PxRigidActor;
@@ -31,7 +30,6 @@ public:
 		float fSlopeLimit = 0.707f;    // 오를 수 있는 최대 경사 (cos각도, 0.707은 약 45도)
 		XMFLOAT3 vPosition = { 0.f, 0.f, 0.f };
 		PX_FILTER_DESC tFilter{};
-		IPxCharacterControllerListener* pListener{};
 	};
 public:
 	DECLARE_DERIVED_TYPE(CComPxCharacterController, CComponent)
@@ -50,7 +48,7 @@ private:
 	HRESULT Initialize(void* pArg) override;
 
 public:
-	PX_CCT_COLLISION_FLAG Move(const XMFLOAT3& vDisplacement, float fTimeStep);
+	PX_CCT_COLLISION_FLAG Move(const XMFLOAT3& vDisplacement, float fTimeStep, float fMinDistance = 0.f);
 	bool IsGrounded() const;
 	bool IsCollidingUp() const;
 	bool IsCollidingSide() const;
@@ -68,11 +66,9 @@ public:
 
 	_bool SetFilter(const PX_FILTER_DESC& tFilter);
 	const PX_FILTER_DESC& GetFilter() const { return m_tFilter; }
-	void SetListener(IPxCharacterControllerListener* pListener) { m_pListener = pListener; }
 private:
 	physx::PxController* m_pController{};
 	PX_FILTER_DESC m_tFilter{};
-	IPxCharacterControllerListener* m_pListener{};
 
 	struct Impl;
 	std::unique_ptr<Impl> m_pImpl;

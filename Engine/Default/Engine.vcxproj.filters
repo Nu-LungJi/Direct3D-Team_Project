@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="98.Default">
@@ -1017,9 +1017,6 @@
     </ClInclude>
     <ClInclude Include="..\public\MyFSR2_2.h">
       <Filter>Renderer\FSR2_2</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\IPxCharacterControllerListener.h">
-      <Filter>Component\PhysX\CharacterController</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

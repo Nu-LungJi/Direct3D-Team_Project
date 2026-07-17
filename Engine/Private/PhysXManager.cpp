@@ -97,6 +97,27 @@ std::optional<PX_SHAPE_USER_DATA> CPhysXManager::FindShapeUserData(const physx::
 	return iter->second;
 }
 
+void CPhysXManager::QueueCCTShapeHit(
+	const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit)
+{
+	if (m_pListener)
+		m_pListener->QueueCCTShapeHit(hOwner, hOther, tHit);
+}
+
+void CPhysXManager::QueueCCTControllerHit(
+	const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit)
+{
+	if (m_pListener)
+		m_pListener->QueueCCTControllerHit(hOwner, hOther, tHit);
+}
+
+void CPhysXManager::QueueCCTObstacleHit(
+	const CHandle& hOwner, const PX_CCT_OBSTACLE_HIT_DATA& tHit)
+{
+	if (m_pListener)
+		m_pListener->QueueCCTObstacleHit(hOwner, tHit);
+}
+
 void CPhysXManager::UpdateGUI()
 {
     ImGui::Begin("CPhysXManager");
@@ -422,6 +443,12 @@ void CPhysXManager::StepSimulation(float fixedDeltaTime)
         ZoneScopedN("CPhysXManager_SyncPhysicsToComponents");
         SyncPhysicsToComponents();
     }
+
+	{
+		ZoneScopedN("CPhysXManager_DispatchPendingEvents");
+		if (m_pListener)
+			m_pListener->DispatchPendingEvents();
+	}
 }
 
 void CPhysXManager::SyncPhysicsToComponents()

@@ -50,7 +50,9 @@ namespace Engine
 		public physx::PxUserControllerHitReport, 
 		// 캐릭터가 특정 객체 위에 닿았을 때(예: 바닥을 밟거나 움직이는는 엘리베이터 위에 올라탔을 때),
 		// 이 객체 위에서 캐릭터가 어떻게 행동할지(미끄러질지, 올라탈 수 있는지)를 물리 엔진에 알려주는 역할
-		public physx::PxControllerBehaviorCallback 
+		public physx::PxControllerBehaviorCallback,
+		public physx::PxQueryFilterCallback,
+		public physx::PxControllerFilterCallback
 	{
 		CComPxCharacterController* pOwner = nullptr;
 		physx::PxControllerCollisionFlags collisionFlags{};
@@ -58,28 +60,42 @@ namespace Engine
 		
 		void onShapeHit(const physx::PxControllerShapeHit& hit) override
 		{
-			if (!pOwner || !pOwner->m_pListener)
+			if (!pOwner || !pOwner->GetGameObject())
 				return;
 
 			auto* pManager = CGameInstance::Get().GetPhysXManager();
-			CGameObject* pGameObject = pManager ? pManager->FindGameObject(hit.actor) : nullptr;
-			pOwner->m_pListener->OnCCTShapeHit(ConvertHitData(hit, pGameObject));
+			if (!pManager)
+				return;
+
+			CHandle hOther{};
+			if (const auto userData = pManager->FindActorUserData(hit.actor))
+				hOther = userData->hGameObject;
+
+			pManager->QueueCCTShapeHit(
+				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
 		}
 
 		void onControllerHit(const physx::PxControllersHit& hit) override
 		{
-			if (!pOwner || !pOwner->m_pListener)
+			if (!pOwner || !pOwner->GetGameObject())
 				return;
 
 			auto* pManager = CGameInstance::Get().GetPhysXManager();
+			if (!pManager)
+				return;
+
 			const physx::PxRigidActor* pActor = hit.other ? hit.other->getActor() : nullptr;
-			CGameObject* pGameObject = pManager ? pManager->FindGameObject(pActor) : nullptr;
-			pOwner->m_pListener->OnCCTControllerHit(ConvertHitData(hit, pGameObject));
+			CHandle hOther{};
+			if (const auto userData = pManager->FindActorUserData(pActor))
+				hOther = userData->hGameObject;
+
+			pManager->QueueCCTControllerHit(
+				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
 		}
 
 		void onObstacleHit(const physx::PxControllerObstacleHit& hit) override
 		{
-			if (!pOwner || !pOwner->m_pListener)
+			if (!pOwner || !pOwner->GetGameObject())
 				return;
 
 			PX_CCT_OBSTACLE_HIT_DATA tResult{};
@@ -91,13 +107,15 @@ namespace Engine
 			tResult.vWorldNormal = { hit.worldNormal.x, hit.worldNormal.y, hit.worldNormal.z };
 			tResult.vMoveDirection = { hit.dir.x, hit.dir.y, hit.dir.z };
 			tResult.fMoveLength = hit.length;
-			pOwner->m_pListener->OnCCTObstacleHit(tResult);
+			if (auto* pManager = CGameInstance::Get().GetPhysXManager())
+				pManager->QueueCCTObstacleHit(pOwner->GetGameObject()->GetHandle(), tResult);
 		}
 		
 		PxControllerBehaviorFlags getBehaviorFlags(const PxObstacle& obstacle) override
 		{
-			const PX_CCT_BEHAVIOR eBehavior = pOwner && pOwner->m_pListener
-				? pOwner->m_pListener->GetCCTObstacleBehavior(obstacle.mUserData)
+			CGameObject* pGameObject = pOwner ? pOwner->GetGameObject() : nullptr;
+			const PX_CCT_BEHAVIOR eBehavior = pGameObject
+				? pGameObject->GetCCTObstacleBehavior(obstacle.mUserData)
 				: PX_CCT_BEHAVIOR::CAN_RIDE;
 			return ConvertBehavior(eBehavior);
 		}
@@ -106,8 +124,9 @@ namespace Engine
 		{
 			auto* pManager = CGameInstance::Get().GetPhysXManager();
 			CGameObject* pGameObject = pManager ? pManager->FindGameObject(&actor) : nullptr;
-			const PX_CCT_BEHAVIOR eBehavior = pOwner && pOwner->m_pListener
-				? pOwner->m_pListener->GetCCTShapeBehavior(pGameObject)
+			CGameObject* pOwnerObject = pOwner ? pOwner->GetGameObject() : nullptr;
+			const PX_CCT_BEHAVIOR eBehavior = pOwnerObject
+				? pOwnerObject->GetCCTShapeBehavior(pGameObject)
 				: PX_CCT_BEHAVIOR::CAN_RIDE;
 			return ConvertBehavior(eBehavior);
 		}
@@ -116,10 +135,60 @@ namespace Engine
 		{
 			auto* pManager = CGameInstance::Get().GetPhysXManager();
 			CGameObject* pGameObject = pManager ? pManager->FindGameObject(controller.getActor()) : nullptr;
-			const PX_CCT_BEHAVIOR eBehavior = pOwner && pOwner->m_pListener
-				? pOwner->m_pListener->GetCCTControllerBehavior(pGameObject)
+			CGameObject* pOwnerObject = pOwner ? pOwner->GetGameObject() : nullptr;
+			const PX_CCT_BEHAVIOR eBehavior = pOwnerObject
+				? pOwnerObject->GetCCTControllerBehavior(pGameObject)
 				: PX_CCT_BEHAVIOR::NONE;
 			return ConvertBehavior(eBehavior);
+		}
+
+		PxQueryHitType::Enum preFilter(
+			const PxFilterData& filterData,
+			const PxShape* shape,
+			const PxRigidActor* actor,
+			PxHitFlags& queryFlags) override
+		{
+			if (!pOwner || !shape || !actor)
+				return PxQueryHitType::eNONE;
+
+			if (pOwner->m_pController && actor == pOwner->m_pController->getActor())
+				return PxQueryHitType::eNONE;
+
+			if (shape->getFlags().isSet(PxShapeFlag::eTRIGGER_SHAPE))
+				return PxQueryHitType::eNONE;
+
+			const PxFilterData tTargetFilter = shape->getQueryFilterData();
+			return (pOwner->m_tFilter.iQueryMask & tTargetFilter.word0) != 0
+				? PxQueryHitType::eBLOCK
+				: PxQueryHitType::eNONE;
+		}
+
+		PxQueryHitType::Enum postFilter(
+			const PxFilterData& filterData,
+			const PxQueryHit& hit,
+			const PxShape* shape,
+			const PxRigidActor* actor) override
+		{
+			return PxQueryHitType::eBLOCK;
+		}
+
+		bool filter(const PxController& a, const PxController& b) override
+		{
+			const PxRigidDynamic* pActorA = a.getActor();
+			const PxRigidDynamic* pActorB = b.getActor();
+			if (!pActorA || !pActorB)
+				return false;
+
+			PxShape* pShapeA{};
+			PxShape* pShapeB{};
+			if (pActorA->getShapes(&pShapeA, 1) != 1 || !pShapeA ||
+				pActorB->getShapes(&pShapeB, 1) != 1 || !pShapeB)
+				return false;
+
+			const PxFilterData tFilterA = pShapeA->getQueryFilterData();
+			const PxFilterData tFilterB = pShapeB->getQueryFilterData();
+			return (tFilterA.word1 & tFilterB.word0) != 0 &&
+				(tFilterB.word1 & tFilterA.word0) != 0;
 		}
 	};
 
@@ -138,7 +207,7 @@ void CComPxCharacterController::UpdateGUI()
 		return;
 	}
 
-	ImGui::Text("Listener: %s", m_pListener ? "Connected" : "None");
+	ImGui::Text("CCT Callback Target: Owner GameObject");
 	ImGui::Text("Collision Side: %s", IsCollidingSide() ? "true" : "false");
 	ImGui::Text("Collision Up: %s", IsCollidingUp() ? "true" : "false");
 	ImGui::Text("Grounded: %s", IsGrounded() ? "true" : "false");
@@ -224,7 +293,6 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	}
 
 	m_tFilter = pDesc->tFilter;
-	m_pListener = pDesc->pListener;
 	
 	m_pImpl = std::make_unique<CComPxCharacterController::Impl>();
 	m_pImpl->pOwner = this;
@@ -284,18 +352,23 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	return S_OK;
 }
 
-PX_CCT_COLLISION_FLAG CComPxCharacterController::Move(const XMFLOAT3& vDisplacement, float fTimeStep)
+PX_CCT_COLLISION_FLAG CComPxCharacterController::Move(const XMFLOAT3& vDisplacement, float fTimeStep, float fMinDistance)
 {
 	if (!m_pController || !m_pImpl)
 		return PX_CCT_COLLISION_FLAG::NONE;
 
 	PxVec3 disp(vDisplacement.x, vDisplacement.y, vDisplacement.z);
+	PxFilterData tMoveFilter{};
+	tMoveFilter.word0 = m_tFilter.iQueryMask;
 	// move 함수는 '속도'가 아니라 '변위(Displacement = Velocity * dt)'를 받습니다.
 	m_pImpl->collisionFlags = m_pController->move(
 		disp,
-		0.00f,      // 최소 이동 거리 (이보다 작으면 연산 생략해 최적화)
+		fMinDistance,
 		fTimeStep,
-		PxControllerFilters() // 필터링 설정 (적이나 아군 통과 여부 등)
+		PxControllerFilters(
+			&tMoveFilter,
+			m_pImpl.get(),
+			m_pImpl.get())
 	);
 
 	uint8_t iResult{};
@@ -424,6 +497,7 @@ _bool CComPxCharacterController::SetFilter(const PX_FILTER_DESC& tFilter)
 
 	if (PxScene* pScene = pActor->getScene())
 		pScene->resetFiltering(*pActor);
+	m_pController->invalidateCache();
 
 	return true;
 }
@@ -466,7 +540,6 @@ void CComPxCharacterController::Free()
 		m_pController->release();
 		m_pController = nullptr;
 	}
-	m_pListener = nullptr;
 	m_pImpl.reset();
 	CComponent::Free();
 }

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Handle.h"
 namespace Engine
@@ -44,6 +44,32 @@ namespace Engine
 		uint32_t iLayer{ PX_DEFAULT_LAYER };
 		uint32_t iSimulationMask{ PX_ALL_LAYERS };
 		uint32_t iQueryMask{ PX_ALL_LAYERS };
+	};
+
+	enum class PX_CCT_BEHAVIOR : uint8_t
+	{
+		NONE = 0,
+		CAN_RIDE = 1 << 0,
+		SLIDE = 1 << 1,
+		USER_DEFINED_RIDE = 1 << 2
+	};
+
+	struct PX_CCT_HIT_DATA
+	{
+		CGameObject* pGameObject{};
+		_float3 vWorldPosition{};
+		_float3 vWorldNormal{};
+		_float3 vMoveDirection{};
+		_float fMoveLength{};
+	};
+
+	struct PX_CCT_OBSTACLE_HIT_DATA
+	{
+		const void* pUserData{};
+		_float3 vWorldPosition{};
+		_float3 vWorldNormal{};
+		_float3 vMoveDirection{};
+		_float fMoveLength{};
 	};
 
 	struct PX_SYNC_DATA

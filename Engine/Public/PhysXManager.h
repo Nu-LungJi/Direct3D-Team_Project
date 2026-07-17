@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "Handle.h"
 #include <mutex>
@@ -18,6 +18,8 @@ namespace physx {
 NS_BEGIN(Engine)
 class CPhysxManagerListener;
 class CGameObject;
+struct PX_CCT_HIT_DATA;
+struct PX_CCT_OBSTACLE_HIT_DATA;
 class ENGINE_DLL CPhysXManager final: public CEngineBase
 {
 private:
@@ -57,6 +59,10 @@ public:
 	_bool RegisterShape(const physx::PxShape* pShape, const PX_SHAPE_USER_DATA& userData);
 	void UnregisterShape(const physx::PxShape* pShape);
 	std::optional<PX_SHAPE_USER_DATA> FindShapeUserData(const physx::PxShape* pShape) const;
+
+	void QueueCCTShapeHit(const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit);
+	void QueueCCTControllerHit(const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit);
+	void QueueCCTObstacleHit(const CHandle& hOwner, const PX_CCT_OBSTACLE_HIT_DATA& tHit);
 
 private:
 	void SyncPhysicsToComponents();

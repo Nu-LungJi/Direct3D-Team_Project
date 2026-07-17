@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "PhysxManagerListener.h"
 #include "PhysXManager.h"
 
@@ -16,7 +16,137 @@ CPhysxManagerListener::~CPhysxManagerListener()
 
 HRESULT CPhysxManagerListener::Initialize()
 {
+	m_PendingEvents.reserve(128);
     return S_OK;
+}
+
+void CPhysxManagerListener::PushEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB)
+{
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back({ eType, hObjectA, hObjectB });
+}
+
+void CPhysxManagerListener::QueueCCTShapeHit(
+	const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit)
+{
+	PENDING_EVENT tEvent{};
+	tEvent.eType = EVENT_TYPE::CCT_SHAPE_HIT;
+	tEvent.hObjectA = hOwner;
+	tEvent.hObjectB = hOther;
+	tEvent.tCCTHit = tHit;
+	tEvent.tCCTHit.pGameObject = nullptr;
+
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back(tEvent);
+}
+
+void CPhysxManagerListener::QueueCCTControllerHit(
+	const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit)
+{
+	PENDING_EVENT tEvent{};
+	tEvent.eType = EVENT_TYPE::CCT_CONTROLLER_HIT;
+	tEvent.hObjectA = hOwner;
+	tEvent.hObjectB = hOther;
+	tEvent.tCCTHit = tHit;
+	tEvent.tCCTHit.pGameObject = nullptr;
+
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back(tEvent);
+}
+
+void CPhysxManagerListener::QueueCCTObstacleHit(
+	const CHandle& hOwner, const PX_CCT_OBSTACLE_HIT_DATA& tHit)
+{
+	PENDING_EVENT tEvent{};
+	tEvent.eType = EVENT_TYPE::CCT_OBSTACLE_HIT;
+	tEvent.hObjectA = hOwner;
+	tEvent.tCCTObstacleHit = tHit;
+
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back(tEvent);
+}
+
+void CPhysxManagerListener::DispatchPendingEvents()
+{
+	std::vector<PENDING_EVENT> pendingEvents{};
+	{
+		std::lock_guard lock{ m_PendingEventMutex };
+		pendingEvents.swap(m_PendingEvents);
+	}
+
+	for (const PENDING_EVENT& tEvent : pendingEvents)
+	{
+		CGameObject* pObjectA = CGameInstance::Get().GetGameObjectByHandle(tEvent.hObjectA);
+		if (!pObjectA || pObjectA->GetPendingDestroy())
+			continue;
+
+		if (tEvent.eType == EVENT_TYPE::WAKE)
+		{
+			pObjectA->OnWake();
+			continue;
+		}
+
+		if (tEvent.eType == EVENT_TYPE::SLEEP)
+		{
+			pObjectA->OnSleep();
+			continue;
+		}
+
+		if (tEvent.eType == EVENT_TYPE::CCT_SHAPE_HIT ||
+			tEvent.eType == EVENT_TYPE::CCT_CONTROLLER_HIT ||
+			tEvent.eType == EVENT_TYPE::CCT_OBSTACLE_HIT)
+		{
+			if (tEvent.eType == EVENT_TYPE::CCT_OBSTACLE_HIT)
+			{
+				pObjectA->OnCCTObstacleHit(tEvent.tCCTObstacleHit);
+				continue;
+			}
+
+			PX_CCT_HIT_DATA tHit = tEvent.tCCTHit;
+			tHit.pGameObject = CGameInstance::Get().GetGameObjectByHandle(tEvent.hObjectB);
+			if (tHit.pGameObject && tHit.pGameObject->GetPendingDestroy())
+				tHit.pGameObject = nullptr;
+
+			if (tEvent.eType == EVENT_TYPE::CCT_SHAPE_HIT)
+				pObjectA->OnCCTShapeHit(tHit);
+			else
+				pObjectA->OnCCTControllerHit(tHit);
+			continue;
+		}
+
+		CGameObject* pObjectB = CGameInstance::Get().GetGameObjectByHandle(tEvent.hObjectB);
+		if (!pObjectB || pObjectB->GetPendingDestroy())
+			continue;
+
+		switch (tEvent.eType)
+		{
+		case EVENT_TYPE::COLLISION_ENTER:
+			pObjectA->OnCollisionEnter(pObjectB, {});
+			pObjectB->OnCollisionEnter(pObjectA, {});
+			break;
+		case EVENT_TYPE::COLLISION_EXIT:
+			pObjectA->OnCollisionExit(pObjectB, {});
+			pObjectB->OnCollisionExit(pObjectA, {});
+			break;
+		case EVENT_TYPE::TRIGGER_ENTER:
+			pObjectA->OnTriggerEnter(pObjectB, {});
+			pObjectB->OnTriggerEnter(pObjectA, {});
+			break;
+		case EVENT_TYPE::TRIGGER_EXIT:
+			pObjectA->OnTriggerExit(pObjectB, {});
+			pObjectB->OnTriggerExit(pObjectA, {});
+			break;
+		default:
+			break;
+		}
+	}
+
+	pendingEvents.clear();
+	{
+		std::lock_guard lock{ m_PendingEventMutex };
+		if (m_PendingEvents.empty())
+			m_PendingEvents.swap(pendingEvents);
+	}
 }
 
 void CPhysxManagerListener::onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)
@@ -26,23 +156,37 @@ void CPhysxManagerListener::onConstraintBreak(physx::PxConstraintInfo* constrain
 
 void CPhysxManagerListener::onWake(physx::PxActor** actors, physx::PxU32 count)
 {
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager)
+		return;
+
     for (uint32_t i = 0; i < count; ++i)
     {
         physx::PxActor* pActor = actors[i];
-        if (!pActor) continue;
-		if (auto* pObj = CGameInstance::Get().GetPhysXManager()->FindGameObject(pActor))
-			pObj->OnWake();
+		if (!pActor)
+			continue;
+
+		const auto userData = pPhysXManager->FindActorUserData(pActor);
+		if (userData)
+			PushEvent(EVENT_TYPE::WAKE, userData->hGameObject);
     }
 }
 
 void CPhysxManagerListener::onSleep(physx::PxActor** actors, physx::PxU32 count)
 {
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager)
+		return;
+
     for (uint32_t i = 0; i < count; ++i)
     {
         physx::PxActor* pActor = actors[i];
-        if (!pActor) continue;
-		if (auto* pObj = CGameInstance::Get().GetPhysXManager()->FindGameObject(pActor))
-			pObj->OnSleep();
+		if (!pActor)
+			continue;
+
+		const auto userData = pPhysXManager->FindActorUserData(pActor);
+		if (userData)
+			PushEvent(EVENT_TYPE::SLEEP, userData->hGameObject);
     }
 }
 
@@ -54,7 +198,16 @@ void CPhysxManagerListener::onContact(const physx::PxContactPairHeader& pairHead
 		return;
 	}
 
-    for (physx::PxU32 i = 0; i < nbPairs; ++i)
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager || !pairHeader.actors[0] || !pairHeader.actors[1])
+		return;
+
+	const auto userDataA = pPhysXManager->FindActorUserData(pairHeader.actors[0]);
+	const auto userDataB = pPhysXManager->FindActorUserData(pairHeader.actors[1]);
+	if (!userDataA || !userDataB)
+		return;
+
+	for (physx::PxU32 i = 0; i < nbPairs; ++i)
     {
         const physx::PxContactPair& cp = pairs[i];
 		// 개별 충돌 쌍(Pair) 중에 제거된 셰이프가 있다면 연산에서 제외
@@ -63,34 +216,19 @@ void CPhysxManagerListener::onContact(const physx::PxContactPairHeader& pairHead
 			continue;
 		}
 
-        if (!pairHeader.actors[0] || !pairHeader.actors[1])
-        {
-            continue;
-        }
-		// 이미 삭제된 컴포넌트 주소(Dangling Pointer)에 접근하는 것을 원천 차단
-		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
-		auto* pObjA = pPhysXManager->FindGameObject(pairHeader.actors[0]);
-		auto* pObjB = pPhysXManager->FindGameObject(pairHeader.actors[1]);
-        if (!pObjA || !pObjB)
-        {
-            continue;
-        }
-
         if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
-        {
-            pObjA->OnCollisionEnter(pObjB, {});
-            pObjB->OnCollisionEnter(pObjA, {});
-        }
-        else if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
-        {
-            pObjA->OnCollisionExit(pObjB, {});
-            pObjB->OnCollisionExit(pObjA, {});
-        }
+			PushEvent(EVENT_TYPE::COLLISION_ENTER, userDataA->hGameObject, userDataB->hGameObject);
+		if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
+			PushEvent(EVENT_TYPE::COLLISION_EXIT, userDataA->hGameObject, userDataB->hGameObject);
     }
 }
 
 void CPhysxManagerListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)
 {
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager)
+		return;
+
     for (physx::PxU32 i = 0; i < count; ++i)
     {
         const physx::PxTriggerPair& tp = pairs[i];
@@ -106,24 +244,15 @@ void CPhysxManagerListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 
             continue;
         }
 
-		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
-		auto* pObjA = pPhysXManager->FindGameObject(tp.triggerActor);
-		auto* pObjB = pPhysXManager->FindGameObject(tp.otherActor);
-        if (!pObjA || !pObjB)
-        {
-            continue;
-        }
+		const auto userDataA = pPhysXManager->FindActorUserData(tp.triggerActor);
+		const auto userDataB = pPhysXManager->FindActorUserData(tp.otherActor);
+		if (!userDataA || !userDataB)
+			continue;
         
         if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
-        {
-            pObjA->OnTriggerEnter(pObjB, {});
-            pObjB->OnTriggerEnter(pObjA, {});
-        }
-        else if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
-        {
-            pObjA->OnTriggerExit(pObjB, {});
-            pObjB->OnTriggerExit(pObjA, {});
-        }
+			PushEvent(EVENT_TYPE::TRIGGER_ENTER, userDataA->hGameObject, userDataB->hGameObject);
+		if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
+			PushEvent(EVENT_TYPE::TRIGGER_EXIT, userDataA->hGameObject, userDataB->hGameObject);
     }
 }
 
