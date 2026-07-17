@@ -186,6 +186,10 @@ void CLevelLoading::StartUnload()
 	case LEVEL::PHYSX:
 		m_futUnloadFinish = CLevelPhysXLoader::UnLoad();
 		break;
+	case LEVEL::CREATUREEDIT:
+		m_futUnloadFinish = CLevelCreatureLoader::UnLoad();
+		break;
+	
 	default:
 		StartLoad();
 		break;

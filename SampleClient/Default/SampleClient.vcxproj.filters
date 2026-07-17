@@ -163,9 +163,6 @@
     <Filter Include="GameObject\UI\Spell">
       <UniqueIdentifier>{e46f670f-9eb8-4e4d-a6d8-f55d80303b0a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Loader\Level\Creature">
-      <UniqueIdentifier>{1f4a808a-15ad-47ac-8081-adaeb71e748c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Loader\Level\Animator">
       <UniqueIdentifier>{786efb8b-a2ea-4794-b5d1-dd573b1f691e}</UniqueIdentifier>
     </Filter>
@@ -178,11 +175,14 @@
     <Filter Include="Level\CreatureEditor">
       <UniqueIdentifier>{fd3b4d25-d7bc-463f-ba6d-33c2854c81ec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Loader\Level\Help">
-      <UniqueIdentifier>{edec8072-3519-4af3-8bcf-1b22e70c939a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\TestPhysx\Trigger">
       <UniqueIdentifier>{22e50275-7e44-49fc-ad4c-c13395e27add}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\PlayGround">
+      <UniqueIdentifier>{1f4a808a-15ad-47ac-8081-adaeb71e748c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Creature">
+      <UniqueIdentifier>{edec8072-3519-4af3-8bcf-1b22e70c939a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -403,7 +403,7 @@
       <Filter>Loader\Level\Collider</Filter>
     </ClInclude>
     <ClInclude Include="..\public\LevelPlayGroundLoader.h">
-      <Filter>Loader\Level\Creature</Filter>
+      <Filter>Loader\Level\PlayGround</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelAnimatorLoader.h">
       <Filter>Loader\Level\Animator</Filter>
@@ -430,7 +430,7 @@
       <Filter>Level\CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\LevelCreatureLoader.h">
-      <Filter>Loader\Level\Help</Filter>
+      <Filter>Loader\Level\Creature</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -616,7 +616,7 @@
       <Filter>Loader\Level\Animator</Filter>
     </ClCompile>
     <ClCompile Include="..\private\LevelPlayGroundLoader.cpp">
-      <Filter>Loader\Level\Creature</Filter>
+      <Filter>Loader\Level\PlayGround</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp">
       <Filter>Loader\Level\LightMap</Filter>
@@ -640,7 +640,7 @@
       <Filter>Level\CreatureEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\LevelCreatureLoader.cpp">
-      <Filter>Loader\Level\Help</Filter>
+      <Filter>Loader\Level\Creature</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>

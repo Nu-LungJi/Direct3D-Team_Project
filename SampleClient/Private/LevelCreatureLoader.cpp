@@ -121,12 +121,16 @@ std::future<bool> CLevelCreatureLoader::Load()
 
 }
 
-HRESULT CLevelCreatureLoader::UnLoad()
+std::future<bool> CLevelCreatureLoader::UnLoad()
 {
 	LOG_MEMORY("start");
-	E::CGameInstance::Get().DelPrototype("LEVEL_CREATURE");
-	E::CGameInstance::Get().DelResource("LEVEL_CREATURE");
 
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LEVEL_CREATURE", []()
+		{
+			E::CGameInstance::Get().DelPrototype("LEVEL_CREATURE");
+			E::CGameInstance::Get().DelResource("LEVEL_CREATURE");
+
+			return  true;
+		});
 }
