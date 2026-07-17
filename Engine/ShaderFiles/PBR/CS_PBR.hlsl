@@ -8,13 +8,17 @@ Texture2D<float4> EmissiveMap : register(t3);
 Texture2D<float4> AmbientMap : register(t4);
 
 Texture2D<float> DepthMap : register(t5);
-Texture2D<float> FinalShadowMap : register(t6);
-TextureCube<float> FinalShadowCubeMap : register(t7);
+
+Texture2DArray<float> StaticShadowMaps : register(t6);
+Texture2DArray<float> DynamicShadowMaps : register(t7);
+
+TextureCubeArray<float> StaticShadowCubeMaps : register(t8);
+TextureCubeArray<float> DynamicShadowCubeMaps : register(t9);
 
 // Image Based Lighting
-TextureCube IrridianceMap : register(t8);
-TextureCube PreFilterMap : register(t9);
-Texture2D<float4> LUTMap : register(t10);
+TextureCube IrridianceMap : register(t10);
+TextureCube PreFilterMap : register(t11);
+Texture2D<float4> LUTMap : register(t12);
 
 RWTexture2D<float4> OUTPUT : register(u0);
 
@@ -65,7 +69,19 @@ float3 FresnelSchlick(float CTH, float3 MBR)
     float ClampCTH = clamp(CTH, 0.0f, 1.0f);
     return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
-float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
+float MergeShadowMap(int _LightIndex, float2 _SamplerUV, float _CurrentPixelDepth)
+{
+	float StaticShadow = StaticShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(_SamplerUV, _LightIndex), _CurrentPixelDepth);
+	float DynamicShadow = DynamicShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(_SamplerUV, _LightIndex), _CurrentPixelDepth);
+	return min(StaticShadow, DynamicShadow);
+}
+float MergeShadowCubeMap(int _LightIndex, float3 _SamplerUV, float _CurrentPixelDepth)
+{
+	float StaticShadow	= StaticShadowCubeMaps.SampleCmpLevelZero(ShadowSampler, float4(_SamplerUV, _LightIndex), _CurrentPixelDepth);
+	float DynamicShadow = DynamicShadowCubeMaps.SampleCmpLevelZero(ShadowSampler, float4(_SamplerUV, _LightIndex), _CurrentPixelDepth);
+	return min(StaticShadow, DynamicShadow);
+}
+float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoord, float2 _PixelPos, int _LightIndex)
 {
     float4 LightPos = mul(_WorldPos, _Light.g_LightViewProj[0]);
     
@@ -86,29 +102,30 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
     float SinAngle = sin(RandomAngle);
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
     
-    // ÁÖº¯ ShadowSmoothness ¹Ý°æ±îÁö Sampling
+    // ì£¼ë³€ ShadowSmoothness ë°˜ê²½ê¹Œì§€ Sampling
     float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
     
     float FinalShadowFactor = 0.0f;
-
+	
     [unroll]
     for (int i = 0; i < 8; ++i)
     {
         float2 RotatedOffset = mul(PoissonDisk[i], RotationMat);
         
         float2 SampleUV = ShadowMapUV + (RotatedOffset * SamplingRange);
-        
-        // SampleCmpLevelZero : Texture2D(ShadowMap)ÀÇ ±íÀÌ¿Í CompareValue(CurrentPixelDepth) ¸¦ ºñ±³ÇßÀ» ¶§ 
-        // CompareValue°¡ Å©¸é 1, ¾Æ´Ï¸é 0 ¹ÝÈ¯.(x°ª¿¡ °á°ú°ª ÀúÀå)
-        FinalShadowFactor += FinalShadowMap.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
-    }
+		
+		FinalShadowFactor += MergeShadowMap(_LightIndex, SampleUV, CurrentPixelDepth);
+        // SampleCmpLevelZero : Texture2D(ShadowMap)ì˜ ê¹Šì´ì™€ CompareValue(CurrentPixelDepth) ë¥¼ ë¹„êµí–ˆì„ ë•Œ 
+        // CompareValueê°€ í¬ë©´ 1, ì•„ë‹ˆë©´ 0 ë°˜í™˜.(xê°’ì— ê²°ê³¼ê°’ ì €ìž¥)
+		//FinalShadowFactor += FinalShadowMap[_LightIndex].SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
+	}
     
     FinalShadowFactor /= 8.f;
     
     return lerp(ShadowBrightness, 1.0f, FinalShadowFactor);
 }
 
-float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPos)
+float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPos, int _LightIndex)
 {
     float3 LightToPixel = _WorldPos.xyz - _Light.Position;
     float  Distance = length(LightToPixel);
@@ -142,9 +159,9 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
         float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
         
         float3 SampleUV = Direction + Offset3D;
-
-        FinalShadowFactor += FinalShadowCubeMap.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
-    }
+		
+		FinalShadowFactor += MergeShadowCubeMap(_LightIndex, SampleUV, CurrentPixelDepth);
+	}
     
     FinalShadowFactor /= 8.f;
     
@@ -180,10 +197,10 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughne
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
     if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
-        return; // ½º·¹µå°¡ ÇØ»óµµ ³Ñ¾î°¡¸é Ãâ·ÂX
+        return; // ìŠ¤ë ˆë“œê°€ í•´ìƒë„ ë„˜ì–´ê°€ë©´ ì¶œë ¥X
     
     float2 TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
-    float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // ÇØ´ç ÇÈ¼¿ ±íÀÌ °è»ê
+    float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // í•´ë‹¹ í”½ì…€ ê¹Šì´ ê³„ì‚°
     
     [branch]
     if (Depth >= 1.f)
@@ -199,7 +216,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
-    float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f);
+    float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     float Metallic = MultipleTex.r;
     float Roughness = MultipleTex.g;
     //float   Ambient     = MultipleTex.b;
@@ -240,11 +257,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
                 [branch]
                 if (AffectedLight[i].LightType == LIGHT_POINT)
                 {
-                    ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy));
+                    ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), i);
                 }
                 else
                 {
-                    ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy));
+                    ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
                 }
                 
                 LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;

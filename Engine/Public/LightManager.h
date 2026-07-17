@@ -2,8 +2,14 @@
 #include "Engine_Defines.h"
 #include "Light.h"
 #include "ResComputeShader.h"
+#include "ResGeometryShader.h"
 #include "ResViewPort.h"
 NS_BEGIN(Engine)
+
+struct LightData {
+	CLight* LightOBJ;
+	_float Distance;
+};
 
 class ENGINE_DLL CLightManager final : public CEngineBase {
 private:
@@ -31,6 +37,13 @@ public:
 	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 
 	const	SPtr<CResDynamicTexture2D>& Get_CombinedResource()	{ return m_pUAVComBinedOutput; }
+
+	VOID	Bind_ShadowResource();
+	VOID	UnBind_ShadowResource();
+
+	VOID	Update_ActiveLights();
+
+	_bool	IsInFrustum(CLight* _LightOBJ);
 
 #ifdef _DEBUG
 public:
@@ -64,6 +77,7 @@ private:
 	SPtr<CResQuadTexBuffer>				m_pResLightTexBuffer = { nullptr };
 
 	SPtr<CResVertexShader>				m_pPointLightVS = { nullptr };
+	SPtr<CResVertexShader>				m_pDirectionalLightVS = { nullptr };
 	SPtr<CResGeometryShader>			m_pPointLightGS = { nullptr };
 	SPtr<CResPixelShader>				m_pPointLightPS = { nullptr };
 
@@ -75,6 +89,13 @@ private:
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
 
+	SPtr<CResQuadTexBuffer>				m_pQuadBuffer = { nullptr };
+
+	std::vector<CLight*>				m_pActiveShadowLightList{};
+
+	std::vector<ID3D11ShaderResourceView*>	StaticShadowMapList;
+	std::vector<ID3D11ShaderResourceView*>	DynamicShadowMapList;
+	std::vector<ID3D11ShaderResourceView*>	NullList;
 	//std::vector<ID3D11DepthStencilView*>	m_pShadowMapList;
 	//ComPtr<ID3D11Texture2D>					m_pShadowTextureArray = { nullptr };
 	//ComPtr<ID3D11ShaderResourceView>		m_pShadowSRV = { nullptr };

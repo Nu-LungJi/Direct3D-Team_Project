@@ -11,9 +11,7 @@ struct VS_OUT
     float2 uv : TEXCOORD;
 };
 
-
 Texture2D gTex : register(t0);
-//SamplerState samLinear : register(s0);
 
 VS_OUT VSMain(VS_IN vin)
 {

@@ -8,14 +8,14 @@
     <ClCompile Include="Bone.cpp">
       <Filter>Bone</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Material</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Mesh</Filter>
     </ClCompile>
     <ClCompile Include="Animation.cpp">
       <Filter>Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Material</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -25,14 +25,14 @@
     <Filter Include="Bone">
       <UniqueIdentifier>{46f88caf-df0b-4d47-95b5-ea9e7eb3da8d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Material">
-      <UniqueIdentifier>{1f2389a3-6746-4666-8ca3-9ff184c24178}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Mesh">
       <UniqueIdentifier>{d4b5fb62-896d-4669-a593-c41e960a178d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Animation">
       <UniqueIdentifier>{23359fd2-e4de-44eb-95f4-6f2de99ede0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Material">
+      <UniqueIdentifier>{f6a5afd2-bfb2-40d7-bdfb-0ef9da288e49}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -43,14 +43,14 @@
     <ClInclude Include="Bone.h">
       <Filter>Bone</Filter>
     </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Material</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>Mesh</Filter>
     </ClInclude>
     <ClInclude Include="Animation.h">
       <Filter>Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Material</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

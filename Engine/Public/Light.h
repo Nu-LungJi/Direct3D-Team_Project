@@ -33,23 +33,25 @@ public:
 	void			LateUpdate(E::_float fTimeDelta) override;
 	HRESULT			Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
 
+	void			Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext);
+
 public:
-	VOID			Set_LightType(LIGHT_TYPE _LTYPE) { DynamicLight.LightType = ETOUI(_LTYPE); }
+	VOID			Set_LightType(LIGHT_TYPE _LTYPE) { DynamicLight.LightType = ETOUI(_LTYPE); DirtyFlag = true; }
 	LIGHT_TYPE		Get_LightType() { return static_cast<LIGHT_TYPE>(DynamicLight.LightType); }
 
-	VOID			Set_LightDirection(XMFLOAT3 _Direction) { DynamicLight.LightDirection = _Direction; }
+	VOID			Set_LightDirection(XMFLOAT3 _Direction) { DynamicLight.LightDirection = _Direction; DirtyFlag = true;}
 	XMFLOAT3		Get_LightDirection() { return DynamicLight.LightDirection; }
 
-	VOID			Set_LightColor(XMFLOAT3 _Color) { DynamicLight.LightColor = _Color; }
+	VOID			Set_LightColor(XMFLOAT3 _Color) { DynamicLight.LightColor = _Color;}
 	XMFLOAT3		Get_LightColor() { return DynamicLight.LightColor; }
 
 	VOID			Set_LightIntensity(_float _Intensity) { DynamicLight.LightIntensity = _Intensity; }
 	_float			Get_LightIntensity() { return DynamicLight.LightIntensity; }
 
-	VOID			Set_LightRange(_float _Range) { DynamicLight.LightRange = _Range; }
+	VOID			Set_LightRange(_float _Range) { DynamicLight.LightRange = _Range; DirtyFlag = true;}
 	_float			Get_LightRange() { return DynamicLight.LightRange; }
 
-	VOID			Set_LightPosition(XMFLOAT3 _Position) { m_pComTransform->SetPosition(_Position); }
+	VOID			Set_LightPosition(XMFLOAT3 _Position) { m_pComTransform->SetPosition(_Position); DirtyFlag = true;}
 	XMFLOAT3		Get_LightPosition() { return m_pComTransform->GetPosition(); }
 
 	VOID			Set_LightInnerAttenuation(_float _Attenuation) { DynamicLight.InnerAttanuation = _Attenuation; }
@@ -67,6 +69,9 @@ public:
 	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 	
 	HRESULT			Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYPE);
+
+	const SPtr<CCollider>& Get_SphereCollider()		{ return m_pColliderSphere; }
+	const SPtr<CCollider>& Get_FrustumCollider()	{ return m_pColliderFrustum; }
 
 	_bool			Is_StaticDirty()				{ return DirtyFlag;  }
 	VOID			Set_StaticDirty(_bool _Flag)	{ DirtyFlag = _Flag; }
@@ -104,15 +109,9 @@ private:
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
 
-
-
-
-	XMFLOAT4X4							LightView{};
-	XMFLOAT4X4							LightProj{};
-	XMFLOAT4X4							LightViewProj{};
-	XMFLOAT4X4							InvViewProj{};
-
 	_bool								DirtyFlag = { true };
+
+	XMFLOAT4X4 LightView{}, LightProj{};
 
 public:
 	VOID		UpdateGUI() override;
@@ -120,14 +119,14 @@ public:
 	_bool		Check_ObjectInArea();
 	VOID		Update_Collider();
 
-	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext);
+	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, std::vector<CGameObject*>* _StaticList, std::vector<CGameObject*>* _DynamicList);
 
 	VOID		Render_StaticShadow(ID3D11DeviceContext* pContext);
 	VOID		Render_DynamicShadow(ID3D11DeviceContext* pContext);
 
 	VOID		Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow);
 
-	XMFLOAT4X4	Get_LightViewProj() { return LightViewProj; }
+	XMFLOAT4X4	Get_LightViewProj() { return DynamicLight.g_LightViewProj[0]; }
 
 public:
 	static UPtr<CLight> Create();

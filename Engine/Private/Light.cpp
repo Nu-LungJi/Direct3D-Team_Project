@@ -30,11 +30,9 @@ HRESULT CLight::InitializePrototype(VOID* pArg) {
 		.OuterAttanuation = { 30.f }
 	};
 
-	for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) 
+	for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i)	
 		XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixIdentity());
 	
-	
-
 	return S_OK;
 }
 
@@ -55,11 +53,11 @@ HRESULT CLight::Initialize(VOID* pArg)
 	uint32_t ShadowMapResolutionX = { 1280 * 2 };
 	uint32_t ShadowMapResolutionY = { 720 * 2 };
 
-	CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
-	CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
+	CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 2560, 6);
+	CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 2560, 6);
 
 	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), 
-		DynamicLight.LightType, 1280)))	return E_FAIL;
+		DynamicLight.LightType, 2560)))	return E_FAIL;
 
 	return S_OK;
 }
@@ -71,47 +69,19 @@ VOID CLight::PriorityUpdate(E::_float fTimeDelta) {
 VOID CLight::Update(E::_float fTimeDelta) {
 	m_pComTransform->Update();
 
-	Update_Collider();
-}
-VOID CLight::LateUpdate(E::_float fTimeDelta) {
-}
-HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+	XMVECTOR PosVec = m_pComTransform->GetState(STATE::POSITION);
 
-	return S_OK;
-}
-
-VOID CLight::Update_Collider() {
-	XMVECTOR PosVec = XMLoadFloat3(&m_pComTransform->GetPosition());
-
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
-		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderFrustum.get());
-
-		XMVECTOR LookVec = XMVector3Normalize(XMLoadFloat3(&DynamicLight.LightDirection));
-
-		XMVECTOR BaseUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
-		if (fabsf(XMVectorGetY(XMVector3Dot(LookVec, BaseUp))) > 0.99f) {
-			BaseUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
-		}
-
-		XMVECTOR RightVec	= XMVector3Normalize(XMVector3Cross(XMVectorSet(0.f, 1.f, 0.f, 0.f), LookVec));
-		XMVECTOR UpVec		= XMVector3Cross(RightVec, LookVec);
-
-		_float fNearZ = 0.01f;
+	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) || DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
+		_float	 fNearZ = 0.01f;
 		DynamicLight.OuterAttanuation = DynamicLight.OuterAttanuation <= 0.f ? 1.f : DynamicLight.OuterAttanuation;
 		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
 
-		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, LookVec), UpVec));
-		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(DynamicLight.OuterAttanuation * 2.f), 1.f, fNearZ, DynamicLight.LightRange));
-
-		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
-		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView)));
-
-		XMStoreFloat4x4(&LightViewProj, XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, m_pComTransform->GetState(STATE::LOOK)), m_pComTransform->GetState(STATE::UP)));
+		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(DynamicLight.OuterAttanuation * 2.f), 1.f, fNearZ, DynamicLight.LightRange));//DynamicLight.LightRange));
+		//XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(1280.f * 2.f, 720.f * 2.f, fNearZ, DynamicLight.LightRange));
+		XMStoreFloat4x4(&DynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
-	else if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
-		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
-
+	else {
 		_float fNearZ = 0.01f;
 		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
 		XMMATRIX HexaProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange);
@@ -139,12 +109,98 @@ VOID CLight::Update_Collider() {
 			XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, HexaProjMat));
 		}
 	}
+	
+
+	Update_Collider();
+}
+VOID CLight::LateUpdate(E::_float fTimeDelta) {
+}
+HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+	
+
+	return S_OK;
 }
 
-HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
+void CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
+	XMMATRIX LoadedWorldMat = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+	XMMATRIX LoadedViewMat = XMLoadFloat4x4(&LightView);
+	XMMATRIX LoadedProjMat = XMLoadFloat4x4(&LightProj);
+	{
+		E::CB_PER_OBJECT cbPerObject{};
+
+		XMMATRIX LoadedWVPMat = XMMatrixMultiply(XMMatrixMultiply(LoadedWorldMat, LoadedViewMat), LoadedProjMat);
+
+		cbPerObject.matWorld = *m_pComTransform->GetWorldMatrix();
+		XMStoreFloat4x4(&cbPerObject.matWVP, LoadedWVPMat);
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return;
+
+		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	}
+
+	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
+	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	if (SUCCEEDED(pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+	{
+		CB_PER_PASS cbPerPass{};
+		XMStoreFloat4x4(&cbPerPass.matView, LoadedViewMat);
+		XMStoreFloat4x4(&cbPerPass.matProj, LoadedProjMat);
+
+		XMStoreFloat4x4(&cbPerPass.matViewProj, XMMatrixMultiply(LoadedViewMat, LoadedProjMat));
+
+		XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, LoadedViewMat));
+		XMStoreFloat4x4(&cbPerPass.matInvProj, XMMatrixInverse(nullptr, LoadedProjMat));
+
+		XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixMultiply(XMLoadFloat4x4(&cbPerPass.matInvProj), XMLoadFloat4x4(&cbPerPass.matInvView)));
+
+		cbPerPass.vCamPos = m_pComTransform->GetPosition();
+
+		XMStoreFloat4x4(&cbPerPass.matShadowLightViewProj, XMMatrixMultiply(LoadedViewMat, LoadedProjMat));
+
+		memcpy(mappedSubResource.pData, &cbPerPass, sizeof(cbPerPass));
+		pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+	}
+	pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	pContext->CSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+}
+
+VOID CLight::Update_Collider() {
+	XMVECTOR PosVec = XMLoadFloat3(&m_pComTransform->GetPosition());
+
+	if		(DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
+		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderFrustum.get());
+
+		_float	 fNearZ = 0.01f;
+		DynamicLight.OuterAttanuation = DynamicLight.OuterAttanuation <= 0.f ? 1.f : DynamicLight.OuterAttanuation;
+		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
+
+		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
+
+		XMMATRIX InvViewMat = XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView));
+
+		XMMATRIX CleanWorldMat{};
+		XMVECTOR scale, rotation, translation;
+		if (XMMatrixDecompose(&scale, &rotation, &translation, InvViewMat)) {
+			rotation = XMQuaternionNormalize(rotation);
+			CleanWorldMat = XMMatrixRotationQuaternion(rotation) * XMMatrixTranslationFromVector(translation);
+		}
+		m_pColliderFrustum->Transform(CleanWorldMat);
+
+		//m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView)));
+	}
+	else if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
+		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
+		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
+	}
+}
+
+HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, std::vector<CGameObject*>* _StaticList, std::vector<CGameObject*>* _DynamicList) {
 	RENDER_CTX RCTX{};
 	RCTX.pass = RENDERPASS::SHADOW;
 	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
+
+
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
 		XMMATRIX Identity = XMMatrixIdentity();
 		RCTX.matView = Identity;
@@ -152,16 +208,20 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
 		RCTX.matViewProj = Identity;
 	}
 	else {
-		RCTX.matView = XMLoadFloat4x4(&LightView);
-		RCTX.matProj = XMLoadFloat4x4(&LightProj);
-		RCTX.matViewProj = XMLoadFloat4x4(&LightViewProj);
+		RCTX.matView	 = XMLoadFloat4x4(&LightView);
+		RCTX.matProj	 = XMLoadFloat4x4(&LightProj);
+		RCTX.matViewProj = RCTX.matView * RCTX.matProj;
 	}
 
-	for (auto& GOBJ : m_pRenderable_DynamicObjectList) {
-		GOBJ->Render(pContext, RCTX);
+	if (_DynamicList) {
+		for (auto& GOBJ : *_DynamicList) {
+			GOBJ->Render(pContext, RCTX);
+		}
 	}
-	for (auto& GOBJ : m_pRenderable_StaticObjectList) {
-		GOBJ->Render(pContext, RCTX);
+	if (_StaticList) {
+		for (auto& GOBJ : *_StaticList) {
+			GOBJ->Render(pContext, RCTX);
+		}
 	}
 
 	return S_OK;
@@ -175,20 +235,28 @@ HRESULT CLight::Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYP
 	if (DynamicLight.LightType == ETOUI(_LTYPE)) return E_FAIL;
 	DynamicLight.LightType = ETOUI(_LTYPE);
 
-	Safe_Release(m_pStaticShadowTexture);	Safe_Release(m_pStaticShadowDSV);	Safe_Release(m_pStaticShadowSRV);
-	Safe_Release(m_pDynamicShadowTexture);	Safe_Release(m_pDynamicShadowDSV);	Safe_Release(m_pDynamicShadowSRV);
-	Safe_Release(m_pFinalShadowTexture);	Safe_Release(m_pFinalShadowUAV);	Safe_Release(m_pFinalShadowSRV);
+	if (nullptr != m_pStaticShadowTexture)	{ m_pStaticShadowTexture.Reset();	 }
+	if (nullptr != m_pStaticShadowDSV)		{ m_pStaticShadowDSV.Reset();		 }
+	if (nullptr != m_pStaticShadowSRV)		{ m_pStaticShadowSRV.Reset();		 }
+											  
+	if (nullptr != m_pDynamicShadowTexture)	{ m_pDynamicShadowTexture.Reset();	 }
+	if (nullptr != m_pDynamicShadowDSV)		{ m_pDynamicShadowDSV.Reset();		 }
+	if (nullptr != m_pDynamicShadowSRV)		{ m_pDynamicShadowSRV.Reset();		 }
+											  
+	if (nullptr != m_pFinalShadowTexture)	{ m_pFinalShadowTexture.Reset();	 }
+	if (nullptr != m_pFinalShadowUAV)		{ m_pFinalShadowUAV.Reset();		 }
+	if (nullptr != m_pFinalShadowSRV)		{ m_pFinalShadowSRV.Reset();		 }
 
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
-		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 2560, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 2560, 6);
 	}
 	else {
-		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280);
-		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280);
+		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 2560);
+		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 2560);
 	}
 
-	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 1280)))	return E_FAIL;
+	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 2560)))	return E_FAIL;
 
 	DirtyFlag = true;
 	   

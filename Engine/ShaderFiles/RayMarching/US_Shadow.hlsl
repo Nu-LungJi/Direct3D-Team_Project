@@ -2,24 +2,42 @@
 
 struct VS_IN
 {
-    float3 Position : POSITION;
+	float3 Position : POSITION;
 };
 
 struct VS_OUT
 {
-    float4 WorldPos : POSITION;
+	float4 Position : SV_POSITION;
+	float3 WorldPos : POSITION0;
+};
+
+struct VS_FINAL_OUT
+{
+	float4 Position : SV_POSITION;
+	float3 WorldPos : POSITION0;
 };
 
 VS_OUT VSMain(VS_IN IN)
 {
     VS_OUT OUT;
-    OUT.WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
+	OUT.Position = mul(float4(IN.Position, 1.0f), g_matWorld);
+	OUT.WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld).xyz;
     return OUT;
 }
-
+VS_FINAL_OUT VSMain_Final(VS_IN IN)
+{
+	VS_FINAL_OUT OUT;
+	float4 WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
+	OUT.WorldPos	= WorldPos.xyz;
+	
+	float4 ViewPos	= mul(WorldPos, g_matView);
+	OUT.Position	= mul(ViewPos, g_matProj);
+	
+	return OUT;
+}
 struct GS_OUT
 {
-    float4  Position    : SV_POSITION;
+	float4	Position	: SV_POSITION;
     float3  WorldPos    : POSITION;
     uint    LayerIndex  : SV_RenderTargetArrayIndex;
 };
@@ -35,7 +53,7 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
         OUT.LayerIndex = Face;
         for (int v = 0; v < 3; ++v)
         {
-            OUT.Position = mul(IN[v].WorldPos, DLight.g_LightViewProj[Face]);
+			OUT.Position = mul(float4(IN[v].WorldPos, 1.f), DLight.g_LightViewProj[Face]);
             OUT.WorldPos = IN[v].WorldPos.xyz;
             _OutStream.Append(OUT);
         }
