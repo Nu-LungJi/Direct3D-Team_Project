@@ -33,11 +33,6 @@ HRESULT CBTAttackAnimation::Initalize(void* pArg)
 
 EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 {
-	if (m_iLoopCnt >= 1)
-	{
-		m_iLoopCnt = 0;
-		return m_eDebug = EVALUATE::SUCCESS;
-	}
 	if (auto pBT = Get_ComBT())
 	{
 		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
@@ -67,14 +62,14 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			
 			_float tt = (pAnimator->GetPlayAnimRatio() - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
 			if (tt < 0.f)
-				tt = 0;
+				tt = 0.f;
 			if (tt > 1.f)
 				tt = 1.f;
 			if (auto pBT = Get_ComBT())
 			{
 				if (auto pSrc = pBT->GetGameObject())
 				{
-					_float fEmissive = std::lerp(0,0.5, tt);
+					_float fEmissive = std::lerp(0.f,0.5f, tt);
 					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
@@ -99,9 +94,6 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			m_fTime = 0.f;
-			if (!m_bLoop) //루프 한번만 도는거 초기화용
-				++m_iLoopCnt;
-			
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}
@@ -113,9 +105,9 @@ void CBTAttackAnimation::Update_Gui()
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
 
 	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0, 1);
+	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f ,1.f);
 	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0, 1);
+	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
 
 	if (ImGui::Button("Enable Ratio : "))
 		m_bRatio = !m_bRatio;
@@ -133,7 +125,7 @@ void CBTAttackAnimation::Update_Gui()
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-
+		
 		if (-1 != iIndex)
 		{
 			m_bPopup = false;
@@ -164,7 +156,7 @@ void CBTAttackAnimation::Update_Gui()
 	}
 	//	NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
 	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
@@ -216,6 +208,7 @@ void CBTAttackAnimation::Update_Gui()
 void CBTAttackAnimation::Abort()
 {
 	m_fTime = 0.f;
+	m_iLoopCnt = 0;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {

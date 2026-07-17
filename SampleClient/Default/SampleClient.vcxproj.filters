@@ -303,7 +303,7 @@
     <ClInclude Include="..\public\TextBox.h">
       <Filter>GameObject\UI</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTDecHit.h">
+    <ClInclude Include="..\public\BTDecFlag.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTDecHp.h">
@@ -405,6 +405,9 @@
     <ClInclude Include="..\Public\LightTerrain.h">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDecHitCnt.h">
+      <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -501,7 +504,7 @@
     <ClCompile Include="..\private\BTDecInvert.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTDecHit.cpp">
+    <ClCompile Include="..\private\BTDecFlag.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTDecHp.cpp">
@@ -602,6 +605,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LightTerrain.cpp">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecHitCnt.cpp">
+      <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

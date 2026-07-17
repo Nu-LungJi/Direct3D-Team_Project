@@ -21,4 +21,5 @@
 #include "BTDecTimer.h"//타이머 // 플래그 있음
 #include "BTDecSearch.h"//적거리 기반 탐색
 #include "BTDecInvert.h"// true false 인버터
-#include "BTDecHit.h" //맞은판정 플래그 있음
+#include "BTDecFlag.h" //맞은판정 플래그 있음
+#include "BTDecHitCnt.h"

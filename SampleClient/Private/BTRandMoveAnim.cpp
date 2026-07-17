@@ -72,7 +72,7 @@ EVALUATE CBTRandMoveAnim::Evaluate(_float fTimeDelta)
 	if (m_GuiNode.bAbort)
 	{
 		//애니매이션 겹침 방지
-		Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
+		//Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
 	}
 	eType = Move(fTimeDelta);
 	return m_eDebug = eType;

@@ -104,10 +104,6 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 	_bool bFinished = pAnimator->GetFinish();
 
-	if (m_bLoop)
-		return m_eDebug = EVALUATE::SUCCESS;
-	
-
 	if (bFinished)
 		return m_eDebug = EVALUATE::SUCCESS;
 

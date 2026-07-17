@@ -25,6 +25,8 @@ HRESULT CBTRandSelector::Initalize(void* pArg)
 {
 	__super::Initalize(pArg);
 	NODEGROUP eGroup = m_eGroup;
+	
+	m_GuiNode.vColor = _float4(0.5294f, 0.9843f, 1.f, 1.f);
 	return S_OK;
 }
 

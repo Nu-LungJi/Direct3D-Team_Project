@@ -179,10 +179,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
+    <ClInclude Include="..\public\BTDecHitCnt.h" />
     <ClInclude Include="..\public\BTDecHp.h" />
     <ClInclude Include="..\public\BTDecInvert.h" />
     <ClInclude Include="..\public\BTDecLier.h" />
-    <ClInclude Include="..\public\BTDecHit.h" />
+    <ClInclude Include="..\public\BTDecFlag.h" />
     <ClInclude Include="..\public\BTHitAnimMonster.h" />
     <ClInclude Include="..\public\BTOnlyFalse.h" />
     <ClInclude Include="..\public\BTOnlyTrue.h" />
@@ -272,10 +273,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTAttackAnimation.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
     <ClCompile Include="..\private\BTDamage.cpp" />
+    <ClCompile Include="..\private\BTDecHitCnt.cpp" />
     <ClCompile Include="..\private\BTDecHp.cpp" />
     <ClCompile Include="..\private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecLier.cpp" />
-    <ClCompile Include="..\private\BTDecHit.cpp" />
+    <ClCompile Include="..\private\BTDecFlag.cpp" />
     <ClCompile Include="..\private\BTHitAnimMonster.cpp" />
     <ClCompile Include="..\private\BTOnlyFalse.cpp" />
     <ClCompile Include="..\private\BTOnlyTrue.cpp" />

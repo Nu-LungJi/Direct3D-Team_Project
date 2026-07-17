@@ -554,25 +554,42 @@ void CTestGob::IsHit()
 {
 	if (CGameInstance::Get().KeyDown(DIK_2))
 	{
-		uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
+		++m_iHitCnt;
+		uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT);
 		m_pBeHavior->Set_Flag(iFlag, FLAGTYPE::ADD);
 	}
-	if (auto pCam = CGameInstance::Get().GetActiveCamera())
+	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
-		const auto& [vOri, vDir] = pCam->GetRay();
-		_float fDist{};
-	
-			for (const auto& coll :*CGameInstance::Get().GetColliderGroup("CollTestGob"))
-			{
-				if (coll->Intersect(vOri, vDir, fDist))
-				{
-					uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
-					m_pBeHavior->Set_Flag(iFlag,FLAGTYPE::ADD);
-					return;
-				}
-			}
-		
+		m_eHitType = HITMON::HIT_1;
 	}
+	else if (CGameInstance::Get().KeyDown(DIK_X))
+	{
+		m_eHitType = HITMON::HIT_2;
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_C))
+	{
+		m_eHitType = HITMON::HIT_3;
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_V))
+	{
+		m_eHitType = HITMON::END;
+	}
+	//if (auto pCam = CGameInstance::Get().GetActiveCamera())
+	//{
+	//	const auto& [vOri, vDir] = pCam->GetRay();
+	//	_float fDist{};
+	//
+	//		for (const auto& coll :*CGameInstance::Get().GetColliderGroup("CollTestGob"))
+	//		{
+	//			if (coll->Intersect(vOri, vDir, fDist))
+	//			{
+	//				uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
+	//				m_pBeHavior->Set_Flag(iFlag,FLAGTYPE::ADD);
+	//				return;
+	//			}
+	//		}
+	//	
+	//}
 }
 void CTestGob::Flag_Check(_float fTimeDelta)
 {
@@ -580,6 +597,10 @@ void CTestGob::Flag_Check(_float fTimeDelta)
 	{
 		m_bEmissive = true;
 		StartEmissive();
+	}
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
+	{
+		m_eHitType = HITMON::END;
 	}
 }
 void CTestGob::EmissiveFadeOut(_float fTimeDelta)

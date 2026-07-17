@@ -32,20 +32,22 @@ HRESULT CBTHitAnimMonster::Initalize(void* pArg)
 
 EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 {
-	if (m_iLoopCnt >= 1)
-	{
-		m_iLoopCnt = 0;
-		return m_eDebug = EVALUATE::SUCCESS;
-	}
+
 	if (auto pBT = Get_ComBT())
 	{
-
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 
-		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
+		if (pTransform == nullptr || pAnimator == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
-
+		if (m_bStart)
+		{
+			if (false == HitType())
+				return EVALUATE::FAILED;
+			Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
+			m_bStart = false;
+		}
+		
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 
@@ -54,12 +56,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
 		{
-			if (m_bStart)
-			{
-				HitType();
-				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
-				m_bStart = false;
-			}
+			
 
 			if (m_eMove == MOVE::RIGHT)
 				pTransform->GoRight(m_Value.fSpeed * fTimeDelta);
@@ -73,13 +70,10 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (m_bLoop || bFinished)
 		{
-			if (!m_bLoop) //루프 한번만 도는거 초기화용
-				++m_iLoopCnt;
-			//Hit 종료는 애니매이션 끝나면
-			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
+
 		}
 	}
 	return m_eDebug = EVALUATE::RUN;
@@ -90,9 +84,9 @@ void CBTHitAnimMonster::Update_Gui()
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
 
 	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0, 1);
+	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f, 1.f);
 	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0, 1);
+	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
 
 	if (ImGui::Button("Enable Ratio : "))
 		m_bRatio = !m_bRatio;
@@ -103,24 +97,6 @@ void CBTHitAnimMonster::Update_Gui()
 		m_bLoop = !m_bLoop;
 	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
 	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
-
-	if (ImGui::Button("Animation"))
-		m_bPopup = true;
-	if (m_bPopup)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
-		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
-			m_bPopup = false;
-		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-
-		if (-1 != iIndex)
-		{
-			m_bPopup = false;
-			m_Value.iAnimIndex = iIndex;
-		}
-		ImGui::PopStyleColor();
-	}
-
 
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -141,15 +117,16 @@ void CBTHitAnimMonster::Update_Gui()
 
 		ImGui::EndCombo();
 	}
-	//	NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD","EMISSIVE" };
+	//NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
+
+//, EMISSIVE = 0x0000040
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE" };
 	if (ImGui::TreeNode("StartFlag"))
 	{
-
 		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
 			uint32_t iFlag = 1u << i;
@@ -191,9 +168,9 @@ void CBTHitAnimMonster::Update_Gui()
 	}
 	if (!m_bPopup)
 	{
-		for (size_t i = 0; i < ETOUI(TURN::END); ++i)
+		for (size_t i = 0; i < ETOUI(HITMON::END); ++i)
 		{
-			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<TURN>(i)).data();
+			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
 			if (ImGui::Button(Name.c_str()))
 			{
 				m_Value.iAnimIndex = i;
@@ -206,9 +183,8 @@ void CBTHitAnimMonster::Update_Gui()
 	if (m_bPopup && m_Value.iAnimIndex != -1)
 	{
 		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
-		ImGui::Text(MagicEnumToStringView(static_cast<TURN>(m_Value.iAnimIndex)).data());
-
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
+		ImGui::Text(MagicEnumToStringView(static_cast<HITMON>(m_Value.iAnimIndex)).data());
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,1.f,1.f,1.f });
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
@@ -219,9 +195,14 @@ void CBTHitAnimMonster::Update_Gui()
 			m_iHitAnim[m_Value.iAnimIndex] = iIndex;
 			m_Value.iAnimIndex = -1;
 		}
-
+		ImGui::PopStyleColor();
 	}
 	ImGui::PopStyleColor(2);
+}
+void CBTHitAnimMonster::Abort()
+{
+	m_bStart = true;
+	m_iLoopCnt = 0;
 }
 nlohmann::json CBTHitAnimMonster::Save_Node()
 {
@@ -250,6 +231,7 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Loop", m_bLoop);
 	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
@@ -260,21 +242,21 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	}
 	return S_OK;
 }
-void CBTHitAnimMonster::HitType()
+_bool CBTHitAnimMonster::HitType()
 {
 	//플레이어 공격에 따른..
-	if (CGameInstance::Get().KeyDown(DIK_Q))
+	
+	if (auto pBT = Get_ComBT())
 	{
-		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_1)];
+		if (auto pSrc = pBT->GetGameObject())
+		{
+			HITMON eType = static_cast<CTestGob*>(pSrc)->Get_HitMon();
+			if (eType == HITMON::END)
+				return false;
+			m_Value.iAnimIndex = m_iHitAnim[ETOUI(eType)];
+		}
 	}
-	else if (CGameInstance::Get().KeyDown(DIK_W))
-	{
-		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_2)];
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_E))
-	{
-		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_3)];
-	}
+	return true;
 }
 E::UPtr<CBTHitAnimMonster> CBTHitAnimMonster::Create()
 {

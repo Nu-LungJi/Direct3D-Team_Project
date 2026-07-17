@@ -8,6 +8,7 @@
 #include "ComAnimator.h"
 #include "BTComposite.h"
 #include "BTRandSelector.h"
+#include "BTReactiveSelector.h"
 CAction_Manager::CAction_Manager()
 {
 }
@@ -22,6 +23,7 @@ HRESULT CAction_Manager::Initialize()
 	CGameInstance::Get().AddPrototype(NODEGROUP::SELECTOR,		"BTSelector",	  CBTSelector::Create(nullptr));
 	CGameInstance::Get().AddPrototype(NODEGROUP::SEQUENCE,		"BTSequnce",	  CBTSecqunce::Create(nullptr));
 	CGameInstance::Get().AddPrototype(NODEGROUP::RAND_SELECTOR, "BTRandSelector", CBTRandSelector::Create(nullptr));
+	CGameInstance::Get().AddPrototype(NODEGROUP::SELECTOR, "BTReactiveSelector", CBTReactiveSelector::Create(nullptr));
 	return S_OK;
 }
 void CAction_Manager::Show_Action_NodeWidget(CBTRoot* pNode)
@@ -57,8 +59,8 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		ImGui::Text("Action Name : ");
 		if(!m_bPopup)
 		{
-			if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR && eType != NODEGROUP::RAND_SELECTOR)
-			{
+			//if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR && eType != NODEGROUP::RAND_SELECTOR)
+			//{
 				CGameInstance::Get().GetPrototype(eType);
 				for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))
 				{
@@ -68,7 +70,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 						m_bPopup = true;
 					}
 				}
-			}
+			//}
 		}
 		else
 		{
@@ -79,6 +81,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 			ImGui::Text("NodeType");
 			if (eType != NODEGROUP::END )
 			{
+				BEHAVIOR eNodeType{};
 				ImGui::Text(m_SelectName.c_str()); ImGui::SameLine(100);
 				if (ImGui::Button("Add"))
 				{
@@ -86,10 +89,23 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 					uint32_t iNodeCnt = iNode + 1;
 					NodeDesc.Handle = Handle;
 					NodeDesc.eGroup = eType;
-					BEHAVIOR eNodeType = eType == NODEGROUP::DECORATOR ? BEHAVIOR::DECORATOR : BEHAVIOR::ACTION;
-					NodeDesc.m_GuiLink = eType == NODEGROUP::DECORATOR ? (GUINODE_LINK(1)) : NodeDesc.m_GuiLink = (GUINODE_LINK(0));
-					_float4 vColor = { 1.0f,1.f, 1.f,1};
-					NodeDesc.m_GuiNode = GUINODE(eNodeType, iNode++, FinalName.c_str(), _float2(vNodePos.x, vNodePos.y), 0.5f, vColor);
+					if (eType == NODEGROUP::DECORATOR)
+					{
+						eNodeType = BEHAVIOR::DECORATOR;
+						NodeDesc.m_GuiLink = GUINODE_LINK(1);
+					}
+					else if (eType == NODEGROUP::SELECTOR)
+						eNodeType = BEHAVIOR::SELECTOR;
+					else if (eType == NODEGROUP::RAND_SELECTOR)
+						eNodeType = BEHAVIOR::RAND_SELECTOR;
+					else if (eType == NODEGROUP::SEQUENCE)
+						eNodeType = BEHAVIOR::SECQUNCE;
+					else
+					{
+						eNodeType = BEHAVIOR::ACTION;
+						NodeDesc.m_GuiLink = (GUINODE_LINK(0));
+					}
+					NodeDesc.m_GuiNode = GUINODE(eNodeType, iNode++, FinalName.c_str(), _float2(vNodePos.x, vNodePos.y), 0.5f, _float4(0,0,0,1));
 				
 					ImGui::CloseCurrentPopup();
 					ImGui::EndPopup();

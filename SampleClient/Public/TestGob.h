@@ -15,6 +15,8 @@ class CComCollider;
 NS_END
 
 NS_BEGIN(Client)
+
+enum class HITMON { HIT_1, HIT_2, HIT_3, HIT_4, END };
 class CTestGob final : public CAnimationObject
 {
 public:
@@ -60,11 +62,15 @@ public:
 	const int32_t			Get_MaxHp()	  { return m_iMaxHp; }
 	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
+	const HITMON			Get_HitMon() const { return m_eHitType; }
+	_bool					Check_HitCnt(int32_t iHit) { if (iHit >= m_iHitCnt)return true;   return false; }
+	void					ResetHitcnt() { m_iHitCnt = 0; }
 private:			
 	void					IsHit();
 	void					Flag_Check(_float fTimeDelta);
 	void					StartEmissive() { if (m_bWork || m_fEmissive == 0) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
 	void					EmissiveFadeOut(_float fTimeDelta);
+	
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -95,9 +101,9 @@ private:
 	_float	m_fEmissiveIntensity = 0.f;
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
-	
+	HITMON						m_eHitType{ HITMON::END };
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
-	int32_t						m_iHp{}, m_iMaxHp{};
+	int32_t						m_iHp{}, m_iMaxHp{}, m_iHitCnt{};
 	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{false};
 	_string						m_SocketName{};
 public:

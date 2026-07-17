@@ -1,8 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "BTActionNode.h"
-
-enum class HITMON{HIT_1, HIT_2,HIT_3,HIT_4 ,END};
+#include "TestGob.h"
 NS_BEGIN(Client)
 class CBTHitAnimMonster final : public CBTActionNode
 {
@@ -20,11 +19,11 @@ private:
 public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
 	virtual void					Update_Gui() override;
-
+	void							Abort() override;
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
-	void							HitType();
+	_bool							HitType();
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 	_float2				m_fRatio{  };

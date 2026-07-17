@@ -165,25 +165,32 @@ void CNodeEditor::Show_Editor()
 				if (m_bPopupAction)
 					m_bPopupAction = false;
 				//빈공간 우클릭...
-				if (ImGui::MenuItem("Add_Selector"))
-				{
-					m_eBTType = BEHAVIOR::SELECTOR;
-					m_pNodeName = "Selector";
-					m_bPopup = true;
-				}
-				else if (ImGui::MenuItem("Add_Sequence"))
-				{
-					m_eBTType = BEHAVIOR::SECQUNCE;
-					m_pNodeName = "Sequence";
-					m_bPopup = true;
-				}
-				else if (ImGui::MenuItem("Add_RandSelector"))
-				{
-					m_eBTType = BEHAVIOR::RAND_SELECTOR;
-					m_pNodeName = "Rand_Selector";
-					m_bPopup = true;
-				}
-				else if (ImGui::MenuItem("Add_Action"))
+				//if (ImGui::MenuItem("Add_Selector"))
+				//{
+				//	m_eBTType = BEHAVIOR::SELECTOR;
+				//	m_pNodeName = "Selector";
+				//	m_bPopup = true;
+				//}
+				//else if (ImGui::MenuItem("Add_Sequence"))
+				//{
+				//	m_eBTType = BEHAVIOR::SECQUNCE;
+				//	m_pNodeName = "Sequence";
+				//	m_bPopup = true;
+				//}
+				//else if (ImGui::MenuItem("Add_RandSelector"))
+				//{
+				//	m_eBTType = BEHAVIOR::RAND_SELECTOR;
+				//	m_pNodeName = "Rand_Selector";
+				//	m_bPopup = true;
+				//}
+				//else if (ImGui::MenuItem("Add_RandSelector"))
+				//{
+				//	m_eBTType = BEHAVIOR::SELECTOR;
+				//	m_pNodeName = "Rand_BTReactiveSelector";
+				//	m_bPopup = true;
+				//}
+				//else 
+				if (ImGui::MenuItem("Add_Something.."))
 				{
 					bTypeCheck = true;
 					m_bPopupAction = true;
@@ -204,20 +211,23 @@ void CNodeEditor::Show_Editor()
 			if (bTypeCheck)
 			{
 				ImGui::OpenPopup("Group_Type");
-				ImGui::BeginPopup("Group_Type");
-#define X(name)#name,
-				const _char* pGroupList[] = { NODE_ACTION_M };
-#undef X
-				ImGui::Text("Group Name");
-				for (uint32_t i = 0; i < ETOUI(NODEGROUP::END); ++i)
+				if (ImGui::BeginPopup("Group_Type"))
 				{
-					if (ImGui::Button(pGroupList[i]))
+#define X(name)#name,
+					const _char* pGroupList[] = { NODE_ACTION_M };
+#undef X
+					ImGui::Text("Group Name");
+					for (uint32_t i = 0; i < ETOUI(NODEGROUP::END); ++i)
 					{
-						eGroupType = static_cast<NODEGROUP>(i);
-						bTypeCheck = false;
+						if (ImGui::Button(pGroupList[i]))
+						{
+							eGroupType = static_cast<NODEGROUP>(i);
+							bTypeCheck = false;
+						}
 					}
+					ImGui::EndPopup();
 				}
-				ImGui::EndPopup();
+
 			}
 			else if (!bTypeCheck && eGroupType != NODEGROUP::END)
 			{
@@ -828,6 +838,8 @@ void CNodeEditor::Add_Node(BEHAVIOR eType, const _char* pPopupName, ImVec2 vPos)
 				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SEQUENCE, "BTSequnce", &SequenceDesc));
 			else if (eType == BEHAVIOR::RAND_SELECTOR)
 				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::RAND_SELECTOR, "BTRandSelector", &SequenceDesc));
+			else if (eType == BEHAVIOR::SELECTOR)
+				pNode = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(NODEGROUP::SELECTOR, "BTReactiveSelector", &SequenceDesc));
 
 			if (nullptr == pNode)
 			{

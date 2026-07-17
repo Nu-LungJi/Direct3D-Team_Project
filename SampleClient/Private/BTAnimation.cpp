@@ -31,11 +31,6 @@ HRESULT CBTAnimation::Initalize(void* pArg)
 
 EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 {
-	if (m_iLoopCnt >= 1)
-	{
-		m_iLoopCnt = 0;
-		return m_eDebug = EVALUATE::SUCCESS;
-	}
 	auto pAnimator =(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	
 	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
@@ -48,13 +43,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 
 	if (m_bLoop || bFinished)
 	{
-		if (m_GuiNode.bAbort)
-		{
-			//애니매이션 겹침 방지
-		//	Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
-			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
-		}if (!m_bLoop) //루프 한번만 도는거 초기화용
-			++m_iLoopCnt;
+
+		Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
@@ -90,7 +80,11 @@ void CBTAnimation::Update_Gui()
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
+	
+//NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
+	
+//, EMISSIVE = 0x0000040
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
 	if (ImGui::TreeNode("EndFlag"))
 	{
 
@@ -115,6 +109,10 @@ void CBTAnimation::Update_Gui()
 	}
 
 	ImGui::PopStyleColor(2);
+}
+void CBTAnimation::Abort()
+{
+	m_iLoopCnt = 0;
 }
 nlohmann::json CBTAnimation::Save_Node()
 {
