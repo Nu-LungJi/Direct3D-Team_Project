@@ -36,7 +36,7 @@ private:
 
 private:
 	HRESULT Initialize(void* pArg) override;
-	_float4x4& Get_Socket_Matrix();
+
 
 
 

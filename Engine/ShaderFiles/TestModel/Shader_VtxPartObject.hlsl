@@ -22,7 +22,7 @@ struct GPU_ANIM_INSTANCE_DATA
 
 StructuredBuffer<GPU_ANIM_INSTANCE_DATA> g_AnimationInstances : register(t6);
 StructuredBuffer<float4x4> g_FinalBoneMatrices : register(t7);
-struct GPU_PART_INSTANCE_DATA { float4x4 WorldMatrix; uint iParentInstanceIndex; uint iParentBoneIndex; float2 Padding; };
+struct GPU_PART_INSTANCE_DATA { float4x4 WorldMatrix; uint iParentInstanceIndex; uint iParentBoneIndex;	bool bAttacth; float bPad; };
 StructuredBuffer<GPU_PART_INSTANCE_DATA> g_PartInstances : register(t8);
 
 
@@ -49,13 +49,22 @@ struct VS_OUT
 VS_OUT VSMain(VS_IN In, uint instanceId : SV_InstanceID)
 {
     VS_OUT Out;
-    const GPU_PART_INSTANCE_DATA part = g_PartInstances[instanceId];
+	const GPU_PART_INSTANCE_DATA part = g_PartInstances[instanceId];
     const uint boneOffset = part.iParentInstanceIndex * 512;
     const float4x4 boneMatrix = g_FinalBoneMatrices[boneOffset + part.iParentBoneIndex];
     const float4x4 worldMatrix = g_AnimationInstances[part.iParentInstanceIndex].WorldMatrix;
     const float4x4 attachmentWorldMatrix = mul(boneMatrix, worldMatrix);
 
-    const float4x4 partAttachmentWorldMatrix = mul(part.WorldMatrix, attachmentWorldMatrix);
+	float4x4 partAttachmentWorldMatrix;
+	if (part.bAttacth == true)
+	{
+		
+		partAttachmentWorldMatrix = mul(part.WorldMatrix, attachmentWorldMatrix);
+	}
+	else
+	{
+		partAttachmentWorldMatrix = part.WorldMatrix;
+	}
     float4 localPos = mul(float4(In.vPosition, 1.f), preTransform);
     float4 vWorldPosition = mul(localPos, partAttachmentWorldMatrix);
 

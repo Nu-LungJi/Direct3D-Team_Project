@@ -25,6 +25,10 @@ void CTestPartObject::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 
+	if (ImGui::Button("NEW CLEAR HEACK")) {
+		m_bAttach = false;
+	}
+
 }
 
 HRESULT CTestPartObject::InitializePrototype(void* pArg)
@@ -136,6 +140,8 @@ void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 	
 	_float4x4 Dummy;
 	m_pSocket->Get_Socket_MatrixAtPose(CurAnim.iAnimIndex, CurAnim.fTrackPosition,Dummy);
+
+
 	const auto* pOwner = CGameInstance::Get().GetGameObjectByHandle(m_hOwner);
 
 	const _matrix ownerWorld = pOwner->GetTransform().GetLoadedCombinedWorldMatrix();
@@ -144,8 +150,8 @@ void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 
 	XMStoreFloat4x4(&socketWorldFloat, socketWorld);
 
-	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-	CGameInstance::Get().GetDbgLineRender()->AddBox({ 0.001f , 0.001f , 0.001f }, XMLoadFloat4x4(&socketWorldFloat));
+	//CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+	//CGameInstance::Get().GetDbgLineRender()->AddBox({ 0.001f , 0.001f , 0.001f }, XMLoadFloat4x4(&socketWorldFloat));
 
 	E::GPU_PART_INSTANCE_DATA instanceData{};
 	if (SUCCEEDED(BuildPartInstanceData(instanceData)))CGameInstance::Get().Add_Part_Instance(m_pComModelInstance, instanceData);
@@ -177,7 +183,7 @@ HRESULT CTestPartObject::Render(ID3D11DeviceContext* pContext,  const E::RENDER_
 		cbAttachmentObject.m_preTransform = m_pComModelInstance->GetModel()->Get_PreTransformMatrix();
 		cbAttachmentObject.gParentBoneIndex = m_iBoneIndex;
 		cbAttachmentObject.gParentInstanceIndex = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(m_hOwner)->GetInstanceModelNum();
-		cbAttachmentObject.gPartAttachmentPadding = { 0.f,0.f };
+
 
 		if (FAILED(m_pComCBufferPartObject->MapDiscard(pContext, &cbAttachmentObject, sizeof(cbAttachmentObject))))
 		{
@@ -258,7 +264,7 @@ HRESULT  CTestPartObject::Render_Instanced(ID3D11DeviceContext* pContext, const 
 		cbAttachmentObject.m_preTransform = m_pComModelInstance->GetModel()->Get_PreTransformMatrix();
 		cbAttachmentObject.gParentBoneIndex = m_iBoneIndex;
 		cbAttachmentObject.gParentInstanceIndex = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(m_hOwner)->GetInstanceModelNum();
-		cbAttachmentObject.gPartAttachmentPadding = {0.f,0.f};
+		cbAttachmentObject.bPad = {0.f,0.f};
 		
 		if (FAILED(m_pComCBufferPartObject->MapDiscard(pContext, &cbAttachmentObject, sizeof(cbAttachmentObject))))
 		{
@@ -343,9 +349,18 @@ HRESULT CTestPartObject::BuildPartInstanceData(E::GPU_PART_INSTANCE_DATA& outDat
 	auto* pOwner = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(m_hOwner);
 	if (!pOwner)
 		return E_FAIL;
-	outData.WorldMatrix = *GetTransform().GetCombinedWorldMatrix();
+	if (m_bAttach) {
+
+		outData.WorldMatrix = *GetTransform().GetCombinedWorldMatrix();
+		outData.bAttach = m_bAttach;
+	}
+	else {
+		outData.WorldMatrix = socketWorldFloat;
+		outData.bAttach = m_bAttach;
+	}
 	outData.iParentInstanceIndex = pOwner->GetInstanceModelNum();
 	outData.iParentBoneIndex = m_iBoneIndex;
+
 	return S_OK;
 }
 

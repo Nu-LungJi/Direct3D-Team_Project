@@ -48,6 +48,7 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext,  const E::RENDER_CTX& ctx) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
 
+
 public:
 	HRESULT BindParentAnimationBuffers(ID3D11DeviceContext* pContext);
 	HRESULT UpdatePartInstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<E::GPU_PART_INSTANCE_DATA>& instances);
@@ -67,7 +68,7 @@ private:
 	uint32_t m_iBoneIndex{};
 	_float3 m_vBoneOffset{};
 	StringID m_sAnimGetID;
-
+	_bool	 m_bAttach = true;
 
 	_float4x4 socketWorldFloat{};
 public:

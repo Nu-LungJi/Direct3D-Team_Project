@@ -426,7 +426,8 @@ namespace Engine
 		_float4x4 WorldMatrix{};
 		uint32_t iParentInstanceIndex = 0;
 		uint32_t iParentBoneIndex = 0;
-		_float2 Padding{};
+		_bool    bAttach;
+		_float   pad;
 	} GPU_PART_INSTANCE_DATA;
 
 	typedef struct MODEL_INSTANCE_KEY

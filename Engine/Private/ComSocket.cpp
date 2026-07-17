@@ -41,11 +41,6 @@ HRESULT CComSocket::Initialize(void* pArg)
 	return S_OK;
 }
 
-_float4x4& CComSocket::Get_Socket_Matrix()
-{
-	return m_SocketMatrix;
-}
-
 _bool CComSocket::Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosition, _float4x4& OutSocketMatrix) const
 {
 	ZoneScopedN("Update Socket_Matrix");
