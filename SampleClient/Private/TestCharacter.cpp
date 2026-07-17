@@ -1,4 +1,4 @@
-﻿#include"pch.h"
+#include"pch.h"
 #include "GameInstance.h"
 #include "TestCharacter.h"
 #include "Collider.h"
@@ -136,30 +136,26 @@ void CTestCharacter::OnSleep()
 
 void CTestCharacter::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	const std::string message = std::string("[PX][TestCharacter] Collision Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestCharacter] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestCharacter::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	const std::string message = std::string("[PX][TestCharacter] Collision Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestCharacter] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestCharacter::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
-	const std::string message = std::string("[PX][TestCharacter] Trigger Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestCharacter] Trigger Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestCharacter::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
-	const std::string message = std::string("[PX][TestCharacter] Trigger Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestCharacter] Trigger Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 E::UPtr<CTestCharacter> CTestCharacter::Create()

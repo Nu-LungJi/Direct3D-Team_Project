@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "LevelPhysX.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"

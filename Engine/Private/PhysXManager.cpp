@@ -16,6 +16,167 @@ static physx::PxDefaultErrorCallback gDefaultErrorCallback;
 
 NS_USING(Engine)
 
+namespace
+{
+	class CPxSceneQueryFilter final : public PxQueryFilterCallback
+	{
+	public:
+		CPxSceneQueryFilter(const CPhysXManager& manager, const PX_QUERY_FILTER_DESC& tDesc, PxQueryHitType::Enum eHitType)
+			: m_Manager{ manager }, m_tDesc{ tDesc }, m_eHitType{ eHitType }
+		{
+		}
+
+		PxQueryHitType::Enum preFilter(
+			const PxFilterData& tQueryData,
+			const PxShape* pShape,
+			const PxRigidActor* pActor,
+			PxHitFlags&) override
+		{
+			if (!pShape || !pActor)
+				return PxQueryHitType::eNONE;
+
+			if (!m_tDesc.bIncludeTrigger && pShape->getFlags().isSet(PxShapeFlag::eTRIGGER_SHAPE))
+				return PxQueryHitType::eNONE;
+
+			if ((tQueryData.word0 & pShape->getQueryFilterData().word0) == 0)
+				return PxQueryHitType::eNONE;
+
+			if (!(m_tDesc.hIgnoreGameObject == CHandle{}))
+			{
+				if (const auto tShapeData = m_Manager.FindShapeUserData(pShape);
+					tShapeData && tShapeData->hGameObject == m_tDesc.hIgnoreGameObject)
+					return PxQueryHitType::eNONE;
+
+				if (const auto tActorData = m_Manager.FindActorUserData(pActor);
+					tActorData && tActorData->hGameObject == m_tDesc.hIgnoreGameObject)
+					return PxQueryHitType::eNONE;
+			}
+
+			return m_eHitType;
+		}
+
+		PxQueryHitType::Enum postFilter(
+			const PxFilterData&, const PxQueryHit&, const PxShape*, const PxRigidActor*) override
+		{
+			return m_eHitType;
+		}
+
+	private:
+		const CPhysXManager& m_Manager;
+		const PX_QUERY_FILTER_DESC& m_tDesc;
+		PxQueryHitType::Enum m_eHitType{};
+	};
+
+	_bool BuildQueryFilterData(const PX_QUERY_FILTER_DESC& tDesc, _bool bMultiple, PxQueryFilterData& outFilterData)
+	{
+		outFilterData.data.word0 = tDesc.iQueryMask;
+		outFilterData.flags = PxQueryFlag::ePREFILTER;
+
+		if (tDesc.bQueryStatic)
+			outFilterData.flags |= PxQueryFlag::eSTATIC;
+		if (tDesc.bQueryDynamic)
+			outFilterData.flags |= PxQueryFlag::eDYNAMIC;
+		if (bMultiple)
+			outFilterData.flags |= PxQueryFlag::eNO_BLOCK;
+
+		return tDesc.bQueryStatic || tDesc.bQueryDynamic;
+	}
+
+	_bool BuildGeometry(const PX_QUERY_GEOMETRY_DESC& tDesc, PxGeometryHolder& outGeometry)
+	{
+		switch (tDesc.eType)
+		{
+		case PX_QUERY_GEOMETRY_TYPE::BOX:
+			if (tDesc.vBoxHalfExtents.x <= 0.f || tDesc.vBoxHalfExtents.y <= 0.f || tDesc.vBoxHalfExtents.z <= 0.f)
+				return false;
+			outGeometry.storeAny(PxBoxGeometry{ tDesc.vBoxHalfExtents.x, tDesc.vBoxHalfExtents.y, tDesc.vBoxHalfExtents.z });
+			return true;
+
+		case PX_QUERY_GEOMETRY_TYPE::SPHERE:
+			if (tDesc.fRadius <= 0.f)
+				return false;
+			outGeometry.storeAny(PxSphereGeometry{ tDesc.fRadius });
+			return true;
+
+		case PX_QUERY_GEOMETRY_TYPE::CAPSULE:
+			if (tDesc.fRadius <= 0.f || tDesc.fCapsuleHalfHeight < 0.f)
+				return false;
+			outGeometry.storeAny(PxCapsuleGeometry{ tDesc.fRadius, tDesc.fCapsuleHalfHeight });
+			return true;
+		}
+
+		return false;
+	}
+
+	_bool BuildPose(const PX_QUERY_POSE& tPose, PxTransform& outPose)
+	{
+		PxQuat tRotation{ tPose.vRotation.x, tPose.vRotation.y, tPose.vRotation.z, tPose.vRotation.w };
+		if (!tRotation.isFinite() || tRotation.magnitudeSquared() <= 0.f)
+			return false;
+
+		tRotation.normalize();
+		outPose = PxTransform{ PxVec3{ tPose.vPosition.x, tPose.vPosition.y, tPose.vPosition.z }, tRotation };
+		return outPose.isValid();
+	}
+
+	_bool BuildDirection(const _float3& vDirection, PxVec3& outDirection)
+	{
+		outDirection = PxVec3{ vDirection.x, vDirection.y, vDirection.z };
+		const PxReal fLengthSquared = outDirection.magnitudeSquared();
+		if (!outDirection.isFinite() || fLengthSquared <= 0.f)
+			return false;
+
+		outDirection *= PxRecipSqrt(fLengthSquared);
+		return true;
+	}
+
+	void FillShapeResult(const CPhysXManager& manager, const PxShape* pShape, PX_RAYCAST_RESULT& outResult)
+	{
+		if (!pShape)
+			return;
+
+		if (const auto tShapeData = manager.FindShapeUserData(pShape))
+		{
+			outResult.eShapeType = tShapeData->eType;
+			outResult.iShapeSubIndex = tShapeData->iSubIndex;
+		}
+	}
+
+	void FillShapeResult(const CPhysXManager& manager, const PxShape* pShape, PX_OVERLAP_RESULT& outResult)
+	{
+		if (!pShape)
+			return;
+
+		if (const auto tShapeData = manager.FindShapeUserData(pShape))
+		{
+			outResult.eShapeType = tShapeData->eType;
+			outResult.iShapeSubIndex = tShapeData->iSubIndex;
+		}
+	}
+
+	template<typename THit>
+	PX_RAYCAST_RESULT MakeLocationHitResult(const CPhysXManager& manager, const THit& tHit)
+	{
+		PX_RAYCAST_RESULT tResult{};
+		tResult.bHit = true;
+		tResult.vHitpos = { tHit.position.x, tHit.position.y, tHit.position.z };
+		tResult.vHitNormal = { tHit.normal.x, tHit.normal.y, tHit.normal.z };
+		tResult.fDistance = tHit.distance;
+		tResult.pGameObject = manager.FindGameObject(tHit.actor);
+		FillShapeResult(manager, tHit.shape, tResult);
+		return tResult;
+	}
+
+	PX_OVERLAP_RESULT MakeOverlapResult(const CPhysXManager& manager, const PxOverlapHit& tHit)
+	{
+		PX_OVERLAP_RESULT tResult{};
+		tResult.bHit = true;
+		tResult.pGameObject = manager.FindGameObject(tHit.actor);
+		FillShapeResult(manager, tHit.shape, tResult);
+		return tResult;
+	}
+}
+
 CPhysXManager::CPhysXManager()
 {
 }
@@ -129,90 +290,184 @@ void CPhysXManager::UpdateGUI()
     ImGui::End();
 }
 
-_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
+//_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
+//{
+//	PX_RAYCAST_DESC tDesc{};
+//	tDesc.vOrigin = vOrigin;
+//	tDesc.vDirection = vNormalizedDir;
+//	tDesc.fMaxDistance = fMaxDistance;
+//	return RayCast(tDesc, outResult);
+//}
+//
+//_bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+//{
+//	PX_RAYCAST_DESC tDesc{};
+//	tDesc.vOrigin = vOrigin;
+//	tDesc.vDirection = vNormalizedDir;
+//	tDesc.fMaxDistance = fMaxDistance;
+//	return RayCastMultiple(tDesc, outVecResult, iMaxHit);
+//}
+
+_bool CPhysXManager::RayCast(const PX_RAYCAST_DESC& tDesc, PX_RAYCAST_RESULT& outResult) const
 {
-	PxRaycastBuffer hitBuffer;
+	outResult = {};
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f)
+		return false;
 
-	physx::PxHitFlags hitFlags = physx::PxHitFlag::eDEFAULT;
-	physx::PxQueryFilterData filterData = physx::PxQueryFilterData();
+	PxVec3 vDirection{};
+	PxQueryFilterData tFilterData{};
+	if (!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, false, tFilterData))
+		return false;
 
-	_bool bHit = m_pScene->raycast(
-		PxVec3(vOrigin.x, vOrigin.y, vOrigin.z),
-		PxVec3(vNormalizedDir.x, vNormalizedDir.y, vNormalizedDir.z),
-		fMaxDistance,
-		hitBuffer,
-		hitFlags,
-		filterData
-	);
+	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eBLOCK };
+	PxRaycastBuffer tHitBuffer{};
+	PxHitFlags tHitFlags{ PxHitFlag::eDEFAULT };
+	if (tDesc.bHitMeshBothSides)
+		tHitFlags |= PxHitFlag::eMESH_BOTH_SIDES;
 
-	if (bHit)
-	{
-		const physx::PxRaycastHit& block = hitBuffer.block;
+	if (!m_pScene->raycast(
+		PxVec3{ tDesc.vOrigin.x, tDesc.vOrigin.y, tDesc.vOrigin.z },
+		vDirection,
+		tDesc.fMaxDistance,
+		tHitBuffer,
+		tHitFlags,
+		tFilterData,
+		&tFilter) || !tHitBuffer.hasBlock)
+		return false;
 
-		outResult.bHit = true;
-		outResult.vHitpos = { block.position.x, block.position.y, block.position.z };
-		outResult.vHitNormal = { block.normal.x, block.normal.y, block.normal.z };
-		outResult.fDistance = block.distance;
-
-		outResult.pGameObject = FindGameObject(block.actor);
-		return true;
-	}
-
-	return false;
+	outResult = MakeLocationHitResult(*this, tHitBuffer.block);
+	return true;
 }
 
-_bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
 {
 	outVecResult.clear();
-	outVecResult.reserve(iMaxHit);
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0)
+		return false;
 
-	std::unique_ptr< physx::PxRaycastHit[]> hitArray = std::make_unique< physx::PxRaycastHit[]>(iMaxHit);
-	physx::PxRaycastBuffer hitBuffer(hitArray.get(), iMaxHit);
-	
-	physx::PxHitFlags hitFlags = physx::PxHitFlag::eDEFAULT;
-	physx::PxQueryFilterData filterData = physx::PxQueryFilterData();
+	PxVec3 vDirection{};
+	PxQueryFilterData tFilterData{};
+	if (!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
+		return false;
 
-	_bool bHit = m_pScene->raycast(
-		PxVec3(vOrigin.x, vOrigin.y, vOrigin.z),
-		PxVec3(vNormalizedDir.x, vNormalizedDir.y, vNormalizedDir.z),
-		fMaxDistance,
-		hitBuffer,
-		hitFlags,
-		filterData
-	);
+	std::vector<PxRaycastHit> Hits(iMaxHit);
+	PxRaycastBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
+	PxHitFlags tHitFlags{ PxHitFlag::eDEFAULT };
+	if (tDesc.bHitMeshBothSides)
+		tHitFlags |= PxHitFlag::eMESH_BOTH_SIDES;
 
-	if (bHit)
+	m_pScene->raycast(
+		PxVec3{ tDesc.vOrigin.x, tDesc.vOrigin.y, tDesc.vOrigin.z },
+		vDirection,
+		tDesc.fMaxDistance,
+		tHitBuffer,
+		tHitFlags,
+		tFilterData,
+		&tFilter);
+
+	outVecResult.reserve(tHitBuffer.getNbTouches());
+	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+		outVecResult.push_back(MakeLocationHitResult(*this, tHitBuffer.getTouch(i)));
+
+	std::sort(outVecResult.begin(), outVecResult.end(), [](const PX_RAYCAST_RESULT& a, const PX_RAYCAST_RESULT& b)
 	{
-		physx::PxU32 nbTouches = hitBuffer.getNbAnyHits();
-		for (physx::PxU32 i = 0; i < nbTouches; ++i)
-		{
-			const physx::PxRaycastHit& hit = hitBuffer.getAnyHit(i);
+		return a.fDistance < b.fDistance;
+	});
+	return !outVecResult.empty();
+}
 
-			if (auto* pObj = FindGameObject(hit.actor))
-			{
-				PX_RAYCAST_RESULT outResult{};
-				outResult.bHit = true;
-				outResult.vHitpos = { hit.position.x, hit.position.y, hit.position.z };
-				outResult.vHitNormal = { hit.normal.x, hit.normal.y, hit.normal.z };
-				outResult.fDistance = hit.distance;
-				outResult.pGameObject = pObj;
-				outVecResult.push_back(outResult);
-			}
-		} // end for
+_bool CPhysXManager::Sweep(const PX_SWEEP_DESC& tDesc, PX_SWEEP_RESULT& outResult) const
+{
+	outResult = {};
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f)
+		return false;
 
-		if (!outVecResult.empty())
-		{
-			// 오름차순
-			std::sort(outVecResult.begin(), outVecResult.end(),
-				[](const PX_RAYCAST_RESULT& a, const PX_RAYCAST_RESULT& b) {
-					return a.fDistance < b.fDistance;
-				});
-		}
+	PxGeometryHolder tGeometry{};
+	PxTransform tPose{ PxIdentity };
+	PxVec3 vDirection{};
+	PxQueryFilterData tFilterData{};
+	if (!BuildGeometry(tDesc.tGeometry, tGeometry) || !BuildPose(tDesc.tPose, tPose) ||
+		!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, false, tFilterData))
+		return false;
 
-		return !outVecResult.empty();
-	}
+	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eBLOCK };
+	PxSweepBuffer tHitBuffer{};
+	if (!m_pScene->sweep(
+		tGeometry.any(), tPose, vDirection, tDesc.fMaxDistance, tHitBuffer,
+		PxHitFlag::eDEFAULT, tFilterData, &tFilter) || !tHitBuffer.hasBlock)
+		return false;
 
-	return false;
+	outResult = MakeLocationHitResult(*this, tHitBuffer.block);
+	return true;
+}
+
+_bool CPhysXManager::SweepMultiple(const PX_SWEEP_DESC& tDesc, std::vector<PX_SWEEP_RESULT>& outVecResult, uint32_t iMaxHit) const
+{
+	outVecResult.clear();
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0)
+		return false;
+
+	PxGeometryHolder tGeometry{};
+	PxTransform tPose{ PxIdentity };
+	PxVec3 vDirection{};
+	PxQueryFilterData tFilterData{};
+	if (!BuildGeometry(tDesc.tGeometry, tGeometry) || !BuildPose(tDesc.tPose, tPose) ||
+		!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
+		return false;
+
+	std::vector<PxSweepHit> Hits(iMaxHit);
+	PxSweepBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
+	m_pScene->sweep(
+		tGeometry.any(), tPose, vDirection, tDesc.fMaxDistance, tHitBuffer,
+		PxHitFlag::eDEFAULT, tFilterData, &tFilter);
+
+	outVecResult.reserve(tHitBuffer.getNbTouches());
+	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+		outVecResult.push_back(MakeLocationHitResult(*this, tHitBuffer.getTouch(i)));
+
+	std::sort(outVecResult.begin(), outVecResult.end(), [](const PX_SWEEP_RESULT& a, const PX_SWEEP_RESULT& b)
+	{
+		return a.fDistance < b.fDistance;
+	});
+	return !outVecResult.empty();
+}
+
+_bool CPhysXManager::Overlap(const PX_OVERLAP_DESC& tDesc, PX_OVERLAP_RESULT& outResult) const
+{
+	outResult = {};
+	std::vector<PX_OVERLAP_RESULT> Results{};
+	if (!OverlapMultiple(tDesc, Results, 1))
+		return false;
+
+	outResult = Results.front();
+	return true;
+}
+
+_bool CPhysXManager::OverlapMultiple(const PX_OVERLAP_DESC& tDesc, std::vector<PX_OVERLAP_RESULT>& outVecResult, uint32_t iMaxHit) const
+{
+	outVecResult.clear();
+	if (!m_pScene || iMaxHit == 0)
+		return false;
+
+	PxGeometryHolder tGeometry{};
+	PxTransform tPose{ PxIdentity };
+	PxQueryFilterData tFilterData{};
+	if (!BuildGeometry(tDesc.tGeometry, tGeometry) || !BuildPose(tDesc.tPose, tPose) ||
+		!BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
+		return false;
+
+	std::vector<PxOverlapHit> Hits(iMaxHit);
+	PxOverlapBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
+	m_pScene->overlap(tGeometry.any(), tPose, tHitBuffer, tFilterData, &tFilter);
+
+	outVecResult.reserve(tHitBuffer.getNbTouches());
+	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+		outVecResult.push_back(MakeOverlapResult(*this, tHitBuffer.getTouch(i)));
+
+	return !outVecResult.empty();
 }
 
 

@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "TestPhysXBox.h"
 #include "GameInstance.h"
 #include "Collider.h"
@@ -80,30 +80,26 @@ void CTestPhysXBox::OnSleep()
 
 void CTestPhysXBox::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	const std::string message = std::string("[PX][TestPhysXBox] Collision Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXBox] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysXBox::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	const std::string message = std::string("[PX][TestPhysXBox] Collision Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXBox] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysXBox::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
-	const std::string message = std::string("[PX][TestPhysXBox] Trigger Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXBox] Trigger Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysXBox::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
-	const std::string message = std::string("[PX][TestPhysXBox] Trigger Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXBox] Trigger Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 E::UPtr<CTestPhysXBox> CTestPhysXBox::Create()

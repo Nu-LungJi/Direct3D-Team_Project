@@ -1,4 +1,4 @@
-﻿#include"pch.h"
+#include"pch.h"
 #include "GameInstance.h"
 #include "TestPhysX.h"
 #include "Collider.h"
@@ -11,6 +11,7 @@
 #include "TestPhysXCapsule.h"
 #include "Resources.h"
 #include "TestPhysXTerrain.h"
+#include "PhysXManager.h"
 
 NS_USING(Client)
 
@@ -110,35 +111,93 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 		}
 	}
 
+
 	if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		if (auto pCam = CGameInstance::Get().GetActiveCamera())
 		{
 			const auto& [ori, Dir] = pCam->GetRay();
-			if(false)
+			//if(false)
+			//{
+			//	PX_RAYCAST_RESULT outResult;
+			//	if (CGameInstance::Get().GetPhysXManager()->RayCast({ .vOrigin = ori, .vDirection = Dir, .fMaxDistance = 10.f, .tFilter = {.hIgnoreGameObject = GetHandle()}}, outResult))
+			//	{
+			//		if (!outResult.pGameObject->Is<CTestPhysXTerrain>()
+			//			&& !outResult.pGameObject->Is<CTestPhysX>())
+			//		{
+			//			//outResult.pGameObject->SetPendingDestroyCascade();
+			//		}
+			//	}
+			//}
+			
 			{
-				PX_RAYCAST_RESULT outResult;
-				if (CGameInstance::Get().PxRayCast(ori, Dir, 10.f, outResult))
+				if (auto pHandles = CGameInstance::Get().GetGameObjectLayer("00_OBJECTS"))
 				{
-					if (!outResult.pGameObject->IsA(CTestPhysXTerrain::StaticType)
-						&& !outResult.pGameObject->IsA(CTestPhysX::StaticType))
+					for (const auto& h : *pHandles)
 					{
-						//outResult.pGameObject->SetPendingDestroyCascade();
+						//CGameInstance::Get().GetGameObjectByHandleT<>
+					}
+				}
+
+				std::vector< PX_RAYCAST_RESULT> results{};
+
+				if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = Dir, .fMaxDistance = 10.f,.bHitMeshBothSides = true ,
+					.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC), .hIgnoreGameObject = GetHandle(), .bQueryDynamic = false, }}, results))
+				{
+					for (const auto& result : results)
+					{
+						const auto hit = result.vHitpos;
+						const auto normalEnd = _float3{
+							hit.x + result.vHitNormal.x,
+							hit.y + result.vHitNormal.y,
+							hit.z + result.vHitNormal.z
+						};
+						CGameInstance::Get().GetDbgLineRender()->AddLine(
+							hit,
+							normalEnd,
+							{ 0.f, 1.f, 0.f, 1.f });
+
+						if (result.pGameObject && result.pGameObject->Is< CTestPhysXTerrain>())
+						{
+							CTestPhysXBall::DESC Desc{
+								.vInitialPos = hit
+							};
+							Desc.sObjectTag = "TestPhysXBall";
+							if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBall",
+								"00_OBJECTS", &Desc)))
+							{
+								//return E_FAIL;
+							}
+						}
 					}
 				}
 			}
 
+			if (false)
 			{
-				std::vector< PX_RAYCAST_RESULT> vecOutResult{};
-				if (CGameInstance::Get().PxRayCastMultiple(ori, Dir, 10.f, vecOutResult))
+				std::vector< PX_RAYCAST_RESULT> vecOutResult{}; 
+				if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = Dir, .fMaxDistance = 10.f,
+					.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC), .bQueryDynamic = false } }, vecOutResult))
 				{
 					for (auto& result : vecOutResult)
 					{
-						if (!result.pGameObject->IsA(CTestPhysXTerrain::StaticType)
-							&& !result.pGameObject->IsA(CTestPhysX::StaticType))
-						{
-							//result.pGameObject->SetPendingDestroyCascade();
-						}
+						const auto hit = result.vHitpos;
+						const auto normalEnd = _float3{
+							hit.x + result.vHitNormal.x,
+							hit.y + result.vHitNormal.y,
+							hit.z + result.vHitNormal.z
+						};
+
+						CGameInstance::Get().GetDbgLineRender()->AddLine(
+							hit,
+							normalEnd,
+							{ 0.f, 1.f, 0.f, 1.f });
+
+						//if (!result.pGameObject->Is<CTestPhysXTerrain>()
+						//	&& !result.pGameObject->Is<CTestPhysX>())
+						//{
+						//	//result.pGameObject->SetPendingDestroyCascade();
+						//}
 					}
 				}
 			}
@@ -170,16 +229,14 @@ void CTestPhysX::OnSleep()
 
 void CTestPhysX::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	const std::string message = std::string("[PX][TestPhysX] Collision Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestPhysX] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysX::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	const std::string message = std::string("[PX][TestPhysX] Collision Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
-	OutputDebugStringA(message.c_str());
+	DEBUG_LOG_STR(std::string("[PX][TestPhysX] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysX::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
