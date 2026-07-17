@@ -10,6 +10,7 @@ class CResPixelShader;
 class CResSamplerState;
 class CResModel;
 class CComStaticModelInstance;
+class CComSocket;
 NS_END
 
 NS_BEGIN(Client)
@@ -28,6 +29,7 @@ public:
 		_float3 vBoneOffset{};
 		StringID sGroupTag;
 		StringID sResTag;
+
 	
 	}DESC;
 
@@ -58,6 +60,9 @@ private:
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	CComConstantBuffer* m_pComCBufferPartObject{};
+
+	CComSocket* m_pSocket;
+
 	CHandle m_hOwner{};
 	uint32_t m_iBoneIndex{};
 	_float3 m_vBoneOffset{};

@@ -36,15 +36,8 @@ HRESULT CComSocket::Initialize(void* pArg)
 	// Bone Socket 위치 알기 위한 이름
 	m_iBoneIndex	=	pDesc->iBoneIndex;
 	m_fOffset		=	pDesc->m_fOffset;
-	
-	auto& m_sModelInstanceName = pDesc->sModelInstanceName;
-	auto& m_sAnimatorName = pDesc->sAnimationName;
-	
-	if (pArg != nullptr) {
-
-		m_ComModelInstance = CGameInstance::Get().GetGameObjectByHandle(m_pOwner)->GetComponent<CComModelInstance>(m_sModelInstanceName);
-		m_ComAnimator = CGameInstance::Get().GetGameObjectByHandle(m_pOwner)->GetComponent<CComAnimator>(m_sAnimatorName);
-	}
+	m_sModelInstanceName = pDesc->sModelInstanceName;
+	m_sAnimatorName = pDesc->sAnimationName;
 	return S_OK;
 }
 
@@ -55,11 +48,19 @@ _float4x4& CComSocket::Get_Socket_Matrix()
 
 _bool CComSocket::Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosition, _float4x4& OutSocketMatrix) const
 {
-	if (m_ComAnimator == nullptr || m_ComModelInstance == nullptr)
+	ZoneScopedN("Update Socket_Matrix");
+
+	auto* pObj = CGameInstance::Get().GetGameObjectByHandle(m_pOwner);
+	if (!pObj)
 		return false;
 
+	auto* pModelInstance = pObj->GetComponent<CComModelInstance>(m_sModelInstanceName);
+	auto* pAnimator = pObj->GetComponent<CComAnimator>(m_sAnimatorName);
+
+
+
 	std::vector<_float4x4> combinedBoneMatrices;
-	if (!m_ComAnimator->Sample_CombinedBoneMatrices(iAnimIndex, fTrackPosition, combinedBoneMatrices) ||
+	if (!pAnimator->Sample_CombinedBoneMatrices(iAnimIndex, fTrackPosition, combinedBoneMatrices) ||
 		m_iBoneIndex >= combinedBoneMatrices.size())
 	{
 		return false;

@@ -3,6 +3,7 @@
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComStaticModelInstance.h"
+#include "ComSocket.h"
 #include "AnimationObject.h"
 #include "Resources.h"
 #include "GameInstance.h"
@@ -82,6 +83,7 @@ HRESULT CTestPartObject::Initialize(void* pArg)
 		};
 	}
 
+	
 	{
 		CComStaticModelInstance::DESC Desc{};
 		//Desc.sGroupTag = "TEST";
@@ -95,6 +97,18 @@ HRESULT CTestPartObject::Initialize(void* pArg)
 		};
 	}
 
+	{
+		CComSocket::DESC des{};
+		des.m_pOwner = m_hOwner;
+		des.sModelInstanceName = "ComCModelIntance";
+		des.sAnimationName = "ComCModelAnimator";
+		des.iBoneIndex = m_iBoneIndex;
+		des.m_fOffset = {0.f,0.f,0.f,0.f};
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Socket", "ComSocket", &des, &m_pSocket)))
+		{
+			return E_FAIL;
+		};
+	}
 
 
 
@@ -113,7 +127,8 @@ void CTestPartObject::Update(E::_float fTimeDelta)
 void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
-
+	_float4x4 Dummy;
+	m_pSocket->Get_Socket_MatrixAtPose(1.f,1,Dummy);
 
 	E::GPU_PART_INSTANCE_DATA instanceData{};
 	if (SUCCEEDED(BuildPartInstanceData(instanceData)))

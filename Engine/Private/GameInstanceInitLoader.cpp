@@ -17,6 +17,7 @@
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
+#include "ComSocket.h"
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
@@ -334,6 +335,12 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 
 	if (CGameInstance::Get().AddPrototype(
 		"PERMANENT", "Prototype_Component_Animator", CComAnimator::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		"PERMANENT", "Prototype_Component_Socket", CComSocket::Create()))
 	{
 		return E_FAIL;
 	}
