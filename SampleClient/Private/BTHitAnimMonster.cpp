@@ -14,7 +14,7 @@ CBTHitAnimMonster::CBTHitAnimMonster(const CBTHitAnimMonster& rhs) : CBTActionNo
 
 CBTHitAnimMonster::~CBTHitAnimMonster()
 {
-
+	
 }
 HRESULT CBTHitAnimMonster::InitializePrototype(void* pArg)
 {
@@ -217,7 +217,7 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 
-	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
+	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
 		SaveJsonValue(j, Name, m_iHitAnim[i]);
@@ -235,7 +235,7 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
-	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
+	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
 		LoadJsonValue(j, Name, m_iHitAnim[i]);

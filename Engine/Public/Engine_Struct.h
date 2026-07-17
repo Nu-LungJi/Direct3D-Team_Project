@@ -125,9 +125,9 @@ namespace Engine
 	typedef struct tagdestnode
 	{
 		tagdestnode() = default;
-		tagdestnode(_string Name, BEHAVIOR eBType, int32_t iNode)
+		tagdestnode(_string Name, BEHAVIOR eBType, int32_t iNode) : DestName(Name)
 		{
-			DestName = Name; eType = eBType; iDestNode = iNode;
+			eType = eBType; iDestNode = iNode;
 		}
 		_string  DestName{};
 		int32_t iDestNode{ -1 };
@@ -145,7 +145,7 @@ namespace Engine
 		_bool		bAbort{ false };
 		BEHAVIOR    eMyType{};
 		tagimguinode() = default;
-		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color) { eMyType = eType; iID = id; Name = name; vPos = pos; fValue = value; vColor = color; }
+		tagimguinode(BEHAVIOR eType, int32_t id, const _char* name, XMFLOAT2 pos, float value, XMFLOAT4 color):Name(name){ eMyType = eType; iID = id; vPos = pos; fValue = value; vColor = color; }
 		XMFLOAT2 GetStartSlotPos() { return XMFLOAT2(vPos.x + vSize.x * 0.5f, vPos.y); }
 		XMFLOAT2 GetEndSlotPos(int slot_no, int32_t iMaxCnt) const {
 			return XMFLOAT2(vPos.x + vSize.x * ((float)slot_no + 1) / ((float)iMaxCnt), vPos.y + vSize.y);

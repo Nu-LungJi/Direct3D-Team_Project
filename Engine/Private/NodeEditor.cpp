@@ -23,7 +23,6 @@ HRESULT CNodeEditor::Initialize()
 	//	"./Resources/SampleClient/Fonts/NeoDunggeunmoPro-Regular.ttf",
 	//	15.f);
 
-
 	ax::NodeEditor::Config config;
 	config.SettingsFile = nullptr;
 
@@ -990,6 +989,9 @@ void CNodeEditor::Pin(CBTRoot* pNode, _bool bPin)
 	}
 	else
 	{
+		if (pNode->Get_GuiNodeLink().SlotEnd.empty())
+			return;
+
 		DEST_NODE pDest = pNode->Get_GuiNodeLink().SlotEnd.back();
 		int32_t   iSlot = pNode->Get_GuiNodeLink().SlotEnd.size() - 1;
 		if (-1 != pDest.iDestNode)

@@ -427,9 +427,9 @@ void CGameInstance::Release_Engine()
 
 	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
 	m_pSoundManager.reset();
+	m_pNodeEditor.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
-	m_pNodeEditor.reset();
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pModel_Instance_Manager.reset();
