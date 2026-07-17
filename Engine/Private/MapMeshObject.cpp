@@ -455,121 +455,127 @@ HRESULT CMapMeshObject::PushInstance(const SPtr<CResStaticModel>& pModel, const 
 HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
 	ZoneScopedN("RenderInstancedBatches");
-	if (s_InstanceBatches.empty())
-	{
+	if (pContext == nullptr || s_InstanceBatches.empty())
 		return S_OK;
-	}
-
 
 	const auto& vertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
 	const auto& pixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced");
 	const auto& sampler = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-
-	if (vertexShader == nullptr || pixelShader == nullptr || sampler == nullptr)
-	{
+	if (!vertexShader || !pixelShader || !sampler)
 		return E_FAIL;
-	}
 
 	pContext->IASetInputLayout(vertexShader->GetInputLayout().Get());
 	pContext->VSSetShader(vertexShader->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(pixelShader->GetPixelShader().Get(), nullptr, 0);
+	pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
 
-	for (auto& [pModel, instanceBatch] : s_InstanceBatches)
+	if (s_pGpuCuller == nullptr)
 	{
-		if (pModel == nullptr || instanceBatch.instances.empty())
-		{
-			continue;
-		}
-
-		const auto* textureCache = GetOrCreateMapMeshTextureCache(pModel);
-		if (textureCache == nullptr)
-		{
-			return E_FAIL;
-		}
-
+		s_pGpuCuller = CMapMeshGpuCuller::Create();
 		if (s_pGpuCuller == nullptr)
-		{
-			s_pGpuCuller = CMapMeshGpuCuller::Create();
-			if (s_pGpuCuller == nullptr)
-			{
-				return E_FAIL;
-			}
-		}
-
-		if (FAILED(s_pGpuCuller->BuildVisibleInstances(
-			pContext,
-			instanceBatch.instances,
-			instanceBatch.occlusionData,
-			CGameInstance::Get().GetPrevHizBuffer(),
-			ctx.matViewProj,
-			CGameInstance::Get().GetClientScreenSize())))
-		{
 			return E_FAIL;
-		}
+	}
 
-#ifdef _DEBUG
-		// 디버그 확인용!! cpu readback이라 병목 발생
-		//{
-		//	const uint32_t visibleInstanceCount = s_pGpuCuller->GetVisibleCountForDebug(pContext);
-		//	const uint32_t totalInstanceCount = static_cast<uint32_t>(instanceBatch.instances.size());
-		//	s_FrameStats.iVisibleInstances += visibleInstanceCount;
-		//	s_FrameStats.iCulledInstances += totalInstanceCount - std::min(visibleInstanceCount, totalInstanceCount);
-		//}
-#endif
+	struct DRAW_ITEM
+	{
+		SPtr<CResStaticModel> model{};
+		const std::vector<MAPMESH_TEXTURE_SET>* textureCache = nullptr;
+		uint32_t meshIndex = 0;
+		uint32_t instanceOffset = 0;
+	};
 
-		ID3D11Buffer* visibleInstanceBuffer = s_pGpuCuller->GetVisibleInstanceBuffer();
-		if (visibleInstanceBuffer == nullptr)
+	size_t totalInstances = 0;
+	size_t totalDraws = 0;
+	for (const auto& [model, batch] : s_InstanceBatches)
+	{
+		if (model && !batch.instances.empty())
 		{
+			totalInstances += batch.instances.size();
+			totalDraws += model->Get_NumMeshes();
+		}
+	}
+
+	std::vector<MAPMESH_INSTANCE_DATA> instances;
+	std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
+	std::vector<MAPMESH_CULL_META> cullMeta;
+	std::vector<uint32_t> drawBatchIndices;
+	std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS> indirectArgs;
+	std::vector<DRAW_ITEM> drawItems;
+	instances.reserve(totalInstances);
+	occlusionData.reserve(totalInstances);
+	cullMeta.reserve(totalInstances);
+	drawBatchIndices.reserve(totalDraws);
+	indirectArgs.reserve(totalDraws);
+	drawItems.reserve(totalDraws);
+
+	uint32_t batchIndex = 0;
+	for (const auto& [model, batch] : s_InstanceBatches)
+	{
+		if (!model || batch.instances.empty())
+			continue;
+		if (batch.occlusionData.size() != batch.instances.size())
 			return E_FAIL;
-		}
 
-		if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
-		{
+		const auto* textureCache = GetOrCreateMapMeshTextureCache(model);
+		if (textureCache == nullptr)
 			return E_FAIL;
-		}
 
-		const uint32_t numMeshes = pModel->Get_NumMeshes();
-		for (uint32_t i = 0; i < numMeshes; ++i)
+		const uint32_t instanceOffset = static_cast<uint32_t>(instances.size());
+		instances.insert(instances.end(), batch.instances.begin(), batch.instances.end());
+		occlusionData.insert(occlusionData.end(), batch.occlusionData.begin(), batch.occlusionData.end());
+		cullMeta.insert(cullMeta.end(), batch.instances.size(), MAPMESH_CULL_META{ instanceOffset, batchIndex });
+
+		for (uint32_t meshIndex = 0; meshIndex < model->Get_NumMeshes(); ++meshIndex)
 		{
-			const auto& viBuffer = pModel->GetMeshes()[i];
-			if (viBuffer == nullptr)
-			{
+			const auto& mesh = model->GetMeshes()[meshIndex];
+			if (mesh == nullptr)
 				continue;
-			}
 
-			ID3D11Buffer* vertexBuffers[] = {
-				viBuffer->GetVertexBuffer().Get(),
-				visibleInstanceBuffer
-			};
-			uint32_t strides[] = {
-				viBuffer->GetVertexStride(),
-				static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)),
-			};
-			uint32_t offsets[] = { 0, 0 };
-
-			pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
-			pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-			pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-			if (FAILED(BindMapMeshTextures(pContext, *textureCache, i)))
-			{
-				return E_FAIL;
-			}
-
-			if (FAILED(s_pGpuCuller->PrepareIndirectArgs(
-				pContext,
-				static_cast<uint32_t>(viBuffer->GetNumIndices()),
-				0,
-				0,
-				0)))
-			{
-				return E_FAIL;
-			}
-
-			pContext->DrawIndexedInstancedIndirect(s_pGpuCuller->GetIndirectArgsBuffer(), 0);
-
-			++s_FrameStats.iDrawCalls;
+			drawBatchIndices.push_back(batchIndex);
+			D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
+			args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
+			indirectArgs.push_back(args);
+			drawItems.push_back({ model, textureCache, meshIndex, instanceOffset });
 		}
+		++batchIndex;
+	}
+
+	if (instances.empty() || drawItems.empty())
+		return S_OK;
+
+	if (FAILED(s_pGpuCuller->BuildVisibleInstancesAndIndirectArgs(
+		pContext, instances, occlusionData, cullMeta, batchIndex,
+		drawBatchIndices, indirectArgs,
+		CGameInstance::Get().GetPrevHizBuffer(), ctx.matViewProj,
+		CGameInstance::Get().GetClientScreenSize())))
+	{
+		return E_FAIL;
+	}
+
+	ID3D11Buffer* visibleInstanceBuffer = s_pGpuCuller->GetVisibleInstanceBuffer();
+	ID3D11Buffer* argsBuffer = s_pGpuCuller->GetIndirectArgsBuffer();
+	if (!visibleInstanceBuffer || !argsBuffer)
+		return E_FAIL;
+	if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
+		return E_FAIL;
+
+	for (uint32_t drawIndex = 0; drawIndex < drawItems.size(); ++drawIndex)
+	{
+		const auto& item = drawItems[drawIndex];
+		const auto& mesh = item.model->GetMeshes()[item.meshIndex];
+		ID3D11Buffer* vertexBuffers[] = { mesh->GetVertexBuffer().Get(), visibleInstanceBuffer };
+		uint32_t strides[] = { mesh->GetVertexStride(), static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
+		uint32_t offsets[] = { 0, item.instanceOffset * static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
+		pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
+		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+		if (FAILED(BindMapMeshTextures(pContext, *item.textureCache, item.meshIndex)))
+			return E_FAIL;
+
+		pContext->DrawIndexedInstancedIndirect(
+			argsBuffer,
+			drawIndex * static_cast<uint32_t>(sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS)));
+		++s_FrameStats.iDrawCalls;
 	}
 
 	return S_OK;

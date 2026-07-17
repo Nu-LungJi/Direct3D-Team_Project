@@ -1631,6 +1631,12 @@
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshBuildIndirectArgs.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGlobalCull.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
