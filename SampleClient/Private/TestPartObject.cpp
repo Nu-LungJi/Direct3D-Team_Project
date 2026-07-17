@@ -264,7 +264,7 @@ HRESULT  CTestPartObject::Render_Instanced(ID3D11DeviceContext* pContext, const 
 		cbAttachmentObject.m_preTransform = m_pComModelInstance->GetModel()->Get_PreTransformMatrix();
 		cbAttachmentObject.gParentBoneIndex = m_iBoneIndex;
 		cbAttachmentObject.gParentInstanceIndex = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(m_hOwner)->GetInstanceModelNum();
-		cbAttachmentObject.bPad = {0.f,0.f};
+		
 		
 		if (FAILED(m_pComCBufferPartObject->MapDiscard(pContext, &cbAttachmentObject, sizeof(cbAttachmentObject))))
 		{
