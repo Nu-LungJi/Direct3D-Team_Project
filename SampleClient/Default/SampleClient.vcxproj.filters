@@ -534,9 +534,6 @@
     <ClCompile Include="..\private\BTDecHp.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\BTTurnAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
@@ -644,6 +641,9 @@
     </ClCompile>
     <ClCompile Include="..\private\LevelCreatureLoader.cpp">
       <Filter>Loader\Level\Help</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -31,81 +31,64 @@ HRESULT CBTTurnAnimation::Initalize(void* pArg)
 
 EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 {
+	_matrix mat = XMMatrixIdentity();
 	auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 
 	auto pSrcTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto& pDestTransform = CGameInstance::Get().GetActiveCamera()->GetTransform();
-	if (pAnimator == nullptr)
+	if (pAnimator == nullptr || pSrcTransform == nullptr)
 		return m_eDebug = EVALUATE::FAILED;
-
-	_vector vDestPos = XMLoadFloat3(&pDestTransform.GetPosition());
-	_vector vSrcPos = XMLoadFloat3(&pSrcTransform->GetPosition());
-
-	_vector vTargetLook = XMVectorSetY(XMVector3Normalize(vDestPos - vSrcPos),0);
-	_vector vSrcLook = XMVectorSetY(XMVector3Normalize(pSrcTransform->GetState(STATE::LOOK) ),0);
-
-	_float fDot = XMVectorGetX(XMVector3Dot(vSrcLook, vTargetLook));
-	_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
-
-	m_GuiNode.fValue = XMConvertToDegrees(atan2f(fCrossY,fDot));
-	
 	EVALUATE Resut = EVALUATE::END;
-	//- 가 레프트
-	// + 가 라이트
-	_bool bTurn{ false };
-	if (m_GuiNode.fValue > 157.f)
+	//ㅋㅋ;
+	if (!m_bTurn)
 	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_180)];
-	}
-	else if (m_GuiNode.fValue > 112.5f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_135)];
-	}
-	else if (m_GuiNode.fValue > 67.5f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_90)];
-	}
-	else if (m_GuiNode.fValue > 22.5f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_45)];
+		_vector vDestPos = XMLoadFloat3(&pDestTransform.GetPosition());
+		_vector vSrcPos = XMLoadFloat3(&pSrcTransform->GetPosition());
 
-	}
-	else if (m_GuiNode.fValue < -157.f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_180)];
-	}
-	else if(m_GuiNode.fValue < -112.5f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_135)];
-	}
-	else if (m_GuiNode.fValue < -67.5f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_90)];
-	}
-	else if (m_GuiNode.fValue < -22.5f)
-	{
-		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_45)];
+		_vector vTargetLook = XMVectorSetY(XMVector3Normalize(vDestPos - vSrcPos), 0);
+		_vector vSrcLook = XMVectorSetY(XMVector3Normalize(pSrcTransform->GetState(STATE::LOOK)), 0);
 
+		_float fDot = XMVectorGetX(XMVector3Dot(vSrcLook, vTargetLook));
+		_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
+		if (false == SelectAngle(XMConvertToDegrees(atan2f(fCrossY, fDot))))
+		{
+			_vector vLook = XMVector3Normalize(vDestPos - vSrcPos);
+			_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
+			_vector vUp = XMVector3Cross(vLook, vRight);
+			mat.r[0] = vRight; mat.r[1] = vUp; mat.r[2] = vLook;
+			XMVECTOR quat = XMQuaternionRotationMatrix(mat);
+			pSrcTransform->SetQuaternion(quat);
+			return m_eDebug = EVALUATE::SUCCESS;
+		}
+		XMStoreFloat3(&m_vCurrentLook, vSrcLook);
+		XMStoreFloat3(&m_vTargetLook, vTargetLook);
+		pAnimator->SetPlay(true);
+		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+
+		m_bTurn = true;
 	}
-	else
-	{
-		_matrix mat = XMMatrixIdentity();
-		_vector vLook = vTargetLook;
-		_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
-		_vector vUp = XMVector3Cross(vLook, vRight);
-		mat.r[0] = vRight;
-		mat.r[1] = vUp;
-		mat.r[2] = vLook;
-		XMVECTOR quat = XMQuaternionRotationMatrix(mat);
-		pSrcTransform->SetQuaternion(quat);
-		return EVALUATE::SUCCESS;
-	}
-	
-	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+	m_fTick += fTimeDelta;
+
+	_float t = m_fTick / 1.6f;
+
+	_vector vLook = XMVectorLerp(XMLoadFloat3(&m_vCurrentLook),XMLoadFloat3(&m_vTargetLook),t);
+	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
+	_vector vUp = XMVector3Cross(vLook, vRight);
+
+	mat.r[0] = vRight; mat.r[1] = vUp; mat.r[2] = vLook;
+
+	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
+	pSrcTransform->SetQuaternion(quat);	
+
+
 	_bool bFinished = pAnimator->GetFinish();
 
 	if (bFinished)
+	{
+		m_fTick = 0.f;
+		m_bTurn = false;
 		return m_eDebug = EVALUATE::SUCCESS;
+	}
 
 	return m_eDebug = EVALUATE::RUN;
 }
@@ -175,6 +158,62 @@ HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
 	}
 	LoadJsonValue(j, "Loop", m_bLoop);
 	return S_OK;
+}
+void CBTTurnAnimation::Abort()
+{
+	m_fTick = 0.f;
+	m_bTurn = false;
+}
+_bool CBTTurnAnimation::SelectAngle( _float fAngle)
+{
+	if (fAngle > 157.f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_180)];
+		m_fAngle = 180.f;
+	}
+	else if (fAngle > 112.5f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_135)];
+		m_fAngle = 135.f;
+	}
+	else if (fAngle > 67.5f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_90)];
+		m_fAngle = 90.f;
+	}
+	else if (fAngle > 22.5f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::RIGHT_45)];
+		m_fAngle = 45.f;
+
+	}
+	else if (fAngle < -157.f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_180)];
+		m_fAngle = -180.f;
+	}
+	else if (fAngle < -112.5f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_135)];
+		m_fAngle = -135.f;
+	}
+	else if (fAngle < -67.5f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_90)];
+		m_fAngle = -90.f;
+	}
+	else if (fAngle < -22.5f)
+	{
+		m_Value.iAnimIndex = m_iTurnAnimIndex[ETOUI(TURN::LEFT_45)];
+		m_fAngle = -45.f;
+	}
+	else
+		return false;
+
+	return true;
+}
+void CBTTurnAnimation::Turn(_float fTimeDelta)
+{
 }
 E::UPtr<CBTTurnAnimation> CBTTurnAnimation::Create()
 {
