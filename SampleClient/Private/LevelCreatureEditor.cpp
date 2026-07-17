@@ -198,8 +198,7 @@ void CLevelCreatureEditor::Objects()
 	ImGui::Text("OBJECT "); ImGui::SameLine(70.f);
 	if (ImGui::BeginCombo("##Object", m_SelectObjecteTag.c_str()))
 	{
-		auto& Prototypes = *CGameInstance::Get().GetPrototype(m_strLevelName);
-		for (const auto& [key, value] : Prototypes)
+		for (const auto& key : CGameInstance::Get().GetPrototypeTags(m_strLevelName))
 		{
 			const _char* pName = key.str;
 			_bool isSelected = m_SelectObjecteTag == pName;

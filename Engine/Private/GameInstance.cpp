@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "GameInstance.h"
 
 #include "TimeProvider.h"
@@ -155,13 +155,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("Start m_pRenderer()");
 	m_pRenderer = CRenderer::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pRenderer == nullptr)
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("End m_pRenderer()");
 	m_pHizOcclusionCuller = CHizOcclusionCuller::Create();
 	if (m_pHizOcclusionCuller == nullptr)
 	{

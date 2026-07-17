@@ -61,8 +61,7 @@ UPtr<class CBTRoot> CAction_Manager::Show_ActioNode_List(NODEGROUP eType, uint32
 		{
 			//if (eType != NODEGROUP::SEQUENCE && eType != NODEGROUP::SELECTOR && eType != NODEGROUP::RAND_SELECTOR)
 			//{
-				CGameInstance::Get().GetPrototype(eType);
-				for (const auto& [key, value] : *CGameInstance::Get().GetPrototype(eType))
+				for (const auto& key: CGameInstance::Get().GetPrototypeTags(eType))
 				{
 					if (ImGui::Button(key.GetDbgStr()))
 					{

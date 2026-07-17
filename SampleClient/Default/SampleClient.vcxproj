@@ -121,7 +121,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -149,7 +149,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
