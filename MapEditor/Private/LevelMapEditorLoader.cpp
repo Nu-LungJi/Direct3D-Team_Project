@@ -94,12 +94,50 @@ std::future<bool> CLevelMapEditorLoader::Load()
 		}
 	}
 
-	if (!LoadLevelAnimEditorStaticModels())
+	//if (!LoadLevelAnimEditorStaticModels())
+	//{
+	//	MSG_BOX("StaticModel Load Failed");
+	//}
+
+	const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+	if (!std::filesystem::exists(staticModelDir))
 	{
-		MSG_BOX("StaticModel Load Failed");
+		MSG_BOX("NO_STATIC_MODEL_DIR");
 	}
 
-	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", []()
+	std::future<bool> result;
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
+	{
+		if (!entry.is_regular_file() || _stricmp(entry.path().extension().string().c_str(), ".bin") != 0)
+		{
+			continue;
+		}
+
+		result = E::CGameInstance::Get().WorkerEnqueueWithFuture("Loading_MapFast", [=]()
+			{
+				const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
+				auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
+					E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL,
+					resourceTag,
+					E::CResStaticModel::Create(entry.path().string()));
+
+				if (!res)
+				{
+					return false;
+				}
+
+				E::CResStaticModel::DESC desc{};
+				desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+				if (FAILED(res->Load(desc)))
+				{
+					return false;
+				}
+			}
+		);
+	}
+
+	result = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", []()
 	{
 		// 터레인
 		if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_MapEditorTerrain", CMapEditorTerrain::Create())))
@@ -109,6 +147,8 @@ std::future<bool> CLevelMapEditorLoader::Load()
 
 		return true;
 	});
+
+	return result;
 }
 HRESULT CLevelMapEditorLoader::UnLoad()
 {
