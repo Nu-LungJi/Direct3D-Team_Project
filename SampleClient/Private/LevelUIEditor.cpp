@@ -2,6 +2,7 @@
 #include "LevelUIEditor.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 #include "Client_Defines.h"
 #include "FlyCamera.h"
 #include "UiCamera.h"
@@ -27,6 +28,7 @@ NS_USING(Client)
 static int selectedParent = -1;
 
 CLevelUIEditor::CLevelUIEditor()
+	: CLevel{ ETOUI(LEVEL::UIEDITOR) }
 {
 }
 
@@ -2080,7 +2082,5 @@ Engine::UPtr<CLevelUIEditor> CLevelUIEditor::Create()
 
 void CLevelUIEditor::Free()
 {
-	E::CGameInstance::Get().DelPrototype("LEVEL_UIEditor");
-	E::CGameInstance::Get().DelResource("LEVEL_UIEditor");
 	CLevel::Free();
 }

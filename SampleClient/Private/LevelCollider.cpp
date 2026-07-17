@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "LevelCollider.h"
 #include "GameInstance.h"
+#include "Level_Defines.h"
 #include "TestCollider.h"
 #include "ComCollider.h"
 #include "LevelColliderLoader.h"
@@ -8,6 +9,7 @@
 NS_USING(Client)
 
 CLevelCollider::CLevelCollider()
+	: CLevel{ ETOUI(LEVEL::COLLIDER) }
 {
 }
 
@@ -199,6 +201,5 @@ UPtr<CLevelCollider> CLevelCollider::Create()
 
 void CLevelCollider::Free()
 {
-	CLevelColliderLoader::UnLoad();
 	CLevel::Free();
 }

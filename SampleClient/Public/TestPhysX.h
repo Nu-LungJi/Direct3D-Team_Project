@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
 #include "ComCollider.h"
@@ -34,10 +34,10 @@ public:
 public:
 	void OnWake() override;
 	void OnSleep() override;
-	void OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info) override;
-	void OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info) override;
-	void OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info) override;
-	void OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info) override;
+	void OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
+	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
+	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
+	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 
 private:
 	CComPxRigidBody* m_pComPxRigidBody{};

@@ -1,18 +1,14 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "PhysXManager.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 using namespace physx;
 
@@ -91,20 +87,31 @@ HRESULT CComPxCollider::Initialize(void* pArg)
 	m_pResMaterial = pDesc->pResMaterial;
     if (m_pResMaterial == nullptr)
         return E_FAIL;
+	m_tFilter = pDesc->tFilter;
 
     return S_OK;
 }
 
-_bool CComPxCollider::RegisterShape(PHYSX_SHAPE_TYPE eType, uint32_t iSubIndex)
+_bool CComPxCollider::RegisterShape(PX_SHAPE_TYPE eType, uint32_t iSubIndex)
 {
 	if (!m_pShape || !GetGameObject())
 		return false;
 
-	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 	if (!pPhysXManager)
 		return false;
 
-	PHYSX_SHAPE_USER_DATA userData{};
+	PxFilterData simulationFilter{};
+	simulationFilter.word0 = m_tFilter.iLayer;
+	simulationFilter.word1 = m_tFilter.iSimulationMask;
+	m_pShape->setSimulationFilterData(simulationFilter);
+
+	PxFilterData queryFilter{};
+	queryFilter.word0 = m_tFilter.iLayer;
+	queryFilter.word1 = m_tFilter.iQueryMask;
+	m_pShape->setQueryFilterData(queryFilter);
+
+	PX_SHAPE_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
 	userData.eType = eType;
 	userData.iSubIndex = iSubIndex;
@@ -117,7 +124,7 @@ void CComPxCollider::Free()
 {
 	if (m_pShape)
 	{
-		if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+		if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
 			pPhysXManager->UnregisterShape(m_pShape);
 
 		m_pShape->userData = nullptr;

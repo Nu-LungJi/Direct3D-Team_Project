@@ -46,7 +46,8 @@
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
-	: m_pDevice{ pDevice }
+	: CLevel{ ETOUI(LEVEL::LOADING) }
+	, m_pDevice{ pDevice }
 	, m_pContext{ pContext }
 	, m_eNextLevelIndex(eNextLevelIndex)
 {
@@ -56,8 +57,17 @@ CLevelLoading::~CLevelLoading()
 {
 }
 
+bool CLevelLoading::IsLevelChangeLocked() const
+{
+	return m_ePhase != PHASE::COMPLETE && m_ePhase != PHASE::FAILED;
+}
+
 HRESULT CLevelLoading::Initialize()
 {
+	const uint32_t iCurrentLevelID = Engine::CGameInstance::Get().GetCurrentLevelID();
+	if (iCurrentLevelID != Engine::CLevel::INVALID_LEVEL_ID)
+		m_ePreviousLevelIndex = static_cast<LEVEL>(iCurrentLevelID);
+
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
 
@@ -66,15 +76,20 @@ HRESULT CLevelLoading::Initialize()
 
 void CLevelLoading::Update(E::_float fTimeDelta)
 {
-	if (!m_bThreadStart)
+	switch (m_ePhase)
 	{
-		m_bThreadStart = true;
-
-		ThreadStart();
+	case PHASE::READY:
+		StartUnload();
+		break;
+	case PHASE::UNLOADING:
+		CheckUnload();
+		break;
+	case PHASE::LOADING:
+		CheckLoad();
+		break;
+	default:
+		break;
 	}
-
-	LoadingCheck();
-
 }
 
 HRESULT CLevelLoading::Render()
@@ -134,28 +149,70 @@ HRESULT CLevelLoading::LoadEnd()
 	return S_OK;
 }
 
-void CLevelLoading::ThreadStart()
+void CLevelLoading::StartUnload()
 {
+	if (!m_ePreviousLevelIndex || *m_ePreviousLevelIndex == LEVEL::LOADING)
+	{
+		StartLoad();
+		return;
+	}
+
+	m_ePhase = PHASE::UNLOADING;
+	switch (*m_ePreviousLevelIndex)
+	{
+	case LEVEL::LOGO:
+		m_futUnloadFinish = CLevelLogoLoader::UnLoad();
+		break;
+	case LEVEL::PLAYGROUND:
+		m_futUnloadFinish = CLevelPlayGroundLoader::UnLoad();
+		break;
+	case LEVEL::UIEDITOR:
+		m_futUnloadFinish = CLevelUIEditorLoader::UnLoad();
+		break;
+	case LEVEL::ANIMEDITOR:
+		m_futUnloadFinish = CLevelAnimatorLoader::UnLoad();
+		break;
+	case LEVEL::COLLIDER:
+		m_futUnloadFinish = CLevelColliderLoader::UnLoad();
+		break;
+	case LEVEL::LIGHTMAP:
+		m_futUnloadFinish = CLevelLightMapLoader::UnLoad();
+		break;
+	case LEVEL::PHYSX:
+		m_futUnloadFinish = CLevelPhysXLoader::UnLoad();
+		break;
+	default:
+		StartLoad();
+		break;
+	}
+}
+
+void CLevelLoading::CheckUnload()
+{
+	if (!m_futUnloadFinish.valid())
+		return;
+
+	if (m_futUnloadFinish.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+		return;
+
+	if (!m_futUnloadFinish.get())
+	{
+		m_ePhase = PHASE::FAILED;
+		MSG_BOX("UNLOADING FAILED");
+		return;
+	}
+
+	StartLoad();
+}
+
+void CLevelLoading::StartLoad()
+{
+	m_ePhase = PHASE::LOADING;
 	switch (m_eNextLevelIndex)
 	{
 	case LEVEL::LOGO:
 	{
 		m_futLoadFinish = CLevelLogoLoader::Load();
-		//m_futLoadFinish = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LOGO", [this]()
-		//	{
-		//		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOGO", "Prototype_GameObject_BackGround", CBackGround::Create())))
-		//		{
-		//			return false;
-		//		}
-
-		//		//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		//		return  true;
-		//	});
-
-		//if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
-		//{
-		//	res->Load();
-		//}
 	}
 	break;
 	case LEVEL::PLAYGROUND:
@@ -168,11 +225,6 @@ void CLevelLoading::ThreadStart()
 		break;
 	case LEVEL::ANIMEDITOR:
 	{
-		//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TEST", "Prototype_GameObject_LightObject", CLightObject::Create())))
-		//{
-		//	int a = 0;
-		//	//return false;
-		//}
 		m_futLoadFinish = CLevelAnimatorLoader::Load();
 	}
 		break;
@@ -192,24 +244,28 @@ void CLevelLoading::ThreadStart()
 	}
 	break;
 	default:
+		m_ePhase = PHASE::COMPLETE;
 		m_bLoadEnd = true;
 		break;
 	}
 
 }
 
-void CLevelLoading::LoadingCheck()
+void CLevelLoading::CheckLoad()
 {
 	if (m_futLoadFinish.valid())
 	{
 		if (m_futLoadFinish.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
 		{
-			m_bLoadEnd = m_futLoadFinish.get();
-
-			if (!m_bLoadEnd)
+			if (!m_futLoadFinish.get())
 			{
-				MSG_BOX("LOADING FAILD");
+				m_ePhase = PHASE::FAILED;
+				MSG_BOX("LOADING FAILED");
+				return;
 			}
+
+			m_ePhase = PHASE::COMPLETE;
+			m_bLoadEnd = true;
 		}
 	}
 }

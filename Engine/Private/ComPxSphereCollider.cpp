@@ -1,17 +1,13 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ComPxSphereCollider.h"
 #include "ComPxRigidBody.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 #include "ResPhysXSphereGeometry.h"
 using namespace physx;
@@ -73,7 +69,7 @@ HRESULT CComPxSphereCollider::Initialize(void* pArg)
         m_pShape->setLocalPose(tLocalPose);
     }
 
-	if (!RegisterShape(PHYSX_SHAPE_TYPE::SPHERE))
+	if (!RegisterShape(PX_SHAPE_TYPE::SPHERE))
 		return E_FAIL;
     auto pActor = m_pComRigidBody->GetActor();
 	if (!pActor)

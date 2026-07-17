@@ -49,7 +49,7 @@ std::future<bool> CLevelLightMapLoader::Load()
 		});
 }
 
-HRESULT CLevelLightMapLoader::UnLoad()
+std::future<bool> CLevelLightMapLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 	CGameInstance::Get().Clear_DynamicLightList();
@@ -62,5 +62,8 @@ HRESULT CLevelLightMapLoader::UnLoad()
 
 	LOG_MEMORY("end");
 
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LIGHTMAP", []()
+		{
+			return true;
+		});
 }
