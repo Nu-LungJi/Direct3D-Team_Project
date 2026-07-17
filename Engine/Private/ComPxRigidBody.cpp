@@ -149,10 +149,10 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
 	if (!pScene)
 		return E_FAIL;
 
-	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
-	PHYSX_ACTOR_USER_DATA userData{};
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	PX_ACTOR_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
-	userData.eType = PHYSX_ACTOR_TYPE::RIGID_BODY;
+	userData.eType = PX_ACTOR_TYPE::RIGID_BODY;
 	if (!pPhysXManager || !pPhysXManager->RegisterActor(m_pActor, userData))
 		return E_FAIL;
 
@@ -186,7 +186,7 @@ void CComPxRigidBody::Free()
 {
     if (m_pActor != nullptr)
     {
-		if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+		if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
 			pPhysXManager->UnregisterActor(m_pActor);
 
 		m_pActor->userData = nullptr;

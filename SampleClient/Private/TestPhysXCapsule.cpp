@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "TestPhysXCapsule.h"
 #include "GameInstance.h"
 #include "Collider.h"
@@ -37,8 +37,8 @@ HRESULT CTestPhysXCapsule::Initialize(void* pArg)
 	{
 		CComPxCapsuleCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResCapsuleGeo = CGameInstance::Get().GetResourceFirst<CResPhysXCapsuleGeometry>("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE");
-		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL");
+		Desc.pResCapsuleGeo = CGameInstance::Get().GetResourceFirst<CResPhysXCapsuleGeometry>("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE");
+		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PX", "TMP_MATERIAL");
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxCapsuleCollider", "ComPxCapsuleCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;
@@ -76,19 +76,19 @@ void CTestPhysXCapsule::OnSleep()
 	int x = 0;
 }
 
-void CTestPhysXCapsule::OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestPhysXCapsule::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestPhysXCapsule::OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestPhysXCapsule::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestPhysXCapsule::OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestPhysXCapsule::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 
-void CTestPhysXCapsule::OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestPhysXCapsule::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 

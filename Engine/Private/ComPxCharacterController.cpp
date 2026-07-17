@@ -131,11 +131,11 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	if (m_pController == nullptr)
 		return E_FAIL;
 
-	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 	auto* pActor = m_pController->getActor();
-	PHYSX_ACTOR_USER_DATA userData{};
+	PX_ACTOR_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
-	userData.eType = PHYSX_ACTOR_TYPE::CHARACTER_CONTROLLER;
+	userData.eType = PX_ACTOR_TYPE::CHARACTER_CONTROLLER;
 	if (!pPhysXManager || !pActor || !pPhysXManager->RegisterActor(pActor, userData))
 		return E_FAIL;
 
@@ -199,7 +199,7 @@ void CComPxCharacterController::Free()
 	{
 		if (auto* pActor = m_pController->getActor())
 		{
-			if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+			if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
 				pPhysXManager->UnregisterActor(pActor);
 
 			pActor->userData = nullptr;

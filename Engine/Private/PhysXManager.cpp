@@ -24,7 +24,7 @@ CPhysXManager::~CPhysXManager()
 {
 }
 
-_bool CPhysXManager::RegisterActor(const physx::PxActor* pActor, const PHYSX_ACTOR_USER_DATA& userData)
+_bool CPhysXManager::RegisterActor(const physx::PxActor* pActor, const PX_ACTOR_USER_DATA& userData)
 {
 	if (!pActor)
 		return false;
@@ -43,7 +43,7 @@ void CPhysXManager::UnregisterActor(const physx::PxActor* pActor)
 	m_ActorUserDataRegistry.erase(pActor);
 }
 
-std::optional<PHYSX_ACTOR_USER_DATA> CPhysXManager::FindActorUserData(const physx::PxActor* pActor) const
+std::optional<PX_ACTOR_USER_DATA> CPhysXManager::FindActorUserData(const physx::PxActor* pActor) const
 {
 	if (!pActor)
 		return std::nullopt;
@@ -65,7 +65,7 @@ CGameObject* CPhysXManager::FindGameObject(const physx::PxActor* pActor) const
 	return CGameInstance::Get().GetGameObjectByHandle(userData->hGameObject);
 }
 
-_bool CPhysXManager::RegisterShape(const physx::PxShape* pShape, const PHYSX_SHAPE_USER_DATA& userData)
+_bool CPhysXManager::RegisterShape(const physx::PxShape* pShape, const PX_SHAPE_USER_DATA& userData)
 {
 	if (!pShape)
 		return false;
@@ -84,7 +84,7 @@ void CPhysXManager::UnregisterShape(const physx::PxShape* pShape)
 	m_ShapeUserDataRegistry.erase(pShape);
 }
 
-std::optional<PHYSX_SHAPE_USER_DATA> CPhysXManager::FindShapeUserData(const physx::PxShape* pShape) const
+std::optional<PX_SHAPE_USER_DATA> CPhysXManager::FindShapeUserData(const physx::PxShape* pShape) const
 {
 	if (!pShape)
 		return std::nullopt;
@@ -108,7 +108,7 @@ void CPhysXManager::UpdateGUI()
     ImGui::End();
 }
 
-_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const
+_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
 {
 	PxRaycastBuffer hitBuffer;
 
@@ -140,7 +140,7 @@ _bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedD
 	return false;
 }
 
-_bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
 {
 	outVecResult.clear();
 	outVecResult.reserve(iMaxHit);
@@ -169,7 +169,7 @@ _bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNor
 
 			if (auto* pObj = FindGameObject(hit.actor))
 			{
-				PHYSIX_RAYCAST_RESULT outResult{};
+				PX_RAYCAST_RESULT outResult{};
 				outResult.bHit = true;
 				outResult.vHitpos = { hit.position.x, hit.position.y, hit.position.z };
 				outResult.vHitNormal = { hit.normal.x, hit.normal.y, hit.normal.z };
@@ -183,7 +183,7 @@ _bool CPhysXManager::RayCastMultiple(const _float3& vOrigin, const _float3& vNor
 		{
 			// 오름차순
 			std::sort(outVecResult.begin(), outVecResult.end(),
-				[](const PHYSIX_RAYCAST_RESULT& a, const PHYSIX_RAYCAST_RESULT& b) {
+				[](const PX_RAYCAST_RESULT& a, const PX_RAYCAST_RESULT& b) {
 					return a.fDistance < b.fDistance;
 				});
 		}
@@ -249,15 +249,27 @@ static physx::PxFilterFlags MyFilterShader(
     physx::PxFilterObjectAttributes attributes1, physx::PxFilterData filterData1,
     physx::PxPairFlags& pairFlags, const void* constantBlock, physx::PxU32 constantBlockSize)
 {
-    // 기본 PhysX 필터링 로직을 그대로 호출
-    physx::PxFilterFlags flags = physx::PxDefaultSimulationFilterShader(
-        attributes0, filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
+	const bool bLayerMaskMatched =
+		(filterData0.word0 & filterData1.word1) != 0 &&
+		(filterData1.word0 & filterData0.word1) != 0;
 
-    
-    pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_FOUND;
-    pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
+	if (!bLayerMaskMatched)
+		return physx::PxFilterFlag::eSUPPRESS;
 
-    return flags;
+	if (physx::PxFilterObjectIsTrigger(attributes0) ||
+		physx::PxFilterObjectIsTrigger(attributes1))
+	{
+		pairFlags = physx::PxPairFlag::eTRIGGER_DEFAULT;
+	}
+	else
+	{
+		pairFlags =
+			physx::PxPairFlag::eCONTACT_DEFAULT |
+			physx::PxPairFlag::eNOTIFY_TOUCH_FOUND |
+			physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
+	}
+
+	return physx::PxFilterFlag::eDEFAULT;
 }
 
 HRESULT CPhysXManager::Initialize()
@@ -430,7 +442,7 @@ void CPhysXManager::SyncPhysicsToComponents()
         {
             physx::PxTransform pose = actor->getGlobalPose();
 
-            PHYSX_SYNC_DATA data{};
+            PX_SYNC_DATA data{};
             data.vPos = { pose.p.x, pose.p.y, pose.p.z };
             data.vQuat = { pose.q.x , pose.q.y, pose.q.z, pose.q.w };
             pObj->SyncActivePhysXData(data);

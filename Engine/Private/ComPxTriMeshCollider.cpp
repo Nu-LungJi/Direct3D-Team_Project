@@ -64,7 +64,7 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
         m_pShape->setLocalPose(tLocalPose);
     }
 
-	if (!RegisterShape(PHYSX_SHAPE_TYPE::TRIANGLE_MESH))
+	if (!RegisterShape(PX_SHAPE_TYPE::TRIANGLE_MESH))
 		return E_FAIL;
 
     auto pActor = m_pComRigidBody->GetActor();
