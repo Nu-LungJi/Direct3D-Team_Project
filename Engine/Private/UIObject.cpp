@@ -47,11 +47,13 @@ void CUIObject::Update(_float fTimeDelta)
 		CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_pParent);
 		UI_INFO& parentInfo = parentUI->GetUIInfo();
 
-		m_UIINFO.fX		= parentInfo.fX + m_UIINFO.LocalX;
-		m_UIINFO.fY		= parentInfo.fY + m_UIINFO.LocalY;
-		m_UIINFO.SizeX	= parentInfo.SizeX * m_UIINFO.WidthRatioX;
-		m_UIINFO.SizeY	= parentInfo.SizeY * m_UIINFO.WidthRatioY;
-		m_UIINFO.Alpha	= parentInfo.Alpha * m_UIINFO.AlphaRatio;
+		m_ScaleRatio = parentUI->GetScaleRatio();
+
+		m_UIINFO.fX = parentInfo.fX + (m_UIINFO.LocalX * m_ScaleRatio);
+		m_UIINFO.fY = parentInfo.fY + (m_UIINFO.LocalY * m_ScaleRatio);
+		//m_UIINFO.SizeX	= (m_UIINFO.SizeX * m_UIINFO.WidthRatioX) * parentUI->GetScaleRatio();
+		//m_UIINFO.SizeY	= (m_UIINFO.SizeY * m_UIINFO.WidthRatioY) * parentUI->GetScaleRatio();
+		m_UIINFO.Alpha	= m_UIINFO.Alpha * m_UIINFO.AlphaRatio;
 		m_UIINFO.Weight = parentInfo.Weight + m_UIINFO.WeightOffset;
 		m_UIINFO.Rot	= parentInfo.Rot + m_UIINFO.LocalRot;
 

@@ -49,19 +49,43 @@ HRESULT CHPBar::Initialize(void* pArg)
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::HPBAR);
-	m_UIINFO.Restag = "TEX_UI_T_HUD_Enemy_Health_BG";
+
+	const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_UIINFO.Restag);
+	const D3D11_TEXTURE2D_DESC& texDesc = srv->GetTexture2DDesc();
+	//m_UIINFO.SizeX = static_cast<float>(texDesc.Width);
+	//m_UIINFO.SizeY = static_cast<float>(texDesc.Height);
 
 	return S_OK;
 }
 
 void CHPBar::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::LEFTHPFILL))
+		m_fFillDir = 0.f;
 }
 
 void CHPBar::Update(E::_float fTimeDelta)
 {
 	if (!m_isActive)
 		return;
+
+	// 디버깅용
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::HPFILL))
+	{
+		if (CGameInstance::Get().KeyDown(DIK_8))
+		{
+			m_fcurrentFill -= 100.f;
+			UpdateFill();
+		}
+	}
+	else if (m_UIINFO.UIType == ETOUI(UI_TYPE::LEFTHPFILL))
+	{
+		if (CGameInstance::Get().KeyDown(DIK_9))
+		{
+			m_fcurrentFill -= 100.f;
+			UpdateFill();
+		}
+	}
 
 	CUIObject::Update(fTimeDelta);
 
@@ -119,11 +143,11 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = { 0.f, 0.f };
-		perUI.uvSize = { 1.f, 1.f };
+		perUI.uvSize = { m_fCurrentAmount, m_fFillDir };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 		perUI.texSize = { static_cast<float>(texDesc.Width), static_cast<float>(texDesc.Height) };
 		perUI.quadSize = { m_UIINFO.fX, m_UIINFO.fY };
-		perUI.margins = { 3.f, 0.f, 3.f, 0.f };
+		perUI.margins = { 3.f, 5.f, 3.f, 5.f }; // left top right bottom
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -175,6 +199,38 @@ void CHPBar::PlayEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
+}
+
+void CHPBar::UpdateFill()
+{
+	if (m_fMaxFill <= 0.f) return;
+
+	float targetAmount = m_fcurrentFill / m_fMaxFill;
+
+	targetAmount = std::clamp(targetAmount, 0.0f, 1.0f);
+
+	auto pTween = GetTweenCom();
+	if (!pTween)
+	{
+		m_fCurrentAmount = targetAmount;
+		return;
+	}
+
+	if (m_fCurrentAmount == targetAmount)
+		return;
+
+	pTween->ClearTweens();
+	pTween->PlayTween(m_fCurrentAmount, targetAmount, 0.1f, 
+		[this](float currentValue) {
+			m_fCurrentAmount = currentValue;
+		},
+		[this]() {
+			// 트윈 종료 후 처리
+		},
+			EEaseType::EaseOutQuad,
+			0.0f,
+			false
+			);
 }
 
 E::UPtr<CHPBar> CHPBar::Create()

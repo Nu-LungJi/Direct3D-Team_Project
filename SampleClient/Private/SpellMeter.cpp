@@ -59,7 +59,7 @@ void CSpellMeter::PriorityUpdate(E::_float fTimeDelta)
 void CSpellMeter::Update(E::_float fTimeDelta)
 {
 	
-	if(CGameInstance::Get().KeyDown(DIK_Q))
+	if(CGameInstance::Get().KeyDown(DIK_1))
 		StartCooldown(5.0f);
 
 	if (!m_isActive)

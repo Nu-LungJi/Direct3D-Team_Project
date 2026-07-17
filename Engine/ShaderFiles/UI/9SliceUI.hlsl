@@ -62,6 +62,23 @@ float4 PSMain(PS_IN input) : SV_Target
 	uv9.x = Map9Slice(input.uv.x, g_ui_quadSize.x, g_ui_texSize.x, g_ui_margins.x, g_ui_margins.z); // Left(x), Right(z)
 	uv9.y = Map9Slice(input.uv.y, g_ui_quadSize.y, g_ui_texSize.y, g_ui_margins.y, g_ui_margins.w); // Top(y), Bottom(w)
 
+	if (g_ui_uvSize.y == 1.f)
+	{
+		if (input.uv.x > g_ui_uvSize.x)
+		{
+			discard;
+		}
+	}
+	else
+	{
+		if (input.uv.x < 1.f - g_ui_uvSize.x)
+		{
+			discard;
+		}
+	}
+
+
+
 	// 변환된 UV 좌표로 텍스처 샘플링
 	float4 texColor = tex.Sample(LinearWrap, uv9);
 

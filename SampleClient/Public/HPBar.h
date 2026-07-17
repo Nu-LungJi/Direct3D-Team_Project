@@ -28,14 +28,22 @@ public:
 
 private:
 	virtual void PlayEffect(uint32_t uiState);
-
-private:
-	CComConstantBuffer* m_pComCBufferPerSpellMeter = nullptr;
-	CButtonComponent* m_pComCButton = nullptr;
-
+	void UpdateFill();
 private:
 	_float s_fAccumulatedTime = 0.f;
 	_float m_fCurrentAmount = 1.f;
+
+private:
+	_float m_fMaxFill = 1000.f;
+	_float m_fcurrentFill = 1000.f;
+	_float m_fFillDir = 1.f;
+
+public:
+	_float GetMaxFill() { return m_fMaxFill; }
+	_float GetCurrentFill() { return m_fcurrentFill; }
+
+	void SetMaxFill(_float maxfill) { m_fMaxFill = maxfill; }
+	void SetCurrentFill(_float currentfill) { m_fcurrentFill = currentfill; }
 
 public:
 	static E::UPtr<CHPBar> Create();

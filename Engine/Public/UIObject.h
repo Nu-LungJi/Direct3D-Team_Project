@@ -157,6 +157,7 @@ public:
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
 	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }
+	void SetUIType(uint32_t uiType) { m_UIINFO.UIType = uiType; }
 	void SetColor(_float3 vColor) { m_UIINFO.Color = vColor; }
 	int GetWeight() { return m_UIINFO.Weight; }
 	int GetWeight() const { return m_UIINFO.Weight; }

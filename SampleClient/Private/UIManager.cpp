@@ -509,10 +509,8 @@ void UIManager::InitializeFunc()
 
 	m_FuncMap["SceneChange"] = [this](std::string name)
 	{
-		CGameInstance::Get().RegisterLevelChangeFunc("TO_LOGO", [this]() {
-			Engine::CGameInstance::Get().ChangeLevel(
-				CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
-			});
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
 	};
 	m_vFuncNames.push_back("SceneChange");
 }
@@ -526,15 +524,18 @@ void UIManager::UpdateRootUIHandles()
 
 	rootUIHandles.clear();
 
-	std::vector<CHandle> uiHandles = *CGameInstance::Get().GetGameObjectLayer("Layer_UI");
+	const std::vector<CHandle>* uiHandles = CGameInstance::Get().GetGameObjectLayer("Layer_UI");
 
-	for (auto ui : uiHandles)
+	for (auto ui : *uiHandles)
 	{
-		if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(ui))
+		Engine::CUIObject* checkUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(ui);
+
+		if (checkUI != nullptr)
 		{
-			Engine::CUIObject* checkUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(ui);
 			if (std::nullopt == checkUI->GetParent())
+			{
 				rootUIHandles.push_back(ui);
+			}
 		}
 	}
 }
@@ -557,6 +558,68 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 
 	MSG_BOX("[UI Error] Func not found: ");
 	return [](std::string text) {};
+}
+
+std::optional<CHandle> UIManager::RootUIPicking()
+{
+	std::optional<CHandle> targetHandle = std::nullopt;
+	for (auto uiHandle : rootUIHandles)
+	{
+		if (nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(uiHandle))
+			continue;
+
+		CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(uiHandle);
+		const UI_INFO& pInfo = pUI->GetUIInfo();
+
+		if (PtInRect(pInfo))
+		{
+			if (std::nullopt == targetHandle)
+				targetHandle = uiHandle;
+			else
+			{
+				if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*targetHandle))
+				{
+					CUIObject* targetUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*targetHandle);
+					const UI_INFO& targetInfo = targetUI->GetUIInfo();
+
+					if (pInfo.Weight > targetInfo.Weight)
+						targetHandle = uiHandle;
+				}
+			}
+		}
+	}
+
+	return targetHandle;
+}
+
+_bool UIManager::PtInRect(const UI_INFO& selectInfo)
+{
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
+	_float2 origin = { selectInfo.fX, selectInfo.fY };
+	_float2 size = { selectInfo.SizeX, selectInfo.SizeY };
+
+	_float2 minPos =
+	{
+		origin.x - size.x * 0.5f,
+		origin.y - size.y * 0.5f
+	};
+
+	_float2 maxPos =
+	{
+		origin.x + size.x * 0.5f,
+		origin.y + size.y * 0.5f
+	};
+
+	if (mousePos.x >= minPos.x &&
+		mousePos.x <= maxPos.x &&
+		mousePos.y >= minPos.y &&
+		mousePos.y <= maxPos.y)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
@@ -655,12 +718,29 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		break;
+	case ETOUI(UI_TYPE::HPFILL):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::HPFILL));
+		break;
+	case ETOUI(UI_TYPE::LEFTHPFILL):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::LEFTHPFILL));
+		break;
 	default:
 		break;
 	}
 
 	if (pUI == nullptr)
 		return nullptr;
+
+	if (parent == nullptr)
+	{
+		if (obj.contains("ScaleRatio"))
+			pUI->SetScaleRatio(obj["ScaleRatio"]);
+	}
+		
 
 	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
 

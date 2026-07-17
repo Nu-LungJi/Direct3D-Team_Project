@@ -50,6 +50,7 @@ private:
 	char m_cLevelName[128] = "";
 	char m_cPrefabName[128] = "";
 	char m_cResTag[128] = "";
+	_float m_ScaleRatio = 1.f;
 
 private:
 	uint32_t count{};
@@ -87,6 +88,7 @@ private:
 
 	void StateView();
 	void LocalStateView();
+	void UpdateTargetState();
 	void DrawFileExplorer();
 
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);

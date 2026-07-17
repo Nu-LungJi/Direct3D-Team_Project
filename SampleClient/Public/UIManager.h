@@ -27,14 +27,17 @@ public:
 	void InitializeFunc();
 	void UpdateRootUIHandles();
 
+public:
 	std::function<void(CUIObject* pCaller)> GetAction(const std::string& actionName);
 	std::function<void(std::string text)> GetFunc(const std::string& funcName);
-
 
 	std::vector<std::string>* GetEventNames() { return &m_vEventNames; }
 	std::vector<std::string>* GetFuncNames(){ return &m_vFuncNames; }
 
 	std::vector<CHandle> GetRootUIHandles() { return rootUIHandles; }
+public:
+	std::optional<CHandle> RootUIPicking();
+
 private:
 	std::map<std::string, std::function<void(class CUIObject*)>> m_EventMap;
 	std::map<std::string, std::function<void(std::string name)>> m_FuncMap;
@@ -44,6 +47,8 @@ private:
 	std::vector<std::string> m_vEventNames;
 	std::vector<std::string> m_vFuncNames;
 
+	// 피킹용
+	_bool PtInRect(const UI_INFO& selectInfo);
 public:
 	std::optional<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);

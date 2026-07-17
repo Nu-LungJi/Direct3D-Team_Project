@@ -73,17 +73,17 @@ void CButton::PriorityUpdate(E::_float fTimeDelta)
 	//	this->OnHoverExit = GET_SINGLE(UIManager)->GetAction("ScaleDown");
 	//	this->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("Create");
 	//
-	//	if (m_Effect_Hovered != nullptr)
+	//	if (m_Effect_Hovered_Handle != nullptr)
 	//	{
-	//		m_Effect_Hovered->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
-	//		m_Effect_Hovered->OnHoverExit = GET_SINGLE(UIManager)->GetAction("FadeOut");
+	//		m_Effect_Hovered_Handle->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
+	//		m_Effect_Hovered_Handle->OnHoverExit = GET_SINGLE(UIManager)->GetAction("FadeOut");
 	//	}
 	//
 	//	this->OnClicked = GET_SINGLE(UIManager)->GetAction("ScaleUpDown");
 	//
-	//	if (m_Effect_Clicked != nullptr)
+	//	if (m_Effect_Clicked_Handle != nullptr)
 	//	{
-	//		m_Effect_Clicked->OnClicked = GET_SINGLE(UIManager)->GetAction("FadInOut");
+	//		m_Effect_Clicked_Handle->OnClicked = GET_SINGLE(UIManager)->GetAction("FadInOut");
 	//	}
 	//
 	//	m_EffectLoad = true;
@@ -219,10 +219,10 @@ void CButton::PlayEffect(uint32_t uiState)
 		ClearEffectTweens();
 		if (OnHoverEnter) OnHoverEnter(this);
 
-		if (m_Effect_Hovered != nullptr)
+		if (m_Effect_Hovered_Handle != nullptr)
 		{
 			ClearHoveredEffect();
-			m_Effect_Hovered->OnHoverEnter(m_Effect_Hovered);
+			m_Effect_Hovered_Handle->OnHoverEnter(m_Effect_Hovered_Handle);
 		}
 	}
 
@@ -231,10 +231,10 @@ void CButton::PlayEffect(uint32_t uiState)
 		ClearEffectTweens();
 		if (OnHoverExit) OnHoverExit(this);
 
-		if (m_Effect_Hovered != nullptr)
+		if (m_Effect_Hovered_Handle != nullptr)
 		{
 			ClearHoveredEffect();
-			m_Effect_Hovered->OnHoverExit(m_Effect_Hovered);
+			m_Effect_Hovered_Handle->OnHoverExit(m_Effect_Hovered_Handle);
 		}
 	}
 
@@ -244,12 +244,13 @@ void CButton::PlayEffect(uint32_t uiState)
 		if (OnClicked) OnClicked(this);
 		if (OnClickedAction) OnClickedAction(ClickTargetName);
 
-		if (m_Effect_Clicked != nullptr)
+
+		if (m_Effect_Clicked_Handle != nullptr)
 		{
-			if (GetSafeUI(m_Effect_Clicked->GetHandle()))
+			if (GetSafeUI(m_Effect_Clicked_Handle->GetHandle()))
 			{
 				ClearClickEffect();
-				m_Effect_Clicked->OnClicked(m_Effect_Clicked);
+				m_Effect_Clicked_Handle->OnClicked(m_Effect_Clicked_Handle);
 			}
 		}
 	}
@@ -262,21 +263,21 @@ void CButton::ClearEffectTweens()
 
 void CButton::ClearHoveredEffect()
 {
-	if (m_Effect_Hovered != nullptr)
+	if (m_Effect_Hovered_Handle != nullptr)
 	{
-		if (nullptr != m_Effect_Hovered->GetTweenCom())
-			m_Effect_Hovered->GetTweenCom()->ClearTweens();
+		if (nullptr != m_Effect_Hovered_Handle->GetTweenCom())
+			m_Effect_Hovered_Handle->GetTweenCom()->ClearTweens();
 	}
 }
 
 void CButton::ClearClickEffect()
 {
-	if (m_Effect_Clicked != nullptr)
+	if (m_Effect_Clicked_Handle != nullptr)
 	{
-		if (GetSafeUI(m_Effect_Clicked->GetHandle()))
+		if (GetSafeUI(m_Effect_Clicked_Handle->GetHandle()))
 		{
-			if (nullptr != m_Effect_Clicked->GetTweenCom())
-				m_Effect_Clicked->GetTweenCom()->ClearTweens();
+			if (nullptr != m_Effect_Clicked_Handle->GetTweenCom())
+				m_Effect_Clicked_Handle->GetTweenCom()->ClearTweens();
 		}
 	}
 }

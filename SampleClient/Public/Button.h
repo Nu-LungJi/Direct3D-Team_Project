@@ -31,8 +31,8 @@ public:
 
 public:
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
-	void SetEffectHovered(std::optional<CHandle> effectUIHandle) { m_Effect_Hovered = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*effectUIHandle); }
-	void SetEffectClicked(std::optional<CHandle> effectUIHandle) { m_Effect_Clicked = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*effectUIHandle); }
+	void SetEffectHovered(std::optional<CHandle> effectUIHandle) { m_Effect_Hovered_Handle = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*effectUIHandle); }
+	void SetEffectClicked(std::optional<CHandle> effectUIHandle) { m_Effect_Clicked_Handle = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*effectUIHandle); }
 
 	void SetClickTargetName(std::string targetName) { ClickTargetName = targetName; }
 	std::function<void(CUIObject* pCaller)> ClickFunc;
@@ -46,8 +46,8 @@ protected:
 	virtual void PlayEffect(uint32_t uiState);
 
 	_bool m_EffectLoad = false;
-	CEffectUI* m_Effect_Hovered = nullptr;
-	CEffectUI* m_Effect_Clicked = nullptr;
+	CEffectUI* m_Effect_Hovered_Handle = nullptr;
+	CEffectUI* m_Effect_Clicked_Handle = nullptr;
 
 	std::string ClickTargetName = "EventTest";
 
