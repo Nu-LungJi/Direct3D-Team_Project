@@ -68,7 +68,7 @@ public:
 private:			
 	void					IsHit();
 	void					Flag_Check(_float fTimeDelta);
-	void					StartEmissive() { if (m_bWork || m_fEmissive == 0) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
+	void					StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
 	void					EmissiveFadeOut(_float fTimeDelta);
 	
 private:

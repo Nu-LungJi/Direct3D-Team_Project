@@ -379,7 +379,7 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 
 		
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.2f, 0.7f, 0.f }, m_fEmissive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
@@ -615,7 +615,9 @@ void CTestGob::EmissiveFadeOut(_float fTimeDelta)
 		m_fEmissive = std::lerp(m_fPreEmissive,0,t);
 		if (t >= 1.f)
 		{
-			m_bWork = m_bEmissive = false; m_fEmissive = 0;
+			m_bWork = m_bEmissive = false;
+			m_fTimeTick = m_fEmissive = 0;
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE), FLAGTYPE::DEL);
 		}
 			
 	}
