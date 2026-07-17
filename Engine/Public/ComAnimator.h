@@ -319,7 +319,7 @@ public:
 
 	void	Sample_Channel_CPU( CResModelChanel* pChannel, _float fTrackPosition, uint32_t& iCurrentKeyFrameIndex, std::vector<_float4x4>& OutLocalBoneMatrices);
 	_matrix Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition) const;
-	_vector RemoveYRotation(_vector qRotation);
+	_vector RemoveYRotation(_vector qRotation) const;
 	void	Blend_Anim(_float fTimeDelta);
 
 
@@ -336,6 +336,7 @@ public:
 
 public:
 	_float3 GetRootMotionDelta() { return m_vRootMotionDelta; }
+	_float4 GetRootMotionRotationDelta() const { return m_qRootMotionRotationDelta; }
 	ANIMSTRUCT& GetCurAnimState() { return  m_CurAnimState; }
 
 public:
@@ -412,6 +413,7 @@ private:
 	int32_t m_iRootBoneIndex{ -1 };
 	// 애니메이션 Local 기준 RootMotion
 	_float3 m_vRootMotionDelta{ 0.f, 0.f, 0.f };
+	_float4 m_qRootMotionRotationDelta{ 0.f, 0.f, 0.f, 1.f };
 
 
 public:
