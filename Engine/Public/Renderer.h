@@ -44,7 +44,8 @@ private:
 	HRESULT InitializeTargetPBR();
 	HRESULT InitializeBlendTarget();
 
-	HRESULT InitilizePostProcess();
+	HRESULT InitializePostProcess();
+	HRESULT	InitializeUserInterface();
 	HRESULT InitializeGFSDK_SSAO();
 	HRESULT InitializeFSR2_2();
 	HRESULT InitializeBloom();
@@ -88,8 +89,10 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetLight{};
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
 
@@ -98,6 +101,8 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric{};
+
+	SPtr<CResDynamicTexture2D> m_pResDynTexTargetPreviousRenderView{};
 
 private:
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
@@ -186,6 +191,8 @@ private:
 	HRESULT Render_FullScreen();
 
 	VOID	Unbind_Resources();
+
+	VOID	Render_Quad();
 
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0, uint32_t _TexDepth = 0);

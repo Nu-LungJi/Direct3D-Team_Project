@@ -22,6 +22,7 @@ VS_OUT VSMain(VS_IN IN)
     VS_OUT OUT;
 	OUT.Position = mul(float4(IN.Position, 1.0f), g_matWorld);
 	OUT.WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld).xyz;
+    
     return OUT;
 }
 VS_FINAL_OUT VSMain_Final(VS_IN IN)

@@ -14,6 +14,8 @@ TextureCube IrridianceMap : register(t7);
 TextureCube PreFilterMap : register(t8);
 Texture2D LUTMap : register(t9);
 
+Texture2D OriginColor : register(t10);
+
 static const float ShadowSmoothness = 1.5f;
 static const float ShadowBrightness = 0.45f;
 static const float2 ShadowMapResolution = { 1280.f, 720.f };
@@ -285,10 +287,7 @@ PS_OUT PSMain(PS_IN IN)
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
         }
     }
-    
-    
     float3 BaseEmissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
-    
     
     // Enviroment Light Process
     float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
@@ -312,6 +311,9 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     if (AlbedoTex.a == 0.0f)
         discard;
     
+	OUT.Diffuse = OriginColor.Sample(LinearWrap, IN.TexCoord);
+	return OUT;
+	
     float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);
     float3 V = normalize(g_vCamPos - IN.WorldPos.xyz);

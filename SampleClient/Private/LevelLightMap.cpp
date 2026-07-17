@@ -12,6 +12,7 @@
 #include "Terrain.h"
 #include "TestModel.h"
 #include "LightObject.h"
+#include "LightTerrain.h"
 #include "LevelLightMapLoader.h"
 
 NS_USING(Client)
@@ -37,7 +38,8 @@ HRESULT CLevelLightMap::Initialize()
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
 
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(-2.f, 17.f, -3.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(30.f, 30.f, 30.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(0.f, 0.f, 0.f, 1.f));
 	}
 	{
 		CLightObject::DESC LDesc{};
@@ -48,12 +50,12 @@ HRESULT CLevelLightMap::Initialize()
 		if (!LightObject)	return E_FAIL;
 
 		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(-2.f, 17.f, -3.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(0.f, 0.f, 0.f, 1.f));
 	}
 	{
-		CTerrain::DESC Desc{};
-		Desc.sObjectTag = "Terrain";
-
+		CLightTerrain::DESC Desc{};
+		Desc.sObjectTag = "LightTerrain";
+	
 		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_Terrain",
 			"02_Terrain", &Desc)))
 		{
@@ -68,7 +70,7 @@ HRESULT CLevelLightMap::Initialize()
 		Desc.vEye = { 0.f, 0.f, -5.f };
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
+		Desc.fNear = 0.01f;
 		Desc.fFar = 1000.f;
 		Desc.sObjectTag = "FlyCam";
 
