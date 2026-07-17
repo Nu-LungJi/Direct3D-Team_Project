@@ -10,6 +10,7 @@
 #include "TestPhysXBox.h"
 #include "TestPhysXBall.h"
 #include "TestPhysXCapsule.h"
+#include "TestPhysXTrigger.h"
 
 #include "Client_Resources.h"
 
@@ -72,6 +73,11 @@ std::future<bool> CLevelPhysXLoader::Load()
 
 			//TestPhysXCapsule
 			if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXCapsule", CTestPhysXCapsule::Create())))
+			{
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXTrigger", CTestPhysXTrigger::Create())))
 			{
 				return false;
 			}

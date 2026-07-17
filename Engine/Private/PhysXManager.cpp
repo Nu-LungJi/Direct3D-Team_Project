@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "PhysXManager.h"
 #include "PhysxManagerListener.h"
 #include "GameInstance.h"
@@ -244,6 +244,10 @@ void CPhysXManager::Update(_float fTimeDeta)
     UpdateDebugRender(fTimeDeta);
 }
 
+//word0 = 자신의 Layer
+//word1 = 자신이 허용하는 Simulation Mask
+//word2 = 현재 미사용
+//word3 = 현재 미사용
 static physx::PxFilterFlags MyFilterShader(
     physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0,
     physx::PxFilterObjectAttributes attributes1, physx::PxFilterData filterData1,

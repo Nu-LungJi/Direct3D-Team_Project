@@ -101,6 +101,10 @@ HRESULT CTestPhysXTerrain::InitializePrototype(void* pArg)
 
 HRESULT CTestPhysXTerrain::Initialize(void* pArg)
 {
+	auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -129,6 +133,7 @@ HRESULT CTestPhysXTerrain::Initialize(void* pArg)
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
 		Desc.pResTriMesh = m_pResTriMesh;
 		Desc.pResMaterial = CResPhysXMaterial::Create({});
+		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxTriMeshCollider", "ComPxTriMeshCollider", &Desc, &m_pComPxTriMeshCollider)))
 		{
 			return E_FAIL;
@@ -198,6 +203,20 @@ HRESULT CTestPhysXTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER
 
 
 	return S_OK;
+}
+
+void CTestPhysXTerrain::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+{
+	const std::string message = std::string("[PX][TestPhysXTerrain] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
+}
+
+void CTestPhysXTerrain::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+{
+	const std::string message = std::string("[PX][TestPhysXTerrain] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 E::UPtr<CTestPhysXTerrain> CTestPhysXTerrain::Create()

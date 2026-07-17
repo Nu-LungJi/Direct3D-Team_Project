@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Component.h"
 #include "ResPhysXMaterial.h"
 NS_BEGIN(physx)
@@ -21,6 +21,7 @@ public:
 		float fStepOffset = 0.1f;      // 오를 수 있는 계단 높이
 		float fSlopeLimit = 0.707f;    // 오를 수 있는 최대 경사 (cos각도, 0.707은 약 45도)
 		XMFLOAT3 vPosition = { 0.f, 0.f, 0.f };
+		PX_FILTER_DESC tFilter{};
 	};
 public:
 	DECLARE_DERIVED_TYPE(CComPxCharacterController, CComponent)

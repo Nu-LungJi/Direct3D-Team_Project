@@ -44,6 +44,7 @@ HRESULT CTestPhysXBall::Initialize(void* pArg)
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
 		Desc.pResSphereGeo = CGameInstance::Get().GetResourceFirst<CResPhysXSphereGeometry>("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE");
 		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PX", "TMP_MATERIAL");
+		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxSphereCollider", "ComPxBoxCollider", &Desc, &m_pComPxSphereCollider)))
 		{
 			return E_FAIL;
@@ -85,18 +86,30 @@ void CTestPhysXBall::OnSleep()
 
 void CTestPhysXBall::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
+	const std::string message = std::string("[PX][TestPhysXBall] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 void CTestPhysXBall::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
+	const std::string message = std::string("[PX][TestPhysXBall] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 void CTestPhysXBall::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
+	const std::string message = std::string("[PX][TestPhysXBall] Trigger Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 void CTestPhysXBall::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
+	const std::string message = std::string("[PX][TestPhysXBall] Trigger Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 E::UPtr<CTestPhysXBall> CTestPhysXBall::Create()

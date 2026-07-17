@@ -170,10 +170,16 @@ void CTestPhysX::OnSleep()
 
 void CTestPhysX::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
+	const std::string message = std::string("[PX][TestPhysX] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 void CTestPhysX::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
+	const std::string message = std::string("[PX][TestPhysX] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n";
+	OutputDebugStringA(message.c_str());
 }
 
 void CTestPhysX::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)

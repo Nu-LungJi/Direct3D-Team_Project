@@ -15,6 +15,7 @@
 #include "TestPhysXTerrain.h"
 #include "TestPhysXBox.h"
 #include "TestCharacter.h"
+#include "TestPhysXTrigger.h"
 
 #include "LevelPhysXLoader.h"
 
@@ -81,7 +82,19 @@ HRESULT CLevelPhysX::Initialize()
 		}
 	}
 
-
+	//"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXTrigger"
+	{
+		CTestPhysXTrigger::DESC Desc{ };
+		Desc.sObjectTag = "TestTrigger";
+		Desc.vInitialPos = { 6.f, 4.f, 2.f };
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::INTERACTION);
+		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_BODY);
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXTrigger",
+			"01_TRIGGER", &Desc)))
+		{
+			return E_FAIL;
+		}
+	}
 
 
 	{

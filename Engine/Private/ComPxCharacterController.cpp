@@ -133,10 +133,27 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 
 	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 	auto* pActor = m_pController->getActor();
+	if (!pActor)
+		return E_FAIL;
+
+	PxShape* pShape{};
+	if (pActor->getShapes(&pShape, 1) != 1 || !pShape)
+		return E_FAIL;
+
+	PxFilterData simulationFilter{};
+	simulationFilter.word0 = pDesc->tFilter.iLayer;
+	simulationFilter.word1 = pDesc->tFilter.iSimulationMask;
+	pShape->setSimulationFilterData(simulationFilter);
+
+	PxFilterData queryFilter{};
+	queryFilter.word0 = pDesc->tFilter.iLayer;
+	queryFilter.word1 = pDesc->tFilter.iQueryMask;
+	pShape->setQueryFilterData(queryFilter);
+
 	PX_ACTOR_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
 	userData.eType = PX_ACTOR_TYPE::CHARACTER_CONTROLLER;
-	if (!pPhysXManager || !pActor || !pPhysXManager->RegisterActor(pActor, userData))
+	if (!pPhysXManager || !pPhysXManager->RegisterActor(pActor, userData))
 		return E_FAIL;
 
 	pActor->userData = nullptr;

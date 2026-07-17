@@ -172,6 +172,9 @@
     <Filter Include="GameObject\LightObject\LightTerrain">
       <UniqueIdentifier>{8c6ec420-6258-4dd1-afce-8e979f1663f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestPhysx\Trigger">
+      <UniqueIdentifier>{22e50275-7e44-49fc-ad4c-c13395e27add}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -405,6 +408,9 @@
     <ClInclude Include="..\Public\LightTerrain.h">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestPhysXTrigger.h">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -602,6 +608,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LightTerrain.cpp">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXTrigger.cpp">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
