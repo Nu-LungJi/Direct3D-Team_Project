@@ -27,14 +27,18 @@ std::future<bool> CLevelLogoLoader::Load()
 		});
 }
 
-HRESULT CLevelLogoLoader::UnLoad()
+std::future<bool> CLevelLogoLoader::UnLoad()
 {
 	LOG_MEMORY("start");
-	E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
-	E::CGameInstance::Get().DelResource("LEVEL_LOGO");
 
 	CGameInstance::Get().Clear_DynamicLightList();
-	E::CGameInstance::Get().DelResource("LIGHT");
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LOGO", []()
+		{
+			E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
+			E::CGameInstance::Get().DelResource("LEVEL_LOGO");
+
+			E::CGameInstance::Get().DelResource("LIGHT");
+			return true;
+		});
 }

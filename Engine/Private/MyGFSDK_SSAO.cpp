@@ -28,22 +28,11 @@ status = GFSDK_SSAO_CreateContext_D3D11(pD3D11Device, &pAOContext, &CustomHeap);
 assert(status == GFSDK_SSAO_OK); // HBAO+ requires feature level 11_0 or above
 */
 
-
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
-
-// 라이브러리 힙 설정
-    //GFSDK_SSAO_CustomHeap CustomHeap;
-    //CustomHeap.new_ = ::operator new;
-    //CustomHeap.delete_ = ::operator delete;
-
-    m_GFSDK_SSAO_CustomHeap.new_ = ::operator new;
-    m_GFSDK_SSAO_CustomHeap.delete_ = ::operator delete;
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+	m_GFSDK_SSAO_CustomHeap.new_ = ::operator new;
+	m_GFSDK_SSAO_CustomHeap.delete_ = ::operator delete;
+#pragma pop_macro("new")
 
     GFSDK_SSAO_Status status;
     //GFSDK_SSAO_Context_D3D11* pAOContext;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -112,6 +112,7 @@ public:
 public:
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
 	HRESULT ChangeLevel(const _string& ID);
+	uint32_t GetCurrentLevelID() const;
 	void RegisterLevelChangeFunc(const _string& ID, _Func func);
 #pragma endregion
 
@@ -357,13 +358,13 @@ public:
 #pragma endregion
 
 public:
-	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
+	CPhysXManager* GetPhysXManager() const { return m_pPhysXManager.get(); };
 	physx::PxScene* PxGetScene() const;
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
 
-	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
-	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
 #pragma endregion
 
 

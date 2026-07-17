@@ -1,18 +1,14 @@
-
+﻿
 #include "pch.h"
 #include "ComPxRigidBody.h"
 #include "PhysXManager.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 
 
@@ -153,10 +149,10 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
 	if (!pScene)
 		return E_FAIL;
 
-	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
-	PHYSX_ACTOR_USER_DATA userData{};
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	PX_ACTOR_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
-	userData.eType = PHYSX_ACTOR_TYPE::RIGID_BODY;
+	userData.eType = PX_ACTOR_TYPE::RIGID_BODY;
 	if (!pPhysXManager || !pPhysXManager->RegisterActor(m_pActor, userData))
 		return E_FAIL;
 
@@ -190,7 +186,7 @@ void CComPxRigidBody::Free()
 {
     if (m_pActor != nullptr)
     {
-		if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+		if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
 			pPhysXManager->UnregisterActor(m_pActor);
 
 		m_pActor->userData = nullptr;

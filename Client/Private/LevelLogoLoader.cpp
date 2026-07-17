@@ -27,7 +27,7 @@ std::future<bool> CLevelLogoLoader::Load()
 		});
 }
 
-HRESULT CLevelLogoLoader::UnLoad()
+std::future<bool> CLevelLogoLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 	E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
@@ -36,5 +36,8 @@ HRESULT CLevelLogoLoader::UnLoad()
 	CGameInstance::Get().Clear_DynamicLightList();
 	E::CGameInstance::Get().DelResource("LIGHT");
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LOGO", []()
+		{
+			return true;
+		});
 }
