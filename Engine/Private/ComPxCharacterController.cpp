@@ -1,17 +1,13 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ComPxCharacterController.h"
 #include "PhysXManager.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 using namespace physx;
 
@@ -135,11 +131,11 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	if (m_pController == nullptr)
 		return E_FAIL;
 
-	auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 	auto* pActor = m_pController->getActor();
-	PHYSX_ACTOR_USER_DATA userData{};
+	PX_ACTOR_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
-	userData.eType = PHYSX_ACTOR_TYPE::CHARACTER_CONTROLLER;
+	userData.eType = PX_ACTOR_TYPE::CHARACTER_CONTROLLER;
 	if (!pPhysXManager || !pActor || !pPhysXManager->RegisterActor(pActor, userData))
 		return E_FAIL;
 
@@ -203,7 +199,7 @@ void CComPxCharacterController::Free()
 	{
 		if (auto* pActor = m_pController->getActor())
 		{
-			if (auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager())
+			if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
 				pPhysXManager->UnregisterActor(pActor);
 
 			pActor->userData = nullptr;
