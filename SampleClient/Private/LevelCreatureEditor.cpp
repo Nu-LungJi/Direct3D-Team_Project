@@ -15,6 +15,7 @@
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
+	:CLevel{ ETOUI(LEVEL::CREATUREEDIT) }
 {
 }
 
