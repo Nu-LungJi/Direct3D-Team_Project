@@ -1018,6 +1018,9 @@
     <ClInclude Include="..\public\MyFSR2_2.h">
       <Filter>Renderer\FSR2_2</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\IPxCharacterControllerListener.h">
+      <Filter>Component\PhysX\CharacterController</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
