@@ -82,8 +82,10 @@ std::future<bool> CLevelPlayGroundLoader::Load()
 	// 메인 스레드 종료
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAY_GROUND", []()
 		{
+			CTerrain::DESC Terrain{};
+			Terrain.tagLevelName = "LEVEL_PLAYGROUND";
 
-			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create())))
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Terrain", CTerrain::Create(&Terrain))))
 			{
 				MSG_BOX("PLAY_GROUND Failed Prototype_GameObject_Terrain");
 				return false;

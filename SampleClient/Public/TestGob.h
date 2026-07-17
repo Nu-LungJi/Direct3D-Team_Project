@@ -25,8 +25,8 @@ public:
 public:
 	typedef struct tagMonsterDesc : public CGameObject::GAMEOBJECT_DESC
 	{
-		_string SocketName;
-
+		_string SocketName{}, LevelTag{}, ReSourceTag{}, BeHaviorTag{};
+		_float3 vPos{};
 	}MONSTER_DESC;
 
 private:

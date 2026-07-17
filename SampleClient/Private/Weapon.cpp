@@ -65,8 +65,8 @@ HRESULT CWeapon::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC Desc{};
-		Desc.sGroupTag = "LEVEL_PLAYGROUND";
-		Desc.sResTag = pDesc->WeaponName;
+		Desc.sGroupTag = pDesc->LevelTag;
+		Desc.sResTag   = pDesc->WeaponName;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{

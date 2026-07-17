@@ -199,6 +199,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTMove.h" />
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\public\BTCreatureFlag.h" />
+    <ClInclude Include="..\public\LevelCreatureEditor.h" />
     <ClInclude Include="..\public\EffectUI.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
@@ -208,6 +209,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\public\LevelColliderLoader.h" />
+    <ClInclude Include="..\public\LevelCreatureLoader.h" />
     <ClInclude Include="..\public\LevelPlayGroundLoader.h" />
     <ClInclude Include="..\Public\LevelLightMapLoader.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
@@ -292,12 +294,14 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTMove.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\private\BTCreatureFlag.cpp" />
+    <ClCompile Include="..\private\LevelCreatureEditor.cpp" />
     <ClCompile Include="..\private\EffectUI.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\LevelAnimatorLoader.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
+    <ClCompile Include="..\private\LevelCreatureLoader.cpp" />
     <ClCompile Include="..\private\LevelPlayGroundLoader.cpp" />
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />

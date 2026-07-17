@@ -172,6 +172,12 @@
     <Filter Include="GameObject\LightObject\LightTerrain">
       <UniqueIdentifier>{8c6ec420-6258-4dd1-afce-8e979f1663f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\CreatureEditor">
+      <UniqueIdentifier>{fd3b4d25-d7bc-463f-ba6d-33c2854c81ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Help">
+      <UniqueIdentifier>{edec8072-3519-4af3-8bcf-1b22e70c939a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -408,6 +414,12 @@
     <ClInclude Include="..\public\BTDecHitCnt.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LevelCreatureEditor.h">
+      <Filter>Level\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelCreatureLoader.h">
+      <Filter>Loader\Level\Help</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -608,6 +620,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecHitCnt.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelCreatureEditor.cpp">
+      <Filter>Level\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelCreatureLoader.cpp">
+      <Filter>Loader\Level\Help</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

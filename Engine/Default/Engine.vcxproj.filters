@@ -355,9 +355,6 @@
     <Filter Include="Component\Model\ComStaticModelInstance">
       <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
     </Filter>
-    <Filter Include="CreatureEditor">
-      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\BeHavior\Manager">
       <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
     </Filter>
@@ -474,6 +471,9 @@
     </Filter>
     <Filter Include="Renderer\FSR2_2">
       <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CreatureManager">
+      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -888,8 +888,8 @@
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\CreatureEditor.h">
-      <Filter>CreatureEditor</Filter>
+    <ClInclude Include="..\Public\CreatureManager.h">
+      <Filter>CreatureManager</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
@@ -1356,8 +1356,8 @@
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\CreatureEditor.cpp">
-      <Filter>CreatureEditor</Filter>
+    <ClCompile Include="..\Private\CreatureManager.cpp">
+      <Filter>CreatureManager</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>

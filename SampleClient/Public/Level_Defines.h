@@ -13,5 +13,6 @@ namespace Client
 		LIGHTMAP,
 		COLLIDER,
 		PHYSX,
+		CREATUREEDIT,
 	};
 }

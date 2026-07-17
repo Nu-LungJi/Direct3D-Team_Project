@@ -7,7 +7,7 @@ class  ENGINE_DLL CComBeHavior : public CComponent
 public:		
 	typedef struct tagbehaviordesc : public CComponent::DESC
 	{
-		_string OwnerName;
+		_string OwnerName{}, LoadPath{};
 	}BEHAVIOR_DESC;
 public:
 	DECLARE_DERIVED_TYPE(CComBeHavior, CComponent)

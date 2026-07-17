@@ -41,6 +41,9 @@ HRESULT CComBeHavior::Initialize(void* pArg)
 	proot->Set_OwnerName(m_ComponentName);
 	m_Root = std::move(ToUPtr(proot));
     m_NodeMap[m_iNodeID++] = m_Root.get();
+	
+	if (!pDesc->LoadPath.empty())
+		Load_Data(pDesc->LoadPath);
     return S_OK;
 }
 void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)

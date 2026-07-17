@@ -18,13 +18,15 @@ CTerrain::~CTerrain()
 
 HRESULT CTerrain::InitializePrototype(void* pArg)
 {
-	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("LEVEL_PLAYGROUND", "VIBUFFER_Terrain");
+	auto Desc = static_cast<DESC*>(pArg);
+	//본인 레벨 네임 넣기
+	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>(Desc->tagLevelName, "VIBUFFER_Terrain");
 	if (!m_pResTerrainVIBuffer)
 	{
 		return E_FAIL;
 	}
 
-	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LEVEL_PLAYGROUND", "TEX2D_Terrain_Tile0");
+	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>(Desc->tagLevelName, "TEX2D_Terrain_Tile0");
 	if (!m_pResTerrainTexture2D)
 	{
 		return E_FAIL;
@@ -149,10 +151,10 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	return S_OK;
 }
 
-E::UPtr<CTerrain> CTerrain::Create()
+E::UPtr<CTerrain> CTerrain::Create(void* pArg)
 {
 	auto pInstance = E::ToUPtr(new CTerrain{});
-	if (FAILED(pInstance->InitializePrototype()))
+	if (FAILED(pInstance->InitializePrototype(pArg)))
 	{
 		MSG_BOX("Failed to Created : CTerrain");
 		return nullptr;

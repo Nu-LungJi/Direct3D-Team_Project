@@ -82,7 +82,10 @@ HRESULT CMainApp::Initialize()
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PHYSX));
 		});
-
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_CreatureEditor", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::CREATUREEDIT));
+		});
 	if (FAILED(CMainAppLoader::Load()))
 	{
 		MSG_BOX("MainLoader Failed");

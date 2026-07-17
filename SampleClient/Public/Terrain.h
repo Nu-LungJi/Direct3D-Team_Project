@@ -19,6 +19,7 @@ public:
 public:
 	typedef struct tagTerrainDesc: public CGameObject::GAMEOBJECT_DESC
 	{
+		_string		tagLevelName{};
 	}DESC;
 
 private:
@@ -41,7 +42,7 @@ private:
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
 public:
-	static E::UPtr<CTerrain> Create();
+	static E::UPtr<CTerrain> Create(void* pArg);
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

@@ -31,7 +31,6 @@ public:
 	void Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 private:
 	CComBeHavior*				m_pComBT{ nullptr };
-	CGameObject*				m_Partes[ETOUI(PARTES::END)]{};
 	int32_t						m_iHp{};
 	_bool						m_bDead{ false };
 

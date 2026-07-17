@@ -65,13 +65,16 @@ HRESULT CTestGob::InitializePrototype(void* pArg)
 
 HRESULT CTestGob::Initialize(void* pArg)
 {
+	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 100;
+	
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
+	Desc.LoadPath = MonDesc->BeHaviorTag;
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
 	{
 		return E_FAIL;
@@ -87,8 +90,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "LEVEL_PLAYGROUND";
-		Desc.sResTag = "Model_Resource_TombProtector";
+		Desc.sGroupTag = MonDesc->LevelTag;
+		Desc.sResTag = MonDesc->ReSourceTag;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -120,13 +123,16 @@ HRESULT CTestGob::Initialize(void* pArg)
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
+	WeaponDesc.LevelTag = MonDesc->LevelTag;
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
 		MSG_BOX("Create Failed Weapon");
 		return E_FAIL;
 	}
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+
+	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	return S_OK;
 }
 

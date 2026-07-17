@@ -221,7 +221,6 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "StartFlag", m_iStartFlag);
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
-	SaveJsonValue(j, "Emissive", m_fEmissive);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return j;
 }
@@ -234,7 +233,6 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
-	LoadJsonValue(j, "Emissive", m_fEmissive);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return S_OK;
 }
