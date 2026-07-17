@@ -10,10 +10,6 @@
 NS_USING(Engine)
 
 std::unordered_map<SPtr<CResStaticModel>, MAPMESH_INSTANCE_BATCH> CMapMeshObject::s_InstanceBatches{};
-SPtr<CResDynamicBuffer> CMapMeshObject::s_pInstanceBuffer{};
-SPtr<CResStructuredBuffer> CMapMeshObject::s_pOcclusionInputBuffer{};
-SPtr<CResStructuredBuffer> CMapMeshObject::s_pVisibleFlagBuffer{};
-size_t CMapMeshObject::s_iInstanceCapacity = 0;
 std::optional<CHandle> CMapMeshObject::s_hRenderRepresentative = {};
 UPtr<CMapMeshGpuCuller> CMapMeshObject::s_pGpuCuller{};
 _bool CMapMeshObject::s_bInstancingEnabled = true;
@@ -23,6 +19,10 @@ CMapMeshObject::INSTANCING_STATS CMapMeshObject::s_LastStats{ true };
 
 namespace
 {
+	constexpr size_t MAPMESH_TEXTURE_COUNT = 4;
+	using MAPMESH_TEXTURE_SET = std::array<SPtr<CResTexture2D>, MAPMESH_TEXTURE_COUNT>;
+	std::unordered_map<SPtr<CResStaticModel>, std::vector<MAPMESH_TEXTURE_SET>> s_MapMeshTextureCache;
+
 	SPtr<CResTexture2D> GetMapMeshTexture(const SPtr<CResStaticModel>& pModel, uint32_t meshIndex, AI_TEXTURE_TYPE materialType)
 	{
 		if (pModel == nullptr)
@@ -52,46 +52,62 @@ namespace
 		return textures[materialType].front();
 	}
 
-	HRESULT BindMapMeshTextures(ID3D11DeviceContext* pContext, const SPtr<CResStaticModel>& pModel, uint32_t meshIndex)
+	const std::vector<MAPMESH_TEXTURE_SET>* GetOrCreateMapMeshTextureCache(const SPtr<CResStaticModel>& pModel)
 	{
-		if (pContext == nullptr)
+		if (pModel == nullptr)
+		{
+			return nullptr;
+		}
+
+		if (const auto iter = s_MapMeshTextureCache.find(pModel); iter != s_MapMeshTextureCache.end())
+		{
+			return &iter->second;
+		}
+
+		MAPMESH_TEXTURE_SET defaultTextures{
+			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE"),
+			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL"),
+			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO"),
+			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE")
+		};
+		if (std::ranges::any_of(defaultTextures, [](const auto& texture) { return texture == nullptr; }))
+		{
+			return nullptr;
+		}
+
+		std::vector<MAPMESH_TEXTURE_SET> textureSets(pModel->Get_NumMeshes(), defaultTextures);
+		for (uint32_t meshIndex = 0; meshIndex < textureSets.size(); ++meshIndex)
+		{
+			auto& textures = textureSets[meshIndex];
+			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE))
+				textures[0] = std::move(texture);
+			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS))
+				textures[1] = std::move(texture);
+			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS))
+				textures[2] = std::move(texture);
+			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE))
+				textures[3] = std::move(texture);
+		}
+
+		auto [iter, inserted] = s_MapMeshTextureCache.emplace(pModel, std::move(textureSets));
+		return &iter->second;
+	}
+
+	HRESULT BindMapMeshTextures(ID3D11DeviceContext* pContext, const std::vector<MAPMESH_TEXTURE_SET>& textureCache, uint32_t meshIndex)
+	{
+		if (pContext == nullptr || meshIndex >= textureCache.size())
 		{
 			return E_FAIL;
 		}
 
-		SPtr<CResTexture2D> diffuseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
-		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE))
+		ID3D11ShaderResourceView* srvs[MAPMESH_TEXTURE_COUNT]{};
+		for (size_t i = 0; i < MAPMESH_TEXTURE_COUNT; ++i)
 		{
-			diffuseTexture = texture;
+			if (textureCache[meshIndex][i] == nullptr)
+				return E_FAIL;
+			srvs[i] = textureCache[meshIndex][i]->GetSRV().Get();
 		}
-
-		SPtr<CResTexture2D> normalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
-		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS))
-		{
-			normalTexture = texture;
-		}
-
-		SPtr<CResTexture2D> smroTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
-		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS))
-		{
-			smroTexture = texture;
-		}
-
-		SPtr<CResTexture2D> emissiveTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
-		if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE))
-		{
-			emissiveTexture = texture;
-		}
-
-		if (diffuseTexture == nullptr || normalTexture == nullptr || smroTexture == nullptr || emissiveTexture == nullptr)
-		{
-			return E_FAIL;
-		}
-
-		pContext->PSSetShaderResources(0, 1, diffuseTexture->GetSRV().GetAddressOf());
-		pContext->PSSetShaderResources(1, 1, normalTexture->GetSRV().GetAddressOf());
-		pContext->PSSetShaderResources(2, 1, smroTexture->GetSRV().GetAddressOf());
-		pContext->PSSetShaderResources(3, 1, emissiveTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(0, MAPMESH_TEXTURE_COUNT, srvs);
 
 		return S_OK;
 	}
@@ -411,13 +427,9 @@ void CMapMeshObject::ClearInstancingData()
 void CMapMeshObject::ReleaseInstancingResources()
 {
 	s_InstanceBatches.clear();
+	s_MapMeshTextureCache.clear();
 	s_hRenderRepresentative.reset();
 
-	s_pInstanceBuffer.reset();
-	s_iInstanceCapacity = 0;
-
-	s_pOcclusionInputBuffer.reset();
-	s_pVisibleFlagBuffer.reset();
 	s_pGpuCuller.reset();
 }
 
@@ -437,97 +449,6 @@ HRESULT CMapMeshObject::PushInstance(const SPtr<CResStaticModel>& pModel, const 
 
 	++s_FrameStats.iInstances;
 
-	return S_OK;
-}
-
-HRESULT CMapMeshObject::EnsureInstanceResources(size_t instanceCount)
-{
-	if (instanceCount == 0)
-		return S_OK;
-
-	if (s_pInstanceBuffer &&
-		s_pOcclusionInputBuffer &&
-		s_pVisibleFlagBuffer &&
-		s_iInstanceCapacity >= instanceCount)
-	{
-		return S_OK;
-	}
-
-	size_t newCapacity = std::max<size_t>(instanceCount, 256);
-	while (newCapacity < instanceCount)
-	{
-		newCapacity *= 2;
-	}
-
-	// 인스턴싱 렌더링용 vertex instance buffer 생성
-	{
-		auto pBuffer = CResDynamicBuffer::Create();
-		if (pBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
-
-		CResDynamicBuffer::DESC bufferDesc{};
-		bufferDesc.desc = {
-			.ByteWidth = static_cast<UINT>(sizeof(MAPMESH_INSTANCE_DATA) * newCapacity),
-			.Usage = D3D11_USAGE_DYNAMIC,
-			.BindFlags = D3D11_BIND_VERTEX_BUFFER,
-			.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-			.MiscFlags = 0,
-			.StructureByteStride = 0,
-		};
-
-		if (FAILED(pBuffer->Load(bufferDesc)))
-		{
-			return E_FAIL;
-		}
-
-		s_pInstanceBuffer = pBuffer;
-	}
-
-	{
-		auto pBuffer = CResStructuredBuffer::Create();
-		if (pBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
-
-		CResStructuredBuffer::DESC bufferDesc{};
-		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
-		bufferDesc.iStructureByteStride = sizeof(MAPMESH_OCCLUSION_DATA);
-		bufferDesc.pInitialData = nullptr;
-		bufferDesc.bAppendConsume = false;
-
-		if (FAILED(pBuffer->Load(bufferDesc)))
-		{
-			return E_FAIL;
-		}
-
-		s_pOcclusionInputBuffer = pBuffer;
-	}
-
-	{
-		auto pBuffer = CResStructuredBuffer::Create();
-		if (pBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
-
-		CResStructuredBuffer::DESC bufferDesc{};
-		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
-		bufferDesc.iStructureByteStride = sizeof(uint32_t);
-		bufferDesc.pInitialData = nullptr;
-		bufferDesc.bAppendConsume = false;
-
-		if (FAILED(pBuffer->Load(bufferDesc)))
-		{
-			return E_FAIL;
-		}
-
-		s_pVisibleFlagBuffer = pBuffer;
-	}
-
-	s_iInstanceCapacity = newCapacity;
 	return S_OK;
 }
 
@@ -558,6 +479,12 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 		if (pModel == nullptr || instanceBatch.instances.empty())
 		{
 			continue;
+		}
+
+		const auto* textureCache = GetOrCreateMapMeshTextureCache(pModel);
+		if (textureCache == nullptr)
+		{
+			return E_FAIL;
 		}
 
 		if (s_pGpuCuller == nullptr)
@@ -596,6 +523,11 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 			return E_FAIL;
 		}
 
+		if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
+		{
+			return E_FAIL;
+		}
+
 		const uint32_t numMeshes = pModel->Get_NumMeshes();
 		for (uint32_t i = 0; i < numMeshes; ++i)
 		{
@@ -619,17 +551,10 @@ HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, co
 			pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 			pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-			if (FAILED(BindMapMeshTextures(pContext, pModel, i)))
+			if (FAILED(BindMapMeshTextures(pContext, *textureCache, i)))
 			{
 				return E_FAIL;
 			}
-
-			if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
-			{
-				return E_FAIL;
-			}
-
-			
 
 			if (FAILED(s_pGpuCuller->PrepareIndirectArgs(
 				pContext,

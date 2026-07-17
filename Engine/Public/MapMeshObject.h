@@ -5,11 +5,9 @@ NS_BEGIN(Engine)
 
 class CComConstantBuffer;
 class CComStaticModelInstance;
-class CResDynamicBuffer;
 class CResPixelShader;
 class CResSamplerState;
 class CResStaticModel;
-class CResStructuredBuffer;
 class CResVertexShader;
 class CMapMeshGpuCuller;
 
@@ -76,7 +74,6 @@ public:
 
 private:
 	static HRESULT PushInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
-	static HRESULT EnsureInstanceResources(size_t instanceCount);
 	HRESULT RenderInstancedBatches(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx);
 
 private:
@@ -89,13 +86,9 @@ private:
 
 private:
 	static std::unordered_map<SPtr<CResStaticModel>, MAPMESH_INSTANCE_BATCH> s_InstanceBatches;
-	static SPtr<CResDynamicBuffer> s_pInstanceBuffer;
-	static size_t s_iInstanceCapacity;
 	static std::optional<CHandle> s_hRenderRepresentative;// 대표로 렌더 콜 호출할 오브젝트
 	static UPtr<CMapMeshGpuCuller> s_pGpuCuller;
 
-	static SPtr<CResStructuredBuffer>  s_pOcclusionInputBuffer; // MAPMESH_OCCLUSION_DATA[]
-	static SPtr<CResStructuredBuffer> s_pVisibleFlagBuffer; // uint[]
 
 	// 드로우 콜 확인용
 	static _bool s_bInstancingEnabled; // 인스턴싱 On/Off
