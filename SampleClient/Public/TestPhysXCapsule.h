@@ -20,6 +20,11 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPos{};
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
 	};
 
 private:

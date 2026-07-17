@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
 NS_BEGIN(Engine)
@@ -23,6 +23,11 @@ public:
 public:
 	typedef struct tagTerrainDesc : public CGameObject::GAMEOBJECT_DESC
 	{
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::WORLD_STATIC),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
 	}DESC;
 
 private:
@@ -36,6 +41,8 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	void OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
+	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
 
 private:
 	SPtr<CResTerrainVIBuffer> m_pResTerrainVIBuffer{};

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prototype.h"
 #include "MyTreeNode.h"
 #include "Component.h"
@@ -134,6 +134,7 @@ public:
 	};
 
 
+
 protected:
 	HRESULT DelComponent(const StringID& tagComponent);
 
@@ -167,6 +168,25 @@ public:
 	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override {}
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override {}
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override {}
+
+	// CCT Hit 알림은 move 중 즉시 호출되지 않고 물리 이벤트 Dispatch 시점에 전달된다.
+	void OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override {}
+	void OnCCTControllerHit(const PX_CCT_HIT_DATA& tHit) override {}
+	void OnCCTObstacleHit(const PX_CCT_OBSTACLE_HIT_DATA& tHit) override {}
+
+	// CCT 이동 계산에 즉시 사용되므로 상태 변경 없이 정책값만 반환해야 한다.
+	PX_CCT_BEHAVIOR GetCCTShapeBehavior(CGameObject* pGameObject) const override
+	{
+		return PX_CCT_BEHAVIOR::CAN_RIDE;
+	}
+	PX_CCT_BEHAVIOR GetCCTControllerBehavior(CGameObject* pGameObject) const override
+	{
+		return PX_CCT_BEHAVIOR::NONE;
+	}
+	PX_CCT_BEHAVIOR GetCCTObstacleBehavior(const void* pUserData) const override
+	{
+		return PX_CCT_BEHAVIOR::CAN_RIDE;
+	}
 
 	// IPhysicsSync
 public:

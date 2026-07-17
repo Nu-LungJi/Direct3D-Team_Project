@@ -181,6 +181,9 @@
     <Filter Include="Loader\Level\Help">
       <UniqueIdentifier>{edec8072-3519-4af3-8bcf-1b22e70c939a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\TestPhysx\Trigger">
+      <UniqueIdentifier>{22e50275-7e44-49fc-ad4c-c13395e27add}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -417,6 +420,9 @@
     <ClInclude Include="..\Public\LightTerrain.h">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestPhysXTrigger.h">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\BTDecHitCnt.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
@@ -626,6 +632,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LightTerrain.cpp">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPhysXTrigger.cpp">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTDecHitCnt.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>

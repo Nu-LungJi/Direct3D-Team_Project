@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "TestPhysXCapsule.h"
 #include "GameInstance.h"
 #include "Collider.h"
@@ -39,6 +39,7 @@ HRESULT CTestPhysXCapsule::Initialize(void* pArg)
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
 		Desc.pResCapsuleGeo = CGameInstance::Get().GetResourceFirst<CResPhysXCapsuleGeometry>("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE");
 		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PX", "TMP_MATERIAL");
+		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxCapsuleCollider", "ComPxCapsuleCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;
@@ -78,18 +79,26 @@ void CTestPhysXCapsule::OnSleep()
 
 void CTestPhysXCapsule::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXCapsule] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysXCapsule::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXCapsule] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysXCapsule::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXCapsule] Trigger Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 void CTestPhysXCapsule::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
+	DEBUG_LOG_STR(std::string("[PX][TestPhysXCapsule] Trigger Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
 E::UPtr<CTestPhysXCapsule> CTestPhysXCapsule::Create()

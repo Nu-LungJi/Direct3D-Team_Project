@@ -1,38 +1,39 @@
 ﻿#pragma once
+
 #include "GameObject.h"
 #include "Client_Defines.h"
-#include "ComCollider.h"
 
 NS_BEGIN(Engine)
 class CComPxRigidBody;
 class CComPxBoxCollider;
-class CResPhysXBoxGeometry;
-class CComPxCharacterController;
 NS_END
+
 NS_BEGIN(Client)
 
-class CTestCharacter final : public CGameObject
+class CTestPhysXTrigger final : public CGameObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CTestCharacter, CGameObject)
+	DECLARE_DERIVED_TYPE(CTestPhysXTrigger, CGameObject)
 
 public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
+		_float3 vInitialPos{};
+		_float3 vHalfExtents{ 1.f, 1.f, 1.f };
+		_bool bIsTrigger{ true };
 		PX_FILTER_DESC tFilter{
-			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+			.iLayer = ETOUI(COLLISION_LAYER::INTERACTION),
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
 	};
 
 private:
-	CTestCharacter();
-	~CTestCharacter() override;
+	CTestPhysXTrigger();
+	~CTestPhysXTrigger() override;
 
 public:
 	HRESULT Initialize(void* pArg) override;
-	void FixedUpdate(_float fTimeDelta) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
@@ -49,11 +50,9 @@ public:
 private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
-	CComCollider* m_pComCollider{};
-	CComPxCharacterController* m_pComCharacterController{};
 
 public:
-	static E::UPtr<CTestCharacter> Create();
+	static E::UPtr<CTestPhysXTrigger> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

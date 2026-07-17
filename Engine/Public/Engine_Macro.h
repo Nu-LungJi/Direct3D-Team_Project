@@ -27,6 +27,16 @@
 #define DEBUG_BREAK() ((void)0)
 #endif
 
+#ifdef _DEBUG
+#define DEBUG_LOG(_message) \
+	do { OutputDebugStringA((_message)); } while (0)
+#define DEBUG_LOG_STR(_message) \
+	do { OutputDebugStringA((_message).c_str()); } while (0)
+#else
+#define DEBUG_LOG(_message) ((void)0)
+#define DEBUG_LOG_STR(_message) ((void)0)
+#endif
+
 #define CHECK_HR(hr, fmt, ...) \
     do { \
         HRESULT _hr = (hr); \

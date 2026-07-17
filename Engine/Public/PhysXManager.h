@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "Handle.h"
 #include <mutex>
@@ -18,6 +18,8 @@ namespace physx {
 NS_BEGIN(Engine)
 class CPhysxManagerListener;
 class CGameObject;
+struct PX_CCT_HIT_DATA;
+struct PX_CCT_OBSTACLE_HIT_DATA;
 class ENGINE_DLL CPhysXManager final: public CEngineBase
 {
 private:
@@ -32,10 +34,16 @@ public:
 	void UpdateGUI();
 
 public:
-	_bool RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
-	_bool RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10)const;
-	_bool OverlapTest();
-	_bool SweepTest();
+	//_bool RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	//_bool RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10)const;
+	_bool RayCast(const PX_RAYCAST_DESC& tDesc, PX_RAYCAST_RESULT& outResult) const;
+	_bool RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+
+	_bool Sweep(const PX_SWEEP_DESC& tDesc, PX_SWEEP_RESULT& outResult) const;
+	_bool SweepMultiple(const PX_SWEEP_DESC& tDesc, std::vector<PX_SWEEP_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+
+	_bool Overlap(const PX_OVERLAP_DESC& tDesc, PX_OVERLAP_RESULT& outResult) const;
+	_bool OverlapMultiple(const PX_OVERLAP_DESC& tDesc, std::vector<PX_OVERLAP_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
 
 private:
 	void UpdateDebugRender(_float fTimeDelta);
@@ -58,6 +66,10 @@ public:
 	void UnregisterShape(const physx::PxShape* pShape);
 	std::optional<PX_SHAPE_USER_DATA> FindShapeUserData(const physx::PxShape* pShape) const;
 
+	void QueueCCTShapeHit(const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit);
+	void QueueCCTControllerHit(const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit);
+	void QueueCCTObstacleHit(const CHandle& hOwner, const PX_CCT_OBSTACLE_HIT_DATA& tHit);
+
 private:
 	void SyncPhysicsToComponents();
 	
@@ -79,7 +91,7 @@ private:
 	std::unordered_map<const physx::PxShape*, PX_SHAPE_USER_DATA> m_ShapeUserDataRegistry{};
 
 private:
-	_bool m_bDbgRender{ true };
+	_bool m_bDbgRender{ false };
 public:
 	static UPtr<CPhysXManager> Create();
 

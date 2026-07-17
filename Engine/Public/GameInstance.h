@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -363,8 +363,8 @@ public:
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
 
-	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
-	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+	//_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	//_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
 #pragma endregion
 
 

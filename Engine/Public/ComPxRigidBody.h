@@ -26,8 +26,36 @@ public:
 
 public:
 	physx::PxRigidActor* GetActor() const { return m_pActor; }
+	TYPE GetRigidBodyType() const { return m_eType; }
 	bool IsDynamic() const { return m_bIsDynamic; }
-	float GetMass() const { return m_fMass; };
+	float GetMass() const { return m_fMass; }
+
+	_bool SetPosition(const _float3& vPosition);
+	_float3 GetPosition() const;
+	_bool SetRotation(const _float4& vQuaternion);
+	_float4 GetRotation() const;
+	_bool SetPose(const _float3& vPosition, const _float4& vQuaternion);
+	_bool SetMass(_float fMass);
+	_bool SetKinematic(_bool bKinematic);
+	_bool IsKinematic() const;
+
+	_float3 GetLinearVelocity() const;
+	_bool SetLinearVelocity(const _float3& vVelocity);
+	_float3 GetAngularVelocity() const;
+	_bool SetAngularVelocity(const _float3& vVelocity);
+
+	_bool AddForce(const _float3& vForce);
+	_bool AddImpulse(const _float3& vImpulse);
+	_bool AddTorque(const _float3& vTorque);
+	_bool SetKinematicTarget(const _float3& vPosition, const _float4& vQuaternion);
+
+	_bool SetGravityEnabled(_bool bEnabled);
+	_bool IsGravityEnabled() const;
+	_bool SetLinearDamping(_float fDamping);
+	_bool SetAngularDamping(_float fDamping);
+	_bool WakeUp();
+	_bool PutToSleep();
+	_bool IsSleeping() const;
 private:
 	explicit CComPxRigidBody();
 	~CComPxRigidBody() override;
