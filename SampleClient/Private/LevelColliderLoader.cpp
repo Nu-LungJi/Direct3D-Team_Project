@@ -27,7 +27,7 @@ std::future<bool> CLevelColliderLoader::Load()
 		});
 }
 
-HRESULT CLevelColliderLoader::UnLoad()
+std::future<bool> CLevelColliderLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 	E::CGameInstance::Get().DelPrototype("LEVEL_COLLIDER");
@@ -36,5 +36,8 @@ HRESULT CLevelColliderLoader::UnLoad()
 	CGameInstance::Get().Clear_DynamicLightList();
 	E::CGameInstance::Get().DelResource("LIGHT");
 	LOG_MEMORY("end");
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_COLLIDER", []()
+		{
+			return true;
+		});
 }

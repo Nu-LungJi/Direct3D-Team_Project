@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "PhysxManagerListener.h"
 #include "PhysXManager.h"
 
@@ -30,7 +30,7 @@ void CPhysxManagerListener::onWake(physx::PxActor** actors, physx::PxU32 count)
     {
         physx::PxActor* pActor = actors[i];
         if (!pActor) continue;
-		if (auto* pObj = CGameInstance::Get().GetPhysiXManager()->FindGameObject(pActor))
+		if (auto* pObj = CGameInstance::Get().GetPhysXManager()->FindGameObject(pActor))
 			pObj->OnWake();
     }
 }
@@ -41,7 +41,7 @@ void CPhysxManagerListener::onSleep(physx::PxActor** actors, physx::PxU32 count)
     {
         physx::PxActor* pActor = actors[i];
         if (!pActor) continue;
-		if (auto* pObj = CGameInstance::Get().GetPhysiXManager()->FindGameObject(pActor))
+		if (auto* pObj = CGameInstance::Get().GetPhysXManager()->FindGameObject(pActor))
 			pObj->OnSleep();
     }
 }
@@ -68,7 +68,7 @@ void CPhysxManagerListener::onContact(const physx::PxContactPairHeader& pairHead
             continue;
         }
 		// 이미 삭제된 컴포넌트 주소(Dangling Pointer)에 접근하는 것을 원천 차단
-		auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 		auto* pObjA = pPhysXManager->FindGameObject(pairHeader.actors[0]);
 		auto* pObjB = pPhysXManager->FindGameObject(pairHeader.actors[1]);
         if (!pObjA || !pObjB)
@@ -106,7 +106,7 @@ void CPhysxManagerListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 
             continue;
         }
 
-		auto* pPhysXManager = CGameInstance::Get().GetPhysiXManager();
+		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 		auto* pObjA = pPhysXManager->FindGameObject(tp.triggerActor);
 		auto* pObjB = pPhysXManager->FindGameObject(tp.otherActor);
         if (!pObjA || !pObjB)

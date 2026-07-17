@@ -3,6 +3,8 @@
 #include "GameInstance.h"
 #include "LevelLoading.h"
 
+#include "MainAppLoader.h"
+
 
 NS_USING(Client)
 
@@ -29,15 +31,30 @@ HRESULT CMainApp::Initialize()
 		return E_FAIL;
 	}
 
+	LOG_MEMORY("CBaseApp::Initialize End");
+
+	CGameInstance::Get().ImguiEnableDocking(true, true);
+
 	if (CBaseApp::StartLevel(CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO)))
 	{
 		return E_FAIL;
 	}
+
 	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_LOGO", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
 		});
 
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_Persibal", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PERCIVAL));
+		});
+
+	if (FAILED(CMainAppLoader::Load()))
+	{
+		MSG_BOX("MainLoader Failed");
+		return E_FAIL;
+	}
 
 	return S_OK;
 }

@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 #include "GameObject.h"
 #include "Component.h"
@@ -175,7 +175,7 @@ void CGameObject::SetPendingDestroyCascade(_bool b)
     MyTreeDFS(this, [&](auto pObj) {pObj->SetPendingDestroy(b); });
 }
 
-void CGameObject::SyncActivePhysXData(const PHYSX_SYNC_DATA& syncData)
+void CGameObject::SyncActivePhysXData(const PX_SYNC_DATA& syncData)
 {
     m_PhysXSyncData = syncData;
     m_bPhysXSynced = true;

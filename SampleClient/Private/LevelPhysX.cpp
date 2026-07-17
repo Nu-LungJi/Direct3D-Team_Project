@@ -1,7 +1,8 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "LevelPhysX.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 
 #include "FlyCamera.h"
 
@@ -20,7 +21,7 @@
 NS_USING(Client)
 
 CLevelPhysX::CLevelPhysX()
-
+	: CLevel{ ETOUI(LEVEL::PHYSX) }
 {
 }
 
@@ -42,7 +43,7 @@ HRESULT CLevelPhysX::Initialize()
 		CTestPhysXTerrain::DESC Desc{};
 		Desc.sObjectTag = "TestPhysXTerrain";
 
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXTerrain",
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXTerrain",
 			TestPhysXLayer::_01_Terrain, &Desc))
 		{
 			int x = 0;
@@ -50,10 +51,10 @@ HRESULT CLevelPhysX::Initialize()
 	}
 
 	//{
-	//	//"SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox"
+	//	//"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox"
 	//	CTestPhysXBox::DESC Desc{ };
 	//	Desc.sObjectTag = "TestPhysXBox";
-	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox",
+	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox",
 	//		"00_OBJECTS", &Desc)))
 	//	{
 	//		return E_FAIL;
@@ -63,7 +64,7 @@ HRESULT CLevelPhysX::Initialize()
 	{
 		CTestPhysX::DESC Desc{ };
 		Desc.sObjectTag = "TestPhysX";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysX",
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysX",
 			"00_OBJECTS", &Desc)))
 		{
 			return E_FAIL;
@@ -73,7 +74,7 @@ HRESULT CLevelPhysX::Initialize()
 	{
 		CTestCharacter::DESC Desc{ };
 		Desc.sObjectTag = "TestCharacter";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestCharacter",
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestCharacter",
 			"00_OBJECTS", &Desc)))
 		{
 			return E_FAIL;
@@ -137,7 +138,7 @@ void CLevelPhysX::UpdateGUI()
 
 			CTestPhysX::DESC Desc{ .comPhysXDesc = comPhysXDesc };
 			Desc.sObjectTag = "TestPhysX";
-			if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysX",
+			if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysX",
 				"00_OBJECTS", &Desc)))
 			{
 
@@ -171,6 +172,5 @@ Engine::UPtr<CLevelPhysX> CLevelPhysX::Create()
 
 void CLevelPhysX::Free()
 {
-	CLevelPhysXLoader::UnLoad();
 	CLevel::Free();
 }

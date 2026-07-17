@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "TestPhysXBall.h"
 #include "GameInstance.h"
 #include "Collider.h"
@@ -23,10 +23,10 @@ HRESULT CTestPhysXBall::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
-	//"SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL",
-	//	"SAMPLE_CLIENT_PHYSIX", "TMP_GEO_BOX",
-	//	"SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE",
-	//	"SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE"
+	//"SAMPLE_CLIENT_PX", "TMP_MATERIAL",
+	//	"SAMPLE_CLIENT_PX", "TMP_GEO_BOX",
+	//	"SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE",
+	//	"SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE"
 
 
 	{
@@ -42,8 +42,8 @@ HRESULT CTestPhysXBall::Initialize(void* pArg)
 	{
 		CComPxSphereCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResSphereGeo = CGameInstance::Get().GetResourceFirst<CResPhysXSphereGeometry>("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE");
-		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL");
+		Desc.pResSphereGeo = CGameInstance::Get().GetResourceFirst<CResPhysXSphereGeometry>("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE");
+		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PX", "TMP_MATERIAL");
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxSphereCollider", "ComPxBoxCollider", &Desc, &m_pComPxSphereCollider)))
 		{
 			return E_FAIL;
@@ -83,19 +83,19 @@ void CTestPhysXBall::OnSleep()
 	int x = 0;
 }
 
-void CTestPhysXBall::OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestPhysXBall::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestPhysXBall::OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestPhysXBall::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestPhysXBall::OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestPhysXBall::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 
-void CTestPhysXBall::OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestPhysXBall::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 
