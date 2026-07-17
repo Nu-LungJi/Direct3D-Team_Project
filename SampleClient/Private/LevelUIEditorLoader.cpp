@@ -161,12 +161,15 @@ std::future<bool> CLevelUIEditorLoader::Load()
 		});
 }
 
-HRESULT CLevelUIEditorLoader::UnLoad()
+std::future<bool> CLevelUIEditorLoader::UnLoad()
 {
 	LOG_MEMORY("start");
-	E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
-	E::CGameInstance::Get().DelResource("LEVEL_LOGO");
+	E::CGameInstance::Get().DelPrototype("LEVEL_UIEDITOR");
+	E::CGameInstance::Get().DelResource("LEVEL_UIEDITOR");
 	LOG_MEMORY("end");
 
-	return S_OK;
+	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_UIEDITOR", []()
+		{
+			return true;
+		});
 }

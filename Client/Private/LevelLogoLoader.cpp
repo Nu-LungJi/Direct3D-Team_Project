@@ -9,7 +9,7 @@ NS_USING(Client)
 std::future<bool> CLevelLogoLoader::Load()
 {
 	// 메인 스레드 시작
-	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/Client/Textures/SHM.png")))
 	{
 		res->Load();
 	}
@@ -30,15 +30,14 @@ std::future<bool> CLevelLogoLoader::Load()
 std::future<bool> CLevelLogoLoader::UnLoad()
 {
 	LOG_MEMORY("start");
+	E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
+	E::CGameInstance::Get().DelResource("LEVEL_LOGO");
 
 	CGameInstance::Get().Clear_DynamicLightList();
+	E::CGameInstance::Get().DelResource("LIGHT");
 	LOG_MEMORY("end");
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LOGO", []()
 		{
-			E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
-			E::CGameInstance::Get().DelResource("LEVEL_LOGO");
-
-			E::CGameInstance::Get().DelResource("LIGHT");
 			return true;
 		});
 }

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Client_Defines.h"
 
@@ -19,10 +19,23 @@ public:
 	HRESULT Render() override;
 	void UpdateGUI() override;
 	void FrameEnd(E::_float fTimeDelta) override;
+	bool IsLevelChangeLocked() const override;
 private:
 	HRESULT LoadEnd();
-	void ThreadStart();
-	void LoadingCheck();
+	void StartUnload();
+	void CheckUnload();
+	void StartLoad();
+	void CheckLoad();
+
+private:
+	enum class PHASE
+	{
+		READY,
+		UNLOADING,
+		LOADING,
+		COMPLETE,
+		FAILED
+	};
 
 private:
 	HRESULT LoadingOverWorldLevel();
@@ -32,10 +45,12 @@ private:
 	ComPtr<ID3D11DeviceContext> m_pContext{};
 
 private:
+	std::optional<LEVEL> m_ePreviousLevelIndex{};
 	const LEVEL m_eNextLevelIndex;
 
-	bool m_bThreadStart{ false };
 	bool m_bLoadEnd{ false };
+	PHASE m_ePhase{ PHASE::READY };
+	std::future<bool> m_futUnloadFinish{};
 	std::future<bool> m_futLoadFinish{};
 
 public:

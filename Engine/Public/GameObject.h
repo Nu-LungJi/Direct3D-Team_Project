@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prototype.h"
 #include "MyTreeNode.h"
 #include "Component.h"
@@ -158,17 +158,17 @@ private:
 public:
 	void OnWake() override {}
 	void OnSleep() override {}
-	void OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info) override {}
-	void OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info) override {}
-	void OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info) override {}
-	void OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info) override {}
+	void OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override {}
+	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override {}
+	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override {}
+	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override {}
 
 	// IPhysicsSync
 public:
-	void SyncActivePhysXData(const PHYSX_SYNC_DATA& syncData) override;
+	void SyncActivePhysXData(const PX_SYNC_DATA& syncData) override;
 	virtual void UpdatePhysicData();
 private:
-	PHYSX_SYNC_DATA m_PhysXSyncData{};
+	PX_SYNC_DATA m_PhysXSyncData{};
 	_bool m_bPhysXSynced{ false };
 };
 

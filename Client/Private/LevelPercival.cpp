@@ -1,40 +1,39 @@
 #include "pch.h"
-#include "LevelLogo.h"
+#include "LevelPercival.h"
 #include "GameInstance.h"
-#include "LevelLoading.h"
 #include "Level_Defines.h"
-
 #include "FlyCamera.h"
 
 #include "ResCBuffer.h"
 #include "BackGround.h"
 #include "UiCamera.h"
 
-#include "LevelLogoLoader.h"
+#include "LevelPercivalLoader.h"
+
 NS_USING(Client)
 
-CLevelLogo::CLevelLogo()
-	: CLevel{ ETOUI(LEVEL::LOGO) }
+CLevelPercival::CLevelPercival()
+	: CLevel{ ETOUI(LEVEL::PERCIVAL) }
 {
 }
 
-CLevelLogo::~CLevelLogo()
+CLevelPercival::~CLevelPercival()
 {
 }
 
-HRESULT CLevelLogo::Initialize()
+HRESULT CLevelPercival::Initialize()
 {
-	Engine::CGameInstance::Get().GameObjectAllReset();
+	E::CGameInstance::Get().GameObjectAllReset();
 
-	{
-		CBackGround::UIOBJECT_DESC Desc{};
-		Desc.sObjectTag = "BackGround";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_LOGO", "Prototype_GameObject_BackGround",
-			"00_OBJECTS", &Desc)))
-		{
-			return E_FAIL;
-		}
-	}
+	//{
+	//	CBackGround::UIOBJECT_DESC Desc{};
+	//	Desc.sObjectTag = "BackGround";
+	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PERCIVAL", "Prototype_GameObject_BackGround",
+	//		"00_OBJECTS", &Desc)))
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -44,7 +43,7 @@ HRESULT CLevelLogo::Initialize()
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
 		Desc.fNear = 0.1f;
-		Desc.fFar = 100.f;
+		Desc.fFar = 1000.f;
 		Desc.sObjectTag = "FlyCam";
 
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
@@ -52,7 +51,7 @@ HRESULT CLevelLogo::Initialize()
 		{
 			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
 			{
-				MSG_BOX("MSG_BOX_123");
+				MSG_BOX("FailedToRegistCamera");
 			}
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
@@ -63,7 +62,7 @@ HRESULT CLevelLogo::Initialize()
 		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
 		Desc.fNear = 0.f;
 		Desc.fFar = 1.f;
-		Desc.fWidth = g_iWinSizeX;	
+		Desc.fWidth = g_iWinSizeX;
 		Desc.fHeight = g_iWinSizeY;
 		Desc.sObjectTag = "UICam";
 		Desc.vEye = { 0.f, 0.f, -0.1f };
@@ -73,41 +72,39 @@ HRESULT CLevelLogo::Initialize()
 		{
 			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
 			{
-				MSG_BOX("MSG_BOX_123_");
+				MSG_BOX("FailedToRegistCamera");
 			}
-			//E::CGameInstance::Get().SetActiveUICamera("UI");
 		}
 	}
 
+
 	return S_OK;
 }
 
-void CLevelLogo::Update(E::_float fTimeDelta)
+void CLevelPercival::Update(E::_float fTimeDelta)
 {
 }
 
-HRESULT CLevelLogo::Render()
+HRESULT CLevelPercival::Render()
 {
 	return S_OK;
 }
 
-void CLevelLogo::UpdateGUI()
+void CLevelPercival::UpdateGUI()
 {
-	ImGui::Begin("LEVEL: CLevel_Logo");
-
-
+	ImGui::Begin("level: Persibal");
 
 	ImGui::End();
 }
 
-void CLevelLogo::FrameStart(E::_float fTimeDelta)
+void CLevelPercival::FrameStart(E::_float fTimeDelta)
 {
 
 }
 
-Engine::UPtr<CLevelLogo> CLevelLogo::Create()
+Engine::UPtr<CLevelPercival> CLevelPercival::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelLogo>(new CLevelLogo{});
+	auto	pInstance = Engine::UPtr<CLevelPercival>(new CLevelPercival{});
 
 	if (FAILED(pInstance->Initialize()))
 	{
@@ -117,7 +114,7 @@ Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 	return pInstance;
 }
 
-void CLevelLogo::Free()
+void CLevelPercival::Free()
 {
 	CLevel::Free();
 }

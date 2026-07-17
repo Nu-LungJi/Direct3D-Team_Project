@@ -16,12 +16,15 @@ CResTexture2D::~CResTexture2D()
 
 HRESULT CResTexture2D::Load(const std::any& arg)
 {
-    if (m_eState == STATE::LOADED)
+    if (m_eState.load(std::memory_order_acquire) == STATE::LOADED)
     {
-        return S_OK;
+		return S_OK;
     }
 
-    m_eState = STATE::LOADING;
+	m_eState.store(STATE::LOADING, std::memory_order_release);
+    m_pTexture.Reset();
+    m_pSRV.Reset();
+    m_Texture2DDesc = {};
     //DirectX::CreateWICTextureFromFileEx(
     //    m_pDevice.Get(),
     //    nullptr,                // 스레드에서는 Context를 nullptr로! (밉맵 생성 미룸)
@@ -111,20 +114,43 @@ HRESULT CResTexture2D::Load(const std::any& arg)
     }
     else
     {
+		DirectX::TexMetadata metadata{};
+		DirectX::ScratchImage sourceImage{};
+		DirectX::ScratchImage mipChain{};
+		const DirectX::ScratchImage* textureImage = &sourceImage;
 
-        hr = DirectX::CreateWICTextureFromFileEx(
-            m_pDevice.Get(),
-            m_pContext.Get(),
-            path.c_str(),
-            0,
-            D3D11_USAGE_DEFAULT,
-            D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
-            0,
-            D3D11_RESOURCE_MISC_GENERATE_MIPS,
-			DirectX::WIC_LOADER_DEFAULT, //DirectX::WIC_LOADER_FORCE_RGBA32 | DirectX::WIC_LOADER_IGNORE_SRGB,
-            pResource.GetAddressOf(),
-            m_pSRV.GetAddressOf()
-        );
+		hr = DirectX::LoadFromWICFile(
+			path.c_str(),
+			DirectX::WIC_FLAGS_NONE,
+			&metadata,
+			sourceImage);
+
+		if (SUCCEEDED(hr) && (metadata.width > 1 || metadata.height > 1))
+		{
+			hr = DirectX::GenerateMipMaps(
+				sourceImage.GetImages(),
+				sourceImage.GetImageCount(),
+				sourceImage.GetMetadata(),
+				DirectX::TEX_FILTER_DEFAULT,
+				0,
+				mipChain);
+
+			if (SUCCEEDED(hr))
+				textureImage = &mipChain;
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = DirectX::CreateShaderResourceView(
+				m_pDevice.Get(),
+				textureImage->GetImages(),
+				textureImage->GetImageCount(),
+				textureImage->GetMetadata(),
+				m_pSRV.GetAddressOf());
+		}
+
+		if (SUCCEEDED(hr))
+			m_pSRV->GetResource(pResource.GetAddressOf());
 		
         //hr = DirectX::CreateWICTextureFromFile(
         //    m_pDevice.Get(),
@@ -143,17 +169,17 @@ HRESULT CResTexture2D::Load(const std::any& arg)
     //);
     if (FAILED(hr))
     {
-        m_eState = STATE::LOADFAIL;
+        m_eState.store(STATE::LOADFAIL, std::memory_order_release);
         MSG_BOX_STR(_wstring{ L"CreateTextureFromFile Faield Path:" + StringToWString(m_sPath) }.c_str());
         return E_FAIL;
     }
 
 
 
-    hr = pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&m_pTexture);
+    hr = pResource.As(&m_pTexture);
     if (FAILED(hr))
     {
-        m_eState = STATE::LOADFAIL;
+        m_eState.store(STATE::LOADFAIL, std::memory_order_release);
         //MSG_BOX("CreateWICTextureFromFile Faield");
         MSG_BOX_STR(_wstring{ L"QueryInterface(__uuidof(ID3D11Texture2D) Faield Path:" + StringToWString(m_sPath) }.c_str());
         return E_FAIL;
@@ -172,7 +198,7 @@ HRESULT CResTexture2D::Load(const std::any& arg)
     int x = 0;
 
 
-    m_eState = STATE::LOADED;
+    m_eState.store(STATE::LOADED, std::memory_order_release);
 
 
     return S_OK;
