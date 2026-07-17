@@ -315,10 +315,8 @@ public:
 	void	Play_Anim(int32_t iAnimIndex, _bool bLoop=false, _float fBlendDuration = 0.1f);
 	void	Play_Action(int32_t iActionIndex, _float fBlendDuration);
 	void	Build_BoneMatrices_CPU(_float fTimeDelta);
-	// Samples an animation pose without changing the currently playing animation
-	// or any of its playback state.
-	_bool	Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition,
-		std::vector<_float4x4>& OutCombinedBoneMatrices) const;
+	_bool Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain, _float4x4& outMatrix) const;
+
 	void	Sample_Channel_CPU( CResModelChanel* pChannel, _float fTrackPosition, uint32_t& iCurrentKeyFrameIndex, std::vector<_float4x4>& OutLocalBoneMatrices);
 	_matrix Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition) const;
 	_vector RemoveYRotation(_vector qRotation);

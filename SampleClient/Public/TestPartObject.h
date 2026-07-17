@@ -66,7 +66,10 @@ private:
 	CHandle m_hOwner{};
 	uint32_t m_iBoneIndex{};
 	_float3 m_vBoneOffset{};
+	StringID m_sAnimGetID;
 
+
+	_float4x4 socketWorldFloat{};
 public:
 	static E::UPtr<CTestPartObject> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

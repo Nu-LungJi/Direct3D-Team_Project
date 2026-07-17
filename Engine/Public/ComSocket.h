@@ -25,8 +25,10 @@ public:
 
 public:
 	virtual void UpdateGUI() override;
-	// Gets this socket at an arbitrary animation pose without changing playback.
 	_bool Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosition, _float4x4& OutSocketMatrix) const;
+
+	void BuildBoneChain(const CResModel& model) const;
+
 private:
 	explicit CComSocket();
 	~CComSocket() override;
@@ -46,13 +48,13 @@ public:
 
 private:
 	CHandle					m_pOwner{};
-
+	mutable  std::vector<uint32_t> m_BoneChain;
 	uint32_t		m_iBoneIndex;
 	_float4			m_fOffset;
 	_float4x4		m_SocketMatrix{};
 
-	StringID		m_sModelInstanceName;
 	StringID		m_sAnimatorName;
+	StringID		m_sModelInstanceName;
 		
 };
 

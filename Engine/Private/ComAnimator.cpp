@@ -779,7 +779,7 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	
 }
 
-_bool CComAnimator::Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition,std::vector<_float4x4>& OutCombinedBoneMatrices) const
+_bool CComAnimator::Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain,_float4x4& outMatrix) const
 {
 	if (m_pModelInstance == nullptr)
 		return false;
@@ -793,34 +793,34 @@ _bool CComAnimator::Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrac
 	if (iAnimIndex < 0 || iAnimIndex >= (int32_t)(Anims.size()) || Anims[iAnimIndex] == nullptr)
 		return false;
 
+
 	const auto& pAnim = Anims[iAnimIndex];
 	fTrackPosition = std::clamp(fTrackPosition, 0.f, pAnim->GetDuration());
+	if (boneChain.empty())
+		return false;
 
-	std::vector<_float4x4> localBoneMatrices(Bones.size());
-	for (size_t i = 0; i < Bones.size(); ++i)
-		XMStoreFloat4x4(&localBoneMatrices[i], Bones[i]->Get_TransformationMatrix());
 
-	for (const auto& pChannel : pAnim->GetChannels())
+	const _matrix preTransform =XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
+	_matrix combined = preTransform;
+
+
+	// CComSocket caches this chain in Root -> Target order.
+	for (uint32_t boneIndex : boneChain)
 	{
-		if (pChannel == nullptr)
-			continue;
+		if (boneIndex >= Bones.size())
+			return false;
 
-		const int32_t iBoneIndex = pChannel->Get_BoneIndex();
-		if (iBoneIndex < 0 || iBoneIndex >= static_cast<int32_t>(localBoneMatrices.size()))
-			continue;
+		_matrix local = Bones[boneIndex]->Get_TransformationMatrix();
+		if (auto* pChannel = pAnim->GetChannelByBoneIndex(boneIndex))
+			local = Evaluate_ChannelMatrix_CPU(pChannel, fTrackPosition);
 
-		XMStoreFloat4x4(&localBoneMatrices[iBoneIndex],Evaluate_ChannelMatrix_CPU(pChannel.get(), fTrackPosition));
+		combined = local * combined;
+
 	}
 
-	OutCombinedBoneMatrices.resize(Bones.size());
-	const _matrix matPreTransform = XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
-	for (size_t i = 0; i < Bones.size(); ++i)
-	{
-		const int32_t iParentIndex = Bones[i]->GetParendBoneIndex();
-		const _matrix matLocal = XMLoadFloat4x4(&localBoneMatrices[i]);
-		const _matrix matCombined = iParentIndex < 0 ? matLocal * matPreTransform : matLocal * XMLoadFloat4x4(&OutCombinedBoneMatrices[iParentIndex]);
-		XMStoreFloat4x4(&OutCombinedBoneMatrices[i], matCombined);
-	}
+	XMStoreFloat4x4(&outMatrix, combined);
+
+
 
 	return true;
 }

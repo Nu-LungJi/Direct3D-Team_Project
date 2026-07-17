@@ -56,23 +56,48 @@ _bool CComSocket::Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosit
 
 	auto* pModelInstance = pObj->GetComponent<CComModelInstance>(m_sModelInstanceName);
 	auto* pAnimator = pObj->GetComponent<CComAnimator>(m_sAnimatorName);
+	if (pModelInstance == nullptr || pAnimator == nullptr)
+		return false;
 
+	if (m_BoneChain.size() == 0) {
+		const auto pModel = pModelInstance->GetModel();
 
+		if (!pModel)
+			return false;
 
-	std::vector<_float4x4> combinedBoneMatrices;
-	if (!pAnimator->Sample_CombinedBoneMatrices(iAnimIndex, fTrackPosition, combinedBoneMatrices) ||
-		m_iBoneIndex >= combinedBoneMatrices.size())
+		BuildBoneChain(*pModel);
+	}
+
+	_float4x4 combinedBoneMatrices;
+	if (!pAnimator->Sample_CombinedBoneMatrices(iAnimIndex, fTrackPosition, m_BoneChain, combinedBoneMatrices))
 	{
 		return false;
 	}
 
 	const _matrix matOffset = XMMatrixTranslation(m_fOffset.x, m_fOffset.y, m_fOffset.z);
-	const _matrix matBone = XMLoadFloat4x4(&combinedBoneMatrices[m_iBoneIndex]);
-	const _matrix matWorld = GetGameObject()->GetTransform().GetLoadedCombinedWorldMatrix();
-	XMStoreFloat4x4(&OutSocketMatrix, matOffset * matBone * matWorld);
+	const _matrix matBone = XMLoadFloat4x4(&combinedBoneMatrices);
+
+	XMStoreFloat4x4(&OutSocketMatrix, matOffset * matBone);
 	return true;
 }
 
+void CComSocket::BuildBoneChain(const CResModel& model) const
+{
+	m_BoneChain.clear();
+
+	const auto& bones = model.GetBones();
+	if (m_iBoneIndex >= bones.size())
+		return;
+
+	for (int32_t bone = static_cast<int32_t>(m_iBoneIndex);
+		bone >= 0;
+		bone = bones[bone]->GetParendBoneIndex())
+	{
+		m_BoneChain.push_back(static_cast<uint32_t>(bone));
+	}
+
+	std::reverse(m_BoneChain.begin(), m_BoneChain.end());
+}
 
 UPtr<CComSocket> CComSocket::Create()
 {

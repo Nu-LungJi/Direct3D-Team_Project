@@ -5,6 +5,7 @@
 #include "ComStaticModelInstance.h"
 #include "ComSocket.h"
 #include "AnimationObject.h"
+#include "ComAnimator.h"
 #include "Resources.h"
 #include "GameInstance.h"
 NS_USING(Client)
@@ -108,6 +109,9 @@ HRESULT CTestPartObject::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+		m_sAnimGetID = des.sAnimationName;
+		
 	}
 
 
@@ -126,13 +130,29 @@ void CTestPartObject::Update(E::_float fTimeDelta)
 
 void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 {
-	GetTransform().Update();
+	ZoneScopedN("LateUpdate TestPartObject");
+	auto pAnim = CGameInstance::Get().GetGameObjectByHandle(m_hOwner)->GetComponent<CComAnimator>(m_sAnimGetID);
+	auto CurAnim = pAnim->GetCurAnimState();
+	
 	_float4x4 Dummy;
-	m_pSocket->Get_Socket_MatrixAtPose(1.f,1,Dummy);
+	m_pSocket->Get_Socket_MatrixAtPose(CurAnim.iAnimIndex, CurAnim.fTrackPosition,Dummy);
+	const auto* pOwner = CGameInstance::Get().GetGameObjectByHandle(m_hOwner);
+
+	const _matrix ownerWorld = pOwner->GetTransform().GetLoadedCombinedWorldMatrix();
+
+	const _matrix socketWorld = XMLoadFloat4x4(&Dummy) * ownerWorld;
+
+	XMStoreFloat4x4(&socketWorldFloat, socketWorld);
+
+	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+	CGameInstance::Get().GetDbgLineRender()->AddBox({ 0.001f , 0.001f , 0.001f }, XMLoadFloat4x4(&socketWorldFloat));
 
 	E::GPU_PART_INSTANCE_DATA instanceData{};
-	if (SUCCEEDED(BuildPartInstanceData(instanceData)))
-		CGameInstance::Get().Add_Part_Instance(m_pComModelInstance, instanceData);
+	if (SUCCEEDED(BuildPartInstanceData(instanceData)))CGameInstance::Get().Add_Part_Instance(m_pComModelInstance, instanceData);
+
+
+
+	GetTransform().Update();
 
 	//CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
