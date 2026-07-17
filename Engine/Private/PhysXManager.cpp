@@ -1,18 +1,13 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "PhysXManager.h"
 #include "PhysxManagerListener.h"
 #include "GameInstance.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 #include "PxShape.h"
 #include "PxPhysicsAPI.h"
-
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 
 using namespace physx;
