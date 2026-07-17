@@ -8,6 +8,8 @@
 #include <fstream>
 #include "LevelLogo.h"
 #include "LevelLoading.h"
+#include "SpellMeter.h"
+#include "HPBar.h"
 
 NS_USING(Client)
 
@@ -644,6 +646,14 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	case ETOUI(UI_TYPE::BUTTON):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_Button", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CButton>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::SPELLMETER):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::HPBAR):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		break;
 	default:
 		break;

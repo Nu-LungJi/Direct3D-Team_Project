@@ -8,6 +8,7 @@
 #include "Button.h"
 #include "TextBox.h"
 #include "SpellMeter.h"
+#include "HPBar.h"
 
 NS_USING(Client)
 std::future<bool> CLevelUIEditorLoader::Load()
@@ -148,6 +149,10 @@ std::future<bool> CLevelUIEditorLoader::Load()
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", CHPBar::Create())))
 			{
 				return false;
 			}

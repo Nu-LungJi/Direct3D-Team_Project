@@ -48,8 +48,6 @@ HRESULT CSpellMeter::Initialize(void* pArg)
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::SPELLMETER);
-	m_fCurrentAmount = 1.f;
-	s_fAccumulatedTime = 0.f;
 
 	return S_OK;
 }
@@ -131,10 +129,9 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		perSpellMeter.fTime = s_fAccumulatedTime;
 
 		// 색상
-		//perSpellMeter.vFillColor = { 0.396f, 0.187f, 0.046f, 1.0f }; // 채워진 마법 색상
-		perSpellMeter.vFillColor = { 0.f, 0.f, 1.f, 1.0f }; // 채워진 마법 색상
-		perSpellMeter.vEmptyColor = { 0.023f, 0.024f, 0.019f, 1.0f }; // 빈 배경 (매우 어두운 색)
-		perSpellMeter.vRippleColor = { 1.0f, 1.0f, 1.0f, 1.0f };       // 경계선 파동 (흰색 발광)
+		perSpellMeter.vFillColor = { 1.f, 0.f, 0.f, 1.0f };				// 채워진 마법 색상
+		perSpellMeter.vEmptyColor = { 0.023f, 0.024f, 0.019f, 1.0f };	// 빈 배경 (매우 어두운 색)
+		perSpellMeter.vRippleColor = { 1.0f, 1.0f, 1.0f, 1.0f };		// 경계선 파동 (흰색 발광)
 		perSpellMeter.vWispyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
 
 		// 3. 버퍼 업데이트 및 쉐이더로 전송

@@ -172,6 +172,9 @@
     <Filter Include="GameObject\LightObject\LightTerrain">
       <UniqueIdentifier>{8c6ec420-6258-4dd1-afce-8e979f1663f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\HPBar">
+      <UniqueIdentifier>{a23637ff-fbe1-4efd-9c58-6bd2a820f42f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -405,6 +408,9 @@
     <ClInclude Include="..\Public\LightTerrain.h">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HPBar.h">
+      <Filter>GameObject\UI\HPBar</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -602,6 +608,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LightTerrain.cpp">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HPBar.cpp">
+      <Filter>GameObject\UI\HPBar</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -158,11 +158,9 @@ cbuffer CB_PER_UI : register(b7)
     float2 g_ui_texCoord;
     float2 g_ui_uvSize;
     float4 g_ui_color;
-    //uint g_ui_texIndex; 
-    //float2 g_ui_borderUV; 
-    //float _pad_perui; 
-    //float2 g_ui_borderPx; 
-    //float2 g_ui_rectSizePx;
+	float2 g_ui_texSize;
+	float2 g_ui_quadSize;
+	float4 g_ui_margins;
 };
 cbuffer PostProcessBuffer : register(b8)
 {

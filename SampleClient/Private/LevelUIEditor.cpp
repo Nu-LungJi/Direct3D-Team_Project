@@ -218,15 +218,36 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 	if (bP)
 	{
-		if (true)
+		if (false)
+		{
+
+			CTextureUI::UIOBJECT_DESC Desc{};
+
+			count++;
+			Desc.sObjectTag = "UI_" + std::to_string(count);
+			Desc.Name = "UI_" + std::to_string(count);
+			Desc.fSizeX = 96.f;
+			Desc.fSizeY = 96.f;
+			Desc.fX = clientSize.x * 0.5f;
+			Desc.fY = clientSize.y * 0.5f;
+			Desc.fAlpha = 1.f;
+			Desc.ResTag = "TEX_UI_T_HUD_HealthMeterFill";
+			Desc.UIType = ETOUI(UI_TYPE::HPBAR);
+			Desc.ResWeight = count;
+
+			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		}
+
+		// 스펠
+		if (false)
 		{
 			CTextureUI::UIOBJECT_DESC Desc{};
 
 			count++;
 			Desc.sObjectTag = "UI_" + std::to_string(count);
 			Desc.Name = "UI_" + std::to_string(count);
-			Desc.fSizeX = 80.f;
-			Desc.fSizeY = 80.f;
+			Desc.fSizeX = 96.f;
+			Desc.fSizeY = 96.f;
 			Desc.fX = clientSize.x * 0.5f;
 			Desc.fY = clientSize.y * 0.5f;
 			Desc.fAlpha = 1.f;

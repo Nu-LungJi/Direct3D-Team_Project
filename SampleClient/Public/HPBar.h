@@ -1,5 +1,4 @@
 #pragma once
-
 #include "UITex.h"
 #include "Client_Defines.h"
 
@@ -10,14 +9,14 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CSpellMeter final : public E::CUITex
+class CHPBar final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CSpellMeter, E::CUITex)
+	DECLARE_DERIVED_TYPE(HPBar, E::CUITex)
 
 private:
-	CSpellMeter();
-	~CSpellMeter() override;
+	CHPBar();
+	~CHPBar() override;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
@@ -38,11 +37,10 @@ private:
 	_float s_fAccumulatedTime = 0.f;
 	_float m_fCurrentAmount = 1.f;
 
-private:
-	void StartCooldown(float fCooldownTime);
 public:
-	static E::UPtr<CSpellMeter> Create();
+	static E::UPtr<CHPBar> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
 };
 
 NS_END
