@@ -13,13 +13,15 @@ HRESULT CResComputeShader::Load(const std::any& arg)
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	ComPtr<ID3D11ComputeShader> computeShader{};
 	if (FAILED(m_pDevice->CreateComputeShader(m_pBlob->GetBufferPointer(),
-		m_pBlob->GetBufferSize(), nullptr, &m_pComputeShader)))
+		m_pBlob->GetBufferSize(), nullptr, &computeShader)))
 	{
 		MSG_BOX_STR(_wstring{ L"CResComputeShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	m_pComputeShader = std::move(computeShader);
 	m_eState = STATE::LOADED;
 
 	m_pBlob.Reset();

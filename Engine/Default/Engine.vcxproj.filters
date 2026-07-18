@@ -1003,6 +1003,9 @@
     <ClInclude Include="..\public\LuaWatcher.h">
       <Filter>Lua\Watcher</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShaderWatcher.h">
+      <Filter>Resource\Shader</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ILuaScriptRelodable.h">
       <Filter>Lua</Filter>
     </ClInclude>
@@ -1497,6 +1500,9 @@
     </ClCompile>
     <ClCompile Include="..\private\LuaWatcher.cpp">
       <Filter>Lua\Watcher</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ShaderWatcher.cpp">
+      <Filter>Resource\Shader</Filter>
     </ClCompile>
     <ClCompile Include="..\private\LuaEnv.cpp">
       <Filter>Lua\LuaEnv</Filter>
