@@ -35,15 +35,15 @@ HRESULT CLevelCreatureEditor::Initialize()
 		{
 			int x = 0;
 		}
-		CPlayer::DESC PlayerDesc{};
-		PlayerDesc.sObjectTag = "Player";
-		PlayerDesc.sGroupTag = "LEVEL_CREATURE";
-		PlayerDesc.sResTag = "Model_Resource_Player";
-		if (auto Player = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Player",
-			"01_Player", &PlayerDesc))
-		{
-			int x = 0;
-		}
+		//CPlayer::DESC PlayerDesc{};
+		//PlayerDesc.sObjectTag = "Player";
+		//PlayerDesc.sGroupTag = "LEVEL_CREATURE";
+		//PlayerDesc.sResTag = "Model_Resource_Player";
+		//if (auto Player = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Player",
+		//	"01_Player", &PlayerDesc))
+		//{
+		//	int x = 0;
+		//}
 
 	}
 	{
