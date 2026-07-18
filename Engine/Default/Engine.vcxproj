@@ -264,6 +264,7 @@
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
@@ -554,6 +555,7 @@
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
     <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />

@@ -475,6 +475,9 @@
     <Filter Include="Renderer\FSR2_2">
       <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EventBus">
+      <UniqueIdentifier>{95f85a46-ca51-43e5-aeae-cedb068ad6ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1021,6 +1024,9 @@
     <ClInclude Include="..\Public\MapMeshInstancingRenderer.h">
       <Filter>Instance</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\EventManager.h">
+      <Filter>EventBus</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1515,6 +1521,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp">
       <Filter>Instance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\EventManager.cpp">
+      <Filter>EventBus</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

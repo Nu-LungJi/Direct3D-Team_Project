@@ -12,6 +12,7 @@
 #include "SerializeManager.h"
 #include "PrototypeManager.h"
 #include "LuaManager.h"
+#include "EventManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -400,6 +401,26 @@ public:
 	void ClearMapMeshTextureCache();
 #pragma endregion
 
+#pragma region EVENT_MANAGER
+	template<typename TEvent, typename TCallback>
+	void EventSubscribe(CHandle owner, TCallback&& callback)
+	{
+		m_pEventManager->Subscribe<TEvent>(owner, std::forward<TCallback>(callback));
+	}
+
+	template<typename TEvent>
+	void EventPublish(TEvent&& event)
+	{
+		m_pEventManager->Publish(std::forward<TEvent>(event));
+	}
+
+	template<typename TEvent>
+	void EventPublish()
+	{
+		m_pEventManager->Publish<TEvent>();
+	}
+#pragma endregion
+
 
 
 #pragma region SERIALIZE_MANAGER
@@ -515,6 +536,7 @@ private:
 	UPtr<CLuaManager> m_pLuaManager{};
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
+	UPtr<CEventManager> m_pEventManager{};
 };
 
 NS_END

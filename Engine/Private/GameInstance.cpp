@@ -55,6 +55,8 @@
 
 #include "MapMeshInstancingRenderer.h"
 
+#include "EventManager.h"
+
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -246,6 +248,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pMapMeshInstancingRenderer = CMapMeshInstancingRenderer::Create();
 	if (m_pMapMeshInstancingRenderer == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pEventManager = CEventManager::Create();
+	if (m_pEventManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -467,6 +475,7 @@ void CGameInstance::Release_Engine()
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
+	m_pEventManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -494,6 +503,7 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 {
 	m_pGameObjectManager->FrameEnd();
 	m_pLevelManager->FrameEnd(fTimeDelta);
+	m_pEventManager->FrameEnd();
 
 	m_pRenderer->FrameEnd();
 	m_pMapMeshInstancingRenderer->FrameEnd();
@@ -1182,7 +1192,6 @@ void CGameInstance::ClearMapMeshTextureCache()
 	}
 }
 #pragma endregion
-
 
 void CGameInstance::MouseFix() const
 {
