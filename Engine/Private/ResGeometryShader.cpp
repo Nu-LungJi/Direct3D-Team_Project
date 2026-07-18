@@ -13,13 +13,15 @@ HRESULT CResGeometryShader::Load(const std::any& arg)
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	ComPtr<ID3D11GeometryShader> geometryShader{};
 	if (FAILED(m_pDevice->CreateGeometryShader(m_pBlob->GetBufferPointer(),
-		m_pBlob->GetBufferSize(), nullptr, &m_pGeometryShader)))
+		m_pBlob->GetBufferSize(), nullptr, &geometryShader)))
 	{
 		MSG_BOX_STR(_wstring{ L"CResGeometryShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	m_pGeometryShader = std::move(geometryShader);
 	m_eState = STATE::LOADED;
 
 	m_pBlob.Reset();
