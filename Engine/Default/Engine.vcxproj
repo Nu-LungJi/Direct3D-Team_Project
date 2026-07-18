@@ -267,6 +267,7 @@
     <ClInclude Include="..\Public\HizBuffer.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
+    <ClInclude Include="..\Public\MapMeshInstancingRenderer.h" />
     <ClInclude Include="..\Public\Model_Instance_Manager.h" />
     <ClInclude Include="..\public\GameInstanceInitLoader.h" />
     <ClInclude Include="..\public\LuaEnv.h" />
@@ -557,6 +558,7 @@
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\ButtonComponent.cpp" />
+    <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp" />
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp" />
     <ClCompile Include="..\private\LuaEnv.cpp" />

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -44,6 +44,8 @@ class CDbgLineRender;
 class CSerializeManager;
 class ILuaScriptRelodable;
 class CModel_Instance_Manager;
+class CMapMeshInstancingRenderer;
+class CResStaticModel;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -387,6 +389,17 @@ public:
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
 #pragma endregion
 
+#pragma region MAPMESH_INSTANCE_RENDER
+	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
+	// 인스턴싱 On/Off , 드로우 콜 GUI
+	_bool IsInstancingEnabled();
+	void SetInstancingEnabled(_bool bEnabled);
+	const struct INSTANCING_STATS& GetInstancingStats();
+	_bool IsDebugBoundsEnabled();
+	void SetDebugBoundsEnabled(_bool bEnabled);
+	void ClearMapMeshTextureCache();
+#pragma endregion
+
 
 
 #pragma region SERIALIZE_MANAGER
@@ -501,6 +514,7 @@ private:
 	UPtr<CSerializeManager> m_pSerializeManager{};
 	UPtr<CLuaManager> m_pLuaManager{};
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
+	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
 };
 
 NS_END

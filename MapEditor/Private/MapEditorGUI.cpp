@@ -227,18 +227,18 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	DrawGizmoToolbar();
 
 	ImGui::Separator();
-	bool bMapMeshInstancing = E::CMapMeshObject::IsInstancingEnabled();
+	bool bMapMeshInstancing = E::CGameInstance::Get().IsInstancingEnabled();
 	if (ImGui::Checkbox("MapMesh Instancing", &bMapMeshInstancing))
 	{
-		E::CMapMeshObject::SetInstancingEnabled(bMapMeshInstancing);
+		E::CGameInstance::Get().SetInstancingEnabled(bMapMeshInstancing);
 	}
 
-	bool bMapMeshDebugBounds = E::CMapMeshObject::IsDebugBoundsEnabled();
+	bool bMapMeshDebugBounds = E::CGameInstance::Get().IsDebugBoundsEnabled();
 	if (ImGui::Checkbox("MapMesh BoundingBox", &bMapMeshDebugBounds))
 	{
-		E::CMapMeshObject::SetDebugBoundsEnabled(bMapMeshDebugBounds);
+		E::CGameInstance::Get().SetDebugBoundsEnabled(bMapMeshDebugBounds);
 	}
-	const auto& instancingStats = E::CMapMeshObject::GetInstancingStats();
+	const auto& instancingStats = E::CGameInstance::Get().GetInstancingStats();
 	ImGui::Text("Mode: %s", instancingStats.bEnabled ? "Instanced" : "Normal");
 	ImGui::Text("Objects: %u", instancingStats.iObjects);
 	ImGui::Text("Batches: %u", instancingStats.iBatches);

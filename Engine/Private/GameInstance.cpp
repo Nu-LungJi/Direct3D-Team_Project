@@ -53,6 +53,7 @@
 
 #include "GameInstanceInitLoader.h"
 
+#include "MapMeshInstancingRenderer.h"
 
 NS_USING(Engine)
 
@@ -144,7 +145,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-	m_pWorkerManager = CWorkerManager::Create("Normal", 3);
+	m_pWorkerManager = CWorkerManager::Create("Normal", std::thread::hardware_concurrency());
 	if (m_pWorkerManager == nullptr)
 	{
 		return E_FAIL;
@@ -240,6 +241,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pModel_Instance_Manager = CModel_Instance_Manager::Create();
 	if (m_pModel_Instance_Manager == nullptr) {
+		return E_FAIL;
+	}
+
+	m_pMapMeshInstancingRenderer = CMapMeshInstancingRenderer::Create();
+	if (m_pMapMeshInstancingRenderer == nullptr)
+	{
 		return E_FAIL;
 	}
 	
@@ -397,6 +404,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pColliderManager->Update();
 
 	m_pMapManager->Update(fTimeDelta);
+	m_pMapMeshInstancingRenderer->Update();
 
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
@@ -424,8 +432,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
-
-	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
+	m_pMapMeshInstancingRenderer.reset();
 	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
@@ -489,7 +496,7 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 	m_pLevelManager->FrameEnd(fTimeDelta);
 
 	m_pRenderer->FrameEnd();
-	CMapMeshObject::ClearInstancingData();
+	m_pMapMeshInstancingRenderer->FrameEnd();
 	m_pModel_Instance_Manager->Clear_Frame();
 	m_pColliderManager->FrameEnd();
 	m_pDbgLineRender->FrameEnd();
@@ -1139,6 +1146,41 @@ void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_AN
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
+#pragma endregion
+
+#pragma region MAPMESH_INSTANCE_RENDER
+HRESULT CGameInstance::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData)
+{
+	return m_pMapMeshInstancingRenderer->PushMapObjectInstance(pModel, instanceData, occlusionData);
+}
+// 인스턴싱 On/Off , 드로우 콜 GUI
+_bool CGameInstance::IsInstancingEnabled()
+{
+	return m_pMapMeshInstancingRenderer->IsInstancingEnabled();
+}
+void CGameInstance::SetInstancingEnabled(_bool bEnabled)
+{
+	m_pMapMeshInstancingRenderer->SetInstancingEnabled(bEnabled);
+}
+const INSTANCING_STATS& CGameInstance::GetInstancingStats()
+{
+	return m_pMapMeshInstancingRenderer->GetInstancingStats();
+}
+_bool CGameInstance::IsDebugBoundsEnabled()
+{
+	return m_pMapMeshInstancingRenderer->IsDebugBoundsEnabled();
+}
+void CGameInstance::SetDebugBoundsEnabled(_bool bEnabled)
+{
+	return m_pMapMeshInstancingRenderer->SetDebugBoundsEnabled(bEnabled);
+}
+void CGameInstance::ClearMapMeshTextureCache()
+{
+	if (m_pMapMeshInstancingRenderer)
+	{
+		m_pMapMeshInstancingRenderer->ClearTextureCache();
+	}
+}
 #pragma endregion
 
 

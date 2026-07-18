@@ -1018,6 +1018,9 @@
     <ClInclude Include="..\public\MyFSR2_2.h">
       <Filter>Renderer\FSR2_2</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshInstancingRenderer.h">
+      <Filter>Instance</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1509,6 +1512,9 @@
     </ClCompile>
     <ClCompile Include="..\private\MyFSR2_2.cpp">
       <Filter>Renderer\FSR2_2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp">
+      <Filter>Instance</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
