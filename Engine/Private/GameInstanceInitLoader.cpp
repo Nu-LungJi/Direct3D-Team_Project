@@ -29,6 +29,8 @@
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
+#include "ComLocomotion.h"
+#include "ComCharacterMotor.h"
 
 #include "ComLuaScript.h"
 
@@ -351,6 +353,22 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 	}
 
 	if (CGameInstance::Get().AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
+		CComLocomotion::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+		CComCharacterMotor::Create()))
 	{
 		return E_FAIL;
 	}

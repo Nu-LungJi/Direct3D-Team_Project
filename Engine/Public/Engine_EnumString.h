@@ -17,7 +17,9 @@ namespace Engine
 		Prototype_Component_ModelInstance,
 		Prototype_Component_StaticModelInstance,
 		Prototype_Component_Animator,
-		Prototype_Component_ComLuaScript
+		Prototype_Component_ComLuaScript,
+		Prototype_Component_ComLocomotion,
+		Prototype_Component_ComCharacterMotor
 	};
 
 	enum class ES_EngineProtoPhysXComponent

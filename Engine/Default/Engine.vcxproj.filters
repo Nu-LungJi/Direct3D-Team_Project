@@ -478,6 +478,9 @@
     <Filter Include="CreatureManager">
       <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\LocoAndMotor">
+      <UniqueIdentifier>{cf07ed9a-c696-4a46-9d9b-c31cce90f76c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -932,6 +935,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\TweenComponent.h">
       <Filter>Component\Tween</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComLocomotion.h">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComCharacterMotor.h">
+      <Filter>Component\LocoAndMotor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\HizBuffer.h">
       <Filter>HizBuffer</Filter>
@@ -1478,6 +1487,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\TweenComponent.cpp">
       <Filter>Component\Tween</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComLocomotion.cpp">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComCharacterMotor.cpp">
+      <Filter>Component\LocoAndMotor</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ShadowCamera.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp">

@@ -241,6 +241,8 @@
     <ClInclude Include="..\public\BTReactiveSelector.h" />
     <ClInclude Include="..\public\ComLuaScript.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
+	<ClInclude Include="..\Public\ComLocomotion.h" />
+	<ClInclude Include="..\Public\ComCharacterMotor.h" />
     <ClInclude Include="..\Public\ComSocket.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
@@ -532,6 +534,8 @@
     <ClCompile Include="..\private\BTReactiveSelector.cpp" />
     <ClCompile Include="..\private\ComLuaScript.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
+	<ClCompile Include="..\Private\ComLocomotion.cpp" />
+	<ClCompile Include="..\Private\ComCharacterMotor.cpp" />
     <ClCompile Include="..\Private\ComSocket.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
