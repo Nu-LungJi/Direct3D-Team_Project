@@ -1012,7 +1012,6 @@ HRESULT CRenderer::Render_Shadow() {
 		ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
 		m_pContext->PSSetShaderResources(6, 1, pNullSRV); // 6번 슬롯을 NULL로 청소
 	}
-
 	{
 		ID3D11DepthStencilState* pDSS = nullptr;
 		m_pContext->OMSetDepthStencilState(pDSS, 0);
@@ -1071,11 +1070,12 @@ HRESULT CRenderer::Render_DepthMap() {
 			m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
 
 			m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		} 
+		{
+			ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetDepth->GetRTV().Get() };
+			m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+			m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 		}
-
-		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetDepth->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
-		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 		auto pGameCam = CGameInstance::Get().GetActiveCamera();
 		if (nullptr == pGameCam)    return S_OK;
@@ -1307,9 +1307,9 @@ HRESULT CRenderer::Render_Lighting() {
 	
 	}
 	
-	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetLight;
-	
+	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetLight);
 	Unbind_Resources();
+
 
 	return S_OK;
 }
@@ -1322,14 +1322,6 @@ HRESULT CRenderer::Render_Alpha() {
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-
-		//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
-		//m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const _float*>(&ClearColor));
-		//m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-		
-		// 후방 픽셀과 색상혼합을 위해서 이전 렌더타겟 복사
-		m_pContext->CopyResource(m_pResDynTexTargetPBR->GetTexture().Get(),
-			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
 	}
 	{
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
@@ -1348,7 +1340,7 @@ HRESULT CRenderer::Render_Alpha() {
 
 		if (FAILED(RenderSkybox()))										return E_FAIL;
 
-		if (FAILED(RenderCollider()))									return E_FAIL;
+		//if (FAILED(RenderCollider()))									return E_FAIL;
 
 		//if (FAILED(RenderParticle()))									return E_FAIL;
 	}
@@ -1366,13 +1358,6 @@ HRESULT CRenderer::Render_Effect()
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-
-		m_pContext->CopyResource(m_pResDynTexTargetEffect->GetTexture().Get(),
-			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
-	}
-	{
-		ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPreviousRenderView->GetSRV() };
-		m_pContext->PSSetShaderResources(7, 1, pSRVs.GetAddressOf());
 	}
 
 	auto pGameCam = CGameInstance::Get().GetActiveCamera();

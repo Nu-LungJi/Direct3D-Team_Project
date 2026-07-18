@@ -201,16 +201,19 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     
     float2	TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
     float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
-    
+	
     [branch]
     if (Depth >= 1.f)
     {
         OUTPUT[ID.xy] = float4(0.f, 0.f, 1.f, 1.f);
         return;
     }
-
+	
+	OUTPUT[ID.xy] = float4(Depth, Depth, Depth, 1.f);
+	return;
+	
     float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
-    
+	
     float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
 	
 	OUTPUT[ID.xy] = float4(0.f, 1.f, 0.f, 1.f);
