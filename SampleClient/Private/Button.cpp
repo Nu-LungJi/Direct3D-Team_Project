@@ -219,10 +219,12 @@ void CButton::PlayEffect(uint32_t uiState)
 		ClearEffectTweens();
 		if (OnHoverEnter) OnHoverEnter(this);
 
-		if (m_Effect_Hovered_Handle != nullptr)
+		if (m_Effect_Hovered_Handle != std::nullopt && 
+			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 		{
+			CEffectUI* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Hovered_Handle);
 			ClearHoveredEffect();
-			m_Effect_Hovered_Handle->OnHoverEnter(m_Effect_Hovered_Handle);
+			pHoverUI->OnHoverEnter(pHoverUI);
 		}
 	}
 
@@ -231,10 +233,12 @@ void CButton::PlayEffect(uint32_t uiState)
 		ClearEffectTweens();
 		if (OnHoverExit) OnHoverExit(this);
 
-		if (m_Effect_Hovered_Handle != nullptr)
+		if (m_Effect_Hovered_Handle != std::nullopt &&
+			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 		{
+			CEffectUI* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Hovered_Handle);
 			ClearHoveredEffect();
-			m_Effect_Hovered_Handle->OnHoverExit(m_Effect_Hovered_Handle);
+			pHoverUI->OnHoverExit(pHoverUI);
 		}
 	}
 
@@ -245,13 +249,12 @@ void CButton::PlayEffect(uint32_t uiState)
 		if (OnClickedAction) OnClickedAction(ClickTargetName);
 
 
-		if (m_Effect_Clicked_Handle != nullptr)
+		if (m_Effect_Clicked_Handle != std::nullopt &&
+			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Clicked_Handle)))
 		{
-			if (GetSafeUI(m_Effect_Clicked_Handle->GetHandle()))
-			{
-				ClearClickEffect();
-				m_Effect_Clicked_Handle->OnClicked(m_Effect_Clicked_Handle);
-			}
+			CEffectUI* pClickUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Clicked_Handle);
+			ClearClickEffect();
+			pClickUI->OnClicked(pClickUI);
 		}
 	}
 }
@@ -263,22 +266,23 @@ void CButton::ClearEffectTweens()
 
 void CButton::ClearHoveredEffect()
 {
-	if (m_Effect_Hovered_Handle != nullptr)
+	if (m_Effect_Hovered_Handle != std::nullopt &&
+		(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 	{
-		if (nullptr != m_Effect_Hovered_Handle->GetTweenCom())
-			m_Effect_Hovered_Handle->GetTweenCom()->ClearTweens();
+		CEffectUI* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Hovered_Handle);
+
+		pHoverUI->GetTweenCom()->ClearTweens();
 	}
 }
 
 void CButton::ClearClickEffect()
 {
-	if (m_Effect_Clicked_Handle != nullptr)
+	if (m_Effect_Clicked_Handle != std::nullopt &&
+		(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Clicked_Handle)))
 	{
-		if (GetSafeUI(m_Effect_Clicked_Handle->GetHandle()))
-		{
-			if (nullptr != m_Effect_Clicked_Handle->GetTweenCom())
-				m_Effect_Clicked_Handle->GetTweenCom()->ClearTweens();
-		}
+		CEffectUI* pClickUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Clicked_Handle);
+
+		pClickUI->GetTweenCom()->ClearTweens();
 	}
 }
 

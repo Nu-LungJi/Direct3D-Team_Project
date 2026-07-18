@@ -685,7 +685,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 			if (parent &&
 				*parent->GetUIType() == ETOUI(UI_TYPE::BUTTON))
 			{
-				static_cast<CButton*>(parent)->SetEffectHovered(*uiHandle);
+				static_cast<CButton*>(parent)->SetEffectHovered(uiHandle);
 			}
 		}
 		else if (EffectType == ETOUI(UI_EFFECT_TYPE::CLICK))
@@ -694,7 +694,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 			if (parent &&
 				*parent->GetUIType() == ETOUI(UI_TYPE::BUTTON))
 			{
-				static_cast<CButton*>(parent)->SetEffectClicked(*uiHandle);
+				static_cast<CButton*>(parent)->SetEffectClicked(uiHandle);
 			}
 		}
 		break;

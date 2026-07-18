@@ -97,6 +97,8 @@ void CUIObject::CalcUICoord()
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 	auto clientWidth = clientSize.x;
 	auto clientHeight = clientSize.y;
+	if (m_pComTransform == nullptr)
+		return;
 	GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * m_ScaleRatio, m_UIINFO.SizeY * m_ScaleRatio, 1.f });
 	auto x = m_UIINFO.fX - clientWidth * 0.5f;
 	auto y = -m_UIINFO.fY + clientHeight * 0.5f;
