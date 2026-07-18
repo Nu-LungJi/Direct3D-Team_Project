@@ -350,7 +350,12 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 		_Diffuse.Get(), _Normal.Get(), _SMRO.Get(), _Emissive.Get(), _Ambient.Get(), _Depth.Get()
 	};
 
-	m_pContext->CSSetShaderResources(0, 6, pMainSRVs);
+	m_pContext->CSSetShaderResources(0, 1, &pMainSRVs[0]);
+	m_pContext->CSSetShaderResources(1, 1, &pMainSRVs[1]);
+	m_pContext->CSSetShaderResources(2, 1, &pMainSRVs[2]);
+	m_pContext->CSSetShaderResources(3, 1, &pMainSRVs[3]);
+	m_pContext->CSSetShaderResources(4, 1, &pMainSRVs[4]);
+	m_pContext->CSSetShaderResources(5, 1, &pMainSRVs[5]);
 
 	ID3D11ShaderResourceView* pIBLSRVs[3] = {
 		m_pIrridianceSRV.Get(),
@@ -358,7 +363,9 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 		m_pLUTSRV.Get()
 	};
 
-	m_pContext->CSSetShaderResources(8, 3, pIBLSRVs);
+	m_pContext->CSSetShaderResources(10, 1, &pIBLSRVs[0]);
+	m_pContext->CSSetShaderResources(11, 1, &pIBLSRVs[1]);
+	m_pContext->CSSetShaderResources(12, 1, &pIBLSRVs[2]);
 
 	uint32_t LightCount = 0;
 	CB_LIGHT LightBuffer{};
@@ -404,8 +411,8 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 
 	m_pContext->Dispatch((ScreenResolutionX + 15) / 16, (ScreenResolutionY + 15) / 16, 1);
 
-	ID3D11ShaderResourceView* NullSRVs[11] = { nullptr };
-	m_pContext->CSSetShaderResources(0, 11, NullSRVs);
+	ID3D11ShaderResourceView* NullSRVs[12] = { nullptr };
+	m_pContext->CSSetShaderResources(0, 12, NullSRVs);
 
 	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
 	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
@@ -546,8 +553,8 @@ VOID CLightManager::Bind_ShadowResource() {
 			DynamicShadowMapList[i] = LightOBJ->Get_DynamicShadowSRV().Get();
 		}
 	}
-	m_pContext->CSSetShaderResources(6, 1, StaticShadowMapList.data());
-	m_pContext->CSSetShaderResources(7, 1, DynamicShadowMapList.data());
+	m_pContext->CSSetShaderResources(6, MAX_LIGHT_MAPCOUNT, StaticShadowMapList.data());
+	m_pContext->CSSetShaderResources(7, MAX_LIGHT_MAPCOUNT, DynamicShadowMapList.data());
 }
 
 VOID CLightManager::UnBind_ShadowResource() {

@@ -132,9 +132,10 @@ HRESULT CLightObject::RenderDefault(ID3D11DeviceContext* pContext, const E::REND
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		{
+		{  
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, {1.f, 1.f, 1.f}, 0.5f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, {1.f, 1.f, 1.f}, 0.5f, 1.f);	
+			// EmissiveColor -> EmissiveIntensity -> Dissolve Color -> Dissolve Intensity -> Alpha
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

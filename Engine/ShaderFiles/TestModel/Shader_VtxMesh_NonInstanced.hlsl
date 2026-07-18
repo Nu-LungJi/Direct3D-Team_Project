@@ -35,10 +35,10 @@ VS_OUT VSMain(VS_IN In)
     float4x4 matWV = mul(g_matWorld, g_matView);
     float4x4 matWVP = mul(matWV, g_matProj);
 
-    Out.vPosition = mul(float4(In.vPosition, 1.f), matWVP);
+	Out.vPosition = mul(float4(In.vPosition, 1.f), matWVP);
     Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
-    Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
-    Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
+		Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
+		Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
     Out.vProjPos = Out.vPosition;
@@ -71,19 +71,20 @@ PS_OUT PSMain(PS_IN IN)
 
 	float4 fDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
     if (fDiffuse.a == 0.0f) discard;
-    
+  
+	
     float3 fNormal      = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
     float3 fMRO         = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
-
+	
     float fFinalMetallic    = fMRO.r * MetallicIntensity;
     float fFinalRoughness   = fMRO.g * RoughnessIntensity;
     float fFinalAO          = fMRO.b * AmbientIntensity;
-
+	
     float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).rgb * EmissiveColor * EmissiveIntensity;
     
-    float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth);
-
-    Out.vDiffuse = fDiffuse;
+    //float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth);
+	
+	Out.vDiffuse = float4(fDiffuse.rgb, 1.f);
     Out.vNormal = float4(fNormal * 0.5f + 0.5f, 1.f);
     Out.vSMRO = float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
 	Out.vEmissive = float4(fEmissive, 1.f);

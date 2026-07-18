@@ -57,7 +57,7 @@ PS_IN VSMain_BillBoard(VS_IN IN)
     return output;
 }
 
-// Pixel Shader : ºÒÅõ¸í(NONBLEND) ¿ÀºêÁ§Æ® ±×¸± ¶§´Â »ç¿ëX(Normal, SMRO, Emissive¿¡¼­ ¾È ±×·ÁÁ®¼­ Á¤»óÀûÀ¸·Î ·»´õX)
+// Pixel Shader : ë¶ˆíˆ¬ëª…(NONBLEND) ì˜¤ë¸Œì íŠ¸ ê·¸ë¦´ ë•ŒëŠ” ì‚¬ìš©X(Normal, SMRO, Emissiveì—ì„œ ì•ˆ ê·¸ë ¤ì ¸ì„œ ì •ìƒì ìœ¼ë¡œ ë Œë”X)
 float4 PSMain(PS_IN IN) : SV_TARGET0
 {
     float4 TexColor = g_DiffuseTexture.Sample(LinearWrap, IN.uv);

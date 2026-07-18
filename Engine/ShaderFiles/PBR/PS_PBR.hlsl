@@ -305,7 +305,7 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
 {
     PS_OUT OUT;
 
-	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord) * float4(AlbedoColor, ObjectAlpha);;
+	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord) * float4(AlbedoColor, ObjectAlpha);
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
     
     if (AlbedoTex.a == 0.0f)

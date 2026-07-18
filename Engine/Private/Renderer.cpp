@@ -815,23 +815,17 @@ HRESULT CRenderer::Reset_DefaultShader(RENDERGROUP _Group) {
 VOID	CRenderer::Unbind_Resources()
 {
 	// UnBind RenderTargets / ShaderResource / Shader
-	ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
-	m_pContext->OMSetRenderTargets(4, pRTVs, nullptr);
+	ID3D11RenderTargetView* pRTVs[8] = { nullptr };
+	m_pContext->OMSetRenderTargets(8, pRTVs, nullptr);
 
-	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
-	m_pContext->PSSetShaderResources(0, 1, pSRVs);
-	m_pContext->PSSetShaderResources(1, 1, pSRVs);
-	m_pContext->PSSetShaderResources(2, 1, pSRVs);
-	m_pContext->PSSetShaderResources(3, 1, pSRVs);
-	m_pContext->PSSetShaderResources(4, 1, pSRVs);
-	m_pContext->PSSetShaderResources(5, 1, pSRVs);
-	m_pContext->PSSetShaderResources(6, 1, pSRVs);
-	m_pContext->PSSetShaderResources(7, 1, pSRVs);
-	m_pContext->PSSetShaderResources(8, 1, pSRVs);
+	ID3D11ShaderResourceView* pNullSRVs[12] = { nullptr };
+	m_pContext->PSSetShaderResources(0, 12, pNullSRVs);
+	m_pContext->VSSetShaderResources(0, 12, pNullSRVs);
+	m_pContext->CSSetShaderResources(0, 12, pNullSRVs);
 
 	m_pContext->IASetInputLayout(nullptr);
-	//m_pContext->VSSetShader(nullptr, nullptr, 0);
 	m_pContext->PSSetShader(nullptr, nullptr, 0);
+	m_pContext->CSSetShader(nullptr, nullptr, 0);
 }
 
 VOID CRenderer::Render_Quad(){
@@ -971,7 +965,7 @@ HRESULT CRenderer::Draw() {
 	if (FAILED(Render_Effect()))			return E_FAIL;
 
 	// Volumetric
-	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
+	//if (FAILED(Render_VolumetricEffect())) return E_FAIL;
 
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
@@ -1227,9 +1221,9 @@ HRESULT CRenderer::Render_Lighting() {
 	};
 	CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
 	
-	m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
-	
 	Unbind_Resources();
+	
+	m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
 	
 	return S_OK;
 	{
@@ -1247,7 +1241,7 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 	
 		const auto& FullScreenBuffer = m_pFullscreenVIBuffer;
-		m_pContext->VSSetShader(m_pPBRVertexShader->GetVertexShader().Get(), nullptr, 0);
+
 		m_pContext->PSSetShader(m_pPBRPixelShader->GetPixelShader().Get(), nullptr, 0);
 	
 		m_pContext->IASetInputLayout(m_pPBRVertexShader->GetInputLayout().Get());
@@ -1308,6 +1302,7 @@ HRESULT CRenderer::Render_Lighting() {
 	}
 	
 	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetLight);
+	
 	Unbind_Resources();
 
 
@@ -1395,7 +1390,6 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 	{
 		ID3D11ShaderResourceView* pSRVs[5] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
-			m_pResDynTexTargetDepth->GetSRV().Get(),
 			m_pResDynTexTargetShadow->GetSRV().Get(),
 			BlueNoiseTexture.Get(),
 			VolumeTexture.Get()
@@ -1420,6 +1414,8 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 		m_pContext->CSSetShaderResources(0, 5, NullSRVs);
 	}
 
+	Unbind_Resources();
+
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexUAVVolumetric;
 
 	return S_OK;
@@ -1428,6 +1424,12 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 HRESULT CRenderer::Render_OffScreen() {
 	ZoneScopedN("Render_OffScreen");
 	{
+		ID3D11RenderTargetView* nullRTVs[1] = { nullptr };
+		m_pContext->OMSetRenderTargets(1, nullRTVs, nullptr);
+
+		ID3D11ShaderResourceView* nullSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+		m_pContext->PSSetShaderResources(0, 4, nullSRVs);
+
 		ID3D11RenderTargetView* pRTVs[1] = { m_pOffScreenTex2D->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
@@ -1458,22 +1460,22 @@ HRESULT CRenderer::Render_OffScreen() {
 		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 		m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
+		
 		// Bind Shader Resource
 		{
-			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPreviousRenderView->GetSRV() };
+			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetEffect->GetSRV() };
 			m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
 		}
-		{
-			ComPtr<ID3D11ShaderResourceView> pSRVs = { E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE")->GetSRV() };
-			m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());
-		}
+		//{
+		//	ComPtr<ID3D11ShaderResourceView> pSRVs = { E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE")->GetSRV() };
+		//	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());
+		//}
 
 		// Draw On OffScreen
 		m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
 		Unbind_Resources();
-
+		m_pContext->Flush();
 		m_pResDynTexTargetPreviousRenderView = m_pOffScreenTex2D;
 	}
 
