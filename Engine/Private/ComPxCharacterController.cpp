@@ -348,7 +348,17 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	if (!pPhysXManager || !pPhysXManager->RegisterActor(pActor, userData))
 		return E_FAIL;
 
+	PX_SHAPE_USER_DATA shapeUserData{};
+	shapeUserData.hGameObject = GetGameObject()->GetHandle();
+	shapeUserData.eType = PX_SHAPE_TYPE::CAPSULE;
+	if (!pPhysXManager->RegisterShape(pShape, shapeUserData))
+	{
+		pPhysXManager->UnregisterActor(pActor);
+		return E_FAIL;
+	}
+
 	pActor->userData = nullptr;
+	pShape->userData = nullptr;
 	return S_OK;
 }
 
@@ -532,7 +542,16 @@ void CComPxCharacterController::Free()
 		if (auto* pActor = m_pController->getActor())
 		{
 			if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+			{
+				PxShape* pShape{};
+				if (pActor->getShapes(&pShape, 1) == 1 && pShape)
+				{
+					pPhysXManager->UnregisterShape(pShape);
+					pShape->userData = nullptr;
+				}
+
 				pPhysXManager->UnregisterActor(pActor);
+			}
 
 			pActor->userData = nullptr;
 		}
