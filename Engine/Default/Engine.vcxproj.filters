@@ -475,9 +475,6 @@
     <Filter Include="Component\Model\ComSocket">
       <UniqueIdentifier>{41fbef30-0861-4a12-87af-d96a9c20c674}</UniqueIdentifier>
     </Filter>
-    <Filter Include="CreatureManager">
-      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -890,9 +887,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\CreatureManager.h">
-      <Filter>CreatureManager</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
@@ -1361,9 +1355,6 @@
     </ClCompile>
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\CreatureManager.cpp">
-      <Filter>CreatureManager</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>

@@ -16,7 +16,17 @@ NS_END
 
 NS_BEGIN(Client)
 
-enum class HITMON { HIT_1, HIT_2, HIT_3, HIT_4, END };
+
+typedef struct HitTable
+{
+	_bool operator == (const HitTable& rhs) const
+	{
+		return (eAttType == rhs.eAttType) && (eHitType == rhs.eHitType);
+	}
+
+	ATTMON			eAttType{ATTMON::END};
+	HITMON			eHitType{ HITMON::END };
+}HITTABLE;
 class CTestGob final : public CAnimationObject
 {
 public:
@@ -62,9 +72,10 @@ public:
 	const int32_t			Get_MaxHp()	  { return m_iMaxHp; }
 	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
-	const HITMON			Get_HitMon() const { return m_eHitType; }
 	_bool					Check_HitCnt(int32_t iHit) { if (iHit >= m_iHitCnt)return true;   return false; }
 	void					ResetHitcnt() { m_iHitCnt = 0; }
+	void					Set_AttTable(ATTMON eType) { m_MonTable.eAttType = eType; }
+	const HITTABLE			Get_HitTable()const { return m_MonTable; }
 private:			
 	void					IsHit();
 	void					Flag_Check(_float fTimeDelta);
@@ -101,11 +112,12 @@ private:
 	_float	m_fEmissiveIntensity = 0.f;
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
-	HITMON						m_eHitType{ HITMON::END };
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{}, m_iHitCnt{};
 	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{false};
 	_string						m_SocketName{};
+
+	HITTABLE					m_MonTable{};
 public:
 	static E::UPtr<CTestGob> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

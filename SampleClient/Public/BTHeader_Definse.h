@@ -15,6 +15,8 @@
 #include "BTRandMoveAnim.h" //랜덤 움직임 필요한경우
 #include "BTHitAnimMonster.h"
 #include "BTCreatureFlag.h"// 개별 플래그 세팅용
+#include "BTMonAttType.h" // 몬스터 전용
+
 
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함

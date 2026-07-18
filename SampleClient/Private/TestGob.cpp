@@ -138,29 +138,27 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
+	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
+	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
 	if (CGameInstance::Get().KeyDown(DIK_1))
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
+	m_pBeHavior->Update(fTimeDelta);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
-	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
-	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
-
-
 	__super::Update(fTimeDelta);
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
 
-	m_pBeHavior->Update(fTimeDelta);
-	if(m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
 		m_fEmissive = 0;
+
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
-
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
@@ -383,9 +381,12 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		ID3D11Buffer* pSkinMeshCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &pSkinMeshCB);
 
-		
+		//"R": 1.0,
+		//	"G" : 0.933333,
+		//	"B" : 0.592157,
+		//1.2f, 0.7f, 0.f
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, { 1.2f, 0.7f, 0.f }, m_fEmissive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, {1.f, 0.933333f, 0.592157f}, m_fEmissive, {1.f, 1.f, 1.f}, 0.f, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
@@ -566,19 +567,19 @@ void CTestGob::IsHit()
 	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
-		m_eHitType = HITMON::HIT_1;
+		m_MonTable.eHitType = HITMON::HIT_1;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_X))
 	{
-		m_eHitType = HITMON::HIT_2;
+		m_MonTable.eHitType = HITMON::HIT_2;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_C))
 	{
-		m_eHitType = HITMON::HIT_3;
+		m_MonTable.eHitType = HITMON::HIT_3;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))
 	{
-		m_eHitType = HITMON::END;
+		m_MonTable.eHitType = HITMON::END;
 	}
 	//if (auto pCam = CGameInstance::Get().GetActiveCamera())
 	//{
@@ -606,7 +607,11 @@ void CTestGob::Flag_Check(_float fTimeDelta)
 	}
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
-		m_eHitType = HITMON::END;
+		m_MonTable.eHitType = HITMON::END;
+	}
+	if (m_iHp <= 0.f)
+	{
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEAD),FLAGTYPE::ADD);
 	}
 }
 void CTestGob::EmissiveFadeOut(_float fTimeDelta)

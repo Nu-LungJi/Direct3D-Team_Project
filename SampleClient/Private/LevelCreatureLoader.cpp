@@ -33,7 +33,28 @@ std::future<bool> CLevelCreatureLoader::Load()
 			//return false;
 		}
 	}
-
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_TombNormalProtector",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Grunt/SK_Tomb_Grunt.bin")))
+	{
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TombNormalProtector");
+			//return false;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_Dragon",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin")))
+	{
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Model_Resource_Dragon");
+			//return false;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Axe_Model_Resource",
 		CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx")))
 	{

@@ -84,7 +84,9 @@ void CBTAnimation::Update_Gui()
 //NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
 	
 //, EMISSIVE = 0x0000040
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M };
+#undef X
 	if (ImGui::TreeNode("EndFlag"))
 	{
 

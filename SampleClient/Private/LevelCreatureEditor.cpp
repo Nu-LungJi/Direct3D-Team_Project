@@ -81,12 +81,6 @@ HRESULT CLevelCreatureEditor::Render()
 void CLevelCreatureEditor::UpdateGUI()
 {
 	ImGui::Begin("Craeture Editor");
-
-	//테스트 고블린
-	CTestGob::MONSTER_DESC Desc{};
-	Desc.sObjectTag = "Gobline";
-	Desc.LevelTag = m_strLevelName;
-	//auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
 	Resources();
 	Objects();
 	BeHaviors();

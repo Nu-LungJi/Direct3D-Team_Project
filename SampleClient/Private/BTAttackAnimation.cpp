@@ -155,12 +155,13 @@ void CBTAttackAnimation::Update_Gui()
 
 		ImGui::EndCombo();
 	}
-	//	NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M };
+#undef X
 	if (ImGui::TreeNode("StartFlag"))
 	{
 		

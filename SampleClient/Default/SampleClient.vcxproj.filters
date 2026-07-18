@@ -432,6 +432,9 @@
     <ClInclude Include="..\public\LevelCreatureLoader.h">
       <Filter>Loader\Level\Creature</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTMonAttType.h">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -641,6 +644,9 @@
     </ClCompile>
     <ClCompile Include="..\private\LevelCreatureLoader.cpp">
       <Filter>Loader\Level\Creature</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMonAttType.cpp">
+      <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>

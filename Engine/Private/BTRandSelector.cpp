@@ -25,7 +25,6 @@ HRESULT CBTRandSelector::Initalize(void* pArg)
 {
 	__super::Initalize(pArg);
 	NODEGROUP eGroup = m_eGroup;
-	
 	m_GuiNode.vColor = _float4(0.5294f, 0.9843f, 1.f, 1.f);
 	return S_OK;
 }
@@ -66,6 +65,7 @@ void CBTRandSelector::Abort()
 		if (nullptr != m_Actions[i])
 			m_Actions[i]->Abort();
 	}
+	m_NodeValue.bCur = false;
 }
 
 nlohmann::json CBTRandSelector::Save_Node()
