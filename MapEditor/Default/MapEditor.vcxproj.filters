@@ -70,8 +70,11 @@
     <Filter Include="Loader\Level">
       <UniqueIdentifier>{a992b72c-9d48-4e38-a25d-a063fbfc878d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Loader\Logo">
+    <Filter Include="Loader\Level\Logo">
       <UniqueIdentifier>{fe0ec777-23ab-46a1-8e7a-e7c8db511225}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\MapEditor">
+      <UniqueIdentifier>{73913414-693c-4b8e-8edd-7fe01195e26a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -162,11 +165,11 @@
     <ClInclude Include="..\Public\MainAppLoader.h">
       <Filter>Loader\MainApp</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\LevelMapEditorLoader.h">
-      <Filter>Loader\Level</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\LevelLogoLoader.h">
-      <Filter>Loader\Logo</Filter>
+      <Filter>Loader\Level\Logo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelMapEditorLoader.h">
+      <Filter>Loader\Level\MapEditor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -252,11 +255,11 @@
     <ClCompile Include="..\Private\MainAppLoader.cpp">
       <Filter>Loader\MainApp</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\LevelMapEditorLoader.cpp">
-      <Filter>Loader\Level</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\LevelLogoLoader.cpp">
-      <Filter>Loader\Logo</Filter>
+      <Filter>Loader\Level\Logo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelMapEditorLoader.cpp">
+      <Filter>Loader\Level\MapEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
