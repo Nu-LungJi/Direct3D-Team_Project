@@ -49,6 +49,12 @@ HRESULT CTextureUI::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
+		{
+			return E_FAIL;
+		};
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
@@ -58,26 +64,25 @@ HRESULT CTextureUI::Initialize(void* pArg)
 
 void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
 {
+
 }
 
 void CTextureUI::Update(E::_float fTimeDelta)
 {
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
 	if (!m_isActive)
 		return;
 
 	CUIObject::Update(fTimeDelta);
 
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+
 	if (m_bMouseTracking)
 	{
 		m_UIINFO.fX = mousePos.x;
 		m_UIINFO.fY = mousePos.y;
 		CalcUICoord();
-	}
-
-	for (auto& pComponent : m_UIComponents)
-	{
-		pComponent->Update(fTimeDelta, mousePos);
 	}
 
 	if (m_pComTween != nullptr)
@@ -161,8 +166,6 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-
-
 
 	return S_OK;
 }

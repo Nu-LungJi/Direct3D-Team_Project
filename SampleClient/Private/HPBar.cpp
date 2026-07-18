@@ -46,6 +46,12 @@ HRESULT CHPBar::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
+		{
+			return E_FAIL;
+		};
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::HPBAR);
@@ -90,6 +96,8 @@ void CHPBar::Update(E::_float fTimeDelta)
 	CUIObject::Update(fTimeDelta);
 
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
+	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
 
 	for (auto& pComponent : m_UIComponents)
 	{

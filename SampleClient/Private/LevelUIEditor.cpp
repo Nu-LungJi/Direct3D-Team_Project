@@ -832,10 +832,6 @@ void CLevelUIEditor::PrefabMode()
 		// 스크롤이 가능하도록 영역 지정 (UI가 많아질 것을 대비)
 		ImGui::BeginChild("HierarchyTreeBox", ImVec2(0, 200), true);
 
-		// [중요] 엔진 구조에서 '최상위 부모 UI(Root UI)' 리스트를 가져와야 해.
-		// UIManager나 CGameInstance에서 최상위 UI 목록을 가져오는 함수가 있다고 가정할게.
-		// (예: m_vRootUIs, 혹은 전체 씬 객체 중 GetParent() == nullopt 인 것들)
-
 		std::vector<CHandle> rootUIHandles = GET_SINGLE(UIManager)->GetRootUIHandles();
 
 		for (auto rootHandle : rootUIHandles)
@@ -2150,6 +2146,8 @@ void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandl
 	// 4. 공통 프로퍼티 동기화 (TextureUI, FlipbookUI 등 모든 CUIObject 공통)
 	m_UIINFO = pTargetUI->GetUIInfo();
 	strcpy_s(m_cName, sizeof(m_cName), m_UIINFO.Name.c_str());
+
+	m_ScaleRatio = pTargetUI->GetScaleRatio();
 
 	// 5. 타입별 특수 프로퍼티 동기화 (플립북일 경우 FLIP_INFO 갱신)
 	if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::FLIPBOOK))

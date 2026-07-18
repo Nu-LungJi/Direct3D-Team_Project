@@ -83,10 +83,10 @@ void UIManager::InitializeActions()
 
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
-
-		pTween->PlayTween(pCaller->GetAlphaRatio(), 1.0f, 0.3f,
+		//pCaller->GetAlpha()
+		pTween->PlayTween(0.f, 1.0f, 0.5f,
 			[handle](float currentValue) {
-				if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
+				if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
 			});
 	};
 	m_vEventNames.push_back("FadeIn");
@@ -99,7 +99,6 @@ void UIManager::InitializeActions()
 
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
-
 		pTween->PlayTween(pCaller->GetAlphaRatio(), 1.0f, 0.3f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
@@ -118,9 +117,9 @@ void UIManager::InitializeActions()
 
 		CHandle handle = pCaller->GetHandle();
 
-		pTween->PlayTween(pCaller->GetAlphaRatio(), 0.0f, 0.3f,
+		pTween->PlayTween(pCaller->GetAlpha(), 0.0f, 0.3f,
 			[handle](float currentValue) {
-				if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
+				if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
 			}, 
 			[handle]() {
 				if (auto pObj = GetSafeUI(handle)) pObj->SetActive(false);

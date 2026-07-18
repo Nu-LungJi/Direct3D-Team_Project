@@ -108,11 +108,6 @@ void CButton::Update(E::_float fTimeDelta)
 		CalcUICoord();
 	}
 
-	for (auto& pComponent : m_UIComponents)
-	{
-		pComponent->Update(fTimeDelta, mousePos);
-	}
-
 	if (m_pComTween != nullptr)
 	{
 		m_pComTween->Tick(fTimeDelta);

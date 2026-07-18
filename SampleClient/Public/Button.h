@@ -42,6 +42,9 @@ private:
 private:
 	bool m_bOutline{};
 
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CButtonComponent* m_pComCButton = nullptr;
+
 protected:
 	virtual void PlayEffect(uint32_t uiState);
 

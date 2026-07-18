@@ -45,6 +45,10 @@ public:
 	void SetMaxFill(_float maxfill) { m_fMaxFill = maxfill; }
 	void SetCurrentFill(_float currentfill) { m_fcurrentFill = currentfill; }
 
+private:
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CButtonComponent* m_pComCButton = nullptr;
+
 public:
 	static E::UPtr<CHPBar> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -140,8 +140,10 @@ public:
 	void	SetInputLcok(_bool inputlock) { m_bInputLocked = inputlock; }
 
 	_float2 GetPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
-	void	SetPos(_float2 pos) { m_UIINFO.fX = pos.x; m_UIINFO.fY = pos.y; }
 	_float2	GetLocalPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
+	_float	GetAlpha() { return m_UIINFO.Alpha; }
+
+	void	SetPos(_float2 pos) { m_UIINFO.fX = pos.x; m_UIINFO.fY = pos.y; }
 	void	SetLocalPos(_float2 pos) { m_UIINFO.LocalX = pos.x; m_UIINFO.LocalY = pos.y; }
 	void	SetAlpha(_float alpha) { m_UIINFO.Alpha = alpha; }
 
