@@ -121,6 +121,7 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	else
 	{
 		// ------------------------------------------- 인스턴싱 ON --------------------------------------
+		// 렌더 큐에 넣지않고 instance데이터 push
 		MAPMESH_INSTANCE_DATA instanceData{};
 		MAPMESH_OCCLUSION_DATA occlusionData{};
 		XMStoreFloat4x4(&instanceData.world, GetTransform().GetLoadedCombinedWorldMatrix());
