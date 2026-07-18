@@ -481,6 +481,12 @@
     <Filter Include="Component\LocoAndMotor">
       <UniqueIdentifier>{cf07ed9a-c696-4a46-9d9b-c31cce90f76c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\PhysX\Collider\Convex">
+      <UniqueIdentifier>{e3a7c27f-bf0e-4b2d-b37a-c2a6c0231cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Convex">
+      <UniqueIdentifier>{4113270c-cbfc-47f0-9f11-ffd2fec91bce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -870,7 +876,7 @@
     <ClInclude Include="..\public\ResPhysXSphereGeometry.h">
       <Filter>Resource\PhysX\Geometry\Sphere</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h">
+    <ClInclude Include="..\public\ResPhysXRTTriMeshGeometry.h">
       <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h">
@@ -1038,6 +1044,12 @@
     </ClInclude>
     <ClInclude Include="..\public\BTReactiveSelector.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxConvexCollider.h">
+      <Filter>Component\PhysX\Collider\Convex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1428,7 +1440,7 @@
     <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\Sphere</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp">
+    <ClCompile Include="..\private\ResPhysXRTTriMeshGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp">
@@ -1545,6 +1557,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTReactiveSelector.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxConvexCollider.cpp">
+      <Filter>Component\PhysX\Collider\Convex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -18,6 +18,7 @@ namespace Engine
 		BOX,
 		SPHERE,
 		CAPSULE,
+		CONVEX_MESH,
 		TRIANGLE_MESH,
 		RAGDOLL
 	};

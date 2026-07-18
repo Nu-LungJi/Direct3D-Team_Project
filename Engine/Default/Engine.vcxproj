@@ -263,6 +263,7 @@
     <ClInclude Include="..\Public\Component.h" />
     <ClInclude Include="..\public\ComPxBoxCollider.h" />
     <ClInclude Include="..\public\ComPxCapsuleCollider.h" />
+    <ClInclude Include="..\public\ComPxConvexCollider.h" />
     <ClInclude Include="..\public\ComPxCollider.h" />
     <ClInclude Include="..\public\ComPxRigidBody.h" />
     <ClInclude Include="..\public\ComPxSphereCollider.h" />
@@ -294,7 +295,8 @@
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
     <ClInclude Include="..\public\ResPhysXGeometry.h" />
     <ClInclude Include="..\public\ResPhysXSphereGeometry.h" />
-    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXRTTriMeshGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h" />
     <ClInclude Include="..\public\DbgLineRender.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
@@ -557,6 +559,7 @@
     <ClCompile Include="..\Private\Component.cpp" />
     <ClCompile Include="..\private\ComPxBoxCollider.cpp" />
     <ClCompile Include="..\private\ComPxCapsuleCollider.cpp" />
+    <ClCompile Include="..\private\ComPxConvexCollider.cpp" />
     <ClCompile Include="..\private\ComPxCollider.cpp" />
     <ClCompile Include="..\private\ComPxRigidBody.cpp" />
     <ClCompile Include="..\private\ComPxSphereCollider.cpp" />
@@ -588,7 +591,8 @@
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />
     <ClCompile Include="..\private\ResPhysXGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp" />
-    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXRTTriMeshGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp" />
     <ClCompile Include="..\private\DbgLineRender.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />
     <ClCompile Include="..\Private\FlyCamera.cpp" />

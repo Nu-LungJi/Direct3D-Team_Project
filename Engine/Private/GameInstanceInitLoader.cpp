@@ -25,6 +25,7 @@
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
 #include "ComPxSphereCollider.h"
+#include "ComPxConvexCollider.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
@@ -386,6 +387,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxConvexCollider, CComPxConvexCollider::Create()))
 		{
 			return E_FAIL;
 		}

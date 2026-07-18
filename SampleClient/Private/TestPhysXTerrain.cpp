@@ -8,6 +8,8 @@
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 
+#include "ComPxConvexCollider.h"
+
 NS_USING(Client)
 
 CTestPhysXTerrain::CTestPhysXTerrain()
@@ -55,21 +57,14 @@ HRESULT CTestPhysXTerrain::InitializePrototype(void* pArg)
 		return E_FAIL;
 	}
 
-	auto v = m_pResTerrainVIBuffer->GetVertices();
-
-	for (const auto& vTmp : v)
-	{
-		m_vecPoses.push_back(vTmp.pos);
-	}
-	auto indices = m_pResTerrainVIBuffer->GetIndices();
+	const auto& v = m_pResTerrainVIBuffer->GetVertices();
+	const auto& indices = m_pResTerrainVIBuffer->GetIndices();
 	auto triangleCount = static_cast<uint32_t>(indices.size() / 3);
 	for (uint32_t i = 0; i < triangleCount; ++i)
 	{
 		int32_t i0 = indices[i * 3 + 0];
 		int32_t i1 = indices[i * 3 + 1];
 		int32_t i2 = indices[i * 3 + 2];
-		m_vecTriangles.push_back({ i0, i1, i2 });
-
 		// 0 1
 		{
 			m_vecPreBuiltedDbgLineVertices.push_back(VTX_COL{ .pos = v[i0].pos, .color = {0.f, 0.f, 0.f, 1.f} });
@@ -90,8 +85,18 @@ HRESULT CTestPhysXTerrain::InitializePrototype(void* pArg)
 	}
 
 
-	m_pResTriMesh = CResPhysXTriMeshGeometry::Create();
-	if (FAILED(m_pResTriMesh->Load(CResPhysXTriMeshGeometry::DESC{.pVecVertices = &m_vecPoses, .pVecTriangles = &m_vecTriangles})))
+	m_pResTriMesh = CResPhysXRTTriMeshGeometry::Create();
+	const auto triMeshDesc = CResPhysXRTTriMeshGeometry::MakeDesc(
+		v, indices, offsetof(VTX_NORMAL_TEX, pos));
+	if (FAILED(m_pResTriMesh->Load(triMeshDesc)))
+	{
+		return E_FAIL;
+	}
+
+	m_pResConvex = CResPhysXRTConvexGeometry::Create();
+	const auto convexDesc = CResPhysXRTConvexGeometry::MakeDesc(
+		v,offsetof(VTX_NORMAL_TEX, pos));
+	if (FAILED(m_pResConvex->Load(convexDesc)))
 	{
 		return E_FAIL;
 	}
@@ -128,6 +133,7 @@ HRESULT CTestPhysXTerrain::Initialize(void* pArg)
 		};
 	}
 
+	
 	{
 		CComPxTriMeshCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
@@ -135,6 +141,18 @@ HRESULT CTestPhysXTerrain::Initialize(void* pArg)
 		Desc.pResMaterial = CResPhysXMaterial::Create({});
 		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxTriMeshCollider", "ComPxTriMeshCollider", &Desc, &m_pComPxTriMeshCollider)))
+		{
+			return E_FAIL;
+		};
+	}
+	if (false)
+	{
+		CComPxConvexCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResConvex = m_pResConvex;
+		Desc.pResMaterial = CResPhysXMaterial::Create({});
+		Desc.tFilter = pDesc->tFilter;
+		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxConvexCollider", "ComPxTriMeshCollider", &Desc, &m_pComPxConvexCollider)))
 		{
 			return E_FAIL;
 		};

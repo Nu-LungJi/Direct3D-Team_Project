@@ -7,13 +7,13 @@ namespace physx
 }
 
 NS_BEGIN(Engine)
-class CResPhysXTriMeshGeometry;
+class CResPhysXRTTriMeshGeometry;
 class ENGINE_DLL CComPxTriMeshCollider : public CComPxCollider
 {
 public:
 	struct DESC : CComPxCollider::DESC
 	{
-		SPtr<CResPhysXTriMeshGeometry> pResTriMesh{};
+		SPtr<CResPhysXRTTriMeshGeometry> pResTriMesh{};
 	};
 public:
 	DECLARE_DERIVED_TYPE(CComPxTriMeshCollider, CComPxCollider)
@@ -33,7 +33,7 @@ public:
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 private:
-	SPtr<CResPhysXTriMeshGeometry> m_pResTriMesh{};
+	SPtr<CResPhysXRTTriMeshGeometry> m_pResTriMesh{};
 private:
 	void Free() override;
 };
