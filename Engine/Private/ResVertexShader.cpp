@@ -22,8 +22,9 @@ HRESULT CResVertexShader::Load(const std::any& arg)
 		return E_FAIL;
 	}
 
+	ComPtr<ID3D11VertexShader> vertexShader{};
 	if (FAILED(m_pDevice->CreateVertexShader(m_pBlob->GetBufferPointer(),
-		m_pBlob->GetBufferSize(), nullptr, &m_pVertexShader)))
+		m_pBlob->GetBufferSize(), nullptr, &vertexShader)))
 	{
         MSG_BOX_STR(_wstring{ L"CreateVertexShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
@@ -118,15 +119,14 @@ HRESULT CResVertexShader::Load(const std::any& arg)
 
         inputLayout.push_back(element);
     }
-	m_inputLayout = inputLayout;
-
 	{
+		ComPtr<ID3D11InputLayout> newInputLayout{};
 		auto hr = m_pDevice->CreateInputLayout(
 			inputLayout.data(),
 			(UINT)inputLayout.size(),
 			m_pBlob->GetBufferPointer(),
 			m_pBlob->GetBufferSize(),
-			&m_pInputLayout
+			&newInputLayout
 		);
 
 		if (FAILED(hr))
@@ -135,6 +135,9 @@ HRESULT CResVertexShader::Load(const std::any& arg)
 			m_eState = STATE::LOADFAIL;
 			return E_FAIL;
 		}
+		m_pVertexShader = std::move(vertexShader);
+		m_pInputLayout = std::move(newInputLayout);
+		m_inputLayout = std::move(inputLayout);
 
 	}
 

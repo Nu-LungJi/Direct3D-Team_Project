@@ -9,6 +9,8 @@
 #include "ResTessDomainShader.h"
 #include "ResGeometryShader.h"
 #include "ResGeoShaderStreamOut.h"
+#include "ResShader.h"
+#include "ShaderWatcher.h"
 
 NS_USING(Engine)
 
@@ -82,6 +84,8 @@ void CResourceManager::UpdateGUI()
 
 	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
 	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
+	if (ImGui::Button("Rebuild All Shaders"))
+		RebuildAllShaders();
 	ImGui::Separator();
 	ImGui::Spacing();
 
@@ -288,7 +292,115 @@ void CResourceManager::UpdateGUI()
 
 void CResourceManager::Initialize()
 {
-	
+#ifdef _DEBUG
+	m_pShaderWatcher = CShaderWatcher::Create();
+#endif
+}
+
+void CResourceManager::UpdateShaderHotReload()
+{
+#ifdef _DEBUG
+	if (!m_pShaderWatcher)
+		return;
+
+	const auto now = std::chrono::steady_clock::now();
+	for (auto& path : m_pShaderWatcher->GetChangedFilesAndClear())
+		m_PendingShaderChanges[std::move(path)] = now;
+
+	constexpr auto debounce = std::chrono::milliseconds{ 150 };
+	for (auto iter = m_PendingShaderChanges.begin(); iter != m_PendingShaderChanges.end(); )
+	{
+		if (now - iter->second < debounce)
+		{
+			++iter;
+			continue;
+		}
+
+		const _string sourcePath = iter->first;
+		const size_t shaderFilesPos = sourcePath.find("ShaderFiles/");
+		if (shaderFilesPos == _string::npos)
+		{
+			iter = m_PendingShaderChanges.erase(iter);
+			continue;
+		}
+
+		const _string relativePath = sourcePath.substr(shaderFilesPos);
+		const std::filesystem::path destinationPath = std::filesystem::path{ "./" } / relativePath;
+
+		try
+		{
+			std::filesystem::create_directories(destinationPath.parent_path());
+			std::filesystem::copy_file(
+				std::filesystem::path{ sourcePath },
+				destinationPath,
+				std::filesystem::copy_options::overwrite_existing);
+		}
+		catch (const std::filesystem::filesystem_error&)
+		{
+			// Editors can briefly lock or replace a file while saving. Retry next frame.
+			iter->second = now;
+			++iter;
+			continue;
+		}
+
+		const _string runtimePath = NormalizeResourcePath(destinationPath.generic_string());
+		if (RebuildShadersByPath(runtimePath) == S_FALSE)
+		{
+			// Include-only files are not resources themselves. Rebuild every shader
+			// so changes in shared HLSL code are reflected as well.
+			RebuildAllShaders();
+		}
+
+		iter = m_PendingShaderChanges.erase(iter);
+	}
+#endif
+}
+
+HRESULT CResourceManager::RebuildShadersByPath(const _string& sPath)
+{
+	const auto resources = GetResourcesByPath(sPath);
+	_bool foundShader = false;
+	_bool allSucceeded = true;
+
+	for (const auto& resource : resources)
+	{
+		if (!resource || !resource->IsA(CResShader::StaticType))
+			continue;
+
+		foundShader = true;
+		auto shader = std::static_pointer_cast<CResShader>(resource);
+		if (FAILED(shader->Reload()))
+			allSucceeded = false;
+	}
+
+	if (!foundShader)
+		return S_FALSE;
+	return allSucceeded ? S_OK : E_FAIL;
+}
+
+HRESULT CResourceManager::RebuildAllShaders()
+{
+	const auto pathLookup = GetResourcesByPath();
+	std::unordered_set<CResShader*> rebuiltShaders{};
+	_bool allSucceeded = true;
+
+	for (const auto& [path, resources] : pathLookup)
+	{
+		for (const auto& resource : resources)
+		{
+			if (!resource || !resource->IsA(CResShader::StaticType))
+				continue;
+
+			auto shader = std::static_pointer_cast<CResShader>(resource);
+			if (!rebuiltShaders.emplace(shader.get()).second)
+				continue;
+
+			if (FAILED(shader->Reload()))
+				allSucceeded = false;
+		}
+	}
+
+	return allSucceeded ? S_OK : E_FAIL;
 }
 
 std::vector<SPtr<CResource>> CResourceManager::GetResource(const StringID& sGroupTag, const StringID& sResTag) const
@@ -634,11 +746,15 @@ SPtr<CResource> CResourceManager::CreateResource(_string_id eAssetType, const _s
 
 UPtr<CResourceManager> CResourceManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {
-	return ToUPtr(new CResourceManager{ pDevice , pContext });
+	auto instance = ToUPtr(new CResourceManager{ pDevice , pContext });
+	instance->Initialize();
+	return instance;
 }
 
 void CResourceManager::Free()
 {
+	m_pShaderWatcher.reset();
+	m_PendingShaderChanges.clear();
 	CEngineBase::Free();
 }
 

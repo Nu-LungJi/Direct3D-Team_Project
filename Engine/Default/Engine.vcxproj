@@ -146,7 +146,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -173,7 +173,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -276,6 +276,7 @@
     <ClInclude Include="..\public\LuaEnv.h" />
     <ClInclude Include="..\public\LuaManager.h" />
     <ClInclude Include="..\public\LuaWatcher.h" />
+    <ClInclude Include="..\Public\ShaderWatcher.h" />
     <ClInclude Include="..\Public\StateMachine.h" />
     <ClInclude Include="..\public\MyFSR2_2.h" />
     <ClInclude Include="..\public\ResLuaScript.h" />
@@ -569,6 +570,7 @@
     <ClCompile Include="..\private\LuaEnv.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
     <ClCompile Include="..\private\LuaWatcher.cpp" />
+    <ClCompile Include="..\Private\ShaderWatcher.cpp" />
     <ClCompile Include="..\Private\StateMachine.cpp" />
     <ClCompile Include="..\private\MyFSR2_2.cpp" />
     <ClCompile Include="..\private\ResLuaScript.cpp" />
