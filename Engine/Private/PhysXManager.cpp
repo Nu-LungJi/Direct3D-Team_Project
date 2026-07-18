@@ -546,7 +546,8 @@ static physx::PxFilterFlags MyFilterShader(
 		pairFlags =
 			physx::PxPairFlag::eCONTACT_DEFAULT |
 			physx::PxPairFlag::eNOTIFY_TOUCH_FOUND |
-			physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
+			physx::PxPairFlag::eNOTIFY_TOUCH_LOST |
+			physx::PxPairFlag::eNOTIFY_CONTACT_POINTS;
 	}
 
 	return physx::PxFilterFlag::eDEFAULT;

@@ -79,14 +79,33 @@ namespace Engine
 		_float4 vQuat{};
 	};
 
+	inline constexpr uint32_t PX_MAX_CONTACT_POINTS = 8u;
+
+	struct PX_CONTACT_POINT_DATA
+	{
+		_float3 vWorldPosition{};
+		_float3 vWorldNormal{};
+		_float3 vImpulse{};
+		_float fSeparation{};
+	};
+
 	struct PX_ON_COLLISION_DATA
 	{
-		bool hello;
+		std::array<PX_CONTACT_POINT_DATA, PX_MAX_CONTACT_POINTS> Contacts{};
+		uint32_t iContactCount{};
+		PX_SHAPE_TYPE eSelfShapeType{ PX_SHAPE_TYPE::BOX };
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iSelfShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
 	struct PX_ON_TRIGGER_DATA
 	{
-		bool hello;
+		_bool bSelfIsTrigger{};
+		PX_SHAPE_TYPE eSelfShapeType{ PX_SHAPE_TYPE::BOX };
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iSelfShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
 	struct PX_RAYCAST_RESULT

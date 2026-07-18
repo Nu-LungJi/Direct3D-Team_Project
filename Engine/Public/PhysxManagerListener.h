@@ -58,11 +58,15 @@ private:
 		EVENT_TYPE eType{};
 		CHandle hObjectA{};
 		CHandle hObjectB{};
+		PX_ON_COLLISION_DATA tCollision{};
+		PX_ON_TRIGGER_DATA tTrigger{};
 		PX_CCT_HIT_DATA tCCTHit{};
 		PX_CCT_OBSTACLE_HIT_DATA tCCTObstacleHit{};
 	};
 
 	void PushEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB = {});
+	void PushCollisionEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_COLLISION_DATA& tData);
+	void PushTriggerEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_TRIGGER_DATA& tData);
 
 private:
 	std::mutex m_PendingEventMutex{};
