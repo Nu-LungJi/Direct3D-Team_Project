@@ -182,6 +182,7 @@ void CMapMeshInstancingRenderer::Update()
 void CMapMeshInstancingRenderer::FrameEnd()
 {
 	ClearInstancingData();
+	ClearFrameScratchBuffers();
 }
 
 void CMapMeshInstancingRenderer::ClearTextureCache()
@@ -192,6 +193,7 @@ void CMapMeshInstancingRenderer::ClearTextureCache()
 HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
 	ZoneScopedN("MapMeshInstancingRender");
+	ClearFrameScratchBuffers();
 	if (pContext == nullptr || s_InstanceBatches.empty())
 		return S_OK;
 
@@ -213,14 +215,6 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			return E_FAIL;
 	}
 
-	struct DRAW_ITEM
-	{
-		SPtr<CResStaticModel> model{};
-		const std::vector<MAPMESH_TEXTURE_SET>* textureCache = nullptr;
-		uint32_t meshIndex = 0;
-		uint32_t instanceOffset = 0;
-	};
-
 	size_t totalInstances = 0;
 	size_t totalDraws = 0;
 	for (const auto& [model, batch] : s_InstanceBatches)
@@ -232,18 +226,12 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		}
 	}
 
-	std::vector<MAPMESH_INSTANCE_DATA> instances;
-	std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
-	std::vector<MAPMESH_CULL_META> cullMeta;
-	std::vector<uint32_t> drawBatchIndices;
-	std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS> indirectArgs;
-	std::vector<DRAW_ITEM> drawItems;
-	instances.reserve(totalInstances);
-	occlusionData.reserve(totalInstances);
-	cullMeta.reserve(totalInstances);
-	drawBatchIndices.reserve(totalDraws);
-	indirectArgs.reserve(totalDraws);
-	drawItems.reserve(totalDraws);
+	m_Instances.reserve(totalInstances);
+	m_OcclusionData.reserve(totalInstances);
+	m_CullMeta.reserve(totalInstances);
+	m_DrawBatchIndices.reserve(totalDraws);
+	m_IndirectArgs.reserve(totalDraws);
+	m_DrawItems.reserve(totalDraws);
 
 	uint32_t batchIndex = 0;
 	for (const auto& [model, batch] : s_InstanceBatches)
@@ -257,10 +245,10 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		if (textureCache == nullptr)
 			return E_FAIL;
 
-		const uint32_t instanceOffset = static_cast<uint32_t>(instances.size());
-		instances.insert(instances.end(), batch.instances.begin(), batch.instances.end());
-		occlusionData.insert(occlusionData.end(), batch.occlusionData.begin(), batch.occlusionData.end());
-		cullMeta.insert(cullMeta.end(), batch.instances.size(), MAPMESH_CULL_META{ instanceOffset, batchIndex });
+		const uint32_t instanceOffset = static_cast<uint32_t>(m_Instances.size());
+		m_Instances.insert(m_Instances.end(), batch.instances.begin(), batch.instances.end());
+		m_OcclusionData.insert(m_OcclusionData.end(), batch.occlusionData.begin(), batch.occlusionData.end());
+		m_CullMeta.insert(m_CullMeta.end(), batch.instances.size(), MAPMESH_CULL_META{ instanceOffset, batchIndex });
 
 		for (uint32_t meshIndex = 0; meshIndex < model->Get_NumMeshes(); ++meshIndex)
 		{
@@ -268,21 +256,21 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			if (mesh == nullptr)
 				continue;
 
-			drawBatchIndices.push_back(batchIndex);
+			m_DrawBatchIndices.push_back(batchIndex);
 			D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
 			args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
-			indirectArgs.push_back(args);
-			drawItems.push_back({ model, textureCache, meshIndex, instanceOffset });
+			m_IndirectArgs.push_back(args);
+			m_DrawItems.push_back({ model, textureCache, meshIndex, instanceOffset });
 		}
 		++batchIndex;
 	}
 
-	if (instances.empty() || drawItems.empty())
+	if (m_Instances.empty() || m_DrawItems.empty())
 		return S_OK;
 
 	if (FAILED(s_pGpuCuller->BuildVisibleInstancesAndIndirectArgs(
-		pContext, instances, occlusionData, cullMeta, batchIndex,
-		drawBatchIndices, indirectArgs,
+		pContext, m_Instances, m_OcclusionData, m_CullMeta, batchIndex,
+		m_DrawBatchIndices, m_IndirectArgs,
 		CGameInstance::Get().GetPrevHizBuffer(), ctx.matViewProj,
 		CGameInstance::Get().GetClientScreenSize())))
 	{
@@ -296,9 +284,9 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 	if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
 		return E_FAIL;
 
-	for (uint32_t drawIndex = 0; drawIndex < drawItems.size(); ++drawIndex)
+	for (uint32_t drawIndex = 0; drawIndex < m_DrawItems.size(); ++drawIndex)
 	{
-		const auto& item = drawItems[drawIndex];
+		const auto& item = m_DrawItems[drawIndex];
 		const auto& mesh = item.model->GetMeshes()[item.meshIndex];
 		ID3D11Buffer* vertexBuffers[] = { mesh->GetVertexBuffer().Get(), visibleInstanceBuffer };
 		uint32_t strides[] = { mesh->GetVertexStride(), static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
@@ -350,9 +338,20 @@ void CMapMeshInstancingRenderer::ClearInstancingData()
 	s_InstanceBatches.clear();
 }
 
+void CMapMeshInstancingRenderer::ClearFrameScratchBuffers()
+{
+	m_Instances.clear();
+	m_OcclusionData.clear();
+	m_CullMeta.clear();
+	m_DrawBatchIndices.clear();
+	m_IndirectArgs.clear();
+	m_DrawItems.clear();
+}
+
 void CMapMeshInstancingRenderer::ReleaseInstancingResources()
 {
 	s_InstanceBatches.clear();
+	ClearFrameScratchBuffers();
 	ClearTextureCache();
 	s_pGpuCuller.reset();
 }

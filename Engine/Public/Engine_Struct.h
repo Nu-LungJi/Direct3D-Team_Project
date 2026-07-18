@@ -300,6 +300,12 @@ namespace Engine
 		std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
 	};
 
+	struct MAPMESH_CULL_META
+	{
+		uint32_t outputOffset = 0;
+		uint32_t batchIndex = 0;
+	};
+
 	struct INSTANCING_STATS
 	{
 		_bool bEnabled = false;

@@ -38,12 +38,20 @@ public:
 
 private:
 	void ClearInstancingData(); // 매 프레임 인스턴싱 데이터 clear
+	void ClearFrameScratchBuffers();
 	void ReleaseInstancingResources(); // 종료할 때 인스턴싱 버퍼 해제
 
 private:
 	static constexpr size_t MAPMESH_TEXTURE_COUNT = 4;
 	using MAPMESH_TEXTURE_SET = std::array<SPtr<CResTexture2D>, MAPMESH_TEXTURE_COUNT>;
 	using MAPMESH_TEXTURE_CACHE = std::unordered_map<SPtr<CResStaticModel>, std::vector<MAPMESH_TEXTURE_SET>>;
+	struct DRAW_ITEM
+	{
+		SPtr<CResStaticModel> model{};
+		const std::vector<MAPMESH_TEXTURE_SET>* textureCache = nullptr;
+		uint32_t meshIndex = 0;
+		uint32_t instanceOffset = 0;
+	};
 
 	const std::vector<MAPMESH_TEXTURE_SET>* GetOrCreateMapMeshTextureCache(const SPtr<CResStaticModel>& pModel);
 	HRESULT BindMapMeshTextures(ID3D11DeviceContext* pContext, const std::vector<MAPMESH_TEXTURE_SET>& textureCache, uint32_t meshIndex) const;
@@ -57,6 +65,12 @@ private:
 	std::unordered_map<SPtr<CResStaticModel>, MAPMESH_INSTANCE_BATCH> s_InstanceBatches;
 	MAPMESH_TEXTURE_CACHE m_MapMeshTextureCache;
 	UPtr<CMapMeshGpuCuller> s_pGpuCuller;
+	std::vector<MAPMESH_INSTANCE_DATA> m_Instances;
+	std::vector<MAPMESH_OCCLUSION_DATA> m_OcclusionData;
+	std::vector<MAPMESH_CULL_META> m_CullMeta;
+	std::vector<uint32_t> m_DrawBatchIndices;
+	std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS> m_IndirectArgs;
+	std::vector<DRAW_ITEM> m_DrawItems;
 
 	// 드로우 콜 확인용
 	_bool s_bInstancingEnabled = true; // 인스턴싱 On/Off

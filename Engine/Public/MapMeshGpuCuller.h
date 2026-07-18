@@ -17,12 +17,6 @@ struct CB_MAPMESH_GPU_CULL
 	_float hizBias = 0.0005f;
 };
 
-struct MAPMESH_CULL_META
-{
-	uint32_t outputOffset = 0;
-	uint32_t batchIndex = 0;
-};
-
 class ENGINE_DLL CMapMeshGpuCuller : public CEngineBase
 {
 public:
