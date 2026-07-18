@@ -282,6 +282,7 @@ void CPhysXManager::QueueCCTObstacleHit(
 void CPhysXManager::UpdateGUI()
 {
     ImGui::Begin("CPhysXManager");
+	ImGui::Text("Simulation: %s", m_bGpuSimulationEnabled ? "GPU" : "CPU");
     ImGui::Text("m_bDbgRender: %i", m_bDbgRender);
     if (ImGui::Button("DebugRender"))
     {
@@ -641,23 +642,52 @@ HRESULT CPhysXManager::Initialize()
         _float fGravitY = -9.81f;
         uint32_t iCpuDispatcherCnt = 4;
 
-
-        physx::PxSceneDesc sceneDesc(m_pPhysics->getTolerancesScale());
-        sceneDesc.gravity = physx::PxVec3(0.0f, fGravitY, 0.0f);
-        physx::PxDefaultSimulationFilterShader;
-        sceneDesc.filterShader = MyFilterShader;
-        sceneDesc.flags |= physx::PxSceneFlag::eENABLE_ACTIVE_ACTORS;
-        sceneDesc.simulationEventCallback = m_pListener.get();
-
         m_pCpuDispatcher = physx::PxDefaultCpuDispatcherCreate(iCpuDispatcherCnt);
         if (!m_pCpuDispatcher)
         {
             MSG_BOX("PxDefaultCpuDispatcherCreate FAIL");
             return E_FAIL;
         }
-        sceneDesc.cpuDispatcher = m_pCpuDispatcher;
+		auto CreateScene = [&](const _bool bUseGpu) -> physx::PxScene*
+		{
+			physx::PxSceneDesc sceneDesc(m_pPhysics->getTolerancesScale());
+			sceneDesc.gravity = physx::PxVec3(0.0f, fGravitY, 0.0f);
+			sceneDesc.filterShader = MyFilterShader;
+			sceneDesc.flags |= physx::PxSceneFlag::eENABLE_ACTIVE_ACTORS;
+			sceneDesc.simulationEventCallback = m_pListener.get();
+			sceneDesc.cpuDispatcher = m_pCpuDispatcher;
 
-        m_pScene = m_pPhysics->createScene(sceneDesc);
+			if (bUseGpu)
+			{
+				sceneDesc.cudaContextManager = m_pCudaContextManager;
+				sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
+				sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
+			}
+
+			return m_pPhysics->createScene(sceneDesc);
+		};
+
+		physx::PxCudaContextManagerDesc cudaDesc{};
+		//m_pCudaContextManager = PxCreateCudaContextManager(*m_pFoundation, cudaDesc, nullptr);
+		m_pCudaContextManager = nullptr;
+
+		if (m_pCudaContextManager && m_pCudaContextManager->contextIsValid())
+		{
+			m_pScene = CreateScene(true);
+			m_bGpuSimulationEnabled = m_pScene != nullptr;
+		}
+
+		if (!m_bGpuSimulationEnabled)
+		{
+			if (m_pCudaContextManager)
+			{
+				m_pCudaContextManager->release();
+				m_pCudaContextManager = nullptr;
+			}
+
+			m_pScene = CreateScene(false);
+		}
+
         if (!m_pScene)
         {
             MSG_BOX("createScene FAIL");
@@ -764,7 +794,18 @@ void CPhysXManager::Free()
 		m_pControllerManager = nullptr;
 	}
 
-    if (m_pScene) m_pScene->release();
+    if (m_pScene)
+	{
+		m_pScene->release();
+		m_pScene = nullptr;
+	}
+
+	if (m_pCudaContextManager)
+	{
+		m_pCudaContextManager->release();
+		m_pCudaContextManager = nullptr;
+	}
+	m_bGpuSimulationEnabled = false;
 
     if (m_pPhysics) m_pPhysics->release();
     if (m_pCpuDispatcher) m_pCpuDispatcher->release();

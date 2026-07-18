@@ -13,6 +13,7 @@ namespace physx {
 	class PxCooking;
 	class PxControllerManager;
 	class PxShape;
+	class PxCudaContextManager;
 }
 
 NS_BEGIN(Engine)
@@ -80,6 +81,7 @@ private:
 	physx::PxPhysics* m_pPhysics{};
 	physx::PxScene* m_pScene{};
 	physx::PxDefaultCpuDispatcher* m_pCpuDispatcher{};
+	physx::PxCudaContextManager* m_pCudaContextManager{};
 	physx::PxPvd* m_pPvd{};
 
 private:
@@ -92,6 +94,7 @@ private:
 
 private:
 	_bool m_bDbgRender{ false };
+	_bool m_bGpuSimulationEnabled{ false };
 public:
 	static UPtr<CPhysXManager> Create();
 
