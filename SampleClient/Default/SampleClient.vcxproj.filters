@@ -184,6 +184,12 @@
     <Filter Include="Loader\Level\Creature">
       <UniqueIdentifier>{edec8072-3519-4af3-8bcf-1b22e70c939a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player">
+      <UniqueIdentifier>{eda74fba-0f79-4b19-94df-44b8f95179d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\FSM">
+      <UniqueIdentifier>{c609926e-37c5-4936-8ba5-557d8908222d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -432,6 +438,12 @@
     <ClInclude Include="..\public\LevelCreatureLoader.h">
       <Filter>Loader\Level\Creature</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_FSM.h">
+      <Filter>GameObject\Player\FSM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -644,6 +656,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_FSM.cpp">
+      <Filter>GameObject\Player\FSM</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

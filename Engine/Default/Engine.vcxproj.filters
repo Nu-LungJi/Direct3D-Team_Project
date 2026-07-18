@@ -478,6 +478,9 @@
     <Filter Include="CreatureManager">
       <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FSM">
+      <UniqueIdentifier>{c25ecb41-7bf1-46a9-a361-10286b324e9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1027,6 +1030,9 @@
     <ClInclude Include="..\public\BTReactiveSelector.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\StateMachine.h">
+      <Filter>FSM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1524,6 +1530,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTReactiveSelector.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StateMachine.cpp">
+      <Filter>FSM</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

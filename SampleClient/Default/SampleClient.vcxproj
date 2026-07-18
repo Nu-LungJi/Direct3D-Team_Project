@@ -217,6 +217,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\LightTerrain.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
+    <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\Player_FSM.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\public\TestGob.h" />
@@ -308,6 +310,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
     <ClCompile Include="..\Private\LightTerrain.cpp" />
+    <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\Player_FSM.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\private\LevelColliderLoader.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
