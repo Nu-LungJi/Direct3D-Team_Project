@@ -35,7 +35,7 @@ HRESULT CComPxConvexCollider::Initialize(void* pArg)
 		return E_FAIL;
 
 	const PxMeshScale meshScale{ PxVec3{ desc->vScale.x, desc->vScale.y, desc->vScale.z } };
-	m_pShape = physics->createShape(PxConvexMeshGeometry{ convexMesh, meshScale }, *material);
+	m_pShape = physics->createShape(PxConvexMeshGeometry{ convexMesh, meshScale }, *material, true);
 	if (!m_pShape)
 		return E_FAIL;
 

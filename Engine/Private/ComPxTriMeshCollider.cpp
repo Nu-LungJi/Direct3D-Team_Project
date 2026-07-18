@@ -61,7 +61,7 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 		return E_FAIL;
 	}
 
-    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh), *pMaterial);
+    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh), *pMaterial, true);
     if (m_pShape == nullptr)
         return E_FAIL;
 
