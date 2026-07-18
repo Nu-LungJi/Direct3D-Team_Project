@@ -352,6 +352,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pLuaManager->Update(fTimeDelta);
 	}
 
+	{
+		ZoneScopedN("ShaderHotReload_Update");
+		m_pResourceManager->UpdateShaderHotReload();
+	}
+
 
 
 	{
@@ -433,7 +438,12 @@ void CGameInstance::Release_Engine()
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pModel_Instance_Manager.reset();
-	if(m_pGameObjectManager)m_pGameObjectManager->AllReset();
+	if (m_pGameObjectManager)
+	{
+		m_pGameObjectManager->AllReset();
+		//m_pGameObjectManager->FrameStart();
+		m_pGameObjectManager->FrameEnd();
+	}
 	
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
