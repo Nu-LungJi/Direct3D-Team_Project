@@ -180,21 +180,29 @@ void CGameObjectManager::FrameStart()
 
 void CGameObjectManager::FrameEnd()
 {
-	for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
+	if (m_bAllResetCalled)
 	{
-		CGameObject* pObj = *iter;
-		CHandle hObj = pObj->GetHandle();
+		m_bAllResetCalled = false;
+		AllObjectsReset();
+	}
+	else
+	{
+		for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
+		{
+			CGameObject* pObj = *iter;
+			CHandle hObj = pObj->GetHandle();
 
-		// double check 필요 없을듯
-		//if (GetGameObjectByHandle(hObj) == pObj)
-		//{
+			// double check 필요 없을듯
+			//if (GetGameObjectByHandle(hObj) == pObj)
+			//{
 			if (pObj->GetPendingDestroy())
 			{
 				m_bTreeReBuild = true;
 				m_Objects[hObj.GetIndex()].Reset();
 				m_FreeSlots.push_back(hObj.GetIndex());
 			}
-		//}
+			//}
+		}
 	}
 }
 
@@ -428,13 +436,30 @@ void CGameObjectManager::AllReset()
 		}
 	}
 	m_bTreeReBuild = true;
-	FrameStart();
-	FrameEnd();
+	m_bAllResetCalled = true;
+	//FrameStart();
+	//FrameEnd();
 
 	m_Layers.clear();
 	m_LookupLayers.clear();
 	m_TreePreparation.clear();
 	m_Tree.clear();
+}
+
+void CGameObjectManager::AllObjectsReset()
+{
+	for (auto& pObj : m_Objects)
+	{
+		if (pObj.IsOccupied())
+		{
+			CHandle hObj = pObj.Get()->GetHandle();
+			if (pObj.Get()->GetPendingDestroy())
+			{
+				m_Objects[hObj.GetIndex()].Reset();
+				m_FreeSlots.push_back(hObj.GetIndex());
+			}
+		}
+	}
 }
 
 void CGameObjectManager::Free()

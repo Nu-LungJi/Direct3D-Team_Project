@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "TestModel.h"
+#include "Player.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -12,22 +12,22 @@
 
 NS_USING(Client)
 
-CTestModel::CTestModel()
+CPlayer::CPlayer()
 	: CAnimationObject{}
 {
 }
 
-CTestModel::~CTestModel()
+CPlayer::~CPlayer()
 {
 }
 
-void CTestModel::UpdateGUI()
+void CPlayer::UpdateGUI()
 {
 	CAnimationObject::UpdateGUI();
 
 }
 
-HRESULT CTestModel::InitializePrototype(void* pArg)
+HRESULT CPlayer::InitializePrototype(void* pArg)
 {
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
 	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
@@ -50,9 +50,9 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	if (!m_pResSkinMeshCBuffer)
 	{
 		return E_FAIL;
-	} 
+	}
 
-	
+
 	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
 	if (FAILED(m_pAnimComputeShader->Load()))
 	{
@@ -62,12 +62,16 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CTestModel::Initialize(void* pArg)
+HRESULT CPlayer::Initialize(void* pArg)
 {
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
+	
+	auto* pDesc = static_cast<DESC*>(pArg);
+	auto pGroup = pDesc->sGroupTag;
+	auto pRes = pDesc->sResTag;
 
 	{
 		CComConstantBuffer::DESC Desc{};
@@ -79,9 +83,10 @@ HRESULT CTestModel::Initialize(void* pArg)
 	}
 
 	{
+	
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "TEST";
-		Desc.sResTag = "Model_Resource";
+		Desc.sGroupTag = pGroup;
+		Desc.sResTag = pRes;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -92,11 +97,14 @@ HRESULT CTestModel::Initialize(void* pArg)
 	{
 		CComAnimator::DESC DescAnim{};
 		DescAnim.sComTag = "ComCModelIntance";
-	
+
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
 		{
 			return E_FAIL;
 		};
+
+
+		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
 	//CTestPartObject::DESC WeaponDesc{};
@@ -119,22 +127,22 @@ HRESULT CTestModel::Initialize(void* pArg)
 
 }
 
-void CTestModel::PriorityUpdate(E::_float fTimeDelta)
-{ 
+void CPlayer::PriorityUpdate(E::_float fTimeDelta)
+{
 }
 
-void CTestModel::Update(E::_float fTimeDelta)
+void CPlayer::Update(E::_float fTimeDelta)
 {
-	ZoneScopedN("Update TestModel");
+	ZoneScopedN("Update CPlayer");
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
-		
+
 		m_pModelAnimator->Update(fTimeDelta);
 	}
 
 }
 
-void CTestModel::LateUpdate(E::_float fTimeDelta)
+void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 
@@ -145,16 +153,16 @@ void CTestModel::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel->GetAnimations().empty())
 	{
-		CGameInstance::Get().Add_Instance(m_pComModelInstance,m_pModelAnimator,*GetTransform().GetCombinedWorldMatrix());
-	
+		CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
+
 		return;
 	}
 
 
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND,this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
-HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CPlayer::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 
 	{
@@ -163,17 +171,17 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
 		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
 		{
-			return E_FAIL; 
+			return E_FAIL;
 		}
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 
 
 		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);
-		
+
 	}
 	const auto& vs = m_pResVertexShader;
-	
+
 	const auto& ps = m_pResPixelShader;
 
 
@@ -181,7 +189,7 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
-	auto pModel = m_pComModelInstance->GetModel(); 
+	auto pModel = m_pComModelInstance->GetModel();
 
 	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
 	for (uint32_t i = 0; i < iNumMeshes; ++i) {
@@ -202,7 +210,7 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 		{
-			if(!m_pComModelInstance->GetModel()->GetAnimations().empty())
+			if (!m_pComModelInstance->GetModel()->GetAnimations().empty())
 				if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i))) {
 					return E_FAIL;
 				}
@@ -212,17 +220,17 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			m_pComModelInstance->Bind_Textures(pContext, i);
 			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
-		
+
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 		//pContext->DrawIndexedInstancedIndirect(viBuffer->GetNumIndices(), 0, 0);
 	}
 
 
-	
+
 	return S_OK;
 }
 
-HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx,const E::MODEL_INSTANCE_BATCH& Batch)
+HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
 	ZoneScopedN("Render TestModel");
 
@@ -236,7 +244,7 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 
 
 
-	if (!m_pAnimComputeShader ||!m_pAnimComputeShader->GetComputeShader())
+	if (!m_pAnimComputeShader || !m_pAnimComputeShader->GetComputeShader())
 	{
 		return E_FAIL;
 	}
@@ -245,7 +253,7 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	// Compute Shader
 	// -------------------------------------------------
 
-	if (FAILED(Update_InstanceBuffer(pContext,Batch.Instances)))
+	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))
 	{
 		return E_FAIL;
 	}
@@ -268,12 +276,12 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 		return E_FAIL;
 	}
 
-	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(),nullptr,0);
+	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(), nullptr, 0);
 
 	/*
 	 * 한 Thread Group = 한 인스턴스라는 전제.
 	 */
-	pContext->Dispatch(iInstanceCount,1,1);
+	pContext->Dispatch(iInstanceCount, 1, 1);
 
 	if (FAILED(Unbind_AnimationCompute(pContext)))
 	{
@@ -304,26 +312,26 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	// Graphics Shader
 	// -------------------------------------------------
 
-	const auto& vs =m_pResVertexInstancedShader;
+	const auto& vs = m_pResVertexInstancedShader;
 
-	const auto& ps =m_pResPixelShader;
+	const auto& ps = m_pResPixelShader;
 
 	if (!vs || !ps)
 		return E_FAIL;
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 
-	pContext->VSSetShader(vs->GetVertexShader().Get(),nullptr,0);
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 
-	pContext->PSSetShader(ps->GetPixelShader().Get(),nullptr,0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
-	auto pModel =CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup,Batch.Key.modelTag);
+	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
 
-	const uint32_t iNumMeshes =pModel->Get_NumMeshes();
+	const uint32_t iNumMeshes = pModel->Get_NumMeshes();
 
-	for (uint32_t iMeshIndex = 0;iMeshIndex < iNumMeshes;++iMeshIndex)
+	for (uint32_t iMeshIndex = 0; iMeshIndex < iNumMeshes; ++iMeshIndex)
 	{
-		const auto& viBuffer =pModel->GetMeshes()[iMeshIndex];
+		const auto& viBuffer = pModel->GetMeshes()[iMeshIndex];
 
 		if (!viBuffer)
 			continue;
@@ -343,9 +351,9 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 			0
 		};
 
-		pContext->IASetVertexBuffers(0,1,vertexBuffers,strides,offsets);
+		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 
-		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(),viBuffer->GetIndexFormat(),0);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
@@ -363,7 +371,7 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
 		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
-		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(),iInstanceCount,0,0,0);
+		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
 
@@ -375,10 +383,10 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 
 	return S_OK;
 }
-HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
+HRESULT CPlayer::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
 
-	m_iCurrentInstanceCount =static_cast<uint32_t>(Instances.size());
+	m_iCurrentInstanceCount = static_cast<uint32_t>(Instances.size());
 
 	if (Instances.empty())
 		return S_OK;
@@ -388,12 +396,12 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 	if (m_iCurrentInstanceCount > MAX_INSTANCE_COUNT)
 		return E_FAIL;
 
-	auto pStructuredBuffer =CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER,"SBUFFER_ANIMAITON");
+	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
 	if (!pStructuredBuffer)
 		return E_FAIL;
 
-	ID3D11Buffer* pBuffer =pStructuredBuffer->GetBuffer().Get();
+	ID3D11Buffer* pBuffer = pStructuredBuffer->GetBuffer().Get();
 
 	if (!pBuffer)
 		return E_FAIL;
@@ -404,9 +412,9 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 	 */
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 
-	pContext->CSSetShaderResources(6,1,&pNullSRV);
+	pContext->CSSetShaderResources(6, 1, &pNullSRV);
 
-	pContext->VSSetShaderResources(6,1,&pNullSRV);
+	pContext->VSSetShaderResources(6, 1, &pNullSRV);
 
 	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
 
@@ -426,7 +434,7 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 
 }
 
-HRESULT CTestModel::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
 {
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
@@ -442,9 +450,9 @@ HRESULT CTestModel::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CTestModel::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
 {
-	auto pStructuredBuffer =CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER,"SBUFFER_FINALBONEMATRIX");
+	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
 
 	if (!pStructuredBuffer)
 		return E_FAIL;
@@ -458,14 +466,14 @@ HRESULT CTestModel::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
 	// 연결되어 있었다면 먼저 연결 해제
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 
-	pContext->VSSetShaderResources(7,1,&pNullSRV);
+	pContext->VSSetShaderResources(7, 1, &pNullSRV);
 
 	// CS의 u0 슬롯에 출력 UAV 연결
-	pContext->CSSetUnorderedAccessViews(0,1,&pUAV,nullptr);
+	pContext->CSSetUnorderedAccessViews(0, 1, &pUAV, nullptr);
 
 	return S_OK;
 }
-HRESULT CTestModel::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 {
 	// CS t0 ~ t6 SRV 해제
 	ID3D11ShaderResourceView* pNullSRVs[7] =
@@ -479,23 +487,23 @@ HRESULT CTestModel::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 		nullptr
 	};
 
-	pContext->CSSetShaderResources(0,7,pNullSRVs);
+	pContext->CSSetShaderResources(0, 7, pNullSRVs);
 
 	// CS u0 UAV 해제
 	ID3D11UnorderedAccessView* pNullUAV = nullptr;
 
-	pContext->CSSetUnorderedAccessViews(0,1,&pNullUAV,nullptr);
+	pContext->CSSetUnorderedAccessViews(0, 1, &pNullUAV, nullptr);
 
 	// Compute Shader 자체도 해제
-	pContext->CSSetShader(nullptr,nullptr,0);
+	pContext->CSSetShader(nullptr, nullptr, 0);
 
 	return S_OK;
 }
 
-HRESULT CTestModel::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 {
 
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER,"SBUFFER_ANIMAITON");
+	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
 	if (!pStructuredBuffer)
 		return E_FAIL;
@@ -506,15 +514,15 @@ HRESULT CTestModel::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 		return E_FAIL;
 
 	// VS의 t6 슬롯에 InstanceData 연결
-	pContext->VSSetShaderResources(6,1,&pSRV);
+	pContext->VSSetShaderResources(6, 1, &pSRV);
 
 	return S_OK;
 }
 
-HRESULT CTestModel::Bind_FinalBoneSRV_VS( ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
 {
 
-	auto pStructuredBuffer =CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER,"SBUFFER_FINALBONEMATRIX");
+	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
 
 	if (!pStructuredBuffer)
 		return E_FAIL;
@@ -525,39 +533,39 @@ HRESULT CTestModel::Bind_FinalBoneSRV_VS( ID3D11DeviceContext* pContext)
 		return E_FAIL;
 
 	// VS의 t7 슬롯에 Compute 결과 연결
-	pContext->VSSetShaderResources(7,1,&pSRV);
+	pContext->VSSetShaderResources(7, 1, &pSRV);
 
 	return S_OK;
 }
-HRESULT CTestModel::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 {
 	if (!pContext)
 		return E_INVALIDARG;
 
 	ID3D11ShaderResourceView* pNullSRVs[3]{};
 
-	pContext->VSSetShaderResources(6,3,pNullSRVs);
+	pContext->VSSetShaderResources(6, 3, pNullSRVs);
 
 	return S_OK;
 }
 
-E::UPtr<CTestModel> CTestModel::Create()
+E::UPtr<CPlayer> CPlayer::Create()
 {
-	auto pInstance = E::ToUPtr(new CTestModel{});
+	auto pInstance = E::ToUPtr(new CPlayer{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTestModel");
+		MSG_BOX("Failed to Created : CPlayer");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTestModel::Clone(void* pArg)
+E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTestModel{ *this });
+	auto	pInstance = E::ToUPtr(new CPlayer{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTestModel");
+		MSG_BOX("Failed to Cloned : CPlayer");
 		return nullptr;
 	}
 

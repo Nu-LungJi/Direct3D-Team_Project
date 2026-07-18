@@ -475,6 +475,12 @@
     <Filter Include="Component\Model\ComSocket">
       <UniqueIdentifier>{41fbef30-0861-4a12-87af-d96a9c20c674}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CreatureManager">
+      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FSM">
+      <UniqueIdentifier>{c25ecb41-7bf1-46a9-a361-10286b324e9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1000,6 +1006,9 @@
     <ClInclude Include="..\public\LuaWatcher.h">
       <Filter>Lua\Watcher</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ShaderWatcher.h">
+      <Filter>Resource\Shader</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ILuaScriptRelodable.h">
       <Filter>Lua</Filter>
     </ClInclude>
@@ -1020,6 +1029,9 @@
     </ClInclude>
     <ClInclude Include="..\public\BTReactiveSelector.h">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StateMachine.h">
+      <Filter>FSM</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1498,6 +1510,9 @@
     <ClCompile Include="..\private\LuaWatcher.cpp">
       <Filter>Lua\Watcher</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ShaderWatcher.cpp">
+      <Filter>Resource\Shader</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\LuaEnv.cpp">
       <Filter>Lua\LuaEnv</Filter>
     </ClCompile>
@@ -1515,6 +1530,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTReactiveSelector.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StateMachine.cpp">
+      <Filter>FSM</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

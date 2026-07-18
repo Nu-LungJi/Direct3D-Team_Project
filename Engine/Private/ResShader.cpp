@@ -14,6 +14,22 @@ CResShader::~CResShader()
 {
 }
 
+HRESULT CResShader::Reload()
+{
+	const STATE previousState = m_eState.load(std::memory_order_acquire);
+	m_eState.store(STATE::UNLOAD, std::memory_order_release);
+
+	if (FAILED(Load()))
+	{
+		// The derived shader keeps its previous D3D object until a new one is
+		// successfully created, so a compile error must not disable rendering.
+		m_eState.store(previousState, std::memory_order_release);
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
 HRESULT CResShader::CompileShader(const DESC* _desc)
 {
     if (_desc) {
@@ -31,6 +47,8 @@ HRESULT CResShader::CompileShader(const DESC* _desc)
     iFlag |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
 
+    ComPtr<ID3DBlob> compiledBlob{};
+    ComPtr<ID3DBlob> errorBlob{};
     HRESULT hr = D3DCompileFromFile(
         StringToWString(m_sPath).c_str(),
         nullptr,
@@ -39,16 +57,16 @@ HRESULT CResShader::CompileShader(const DESC* _desc)
         m_sTarget.c_str(),
         iFlag,
         0,
-        &m_pBlob,
-        &m_pErrorBlob
+        &compiledBlob,
+        &errorBlob
     );
     if (FAILED(hr))
     {
-        if (m_pErrorBlob)
+        if (errorBlob)
         {
             MSG_BOX_STR(_wstring{ L"CompileShader Faield Path:" + StringToWString(m_sPath) }.c_str());
 
-            const char* err = (const char*)m_pErrorBlob->GetBufferPointer();
+            const char* err = (const char*)errorBlob->GetBufferPointer();
             std::string str = err;
             MSG_BOX_STR(StringToWString(str).c_str());
             OutputDebugStringA(err);
@@ -60,6 +78,8 @@ HRESULT CResShader::CompileShader(const DESC* _desc)
         }
         return E_FAIL;
     }
+	m_pBlob = std::move(compiledBlob);
+	m_pErrorBlob.Reset();
     return S_OK;
 }
 //
