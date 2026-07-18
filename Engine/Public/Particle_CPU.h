@@ -9,13 +9,16 @@ struct PARTICLE_CPU_DATA
     _float3 vPosition;
     _float3 vVelocity;
     _float4 vColor = { 1.f, 1.f, 1.f, 1.f };
-    _float  fSize = 1.f;
+    _float  fSize = 0.f;
+    _float  fStartSize = 0.f;
     _float  fEndSize = 1.f;
     _float4  rotation = { 0.f, 0.f, 0.f, 0.f };
     _float  life = 0.f;
     _float  fMaxLife = 1.f;
     _bool   bAlive = false;
     _float4 emissive;
+    _float4 endEmissive;
+    _float4 originalEmissive;
 	_float spawnDelay;
 	uint32_t iFrameIndex = 0;
 	uint32_t ownerID = 0;
@@ -28,11 +31,14 @@ struct VTX_PARTICLE_INSTANCED_DATA
 {
     _float4x4 matWorld;
     _float4   vColor;
+    _float4 originalEmissive;
     _float4 emissive;
+    _float4 endEmissive;
 	_float2   vUVOffset; 
 	_float2   vUVSize;
 	_float    life;
 	_float    maxLife;
+	uint32_t iBehaviorType = 0;
 };
 
 // CPU 파티클 중간 추상 클래스.
@@ -51,6 +57,8 @@ public:
 		std::pair<StringID, StringID> normalTextureID;
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
+		std::pair<StringID, StringID> hdrPositionTextureID;
+		std::pair<StringID, StringID> hdrNormalTextureID;
         PARTICLE_TYPE                  type;
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
 		uint32_t TexRows = 1;

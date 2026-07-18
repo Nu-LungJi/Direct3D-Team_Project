@@ -606,6 +606,9 @@
     <FxCompile Include="..\ShaderFiles\Shader_BladeTrail.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LuaFiles\ClientTest\asdf.lua">

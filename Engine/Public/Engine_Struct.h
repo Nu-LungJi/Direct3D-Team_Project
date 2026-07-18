@@ -201,7 +201,9 @@ namespace Engine
 		_float2   pad1;     
 		_float4  rotation;
 		_float4  color;
+		_float4  originalEmissive;
 		_float4  emissive;
+		_float4  endEmissive;
 		_float   spawnDelay;
 		uint32_t ownerID = 0;
 		uint32_t iBehaviorType = 0;

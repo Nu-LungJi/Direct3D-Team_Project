@@ -182,6 +182,22 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_SPLASH_TEX", CResVertexShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_SPLASH_TEX", CResPixelShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 
 	{
 		//파티클 텍스쳐 로드
@@ -227,14 +243,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		//노이즈 텍스쳐
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_NoiseGreypack03_D.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		//return E_FAIL;
-		//	}
-		//}
+		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/Noise/VFX_T_NoiseGreypack03_D.png")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
 		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
 		//{
 		//	if (FAILED(res->Load()))

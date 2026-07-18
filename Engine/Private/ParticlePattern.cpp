@@ -41,6 +41,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 		s.velocity = _float3(0.f, 0.f, 0.f);
 		s.life = param.fLife;
 		s.fSize = param.fSize;
+		s.fEndSize = param.fEndSize;
 		s.color = param.color;
 		s.emissive = param.emissive;
 		s.velocity = param.fVelocity;
@@ -79,6 +80,16 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 			s.color = param.color;
 			s.emissive = param.emissive;
 			s.spawnDelay = param.fSpawnDelay * (_float)r;
+
+			s.rotation = param.bRandomRot
+				? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)),
+					XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)),
+					XMConvertToRadians(Randf(param.vMinRot.z, param.vMaxRot.z)),
+					1.f)
+				: _float4(XMConvertToRadians(param.vRotation.x),
+					XMConvertToRadians(param.vRotation.y),
+					XMConvertToRadians(param.vRotation.z),
+					1.f);
 		}
 	}
 	return spawnList;

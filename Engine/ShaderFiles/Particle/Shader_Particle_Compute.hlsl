@@ -33,6 +33,7 @@ void CSMain(uint id : SV_DispatchThreadID)
     float ageRatio = saturate(1.0f - (p.life / max(p.maxLife, 0.0001f)));
     p.size = lerp(p.startSize, p.endSize, ageRatio);
     
+    
     if (g_iTotalFrames > 0)
     {
         uint frame = (uint) (ageRatio * g_iTotalFrames);
@@ -49,7 +50,9 @@ void CSMain(uint id : SV_DispatchThreadID)
         {
             p.life = p.maxLife;
             p.position = p.originalPosition;
+            p.velocity = p.velocity;
             p.alive = 1;
+            p.emissive = p.originalEmissive;
         }
         else
         {
@@ -61,6 +64,7 @@ void CSMain(uint id : SV_DispatchThreadID)
             p.originalPosition = 0;
             p.iBehaviorType = 0;
             p.velocity = 0;
+            
             gDeadList.Append(id);
         }
     }

@@ -21,13 +21,16 @@ struct VS_OUT
 {
     float4 vPosition : SV_POSITION;
     float2 vTexcoord : TEXCOORD0;
-    float4 vColor : COLOR0;
-    float4 vEmissive : COLOR1;
-    float4 vScreenPos : TEXCOORD1;
-    uint iBehaviorType : TEXCOORD2;
-    float3 vNormal : NORMAL0;
-    float3 vTangent : TANGENT0;
-    float3 vWorldPos : TEXCOORD3;
+    float4 vColor : TEXCOORD1;
+    float4 vEmissive : TEXCOORD2;
+    float4 vEndEmissive : TEXCOORD3;
+    uint iBehaviorType : TEXCOORD4;
+    float4 vScreenPos : TEXCOORD5;
+    float3 vNormal : TEXCOORD6; 
+    float3 vTangent : TEXCOORD7;
+    float3 vWorldPos : TEXCOORD8; 
+    float life : TEXCOORD9;
+    float maxLife : TEXCOORD10; 
 };
 
 VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
@@ -96,6 +99,8 @@ VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
     Out.vEmissive = p.emissive;
 
     Out.iBehaviorType = p.iBehaviorType;
+    Out.life = p.life;
+    Out.maxLife = p.maxLife;
     return Out;
 }
 
@@ -111,9 +116,12 @@ PS_OUT PSMain(VS_OUT In)
     
  
 
-    float4 vTextureColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+    float4 vTextureColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord) ;
     if (all(vTextureColor.rgb <= 0.03f))
         discard;
+    float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+    float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+    
     if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
     {
         clip(vTextureColor.a - 0.02f);
@@ -135,7 +143,7 @@ PS_OUT PSMain(VS_OUT In)
         float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
         float4 vFinalColor = vTextureColor * In.vColor;
         float3 finalRGB = lerp(distortedBackground.rgb, vFinalColor.rgb, vFinalColor.a);
-        finalRGB += In.vEmissive.rgb * In.vEmissive.w;
+        finalRGB += lerpedEmissive.rgb * lerpedEmissive.a;
 
         Out.vDiffuse = float4(finalRGB, 1.0f);
         return Out;
@@ -170,9 +178,10 @@ PS_OUT PSMain(VS_OUT In)
         }
     }
 
-    float3 ConstantAmbient = Albedo * 0.05f;
-    float3 FinalColor = ConstantAmbient + LightAccumulation + In.vEmissive.rgb * In.vEmissive.w;
+
+    float3 FinalColor = Albedo + LightAccumulation + lerpedEmissive.rgb * lerpedEmissive.a;
 
     Out.vDiffuse = float4(FinalColor, vFinalColor.a);
+   
     return Out;
 }

@@ -476,6 +476,22 @@ HRESULT CGameInstanceInitLoader::LoadBlendState()
 			blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 			res->Load(blendDesc);
 		}
+
+		if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE", E::CResBlendState::Create()))
+		{
+			D3D11_BLEND_DESC blendDesc{};
+			blendDesc.AlphaToCoverageEnable = FALSE;
+			blendDesc.IndependentBlendEnable = FALSE;
+			blendDesc.RenderTarget[0].BlendEnable = TRUE;
+			blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;   // 텍스처 알파로 밝기(강도) 조절
+			blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;        // 배경을 100% 보존하고 그 위에 더한다 ← 핵심
+			blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+			blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+			blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+			blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+			blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+			if (FAILED(res->Load(blendDesc))) return E_FAIL;
+		}
 	return S_OK;
 }
 
@@ -666,7 +682,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 		if (FAILED(res->Load(samplerDesc))) return E_FAIL;
-
+		CGameInstance::Get().GetGraphicDeviceContext()->VSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(2, 1, res->GetSamplerState().GetAddressOf());
 
@@ -685,6 +701,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			}))) {
 			return E_FAIL;
 		}
+		CGameInstance::Get().GetGraphicDeviceContext()->VSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(3, 1, res->GetSamplerState().GetAddressOf());
 

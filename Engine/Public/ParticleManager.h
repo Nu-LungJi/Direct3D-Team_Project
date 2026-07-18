@@ -30,7 +30,9 @@ typedef struct tagParticlePreset
 
 	//EndColor는 보간 로직 만든 뒤에 추가
 	_float4 StartColor = { 1.f, 1.f, 1.f, 1.f };
+	_float4 originalEmissive = { 1.f, 1.f, 1.f, 0.f };
 	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
+	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
 
 } PARTICLE_PRESET;
@@ -51,9 +53,14 @@ struct STANDARD_PARAMS
     _float   life = 1.f;
     _float   fSize = 1.f;
     _float   fEndSize = 1.f;
+	bool bRandomRot = false;
+	_float3 rotMin = { 0,0,0 };
+	_float3 rotMax = { 0,0,0 };
     _float4   rotation = { 0.f, 0.f, 0.f, 0.f };
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
+    _float4  originalEmissive = { 1.f, 1.f, 1.f, 0.f };
     _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
+    _float4  endEmissive = { 1.f, 1.f, 1.f, 0.f };
     _bool    bLoop = false;
     _float   fSpawnInterval = 0.1f;
 	_float	 fSpawnDelay = 0.f;
@@ -66,6 +73,7 @@ struct BEAM_PARAMS
     _float4  beamEnd = {};
     _float4  color = { 1.f, 1.f, 1.f, 1.f };
     _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
+    _float4  endEmissive = { 1.f, 1.f, 1.f, 0.f };
     int      iDisplacementIterations = 6;
     _float   fDisplacementAmplitude = 2.5f;
     _float   fDisplacementDamping = 0.25f;
@@ -135,18 +143,28 @@ public:
 
 
 public:
-	HRESULT Save_Binary_Json(std::string outpath, const std::string& fbxFullPath, const std::string& whatKind, const std::string& particleType,
-		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
-		const std::string& PSGroup, const std::string& PSID, const std::string& sGroupTag, const std::string& sResTag, 
-		const std::string& textureID1 = "", const std::string& textureID2 = "", const std::string& viBufferID1 ="",
-		const std::string& viBufferID2= "",
-		int RowCount = 1,
-		int ColCount = 1, const std::string& normalTexID1 = "", const std::string& normalTexID2 = "",
+	HRESULT Save_Binary_Json(std::string outpath,
+		const std::string& FullPath, const std::string& whatKind,
+		const std::string& particleType, const std::string& particleName,
+		int iMaxParticles,
+		const std::string& VSGroup, const std::string& VSID,
+		const std::string& PSGroup, const std::string& PSID,
+		const std::string& sGroupTag, const std::string& sResTag,
+		const std::string& textureID1, const std::string& textureID2,
+		const std::string& viBufferID1, const std::string& viBufferID2,
+		int RowCount, int ColCount,
+		const std::string& normalTexID1 = "", const std::string& normalTexID2 = "",
 		const std::string& distortionTexID1 = "", const std::string& distortionTexID2 = "",
 		const std::string& noiseTexID1 = "", const std::string& noiseTexID2 = "",
 		const std::string& normalTexPath = "",
 		const std::string& distortionTexPath = "",
-		const std::string& noiseTexPath = "");
+		const std::string& noiseTexPath = "",
+		const std::string& hdrTexID1 = "",
+		const std::string& hdrTexID2 = "",
+		const std::string& hdrTexPath = "",
+		const std::string& hdrNormalTexID1 = "",  
+		const std::string& hdrNormalTexID2 = "",  
+		const std::string& hdrNormalTexPath = "");
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -157,13 +175,15 @@ public:
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 
-	HRESULT Spawn(uint32_t owenrId, const std::string& strJsonPath, _fvector startPos, _fvector endPos);
+	uint32_t Spawn(uint32_t owenrId, const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = {0,0,0,1});
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
 	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
 	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
 	void ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos);
+	void ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX matWorld);
+	std::vector<std::string> ScanBinFolder(const std::string& strBinFolder);
 	// 조회 헬퍼
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
 	bool HasGroup(const StringID& sGroupTag) const;

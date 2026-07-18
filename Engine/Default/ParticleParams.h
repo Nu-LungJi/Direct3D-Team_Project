@@ -27,6 +27,7 @@ NS_BEGIN(Engine)
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
     X(_float, fSize, 1.f) \
+    X(_float, fEndSize, 1.f) \
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
@@ -46,10 +47,17 @@ NS_BEGIN(Engine)
 
 #define STRAIGHT_GROUND_FIELDS(X) \
     X(_float3, vStartPos, _float3(0,0,0)) \
+    X(_bool, bRandomPos, false) \
+    X(_float3, vMinPos, _float3(0,0,0)) \
+    X(_float3, vMaxPos, _float3(0,0,0)) \
     X(uint32_t, iRow, 3) \
     X(uint32_t, iCol, 3) \
     X(_float, fOffsetX, 1.f) \
     X(_float, fOffsetZ, 1.f) \
+    X(_bool, bRandomRot, false) \
+    X(_float3, vMinRot, _float3(0,0,0)) \
+    X(_float3, vMaxRot, _float3(0,0,0)) \
+    X(_float3, vRotation, _float3(0,0,0)) \
     X(_float, fSpawnDelay, 0.1f) \
     X(_float, fSize, 1.f) \
     X(_float, fLife, 1.f) \

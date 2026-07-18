@@ -8,6 +8,7 @@ inline void DrawField(const char* name, _float3& v) { ImGui::DragFloat3(name, &v
 inline void DrawField(const char* name, _float& v) { ImGui::DragFloat(name, &v, 0.05f); }
 inline void DrawField(const char* name, uint32_t& v) { int tmp = (int)v; if (ImGui::DragInt(name, &tmp, 1, 0, 9999)) v = (uint32_t)std::max(0, tmp); }
 inline void DrawField(const char* name, _float4& v) { ImGui::ColorEdit4(name, &v.x); }
+inline void DrawField(const char* name, _bool& v){bool tmp = (bool)v;if (ImGui::Checkbox(name, &tmp))v = tmp;}
 
 #define DRAW_PARAM_FIELD(type, name, defaultVal) DrawField(#name, p.name);
 inline void DrawImGui(SStairsParam& p) { STAIRS_FIELDS(DRAW_PARAM_FIELD) }
@@ -21,6 +22,7 @@ inline void SaveField(nlohmann::json& out, const char* name, const _float3& v) {
 inline void SaveField(nlohmann::json& out, const char* name, const _float4& v) { out[name] = { v.x, v.y, v.z, v.w }; }
 inline void SaveField(nlohmann::json& out, const char* name, const _float& v) { out[name] = v; }
 inline void SaveField(nlohmann::json& out, const char* name, const uint32_t& v) { out[name] = v; }
+inline void SaveField(nlohmann::json& out, const char* name, const _bool& v){out[name] = (bool)v;}
 
 inline void LoadField(const nlohmann::json& in, const char* name, _float3& v)
 {
@@ -34,6 +36,11 @@ inline void LoadField(const nlohmann::json& in, const char* name, _float4& v)
 }
 inline void LoadField(const nlohmann::json& in, const char* name, _float& v) { v = in.value(name, v); }
 inline void LoadField(const nlohmann::json& in, const char* name, uint32_t& v) { v = in.value(name, v); }
+inline void LoadField(const nlohmann::json& in, const char* name, _bool& v)
+{
+	if (in.contains(name))
+		v = in[name].get<bool>();
+}
 
 #define SAVE_PARAM_FIELD(type, name, defaultVal) SaveField(out, #name, p.name);
 #define LOAD_PARAM_FIELD(type, name, defaultVal) LoadField(in, #name, p.name);

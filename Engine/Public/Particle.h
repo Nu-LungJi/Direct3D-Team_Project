@@ -52,6 +52,8 @@ protected:
 	SPtr<class CResTexture2D> m_pNormalTexture;
 	SPtr<class CResTexture2D> m_pDistortionTexture;
 	SPtr<class CResTexture2D> m_pNoiseTexture;
+	SPtr<class CResTexture2D> m_pHdrPositionTexture;
+	SPtr<class CResTexture2D> m_pHdrNormalTexture;
 
 private:
 

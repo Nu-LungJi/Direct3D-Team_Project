@@ -15,7 +15,9 @@ struct SPAWN_DATA
     float2 pad1;
     float4 rotation;
     float4 color;
+    float4 originalEmissive;
     float4 emissive;
+    float4  endEmissive;
     float spawnDelay;
     uint ownerID;
     uint iBehaviorType;
@@ -40,7 +42,9 @@ struct ParticleData
     uint loop;
     float2 pad2; // 추가 필요: loop→color (8바이트)
     float4 color;
+    float4 originalEmissive;
     float4 emissive;
+    float4 endEmissive;
     uint frameIndex;
     uint ownerID;
     uint iBehaviorType ;

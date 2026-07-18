@@ -34,7 +34,9 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.size = s.size;
     p.alive = 1;
     p.color = s.color;
+    p.originalEmissive = s.originalEmissive;
     p.emissive = s.emissive;
+    p.endEmissive = s.endEmissive;
     p.ownerID = s.ownerID;
     p.iBehaviorType = s.iBehaviorType;
     p.loop = s.loop;

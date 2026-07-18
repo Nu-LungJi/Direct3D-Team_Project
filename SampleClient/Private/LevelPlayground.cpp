@@ -37,14 +37,14 @@ HRESULT CLevelPlayground::Initialize()
 			int x = 0;
 		}
 	}
-	{
-		CLightObject::DESC LDesc{};
-		LDesc.sObjectTag = "LightObject";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
-		if (!ObjectHandle.has_value())	return E_FAIL;
-		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
-		if (!LightObject)	return E_FAIL;
-	}
+	//{
+	//	CLightObject::DESC LDesc{};
+	//	LDesc.sObjectTag = "LightObject";
+	//	auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+	//	if (!ObjectHandle.has_value())	return E_FAIL;
+	//	auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+	//	if (!LightObject)	return E_FAIL;
+	//}
 	{
 		//테스트 고블린
 		CGameObject::GAMEOBJECT_DESC Desc{};

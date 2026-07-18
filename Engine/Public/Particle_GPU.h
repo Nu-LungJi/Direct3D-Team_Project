@@ -34,6 +34,8 @@ public:
 		std::pair<StringID, StringID> normalTextureID;
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
+		std::pair<StringID, StringID> hdrPositionTextureID;
+		std::pair<StringID, StringID> hdrNormalTextureID;
         //모델이면 넣어줌
         StringID sGroupTag;
         StringID sResTag;
