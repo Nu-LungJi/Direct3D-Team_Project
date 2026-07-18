@@ -305,13 +305,13 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
 {
     PS_OUT OUT;
 
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord) * float4(AlbedoColor, ObjectAlpha);;
+	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord) * float4(AlbedoColor, ObjectAlpha);;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
     
     if (AlbedoTex.a == 0.0f)
         discard;
     
-	OUT.Diffuse = OriginColor.Sample(LinearWrap, IN.TexCoord);
+	OUT.Diffuse = float4(AlbedoTex.rgb, 1.f);
 	return OUT;
 	
     float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
@@ -362,8 +362,8 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
         }
     }
     float3 fEmissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb * EmissiveColor * EmissiveIntensity;
-    fEmissive = pow(fEmissive, 2.2f);
-    
+	fEmissive = pow(fEmissive, 2.2f);
+	
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + fEmissive;
     

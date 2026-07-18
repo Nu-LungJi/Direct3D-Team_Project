@@ -859,6 +859,8 @@ VOID CRenderer::Render_Quad(){
 	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 	m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 	m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+	m_pContext->DrawIndexed(viBuffer->GetIndexStride(), 0, 0);
 }
 
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
@@ -1215,21 +1217,21 @@ HRESULT CRenderer::Render_HBAO() {
 }
 
 HRESULT CRenderer::Render_Lighting() {
-	//ComPtr<ID3D11ShaderResourceView> SRVList[] = {
-	//	m_pResDynTexTargetDiffuse->GetSRV(),
-	//	m_pResDynTexTargetNormal->GetSRV(),
-	//	m_pResDynTexTargetSMRO->GetSRV(),
-	//	m_pResDynTexTargetEmissive->GetSRV(),
-	//	m_pResDynTexTargetHBAO->GetSRV(),
-	//	m_pResDynTexTargetDepth->GetSRV(),
-	//};
-	//CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
-	//
-	//m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
-	//
-	//Unbind_Resources();
-	//
-	//return S_OK;
+	ComPtr<ID3D11ShaderResourceView> SRVList[] = {
+		m_pResDynTexTargetDiffuse->GetSRV(),
+		m_pResDynTexTargetNormal->GetSRV(),
+		m_pResDynTexTargetSMRO->GetSRV(),
+		m_pResDynTexTargetEmissive->GetSRV(),
+		m_pResDynTexTargetHBAO->GetSRV(),
+		m_pResDynTexTargetDepth->GetSRV(),
+	};
+	CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
+	
+	m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
+	
+	Unbind_Resources();
+	
+	return S_OK;
 	{
 		CGameInstance::Get().Bind_DynamicLight();
 	
@@ -1314,23 +1316,25 @@ HRESULT CRenderer::Render_Lighting() {
 
 HRESULT CRenderer::Render_Alpha() {
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+
 	ZoneScopedN("Render_Alpha");
 	{
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+		//m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const _float*>(&ClearColor));
+		//m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		
+		// 후방 픽셀과 색상혼합을 위해서 이전 렌더타겟 복사
+		m_pContext->CopyResource(m_pResDynTexTargetPBR->GetTexture().Get(),
+			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
 	}
 	{
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
 		m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
 		m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
-
-		ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPreviousRenderView->GetSRV().Get() };
-		m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
 	}
 	{
 		auto pGameCam = CGameInstance::Get().GetActiveCamera();
@@ -1348,27 +1352,23 @@ HRESULT CRenderer::Render_Alpha() {
 
 		//if (FAILED(RenderParticle()))									return E_FAIL;
 	}
-
+		
 	Unbind_Resources();
 
-	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetPBR;
-	//m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
+	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetPBR);
 	return S_OK;
 }
 
 HRESULT CRenderer::Render_Effect()
 {
 	ZoneScopedN("Render_Effect");
-	//{
-	//	m_pContext->CopyResource(
-	//		m_pResDynTexTargetEffect->GetTexture().Get(),
-	//		m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
-	//
-	//}
 	{
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		m_pContext->CopyResource(m_pResDynTexTargetEffect->GetTexture().Get(),
+			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
 	}
 	{
 		ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPreviousRenderView->GetSRV() };
@@ -1386,50 +1386,54 @@ HRESULT CRenderer::Render_Effect()
 
 	Unbind_Resources();
 
-	Render_Quad();
+	//m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetEffect;
 
-	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetEffect;
+	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetEffect);
+
 	return S_OK;
 }
 
 HRESULT CRenderer::Render_VolumetricEffect() {
-
 	if (ApplyVolumetric == false) return S_OK;
-
 	ZoneScopedN("Render_VolumetricEffect");
-	ID3D11RenderTargetView* NullRTV[1] = { nullptr };
-	m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
+	{
+		ID3D11RenderTargetView* NullRTV[1] = { nullptr };
+		m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
 
-	const auto& cs = m_pVolumetricComputeShader;
+		const auto& cs = m_pVolumetricComputeShader;
 
-	m_pContext->CSSetShader(cs->GetComputeShader().Get(), nullptr, 0);
+		m_pContext->CSSetShader(cs->GetComputeShader().Get(), nullptr, 0);
 
-	ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get() };
-	m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
-
-	ID3D11ShaderResourceView* pSRVs[5] = {
-			CGameInstance::Get().Get_CombinedResource()->GetSRV().Get(),
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+	}
+	{
+		ID3D11ShaderResourceView* pSRVs[5] = {
+			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
 			m_pResDynTexTargetShadow->GetSRV().Get(),
 			BlueNoiseTexture.Get(),
 			VolumeTexture.Get()
-	};
-	Bind_VolumetricFog();
-	m_pContext->CSSetShaderResources(0, 5, pSRVs);
+		};
+		Bind_VolumetricFog();
+		m_pContext->CSSetShaderResources(0, 5, pSRVs);
+	}
+	{
+		uint32_t ScreenResolutionX = { 1280 };
+		uint32_t ScreenResolutionY = { 720 };
 
-	uint32_t ScreenResolutionX = { 1280 };
-	uint32_t ScreenResolutionY = { 720 };
+		UINT GroupX = (ScreenResolutionX + 15) / 16;
+		UINT GroupY = (ScreenResolutionY + 15) / 16;
+		UINT GroupZ = 1;
+		m_pContext->Dispatch(GroupX, GroupY, GroupZ);
+	}
+	{
+		ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
 
-	UINT GroupX = (ScreenResolutionX + 15) / 16;
-	UINT GroupY = (ScreenResolutionY + 15) / 16;
-	UINT GroupZ = 1;
-	m_pContext->Dispatch(GroupX, GroupY, GroupZ);
-
-	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
-	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
-
-	ID3D11ShaderResourceView* NullSRVs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
-	m_pContext->CSSetShaderResources(0, 5, NullSRVs);
+		ID3D11ShaderResourceView* NullSRVs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+		m_pContext->CSSetShaderResources(0, 5, NullSRVs);
+	}
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexUAVVolumetric;
 
