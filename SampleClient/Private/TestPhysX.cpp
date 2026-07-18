@@ -58,7 +58,7 @@ void CTestPhysX::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestPhysX::Update(E::_float fTimeDelta)
 {
-	if (CGameInstance::Get().KeyDown(DIK_SPACE))
+	if (false && CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
 		// spawn
 		auto pos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetPosition();
@@ -112,7 +112,7 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 	}
 
 
-	if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (false && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		if (auto pCam = CGameInstance::Get().GetActiveCamera())
 		{

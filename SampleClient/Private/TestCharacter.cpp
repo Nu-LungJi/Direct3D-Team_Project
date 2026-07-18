@@ -8,10 +8,18 @@
 #include "ComPxCapsuleCollider.h"
 #include "TestPhysXBox.h"
 #include "TestPhysXBall.h"
+#include "TestMonster.h"
 #include "TestPhysXCapsule.h"
+#include "TestPhysXBox.h"
+#include "TestPhysXBall.h"
 #include "Resources.h"
 #include "TestPhysXTerrain.h"
 #include "ComPxCharacterController.h"
+#include "ComLocomotion.h"
+#include "ComCharacterMotor.h"
+#include "TestThirdPersonCamera.h"
+#include "DbgLineRender.h"
+#include "TestPhysXCapsule.h"
 
 NS_USING(Client)
 
@@ -26,6 +34,9 @@ CTestCharacter::~CTestCharacter()
 HRESULT CTestCharacter::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
@@ -63,59 +74,265 @@ HRESULT CTestCharacter::Initialize(void* pArg)
 		};
 	}
 
+	{
+		CComLocomotion::DESC Desc{};
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
+			"ComLocomotion", &Desc, &m_pComLocomotion)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComCharacterMotor::DESC Desc{};
+		Desc.pLocomotion = m_pComLocomotion;
+		Desc.pCharacterController = m_pComCharacterController;
+		Desc.fGravity = -9.81f;
+		Desc.fJumpVelocity = 5.f;
+		Desc.bUseGravity = true;
+		Desc.bSyncTransform = true;
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+			"ComCharacterMotor", &Desc, &m_pComCharacterMotor)))
+		{
+			return E_FAIL;
+		}
+	}
+
 	return S_OK;
 }
 void CTestCharacter::PriorityUpdate(E::_float fTimeDelta)
 {
+	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("TestPlayerCam");
+	if (!pPlayerCamera)
+	{
+		m_pComLocomotion->ClearMoveIntent();
+		return;
+	}
+
+	if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		_float3 vAimDirection{};
+		XMStoreFloat3(&vAimDirection,
+			XMVector3Normalize(pPlayerCamera->GetTransform().GetState(STATE::LOOK)));
+
+		const _float3 vCharacterPosition = GetTransform().GetPosition();
+		constexpr _float fSpawnDistance = 2.f;
+		constexpr _float fLaunchSpeed = 15.f;
+
+		const _float3 vSpawnPosition{
+			vCharacterPosition.x + vAimDirection.x * fSpawnDistance,
+			vCharacterPosition.y + vAimDirection.y * fSpawnDistance,
+			vCharacterPosition.z + vAimDirection.z * fSpawnDistance };
+		const _float3 vInitialVelocity{
+			vAimDirection.x * fLaunchSpeed,
+			vAimDirection.y * fLaunchSpeed,
+			vAimDirection.z * fLaunchSpeed };
+		PX_FILTER_DESC tProjectileFilter{};
+		tProjectileFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE);
+		tProjectileFilter.iSimulationMask =
+			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::ENEMY_BODY) |
+			ETOUI(COLLISION_LAYER::NPC_BODY) |
+			ETOUI(COLLISION_LAYER::DEBRIS);
+		tProjectileFilter.iQueryMask = PX_ALL_LAYERS;
+
+		std::optional<CHandle> hProjectile{};
+		switch (RandInt(0, 2))
+		{
+		case 0:
+		{
+			CTestPhysXBox::DESC Desc{};
+			Desc.sObjectTag = "TestPlayerProjectileBox";
+			Desc.vInitialPos = vSpawnPosition;
+			Desc.vInitialVelocity = vInitialVelocity;
+			Desc.fPlayerCollisionDelay = 0.1f;
+			Desc.tFilter = tProjectileFilter;
+			hProjectile = CGameInstance::Get().AddGameObjectToLayer(
+				"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox", "02_PROJECTILES", &Desc);
+			break;
+		}
+		case 1:
+		{
+			CTestPhysXBall::DESC Desc{};
+			Desc.sObjectTag = "TestPlayerProjectileSphere";
+			Desc.vInitialPos = vSpawnPosition;
+			Desc.vInitialVelocity = vInitialVelocity;
+			Desc.fPlayerCollisionDelay = 0.1f;
+			Desc.tFilter = tProjectileFilter;
+			hProjectile = CGameInstance::Get().AddGameObjectToLayer(
+				"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBall", "02_PROJECTILES", &Desc);
+			break;
+		}
+		default:
+		{
+			CTestPhysXCapsule::DESC Desc{};
+			Desc.sObjectTag = "TestPlayerProjectileCapsule";
+			Desc.vInitialPos = vSpawnPosition;
+			Desc.vInitialVelocity = vInitialVelocity;
+			Desc.fPlayerCollisionDelay = 0.1f;
+			Desc.tFilter = tProjectileFilter;
+			hProjectile = CGameInstance::Get().AddGameObjectToLayer(
+				"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXCapsule", "02_PROJECTILES", &Desc);
+			break;
+		}
+		}
+
+		if (!hProjectile)
+		{
+			DEBUG_LOG("[PX][TestCharacter] Failed to spawn projectile.\n");
+		}
+		else
+		{
+			m_Projectiles.push_back({ *hProjectile, 5.f });
+		}
+	}
+
+	if (CGameInstance::Get().KeyDown(DIK_M))
+	{
+		const _float3 vPlayerPosition = GetTransform().GetPosition();
+		CTestMonster::DESC Desc{};
+		Desc.sObjectTag = "TestMonster";
+		Desc.hTarget = GetHandle();
+		Desc.vInitialPos = {
+			vPlayerPosition.x + Randf(-5.f, 5.f),
+			vPlayerPosition.y,
+			vPlayerPosition.z + Randf(-5.f, 5.f) };
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY);
+		Desc.tFilter.iSimulationMask =
+			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::PLAYER_BODY) |
+			ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE);
+		Desc.tFilter.iQueryMask = PX_ALL_LAYERS;
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestMonster", "03_MONSTERS", &Desc))
+		{
+			DEBUG_LOG("[PX][TestCharacter] Failed to spawn test monster.\n");
+		}
+	}
+
+	// 실제 콘텐츠에서는 BT가 이 입력 코드 대신 이동 의도만 Locomotion에 전달한다.
+	_float fForwardIntent{};
+	_float fRightIntent{};
+	if (CGameInstance::Get().KeyPressing(DIK_W) || CGameInstance::Get().KeyPressing(DIK_UP))
+		fForwardIntent += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_S) || CGameInstance::Get().KeyPressing(DIK_DOWN))
+		fForwardIntent -= 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_D) || CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		fRightIntent += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_A) || CGameInstance::Get().KeyPressing(DIK_LEFT))
+		fRightIntent -= 1.f;
+
+	_float3 vCameraForward{};
+	_float3 vCameraRight{};
+	XMStoreFloat3(&vCameraForward, pPlayerCamera->GetTransform().GetState(STATE::LOOK));
+	XMStoreFloat3(&vCameraRight, pPlayerCamera->GetTransform().GetState(STATE::RIGHT));
+	vCameraForward.y = 0.f;
+	vCameraRight.y = 0.f;
+
+	const _float fForwardLengthSq =
+		vCameraForward.x * vCameraForward.x + vCameraForward.z * vCameraForward.z;
+	const _float fRightLengthSq =
+		vCameraRight.x * vCameraRight.x + vCameraRight.z * vCameraRight.z;
+	if (fForwardLengthSq > std::numeric_limits<_float>::epsilon())
+	{
+		const _float fInvLength = 1.f / std::sqrt(fForwardLengthSq);
+		vCameraForward.x *= fInvLength;
+		vCameraForward.z *= fInvLength;
+	}
+	if (fRightLengthSq > std::numeric_limits<_float>::epsilon())
+	{
+		const _float fInvLength = 1.f / std::sqrt(fRightLengthSq);
+		vCameraRight.x *= fInvLength;
+		vCameraRight.z *= fInvLength;
+	}
+
+	const _float3 vMoveDirection{
+		vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent,
+		0.f,
+		vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
+
+	if (vMoveDirection.x != 0.f || vMoveDirection.z != 0.f)
+		m_pComLocomotion->SetMoveIntent(vMoveDirection, 5.f);
+	else
+		m_pComLocomotion->ClearMoveIntent();
+
+	if (CGameInstance::Get().KeyDown(DIK_SPACE))
+		m_pComLocomotion->RequestJump();
+
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
 		m_pComCharacterController->SetPosition({ 5.f, 5.f, 5.f });
+		m_pComCharacterMotor->SetVelocity({});
 	}
 }
 void CTestCharacter::FixedUpdate(_float fTimeDelta)
 {
-	// 1. 이동 방향 계산 (입력 처리)
-	XMFLOAT3 vDir = { 0.f, 0.f, 0.f };
-	if (CGameInstance::Get().KeyPressing(DIK_UP)) vDir.z += 1.f;
-	if (CGameInstance::Get().KeyPressing(DIK_DOWN)) vDir.z -= 1.f;
-	if (CGameInstance::Get().KeyPressing(DIK_LEFT)) vDir.x -= 1.f;
-	if (CGameInstance::Get().KeyPressing(DIK_RIGHT)) vDir.x += 1.f;
-
-	// 2. 이동 벡터 생성 (가로)
-	XMFLOAT3 vMove = { 0.f, 0.f, 0.f };
-	if (vDir.x != 0.f || vDir.z != 0.f)
-	{
-		float fLength = sqrtf(vDir.x * vDir.x + vDir.z * vDir.z);
-		vDir.x /= fLength;
-		vDir.z /= fLength;
-
-		float fSpeed = 5.0f;
-		vMove.x = vDir.x * fSpeed * fTimeDelta;
-		vMove.z = vDir.z * fSpeed * fTimeDelta;
-	}
-
-	// 3. 중력 적용 (세로)
-	// 입력이 없어도 중력은 항상 적용되어야 함!
-	float fGravity = -9.81f; // 중력 가속도
-	vMove.y = fGravity * fTimeDelta;
-
-	// 4. 컨트롤러 이동 (입력이 없어도 vMove.y 때문에 아래로 이동 시도)
-	// PhysX가 바닥(지형)을 감지하면 여기서 자동으로 멈추게 됨
-	m_pComCharacterController->Move(vMove, fTimeDelta);
-
+	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 }
 
 
 
 void CTestCharacter::Update(E::_float fTimeDelta)
 {
-	
+	for (auto iter = m_Projectiles.begin(); iter != m_Projectiles.end();)
+	{
+		auto* pProjectile = CGameInstance::Get().GetGameObjectByHandle(iter->hProjectile);
+		if (!pProjectile)
+		{
+			iter = m_Projectiles.erase(iter);
+			continue;
+		}
+
+		iter->fRemainingTime -= fTimeDelta;
+		if (iter->fRemainingTime <= 0.f)
+		{
+			pProjectile->SetPendingDestroyCascade();
+			iter = m_Projectiles.erase(iter);
+			continue;
+		}
+
+		++iter;
+	}
 }
 
 void CTestCharacter::LateUpdate(E::_float fTimeDelta)
 {
 	//m_pComPhysX->UpdateSyncedDataToTransform(m_pComTransform);
 	GetTransform().Update();
+
+	// 플레이어 Transform을 먼저 확정한 뒤 같은 프레임의 카메라 View를 갱신한다.
+
+	
+	if (auto* pCamera = Cast<CTestThirdPersonCamera>(CGameInstance::Get().GetActiveCamera("TestPlayerCam")))
+	{
+		pCamera->UpdateFollow();
+	}
+
+	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
+	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
+	{
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		const _float3 vPosition = GetTransform().GetPosition();
+
+		pDbgLineRender->SetColor({ 1.f, 1.f, 1.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddCapsule(
+			0.5f,
+			1.f,
+			XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+		pDbgLineRender->AddCross(vPosition, 0.15f);
+
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+	}
 	//CGameInstance::Get().AddColliderGroup("Coll_TestPhysX", m_pComCollider->Get());
 	//m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 }

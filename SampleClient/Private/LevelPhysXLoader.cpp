@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "LevelPhysXLoader.h"
 
 #include "GameInstance.h"
@@ -17,6 +17,8 @@
 #include "Terrain.h"
 
 #include "TestCharacter.h"
+#include "TestThirdPersonCamera.h"
+#include "TestMonster.h"
 
 NS_USING(Client)
 
@@ -84,6 +86,16 @@ std::future<bool> CLevelPhysXLoader::Load()
 
 			//TestCharacter
 			if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestCharacter", CTestCharacter::Create())))
+			{
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestThirdPersonCamera", CTestThirdPersonCamera::Create())))
+			{
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestMonster", CTestMonster::Create())))
 			{
 				return false;
 			}
