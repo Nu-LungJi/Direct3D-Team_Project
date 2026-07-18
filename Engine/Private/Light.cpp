@@ -84,15 +84,17 @@ VOID CLight::Update(E::_float fTimeDelta) {
 	else {
 		_float fNearZ = 0.01f;
 		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
-		XMMATRIX HexaProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange);
+		_float FOVAngle = DynamicLight.OuterAttanuation * 2.f;
+		XMMATRIX HexaProjMat = XMMatrixPerspectiveFovLH(FOVAngle, 1.f, fNearZ, DynamicLight.LightRange);
 
+		XMVECTOR Pos = m_pComTransform->GetLoadedPostion();
 		XMVECTOR DirectionVec[6] = {
-			XMVectorSet(1.f, 0.f, 0.f, 0.f),   // +X
-			XMVectorSet(-1.f, 0.f, 0.f, 0.f),  // -X
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Y
-			XMVectorSet(0.f, -1.f, 0.f, 0.f),  // -Y
-			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // +Z
-			XMVectorSet(0.f, 0.f, -1.f, 0.f)   // -Z
+			Pos + XMVectorSet(1.f, 0.f, 0.f, 0.f),   // +X
+			Pos + XMVectorSet(-1.f, 0.f, 0.f, 0.f),  // -X
+			Pos + XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Y
+			Pos + XMVectorSet(0.f, -1.f, 0.f, 0.f),  // -Y
+			Pos + XMVectorSet(0.f, 0.f, 1.f, 0.f),   // +Z
+			Pos + XMVectorSet(0.f, 0.f, -1.f, 0.f)   // -Z
 		};
 
 		XMVECTOR UpVec[6] = {
@@ -105,7 +107,7 @@ VOID CLight::Update(E::_float fTimeDelta) {
 		};
 
 		for (int i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
-			XMMATRIX ViewMat = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, DirectionVec[i]), UpVec[i]);
+			XMMATRIX ViewMat = XMMatrixLookAtLH(Pos, XMVectorAdd(Pos, DirectionVec[i]), UpVec[i]);
 			XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, HexaProjMat));
 		}
 	}
@@ -270,28 +272,6 @@ VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject)
 	else {
 		m_pRenderable_StaticObjectList.push_back(pRenderObject);
 	}
-}
-
-VOID CLight::Render_StaticShadow(ID3D11DeviceContext* pContext) {
-	for (auto& OBJ : m_pRenderable_StaticObjectList) {
-		//OBJ->Render_Shadow(pContext);
-	}
-}
-VOID CLight::Render_DynamicShadow(ID3D11DeviceContext* pContext) {
-	for (auto& OBJ : m_pRenderable_DynamicObjectList) {
-		//OBJ->Render_Shadow(pContext);
-	}
-}
-
-VOID CLight::Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow) {
-	//if (_DrawStaticShadow == true) {
-	//	pContext->ClearDepthStencilView(m_pResDynTexStaticShadowMap->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-	//	pContext->OMSetRenderTargets(0, nullptr, m_pResDynTexStaticShadowMap->GetDSV().Get());
-	//}
-	//else {
-	//	pContext->ClearDepthStencilView(m_pResDynTexDynamicShadowMap->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-	//	pContext->OMSetRenderTargets(0, nullptr, m_pResDynTexDynamicShadowMap->GetDSV().Get());
-	//}
 }
 
 UPtr<CLight>	 CLight::Create()

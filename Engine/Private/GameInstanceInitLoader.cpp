@@ -743,7 +743,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
-		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;

@@ -39,8 +39,8 @@ public:
 	VOID			Set_LightType(LIGHT_TYPE _LTYPE) { DynamicLight.LightType = ETOUI(_LTYPE); DirtyFlag = true; }
 	LIGHT_TYPE		Get_LightType() { return static_cast<LIGHT_TYPE>(DynamicLight.LightType); }
 
-	VOID			Set_LightDirection(XMFLOAT3 _Direction) { DynamicLight.LightDirection = _Direction; DirtyFlag = true;}
-	XMFLOAT3		Get_LightDirection() { return DynamicLight.LightDirection; }
+	VOID			Set_LightDirection(XMFLOAT3 _Direction) { DynamicLight.LightDirection = _Direction; }
+	XMFLOAT3		Get_LightDirection()					{ return DynamicLight.LightDirection; }
 
 	VOID			Set_LightColor(XMFLOAT3 _Color) { DynamicLight.LightColor = _Color;}
 	XMFLOAT3		Get_LightColor() { return DynamicLight.LightColor; }
@@ -63,9 +63,7 @@ public:
 	VOID			Set_LightViewProj(uint32_t _Index, XMMATRIX _LightViewProj) { XMStoreFloat4x4(&DynamicLight.g_LightViewProj[_Index], _LightViewProj);	}
 	XMFLOAT4X4		Get_LightViewProj(uint32_t _Index)							{ return DynamicLight.g_LightViewProj[_Index];								}
 	XMMATRIX		Get_LoadedLightViewProj(uint32_t _Index)					{ return XMLoadFloat4x4(&DynamicLight.g_LightViewProj[_Index]);				}
-
-	HRESULT			Generate_ShadowMapOutput(ID3D11DeviceContext* pContext, uint32_t _LTYPE, uint32_t _Resolution, uint32_t _BindFlags);
-
+	
 	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 	
 	HRESULT			Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYPE);
@@ -120,13 +118,6 @@ public:
 	VOID		Update_Collider();
 
 	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, std::vector<CGameObject*>* _StaticList, std::vector<CGameObject*>* _DynamicList);
-
-	VOID		Render_StaticShadow(ID3D11DeviceContext* pContext);
-	VOID		Render_DynamicShadow(ID3D11DeviceContext* pContext);
-
-	VOID		Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow);
-
-	XMFLOAT4X4	Get_LightViewProj() { return DynamicLight.g_LightViewProj[0]; }
 
 public:
 	static UPtr<CLight> Create();

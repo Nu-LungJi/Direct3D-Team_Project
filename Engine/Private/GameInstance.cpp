@@ -1046,9 +1046,6 @@ void CGameInstance::ClearAllChunk()
 #pragma endregion
 
 #pragma region LIGHT_MANAGER
-VOID	CGameInstance::Bind_EnviromentLight() {
-	m_pLightManager->Bind_EnviromentLight();
-}
 VOID	CGameInstance::Bind_DynamicLight() {
 	m_pLightManager->Bind_DynamicLight();
 }

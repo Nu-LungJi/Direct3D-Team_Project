@@ -57,7 +57,7 @@ struct SpotLight
 };
 struct DynamicLight
 {
-    float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
+	float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
     float3 LightDirection;
     float LightIntensity;
@@ -129,7 +129,7 @@ cbuffer CB_MATERIAL : register(b3)
 
 cbuffer CB_LIGHT_BUFFER : register(b4)
 {
-    DynamicLight AffectedLight[MAX_LIGHT_COUNT];
+	DynamicLight AffectedLight[MAX_LIGHT_COUNT];
     float4x4 g_InvViewProj;
     uint LightCount;
     uint CurrentLightIndex;

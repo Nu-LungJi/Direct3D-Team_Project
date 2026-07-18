@@ -1220,7 +1220,11 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pResDynTexTargetDepth->GetSRV(),
 	};
 	CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
-	
+
+	// Dissolve
+	SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
+	m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+
 	Unbind_Resources();
 	
 	m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
@@ -1335,7 +1339,7 @@ HRESULT CRenderer::Render_Alpha() {
 
 		if (FAILED(RenderSkybox()))										return E_FAIL;
 
-		//if (FAILED(RenderCollider()))									return E_FAIL;
+		if (FAILED(RenderCollider()))									return E_FAIL;
 
 		//if (FAILED(RenderParticle()))									return E_FAIL;
 	}
@@ -1596,7 +1600,7 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 	m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
 	m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
-
+	
 	ID3D11Buffer* vertexBuffers[] = {
 			viBuffer->GetVertexBuffer().Get()
 	};
@@ -1672,7 +1676,7 @@ HRESULT CRenderer::Render_UserInterface() {
 	return S_OK;
 }
 
-HRESULT CRenderer::Render_FullScreen()
+HRESULT CRenderer::Render_FullScreen()	
 {
 	ZoneScopedN("DrawFullscreen");
 	ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pBackBufferRTV.Get() };

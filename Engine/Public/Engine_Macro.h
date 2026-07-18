@@ -100,5 +100,5 @@ X(STRAIGHT)            \
 X(BACKWARD)               \
 X(END)
 
-#define MAX_LIGHT_COUNT 16
+#define MAX_LIGHT_COUNT 8
 #define MAX_LIGHT_MAPCOUNT 6

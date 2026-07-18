@@ -82,12 +82,12 @@ PS_OUT PSMain(PS_IN IN)
 	
     float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).rgb * EmissiveColor * EmissiveIntensity;
     
-    //float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth);
+    float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth);
 	
-	Out.vDiffuse = float4(fDiffuse.rgb, 1.f);
-    Out.vNormal = float4(fNormal * 0.5f + 0.5f, 1.f);
-    Out.vSMRO = float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
-	Out.vEmissive = float4(fEmissive, 1.f);
+	Out.vDiffuse	= float4(fDiffuse.rgb, 1.f);
+    Out.vNormal		= float4(fNormal * 0.5f + 0.5f, 1.f);
+    Out.vSMRO		= float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
+	Out.vEmissive	= float4(fFinalEmissive, 1.f);
 
     return Out;
 }

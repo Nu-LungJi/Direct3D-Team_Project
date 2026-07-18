@@ -83,15 +83,25 @@ float MergeShadowCubeMap(int _LightIndex, float3 _SamplerUV, float _CurrentPixel
 }
 float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoord, float2 _PixelPos, int _LightIndex)
 {
-    float4 LightPos = mul(_WorldPos, _Light.g_LightViewProj[0]);
+	float4 LightPos = mul(_WorldPos, _Light.g_LightViewProj[CurrentLightIndex]);
     
     float2 ShadowMapUV;
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
     ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
     
-    if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f || ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f)
+	float3 ShadowTexCoord = LightPos.xyz / LightPos.w;
+	if (ShadowTexCoord.z > 1.f)
+	{
+		return 999.f;
+	}
+    if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f || ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f ||
+		ShadowTexCoord.z < 0.f || ShadowTexCoord.z > 1.f)
         return 1.f;
     
+
+	
+	
+	
     float CurrentPixelDepth = LightPos.z;
     CurrentPixelDepth -= 0.0005f; // Depth Bias
     
@@ -207,74 +217,83 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
         OUTPUT[ID.xy] = float4(0.f, 0.f, 1.f, 1.f);
         return;
     }
-	
+
     float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
-	
+
     float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
 	
     float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
-	
+
     float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     float Metallic = MultipleTex.r;
     float Roughness = MultipleTex.g;
     //float   Ambient     = MultipleTex.b;
-    
+
     float3 V = normalize(g_vCamPos - DepthWorld.xyz);
     float NDV = max(dot(WorldNormal, V), 0.0001f);
     
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
-
+	
     float3 LightAccumulation = float3(0.f, 0.f, 0.f);
     
     for (uint i = 0; i < LightCount; ++i)
-    {
-        float3 L, Radiance;
-        if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
-        {
-            float RawNDL = dot(WorldNormal, L);
+	{
+		float3 L, Radiance;
+		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
+		{
+			float RawNDL = dot(WorldNormal, L);
 
-            if (RawNDL > 0.f)
-            {
-                float NDL = clamp(RawNDL, 0.f, 1.f);
+			if (RawNDL > 0.f)
+			{
+				float NDL = clamp(RawNDL, 0.f, 1.f);
 
-                float3 H = normalize(V + L);
-                float D = DistributionGGX(WorldNormal, H, Roughness);
-                float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+				float3 H = normalize(V + L);
+				float D = DistributionGGX(WorldNormal, H, Roughness);
+				float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
 
-                float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
+				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
-                float3 Specular = D * F * V_Spec;
+				float3 Specular = D * F * V_Spec;
 
-                float3 kS = F;
-                float3 kD = (1.0f - kS) * (1.0f - Metallic);
-                float3 Diffuse = kD * Albedo / PI;
-                
-                float ShadowFactor = 1.f;
-                
+				float3 kS = F;
+				float3 kD = (1.0f - kS) * (1.0f - Metallic);
+				float3 Diffuse = kD * Albedo / PI;
+				
+				float ShadowFactor = 1.f;
+				
                 [branch]
-                if (AffectedLight[i].LightType == LIGHT_POINT)
-                {
-                    ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), i);
-                }
-                else
-                {
-                    ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
-                }
+				if (AffectedLight[i].LightType == LIGHT_POINT)
+				{
+					ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), i);
+				}
+				else
+				{
+					ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
+					if (ShadowFactor == 999.f)
+					{
+						OUTPUT[ID.xy] = float4(1.f, 0.f, 0.f, 1.f);
+						return;
+					}
+
+				}
                 
-                LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
-            }
-        }
-    }
-    float3  BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
+				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
+				}
+		}
+	}
+	OUTPUT[ID.xy] = float4(LightAccumulation, 1.f);
+	return;
+	
+	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
     float   AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
     
     float3  Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
     float3  BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
     float3  ExtraColor = BaseAmbient + BaseEmissive;
-
+	
     OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
     return;
 }

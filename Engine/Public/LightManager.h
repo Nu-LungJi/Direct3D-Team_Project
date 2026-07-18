@@ -25,7 +25,6 @@ public:
 	HRESULT	Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
 		const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth);
 
-	VOID	Bind_EnviromentLight();
 	VOID	Bind_DynamicLight();
 
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
@@ -44,6 +43,9 @@ public:
 	VOID	Update_ActiveLights();
 
 	_bool	IsInFrustum(CLight* _LightOBJ);
+
+private:
+
 
 #ifdef _DEBUG
 public:
@@ -89,16 +91,11 @@ private:
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
 
-	SPtr<CResQuadTexBuffer>				m_pQuadBuffer = { nullptr };
-
 	std::vector<CLight*>				m_pActiveShadowLightList{};
 
 	std::vector<ID3D11ShaderResourceView*>	StaticShadowMapList;
 	std::vector<ID3D11ShaderResourceView*>	DynamicShadowMapList;
 	std::vector<ID3D11ShaderResourceView*>	NullList;
-	//std::vector<ID3D11DepthStencilView*>	m_pShadowMapList;
-	//ComPtr<ID3D11Texture2D>					m_pShadowTextureArray = { nullptr };
-	//ComPtr<ID3D11ShaderResourceView>		m_pShadowSRV = { nullptr };
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

@@ -14,10 +14,8 @@ HRESULT CLightManager::Initialize_LightManager() {
 	{
 		if (FAILED(m_pLightConstantBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LIGHT) })))    return E_FAIL;
 	}
-	m_pQuadBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
-	if (nullptr == m_pQuadBuffer)			return E_FAIL;		
 
-	m_pResLightTexBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
+	m_pResLightTexBuffer = CGameInstance::Get().GetResourceFirst<CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 	if (nullptr == m_pResLightTexBuffer)	return E_FAIL;
 
 	m_pPBRComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR");
@@ -238,20 +236,39 @@ VOID CLightManager::Update(_float fTimeDelta) {
 
 HRESULT CLightManager::Capture_ShadowMap() {
 	ZoneScopedN("Capture_ShadowMap");
-
-	SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
-	m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
-
 	ID3D11RenderTargetView* NullRTV = { nullptr };
-	m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
+	{
+		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
+		
+		m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
+		m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
+	}
 
 	Update_ActiveLights();
+
+	CB_LIGHT CBLight{};
+	CBLight.LightCount = m_pActiveShadowLightList.size();
 
 	for (uint32_t i = 0; i < m_pActiveShadowLightList.size(); ++i) {
 		auto LightOBJ = m_pActiveShadowLightList[i];
 
 		const LIGHT_TYPE LightType = LightOBJ->Get_LightType();
 		const bool bIsPointLight = (LightType == LIGHT_TYPE::POINT);
+
+		CBLight.AffectedLight[i].LightType = ETOUI(LightType);
+		CBLight.CurrentLightIndex = i;
+		
+		uint32_t LightMapCount = bIsPointLight ? MAX_LIGHT_MAPCOUNT : 1;
+		for (int Face = 0; Face < LightMapCount; ++Face)
+			CBLight.AffectedLight[i].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
+
+		D3D11_MAPPED_SUBRESOURCE MRES = {};
+		if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+		{
+			memcpy(MRES.pData, &CBLight, sizeof(CB_LIGHT));
+			m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
+		}
 
 		if (bIsPointLight) {
 			m_pContext->IASetInputLayout(m_pPointLightVS->GetInputLayout().Get());
@@ -266,32 +283,10 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			m_pContext->PSSetShader(nullptr, nullptr, 0);
 		}
 
-		m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
-
-		D3D11_MAPPED_SUBRESOURCE MRES = {};
-		if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-		{
-			CB_LIGHT CBLight{};
-			if (bIsPointLight) {
-				for (int Face = 0; Face < 6; ++Face) {
-					CBLight.AffectedLight[i].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
-				}
-			}
-			else {
-				CBLight.AffectedLight[i].g_LightViewProj[0] = LightOBJ->Get_LightViewProj();
-			}
-
-			CBLight.AffectedLight[i].LightType = ETOUI(LightType);
-			CBLight.LightCount = m_pActiveShadowLightList.size();
-			CBLight.CurrentLightIndex = i;
-
-			memcpy(MRES.pData, &CBLight, sizeof(CB_LIGHT));
-			m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
-		}
-
-		m_pContext->VSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-		m_pContext->CSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-		m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		auto Buffer = m_pLightConstantBuffer->GetCBuffer().GetAddressOf();
+		m_pContext->VSSetConstantBuffers(4, 1, Buffer);
+		m_pContext->CSSetConstantBuffers(4, 1, Buffer);
+		m_pContext->GSSetConstantBuffers(4, 1, Buffer); 
 
 		LightOBJ->Update_ObjectConstantBuffer(m_pContext.Get());
 
@@ -334,12 +329,10 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 	const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth) {
 	ZoneScopedN("Render_ObjectShadow");
 
-	m_pContext->CSSetShader(m_pPBRComputeShader->GetComputeShader().Get(), nullptr, 0);
-
 	ID3D11UnorderedAccessView* pUAVs[1] = { m_pUAVComBinedOutput->GetUAV().Get() };
 	m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	auto LightConstantBuffer = CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light");
+	m_pContext->CSSetShader(m_pPBRComputeShader->GetComputeShader().Get(), nullptr, 0);
 
 	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
 	if (nullptr == ActiveCamera) return E_FAIL;
@@ -378,15 +371,21 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle);
 		if (nullptr == LightOBJ)			continue;
 
-		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightOBJ->Get_LightType());
-		LightBuffer.AffectedLight[LightCount].g_LightViewProj[0] = LightOBJ->Get_LightViewProj();
+		const LIGHT_TYPE LightType = LightOBJ->Get_LightType();
+		const bool bIsPointLight = (LightType == LIGHT_TYPE::POINT);
 
-		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
-		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
-		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
+		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightType);
 
-		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
+		uint32_t LightMapCount = bIsPointLight ? MAX_LIGHT_MAPCOUNT : 1;
+		for (int Face = 0; Face < LightMapCount; ++Face)
+			LightBuffer.AffectedLight[LightCount].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
+
+		LightBuffer.AffectedLight[LightCount].LightDirection			= LightOBJ->Get_LightDirection();
+		LightBuffer.AffectedLight[LightCount].LightColor				= LightOBJ->Get_LightColor();
+		LightBuffer.AffectedLight[LightCount].LightIntensity			= LightOBJ->Get_LightIntensity();
+		LightBuffer.AffectedLight[LightCount].LightRange				= LightOBJ->Get_LightRange();
+
+		LightBuffer.AffectedLight[LightCount].Position					= LightOBJ->Get_LightPosition();
 
 		LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
 		LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
@@ -395,16 +394,16 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 	}
 	LightBuffer.LightCount = LightCount;
 
-	D3D11_MAPPED_SUBRESOURCE MRES;
-	if (SUCCEEDED(m_pContext->Map(LightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+	D3D11_MAPPED_SUBRESOURCE MRES{};
+	if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &   MRES)))
 	{
 		memcpy(MRES.pData, &LightBuffer, sizeof(CB_LIGHT));
-		m_pContext->Unmap(LightConstantBuffer->GetCBuffer().Get(), 0);
+		m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
 
 	Bind_ShadowResource();
 
-	m_pContext->CSSetConstantBuffers(4, 1, LightConstantBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 
 	uint32_t ScreenResolutionX = { 1280 };
 	uint32_t ScreenResolutionY = { 720 };
@@ -420,12 +419,6 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 	UnBind_ShadowResource();
 
 	return S_OK;
-}
-
-VOID CLightManager::Bind_EnviromentLight() {
-	//m_pContext->PSSetShaderResources(4, 1, &m_IrridianceSRV);
-	//m_pContext->PSSetShaderResources(5, 1, &m_PreFilterSRV);
-	//m_pContext->PSSetShaderResources(6, 1, &m_LUTSRV);
 }
 
 VOID CLightManager::Bind_DynamicLight() {
@@ -444,14 +437,14 @@ VOID CLightManager::Bind_DynamicLight() {
 		// Distance Culling
 		// Frustum Culling
 
-		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightOBJ->Get_LightType());
-		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
-		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
-		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
-		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
-		LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
-		LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+		LightBuffer.AffectedLight[LightCount].LightType			= ETOUI(LightOBJ->Get_LightType());
+		LightBuffer.AffectedLight[LightCount].LightDirection	= LightOBJ->Get_LightDirection();
+		LightBuffer.AffectedLight[LightCount].LightColor		= LightOBJ->Get_LightColor();
+		LightBuffer.AffectedLight[LightCount].LightIntensity	= LightOBJ->Get_LightIntensity();
+		LightBuffer.AffectedLight[LightCount].LightRange		= LightOBJ->Get_LightRange();
+		LightBuffer.AffectedLight[LightCount].Position			= LightOBJ->Get_LightPosition();
+		LightBuffer.AffectedLight[LightCount].InnerAttanuation	= cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+		LightBuffer.AffectedLight[LightCount].OuterAttanuation	= cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
 
 		LightCount++;
 	}
@@ -534,12 +527,8 @@ VOID CLightManager::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 HRESULT CLightManager::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	if (nullptr == pRenderObject) return E_FAIL;
 
-	if (_ATYPE == ACTORTYPE::DYNAMIC) {
-		m_pRenderable_DynamicObjectList.push_back(pRenderObject);
-	}
-	else {
-		m_pRenderable_StaticObjectList.push_back(pRenderObject);
-	}
+	_ATYPE == ACTORTYPE::DYNAMIC ? m_pRenderable_DynamicObjectList.push_back(pRenderObject) : m_pRenderable_StaticObjectList.push_back(pRenderObject);
+
 	return S_OK;
 }
 
@@ -583,7 +572,7 @@ VOID CLightManager::Update_ActiveLights() {
 		XMVECTOR CurrentPosition = LightOBJ->GetTransform().GetLoadedPostion();
 		_float	 Distance = XMVectorGetX(XMVector3Length(XMVectorSubtract(CameraPos, CurrentPosition)));
 		
-		if (Distance <= 50.f )// && IsInFrustum(LightOBJ))
+		if (Distance <= 50.f)// && IsInFrustum(LightOBJ))
 			CullingLight.push_back({ LightOBJ, Distance });
 	}
 
