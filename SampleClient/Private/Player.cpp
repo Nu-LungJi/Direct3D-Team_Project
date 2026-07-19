@@ -8,7 +8,10 @@
 #include "GameInstance.h"
 #include "TestPartObject.h"
 
-
+#include "ComCharacterMotor.h"
+#include "ComLocomotion.h"
+#include "ComPxCharacterController.h"
+#include "TestPlayer3CameraCreatureEditor.h"
 
 NS_USING(Client)
 
@@ -17,6 +20,15 @@ CPlayer::CPlayer()
 {
 }
 
+CPlayer::CPlayer(const CPlayer& rhs)
+	: CAnimationObject{ rhs }
+{
+	m_pResVertexShader = rhs.m_pResVertexShader;
+	m_pResPixelShader = rhs.m_pResPixelShader;
+	m_pResVertexInstancedShader = rhs.m_pResVertexInstancedShader;
+	m_pResSkinMeshCBuffer = rhs.m_pResSkinMeshCBuffer;
+	m_pAnimComputeShader = rhs.m_pAnimComputeShader;
+}
 CPlayer::~CPlayer()
 {
 }
@@ -107,6 +119,53 @@ HRESULT CPlayer::Initialize(void* pArg)
 		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
+
+	{
+		CComPxCharacterController::DESC Desc{};
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.tFilter = pDesc->tFilter;
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
+			"ComPxCharacterController", &Desc, &m_pCharacterController)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComLocomotion::DESC Desc{};
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
+			"ComLocomotion", &Desc, &m_pLocomotion)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComCharacterMotor::DESC Desc{};
+		Desc.pLocomotion = m_pLocomotion;
+		Desc.pCharacterController = m_pCharacterController;
+		Desc.fGravity = -9.81f;
+		Desc.fJumpVelocity = 5.f;
+		Desc.bUseGravity = true;
+		Desc.bSyncTransform = true;
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
+		{
+			return E_FAIL;
+		}
+	}
+	GetTransform().SetScale(_float3{2.f,2.f,2.f });
+	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().Update();
+
+
 	//CTestPartObject::DESC WeaponDesc{};
 	//WeaponDesc.sObjectTag = "Weapon";
 	//WeaponDesc.hOwner = GetHandle();
@@ -129,7 +188,50 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	auto* pCamera = CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA");
+	if (!pCamera)
+	{
+		m_pLocomotion->ClearMoveIntent();
+		return;
+	}
+
+	_float fForward{};
+	_float fRight{};
+	if (CGameInstance::Get().KeyPressing(DIK_W))
+		fForward += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_S))
+		fForward -= 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_D))
+		fRight += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_A))
+		fRight -= 1.f;
+
+	_float3 vForward{};
+	_float3 vRight{};
+	XMStoreFloat3(&vForward, pCamera->GetTransform().GetState(STATE::LOOK));
+	XMStoreFloat3(&vRight, pCamera->GetTransform().GetState(STATE::RIGHT));
+	vForward.y = 0.f;
+	vRight.y = 0.f;
+
+	const _float3 vMoveDirection{
+		vForward.x * fForward + vRight.x * fRight,
+		0.f,
+		vForward.z * fForward + vRight.z * fRight };
+
+	if (vMoveDirection.x != 0.f || vMoveDirection.z != 0.f)
+		m_pLocomotion->SetMoveIntent(vMoveDirection, 5.f);
+	else
+		m_pLocomotion->ClearMoveIntent();
+
+	if (CGameInstance::Get().KeyDown(DIK_SPACE))
+		m_pLocomotion->RequestJump();
 }
+
+void CPlayer::FixedUpdate(_float fTimeDelta)
+{
+	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+}
+
 
 void CPlayer::Update(E::_float fTimeDelta)
 {
@@ -145,6 +247,29 @@ void CPlayer::Update(E::_float fTimeDelta)
 void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
+
+	if (auto* pCamera = Cast<CTestPlayer3CameraCreatureEditor>(
+		CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA")))
+	{
+		pCamera->UpdateFollow();
+	}
+
+	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
+	{
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		const _float3 vPosition = GetTransform().GetPosition();
+
+		pDbgLineRender->SetColor({ 0.2f, 0.7f, 1.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddCapsule(
+			0.5f,
+			1.f,
+			XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+	}
 
 	const auto& pModel = m_pComModelInstance->GetModel();
 

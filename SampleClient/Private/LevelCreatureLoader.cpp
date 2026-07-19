@@ -30,17 +30,20 @@ std::future<bool> CLevelCreatureLoader::Load()
 				}
 			}
 
-			//if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_Player",
-			//	CResModel::Create("./Resources/SampleClient/Models/Skeleton/Test/SK_Test.bin")))
-			//{
-			//	E::CResModel::DESC pDesc{};
-			//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
-			//	if (FAILED(res->Load(pDesc)))
-			//	{
-			//		MSG_BOX("LEVEL_CREATURE Failed Model_Resource_Player");
-			//		//return false;
-			//	}
-			//}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_Player",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Test/SK_Test.bin")))
+			{
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix =
+					XMMatrixScaling(1.f, 1.f, 1.f) *
+					XMMatrixRotationY(XMConvertToRadians(180.f)) *
+					XMMatrixTranslation(0.f, -0.7f, 0.f);
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Model_Resource_Player");
+					//return false;
+				}
+			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_TombProtector",
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin")))

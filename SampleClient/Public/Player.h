@@ -15,6 +15,11 @@ class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
 class CResComputeShader;
+
+// 물리
+class CComPxCharacterController;
+class CComLocomotion;
+class CComCharacterMotor;
 NS_END
 
 NS_BEGIN(Client)
@@ -29,10 +34,18 @@ public:
 		StringID sGroupTag;
 		StringID sResTag;
 
+		_float3 vInitialPosition{ 50.f, 50.f, 10.f };
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
+
 	}DESC;	
 
 private:
 	CPlayer();
+	CPlayer(const CPlayer& rhs);
 	~CPlayer() override;
 
 public:
@@ -40,6 +53,9 @@ public:
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
+
+	void FixedUpdate(_float fTimeDelta) override;
+
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
@@ -84,6 +100,13 @@ private:
 	_float	m_fEmissiveIntensity = 0.f;
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
+
+
+private:
+	CComPxCharacterController* m_pCharacterController{};
+	CComLocomotion* m_pLocomotion{};
+	CComCharacterMotor* m_pCharacterMotor{};
+
 
 public:
 	static E::UPtr<CPlayer> Create();
