@@ -882,6 +882,12 @@
     <ClInclude Include="..\public\ResPhysXRTTriMeshGeometry.h">
       <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\private\PhysXCookedMeshFile.h">
+      <Filter>Resource\PhysX\Geometry</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h">
       <Filter>Resource\PhysX\Geometry\Capsule</Filter>
     </ClInclude>
@@ -1049,6 +1055,9 @@
       <Filter>Component\PhysX\Collider\Convex</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXConvexGeometry.h">
       <Filter>Resource\PhysX\Geometry\Convex</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\StateMachine.h">
@@ -1443,6 +1452,9 @@
     <ClCompile Include="..\private\ResPhysXRTTriMeshGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResPhysXCapsuleGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\Capsule</Filter>
     </ClCompile>
@@ -1562,6 +1574,9 @@
       <Filter>Component\PhysX\Collider\Convex</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXConvexGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\Convex</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\StateMachine.cpp">

@@ -7,11 +7,26 @@
 #include "PxPhysicsAPI.h"
 #pragma pop_macro("new")
 
+#include "PhysXCookedMeshFile.h"
+
 using namespace physx;
 NS_USING(Engine)
 
+namespace
+{
+	_bool IsValidDesc(const CResPhysXRTConvexGeometry::DESC& desc)
+	{
+		return desc.pVertexData &&
+			desc.iVertexCount >= 4 &&
+			desc.iVertexStride >= sizeof(_float3) &&
+			desc.iPositionOffset <= desc.iVertexStride - sizeof(_float3) &&
+			desc.iVertexLimit >= 8 &&
+			desc.iVertexLimit <= 255;
+	}
+}
+
 CResPhysXRTConvexGeometry::CResPhysXRTConvexGeometry(const _string& sPath)
-	: CResPhysXGeometry{ sPath }
+	: CResPhysXConvexGeometry{ sPath }
 {
 }
 
@@ -19,73 +34,83 @@ CResPhysXRTConvexGeometry::~CResPhysXRTConvexGeometry() = default;
 
 HRESULT CResPhysXRTConvexGeometry::Load(const std::any& arg)
 {
-	const auto* desc = std::any_cast<DESC>(&arg);
-	if (!desc || !desc->pVertexData || desc->iVertexCount < 4 ||
-		desc->iVertexStride < sizeof(_float3) ||
-		desc->iPositionOffset > desc->iVertexStride - sizeof(_float3) ||
-		desc->iVertexLimit < 8 || desc->iVertexLimit > 255)
-	{
-		return E_FAIL;
-	}
+	const auto* pDesc = std::any_cast<DESC>(&arg);
+	if (!pDesc)
+		return E_INVALIDARG;
 
 	if (m_eState == STATE::LOADED)
 		return S_OK;
 
 	m_eState = STATE::LOADING;
-	auto* physics = CGameInstance::Get().PxGetPhysics();
-	if (!physics)
+	std::vector<uint8_t> cookedData{};
+	if (FAILED(CookToMemory(*pDesc, cookedData)) ||
+		FAILED(CreateFromCookedData(cookedData.data(), cookedData.size())))
 	{
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
 
-	const auto* vertexBytes = static_cast<const std::byte*>(desc->pVertexData);
-	PxConvexMeshDesc convexDesc{};
-	convexDesc.points.count = desc->iVertexCount;
-	convexDesc.points.stride = desc->iVertexStride;
-	convexDesc.points.data = vertexBytes + desc->iPositionOffset;
-	convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-	convexDesc.vertexLimit = desc->iVertexLimit;
-
-	if (!convexDesc.isValid())
-	{
-		m_eState = STATE::LOADFAIL;
-		DEBUG_LOG("[PX][RTConvex] Invalid mesh descriptor.\n");
-		return E_FAIL;
-	}
-
-	PxCookingParams params{ physics->getTolerancesScale() };
-	PxDefaultMemoryOutputStream outputBuffer{};
-	PxConvexMeshCookingResult::Enum cookingResult{ PxConvexMeshCookingResult::eFAILURE };
-	if (!PxCookConvexMesh(params, convexDesc, outputBuffer, &cookingResult))
-	{
-		m_eState = STATE::LOADFAIL;
-		DEBUG_LOG("[PX][RTConvex] Cooking failed.\n");
-		return E_FAIL;
-	}
-
-	if (cookingResult == PxConvexMeshCookingResult::ePOLYGONS_LIMIT_REACHED)
-		DEBUG_LOG("[PX][RTConvex] Polygon limit reached; the cooked hull was simplified.\n");
-	else if (cookingResult == PxConvexMeshCookingResult::eNON_GPU_COMPATIBLE)
-		DEBUG_LOG("[PX][RTConvex] Cooked hull is not GPU compatible.\n");
-
-	PxDefaultMemoryInputData input{ outputBuffer.getData(), outputBuffer.getSize() };
-	PxConvexMesh* convexMesh = physics->createConvexMesh(input);
-	if (!convexMesh)
-	{
-		m_eState = STATE::LOADFAIL;
-		DEBUG_LOG("[PX][RTConvex] createConvexMesh failed.\n");
-		return E_FAIL;
-	}
-
-	m_pConvexMesh = convexMesh;
 	m_eState = STATE::LOADED;
 	return S_OK;
 }
 
-HRESULT CResPhysXRTConvexGeometry::Unload(const std::any& arg)
+HRESULT CResPhysXRTConvexGeometry::CookToMemory(
+	const DESC& desc,
+	std::vector<uint8_t>& outCookedData)
 {
-	return S_OK;
+	outCookedData.clear();
+	if (!IsValidDesc(desc))
+		return E_INVALIDARG;
+
+	auto* pPhysics = CGameInstance::Get().PxGetPhysics();
+	if (!pPhysics)
+		return E_FAIL;
+
+	const auto* pVertexBytes = static_cast<const std::byte*>(desc.pVertexData);
+	PxConvexMeshDesc meshDesc{};
+	meshDesc.points.count = desc.iVertexCount;
+	meshDesc.points.stride = desc.iVertexStride;
+	meshDesc.points.data = pVertexBytes + desc.iPositionOffset;
+	meshDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+	meshDesc.vertexLimit = desc.iVertexLimit;
+
+	if (!meshDesc.isValid())
+	{
+		DEBUG_LOG("[PX][RTConvex] Invalid mesh descriptor.\n");
+		return E_INVALIDARG;
+	}
+
+	PxCookingParams params{ pPhysics->getTolerancesScale() };
+	PxDefaultMemoryOutputStream output{};
+	PxConvexMeshCookingResult::Enum result{ PxConvexMeshCookingResult::eFAILURE };
+	if (!PxCookConvexMesh(params, meshDesc, output, &result))
+	{
+		DEBUG_LOG("[PX][RTConvex] Cooking failed.\n");
+		return E_FAIL;
+	}
+
+	if (result == PxConvexMeshCookingResult::ePOLYGONS_LIMIT_REACHED)
+		DEBUG_LOG("[PX][RTConvex] Polygon limit reached; the cooked hull was simplified.\n");
+	else if (result == PxConvexMeshCookingResult::eNON_GPU_COMPATIBLE)
+		DEBUG_LOG("[PX][RTConvex] Cooked hull is not GPU compatible.\n");
+
+	outCookedData.assign(output.getData(), output.getData() + output.getSize());
+	return outCookedData.empty() ? E_FAIL : S_OK;
+}
+
+HRESULT CResPhysXRTConvexGeometry::CookToFile(
+	const DESC& desc,
+	const _string& sOutputPath)
+{
+	std::vector<uint8_t> cookedData{};
+	if (FAILED(CookToMemory(desc, cookedData)))
+		return E_FAIL;
+
+	return PhysXCookedMeshFile::Write(
+		sOutputPath,
+		PhysXCookedMeshFile::TYPE::CONVEX_MESH,
+		cookedData.data(),
+		cookedData.size());
 }
 
 SPtr<CResPhysXRTConvexGeometry> CResPhysXRTConvexGeometry::Create()
@@ -93,12 +118,11 @@ SPtr<CResPhysXRTConvexGeometry> CResPhysXRTConvexGeometry::Create()
 	return ToSPtr(new CResPhysXRTConvexGeometry{ "" });
 }
 
-void CResPhysXRTConvexGeometry::Free()
+SPtr<CResPhysXRTConvexGeometry> CResPhysXRTConvexGeometry::CreateAndLoad(const DESC& desc)
 {
-	if (m_pConvexMesh)
-	{
-		m_pConvexMesh->release();
-		m_pConvexMesh = nullptr;
-	}
-	CResPhysXGeometry::Free();
+	auto pInstance = Create();
+	if (!pInstance || FAILED(pInstance->Load(desc)))
+		return nullptr;
+
+	return pInstance;
 }

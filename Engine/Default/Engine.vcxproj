@@ -295,8 +295,11 @@
     <ClInclude Include="..\public\ResPhysXMaterial.h" />
     <ClInclude Include="..\public\ResPhysXGeometry.h" />
     <ClInclude Include="..\public\ResPhysXSphereGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h" />
     <ClInclude Include="..\public\ResPhysXRTTriMeshGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXConvexGeometry.h" />
     <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h" />
+    <ClInclude Include="..\private\PhysXCookedMeshFile.h" />
     <ClInclude Include="..\public\DbgLineRender.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
@@ -591,7 +594,9 @@
     <ClCompile Include="..\private\ResPhysXMaterial.cpp" />
     <ClCompile Include="..\private\ResPhysXGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXRTTriMeshGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXConvexGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp" />
     <ClCompile Include="..\private\DbgLineRender.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />

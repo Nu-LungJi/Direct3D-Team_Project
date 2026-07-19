@@ -3,14 +3,14 @@
 
 NS_BEGIN(Engine)
 
-class CResPhysXRTConvexGeometry;
+class CResPhysXConvexGeometry;
 
 class ENGINE_DLL CComPxConvexCollider final : public CComPxCollider
 {
 public:
 	struct DESC : CComPxCollider::DESC
 	{
-		SPtr<CResPhysXRTConvexGeometry> pResConvex{};
+		SPtr<CResPhysXConvexGeometry> pResConvex{};
 		_float3 vScale{ 1.f, 1.f, 1.f };
 	};
 
@@ -26,7 +26,7 @@ public:
 	void UpdateGUI() override;
 
 private:
-	SPtr<CResPhysXRTConvexGeometry> m_pResConvex{};
+	SPtr<CResPhysXConvexGeometry> m_pResConvex{};
 
 public:
 	static UPtr<CComPxConvexCollider> Create();
