@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -222,6 +222,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\Player_FSM.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
+    <ClInclude Include="..\public\TestMonster.h" />
+    <ClInclude Include="..\public\TestThirdPersonCamera.h" />
+    <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
+    <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
@@ -323,6 +327,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
+    <ClCompile Include="..\private\TestMonster.cpp" />
+    <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
+    <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
+    <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
     <ClCompile Include="..\private\LevelCollider.cpp" />

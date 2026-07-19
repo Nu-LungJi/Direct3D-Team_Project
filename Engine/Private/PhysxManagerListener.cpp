@@ -26,6 +26,32 @@ void CPhysxManagerListener::PushEvent(EVENT_TYPE eType, const CHandle& hObjectA,
 	m_PendingEvents.push_back({ eType, hObjectA, hObjectB });
 }
 
+void CPhysxManagerListener::PushCollisionEvent(
+	EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_COLLISION_DATA& tData)
+{
+	PENDING_EVENT tEvent{};
+	tEvent.eType = eType;
+	tEvent.hObjectA = hObjectA;
+	tEvent.hObjectB = hObjectB;
+	tEvent.tCollision = tData;
+
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back(tEvent);
+}
+
+void CPhysxManagerListener::PushTriggerEvent(
+	EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_TRIGGER_DATA& tData)
+{
+	PENDING_EVENT tEvent{};
+	tEvent.eType = eType;
+	tEvent.hObjectA = hObjectA;
+	tEvent.hObjectB = hObjectB;
+	tEvent.tTrigger = tData;
+
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back(tEvent);
+}
+
 void CPhysxManagerListener::QueueCCTShapeHit(
 	const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit)
 {
@@ -121,21 +147,52 @@ void CPhysxManagerListener::DispatchPendingEvents()
 		switch (tEvent.eType)
 		{
 		case EVENT_TYPE::COLLISION_ENTER:
-			pObjectA->OnCollisionEnter(pObjectB, {});
-			pObjectB->OnCollisionEnter(pObjectA, {});
+		{
+			pObjectA->OnCollisionEnter(pObjectB, tEvent.tCollision);
+			PX_ON_COLLISION_DATA tOtherData = tEvent.tCollision;
+			std::swap(tOtherData.eSelfShapeType, tOtherData.eOtherShapeType);
+			std::swap(tOtherData.iSelfShapeSubIndex, tOtherData.iOtherShapeSubIndex);
+			for (uint32_t i = 0; i < tOtherData.iContactCount; ++i)
+			{
+				tOtherData.Contacts[i].vWorldNormal.x *= -1.f;
+				tOtherData.Contacts[i].vWorldNormal.y *= -1.f;
+				tOtherData.Contacts[i].vWorldNormal.z *= -1.f;
+				tOtherData.Contacts[i].vImpulse.x *= -1.f;
+				tOtherData.Contacts[i].vImpulse.y *= -1.f;
+				tOtherData.Contacts[i].vImpulse.z *= -1.f;
+			}
+			pObjectB->OnCollisionEnter(pObjectA, tOtherData);
 			break;
+		}
 		case EVENT_TYPE::COLLISION_EXIT:
-			pObjectA->OnCollisionExit(pObjectB, {});
-			pObjectB->OnCollisionExit(pObjectA, {});
+		{
+			pObjectA->OnCollisionExit(pObjectB, tEvent.tCollision);
+			PX_ON_COLLISION_DATA tOtherData = tEvent.tCollision;
+			std::swap(tOtherData.eSelfShapeType, tOtherData.eOtherShapeType);
+			std::swap(tOtherData.iSelfShapeSubIndex, tOtherData.iOtherShapeSubIndex);
+			pObjectB->OnCollisionExit(pObjectA, tOtherData);
 			break;
+		}
 		case EVENT_TYPE::TRIGGER_ENTER:
-			pObjectA->OnTriggerEnter(pObjectB, {});
-			pObjectB->OnTriggerEnter(pObjectA, {});
+		{
+			pObjectA->OnTriggerEnter(pObjectB, tEvent.tTrigger);
+			PX_ON_TRIGGER_DATA tOtherData = tEvent.tTrigger;
+			tOtherData.bSelfIsTrigger = !tOtherData.bSelfIsTrigger;
+			std::swap(tOtherData.eSelfShapeType, tOtherData.eOtherShapeType);
+			std::swap(tOtherData.iSelfShapeSubIndex, tOtherData.iOtherShapeSubIndex);
+			pObjectB->OnTriggerEnter(pObjectA, tOtherData);
 			break;
+		}
 		case EVENT_TYPE::TRIGGER_EXIT:
-			pObjectA->OnTriggerExit(pObjectB, {});
-			pObjectB->OnTriggerExit(pObjectA, {});
+		{
+			pObjectA->OnTriggerExit(pObjectB, tEvent.tTrigger);
+			PX_ON_TRIGGER_DATA tOtherData = tEvent.tTrigger;
+			tOtherData.bSelfIsTrigger = !tOtherData.bSelfIsTrigger;
+			std::swap(tOtherData.eSelfShapeType, tOtherData.eOtherShapeType);
+			std::swap(tOtherData.iSelfShapeSubIndex, tOtherData.iOtherShapeSubIndex);
+			pObjectB->OnTriggerExit(pObjectA, tOtherData);
 			break;
+		}
 		default:
 			break;
 		}
@@ -216,10 +273,35 @@ void CPhysxManagerListener::onContact(const physx::PxContactPairHeader& pairHead
 			continue;
 		}
 
-        if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
-			PushEvent(EVENT_TYPE::COLLISION_ENTER, userDataA->hGameObject, userDataB->hGameObject);
+		const auto shapeDataA = pPhysXManager->FindShapeUserData(cp.shapes[0]);
+		const auto shapeDataB = pPhysXManager->FindShapeUserData(cp.shapes[1]);
+		if (!shapeDataA || !shapeDataB)
+			continue;
+
+		PX_ON_COLLISION_DATA tData{};
+		tData.eSelfShapeType = shapeDataA->eType;
+		tData.eOtherShapeType = shapeDataB->eType;
+		tData.iSelfShapeSubIndex = shapeDataA->iSubIndex;
+		tData.iOtherShapeSubIndex = shapeDataB->iSubIndex;
+
+		if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
+		{
+			physx::PxContactPairPoint contactPoints[PX_MAX_CONTACT_POINTS]{};
+			const physx::PxU32 iContactCount = cp.extractContacts(contactPoints, PX_MAX_CONTACT_POINTS);
+			tData.iContactCount = iContactCount;
+			for (physx::PxU32 contactIndex = 0; contactIndex < iContactCount; ++contactIndex)
+			{
+				const auto& source = contactPoints[contactIndex];
+				auto& destination = tData.Contacts[contactIndex];
+				destination.vWorldPosition = { source.position.x, source.position.y, source.position.z };
+				destination.vWorldNormal = { source.normal.x, source.normal.y, source.normal.z };
+				destination.vImpulse = { source.impulse.x, source.impulse.y, source.impulse.z };
+				destination.fSeparation = source.separation;
+			}
+			PushCollisionEvent(EVENT_TYPE::COLLISION_ENTER, userDataA->hGameObject, userDataB->hGameObject, tData);
+		}
 		if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
-			PushEvent(EVENT_TYPE::COLLISION_EXIT, userDataA->hGameObject, userDataB->hGameObject);
+			PushCollisionEvent(EVENT_TYPE::COLLISION_EXIT, userDataA->hGameObject, userDataB->hGameObject, tData);
     }
 }
 
@@ -246,13 +328,22 @@ void CPhysxManagerListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 
 
 		const auto userDataA = pPhysXManager->FindActorUserData(tp.triggerActor);
 		const auto userDataB = pPhysXManager->FindActorUserData(tp.otherActor);
-		if (!userDataA || !userDataB)
+		const auto shapeDataA = pPhysXManager->FindShapeUserData(tp.triggerShape);
+		const auto shapeDataB = pPhysXManager->FindShapeUserData(tp.otherShape);
+		if (!userDataA || !userDataB || !shapeDataA || !shapeDataB)
 			continue;
+
+		PX_ON_TRIGGER_DATA tData{};
+		tData.bSelfIsTrigger = true;
+		tData.eSelfShapeType = shapeDataA->eType;
+		tData.eOtherShapeType = shapeDataB->eType;
+		tData.iSelfShapeSubIndex = shapeDataA->iSubIndex;
+		tData.iOtherShapeSubIndex = shapeDataB->iSubIndex;
         
         if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
-			PushEvent(EVENT_TYPE::TRIGGER_ENTER, userDataA->hGameObject, userDataB->hGameObject);
+			PushTriggerEvent(EVENT_TYPE::TRIGGER_ENTER, userDataA->hGameObject, userDataB->hGameObject, tData);
 		if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
-			PushEvent(EVENT_TYPE::TRIGGER_EXIT, userDataA->hGameObject, userDataB->hGameObject);
+			PushTriggerEvent(EVENT_TYPE::TRIGGER_EXIT, userDataA->hGameObject, userDataB->hGameObject, tData);
     }
 }
 

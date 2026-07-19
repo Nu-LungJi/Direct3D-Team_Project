@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
 NS_BEGIN(Engine)
@@ -7,9 +7,10 @@ class CResTexture2D;
 class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
-class CResPhysXTriMeshGeometry;
+class CResPhysXRTTriMeshGeometry;
 class CComPxRigidBody;
 class CComPxTriMeshCollider;
+class CComPxConvexCollider;
 class CResPhysXMaterial;
 NS_END
 
@@ -51,14 +52,14 @@ private:
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResSamplerState> m_pResSamplerState{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
-	std::vector<_float3> m_vecPoses{};
-	std::vector<XMINT3> m_vecTriangles{};
 	std::vector<VTX_COL> m_vecPreBuiltedDbgLineVertices{};
 
-	SPtr<CResPhysXTriMeshGeometry> m_pResTriMesh{};
+	SPtr<CResPhysXRTTriMeshGeometry> m_pResTriMesh{};
+	SPtr<CResPhysXRTConvexGeometry> m_pResConvex{};
 private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxTriMeshCollider* m_pComPxTriMeshCollider{};
+	CComPxConvexCollider* m_pComPxConvexCollider{};
 public:
 	static E::UPtr<CTestPhysXTerrain> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

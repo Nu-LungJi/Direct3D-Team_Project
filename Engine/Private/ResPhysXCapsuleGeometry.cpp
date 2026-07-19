@@ -55,7 +55,7 @@ SPtr<CResPhysXCapsuleGeometry> CResPhysXCapsuleGeometry::Create()
 	return ToSPtr(new CResPhysXCapsuleGeometry{ "" });
 }
 
-SPtr<CResPhysXCapsuleGeometry> CResPhysXCapsuleGeometry::Create(const DESC& desc)
+SPtr<CResPhysXCapsuleGeometry> CResPhysXCapsuleGeometry::CreateAndLoad(const DESC& desc)
 {
 	auto pInstance = ToSPtr(new CResPhysXCapsuleGeometry{ "" });;
 	if (FAILED(pInstance->Load(desc)))

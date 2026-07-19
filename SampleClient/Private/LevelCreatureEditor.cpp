@@ -13,6 +13,8 @@
 #include "Player.h"
 #include "LightObject.h"
 #include "LevelPlayGroundLoader.h"
+#include "TestPlayerCreatureEditor.h"
+#include "TestPlayer3CameraCreatureEditor.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -27,6 +29,7 @@ CLevelCreatureEditor::~CLevelCreatureEditor()
 HRESULT CLevelCreatureEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
+	CHandle hPlayer{};
 	{
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
@@ -35,16 +38,17 @@ HRESULT CLevelCreatureEditor::Initialize()
 		{
 			int x = 0;
 		}
-		//CPlayer::DESC PlayerDesc{};
-		//PlayerDesc.sObjectTag = "Player";
-		//PlayerDesc.sGroupTag = "LEVEL_CREATURE";
-		//PlayerDesc.sResTag = "Model_Resource_Player";
-		//if (auto Player = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Player",
-		//	"01_Player", &PlayerDesc))
-		//{
-		//	int x = 0;
-		//}
-
+		CTestPlayerCreatureEditor::DESC PlayerDesc{};
+		PlayerDesc.sObjectTag = "TestPlayerCreatureEditor";
+		PlayerDesc.vInitialPosition = { 10.f, 50.f, 10.f };
+		auto hSpawnedPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_TestPlayerCreatureEditor",
+			"01_Player",
+			&PlayerDesc);
+		if (!hSpawnedPlayer)
+			return E_FAIL;
+		hPlayer = *hSpawnedPlayer;
 	}
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -64,9 +68,34 @@ HRESULT CLevelCreatureEditor::Initialize()
 			{
 				int x = 0;
 			}
-			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	{
+		CTestPlayer3CameraCreatureEditor::DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+		Desc.vAt = { 10.f, 50.f, 10.f };
+		Desc.vEye = { 10.f, 53.f, 5.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fFovY = 75.f;
+		Desc.fNear = 0.1f;
+		Desc.fFar = 1000.f;
+		Desc.sObjectTag = "TestPlayer3CameraCreatureEditor";
+		Desc.hTarget = hPlayer;
+
+		auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
+			"99_CAMERA",
+			&Desc);
+		if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
+			"CREATURE_PLAYER_CAMERA", *hPlayerCamera)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
+		return E_FAIL;
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	

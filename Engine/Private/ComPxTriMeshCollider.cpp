@@ -34,6 +34,11 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 
     if (pDesc->pResTriMesh == nullptr)
         return E_FAIL;
+	if (pDesc->bIsTrigger)
+	{
+		DEBUG_LOG("[PX][TriMesh] Triangle mesh triggers are not supported.\n");
+		return E_FAIL;
+	}
 
     if (FAILED(CComPxCollider::Initialize(pArg)))
     {
@@ -47,7 +52,16 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 	if (!pPhysics || !pTriMesh || !pMaterial)
 		return E_FAIL;
 
-    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh), *pMaterial);
+	auto* pActor = m_pComRigidBody->GetActor();
+	if (!pActor)
+		return E_FAIL;
+	if (m_pComRigidBody->GetRigidBodyType() == CComPxRigidBody::TYPE::DYNAMIC)
+	{
+		DEBUG_LOG("[PX][TriMesh] Triangle mesh requires a static or kinematic rigid body.\n");
+		return E_FAIL;
+	}
+
+    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh), *pMaterial, true);
     if (m_pShape == nullptr)
         return E_FAIL;
 
@@ -64,25 +78,14 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
         m_pShape->setLocalPose(tLocalPose);
     }
 
+	if (!pActor->attachShape(*m_pShape))
+		return E_FAIL;
+
 	if (!RegisterShape(PX_SHAPE_TYPE::TRIANGLE_MESH))
+	{
+		pActor->detachShape(*m_pShape);
 		return E_FAIL;
-
-    auto pActor = m_pComRigidBody->GetActor();
-	if (!pActor)
-		return E_FAIL;
-
-    //if (pActor->is<PxRigidDynamic>() != nullptr)
-    //{
-    //    bool bIsKinematic = (static_cast<PxRigidDynamic*>(pActor)->getRigidBodyFlags()
-    //        & PxRigidBodyFlag::eKINEMATIC) != 0;
-    //    if (!bIsKinematic)
-    //    {
-    //        MSG_BOX("TriMesh Collider needs STATIC or KINEMATIC RigidBody");
-    //        return E_FAIL;
-    //    }
-    //}
-
-    pActor->attachShape(*m_pShape);
+	}
 
     return S_OK;
 }

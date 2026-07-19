@@ -41,8 +41,8 @@ HRESULT CTestPhysX::Initialize(void* pArg)
 	{
 		CComPxBoxCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResBoxGeo = CResPhysXBoxGeometry::Create({ .vHalfExtents = {0.5f, 0.5f, 0.5f} });
-		Desc.pResMaterial = CResPhysXMaterial::Create({});
+		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = {0.5f, 0.5f, 0.5f} });
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxBoxCollider", "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;
@@ -58,7 +58,7 @@ void CTestPhysX::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestPhysX::Update(E::_float fTimeDelta)
 {
-	if (CGameInstance::Get().KeyDown(DIK_SPACE))
+	if (false && CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
 		// spawn
 		auto pos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetPosition();
@@ -112,7 +112,7 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 	}
 
 
-	if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (false && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		if (auto pCam = CGameInstance::Get().GetActiveCamera())
 		{

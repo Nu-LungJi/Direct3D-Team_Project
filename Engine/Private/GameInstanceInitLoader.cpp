@@ -25,10 +25,13 @@
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
 #include "ComPxSphereCollider.h"
+#include "ComPxConvexCollider.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
+#include "ComLocomotion.h"
+#include "ComCharacterMotor.h"
 
 #include "ComLuaScript.h"
 
@@ -355,6 +358,22 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		return E_FAIL;
 	}
 
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
+		CComLocomotion::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+		CComCharacterMotor::Create()))
+	{
+		return E_FAIL;
+	}
+
 
 	// 피직스관련
 	{
@@ -368,6 +387,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxConvexCollider, CComPxConvexCollider::Create()))
 		{
 			return E_FAIL;
 		}

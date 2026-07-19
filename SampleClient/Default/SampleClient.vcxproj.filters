@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="98.Default">
@@ -189,6 +189,9 @@
     </Filter>
     <Filter Include="GameObject\Player\FSM">
       <UniqueIdentifier>{c609926e-37c5-4936-8ba5-557d8908222d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CreatureEditor">
+      <UniqueIdentifier>{1d4d7a4d-fc58-4cb3-aab4-ddcfd06e9a82}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -396,6 +399,12 @@
     <ClInclude Include="..\public\TestCharacter.h">
       <Filter>GameObject\TestPhysx\TestCharacter</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestMonster.h">
+      <Filter>GameObject\TestPhysx\TestCharacter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestThirdPersonCamera.h">
+      <Filter>GameObject\TestPhysx\TestCharacter</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\MainAppLoader.h">
       <Filter>Loader\MainApp</Filter>
     </ClInclude>
@@ -446,6 +455,12 @@
     </ClInclude>
     <ClInclude Include="..\public\BTMonAttType.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\EnderDragon.h">
       <Filter>GameObject\AI</Filter>
@@ -618,6 +633,12 @@
     <ClCompile Include="..\private\TestCharacter.cpp">
       <Filter>GameObject\TestPhysx\TestCharacter</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\TestMonster.cpp">
+      <Filter>GameObject\TestPhysx\TestCharacter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestThirdPersonCamera.cpp">
+      <Filter>GameObject\TestPhysx\TestCharacter</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\MainAppLoader.cpp">
       <Filter>Loader\MainApp</Filter>
     </ClCompile>
@@ -671,6 +692,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_FSM.cpp">
       <Filter>GameObject\Player\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\EnderDragon.cpp">
       <Filter>GameObject\AI</Filter>

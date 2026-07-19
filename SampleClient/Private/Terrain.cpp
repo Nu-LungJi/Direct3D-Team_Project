@@ -5,6 +5,9 @@
 #include "Resources.h"
 #include "GameInstance.h"
 
+#include "ComPxRigidBody.h"
+#include "ComPxTriMeshCollider.h"
+
 NS_USING(Client)
 
 CTerrain::CTerrain()
@@ -43,6 +46,12 @@ HRESULT CTerrain::InitializePrototype(void* pArg)
 		return E_FAIL;
 	}
 
+	if (FAILED(BuildPxRuntimeTriMesh()))
+	{
+		MSG_BOX("Terrain BuildPxRuntimeTriMesh Failed");
+		return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -58,6 +67,31 @@ HRESULT CTerrain::Initialize(void* pArg)
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::STATIC;
+		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxRigidBody", "ComPxRigidBody", &Desc, &m_pComPxRigidBody)))
+		{
+			return E_FAIL;
+		};
+	}
+
+
+	{
+		CComPxTriMeshCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResTriMesh = m_pResTriMesh;
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.tFilter = PX_FILTER_DESC {
+			.iLayer = ETOUI(COLLISION_LAYER::WORLD_STATIC),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS };
+		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxTriMeshCollider", "ComPxTriMeshCollider", &Desc, &m_pComPxTriMeshCollider)))
 		{
 			return E_FAIL;
 		};
@@ -147,6 +181,22 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	// 오브젝트 렌더 할 떄, VSSetShader, PSSetShader 를 해야한다면,
 	// 다시 원래 쉐이더로 돌려놓아야 이후에 렌더하는 오브젝트들이 정상적으로 렌더 됨.
 	// 나중에 오브젝트들 정리해서 배칭으로 전환할 때 삭제 예정.
+
+	return S_OK;
+}
+
+HRESULT CTerrain::BuildPxRuntimeTriMesh()
+{
+	const auto& v = m_pResTerrainVIBuffer->GetVertices();
+	const auto& indices = m_pResTerrainVIBuffer->GetIndices();
+
+	m_pResTriMesh = CResPhysXRTTriMeshGeometry::Create();
+	const auto triMeshDesc = CResPhysXRTTriMeshGeometry::MakeDesc(
+		v, indices, offsetof(VTX_NORMAL_TEX, pos));
+	if (FAILED(m_pResTriMesh->Load(triMeshDesc)))
+	{
+		return E_FAIL;
+	}
 
 	return S_OK;
 }

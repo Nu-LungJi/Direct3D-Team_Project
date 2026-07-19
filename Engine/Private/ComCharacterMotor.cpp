@@ -1,0 +1,140 @@
+#include "pch.h"
+#include "ComCharacterMotor.h"
+
+#include "ComLocomotion.h"
+#include "GameObject.h"
+
+NS_USING(Engine)
+
+CComCharacterMotor::CComCharacterMotor()
+{
+}
+
+CComCharacterMotor::CComCharacterMotor(const CComCharacterMotor& rhs)
+	: CComponent{ rhs }
+	, m_fGravity{ rhs.m_fGravity }
+	, m_fJumpVelocity{ rhs.m_fJumpVelocity }
+	, m_fMinMoveDistance{ rhs.m_fMinMoveDistance }
+	, m_bUseGravity{ rhs.m_bUseGravity }
+	, m_bSyncTransform{ rhs.m_bSyncTransform }
+{
+}
+
+CComCharacterMotor::~CComCharacterMotor()
+{
+}
+
+HRESULT CComCharacterMotor::Initialize(void* pArg)
+{
+	auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc || !pDesc->pLocomotion || !pDesc->pCharacterController)
+		return E_FAIL;
+
+	if (FAILED(CComponent::Initialize(pArg)))
+		return E_FAIL;
+
+	if (pDesc->pLocomotion->GetGameObject() != m_pGameObject ||
+		pDesc->pCharacterController->GetGameObject() != m_pGameObject)
+		return E_FAIL;
+
+	m_pLocomotion = pDesc->pLocomotion;
+	m_pCharacterController = pDesc->pCharacterController;
+	m_fGravity = pDesc->fGravity;
+	m_fJumpVelocity = pDesc->fJumpVelocity;
+	m_fMinMoveDistance = std::max(0.f, pDesc->fMinMoveDistance);
+	m_bUseGravity = pDesc->bUseGravity;
+	m_bSyncTransform = pDesc->bSyncTransform;
+	m_bGrounded = m_pCharacterController->IsGrounded();
+
+	return S_OK;
+}
+
+void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
+{
+	if (!m_pLocomotion || !m_pCharacterController || fFixedTimeDelta <= 0.f)
+		return;
+
+	const CComLocomotion::OUTPUT& tOutput = m_pLocomotion->GetOutput();
+	if (tOutput.bMoveRequested)
+	{
+		m_vVelocity.x = tOutput.vMoveDirection.x * tOutput.fMoveSpeed;
+		m_vVelocity.z = tOutput.vMoveDirection.z * tOutput.fMoveSpeed;
+	}
+	else
+	{
+		m_vVelocity.x = 0.f;
+		m_vVelocity.z = 0.f;
+	}
+
+	if (m_pLocomotion->HasJumpRequest())
+	{
+		if (m_bGrounded)
+			m_vVelocity.y = m_fJumpVelocity;
+
+		m_pLocomotion->ConsumeJumpRequest();
+	}
+
+	if (m_bUseGravity)
+		m_vVelocity.y += m_fGravity * fFixedTimeDelta;
+
+	const _float3 vDisplacement{
+		m_vVelocity.x * fFixedTimeDelta,
+		m_vVelocity.y * fFixedTimeDelta,
+		m_vVelocity.z * fFixedTimeDelta };
+
+	m_eLastCollisionFlag = m_pCharacterController->Move(
+		vDisplacement,
+		fFixedTimeDelta,
+		m_fMinMoveDistance);
+
+	m_bGrounded = m_pCharacterController->IsGrounded();
+	if (m_bGrounded && m_vVelocity.y < 0.f)
+		m_vVelocity.y = 0.f;
+	if (m_pCharacterController->IsCollidingUp() && m_vVelocity.y > 0.f)
+		m_vVelocity.y = 0.f;
+
+	if (m_bSyncTransform && m_pGameObject)
+		m_pGameObject->GetTransform().SetPosition(m_pCharacterController->GetPosition());
+}
+
+void CComCharacterMotor::UpdateGUI()
+{
+	CComponent::UpdateGUI();
+	ImGui::Text("Velocity: %.3f, %.3f, %.3f", m_vVelocity.x, m_vVelocity.y, m_vVelocity.z);
+	ImGui::Text("Grounded: %s", m_bGrounded ? "true" : "false");
+	ImGui::DragFloat("Gravity", &m_fGravity, 0.1f);
+	ImGui::DragFloat("Jump Velocity", &m_fJumpVelocity, 0.1f, 0.f);
+	ImGui::Checkbox("Use Gravity", &m_bUseGravity);
+	ImGui::Checkbox("Sync Transform", &m_bSyncTransform);
+}
+
+UPtr<CComCharacterMotor> CComCharacterMotor::Create()
+{
+	auto pInstance = ToUPtr(new CComCharacterMotor{});
+	if (FAILED(pInstance->InitializePrototype()))
+	{
+		MSG_BOX("Failed to Created : CComCharacterMotor");
+		return nullptr;
+	}
+
+	return pInstance;
+}
+
+UPtr<CPrototype> CComCharacterMotor::Clone(void* pArg)
+{
+	auto pInstance = ToUPtr(new CComCharacterMotor{ *this });
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CComCharacterMotor");
+		return nullptr;
+	}
+
+	return pInstance;
+}
+
+void CComCharacterMotor::Free()
+{
+	m_pLocomotion = nullptr;
+	m_pCharacterController = nullptr;
+	CComponent::Free();
+}

@@ -248,7 +248,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 {
-	m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	{
+		ZoneScopedN("GameObjectManager_FixedUpdate");
+		m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	}
+	
 	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
 }
 
