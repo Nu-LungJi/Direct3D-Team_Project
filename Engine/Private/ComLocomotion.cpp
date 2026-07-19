@@ -111,6 +111,36 @@ _bool CComLocomotion::ConsumeJumpRequest()
 	return bRequested;
 }
 
+void CComLocomotion::RequestWarp(const _float3& vPosition)
+{
+	if (!std::isfinite(vPosition.x) ||
+		!std::isfinite(vPosition.y) ||
+		!std::isfinite(vPosition.z))
+	{
+		ClearWarpRequest();
+		return;
+	}
+
+	m_vWarpPosition = vPosition;
+	m_bWarpRequested = true;
+}
+
+_bool CComLocomotion::ConsumeWarpRequest(_float3& vOutPosition)
+{
+	if (!m_bWarpRequested)
+		return false;
+
+	vOutPosition = m_vWarpPosition;
+	ClearWarpRequest();
+	return true;
+}
+
+void CComLocomotion::ClearWarpRequest()
+{
+	m_vWarpPosition = {};
+	m_bWarpRequested = false;
+}
+
 void CComLocomotion::UpdateGUI()
 {
 	CComponent::UpdateGUI();
@@ -128,6 +158,11 @@ void CComLocomotion::UpdateGUI()
 	ImGui::Text("Turn Speed: %.3f deg/s", m_tOutput.fTurnSpeed);
 	ImGui::Text("Immediate Facing: %s", m_tOutput.bImmediateFacing ? "true" : "false");
 	ImGui::Text("Jump Requested: %s", m_bJumpRequested ? "true" : "false");
+	ImGui::Text("Warp Requested: %s", m_bWarpRequested ? "true" : "false");
+	ImGui::Text("Warp Position: %.3f, %.3f, %.3f",
+		m_vWarpPosition.x,
+		m_vWarpPosition.y,
+		m_vWarpPosition.z);
 }
 
 UPtr<CComLocomotion> CComLocomotion::Create()

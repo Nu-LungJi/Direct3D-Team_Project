@@ -47,12 +47,19 @@ public:
 	_bool ConsumeJumpRequest();
 	void ClearJumpRequest() { m_bJumpRequested = false; }
 
+	void RequestWarp(const _float3& vPosition);
+	_bool HasWarpRequest() const { return m_bWarpRequested; }
+	_bool ConsumeWarpRequest(_float3& vOutPosition);
+	void ClearWarpRequest();
+
 public:
 	void UpdateGUI() override;
 
 private:
 	OUTPUT m_tOutput{};
 	_bool m_bJumpRequested{};
+	_float3 m_vWarpPosition{};
+	_bool m_bWarpRequested{};
 
 public:
 	static UPtr<CComLocomotion> Create();

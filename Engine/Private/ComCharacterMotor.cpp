@@ -54,6 +54,20 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 	if (!m_pLocomotion || !m_pCharacterController || fFixedTimeDelta <= 0.f)
 		return;
 
+	_float3 vWarpPosition{};
+	if (m_pLocomotion->ConsumeWarpRequest(vWarpPosition))
+	{
+		m_pCharacterController->SetPosition(vWarpPosition);
+		m_vVelocity = {};
+		m_bGrounded = false;
+		m_eLastCollisionFlag = PX_CCT_COLLISION_FLAG::NONE;
+
+		if (m_pGameObject)
+			m_pGameObject->GetTransform().SetPosition(vWarpPosition);
+
+		return;
+	}
+
 	const CComLocomotion::OUTPUT& tOutput = m_pLocomotion->GetOutput();
 	if (tOutput.bMoveRequested)
 	{
