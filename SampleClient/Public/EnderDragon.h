@@ -3,14 +3,20 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
-class CTestGob final : public CMonster
+class CEnderDragon final : public CMonster
 {
 public:
-	DECLARE_DERIVED_TYPE(CTestGob, CMonster)
+	DECLARE_DERIVED_TYPE(CEnderDragon, CMonster)
+
+public:
+	typedef struct tagDragonDesc : public CMonster::MONSTER_DESC
+	{
+		
+	}DRAGON_DESC;
 
 private:
-	CTestGob();
-	~CTestGob() override;
+	CEnderDragon();
+	~CEnderDragon() override;
 
 public:
 	void UpdateGUI() override;
@@ -18,12 +24,13 @@ public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
-	void FixedUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
+	
+public:
 
 public:
-	static E::UPtr<CTestGob> Create();
+	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

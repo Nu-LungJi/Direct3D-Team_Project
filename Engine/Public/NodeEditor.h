@@ -65,7 +65,7 @@ private:
 	GUICURRENT_NODE										m_CurrentNode;
 
 	_float2												m_vScroll{ 0,0 }, m_vOffset{};
-	_bool												m_binited{ false }, m_bShow_grid{ true }, m_bPopup{ false }, m_bPopupAction{ false }, m_bSaveLoad{ false };
+	_bool												m_binited{ false }, m_bShow_grid{ true }, m_bPopup{ false }, m_bPopupAction{ false }, m_bSaveLoad{ false },m_bReName{ false };;
 														
 	int32_t												m_iNodeSelect{ -1 }, iNodeID{0};
 														
@@ -73,11 +73,12 @@ private:
 														
 	CHandle												m_hTarget{};
 
-	_string												m_SaveName;
-	const _char*										m_pNodeName;
-	BEHAVIOR											m_eBTType;
+	_string												m_SaveName{};
+	const _char*										m_pNodeName{ nullptr };
+	char												m_ReName[128]{};
+	BEHAVIOR											m_eBTType{ BEHAVIOR::END };
 	ImFont*												m_FontRegular{ nullptr };
-
+												
 	std::map<_string, _string>							m_LoadDataList;
 public:
 	static UPtr<CNodeEditor> Create();

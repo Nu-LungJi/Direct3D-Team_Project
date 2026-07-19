@@ -462,6 +462,9 @@
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\EnderDragon.h">
+      <Filter>GameObject\AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -695,6 +698,9 @@
     </ClCompile>
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
       <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EnderDragon.cpp">
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

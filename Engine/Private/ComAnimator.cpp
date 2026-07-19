@@ -49,9 +49,20 @@ HRESULT CComAnimator::Initialize(void* pArg)
         m_Comtag = pDesc->sComTag;
         m_pModelInstance = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag);
 
-
-		m_iRootBoneIndex = m_pModelInstance->GetModel()->Get_BoneIndex("Reference");
-
+		int32_t iIndex{-1};
+		iIndex = m_pModelInstance->GetModel()->Get_BoneIndex("Reference");
+		if (iIndex != -1)
+		{
+			m_iRootBoneIndex = iIndex;
+			return S_OK;
+		}
+		iIndex = m_pModelInstance->GetModel()->Get_BoneIndex("root");
+		if (iIndex != -1)
+		{
+			m_iRootBoneIndex = iIndex;
+			return S_OK;
+		}
+	
     }
 
 
