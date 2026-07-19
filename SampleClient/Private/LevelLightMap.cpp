@@ -41,17 +41,17 @@ HRESULT CLevelLightMap::Initialize()
 		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(30.f, 30.f, 30.f, 1.f));
 		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(7.5f, 10.f, 8.f, 1.f));
 	}
-	{
-		CLightObject::DESC LDesc{};
-		LDesc.sObjectTag = "LightObject2";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
-		if (!ObjectHandle.has_value())	return E_FAIL;
-		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
-		if (!LightObject)	return E_FAIL;
-
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(200.f, 200.f, 200.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(6.5f, 10.f, 7.f, 1.f));
-	}
+	//{
+	//	CLightObject::DESC LDesc{};
+	//	LDesc.sObjectTag = "LightObject2";
+	//	auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
+	//	if (!ObjectHandle.has_value())	return E_FAIL;
+	//	auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
+	//	if (!LightObject)	return E_FAIL;
+	//
+	//	LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(200.f, 200.f, 200.f, 1.f));
+	//	LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(6.5f, 10.f, 7.f, 1.f));
+	//}
 	{
 		CLightTerrain::DESC Desc{};
 		Desc.sObjectTag = "LightTerrain";
@@ -112,7 +112,7 @@ HRESULT CLevelLightMap::Initialize()
 
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
-	CGameInstance::Get().Add_SpotLight({ 5.2f, 4.f, 5.2f }, { 1.f, -1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
+	CGameInstance::Get().Add_PointLight({ 5.2f, 4.f, 5.2f }, { 1.f, 1.f, 1.f }, 100.f, 50.f);
 	//CGameInstance::Get().Add_SpotLight({ 8.2f, 4.f, 8.2f }, { 1.f, 1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
 	return S_OK;
 }

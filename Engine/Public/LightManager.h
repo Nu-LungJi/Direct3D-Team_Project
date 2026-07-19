@@ -41,6 +41,7 @@ public:
 	VOID	UnBind_ShadowResource();
 
 	VOID	Update_ActiveLights();
+	VOID	Update_LightData();
 
 	_bool	IsInFrustum(CLight* _LightOBJ);
 
@@ -93,9 +94,10 @@ private:
 
 	std::vector<CLight*>				m_pActiveShadowLightList{};
 
-	std::vector<ID3D11ShaderResourceView*>	StaticShadowMapList;
-	std::vector<ID3D11ShaderResourceView*>	DynamicShadowMapList;
-	std::vector<ID3D11ShaderResourceView*>	NullList;
+	//std::vector<ID3D11ShaderResourceView*>	StaticShadowMapList;
+	//std::vector<ID3D11ShaderResourceView*>	DynamicShadowMapList;
+	//std::vector<ID3D11ShaderResourceView*>	NullList;
+	CB_LIGHT							m_pLightConstantVariable{};
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

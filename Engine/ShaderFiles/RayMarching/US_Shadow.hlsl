@@ -7,8 +7,7 @@ struct VS_IN
 
 struct VS_OUT
 {
-	float4 Position : SV_POSITION;
-	float3 WorldPos : POSITION0;
+	float4 WorldPos : POSITION;
 };
 
 struct VS_FINAL_OUT
@@ -20,9 +19,9 @@ struct VS_FINAL_OUT
 VS_OUT VSMain(VS_IN IN)
 {
     VS_OUT OUT;
-	OUT.Position = mul(float4(IN.Position, 1.0f), g_matWorld);
-	OUT.WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld).xyz;
-    
+	
+	OUT.WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
+	
     return OUT;
 }
 VS_FINAL_OUT VSMain_Final(VS_IN IN)
@@ -46,29 +45,30 @@ struct GS_OUT
 [maxvertexcount(18)]
 void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
 {
-    DynamicLight DLight = AffectedLight[CurrentLightIndex];
+	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
     
-    for (int Face = 0; Face < 6; ++Face)
-    {
-        GS_OUT OUT;
-        OUT.LayerIndex = Face;
-        for (int v = 0; v < 3; ++v)
-        {
-			OUT.Position = mul(float4(IN[v].WorldPos, 1.f), DLight.g_LightViewProj[Face]);
-            OUT.WorldPos = IN[v].WorldPos.xyz;
-            _OutStream.Append(OUT);
-        }
-        
-        _OutStream.RestartStrip();
-    }
+	for (int Face = 0; Face < 6; ++Face)
+	{
+		for (int v = 0; v < 3; ++v)
+		{
+			GS_OUT OUT;
+			OUT.Position = mul(float4(IN[v].WorldPos.xyz, 1.f), DLight.g_LightViewProj[Face]);
+			OUT.WorldPos = IN[v].WorldPos.xyz;
+			OUT.LayerIndex = (DLight.CurrentLightIndex * 6) + Face;
+            
+			_OutStream.Append(OUT);
+		}
+		_OutStream.RestartStrip();
+	}
 }
-
 float PSMain(GS_OUT OUT) : SV_DEPTH
 {
-    DynamicLight Light = AffectedLight[CurrentLightIndex];
-    
-    float3 LightToPixel = OUT.WorldPos.xyz - Light.Position;
-    float Distance = length(LightToPixel);
-    
-    return Distance / Light.LightRange;
+	
+	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
+	
+    float3	LightToPixel = OUT.WorldPos.xyz - DLight.Position;
+    float	Distance = length(LightToPixel);
+	float	Depth = Distance / DLight.LightRange;
+	
+	return saturate(Depth - 0.0005f);
 }

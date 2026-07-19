@@ -48,7 +48,7 @@ public:
 	VOID			Set_LightIntensity(_float _Intensity) { DynamicLight.LightIntensity = _Intensity; }
 	_float			Get_LightIntensity() { return DynamicLight.LightIntensity; }
 
-	VOID			Set_LightRange(_float _Range) { DynamicLight.LightRange = _Range; DirtyFlag = true;}
+	VOID			Set_LightRange(_float _Range);
 	_float			Get_LightRange() { return DynamicLight.LightRange; }
 
 	VOID			Set_LightPosition(XMFLOAT3 _Position) { m_pComTransform->SetPosition(_Position); DirtyFlag = true;}
@@ -110,6 +110,15 @@ private:
 	_bool								DirtyFlag = { true };
 
 	XMFLOAT4X4 LightView{}, LightProj{};
+
+private:	// PointLight
+	XMVECTOR DirectionVec[6];
+	XMVECTOR BaseUpVec[6];
+
+	XMMATRIX ShadowMapProj_PointLight{};
+
+private:
+	VOID	Update_PointLight_ProjectionMatrix(_float _Range);
 
 public:
 	VOID		UpdateGUI() override;

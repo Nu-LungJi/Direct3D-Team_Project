@@ -633,7 +633,7 @@ HRESULT CRenderer::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11T
 	TEXDesc.Width = _Resolution;
 	TEXDesc.Height = _Resolution;
 	TEXDesc.MipLevels = 1;
-	TEXDesc.ArraySize = _MaxLightCount;
+	TEXDesc.ArraySize = _MaxLightCount * 6;
 	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 	TEXDesc.SampleDesc = { .Count = 1, .Quality = 0 };
 	TEXDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -645,7 +645,7 @@ HRESULT CRenderer::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11T
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
 	SRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
 	SRVDesc.Texture2DArray.MostDetailedMip = 0;
 	SRVDesc.Texture2DArray.MipLevels = 1;
 	SRVDesc.Texture2DArray.FirstArraySlice = 0;
@@ -658,7 +658,7 @@ HRESULT CRenderer::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11T
 	DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
 	DSVDesc.Texture2DArray.MipSlice = 0;
 	DSVDesc.Texture2DArray.FirstArraySlice = 0;
-	DSVDesc.Texture2DArray.ArraySize = 6;
+	DSVDesc.Texture2DArray.ArraySize = _MaxLightCount * 6;
 
 	if (FAILED(m_pDevice->CreateDepthStencilView(*_TextureArray, &DSVDesc, _ShadowDSV))) return E_FAIL;
 

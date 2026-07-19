@@ -135,28 +135,28 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
 {
     float3 LightToPixel = _WorldPos.xyz - _Light.Position;
     float  Distance = length(LightToPixel);
-    
-    float  CurrentPixelDepth = Distance / _Light.LightRange;
+	
+	float CurrentPixelDepth = Distance / _Light.LightRange;
 	CurrentPixelDepth -= 0.00001f; // Depth Bias
-    
+	
     float  InvDistance  = 1.0f / max(Distance, 0.0001f);
     float3 Direction    = LightToPixel * InvDistance;
     float3 BaseUP       = abs(Direction.z) < 0.999f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
-    
+	
     float3 TangentX     = cross(Direction, BaseUP);
     float3 TangentY     = cross(Direction, TangentX);
     
     float  RandomNoise  = Get_GradientNoise(_PixelPos);
     float  RandomAngle  = RandomNoise * 2.f * PI;
-    
+    	
     float  CosAngle     = cos(RandomAngle);
     float  SinAngle     = sin(RandomAngle);
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
     
     float FilterRadius  = (ShadowSmoothness * 0.05f) / _Light.LightRange;
-    
+	
     float FinalShadowFactor = { 0.f };
-    
+
     [unroll]
     for (int i = 0; i < 8; ++i)
     {
@@ -164,14 +164,12 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
         
         float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
         
-        float3 SampleUV = Direction + Offset3D;
-		
+		float3 SampleUV = normalize(Direction + Offset3D);
+			
 		FinalShadowFactor += MergeShadowCubeMap(_LightIndex, SampleUV, CurrentPixelDepth);
 	}
-    
     FinalShadowFactor /= 8.f;
-    
-    return lerp(ShadowBrightness, 1.0f, FinalShadowFactor);
+	return lerp(ShadowBrightness, 1.f, FinalShadowFactor);
 }
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
@@ -240,14 +238,14 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
 			float RawNDL = dot(WorldNormal, L);
-
+			
 			if (RawNDL > 0.f)
 			{
 				float NDL = clamp(RawNDL, 0.f, 1.f);
 
-				float3 H = normalize(V + L);
-				float D = DistributionGGX(WorldNormal, H, Roughness);
-				float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+				float3	H = normalize(V + L);
+				float	D = DistributionGGX(WorldNormal, H, Roughness);
+				float3	F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
 
 				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
@@ -257,47 +255,30 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				float3 kD = (1.0f - kS) * (1.0f - Metallic);
 				float3 Diffuse = kD * Albedo / PI;
 				
-
-                [branch]
+				[branch]
 				if (AffectedLight[i].LightType == LIGHT_POINT)
 				{
-					ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), i);
+					ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), AffectedLight[i].CurrentLightIndex);\
+
 				}
 				else
 				{
-					float3 LightToPixelDirection = normalize(DepthWorld.xyz - AffectedLight[i].Position);
-					float3 LightDirection = normalize(AffectedLight[i].LightDirection);
-					
-					if (dot(LightToPixelDirection, LightDirection) > 0.f)
-					{
-						ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
-					}
-					else
-					{
-						ShadowFactor = 1.f;
-					}
-					
-						
-					if (ShadowFactor == 999.f)
-					{
-						OUTPUT[ID.xy] = float4(1.f, 1.f, 1.f, 1.f);
-						return;
-					}
+					ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
 				}
-				
+                
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
 			}
 		}
 	}
-	
-	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
+
+	float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
     float   AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
     
     float3  Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
     float3  BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
 	float3	ExtraColor = BaseAmbient + BaseEmissive;
-	
+
     OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
     return;
 }
