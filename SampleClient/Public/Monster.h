@@ -12,6 +12,9 @@ class CComModelInstance;
 class CComAnimator;
 class CComBeHavior;
 class CComCollider;
+class CComPxCharacterController;
+class CComCharacterMoveIntent;
+class CComCharacterMotor;
 NS_END
 
 
@@ -36,6 +39,11 @@ public:
 	{
 		_string SocketName{}, LevelTag{}, ReSourceTag{}, BeHaviorTag{};
 		_float3 vPos{};
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
 	}MONSTER_DESC;
 protected:
 	CMonster();
@@ -75,6 +83,9 @@ protected:
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
 	CComCollider* m_pComCollider{};
+	CComPxCharacterController* m_pCharacterController{};
+	CComCharacterMoveIntent* m_pMoveIntent{};
+	CComCharacterMotor* m_pCharacterMotor{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 

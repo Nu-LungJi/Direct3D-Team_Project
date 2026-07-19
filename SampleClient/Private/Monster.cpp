@@ -9,6 +9,8 @@
 #include "Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
+#include "ComCharacterMoveIntent.h"
+#include "ComCharacterMotor.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -78,6 +80,8 @@ HRESULT CMonster::Initialize(void* pArg)
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
+	m_pMoveIntent->ClearMoveIntent();
+	m_pMoveIntent->ClearFacingIntent();
 	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
 	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
@@ -104,6 +108,8 @@ void CMonster::Update(E::_float fTimeDelta)
 void CMonster::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
+	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
+	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 	IsHit();
 	const auto& pModel = m_pComModelInstance->GetModel();
