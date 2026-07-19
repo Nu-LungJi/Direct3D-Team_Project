@@ -39,7 +39,7 @@ HRESULT CLevelLightMap::Initialize()
 		if (!LightObject)	return E_FAIL;
 
 		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(30.f, 30.f, 30.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(0.f, 0.f, 0.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(7.5f, 10.f, 8.f, 1.f));
 	}
 	{
 		CLightObject::DESC LDesc{};
@@ -49,8 +49,8 @@ HRESULT CLevelLightMap::Initialize()
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
 
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(0.f, 0.f, 0.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(200.f, 200.f, 200.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(6.5f, 10.f, 7.f, 1.f));
 	}
 	{
 		CLightTerrain::DESC Desc{};
@@ -112,7 +112,8 @@ HRESULT CLevelLightMap::Initialize()
 
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
-	CGameInstance::Get().Add_SpotLight({ -2.2f, 14.8f, -4.2f }, { 1.f, -1.f, 1.f }, 100.f, 20.f, 10.f, 20.f);
+	CGameInstance::Get().Add_SpotLight({ 5.2f, 4.f, 5.2f }, { 1.f, -1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
+	//CGameInstance::Get().Add_SpotLight({ 8.2f, 4.f, 8.2f }, { 1.f, 1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
 	return S_OK;
 }
 

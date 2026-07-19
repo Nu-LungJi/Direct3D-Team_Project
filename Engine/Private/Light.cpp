@@ -53,11 +53,11 @@ HRESULT CLight::Initialize(VOID* pArg)
 	uint32_t ShadowMapResolutionX = { 1280 * 2 };
 	uint32_t ShadowMapResolutionY = { 720 * 2 };
 
-	CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 2560, 6);
-	CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 2560, 6);
+	CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
+	CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
 
 	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), 
-		DynamicLight.LightType, 2560)))	return E_FAIL;
+		DynamicLight.LightType, 1280, 720)))	return E_FAIL;
 
 	return S_OK;
 }
@@ -72,17 +72,21 @@ VOID CLight::Update(E::_float fTimeDelta) {
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) || DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
 		_float	 fNearZ = 0.01f;
 
-		DynamicLight.OuterAttanuation = DynamicLight.OuterAttanuation <= 0.f ? 1.f : DynamicLight.OuterAttanuation;
+		DynamicLight.OuterAttanuation = DynamicLight.OuterAttanuation <= 0.f ? 1.f : (DynamicLight.OuterAttanuation >= 75.f ? 75.f : DynamicLight.OuterAttanuation);
 		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
 
-		XMVECTOR DynamicPos = m_pComTransform->GetState(STATE::POSITION);
+		XMVECTOR DynamicPos			= m_pComTransform->GetState(STATE::POSITION);
+		XMVECTOR DynamicDirection	= XMLoadFloat3(&DynamicLight.LightDirection);
+		XMVECTOR WorldUpVec			= XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
-		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(DynamicPos, XMVectorAdd(DynamicPos, XMVector3Normalize(XMLoadFloat3(&DynamicLight.LightDirection))), m_pComTransform->GetState(STATE::UP)));
+		_float CameraOffset = 0.2f;
+		XMVECTOR ShadowCameraPos = XMVectorSubtract(DynamicPos, XMVectorScale(DynamicDirection, CameraOffset));
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(ShadowCameraPos, XMVectorAdd(DynamicPos, XMVector3Normalize(DynamicDirection)), WorldUpVec));
 		
-		_float FOVAngle = DynamicLight.OuterAttanuation * 2.f * 1.3f;
-		if (FOVAngle > 210.f) FOVAngle = 210.f;
+		_float FOVAngle = DynamicLight.OuterAttanuation * 2.f * 1.2f;
+		if (FOVAngle > 150.f) FOVAngle = 150.f;
 
-		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), 1.f, fNearZ, DynamicLight.LightRange));//DynamicLight.LightRange));
+		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), 1280.f / 720.f, fNearZ, DynamicLight.LightRange + CameraOffset));//DynamicLight.LightRange));
 		//XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(1280.f * 2.f, 720.f * 2.f, fNearZ, DynamicLight.LightRange));
 		XMStoreFloat4x4(&DynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
@@ -188,15 +192,13 @@ VOID CLight::Update_Collider() {
 
 		XMMATRIX InvViewMat = XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView));
 
-		XMMATRIX CleanWorldMat{};
-		XMVECTOR scale, rotation, translation;
+		XMMATRIX WorldMatrix{};
+		XMVECTOR scale{}, rotation{}, translation{};
 		if (XMMatrixDecompose(&scale, &rotation, &translation, InvViewMat)) {
 			rotation = XMQuaternionNormalize(rotation);
-			CleanWorldMat = XMMatrixRotationQuaternion(rotation) * XMMatrixTranslationFromVector(translation);
+			WorldMatrix = XMMatrixRotationQuaternion(rotation) * XMMatrixTranslationFromVector(translation);
 		}
-		m_pColliderFrustum->Transform(CleanWorldMat);
-
-		//m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView)));
+		m_pColliderFrustum->Transform(WorldMatrix);
 	}
 	else if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
@@ -257,15 +259,15 @@ HRESULT CLight::Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYP
 	if (nullptr != m_pFinalShadowSRV)		{ m_pFinalShadowSRV.Reset();		 }
 
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 2560, 6);
-		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 2560, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
 	}
 	else {
-		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 2560);
-		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 2560);
+		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 720);
+		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 720);
 	}
 
-	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 2560)))	return E_FAIL;
+	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 1280, 720)))	return E_FAIL;
 
 	DirtyFlag = true;
 	   

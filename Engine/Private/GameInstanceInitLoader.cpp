@@ -559,6 +559,19 @@ HRESULT CGameInstanceInitLoader::LoadRasterizerState()
 		desc.DepthBiasClamp = 0.0f;
 		if (FAILED(res->Load(desc))) return E_FAIL;
 	}
+
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "RS_MULTIPLE_SHADOW", E::CResRasterizerState::Create()))
+	{
+		D3D11_RASTERIZER_DESC desc{};
+		desc.FillMode = D3D11_FILL_SOLID;
+		desc.CullMode = D3D11_CULL_NONE;
+		desc.DepthClipEnable = FALSE;
+		desc.DepthBias = 2;
+		desc.SlopeScaledDepthBias = 0.1f;
+		desc.DepthBiasClamp = 0.0f;
+		if (FAILED(res->Load(desc))) return E_FAIL;
+	}
+
 	return S_OK;
 }
 

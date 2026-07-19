@@ -509,13 +509,13 @@ SPtr<CResDynamicTexture2D> CRenderer::Generate_UnorderedAccessView(const StringI
 	return nullptr;
 
 }
-HRESULT CRenderer::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution) {
+HRESULT CRenderer::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY) {
 
 	if (nullptr == _ShadowUAV || nullptr == _Texture || nullptr == _ShadowSRV) return E_FAIL;
 
 	D3D11_TEXTURE2D_DESC Tex2dDesc = {};
-	Tex2dDesc.Width = _Resolution;
-	Tex2dDesc.Height = _Resolution;
+	Tex2dDesc.Width = _ResolutionX;
+	Tex2dDesc.Height = _ResolutionY;
 	Tex2dDesc.MipLevels = 1;
 	Tex2dDesc.ArraySize = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? MAX_LIGHT_MAPCOUNT : 1;
 	Tex2dDesc.Format = DXGI_FORMAT_R32_FLOAT;
@@ -665,10 +665,10 @@ HRESULT CRenderer::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11T
 	return S_OK;
 }
 
-HRESULT CRenderer::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution){
+HRESULT CRenderer::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY){
 	D3D11_TEXTURE2D_DESC TEXDesc{};
-	TEXDesc.Width = _Resolution;
-	TEXDesc.Height = _Resolution;
+	TEXDesc.Width = _ResolutionX;
+	TEXDesc.Height = _ResolutionY;
 	TEXDesc.MipLevels = 1;
 	TEXDesc.ArraySize = 1;
 	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;

@@ -26,7 +26,7 @@ static const float2 ScreenResolution = { 1280.f, 720.f };
 static const float2 ShadowMapResolution = { 1280.f, 720.f };
 
 static const float ShadowSmoothness = 1.5f;
-static const float ShadowBrightness = 0.45f;
+static const float ShadowBrightness = 0.1f;
 
 static const float DissolveEdgeWidth = 0.025f;
 
@@ -93,13 +93,13 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
 	float2 ShadowUV = ShadowTexCoord.xy * 0.5f + 0.5f;
 
 	if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f ||
-	 	ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f)
+	 	ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f || LightPos.w <= 0.0f)
 	{
-		return ShadowBrightness;
+		return (_Light.LightType == LIGHT_DIRECTIONAL) ? ShadowBrightness : 1.f;
 	}
     
 	float CurrentPixelDepth = LightPos.z / LightPos.w;;
-    CurrentPixelDepth -= 0.0005f; // Depth Bias
+    CurrentPixelDepth -= 0.00001f; // Depth Bias
     
     float RandomNoise = Get_GradientNoise(_PixelPos);
     float RandomAngle = RandomNoise * 2.f * PI;
@@ -137,7 +137,7 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
     float  Distance = length(LightToPixel);
     
     float  CurrentPixelDepth = Distance / _Light.LightRange;
-    CurrentPixelDepth -= 0.0005f; // Depth Bias
+	CurrentPixelDepth -= 0.00001f; // Depth Bias
     
     float  InvDistance  = 1.0f / max(Distance, 0.0001f);
     float3 Direction    = LightToPixel * InvDistance;
@@ -265,7 +265,19 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				}
 				else
 				{
-					ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
+					float3 LightToPixelDirection = normalize(DepthWorld.xyz - AffectedLight[i].Position);
+					float3 LightDirection = normalize(AffectedLight[i].LightDirection);
+					
+					if (dot(LightToPixelDirection, LightDirection) > 0.f)
+					{
+						ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
+					}
+					else
+					{
+						ShadowFactor = 1.f;
+					}
+					
+						
 					if (ShadowFactor == 999.f)
 					{
 						OUTPUT[ID.xy] = float4(1.f, 1.f, 1.f, 1.f);

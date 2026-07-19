@@ -22,8 +22,8 @@ HRESULT CLightManager::Initialize_LightManager() {
 	if (nullptr == m_pPBRComputeShader)		return E_FAIL;
 
 	// 2K Resolution
-	uint32_t ShadowMapResolutionX = { 1280 * 2 };
-	uint32_t ShadowMapResolutionY = { 720 * 2 };
+	uint32_t ShadowMapResolutionX = { 1280 };
+	uint32_t ShadowMapResolutionY = { 720 };
 
 	m_pUAVComBinedOutput = CGameInstance::Get().Generate_UnorderedAccessView("ComBinedTex", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 
@@ -199,11 +199,11 @@ VOID CLightManager::UpdateGUI() {
 		}
 
 		if (lightType == LIGHT_TYPE::SPOTLIGHT) {
-			if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 90.0f, "%.1f도") && innerAttn < outerAttn)
+			if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 75.0f, "%.1f도") && innerAttn < outerAttn)
 			{
 				pSelectedLight->Set_LightInnerAttenuation(innerAttn);
 			}
-			if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 90.0f, "%.1f도"))
+			if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 75.0f, "%.1f도"))
 			{
 				pSelectedLight->Set_LightOuterAttenuation(outerAttn);
 			}
@@ -243,6 +243,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		
 		m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
 		m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
+
+		auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, "RS_MULTIPLE_SHADOW");
+		m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	}
 
 	Update_ActiveLights();
@@ -322,6 +325,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 
 	m_pRenderable_StaticObjectList.clear();
 	m_pRenderable_DynamicObjectList.clear();
+
+	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	return S_OK;
 }
