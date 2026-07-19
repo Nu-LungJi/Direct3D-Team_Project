@@ -12,6 +12,9 @@ class CComModelInstance;
 class CComAnimator;
 class CComBeHavior;
 class CComCollider;
+class CComPxCharacterController;
+class CComLocomotion;
+class CComCharacterMotor;
 NS_END
 
 NS_BEGIN(Client)
@@ -37,6 +40,11 @@ public:
 	{
 		_string SocketName{}, LevelTag{}, ReSourceTag{}, BeHaviorTag{};
 		_float3 vPos{};
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
 	}MONSTER_DESC;
 
 private:
@@ -50,6 +58,7 @@ public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
+	void FixedUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
@@ -87,6 +96,9 @@ private:
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
 	CComCollider* m_pComCollider{};
+	CComPxCharacterController* m_pCharacterController{};
+	CComLocomotion* m_pLocomotion{};
+	CComCharacterMotor* m_pCharacterMotor{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 

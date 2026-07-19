@@ -9,6 +9,10 @@
 #include "Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
+#include "ComPxCharacterController.h"
+#include "ComLocomotion.h"
+#include "ComCharacterMotor.h"
+#include "DbgLineRender.h"
 NS_USING(Client)
 
 CTestGob::CTestGob()
@@ -71,6 +75,47 @@ HRESULT CTestGob::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 100;
+
+	{
+		CComPxCharacterController::DESC Desc{};
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.vPosition = MonDesc->vPos;
+		Desc.tFilter = MonDesc->tFilter;
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
+			"ComPxCharacterController", &Desc, &m_pCharacterController)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComLocomotion::DESC Desc{};
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
+			"ComLocomotion", &Desc, &m_pLocomotion)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComCharacterMotor::DESC Desc{};
+		Desc.pLocomotion = m_pLocomotion;
+		Desc.pCharacterController = m_pCharacterController;
+		Desc.fGravity = -9.81f;
+		Desc.bUseGravity = true;
+		Desc.bSyncTransform = true;
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
+		{
+			return E_FAIL;
+		}
+	}
 	
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
@@ -132,7 +177,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 	}
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
-	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
+	GetTransform().SetPosition(m_pCharacterController->GetPosition());
+	GetTransform().Update();
 	return S_OK;
 }
 
@@ -145,6 +191,11 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
 	m_pBeHavior->Update(fTimeDelta);
+}
+
+void CTestGob::FixedUpdate(E::_float fTimeDelta)
+{
+	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
@@ -165,6 +216,24 @@ void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
 	GetTransform().Update();
+
+	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
+	{
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		const _float3 vPosition = GetTransform().GetPosition();
+
+		pDbgLineRender->SetColor({ 1.f, 0.f, 0.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddCapsule(
+			0.5f,
+			1.f,
+			XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+	}
+
 	IsHit();
 	const auto& pModel = m_pComModelInstance->GetModel();
 
