@@ -95,16 +95,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
 	if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f ||
 	 	ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f)
 	{
-		//return ShadowBrightness;
-		[branch]
-		if (_Light.LightType == LIGHT_DIRECTIONAL)
-		{
-			return ShadowBrightness;
-		}
-		else
-		{
-			return 0.0f;
-		}
+		return ShadowBrightness;
 	}
     
 	float CurrentPixelDepth = LightPos.z / LightPos.w;;
