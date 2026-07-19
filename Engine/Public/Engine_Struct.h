@@ -210,6 +210,8 @@ namespace Engine
 		_float   pad2;
 		_bool    loop;
 		_float3  originalPosition;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
 	} PARTICLE_SPAWN_DATA;
 	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
 
@@ -248,9 +250,7 @@ namespace Engine
 
 	}MODEL_FILE_HEADER;
 
-	typedef struct tagParticleSpecies {
 
-	}PARTICLE_SPECIES;
 
 	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
 	typedef struct tagMapChunkCoord

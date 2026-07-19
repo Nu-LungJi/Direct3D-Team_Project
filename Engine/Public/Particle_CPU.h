@@ -24,8 +24,11 @@ struct PARTICLE_CPU_DATA
 	uint32_t ownerID = 0;
 	uint32_t iBehaviorType = 0;
 	_float3 originalPosition = { 0.f, 0.f, 0.f };
+	_float3 originalVelocity = { 0.f, 0.f, 0.f };
 	_bool loop = false;
+
 };
+
 
 struct VTX_PARTICLE_INSTANCED_DATA
 {

@@ -267,6 +267,7 @@
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
     <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
@@ -398,7 +399,6 @@
     <ClInclude Include="..\public\Trail_CPU.h" />
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
-   
     <ClInclude Include="..\Public\VolumetricFog.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />

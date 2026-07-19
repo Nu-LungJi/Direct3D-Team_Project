@@ -4,6 +4,7 @@
 #define BEHAVIOR_DISTORTION (1u << 1)
 #define BEHAVIOR_BILLBOARD (1u << 2)
 #define BEHAVIOR_GRAVITY (1u << 3)
+#define BEHAVIOR_CIRCLE_TO_WAVE (1u << 4)
 struct SPAWN_DATA
 {
     float3 position;
@@ -24,6 +25,8 @@ struct SPAWN_DATA
     float pad2;
     uint loop;
     float3 originalPosition; // 원래 스폰 위치
+    float3 originalVelocity; // 원래 스폰 속도+ 방향
+    float pad3;
 };
 
 
@@ -51,6 +54,8 @@ struct ParticleData
     float pad3;
     float3 originalPosition; // 원래 스폰 위치
     float pad4;
+    float3 originalVelocity; // 원래 스폰 속도+ 방향
+    float pad5;
 };
 float3 RotateXYZ(float3 pos, float4 rotation)
 {

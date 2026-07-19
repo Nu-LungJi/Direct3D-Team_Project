@@ -98,6 +98,7 @@ private:
     SPtr<class CResSamplerState>     m_pResSamplerState = nullptr;
 
     SPtr<class CResCBuffer>          m_pComCBuffer;
+    SPtr<class CResCBuffer>          m_pComWaveCBuffer;
     SPtr<CResCBuffer>                m_pComSpawnCBuffer;
     SPtr<CResCBuffer>                m_pComInitCBuffer;
 

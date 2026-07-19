@@ -97,7 +97,7 @@ VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
     Out.vWorldPos = vWorldPos.xyz;
     Out.vColor = p.color;
     Out.vEmissive = p.emissive;
-
+    Out.vEndEmissive = p.endEmissive;
     Out.iBehaviorType = p.iBehaviorType;
     Out.life = p.life;
     Out.maxLife = p.maxLife;
@@ -121,7 +121,6 @@ PS_OUT PSMain(VS_OUT In)
         discard;
     float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
-    
     if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
     {
         clip(vTextureColor.a - 0.02f);
@@ -179,7 +178,8 @@ PS_OUT PSMain(VS_OUT In)
     }
 
 
-    float3 FinalColor = Albedo + LightAccumulation + lerpedEmissive.rgb * lerpedEmissive.a;
+    float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+    float3 FinalColor = Albedo + LightAccumulation + instEmissive;
 
     Out.vDiffuse = float4(FinalColor, vFinalColor.a);
    

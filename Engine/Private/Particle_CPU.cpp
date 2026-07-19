@@ -447,7 +447,8 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     if (m_vecInstancedData.empty())
         return S_OK;
 
-
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
@@ -512,6 +513,9 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     pContext->PSSetShaderResources(0, 5, nullSRV);
 
 	pContext->OMSetDepthStencilState(nullptr, 0);
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
     return S_OK;
 }
 UPtr<CParticle> CParticle_CPU::Create(void* pArg)

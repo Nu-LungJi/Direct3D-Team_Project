@@ -4,6 +4,32 @@
 NS_BEGIN(Engine)
 
 // ---- 타입별 그리기 함수 (전 패턴이 재사용) ----
+
+inline void DrawBehaviorTypeFlags(uint32_t& flags)
+{
+	ImGui::Separator();
+
+
+	bool bDistortion = (flags & BEHAVIOR_DISTORTION) != 0;
+	bool bBillboard = (flags & BEHAVIOR_BILLBOARD) != 0;
+	bool bGravity = (flags & BEHAVIOR_GRAVITY) != 0;
+	bool bCircleWave = (flags & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
+
+	if (ImGui::Checkbox("Distortion", &bDistortion))
+		flags = bDistortion ? (flags | BEHAVIOR_DISTORTION) : (flags & ~BEHAVIOR_DISTORTION);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Billboard", &bBillboard))
+		flags = bBillboard ? (flags | BEHAVIOR_BILLBOARD) : (flags & ~BEHAVIOR_BILLBOARD);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Gravity", &bGravity))
+		flags = bGravity ? (flags | BEHAVIOR_GRAVITY) : (flags & ~BEHAVIOR_GRAVITY);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("CircleToWave", &bCircleWave))
+		flags = bCircleWave ? (flags | BEHAVIOR_CIRCLE_TO_WAVE) : (flags & ~BEHAVIOR_CIRCLE_TO_WAVE);
+}
+
+
+
 inline void DrawField(const char* name, _float3& v) { ImGui::DragFloat3(name, &v.x, 0.05f); }
 inline void DrawField(const char* name, _float& v) { ImGui::DragFloat(name, &v, 0.05f); }
 inline void DrawField(const char* name, uint32_t& v) { int tmp = (int)v; if (ImGui::DragInt(name, &tmp, 1, 0, 9999)) v = (uint32_t)std::max(0, tmp); }
@@ -11,10 +37,16 @@ inline void DrawField(const char* name, _float4& v) { ImGui::ColorEdit4(name, &v
 inline void DrawField(const char* name, _bool& v){bool tmp = (bool)v;if (ImGui::Checkbox(name, &tmp))v = tmp;}
 
 #define DRAW_PARAM_FIELD(type, name, defaultVal) DrawField(#name, p.name);
-inline void DrawImGui(SStairsParam& p) { STAIRS_FIELDS(DRAW_PARAM_FIELD) }
-inline void DrawImGui(SCircleParam& p) { CIRCLE_FIELDS(DRAW_PARAM_FIELD) }
-inline void DrawImGui(SSpiralParam& p) { SPIRAL_FIELDS(DRAW_PARAM_FIELD) }
-inline void DrawImGui(SStraightGroundParam& p) { STRAIGHT_GROUND_FIELDS(DRAW_PARAM_FIELD) }
+inline void DrawImGui(SStairsParam& p) { STAIRS_FIELDS(DRAW_PARAM_FIELD)   DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SCircleParam& p) { CIRCLE_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SCircleSpreadParam& p) { CIRCLE_SPREAD_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui( SSpiralParam& p) { SPIRAL_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SStraightGroundParam& p) { STRAIGHT_GROUND_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
 #undef DRAW_PARAM_FIELD
 
 // ---- json 저장/로드 (타입별 헬퍼) ----
@@ -47,11 +79,13 @@ inline void LoadField(const nlohmann::json& in, const char* name, _bool& v)
 
 inline void SaveParam(const SStairsParam& p, nlohmann::json& out) { STAIRS_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SCircleSpreadParam& p, nlohmann::json& out) { CIRCLE_SPREAD_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
 
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SCircleParam& p, const nlohmann::json& in) { CIRCLE_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SCircleSpreadParam& p, const nlohmann::json& in) { CIRCLE_SPREAD_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SSpiralParam& p, const nlohmann::json& in) { SPIRAL_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAIGHT_GROUND_FIELDS(LOAD_PARAM_FIELD) }
 

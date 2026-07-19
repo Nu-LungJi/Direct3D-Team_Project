@@ -36,6 +36,8 @@ void CComTransform::UpdateGUI()
 
 CComTransform::CComTransform()
 {
+	XMStoreFloat4x4(&m_WorldMatrix, XMMatrixIdentity());
+	XMStoreFloat4x4(&m_CombinedWorldMatrix, XMMatrixIdentity());
 }
 
 //CComTransform::CComTransform(const CComTransform& rhs)

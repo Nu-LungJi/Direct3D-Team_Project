@@ -353,6 +353,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />

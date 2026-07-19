@@ -49,6 +49,36 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 	}
 	return spawnList;
 }
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCircleSpreadParam& param)
+{
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
+	if (param.iCount == 0)
+		return spawnList;
+
+	const _float fAngleStep = XM_2PI / (_float)param.iCount;
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		PARTICLE_SPAWN_DATA& s = spawnList[i];
+		_float fAngle = fAngleStep * (_float)i;
+		s.position = param.vCenter;
+		s.velocity = _float3(
+			cosf(fAngle) * param.fRadius,
+			sinf(fAngle) * param.fRadius,
+			0
+		);
+		s.life = param.fLife;
+		s.fSize = param.fSize;
+		s.fEndSize = param.fEndSize;
+		s.color = param.color;
+		s.emissive = param.emissive;
+		s.endEmissive = param.endEmissive;
+		s.iBehaviorType = param.iBehaviorType;
+		s.originalEmissive = param.emissive;
+		s.originalPosition = param.vCenter;
+		uint32_t degree = 360 / param.iCount;
+	}
+	return spawnList;
+}
 
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSpiral(const SSpiralParam& param)
 {

@@ -79,6 +79,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		m_pParticleStructuredBuffer = res;
 	}
 
+
 	// 죽은 파티클 인덱스 버퍼
 	if (auto res = CResStructuredBuffer::Create())
 	{
@@ -114,6 +115,14 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		if (FAILED(res->Load(bufDesc)))
 			return E_FAIL;
 		m_pComCBuffer = res;
+	}
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_CIRCLE_TO_WAVE);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComWaveCBuffer = res;
 	}
 
 	{
@@ -392,6 +401,27 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
     {
+		CB_CIRCLE_TO_WAVE waveCb{};
+		waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
+		waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
+		waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
+		waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
+		waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
+		waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
+		waveCb.g_vFlowDirection = _float3(Randf(-1, 1), Randf(-1, 1), Randf(-1, 1));
+
+
+		{
+			D3D11_MAPPED_SUBRESOURCE mapped{};
+			if (SUCCEEDED(pContext->Map(m_pComWaveCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+			{
+				memcpy(mapped.pData, &waveCb, sizeof(waveCb));
+				pContext->Unmap(m_pComWaveCBuffer->GetCBuffer().Get(), 0);
+			}
+		}
+
+
         pContext->CSSetConstantBuffers(6, 1, m_pComSpawnCBuffer->GetCBuffer().GetAddressOf());
 
         ID3D11ShaderResourceView* spawnSRV = m_pSpawnListBuffer->GetSRV().Get();
@@ -437,6 +467,9 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
             pContext->CSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
         }
     }
+	
+	
+	pContext->CSSetConstantBuffers(10, 1, m_pComWaveCBuffer->GetCBuffer().GetAddressOf());
 
     ID3D11UnorderedAccessView* updateUAVs[] = {
         m_pDeadListBuffer->GetUAV().Get(),
@@ -590,7 +623,8 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
-
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
     pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
@@ -636,6 +670,10 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 	pContext->VSSetConstantBuffers(5, 1, nullCB);
 	pContext->PSSetConstantBuffers(5, 1, nullCB);
 	pContext->OMSetDepthStencilState(nullptr, 0);
+
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
     return S_OK;
 }
 

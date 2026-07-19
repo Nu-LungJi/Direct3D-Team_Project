@@ -27,7 +27,8 @@ typedef struct tagParticlePreset
 	_float fStartSize = 1.f;
 	_float fEndSize = 1.f;
 	_float4   rotation = { 0.f, 0.f, 0.f, 0.f };
-
+	_float3 velocity = { 0,0,0 };
+	_float3 originalVelocity = { 0,0,0 };
 	//EndColor는 보간 로직 만든 뒤에 추가
 	_float4 StartColor = { 1.f, 1.f, 1.f, 1.f };
 	_float4 originalEmissive = { 1.f, 1.f, 1.f, 0.f };
@@ -37,53 +38,7 @@ typedef struct tagParticlePreset
 
 } PARTICLE_PRESET;
 
-struct STANDARD_PARAMS
-{
-	bool bRandomPos = false;
-	_float3 posMin = { 0,0,0 };
-	_float3 posMax = { 0,0,0 };
 
-	bool bRandomVel = false;
-	_float3 velMin = { 0,0,0 };
-	_float3 velMax = { 0,0,0 };
-
-    uint32_t count = 1;
-    _float3  position = {};
-    _float3  velocity = {};
-    _float   life = 1.f;
-    _float   fSize = 1.f;
-    _float   fEndSize = 1.f;
-	bool bRandomRot = false;
-	_float3 rotMin = { 0,0,0 };
-	_float3 rotMax = { 0,0,0 };
-    _float4   rotation = { 0.f, 0.f, 0.f, 0.f };
-    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-    _float4  originalEmissive = { 1.f, 1.f, 1.f, 0.f };
-    _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
-    _float4  endEmissive = { 1.f, 1.f, 1.f, 0.f };
-    _bool    bLoop = false;
-    _float   fSpawnInterval = 0.1f;
-	_float	 fSpawnDelay = 0.f;
-	uint32_t	iBehaviorType;
-};
-
-struct BEAM_PARAMS
-{
-    _float4  beamStart = {};
-    _float4  beamEnd = {};
-    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-    _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
-    _float4  endEmissive = { 1.f, 1.f, 1.f, 0.f };
-    int      iDisplacementIterations = 6;
-    _float   fDisplacementAmplitude = 2.5f;
-    _float   fDisplacementDamping = 0.25f;
-    _float   flickerTimeInverval = 0.25f;
-    _float   beamDuration = 0.f;
-	_float	 fSpawnDelay = 0.f;
-	uint32_t ownerId = 0;
-	uint32_t geometryType = 0;
-
-};
 struct TextureSlotState
 {
 	std::string label;              // "Diffuse", "Normal", "Distortion", "Noise"
@@ -94,16 +49,16 @@ struct TextureSlotState
 };
 
 // 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
-enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
-
-struct SPAWN_COMMAND
-{
-    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
-    StringID sGroupTag{};
-    StringID sTypeTag{};
-	uint32_t ownerId = 0;
-    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
-};
+//enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
+//
+//struct SPAWN_COMMAND
+//{
+//    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
+//    StringID sGroupTag{};
+//    StringID sTypeTag{};
+//	uint32_t ownerId = 0;
+//    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
+//};
 struct PARTICLE_EFFECT_PRESET
 {
     std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
@@ -134,6 +89,11 @@ public:
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData, 
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
+	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos);
+
+	//실제 스폰 함수
+	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
+	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos);
 
 
 
@@ -175,7 +135,6 @@ public:
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 
-	uint32_t Spawn(uint32_t owenrId, const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = {0,0,0,1});
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
 	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
@@ -207,7 +166,7 @@ private:
 private:
     uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> s_TextureThumbnailCache;
-
+	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> m_ParsedCommandCache;
 private:
 	uint32_t m_iNextOwnerId = 1;
 };

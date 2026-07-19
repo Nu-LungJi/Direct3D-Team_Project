@@ -63,6 +63,8 @@ namespace Engine
 		_float pad3;
 		_float3 originalPosition; // 원래 스폰 위치
 		_float pad4;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
 	}PARTICLE;
 
 

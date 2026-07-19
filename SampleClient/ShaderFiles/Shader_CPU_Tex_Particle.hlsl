@@ -17,12 +17,16 @@ struct VS_IN
     float4 vColor : INSTANCE_COLOR0;
     float4 vInstEmissive : INSTANCE_EMISSIVE;
     float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
+    float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
     float2 uvOffset : INSTANCE_UVOFFSET;
     float2 uvSize : INSTANCE_UVSIZE;
     float life : INSTANCE_LIFE; // 추가 
     float maxLife : INSTANCE_MAXLIFE; // 추가
     uint iBehaviorType : INSTANCE_BEHAVIORTYPE;
 };
+
+
+
 
 struct VS_OUT
 {

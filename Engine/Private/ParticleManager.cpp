@@ -90,6 +90,7 @@ void CParticleManager::UpdateGUI()
 	static _bool distortion = false;
 	static _bool billboard = false;
 	static _bool gravity = false;
+	static _bool circleToWave = false;
 
 	static _float4 rotaion = _float4(0, 0, 0, 0);
 	static int iGeometryType = 0;
@@ -214,6 +215,108 @@ void CParticleManager::UpdateGUI()
 			ImGui::InputText("Hdr Normal TextureID1", slotNormalHdr.szTextureID1, IM_ARRAYSIZE(slotNormalHdr.szTextureID1));
 			ImGui::InputText("Hdr Normal TextureID2", slotNormalHdr.szTextureID2, IM_ARRAYSIZE(slotNormalHdr.szTextureID2));
 		}
+		ImGui::Separator();
+		ImGui::Text("Optional Textures (Distortion / Noise)");
+
+		// 썸네일 그리드 그리기 (기존 TEXTURE 모드와 동일한 방식)
+		auto DrawTextureThumbnailPicker = [&](const std::string& folder, std::vector<std::string>& fileList, TextureSlotState& slot)
+			{
+				const float thumbnailSize = 64.0f;
+				const float cellPadding = 10.0f;
+				const float cellWidth = thumbnailSize + cellPadding;
+				int columns = std::max(1, (int)(ImGui::GetContentRegionAvail().x / cellWidth));
+				int i = 0;
+				for (auto& texName : fileList)
+				{
+					std::string fullPath = folder + "/" + texName;
+					ID3D11ShaderResourceView* pSRV = GetOrLoadTextureThumbnail(fullPath);
+					ImGui::PushID(i);
+					ImGui::BeginGroup();
+					if (pSRV)
+					{
+						if (ImGui::ImageButton((ImTextureID)pSRV, ImVec2(thumbnailSize, thumbnailSize)))
+						{
+							slot.selectedIndex = i;
+							slot.selectedPath = fullPath;
+						}
+					}
+					else
+					{
+						if (ImGui::Button("No Img", ImVec2(thumbnailSize, thumbnailSize)))
+						{
+							slot.selectedIndex = i;
+							slot.selectedPath = fullPath;
+						}
+					}
+					ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + thumbnailSize);
+					ImGui::TextWrapped("%s", texName.c_str());
+					ImGui::PopTextWrapPos();
+					ImGui::EndGroup();
+					if (slot.selectedIndex == i)
+					{
+						ImVec2 minPos = ImGui::GetItemRectMin();
+						ImVec2 maxPos = ImGui::GetItemRectMax();
+						ImGui::GetWindowDrawList()->AddRect(minPos, maxPos, IM_COL32(255, 200, 0, 255), 0.0f, 0, 2.0f);
+					}
+					ImGui::PopID();
+					if ((i + 1) % columns != 0) ImGui::SameLine(0.0f, cellPadding);
+					i++;
+				}
+				ImGui::NewLine();
+			};
+
+		// ---- Distortion ----
+		static bool bDistortionScannedForMesh = false;
+		static std::vector<std::string> distortionFileListForMesh;
+		bool bRescanDistortionClicked = ImGui::Button("Rescan Distortion Folder");
+		if (!bDistortionScannedForMesh || bRescanDistortionClicked)
+		{
+			distortionFileListForMesh = ScanTextureFolder(kTextureFolders[2]); 
+			bDistortionScannedForMesh = true;
+		}
+		if (!slotDistortion.selectedPath.empty())
+		{
+			ImGui::Text("Selected(Distortion): %s", slotDistortion.selectedPath.c_str());
+			ImGui::SameLine();
+			if (ImGui::Button("Clear##Distortion"))
+			{
+				slotDistortion.selectedIndex = -1;
+				slotDistortion.selectedPath.clear();
+			}
+		}
+		if (!distortionFileListForMesh.empty())
+			DrawTextureThumbnailPicker(kTextureFolders[2], distortionFileListForMesh, slotDistortion);
+		else
+			ImGui::Text("(폴더에 텍스처 파일 없음)");
+		ImGui::InputText("Distortion TextureID1", slotDistortion.szTextureID1, IM_ARRAYSIZE(slotDistortion.szTextureID1));
+		ImGui::InputText("Distortion TextureID2", slotDistortion.szTextureID2, IM_ARRAYSIZE(slotDistortion.szTextureID2));
+		ImGui::Separator();
+
+		// ---- Noise ----
+		static bool bNoiseScannedForMesh = false;
+		static std::vector<std::string> noiseFileListForMesh;
+		bool bRescanNoiseClicked = ImGui::Button("Rescan Noise Folder");
+		if (!bNoiseScannedForMesh || bRescanNoiseClicked)
+		{
+			noiseFileListForMesh = ScanTextureFolder(kTextureFolders[3]);
+			bNoiseScannedForMesh = true;
+		}
+		if (!slotNoise.selectedPath.empty())
+		{
+			ImGui::Text("Selected(Noise): %s", slotNoise.selectedPath.c_str());
+			ImGui::SameLine();
+			if (ImGui::Button("Clear##Noise"))
+			{
+				slotNoise.selectedIndex = -1;
+				slotNoise.selectedPath.clear();
+			}
+		}
+		if (!noiseFileListForMesh.empty())
+			DrawTextureThumbnailPicker(kTextureFolders[3], noiseFileListForMesh, slotNoise);
+		else
+			ImGui::Text("(폴더에 텍스처 파일 없음)");
+		ImGui::InputText("Noise TextureID1", slotNoise.szTextureID1, IM_ARRAYSIZE(slotNoise.szTextureID1));
+		ImGui::InputText("Noise TextureID2", slotNoise.szTextureID2, IM_ARRAYSIZE(slotNoise.szTextureID2));
 	}
 
 	// ---- 2. TEXTURE일 때만: 텍스처 섹션 ----
@@ -443,8 +546,14 @@ void CParticleManager::UpdateGUI()
 					"", "",
 					"", "",
 					iTexRow, iTexCol,
-					"", "", "", "", "", "",
-					"", "", "",
+					"", "",                                                                  // normalTexID1, normalTexID2 (메쉬 노멀맵 미지원)
+					slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID1,
+					slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID2,
+					slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID1,
+					slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID2,
+					"",                                                                       // normalTexPath
+					slotDistortion.selectedPath,
+					slotNoise.selectedPath,
 					bUseHdrForMesh ? slotPositionHdr.szTextureID1 : "",
 					bUseHdrForMesh ? slotPositionHdr.szTextureID2 : "",
 					bUseHdrForMesh ? slotPositionHdr.selectedPath : "",
@@ -697,6 +806,8 @@ void CParticleManager::UpdateGUI()
 			previewParams.fEndSize = preset.fEndSize;
 			previewParams.color = preset.StartColor;
 			previewParams.originalEmissive = preset.originalEmissive;
+			previewParams.velocity = preset.velocity;
+			previewParams.originalVelocity = preset.originalVelocity;
 			previewParams.emissive = preset.Emissive;
 			previewParams.endEmissive = preset.endEmissive;
 			previewParams.rotation = _float4(XMConvertToRadians(preset.rotation.x),
@@ -737,6 +848,7 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("Distortion", &distortion);
 	ImGui::Checkbox("BILLBOARD", &billboard);
 	ImGui::Checkbox("GRAVITY", &gravity);
+	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 	ImGui::Checkbox("None", &none);
 
 	if (none)
@@ -744,6 +856,7 @@ void CParticleManager::UpdateGUI()
 		distortion = false;
 		billboard = false;
 		gravity = false;
+		circleToWave = false;
 	}
 
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
@@ -753,6 +866,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
 	if (gravity)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
+	if(circleToWave)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
 
 	ImGui::Separator();
 
@@ -818,6 +933,7 @@ void CParticleManager::UpdateGUI()
 			data.velocity = p.bRandomVel
 				? _float3(Randf(p.velMin.x, p.velMax.x), Randf(p.velMin.y, p.velMax.y), Randf(p.velMin.z, p.velMax.z))
 				: p.velocity;
+			data.originalVelocity = data.velocity;
 			data.life = p.life;
 			
 			data.fSize = p.fSize;
@@ -896,6 +1012,8 @@ void CParticleManager::UpdateGUI()
 			preset.sGroupTag = selectedGroup;
 			preset.sTypeTag = selectedType;
 			preset.StartColor = previewParams.color;
+			preset.velocity = previewParams.velocity;
+			preset.originalVelocity = preset.velocity;
 			preset.originalEmissive = previewParams.originalEmissive;
 			preset.Emissive = previewParams.emissive;
 			preset.endEmissive = previewParams.endEmissive;
@@ -941,27 +1059,33 @@ void CParticleManager::UpdateGUI()
 	}
 
 	ImGui::Separator();
+	if (currentKind == SPAWN_COMMAND_KIND::STANDARD|| currentKind == SPAWN_COMMAND_KIND::BEAM) {
+		ImGui::Checkbox("Distortion", &distortion);
+		ImGui::Checkbox("BILLBOARD", &billboard);
+		ImGui::Checkbox("GRAVITY", &gravity);
+		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::Checkbox("None", &none);
 
-	ImGui::Checkbox("Distortion", &distortion);
-	ImGui::Checkbox("BILLBOARD", &billboard);
-	ImGui::Checkbox("GRAVITY", &gravity);
-	ImGui::Checkbox("None", &none);
+		if (none)
+		{
+			distortion = false;
+			billboard = false;
+			gravity = false;
+			circleToWave = false;
+		}
 
-	if (none)
-	{
-		distortion = false;
-		billboard = false;
-		gravity = false;
+		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
+		if (distortion)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
+		if (billboard)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
+		if (gravity)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
+		if (circleToWave)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
+
 	}
-
-	pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
-	if (distortion)
-		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
-	if (billboard)
-		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
-	if (gravity)
-		pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
-
+	
 	ImGui::Separator();
 	if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
 	{
@@ -1034,7 +1158,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::Text("Pattern Params");
 		if (ImGui::Combo("Pattern Kind", &patternKindIndex, PATTERN_KIND_NAMES, IM_ARRAYSIZE(PATTERN_KIND_NAMES)))
 			pendingPattern = MakeDefaultPatternParam(patternKindIndex);
-
+		
 		DrawImGui(pendingPattern);
 	}
 	if (ImGui::Button("Add to List") && !matchedList.empty())
@@ -1049,8 +1173,9 @@ void CParticleManager::UpdateGUI()
 			cmd.params = pendingStandard;
 		else if (currentKind == SPAWN_COMMAND_KIND::BEAM)
 			cmd.params = pendingBeam;
-		else if (currentKind == SPAWN_COMMAND_KIND::PATTERN)
+		else if (currentKind == SPAWN_COMMAND_KIND::PATTERN) {
 			cmd.params = pendingPattern;
+		}
 
 		m_vecCommandQueue.push_back(cmd);
 	}
@@ -1369,6 +1494,18 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 				newEntry["HdrNormalTexturePath"] = hdrNormalTexPath;
 			}
 		}
+		if (!distortionTexID1.empty())                              // <-- 새로 추가
+		{
+			newEntry["DistortionTextureID1"] = distortionTexID1;
+			newEntry["DistortionTextureID2"] = distortionTexID2;
+			newEntry["DistortionTexturePath"] = distortionTexPath;
+		}
+		if (!noiseTexID1.empty())
+		{
+			newEntry["NoiseTextureID1"] = noiseTexID1;
+			newEntry["NoiseTextureID2"] = noiseTexID2;
+			newEntry["NoiseTexturePath"] = noiseTexPath;            
+		}
 	}
 	else
 	{
@@ -1479,6 +1616,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 				s.velocity = p.bRandomVel
 					? _float3(Randf(p.velMin.x, p.velMax.x), Randf(p.velMin.y, p.velMax.y), Randf(p.velMin.z, p.velMax.z))
 					: p.velocity;
+				s.originalVelocity = s.velocity;
 				s.life = p.life;
 				s.fSize = p.fSize;
 				s.fEndSize = p.fEndSize;
@@ -1755,6 +1893,8 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sResTag = sResTag;
 				desc.TexRows = RowCount;      
 				desc.TexColumns = ColCount;
+				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
+				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
 
@@ -1781,10 +1921,11 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 
 				if (!PSGroup.empty() && !PSID.empty())
 					desc.PSID = { PSGroup, PSID };
-
+				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
+				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
-
+				
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2394,29 +2535,183 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 
 	return S_OK;
 }
-uint32_t CParticleManager::Spawn(uint32_t ownerId, const std::string& strJsonPath, const _float4x4& worldMat, _fvector endPos)
+// 3) 예전 호출부(strJsonPath로 바로 부르던 곳) 호환용 오버로드 - 필요하면 유지
+uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
+	const _float4x4& worldMat, _fvector endPos)
 {
-	if (!std::filesystem::exists(strJsonPath))
-		return E_FAIL;
-	std::ifstream file(strJsonPath);
+	auto found = m_ParsedCommandCache.find(strJsonPath);
+	if (found == m_ParsedCommandCache.end())
+		found = m_ParsedCommandCache.emplace(strJsonPath, Parse_Command(strJsonPath)).first;
+
+	return Spawn(found->second, worldMat, endPos);
+}
+//uint32_t CParticleManager::Spawn( const std::string& strJsonPath, const _float4x4& worldMat, _fvector endPos)
+//{
+//	std::string path = "./Resources/json/Particle/";
+//	path += strJsonPath;
+//	if (!std::filesystem::exists(path))
+//		return E_FAIL;
+//	std::ifstream file(path);
+//	if (!file.is_open())
+//		return E_FAIL;
+//	nlohmann::json j;
+//	try { file >> j; }
+//	catch (...) { return E_FAIL; }
+//	if (!j.contains("commands") || !j["commands"].is_array())
+//		return E_FAIL;
+//
+//	XMMATRIX matWorld = XMLoadFloat4x4(&worldMat);   // 여기서 한 번만 로드
+//
+//	std::vector<SPAWN_COMMAND> localQueue;
+//	for (const auto& entry : j["commands"])
+//	{
+//		SPAWN_COMMAND cmd{};
+//		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
+//		cmd.sGroupTag = entry.value("sGroupTag", "");
+//		cmd.sTypeTag = entry.value("sTypeTag", "");
+//
+//		switch (cmd.sGroupTag_KindTag)
+//		{
+//		case SPAWN_COMMAND_KIND::STANDARD:
+//		{
+//			STANDARD_PARAMS p{};
+//			p.count = entry.value("count", 1u);
+//			p.bRandomPos = entry.value("bRandomPos", false);
+//			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
+//			auto posMax = entry.value("posMax", std::vector<float>{0, 0, 0});
+//			auto pos = entry.value("position", std::vector<float>{0, 0, 0});
+//
+//			// 위치: 로컬 오프셋을s matWorld로 통째로 변환 (회전 + 이동)
+//			// 회전이 걸려있으면 min/max 두 점을 각각 변환해도 축별 대소관계가
+//			// 뒤집힐 수 있으므로, 변환 후 컴포넌트별로 다시 min/max를 재정렬한다.
+//			_float3 posMinT, posMaxT;
+//			XMStoreFloat3(&posMinT, XMVector3TransformCoord(
+//				XMVectorSet(posMin[0], posMin[1], posMin[2], 1.f), matWorld));
+//			XMStoreFloat3(&posMaxT, XMVector3TransformCoord(
+//				XMVectorSet(posMax[0], posMax[1], posMax[2], 1.f), matWorld));
+//			p.posMin = { std::min(posMinT.x, posMaxT.x), std::min(posMinT.y, posMaxT.y), std::min(posMinT.z, posMaxT.z) };
+//			p.posMax = { std::max(posMinT.x, posMaxT.x), std::max(posMinT.y, posMaxT.y), std::max(posMinT.z, posMaxT.z) };
+//
+//			XMStoreFloat3(&p.position, XMVector3TransformCoord(
+//				XMVectorSet(pos[0], pos[1], pos[2], 1.f), matWorld));
+//
+//			p.bRandomVel = entry.value("bRandomVel", false);
+//			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
+//			auto velMax = entry.value("velMax", std::vector<float>{0, 0, 0});
+//			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
+//
+//			// 속도: 방향값이니까 회전만 적용, 이동 성분은 무시 (TransformNormal, w=0)
+//			// 위치와 마찬가지로 회전 때문에 축별 대소관계가 뒤집힐 수 있어 재정렬한다.
+//			_float3 velMinT, velMaxT;
+//			XMStoreFloat3(&velMinT, XMVector3TransformNormal(
+//				XMVectorSet(velMin[0], velMin[1], velMin[2], 0.f), matWorld));
+//			XMStoreFloat3(&velMaxT, XMVector3TransformNormal(
+//				XMVectorSet(velMax[0], velMax[1], velMax[2], 0.f), matWorld));
+//			p.velMin = { std::min(velMinT.x, velMaxT.x), std::min(velMinT.y, velMaxT.y), std::min(velMinT.z, velMaxT.z) };
+//			p.velMax = { std::max(velMinT.x, velMaxT.x), std::max(velMinT.y, velMaxT.y), std::max(velMinT.z, velMaxT.z) };
+//
+//			XMStoreFloat3(&p.velocity, XMVector3TransformNormal(
+//				XMVectorSet(vel[0], vel[1], vel[2], 0.f), matWorld));
+//
+//			p.life = entry.value("life", 1.f);
+//			p.fSize = entry.value("StartSize", 1.f);
+//			p.fEndSize = entry.value("EndSize", 1.f);
+//
+//			p.bRandomRot = entry.value("bRandomRot", false);
+//			// 회전 min/max는 좌표가 아니라 오일러 각도(도) 범위이므로 matWorld로
+//			// 변환하면 안 된다. 캐스터 회전까지 합성하려면 나중에 쿼터니언으로 별도 처리.
+//			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
+//			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
+//			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
+//			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
+//			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
+//			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
+//			// TODO: 캐스터 회전까지 합성하려면 matWorld에서 쿼터니언 뽑아서
+//			// rotation과 XMQuaternionMultiply 필요 (지금은 위치/속도만 처리)
+//
+//			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
+//			p.color = { col[0], col[1], col[2], col[3] };
+//			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
+//			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
+//			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
+//			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
+//			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
+//			p.bLoop = entry.value("bLoop", false);
+//			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
+//			cmd.params = p;
+//			break;
+//		}
+//		case SPAWN_COMMAND_KIND::BEAM:
+//		{
+//			BEAM_PARAMS p{};
+//			auto bs = entry.value("beamStart", std::vector<float>{0, 0, 0, 0});
+//			p.beamStart = { bs[0], bs[1], bs[2], bs[3] };
+//			XMStoreFloat4(&p.beamStart, XMVector3TransformCoord(
+//				XMLoadFloat4(&p.beamStart), matWorld));          // 캐스터 기준: 회전 + 이동
+//
+//			auto be = entry.value("beamEnd", std::vector<float>{0, 0, 0, 0});
+//			p.beamEnd = { be[0], be[1], be[2], be[3] };
+//			XMStoreFloat4(&p.beamEnd, XMLoadFloat4(&p.beamEnd) + endPos);   // 타겟 기준: 순수 이동만 (원래대로)
+//
+//			p.iDisplacementIterations = entry.value("iDisplacementIterations", 0);
+//			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.f);
+//			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.f);
+//			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
+//			p.beamDuration = entry.value("beamDuration", 0.f);
+//			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
+//			p.geometryType = entry.value("GeometryType", 0.f);
+//			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
+//			p.color = { col[0], col[1], col[2], col[3] };
+//			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
+//			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
+//			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
+//			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
+//			cmd.params = p;
+//			break;
+//		}
+//		case SPAWN_COMMAND_KIND::PATTERN:
+//		{
+//			int kindIdx = entry.value("patternKindIndex", 0);
+//			PatternParamVariant pv = MakeDefaultPatternParam(kindIdx);
+//			const auto& paramJson = entry["patternParams"];
+//			std::visit([&](auto& p) { LoadParam(p, paramJson); }, pv);
+//			ApplyWorldMatToPattern(pv, matWorld);
+//			auto spawnList = BuildSpawnData(pv);
+//			cmd.sGroupTag_KindTag = SPAWN_COMMAND_KIND::PATTERN;
+//			cmd.params = spawnList;
+//			break;
+//		}
+//		default:
+//			continue;
+//		}
+//		localQueue.push_back(cmd);
+//	}
+//	ExecuteCommandQueue(localQueue);
+//	return m_iNextOwnerId++;
+//}
+// 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
+std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& strJsonPath)
+{
+	std::vector<SPAWN_COMMAND> parsed;
+
+	std::string path = "./Resources/json/Particle/" + strJsonPath;
+	std::ifstream file(path);
 	if (!file.is_open())
-		return E_FAIL;
+		return parsed;
+
 	nlohmann::json j;
 	try { file >> j; }
-	catch (...) { return E_FAIL; }
+	catch (...) { return parsed; }
 	if (!j.contains("commands") || !j["commands"].is_array())
-		return E_FAIL;
+		return parsed;
 
-	XMMATRIX matWorld = XMLoadFloat4x4(&worldMat);   // 여기서 한 번만 로드
-
-	std::vector<SPAWN_COMMAND> localQueue;
 	for (const auto& entry : j["commands"])
 	{
 		SPAWN_COMMAND cmd{};
 		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
 		cmd.sGroupTag = entry.value("sGroupTag", "");
 		cmd.sTypeTag = entry.value("sTypeTag", "");
-		cmd.ownerId = ownerId;
+
 		switch (cmd.sGroupTag_KindTag)
 		{
 		case SPAWN_COMMAND_KIND::STANDARD:
@@ -2424,48 +2719,45 @@ uint32_t CParticleManager::Spawn(uint32_t ownerId, const std::string& strJsonPat
 			STANDARD_PARAMS p{};
 			p.count = entry.value("count", 1u);
 			p.bRandomPos = entry.value("bRandomPos", false);
+			p.bRandomVel = entry.value("bRandomVel", false);
+			p.bRandomRot = entry.value("bRandomRot", false);
+			p.bLoop = entry.value("bLoop", false);
+
 			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
 			auto posMax = entry.value("posMax", std::vector<float>{0, 0, 0});
 			auto pos = entry.value("position", std::vector<float>{0, 0, 0});
-			// 위치: 로컬 오프셋을 matWorld로 통째로 변환 (회전 + 이동)
-			XMStoreFloat3(&p.posMin, XMVector3TransformCoord(
-				XMVectorSet(posMin[0], posMin[1], posMin[2], 1.f), matWorld));
-			XMStoreFloat3(&p.posMax, XMVector3TransformCoord(
-				XMVectorSet(posMax[0], posMax[1], posMax[2], 1.f), matWorld));
-			XMStoreFloat3(&p.position, XMVector3TransformCoord(
-				XMVectorSet(pos[0], pos[1], pos[2], 1.f), matWorld));
-			p.bRandomVel = entry.value("bRandomVel", false);
+			p.posMin = { posMin[0], posMin[1], posMin[2] };
+			p.posMax = { posMax[0], posMax[1], posMax[2] };
+			p.position = { pos[0], pos[1], pos[2] };
+
 			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
 			auto velMax = entry.value("velMax", std::vector<float>{0, 0, 0});
 			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
-			// 속도: 방향값이니까 회전만 적용 (이동 성분 무시하는 TransformNormal)
-			XMStoreFloat3(&p.velMin, XMVector3TransformNormal(
-				XMVectorSet(velMin[0], velMin[1], velMin[2], 0.f), matWorld));
-			XMStoreFloat3(&p.velMax, XMVector3TransformNormal(
-				XMVectorSet(velMax[0], velMax[1], velMax[2], 0.f), matWorld));
-			XMStoreFloat3(&p.velocity, XMVector3TransformNormal(
-				XMVectorSet(vel[0], vel[1], vel[2], 0.f), matWorld));
+			p.velMin = { velMin[0], velMin[1], velMin[2] };
+			p.velMax = { velMax[0], velMax[1], velMax[2] };
+			p.velocity = { vel[0], vel[1], vel[2] };
+
+			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
+			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
+			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
+			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
+			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
+			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
+
 			p.life = entry.value("life", 1.f);
 			p.fSize = entry.value("StartSize", 1.f);
 			p.fEndSize = entry.value("EndSize", 1.f);
-			p.bRandomRot = entry.value("bRandomRot", false);
-			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
-			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
-			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
-			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
-			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
-			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
-			// TODO: 캐스터 회전까지 합성하려면 matWorld에서 쿼터니언 뽑아서
-			// rotation과 XMQuaternionMultiply 필요 (지금은 위치/속도만 처리)
+
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
-			p.color = { col[0], col[1], col[2], col[3] };
 			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
-			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
+			p.color = { col[0], col[1], col[2], col[3] };
+			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
 			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
+
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-			p.bLoop = entry.value("bLoop", false);
 			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
+
 			cmd.params = p;
 			break;
 		}
@@ -2473,13 +2765,9 @@ uint32_t CParticleManager::Spawn(uint32_t ownerId, const std::string& strJsonPat
 		{
 			BEAM_PARAMS p{};
 			auto bs = entry.value("beamStart", std::vector<float>{0, 0, 0, 0});
-			p.beamStart = { bs[0], bs[1], bs[2], bs[3] };
-			XMStoreFloat4(&p.beamStart, XMVector3TransformCoord(
-				XMLoadFloat4(&p.beamStart), matWorld));          // 캐스터 기준: 회전 + 이동
-
 			auto be = entry.value("beamEnd", std::vector<float>{0, 0, 0, 0});
+			p.beamStart = { bs[0], bs[1], bs[2], bs[3] };
 			p.beamEnd = { be[0], be[1], be[2], be[3] };
-			XMStoreFloat4(&p.beamEnd, XMLoadFloat4(&p.beamEnd) + endPos);   // 타겟 기준: 순수 이동만 (원래대로)
 
 			p.iDisplacementIterations = entry.value("iDisplacementIterations", 0);
 			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.f);
@@ -2488,12 +2776,14 @@ uint32_t CParticleManager::Spawn(uint32_t ownerId, const std::string& strJsonPat
 			p.beamDuration = entry.value("beamDuration", 0.f);
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
 			p.geometryType = entry.value("GeometryType", 0.f);
+
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
-			p.color = { col[0], col[1], col[2], col[3] };
 			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
-			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
+			p.color = { col[0], col[1], col[2], col[3] };
+			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
 			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
+
 			cmd.params = p;
 			break;
 		}
@@ -2502,21 +2792,96 @@ uint32_t CParticleManager::Spawn(uint32_t ownerId, const std::string& strJsonPat
 			int kindIdx = entry.value("patternKindIndex", 0);
 			PatternParamVariant pv = MakeDefaultPatternParam(kindIdx);
 			const auto& paramJson = entry["patternParams"];
-			std::visit([&](auto& p) { LoadParam(p, paramJson); }, pv);
-			ApplyWorldMatToPattern(pv, matWorld);
-			auto spawnList = BuildSpawnData(pv);
-			cmd.sGroupTag_KindTag = SPAWN_COMMAND_KIND::PATTERN;
-			cmd.params = spawnList;
+			std::visit([&](auto& pp) { LoadParam(pp, paramJson); }, pv);
+			cmd.params = pv; // 아직 matWorld 적용 전
 			break;
 		}
 		default:
 			continue;
 		}
-		localQueue.push_back(cmd);
+
+		parsed.push_back(cmd);
 	}
+
+	return parsed;
+}
+// 2) 진짜 스폰: 이미 파싱된 벡터만 받아서 변환+실행
+uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
+	const _float4x4& worldMat, _fvector endPos)
+{
+	XMMATRIX matWorld = XMLoadFloat4x4(&worldMat);
+
+	if (XMVector4IsNaN(matWorld.r[0]) || XMVector4IsNaN(matWorld.r[1]) ||
+		XMVector4IsNaN(matWorld.r[2]) || XMVector4IsNaN(matWorld.r[3]) ||
+		XMVector4IsInfinite(matWorld.r[0]) || XMVector4IsInfinite(matWorld.r[1]) ||
+		XMVector4IsInfinite(matWorld.r[2]) || XMVector4IsInfinite(matWorld.r[3]))
+	{
+		OutputDebugStringA("[CParticleManager::Spawn] invalid matWorld\n");
+		return (uint32_t)E_FAIL;
+	}
+
+	std::vector<SPAWN_COMMAND> localQueue;
+	localQueue.reserve(templateCommands.size());
+
+	for (const auto& srcCmd : templateCommands)
+	{
+		SPAWN_COMMAND cmd = srcCmd; // 복사본에만 변환, 원본(호출자가 들고 있는 벡터)은 그대로
+		cmd.ownerId = m_iNextOwnerId;
+
+		switch (cmd.sGroupTag_KindTag)
+		{
+		case SPAWN_COMMAND_KIND::STANDARD:
+		{
+			auto& p = std::get<STANDARD_PARAMS>(cmd.params);
+
+			_float3 posMinT, posMaxT;
+			XMStoreFloat3(&posMinT, XMVector3TransformCoord(XMLoadFloat3(&p.posMin), matWorld));
+			XMStoreFloat3(&posMaxT, XMVector3TransformCoord(XMLoadFloat3(&p.posMax), matWorld));
+			p.posMin = { std::min(posMinT.x, posMaxT.x), std::min(posMinT.y, posMaxT.y), std::min(posMinT.z, posMaxT.z) };
+			p.posMax = { std::max(posMinT.x, posMaxT.x), std::max(posMinT.y, posMaxT.y), std::max(posMinT.z, posMaxT.z) };
+
+			_float3 posT;
+			XMStoreFloat3(&posT, XMVector3TransformCoord(XMLoadFloat3(&p.position), matWorld));
+			p.position = posT;
+
+			_float3 velMinT, velMaxT;
+			XMStoreFloat3(&velMinT, XMVector3TransformNormal(XMLoadFloat3(&p.velMin), matWorld));
+			XMStoreFloat3(&velMaxT, XMVector3TransformNormal(XMLoadFloat3(&p.velMax), matWorld));
+			p.velMin = { std::min(velMinT.x, velMaxT.x), std::min(velMinT.y, velMaxT.y), std::min(velMinT.z, velMaxT.z) };
+			p.velMax = { std::max(velMinT.x, velMaxT.x), std::max(velMinT.y, velMaxT.y), std::max(velMinT.z, velMaxT.z) };
+
+			_float3 velT;
+			XMStoreFloat3(&velT, XMVector3TransformNormal(XMLoadFloat3(&p.velocity), matWorld));
+			p.velocity = velT;
+			// rotMin/rotMax는 변환하지 않음
+			break;
+		}
+		case SPAWN_COMMAND_KIND::BEAM:
+		{
+			auto& p = std::get<BEAM_PARAMS>(cmd.params);
+			XMStoreFloat4(&p.beamStart, XMVector3TransformCoord(XMLoadFloat4(&p.beamStart), matWorld));
+			XMStoreFloat4(&p.beamEnd, XMLoadFloat4(&p.beamEnd) + endPos);
+			break;
+		}
+		case SPAWN_COMMAND_KIND::PATTERN:
+		{
+			PatternParamVariant pv = std::get<PatternParamVariant>(cmd.params);
+			ApplyWorldMatToPattern(pv, matWorld);
+			cmd.params = BuildSpawnData(pv);
+			break;
+		}
+		default:
+			break;
+		}
+
+		localQueue.push_back(std::move(cmd));
+	}
+
 	ExecuteCommandQueue(localQueue);
 	return m_iNextOwnerId++;
 }
+
+
 HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float3& position, uint32_t count)
 {
 	auto it = m_ParticlePresets.find(presetName);
@@ -2529,6 +2894,7 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 
 	PARTICLE_SPAWN_DATA data{};
 	data.position = position;
+	data.velocity =  preset.velocity;
 	data.life = preset.maxLife;
 	data.fSize = preset.fStartSize;
 	data.fEndSize = preset.fEndSize;
@@ -2538,6 +2904,7 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 	data.iBehaviorType = preset.iBehaviorType;
 	data.rotation = preset.rotation;
 	data.originalPosition = position;
+	data.originalVelocity = data.velocity;
 	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
 }
 // ParticleManager.cpp
@@ -2592,6 +2959,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSpiral(param);
 			else if constexpr (std::is_same_v<T, SStraightGroundParam>)
 				return ParticlePattern::MakeStraightGround(param);
+			else if constexpr (std::is_same_v<T, SCircleSpreadParam>)
+				return ParticlePattern::MakeCircleAndSpread(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

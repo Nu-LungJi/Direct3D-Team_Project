@@ -1018,6 +1018,9 @@
     <ClInclude Include="..\public\Particle_GPU.h">
       <Filter>Particle</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_ParticleDefines.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
