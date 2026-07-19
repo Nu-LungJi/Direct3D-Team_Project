@@ -41,6 +41,7 @@ public:
 private:
 	std::map<std::string, std::function<void(class CUIObject*)>> m_EventMap;
 	std::map<std::string, std::function<void(std::string name)>> m_FuncMap;
+	std::unordered_map<std::string, std::wstring> m_StringTable;
 	std::vector<CHandle> rootUIHandles;
 
 	// 애니메이션 함수, 실행 함수들 이름

@@ -181,6 +181,12 @@ void CTextureUI::PlayEffect(uint32_t uiState)
 		if (Appear) Appear(this);
 	}
 
+	if (uiState & ETOUI(UI_STATE::DISAPPEAR))
+	{
+		ClearEffectTweens();
+		if (Disappear) Disappear(this);
+	}
+
 	if (m_bInputLocked)
 		return;
 }

@@ -158,5 +158,4 @@ namespace Engine
 		float g_fUseDissolve;
 	};
 	static_assert(sizeof(CB_TRAIL_OPTION) % 16 == 0);
-
 }

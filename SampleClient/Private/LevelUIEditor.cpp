@@ -43,7 +43,7 @@ HRESULT CLevelUIEditor::Initialize()
 	E::CGameInstance::Get().GameObjectAllReset();
 
 	Target_UI = std::nullopt;
-	m_iEditorMode = 0;
+	m_iEditorMode = 1;
 	m_iButtonMode = 0;
 	count = 0;
 
@@ -241,7 +241,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 		}
 
 		// 스펠
-		if (true)
+		if (false)
 		{
 			CTextureUI::UIOBJECT_DESC Desc{};
 
@@ -260,17 +260,20 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
 		}
 
-		if (false)
+		if (true)
 		{
 			count++;
 			CTextUI::TEXT_DESC desc{};
 
-			desc.fSizeX = 2.f;
-			desc.fSizeY = 2.f;
+			desc.sObjectTag = "UI_" + std::to_string(count);
+			desc.Name = "UI_" + std::to_string(count);
+			desc.fSizeX = 3.f;
+			desc.fSizeY = 3.f;
 			desc.fX = clientSize.x * 0.5f;
 			desc.fY = clientSize.y * 0.5f;
-			desc.fAlpha = 0.05f;
+			desc.fAlpha = 1.f;
 			desc.Text = L"Test";
+			desc.ResWeight = count;
 
 			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", "Layer_UI", &desc);
 		}
@@ -476,144 +479,93 @@ void CLevelUIEditor::SelectMode()
 void CLevelUIEditor::ArrangeMode()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
-	
 	_float2 mousePos = CGameInstance::Get().GetMousePos();
 
 	DrawJsonFileLoader(m_iEditorMode);
 
-	ImGui::Begin("EDITOR_MODE: ARRANGE_MODE");
+	// 윈도우 여백 및 패딩 약간 조절
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+	ImGui::Begin("UI Editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Save / Load");
-	ImGui::Separator();
-
-	if (ImGui::Button("Save"))
-		Save();
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Load"))
-		Load();
-
-	ImGui::SetNextItemWidth(100);
-	ImGui::InputText("LevelName", m_cLevelName, sizeof(m_cLevelName));
-
-	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Mode");
-	ImGui::Separator();
-
-	if (ImGui::Button("ARRAGE_MODE"))
+	// ---------------------------------------------------------
+	// 1. File & Mode Settings
+	// ---------------------------------------------------------
+	if (ImGui::CollapsingHeader("File & Mode Settings", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
-		RefreshJsonFileList();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("PREFAB_MODE"))
-	{
-		m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
-		RefreshJsonFileList();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("FLIPBOOK_MODE"))
-	{
-		m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
-		RefreshJsonFileList();
-	}
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("Prefab Name:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(200);
+		ImGui::InputText("##PrefabName", m_cPrefabName, sizeof(m_cPrefabName));
 
-	ImGui::Spacing();
-	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Target_State");
-	ImGui::Separator();
+		if (ImGui::Button("Save Prefab", ImVec2(120, 0)))
+			PrefabSave();
 
-	ImGui::Text("PosX  : %.2f  ", m_UIINFO.fX);
-	ImGui::SameLine(150);
-	ImGui::Text("PosY   : %.2f", m_UIINFO.fY);
+		ImGui::SameLine();
 
-	ImGui::Text("SizeX : %.2f  ", m_UIINFO.SizeX);
-	ImGui::SameLine(150);
-	ImGui::Text("SizeY  : %.2f", m_UIINFO.SizeY);
+		if (ImGui::Button("Load Prefab", ImVec2(120, 0)))
+			GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_PrefabPath);
 
-	ImGui::Text("Alpha : %.2f", m_UIINFO.Alpha);
-	ImGui::SameLine(150);
-	ImGui::Text("Weight : %.d", m_UIINFO.Weight);
+		ImGui::Spacing();
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Editor Mode ]");
 
-	ImGui::Text("Name : %s", m_cName);
 
-	ImGui::Spacing();
-	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Input_State");
-	ImGui::Separator();
-
-	ImGui::SetNextItemWidth(80);
-	ImGui::DragFloat("fx", &m_UIINFO.fX, 0.1f, 0.0f, clientSize.x);
-	ImGui::SameLine(150);
-	ImGui::SetNextItemWidth(80);
-	ImGui::DragFloat("fy", &m_UIINFO.fY, 0.1f, 0.0f, clientSize.y);
-
-	ImGui::SetNextItemWidth(80);
-	ImGui::DragFloat("fSizeX", &m_UIINFO.SizeX, 0.1f, 0.0f, clientSize.x);
-	ImGui::SameLine(150);
-	ImGui::SetNextItemWidth(80);
-	ImGui::DragFloat("fSizeY", &m_UIINFO.SizeY, 0.1f, 0.0f, clientSize.y);
-
-	ImGui::SetNextItemWidth(80);
-	ImGui::DragFloat("fAlpha", &m_UIINFO.Alpha, 0.001f, 0.0f, 1.f);
-	ImGui::SameLine(150);
-	ImGui::SetNextItemWidth(80);
-	ImGui::DragInt("iWeight", &m_UIINFO.Weight, 1.f, 0.0f, 100);
-
-	ImGui::SetNextItemWidth(80);
-	ImGui::InputText("Name", m_cName, sizeof(m_cName));
-
-	ImGui::Spacing();
-	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Level");
-	ImGui::Separator();
-
-	ImGui::Spacing();
-	ImGui::TextColored(ImVec4(0, 1, 1, 1), "Select_Images");
-	ImGui::Separator();
-
-	if (ImGui::BeginTable("TextureTable", 2))
-	{
-		for (size_t i = 0; i < m_vResTag.size(); ++i)
-		{
-			ImGui::TableNextColumn();
-
-			ImGui::PushID((int)i);
-
-			const auto& srv = E::CGameInstance::GetConst()
-				.GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_vResTag[i]);
-
-			if (ImGui::ImageButton((ImTextureID)srv->GetSRV().Get(), ImVec2(100, 100)))
-			{
-				if (std::nullopt != m_oSelectHandle)
-				{
-					CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_oSelectHandle);
-					selectUI->SetPendingDestroyCascade();
-
-					m_oSelectHandle = std::nullopt;
-				}
-
-				CTextureUI::UIOBJECT_DESC Desc{};
-
-				Desc.sObjectTag = "Select_Image";
-				Desc.fSizeX = m_UIINFO.SizeX;
-				Desc.fSizeY = m_UIINFO.SizeY;
-				Desc.fX = g_iWinSizeX * 0.5f;
-				Desc.fY = g_iWinSizeY * 0.5f;
-				Desc.fAlpha = m_UIINFO.Alpha * 0.3f;
-				Desc.ResTag = m_vResTag[i];
-				Desc.UIType = ETOUI(UI_TYPE::TEXUI);
-				Desc.ResWeight = 10000;
-
-				m_oSelectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI","Layer_UI_Texture", &Desc);
-				CTextureUI* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*m_oSelectHandle);
-				selectUI->SetMouseTracking(true);
-			}
-
-			ImGui::PopID();
+		// 라디오 버튼 형태나 그룹화된 버튼으로 모드 전환을 직관적으로 변경
+		if (ImGui::Button("PREFAB", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
+			RefreshJsonFileList();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("FLIPBOOK", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
+			RefreshJsonFileList();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Text", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
+			RefreshJsonFileList();
 		}
 
-		ImGui::EndTable();
+		ImGui::Spacing();
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Clear ]");
+		if (ImGui::Button("ClearUI", ImVec2(90, 0))) {
+			ClearUI();
+		}
+	}
+
+	if (std::nullopt != Target_UI &&
+		(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI)))
+	{
+		Engine::CUIObject* targetUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+		m_UIINFO.Name = targetUI->GetName();
+		strcpy_s(m_cName, sizeof(m_cName), m_UIINFO.Name.c_str());
+	}
+
+	StateView();
+
+	if (ImGui::CollapsingHeader("Global UI Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		// 스크롤이 가능하도록 영역 지정 (UI가 많아질 것을 대비)
+		ImGui::BeginChild("HierarchyTreeBox", ImVec2(0, 200), true);
+
+		std::vector<CHandle> rootUIHandles = GET_SINGLE(UIManager)->GetRootUIHandles();
+
+		for (auto rootHandle : rootUIHandles)
+		{
+			DrawHierarchyNode(rootHandle); // 여기서부터 재귀적으로 쭉 그려짐
+		}
+
+		// 빈 공간을 클릭하면 선택 해제 (원한다면 추가)
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered())
+		{
+			Target_UI = std::nullopt;
+		}
+
+		ImGui::EndChild();
 	}
 
 	ImGui::End();
+	ImGui::PopStyleVar();
 }  
 
 void CLevelUIEditor::PrefabMode()
@@ -649,12 +601,8 @@ void CLevelUIEditor::PrefabMode()
 		ImGui::Spacing();
 		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Editor Mode ]");
 	
+
 		// 라디오 버튼 형태나 그룹화된 버튼으로 모드 전환을 직관적으로 변경
-		if (ImGui::Button("ARRANGE", ImVec2(90, 0))) {
-			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
-			RefreshJsonFileList();
-		}
-		ImGui::SameLine();
 		if (ImGui::Button("PREFAB", ImVec2(90, 0))) {
 			m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
 			RefreshJsonFileList();
@@ -663,6 +611,17 @@ void CLevelUIEditor::PrefabMode()
 		if (ImGui::Button("FLIPBOOK", ImVec2(90, 0))) {
 			m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
 			RefreshJsonFileList();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Text", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
+			RefreshJsonFileList();
+		}
+
+		ImGui::Spacing();
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Clear ]");
+		if (ImGui::Button("ClearUI", ImVec2(90, 0))) {
+			ClearUI();
 		}
 	}
 	
@@ -944,12 +903,8 @@ void CLevelUIEditor::FlipbookMode()
 	if (ImGui::CollapsingHeader("File & Mode Settings", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Editor Mode ]");
-	
-		if (ImGui::Button("ARRANGE", ImVec2(90, 0))) {
-			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
-			RefreshJsonFileList();
-		}
-		ImGui::SameLine();
+
+		
 		if (ImGui::Button("PREFAB", ImVec2(90, 0))) {
 			m_iEditorMode = ETOUI(UiEditorMode::PREFAB);
 			RefreshJsonFileList();
@@ -957,6 +912,11 @@ void CLevelUIEditor::FlipbookMode()
 		ImGui::SameLine();
 		if (ImGui::Button("FLIPBOOK", ImVec2(90, 0))) {
 			m_iEditorMode = ETOUI(UiEditorMode::FLIPBOOK);
+			RefreshJsonFileList();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Text", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
 			RefreshJsonFileList();
 		}
 	
@@ -1219,6 +1179,12 @@ void CLevelUIEditor::Picking()
 			m_FLIPINFO.Duration = flipInfo.Duration;
 			m_FLIPINFO.TotalFrame = flipInfo.TotalFrame;
 			m_FLIPINFO.Padding = flipInfo.Padding;
+		}
+		if (ETOUI(UI_TYPE::TEXT) == selectInfo.UIType)
+		{
+			CTextBox* ptextbox = static_cast<CTextBox*>(selectUI);
+			m_sText = WStringToUTF8(ptextbox->GetwText());
+			strcpy_s(m_cTextBuf, sizeof(m_cTextBuf), m_sText.c_str());
 		}
 	}
 }
@@ -1560,7 +1526,7 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 	case ETOUI(UI_TYPE::TEXT):
 	{
 		const TEXT_INFO& textInfo = static_cast<CTextUI*>(pUI)->GetTextInfo();
-		//obj["Text"] = textInfo.Text;
+		obj["Text"] = WStringToUTF8(textInfo.Text);
 	}
 	default:
 		break;
@@ -1746,7 +1712,7 @@ void CLevelUIEditor::StateView()
 		ImGui::Text("Position"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragFloat("X##PosX", &m_UIINFO.fX, 0.1f, 0.0f, clientSize.x); ImGui::SameLine();
 		ImGui::SetNextItemWidth(100); ImGui::DragFloat("Y##PosY", &m_UIINFO.fY, 0.1f, 0.0f, clientSize.y);
-	
+		
 		// Transform (Size)
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Size"); ImGui::TableNextColumn();
@@ -1792,6 +1758,26 @@ void CLevelUIEditor::StateView()
 		ImGui::Text("Effect Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
 		ImGui::Combo("##EffectType", reinterpret_cast<int*>(&m_UIINFO.EffectType), EffectTypeNames, IM_ARRAYSIZE(EffectTypeNames));
+
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::TEXT))
+		{
+			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+			ImGui::Text("Text String"); ImGui::TableNextColumn();
+
+			// 입력 칸이 셀 너비 전체를 차지하도록 설정
+			ImGui::SetNextItemWidth(-FLT_MIN);
+
+			ImGui::InputText("##TextData", m_cTextBuf, sizeof(m_cTextBuf));
+
+			m_sText = m_cTextBuf;
+			
+			if (Target_UI != std::nullopt && 
+				nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*Target_UI))
+			{
+				CTextBox* pTextBox = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*Target_UI);
+				pTextBox->SetwText(StringToWUTF8(m_sText));
+			}
+		}
 	
 		ImGui::EndTable();
 	}
@@ -2159,6 +2145,21 @@ void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandl
 	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::TEXUI))
 	{
 		// TextureUI 전용으로 동기화할 데이터가 나중에 생긴다면 여기에 추가
+	}
+	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::TEXT))
+	{
+		CTextBox* textBox = static_cast<CTextBox*>(pTargetUI);
+		m_sText = WStringToUTF8(textBox->GetwText());
+		strcpy_s(m_cTextBuf, sizeof(m_cTextBuf), m_sText.c_str());
+	}
+}
+
+void CLevelUIEditor::ClearUI()
+{
+	std::vector<CHandle> uiHandles = GET_SINGLE(UIManager)->GetRootUIHandles();
+	for (auto handle : uiHandles)
+	{
+		GET_SINGLE(UIManager)->DeleteUIRecursive(handle);
 	}
 }
 

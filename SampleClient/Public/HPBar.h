@@ -32,7 +32,7 @@ private:
 private:
 	_float s_fAccumulatedTime = 0.f;
 	_float m_fCurrentAmount = 1.f;
-
+	_bool m_bDead = false;
 private:
 	_float m_fMaxFill = 1000.f;
 	_float m_fcurrentFill = 1000.f;

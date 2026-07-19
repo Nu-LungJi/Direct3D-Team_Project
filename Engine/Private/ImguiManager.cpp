@@ -50,6 +50,9 @@ HRESULT CImguiManager::Ready_Imgui(HWND hWnd, ID3D11Device* pDevice, ID3D11Devic
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
+	static const ImWchar ranges[] = { 0x0020, 0x00FF, 0xAC00, 0xD7A3, 0x3130, 0x318F, 0 };
+	io.Fonts->AddFontFromFileTTF("./Resources/Engine/Font/Pretendard-Medium.ttf", 15.0f, NULL, ranges);
+
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // 키보드 컨트롤 활성화
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 	io.FontGlobalScale = main_scale;
@@ -88,6 +91,7 @@ void CImguiManager::Render_Imgui()
 	if (m_bNewFrame)
 	{
 		ImGuiIO& io = ImGui::GetIO();
+
 		m_pNodeEditor->RenderGUI(); //imgui node 랜더
 		ImGui::EndFrame();
 		ImGui::Render();

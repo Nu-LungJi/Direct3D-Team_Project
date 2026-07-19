@@ -51,6 +51,36 @@ void UIManager::InitializeActions()
 	};
 	m_vEventNames.push_back("ScaleUp");
 
+	m_EventMap["AppearScaleUp"] = [](CUIObject* pCaller)
+	{
+		if (!pCaller) return;
+		auto pTween = pCaller->GetTweenCom();
+		if (!pTween) return;
+
+		pCaller->SetActive(true);
+		CHandle handle = pCaller->GetHandle();
+		_float scaleRatio = pCaller->GetScaleRatio();
+
+		pTween->PlayTween(0.5f, scaleRatio, 0.2f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle))
+				{
+					pObj->SetScaleRatio(currentValue);
+					pObj->CalcUICoord();
+				}
+			}, nullptr, EEaseType::EaseOutQuad);
+
+		pTween->PlayTween(0.f, 1.f, 0.1f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle))
+				{
+					pObj->SetAlpha(currentValue);
+					pObj->CalcUICoord();
+				}
+			}, nullptr, EEaseType::EaseOutQuad);
+	};
+	m_vEventNames.push_back("AppearScaleUp");
+
 	// ==========================================
 	// 2. 사이즈 축소
 	// ==========================================
@@ -72,6 +102,58 @@ void UIManager::InitializeActions()
 	};
 	m_vEventNames.push_back("ScaleDown");
 
+	m_EventMap["DisappearScaleDown"] = [](CUIObject* pCaller)
+	{
+		if (!pCaller) return;
+		auto pTween = pCaller->GetTweenCom();
+		if (!pTween) return;
+
+		pCaller->SetInputLcok(true);
+		CHandle handle = pCaller->GetHandle();
+
+		pTween->PlayTween(pCaller->GetScaleRatio(), 0.5f, 0.3f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle)) {
+					pObj->SetScaleRatio(currentValue);
+					pObj->CalcUICoord();
+				}
+			}, nullptr, EEaseType::EaseOutQuad);
+	};
+	m_vEventNames.push_back("DisappearScaleDown");
+
+	m_EventMap["DisappearScaleDown_D"] = [this](CUIObject* pCaller)
+	{
+		if (!pCaller) return;
+		auto pTween = pCaller->GetTweenCom();
+		if (!pTween) return;
+
+		pCaller->SetInputLcok(true);
+		CHandle handle = pCaller->GetHandle();
+
+		pTween->PlayTween(pCaller->GetScaleRatio(), 0.5f, 0.2f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle)) {
+					pObj->SetScaleRatio(currentValue);
+					pObj->CalcUICoord();
+				}
+			}, nullptr, EEaseType::EaseOutQuad);
+
+		pTween->PlayTween(2.f, 0.f, 0.2f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle))
+				{
+					if (currentValue <= 1.f)
+					{
+						pObj->SetAlpha(currentValue);
+						pObj->CalcUICoord();
+					}
+				}
+			}, [handle, this]() {
+				if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
+			}, EEaseType::EaseOutQuad);
+	};
+	m_vEventNames.push_back("DisappearScaleDown_D");
+
 	// ==========================================
 	// 3. 페이드 인
 	// ==========================================
@@ -84,7 +166,7 @@ void UIManager::InitializeActions()
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
 		//pCaller->GetAlpha()
-		pTween->PlayTween(0.f, 1.0f, 0.5f,
+		pTween->PlayTween(0.f, 1.0f, 0.3f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
 			});
@@ -133,6 +215,7 @@ void UIManager::InitializeActions()
 		auto pTween = pCaller->GetTweenCom();
 		if (!pTween) return;
 
+		pCaller->SetInputLcok(true);
 		CHandle handle = pCaller->GetHandle();
 
 		pTween->PlayTween(pCaller->GetAlphaRatio(), 0.0f, 0.3f,
@@ -144,6 +227,26 @@ void UIManager::InitializeActions()
 			});
 	};
 	m_vEventNames.push_back("LocalFadeOut");
+
+	m_EventMap["FadeOut_D"] = [this](CUIObject* pCaller)
+	{
+		if (!pCaller) return;
+		auto pTween = pCaller->GetTweenCom();
+		if (!pTween) return;
+
+		pCaller->SetInputLcok(true);
+		pCaller->SetInputLcok(true);
+
+		CHandle handle = pCaller->GetHandle();
+		pTween->PlayTween(pCaller->GetAlpha(), 0.0f, 0.3f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
+			},
+			[handle, this]() {
+				if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
+			});
+	};
+	m_vEventNames.push_back("FadeOut_D");
 
 	// ==========================================
 	// 5. 페이드 인 & 아웃 (FadInOut -> FadeInOut 권장)
@@ -598,6 +701,13 @@ _bool UIManager::PtInRect(const UI_INFO& selectInfo)
 	_float2 origin = { selectInfo.fX, selectInfo.fY };
 	_float2 size = { selectInfo.SizeX, selectInfo.SizeY };
 
+	if (selectInfo.UIType == ETOUI(UI_TYPE::TEXT))
+	{
+		size = { selectInfo.SizeX * 50.f, selectInfo.SizeY * 50.f };
+		origin = { selectInfo.fX + size.x * 0.5f, selectInfo.fY + size.y * 0.5f};
+	}
+
+
 	_float2 minPos =
 	{
 		origin.x - size.x * 0.5f,
@@ -702,7 +812,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);
 		{
 			TEXT_INFO& textInfo = static_cast<CTextBox*>(pUI)->GetTextInfo();
-			//textInfo.Text = obj["Text"];
+			textInfo.Text = StringToWUTF8(obj["Text"]);
 		}
 		break;
 	case ETOUI(UI_TYPE::BUTTON):

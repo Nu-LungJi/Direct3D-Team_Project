@@ -72,7 +72,7 @@ void CFontManager::LateDraw(RENDERGROUP eRenderGroup)
         if (auto font = CGameInstance::Get().GetResourceFirst<CResFontCustom>("FONT", fontName))
         {
             m_pBatch->Begin();
-
+			
             for (const auto& Desc : vecDesc)
             {
                 font->GetFont()->DrawString(m_pBatch.get(), Desc.txt.data(), Desc.vPosition, XMLoadFloat4(&Desc.vColor), Desc.fRotation, Desc.vOrigin, Desc.fScale);
@@ -123,6 +123,14 @@ HRESULT CFontManager::Initialize()
             return E_FAIL;
         }
     }
+
+	if (auto res = CGameInstance::Get().AddResource("FONT", "Pretendard", CResFontCustom::Create("./Resources/Engine/Font/Pretendard.spritefont")))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
     m_pBatch = std::make_unique<SpriteBatch>(m_pContext.Get());
 	return S_OK;
 }

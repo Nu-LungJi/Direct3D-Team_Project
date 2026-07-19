@@ -97,6 +97,19 @@ void CHPBar::Update(E::_float fTimeDelta)
 
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::HPFILL) &&
+		m_fcurrentFill <= 0.f && !m_bDead)
+	{
+		m_bDead = true;
+		m_pComCButton->SetDisappear(true);
+
+		for (auto child : m_vChildren)
+		{
+			CUIObject* pUi = CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(child);
+			pUi->GetComponent<CButtonComponent>("Com_Button")->SetDisappear(true);
+		}
+	}
+
 	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
 
 	for (auto& pComponent : m_UIComponents)
@@ -203,6 +216,12 @@ void CHPBar::PlayEffect(uint32_t uiState)
 	{
 		ClearEffectTweens();
 		if (Appear) Appear(this);
+	}
+
+	if (uiState & ETOUI(UI_STATE::DISAPPEAR))
+	{
+		ClearEffectTweens();
+		if (Disappear) Disappear(this);
 	}
 
 	if (m_bInputLocked)
