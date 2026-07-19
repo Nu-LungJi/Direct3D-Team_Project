@@ -12,6 +12,8 @@
 #include "ComLocomotion.h"
 #include "ComPxCharacterController.h"
 #include "TestPlayer3CameraCreatureEditor.h"
+#include "Player_StateMachine.h"
+#include "Player_Locomotion_State.h"
 
 NS_USING(Client)
 
@@ -153,6 +155,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.fJumpVelocity = 5.f;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
+
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
 			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
@@ -161,10 +164,22 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 	}
+
+	{
+		CStateMachine::DESC Desc{};
+
+		if (FAILED(AddComponentFromProto(pGroup,"Prototype_Component_PlayerStateMachine","ComPlayerStateMachine", &Desc, &m_pStateMachine)))
+		{
+
+
+			return E_FAIL;
+		}
+
+	
+	}
 	GetTransform().SetScale(_float3{2.f,2.f,2.f });
 	GetTransform().SetPosition(pDesc->vInitialPosition);
 	GetTransform().Update();
-
 
 	//CTestPartObject::DESC WeaponDesc{};
 	//WeaponDesc.sObjectTag = "Weapon";
@@ -188,10 +203,18 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (!m_bStateInitailzie) {
+		m_pStateMachine->AddPlayerState(PLAYER_STATE::LOCOMOTION, CPlayer_Locomotion_State::Create());
+		m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION);
+		m_bStateInitailzie = true;
+	}
+
+
 	auto* pCamera = CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA");
 	if (!pCamera)
 	{
 		m_pLocomotion->ClearMoveIntent();
+		
 		return;
 	}
 
@@ -225,6 +248,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_SPACE))
 		m_pLocomotion->RequestJump();
+
+	if (m_pStateMachine)
+		m_pStateMachine->PriorityUpdate(fTimeDelta);
 }
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
@@ -237,15 +263,37 @@ void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update CPlayer");
 
+	if (m_pStateMachine)
+		m_pStateMachine->Update(fTimeDelta);
+
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
+
 	}
 
 }
 
+int32_t CPlayer::FindAnimationIndex(_string_view sAnimationName) const
+{
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return -1;
+
+	const auto& animations = m_pComModelInstance->GetModel()->GetAnimations();
+	for (uint32_t i = 0; i < animations.size(); ++i)
+	{
+		if (animations[i] && animations[i]->GetAnimName() == sAnimationName)
+			return static_cast<int32_t>(i);
+	}
+
+	return -1;
+}
+
 void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
+	if (m_pStateMachine)
+		m_pStateMachine->LateUpdate(fTimeDelta);
+
 	GetTransform().Update();
 
 	if (auto* pCamera = Cast<CTestPlayer3CameraCreatureEditor>(

@@ -1,40 +1,44 @@
-// StateMachine.cpp
 #include "pch.h"
 #include "StateMachine.h"
 
 NS_USING(Engine)
 
-HRESULT CStateMachine::Initialize(const CHandle& hOwner)
+CStateMachine::CStateMachine(const CStateMachine& rhs)
+	: CComponent{ rhs }
 {
-	m_hOwner = hOwner;
+}
+
+HRESULT CStateMachine::Initialize(void* pArg)
+{
+	if (FAILED(CComponent::Initialize(pArg)))
+		return E_FAIL;
+
+	if (!GetGameObject())
+		return E_FAIL;
+
+	m_hOwner = GetGameObject()->GetHandle();
+	m_States.clear();
+	m_pCurrentState.reset();
+
 	return S_OK;
 }
 
 void CStateMachine::AddState(uint32_t iStateID, SPtr<CState> pState)
 {
-	if (!pState)
-		return;
-
-	m_States[iStateID] = std::move(pState);
+	if (pState)
+		m_States[iStateID] = std::move(pState);
 }
 
 void CStateMachine::ChangeState(uint32_t iNextStateID)
 {
 	const auto iter = m_States.find(iNextStateID);
-
-	if (iter == m_States.end() || !iter->second)
-		return;
-
-	// 현재 상태를 Exit()하는 동안 상태 테이블이 바뀌어도 다음 상태가 유지되도록 복사한다.
-	SPtr<CState> pNextState = iter->second;
-
-	if (m_pCurrentState == pNextState)
+	if (iter == m_States.end() || !iter->second || m_pCurrentState == iter->second)
 		return;
 
 	if (m_pCurrentState)
 		m_pCurrentState->Exit(this);
 
-	m_pCurrentState = pNextState;
+	m_pCurrentState = iter->second;
 	m_pCurrentState->Enter(this);
 }
 
@@ -56,15 +60,34 @@ void CStateMachine::LateUpdate(_float fTimeDelta)
 		m_pCurrentState->LateUpdate(this, fTimeDelta);
 }
 
-SPtr<CStateMachine> CStateMachine::Create(const CHandle& hOwner)
+UPtr<CStateMachine> CStateMachine::Create()
 {
-	auto pInstance = ToSPtr(new CStateMachine{});
-
-	if (FAILED(pInstance->Initialize(hOwner)))
+	auto pInstance = ToUPtr(new CStateMachine{});
+	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CStateMachine");
+		MSG_BOX("Failed to create CStateMachine");
 		return nullptr;
 	}
 
 	return pInstance;
+}
+
+UPtr<CPrototype> CStateMachine::Clone(void* pArg)
+{
+	auto pInstance = ToUPtr(new CStateMachine{ *this });
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to clone CStateMachine");
+		return nullptr;
+	}
+
+	return pInstance;
+}
+
+void CStateMachine::Free()
+{
+	m_pCurrentState.reset();
+	m_States.clear();
+	m_hOwner = {};
+	CComponent::Free();
 }

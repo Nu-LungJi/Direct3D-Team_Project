@@ -23,6 +23,7 @@ class CComCharacterMotor;
 NS_END
 
 NS_BEGIN(Client)
+class CPlayer_StateMachine;
 class CPlayer final : public CAnimationObject
 {
 public:
@@ -73,6 +74,13 @@ public:
 	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
 
 	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
+	int32_t FindAnimationIndex(_string_view sAnimationName) const;
+
+
+public:
+
+	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
+	CComLocomotion* GetLocomotion() const { return m_pLocomotion; }
 
 private:
 	CComModelInstance* m_pComModelInstance{};
@@ -101,12 +109,13 @@ private:
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
 
-
+private:
+	_bool   m_bStateInitailzie = false;
 private:
 	CComPxCharacterController* m_pCharacterController{};
 	CComLocomotion* m_pLocomotion{};
 	CComCharacterMotor* m_pCharacterMotor{};
-
+	CPlayer_StateMachine* m_pStateMachine{};
 
 public:
 	static E::UPtr<CPlayer> Create();
