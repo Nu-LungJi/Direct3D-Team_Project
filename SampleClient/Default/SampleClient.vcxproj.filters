@@ -190,6 +190,9 @@
     <Filter Include="GameObject\Player\FSM">
       <UniqueIdentifier>{c609926e-37c5-4936-8ba5-557d8908222d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\CreatureEditor">
+      <UniqueIdentifier>{1d4d7a4d-fc58-4cb3-aab4-ddcfd06e9a82}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -453,6 +456,12 @@
     <ClInclude Include="..\public\BTMonAttType.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -680,6 +689,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_FSM.cpp">
       <Filter>GameObject\Player\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

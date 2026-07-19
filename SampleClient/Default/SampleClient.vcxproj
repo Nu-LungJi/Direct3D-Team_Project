@@ -223,6 +223,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestCharacter.h" />
     <ClInclude Include="..\public\TestMonster.h" />
     <ClInclude Include="..\public\TestThirdPersonCamera.h" />
+    <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
+    <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
@@ -325,6 +327,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestCharacter.cpp" />
     <ClCompile Include="..\private\TestMonster.cpp" />
     <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
+    <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
+    <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
     <ClCompile Include="..\private\LevelCollider.cpp" />

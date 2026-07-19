@@ -10,6 +10,8 @@
 #include "TestModel.h"
 #include "Weapon.h"
 #include "Player.h"
+#include "TestPlayerCreatureEditor.h"
+#include "TestPlayer3CameraCreatureEditor.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -149,6 +151,18 @@ std::future<bool> CLevelCreatureLoader::Load()
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Player", CPlayer::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE", "Prototype_GameObject_TestPlayerCreatureEditor",
+				CTestPlayerCreatureEditor::Create())))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE", "Prototype_GameObject_TestPlayer3CameraCreatureEditor",
+				CTestPlayer3CameraCreatureEditor::Create())))
+			{
 				return false;
 			}
 			if (E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Light", CLight::Create()))
