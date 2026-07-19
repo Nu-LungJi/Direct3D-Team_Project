@@ -83,26 +83,31 @@ float MergeShadowCubeMap(int _LightIndex, float3 _SamplerUV, float _CurrentPixel
 }
 float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoord, float2 _PixelPos, int _LightIndex)
 {
-	float4 LightPos = mul(_WorldPos, _Light.g_LightViewProj[CurrentLightIndex]);
+	float4 LightPos = mul(float4(_WorldPos.xyz, 1.f), _Light.g_LightViewProj[_LightIndex]);
     
     float2 ShadowMapUV;
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
     ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
     
 	float3 ShadowTexCoord = LightPos.xyz / LightPos.w;
-	if (ShadowTexCoord.z > 1.f)
-	{
-		return 999.f;
-	}
-    if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f || ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f ||
-		ShadowTexCoord.z < 0.f || ShadowTexCoord.z > 1.f)
-        return 1.f;
-    
+	float2 ShadowUV = ShadowTexCoord.xy * 0.5f + 0.5f;
 
-	
-	
-	
-    float CurrentPixelDepth = LightPos.z;
+	if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f ||
+	 	ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f)
+	{
+		//return ShadowBrightness;
+		[branch]
+		if (_Light.LightType == LIGHT_DIRECTIONAL)
+		{
+			return ShadowBrightness;
+		}
+		else
+		{
+			return 0.0f;
+		}
+	}
+    
+	float CurrentPixelDepth = LightPos.z / LightPos.w;;
     CurrentPixelDepth -= 0.0005f; // Depth Bias
     
     float RandomNoise = Get_GradientNoise(_PixelPos);
@@ -111,7 +116,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
     float CosAngle = cos(RandomAngle);
     float SinAngle = sin(RandomAngle);
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
-    
+   
     // 주변 ShadowSmoothness 반경까지 Sampling
     float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
     
@@ -119,7 +124,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
 	
     [unroll]
     for (int i = 0; i < 8; ++i)
-    {
+	{
         float2 RotatedOffset = mul(PoissonDisk[i], RotationMat);
         
         float2 SampleUV = ShadowMapUV + (RotatedOffset * SamplingRange);
@@ -131,8 +136,8 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
 	}
     
     FinalShadowFactor /= 8.f;
-    
-    return lerp(ShadowBrightness, 1.0f, FinalShadowFactor);
+			
+	return lerp(ShadowBrightness, 1.f, FinalShadowFactor);
 }
 
 float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPos, int _LightIndex)
@@ -236,10 +241,10 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
 	
-    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-    
+    float3	LightAccumulation = float3(0.f, 0.f, 0.f);
     for (uint i = 0; i < LightCount; ++i)
 	{
+		float ShadowFactor = 1.f;
 		float3 L, Radiance;
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
@@ -261,8 +266,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				float3 kD = (1.0f - kS) * (1.0f - Metallic);
 				float3 Diffuse = kD * Albedo / PI;
 				
-				float ShadowFactor = 1.f;
-				
+
                 [branch]
 				if (AffectedLight[i].LightType == LIGHT_POINT)
 				{
@@ -273,18 +277,15 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 					ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), i);
 					if (ShadowFactor == 999.f)
 					{
-						OUTPUT[ID.xy] = float4(1.f, 0.f, 0.f, 1.f);
+						OUTPUT[ID.xy] = float4(1.f, 1.f, 1.f, 1.f);
 						return;
 					}
-
 				}
-                
+				
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
-				}
+			}
 		}
 	}
-	OUTPUT[ID.xy] = float4(LightAccumulation, 1.f);
-	return;
 	
 	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
@@ -292,7 +293,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     
     float3  Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
     float3  BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
-    float3  ExtraColor = BaseAmbient + BaseEmissive;
+	float3	ExtraColor = BaseAmbient + BaseEmissive;
 	
     OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
     return;

@@ -69,45 +69,52 @@ VOID CLight::PriorityUpdate(E::_float fTimeDelta) {
 VOID CLight::Update(E::_float fTimeDelta) {
 	m_pComTransform->Update();
 
-	XMVECTOR PosVec = m_pComTransform->GetState(STATE::POSITION);
-
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) || DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
 		_float	 fNearZ = 0.01f;
+
 		DynamicLight.OuterAttanuation = DynamicLight.OuterAttanuation <= 0.f ? 1.f : DynamicLight.OuterAttanuation;
 		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
 
-		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, m_pComTransform->GetState(STATE::LOOK)), m_pComTransform->GetState(STATE::UP)));
-		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(DynamicLight.OuterAttanuation * 2.f), 1.f, fNearZ, DynamicLight.LightRange));//DynamicLight.LightRange));
+		XMVECTOR DynamicPos = m_pComTransform->GetState(STATE::POSITION);
+
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(DynamicPos, XMVectorAdd(DynamicPos, XMVector3Normalize(XMLoadFloat3(&DynamicLight.LightDirection))), m_pComTransform->GetState(STATE::UP)));
+		
+		_float FOVAngle = DynamicLight.OuterAttanuation * 2.f * 1.3f;
+		if (FOVAngle > 210.f) FOVAngle = 210.f;
+
+		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), 1.f, fNearZ, DynamicLight.LightRange));//DynamicLight.LightRange));
 		//XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(1280.f * 2.f, 720.f * 2.f, fNearZ, DynamicLight.LightRange));
 		XMStoreFloat4x4(&DynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 	else {
 		_float fNearZ = 0.01f;
 		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
-		_float FOVAngle = DynamicLight.OuterAttanuation * 2.f;
-		XMMATRIX HexaProjMat = XMMatrixPerspectiveFovLH(FOVAngle, 1.f, fNearZ, DynamicLight.LightRange);
 
-		XMVECTOR Pos = m_pComTransform->GetLoadedPostion();
+		_float FOVAngle = 90.f;
+		XMMATRIX HexaProjMat = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), 1.f, fNearZ, DynamicLight.LightRange);
+
+		XMVECTOR PosVec = m_pComTransform->GetLoadedPostion() + XMVectorSet(0.f, 0.0001f, 0.f, 0.f);
 		XMVECTOR DirectionVec[6] = {
-			Pos + XMVectorSet(1.f, 0.f, 0.f, 0.f),   // +X
-			Pos + XMVectorSet(-1.f, 0.f, 0.f, 0.f),  // -X
-			Pos + XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Y
-			Pos + XMVectorSet(0.f, -1.f, 0.f, 0.f),  // -Y
-			Pos + XMVectorSet(0.f, 0.f, 1.f, 0.f),   // +Z
-			Pos + XMVectorSet(0.f, 0.f, -1.f, 0.f)   // -Z
+		XMVectorSet(1.f, 0.f, 0.f, 0.f),   // +X (오른쪽)
+		XMVectorSet(-1.f, 0.f, 0.f, 0.f),  // -X (왼쪽)
+		XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Y (위)
+		XMVectorSet(0.f, -1.f, 0.f, 0.f),  // -Y (아래)
+		XMVectorSet(0.f, 0.f, 1.f, 0.f),   // +Z (앞)
+		XMVectorSet(0.f, 0.f, -1.f, 0.f)   // -Z (뒤)
 		};
 
+		// DirectX 큐브맵 표준 Up 벡터 정의
 		XMVECTOR UpVec[6] = {
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +X (Up)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // -X (Up)
-			XMVectorSet(0.f, 0.f, -1.f, 0.f),  // +Y (+Y축 Up벡터)
-			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // -Y (-Y축 Up벡터)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Z (Up)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f)    // -Z (Up)
+			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +X (Up: +Y)
+			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // -X (Up: +Y)
+			XMVectorSet(0.f, 0.f, -1.f, 0.f),  // +Y (Up: -Z)
+			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // -Y (Up: +Z)
+			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Z (Up: +Y)
+			XMVectorSet(0.f, 1.f, 0.f, 0.f)    // -Z (Up: +Y)
 		};
 
 		for (int i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
-			XMMATRIX ViewMat = XMMatrixLookAtLH(Pos, XMVectorAdd(Pos, DirectionVec[i]), UpVec[i]);
+			XMMATRIX ViewMat = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, DirectionVec[i]), UpVec[i]);
 			XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, HexaProjMat));
 		}
 	}
