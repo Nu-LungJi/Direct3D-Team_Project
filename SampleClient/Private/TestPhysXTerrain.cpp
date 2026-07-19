@@ -138,7 +138,7 @@ HRESULT CTestPhysXTerrain::Initialize(void* pArg)
 		CComPxTriMeshCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
 		Desc.pResTriMesh = m_pResTriMesh;
-		Desc.pResMaterial = CResPhysXMaterial::Create({});
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxTriMeshCollider", "ComPxTriMeshCollider", &Desc, &m_pComPxTriMeshCollider)))
 		{
@@ -150,7 +150,7 @@ HRESULT CTestPhysXTerrain::Initialize(void* pArg)
 		CComPxConvexCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
 		Desc.pResConvex = m_pResConvex;
-		Desc.pResMaterial = CResPhysXMaterial::Create({});
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxConvexCollider", "ComPxTriMeshCollider", &Desc, &m_pComPxConvexCollider)))
 		{

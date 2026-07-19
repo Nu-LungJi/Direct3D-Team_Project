@@ -56,7 +56,7 @@ SPtr<CResPhysXSphereGeometry> CResPhysXSphereGeometry::Create()
 	return ToSPtr(new CResPhysXSphereGeometry{ "" });
 }
 
-SPtr<CResPhysXSphereGeometry> CResPhysXSphereGeometry::Create(const DESC& desc)
+SPtr<CResPhysXSphereGeometry> CResPhysXSphereGeometry::CreateAndLoad(const DESC& desc)
 {
 	auto pInstance = ToSPtr(new CResPhysXSphereGeometry{ "" });;
 	if (FAILED(pInstance->Load(desc)))

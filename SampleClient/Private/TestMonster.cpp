@@ -22,7 +22,7 @@ HRESULT CTestMonster::Initialize(void* pArg)
 
 	{
 		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::Create(CResPhysXMaterial::DESC{});
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.vPosition = pDesc->vInitialPos;
 		Desc.tFilter = pDesc->tFilter;
 		if (FAILED(AddComponentFromProto(

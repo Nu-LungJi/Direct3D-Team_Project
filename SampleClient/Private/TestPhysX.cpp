@@ -41,8 +41,8 @@ HRESULT CTestPhysX::Initialize(void* pArg)
 	{
 		CComPxBoxCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResBoxGeo = CResPhysXBoxGeometry::Create({ .vHalfExtents = {0.5f, 0.5f, 0.5f} });
-		Desc.pResMaterial = CResPhysXMaterial::Create({});
+		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = {0.5f, 0.5f, 0.5f} });
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxBoxCollider", "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;

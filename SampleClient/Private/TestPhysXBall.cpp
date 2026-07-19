@@ -48,10 +48,10 @@ HRESULT CTestPhysXBall::Initialize(void* pArg)
 		if (pDesc->fRadius == 0.5f)
 			Desc.pResSphereGeo = CGameInstance::Get().GetResourceFirst<CResPhysXSphereGeometry>("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE");
 		else
-			Desc.pResSphereGeo = CResPhysXSphereGeometry::Create({ .fRadius = pDesc->fRadius });
+			Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = pDesc->fRadius });
 		if (pDesc->fRestitution >= 0.f)
 		{
-			Desc.pResMaterial = CResPhysXMaterial::Create({
+			Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({
 				.fStaticFriction = 0.f,
 				.fDynamicFriction = 0.f,
 				.fRestitution = pDesc->fRestitution });

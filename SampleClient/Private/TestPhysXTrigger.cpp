@@ -37,7 +37,7 @@ HRESULT CTestPhysXTrigger::Initialize(void* pArg)
 	{
 		CComPxBoxCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResBoxGeo = CResPhysXBoxGeometry::Create({ .vHalfExtents = pDesc->vHalfExtents });
+		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = pDesc->vHalfExtents });
 		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("SAMPLE_CLIENT_PX", "TMP_MATERIAL");
 		Desc.bIsTrigger = pDesc->bIsTrigger;
 		Desc.tFilter = pDesc->tFilter;
