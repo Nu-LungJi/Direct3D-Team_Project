@@ -137,7 +137,7 @@ void CTestMonster::TryFireAtTarget(_float fTimeDelta)
 	if (CGameInstance::Get().AddGameObjectToLayer(
 		"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBall", "02_PROJECTILES", &Desc))
 	{
-		m_fAttackCooldown = 0.1f;
+		m_fAttackCooldown = 0.5f;
 	}
 }
 
