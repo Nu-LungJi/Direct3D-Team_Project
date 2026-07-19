@@ -16,6 +16,11 @@ public:
 		_float3 vMoveDirection{};
 		_float fMoveSpeed{};
 		_bool bMoveRequested{};
+
+		_float3 vFacingDirection{};
+		_float fTurnSpeed{};
+		_bool bFacingRequested{};
+		_bool bImmediateFacing{};
 	};
 
 public:
@@ -32,6 +37,9 @@ private:
 public:
 	void SetMoveIntent(const _float3& vDirection, _float fSpeed);
 	void ClearMoveIntent();
+	void SetFacingIntent(const _float3& vDirection, _float fTurnSpeed);
+	void SetFacingIntentImmediate(const _float3& vDirection);
+	void ClearFacingIntent();
 	const OUTPUT& GetOutput() const { return m_tOutput; }
 
 	void RequestJump() { m_bJumpRequested = true; }

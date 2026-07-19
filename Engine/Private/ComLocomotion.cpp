@@ -47,7 +47,61 @@ void CComLocomotion::SetMoveIntent(const _float3& vDirection, _float fSpeed)
 
 void CComLocomotion::ClearMoveIntent()
 {
-	m_tOutput = {};
+	m_tOutput.vMoveDirection = {};
+	m_tOutput.fMoveSpeed = 0.f;
+	m_tOutput.bMoveRequested = false;
+}
+
+void CComLocomotion::SetFacingIntent(const _float3& vDirection, _float fTurnSpeed)
+{
+	const _float fLengthSq =
+		vDirection.x * vDirection.x +
+		vDirection.z * vDirection.z;
+
+	if (fLengthSq <= std::numeric_limits<_float>::epsilon() || fTurnSpeed <= 0.f)
+	{
+		ClearFacingIntent();
+		return;
+	}
+
+	const _float fInvLength = 1.f / std::sqrt(fLengthSq);
+	m_tOutput.vFacingDirection = {
+		vDirection.x * fInvLength,
+		0.f,
+		vDirection.z * fInvLength };
+	m_tOutput.fTurnSpeed = fTurnSpeed;
+	m_tOutput.bFacingRequested = true;
+	m_tOutput.bImmediateFacing = false;
+}
+
+void CComLocomotion::SetFacingIntentImmediate(const _float3& vDirection)
+{
+	const _float fLengthSq =
+		vDirection.x * vDirection.x +
+		vDirection.z * vDirection.z;
+
+	if (fLengthSq <= std::numeric_limits<_float>::epsilon())
+	{
+		ClearFacingIntent();
+		return;
+	}
+
+	const _float fInvLength = 1.f / std::sqrt(fLengthSq);
+	m_tOutput.vFacingDirection = {
+		vDirection.x * fInvLength,
+		0.f,
+		vDirection.z * fInvLength };
+	m_tOutput.fTurnSpeed = 0.f;
+	m_tOutput.bFacingRequested = true;
+	m_tOutput.bImmediateFacing = true;
+}
+
+void CComLocomotion::ClearFacingIntent()
+{
+	m_tOutput.vFacingDirection = {};
+	m_tOutput.fTurnSpeed = 0.f;
+	m_tOutput.bFacingRequested = false;
+	m_tOutput.bImmediateFacing = false;
 }
 
 _bool CComLocomotion::ConsumeJumpRequest()
@@ -66,6 +120,13 @@ void CComLocomotion::UpdateGUI()
 		m_tOutput.vMoveDirection.y,
 		m_tOutput.vMoveDirection.z);
 	ImGui::Text("Move Speed: %.3f", m_tOutput.fMoveSpeed);
+	ImGui::Text("Facing Requested: %s", m_tOutput.bFacingRequested ? "true" : "false");
+	ImGui::Text("Facing Direction: %.3f, %.3f, %.3f",
+		m_tOutput.vFacingDirection.x,
+		m_tOutput.vFacingDirection.y,
+		m_tOutput.vFacingDirection.z);
+	ImGui::Text("Turn Speed: %.3f deg/s", m_tOutput.fTurnSpeed);
+	ImGui::Text("Immediate Facing: %s", m_tOutput.bImmediateFacing ? "true" : "false");
 	ImGui::Text("Jump Requested: %s", m_bJumpRequested ? "true" : "false");
 }
 

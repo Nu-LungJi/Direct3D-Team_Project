@@ -95,6 +95,37 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 
 	if (m_bSyncTransform && m_pGameObject)
 		m_pGameObject->GetTransform().SetPosition(m_pCharacterController->GetPosition());
+
+	if (tOutput.bFacingRequested && m_pGameObject)
+	{
+		auto& Transform = m_pGameObject->GetTransform();
+		const _float fTargetYaw = std::atan2(
+			tOutput.vFacingDirection.x,
+			tOutput.vFacingDirection.z);
+		const _vector vTargetQuaternion = XMQuaternionRotationAxis(
+			XMVectorSet(0.f, 1.f, 0.f, 0.f),
+			fTargetYaw);
+
+		if (tOutput.bImmediateFacing)
+		{
+			Transform.SetQuaternion(vTargetQuaternion);
+		}
+		else
+		{
+			const _vector vCurrentQuaternion = Transform.GetLoadedQuaternion();
+			_float fDot = std::abs(XMVectorGetX(XMQuaternionDot(
+				vCurrentQuaternion, vTargetQuaternion)));
+			fDot = std::clamp(fDot, 0.f, 1.f);
+			const _float fAngle = 2.f * std::acos(fDot);
+			const _float fMaxStep = XMConvertToRadians(tOutput.fTurnSpeed) * fFixedTimeDelta;
+			const _float fRatio = fAngle <= std::numeric_limits<_float>::epsilon()
+				? 1.f
+				: std::min(1.f, fMaxStep / fAngle);
+
+			Transform.SetQuaternion(XMQuaternionSlerp(
+				vCurrentQuaternion, vTargetQuaternion, fRatio));
+		}
+	}
 }
 
 void CComCharacterMotor::UpdateGUI()
