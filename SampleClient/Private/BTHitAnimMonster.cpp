@@ -121,10 +121,10 @@ void CBTHitAnimMonster::Update_Gui()
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	//NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
 
-//, EMISSIVE = 0x0000040
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE" };
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M};
+#undef X
 	if (ImGui::TreeNode("StartFlag"))
 	{
 		for (uint32_t i = 0; i < std::size(Flag); ++i)
@@ -166,10 +166,12 @@ void CBTHitAnimMonster::Update_Gui()
 
 		ImGui::TreePop();
 	}
+	
 	if (!m_bPopup)
 	{
 		for (size_t i = 0; i < ETOUI(HITMON::END); ++i)
 		{
+
 			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
 			if (ImGui::Button(Name.c_str()))
 			{
@@ -177,6 +179,48 @@ void CBTHitAnimMonster::Update_Gui()
 				m_bPopup = true;
 				break;
 			}
+			ImGui::SameLine();
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,0.f,0.f,1.f });
+			_string AttName = _string("##AttType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			if (ImGui::BeginCombo(AttName.c_str(), MagicEnumToStringView(m_HitTable[i].eAttType).data()))
+			{
+				for (uint32_t j = 0; j < ETOUI(ATTMON::END); ++j)
+				{
+					_bool	bSelect = m_HitTable[i].eAttType == static_cast<ATTMON>(j);
+					ImGui::PushID(MagicEnumToStringView(static_cast<ATTMON>(j)).data());
+					if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(j)).data(), bSelect))
+					{
+						m_HitTable[i].eAttType = static_cast<ATTMON>(j);
+					}
+					if (bSelect)
+						ImGui::SetItemDefaultFocus();
+
+					ImGui::PopID();
+				}
+
+				ImGui::EndCombo();
+			}
+			ImGui::SameLine();
+
+			_string HittName = _string("##HitType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			if (ImGui::BeginCombo(HittName.c_str(), MagicEnumToStringView(m_HitTable[i].eHitType).data()))
+			{
+				for (uint32_t j = 0; j < ETOUI(HITMON::END); ++j)
+				{
+					_bool	bSelect = m_HitTable[i].eHitType == static_cast<HITMON>(j);
+					ImGui::PushID(MagicEnumToStringView(static_cast<HITMON>(j)).data());
+					if (ImGui::Selectable(MagicEnumToStringView(static_cast<HITMON>(j)).data(), bSelect))
+					{
+						m_HitTable[i].eHitType = static_cast<HITMON>(j);
+					}
+					if (bSelect)
+						ImGui::SetItemDefaultFocus();
+					ImGui::PopID();
+				}
+
+				ImGui::EndCombo();
+			}
+			ImGui::PopStyleColor();
 		}
 	}
 
@@ -220,7 +264,14 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
+		_string HitName = "HITType" + std::to_string(i);
 		SaveJsonValue(j, Name, m_iHitAnim[i]);
+		SaveJsonEnum(j, HitName, m_HitTable[i].eHitType);
+	}
+	for (uint32_t i = 0; i < ETOUI(ATTMON::END); ++i)
+	{
+		_string Name = "ATTType" + std::to_string(i);
+		SaveJsonEnum(j, Name, m_HitTable[i].eAttType);
 	}
 	return j;
 }
@@ -235,10 +286,18 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
+
 	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
+		_string HitName = "HITType" + std::to_string(i);
 		LoadJsonValue(j, Name, m_iHitAnim[i]);
+		LoadJsonEnum(j, HitName, m_HitTable[i].eHitType);
+	}
+	for (uint32_t i = 0; i < ETOUI(ATTMON::END); ++i)
+	{
+		_string Name = "ATTType" + std::to_string(i);
+		LoadJsonEnum(j, Name, m_HitTable[i].eAttType);
 	}
 	return S_OK;
 }
@@ -250,13 +309,19 @@ _bool CBTHitAnimMonster::HitType()
 	{
 		if (auto pSrc = pBT->GetGameObject())
 		{
-			HITMON eType = static_cast<CTestGob*>(pSrc)->Get_HitMon();
-			if (eType == HITMON::END)
-				return false;
-			m_Value.iAnimIndex = m_iHitAnim[ETOUI(eType)];
+			
+			for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+			{
+				if (m_HitTable[i] == static_cast<CTestGob*>(pSrc)->Get_HitTable())
+				{
+					m_Value.iAnimIndex = m_iHitAnim[i];
+					return true;
+
+				}
+			}
 		}
 	}
-	return true;
+	return false;
 }
 E::UPtr<CBTHitAnimMonster> CBTHitAnimMonster::Create()
 {

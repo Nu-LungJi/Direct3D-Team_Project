@@ -10,6 +10,7 @@
 #include "Particle.h"
 #include "TestModel.h"
 #include "TestGob.h"
+#include "Player.h"
 #include "LightObject.h"
 #include "LevelPlayGroundLoader.h"
 NS_USING(Client)
@@ -34,6 +35,16 @@ HRESULT CLevelCreatureEditor::Initialize()
 		{
 			int x = 0;
 		}
+		//CPlayer::DESC PlayerDesc{};
+		//PlayerDesc.sObjectTag = "Player";
+		//PlayerDesc.sGroupTag = "LEVEL_CREATURE";
+		//PlayerDesc.sResTag = "Model_Resource_Player";
+		//if (auto Player = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Player",
+		//	"01_Player", &PlayerDesc))
+		//{
+		//	int x = 0;
+		//}
+
 	}
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -81,12 +92,6 @@ HRESULT CLevelCreatureEditor::Render()
 void CLevelCreatureEditor::UpdateGUI()
 {
 	ImGui::Begin("Craeture Editor");
-
-	//테스트 고블린
-	CTestGob::MONSTER_DESC Desc{};
-	Desc.sObjectTag = "Gobline";
-	Desc.LevelTag = m_strLevelName;
-	//auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
 	Resources();
 	Objects();
 	BeHaviors();

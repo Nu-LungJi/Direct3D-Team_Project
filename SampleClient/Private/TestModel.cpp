@@ -99,22 +99,22 @@ HRESULT CTestModel::Initialize(void* pArg)
 		};
 	}
 
-	CTestPartObject::DESC WeaponDesc{};
-	WeaponDesc.sObjectTag = "Weapon";
-	WeaponDesc.hOwner = GetHandle();
-	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
-	WeaponDesc.sGroupTag = "TEST"; 
-	WeaponDesc.sResTag = "Static_Axe_Model_Resource";
+	//CTestPartObject::DESC WeaponDesc{};
+	//WeaponDesc.sObjectTag = "Weapon";
+	//WeaponDesc.hOwner = GetHandle();
+	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	//WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
+	//WeaponDesc.sGroupTag = "TEST"; 
+	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
 
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
-	if (!Weapon.has_value())
-	{
-		MSG_BOX("Create Failed Weapon");
-		return E_FAIL;
-	}
+	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
+	//if (!Weapon.has_value())
+	//{
+	//	MSG_BOX("Create Failed Weapon");
+	//	return E_FAIL;
+	//}
 
-	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	return S_OK;
 
 }

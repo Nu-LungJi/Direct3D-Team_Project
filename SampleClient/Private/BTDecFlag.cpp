@@ -43,10 +43,11 @@ void CBTDecFlag::Update_Gui()
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE" };
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M };
+#undef X
 	if (ImGui::TreeNode("StartFlag"))
 	{
-
 		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
 			uint32_t iFlag = 1u << i;

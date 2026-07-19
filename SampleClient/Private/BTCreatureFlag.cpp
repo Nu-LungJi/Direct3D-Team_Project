@@ -62,7 +62,9 @@ void CBTCreatureFlag::Update_Gui()
 		ImGui::TreePop();
 	}
 	uint32_t iStart = { m_iFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW","DEAD","EMISSIVE" };
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M };
+#undef X
 	if (ImGui::TreeNode("FlagValue"))
 	{
 		for (uint32_t i = 0; i < std::size(Flag); ++i)

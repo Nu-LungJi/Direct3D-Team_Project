@@ -1,35 +1,34 @@
 #include "pch.h"
-#include "TestGob.h"
+#include "Player.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Resources.h"
-#include "ComBeHavior.h"
-#include "Weapon.h"
 #include "GameInstance.h"
-#include "ComCollider.h"
+#include "TestPartObject.h"
+
+
+
 NS_USING(Client)
 
-CTestGob::CTestGob()
+CPlayer::CPlayer()
 	: CAnimationObject{}
 {
 }
 
-CTestGob::~CTestGob()
+CPlayer::~CPlayer()
 {
 }
 
-void CTestGob::UpdateGUI()
+void CPlayer::UpdateGUI()
 {
-	CGameObject::UpdateGUI();
-	ImGui::DragFloat3("Emissive", reinterpret_cast<_float*>(&m_fEmissiveColor), 1.0, 100);
-	ImGui::DragInt("HP", &m_iHp, 0, 1);
+	CAnimationObject::UpdateGUI();
+
 }
 
-HRESULT CTestGob::InitializePrototype(void* pArg)
+HRESULT CPlayer::InitializePrototype(void* pArg)
 {
-
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
 	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
@@ -63,22 +62,17 @@ HRESULT CTestGob::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CTestGob::Initialize(void* pArg)
+HRESULT CPlayer::Initialize(void* pArg)
 {
-	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 100;
 	
-	CComBeHavior::BEHAVIOR_DESC Desc{};
-	Desc.OwnerName = "Com_BT";
-	Desc.LoadPath = MonDesc->BeHaviorTag;
-	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
-	{
-		return E_FAIL;
-	};
+	auto* pDesc = static_cast<DESC*>(pArg);
+	auto pGroup = pDesc->sGroupTag;
+	auto pRes = pDesc->sResTag;
+
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
@@ -89,9 +83,10 @@ HRESULT CTestGob::Initialize(void* pArg)
 	}
 
 	{
+	
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = MonDesc->LevelTag;
-		Desc.sResTag = MonDesc->ReSourceTag;
+		Desc.sGroupTag = pGroup;
+		Desc.sResTag = pRes;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -107,65 +102,50 @@ HRESULT CTestGob::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+
+		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
-	{
-		CComCollider::DESC Desc{};
-		Desc.eCollType = CollType::Box;
-		Desc.vExtents = {1.f, 1.f, 1.f};
-		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
-		{
-			return E_FAIL;
-		};
-	}
-	CWeapon::WEAPON_DESC WeaponDesc{};
-	WeaponDesc.sObjectTag = "Weapon";
-	WeaponDesc.ParentHandle = GetHandle();
-	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	WeaponDesc.LevelTag = MonDesc->LevelTag;
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
-	if (!Weapon.has_value())
-	{
-		MSG_BOX("Create Failed Weapon");
-		return E_FAIL;
-	}
-	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	//CTestPartObject::DESC WeaponDesc{};
+	//WeaponDesc.sObjectTag = "Weapon";
+	//WeaponDesc.hOwner = GetHandle();
+	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	//WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
+	//WeaponDesc.sGroupTag = "TEST"; 
+	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
 
-	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
+	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
+	//if (!Weapon.has_value())
+	//{
+	//	MSG_BOX("Create Failed Weapon");
+	//	return E_FAIL;
+	//}
+
+	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	return S_OK;
+
 }
 
-void CTestGob::PriorityUpdate(E::_float fTimeDelta)
+void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
-	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
-	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
-	__super::PriorityUpdate(fTimeDelta);
-	if (CGameInstance::Get().KeyDown(DIK_1))
-		Set_Damage(10);
-	Flag_Check(fTimeDelta);
-	m_pBeHavior->Update(fTimeDelta);
 }
 
-void CTestGob::Update(E::_float fTimeDelta)
+void CPlayer::Update(E::_float fTimeDelta)
 {
-	__super::Update(fTimeDelta);
+	ZoneScopedN("Update CPlayer");
 
-	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
+	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
+
 		m_pModelAnimator->Update(fTimeDelta);
+	}
 
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
-		m_fEmissive = 0;
-
-	EmissiveFadeOut(fTimeDelta);
-	m_pBeHavior->AbortNode();
 }
 
-void CTestGob::LateUpdate(E::_float fTimeDelta)
+void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
-	__super::LateUpdate(fTimeDelta);
 	GetTransform().Update();
-	IsHit();
+
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)
@@ -178,12 +158,13 @@ void CTestGob::LateUpdate(E::_float fTimeDelta)
 		return;
 	}
 
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
-HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CPlayer::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+
 	{
 		E::CB_PER_OBJECT cbPerObject{};
 		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
@@ -194,16 +175,14 @@ HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		}
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+
+
+		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);
+
 	}
 	const auto& vs = m_pResVertexShader;
-	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
-	//? m_pResVertexShader
-	//: m_pResVertexNonAnimShader;
 
 	const auto& ps = m_pResPixelShader;
-	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
-	//? m_pResPixelShader
-	//: m_pResPixelNonAnimShader;
 
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -239,15 +218,22 @@ HRESULT CTestGob::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, {1.f, 1.f, 1.f}, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+		//pContext->DrawIndexedInstancedIndirect(viBuffer->GetNumIndices(), 0, 0);
 	}
+
+
+
 	return S_OK;
 }
-HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
+
+HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
+	ZoneScopedN("Render TestModel");
+
 	if (!pContext)
 		return E_INVALIDARG;
 
@@ -381,15 +367,14 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		ID3D11Buffer* pSkinMeshCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &pSkinMeshCB);
 
-		//"R": 1.0,
-		//	"G" : 0.933333,
-		//	"B" : 0.592157,
-		//1.2f, 0.7f, 0.f
+
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, {1.f, 0.933333f, 0.592157f}, m_fEmissive, {1.f, 1.f, 1.f}, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
+
+
 
 	if (FAILED(Unbind_AnimationVS(pContext)))
 	{
@@ -398,7 +383,7 @@ HRESULT CTestGob::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 
 	return S_OK;
 }
-HRESULT CTestGob::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
+HRESULT CPlayer::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
 
 	m_iCurrentInstanceCount = static_cast<uint32_t>(Instances.size());
@@ -432,6 +417,9 @@ HRESULT CTestGob::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std
 	pContext->VSSetShaderResources(6, 1, &pNullSRV);
 
 	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
+
+	// pDstBox가 nullptr이면 D3D11은 버퍼 전체(현재 512개)를 복사한다.
+	// Instances에는 이번 배치의 원소만 있으므로, 유효한 원소 범위만 갱신해야 한다.
 	D3D11_BOX updateBox{};
 	updateBox.left = 0;
 	updateBox.right = static_cast<UINT>(iCopySize);
@@ -445,7 +433,8 @@ HRESULT CTestGob::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std
 	return S_OK;
 
 }
-HRESULT CTestGob::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
+
+HRESULT CPlayer::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
 {
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
@@ -461,7 +450,7 @@ HRESULT CTestGob::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CTestGob::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
 {
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
 
@@ -484,7 +473,7 @@ HRESULT CTestGob::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CTestGob::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 {
 	// CS t0 ~ t6 SRV 해제
 	ID3D11ShaderResourceView* pNullSRVs[7] =
@@ -510,7 +499,8 @@ HRESULT CTestGob::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CTestGob::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
+
+HRESULT CPlayer::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 {
 
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
@@ -528,7 +518,8 @@ HRESULT CTestGob::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CTestGob::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
+
+HRESULT CPlayer::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
 {
 
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
@@ -546,7 +537,7 @@ HRESULT CTestGob::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CTestGob::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 {
 	if (!pContext)
 		return E_INVALIDARG;
@@ -557,100 +548,24 @@ HRESULT CTestGob::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-void CTestGob::IsHit()
-{
-	if (CGameInstance::Get().KeyDown(DIK_2))
-	{
-		++m_iHitCnt;
-		uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT);
-		m_pBeHavior->Set_Flag(iFlag, FLAGTYPE::ADD);
-	}
-	if (CGameInstance::Get().KeyDown(DIK_Z))
-	{
-		m_MonTable.eHitType = HITMON::HIT_1;
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_X))
-	{
-		m_MonTable.eHitType = HITMON::HIT_2;
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_C))
-	{
-		m_MonTable.eHitType = HITMON::HIT_3;
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_V))
-	{
-		m_MonTable.eHitType = HITMON::END;
-	}
-	//if (auto pCam = CGameInstance::Get().GetActiveCamera())
-	//{
-	//	const auto& [vOri, vDir] = pCam->GetRay();
-	//	_float fDist{};
-	//
-	//		for (const auto& coll :*CGameInstance::Get().GetColliderGroup("CollTestGob"))
-	//		{
-	//			if (coll->Intersect(vOri, vDir, fDist))
-	//			{
-	//				uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
-	//				m_pBeHavior->Set_Flag(iFlag,FLAGTYPE::ADD);
-	//				return;
-	//			}
-	//		}
-	//	
-	//}
-}
-void CTestGob::Flag_Check(_float fTimeDelta)
-{
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
-	{
-		m_bEmissive = true;
-		StartEmissive();
-	}
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
-	{
-		m_MonTable.eHitType = HITMON::END;
-	}
-	if (m_iHp <= 0.f)
-	{
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEAD),FLAGTYPE::ADD);
-	}
-}
-void CTestGob::EmissiveFadeOut(_float fTimeDelta)
-{
-	if (m_bEmissive)
-	{
-		m_bWork = true;
-		m_fTimeTick += fTimeDelta;
 
-		_float t = m_fTimeTick / 0.5f;
-
-		m_fEmissive = std::lerp(m_fPreEmissive,0,t);
-		if (t >= 1.f)
-		{
-			m_bWork = m_bEmissive = false;
-			m_fTimeTick = m_fEmissive = 0;
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE), FLAGTYPE::DEL);
-		}
-			
-	}
-
-}
-E::UPtr<CTestGob> CTestGob::Create()
+E::UPtr<CPlayer> CPlayer::Create()
 {
-	auto pInstance = E::ToUPtr(new CTestGob{});
+	auto pInstance = E::ToUPtr(new CPlayer{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTestGob");
+		MSG_BOX("Failed to Created : CPlayer");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTestGob::Clone(void* pArg)
+E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTestGob{ *this });
+	auto	pInstance = E::ToUPtr(new CPlayer{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTestGob");
+		MSG_BOX("Failed to Cloned : CPlayer");
 		return nullptr;
 	}
 

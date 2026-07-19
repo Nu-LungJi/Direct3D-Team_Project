@@ -487,6 +487,9 @@
     <Filter Include="Resource\PhysX\Geometry\Convex">
       <UniqueIdentifier>{4113270c-cbfc-47f0-9f11-ffd2fec91bce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FSM">
+      <UniqueIdentifier>{c25ecb41-7bf1-46a9-a361-10286b324e9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -900,9 +903,6 @@
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\CreatureManager.h">
-      <Filter>CreatureManager</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClInclude>
@@ -1050,6 +1050,9 @@
     </ClInclude>
     <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h">
       <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StateMachine.h">
+      <Filter>FSM</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1386,9 +1389,6 @@
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\CreatureManager.cpp">
-      <Filter>CreatureManager</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
@@ -1563,6 +1563,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StateMachine.cpp">
+      <Filter>FSM</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

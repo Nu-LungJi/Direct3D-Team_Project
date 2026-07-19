@@ -397,7 +397,7 @@ private:
 	int32_t					 m_curActions;
 	_float				     m_ActionTime{};
 	// 애니메이션 제어를 위한 멤버 변수들
-	_bool		    m_bPlay{ false };
+	_bool		    m_bPlay{ true };
 
 	_bool			m_bBlending = true;
 	_float          m_fRatio{ 0.f };
