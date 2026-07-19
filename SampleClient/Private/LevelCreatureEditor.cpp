@@ -195,6 +195,7 @@ void CLevelCreatureEditor::UpdateGUI()
 				Desc.ReSourceTag = m_SelectResourceTag;
 				Desc.BeHaviorTag = m_SelectFilePath;
 				Desc.vPos = m_fPos;
+				Desc.vPos.y += 50.f;
 				auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, m_SelectObjecteTag, "02_Gobline", &Desc);
 			}
 		}

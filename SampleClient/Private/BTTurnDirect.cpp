@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTTurnDirect.h"
 #include "ComTransform.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTTurnDirect::CBTTurnDirect()
@@ -32,23 +33,17 @@ HRESULT CBTTurnDirect::Initalize(void* pArg)
 EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 {
 	auto pTransform (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
-	if (pTransform == nullptr)
-	{
-		m_eDebug = EVALUATE::FAILED;
-		return EVALUATE::FAILED;
-	}
-	XMMATRIX mat = XMMatrixIdentity();
-	_vector vLook = XMVector3Normalize((vDest.GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION)));
-	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
-	_vector vUp = XMVector3Cross(vLook, vRight);
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	auto* pTarget = CGameInstance::Get().GetActiveCamera();
+	if (pTransform == nullptr || pMoveIntent == nullptr || pTarget == nullptr)
 
-	mat.r[0] = vRight;
-	mat.r[1] = vUp;
-	mat.r[2] = vLook;
+		return m_eDebug = EVALUATE::FAILED;
 
-	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
-	pTransform->SetQuaternion(quat);
+	_float3 vFacingDirection{};
+	XMStoreFloat3(&vFacingDirection,
+		pTarget->GetTransform().GetState(STATE::POSITION) -
+		pTransform->GetState(STATE::POSITION));
+	pMoveIntent->SetFacingIntentImmediate(vFacingDirection);
 
 	return m_eDebug =  EVALUATE::SUCCESS;
 }

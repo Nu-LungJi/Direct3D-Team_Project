@@ -30,7 +30,7 @@
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 
 #include "ComLuaScript.h"
@@ -360,8 +360,8 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 
 	if (CGameInstance::Get().AddPrototype(
 		ES_EngineProtoMajorType::PERMANENT,
-		ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
-		CComLocomotion::Create()))
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+		CComCharacterMoveIntent::Create()))
 	{
 		return E_FAIL;
 	}

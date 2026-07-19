@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTHitAnimMonster.h"
 #include "ComAnimator.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTHitAnimMonster::CBTHitAnimMonster()
@@ -37,8 +38,9 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 	{
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 
-		if (pTransform == nullptr || pAnimator == nullptr)
+		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
 		if (m_bStart)
 		{
@@ -58,14 +60,22 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		{
 			
 
+			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
-				pTransform->GoRight(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::LEFT)
-				pTransform->GoLeft(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = -pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::STRAIGHT)
-				pTransform->GoStraight(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
-				pTransform->GoBackward(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+
+			if (m_eMove != MOVE::END)
+			{
+				_float3 vDirection{};
+				XMStoreFloat3(&vDirection, vMoveDirection);
+				pMoveIntent->SetMoveIntent(vDirection, m_Value.fSpeed);
+			}
 		}
 
 		if (m_bLoop || bFinished)

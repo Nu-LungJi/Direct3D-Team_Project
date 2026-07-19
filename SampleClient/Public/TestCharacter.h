@@ -8,7 +8,7 @@ class CComPxRigidBody;
 class CComPxBoxCollider;
 class CResPhysXBoxGeometry;
 class CComPxCharacterController;
-class CComLocomotion;
+class CComCharacterMoveIntent;
 class CComCharacterMotor;
 NS_END
 NS_BEGIN(Client)
@@ -59,7 +59,7 @@ private:
 	CComPxBoxCollider* m_pComPxBoxCollider{};
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
-	CComLocomotion* m_pComLocomotion{};
+	CComCharacterMoveIntent* m_pComMoveIntent{};
 	CComCharacterMotor* m_pComCharacterMotor{};
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 

@@ -136,6 +136,8 @@ CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)
 
 void CComBeHavior::Add_Node(CBTRoot* pParent,  uint32_t iSlot, UPtr<CBTRoot> pNode)
 {
+	if (nullptr == pParent)
+		return;
 
 	BEHAVIOR eType = pParent->Get_GuiNodeInfo().eMyType;
 	if (nullptr == pNode) return;

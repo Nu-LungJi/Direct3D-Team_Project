@@ -480,6 +480,9 @@
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\EnderDragon.h">
+      <Filter>GameObject\AI</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_Locomotion_State.h">
       <Filter>GameObject\Player\State_Machine\State\Player_Locomotion_State</Filter>
     </ClInclude>
@@ -728,6 +731,9 @@
     </ClCompile>
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
       <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EnderDragon.cpp">
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp">
       <Filter>GameObject\Player\State_Machine\State\Player_Locomotion_State</Filter>

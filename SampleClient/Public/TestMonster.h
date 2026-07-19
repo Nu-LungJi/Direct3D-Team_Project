@@ -4,7 +4,7 @@
 
 NS_BEGIN(Engine)
 class CComPxCharacterController;
-class CComLocomotion;
+class CComCharacterMoveIntent;
 class CComCharacterMotor;
 NS_END
 
@@ -47,7 +47,7 @@ private:
 	void TryDestroyByProjectile(CGameObject* pObject);
 	void TryFireAtTarget(_float fTimeDelta);
 
-	CComLocomotion* m_pLocomotion{};
+	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
 	CComPxCharacterController* m_pCharacterController{};
 	CHandle m_hTarget{};

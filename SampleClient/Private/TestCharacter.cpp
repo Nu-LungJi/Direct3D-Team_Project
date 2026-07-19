@@ -15,7 +15,7 @@
 #include "Resources.h"
 #include "TestPhysXTerrain.h"
 #include "ComPxCharacterController.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "TestThirdPersonCamera.h"
 #include "DbgLineRender.h"
@@ -75,11 +75,11 @@ HRESULT CTestCharacter::Initialize(void* pArg)
 	}
 
 	{
-		CComLocomotion::DESC Desc{};
+		CComCharacterMoveIntent::DESC Desc{};
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
-			"ComLocomotion", &Desc, &m_pComLocomotion)))
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+			"ComCharacterMoveIntent", &Desc, &m_pComMoveIntent)))
 		{
 			return E_FAIL;
 		}
@@ -87,7 +87,7 @@ HRESULT CTestCharacter::Initialize(void* pArg)
 
 	{
 		CComCharacterMotor::DESC Desc{};
-		Desc.pLocomotion = m_pComLocomotion;
+		Desc.pMoveIntent = m_pComMoveIntent;
 		Desc.pCharacterController = m_pComCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.fJumpVelocity = 5.f;
@@ -109,7 +109,7 @@ void CTestCharacter::PriorityUpdate(E::_float fTimeDelta)
 	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("TestPlayerCam");
 	if (!pPlayerCamera)
 	{
-		m_pComLocomotion->ClearMoveIntent();
+		m_pComMoveIntent->ClearMoveIntent();
 		return;
 	}
 
@@ -259,12 +259,12 @@ void CTestCharacter::PriorityUpdate(E::_float fTimeDelta)
 		vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 
 	if (vMoveDirection.x != 0.f || vMoveDirection.z != 0.f)
-		m_pComLocomotion->SetMoveIntent(vMoveDirection, 5.f);
+		m_pComMoveIntent->SetMoveIntent(vMoveDirection, 5.f);
 	else
-		m_pComLocomotion->ClearMoveIntent();
+		m_pComMoveIntent->ClearMoveIntent();
 
 	if (CGameInstance::Get().KeyDown(DIK_SPACE))
-		m_pComLocomotion->RequestJump();
+		m_pComMoveIntent->RequestJump();
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{

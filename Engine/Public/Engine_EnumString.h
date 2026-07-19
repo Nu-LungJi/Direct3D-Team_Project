@@ -18,7 +18,7 @@ namespace Engine
 		Prototype_Component_StaticModelInstance,
 		Prototype_Component_Animator,
 		Prototype_Component_ComLuaScript,
-		Prototype_Component_ComLocomotion,
+		Prototype_Component_ComCharacterMoveIntent,
 		Prototype_Component_ComCharacterMotor
 	};
 

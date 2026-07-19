@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTAttackAnimation.h"
 #include "ComAnimator.h" 
+#include "ComCharacterMoveIntent.h"
 #include "TestGob.h"
 NS_USING(Client)
 
@@ -38,8 +39,10 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 		
-		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
+		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
+			-1 == m_Value.iAnimIndex)
 			return m_eDebug = EVALUATE::FAILED;
 		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 		pAnimator->SetPlay(true);
@@ -76,15 +79,23 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 
 			_float fAnimRange = m_fRatio.y - m_fRatio.x;
 			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
-			_float fMove = t * fTimeDelta * fAnimRange * m_Value.fSpeed;
+			const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
-				pTransform->GoRight(fMove);
+				vMoveDirection = pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::LEFT)
-				pTransform->GoLeft(fMove);
+				vMoveDirection = -pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::STRAIGHT)
-				pTransform->GoStraight(fMove);
+				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
-				pTransform->GoBackward(fMove);
+				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+
+			if (m_eMove != MOVE::END)
+			{
+				_float3 vDirection{};
+				XMStoreFloat3(&vDirection, vMoveDirection);
+				pMoveIntent->SetMoveIntent(vDirection, fMoveSpeed);
+			}
 		}
 
 		
