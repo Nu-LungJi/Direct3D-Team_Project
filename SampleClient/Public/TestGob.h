@@ -13,7 +13,7 @@ class CComAnimator;
 class CComBeHavior;
 class CComCollider;
 class CComPxCharacterController;
-class CComLocomotion;
+class CComCharacterMoveIntent;
 class CComCharacterMotor;
 NS_END
 
@@ -97,7 +97,7 @@ private:
 	CComBeHavior* m_pBeHavior;
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pCharacterController{};
-	CComLocomotion* m_pLocomotion{};
+	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 

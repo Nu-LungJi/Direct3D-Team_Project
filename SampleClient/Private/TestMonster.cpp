@@ -3,7 +3,7 @@
 
 #include "GameInstance.h"
 #include "ComPxCharacterController.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "Resources.h"
 #include "DbgLineRender.h"
@@ -35,11 +35,11 @@ HRESULT CTestMonster::Initialize(void* pArg)
 	}
 
 	{
-		CComLocomotion::DESC Desc{};
+		CComCharacterMoveIntent::DESC Desc{};
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
-			"ComLocomotion", &Desc, &m_pLocomotion)))
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
 		{
 			return E_FAIL;
 		}
@@ -47,7 +47,7 @@ HRESULT CTestMonster::Initialize(void* pArg)
 
 	{
 		CComCharacterMotor::DESC Desc{};
-		Desc.pLocomotion = m_pLocomotion;
+		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.bUseGravity = true;
@@ -79,7 +79,7 @@ void CTestMonster::PriorityUpdate(_float fTimeDelta)
 		m_fDirectionChangeTimer = Randf(1.f, 3.f);
 	}
 
-	m_pLocomotion->SetMoveIntent(m_vMoveDirection, 2.f);
+	m_pMoveIntent->SetMoveIntent(m_vMoveDirection, 2.f);
 }
 
 void CTestMonster::TryFireAtTarget(_float fTimeDelta)

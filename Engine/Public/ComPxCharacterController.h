@@ -54,6 +54,7 @@ public:
 	bool IsCollidingSide() const;
 	void SetPosition(const XMFLOAT3& vPosition);
 	_float3 GetPosition() const;
+	_float3 GetFootPosition() const;
 
 	_bool Resize(_float fHeight);
 	_bool SetRadius(_float fRadius);

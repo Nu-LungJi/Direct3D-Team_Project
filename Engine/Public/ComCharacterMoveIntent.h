@@ -4,7 +4,7 @@
 
 NS_BEGIN(Engine)
 
-class ENGINE_DLL CComLocomotion final : public CComponent
+class ENGINE_DLL CComCharacterMoveIntent final : public CComponent
 {
 public:
 	struct DESC : public CComponent::DESC
@@ -24,12 +24,12 @@ public:
 	};
 
 public:
-	DECLARE_DERIVED_TYPE(CComLocomotion, CComponent)
+	DECLARE_DERIVED_TYPE(CComCharacterMoveIntent, CComponent)
 
 private:
-	explicit CComLocomotion();
-	CComLocomotion(const CComLocomotion& rhs);
-	~CComLocomotion() override;
+	explicit CComCharacterMoveIntent();
+	CComCharacterMoveIntent(const CComCharacterMoveIntent& rhs);
+	~CComCharacterMoveIntent() override;
 
 private:
 	HRESULT Initialize(void* pArg) override;
@@ -37,6 +37,7 @@ private:
 public:
 	void SetMoveIntent(const _float3& vDirection, _float fSpeed);
 	void ClearMoveIntent();
+	// deg/sec
 	void SetFacingIntent(const _float3& vDirection, _float fTurnSpeed);
 	void SetFacingIntentImmediate(const _float3& vDirection);
 	void ClearFacingIntent();
@@ -62,7 +63,7 @@ private:
 	_bool m_bWarpRequested{};
 
 public:
-	static UPtr<CComLocomotion> Create();
+	static UPtr<CComCharacterMoveIntent> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 private:

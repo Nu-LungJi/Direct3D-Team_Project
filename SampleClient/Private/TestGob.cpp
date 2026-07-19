@@ -10,7 +10,7 @@
 #include "GameInstance.h"
 #include "ComCollider.h"
 #include "ComPxCharacterController.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
 NS_USING(Client)
@@ -91,11 +91,11 @@ HRESULT CTestGob::Initialize(void* pArg)
 	}
 
 	{
-		CComLocomotion::DESC Desc{};
+		CComCharacterMoveIntent::DESC Desc{};
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
-			"ComLocomotion", &Desc, &m_pLocomotion)))
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
 		{
 			return E_FAIL;
 		}
@@ -103,7 +103,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 	{
 		CComCharacterMotor::DESC Desc{};
-		Desc.pLocomotion = m_pLocomotion;
+		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.bUseGravity = true;
@@ -177,7 +177,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	}
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
-	GetTransform().SetPosition(m_pCharacterController->GetPosition());
+	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 	return S_OK;
 }
@@ -190,6 +190,8 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyDown(DIK_1))
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
+	m_pMoveIntent->ClearMoveIntent();
+	m_pMoveIntent->ClearFacingIntent();
 	m_pBeHavior->Update(fTimeDelta);
 }
 
@@ -215,20 +217,24 @@ void CTestGob::Update(E::_float fTimeDelta)
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
+	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
+	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
+	if(false)
 	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
 	{
 		const auto vPreviousColor = pDbgLineRender->GetColor();
 		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
-		const _float3 vPosition = GetTransform().GetPosition();
-
 		pDbgLineRender->SetColor({ 1.f, 0.f, 0.f, 1.f });
 		pDbgLineRender->SetDepthTest(true);
 		pDbgLineRender->AddCapsule(
 			0.5f,
 			1.f,
-			XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+			XMMatrixTranslation(
+				vControllerPosition.x,
+				vControllerPosition.y,
+				vControllerPosition.z));
 
 		pDbgLineRender->SetColor(vPreviousColor);
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);

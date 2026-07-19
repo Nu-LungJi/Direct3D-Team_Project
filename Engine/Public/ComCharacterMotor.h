@@ -5,14 +5,14 @@
 
 NS_BEGIN(Engine)
 
-class CComLocomotion;
+class CComCharacterMoveIntent;
 
 class ENGINE_DLL CComCharacterMotor final : public CComponent
 {
 public:
 	struct DESC : public CComponent::DESC
 	{
-		CComLocomotion* pLocomotion{};
+		CComCharacterMoveIntent* pMoveIntent{};
 		CComPxCharacterController* pCharacterController{};
 		_float fGravity{ -9.81f };
 		_float fJumpVelocity{ 5.f };
@@ -46,7 +46,7 @@ public:
 	PX_CCT_COLLISION_FLAG GetLastCollisionFlag() const { return m_eLastCollisionFlag; }
 
 private:
-	CComLocomotion* m_pLocomotion{};
+	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComPxCharacterController* m_pCharacterController{};
 	_float3 m_vVelocity{};
 	_float m_fGravity{ -9.81f };

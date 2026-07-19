@@ -942,7 +942,7 @@
     <ClInclude Include="..\Public\TweenComponent.h">
       <Filter>Component\Tween</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ComLocomotion.h">
+    <ClInclude Include="..\Public\ComCharacterMoveIntent.h">
       <Filter>Component\LocoAndMotor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\ComCharacterMotor.h">
@@ -1500,7 +1500,7 @@
     <ClCompile Include="..\Private\TweenComponent.cpp">
       <Filter>Component\Tween</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\ComLocomotion.cpp">
+    <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp">
       <Filter>Component\LocoAndMotor</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ComCharacterMotor.cpp">

@@ -1,22 +1,22 @@
 #include "pch.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 
 NS_USING(Engine)
 
-CComLocomotion::CComLocomotion()
+CComCharacterMoveIntent::CComCharacterMoveIntent()
 {
 }
 
-CComLocomotion::CComLocomotion(const CComLocomotion& rhs)
+CComCharacterMoveIntent::CComCharacterMoveIntent(const CComCharacterMoveIntent& rhs)
 	: CComponent{ rhs }
 {
 }
 
-CComLocomotion::~CComLocomotion()
+CComCharacterMoveIntent::~CComCharacterMoveIntent()
 {
 }
 
-HRESULT CComLocomotion::Initialize(void* pArg)
+HRESULT CComCharacterMoveIntent::Initialize(void* pArg)
 {
 	if (FAILED(CComponent::Initialize(pArg)))
 		return E_FAIL;
@@ -24,7 +24,7 @@ HRESULT CComLocomotion::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CComLocomotion::SetMoveIntent(const _float3& vDirection, _float fSpeed)
+void CComCharacterMoveIntent::SetMoveIntent(const _float3& vDirection, _float fSpeed)
 {
 	const _float fLengthSq =
 		vDirection.x * vDirection.x +
@@ -45,14 +45,14 @@ void CComLocomotion::SetMoveIntent(const _float3& vDirection, _float fSpeed)
 	m_tOutput.bMoveRequested = true;
 }
 
-void CComLocomotion::ClearMoveIntent()
+void CComCharacterMoveIntent::ClearMoveIntent()
 {
 	m_tOutput.vMoveDirection = {};
 	m_tOutput.fMoveSpeed = 0.f;
 	m_tOutput.bMoveRequested = false;
 }
 
-void CComLocomotion::SetFacingIntent(const _float3& vDirection, _float fTurnSpeed)
+void CComCharacterMoveIntent::SetFacingIntent(const _float3& vDirection, _float fTurnSpeed)
 {
 	const _float fLengthSq =
 		vDirection.x * vDirection.x +
@@ -74,7 +74,7 @@ void CComLocomotion::SetFacingIntent(const _float3& vDirection, _float fTurnSpee
 	m_tOutput.bImmediateFacing = false;
 }
 
-void CComLocomotion::SetFacingIntentImmediate(const _float3& vDirection)
+void CComCharacterMoveIntent::SetFacingIntentImmediate(const _float3& vDirection)
 {
 	const _float fLengthSq =
 		vDirection.x * vDirection.x +
@@ -96,7 +96,7 @@ void CComLocomotion::SetFacingIntentImmediate(const _float3& vDirection)
 	m_tOutput.bImmediateFacing = true;
 }
 
-void CComLocomotion::ClearFacingIntent()
+void CComCharacterMoveIntent::ClearFacingIntent()
 {
 	m_tOutput.vFacingDirection = {};
 	m_tOutput.fTurnSpeed = 0.f;
@@ -104,14 +104,14 @@ void CComLocomotion::ClearFacingIntent()
 	m_tOutput.bImmediateFacing = false;
 }
 
-_bool CComLocomotion::ConsumeJumpRequest()
+_bool CComCharacterMoveIntent::ConsumeJumpRequest()
 {
 	const _bool bRequested = m_bJumpRequested;
 	m_bJumpRequested = false;
 	return bRequested;
 }
 
-void CComLocomotion::RequestWarp(const _float3& vPosition)
+void CComCharacterMoveIntent::RequestWarp(const _float3& vPosition)
 {
 	if (!std::isfinite(vPosition.x) ||
 		!std::isfinite(vPosition.y) ||
@@ -125,7 +125,7 @@ void CComLocomotion::RequestWarp(const _float3& vPosition)
 	m_bWarpRequested = true;
 }
 
-_bool CComLocomotion::ConsumeWarpRequest(_float3& vOutPosition)
+_bool CComCharacterMoveIntent::ConsumeWarpRequest(_float3& vOutPosition)
 {
 	if (!m_bWarpRequested)
 		return false;
@@ -135,13 +135,13 @@ _bool CComLocomotion::ConsumeWarpRequest(_float3& vOutPosition)
 	return true;
 }
 
-void CComLocomotion::ClearWarpRequest()
+void CComCharacterMoveIntent::ClearWarpRequest()
 {
 	m_vWarpPosition = {};
 	m_bWarpRequested = false;
 }
 
-void CComLocomotion::UpdateGUI()
+void CComCharacterMoveIntent::UpdateGUI()
 {
 	CComponent::UpdateGUI();
 	ImGui::Text("Move Requested: %s", m_tOutput.bMoveRequested ? "true" : "false");
@@ -165,31 +165,31 @@ void CComLocomotion::UpdateGUI()
 		m_vWarpPosition.z);
 }
 
-UPtr<CComLocomotion> CComLocomotion::Create()
+UPtr<CComCharacterMoveIntent> CComCharacterMoveIntent::Create()
 {
-	auto pInstance = ToUPtr(new CComLocomotion{});
+	auto pInstance = ToUPtr(new CComCharacterMoveIntent{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CComLocomotion");
+		MSG_BOX("Failed to Created : CComCharacterMoveIntent");
 		return nullptr;
 	}
 
 	return pInstance;
 }
 
-UPtr<CPrototype> CComLocomotion::Clone(void* pArg)
+UPtr<CPrototype> CComCharacterMoveIntent::Clone(void* pArg)
 {
-	auto pInstance = ToUPtr(new CComLocomotion{ *this });
+	auto pInstance = ToUPtr(new CComCharacterMoveIntent{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CComLocomotion");
+		MSG_BOX("Failed to Cloned : CComCharacterMoveIntent");
 		return nullptr;
 	}
 
 	return pInstance;
 }
 
-void CComLocomotion::Free()
+void CComCharacterMoveIntent::Free()
 {
 	CComponent::Free();
 }

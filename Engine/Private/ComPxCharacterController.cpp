@@ -430,6 +430,18 @@ _float3 CComPxCharacterController::GetPosition() const
 		static_cast<_float>(vPosition.z) };
 }
 
+_float3 CComPxCharacterController::GetFootPosition() const
+{
+	if (!m_pController)
+		return {};
+
+	const PxExtendedVec3 vPosition = m_pController->getFootPosition();
+	return {
+		static_cast<_float>(vPosition.x),
+		static_cast<_float>(vPosition.y),
+		static_cast<_float>(vPosition.z) };
+}
+
 _bool CComPxCharacterController::Resize(_float fHeight)
 {
 	if (!m_pController || fHeight <= 0.f)

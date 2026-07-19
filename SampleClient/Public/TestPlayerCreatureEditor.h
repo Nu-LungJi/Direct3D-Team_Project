@@ -4,7 +4,7 @@
 
 NS_BEGIN(Engine)
 class CComPxCharacterController;
-class CComLocomotion;
+class CComCharacterMoveIntent;
 class CComCharacterMotor;
 NS_END
 
@@ -40,7 +40,7 @@ public:
 
 private:
 	CComPxCharacterController* m_pCharacterController{};
-	CComLocomotion* m_pLocomotion{};
+	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
 
 public:

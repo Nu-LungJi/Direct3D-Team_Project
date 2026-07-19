@@ -2,6 +2,7 @@
 #include "BTRandMoveAnim.h"
 #include "ComTransform.h" 
 #include "ComAnimator.h"
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTRandMoveAnim::CBTRandMoveAnim()
@@ -108,7 +109,8 @@ void CBTRandMoveAnim::RandomDirSelect()
 EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 {
 	auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	if (pTransform == nullptr)
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	if (pTransform == nullptr || pMoveIntent == nullptr)
 		return EVALUATE::FAILED;
 
 	_vector vCurPos = pTransform->GetState(STATE::POSITION);
@@ -120,9 +122,12 @@ EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 		m_bInit = false;
 		return EVALUATE::SUCCESS;
 	}
-		
-	vCurPos += XMLoadFloat3(&m_vDir) * -m_fClamp * fTimeDelta;
-	pTransform->SetPosition(XMVectorSetW(vCurPos, 1.f));
+
+	const _float3 vMoveDirection{
+		-m_vDir.x,
+		0.f,
+		-m_vDir.z };
+	pMoveIntent->SetMoveIntent(vMoveDirection, m_fClamp);
 	return EVALUATE::RUN;
 }
 void CBTRandMoveAnim::Update_Gui()

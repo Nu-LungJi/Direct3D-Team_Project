@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ComCharacterMotor.h"
 
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 #include "GameObject.h"
 
 NS_USING(Engine)
@@ -27,17 +27,17 @@ CComCharacterMotor::~CComCharacterMotor()
 HRESULT CComCharacterMotor::Initialize(void* pArg)
 {
 	auto* pDesc = static_cast<DESC*>(pArg);
-	if (!pDesc || !pDesc->pLocomotion || !pDesc->pCharacterController)
+	if (!pDesc || !pDesc->pMoveIntent || !pDesc->pCharacterController)
 		return E_FAIL;
 
 	if (FAILED(CComponent::Initialize(pArg)))
 		return E_FAIL;
 
-	if (pDesc->pLocomotion->GetGameObject() != m_pGameObject ||
+	if (pDesc->pMoveIntent->GetGameObject() != m_pGameObject ||
 		pDesc->pCharacterController->GetGameObject() != m_pGameObject)
 		return E_FAIL;
 
-	m_pLocomotion = pDesc->pLocomotion;
+	m_pMoveIntent = pDesc->pMoveIntent;
 	m_pCharacterController = pDesc->pCharacterController;
 	m_fGravity = pDesc->fGravity;
 	m_fJumpVelocity = pDesc->fJumpVelocity;
@@ -51,11 +51,11 @@ HRESULT CComCharacterMotor::Initialize(void* pArg)
 
 void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 {
-	if (!m_pLocomotion || !m_pCharacterController || fFixedTimeDelta <= 0.f)
+	if (!m_pMoveIntent || !m_pCharacterController || fFixedTimeDelta <= 0.f)
 		return;
 
 	_float3 vWarpPosition{};
-	if (m_pLocomotion->ConsumeWarpRequest(vWarpPosition))
+	if (m_pMoveIntent->ConsumeWarpRequest(vWarpPosition))
 	{
 		m_pCharacterController->SetPosition(vWarpPosition);
 		m_vVelocity = {};
@@ -68,7 +68,7 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 		return;
 	}
 
-	const CComLocomotion::OUTPUT& tOutput = m_pLocomotion->GetOutput();
+	const CComCharacterMoveIntent::OUTPUT& tOutput = m_pMoveIntent->GetOutput();
 	if (tOutput.bMoveRequested)
 	{
 		m_vVelocity.x = tOutput.vMoveDirection.x * tOutput.fMoveSpeed;
@@ -80,12 +80,12 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 		m_vVelocity.z = 0.f;
 	}
 
-	if (m_pLocomotion->HasJumpRequest())
+	if (m_pMoveIntent->HasJumpRequest())
 	{
 		if (m_bGrounded)
 			m_vVelocity.y = m_fJumpVelocity;
 
-		m_pLocomotion->ConsumeJumpRequest();
+		m_pMoveIntent->ConsumeJumpRequest();
 	}
 
 	if (m_bUseGravity)
@@ -179,7 +179,7 @@ UPtr<CPrototype> CComCharacterMotor::Clone(void* pArg)
 
 void CComCharacterMotor::Free()
 {
-	m_pLocomotion = nullptr;
+	m_pMoveIntent = nullptr;
 	m_pCharacterController = nullptr;
 	CComponent::Free();
 }

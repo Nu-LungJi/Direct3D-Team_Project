@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTTurnAnimation.h"
 #include "ComAnimator.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTTurnAnimation::CBTTurnAnimation()
@@ -31,13 +32,14 @@ HRESULT CBTTurnAnimation::Initalize(void* pArg)
 
 EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 {
-	_matrix mat = XMMatrixIdentity();
 	auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
-
 	auto pSrcTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	auto& pDestTransform = CGameInstance::Get().GetActiveCamera()->GetTransform();
-	if (pAnimator == nullptr || pSrcTransform == nullptr)
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	auto* pTarget = CGameInstance::Get().GetActiveCamera();
+	if (pAnimator == nullptr || pSrcTransform == nullptr ||
+		pMoveIntent == nullptr || pTarget == nullptr)
 		return m_eDebug = EVALUATE::FAILED;
+	auto& pDestTransform = pTarget->GetTransform();
 	EVALUATE Resut = EVALUATE::END;
 	//ㅋㅋ;
 	if (!m_bTurn)
@@ -52,12 +54,9 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 		_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
 		if (false == SelectAngle(XMConvertToDegrees(atan2f(fCrossY, fDot))))
 		{
-			_vector vLook = XMVector3Normalize(vDestPos - vSrcPos);
-			_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
-			_vector vUp = XMVector3Cross(vLook, vRight);
-			mat.r[0] = vRight; mat.r[1] = vUp; mat.r[2] = vLook;
-			XMVECTOR quat = XMQuaternionRotationMatrix(mat);
-			pSrcTransform->SetQuaternion(quat);
+			_float3 vFacingDirection{};
+			XMStoreFloat3(&vFacingDirection, vTargetLook);
+			pMoveIntent->SetFacingIntentImmediate(vFacingDirection);
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 		XMStoreFloat3(&m_vCurrentLook, vSrcLook);
@@ -69,16 +68,8 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 	}
 	m_fTick += fTimeDelta;
 
-	_float t = m_fTick / 1.6f;
-
-	_vector vLook = XMVectorLerp(XMLoadFloat3(&m_vCurrentLook),XMLoadFloat3(&m_vTargetLook),t);
-	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
-	_vector vUp = XMVector3Cross(vLook, vRight);
-
-	mat.r[0] = vRight; mat.r[1] = vUp; mat.r[2] = vLook;
-
-	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
-	pSrcTransform->SetQuaternion(quat);	
+	const _float fTurnSpeed = std::max(std::abs(m_fAngle) / 1.6f, 1.f);
+	pMoveIntent->SetFacingIntent(m_vTargetLook, fTurnSpeed);
 
 
 	_bool bFinished = pAnimator->GetFinish();
