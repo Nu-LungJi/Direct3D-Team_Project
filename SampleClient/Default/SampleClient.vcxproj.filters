@@ -447,6 +447,9 @@
     <ClInclude Include="..\public\BTMonAttType.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\EnderDragon.h">
+      <Filter>GameObject\AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -668,6 +671,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_FSM.cpp">
       <Filter>GameObject\Player\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EnderDragon.cpp">
+      <Filter>GameObject\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

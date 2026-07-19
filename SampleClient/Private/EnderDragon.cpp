@@ -1,37 +1,37 @@
 #include "pch.h"
-#include "TestGob.h"
+#include "EnderDragon.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
-#include "Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
 NS_USING(Client)
 
-CTestGob::CTestGob()
+CEnderDragon::CEnderDragon()
 {
 }
 
-CTestGob::~CTestGob()
+
+CEnderDragon::~CEnderDragon()
 {
 }
 
-void CTestGob::UpdateGUI()
+void CEnderDragon::UpdateGUI()
 {
-	__super::UpdateGUI();
-
+	CGameObject::UpdateGUI();
+	ImGui::DragInt("HP", &m_iHp, 0, 1);
 }
 
-HRESULT CTestGob::InitializePrototype(void* pArg)
+HRESULT CEnderDragon::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
 	return S_OK;
 }
 
-HRESULT CTestGob::Initialize(void* pArg)
+HRESULT CEnderDragon::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
@@ -39,7 +39,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 100;
-	
+
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
 	Desc.LoadPath = MonDesc->BeHaviorTag;
@@ -80,64 +80,55 @@ HRESULT CTestGob::Initialize(void* pArg)
 	{
 		CComCollider::DESC Desc{};
 		Desc.eCollType = CollType::Box;
-		Desc.vExtents = {1.f, 1.f, 1.f};
+		Desc.vExtents = { 1.f, 1.f, 1.f };
 		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
 		{
 			return E_FAIL;
 		};
 	}
-	CWeapon::WEAPON_DESC WeaponDesc{};
-	WeaponDesc.sObjectTag = "Weapon";
-	WeaponDesc.ParentHandle = GetHandle();
-	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	WeaponDesc.LevelTag = MonDesc->LevelTag;
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
-	if (!Weapon.has_value())
-	{
-		MSG_BOX("Create Failed Weapon");
-		return E_FAIL;
-	}
-	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
-
+	
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	return S_OK;
 }
 
-void CTestGob::PriorityUpdate(E::_float fTimeDelta)
+void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
+	if (CGameInstance::Get().KeyDown(DIK_1))
+		Set_Damage(10);
 
 }
 
-void CTestGob::Update(E::_float fTimeDelta)
+void CEnderDragon::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-
 }
 
-void CTestGob::LateUpdate(E::_float fTimeDelta)
+void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
-}
+	GetTransform().Update();
 
-E::UPtr<CTestGob> CTestGob::Create()
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+}
+E::UPtr<CEnderDragon> CEnderDragon::Create()
 {
-	auto pInstance = E::ToUPtr(new CTestGob{});
+	auto pInstance = E::ToUPtr(new CEnderDragon{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTestGob");
+		MSG_BOX("Failed to Created : CEnderDragon");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTestGob::Clone(void* pArg)
+E::UPtr<E::CPrototype> CEnderDragon::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTestGob{ *this });
+	auto	pInstance = E::ToUPtr(new CEnderDragon{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTestGob");
+		MSG_BOX("Failed to Cloned : CEnderDragon");
 		return nullptr;
 	}
 

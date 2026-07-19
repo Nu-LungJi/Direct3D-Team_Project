@@ -146,11 +146,11 @@ std::future<bool> CLevelCreatureLoader::Load()
 				return false;
 			}
 
-			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Player", CPlayer::Create())))
-			{
-				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");
-				return false;
-			}
+			//if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Player", CPlayer::Create())))
+			//{
+			//	MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");
+			//	return false;
+			//}
 			if (E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Light", CLight::Create()))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Light");

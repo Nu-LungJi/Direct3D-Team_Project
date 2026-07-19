@@ -126,7 +126,12 @@ void CNodeEditor::Show_Editor()
 	{
 		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || !ImGui::IsAnyItemHovered())
 		{
-			m_iNodeSelect = iNode_hovered_in_list = iNode_hovered_in_scene = -1;
+			if (iNode_hovered_in_list != -1)
+				m_iNodeSelect = iNode_hovered_in_list;
+			else if (iNode_hovered_in_scene != -1)
+				m_iNodeSelect = iNode_hovered_in_scene;
+			else
+				m_iNodeSelect = -1;
 			bOpen_Context_Menu = true;
 		}
 	}
@@ -146,49 +151,54 @@ void CNodeEditor::Show_Editor()
 	static NODEGROUP eGroupType = NODEGROUP::END;
 	if (ImGui::BeginPopup("context_menu"))
 	{
-		if (m_Nodes.size() - 1 <= m_iNodeSelect)
-		{
+		
+			auto pNode = m_pBeHavior->Find_Node(m_iNodeSelect);
 
-			//GUINODE* pNode = m_iNodeSelect != -1 ? &m_Nodes[m_iNodeSelect] : NULL;
-			//if (pNode)
-			//{
-			////	//노드에서 우클릭 -> Rename delete copy ...
-			////	ImGui::Text("Node %s", pNode->Name);
-			////	ImGui::Separator();
-			////	if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
-			////	if (ImGui::MenuItem("Delete..", NULL, false, false)) {}
-			////	if (ImGui::MenuItem("Copy", NULL, false, false)) {}
-			//}
-			//else
-			//{
+			if (pNode)
+			{
+
+				//노드에서 우클릭 -> Rename delete copy ...
+				auto& nodeInfo = pNode->Get_GuiNodeInfo();
+
+				ImGui::Text("Node %s", nodeInfo.Name.c_str());
+				ImGui::Separator();
+
+				if (!m_bReName)
+				{
+					if (ImGui::Selectable("Rename..",false,ImGuiSelectableFlags_DontClosePopups))
+					{
+						strcpy_s(m_ReName, nodeInfo.Name.c_str()); // 현재 이름으로 초기화
+						m_bReName = true;
+						ImGui::SetKeyboardFocusHere();	
+					}
+				}
+				else
+				{
+					ImGui::Text("Rename node");
+
+					bool submitted = ImGui::InputText(
+						"##RenameNode",
+						m_ReName,
+						IM_ARRAYSIZE(m_ReName),
+						ImGuiInputTextFlags_EnterReturnsTrue);
+
+					if (submitted || ImGui::Button("Apply"))
+					{
+						 nodeInfo.Name = m_ReName;
+						 m_bReName = false;
+						ImGui::CloseCurrentPopup();
+					}
+
+					ImGui::SameLine();
+
+					if (ImGui::Button("Cancel"))
+						m_bReName = false;
+				}
+			}
+			else
+			{
 				if (m_bPopupAction)
 					m_bPopupAction = false;
-				//빈공간 우클릭...
-				//if (ImGui::MenuItem("Add_Selector"))
-				//{
-				//	m_eBTType = BEHAVIOR::SELECTOR;
-				//	m_pNodeName = "Selector";
-				//	m_bPopup = true;
-				//}
-				//else if (ImGui::MenuItem("Add_Sequence"))
-				//{
-				//	m_eBTType = BEHAVIOR::SECQUNCE;
-				//	m_pNodeName = "Sequence";
-				//	m_bPopup = true;
-				//}
-				//else if (ImGui::MenuItem("Add_RandSelector"))
-				//{
-				//	m_eBTType = BEHAVIOR::RAND_SELECTOR;
-				//	m_pNodeName = "Rand_Selector";
-				//	m_bPopup = true;
-				//}
-				//else if (ImGui::MenuItem("Add_RandSelector"))
-				//{
-				//	m_eBTType = BEHAVIOR::SELECTOR;
-				//	m_pNodeName = "Rand_BTReactiveSelector";
-				//	m_bPopup = true;
-				//}
-				//else 
 				if (ImGui::MenuItem("Add_Something.."))
 				{
 					bTypeCheck = true;
@@ -196,9 +206,9 @@ void CNodeEditor::Show_Editor()
 				}
 
 				if (ImGui::MenuItem("Paste", NULL, false, false)) {}
-			//}
+			}
 
-		}
+
 
 		ImGui::EndPopup();
 	}

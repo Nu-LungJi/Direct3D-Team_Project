@@ -51,10 +51,10 @@ public:
 	uint32_t					Get_Flag();
 	void						Set_Flag(uint32_t iFlag, FLAGTYPE eType);
 protected:
-	GUINODE								m_GuiNode;
-	GUINODE_LINK						m_GuiLink;
-	CHandle								m_Handle;
-	_string								m_MasterName, m_OwnerName;
+	GUINODE								m_GuiNode{};
+	GUINODE_LINK						m_GuiLink{};
+	CHandle								m_Handle{};
+	_string								m_MasterName{}, m_OwnerName{};
 	NODEGROUP							m_eGroup{};
 
 	EVALUATE							m_eDebug{};

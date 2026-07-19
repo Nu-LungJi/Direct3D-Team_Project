@@ -45,8 +45,8 @@ public:
 	void					Set_Flag(uint32_t iFlag, FLAGTYPE eType);
 	uint32_t				Get_Flag() { return m_iFlag; }
 private:
-	_string									m_ComponentName;
-	UPtr<class CBTComposite>				m_Root;
+	_string									m_ComponentName{};
+	UPtr<class CBTComposite>				m_Root{};
 	std::map<uint32_t,CBTRoot*>				m_NodeMap;
 	uint32_t								m_iNodeID{ 0 };
 	_string									m_FileName{};
