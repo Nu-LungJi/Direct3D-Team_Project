@@ -2,6 +2,7 @@
 #include "PhysXManager.h"
 #include "PhysxManagerListener.h"
 #include "GameInstance.h"
+#include "PhysXCollisionProxyEditor.h"
 
 #pragma push_macro("new")
 #undef new
@@ -289,6 +290,9 @@ void CPhysXManager::UpdateGUI()
         m_bDbgRender = !m_bDbgRender;
     }
     ImGui::End();
+
+	if (m_pCollisionProxyEditor)
+		m_pCollisionProxyEditor->UpdateGUI(0.f);
 }
 
 //_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
@@ -556,6 +560,10 @@ static physx::PxFilterFlags MyFilterShader(
 
 HRESULT CPhysXManager::Initialize()
 {
+	m_pCollisionProxyEditor = CPhysXCollisionProxyEditor::Create();
+	if (!m_pCollisionProxyEditor)
+		return E_FAIL;
+
     m_pListener = CPhysxManagerListener::Create();
 	if (!m_pListener)
 	{
@@ -780,6 +788,8 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 
 void CPhysXManager::Free()
 {
+	m_pCollisionProxyEditor.reset();
+
 	{
 		std::unique_lock lock{ m_UserDataRegistryMutex };
 		m_ShapeUserDataRegistry.clear();

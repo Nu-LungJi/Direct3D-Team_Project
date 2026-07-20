@@ -15,6 +15,7 @@
 #include "LevelPlayGroundLoader.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
+#include "MapCollisionProxyObject.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -49,6 +50,18 @@ HRESULT CLevelCreatureEditor::Initialize()
 		if (!hSpawnedPlayer)
 			return E_FAIL;
 		hPlayer = *hSpawnedPlayer;
+	}
+
+	{
+		CMapCollisionProxyObject::DESC Desc{};
+		Desc.sObjectTag = "MapCollisionProxy";
+		Desc.sCollisionFileName = "LevelA";
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_MapCollisionProxy",
+			"00_MapCollision",
+			&Desc))
+			return E_FAIL;
 	}
 
 
