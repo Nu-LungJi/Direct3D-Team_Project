@@ -106,6 +106,7 @@ private:
     uint32_t                         m_iDeadCount = 0;
 	SPtr<CResComputeShader> m_pResClearByOwnerCS;
 	SPtr<CResCBuffer> m_pComClearCBuffer;
+	_float				m_fTime{};
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

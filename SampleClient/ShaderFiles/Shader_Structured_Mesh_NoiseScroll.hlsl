@@ -11,8 +11,10 @@ cbuffer CB_PER_PARTICLE : register(b5)
     uint g_iFlipbookRows;
     uint g_iFlipbookColumns;
     uint g_iTotalFrames;
-    float3 g_fPadding;
+    float g_fTime;
+    float2 g_fPadding;
 };
+
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
@@ -54,40 +56,60 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
 {
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
-    float2 finalUV = In.vTexcoord;
+   // float2 finalUV = In.vTexcoord;
     float scale = p.alive ? p.size : 0.0f;
     
-    if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
-    {
-        uint frame = min(p.frameIndex, g_iTotalFrames - 1);
-        uint col = frame % g_iFlipbookColumns;
-        uint row = frame / g_iFlipbookColumns;
-        float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
-        float2 uvOffset = float2(col, row) * uvSize;
+// ----------------------------------------------------------
+// Noise Vertex Animation
+// ----------------------------------------------------------
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV 대신 실제 메쉬 UV 사용
-    }
+    Out.vTexcoord = In.vTexcoord;
 
-    Out.vTexcoord = finalUV;
+// 큰 물결
+    float2 uvLarge = In.vTexcoord * 0.6f;
+    uvLarge += float2(0.02f, 0.015f) * g_fTime;
+
+// 작은 물결
+    float2 uvSmall = In.vTexcoord * 2.5f;
+    uvSmall += float2(-0.04f, 0.03f) * g_fTime;
+
+    float nLarge = NoiseMap.SampleLevel(LinearWrap, uvLarge, 0).r;
+    float nSmall = NoiseMap.SampleLevel(LinearWrap, uvSmall, 0).r;
+
+// 큰 물결 위주 + 작은 디테일
+    float noise = lerp(nLarge, nSmall, 0.25f);
+
+// 부드럽게
+    noise = smoothstep(0.2f, 0.8f, noise);
+    noise = noise * 2.0f - 1.0f;
+
+    float amplitude = 3.0f;
+
+// 위치 이동
+    float3 vLocalPos = In.vPosition;
+    vLocalPos += normalize(In.vNormal) * noise * amplitude;
+
+// 원래 노멀 그대로 사용
+    float3 vLocalNormal = normalize(In.vNormal);
     
+    vLocalPos *= scale;
 
-    float3 localPos = In.vPosition * scale; 
-    float3 rotatedLocal = RotateXYZ(localPos, p.rotation); 
-    float3 vWorldPos = rotatedLocal + p.position;
+    float3 rotatedLocal = RotateXYZ(vLocalPos, p.rotation);
 
+    float3 worldPos = rotatedLocal + p.position;
 
-    Out.vPosition = mul(float4(vWorldPos, 1.0f), g_matViewProj);
-    Out.vWorldPos = vWorldPos;
-    //Out.vTexcoord = In.vTexcoord;
-    Out.vNormal = In.vNormal;
-    Out.vTangent = In.vTangent;
-    Out.vBinormal = In.vBinormal;
+    Out.vPosition = mul(float4(worldPos, 1), g_matViewProj);
+    Out.vWorldPos = worldPos;
+
+    Out.vNormal = normalize(RotateXYZ(vLocalNormal, p.rotation));
+    Out.vTangent = normalize(RotateXYZ(In.vTangent, p.rotation));
+    Out.vBinormal = normalize(RotateXYZ(In.vBinormal, p.rotation));
     Out.vColor = p.alive ? p.color : float4(p.color.rgb, 0.0f);
     Out.vEmissive = p.emissive;
     Out.vEndEmissive = p.endEmissive;
     Out.life = p.life;
     Out.maxLife = p.maxLife;
-    
+
     return Out;
 }
 
