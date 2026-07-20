@@ -89,8 +89,8 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     float wiggle = sin(phase);
     float flexMask = pow(saturate(bodyPos), 1.5f);
     float wiggleAmplitude = 4.0f;
-    float3 sideAxis = float3(0, 0, 1); // 모델링 좌표계에 맞게 조정
-
+  //  float3 sideAxis = float3(0, 0, 1); /
+    float3 sideAxis = normalize(In.vTangent); // 
     float3 vLocalPos = In.vPosition;
     vLocalPos += sideAxis * wiggle * wiggleAmplitude * flexMask;
     vLocalPos += normalize(In.vNormal) * noise * (amplitude * 0.3f);
