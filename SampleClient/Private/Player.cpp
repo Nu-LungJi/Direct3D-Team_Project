@@ -9,7 +9,7 @@
 #include "TestPartObject.h"
 
 #include "ComCharacterMotor.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 #include "ComPxCharacterController.h"
 #include "TestPlayer3CameraCreatureEditor.h"
 #include "Player_StateMachine.h"
@@ -137,11 +137,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	{
-		CComLocomotion::DESC Desc{};
+		CComCharacterMoveIntent::DESC Desc{};
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComLocomotion,
-			"ComLocomotion", &Desc, &m_pLocomotion)))
+			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+			"ComLocomotion", &Desc, &m_pMoveIntent)))
 		{
 			return E_FAIL;
 		}
@@ -149,7 +149,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	{
 		CComCharacterMotor::DESC Desc{};
-		Desc.pLocomotion = m_pLocomotion;
+		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.fJumpVelocity = 5.f;
@@ -213,7 +213,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	auto* pCamera = CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA");
 	if (!pCamera)
 	{
-		m_pLocomotion->ClearMoveIntent();
+		m_pMoveIntent->ClearMoveIntent();
 		
 		return;
 	}
@@ -242,12 +242,12 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		vForward.z * fForward + vRight.z * fRight };
 
 	if (vMoveDirection.x != 0.f || vMoveDirection.z != 0.f)
-		m_pLocomotion->SetMoveIntent(vMoveDirection, 5.f);
+		m_pMoveIntent->SetMoveIntent(vMoveDirection, 5.f);
 	else
-		m_pLocomotion->ClearMoveIntent();
+		m_pMoveIntent->ClearMoveIntent();
 
 	if (CGameInstance::Get().KeyDown(DIK_SPACE))
-		m_pLocomotion->RequestJump();
+		m_pMoveIntent->RequestJump();
 
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);

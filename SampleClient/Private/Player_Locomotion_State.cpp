@@ -2,7 +2,7 @@
 #include "Player_Locomotion_State.h"
 #include "Player.h"
 #include "ComAnimator.h"
-#include "ComLocomotion.h"
+#include "ComCharacterMoveIntent.h"
 
 NS_USING(Client)
 
@@ -26,11 +26,11 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		return;
 
 	auto* animator = player->GetAnimator();
-	auto* locomotion = player->GetLocomotion();
-	if (!animator || !locomotion)
+	auto* moveIntent = player->GetMoveIntent();
+	if (!animator || !moveIntent)
 		return;
 
-	const auto& move = locomotion->GetOutput();
+	const auto& move = moveIntent->GetOutput();
 
 	int32_t animIndex = m_iFreeIdleAnimation;
 

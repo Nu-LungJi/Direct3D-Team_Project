@@ -18,7 +18,7 @@ class CResComputeShader;
 
 // 물리
 class CComPxCharacterController;
-class CComLocomotion;
+class CComCharacterMoveIntent;
 class CComCharacterMotor;
 NS_END
 
@@ -80,7 +80,7 @@ public:
 public:
 
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
-	CComLocomotion* GetLocomotion() const { return m_pLocomotion; }
+	CComCharacterMoveIntent* GetMoveIntent() const { return m_pMoveIntent; }
 
 private:
 	CComModelInstance* m_pComModelInstance{};
@@ -113,7 +113,7 @@ private:
 	_bool   m_bStateInitailzie = false;
 private:
 	CComPxCharacterController* m_pCharacterController{};
-	CComLocomotion* m_pLocomotion{};
+	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
 	CPlayer_StateMachine* m_pStateMachine{};
 
