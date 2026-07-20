@@ -13,6 +13,7 @@
 #include "Player_StateMachine.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
+#include "Test3DSound.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -21,7 +22,15 @@ std::future<bool> CLevelCreatureLoader::Load()
 	// 메인 스레드 종료
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LEVEL_CREATURE", []()
 		{
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Test3DSound", CTest3DSound::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestModel");
+				return false;
+			}
+
 			// 메인 스레드 시작
+
+
 			if (auto res = CGameInstance::Get().AddResource("LEVEL_CREATURE", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
 			{
 				if (FAILED(res->Load()))

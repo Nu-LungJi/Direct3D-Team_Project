@@ -21,13 +21,18 @@ private:
 	~CTest3DSound() override;
 
 public:
+	HRESULT Initialize(void* pArg) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 
 private:
+	SOUND_ID m_soundID{ INVALID_SOUND_ID };
 
 public:
 	static E::UPtr<CTest3DSound> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	void Free() override;
 };
 
 NS_END

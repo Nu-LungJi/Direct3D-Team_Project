@@ -15,6 +15,7 @@
 #include "LevelPlayGroundLoader.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
+#include "Test3DSound.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -49,6 +50,26 @@ HRESULT CLevelCreatureEditor::Initialize()
 		if (!hSpawnedPlayer)
 			return E_FAIL;
 		hPlayer = *hSpawnedPlayer;
+	}
+
+	//"LEVEL_CREATURE", "Prototype_GameObject_Test3DSound"
+	{
+		CTest3DSound::DESC Desc{};
+		Desc.sObjectTag = "SoundObject";
+
+		auto h = E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_Test3DSound",
+			"08_Sound",
+			&Desc);
+
+		if (!h)
+			return E_FAIL;
+
+		if (auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CTest3DSound>(h.value()))
+		{
+			pObj->GetTransform().SetPosition(_float3{30.f, 5.f, 30.f});
+		}
 	}
 
 

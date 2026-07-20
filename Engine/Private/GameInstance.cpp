@@ -342,12 +342,6 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		}
 	}
 
-	// FMOD update and completed voice cleanup.
-	{
-		ZoneScopedN("SoundManager_Update");
-		m_pSoundManager->Update();
-	}
-
 	// lua hot reload
 	{
 		ZoneScopedN("LuaManager_Update");
@@ -411,6 +405,29 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	AddRenderObject(RENDERGROUP::NONBLEND_INSTANCED, m_pModel_Instance_Manager.get());
 	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
+
+	// 모든 게임 오브젝트와 카메라의 LateUpdate가 끝난 뒤 활성 카메라 하나만 Listener 0에 반영한다.
+	if (auto* pCamera = GetActiveCamera())
+	{
+		auto& cameraTransform = pCamera->GetTransform();
+		_float3 vForward{};
+		_float3 vUp{};
+		XMStoreFloat3(&vForward, XMVector3Normalize(cameraTransform.GetState(STATE::LOOK)));
+		XMStoreFloat3(&vUp, XMVector3Normalize(cameraTransform.GetState(STATE::UP)));
+
+		m_pSoundManager->SetListenerAttributes(0, SOUND_LISTENER_DESC{
+			.vPosition = cameraTransform.GetPosition(),
+			.vVelocity = {},
+			.vForward = vForward,
+			.vUp = vUp
+		});
+	}
+
+	// 최신 Listener/Emitter 값을 FMOD에 반영하고 종료된 SOUND_ID를 정리한다.
+	{
+		ZoneScopedN("SoundManager_Update");
+		m_pSoundManager->Update();
+	}
 }
 
 

@@ -240,6 +240,9 @@ HRESULT CSoundManager::Initialize()
 	if (FMOD_System_Init(m_pSystem, SOUND_MAX_CHANNELS, FMOD_INIT_NORMAL, nullptr) != FMOD_OK)
 		return E_FAIL;
 
+	if (FMOD_System_Set3DNumListeners(m_pSystem, 1) != FMOD_OK)
+		return E_FAIL;
+
 	if (FMOD_System_Set3DSettings(m_pSystem, SOUND_DOPPLER_SCALE, SOUND_DISTANCE_FACTOR, SOUND_ROLLOFF_SCALE) != FMOD_OK)
 		return E_FAIL;
 
