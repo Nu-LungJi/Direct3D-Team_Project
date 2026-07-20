@@ -1249,6 +1249,18 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pResDynTexTargetHBAO->GetSRV(),
 		m_pResDynTexTargetDepth->GetSRV(),
 	};
+	m_pContext->CSSetShaderResources(0, 6, );
+
+	ID3D11ShaderResourceView* pIBLSRVs[3] = {
+		m_pIrridianceSRV.Get(),
+		m_pPreFilterSRV.Get(),
+		m_pLUTSRV.Get()
+	};
+
+	m_pContext->CSSetShaderResources(10, 1, &pIBLSRVs[0]);
+	m_pContext->CSSetShaderResources(11, 1, &pIBLSRVs[1]);
+	m_pContext->CSSetShaderResources(12, 1, &pIBLSRVs[2]);
+
 	CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
 
 	// Dissolve
@@ -1339,7 +1351,6 @@ HRESULT CRenderer::Render_Lighting() {
 	
 	Unbind_Resources();
 
-
 	return S_OK;
 }
 
@@ -1347,6 +1358,11 @@ HRESULT CRenderer::Render_Alpha() {
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	ZoneScopedN("Render_Alpha");
+	{
+		m_pContext->CopyResource(
+			m_pResDynTexTargetPBR->GetTexture().Get(),
+			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+	}
 	{
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
@@ -1383,6 +1399,11 @@ HRESULT CRenderer::Render_Alpha() {
 HRESULT CRenderer::Render_Effect()
 {
 	ZoneScopedN("Render_Effect");
+	{
+		m_pContext->CopyResource(
+			m_pResDynTexTargetEffect->GetTexture().Get(),
+			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+	}
 	{
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());

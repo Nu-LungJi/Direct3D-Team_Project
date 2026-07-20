@@ -11,6 +11,17 @@ struct LightData {
 	_float Distance;
 };
 
+struct SHADOW_ARRAY_2D {
+	ComPtr<ID3D11Texture2D>			 TexBuffer{};
+	ComPtr<ID3D11ShaderResourceView> SRV{};
+	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_LIGHT_MAPCOUNT];
+};
+struct SHADOW_ARRAY_CUBE {
+	ComPtr<ID3D11Texture2D>			 TexBuffer{};
+	ComPtr<ID3D11ShaderResourceView> SRV{};
+	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_LIGHT_MAPCOUNT];
+};
+
 class ENGINE_DLL CLightManager final : public CEngineBase {
 private:
 	CLightManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
@@ -42,11 +53,13 @@ public:
 
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
+	VOID	Allocate_ShadowSlot();
 
 	_bool	IsInFrustum(CLight* _LightOBJ);
 
 private:
-
+	HRESULT	Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
+	HRESULT	Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
 
 #ifdef _DEBUG
 public:
@@ -56,6 +69,8 @@ public:
 private:
 	SPtr<CResVertexShader>	m_pResDebugVertexShader			= { nullptr };
 	SPtr<CResPixelShader>	m_pResDebugPixelShader			= { nullptr };
+
+	SPtr<CResQuadTexBuffer>	m_pResLightTexBuffer			= { nullptr };
 
 	// Light 위치 나타내는 용 아이콘 텍스쳐
 	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
@@ -77,7 +92,6 @@ private:
 
 	SPtr<CResVertexShader>				m_pResVertexShader = { nullptr };
 	SPtr<CResPixelShader>				m_pResPixelShader = { nullptr };
-	SPtr<CResQuadTexBuffer>				m_pResLightTexBuffer = { nullptr };
 
 	SPtr<CResVertexShader>				m_pPointLightVS = { nullptr };
 	SPtr<CResVertexShader>				m_pDirectionalLightVS = { nullptr };
@@ -95,12 +109,13 @@ private:
 
 	std::vector<CLight*>				m_pActiveShadowLightList{};
 
-	//std::vector<ID3D11ShaderResourceView*>	StaticShadowMapList;
-	//std::vector<ID3D11ShaderResourceView*>	DynamicShadowMapList;
-	//std::vector<ID3D11ShaderResourceView*>	NullList;
 	CB_LIGHT							m_pLightConstantVariable{};
-	ComPtr<ID3D11DepthStencilView>	m_pPointShadowDSV{};
-	std::vector<ComPtr<ID3D11DepthStencilView>> m_pPointShadowDSVList;
+
+	SHADOW_ARRAY_2D						m_pStaticDirectionalShadowList{};
+	SHADOW_ARRAY_2D						m_pDynamicDirectionalShadowList{};
+
+	SHADOW_ARRAY_CUBE					m_pStaticPointShadowList{};
+	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

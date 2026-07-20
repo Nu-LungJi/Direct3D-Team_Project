@@ -85,7 +85,7 @@ namespace Engine
 		_float		InnerAttanuation;
 		_float		OuterAttanuation;
 
-		uint32_t	CurrentLightIndex;
+		uint32_t	ShadowSlot;
 		_float		LightPadding;
 	} DYNAMIC_LIGHT;
 

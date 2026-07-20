@@ -70,7 +70,7 @@ struct DynamicLight
     float InnerAttanuation;
     float OuterAttanuation;
 	
-	uint CurrentLightIndex;
+	int		ShadowSlot;
     float LightPadding;
 };
 

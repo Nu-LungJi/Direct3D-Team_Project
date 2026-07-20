@@ -48,13 +48,12 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
     
 	for (int Face = 0; Face < 6; ++Face) {
+		GS_OUT OUT;
+		OUT.LayerIndex = Face;
 		for (int v = 0; v < 3; ++v) {
-			GS_OUT OUT;
-			
 			OUT.Position = mul(IN[v].WorldPos, DLight.g_LightViewProj[Face]);
 			OUT.WorldPos = IN[v].WorldPos.xyz;
-			OUT.LayerIndex = Face;
-            
+			
 			_OutStream.Append(OUT);
 		}
 		_OutStream.RestartStrip();
