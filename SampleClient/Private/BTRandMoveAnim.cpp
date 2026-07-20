@@ -111,7 +111,7 @@ EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 	auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 	if (pTransform == nullptr || pMoveIntent == nullptr)
-		return EVALUATE::FAILED;
+		return m_eDebug = EVALUATE::FAILED;
 
 	_vector vCurPos = pTransform->GetState(STATE::POSITION);
 	_float fDis = XMVectorGetX(XMVector3Length(vCurPos - XMLoadFloat3(&m_vFinishPos)));
@@ -120,15 +120,12 @@ EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 	if (fDis <= fMove)
 	{
 		m_bInit = false;
-		return EVALUATE::SUCCESS;
+		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
-	const _float3 vMoveDirection{
-		-m_vDir.x,
-		0.f,
-		-m_vDir.z };
+	const _float3 vMoveDirection{ -m_vDir.x, 0.f, -m_vDir.z };
 	pMoveIntent->SetMoveIntent(vMoveDirection, m_fClamp);
-	return EVALUATE::RUN;
+	return m_eDebug = EVALUATE::RUN;
 }
 void CBTRandMoveAnim::Update_Gui()
 {

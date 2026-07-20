@@ -717,9 +717,6 @@
     <ClCompile Include="..\private\BTMonAttType.cpp">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\Player.cpp">
       <Filter>GameObject\Player</Filter>
     </ClCompile>
@@ -749,6 +746,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Dead_State.cpp">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

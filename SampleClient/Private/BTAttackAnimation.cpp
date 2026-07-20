@@ -2,7 +2,7 @@
 #include "BTAttackAnimation.h"
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
-#include "TestGob.h"
+#include "Monster.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -61,8 +61,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			}
 
 			m_fTime += fTimeDelta;
-	
-			
+
 			_float tt = (pAnimator->GetPlayAnimRatio() - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
 			if (tt < 0.f)
 				tt = 0.f;
@@ -73,7 +72,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				if (auto pSrc = pBT->GetGameObject())
 				{
 					_float fEmissive = std::lerp(0.f,0.5f, tt);
-					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
+					static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
 

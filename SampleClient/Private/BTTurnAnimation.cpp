@@ -53,12 +53,8 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 		_float fDot = XMVectorGetX(XMVector3Dot(vSrcLook, vTargetLook));
 		_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
 		if (false == SelectAngle(XMConvertToDegrees(atan2f(fCrossY, fDot))))
-		{
-			_float3 vFacingDirection{};
-			XMStoreFloat3(&vFacingDirection, vTargetLook);
-			pMoveIntent->SetFacingIntentImmediate(vFacingDirection);
-			return m_eDebug = EVALUATE::SUCCESS;
-		}
+			return m_eDebug = EVALUATE::FAILED;
+		
 		XMStoreFloat3(&m_vCurrentLook, vSrcLook);
 		XMStoreFloat3(&m_vTargetLook, vTargetLook);
 		pAnimator->SetPlay(true);
@@ -98,17 +94,17 @@ void CBTTurnAnimation::Update_Gui()
 			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<TURN>(i)).data();
 			if (ImGui::Button(Name.c_str()))
 			{
-				m_Value.iAnimIndex = i;
+				m_iTurnIdx = i;
 				m_bPopup = true;
 				break;
 			}
 		}
 	}
 
-	if (m_bPopup && m_Value.iAnimIndex != -1)
+	if (m_bPopup)
 	{
 		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
-		ImGui::Text(MagicEnumToStringView(static_cast<TURN>(m_Value.iAnimIndex)).data());
+		ImGui::Text(MagicEnumToStringView(static_cast<TURN>(m_iTurnIdx)).data());
 
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
@@ -118,8 +114,8 @@ void CBTTurnAnimation::Update_Gui()
 			if (-1 != iIndex)
 			{
 				m_bPopup = false;
-				m_iTurnAnimIndex[m_Value.iAnimIndex] = iIndex;
-				m_Value.iAnimIndex = -1;
+				m_iTurnAnimIndex[m_iTurnIdx] = iIndex;
+				m_iTurnIdx = -1;
 			}
 
 			ImGui::PopStyleColor();

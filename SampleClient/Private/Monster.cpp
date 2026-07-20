@@ -82,7 +82,7 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
-	CGameInstance::Get().AddColliderGroup("CollTestGob", m_pComCollider->Get());
+	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
 	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
 	if (CGameInstance::Get().KeyDown(DIK_1))
@@ -123,8 +123,6 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 		return;
 	}
-
-
 }
 
 HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -331,7 +329,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		//	"B" : 0.592157,
 		//1.2f, 0.7f, 0.f
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_f, ff, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, {0.585,0.685,1}, m_fEmissive, {1.f, 1.f, 1.f}, 0.f, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
@@ -506,9 +504,7 @@ void CMonster::IsHit()
 {
 	if (CGameInstance::Get().KeyDown(DIK_2))
 	{
-		++m_iHitCnt;
-		uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT);
-		m_pBeHavior->Set_Flag(iFlag, FLAGTYPE::ADD);
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
@@ -526,22 +522,7 @@ void CMonster::IsHit()
 	{
 		m_MonTable.eHitType = HITMON::END;
 	}
-	//if (auto pCam = CGameInstance::Get().GetActiveCamera())
-	//{
-	//	const auto& [vOri, vDir] = pCam->GetRay();
-	//	_float fDist{};
-	//
-	//		for (const auto& coll :*CGameInstance::Get().GetColliderGroup("CollTestGob"))
-	//		{
-	//			if (coll->Intersect(vOri, vDir, fDist))
-	//			{
-	//				uint32_t iFlag = ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::ABORT);
-	//				m_pBeHavior->Set_Flag(iFlag,FLAGTYPE::ADD);
-	//				return;
-	//			}
-	//		}
-	//	
-	//}
+
 }
 void CMonster::Flag_Check(_float fTimeDelta)
 {

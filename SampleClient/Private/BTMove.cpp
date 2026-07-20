@@ -53,12 +53,8 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	auto pTransform =(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 	if (pTransform == nullptr || pMoveIntent == nullptr)
-	{
-		m_eDebug = EVALUATE::FAILED;
-
-		return EVALUATE::FAILED;
-	}
-
+		return m_eDebug = EVALUATE::FAILED;
+	
 	_vector vDirection{};
 	if (m_eMove == MOVE::RIGHT)
 		vDirection = pTransform->GetState(STATE::RIGHT);

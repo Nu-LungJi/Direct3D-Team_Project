@@ -67,8 +67,8 @@ public:
 	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
 public:
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
-	const int32_t			Get_CurrentHp() { return m_iHp; }
-	const int32_t			Get_MaxHp() { return m_iMaxHp; }
+	const int32_t			Get_CurrentHp() const { return m_iHp; }
+	const int32_t			Get_MaxHp()		const { return m_iMaxHp; }
 	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
 	void					Set_AttTable(ATTMON eType) { m_MonTable.eAttType = eType; }
@@ -104,7 +104,7 @@ protected:
 	_float ff{};
 	uint32_t					m_iCurrentInstanceCount = 0.f;
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
-	int32_t						m_iHp{}, m_iMaxHp{}, m_iHitCnt{};
+	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{ false };
 	_string						m_SocketName{};
 

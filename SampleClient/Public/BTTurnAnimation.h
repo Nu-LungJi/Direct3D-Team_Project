@@ -32,7 +32,7 @@ private:
 	_float						m_fAngle{};
 	_float						m_fTick{};
 	_float3						m_vCurrentLook{}, m_vTargetLook{};
-	int32_t						m_iTurnAnimIndex[ETOUI(TURN::END)];
+	int32_t						m_iTurnAnimIndex[ETOUI(TURN::END)], m_iTurnIdx{ -1 };
 public:
 	static UPtr<CBTTurnAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
