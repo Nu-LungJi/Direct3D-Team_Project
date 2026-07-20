@@ -171,6 +171,9 @@
     <ClInclude Include="..\Public\LevelMapEditorLoader.h">
       <Filter>Loader\Level\MapEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ClientEvents.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="MapEditor.ico">

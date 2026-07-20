@@ -5,6 +5,8 @@
 
 NS_BEGIN(Engine)
 
+using EVENT_LISTENER_ID = uint64_t;
+
 class ENGINE_DLL CEventManager final : public CEngineBase
 {
 public:
@@ -14,6 +16,7 @@ public:
 private:
 	struct LISTENER
 	{
+		EVENT_LISTENER_ID id = 0;
 		CHandle owner;
 		std::function<void(const void*)> callback;
 	};
@@ -32,7 +35,7 @@ private:
 
 public:
 	template<typename TEvent, typename TCallback>
-	void Subscribe(CHandle owner, TCallback&& callback)
+	EVENT_LISTENER_ID Subscribe(CHandle owner, TCallback&& callback)
 	{
 		using CALLBACK_TYPE = std::decay_t<TCallback>;
 		static_assert(
@@ -41,6 +44,7 @@ public:
 			"Event callback must be callable with const TEvent& or with no arguments.");
 
 		LISTENER listener{};
+		listener.id = m_NextListenerId++;
 		listener.owner = owner;
 
 		if constexpr (std::is_invocable_v<CALLBACK_TYPE, const TEvent&>)
@@ -58,8 +62,57 @@ public:
 				};
 		}
 
+		const EVENT_LISTENER_ID listenerId = listener.id;
 		m_Listeners[typeid(TEvent)].emplace_back(std::move(listener));
+		return listenerId;
 	}
+
+	// 특정 콜백 하나만 해제
+	template<typename TEvent>
+	void Unsubscribe(EVENT_LISTENER_ID listenerId)
+	{
+		auto iter = m_Listeners.find(typeid(TEvent));
+		if (iter == m_Listeners.end())
+			return;
+
+		auto& listeners = iter->second;
+
+		std::erase_if(
+			listeners,
+			[listenerId](const LISTENER& listener)
+			{
+				return listener.id == listenerId;
+			}
+		);
+
+		if (listeners.empty())
+			m_Listeners.erase(iter);
+	}
+
+	// 특정 owner의 해당 이벤트 구독을 모두 해제
+	template<typename TEvent>
+	void UnsubscribeAll(CHandle owner)
+	{
+		auto iter = m_Listeners.find(typeid(TEvent));
+		if (iter == m_Listeners.end())
+			return;
+
+		auto& listeners = iter->second;
+
+		std::erase_if(
+			listeners,
+			[owner](const LISTENER& listener)
+			{
+				return listener.owner == owner;
+			}
+		);
+
+		if (listeners.empty())
+			m_Listeners.erase(iter);
+	}
+
+	// 특정 owner의 모든 이벤트 구독을 해제
+	void UnsubscribeAll(CHandle owner);
 
 	template<typename TEvent>
 	void Publish(TEvent&& event)
@@ -93,6 +146,7 @@ private:
 	std::unordered_map<std::type_index, std::vector<LISTENER>> m_Listeners; // 이벤트 타입 별 구독자들
 	std::queue<QUEUED_EVENT> m_CurQueue; // 이번 프레임에 소비하는 Queue
 	std::queue<QUEUED_EVENT> m_NextQueue; // Flush하는동안 무한 구독 방지용
+	EVENT_LISTENER_ID m_NextListenerId = 1;
 	_bool m_bIsFlushing = false;
 
 public:

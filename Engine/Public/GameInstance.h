@@ -403,9 +403,26 @@ public:
 
 #pragma region EVENT_MANAGER
 	template<typename TEvent, typename TCallback>
-	void EventSubscribe(CHandle owner, TCallback&& callback)
+	EVENT_LISTENER_ID EventSubscribe(CHandle owner, TCallback&& callback)
 	{
-		m_pEventManager->Subscribe<TEvent>(owner, std::forward<TCallback>(callback));
+		return m_pEventManager->Subscribe<TEvent>(owner, std::forward<TCallback>(callback));
+	}
+
+	template<typename TEvent>
+	void EventUnsubscribe(EVENT_LISTENER_ID listenerId)
+	{
+		m_pEventManager->Unsubscribe<TEvent>(listenerId);
+	}
+
+	template<typename TEvent>
+	void EventUnsubscribeAll(CHandle owner)
+	{
+		m_pEventManager->UnsubscribeAll<TEvent>(owner);
+	}
+
+	void EventUnsubscribeAll(CHandle owner)
+	{
+		m_pEventManager->UnsubscribeAll(owner);
 	}
 
 	template<typename TEvent>

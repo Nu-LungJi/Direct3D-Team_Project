@@ -156,6 +156,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\CreateMapMeshCommand.h" />
     <ClInclude Include="..\Public\DeleteMapMeshCommand.h" />

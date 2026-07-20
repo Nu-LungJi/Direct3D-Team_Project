@@ -26,6 +26,23 @@ void CEventManager::PushEvent(QUEUED_EVENT event)
 	}
 }
 
+void CEventManager::UnsubscribeAll(CHandle owner)
+{
+	for (auto mapIter = m_Listeners.begin(); mapIter != m_Listeners.end();)
+	{
+		auto& listeners = mapIter->second;
+		std::erase_if(listeners, [owner](const LISTENER& listener)
+			{
+				return listener.owner == owner;
+			});
+
+		if (listeners.empty())
+			mapIter = m_Listeners.erase(mapIter);
+		else
+			++mapIter;
+	}
+}
+
 void CEventManager::Flush()
 {
 	m_bIsFlushing = true;
