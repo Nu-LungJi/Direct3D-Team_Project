@@ -55,18 +55,23 @@ HRESULT CPrototypeManager::AddPrototype(const StringID& svGroupTag, const String
 
 	std::unique_lock lock{ m_PrototypeMutex };
 	auto& group = m_pPrototypes[svGroupTag];
-	group.insert_or_assign(svPrototypeTag, std::move(pPrototype));
+	group.insert_or_assign(svPrototypeTag, SPtr<CPrototype>{ std::move(pPrototype) });
 	return S_OK;
 }
 
 UPtr<CPrototype> CPrototypeManager::ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, void* pArg)
 {
-	std::shared_lock lock{ m_PrototypeMutex };
-	CPrototype* pPrototype = Find_Prototype(svGroupTag, svPrototypeTag);
-	if (pPrototype == nullptr)
+	SPtr<CPrototype> pPrototype{};
+	{
+		std::shared_lock lock{ m_PrototypeMutex };
+		pPrototype = Find_Prototype(svGroupTag, svPrototypeTag);
+	}
+
+	if (!pPrototype)
 	{
 		return nullptr;
 	}
+
 	return pPrototype->Clone(pArg);
 }
 
@@ -120,7 +125,7 @@ CPrototypeManager::PROTOTYPES* CPrototypeManager::Find_Group(const StringID& svG
 	return &iter->second;
 }
 
-CPrototype* CPrototypeManager::Find_Prototype(const StringID& svGroupTag, const StringID& svPrototypeTag)
+SPtr<CPrototype> CPrototypeManager::Find_Prototype(const StringID& svGroupTag, const StringID& svPrototypeTag)
 {
 	//if (iLevelIndex >= m_iNumLevels)
 	//{
@@ -145,7 +150,7 @@ CPrototype* CPrototypeManager::Find_Prototype(const StringID& svGroupTag, const 
 	//	return nullptr;
 	//}
 
-	return protoIter->second.get();
+	return protoIter->second;
 }
 
 UPtr<CPrototypeManager> CPrototypeManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
