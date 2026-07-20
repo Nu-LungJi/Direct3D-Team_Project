@@ -5,6 +5,7 @@
 #include "Resources.h"
 #include "UIManager.h"
 #include "Client_Defines.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -80,7 +81,7 @@ void CHPBar::Update(E::_float fTimeDelta)
 	{
 		if (CGameInstance::Get().KeyDown(DIK_8))
 		{
-			m_fcurrentFill -= 100.f;
+			m_fcurrentFill -= 400.f;
 			UpdateFill();
 		}
 	}
@@ -134,8 +135,8 @@ void CHPBar::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
-
+	//std::string currentLevel = "LEVEL_UIEDITOR";
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_9SliceUI");
 	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_9SliceUI");

@@ -38,6 +38,8 @@ private:
 	_float s_fAccumulatedTime = 0.f;
 	_float m_fCurrentAmount = 1.f;
 
+	uint32_t m_colorType{};
+	_float4 m_BGColor{1.f, 1.f, 1.f, 1.f};
 private:
 	void StartCooldown(float fCooldownTime);
 public:

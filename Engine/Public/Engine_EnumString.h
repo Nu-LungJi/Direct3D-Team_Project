@@ -36,7 +36,4 @@ namespace Engine
 		Prototype_GameObject_ShadowCamera,
 		Prototype_GameObject_UICamera
 	};
-
-
-
 }

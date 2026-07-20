@@ -9,6 +9,7 @@
 #include "ButtonComponent.h"
 #include "TweenComponent.h"
 #include "UIObject.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 

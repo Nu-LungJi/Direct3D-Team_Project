@@ -40,7 +40,7 @@ float4 baseColor = g_BaseTex.Sample(LinearWrap, input.uv);
     }
 
     // =========================================================
-    // 1. UV ¿Ö°î ¹× ¸¶¹ı ¿¬±â »ùÇÃ¸µ
+    // 1. UV ì™œê³¡ ë° ë§ˆë²• ì—°ê¸° ìƒ˜í”Œë§
     // =========================================================
     float2 normalUV = input.uv + float2(-g_Time * g_DistSpeed, -g_Time * (g_DistSpeed * 0.7f));
     float2 normalData = g_WavyNormal.Sample(LinearWrap, normalUV).rg;
@@ -52,9 +52,9 @@ float4 baseColor = g_BaseTex.Sample(LinearWrap, input.uv);
     float wispyGlow = g_WispyTex.Sample(LinearWrap, wispyUV).r;
 
     // =========================================================
-    // 2. ½ºÅ³ ¾ÆÀÌÄÜ 
+    // 2. ìŠ¤í‚¬ ì•„ì´ì½˜ 
     // =========================================================
-    float iconScale = 1.5f;
+    float iconScale = 1.f;
     float2 iconUV = (input.uv - 0.5f) * iconScale + 0.5f;
 
     float4 iconColor = g_SkillIconTex.Sample(LinearWrap, iconUV);

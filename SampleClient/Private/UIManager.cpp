@@ -10,6 +10,7 @@
 #include "LevelLoading.h"
 #include "SpellMeter.h"
 #include "HPBar.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -80,6 +81,37 @@ void UIManager::InitializeActions()
 			}, nullptr, EEaseType::EaseOutQuad);
 	};
 	m_vEventNames.push_back("AppearScaleUp");
+
+	m_EventMap["TextScaleUp"] = [](CUIObject* pCaller)
+	{
+		if (!pCaller) return;
+		auto pTween = pCaller->GetTweenCom();
+		if (!pTween) return;
+
+		pCaller->SetActive(true);
+		CHandle handle = pCaller->GetHandle();
+		_float scaleRatio = pCaller->GetScaleRatio();
+		_float2 originSize = pCaller->GetSize();
+
+		pTween->PlayTween(0.5f, 1.f, 0.2f,
+			[handle, originSize](float currentValue) {
+				if (auto pObj = GetSafeUI(handle))
+				{
+					pObj->SetSize({ originSize.x * currentValue,  originSize.y * currentValue });
+					pObj->CalcUICoord();
+				}
+			}, nullptr, EEaseType::EaseOutQuad);
+
+		pTween->PlayTween(0.f, 1.f, 0.1f,
+			[handle](float currentValue) {
+				if (auto pObj = GetSafeUI(handle))
+				{
+					pObj->SetAlpha(currentValue);
+					pObj->CalcUICoord();
+				}
+			}, nullptr, EEaseType::EaseOutQuad);
+	};
+	m_vEventNames.push_back("TextScaleUp");
 
 	// ==========================================
 	// 2. 사이즈 축소
@@ -733,6 +765,13 @@ _bool UIManager::PtInRect(const UI_INFO& selectInfo)
 
 std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
 {
+	
+	uint32_t num = E::CGameInstance::Get().GetCurrentLevelID();
+	if (num > 100)
+		m_CurrentLevel = "LEVEL_LOADING";
+	else
+		m_CurrentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+
 	char path[256] = "";
 	strcpy_s(path, sizeof(path), g_BasePath.c_str());
 	strcat_s(path, sizeof(path), name.c_str());
@@ -760,6 +799,7 @@ std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_Bas
 
 E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
 {
+
 	int uiType = obj["UiType"];
 
 	E::CUIObject* pUI = nullptr;
@@ -774,11 +814,11 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	switch (uiType)
 	{
 	case ETOUI(UI_TYPE::TEXUI):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
 		break;
 	case ETOUI(UI_TYPE::FLIPBOOK):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*uiHandle);
 		{
 			FLIP_INFO& flipInfo = static_cast<CEffectUI*>(pUI)->GetFlipInfo();
@@ -808,7 +848,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		}
 		break;
 	case ETOUI(UI_TYPE::TEXT):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextBox", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);
 		{
 			TEXT_INFO& textInfo = static_cast<CTextBox*>(pUI)->GetTextInfo();
@@ -816,24 +856,24 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		}
 		break;
 	case ETOUI(UI_TYPE::BUTTON):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_Button", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_Button", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CButton>(*uiHandle);
 		break;
 	case ETOUI(UI_TYPE::SPELLMETER):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(*uiHandle);
 		break;
 	case ETOUI(UI_TYPE::HPBAR):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		break;
 	case ETOUI(UI_TYPE::HPFILL):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		pUI->SetUIType(ETOUI(UI_TYPE::HPFILL));
 		break;
 	case ETOUI(UI_TYPE::LEFTHPFILL):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		pUI->SetUIType(ETOUI(UI_TYPE::LEFTHPFILL));
 		break;

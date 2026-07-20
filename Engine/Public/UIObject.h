@@ -142,10 +142,12 @@ public:
 	_float2 GetPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
 	_float2	GetLocalPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
 	_float	GetAlpha() { return m_UIINFO.Alpha; }
+	_float2 GetSize() { return { m_UIINFO.SizeX, m_UIINFO.SizeY };  }
 
 	void	SetPos(_float2 pos) { m_UIINFO.fX = pos.x; m_UIINFO.fY = pos.y; }
 	void	SetLocalPos(_float2 pos) { m_UIINFO.LocalX = pos.x; m_UIINFO.LocalY = pos.y; }
 	void	SetAlpha(_float alpha) { m_UIINFO.Alpha = alpha; }
+	void	SetSize(_float2 size) { m_UIINFO.SizeX = size.x; m_UIINFO.SizeY = size.y; }
 
 	_bool GetActive() { return m_isActive; }
 	_bool GetVisible() { return m_isVisible; }

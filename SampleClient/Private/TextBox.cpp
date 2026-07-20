@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -65,10 +66,17 @@ void CTextBox::Update(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	CTextUI::Update(fTimeDelta);
-
 	if (m_pComCButton != nullptr)
 		m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+
+	if (m_pComTween != nullptr)
+	{
+		m_pComTween->Tick(fTimeDelta);
+	}
+
+	CTextUI::Update(fTimeDelta);
+
+
 
 	if (m_bMouseTracking)
 	{
@@ -77,10 +85,7 @@ void CTextBox::Update(E::_float fTimeDelta)
 		CalcUICoord();
 	}
 	
-	if (m_pComTween != nullptr)
-	{
-		m_pComTween->Tick(fTimeDelta);
-	}
+
 }
 
 void CTextBox::LateUpdate(E::_float fTimeDelta)

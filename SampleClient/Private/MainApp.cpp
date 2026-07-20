@@ -38,11 +38,20 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
 
+	GET_SINGLE(UIManager)->InitializeActions();
+	GET_SINGLE(UIManager)->InitializeFunc();
+
 	if (FAILED(CBaseApp::Initialize(EngineDesc)))
 	{
 		return E_FAIL;
 	}
 	CGameInstance::Get().ImguiEnableDocking(true, true);
+
+	if (FAILED(CMainAppLoader::Load()))
+	{
+		MSG_BOX("MainLoader Failed");
+		return E_FAIL;
+	}
 
 	if (CBaseApp::StartLevel(CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO)))
 	{
@@ -82,12 +91,6 @@ HRESULT CMainApp::Initialize()
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PHYSX));
 		});
-
-	if (FAILED(CMainAppLoader::Load()))
-	{
-		MSG_BOX("MainLoader Failed");
-		return E_FAIL;
-	}
 	
 	
 	return S_OK;

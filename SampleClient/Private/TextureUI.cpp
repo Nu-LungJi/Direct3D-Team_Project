@@ -5,6 +5,7 @@
 #include "Resources.h"
 #include "UIManager.h"
 #include "Client_Defines.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -102,9 +103,8 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
-
-	//VS_QuadTex
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+	//VS_QuadTe
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
 	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
@@ -161,6 +161,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	}
 
 	{
+		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 	}

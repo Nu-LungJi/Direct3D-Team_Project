@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Client_Defines.h"
 
@@ -38,9 +38,6 @@ private:
 	};
 
 private:
-	HRESULT LoadingOverWorldLevel();
-
-private:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
 
@@ -48,6 +45,7 @@ private:
 	std::optional<LEVEL> m_ePreviousLevelIndex{};
 	const LEVEL m_eNextLevelIndex;
 
+	bool m_bLoadUiResource{ false };
 	bool m_bLoadEnd{ false };
 	PHASE m_ePhase{ PHASE::READY };
 	std::future<bool> m_futUnloadFinish{};

@@ -48,6 +48,8 @@ private:
 	std::vector<std::string> m_vEventNames;
 	std::vector<std::string> m_vFuncNames;
 
+	std::string m_CurrentLevel;
+
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo);
 public:

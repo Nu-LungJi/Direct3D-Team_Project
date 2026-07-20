@@ -9,6 +9,7 @@
 #include "Client_Defines.h"
 #include "UIManager.h"
 #include "TweenComponent.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -94,7 +95,8 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
+	//std::string currentLevel = "LEVEL_UIEDITOR";
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");

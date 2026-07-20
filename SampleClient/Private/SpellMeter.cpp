@@ -88,6 +88,34 @@ void CSpellMeter::Update(E::_float fTimeDelta)
 
 	s_fAccumulatedTime += fTimeDelta;
 	if (s_fAccumulatedTime > 10000.f) s_fAccumulatedTime -= 10000.f; // 오버플로우 방지
+
+	if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Diffindo_Overlay")
+		m_colorType = 0;
+	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_AvadaKedavra_Overlay")
+		m_colorType = 1;
+	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Glacius_Overlay")
+		m_colorType = 2;
+	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Accio_Overlay")
+		m_colorType = 3;
+
+	switch (m_colorType)
+	{
+	case 0:
+		m_BGColor = { 1.3f, 0.f, 0.f, 1.f };
+		break;
+	case 1:
+		m_BGColor = { 0.f, 1.3f, 0.f, 1.f };
+		break;
+	case 2:
+		m_BGColor = { 1.5f, 1.5f, 0.f, 1.f };
+		break;
+	case 3:
+		m_BGColor = { 0.62f * 1.5f, 0.12f * 1.5f, 0.94f * 1.5f, 1.0f };
+		break;
+	default:
+		m_BGColor = { 1.f, 0.f, 0.f, 1.f };
+		break;
+	}
 }
 
 void CSpellMeter::LateUpdate(E::_float fTimeDelta)
@@ -101,7 +129,7 @@ void CSpellMeter::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_SpellMeter");
@@ -135,8 +163,8 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		perSpellMeter.fDistStrength = 0.05f;   // 일렁이는 강도
 		perSpellMeter.fTime = s_fAccumulatedTime;
 
-		// 색상
-		perSpellMeter.vFillColor = { 1.f, 0.f, 0.f, 1.0f };				// 채워진 마법 색상
+		// 색상 
+		perSpellMeter.vFillColor = m_BGColor;				// 채워진 마법 색상
 		perSpellMeter.vEmptyColor = { 0.023f, 0.024f, 0.019f, 1.0f };	// 빈 배경 (매우 어두운 색)
 		perSpellMeter.vRippleColor = { 1.0f, 1.0f, 1.0f, 1.0f };		// 경계선 파동 (흰색 발광)
 		perSpellMeter.vWispyColor = { 0.5f, 0.5f, 0.5f, 0.5f };
@@ -169,15 +197,15 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
-
+	//m_UIINFO.Restag = "TEX_UI_T_spellmeter_Glacius_Overlay";
 	{
 		const auto& baseSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_spellmeter_Generic");
 		const auto& causticSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_T_WaterCaustics_Disorder_A");
 		const auto& wispySrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_VFX_T_WispyNoise_D");
 		const auto& normalSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_VFX_T_Wavy_N");
 		const auto& rippleSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_T_CollectionsMeterLine_A");
-		const auto& iconSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_arrestomomentum");
-
+		const auto& iconSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+		
 		ID3D11ShaderResourceView* srvs[6] = {
 			baseSrv->GetSRV().Get(),      // t0: 다이아몬드
 			causticSrv->GetSRV().Get(),   // t1: 코스틱

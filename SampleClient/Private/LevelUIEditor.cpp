@@ -197,9 +197,6 @@ HRESULT CLevelUIEditor::Initialize()
 		}
 	}
 
-	GET_SINGLE(UIManager)->InitializeActions();
-	GET_SINGLE(UIManager)->InitializeFunc();
-
 	return S_OK;
 }
 
@@ -2029,8 +2026,7 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 				}
 
 				// 디버깅용 콘솔 출력
-				printf("로드 대상 파일: %s\n", file.fullPath.c_str());
-			}
+				printf("로드 대상 파일: %s\n", file.fullPath.c_str());		  			}
 		}
 	}
 
