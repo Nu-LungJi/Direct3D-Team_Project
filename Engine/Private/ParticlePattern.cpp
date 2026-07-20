@@ -125,6 +125,11 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 	return spawnList;
 }
 
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest(const STest& p)
+{
+	return std::vector<PARTICLE_SPAWN_DATA>();
+}
+
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(
 //    const _float3& vStartPos,
 //    uint32_t iStepCount,

@@ -148,6 +148,10 @@ public:
 	bool HasGroup(const StringID& sGroupTag) const;
 	HRESULT ClearLoopRequests();
 	HRESULT DeleteLoopRequests(uint32_t userId);
+
+
+private:
+	void ComboList(_string comboName, _string resourceName, _string& previewName);
 public:
     static UPtr<CParticleManager> Create();
 private:

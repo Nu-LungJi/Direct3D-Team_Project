@@ -36,18 +36,7 @@ inline void DrawField(const char* name, uint32_t& v) { int tmp = (int)v; if (ImG
 inline void DrawField(const char* name, _float4& v) { ImGui::ColorEdit4(name, &v.x); }
 inline void DrawField(const char* name, _bool& v){bool tmp = (bool)v;if (ImGui::Checkbox(name, &tmp))v = tmp;}
 
-#define DRAW_PARAM_FIELD(type, name, defaultVal) DrawField(#name, p.name);
-inline void DrawImGui(SStairsParam& p) { STAIRS_FIELDS(DRAW_PARAM_FIELD)   DrawBehaviorTypeFlags(p.iBehaviorType);
-}
-inline void DrawImGui(SCircleParam& p) { CIRCLE_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
-}
-inline void DrawImGui(SCircleSpreadParam& p) { CIRCLE_SPREAD_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
-}
-inline void DrawImGui( SSpiralParam& p) { SPIRAL_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
-}
-inline void DrawImGui(SStraightGroundParam& p) { STRAIGHT_GROUND_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
-}
-#undef DRAW_PARAM_FIELD
+
 
 // ---- json 저장/로드 (타입별 헬퍼) ----
 inline void SaveField(nlohmann::json& out, const char* name, const _float3& v) { out[name] = { v.x, v.y, v.z }; }
@@ -77,17 +66,40 @@ inline void LoadField(const nlohmann::json& in, const char* name, _bool& v)
 #define SAVE_PARAM_FIELD(type, name, defaultVal) SaveField(out, #name, p.name);
 #define LOAD_PARAM_FIELD(type, name, defaultVal) LoadField(in, #name, p.name);
 
+#define DRAW_PARAM_FIELD(type, name, defaultVal) DrawField(#name, p.name);
+inline void DrawImGui(SStairsParam& p) {
+	STAIRS_FIELDS(DRAW_PARAM_FIELD)   DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SCircleParam& p) {
+	CIRCLE_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SCircleSpreadParam& p) {
+	CIRCLE_SPREAD_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SSpiralParam& p) {
+	SPIRAL_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SStraightGroundParam& p) {
+	STRAIGHT_GROUND_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(STest& p) {
+	TEST_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+#undef DRAW_PARAM_FIELD
+
 inline void SaveParam(const SStairsParam& p, nlohmann::json& out) { STAIRS_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleSpreadParam& p, nlohmann::json& out) { CIRCLE_SPREAD_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const STest& p, nlohmann::json& out) { TEST_FIELDS(SAVE_PARAM_FIELD) }
 
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SCircleParam& p, const nlohmann::json& in) { CIRCLE_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SCircleSpreadParam& p, const nlohmann::json& in) { CIRCLE_SPREAD_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SSpiralParam& p, const nlohmann::json& in) { SPIRAL_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAIGHT_GROUND_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(STest& p, const nlohmann::json& in) { TEST_FIELDS(LOAD_PARAM_FIELD) }
 
 #undef SAVE_PARAM_FIELD
 #undef LOAD_PARAM_FIELD

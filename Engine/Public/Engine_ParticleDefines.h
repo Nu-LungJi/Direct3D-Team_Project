@@ -141,6 +141,19 @@ namespace Engine
    COMMON_PATTERN_FIELDS(X)
 
 
+#define TEST_FIELDS(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(_float, fRadius, 3.f) \
+    X(uint32_t, iCount, 12) \
+    X(_float, fSize, 1.f) \
+    X(_float, fEndSize, 1.f) \
+    X(_float, fLife, 1.f) \
+	X(_float3, fVelocity, _float3(0,0,0))\
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, fYOffset, 0.f)\
+   COMMON_PATTERN_FIELDS(X)
+
 
 // ============================================================
 // struct 자동 생성 매크로
@@ -159,17 +172,18 @@ struct StructName \
 	struct SCircleSpreadParam { CIRCLE_SPREAD_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
+	struct STest { TEST_FIELDS(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
 
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,STest>;
 
 	// 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave"
+		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","Test"
 	};
 
 	// 인덱스로 기본값 variant 생성 (콤보박스에서 종류 바꿀 때 사용)
@@ -182,10 +196,10 @@ struct StructName \
 		case 2: return SSpiralParam{};
 		case 3: return SStraightGroundParam{};
 		case 4: return SCircleSpreadParam{};
+		case 5: return STest{};
 		default: return SStairsParam{};
 		}
 	}
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam>;
 
 	enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
 

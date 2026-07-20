@@ -74,10 +74,8 @@ void CParticleManager::UpdateGUI()
 	static char szParticleName[128] = "";
 	static int iMaxParticles = 1000;
 	static uint32_t iBehaviorType = 0;
-	static char szVSID1[128] = "SAMPLE_CLIENT_SHADER";
-	static char szVSID2[128] = "VS_VTX_GPU_PARTICLE_MESH";
-	static char szPSID1[128] = "SAMPLE_CLIENT_SHADER";
-	static char szPSID2[128] = "PS_VTX_GPU_PARTICLE_MESH";
+	static  _string VSIDIName{};
+	static  _string PSIDIName{};
 	static char szGroupTag[128] = "Rock1";
 	static char szResTag[128] = "Static_Model_Resource";
 	static char szViBuffer1[128] = "SAMPLE_CLIENT_PARTICLEBF";
@@ -238,6 +236,7 @@ void CParticleManager::UpdateGUI()
 						{
 							slot.selectedIndex = i;
 							slot.selectedPath = fullPath;
+							strcpy_s(slot.szTextureID2,texName.c_str());
 						}
 					}
 					else
@@ -288,8 +287,10 @@ void CParticleManager::UpdateGUI()
 			DrawTextureThumbnailPicker(kTextureFolders[2], distortionFileListForMesh, slotDistortion);
 		else
 			ImGui::Text("(폴더에 텍스처 파일 없음)");
+
+		//slotDistortion.szTextureID2 = t
 		ImGui::InputText("Distortion TextureID1", slotDistortion.szTextureID1, IM_ARRAYSIZE(slotDistortion.szTextureID1));
-		ImGui::InputText("Distortion TextureID2", slotDistortion.szTextureID2, IM_ARRAYSIZE(slotDistortion.szTextureID2));
+		ImGui::Text("Distortion TextureID2 : %s", slotDistortion.szTextureID2);// , IM_ARRAYSIZE(slotDistortion.szTextureID2));
 		ImGui::Separator();
 
 		// ---- Noise ----
@@ -315,8 +316,8 @@ void CParticleManager::UpdateGUI()
 			DrawTextureThumbnailPicker(kTextureFolders[3], noiseFileListForMesh, slotNoise);
 		else
 			ImGui::Text("(폴더에 텍스처 파일 없음)");
-		ImGui::InputText("Noise TextureID1", slotNoise.szTextureID1, IM_ARRAYSIZE(slotNoise.szTextureID1));
-		ImGui::InputText("Noise TextureID2", slotNoise.szTextureID2, IM_ARRAYSIZE(slotNoise.szTextureID2));
+		//ImGui::InputText("Noise TextureID1", slotNoise.szTextureID1, IM_ARRAYSIZE(slotNoise.szTextureID1));
+		//ImGui::InputText("Noise TextureID2", slotNoise.szTextureID2, IM_ARRAYSIZE(slotNoise.szTextureID2));
 	}
 
 	// ---- 2. TEXTURE일 때만: 텍스처 섹션 ----
@@ -395,6 +396,7 @@ void CParticleManager::UpdateGUI()
 				{
 					slot.selectedIndex = i;
 					slot.selectedPath = fullPath;
+					strcpy_s(slot.szTextureID2,texName.c_str());
 				}
 			}
 			else
@@ -427,8 +429,8 @@ void CParticleManager::UpdateGUI()
 		if (!slot.selectedPath.empty())
 			ImGui::Text("Selected (%s): %s", slot.label.c_str(), slot.selectedPath.c_str());
 
-		ImGui::InputText((slot.label + " TextureID1").c_str(), slot.szTextureID1, IM_ARRAYSIZE(slot.szTextureID1));
-		ImGui::InputText((slot.label + " TextureID2").c_str(), slot.szTextureID2, IM_ARRAYSIZE(slot.szTextureID2));
+		//ImGui::InputText((slot.label + " TextureID1").c_str(), slot.szTextureID1, IM_ARRAYSIZE(slot.szTextureID1));
+		//ImGui::InputText((slot.label + " TextureID2").c_str(), slot.szTextureID2, IM_ARRAYSIZE(slot.szTextureID2));
 
 		// ---- 다른 슬롯들 요약 표시 ----
 		ImGui::Separator();
@@ -452,10 +454,17 @@ void CParticleManager::UpdateGUI()
 	ImGui::InputText("Particle Name (e.g. ROCK1_CPU)", szParticleName, IM_ARRAYSIZE(szParticleName));
 
 	ImGui::InputInt("MaxParticles", &iMaxParticles);
-	ImGui::InputText("VSID1", szVSID1, IM_ARRAYSIZE(szVSID1));
-	ImGui::InputText("VSID2", szVSID2, IM_ARRAYSIZE(szVSID2));
-	ImGui::InputText("PSID1", szPSID1, IM_ARRAYSIZE(szPSID1));
-	ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
+	//ImGui::InputText("VSID1", szVSID1, IM_ARRAYSIZE(szVSID1));
+
+	ComboList("VSID1", "PERMANENT_PARTICLE_VSSHADER", VSIDIName);
+
+
+
+	//ImGui::InputText("VSID2", szVSID2, IM_ARRAYSIZE(szVSID2));
+	//ImGui::InputText("PSID1", szPSID1, IM_ARRAYSIZE(szPSID1));
+	ComboList("PSID1", "PERMANENT_PARTICLE_PSSHADER", PSIDIName);
+
+	//ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
 
 	ImGui::InputInt("TexRowCount", &iTexRow);
 	ImGui::InputInt("TexColCount", &iTexCol);
@@ -541,7 +550,7 @@ void CParticleManager::UpdateGUI()
 				hr = Save_Binary_Json(savePath.string(),
 					targetPath, whatKindStr, particleTypeStr, particleNameStr,
 					iMaxParticles,
-					szVSID1, szVSID2, szPSID1, szPSID2,
+					"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName,
 					szGroupTag, szResTag,
 					"", "",
 					"", "",
@@ -566,7 +575,7 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						szVSID1, szVSID2, szPSID1, szPSID2,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName,
 						szGroupTag, szResTag,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
@@ -585,7 +594,7 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Beam_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						szVSID1, szVSID2, szPSID1, szPSID2, iGeometryType,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, iGeometryType,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						iTexRow, iTexCol);
 				}
@@ -593,7 +602,7 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						szVSID1, szVSID2, szPSID1, szPSID2,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName,
 						szGroupTag, szResTag,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
@@ -633,6 +642,8 @@ void CParticleManager::UpdateGUI()
 				slotNormalHdr.selectedIndex = -1;
 				slotNormalHdr.selectedPath.clear();
 				selectedHdrNormalIndex = -1;
+				m_Particles.clear();
+				CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
 
 			}
 		}
@@ -1579,6 +1590,29 @@ HRESULT CParticleManager::DeleteLoopRequests(uint32_t userId)
 		}
 	}
 	return S_OK;
+}
+
+void CParticleManager::ComboList(_string comboName, _string resourceName, _string& previewName)
+{
+	auto shaders = CGameInstance::Get().GetResource(resourceName);
+
+	if (ImGui::BeginCombo(comboName.c_str(), previewName.c_str()))
+	{
+		for (auto [key, value] : shaders)
+		{
+			_bool bSelect = previewName == key.str;
+			ImGui::PushID(key.str);
+			if (ImGui::Selectable(key.str, &bSelect))
+			{
+				previewName = key.str;
+			}
+			if (bSelect)
+				ImGui::SetItemDefaultFocus();
+			ImGui::PopID();
+		}
+
+		ImGui::EndCombo();
+	}
 }
 
 UPtr<CParticleManager> CParticleManager::Create()
@@ -2961,6 +2995,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeStraightGround(param);
 			else if constexpr (std::is_same_v<T, SCircleSpreadParam>)
 				return ParticlePattern::MakeCircleAndSpread(param);
+			else if constexpr (std::is_same_v<T, STest>)
+				return ParticlePattern::MakeTest(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

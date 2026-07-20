@@ -54,9 +54,7 @@ namespace Engine
 		uint32_t loop;
 		_float2  pad2;         // 추가 필요: loop→color (8바이트)
 		_float4  color;
-		_float4  originalEmissive;
-		_float4  emissive;
-		_float4  endEmissive;
+		_float4  originalEmissive, emissive, endEmissive;
 		uint32_t frameIndex;
 		uint32_t ownerID;
 		uint32_t iBehaviorType = 0;
