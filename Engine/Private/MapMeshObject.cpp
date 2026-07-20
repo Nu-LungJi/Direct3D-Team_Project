@@ -312,12 +312,12 @@ HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
 
 			/*----------- 광윤 추가 -----------*/
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 			/*---------------------------------*/
 
 			pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+			++s_FrameStats.iDrawCalls;
 		}
-		++s_FrameStats.iDrawCalls;
 		
 
 		return S_OK;
@@ -533,6 +533,7 @@ HRESULT CMapMeshObject::EnsureInstanceResources(size_t instanceCount)
 
 HRESULT CMapMeshObject::RenderInstancedBatches(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
+	ZoneScopedN("RenderInstancedBatches");
 	if (s_InstanceBatches.empty())
 	{
 		return S_OK;

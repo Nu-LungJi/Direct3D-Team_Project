@@ -1,6 +1,10 @@
-#pragma once
+﻿#pragma once
 #include "Engine_Defines.h"
+#include "Handle.h"
+#include <mutex>
+#include <shared_mutex>
 namespace physx {
+	class PxActor;
 	class PxFoundation;
 	class PxPhysics;
 	class PxScene;
@@ -8,10 +12,12 @@ namespace physx {
 	class PxPvd;
 	class PxCooking;
 	class PxControllerManager;
+	class PxShape;
 }
 
 NS_BEGIN(Engine)
 class CPhysxManagerListener;
+class CGameObject;
 class ENGINE_DLL CPhysXManager final: public CEngineBase
 {
 private:
@@ -26,8 +32,8 @@ public:
 	void UpdateGUI();
 
 public:
-	_bool RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
-	_bool RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10)const;
+	_bool RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	_bool RayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10)const;
 	_bool OverlapTest();
 	_bool SweepTest();
 
@@ -41,6 +47,16 @@ public:
 	physx::PxScene* GetScene() const { return m_pScene; }
 	physx::PxPhysics* GetPhysics() const { return m_pPhysics; }
 	physx::PxControllerManager* GetControllerManager() const { return m_pControllerManager; }
+
+public:
+	_bool RegisterActor(const physx::PxActor* pActor, const PX_ACTOR_USER_DATA& userData);
+	void UnregisterActor(const physx::PxActor* pActor);
+	std::optional<PX_ACTOR_USER_DATA> FindActorUserData(const physx::PxActor* pActor) const;
+	CGameObject* FindGameObject(const physx::PxActor* pActor) const;
+
+	_bool RegisterShape(const physx::PxShape* pShape, const PX_SHAPE_USER_DATA& userData);
+	void UnregisterShape(const physx::PxShape* pShape);
+	std::optional<PX_SHAPE_USER_DATA> FindShapeUserData(const physx::PxShape* pShape) const;
 
 private:
 	void SyncPhysicsToComponents();
@@ -56,6 +72,11 @@ private:
 
 private:
 	UPtr<CPhysxManagerListener> m_pListener{};
+
+private:
+	mutable std::shared_mutex m_UserDataRegistryMutex{};
+	std::unordered_map<const physx::PxActor*, PX_ACTOR_USER_DATA> m_ActorUserDataRegistry{};
+	std::unordered_map<const physx::PxShape*, PX_SHAPE_USER_DATA> m_ShapeUserDataRegistry{};
 
 private:
 	_bool m_bDbgRender{ true };

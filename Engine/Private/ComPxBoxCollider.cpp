@@ -1,19 +1,15 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ComPxBoxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ResPhysXBoxGeometry.h"
 #include "ResPhysXMaterial.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 using namespace physx;
 
@@ -36,6 +32,9 @@ CComPxBoxCollider::~CComPxBoxCollider()
 HRESULT CComPxBoxCollider::Initialize(void* pArg)
 {
     auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	m_pResBoxGeo = pDesc->pResBoxGeo;
 	if (!m_pResBoxGeo)
 	{
@@ -47,7 +46,18 @@ HRESULT CComPxBoxCollider::Initialize(void* pArg)
     }
 
 	
-	m_pShape = CGameInstance::Get().PxGetPhysics()->createShape(*m_pResBoxGeo->GetBoxGeometry(), *m_pResMaterial->GetMaterial());
+	auto* pPhysics = CGameInstance::Get().PxGetPhysics();
+	if (!pPhysics)
+		return E_FAIL;
+
+	auto* pGeometry = m_pResBoxGeo->GetBoxGeometry();
+	auto* pMaterial = m_pResMaterial->GetMaterial();
+	if (!pGeometry || !pMaterial)
+		return E_FAIL;
+
+	m_pShape = pPhysics->createShape(*pGeometry, *pMaterial);
+	if (!m_pShape)
+		return E_FAIL;
 
     if (pDesc->bIsTrigger)
     {
@@ -62,8 +72,12 @@ HRESULT CComPxBoxCollider::Initialize(void* pArg)
         m_pShape->setLocalPose(tLocalPose);
     }
 
-    m_pShape->userData = this;
+	if (!RegisterShape(PX_SHAPE_TYPE::BOX))
+		return E_FAIL;
     auto pActor = m_pComRigidBody->GetActor();
+	if (!pActor)
+		return E_FAIL;
+
     pActor->attachShape(*m_pShape);
 
     if (auto* dynamic = pActor->is<PxRigidDynamic>())

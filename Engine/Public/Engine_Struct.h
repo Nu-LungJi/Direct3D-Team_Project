@@ -72,7 +72,7 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		XMFLOAT4X4	g_LightViewProj;
+		XMFLOAT4X4	g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
 		_float3		LightDirection;
 		_float		LightIntensity;
@@ -113,15 +113,13 @@ namespace Engine
 		float		fTrackPosition;
 	}KEYFRAME;
 
-
-
 	///////BeHavior//////
 	typedef struct tagactionvalue
 	{
 		tagactionvalue() = default;
 		tagactionvalue(int32_t iAnim) { iAnim = iAnimIndex; }
 		int32_t  iAnimIndex{ -1 };
-		_float   fSpeed{}, fTime{ 1.f }, fTick{};
+		_float   fSpeed{}, fTime{ 1.f }, fTick{}; 
 
 	}ACTION_VALUE;
 	typedef struct tagdestnode
@@ -337,11 +335,15 @@ namespace Engine
 
 	typedef struct GPU_ANIM_DESC
 	{
+		_float4x4 PreTransformMatrix;
+
 		uint32_t iChannelOffset = 0;
 		uint32_t iChannelCount = 0;
 
 		uint32_t iBoneChannelMapOffset = 0;
 		uint32_t iBoneCount = 0;
+
+
 
 		float fDuration = 0.f;
 		float fPadding0 = 0.f;

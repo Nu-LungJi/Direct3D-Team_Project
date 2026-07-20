@@ -348,15 +348,30 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	// lua hot reload
 	{
+		ZoneScopedN("LuaManager_Update");
 		m_pLuaManager->Update(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("ShaderHotReload_Update");
+		m_pResourceManager->UpdateShaderHotReload();
 	}
 
 
 
-	m_pAnimEdit_Manager->Update(fTimeDelta);
-	m_pParticleManager->Update(fTimeDelta);
+	{
+		ZoneScopedN("AnimEdit_Update");
+		m_pAnimEdit_Manager->Update(fTimeDelta);
+	}
 
 	{
+		ZoneScopedN("ParticleManager_Update");
+		m_pParticleManager->Update(fTimeDelta);
+	}
+	
+
+	{
+		ZoneScopedN("PhysXManager_Update");
 		m_pPhysXManager->Update(fTimeDelta);
 	}
 
@@ -399,7 +414,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	//m_pLightManager->Capture_ShadowMap();
+	m_pLightManager->Capture_ShadowMap();
 
 	if (FAILED(m_pRenderer->Draw()))
 	{
@@ -423,7 +438,12 @@ void CGameInstance::Release_Engine()
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pModel_Instance_Manager.reset();
-	if(m_pGameObjectManager)m_pGameObjectManager->AllReset();
+	if (m_pGameObjectManager)
+	{
+		m_pGameObjectManager->AllReset();
+		//m_pGameObjectManager->FrameStart();
+		m_pGameObjectManager->FrameEnd();
+	}
 	
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
@@ -552,8 +572,6 @@ HRESULT CGameInstance::LuaCompile(const std::string& script)
 {
 	return m_pLuaManager->Compile(script);
 }
-
-
 void CGameInstance::LuaRegisterComponent(const std::string& path, ILuaScriptRelodable* pComp)
 {
 	m_pLuaManager->RegisterComponent(path, pComp);
@@ -734,6 +752,10 @@ HRESULT CGameInstance::ChangeLevel(const _string& ID)
 {
 	return m_pLevelManager->ChangeLevel(ID);
 }
+uint32_t CGameInstance::GetCurrentLevelID() const
+{
+	return m_pLevelManager ? m_pLevelManager->GetCurrentLevelID() : CLevel::INVALID_LEVEL_ID;
+}
 void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 {
 	m_pLevelManager->RegisterLevelChangeFunc(ID, func);
@@ -811,9 +833,9 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 
 
 #pragma region WORKER_MANAGER
-void CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
+_bool CGameInstance::WorkerEnqueue(_string_view svTaskName, _Func func)
 {
-	m_pWorkerManager->Enqueue(svTaskName, func);
+	return m_pWorkerManager->Enqueue(svTaskName, func);
 }
 #pragma endregion
 
@@ -830,9 +852,9 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
-const CPrototypeManager::PROTOTYPES* CGameInstance::GetPrototype(const StringID& svGroupTag) const
+std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
-	return m_pPrototypeManager->GetPrototype(svGroupTag);
+	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
 }
 #pragma endregion
 
@@ -955,6 +977,13 @@ VOID	CGameInstance::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStenci
 VOID	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
 	m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
+VOID	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution) {
+	m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _Resolution);
+}
+HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution) {
+	return m_pRenderer->Generate_ShadowMapOutput(_ShadowUAV, _Texture, _ShadowSRV, _LTYPE, _Resolution);
+}
+
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER
@@ -1092,11 +1121,11 @@ physx::PxControllerManager* CGameInstance::PxGetControllerManager() const
 {
 	return m_pPhysXManager->GetControllerManager();
 }
-_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const
+_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
 {
 	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
 }
-_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
 {
 	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
 }

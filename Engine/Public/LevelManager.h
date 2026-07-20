@@ -20,6 +20,7 @@ public:
 public:
 	HRESULT ChangeLevel(const _string& ID);
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
+	uint32_t GetCurrentLevelID() const;
 	void Update(_float fTimeDelta);
 	HRESULT Render();
 

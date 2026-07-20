@@ -51,6 +51,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		{
 			if (m_bStart)
 			{
+				HitType();
 				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 				m_bStart = false;
 			}
@@ -71,14 +72,6 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
-			if (!m_bLoop) //루프 한번만 도는거 초기화용
-				++m_iLoopCnt;
-			if (m_iLoopCnt >= 2)
-			{
-				m_iLoopCnt = 0;
-				return m_eDebug = EVALUATE::FAILED;
-			}
-
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}
@@ -146,7 +139,7 @@ void CBTHitAnimMonster::Update_Gui()
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
+	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD","EMISSIVE" };
 	if (ImGui::TreeNode("StartFlag"))
 	{
 
@@ -189,7 +182,38 @@ void CBTHitAnimMonster::Update_Gui()
 
 		ImGui::TreePop();
 	}
+	if (!m_bPopup)
+	{
+		for (size_t i = 0; i < ETOUI(TURN::END); ++i)
+		{
+			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<TURN>(i)).data();
+			if (ImGui::Button(Name.c_str()))
+			{
+				m_Value.iAnimIndex = i;
+				m_bPopup = true;
+				break;
+			}
+		}
+	}
 
+	if (m_bPopup && m_Value.iAnimIndex != -1)
+	{
+		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
+		ImGui::Text(MagicEnumToStringView(static_cast<TURN>(m_Value.iAnimIndex)).data());
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
+		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
+			m_bPopup = false;
+		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
+
+		if (-1 != iIndex)
+		{
+			m_bPopup = false;
+			m_iHitAnim[m_Value.iAnimIndex] = iIndex;
+			m_Value.iAnimIndex = -1;
+		}
+
+	}
 	ImGui::PopStyleColor(2);
 }
 nlohmann::json CBTHitAnimMonster::Save_Node()
@@ -204,6 +228,12 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	SaveJsonValue(j, "StartFlag", m_iStartFlag);
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
+
+	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
+	{
+		_string Name = "AnimIndex" + std::to_string(i);
+		SaveJsonValue(j, Name, m_iHitAnim[i]);
+	}
 	return j;
 }
 HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
@@ -216,7 +246,28 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
+	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
+	{
+		_string Name = "AnimIndex" + std::to_string(i);
+		LoadJsonValue(j, Name, m_iHitAnim[i]);
+	}
 	return S_OK;
+}
+void CBTHitAnimMonster::HitType()
+{
+	//플레이어 공격에 따른..
+	if (CGameInstance::Get().KeyDown(DIK_Q))
+	{
+		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_1)];
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_W))
+	{
+		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_2)];
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_E))
+	{
+		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_3)];
+	}
 }
 E::UPtr<CBTHitAnimMonster> CBTHitAnimMonster::Create()
 {

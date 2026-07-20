@@ -18,13 +18,13 @@ CTerrain::~CTerrain()
 
 HRESULT CTerrain::InitializePrototype(void* pArg)
 {
-	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain");
+	m_pResTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResTerrainVIBuffer>("LEVEL_PLAYGROUND", "VIBUFFER_Terrain");
 	if (!m_pResTerrainVIBuffer)
 	{
 		return E_FAIL;
 	}
 
-	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0");
+	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("LEVEL_PLAYGROUND", "TEX2D_Terrain_Tile0");
 	if (!m_pResTerrainTexture2D)
 	{
 		return E_FAIL;

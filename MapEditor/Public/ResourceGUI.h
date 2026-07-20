@@ -1,10 +1,30 @@
 #pragma once
 #include "GUIWindow.h"
 
+
+namespace Engine
+{
+	class CResStaticModel;
+}
+
 NS_BEGIN(Client)
 
 class CModelThumbnailCache;
 class CEditorCommandManager;
+
+struct ResourceViewItem
+{
+	const char* category{};
+	const char* icon{};
+	ImVec4 color{};
+	std::string groupName{};
+	std::string resourceTag{};
+	std::string resourceName{};
+	std::string path{};
+	std::string state{};
+	bool bCanCreateMapMeshObject = false;
+	E::SPtr<E::CResStaticModel> staticModel{};
+};
 
 class CResourceGUI : public CGUIWindow
 {
@@ -16,6 +36,7 @@ private:
 	~CResourceGUI() override;
 
 public:
+	HRESULT CachingAllResource();
 	void UpdateGUI(E::_float fTimeDelta) override;
 
 public:
@@ -39,6 +60,10 @@ private:
 	CEditorCommandManager* m_pCommandManager = nullptr;
 	std::string m_WholeMapImportStatus{};
 	float m_fWholeMapScale = 0.3f;
+	E::_float3 m_vWholeMapOrigin{};
+private:
+	std::vector<ResourceViewItem> m_Items{};
+	std::vector<size_t> m_FilteredItemIndices{};
 };
 
 NS_END

@@ -8,21 +8,24 @@ Texture2D<float4> EmissiveMap : register(t3);
 Texture2D<float4> AmbientMap : register(t4);
 
 Texture2D<float> DepthMap : register(t5);
-Texture2D<float> StaticShadowTexture : register(t6);
-Texture2D<float> DynamicShadowTexture : register(t7);
+Texture2D<float> FinalShadowMap : register(t6);
 
 // Image Based Lighting
 TextureCube IrridianceMap : register(t8);
 TextureCube PreFilterMap : register(t9);
 Texture2D<float4> LUTMap : register(t10);
 
+Texture2D<float> DefaultNoiseTexture : register(t13);
+
 RWTexture2D<float4> OUTPUT : register(u0);
 
 static const float2 ScreenResolution = { 1280.f, 720.f };
-static const float2 ShadowMapResolution = { 1280.f * 2.f, 720.f * 2.f };
+static const float2 ShadowMapResolution = { 1280.f, 720.f };
 
 static const float ShadowSmoothness = 1.5f;
 static const float ShadowBrightness = 0.45f;
+
+static const float DissolveEdgeWidth = 0.025f;
 
 static const float2 PoissonDisk[8] =
 {
@@ -63,9 +66,9 @@ float3 FresnelSchlick(float CTH, float3 MBR)
     float ClampCTH = clamp(CTH, 0.0f, 1.0f);
     return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
 }
-float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
+float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
 {
-    float4 LightPos = mul(_WorldPos, g_matShadowLightViewProj);
+    float4 LightPos = mul(_WorldPos, _Light.g_LightViewProj[0]);
     
     float2 ShadowMapUV;
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
@@ -82,14 +85,12 @@ float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
     
     float CosAngle = cos(RandomAngle);
     float SinAngle = sin(RandomAngle);
-    
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
     
     // 주변 ShadowSmoothness 반경까지 Sampling
     float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
     
-    float StaticShadowFactor = 0.0f;
-    float DynamicShadowFactor = 0.0f;
+    float FinalShadowFactor = 0.0f;
 
     [unroll]
     for (int i = 0; i < 8; ++i)
@@ -100,18 +101,25 @@ float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
         
         // SampleCmpLevelZero : Texture2D(ShadowMap)의 깊이와 CompareValue(CurrentPixelDepth) 를 비교했을 때 
         // CompareValue가 크면 1, 아니면 0 반환.(x값에 결과값 저장)
-        StaticShadowFactor += StaticShadowTexture.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
-        DynamicShadowFactor += DynamicShadowTexture.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
+        FinalShadowFactor += FinalShadowMap.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
     }
     
-    StaticShadowFactor /= 8.f;
-    DynamicShadowFactor /= 8.f;
-    
-    float FinalShadowFactor = min(StaticShadowFactor, DynamicShadowFactor);
+    FinalShadowFactor /= 8.f;
     
     return lerp(ShadowBrightness, 1.0f, FinalShadowFactor);
 }
 
+float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPos)
+{
+    float3 LightToPixel = _WorldPos.xyz - _Light.Position;
+    float  Distance = length(LightToPixel);
+    
+    float CurrentPixelDepth = Distance;
+    CurrentPixelDepth -= 0.0005f; // Depth Bias
+    
+    
+    return 0.f;
+}
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
 {
@@ -172,11 +180,9 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     
     // Metallic Material Based Reflection
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
-    
 
     float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-
-    float3 Diffuse;
+    
     for (uint i = 0; i < LightCount; ++i)
     {
         float3 L, Radiance;
@@ -198,24 +204,45 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 
                 float3 kS = F;
                 float3 kD = (1.0f - kS) * (1.0f - Metallic);
-                Diffuse = kD * Albedo / PI;
-            
-                float ShadowFactor = Compute_SmoothShadow(DepthWorld, TexCoord, float2(ID.xy));
-
+                float3 Diffuse = kD * Albedo / PI;
+                
+                float ShadowFactor = 1.f;
+                
+                [branch]
+                if (AffectedLight[i].LightType == LIGHT_POINT)
+                {
+                    ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy));
+                }
+                else
+                {
+                    ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy));
+                }
+                
                 LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
             }
         }
     }
-    OUTPUT[ID.xy] = float4(Diffuse, 1.f);
-    return;
+    float3  BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
-        
-    float AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
-        
-    float3 Emissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
-    float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-    float3 BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
-    float3 ExtraColor = BaseAmbient + Emissive;
+    /// -- Dissolve -- ///
+    float   DissolveFactor = DefaultNoiseTexture[ID.xy].r - DissolveIntensity;
+    
+    if (DissolveFactor <= 0.f)
+    {
+        OUTPUT[ID.xy] = float4(0.f, 0.f, 0.f, 0.f);
+        return;
+    }
+    float DissolveEdge = 1.f - smoothstep(0.f, DissolveEdgeWidth, DissolveFactor);
+    
+    float3  DissolveEmissive = DissolveColor.rgb * DissolveEdge;
+    float3  FinalEmissive = lerp(BaseEmissive, DissolveEmissive, DissolveEdge * 0.8);
+    /// -- Dissolve -- ///
+    
+    float   AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
+    
+    float3  Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
+    float3  BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
+    float3  ExtraColor = BaseAmbient + FinalEmissive;
 
     OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
     return;

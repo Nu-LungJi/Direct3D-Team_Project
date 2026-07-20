@@ -154,6 +154,24 @@
     <Filter Include="Loader\Level\Collider">
       <UniqueIdentifier>{8796610b-99a8-4ba5-a276-28292e056fb3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loader\Level\UIEditor">
+      <UniqueIdentifier>{2f9e16e6-e99a-4f0a-b3ff-f6899d11a981}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\Spell">
+      <UniqueIdentifier>{e46f670f-9eb8-4e4d-a6d8-f55d80303b0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Creature">
+      <UniqueIdentifier>{1f4a808a-15ad-47ac-8081-adaeb71e748c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Animator">
+      <UniqueIdentifier>{786efb8b-a2ea-4794-b5d1-dd573b1f691e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\LightMap">
+      <UniqueIdentifier>{9a676caf-9a8e-4a44-952d-5ffa5948d377}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\LightObject\LightTerrain">
+      <UniqueIdentifier>{8c6ec420-6258-4dd1-afce-8e979f1663f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -369,6 +387,24 @@
     <ClInclude Include="..\public\LevelColliderLoader.h">
       <Filter>Loader\Level\Collider</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LevelPlayGroundLoader.h">
+      <Filter>Loader\Level\Creature</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelAnimatorLoader.h">
+      <Filter>Loader\Level\Animator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelLightMapLoader.h">
+      <Filter>Loader\Level\LightMap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditorLoader.h">
+      <Filter>Loader\Level\UIEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\SpellMeter.h">
+      <Filter>GameObject\UI\Spell</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightTerrain.h">
+      <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -548,6 +584,24 @@
     </ClCompile>
     <ClCompile Include="..\private\LevelColliderLoader.cpp">
       <Filter>Loader\Level\Collider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelAnimatorLoader.cpp">
+      <Filter>Loader\Level\Animator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelPlayGroundLoader.cpp">
+      <Filter>Loader\Level\Creature</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelLightMapLoader.cpp">
+      <Filter>Loader\Level\LightMap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelUIEditorLoader.cpp">
+      <Filter>Loader\Level\UIEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\SpellMeter.cpp">
+      <Filter>GameObject\UI\Spell</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightTerrain.cpp">
+      <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -2,6 +2,7 @@
 #include "LevelUIEditor.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 #include "Client_Defines.h"
 #include "FlyCamera.h"
 #include "UiCamera.h"
@@ -27,6 +28,7 @@ NS_USING(Client)
 static int selectedParent = -1;
 
 CLevelUIEditor::CLevelUIEditor()
+	: CLevel{ ETOUI(LEVEL::UIEDITOR) }
 {
 }
 
@@ -218,6 +220,25 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 	if (bP)
 	{
+		if (true)
+		{
+			CTextureUI::UIOBJECT_DESC Desc{};
+
+			count++;
+			Desc.sObjectTag = "UI_" + std::to_string(count);
+			Desc.Name = "UI_" + std::to_string(count);
+			Desc.fSizeX = 80.f;
+			Desc.fSizeY = 80.f;
+			Desc.fX = clientSize.x * 0.5f;
+			Desc.fY = clientSize.y * 0.5f;
+			Desc.fAlpha = 1.f;
+			Desc.ResTag = "";
+			Desc.UIType = ETOUI(UI_TYPE::SPELLMETER);
+			Desc.ResWeight = count;
+
+			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
+		}
+
 		if (false)
 		{
 			count++;
@@ -2061,7 +2082,5 @@ Engine::UPtr<CLevelUIEditor> CLevelUIEditor::Create()
 
 void CLevelUIEditor::Free()
 {
-	E::CGameInstance::Get().DelPrototype("LEVEL_UIEditor");
-	E::CGameInstance::Get().DelResource("LEVEL_UIEditor");
 	CLevel::Free();
 }

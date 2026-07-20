@@ -41,7 +41,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 		uint32_t textureTypeCount = *(uint32_t*)pPoint;
 		pPoint += sizeof(uint32_t);
 
-		
+
 
 		for (size_t i = 0; i < textureTypeCount; i++)
 		{
@@ -85,44 +85,31 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 					texPath = ddsPath;
 				}
 
-				_bool b_cache = false;
-				auto pvecRes = CGameInstance::Get().GetResource("ONLY_MINSU_NO_TOUCH", texPath.string());
-				if (pvecRes.empty())
-				{
-					b_cache = false;
-				}
-				else
-				{
-					b_cache = true;
-				}
-
-
-				if (b_cache) {
-
-					auto resTex = CGameInstance::Get().GetResourceFirst<CResTexture2D>("ONLY_MINSU_NO_TOUCH", texPath.string());
-					
-					m_Materials[textureType].push_back(resTex);
-				}
-				else {
-					auto resTex = CResTexture2D::Create(texPath.string());
-					CGameInstance::Get().AddResource("ONLY_MINSU_NO_TOUCH", texPath.string(), resTex);
-
-					if (resTex == nullptr)
+				const _string texturePath = texPath.string();
+				_bool isCreated = false;
+				auto resTex = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(
+					texturePath,
+					[&]()
 					{
-						m_eState = STATE::LOADFAIL;
-						return E_FAIL;
-					}
+						isCreated = true;
+						return CResTexture2D::Create(texturePath);
+					});
 
-					if (FAILED(resTex->Load()))
-					{
-						m_eState = STATE::LOADFAIL;
-						return E_FAIL;
-					}
-
-					m_Materials[textureType].push_back(resTex);
+				if (!resTex)
+				{
+					m_eState = STATE::LOADFAIL;
+					return E_FAIL;
 				}
 
-			
+				if (isCreated && FAILED(resTex->Load()))
+				{
+					m_eState = STATE::LOADFAIL;
+					return E_FAIL;
+				}
+
+				m_Materials[textureType].push_back(resTex);
+
+
 			}
 		}
 
@@ -200,8 +187,15 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 
 
 
-			auto resTex = CResTexture2D::Create(texPath.string());
-			CGameInstance::Get().AddResource("ONLY_MINSU_NO_TOUCH", texPath.string(), resTex);
+			const _string resolvedTexturePath = texPath.string();
+			_bool isCreated = false;
+			auto resTex = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(
+				resolvedTexturePath,
+				[&]()
+				{
+					isCreated = true;
+					return CResTexture2D::Create(resolvedTexturePath);
+				});
 
 			if (resTex == nullptr)
 			{
@@ -209,7 +203,7 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 				return E_FAIL;
 			}
 
-			if (FAILED(resTex->Load()))
+			if (isCreated && FAILED(resTex->Load()))
 			{
 				m_eState = STATE::LOADFAIL;
 				return E_FAIL;
@@ -217,6 +211,9 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 
 			m_Materials[i].emplace_back(resTex);
 		}
+
+		
+	
 	}
 
 	m_eState = STATE::LOADED;

@@ -9,8 +9,22 @@
 #include "ResTessDomainShader.h"
 #include "ResGeometryShader.h"
 #include "ResGeoShaderStreamOut.h"
+#include "ResShader.h"
+#include "ShaderWatcher.h"
 
 NS_USING(Engine)
+
+namespace
+{
+	_string NormalizeResourcePath(const _string& path)
+	{
+		if (path.empty())
+			return {};
+
+		return std::filesystem::path{ path }.lexically_normal().generic_string();
+	}
+}
+
 CResourceManager::CResourceManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 	: m_pDevice{ pDevice }
 	, m_pContext{ pContext }
@@ -24,7 +38,11 @@ CResourceManager::~CResourceManager()
 
 void CResourceManager::UpdateGUI()
 {
-	ImGui::Begin("CResourceManager");
+	if (!ImGui::Begin("CResourceManager"))
+	{
+		ImGui::End();
+		return;
+	}
 
 	// =========================================================
 	// 0. 실시간 메모리 사용량 표시
@@ -49,24 +67,27 @@ void CResourceManager::UpdateGUI()
 	// =========================================================
 	// 1. 통계 정보 계산
 	// =========================================================
+	size_t totalResCount = 0;
+	size_t totalPathKeys = 0;
+	size_t totalPathItems = 0;
 	{
 		std::shared_lock<std::shared_mutex> lock(m_Mutex);// lock
 
-		size_t totalResCount = 0;
 		for (const auto& Pair : m_Resources)
 			for (const auto& Pair2 : Pair.second)
 				totalResCount += Pair2.second.size();
 
-		size_t totalPathKeys = m_PathLookup.size();
-		size_t totalPathItems = 0;
+		totalPathKeys = m_PathLookup.size();
 		for (const auto& PathPair : m_PathLookup)
 			totalPathItems += PathPair.second.size();
-
-		ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
-		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
-		ImGui::Separator();
-		ImGui::Spacing();
 	}
+
+	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[Total Resource Count] : %zu", totalResCount);
+	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[PathLookup] Paths: %zu / Total Items: %zu", totalPathKeys, totalPathItems);
+	if (ImGui::Button("Rebuild All Shaders"))
+		RebuildAllShaders();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	// =========================================================
 	// 2. [수정] 삭제 예약 버퍼 (반복자 무효화 방지)
@@ -78,21 +99,36 @@ void CResourceManager::UpdateGUI()
 	// 3. 그룹 / 서브그룹 리소스 리스트
 	// =========================================================
 	{
-		std::shared_lock<std::shared_mutex> lock(m_Mutex);// lock
-
 		if (ImGui::CollapsingHeader("Group/SubGroup Resources", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			decltype(m_Resources) resourcesSnapshot;
+			{
+				std::shared_lock<std::shared_mutex> lock(m_Mutex);
+				resourcesSnapshot = m_Resources;
+			}
+
 			static ImGuiTextFilter filterGrp;
 			static ImGuiTextFilter filterRes;
 
 			filterGrp.Draw("GrpSearch");
 			filterRes.Draw("ResSearch");
 
-			for (auto& Pair : m_Resources)
-			{
-				const char* groupName = Pair.first.GetDbgStr();
+			using GroupEntry = decltype(resourcesSnapshot)::value_type;
+			std::vector<std::pair<_string, GroupEntry*>> sortedGroups;
+			sortedGroups.reserve(resourcesSnapshot.size());
+			for (auto& pair : resourcesSnapshot)
+				sortedGroups.emplace_back(pair.first.GetDbgStr(), &pair);
 
-				if (!filterGrp.PassFilter(groupName))
+			std::sort(sortedGroups.begin(), sortedGroups.end(),
+				[](const auto& lhs, const auto& rhs) {
+					return lhs.first < rhs.first;
+				});
+
+			for (auto& [groupName, groupEntry] : sortedGroups)
+			{
+				auto& Pair = *groupEntry;
+
+				if (!filterGrp.PassFilter(groupName.c_str()))
 					continue;
 
 				// 하위 검색 필터링 체크
@@ -113,10 +149,10 @@ void CResourceManager::UpdateGUI()
 				size_t groupResCount = 0;
 				for (const auto& Pair2 : Pair.second) groupResCount += Pair2.second.size();
 
-				bool bGroupOpen = ImGui::TreeNode((void*)&Pair, "[%s] (Total: %zu)", groupName, groupResCount);
+				bool bGroupOpen = ImGui::TreeNode(groupName.c_str(), "[%s] (Total: %zu)", groupName.c_str(), groupResCount);
 
 				ImGui::SameLine();
-				ImGui::PushID(&Pair);
+				ImGui::PushID(groupName.c_str());
 				if (ImGui::SmallButton("Clear Group"))
 				{
 					// 즉시 삭제하지 않고 리스트에 담음
@@ -126,16 +162,27 @@ void CResourceManager::UpdateGUI()
 
 				if (bGroupOpen)
 				{
-					for (auto& Pair2 : Pair.second)
+					using SubGroupEntry = decltype(Pair.second)::value_type;
+					std::vector<std::pair<_string, SubGroupEntry*>> sortedSubGroups;
+					sortedSubGroups.reserve(Pair.second.size());
+					for (auto& pair : Pair.second)
+						sortedSubGroups.emplace_back(pair.first.GetDbgStr(), &pair);
+
+					std::sort(sortedSubGroups.begin(), sortedSubGroups.end(),
+						[](const auto& lhs, const auto& rhs) {
+							return lhs.first < rhs.first;
+						});
+
+					for (auto& [subName, subGroupEntry] : sortedSubGroups)
 					{
-						const char* subName = Pair2.first.GetDbgStr();
-						if (!filterRes.PassFilter(subName))
+						auto& Pair2 = *subGroupEntry;
+						if (!filterRes.PassFilter(subName.c_str()))
 							continue;
 
-						bool bSubOpen = ImGui::TreeNode((void*)&Pair2, "- %s (Count: %zu)", subName, Pair2.second.size());
+						bool bSubOpen = ImGui::TreeNode(subName.c_str(), "- %s (Count: %zu)", subName.c_str(), Pair2.second.size());
 
 						ImGui::SameLine();
-						ImGui::PushID(&Pair2);
+						ImGui::PushID(subName.c_str());
 						if (ImGui::SmallButton("Clear"))
 						{
 							// 즉시 삭제하지 않고 리스트에 담음
@@ -174,26 +221,48 @@ void CResourceManager::UpdateGUI()
 	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("PathLookup List", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		std::shared_lock<std::shared_mutex> lock(m_Mutex);
+		std::unordered_map<_string, std::vector<SPtr<CResource>>> pathLookupSnapshot;
+		{
+			std::shared_lock<std::shared_mutex> lock(m_Mutex);
+			for (const auto& [path, weakResources] : m_PathLookup)
+			{
+				auto& resources = pathLookupSnapshot[path];
+				resources.reserve(weakResources.size());
+
+				for (const auto& weakResource : weakResources)
+				{
+					if (auto resource = weakResource.lock())
+						resources.push_back(std::move(resource));
+				}
+			}
+		}
 
 		static ImGuiTextFilter filterPath;
 		filterPath.Draw("PathSearch");
 
 		// 직접 m_PathLookup을 순회합니다. (매우 빠르고 가벼움)
-		for (auto& PathPair : m_PathLookup)
+		using PathEntry = decltype(pathLookupSnapshot)::value_type;
+		std::vector<PathEntry*> sortedPaths;
+		sortedPaths.reserve(pathLookupSnapshot.size());
+		for (auto& pair : pathLookupSnapshot)
+			sortedPaths.push_back(&pair);
+
+		std::sort(sortedPaths.begin(), sortedPaths.end(),
+			[](const PathEntry* lhs, const PathEntry* rhs) {
+				return lhs->first < rhs->first;
+			});
+
+		for (auto* pathEntry : sortedPaths)
 		{
+			auto& PathPair = *pathEntry;
 			const _string& path = PathPair.first;
-			const auto& weakVec = PathPair.second;
+			const auto& resources = PathPair.second;
 
 			if (!filterPath.PassFilter(path.c_str()))
 				continue;
 
 			// 1. 살아있는 리소스 개수 먼저 파악 (노드 레이블에 표시할 Count용)
-			size_t liveCount = 0;
-			for (const auto& wp : weakVec)
-			{
-				if (!wp.expired()) liveCount++;
-			}
+			const size_t liveCount = resources.size();
 
 			// 2. 살아있는 리소스가 있을 때만 그리기
 			if (liveCount > 0)
@@ -202,13 +271,14 @@ void CResourceManager::UpdateGUI()
 				// 이렇게 하면 리스트가 새로 그려져도 ImGui가 "아, 이 노드구나" 하고 상태를 기억합니다.
 				if (ImGui::TreeNode(path.c_str(), "[%s] (Count: %zu)", path.c_str(), liveCount))
 				{
-					for (size_t i = 0; i < weakVec.size(); ++i)
+					for (size_t i = 0; i < resources.size(); ++i)
 					{
-						// 3. lock()을 통해 즉석에서 살아있는지 확인
-						if (SPtr<CResource> pRes = weakVec[i].lock())
+						if (const auto& pRes = resources[i])
 						{
 							ImGui::Text("%i-----", (int)i);
 							pRes->UpdateGUI();
+							//const _string state = pRes->GetStateStr();
+							//ImGui::Text("[%zu] State: %s", i, state.c_str());
 						}
 					}
 					ImGui::TreePop();
@@ -222,7 +292,115 @@ void CResourceManager::UpdateGUI()
 
 void CResourceManager::Initialize()
 {
-	
+#ifdef _DEBUG
+	m_pShaderWatcher = CShaderWatcher::Create();
+#endif
+}
+
+void CResourceManager::UpdateShaderHotReload()
+{
+#ifdef _DEBUG
+	if (!m_pShaderWatcher)
+		return;
+
+	const auto now = std::chrono::steady_clock::now();
+	for (auto& path : m_pShaderWatcher->GetChangedFilesAndClear())
+		m_PendingShaderChanges[std::move(path)] = now;
+
+	constexpr auto debounce = std::chrono::milliseconds{ 150 };
+	for (auto iter = m_PendingShaderChanges.begin(); iter != m_PendingShaderChanges.end(); )
+	{
+		if (now - iter->second < debounce)
+		{
+			++iter;
+			continue;
+		}
+
+		const _string sourcePath = iter->first;
+		const size_t shaderFilesPos = sourcePath.find("ShaderFiles/");
+		if (shaderFilesPos == _string::npos)
+		{
+			iter = m_PendingShaderChanges.erase(iter);
+			continue;
+		}
+
+		const _string relativePath = sourcePath.substr(shaderFilesPos);
+		const std::filesystem::path destinationPath = std::filesystem::path{ "./" } / relativePath;
+
+		try
+		{
+			std::filesystem::create_directories(destinationPath.parent_path());
+			std::filesystem::copy_file(
+				std::filesystem::path{ sourcePath },
+				destinationPath,
+				std::filesystem::copy_options::overwrite_existing);
+		}
+		catch (const std::filesystem::filesystem_error&)
+		{
+			// Editors can briefly lock or replace a file while saving. Retry next frame.
+			iter->second = now;
+			++iter;
+			continue;
+		}
+
+		const _string runtimePath = NormalizeResourcePath(destinationPath.generic_string());
+		if (RebuildShadersByPath(runtimePath) == S_FALSE)
+		{
+			// Include-only files are not resources themselves. Rebuild every shader
+			// so changes in shared HLSL code are reflected as well.
+			RebuildAllShaders();
+		}
+
+		iter = m_PendingShaderChanges.erase(iter);
+	}
+#endif
+}
+
+HRESULT CResourceManager::RebuildShadersByPath(const _string& sPath)
+{
+	const auto resources = GetResourcesByPath(sPath);
+	_bool foundShader = false;
+	_bool allSucceeded = true;
+
+	for (const auto& resource : resources)
+	{
+		if (!resource || !resource->IsA(CResShader::StaticType))
+			continue;
+
+		foundShader = true;
+		auto shader = std::static_pointer_cast<CResShader>(resource);
+		if (FAILED(shader->Reload()))
+			allSucceeded = false;
+	}
+
+	if (!foundShader)
+		return S_FALSE;
+	return allSucceeded ? S_OK : E_FAIL;
+}
+
+HRESULT CResourceManager::RebuildAllShaders()
+{
+	const auto pathLookup = GetResourcesByPath();
+	std::unordered_set<CResShader*> rebuiltShaders{};
+	_bool allSucceeded = true;
+
+	for (const auto& [path, resources] : pathLookup)
+	{
+		for (const auto& resource : resources)
+		{
+			if (!resource || !resource->IsA(CResShader::StaticType))
+				continue;
+
+			auto shader = std::static_pointer_cast<CResShader>(resource);
+			if (!rebuiltShaders.emplace(shader.get()).second)
+				continue;
+
+			if (FAILED(shader->Reload()))
+				allSucceeded = false;
+		}
+	}
+
+	return allSucceeded ? S_OK : E_FAIL;
 }
 
 std::vector<SPtr<CResource>> CResourceManager::GetResource(const StringID& sGroupTag, const StringID& sResTag) const
@@ -251,7 +429,7 @@ std::unordered_map<StringID, CResourceManager::RESOURCES> CResourceManager::GetR
 
 std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetResourcesByPath() 
 {
-	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+	std::shared_lock<std::shared_mutex> lock(m_Mutex);
 
 	// [주의] 전체 순회하며 수정하므로 비용이 큽니다.
 		// [중요] std::unique_lock<std::shared_mutex> lock(m_Mutex); 필수!
@@ -263,13 +441,6 @@ std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetR
 		auto& vec = it->second;
 
 		// 1. 해당 경로의 벡터에서 죽은 것들 정리
-		vec.erase(
-			std::remove_if(vec.begin(), vec.end(), [](const std::weak_ptr<CResource>& wp) {
-				return wp.expired();
-				}),
-			vec.end()
-		);
-
 		// 2. 살아있는 것들만 결과에 담기
 		for (const auto& weakRes : vec)
 		{
@@ -280,10 +451,7 @@ std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetR
 		}
 
 		// 3. 빈 경로면 키 삭제 및 반복자 처리
-		if (vec.empty())
-			it = m_PathLookup.erase(it);
-		else
-			++it;
+		++it;
 	}
 
 	return result;
@@ -291,22 +459,16 @@ std::unordered_map<_string, std::vector<SPtr<CResource>>> CResourceManager::GetR
 
 std::vector<SPtr<CResource>> CResourceManager::GetResourcesByPath(const _string& sPath) 
 {
-	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+	std::shared_lock<std::shared_mutex> lock(m_Mutex);
 
-	auto it = m_PathLookup.find(sPath);
+	const _string normalizedPath = NormalizeResourcePath(sPath);
+	auto it = m_PathLookup.find(normalizedPath);
 	if (it == m_PathLookup.end())
 		return {};
 
 	auto& vec = it->second;
 
 	// Erase-Remove Idiom으로 죽은(expired) 것들 한 번에 정리
-	vec.erase(
-		std::remove_if(vec.begin(), vec.end(), [](const std::weak_ptr<CResource>& wp) {
-			return wp.expired(); // lock()보다 expired()가 더 빠르고 명확합니다.
-			}),
-		vec.end()
-	);
-
 	// 결과 벡터 생성
 	std::vector<SPtr<CResource>> result;
 	result.reserve(vec.size());
@@ -319,9 +481,6 @@ std::vector<SPtr<CResource>> CResourceManager::GetResourcesByPath(const _string&
 	}
 
 	// 경로에 더 이상 남은 리소스가 없으면 키 삭제
-	if (vec.empty())
-		m_PathLookup.erase(it);
-
 	return result;
 }
 
@@ -336,7 +495,8 @@ void CResourceManager::_RemovePathLookup(const _string& sPath, SPtr<CResource> p
 	if (m_bIsShutdown)
 		return;
 
-	auto it = m_PathLookup.find(sPath);
+	const _string normalizedPath = NormalizeResourcePath(sPath);
+	auto it = m_PathLookup.find(normalizedPath);
 	if (it != m_PathLookup.end())
 	{
 		auto& vec = it->second;
@@ -344,15 +504,22 @@ void CResourceManager::_RemovePathLookup(const _string& sPath, SPtr<CResource> p
 		// erase-remove idiom: 해당 포인터와 일치하는 것만 삭제
 		vec.erase(
 			std::remove_if(vec.begin(), vec.end(),
-				[&pRes](const std::weak_ptr<CResource>& wp) {
-					SPtr<CResource> locked = wp.lock();
+				[](const std::weak_ptr<CResource>& wp) {
 					// 1. 찾고자 하는 타겟(pRes)이거나
 					// 2. 이미 메모리에서 해제되어 껍데기만 남은 weak_ptr(nullptr)이면 같이 지워라!
-					return locked == pRes || locked == nullptr;
+					return wp.expired();
 				}
 			),
 			vec.end()
 		);
+
+		auto resourceIt = std::find_if(vec.begin(), vec.end(),
+			[&pRes](const std::weak_ptr<CResource>& wp) {
+				return wp.lock() == pRes;
+			});
+
+		if (resourceIt != vec.end())
+			vec.erase(resourceIt);
 
 		// 더 이상 해당 경로를 쓰는 리소스가 없으면 키 자체를 제거 (메모리 최적화)
 		if (vec.empty())
@@ -381,7 +548,12 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 }
 SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const StringID& sResTag, SPtr<CResource> pAsset)
 {
+	if (!pAsset)
+		return nullptr;
+
 	std::unique_lock<std::shared_mutex> lock(m_Mutex);
+	if (m_bIsShutdown)
+		return nullptr;
 
 	auto pGroup = FindGroup(sGroupTag);
 	if (pGroup)
@@ -413,7 +585,7 @@ SPtr<CResource> CResourceManager::AddResource(const StringID& sGroupTag, const S
 	{
 		if (pAsset)
 		{
-			const _string& resPath = pAsset->GetPath();
+			const _string resPath = NormalizeResourcePath(pAsset->GetPath());
 			if (!resPath.empty())
 			{
 				// 동일한 경로를 가진 리소스가 여러 개일 수 있으므로 vector에 추가
@@ -442,94 +614,9 @@ SPtr<CResource> CResourceManager::GetResourceFirst(const StringID& sGroupTag, co
 	return nullptr;
 }
 
-//HRESULT CAsset_Manager::AddAsset(const _wstring& sGroupTag, const _wstring& sResTag, SPtr<CAsset> pAsset)
-//{
-//	auto pGroup = Find_Group(sGroupTag);
-//	if (pGroup)
-//	{
-//		auto pAssetVec = Find_Asset(sGroupTag, sResTag);
-//		if (pAssetVec)
-//		{
-//			pAssetVec->push_back(pAsset);
-//		}
-//		else
-//		{
-//			std::vector<SPtr<CAsset>> newVecAsset{};
-//			newVecAsset.push_back(pAsset);
-//			pGroup->emplace(sResTag, newVecAsset);
-//		}
-//	}
-//	else
-//	{
-//		CAsset_Manager::ASSETS newAssets{};
-//		m_Assets.emplace(sGroupTag, newAssets);
-//		std::vector<SPtr<CAsset>> newVecAsset{};
-//		newVecAsset.push_back(pAsset);
-//		newAssets.emplace(sResTag, newVecAsset);
-//	}
-//
-//	return S_OK;
-//}
-
-
-//HRESULT CResourceManager::LoadResource(const StringID& sGroupTag)
-//{
-//	HRESULT hr = S_OK;
-//	for (auto& Pair : *FindGroup(sGroupTag))
-//	{
-//		if (FAILED(LoadResource(sGroupTag, Pair.first)))
-//		{
-//			hr = E_FAIL;
-//		}
-//	}
-//
-//	return hr;
-//}
-//
-//HRESULT CResourceManager::LoadResource(const StringID& sGroupTag, const StringID& sResTag)
-//{
-//	HRESULT hr = S_OK;
-//	for (auto& pAsset : *_FindResource(sGroupTag, sResTag))
-//	{
-//		if (FAILED(pAsset->Load()))
-//		{
-//			hr = E_FAIL;
-//		}
-//	}
-//
-//	return hr;
-//}
-
-//HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag)
-//{
-//	HRESULT hr = S_OK;
-//	for (auto& Pair : *FindGroup(sGroupTag))
-//	{
-//		if (FAILED(UnLoadResource(sGroupTag, Pair.first)))
-//		{
-//			hr = E_FAIL;
-//		}
-//	}
-//
-//	return hr;
-//}
-//
-//HRESULT CResourceManager::UnLoadResource(const StringID& sGroupTag, const StringID& sResTag)
-//{
-//	HRESULT hr = S_OK;
-//	for (auto& pAsset : *_FindResource(sGroupTag, sResTag))
-//	{
-//		if (FAILED(pAsset->Unload()))
-//		{
-//			hr = E_FAIL;
-//		}
-//	}
-//
-//	return hr;
-//}
-
 void CResourceManager::DelResource(const StringID& sGroupTag)
 {
+	RESOURCES removedResources;
 	std::unique_lock<std::shared_mutex> lock(m_Mutex);
 
 	auto iter = m_Resources.find(sGroupTag);
@@ -549,12 +636,14 @@ void CResourceManager::DelResource(const StringID& sGroupTag)
 		}
 
 		// 2. 이제 안전하게 메인 저장소에서 삭제
+		removedResources = std::move(iter->second);
 		m_Resources.erase(iter);
 	}
 }
 
 void CResourceManager::DelResource(const StringID& sGroupTag, const StringID& sResTag)
 {
+	std::vector<SPtr<CResource>> removedResources;
 	std::unique_lock<std::shared_mutex> lock(m_Mutex);
 
 	auto pGroup = FindGroup(sGroupTag);
@@ -573,9 +662,13 @@ void CResourceManager::DelResource(const StringID& sGroupTag, const StringID& sR
             }
 
             // 2. 메인 저장소에서 삭제
-            pGroup->erase(iter);
-        }
-    }
+			removedResources = std::move(iter->second);
+			pGroup->erase(iter);
+		}
+
+		if (pGroup->empty())
+			m_Resources.erase(sGroupTag);
+	}
 	
 }
 
@@ -653,21 +746,27 @@ SPtr<CResource> CResourceManager::CreateResource(_string_id eAssetType, const _s
 
 UPtr<CResourceManager> CResourceManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
 {
-	return ToUPtr(new CResourceManager{ pDevice , pContext });
+	auto instance = ToUPtr(new CResourceManager{ pDevice , pContext });
+	instance->Initialize();
+	return instance;
 }
 
 void CResourceManager::Free()
 {
+	m_pShaderWatcher.reset();
+	m_PendingShaderChanges.clear();
 	CEngineBase::Free();
 }
 
 void CResourceManager::Release()
 {
+	decltype(m_Resources) resourcesToRelease;
+	decltype(m_PathLookup) pathsToRelease;
 	std::unique_lock<std::shared_mutex> lock(m_Mutex);
 
 	// 루아매니저 와처 타이밍이슈
 	m_bIsShutdown = true;
 
-	m_Resources.clear();
-	m_PathLookup.clear();
+	resourcesToRelease.swap(m_Resources);
+	pathsToRelease.swap(m_PathLookup);
 }

@@ -53,6 +53,10 @@ public:
 public:
 	void AllReset();
 
+private:
+	void AllObjectsReset();
+	_bool m_bAllResetCalled{ false };
+
 public:
 	void FixedUpdate(_float fTimeDelta);
 	void PriorityUpdate(_float fTimeDelta);

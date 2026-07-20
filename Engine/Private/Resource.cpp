@@ -27,7 +27,7 @@ CResource::~CResource()
 
 _string CResource::GetStateStr() const
 {
-	switch (m_eState)
+	switch (m_eState.load(std::memory_order_acquire))
 	{
 	case STATE::LOADED: return "LOADED";
 	case STATE::UNLOAD: return "UNLOAD";

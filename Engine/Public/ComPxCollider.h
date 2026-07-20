@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Component.h"
 
 namespace physx
@@ -18,6 +18,7 @@ public:
 	{
 		CComPxRigidBody* pComPxRigidBody{};
 		SPtr<CResPhysXMaterial> pResMaterial{};
+		PX_FILTER_DESC tFilter{};
 
 		//float    fStaticFriction = 0.5f;
 		//float    fDynamicFriction = 0.5f;
@@ -37,6 +38,7 @@ protected:
 
 protected:
 	HRESULT Initialize(void* pArg) override;
+	_bool RegisterShape(PX_SHAPE_TYPE eType, uint32_t iSubIndex = std::numeric_limits<uint32_t>::max());
 
 protected:
 	CComPxRigidBody* m_pComRigidBody{};
@@ -44,6 +46,7 @@ protected:
 protected:
 	physx::PxShape* m_pShape = nullptr;
 	SPtr<CResPhysXMaterial> m_pResMaterial{};
+	PX_FILTER_DESC m_tFilter{};
 	//physx::PxMaterial* m_pMaterial = nullptr;
 
 protected:
