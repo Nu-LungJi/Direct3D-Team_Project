@@ -6,7 +6,7 @@ NS_BEGIN(Engine)
 class CPrototypeManager final : public CEngineBase
 {
 public:
-	typedef std::unordered_map<StringID, UPtr<CPrototype>> PROTOTYPES;
+	typedef std::unordered_map<StringID, SPtr<CPrototype>> PROTOTYPES;
 
 private:
 	explicit CPrototypeManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
@@ -32,7 +32,7 @@ private:
 
 private:
 	PROTOTYPES* Find_Group(const StringID& svGroupTag);
-	CPrototype* Find_Prototype(const StringID& svGroupTag, const StringID& svPrototypeTag);
+	SPtr<CPrototype> Find_Prototype(const StringID& svGroupTag, const StringID& svPrototypeTag);
 
 public:
 	static UPtr<CPrototypeManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
