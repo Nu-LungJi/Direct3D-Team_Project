@@ -169,7 +169,7 @@ private:
 
 private:
     uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
-	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> s_TextureThumbnailCache;
+	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_TextureThumbnailCache;
 	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> m_ParsedCommandCache;
 private:
 	uint32_t m_iNextOwnerId = 1;
