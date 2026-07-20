@@ -27,7 +27,8 @@ HRESULT CLightManager::Initialize_LightManager() {
 
 	m_pUAVComBinedOutput = CGameInstance::Get().Generate_UnorderedAccessView("ComBinedTex", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 
-	m_pShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap", ShadowMapResolutionX, ShadowMapResolutionY);
+	m_pDirectionalShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Directional", ShadowMapResolutionX, ShadowMapResolutionY);
+	m_pPointShadowViewPort		 = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Point", 1024, 1024);
 
 	if (m_pPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow_Point", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
@@ -238,7 +239,6 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
 		
 		m_pContext->OMSetRenderTargets(1, &NullRTV, nullptr);
-		m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
 
 		auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, "RS_MULTIPLE_SHADOW");
 		m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
@@ -258,13 +258,18 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			m_pContext->VSSetShader(m_pPointLightVS->GetVertexShader().Get(), nullptr, 0);
 			m_pContext->GSSetShader(m_pPointLightGS->GetGeometryShader().Get(), nullptr, 0);
 			m_pContext->PSSetShader(m_pPointLightPS->GetPixelShader().Get(), nullptr, 0);
+
+			m_pContext->RSSetViewports(1, &m_pPointShadowViewPort->GetViewPort());
 		}
 		else {
 			m_pContext->IASetInputLayout(m_pDirectionalLightVS->GetInputLayout().Get());
 			m_pContext->VSSetShader(m_pDirectionalLightVS->GetVertexShader().Get(), nullptr, 0);
 			m_pContext->GSSetShader(nullptr, nullptr, 0);
 			m_pContext->PSSetShader(nullptr, nullptr, 0);
+
+			m_pContext->RSSetViewports(1, &m_pDirectionalShadowViewPort->GetViewPort());
 		}
+
 		D3D11_MAPPED_SUBRESOURCE MRES = {};
 		if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
@@ -273,7 +278,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			memcpy(MRES.pData, &m_pLightConstantVariable, sizeof(CB_LIGHT));
 			m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 		}
-		m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->VSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->PSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		if (bIsPointLight) m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 
 		LightOBJ->Update_ObjectConstantBuffer(m_pContext.Get());
 		
@@ -325,6 +332,8 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 
 	m_pContext->CSSetShader(m_pPBRComputeShader->GetComputeShader().Get(), nullptr, 0);
 
+	m_pContext->RSSetViewports(1, &m_pDirectionalShadowViewPort->GetViewPort());
+
 	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
 	if (nullptr == ActiveCamera) return E_FAIL;
 
@@ -333,13 +342,7 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 	ID3D11ShaderResourceView* pMainSRVs[6] = {
 		_Diffuse.Get(), _Normal.Get(), _SMRO.Get(), _Emissive.Get(), _Ambient.Get(), _Depth.Get()
 	};
-
-	m_pContext->CSSetShaderResources(0, 1, &pMainSRVs[0]);
-	m_pContext->CSSetShaderResources(1, 1, &pMainSRVs[1]);
-	m_pContext->CSSetShaderResources(2, 1, &pMainSRVs[2]);
-	m_pContext->CSSetShaderResources(3, 1, &pMainSRVs[3]);
-	m_pContext->CSSetShaderResources(4, 1, &pMainSRVs[4]);
-	m_pContext->CSSetShaderResources(5, 1, &pMainSRVs[5]);
+	m_pContext->CSSetShaderResources(0, 6, pMainSRVs);
 
 	ID3D11ShaderResourceView* pIBLSRVs[3] = {
 		m_pIrridianceSRV.Get(),

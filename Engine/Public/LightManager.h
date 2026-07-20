@@ -87,7 +87,8 @@ private:
 	SPtr<CResComputeShader>				m_pShadowComputeShader = { nullptr };
 	SPtr<CResComputeShader>				m_pPBRComputeShader = { nullptr };
 	SPtr<CResDynamicTexture2D>			m_pUAVComBinedOutput = { nullptr };
-	SPtr<CResViewPort>					m_pShadowViewPort{};
+	SPtr<CResViewPort>					m_pDirectionalShadowViewPort{};
+	SPtr<CResViewPort>					m_pPointShadowViewPort{};
 
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
@@ -98,6 +99,8 @@ private:
 	//std::vector<ID3D11ShaderResourceView*>	DynamicShadowMapList;
 	//std::vector<ID3D11ShaderResourceView*>	NullList;
 	CB_LIGHT							m_pLightConstantVariable{};
+	ComPtr<ID3D11DepthStencilView>	m_pPointShadowDSV{};
+	std::vector<ComPtr<ID3D11DepthStencilView>> m_pPointShadowDSVList;
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

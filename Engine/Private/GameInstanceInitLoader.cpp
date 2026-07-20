@@ -565,7 +565,7 @@ HRESULT CGameInstanceInitLoader::LoadRasterizerState()
 		D3D11_RASTERIZER_DESC desc{};
 		desc.FillMode = D3D11_FILL_SOLID;
 		desc.CullMode = D3D11_CULL_NONE;
-		desc.DepthClipEnable = FALSE;
+		desc.DepthClipEnable = TRUE;
 		desc.DepthBias = 2;
 		desc.SlopeScaledDepthBias = 0.1f;
 		desc.DepthBiasClamp = 0.0f;
@@ -757,9 +757,9 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
 		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 
 		sampDesc.BorderColor[0] = 1.f;
 		sampDesc.BorderColor[1] = 1.f;

@@ -81,10 +81,19 @@ float MergeShadowCubeMap(int _LightIndex, float3 _SamplerUV, float _CurrentPixel
 	float DynamicShadow = DynamicShadowCubeMaps.SampleCmpLevelZero(ShadowSampler, float4(_SamplerUV, _LightIndex), _CurrentPixelDepth);
 	return min(StaticShadow, DynamicShadow);
 }
+float Attenuate_ShadowStrength(DynamicLight _Light, float _ShadowFactor, float _Distance)
+{
+	float Attenuation = saturate(1.f - (_Distance / _Light.LightRange));
+	Attenuation = Attenuation * Attenuation; // 거리 기반 그림자 감쇄
+	float ShadowStrength = saturate(_Light.LightIntensity / 100.0f);
+	
+	// 그림자가 젤 어둡게 지는 값(1.f)과 그림자 인수와 lerp -> 빛과 가까우면 어둡고, 멀면 옅음.
+	return lerp(1.f, _ShadowFactor, ShadowStrength * Attenuation);
+}
 float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoord, float2 _PixelPos, int _LightIndex)
 {
 	float4 LightPos = mul(float4(_WorldPos.xyz, 1.f), _Light.g_LightViewProj[_LightIndex]);
-    
+			
     float2 ShadowMapUV;
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
     ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
@@ -111,7 +120,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
     // 주변 ShadowSmoothness 반경까지 Sampling
     float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
     
-    float FinalShadowFactor = 0.0f;
+	float ShadowFactor = 0.f;
 	
     [unroll]
     for (int i = 0; i < 8; ++i)
@@ -120,15 +129,17 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
         
         float2 SampleUV = ShadowMapUV + (RotatedOffset * SamplingRange);
 		
-		FinalShadowFactor += MergeShadowMap(_LightIndex, SampleUV, CurrentPixelDepth);
+		ShadowFactor += MergeShadowMap(_LightIndex, SampleUV, CurrentPixelDepth);
         // SampleCmpLevelZero : Texture2D(ShadowMap)의 깊이와 CompareValue(CurrentPixelDepth) 를 비교했을 때 
         // CompareValue가 크면 1, 아니면 0 반환.(x값에 결과값 저장)
 		//FinalShadowFactor += FinalShadowMap[_LightIndex].SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
 	}
-    
-    FinalShadowFactor /= 8.f;
-			
-	return lerp(ShadowBrightness, 1.f, FinalShadowFactor);
+	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, ShadowFactor * 0.125f);
+	float FinalShadowFactor = Attenuate_ShadowStrength(_Light, NormalShadowFactor, length(_WorldPos.xyz - _Light.Position));
+	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
+	// FinalShadowFactor  : 감쇄O 그림자 (거리기반 밝기 감쇄 그림자)
+	
+	return FinalShadowFactor;
 }
 
 float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPos, int _LightIndex)
@@ -136,7 +147,7 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
     float3 LightToPixel = _WorldPos.xyz - _Light.Position;
     float  Distance = length(LightToPixel);
 	
-	float CurrentPixelDepth = Distance / _Light.LightRange;
+	float  CurrentPixelDepth = Distance / _Light.LightRange;
 	CurrentPixelDepth -= 0.00001f; // Depth Bias
 	
     float  InvDistance  = 1.0f / max(Distance, 0.0001f);
@@ -148,14 +159,15 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
     
     float  RandomNoise  = Get_GradientNoise(_PixelPos);
     float  RandomAngle  = RandomNoise * 2.f * PI;
-    	
+	
     float  CosAngle     = cos(RandomAngle);
     float  SinAngle     = sin(RandomAngle);
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
     
-    float FilterRadius  = (ShadowSmoothness * 0.05f) / _Light.LightRange;
+    //float FilterRadius  = (ShadowSmoothness * 0.05f) / _Light.LightRange;
+	float FilterRadius = ShadowSmoothness * 0.05f;
 	
-    float FinalShadowFactor = { 0.f };
+    float ShadowFactor = { 0.f };
 
     [unroll]
     for (int i = 0; i < 8; ++i)
@@ -164,12 +176,19 @@ float Compute_PointShadow(DynamicLight _Light, float4 _WorldPos, float2 _PixelPo
         
         float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
         
-		float3 SampleUV = normalize(Direction + Offset3D);
+		float3 SampleUV = Direction + Offset3D;
 			
-		FinalShadowFactor += MergeShadowCubeMap(_LightIndex, SampleUV, CurrentPixelDepth);
-	}
-    FinalShadowFactor /= 8.f;
-	return lerp(ShadowBrightness, 1.f, FinalShadowFactor);
+		ShadowFactor += MergeShadowCubeMap(_LightIndex, SampleUV, CurrentPixelDepth);
+		}
+			
+	ShadowFactor = ShadowFactor * 0.125f;
+	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, ShadowFactor);	
+	
+	float FinalShadowFactor = Attenuate_ShadowStrength(_Light, NormalShadowFactor, Distance); 
+	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
+	// FinalShadowFactor : 감쇄O 그림자  (거리기반 밝기 감쇄 그림자)
+	
+	return FinalShadowFactor;
 }
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
@@ -197,9 +216,12 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughne
     return (DiffuseAmbient + SpecularAmbient);
 }
 
+
+
 [numthreads(16, 16, 1)]
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
+	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
 	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return; // 스레드가 해상도 넘어가면 출력X
 
     float2	TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
@@ -254,12 +276,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				float3 kS = F;
 				float3 kD = (1.0f - kS) * (1.0f - Metallic);
 				float3 Diffuse = kD * Albedo / PI;
-				
+				 
 				[branch]
 				if (AffectedLight[i].LightType == LIGHT_POINT)
-				{
-					ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), AffectedLight[i].CurrentLightIndex);\
-
+				{	
+					ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), AffectedLight[i].CurrentLightIndex);	
 				}
 				else
 				{

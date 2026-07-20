@@ -14,23 +14,37 @@ VOID	CLight::UpdateGUI() {
 }
 
 HRESULT CLight::InitializePrototype(VOID* pArg) {
-	DynamicLight = {
-		.g_LightViewProj = {},
-		.LightDirection = { 1.f, -1.f, 1.f },
-		.LightIntensity = { 10.f },
-		.LightColor = { 1.f, 1.f, 1.f },
-		.LightRange = { 5.f },
+	DynamicLight.LightDirection = { 1.f, -1.f, 1.f };
+	DynamicLight.LightIntensity = { 10.f };
+	DynamicLight.LightColor = { 1.f, 1.f, 1.f };
+	DynamicLight.LightRange = { 100.f };
 
-		.Position = {0.f, 0.f, 0.f},
-		.LightType = ETOUI(LIGHT_TYPE::DIRECTIONAL),
+	DynamicLight.Position = { 0.f, 0.f, 0.f };
+	DynamicLight.LightType = ETOUI(LIGHT_TYPE::DIRECTIONAL);
+		
+	DynamicLight.InnerAttanuation = { 20.f };
+	DynamicLight.OuterAttanuation = { 30.f };
 
-		.InnerAttanuation = { 20.f },
-		.OuterAttanuation = { 30.f }
-	};
 
 	for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i)
 		XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixIdentity());
 	
+	// CubeMap 그림자 촬영 View의 Look벡터
+	DirectionVec[0] = { XMVectorSet(+1.f, 0.f, 0.f, 0.f) }; // +X (오른쪽)
+	DirectionVec[1] = { XMVectorSet(-1.f, 0.f, 0.f, 0.f) }; // -X (왼쪽)
+	DirectionVec[2] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // +Y (위)
+	DirectionVec[3] = { XMVectorSet(0.f, -1.f, 0.f, 0.f) }; // -Y (아래)
+	DirectionVec[4] = { XMVectorSet(0.f, 0.f, +1.f, 0.f) }; // +Z (앞)
+	DirectionVec[5] = { XMVectorSet(0.f, 0.f, -1.f, 0.f) }; // -Z (뒤)
+
+	// CubeMap 그림자 촬영 View의 Up벡터
+	BaseUpVec[0] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // +X (Up: +Y)
+	BaseUpVec[1] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // -X (Up: +Y)
+	BaseUpVec[2] = { XMVectorSet(0.f, 0.f, -1.f, 0.f) }; // +Y (Up: -Z)
+	BaseUpVec[3] = { XMVectorSet(0.f, 0.f, +1.f, 0.f) }; // -Y (Up: +Z)
+	BaseUpVec[4] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // +Z (Up: +Y)
+	BaseUpVec[5] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // -Z (Up: +Y)
+
 	return S_OK;
 }
 
@@ -50,10 +64,10 @@ HRESULT CLight::Initialize(VOID* pArg)
 	CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1024, 6);
 	CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1024, 6);
 
-	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), 
-		DynamicLight.LightType, 1280, 720)))	return E_FAIL;
+	_float fNearZ = 0.01f;
 
-	Update_PointLight_ProjectionMatrix(DynamicLight.LightRange);
+	if (DynamicLight.LightRange <= fNearZ) DynamicLight.LightRange = fNearZ + 0.01f;
+	ShadowMapProj_PointLight = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange);
 
 	return S_OK;
 }
@@ -88,31 +102,10 @@ VOID CLight::Update(E::_float fTimeDelta) {
 	}
 	else {
 		XMVECTOR PosVec = m_pComTransform->GetLoadedPostion() + XMVectorSet(0.f, 0.0001f, 0.f, 0.f);
-		XMVECTOR DirectionVec[6] = {
-			XMVectorSet(1.f, 0.f, 0.f, 0.f),   // +X (오른쪽)
-			XMVectorSet(-1.f, 0.f, 0.f, 0.f),  // -X (왼쪽)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Y (위)
-			XMVectorSet(0.f, -1.f, 0.f, 0.f),  // -Y (아래)
-			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // +Z (앞)
-			XMVectorSet(0.f, 0.f, -1.f, 0.f)   // -Z (뒤)
-		};
 
-		// DirectX 큐브맵 표준 Up 벡터 정의
-		XMVECTOR UpVec[6] = {
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +X (Up: +Y)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // -X (Up: +Y)
-			XMVectorSet(0.f, 0.f, -1.f, 0.f),  // +Y (Up: -Z)
-			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // -Y (Up: +Z)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Z (Up: +Y)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f)    // -Z (Up: +Y)
-		};
-
-		_float	 fNearZ = 0.01f, CameraOffset = 0.2f;
-		XMMATRIX ProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange + CameraOffset);
 		for (int i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
-			XMMATRIX ViewMat = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, DirectionVec[i]), UpVec[i]);
-
-			XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ProjMat));
+			XMMATRIX ViewMat = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, DirectionVec[i]), BaseUpVec[i]);
+			XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ShadowMapProj_PointLight));
 		}
 	}
 	Update_Collider();
@@ -140,7 +133,7 @@ void CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 		);
 
 		_float fNearZ = 0.01f, CameraOffset = 0.2f;
-		PassProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange + CameraOffset);
+		PassProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange);
 	}
 	else
 	{
@@ -160,8 +153,8 @@ void CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return;
 
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->GSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->GSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->CSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 
@@ -274,15 +267,13 @@ HRESULT CLight::Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYP
 	if (nullptr != m_pFinalShadowSRV)		{ m_pFinalShadowSRV.Reset();		 }
 
 	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
-		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1024, 6);
+		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1024, 6);
 	}
 	else {
 		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 720);
 		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 720);
 	}
-
-	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 1280, 720)))	return E_FAIL;
 
 	DirtyFlag = true;
 	   
@@ -296,11 +287,7 @@ VOID CLight::Set_LightRange(_float _Range){
 }
 
 VOID CLight::Update_PointLight_ProjectionMatrix(_float _Range) {
-	_float fNearZ = 0.01f;
-	DynamicLight.LightRange = _Range <= fNearZ ? fNearZ + 0.01f : _Range;
-
-	_float FOVAngle = 90.f;
-	ShadowMapProj_PointLight = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, _Range <= fNearZ ? fNearZ + 0.01f : _Range);
+	
 }
 VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	if (_ATYPE == ACTORTYPE::DYNAMIC) {

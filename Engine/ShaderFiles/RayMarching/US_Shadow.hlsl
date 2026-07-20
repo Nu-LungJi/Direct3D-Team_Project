@@ -38,7 +38,7 @@ VS_FINAL_OUT VSMain_Final(VS_IN IN)
 struct GS_OUT
 {
 	float4	Position	: SV_POSITION;
-    float3  WorldPos    : POSITION;
+	float3	WorldPos	: TEXCOORD0;
     uint    LayerIndex  : SV_RenderTargetArrayIndex;
 };
 
@@ -47,14 +47,13 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
 {
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
     
-	for (int Face = 0; Face < 6; ++Face)
-	{
-		for (int v = 0; v < 3; ++v)
-		{
+	for (int Face = 0; Face < 6; ++Face) {
+		for (int v = 0; v < 3; ++v) {
 			GS_OUT OUT;
-			OUT.Position = mul(float4(IN[v].WorldPos.xyz, 1.f), DLight.g_LightViewProj[Face]);
+			
+			OUT.Position = mul(IN[v].WorldPos, DLight.g_LightViewProj[Face]);
 			OUT.WorldPos = IN[v].WorldPos.xyz;
-			OUT.LayerIndex = (DLight.CurrentLightIndex * 6) + Face;
+			OUT.LayerIndex = Face;
             
 			_OutStream.Append(OUT);
 		}
@@ -63,12 +62,11 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
 }
 float PSMain(GS_OUT OUT) : SV_DEPTH
 {
-	
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
 	
     float3	LightToPixel = OUT.WorldPos.xyz - DLight.Position;
     float	Distance = length(LightToPixel);
 	float	Depth = Distance / DLight.LightRange;
 	
-	return saturate(Depth - 0.0005f);
+	return saturate(Depth);
 }
