@@ -97,6 +97,8 @@ HRESULT CTestModel::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
 	//CTestPartObject::DESC WeaponDesc{};

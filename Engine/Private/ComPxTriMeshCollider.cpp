@@ -1,7 +1,8 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "ComPxTriMeshCollider.h"
 
 #include "ComPxRigidBody.h"
+#include "ResPhysXTriMeshGeometry.h"
 #pragma push_macro("new")
 #undef new
 

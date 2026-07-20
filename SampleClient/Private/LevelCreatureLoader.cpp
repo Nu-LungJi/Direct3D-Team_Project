@@ -10,6 +10,7 @@
 #include "TestModel.h"
 #include "Weapon.h"
 #include "Player.h"
+#include "Player_StateMachine.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
 NS_USING(Client)
@@ -34,7 +35,10 @@ std::future<bool> CLevelCreatureLoader::Load()
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Test/SK_Test.bin")))
 			{
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+				pDesc.PreTransformMatrix =
+					XMMatrixScaling(1.f, 1.f, 1.f) *
+					XMMatrixRotationY(XMConvertToRadians(180.f)) *
+					XMMatrixTranslation(0.f, -0.7f, 0.f);
 				if (FAILED(res->Load(pDesc)))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Model_Resource_Player");
@@ -145,6 +149,12 @@ std::future<bool> CLevelCreatureLoader::Load()
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Weapon", CWeapon::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Weapon");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE","Prototype_Component_PlayerStateMachine",CPlayer_StateMachine::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_Component_PlayerStateMachine");
 				return false;
 			}
 

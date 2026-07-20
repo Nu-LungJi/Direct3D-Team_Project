@@ -1,13 +1,9 @@
 #pragma once
-#include "ResPhysXGeometry.h"
-
-NS_BEGIN(physx)
-class PxTriangleMesh;
-NS_END
+#include "ResPhysXTriMeshGeometry.h"
 
 NS_BEGIN(Engine)
 
-class ENGINE_DLL CResPhysXRTTriMeshGeometry final : public CResPhysXGeometry
+class ENGINE_DLL CResPhysXRTTriMeshGeometry final : public CResPhysXTriMeshGeometry
 {
 public:
 	enum class INDEX_FORMAT : uint8_t
@@ -28,15 +24,13 @@ public:
 		INDEX_FORMAT eIndexFormat{ INDEX_FORMAT::UINT32 };
 	};
 public:
-	DECLARE_DERIVED_TYPE(CResPhysXRTTriMeshGeometry, CResPhysXGeometry)
+	DECLARE_DERIVED_TYPE(CResPhysXRTTriMeshGeometry, CResPhysXTriMeshGeometry)
 
 private:
 	explicit CResPhysXRTTriMeshGeometry(const _string& sPath);
 	~CResPhysXRTTriMeshGeometry() override;
 
 public:
-	physx::PxTriangleMesh* GetTriMesh() const { return m_pTriMesh; }
-
 	template<typename TVertex, typename TIndex>
 	static DESC MakeDesc(
 		const std::vector<TVertex>& vertices,
@@ -61,15 +55,12 @@ public:
 
 public:
 	HRESULT Load(const std::any& arg = {}) override;
-	HRESULT Unload(const std::any& arg = {})  override;
+	static HRESULT CookToMemory(const DESC& desc, std::vector<uint8_t>& outCookedData);
+	static HRESULT CookToFile(const DESC& desc, const _string& sOutputPath);
 
-private:
-	physx::PxTriangleMesh* m_pTriMesh{};
 public:
 	static SPtr<CResPhysXRTTriMeshGeometry> Create();
-
-private:
-	void Free() override;
+	static SPtr<CResPhysXRTTriMeshGeometry> CreateAndLoad(const DESC& desc);
 };
 
 NS_END

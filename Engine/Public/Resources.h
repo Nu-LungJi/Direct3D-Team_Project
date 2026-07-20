@@ -55,7 +55,9 @@
 #include "ResModelBone.h"
 
 
+#include "ResPhysXTriMeshGeometry.h"
 #include "ResPhysXRTTriMeshGeometry.h"
+#include "ResPhysXConvexGeometry.h"
 #include "ResPhysXRTConvexGeometry.h"
 #include "ResPhysXBoxGeometry.h"
 #include "ResPhysXSphereGeometry.h"

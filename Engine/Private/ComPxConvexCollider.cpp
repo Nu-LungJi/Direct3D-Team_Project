@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ComPxConvexCollider.h"
 #include "ComPxRigidBody.h"
-#include "ResPhysXRTConvexGeometry.h"
+#include "ResPhysXConvexGeometry.h"
 
 #pragma push_macro("new")
 #undef new

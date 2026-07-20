@@ -1,13 +1,9 @@
 #pragma once
-#include "ResPhysXGeometry.h"
-
-NS_BEGIN(physx)
-class PxConvexMesh;
-NS_END
+#include "ResPhysXConvexGeometry.h"
 
 NS_BEGIN(Engine)
 
-class ENGINE_DLL CResPhysXRTConvexGeometry final : public CResPhysXGeometry
+class ENGINE_DLL CResPhysXRTConvexGeometry final : public CResPhysXConvexGeometry
 {
 public:
 	struct DESC
@@ -20,15 +16,13 @@ public:
 	};
 
 public:
-	DECLARE_DERIVED_TYPE(CResPhysXRTConvexGeometry, CResPhysXGeometry)
+	DECLARE_DERIVED_TYPE(CResPhysXRTConvexGeometry, CResPhysXConvexGeometry)
 
 private:
 	explicit CResPhysXRTConvexGeometry(const _string& sPath);
 	~CResPhysXRTConvexGeometry() override;
 
 public:
-	physx::PxConvexMesh* GetConvexMesh() const { return m_pConvexMesh; }
-
 	template<typename TVertex>
 	static DESC MakeDesc(
 		const std::vector<TVertex>& vertices,
@@ -46,16 +40,12 @@ public:
 
 public:
 	HRESULT Load(const std::any& arg = {}) override;
-	HRESULT Unload(const std::any& arg = {}) override;
-
-private:
-	physx::PxConvexMesh* m_pConvexMesh{};
+	static HRESULT CookToMemory(const DESC& desc, std::vector<uint8_t>& outCookedData);
+	static HRESULT CookToFile(const DESC& desc, const _string& sOutputPath);
 
 public:
 	static SPtr<CResPhysXRTConvexGeometry> Create();
-
-private:
-	void Free() override;
+	static SPtr<CResPhysXRTConvexGeometry> CreateAndLoad(const DESC& desc);
 };
 
 NS_END

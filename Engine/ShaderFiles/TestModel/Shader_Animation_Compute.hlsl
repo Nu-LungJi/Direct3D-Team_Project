@@ -92,7 +92,7 @@ LOCAL_POSE SampleLocalPose(uint boneIndex, uint RootBoneIndex, GPU_ANIM_DESC ani
     result.vTranslation = lerp(a.vTranslation,b.vTranslation,t);
     if (boneIndex == RootBoneIndex)
     {
-        result.vTranslation = 0.0f;
+		result.vTranslation = 0.0f;
 
 		float4 yaw = normalize(float4(0.0f, result.vRotation.y, 0.0f, result.vRotation.w));
 
