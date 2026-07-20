@@ -109,8 +109,8 @@ PS_OUT PSMain(VS_OUT In)
     
     float ratio = 1.0f - (In.life / In.maxLife);
 
-    if (noise.r < ratio) 
-        discard;
+    //if (noise.r < ratio) 
+    //    discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
     float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);

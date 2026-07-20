@@ -45,6 +45,8 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 		s.color = param.color;
 		s.emissive = param.emissive;
 		s.velocity = param.fVelocity;
+		s.iBehaviorType = param.iBehaviorType;
+		
 		uint32_t degree = 360 / param.iCount;
 	}
 	return spawnList;

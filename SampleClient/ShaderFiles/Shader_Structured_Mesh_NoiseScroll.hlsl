@@ -65,42 +65,43 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
 
     Out.vTexcoord = In.vTexcoord;
 
-// 큰 물결
+// ----------------------------------------------------------
+// 표면 디테일용 노이즈 (기존 로직 유지, 세기만 약하게 씀)
+// ----------------------------------------------------------
     float2 uvLarge = In.vTexcoord * 0.6f;
     uvLarge += float2(0.02f, 0.015f) * g_fTime;
-
-// 작은 물결
     float2 uvSmall = In.vTexcoord * 2.5f;
     uvSmall += float2(-0.04f, 0.03f) * g_fTime;
-
     float nLarge = NoiseMap.SampleLevel(LinearWrap, uvLarge, 0).r;
     float nSmall = NoiseMap.SampleLevel(LinearWrap, uvSmall, 0).r;
-
-// 큰 물결 위주 + 작은 디테일
     float noise = lerp(nLarge, nSmall, 0.25f);
-
-// 부드럽게
     noise = smoothstep(0.2f, 0.8f, noise);
     noise = noise * 2.0f - 1.0f;
-
     float amplitude = 3.0f;
 
-// 위치 이동
+// ----------------------------------------------------------
+// 지렁이 꿈틀거림 (몸통 길이를 따라 흐르는 사인파)
+// ----------------------------------------------------------
+    float bodyPos = In.vTexcoord.y;
+    float waveFreq = 6.0f;
+    float waveSpeed = 4.0f;
+    float phase = bodyPos * waveFreq - g_fTime * waveSpeed;
+    float wiggle = sin(phase);
+    float flexMask = pow(saturate(bodyPos), 1.5f);
+    float wiggleAmplitude = 4.0f;
+    float3 sideAxis = float3(0, 0, 1); // 모델링 좌표계에 맞게 조정
+
     float3 vLocalPos = In.vPosition;
-    vLocalPos += normalize(In.vNormal) * noise * amplitude;
+    vLocalPos += sideAxis * wiggle * wiggleAmplitude * flexMask;
+    vLocalPos += normalize(In.vNormal) * noise * (amplitude * 0.3f);
 
-// 원래 노멀 그대로 사용
     float3 vLocalNormal = normalize(In.vNormal);
-    
+
     vLocalPos *= scale;
-
     float3 rotatedLocal = RotateXYZ(vLocalPos, p.rotation);
-
     float3 worldPos = rotatedLocal + p.position;
-
     Out.vPosition = mul(float4(worldPos, 1), g_matViewProj);
     Out.vWorldPos = worldPos;
-
     Out.vNormal = normalize(RotateXYZ(vLocalNormal, p.rotation));
     Out.vTangent = normalize(RotateXYZ(In.vTangent, p.rotation));
     Out.vBinormal = normalize(RotateXYZ(In.vBinormal, p.rotation));
