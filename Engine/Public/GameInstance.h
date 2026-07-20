@@ -12,6 +12,7 @@
 #include "SerializeManager.h"
 #include "PrototypeManager.h"
 #include "LuaManager.h"
+#include "SoundManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -27,7 +28,6 @@ class CGraphicDevice;
 class CDInputManager;
 class CLevelManager;
 class CLevel;
-class CSoundManager;
 class CFontManager;
 class CPrototype;
 class CColliderManager;
@@ -141,16 +141,7 @@ public:
 
 #pragma region SOUND_MANAGER
 public:
-	HRESULT CreateSound(const _string& sPath, FMOD_SOUND** ppSound);
-
-	HRESULT SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources);
-	HRESULT SoundPlay(const StringID& channelTag, _float fVolume = 1.f, _float fPitch = 1.f);
-	void SoundStop(const StringID& channelTag);
-	void SoundPause(const StringID& channelTag, _bool bPause);
-	_bool SoundGetVolume(const StringID& channelTag, _float& fVolume);
-	_bool SoundSetVolume(const StringID& channelTag, _float fVolume);
-	_bool SoundIsPlaying(const StringID& channelTag) const;
-	void SoundSetPitch(const StringID& channelTag, float fPitchRatio);
+	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
 #pragma region FONT_MANAGER

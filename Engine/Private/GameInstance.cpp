@@ -295,8 +295,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	// 사운드 붙일때 부활
-	// m_pSoundManager->UpdateGUI();
+	 m_pSoundManager->UpdateGUI();
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
@@ -343,8 +342,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		}
 	}
 
-	// 사운드 붙일때 부활
-	if constexpr (false)
+	// FMOD update and completed voice cleanup.
 	{
 		ZoneScopedN("SoundManager_Update");
 		m_pSoundManager->Update();
@@ -435,7 +433,6 @@ void CGameInstance::Release_Engine()
 {
 
 	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
-	m_pSoundManager.reset();
 	m_pNodeEditor.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
@@ -465,6 +462,7 @@ void CGameInstance::Release_Engine()
 
 	if(m_pResourceManager) m_pResourceManager->Release();
 	m_pResourceManager.reset();
+	m_pSoundManager.reset();
 
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
@@ -756,55 +754,6 @@ void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 {
 	m_pLevelManager->RegisterLevelChangeFunc(ID, func);
 }
-#pragma endregion
-
-
-#pragma region SOUND_MANAGER
-HRESULT CGameInstance::CreateSound(const _string& sPath, FMOD_SOUND** ppSound)
-{
-	return m_pSoundManager->CreateSound(sPath, ppSound);
-}
-
-HRESULT CGameInstance::SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources)
-{
-	return m_pSoundManager->AddChannel(channelTag, soundResources);
-}
-
-HRESULT CGameInstance::SoundPlay(const StringID& channelTag, _float fVolume, _float fPitch)
-{
-	return m_pSoundManager->Play(channelTag, fVolume, fPitch);
-}
-
-void CGameInstance::SoundStop(const StringID& channelTag)
-{
-	m_pSoundManager->Stop(channelTag);
-}
-
-void CGameInstance::SoundPause(const StringID& channelTag, _bool bPause)
-{
-	m_pSoundManager->Pause(channelTag, bPause);
-}
-
-_bool CGameInstance::SoundGetVolume(const StringID& channelTag, _float& fVolume)
-{
-	return m_pSoundManager->GetVolume(channelTag, fVolume);
-}
-
-_bool CGameInstance::SoundSetVolume(const StringID& channelTag, _float fVolume)
-{
-	return m_pSoundManager->SetVolume(channelTag, fVolume);
-}
-
-_bool CGameInstance::SoundIsPlaying(const StringID& channelTag) const
-{
-	return m_pSoundManager->IsPlaying(channelTag);
-}
-
-void CGameInstance::SoundSetPitch(const StringID& channelTag, float fPitchRatio)
-{
-	m_pSoundManager->SetPitch(channelTag, fPitchRatio);
-}
-
 #pragma endregion
 
 

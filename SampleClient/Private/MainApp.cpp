@@ -16,7 +16,6 @@
 
 #include "MainAppLoader.h"
 
-
 NS_USING(Client)
 
 CMainApp::CMainApp()

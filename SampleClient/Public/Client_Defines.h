@@ -32,6 +32,17 @@ namespace Client
 	enum class ATTMON { ATT_1, ATT_2, ATT_3, ATT_4, SKILL_1, SKILL_2, SKILL_3, END };
 	enum class HITMON { HIT_1, HIT_2, HIT_3, HIT_4, END };
 	enum class PARTES {WEAPON,END};
+
+
+	enum class SOUND_BUS
+	{
+		BGM,
+		SFX,
+		VOICE,
+		UI,
+		AMBIENCE,
+		END
+	};
 }
 
 extern HWND g_hWnd;

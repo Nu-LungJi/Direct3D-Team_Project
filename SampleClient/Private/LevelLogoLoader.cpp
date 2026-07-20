@@ -31,6 +31,8 @@ std::future<bool> CLevelLogoLoader::UnLoad()
 {
 	LOG_MEMORY("start");
 
+	CGameInstance::Get().GetSoundManager()->ClearResources();
+
 	CGameInstance::Get().Clear_DynamicLightList();
 	LOG_MEMORY("end");
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LOGO", []()
