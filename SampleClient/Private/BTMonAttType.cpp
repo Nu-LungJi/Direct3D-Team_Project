@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "BTMonAttType.h"
-#include"TestGob.h"
+#include"Monster.h"
 #include "ComTransform.h" 
 NS_USING(Client)
 
@@ -35,9 +35,9 @@ EVALUATE CBTMonAttType::Evaluate(_float fTimeDelta)
 {
 	if (auto pBT = Get_ComBT())
 		if (auto pSrc = pBT->GetGameObject())
-			static_cast<CTestGob*>(pSrc)->Set_AttTable(m_eAttType);
+			static_cast<CMonster*>(pSrc)->Set_AttTable(m_eAttType);
 
-	return EVALUATE::SUCCESS;
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTMonAttType::Update_Gui()
 {

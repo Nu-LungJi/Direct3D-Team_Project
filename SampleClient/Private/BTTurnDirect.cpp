@@ -45,7 +45,7 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 		pTransform->GetState(STATE::POSITION));
 	pMoveIntent->SetFacingIntentImmediate(vFacingDirection);
 
-	return m_eDebug =  EVALUATE::SUCCESS;
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTTurnDirect::Update_Gui()
 {

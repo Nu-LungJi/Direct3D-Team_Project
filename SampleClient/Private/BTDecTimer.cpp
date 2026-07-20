@@ -83,13 +83,13 @@ EVALUATE CBTDecTimer::TimeInSuccess(_float fTimeDelta)
 		m_fTick += fTimeDelta;
 		if (m_fWaitTime > m_fTick)
 		{
-			return EVALUATE::SUCCESS;
+			return m_eDebug = EVALUATE::SUCCESS;
 		}
 		else
 		{
 			m_bRun = true;
 			m_fTick = 0.f;
-			return EVALUATE::FAILED;
+			return m_eDebug = EVALUATE::FAILED;
 		}
 	}
 	if (m_bRun)
@@ -99,7 +99,7 @@ EVALUATE CBTDecTimer::TimeInSuccess(_float fTimeDelta)
 			m_bRun = false;
 	}
 
-	return m_bFailed == true ? result : EVALUATE::RUN ;
+	return m_eDebug = m_bFailed == true ? result : EVALUATE::RUN ;
 }
 
 EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
@@ -117,7 +117,7 @@ EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 	else if (m_eTimer == TIMER::TIMEIN_SUCCESS)
 		result = TimeInSuccess(fTimeDelta);
 
-	return result;
+	return m_eDebug = result;
 }
 void CBTDecTimer::Abort()
 {

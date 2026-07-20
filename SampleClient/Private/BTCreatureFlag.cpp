@@ -40,7 +40,7 @@ EVALUATE CBTCreatureFlag::Evaluate(_float fTimeDelta)
 	else if(m_eType == FLAGTYPE::RESET)
 		Set_Flag(0x0000000, m_eType);
 	
-	return EVALUATE::SUCCESS;
+	return  m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTCreatureFlag::Update_Gui()
 {

@@ -684,9 +684,6 @@
     <ClCompile Include="..\private\BTMonAttType.cpp">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\Player.cpp">
       <Filter>GameObject\Player</Filter>
     </ClCompile>
@@ -701,6 +698,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EnderDragon.cpp">
       <Filter>GameObject\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -62,7 +62,7 @@ private:
 
 	class CComBeHavior*									m_pBeHavior{ nullptr };
 	ImDrawList*											m_pDrawList{ nullptr };
-	GUICURRENT_NODE										m_CurrentNode;
+	GUICURRENT_NODE										m_CurrentNode{};
 
 	_float2												m_vScroll{ 0,0 }, m_vOffset{};
 	_bool												m_binited{ false }, m_bShow_grid{ true }, m_bPopup{ false }, m_bPopupAction{ false }, m_bSaveLoad{ false },m_bReName{ false };;
