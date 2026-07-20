@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstdint>
 
@@ -20,6 +20,17 @@ namespace Client
 
 	enum class TURN { LEFT_45, LEFT_90, LEFT_135, LEFT_180, RIGHT_45, RIGHT_90, RIGHT_135, RIGHT_180, END };
 	enum class PARTES {WEAPON,END};
+
+
+	enum class SOUND_BUS
+	{
+		BGM,
+		SFX,
+		VOICE,
+		UI,
+		AMBIENCE,
+		END
+	};
 }
 
 extern HWND g_hWnd;

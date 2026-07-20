@@ -212,6 +212,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\LightTerrain.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
+    <ClInclude Include="..\public\Test3DSound.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\public\TestGob.h" />
@@ -304,6 +305,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\LevelPhysXLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\private\Test3DSound.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />

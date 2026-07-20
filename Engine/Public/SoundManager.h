@@ -2,7 +2,6 @@
 
 #include "Engine_Defines.h"
 
-#include <array>
 #include <mutex>
 
 struct FMOD_SYSTEM;
@@ -17,17 +16,8 @@ struct SSoundCallbackBridge;
 
 using SOUND_ID = uint64_t;
 inline constexpr SOUND_ID INVALID_SOUND_ID = 0;
-
-enum class SOUND_BUS : uint8_t
-{
-	MASTER,
-	BGM,
-	SFX,
-	VOICE,
-	UI,
-	AMBIENCE,
-	END
-};
+using SOUND_BUS_ID = StringID;
+inline const SOUND_BUS_ID SOUND_MASTER_BUS_ID{ "MASTER" };
 
 enum class SOUND_LOAD_TYPE : uint8_t
 {
@@ -43,7 +33,7 @@ enum class SOUND_3D_ROLLOFF : uint8_t
 
 struct SOUND_PLAY_DESC
 {
-	SOUND_BUS eBus{ SOUND_BUS::SFX };
+	SOUND_BUS_ID sBusID{ SOUND_MASTER_BUS_ID };
 	_float fVolume{ 1.f };
 	_float fPitch{ 1.f };
 	int32_t iPriority{ 128 };
@@ -68,7 +58,7 @@ struct SOUND_LISTENER_DESC
 	_float3 vUp{ 0.f, 1.f, 0.f };
 };
 
-class CSoundManager final : public CEngineBase
+class ENGINE_DLL CSoundManager final : public CEngineBase
 {
 	friend struct SSoundCallbackBridge;
 
@@ -77,7 +67,7 @@ private:
 	{
 		SPtr<CResFmodSound> pSound{};
 		FMOD_CHANNEL* pChannel{};
-		SOUND_BUS eBus{ SOUND_BUS::SFX };
+		SOUND_BUS_ID sBusID{ SOUND_MASTER_BUS_ID };
 		_bool b3D{};
 	};
 
@@ -114,19 +104,22 @@ public:
 	_bool IsValidSound(SOUND_ID iSoundID) const;
 
 public:
+	_bool CreateBus(const SOUND_BUS_ID& sBusID);
+	_bool RemoveBus(const SOUND_BUS_ID& sBusID);
 	_bool SetListenerAttributes(uint32_t iListenerIndex, const SOUND_LISTENER_DESC& tDesc);
-	_bool SetBusVolume(SOUND_BUS eBus, _float fVolume);
-	_bool SetBusMuted(SOUND_BUS eBus, _bool bMuted);
-	_bool SetBusPaused(SOUND_BUS eBus, _bool bPaused);
-	_bool StopBus(SOUND_BUS eBus);
+	_bool SetBusVolume(const SOUND_BUS_ID& sBusID, _float fVolume);
+	_bool SetBusMuted(const SOUND_BUS_ID& sBusID, _bool bMuted);
+	_bool SetBusPaused(const SOUND_BUS_ID& sBusID, _bool bPaused);
+	_bool StopBus(const SOUND_BUS_ID& sBusID);
 
 private:
 	SPtr<CResFmodSound> GetOrLoadResourceByPath(const _string& sPath, SOUND_LOAD_TYPE eLoadType);
 	SOUND_ID PlayInternal(const SPtr<CResFmodSound>& pSound, const SOUND_PLAY_DESC& tDesc,
 		const SOUND_3D_DESC* p3DDesc);
 	SOUND_ID GenerateSoundID();
-	FMOD_CHANNELGROUP* GetBus(SOUND_BUS eBus) const;
+	FMOD_CHANNELGROUP* GetBus(const SOUND_BUS_ID& sBusID) const;
 	_bool StopSoundsByPath(const _string& sNormalizedPath);
+	_bool StopSoundsByBus(const SOUND_BUS_ID& sBusID);
 	void StopAllSounds();
 	void EnqueueCompletedSound(SOUND_ID iSoundID);
 	void FlushCompletedSounds();
@@ -135,7 +128,7 @@ private:
 	std::mutex m_SoundResourceRegistrationMutex{};
 
 	std::unordered_map<SOUND_ID, SPlayingSound> m_mapPlayingSounds{};
-	std::array<FMOD_CHANNELGROUP*, static_cast<size_t>(SOUND_BUS::END)> m_pBuses{};
+	std::unordered_map<SOUND_BUS_ID, FMOD_CHANNELGROUP*> m_SoundBuses{};
 	SOUND_ID m_iNextSoundID{ 1 };
 
 	std::mutex m_CompletedSoundMutex{};

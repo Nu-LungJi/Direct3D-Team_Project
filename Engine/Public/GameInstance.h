@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -141,31 +141,7 @@ public:
 
 #pragma region SOUND_MANAGER
 public:
-	HRESULT CreateSound(const _string& sPath, FMOD_SOUND** ppSound, SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
-
-	_bool SoundPreload(const _string& sPath, SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
-	_bool SoundRemoveResourceByPath(const _string& sPath);
-	void SoundClearAllResources();
-
-	SOUND_ID SoundPlay2D(const _string& sPath,
-		const SOUND_PLAY_DESC& tDesc = {}, SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
-	SOUND_ID SoundPlay3D(const _string& sPath, const SOUND_3D_DESC& t3DDesc,
-		const SOUND_PLAY_DESC& tPlayDesc = {}, SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
-	_bool SoundStop(SOUND_ID iSoundID);
-	_bool SoundSetPaused(SOUND_ID iSoundID, _bool bPaused);
-	_bool SoundSetVolume(SOUND_ID iSoundID, _float fVolume);
-	_bool SoundSetPitch(SOUND_ID iSoundID, _float fPitch);
-	_bool SoundSet3DAttributes(SOUND_ID iSoundID, const _float3& vPosition, const _float3& vVelocity = {});
-	_bool SoundSet3DMinMaxDistance(SOUND_ID iSoundID, _float fMinDistance, _float fMaxDistance);
-	_bool SoundIsPlaying(SOUND_ID iSoundID) const;
-	_bool SoundIsPaused(SOUND_ID iSoundID) const;
-	_bool SoundIsValid(SOUND_ID iSoundID) const;
-
-	_bool SoundSetListenerAttributes(uint32_t iListenerIndex, const SOUND_LISTENER_DESC& tDesc);
-	_bool SoundSetBusVolume(SOUND_BUS eBus, _float fVolume);
-	_bool SoundSetBusMuted(SOUND_BUS eBus, _bool bMuted);
-	_bool SoundSetBusPaused(SOUND_BUS eBus, _bool bPaused);
-	_bool SoundStopBus(SOUND_BUS eBus);
+	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
 #pragma region FONT_MANAGER

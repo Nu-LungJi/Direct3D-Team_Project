@@ -53,19 +53,6 @@ namespace
 		}
 	}
 
-	const char* GetBusName(SOUND_BUS eBus)
-	{
-		switch (eBus)
-		{
-		case SOUND_BUS::MASTER:   return "Master";
-		case SOUND_BUS::BGM:      return "BGM";
-		case SOUND_BUS::SFX:      return "SFX";
-		case SOUND_BUS::VOICE:    return "Voice";
-		case SOUND_BUS::UI:       return "UI";
-		case SOUND_BUS::AMBIENCE: return "Ambience";
-		default:                  return "Invalid";
-		}
-	}
 }
 
 CSoundManager::CSoundManager()
@@ -79,7 +66,8 @@ CSoundManager::~CSoundManager()
 void CSoundManager::UpdateGUI()
 {
 	SOUND_ID iStopSoundID{ INVALID_SOUND_ID };
-	SOUND_BUS eStopBus{ SOUND_BUS::END };
+	std::optional<SOUND_BUS_ID> sStopBusID{};
+	std::optional<SOUND_BUS_ID> sRemoveBusID{};
 	_bool bClearAll{};
 
 	if (!ImGui::Begin("SoundManager"))
@@ -95,15 +83,32 @@ void CSoundManager::UpdateGUI()
 
 	if (ImGui::TreeNode("Buses"))
 	{
-		for (size_t i = 0; i < static_cast<size_t>(SOUND_BUS::END); ++i)
+		static char sNewBusName[64]{};
+		ImGui::InputTextWithHint("##NewSoundBus", "New bus name", sNewBusName, sizeof(sNewBusName));
+		ImGui::SameLine();
+		if (ImGui::Button("Create Bus") && sNewBusName[0] != '\0')
 		{
-			const SOUND_BUS eBus = static_cast<SOUND_BUS>(i);
-			FMOD_CHANNELGROUP* pBus = GetBus(eBus);
+			if (CreateBus(SOUND_BUS_ID{ sNewBusName }))
+				sNewBusName[0] = '\0';
+		}
+
+		std::vector<SOUND_BUS_ID> busIDs{};
+		busIDs.reserve(m_SoundBuses.size());
+		for (const auto& [sBusID, _] : m_SoundBuses)
+			busIDs.emplace_back(sBusID);
+		std::ranges::sort(busIDs, [](const SOUND_BUS_ID& lhs, const SOUND_BUS_ID& rhs)
+			{
+				return std::string_view{ lhs.GetDbgStr() } < std::string_view{ rhs.GetDbgStr() };
+			});
+
+		for (const auto& sBusID : busIDs)
+		{
+			FMOD_CHANNELGROUP* pBus = GetBus(sBusID);
 			if (pBus == nullptr)
 				continue;
 
-			ImGui::PushID(static_cast<int>(i));
-			if (ImGui::TreeNode(GetBusName(eBus)))
+			ImGui::PushID(reinterpret_cast<void*>(static_cast<uintptr_t>(sBusID.hash)));
+			if (ImGui::TreeNode(sBusID.GetDbgStr()))
 			{
 				_float fVolume{ 1.f };
 				FMOD_BOOL bMuted{};
@@ -113,18 +118,25 @@ void CSoundManager::UpdateGUI()
 				FMOD_ChannelGroup_GetPaused(pBus, &bPaused);
 
 				if (ImGui::DragFloat("Volume", &fVolume, 0.01f, 0.f, 2.f, "%.2f"))
-					SetBusVolume(eBus, fVolume);
+					SetBusVolume(sBusID, fVolume);
 
 				_bool bMutedValue = bMuted != false;
 				if (ImGui::Checkbox("Muted", &bMutedValue))
-					SetBusMuted(eBus, bMutedValue);
+					SetBusMuted(sBusID, bMutedValue);
 
 				_bool bPausedValue = bPaused != false;
 				if (ImGui::Checkbox("Paused", &bPausedValue))
-					SetBusPaused(eBus, bPausedValue);
+					SetBusPaused(sBusID, bPausedValue);
 
 				if (ImGui::Button("Stop Bus"))
-					eStopBus = eBus;
+					sStopBusID = sBusID;
+
+				if (sBusID != SOUND_MASTER_BUS_ID)
+				{
+					ImGui::SameLine();
+					if (ImGui::Button("Remove Bus"))
+						sRemoveBusID = sBusID;
+				}
 
 				ImGui::TreePop();
 			}
@@ -153,7 +165,7 @@ void CSoundManager::UpdateGUI()
 
 				ImGui::Text("Path: %s", tSound.pSound != nullptr ? tSound.pSound->GetPath().c_str() : "<null>");
 				ImGui::Text("Bus: %s | Type: %s | Playing: %s",
-					GetBusName(tSound.eBus), tSound.b3D ? "3D" : "2D", bPlaying ? "Yes" : "No");
+					tSound.sBusID.GetDbgStr(), tSound.b3D ? "3D" : "2D", bPlaying ? "Yes" : "No");
 
 				_bool bPausedValue = bPaused != false;
 				if (ImGui::Checkbox("Paused", &bPausedValue))
@@ -208,8 +220,10 @@ void CSoundManager::UpdateGUI()
 
 	if (iStopSoundID != INVALID_SOUND_ID)
 		Stop(iStopSoundID);
-	if (eStopBus != SOUND_BUS::END)
-		StopBus(eStopBus);
+	if (sStopBusID)
+		StopBus(*sStopBusID);
+	if (sRemoveBusID)
+		RemoveBus(*sRemoveBusID);
 }
 
 HRESULT CSoundManager::Initialize()
@@ -229,19 +243,11 @@ HRESULT CSoundManager::Initialize()
 	if (FMOD_System_Set3DSettings(m_pSystem, SOUND_DOPPLER_SCALE, SOUND_DISTANCE_FACTOR, SOUND_ROLLOFF_SCALE) != FMOD_OK)
 		return E_FAIL;
 
-	if (FMOD_System_GetMasterChannelGroup(m_pSystem, &m_pBuses[static_cast<size_t>(SOUND_BUS::MASTER)]) != FMOD_OK)
+	FMOD_CHANNELGROUP* pMasterBus{};
+	if (FMOD_System_GetMasterChannelGroup(m_pSystem, &pMasterBus) != FMOD_OK || pMasterBus == nullptr)
 		return E_FAIL;
 
-	FMOD_CHANNELGROUP* pMasterBus = m_pBuses[static_cast<size_t>(SOUND_BUS::MASTER)];
-	for (size_t i = static_cast<size_t>(SOUND_BUS::BGM); i < static_cast<size_t>(SOUND_BUS::END); ++i)
-	{
-		const SOUND_BUS eBus = static_cast<SOUND_BUS>(i);
-		if (FMOD_System_CreateChannelGroup(m_pSystem, GetBusName(eBus), &m_pBuses[i]) != FMOD_OK)
-			return E_FAIL;
-
-		if (FMOD_ChannelGroup_AddGroup(pMasterBus, m_pBuses[i], false, nullptr) != FMOD_OK)
-			return E_FAIL;
-	}
+	m_SoundBuses.emplace(SOUND_MASTER_BUS_ID, pMasterBus);
 
 	return S_OK;
 }
@@ -357,7 +363,7 @@ SOUND_ID CSoundManager::PlayInternal(const SPtr<CResFmodSound>& pSound, const SO
 	if (m_pSystem == nullptr || pSound == nullptr || pSound->GetSound() == nullptr)
 		return INVALID_SOUND_ID;
 
-	FMOD_CHANNELGROUP* pBus = GetBus(tDesc.eBus);
+	FMOD_CHANNELGROUP* pBus = GetBus(tDesc.sBusID);
 	if (pBus == nullptr)
 		return INVALID_SOUND_ID;
 
@@ -414,7 +420,7 @@ SOUND_ID CSoundManager::PlayInternal(const SPtr<CResFmodSound>& pSound, const SO
 	m_mapPlayingSounds.emplace(iSoundID, SPlayingSound{
 		.pSound = pSound,
 		.pChannel = pChannel,
-		.eBus = tDesc.eBus,
+		.sBusID = tDesc.sBusID,
 		.b3D = p3DDesc != nullptr
 	});
 
@@ -516,27 +522,70 @@ _bool CSoundManager::SetListenerAttributes(uint32_t iListenerIndex, const SOUND_
 		&vPosition, &vVelocity, &vForward, &vUp) == FMOD_OK;
 }
 
-_bool CSoundManager::SetBusVolume(SOUND_BUS eBus, _float fVolume)
+_bool CSoundManager::CreateBus(const SOUND_BUS_ID& sBusID)
 {
-	FMOD_CHANNELGROUP* pBus = GetBus(eBus);
+	if (m_pSystem == nullptr || sBusID.hash == 0)
+		return false;
+
+	if (GetBus(sBusID) != nullptr)
+		return true;
+
+	FMOD_CHANNELGROUP* pMasterBus = GetBus(SOUND_MASTER_BUS_ID);
+	if (pMasterBus == nullptr)
+		return false;
+
+	FMOD_CHANNELGROUP* pBus{};
+	if (FMOD_System_CreateChannelGroup(m_pSystem, sBusID.GetDbgStr(), &pBus) != FMOD_OK || pBus == nullptr)
+		return false;
+
+	if (FMOD_ChannelGroup_AddGroup(pMasterBus, pBus, false, nullptr) != FMOD_OK)
+	{
+		FMOD_ChannelGroup_Release(pBus);
+		return false;
+	}
+
+	m_SoundBuses.emplace(sBusID, pBus);
+	return true;
+}
+
+_bool CSoundManager::RemoveBus(const SOUND_BUS_ID& sBusID)
+{
+	if (sBusID == SOUND_MASTER_BUS_ID)
+		return false;
+
+	const auto iter = m_SoundBuses.find(sBusID);
+	if (iter == m_SoundBuses.end())
+		return false;
+
+	StopSoundsByBus(sBusID);
+	if (FMOD_ChannelGroup_Release(iter->second) != FMOD_OK)
+		return false;
+
+	m_SoundBuses.erase(iter);
+	return true;
+}
+
+_bool CSoundManager::SetBusVolume(const SOUND_BUS_ID& sBusID, _float fVolume)
+{
+	FMOD_CHANNELGROUP* pBus = GetBus(sBusID);
 	return pBus != nullptr && FMOD_ChannelGroup_SetVolume(pBus, std::max(0.f, fVolume)) == FMOD_OK;
 }
 
-_bool CSoundManager::SetBusMuted(SOUND_BUS eBus, _bool bMuted)
+_bool CSoundManager::SetBusMuted(const SOUND_BUS_ID& sBusID, _bool bMuted)
 {
-	FMOD_CHANNELGROUP* pBus = GetBus(eBus);
+	FMOD_CHANNELGROUP* pBus = GetBus(sBusID);
 	return pBus != nullptr && FMOD_ChannelGroup_SetMute(pBus, bMuted) == FMOD_OK;
 }
 
-_bool CSoundManager::SetBusPaused(SOUND_BUS eBus, _bool bPaused)
+_bool CSoundManager::SetBusPaused(const SOUND_BUS_ID& sBusID, _bool bPaused)
 {
-	FMOD_CHANNELGROUP* pBus = GetBus(eBus);
+	FMOD_CHANNELGROUP* pBus = GetBus(sBusID);
 	return pBus != nullptr && FMOD_ChannelGroup_SetPaused(pBus, bPaused) == FMOD_OK;
 }
 
-_bool CSoundManager::StopBus(SOUND_BUS eBus)
+_bool CSoundManager::StopBus(const SOUND_BUS_ID& sBusID)
 {
-	FMOD_CHANNELGROUP* pBus = GetBus(eBus);
+	FMOD_CHANNELGROUP* pBus = GetBus(sBusID);
 	return pBus != nullptr && FMOD_ChannelGroup_Stop(pBus) == FMOD_OK;
 }
 
@@ -550,10 +599,10 @@ SOUND_ID CSoundManager::GenerateSoundID()
 	}
 }
 
-FMOD_CHANNELGROUP* CSoundManager::GetBus(SOUND_BUS eBus) const
+FMOD_CHANNELGROUP* CSoundManager::GetBus(const SOUND_BUS_ID& sBusID) const
 {
-	const size_t iIndex = static_cast<size_t>(eBus);
-	return iIndex < m_pBuses.size() ? m_pBuses[iIndex] : nullptr;
+	const auto iter = m_SoundBuses.find(sBusID);
+	return iter != m_SoundBuses.end() ? iter->second : nullptr;
 }
 
 _bool CSoundManager::StopSoundsByPath(const _string& sNormalizedPath)
@@ -567,6 +616,27 @@ _bool CSoundManager::StopSoundsByPath(const _string& sNormalizedPath)
 			: _string{};
 
 		if (sSoundPath != sNormalizedPath)
+		{
+			++iter;
+			continue;
+		}
+
+		if (iter->second.pChannel != nullptr)
+			FMOD_Channel_Stop(iter->second.pChannel);
+
+		iter = m_mapPlayingSounds.erase(iter);
+		bStopped = true;
+	}
+
+	return bStopped;
+}
+
+_bool CSoundManager::StopSoundsByBus(const SOUND_BUS_ID& sBusID)
+{
+	_bool bStopped{};
+	for (auto iter = m_mapPlayingSounds.begin(); iter != m_mapPlayingSounds.end();)
+	{
+		if (iter->second.sBusID != sBusID)
 		{
 			++iter;
 			continue;
@@ -664,15 +734,15 @@ void CSoundManager::Free()
 {
 	if (m_pSystem != nullptr)
 	{
-		if (FMOD_CHANNELGROUP* pMasterBus = GetBus(SOUND_BUS::MASTER))
+		if (FMOD_CHANNELGROUP* pMasterBus = GetBus(SOUND_MASTER_BUS_ID))
 			FMOD_ChannelGroup_Stop(pMasterBus);
 
 		m_mapPlayingSounds.clear();
 
-		for (size_t i = static_cast<size_t>(SOUND_BUS::BGM); i < static_cast<size_t>(SOUND_BUS::END); ++i)
+		for (const auto& [sBusID, pBus] : m_SoundBuses)
 		{
-			if (m_pBuses[i] != nullptr)
-				FMOD_ChannelGroup_Release(m_pBuses[i]);
+			if (sBusID != SOUND_MASTER_BUS_ID && pBus != nullptr)
+				FMOD_ChannelGroup_Release(pBus);
 		}
 
 		FMOD_System_SetUserData(m_pSystem, nullptr);
@@ -682,7 +752,7 @@ void CSoundManager::Free()
 	}
 
 	m_mapPlayingSounds.clear();
-	m_pBuses.fill(nullptr);
+	m_SoundBuses.clear();
 
 	{
 		std::lock_guard lock{ m_CompletedSoundMutex };

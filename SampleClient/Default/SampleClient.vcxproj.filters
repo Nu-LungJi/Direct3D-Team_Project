@@ -172,6 +172,9 @@
     <Filter Include="GameObject\LightObject\LightTerrain">
       <UniqueIdentifier>{8c6ec420-6258-4dd1-afce-8e979f1663f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Sound">
+      <UniqueIdentifier>{44cbdb1a-08b4-4740-a320-b6ae20004504}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -405,6 +408,9 @@
     <ClInclude Include="..\Public\LightTerrain.h">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Test3DSound.h">
+      <Filter>GameObject\Sound</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -602,6 +608,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\LightTerrain.cpp">
       <Filter>GameObject\LightObject\LightTerrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Test3DSound.cpp">
+      <Filter>GameObject\Sound</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
