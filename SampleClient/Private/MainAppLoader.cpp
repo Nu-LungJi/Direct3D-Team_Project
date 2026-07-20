@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
@@ -76,6 +76,28 @@ HRESULT CMainAppLoader::Load()
 		}
 
 		GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
+	}
+
+
+	{
+		const _string sSoundPath = "./Resources/SampleClient/Sound/Verses_1_4_of_the_National_Anthem.mp3";
+		if (!CGameInstance::Get().SoundPreload(sSoundPath))
+			return E_FAIL;
+
+		const E::SOUND_PLAY_DESC playDesc{
+			.eBus = E::SOUND_BUS::VOICE,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = true
+		};
+
+		const SOUND_ID iSoundID = E::CGameInstance::Get().SoundPlay2D(
+			sSoundPath,
+			playDesc);
+		if (iSoundID == INVALID_SOUND_ID)
+			return E_FAIL;
+
 	}
 	return S_OK;
 }

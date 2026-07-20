@@ -291,8 +291,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	// 사운드 붙일때 부활
-	// m_pSoundManager->UpdateGUI();
+	 m_pSoundManager->UpdateGUI();
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
@@ -339,8 +338,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		}
 	}
 
-	// 사운드 붙일때 부활
-	if constexpr (false)
+	// FMOD update and completed voice cleanup.
 	{
 		ZoneScopedN("SoundManager_Update");
 		m_pSoundManager->Update();
@@ -431,7 +429,6 @@ void CGameInstance::Release_Engine()
 {
 
 	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
-	m_pSoundManager.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
 	m_pNodeEditor.reset();
@@ -461,6 +458,7 @@ void CGameInstance::Release_Engine()
 
 	if(m_pResourceManager) m_pResourceManager->Release();
 	m_pResourceManager.reset();
+	m_pSoundManager.reset();
 
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
@@ -756,49 +754,106 @@ void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 
 
 #pragma region SOUND_MANAGER
-HRESULT CGameInstance::CreateSound(const _string& sPath, FMOD_SOUND** ppSound)
+HRESULT CGameInstance::CreateSound(const _string& sPath, FMOD_SOUND** ppSound, SOUND_LOAD_TYPE eLoadType)
 {
-	return m_pSoundManager->CreateSound(sPath, ppSound);
+	return m_pSoundManager->CreateSound(sPath, ppSound, eLoadType);
 }
 
-HRESULT CGameInstance::SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources)
+_bool CGameInstance::SoundPreload(const _string& sPath, SOUND_LOAD_TYPE eLoadType)
 {
-	return m_pSoundManager->AddChannel(channelTag, soundResources);
+	return m_pSoundManager->Preload(sPath, eLoadType);
 }
 
-HRESULT CGameInstance::SoundPlay(const StringID& channelTag, _float fVolume, _float fPitch)
+_bool CGameInstance::SoundRemoveResourceByPath(const _string& sPath)
 {
-	return m_pSoundManager->Play(channelTag, fVolume, fPitch);
+	return m_pSoundManager->RemoveResourceByPath(sPath);
 }
 
-void CGameInstance::SoundStop(const StringID& channelTag)
+void CGameInstance::SoundClearAllResources()
 {
-	m_pSoundManager->Stop(channelTag);
+	m_pSoundManager->ClearResources();
 }
 
-void CGameInstance::SoundPause(const StringID& channelTag, _bool bPause)
+SOUND_ID CGameInstance::SoundPlay2D(const _string& sPath, const SOUND_PLAY_DESC& tDesc,
+	SOUND_LOAD_TYPE eLoadType)
 {
-	m_pSoundManager->Pause(channelTag, bPause);
+	return m_pSoundManager->Play2D(sPath, tDesc, eLoadType);
 }
 
-_bool CGameInstance::SoundGetVolume(const StringID& channelTag, _float& fVolume)
+SOUND_ID CGameInstance::SoundPlay3D(const _string& sPath, const SOUND_3D_DESC& t3DDesc,
+	const SOUND_PLAY_DESC& tPlayDesc, SOUND_LOAD_TYPE eLoadType)
 {
-	return m_pSoundManager->GetVolume(channelTag, fVolume);
+	return m_pSoundManager->Play3D(sPath, t3DDesc, tPlayDesc, eLoadType);
 }
 
-_bool CGameInstance::SoundSetVolume(const StringID& channelTag, _float fVolume)
+_bool CGameInstance::SoundStop(SOUND_ID iSoundID)
 {
-	return m_pSoundManager->SetVolume(channelTag, fVolume);
+	return m_pSoundManager->Stop(iSoundID);
 }
 
-_bool CGameInstance::SoundIsPlaying(const StringID& channelTag) const
+_bool CGameInstance::SoundSetPaused(SOUND_ID iSoundID, _bool bPaused)
 {
-	return m_pSoundManager->IsPlaying(channelTag);
+	return m_pSoundManager->SetPaused(iSoundID, bPaused);
 }
 
-void CGameInstance::SoundSetPitch(const StringID& channelTag, float fPitchRatio)
+_bool CGameInstance::SoundSetVolume(SOUND_ID iSoundID, _float fVolume)
 {
-	m_pSoundManager->SetPitch(channelTag, fPitchRatio);
+	return m_pSoundManager->SetVolume(iSoundID, fVolume);
+}
+
+_bool CGameInstance::SoundSetPitch(SOUND_ID iSoundID, _float fPitch)
+{
+	return m_pSoundManager->SetPitch(iSoundID, fPitch);
+}
+
+_bool CGameInstance::SoundSet3DAttributes(SOUND_ID iSoundID, const _float3& vPosition, const _float3& vVelocity)
+{
+	return m_pSoundManager->Set3DAttributes(iSoundID, vPosition, vVelocity);
+}
+
+_bool CGameInstance::SoundSet3DMinMaxDistance(SOUND_ID iSoundID, _float fMinDistance, _float fMaxDistance)
+{
+	return m_pSoundManager->Set3DMinMaxDistance(iSoundID, fMinDistance, fMaxDistance);
+}
+
+_bool CGameInstance::SoundIsPlaying(SOUND_ID iSoundID) const
+{
+	return m_pSoundManager->IsPlaying(iSoundID);
+}
+
+_bool CGameInstance::SoundIsPaused(SOUND_ID iSoundID) const
+{
+	return m_pSoundManager->IsPaused(iSoundID);
+}
+
+_bool CGameInstance::SoundIsValid(SOUND_ID iSoundID) const
+{
+	return m_pSoundManager->IsValidSound(iSoundID);
+}
+
+_bool CGameInstance::SoundSetListenerAttributes(uint32_t iListenerIndex, const SOUND_LISTENER_DESC& tDesc)
+{
+	return m_pSoundManager->SetListenerAttributes(iListenerIndex, tDesc);
+}
+
+_bool CGameInstance::SoundSetBusVolume(SOUND_BUS eBus, _float fVolume)
+{
+	return m_pSoundManager->SetBusVolume(eBus, fVolume);
+}
+
+_bool CGameInstance::SoundSetBusMuted(SOUND_BUS eBus, _bool bMuted)
+{
+	return m_pSoundManager->SetBusMuted(eBus, bMuted);
+}
+
+_bool CGameInstance::SoundSetBusPaused(SOUND_BUS eBus, _bool bPaused)
+{
+	return m_pSoundManager->SetBusPaused(eBus, bPaused);
+}
+
+_bool CGameInstance::SoundStopBus(SOUND_BUS eBus)
+{
+	return m_pSoundManager->StopBus(eBus);
 }
 
 #pragma endregion
