@@ -27,6 +27,20 @@ class CPlayer_StateMachine;
 class CPlayer final : public CAnimationObject
 {
 public:
+	enum class LOCOMOTION_MODE : uint32_t
+	{
+		FREE,
+		HOVER,
+	};
+
+	enum class LOCOMOTION_GAIT : uint32_t
+	{
+		IDLE,
+		WALK,
+		JOG,
+		SPRINT,
+	};
+
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
 
 public:
@@ -81,6 +95,14 @@ public:
 
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComCharacterMoveIntent* GetMoveIntent() const { return m_pMoveIntent; }
+	CComCharacterMotor* GetCharacterMotor() const { return m_pCharacterMotor; }
+	LOCOMOTION_MODE GetLocomotionMode() const { return m_eLocomotionMode; }
+	LOCOMOTION_GAIT GetDesiredGait() const { return m_eDesiredGait; }
+	_bool HasMoveInput() const { return m_bMoveInput; }
+	const _float3& GetDesiredMoveDirection() const { return m_vDesiredMoveDirection; }
+	const _float3& GetCameraFacingDirection() const { return m_vCameraFacingDirection; }
+	void SetLocomotionAngleDebug(_float fForward, _float fRight, _float fAngle, _float fSpeed, _string_view sDirection);
+	void ClearLocomotionAngleDebug();
 
 private:
 	CComModelInstance* m_pComModelInstance{};
@@ -116,6 +138,29 @@ private:
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
 	CPlayer_StateMachine* m_pStateMachine{};
+
+	_bool m_bHasLocomotionAngleDebug = false;
+	_float m_fLocomotionForward = 0.f;
+	_float m_fLocomotionRight = 0.f;
+	_float m_fLocomotionAngle = 0.f;
+	_float m_fLocomotionSpeed = 0.f;
+	_string m_sLocomotionDirection;
+
+private:
+	_float m_fCurrentMoveSpeed = 0.f;
+	_float m_fWalkSpeed = 2.f;
+	_float m_fJogSpeed = 5.f;
+	_float m_fSprintSpeed = 8.5f;
+	_float m_fAcceleration = 2.f;
+	_float m_fDeceleration = 18.f;
+	_float3 m_vLastMoveDirection{};
+	_float3 m_vDesiredMoveDirection{};
+	_float3 m_vCameraFacingDirection{ 0.f, 0.f, 1.f };
+	_bool m_bMoveInput = false;
+	LOCOMOTION_MODE m_eLocomotionMode = LOCOMOTION_MODE::FREE;
+	LOCOMOTION_GAIT m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
+
+
 
 public:
 	static E::UPtr<CPlayer> Create();

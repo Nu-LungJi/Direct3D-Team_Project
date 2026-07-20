@@ -32,7 +32,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_Player",
-				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Test/SK_Test.bin")))
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin")))
 			{
 				E::CResModel::DESC pDesc{};
 				pDesc.PreTransformMatrix =

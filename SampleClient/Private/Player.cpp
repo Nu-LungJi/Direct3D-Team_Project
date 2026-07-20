@@ -37,8 +37,46 @@ CPlayer::~CPlayer()
 
 void CPlayer::UpdateGUI()
 {
-	CAnimationObject::UpdateGUI();
+	CGameObject::UpdateGUI();
 
+	if (ImGui::CollapsingHeader("Locomotion Angle Debug", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Text("Mode        : %s",
+			m_eLocomotionMode == LOCOMOTION_MODE::HOVER ? "HOVER" : "FREE");
+		static constexpr const char* sGaitNames[] = { "IDLE", "WALK", "JOG", "SPRINT" };
+		ImGui::Text("Desired gait: %s", sGaitNames[ETOUI(m_eDesiredGait)]);
+		if (!m_bHasLocomotionAngleDebug)
+		{
+			ImGui::TextDisabled("No movement input");
+		}
+		else
+		{
+			ImGui::Text("Current speed: %.2f / Target speed: %.2f", m_fCurrentMoveSpeed, m_fJogSpeed);
+			ImGui::Text("Acceleration : %.2f / Deceleration: %.2f", m_fAcceleration, m_fDeceleration);
+			ImGui::Separator();
+			ImGui::Text("Forward dot : %.3f", m_fLocomotionForward);
+			ImGui::Text("Right dot   : %.3f", m_fLocomotionRight);
+			ImGui::Separator();
+			ImGui::Text("Speed       : %.2f", m_fLocomotionSpeed);
+			ImGui::Text("Angle (deg) : %.2f", m_fLocomotionAngle);
+			ImGui::Text("Direction   : %s", m_sLocomotionDirection.c_str());
+		}
+	}
+}
+
+void CPlayer::SetLocomotionAngleDebug(_float fForward, _float fRight, _float fAngle, _float fSpeed, _string_view sDirection)
+{
+	m_bHasLocomotionAngleDebug = true;
+	m_fLocomotionForward = fForward;
+	m_fLocomotionRight = fRight;
+	m_fLocomotionAngle = fAngle;
+	m_fLocomotionSpeed = fSpeed;
+	m_sLocomotionDirection = sDirection;
+}
+
+void CPlayer::ClearLocomotionAngleDebug()
+{
+	m_bHasLocomotionAngleDebug = false;
 }
 
 HRESULT CPlayer::InitializePrototype(void* pArg)
@@ -118,7 +156,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 		};
 
 
-		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
 
@@ -141,7 +178,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
 			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComLocomotion", &Desc, &m_pMoveIntent)))
+			"ComMoveIntent", &Desc, &m_pMoveIntent)))
 		{
 			return E_FAIL;
 		}
@@ -213,38 +250,130 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	auto* pCamera = CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA");
 	if (!pCamera)
 	{
+		m_bMoveInput = false;
+		m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
 		m_pMoveIntent->ClearMoveIntent();
+		m_pMoveIntent->ClearFacingIntent();
 		
 		return;
 	}
 
-	_float fForward{};
-	_float fRight{};
+	_float fInputForward{};
+	_float fInputRight{};
 	if (CGameInstance::Get().KeyPressing(DIK_W))
-		fForward += 1.f;
+		fInputForward += 1.f;
 	if (CGameInstance::Get().KeyPressing(DIK_S))
-		fForward -= 1.f;
+		fInputForward -= 1.f;
 	if (CGameInstance::Get().KeyPressing(DIK_D))
-		fRight += 1.f;
+		fInputRight += 1.f;
 	if (CGameInstance::Get().KeyPressing(DIK_A))
-		fRight -= 1.f;
+		fInputRight -= 1.f;
 
+	// Hogwarts Legacy 방식: 입력의 월드 방향은 카메라 수평축으로 만든다.
+	// FREE에서는 Player가 이 이동 방향을 향하고, HOVER에서는 카메라를 향한 채
+	// 이 방향으로 스트레이프한다.
 	_float3 vForward{};
 	_float3 vRight{};
 	XMStoreFloat3(&vForward, pCamera->GetTransform().GetState(STATE::LOOK));
 	XMStoreFloat3(&vRight, pCamera->GetTransform().GetState(STATE::RIGHT));
 	vForward.y = 0.f;
 	vRight.y = 0.f;
+	const _float fForwardLength = std::sqrt(vForward.x * vForward.x + vForward.z * vForward.z);
+	const _float fRightLength = std::sqrt(vRight.x * vRight.x + vRight.z * vRight.z);
+	if (fForwardLength > std::numeric_limits<_float>::epsilon())
+	{
+		vForward.x /= fForwardLength;
+		vForward.z /= fForwardLength;
+	}
+	if (fRightLength > std::numeric_limits<_float>::epsilon())
+	{
+		vRight.x /= fRightLength;
+		vRight.z /= fRightLength;
+	}
+
+	m_vCameraFacingDirection = vForward;
+	const _float fCameraLookLength = std::sqrt(
+		m_vCameraFacingDirection.x * m_vCameraFacingDirection.x +
+		m_vCameraFacingDirection.z * m_vCameraFacingDirection.z);
+	if (fCameraLookLength > std::numeric_limits<_float>::epsilon())
+	{
+		m_vCameraFacingDirection.x /= fCameraLookLength;
+		m_vCameraFacingDirection.z /= fCameraLookLength;
+	}
 
 	const _float3 vMoveDirection{
-		vForward.x * fForward + vRight.x * fRight,
+		vForward.x * fInputForward + vRight.x * fInputRight,
 		0.f,
-		vForward.z * fForward + vRight.z * fRight };
+		vForward.z * fInputForward + vRight.z * fInputRight };
 
-	if (vMoveDirection.x != 0.f || vMoveDirection.z != 0.f)
-		m_pMoveIntent->SetMoveIntent(vMoveDirection, 5.f);
+
+
+	const _float fMoveLength = std::sqrt(
+		vMoveDirection.x * vMoveDirection.x + vMoveDirection.z * vMoveDirection.z);
+	m_bMoveInput = fMoveLength > std::numeric_limits<_float>::epsilon();
+	if (m_bMoveInput)
+	{
+		m_vDesiredMoveDirection = {
+			vMoveDirection.x / fMoveLength,
+			0.f,
+			vMoveDirection.z / fMoveLength };
+	}
+
+	m_eLocomotionMode = CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB)
+		? LOCOMOTION_MODE::HOVER
+		: LOCOMOTION_MODE::FREE;
+
+	m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
+	if (m_bMoveInput)
+	{
+		if (CGameInstance::Get().KeyPressing(DIK_LCONTROL))
+		{
+			m_eDesiredGait = LOCOMOTION_GAIT::WALK;
+		}
+		else
+		{
+			const _bool bForwardSprint = fInputForward > 0.5f && std::abs(fInputRight) < 0.5f;
+			m_eDesiredGait = CGameInstance::Get().KeyPressing(DIK_LSHIFT) && bForwardSprint
+				? LOCOMOTION_GAIT::SPRINT
+				: LOCOMOTION_GAIT::JOG;
+		}
+	}
+
+	_float fTargetSpeed = 0.f;
+	switch (m_eDesiredGait)
+	{
+	case LOCOMOTION_GAIT::WALK:   fTargetSpeed = m_fWalkSpeed; break;
+	case LOCOMOTION_GAIT::JOG:    fTargetSpeed = m_fJogSpeed; break;
+	case LOCOMOTION_GAIT::SPRINT: fTargetSpeed = m_fSprintSpeed; break;
+	default: break;
+	}
+	const _float fRate = m_bMoveInput ? m_fAcceleration : m_fDeceleration;
+
+	m_fCurrentMoveSpeed = std::lerp(m_fCurrentMoveSpeed,fTargetSpeed,std::min(1.f, fRate * fTimeDelta));
+
+	if (m_bMoveInput)
+		m_vLastMoveDirection = m_vDesiredMoveDirection;
+
+	if (m_fCurrentMoveSpeed > 0.01f)
+		m_pMoveIntent->SetMoveIntent(m_vLastMoveDirection, m_fCurrentMoveSpeed);
 	else
+	{
+		m_fCurrentMoveSpeed = 0.f;
 		m_pMoveIntent->ClearMoveIntent();
+	}
+
+	if (m_eLocomotionMode == LOCOMOTION_MODE::HOVER)
+	{
+		m_pMoveIntent->SetFacingIntent(m_vCameraFacingDirection, 360.f);
+	}
+	else if (m_bMoveInput)
+	{
+		m_pMoveIntent->SetFacingIntent(m_vDesiredMoveDirection, 540.f);
+	}
+	else
+	{
+		m_pMoveIntent->ClearFacingIntent();
+	}
 
 	if (CGameInstance::Get().KeyDown(DIK_SPACE))
 		m_pMoveIntent->RequestJump();
@@ -272,6 +401,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	}
 
+	UpdateGUI();
 }
 
 int32_t CPlayer::FindAnimationIndex(_string_view sAnimationName) const
@@ -283,7 +413,7 @@ int32_t CPlayer::FindAnimationIndex(_string_view sAnimationName) const
 	for (uint32_t i = 0; i < animations.size(); ++i)
 	{
 		if (animations[i] && animations[i]->GetAnimName() == sAnimationName)
-			return static_cast<int32_t>(i);
+			return (int32_t)(i);
 	}
 
 	return -1;
@@ -302,23 +432,26 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pCamera->UpdateFollow();
 	}
 
-	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
-	{
-		const auto vPreviousColor = pDbgLineRender->GetColor();
-		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
-		const _float3 vPosition = GetTransform().GetPosition();
+	if (false) {
+		if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
+		{
+			const auto vPreviousColor = pDbgLineRender->GetColor();
+			const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+			const _float3 vPosition = GetTransform().GetPosition();
 
-		pDbgLineRender->SetColor({ 0.2f, 0.7f, 1.f, 1.f });
-		pDbgLineRender->SetDepthTest(true);
-		pDbgLineRender->AddCapsule(
-			0.5f,
-			1.f,
-			XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+			pDbgLineRender->SetColor({ 0.2f, 0.7f, 1.f, 1.f });
+			pDbgLineRender->SetDepthTest(true);
+			pDbgLineRender->AddCapsule(
+				0.5f,
+				1.f,
+				XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
 
-		pDbgLineRender->SetColor(vPreviousColor);
-		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+			pDbgLineRender->SetColor(vPreviousColor);
+			pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+		}
+
 	}
-
+		
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)

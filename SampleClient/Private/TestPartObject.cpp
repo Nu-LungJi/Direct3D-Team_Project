@@ -150,8 +150,8 @@ void CTestPartObject::LateUpdate(E::_float fTimeDelta)
 
 	XMStoreFloat4x4(&socketWorldFloat, socketWorld);
 
-	//CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-	//CGameInstance::Get().GetDbgLineRender()->AddBox({ 0.001f , 0.001f , 0.001f }, XMLoadFloat4x4(&socketWorldFloat));
+	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+	CGameInstance::Get().GetDbgLineRender()->AddBox({ 0.001f , 0.001f , 0.001f }, XMLoadFloat4x4(&socketWorldFloat));
 
 	E::GPU_PART_INSTANCE_DATA instanceData{};
 	if (SUCCEEDED(BuildPartInstanceData(instanceData)))CGameInstance::Get().Add_Part_Instance(m_pComModelInstance, instanceData);
