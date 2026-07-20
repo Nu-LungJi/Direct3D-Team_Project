@@ -11,7 +11,8 @@ cbuffer CB_PER_PARTICLE : register(b5)
     uint g_iFlipbookRows;
     uint g_iFlipbookColumns;
     uint g_iTotalFrames;
-    float3 g_fPadding;
+    float g_fTime;
+    float2 g_fPadding;
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
@@ -24,8 +25,9 @@ Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
 
 //버텍스 쉐이더용 
-Texture2D hdrPoisitonMap : register(t1);
-Texture2D hdrNormalMap : register(t2);
+
+Texture2D hdrPoisitonMap : register(t10);
+Texture2D hdrNormalMap : register(t11);
 
 
 struct VS_IN
@@ -111,7 +113,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID, uint vertID : SV_VertexID)
     float v1 = (row1 + 0.5f) / vatHeight;
 
     float3 pos0 = hdrPoisitonMap.SampleLevel(PointClamp, float2(u, v0), 0).xyz;
-    float3 pos1 = hdrPoisitonMap.SampleLevel(PointClamp, float2(u, v1), 0).xyz;
+    float3 pos1 = hdrPoisitonMap.SampleLevel(PointClamp, float2(u, v1), 0).xyz; 
     float3 posOffset = lerp(pos0, pos1, blend);
     float3 vLocalPos = In.vPosition + posOffset;
 

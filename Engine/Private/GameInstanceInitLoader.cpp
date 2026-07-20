@@ -651,6 +651,7 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 			}))) {
 			return E_FAIL;
 		}
+		CGameInstance::Get().GetGraphicDeviceContext()->VSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(0, 1, res->GetSamplerState().GetAddressOf());
 

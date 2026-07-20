@@ -7,7 +7,8 @@ cbuffer CB_PER_PARTICLE : register(b5)
     uint g_iFlipbookRows;
     uint g_iFlipbookColumns;
     uint g_iTotalFrames;
-    float3 g_fPadding;
+    float g_fTime;
+    float2 g_fPadding;
 };
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t0);

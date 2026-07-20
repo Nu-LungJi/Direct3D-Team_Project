@@ -390,6 +390,7 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
 
+	m_fTime += fTimeDelta;
     auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 
 
@@ -455,6 +456,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
 	cb.g_iFlipbookColumns = m_Desc.TexColumns;
 	cb.g_iFlipbookRows = m_Desc.TexRows;
 	cb.g_iTotalFrames = m_Desc.TexRows * m_Desc.TexColumns;
+	cb.g_fTime = m_fTime;
 
 
 
@@ -485,7 +487,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
 	ProcessPendingSpawns(fTimeDelta);
-
+	
     DebugPrintDeadListCount();
 }
 
@@ -536,18 +538,19 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
 	if (m_pHdrPositionTexture) {
 		ID3D11ShaderResourceView* pHdrSRV = m_pHdrPositionTexture->GetSRV().Get();
-		pContext->VSSetShaderResources(1, 1, &pHdrSRV);
+		pContext->VSSetShaderResources(10, 1, &pHdrSRV);
 	}
 
 	if (m_pHdrNormalTexture) {
 		ID3D11ShaderResourceView* pHdrSRV = m_pHdrNormalTexture->GetSRV().Get();
-		pContext->VSSetShaderResources(2, 1, &pHdrSRV);
+		pContext->VSSetShaderResources(11, 1, &pHdrSRV);
 	}
 
 	if (m_pNoiseTexture)
 	{
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(5, 1, &pNoiseSRV);
+		pContext->VSSetShaderResources(5, 1, &pNoiseSRV);
 	}
 
 
@@ -599,8 +602,8 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->PSSetShaderResources(2, 1, pSRVs);
 	pContext->PSSetShaderResources(3, 1, pSRVs);
 	pContext->PSSetShaderResources(5, 1, pSRVs);
-	pContext->VSSetShaderResources(1, 1, pSRVs);
-	pContext->VSSetShaderResources(2, 1, pSRVs);
+	pContext->VSSetShaderResources(10, 1, pSRVs);
+	pContext->VSSetShaderResources(11, 1, pSRVs);
 	ID3D11Buffer* nullCB[] = { nullptr };
 
 	pContext->VSSetConstantBuffers(5, 1, nullCB);
@@ -608,6 +611,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	{
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		pContext->VSSetShaderResources(4, 1, nullSRV);
+		pContext->VSSetShaderResources(5, 1, nullSRV);
 	}
 	pContext->OMSetDepthStencilState(nullptr, 0);
 

@@ -95,7 +95,8 @@ namespace Engine
 		uint32_t g_iFlipbookRows;
 		uint32_t g_iFlipbookColumns;
 		uint32_t g_iTotalFrames;
-		_float3    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+		_float	g_fTime;
+		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
 
 	typedef struct CB_CIRCLE_TO_WAVE
