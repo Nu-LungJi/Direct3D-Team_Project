@@ -27,10 +27,13 @@ enum class SOUND_LOAD_TYPE : uint8_t
 
 enum class SOUND_3D_ROLLOFF : uint8_t
 {
+	// 반비례 감쇠: 거리가 멀어질수록 볼륨이 반비례로 줄어든다.(현실세계 모방)
 	INVERSE,
+	// 선형 감쇠 : 거리가 멀어질수록 볼륨이 선형적으로 줄어든다.
 	LINEAR
 };
 
+// 2D, 3D 공통적으로 받아야하는 사운드 DESC
 struct SOUND_PLAY_DESC
 {
 	SOUND_BUS_ID sBusID{ SOUND_MASTER_BUS_ID };
@@ -41,6 +44,8 @@ struct SOUND_PLAY_DESC
 	_bool bStartPaused{};
 };
 
+// 3D Attr을 달아주기위한 DESC
+// velocity는 도플러 효과를 위한건데 필요업으면 0 벡터
 struct SOUND_3D_DESC
 {
 	_float3 vPosition{};
@@ -50,6 +55,7 @@ struct SOUND_3D_DESC
 	SOUND_3D_ROLLOFF eRolloff{ SOUND_3D_ROLLOFF::INVERSE };
 };
 
+// 3D사운드 리스너 위치
 struct SOUND_LISTENER_DESC
 {
 	_float3 vPosition{};

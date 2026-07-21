@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include "Client_Defines.h"
 NS_BEGIN(Engine)
+class CComSound;
 NS_END
 
 NS_BEGIN(Client)
@@ -14,6 +15,7 @@ public:
 public:
 	typedef struct tagTerrainDesc : public CGameObject::GAMEOBJECT_DESC
 	{
+		std::string loopSoundPath{};
 	}DESC;
 
 private:
@@ -21,18 +23,16 @@ private:
 	~CTest3DSound() override;
 
 public:
+	void UpdateGUI() override;
 	HRESULT Initialize(void* pArg) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 
 private:
-	SOUND_ID m_soundID{ INVALID_SOUND_ID };
+	E::CComSound* m_pComSound{};
 
 public:
 	static E::UPtr<CTest3DSound> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
-
-private:
-	void Free() override;
 };
 
 NS_END

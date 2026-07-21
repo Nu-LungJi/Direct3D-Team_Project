@@ -490,6 +490,9 @@
     <Filter Include="FSM">
       <UniqueIdentifier>{c25ecb41-7bf1-46a9-a361-10286b324e9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\Sound">
+      <UniqueIdentifier>{1368aba0-d774-49be-a059-20bb842eeaf9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1063,6 +1066,9 @@
     <ClInclude Include="..\Public\StateMachine.h">
       <Filter>FSM</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ComSound.h">
+      <Filter>Component\Sound</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1581,6 +1587,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\StateMachine.cpp">
       <Filter>FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComSound.cpp">
+      <Filter>Component\Sound</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -243,6 +243,7 @@
     <ClInclude Include="..\public\ComPxCharacterController.h" />
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
     <ClInclude Include="..\Public\ComCharacterMotor.h" />
+    <ClInclude Include="..\Public\ComSound.h" />
     <ClInclude Include="..\Public\ComSocket.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
@@ -541,6 +542,7 @@
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />
     <ClCompile Include="..\Private\ComCharacterMotor.cpp" />
+    <ClCompile Include="..\Private\ComSound.cpp" />
     <ClCompile Include="..\Private\ComSocket.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />

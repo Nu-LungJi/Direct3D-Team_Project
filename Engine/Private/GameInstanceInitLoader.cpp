@@ -32,6 +32,7 @@
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "ComSound.h"
 
 #include "ComLuaScript.h"
 
@@ -370,6 +371,14 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		ES_EngineProtoMajorType::PERMANENT,
 		ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
 		CComCharacterMotor::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComSound,
+		CComSound::Create()))
 	{
 		return E_FAIL;
 	}

@@ -4,6 +4,7 @@
 #include "ComConstantBuffer.h"
 #include "Resources.h"
 #include "GameInstance.h"
+#include "ComSound.h"
 
 NS_USING(Client)
 
@@ -11,6 +12,8 @@ namespace
 {
 	constexpr E::_float SOUND_MIN_DISTANCE = 1.f;
 	constexpr E::_float SOUND_MAX_DISTANCE = 10.f;
+	const E::StringID SOUND_SLOT{ "LOOP" };
+	const E::StringID TEST_SLOT{ "TEST" };
 }
 
 CTest3DSound::CTest3DSound()
@@ -23,39 +26,103 @@ CTest3DSound::~CTest3DSound()
 }
 
 
-HRESULT CTest3DSound::Initialize(void* pArg)
+void CTest3DSound::UpdateGUI()
 {
-	if (FAILED(CGameObject::Initialize(pArg)))
-	{
-		return E_FAIL;
-	}
+	CGameObject::UpdateGUI();
 
+	if (ImGui::Button("Play"))
 	{
-		const _string sSoundPath = "./Resources/SampleClient/Sound/Verses_1_4_of_the_National_Anthem.mp3";
-		auto* pSoundManager = CGameInstance::Get().GetSoundManager();
-		if (pSoundManager == nullptr || !pSoundManager->Preload(sSoundPath))
-			return E_FAIL;
-
-		const E::_float3 vSoundPosition = GetTransform().GetPosition();
-		m_soundID = pSoundManager->Play3D(
-			sSoundPath,
-			E::SOUND_3D_DESC{
-				.vPosition = vSoundPosition,
-				.vVelocity = {},
+		auto id = m_pComSound->PlaySlot3D(
+			TEST_SLOT,
+			"./Resources/SampleClient/Sound/avada.wav",
+			SOUND_3D_DESC{
+				.vPosition = GetTransform().GetPosition(),
 				.fMinDistance = SOUND_MIN_DISTANCE,
-				.fMaxDistance = SOUND_MAX_DISTANCE,
-				.eRolloff = E::SOUND_3D_ROLLOFF::LINEAR
+				.fMaxDistance = 30.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
 			},
-			E::SOUND_PLAY_DESC{
+			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::VOICE,
 				.fVolume = 1.f,
 				.fPitch = 1.f,
 				.iPriority = 64,
-				.bLoop = true
+				.bLoop = false
 			});
-		if (m_soundID == INVALID_SOUND_ID)
-			return E_FAIL;
 
+		if (id == INVALID_SOUND_ID)
+		{
+			MSG_BOX("INVALID_SOUND_ID");
+		}
+	}
+
+	if (ImGui::Button("Play Overlap"))
+	{
+		auto id = m_pComSound->PlaySlot3D(
+			TEST_SLOT,
+			"./Resources/SampleClient/Sound/avada.wav",
+			SOUND_3D_DESC{
+				.vPosition = GetTransform().GetPosition(),
+				.fMinDistance = SOUND_MIN_DISTANCE,
+				.fMaxDistance = 30.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			}, SOUND_SLOT_PLAY_MODE::OVERLAP);
+
+		if (id == INVALID_SOUND_ID)
+		{
+			MSG_BOX("INVALID_SOUND_ID");
+		}
+	}
+}
+
+HRESULT CTest3DSound::Initialize(void* pArg)
+{
+	auto* pDesc = static_cast<CTest3DSound::DESC*>(pArg);
+	if (pDesc->loopSoundPath.empty())
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameObject::Initialize(pArg)))
+	{
+		return E_FAIL;
+	}
+	
+
+	CComSound::DESC tSoundDesc{};
+	if (FAILED(AddComponentFromProto(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComSound,
+		"Com_Sound",
+		&tSoundDesc,
+		&m_pComSound)))
+	{
+		return E_FAIL;
+	}
+
+	if (m_pComSound->PlaySlot3D(
+		SOUND_SLOT,
+		pDesc->loopSoundPath,
+		SOUND_3D_DESC{
+			.vPosition = GetTransform().GetPosition(),
+			.fMinDistance = SOUND_MIN_DISTANCE,
+			.fMaxDistance = SOUND_MAX_DISTANCE,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::VOICE,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = true
+		}) == INVALID_SOUND_ID)
+	{
+		return E_FAIL;
 	}
 
 	return S_OK;
@@ -65,15 +132,10 @@ void CTest3DSound::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 
-	auto& gameInstance = CGameInstance::Get();
-	auto* pSoundManager = gameInstance.GetSoundManager();
-	if (pSoundManager != nullptr)
-	{
-		const E::_float3 vSoundPosition = GetTransform().GetPosition();
+	m_pComSound->SetSlot3DAttributes(SOUND_SLOT, GetTransform().GetPosition());
+	m_pComSound->Update();
 
-		if (pSoundManager->IsValidSound(m_soundID))
-			pSoundManager->Set3DAttributes(m_soundID, vSoundPosition);
-	}
+	auto& gameInstance = CGameInstance::Get();
 
 	auto dmode = gameInstance.GetDbgLineRender()->GetDepthMode();
 	gameInstance.GetDbgLineRender()->SetDepthTest(true);
@@ -104,16 +166,4 @@ E::UPtr<E::CPrototype> CTest3DSound::Clone(void* pArg)
 	}
 
 	return pInstance;
-}
-
-void CTest3DSound::Free()
-{
-	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager();
-		pSoundManager != nullptr && m_soundID != INVALID_SOUND_ID)
-	{
-		pSoundManager->Stop(m_soundID);
-		m_soundID = INVALID_SOUND_ID;
-	}
-
-	CGameObject::Free();
 }

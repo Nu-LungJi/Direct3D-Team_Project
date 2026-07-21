@@ -19,7 +19,8 @@ namespace Engine
 		Prototype_Component_Animator,
 		Prototype_Component_ComLuaScript,
 		Prototype_Component_ComCharacterMoveIntent,
-		Prototype_Component_ComCharacterMotor
+		Prototype_Component_ComCharacterMotor,
+		Prototype_Component_ComSound
 	};
 
 	enum class ES_EngineProtoPhysXComponent

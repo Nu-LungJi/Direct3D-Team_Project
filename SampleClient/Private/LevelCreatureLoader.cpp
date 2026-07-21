@@ -199,6 +199,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 std::future<bool> CLevelCreatureLoader::UnLoad()
 {
 	LOG_MEMORY("start");
+	CGameInstance::Get().GetSoundManager()->ClearResources();
 
 	LOG_MEMORY("end");
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LEVEL_CREATURE", []()

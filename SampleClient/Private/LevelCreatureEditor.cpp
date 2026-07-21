@@ -56,7 +56,7 @@ HRESULT CLevelCreatureEditor::Initialize()
 	{
 		CTest3DSound::DESC Desc{};
 		Desc.sObjectTag = "SoundObject";
-
+		Desc.loopSoundPath = "./Resources/SampleClient/Sound/Verses_1_4_of_the_National_Anthem.mp3";
 		auto h = E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
 			"Prototype_GameObject_Test3DSound",
@@ -69,6 +69,25 @@ HRESULT CLevelCreatureEditor::Initialize()
 		if (auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CTest3DSound>(h.value()))
 		{
 			pObj->GetTransform().SetPosition(_float3{30.f, 5.f, 30.f});
+		}
+	}
+
+	{
+		CTest3DSound::DESC Desc{};
+		Desc.sObjectTag = "SoundObject";
+		Desc.loopSoundPath = "./Resources/SampleClient/Sound/PowerSong.mp3";
+		auto h = E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_Test3DSound",
+			"08_Sound",
+			&Desc);
+
+		if (!h)
+			return E_FAIL;
+
+		if (auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CTest3DSound>(h.value()))
+		{
+			pObj->GetTransform().SetPosition(_float3{ 40.f, 5.f, 40.f });
 		}
 	}
 
