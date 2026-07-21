@@ -183,6 +183,12 @@
     <ClInclude Include="..\Public\TerrainBrushController.h">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClInclude>
+	<ClInclude Include="..\Public\TerrainEditCommand.h">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClInclude>
+	<ClInclude Include="..\Public\ScatterObjectsCommand.h">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClInclude>
     <ClInclude Include="..\Public\TerrainGUI.h">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClInclude>
@@ -276,6 +282,12 @@
     <ClCompile Include="..\Private\TerrainBrushController.cpp">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClCompile>
+	<ClCompile Include="..\Private\TerrainEditCommand.cpp">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClCompile>
+	<ClCompile Include="..\Private\ScatterObjectsCommand.cpp">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClCompile>
     <ClCompile Include="..\Private\TerrainGUI.cpp">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClCompile>

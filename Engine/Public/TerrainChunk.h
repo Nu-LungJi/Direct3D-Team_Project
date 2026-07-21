@@ -26,6 +26,15 @@ struct TERRAIN_CHUNK_DESC
 	std::vector<uint32_t> indices{};
 };
 
+struct TERRAIN_MASK_DIRTY_RECT
+{
+	uint32_t left = 0;
+	uint32_t top = 0;
+	uint32_t right = 0;
+	uint32_t bottom = 0;
+	bool valid = false;
+};
+
 class ENGINE_DLL CTerrainChunk final : public CEngineBase
 {
 public:
@@ -46,12 +55,14 @@ public:
 	const std::vector<uint32_t>& GetIndices() const { return m_Indices; }
 	uint32_t GetMaskResolution() const { return m_iMaskResolution; }
 	ID3D11ShaderResourceView* GetBlendMaskSRV() const { return m_pBlendMaskSRV.Get(); }
+	const std::vector<uint8_t>& GetBlendMask() const { return m_BlendMask; }
 
 public:
 	HRESULT UpdateVertices(const std::vector<VTX_NORMAL_TEX>& vertices);
 	bool PaintBlendMask(const _float2& center, const _float2& radius,
-		uint32_t layer, _float opacity, _float falloff);
-	HRESULT UploadBlendMask();
+		uint32_t layer, _float opacity, _float falloff, TERRAIN_MASK_DIRTY_RECT& dirtyRect);
+	HRESULT UploadBlendMask(const TERRAIN_MASK_DIRTY_RECT* dirtyRect = nullptr);
+	HRESULT SetBlendMask(const std::vector<uint8_t>& mask);
 	void Bind(ID3D11DeviceContext* context) const;
 	void Draw(ID3D11DeviceContext* context) const;
 

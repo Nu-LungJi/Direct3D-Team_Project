@@ -4,6 +4,7 @@
 #include "ComConstantBuffer.h"
 #include "GameInstance.h"
 #include "Resources.h"
+#include <nlohmann/json.hpp>
 
 NS_USING(Engine)
 
@@ -86,21 +87,34 @@ HRESULT CTerrain::PaintTileLocal(const _float2& center, const _float2& radius,
 	uint32_t layer, _float opacity, _float falloff)
 {
 	if (layer >= 4 || radius.x <= 0.f || radius.y <= 0.f) return E_INVALIDARG;
+	const float chunkWorldSize = static_cast<float>(m_iChunkQuadCount) * m_fVertexSpacing;
+	const uint32_t chunkCountX = (m_iVertexCountX - 1) / m_iChunkQuadCount;
+	const uint32_t chunkCountZ = (m_iVertexCountZ - 1) / m_iChunkQuadCount;
+	const int32_t minChunkX = std::max(0, static_cast<int32_t>(std::floor((center.x - radius.x) / chunkWorldSize)));
+	const int32_t minChunkZ = std::max(0, static_cast<int32_t>(std::floor((center.y - radius.y) / chunkWorldSize)));
+	const int32_t maxChunkX = std::min(static_cast<int32_t>(chunkCountX) - 1,
+		static_cast<int32_t>(std::floor((center.x + radius.x) / chunkWorldSize)));
+	const int32_t maxChunkZ = std::min(static_cast<int32_t>(chunkCountZ) - 1,
+		static_cast<int32_t>(std::floor((center.y + radius.y) / chunkWorldSize)));
 	bool changed = false;
-	for (const auto& chunk : m_Chunks)
+	for (int32_t chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ)
 	{
-		const float startX = static_cast<float>(chunk->GetCoord().x * m_iChunkQuadCount) * m_fVertexSpacing;
-		const float startZ = static_cast<float>(chunk->GetCoord().z * m_iChunkQuadCount) * m_fVertexSpacing;
+		for (int32_t chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX)
+		{
+		auto* chunk = FindChunk(static_cast<uint32_t>(chunkX), static_cast<uint32_t>(chunkZ));
+		if (!chunk) continue;
+		const float startX = static_cast<float>(chunkX) * chunkWorldSize;
+		const float startZ = static_cast<float>(chunkZ) * chunkWorldSize;
 		const float sizeX = static_cast<float>(chunk->GetVertexCountX() - 1) * m_fVertexSpacing;
 		const float sizeZ = static_cast<float>(chunk->GetVertexCountZ() - 1) * m_fVertexSpacing;
-		if (center.x + radius.x < startX || center.x - radius.x > startX + sizeX ||
-			center.y + radius.y < startZ || center.y - radius.y > startZ + sizeZ) continue;
 		const _float2 uvCenter{ (center.x - startX) / sizeX, (center.y - startZ) / sizeZ };
 		const _float2 uvRadius{ radius.x / sizeX, radius.y / sizeZ };
-		if (chunk->PaintBlendMask(uvCenter, uvRadius, layer, opacity, falloff))
+		TERRAIN_MASK_DIRTY_RECT dirtyRect{};
+		if (chunk->PaintBlendMask(uvCenter, uvRadius, layer, opacity, falloff, dirtyRect))
 		{
-			if (FAILED(chunk->UploadBlendMask())) return E_FAIL;
+			if (FAILED(chunk->UploadBlendMask(&dirtyRect))) return E_FAIL;
 			changed = true;
+		}
 		}
 	}
 	return changed ? S_OK : S_FALSE;
@@ -124,6 +138,198 @@ HRESULT CTerrain::AddChunkNegativeX()
 HRESULT CTerrain::AddChunkNegativeZ()
 {
 	return PrependTerrain(false);
+}
+
+HRESULT CTerrain::SaveTerrain(const _string& metadataPath) const
+{
+	if (metadataPath.empty() || m_Vertices.empty()) return E_INVALIDARG;
+	try
+	{
+		const std::filesystem::path jsonPath = metadataPath;
+		const std::filesystem::path directory = jsonPath.has_parent_path()
+			? jsonPath.parent_path() : std::filesystem::current_path();
+		std::filesystem::create_directories(directory);
+		const std::filesystem::path heightPath = directory / (jsonPath.stem().string() + ".height");
+		std::ofstream heightFile(heightPath, std::ios::binary | std::ios::trunc);
+		if (!heightFile) return E_FAIL;
+		constexpr uint32_t magic = 0x54474854; // TGHT
+		constexpr uint32_t version = 1;
+		heightFile.write(reinterpret_cast<const char*>(&magic), sizeof(magic));
+		heightFile.write(reinterpret_cast<const char*>(&version), sizeof(version));
+		heightFile.write(reinterpret_cast<const char*>(&m_iVertexCountX), sizeof(m_iVertexCountX));
+		heightFile.write(reinterpret_cast<const char*>(&m_iVertexCountZ), sizeof(m_iVertexCountZ));
+		for (const auto& vertex : m_Vertices)
+			heightFile.write(reinterpret_cast<const char*>(&vertex.pos.y), sizeof(vertex.pos.y));
+		if (!heightFile) return E_FAIL;
+
+		nlohmann::ordered_json json{};
+		json["version"] = 1;
+		json["heightFile"] = heightPath.filename().generic_string();
+		json["vertexCountX"] = m_iVertexCountX;
+		json["vertexCountZ"] = m_iVertexCountZ;
+		json["chunkQuadCount"] = m_iChunkQuadCount;
+		json["vertexSpacing"] = m_fVertexSpacing;
+		json["maskResolution"] = m_iMaskResolution;
+		const auto& terrainTransform = GetTransform();
+		const auto& position = terrainTransform.GetPosition();
+		const auto& rotation = terrainTransform.GetQuaternion();
+		const auto& scale = terrainTransform.GetScale();
+		json["transform"] = {
+			{ "position", { position.x, position.y, position.z } },
+			{ "rotation", { rotation.x, rotation.y, rotation.z, rotation.w } },
+			{ "scale", { scale.x, scale.y, scale.z } } };
+		json["tileTextures"] = nlohmann::ordered_json::array();
+		for (const auto& texture : m_pTerrainTextures)
+			json["tileTextures"].push_back(texture ? texture->GetPath() : _string{});
+		json["blendMasks"] = nlohmann::ordered_json::array();
+		const std::filesystem::path maskDirectory = directory / (jsonPath.stem().string() + "_masks");
+		std::filesystem::create_directories(maskDirectory);
+		for (const auto& chunk : m_Chunks)
+		{
+			const auto& coord = chunk->GetCoord();
+			const std::string fileName = "Mask_" + std::to_string(coord.x) + "_" +
+				std::to_string(coord.z) + ".rgba";
+			std::ofstream maskFile(maskDirectory / fileName, std::ios::binary | std::ios::trunc);
+			if (!maskFile) return E_FAIL;
+			const auto& mask = chunk->GetBlendMask();
+			maskFile.write(reinterpret_cast<const char*>(mask.data()),
+				static_cast<std::streamsize>(mask.size()));
+			if (!maskFile) return E_FAIL;
+			json["blendMasks"].push_back({
+				{ "x", coord.x }, { "z", coord.z },
+				{ "file", (maskDirectory.filename() / fileName).generic_string() } });
+		}
+		std::ofstream jsonFile(jsonPath, std::ios::trunc);
+		if (!jsonFile) return E_FAIL;
+		jsonFile << json.dump(2);
+		return jsonFile ? S_OK : E_FAIL;
+	}
+	catch (...)
+	{
+		return E_FAIL;
+	}
+}
+
+HRESULT CTerrain::LoadTerrain(const _string& metadataPath)
+{
+	if (metadataPath.empty()) return E_INVALIDARG;
+	try
+	{
+		const std::filesystem::path jsonPath = metadataPath;
+		std::ifstream jsonFile(jsonPath);
+		if (!jsonFile) return E_FAIL;
+		nlohmann::ordered_json json{};
+		jsonFile >> json;
+		const uint32_t vertexCountX = json.at("vertexCountX").get<uint32_t>();
+		const uint32_t vertexCountZ = json.at("vertexCountZ").get<uint32_t>();
+		const uint32_t chunkQuadCount = json.at("chunkQuadCount").get<uint32_t>();
+		const uint32_t maskResolution = json.at("maskResolution").get<uint32_t>();
+		const float vertexSpacing = json.at("vertexSpacing").get<float>();
+		if (vertexCountX < 2 || vertexCountZ < 2 || chunkQuadCount == 0 ||
+			maskResolution < 2 || vertexSpacing <= 0.f ||
+			static_cast<uint64_t>(vertexCountX) * vertexCountZ > 100000000ull)
+			return E_FAIL;
+		const std::filesystem::path heightPath = jsonPath.parent_path() /
+			json.at("heightFile").get<std::string>();
+		std::ifstream heightFile(heightPath, std::ios::binary);
+		if (!heightFile) return E_FAIL;
+		uint32_t magic = 0, version = 0, storedX = 0, storedZ = 0;
+		heightFile.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+		heightFile.read(reinterpret_cast<char*>(&version), sizeof(version));
+		heightFile.read(reinterpret_cast<char*>(&storedX), sizeof(storedX));
+		heightFile.read(reinterpret_cast<char*>(&storedZ), sizeof(storedZ));
+		if (!heightFile || magic != 0x54474854 || version != 1 ||
+			storedX != vertexCountX || storedZ != vertexCountZ) return E_FAIL;
+
+		std::vector<float> heights(static_cast<size_t>(vertexCountX) * vertexCountZ);
+		heightFile.read(reinterpret_cast<char*>(heights.data()),
+			static_cast<std::streamsize>(heights.size() * sizeof(float)));
+		if (!heightFile) return E_FAIL;
+		m_iVertexCountX = vertexCountX;
+		m_iVertexCountZ = vertexCountZ;
+		m_fVertexSpacing = vertexSpacing;
+		m_Vertices.assign(heights.size(), {});
+		for (uint32_t z = 0; z < m_iVertexCountZ; ++z)
+		{
+			for (uint32_t x = 0; x < m_iVertexCountX; ++x)
+			{
+				auto& vertex = m_Vertices[static_cast<size_t>(z) * m_iVertexCountX + x];
+				vertex.pos = { static_cast<float>(x) * vertexSpacing,
+					heights[static_cast<size_t>(z) * m_iVertexCountX + x],
+					static_cast<float>(z) * vertexSpacing };
+				vertex.texCoord = { static_cast<float>(x) / (m_iVertexCountX - 1),
+					static_cast<float>(z) / (m_iVertexCountZ - 1) };
+			}
+		}
+		BuildGridIndices();
+		RecalculateNormals();
+		RecalculateBounds();
+		if (FAILED(BuildChunks(chunkQuadCount, vertexSpacing, maskResolution))) return E_FAIL;
+		if (json.contains("tileTextures") && json["tileTextures"].is_array())
+		{
+			for (size_t layer = 0; layer < std::min<size_t>(4, json["tileTextures"].size()); ++layer)
+			{
+				const auto path = json["tileTextures"][layer].get<_string>();
+				if (path.empty()) continue;
+				
+				auto texture = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(path,
+					[&path]() { return CResTexture2D::Create(path); });
+				if (!texture) return E_FAIL;
+
+				const auto state = texture->GetState();
+				if ((state == CResource::STATE::UNLOAD || state == CResource::STATE::LOADFAIL) &&
+					FAILED(texture->Load()))
+					return E_FAIL;
+
+				// An existing LOADING resource is owned by the async loader. Keep the same
+				// instance and never call Load() again, since it resets the current SRV.
+				m_pTerrainTextures[layer] = std::move(texture);
+			}
+		}
+		if (json.contains("blendMasks") && json["blendMasks"].is_array())
+		{
+			for (const auto& maskJson : json["blendMasks"])
+			{
+				const int64_t coordX = maskJson.at("x").get<int64_t>();
+				const int64_t coordZ = maskJson.at("z").get<int64_t>();
+				const std::filesystem::path maskPath = jsonPath.parent_path() /
+					maskJson.at("file").get<std::string>();
+				auto chunkIt = std::find_if(m_Chunks.begin(), m_Chunks.end(),
+					[&](const UPtr<CTerrainChunk>& chunk)
+					{
+						return chunk->GetCoord().x == coordX && chunk->GetCoord().z == coordZ;
+					});
+				if (chunkIt == m_Chunks.end()) continue;
+				std::ifstream maskFile(maskPath, std::ios::binary | std::ios::ate);
+				if (!maskFile) return E_FAIL;
+				const auto byteCount = maskFile.tellg();
+				if (byteCount != static_cast<std::streamoff>((*chunkIt)->GetBlendMask().size()))
+					return E_FAIL;
+				maskFile.seekg(0);
+				std::vector<uint8_t> mask(static_cast<size_t>(byteCount));
+				maskFile.read(reinterpret_cast<char*>(mask.data()), byteCount);
+				if (!maskFile || FAILED((*chunkIt)->SetBlendMask(mask))) return E_FAIL;
+			}
+		}
+		if (json.contains("transform"))
+		{
+			const auto& transformJson = json["transform"];
+			const auto& position = transformJson.at("position");
+			const auto& rotation = transformJson.at("rotation");
+			const auto& scale = transformJson.at("scale");
+			GetTransform().SetPosition(_float3{ position[0].get<float>(), position[1].get<float>(), position[2].get<float>() });
+			GetTransform().SetQuaternion(_float4{ rotation[0].get<float>(), rotation[1].get<float>(),
+				rotation[2].get<float>(), rotation[3].get<float>() });
+			GetTransform().SetScale(_float3{ scale[0].get<float>(), scale[1].get<float>(), scale[2].get<float>() });
+			GetTransform().Update();
+		}
+		UpdateChunkVisibility();
+		return S_OK;
+	}
+	catch (...)
+	{
+		return E_FAIL;
+	}
 }
 
 HRESULT CTerrain::PrependTerrain(bool negativeX)
@@ -201,6 +407,7 @@ HRESULT CTerrain::PrependTerrain(bool negativeX)
 			m_Chunks.push_back(std::move(chunk));
 		}
 	}
+	RebuildChunkLookup();
 	UpdateChunkVisibility();
 	return S_OK;
 }
@@ -267,6 +474,7 @@ HRESULT CTerrain::ExpandTerrain(bool positiveX)
 			m_Chunks.push_back(std::move(chunk));
 		}
 	}
+	RebuildChunkLookup();
 	UpdateChunkVisibility();
 	return S_OK;
 }
@@ -534,7 +742,28 @@ HRESULT CTerrain::BuildChunks(uint32_t chunkQuadCount, _float vertexSpacing, uin
 			m_Chunks.push_back(std::move(chunk));
 		}
 	}
+	RebuildChunkLookup();
 	return m_Chunks.empty() ? E_FAIL : S_OK;
+}
+
+void CTerrain::RebuildChunkLookup()
+{
+	m_ChunkLookup.clear();
+	m_ChunkLookup.reserve(m_Chunks.size());
+	for (const auto& chunk : m_Chunks)
+	{
+		const auto& coord = chunk->GetCoord();
+		const uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(coord.x)) << 32) |
+			static_cast<uint32_t>(coord.z);
+		m_ChunkLookup[key] = chunk.get();
+	}
+}
+
+CTerrainChunk* CTerrain::FindChunk(uint32_t chunkX, uint32_t chunkZ) const
+{
+	const uint64_t key = (static_cast<uint64_t>(chunkX) << 32) | chunkZ;
+	const auto it = m_ChunkLookup.find(key);
+	return it != m_ChunkLookup.end() ? it->second : nullptr;
 }
 
 UPtr<CTerrainChunk> CTerrain::CreateChunk(uint32_t chunkX, uint32_t chunkZ) const

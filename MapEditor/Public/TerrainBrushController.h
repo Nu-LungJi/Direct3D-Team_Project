@@ -11,7 +11,10 @@ NS_BEGIN(Client)
 enum class ETerrainBrushMode : uint8_t
 {
 	Raise,
-	Lower
+	Lower,
+	Flatten,
+	Smooth,
+	Noise
 };
 
 struct TERRAIN_BRUSH_SETTINGS
@@ -48,6 +51,7 @@ private:
 private:
 	TERRAIN_BRUSH_SETTINGS m_Settings{};
 	std::optional<E::_float3> m_PreviousHit{};
+	std::optional<float> m_FlattenTargetHeight{};
 };
 
 NS_END

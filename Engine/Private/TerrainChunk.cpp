@@ -88,15 +88,25 @@ HRESULT CTerrainChunk::Initialize(const TERRAIN_CHUNK_DESC& desc)
 }
 
 bool CTerrainChunk::PaintBlendMask(const _float2& center, const _float2& radius,
-	uint32_t layer, _float opacity, _float falloff)
+	uint32_t layer, _float opacity, _float falloff, TERRAIN_MASK_DIRTY_RECT& dirtyRect)
 {
+	dirtyRect = {};
 	if (layer >= 4 || radius.x <= 0.f || radius.y <= 0.f || opacity <= 0.f)
 		return false;
+	const int32_t startX = std::max(0, static_cast<int32_t>(std::floor(
+		(center.x - radius.x) * m_iMaskResolution)));
+	const int32_t startY = std::max(0, static_cast<int32_t>(std::floor(
+		(center.y - radius.y) * m_iMaskResolution)));
+	const int32_t endX = std::min(static_cast<int32_t>(m_iMaskResolution) - 1,
+		static_cast<int32_t>(std::ceil((center.x + radius.x) * m_iMaskResolution)));
+	const int32_t endY = std::min(static_cast<int32_t>(m_iMaskResolution) - 1,
+		static_cast<int32_t>(std::ceil((center.y + radius.y) * m_iMaskResolution)));
+	if (startX > endX || startY > endY) return false;
 	bool changed = false;
-	for (uint32_t y = 0; y < m_iMaskResolution; ++y)
+	for (int32_t y = startY; y <= endY; ++y)
 	{
 		const float v = (static_cast<float>(y) + 0.5f) / m_iMaskResolution;
-		for (uint32_t x = 0; x < m_iMaskResolution; ++x)
+		for (int32_t x = startX; x <= endX; ++x)
 		{
 			const float u = (static_cast<float>(x) + 0.5f) / m_iMaskResolution;
 			const float dx = (u - center.x) / radius.x;
@@ -115,17 +125,47 @@ bool CTerrainChunk::PaintBlendMask(const _float2& center, const _float2& radius,
 			for (uint32_t channel = 0; channel < 4; ++channel)
 				m_BlendMask[offset + channel] = static_cast<uint8_t>(std::clamp(weights[channel] * 255.f, 0.f, 255.f));
 			changed = true;
+			if (!dirtyRect.valid)
+			{
+				dirtyRect = { static_cast<uint32_t>(x), static_cast<uint32_t>(y),
+					static_cast<uint32_t>(x + 1), static_cast<uint32_t>(y + 1), true };
+			}
+			else
+			{
+				dirtyRect.left = std::min(dirtyRect.left, static_cast<uint32_t>(x));
+				dirtyRect.top = std::min(dirtyRect.top, static_cast<uint32_t>(y));
+				dirtyRect.right = std::max(dirtyRect.right, static_cast<uint32_t>(x + 1));
+				dirtyRect.bottom = std::max(dirtyRect.bottom, static_cast<uint32_t>(y + 1));
+			}
 		}
 	}
 	return changed;
 }
 
-HRESULT CTerrainChunk::UploadBlendMask()
+HRESULT CTerrainChunk::UploadBlendMask(const TERRAIN_MASK_DIRTY_RECT* dirtyRect)
 {
 	if (!m_pContext || !m_pBlendMaskTexture || m_BlendMask.empty()) return E_FAIL;
-	m_pContext->UpdateSubresource(m_pBlendMaskTexture.Get(), 0, nullptr,
-		m_BlendMask.data(), m_iMaskResolution * 4, 0);
+	if (dirtyRect && !dirtyRect->valid) return S_FALSE;
+	D3D11_BOX box{};
+	const D3D11_BOX* boxPtr = nullptr;
+	const uint8_t* source = m_BlendMask.data();
+	if (dirtyRect)
+	{
+		box = { dirtyRect->left, dirtyRect->top, 0,
+			dirtyRect->right, dirtyRect->bottom, 1 };
+		boxPtr = &box;
+		source += (static_cast<size_t>(dirtyRect->top) * m_iMaskResolution + dirtyRect->left) * 4;
+	}
+	m_pContext->UpdateSubresource(m_pBlendMaskTexture.Get(), 0, boxPtr,
+		source, m_iMaskResolution * 4, 0);
 	return S_OK;
+}
+
+HRESULT CTerrainChunk::SetBlendMask(const std::vector<uint8_t>& mask)
+{
+	if (mask.size() != m_BlendMask.size()) return E_INVALIDARG;
+	m_BlendMask = mask;
+	return UploadBlendMask();
 }
 
 HRESULT CTerrainChunk::UpdateVertices(const std::vector<VTX_NORMAL_TEX>& vertices)

@@ -121,11 +121,12 @@ std::future<bool> CLevelMapEditorLoader::Load()
 		);
 	}
 
-	const std::filesystem::path terrainTileDir = R"(.\Resources\SampleClient\Textures\Terrain)";
+	const std::filesystem::path terrainTileDir = R"(.\Resources\SampleClient\Textures\Terrain\Tile)";
 	if (!std::filesystem::exists(terrainTileDir))
 	{
 		MSG_BOX("NO_TERRAIN_TILE_DIR");
 	}
+	bool terrainTilesLoaded = true;
 	for (const auto& entry : std::filesystem::recursive_directory_iterator(terrainTileDir))
 	{
 		if (!entry.is_regular_file())
@@ -141,30 +142,21 @@ std::future<bool> CLevelMapEditorLoader::Load()
 			_stricmp(entry.path().stem().string().c_str(), "Height") == 0)
 			continue;
 
-		result = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR_TERRAIN_TILE", [=]()
-			{
-				const std::string resourceTag = MakeStaticModelResourceTag(terrainTileDir, entry.path());
-				auto res = E::CGameInstance::Get().AddResourceT<E::CResTexture2D>(
-					"MAPEDITOR_TERRAIN_TILE",
-					resourceTag,
-					E::CResTexture2D::Create(entry.path().string()));
-
-				if (!res)
-					return false;
-
-				if (FAILED(res->Load()))
-				{
-					MSG_BOX("Terrain Tile Png Load Failed");
-					return false;
-				}
-
-				return true;
-			}
-		);
+		const std::string resourceTag = MakeStaticModelResourceTag(terrainTileDir, entry.path());
+		auto res = E::CGameInstance::Get().AddResourceT<E::CResTexture2D>(
+			"MAPEDITOR_TERRAIN_TILE", resourceTag,
+			E::CResTexture2D::Create(entry.path().string()));
+		if (!res || FAILED(res->Load()))
+		{
+			terrainTilesLoaded = false;
+			MSG_BOX("Terrain Tile Load Failed");
+		}
 	}
 
-	result = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", []()
+	result = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", [terrainTilesLoaded]()
 	{
+		if (!terrainTilesLoaded)
+			return false;
 		// 터레인
 		if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_Terrain", E::CTerrain::Create())))
 		{

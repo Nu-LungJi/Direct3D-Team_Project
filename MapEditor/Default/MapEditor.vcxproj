@@ -176,6 +176,8 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\NavMeshGUI.h" />
     <ClInclude Include="..\Public\TerrainGUI.h" />
     <ClInclude Include="..\Public\TerrainBrushController.h" />
+	<ClInclude Include="..\Public\TerrainEditCommand.h" />
+	<ClInclude Include="..\Public\ScatterObjectsCommand.h" />
     <ClInclude Include="..\Public\TerrainPickingPass.h" />
     <ClInclude Include="..\Public\ResourceGUI.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
@@ -208,6 +210,8 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\NavMeshGUI.cpp" />
     <ClCompile Include="..\Private\TerrainGUI.cpp" />
     <ClCompile Include="..\Private\TerrainBrushController.cpp" />
+	<ClCompile Include="..\Private\TerrainEditCommand.cpp" />
+	<ClCompile Include="..\Private\ScatterObjectsCommand.cpp" />
     <ClCompile Include="..\Private\TerrainPickingPass.cpp" />
     <ClCompile Include="..\Private\ResourceGUI.cpp" />
     <ClCompile Include="..\Private\TestGuizmo.cpp" />

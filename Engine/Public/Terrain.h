@@ -52,6 +52,7 @@ public:
 	uint32_t GetVertexCountX() const { return m_iVertexCountX; }
 	uint32_t GetVertexCountZ() const { return m_iVertexCountZ; }
 	uint32_t GetVisibleChunkCount() const { return static_cast<uint32_t>(m_VisibleChunks.size()); }
+	uint32_t GetChunkQuadCount() const { return m_iChunkQuadCount; }
 	_float GetVertexSpacing() const { return m_fVertexSpacing; }
 	_float GetVertexHeight(uint32_t x, uint32_t z) const;
 	bool TryGetLocalHeight(_float localX, _float localZ, _float& outHeight) const;
@@ -65,6 +66,8 @@ public:
 	HRESULT AddChunkPositiveZ();
 	HRESULT AddChunkNegativeX();
 	HRESULT AddChunkNegativeZ();
+	HRESULT SaveTerrain(const _string& metadataPath) const;
+	HRESULT LoadTerrain(const _string& metadataPath);
 
 private:
 	HRESULT LoadHeightMap(const DESC& desc);
@@ -74,6 +77,8 @@ private:
 	UPtr<CTerrainChunk> CreateChunk(uint32_t chunkX, uint32_t chunkZ) const;
 	HRESULT ExpandTerrain(bool positiveX);
 	HRESULT PrependTerrain(bool negativeX);
+	void RebuildChunkLookup();
+	CTerrainChunk* FindChunk(uint32_t chunkX, uint32_t chunkZ) const;
 	void RecalculateNormals();
 	void RecalculateNormals(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 	void RecalculateBounds();
@@ -95,6 +100,7 @@ private:
 	std::vector<uint32_t> m_Indices{};
 	std::vector<UPtr<CTerrainChunk>> m_Chunks{};
 	std::vector<CTerrainChunk*> m_VisibleChunks{};
+	std::unordered_map<uint64_t, CTerrainChunk*> m_ChunkLookup{};
 	BoundingBox m_LocalBounds{};
 
 public:

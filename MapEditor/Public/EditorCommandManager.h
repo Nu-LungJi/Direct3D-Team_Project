@@ -11,6 +11,7 @@ public:
 
 public:
 	void Submit(std::unique_ptr<IEditorCommand> command);
+	void RecordExecuted(std::unique_ptr<IEditorCommand> command);
 	void RequestUndo();
 	void RequestRedo();
 	void ProcessOne();

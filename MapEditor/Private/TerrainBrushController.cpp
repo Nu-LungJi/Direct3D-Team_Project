@@ -37,7 +37,7 @@ HRESULT CTerrainBrushController::UpdateStroke(
 	}
 	m_PreviousHit = worldHit;
 
-	const float direction = m_Settings.mode == ETerrainBrushMode::Raise ? 1.f : -1.f;
+	const float direction = m_Settings.mode == ETerrainBrushMode::Lower ? -1.f : 1.f;
 	const float heightDelta = direction * m_Settings.strength * timeDelta /
 		static_cast<float>(stamps.size());
 	uint32_t minX = std::numeric_limits<uint32_t>::max();
@@ -74,6 +74,7 @@ HRESULT CTerrainBrushController::UpdateTextureStroke(
 void CTerrainBrushController::EndStroke()
 {
 	m_PreviousHit.reset();
+	m_FlattenTargetHeight.reset();
 }
 
 bool CTerrainBrushController::ApplyStamp(
@@ -91,6 +92,8 @@ bool CTerrainBrushController::ApplyStamp(
 	const float localRadiusX = m_Settings.radius / scaleX;
 	const float localRadiusZ = m_Settings.radius / scaleZ;
 	const float spacing = terrain.GetVertexSpacing();
+	if (m_Settings.mode == ETerrainBrushMode::Flatten && !m_FlattenTargetHeight)
+		m_FlattenTargetHeight = localCenter.y;
 
 	const int32_t startX = std::max(0, static_cast<int32_t>(std::floor((localCenter.x - localRadiusX) / spacing)));
 	const int32_t startZ = std::max(0, static_cast<int32_t>(std::floor((localCenter.z - localRadiusZ) / spacing)));
@@ -101,7 +104,9 @@ bool CTerrainBrushController::ApplyStamp(
 	if (startX > endX || startZ > endZ)
 		return false;
 
-	bool changed = false;
+	struct HeightUpdate { uint32_t x; uint32_t z; float height; };
+	std::vector<HeightUpdate> updates{};
+	updates.reserve(static_cast<size_t>(endX - startX + 1) * (endZ - startZ + 1));
 	for (int32_t z = startZ; z <= endZ; ++z)
 	{
 		for (int32_t x = startX; x <= endX; ++x)
@@ -122,16 +127,56 @@ bool CTerrainBrushController::ApplyStamp(
 			const float weight = std::pow(1.f - normalized, std::max(m_Settings.falloff, 0.01f));
 			const uint32_t ux = static_cast<uint32_t>(x);
 			const uint32_t uz = static_cast<uint32_t>(z);
-			terrain.SetVertexHeight(ux, uz,
-				terrain.GetVertexHeight(ux, uz) + heightDelta * weight / scaleY);
+			const float currentHeight = terrain.GetVertexHeight(ux, uz);
+			float nextHeight = currentHeight;
+			switch (m_Settings.mode)
+			{
+			case ETerrainBrushMode::Raise:
+			case ETerrainBrushMode::Lower:
+				nextHeight += heightDelta * weight / scaleY;
+				break;
+			case ETerrainBrushMode::Flatten:
+				nextHeight = std::lerp(currentHeight, *m_FlattenTargetHeight,
+					std::clamp(std::abs(heightDelta) * weight, 0.f, 1.f));
+				break;
+			case ETerrainBrushMode::Smooth:
+			{
+				float sum = 0.f;
+				uint32_t count = 0;
+				for (int32_t oz = -1; oz <= 1; ++oz)
+					for (int32_t ox = -1; ox <= 1; ++ox)
+					{
+						const int32_t nx = x + ox, nz = z + oz;
+						if (nx < 0 || nz < 0 || nx >= static_cast<int32_t>(terrain.GetVertexCountX()) ||
+							nz >= static_cast<int32_t>(terrain.GetVertexCountZ())) continue;
+						sum += terrain.GetVertexHeight(static_cast<uint32_t>(nx), static_cast<uint32_t>(nz));
+						++count;
+					}
+				const float average = count ? sum / static_cast<float>(count) : currentHeight;
+				nextHeight = std::lerp(currentHeight, average,
+					std::clamp(std::abs(heightDelta) * weight, 0.f, 1.f));
+				break;
+			}
+			case ETerrainBrushMode::Noise:
+			{
+				uint32_t hash = ux * 374761393u + uz * 668265263u;
+				hash = (hash ^ (hash >> 13u)) * 1274126177u;
+				const float noise = static_cast<float>(hash & 0xffffu) / 32767.5f - 1.f;
+				nextHeight += noise * std::abs(heightDelta) * weight / scaleY;
+				break;
+			}
+			}
+			if (std::abs(nextHeight - currentHeight) <= 0.000001f) continue;
+			updates.push_back({ ux, uz, nextHeight });
 			minX = std::min(minX, ux);
 			minZ = std::min(minZ, uz);
 			maxX = std::max(maxX, ux);
 			maxZ = std::max(maxZ, uz);
-			changed = true;
 		}
 	}
-	return changed;
+	for (const auto& update : updates)
+		terrain.SetVertexHeight(update.x, update.z, update.height);
+	return !updates.empty();
 }
 
 void CTerrainBrushController::DrawPreview(
