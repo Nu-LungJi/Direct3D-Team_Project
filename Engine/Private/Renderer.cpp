@@ -164,8 +164,8 @@ HRESULT CRenderer::InitializeBackBuffer()
 	if (nullptr == m_pBackBufferViewPort) { MSG_BOX("Invalid : m_pBackBufferViewPort");   return E_FAIL; }
 	if (nullptr == m_pBackBufferTexture) { MSG_BOX("Invalid : m_pBackBufferTexture");    return E_FAIL; }
 
-	// Rasterizer Setting
-	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	// Rasterizer Setting - BackCull
+	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	return S_OK;
@@ -968,6 +968,7 @@ _float CRenderer::NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z)
 HRESULT CRenderer::Draw() {
 	ZoneScopedN("Draw");
 
+	// Rasterizer Setting - BackCull
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	//if (bApplyShadow)
@@ -1363,6 +1364,10 @@ HRESULT CRenderer::Render_Alpha() {
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		// Rasterizer Setting - NoCull
+		Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+		m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	}
 	{
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
@@ -1389,6 +1394,10 @@ HRESULT CRenderer::Render_Alpha() {
 	Unbind_Resources();
 	
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetPBR;
+
+	// Rasterizer Setting - BackCull
+	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	return S_OK;
 }

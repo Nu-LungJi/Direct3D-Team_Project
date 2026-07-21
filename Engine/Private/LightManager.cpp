@@ -18,10 +18,7 @@ HRESULT CLightManager::Initialize_LightManager() {
 	m_pPBRComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR");
 	if (nullptr == m_pPBRComputeShader)		return E_FAIL;
 
-
 	m_pUAVComBinedOutput = CGameInstance::Get().Generate_UnorderedAccessView("ComBinedTex", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
-
-
 
 	if (m_pPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow_Point", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
@@ -40,7 +37,7 @@ HRESULT CLightManager::Initialize_LightManager() {
 		if (FAILED(m_pPointLightGS->Load()))    return E_FAIL;
 	}
 
-	{
+	{	// Generate Shadow Texture List Array
 		_float2 ShadowMapResolution = CGameInstance::Get().GetClientScreenSize();
 
 		uint32_t ScreenSizeX = ETOUI(ShadowMapResolution.x);
