@@ -110,6 +110,7 @@ HRESULT CLevelCreatureEditor::Initialize()
 		}
 	}
 
+	if(false)
 	{
 		CMapCollisionProxyObject::DESC Desc{};
 		Desc.sObjectTag = "MapCollisionProxy";
