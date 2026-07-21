@@ -140,10 +140,14 @@ public:
 	void	SetInputLcok(_bool inputlock) { m_bInputLocked = inputlock; }
 
 	_float2 GetPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
-	void	SetPos(_float2 pos) { m_UIINFO.fX = pos.x; m_UIINFO.fY = pos.y; }
 	_float2	GetLocalPos() { return { m_UIINFO.fX, m_UIINFO.fY }; }
+	_float	GetAlpha() { return m_UIINFO.Alpha; }
+	_float2 GetSize() { return { m_UIINFO.SizeX, m_UIINFO.SizeY };  }
+
+	void	SetPos(_float2 pos) { m_UIINFO.fX = pos.x; m_UIINFO.fY = pos.y; }
 	void	SetLocalPos(_float2 pos) { m_UIINFO.LocalX = pos.x; m_UIINFO.LocalY = pos.y; }
 	void	SetAlpha(_float alpha) { m_UIINFO.Alpha = alpha; }
+	void	SetSize(_float2 size) { m_UIINFO.SizeX = size.x; m_UIINFO.SizeY = size.y; }
 
 	_bool GetActive() { return m_isActive; }
 	_bool GetVisible() { return m_isVisible; }
@@ -157,6 +161,7 @@ public:
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
 	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }
+	void SetUIType(uint32_t uiType) { m_UIINFO.UIType = uiType; }
 	void SetColor(_float3 vColor) { m_UIINFO.Color = vColor; }
 	int GetWeight() { return m_UIINFO.Weight; }
 	int GetWeight() const { return m_UIINFO.Weight; }

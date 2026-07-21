@@ -47,6 +47,9 @@ private:
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
 	bool m_bWasUsingGizmo = false;
+	E::_float4x4 m_MultiGizmoStartMatrix{};
+	E::_float4x4 m_MultiGizmoCurrentMatrix{};
+	std::vector<std::pair<E::CHandle, E::_float4x4>> m_MultiGizmoStartTransforms{};
 	bool m_bOpenSaveComplete = false;
 	bool m_bOpenLoadComplete = false;
 	std::optional<E::CHandle> m_ContextMapMeshHandle{};

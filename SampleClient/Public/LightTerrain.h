@@ -34,6 +34,10 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
+	HRESULT RenderDefault(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+	HRESULT RenderShadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+
+private:
 	SPtr<CResTerrainVIBuffer> m_pResTerrainVIBuffer{};
 	SPtr<CResTexture2D> m_pResTerrainTexture2D{};
 	SPtr<CResPixelShader> m_pResPixelShader{};

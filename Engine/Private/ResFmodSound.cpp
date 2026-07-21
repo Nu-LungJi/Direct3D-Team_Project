@@ -5,8 +5,9 @@
 
 NS_USING(Engine)
 
-CResFmodSound::CResFmodSound(const _string& sPath)
+CResFmodSound::CResFmodSound(const _string& sPath, SOUND_LOAD_TYPE eLoadType)
     : CResource{ sPath }
+    , m_eLoadType{ eLoadType }
 {
 
 }
@@ -24,7 +25,8 @@ HRESULT CResFmodSound::Load(const std::any& arg)
 
     m_eState = STATE::LOADING;
 
-    if (FAILED(CGameInstance::Get().CreateSound(m_sPath, &m_pFmodSound)))
+    auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+    if (pSoundManager == nullptr || FAILED(pSoundManager->CreateSound(m_sPath, &m_pFmodSound, m_eLoadType)))
     {
         MSG_BOX_STR(_wstring{ L"CResFmodSound Faield Path:" + StringToWString(m_sPath) }.c_str());
         m_eState = STATE::LOADFAIL;
@@ -39,13 +41,28 @@ HRESULT CResFmodSound::Load(const std::any& arg)
 
 HRESULT CResFmodSound::Unload(const std::any& arg)
 {
-    FMOD_Sound_Release(m_pFmodSound);
-    m_pFmodSound = nullptr;
+    if (m_pFmodSound != nullptr)
+    {
+        FMOD_Sound_Release(m_pFmodSound);
+        m_pFmodSound = nullptr;
+    }
+
     m_eState = STATE::UNLOAD;
     return S_OK;
 }
 
-SPtr<CResFmodSound> CResFmodSound::Create(const _string& sPath)
+SPtr<CResFmodSound> CResFmodSound::Create(const _string& sPath, SOUND_LOAD_TYPE eLoadType)
 {
-    return ToSPtr(new CResFmodSound{ sPath });
+    return ToSPtr(new CResFmodSound{ sPath, eLoadType });
+}
+
+void CResFmodSound::Free()
+{
+    if (m_pFmodSound != nullptr)
+    {
+        FMOD_Sound_Release(m_pFmodSound);
+        m_pFmodSound = nullptr;
+    }
+
+    CResource::Free();
 }

@@ -17,12 +17,6 @@ void CLightObject::UpdateGUI() {
 }
 
 HRESULT CLightObject::InitializePrototype(void* pArg) {
-	//m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
-	//if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
-	//
-	//m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
-	//if (FAILED(m_pResPixelShader->Load()))	return E_FAIL;
-
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PBR_BLEND");
 	if (FAILED(m_pResVertexShader->Load()))	return E_FAIL;
 
@@ -75,10 +69,10 @@ HRESULT CLightObject::Initialize(void* pArg) {
 		};
 	}
 
-	m_pComTransform->SetScale(XMVectorSet(100.f, 100.f, 100.f, 1.f));
+	m_pComTransform->SetScale(XMVectorSet(10.f, 10.f, 10.f, 1.f));
 	m_pComTransform->SetRotation(XMVectorSet(1.f, 0.f, 0.f, 1.f), +90.f);
 	m_pComTransform->SetRotation(XMVectorSet(0.f, 0.f, 1.f, 1.f), +90.f);
-	m_pComTransform->SetPosition(XMVectorSet(1.f, 3.f, 0.f, 1.f));
+	m_pComTransform->SetPosition(XMVectorSet(-2.f, 15.f, 1.f, 1.f));
 
 	return S_OK;
 }
@@ -91,8 +85,8 @@ void CLightObject::Update(E::_float fTimeDelta) {
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
-	CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::STATIC, this);
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+		CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
 }
 
 HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -138,9 +132,10 @@ HRESULT CLightObject::RenderDefault(ID3D11DeviceContext* pContext, const E::REND
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		{
+		{  
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, {1.f, 1.f, 1.f}, 0.5f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, {1.f, 1.f, 1.f}, 0.f, 1.f);
+			// EmissiveColor -> EmissiveIntensity -> Dissolve Color -> Dissolve Intensity -> Alpha
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -12,6 +12,8 @@
 #include "SerializeManager.h"
 #include "PrototypeManager.h"
 #include "LuaManager.h"
+#include "SoundManager.h"
+#include "EventManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -27,7 +29,6 @@ class CGraphicDevice;
 class CDInputManager;
 class CLevelManager;
 class CLevel;
-class CSoundManager;
 class CFontManager;
 class CPrototype;
 class CColliderManager;
@@ -45,6 +46,8 @@ class CDbgLineRender;
 class CSerializeManager;
 class ILuaScriptRelodable;
 class CModel_Instance_Manager;
+class CMapMeshInstancingRenderer;
+class CResStaticModel;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -142,16 +145,7 @@ public:
 
 #pragma region SOUND_MANAGER
 public:
-	HRESULT CreateSound(const _string& sPath, FMOD_SOUND** ppSound);
-
-	HRESULT SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources);
-	HRESULT SoundPlay(const StringID& channelTag, _float fVolume = 1.f, _float fPitch = 1.f);
-	void SoundStop(const StringID& channelTag);
-	void SoundPause(const StringID& channelTag, _bool bPause);
-	_bool SoundGetVolume(const StringID& channelTag, _float& fVolume);
-	_bool SoundSetVolume(const StringID& channelTag, _float fVolume);
-	_bool SoundIsPlaying(const StringID& channelTag) const;
-	void SoundSetPitch(const StringID& channelTag, float fPitchRatio);
+	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
 #pragma region FONT_MANAGER
@@ -266,10 +260,10 @@ public:
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
-	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	VOID	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution);
-	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution);
+	HRESULT	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY);
+	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY);
 
 #pragma endregion
 
@@ -285,7 +279,6 @@ public:
 
 #pragma region LIGHT_MANAGER
 public:
-	VOID	Bind_EnviromentLight();
 	VOID	Bind_DynamicLight();
 
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
@@ -296,8 +289,7 @@ public:
 
 	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 
-	HRESULT	Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
-		const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth);
+	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
 #pragma endregion
 
@@ -366,8 +358,8 @@ public:
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
 
-	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
-	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+	//_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	//_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
 #pragma endregion
 
 
@@ -384,10 +376,60 @@ public:
 #pragma region INSTNACE_MANAGER
 public:
 	void Add_Instance(class CComModelInstance* pModelInstance, class CComAnimator* pAnimator, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
+	void Add_Instance(class CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
 
 
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
+	void Add_Part_Instance(class CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
+#pragma endregion
+
+#pragma region MAPMESH_INSTANCE_RENDER
+	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
+	// 인스턴싱 On/Off , 드로우 콜 GUI
+	_bool IsInstancingEnabled();
+	void SetInstancingEnabled(_bool bEnabled);
+	const struct INSTANCING_STATS& GetInstancingStats();
+	_bool IsDebugBoundsEnabled();
+	void SetDebugBoundsEnabled(_bool bEnabled);
+	void ClearMapMeshTextureCache();
+#pragma endregion
+
+#pragma region EVENT_MANAGER
+	template<typename TEvent, typename TCallback>
+	EVENT_LISTENER_ID EventSubscribe(CHandle owner, TCallback&& callback)
+	{
+		return m_pEventManager->Subscribe<TEvent>(owner, std::forward<TCallback>(callback));
+	}
+
+	template<typename TEvent>
+	void EventUnsubscribe(EVENT_LISTENER_ID listenerId)
+	{
+		m_pEventManager->Unsubscribe<TEvent>(listenerId);
+	}
+
+	template<typename TEvent>
+	void EventUnsubscribeAll(CHandle owner)
+	{
+		m_pEventManager->UnsubscribeAll<TEvent>(owner);
+	}
+
+	void EventUnsubscribeAll(CHandle owner)
+	{
+		m_pEventManager->UnsubscribeAll(owner);
+	}
+
+	template<typename TEvent>
+	void EventPublish(TEvent&& event)
+	{
+		m_pEventManager->Publish(std::forward<TEvent>(event));
+	}
+
+	template<typename TEvent>
+	void EventPublish()
+	{
+		m_pEventManager->Publish<TEvent>();
+	}
 #pragma endregion
 
 
@@ -504,6 +546,8 @@ private:
 	UPtr<CSerializeManager> m_pSerializeManager{};
 	UPtr<CLuaManager> m_pLuaManager{};
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
+	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
+	UPtr<CEventManager> m_pEventManager{};
 };
 
 NS_END

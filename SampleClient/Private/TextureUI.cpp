@@ -5,6 +5,7 @@
 #include "Resources.h"
 #include "UIManager.h"
 #include "Client_Defines.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -49,6 +50,12 @@ HRESULT CTextureUI::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
+		{
+			return E_FAIL;
+		};
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
@@ -58,26 +65,25 @@ HRESULT CTextureUI::Initialize(void* pArg)
 
 void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
 {
+
 }
 
 void CTextureUI::Update(E::_float fTimeDelta)
 {
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
 	if (!m_isActive)
 		return;
 
 	CUIObject::Update(fTimeDelta);
 
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+
 	if (m_bMouseTracking)
 	{
 		m_UIINFO.fX = mousePos.x;
 		m_UIINFO.fY = mousePos.y;
 		CalcUICoord();
-	}
-
-	for (auto& pComponent : m_UIComponents)
-	{
-		pComponent->Update(fTimeDelta, mousePos);
 	}
 
 	if (m_pComTween != nullptr)
@@ -97,9 +103,8 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
-
-	//VS_QuadTex
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+	//VS_QuadTe
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
 	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
@@ -156,13 +161,12 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	}
 
 	{
+		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-
-
 
 	return S_OK;
 }
@@ -176,6 +180,12 @@ void CTextureUI::PlayEffect(uint32_t uiState)
 	{
 		ClearEffectTweens();
 		if (Appear) Appear(this);
+	}
+
+	if (uiState & ETOUI(UI_STATE::DISAPPEAR))
+	{
+		ClearEffectTweens();
+		if (Disappear) Disappear(this);
 	}
 
 	if (m_bInputLocked)

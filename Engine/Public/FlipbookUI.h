@@ -63,6 +63,11 @@ protected:
 	_float		m_fSumTime = 0.f;
 
 private:
+	uint32_t	m_iPuaseFrame = 9;
+	_float		m_fPauseTime = 0.15f;
+	_float		m_fPauseSumTime = 0.f;
+
+private:
 	char g_BasePath[256] = "./Resources/SampleClient/UIData/LevelUI/";
 };
 

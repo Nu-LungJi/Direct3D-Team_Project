@@ -4,6 +4,8 @@
 #include "ComAnimator.h"
 #include "AnimationObject.h"
 #include "ComModelInstance.h"
+#include "ComStaticModelInstance.h"
+#include "ComStaticModelInstance.h"
 #include "ResModel.h"
 
 NS_USING(Engine)
@@ -76,12 +78,45 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	Add_Instance(pModelInstance, InstanceData);
 }
 
+
+void CModel_Instance_Manager::Add_Instance(CComStaticModelInstance* pModelInstance,  const _float4x4& WorldMatrix, uint32_t iFlags)
+{
+	if (!pModelInstance)
+	{
+		return;
+	}
+
+	const auto& pModel = pModelInstance->GetModel();
+
+	if (!pModel)
+		return;
+
+
+	GPU_ANIM_INSTANCE_DATA InstanceData{};
+
+	InstanceData.WorldMatrix = WorldMatrix;
+
+	InstanceData.iAnimIndex = INVALID_ANIM_INDEX;
+
+	InstanceData.iFlags = iFlags;
+
+	InstanceData.fTrackPosition = 0.f;
+
+	InstanceData.iRootBoneIndex = 0;
+
+
+
+	Add_Instance(pModelInstance, InstanceData);
+}
+
+
 void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData)
 {
 	if (!pModelInstance)
 		return;
 
-	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance);
+	const _bool bStaticModel = (InstanceData.iAnimIndex == INVALID_ANIM_INDEX);
+	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, bStaticModel);
 
 	if (!pBatch)
 		return;
@@ -89,9 +124,16 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 
 	
 	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
-
+	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
+	// Instance 번호를 알기 위해 다시 Object에 등록을 해줘야 한다.
+	if (CGameObject* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle))
+	{
+		pObject->SetInstanceModelNum(iBatchInstanceIndex);
+	}
 	pBatch->Instances.push_back(InstanceData);
 	++m_iTotalInstanceCount;
+
+
 
 	if (!pBatch->bActiveThisFrame)
 	{
@@ -100,7 +142,58 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 	}
 }
 
-MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelInstance* pModelInstance)
+void CModel_Instance_Manager::Add_Part_Instance(CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData)
+{
+	if (!pModelInstance || !pModelInstance->GetModel())
+		return;
+
+	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Part_Batch(pModelInstance);
+	if (!pBatch)
+		return;
+
+	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
+	pBatch->PartInstances.push_back(InstanceData);
+	if (!pBatch->bActiveThisFrame)
+	{
+		pBatch->bActiveThisFrame = true;
+		m_ActiveBatches.push_back(pBatch);
+	}
+}
+void CModel_Instance_Manager::Add_Instance(CComStaticModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData)
+{
+	if (!pModelInstance)
+		return;
+
+	const _bool bStaticModel = (InstanceData.iAnimIndex == INVALID_ANIM_INDEX);
+	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, bStaticModel);
+
+	if (!pBatch)
+		return;
+
+
+
+	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
+	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
+	// Instance 번호를 알기 위해 다시 Object에 등록을 해줘야 한다.
+	if (CGameObject* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle))
+	{
+		pObject->SetInstanceModelNum(iBatchInstanceIndex);
+	}
+	pBatch->Instances.push_back(InstanceData);
+	++m_iTotalInstanceCount;
+
+
+
+	if (!pBatch->bActiveThisFrame)
+	{
+		pBatch->bActiveThisFrame = true;
+		m_ActiveBatches.push_back(pBatch);
+	}
+}
+
+
+
+MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel)
 {
 	if (!pModelInstance)
 		return nullptr;
@@ -115,6 +208,7 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelIn
 	Key.modelGroup = pModelInstance->Get_GroupTag();
 
 	Key.modelTag = pModelInstance->Get_ResTag();
+	Key.bStaticModel = bStaticModel;
 
 	auto Iter = m_InstanceBatches.find(Key);
 
@@ -129,6 +223,7 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelIn
 		return nullptr;
 
 	pBatch->Key =Key;
+	pBatch->bModelStatic = bStaticModel;
 
 	// 인스턴스 개수 대충 넣은거
 	pBatch->Instances.reserve(16);
@@ -140,6 +235,67 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch( CComModelIn
 	return pBatchRaw;
 }
 
+MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Part_Batch(CComStaticModelInstance* pModelInstance)
+{
+	MODEL_INSTANCE_KEY Key{};
+	Key.modelGroup = pModelInstance->Get_GroupTag();
+	Key.modelTag = pModelInstance->Get_ResTag();
+	Key.bStaticModel = true;
+
+	auto iter = m_InstanceBatches.find(Key);
+	if (iter != m_InstanceBatches.end())
+		return iter->second.get();
+
+	auto pBatch = std::make_unique<MODEL_INSTANCE_BATCH>();
+	pBatch->Key = Key;
+	pBatch->bModelStatic = true;
+	pBatch->PartInstances.reserve(16);
+	auto* pBatchRaw = pBatch.get();
+	m_InstanceBatches.emplace(Key, std::move(pBatch));
+	return pBatchRaw;
+}
+
+MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComStaticModelInstance* pModelInstance, _bool bStaticModel)
+{
+	if (!pModelInstance)
+		return nullptr;
+
+	const auto& pModel = pModelInstance->GetModel();
+
+	if (!pModel)
+		return nullptr;
+
+	MODEL_INSTANCE_KEY Key{};
+
+	Key.modelGroup = pModelInstance->Get_GroupTag();
+
+	Key.modelTag = pModelInstance->Get_ResTag();
+	Key.bStaticModel = bStaticModel;
+
+	auto Iter = m_InstanceBatches.find(Key);
+
+	if (Iter != m_InstanceBatches.end())
+	{
+		return Iter->second.get();
+	}
+
+	auto pBatch = std::make_unique<MODEL_INSTANCE_BATCH>();
+
+	if (!pBatch)
+		return nullptr;
+
+	pBatch->Key = Key;
+	pBatch->bModelStatic = bStaticModel;
+
+	// 인스턴스 개수 대충 넣은거
+	pBatch->Instances.reserve(16);
+
+	MODEL_INSTANCE_BATCH* pBatchRaw = pBatch.get();
+
+	m_InstanceBatches.emplace(Key, std::move(pBatch));
+
+	return pBatchRaw;
+}
 void CModel_Instance_Manager::Clear_Frame()
 {
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches)
@@ -148,8 +304,7 @@ void CModel_Instance_Manager::Clear_Frame()
 			continue;
 
 		pBatch->Instances.clear();
-		pBatch->ObjectHandle;
-
+		pBatch->PartInstances.clear();
 
 		pBatch->bActiveThisFrame = false;
 	}
@@ -233,16 +388,17 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches)
 	{
-		if (!pBatch || pBatch->Instances.empty() )
+		if (!pBatch || (pBatch->Instances.empty() && pBatch->PartInstances.empty()))
 			continue;
 
-		auto* pAnimationObject = CGameInstance::Get().GetGameObjectByHandleT<CAnimationObject>(pBatch->ObjectHandle);
-		
-		if (pAnimationObject == nullptr)
+		auto* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
+		if (pObject == nullptr)
 			return E_FAIL;
 
-		if (FAILED(pAnimationObject->Render_Instanced(pContext, ctx, *pBatch)))
+		if (FAILED(pObject->Render_Instanced(pContext, ctx, *pBatch)))
 			return E_FAIL;
+
+
 	}
 
 	return S_OK;

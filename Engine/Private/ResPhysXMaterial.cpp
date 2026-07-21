@@ -79,7 +79,7 @@ SPtr<CResPhysXMaterial> CResPhysXMaterial::Create()
 	return ToSPtr(new CResPhysXMaterial{ "" });
 }
 
-SPtr<CResPhysXMaterial> CResPhysXMaterial::Create(const DESC& desc)
+SPtr<CResPhysXMaterial> CResPhysXMaterial::CreateAndLoad(const DESC& desc)
 {
 	auto pInstance = ToSPtr(new CResPhysXMaterial{ "" });;
 	if (FAILED(pInstance->Load(desc)))

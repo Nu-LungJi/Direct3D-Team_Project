@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="98.Default">
@@ -283,6 +283,9 @@
     <Filter Include="PhysX\Manager">
       <UniqueIdentifier>{f5a5eb2a-888e-4d69-bfbd-c08eacd2a9f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PhysX\Manager\CollisionProxy">
+      <UniqueIdentifier>{cfc6213e-5482-4e67-a8de-cc1ad03d442c}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX">
       <UniqueIdentifier>{ffcf98bd-cb43-4bcb-aeb7-f1c348a7cd4a}</UniqueIdentifier>
     </Filter>
@@ -354,9 +357,6 @@
     </Filter>
     <Filter Include="Component\Model\ComStaticModelInstance">
       <UniqueIdentifier>{adf76671-6a71-4f3c-892a-c5e56a83ea53}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="CreatureEditor">
-      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Component\BeHavior\Manager">
       <UniqueIdentifier>{b418bd54-e8f1-4319-94f0-07024156c5d3}</UniqueIdentifier>
@@ -474,6 +474,33 @@
     </Filter>
     <Filter Include="Renderer\FSR2_2">
       <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Model\ComSocket">
+      <UniqueIdentifier>{41fbef30-0861-4a12-87af-d96a9c20c674}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CreatureManager">
+      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\LocoAndMotor">
+      <UniqueIdentifier>{cf07ed9a-c696-4a46-9d9b-c31cce90f76c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Collider\Convex">
+      <UniqueIdentifier>{e3a7c27f-bf0e-4b2d-b37a-c2a6c0231cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\PhysX\Geometry\Convex">
+      <UniqueIdentifier>{4113270c-cbfc-47f0-9f11-ffd2fec91bce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FSM">
+      <UniqueIdentifier>{c25ecb41-7bf1-46a9-a361-10286b324e9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\Sound">
+      <UniqueIdentifier>{1368aba0-d774-49be-a059-20bb842eeaf9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EventBus">
+      <UniqueIdentifier>{95f85a46-ca51-43e5-aeae-cedb068ad6ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\UIShader">
+      <UniqueIdentifier>{0d457b52-1b40-4f88-99a7-174c4ddce13f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -819,6 +846,12 @@
     <ClInclude Include="..\public\PhysXManager.h">
       <Filter>PhysX\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\PhysXCollisionProxyData.h">
+      <Filter>PhysX\Manager\CollisionProxy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysXCollisionProxyEditor.h">
+      <Filter>PhysX\Manager\CollisionProxy</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Engine_PhysxDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -864,8 +897,14 @@
     <ClInclude Include="..\public\ResPhysXSphereGeometry.h">
       <Filter>Resource\PhysX\Geometry\Sphere</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ResPhysXRTTriMeshGeometry.h">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h">
       <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\private\PhysXCookedMeshFile.h">
+      <Filter>Resource\PhysX\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ResPhysXCapsuleGeometry.h">
       <Filter>Resource\PhysX\Geometry\Capsule</Filter>
@@ -884,9 +923,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\CreatureEditor.h">
-      <Filter>CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
@@ -926,6 +962,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\TweenComponent.h">
       <Filter>Component\Tween</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComCharacterMoveIntent.h">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComCharacterMotor.h">
+      <Filter>Component\LocoAndMotor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\HizBuffer.h">
       <Filter>HizBuffer</Filter>
@@ -1017,6 +1059,33 @@
     </ClInclude>
     <ClInclude Include="..\public\MyFSR2_2.h">
       <Filter>Renderer\FSR2_2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComSocket.h">
+      <Filter>Component\Model\ComSocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTReactiveSelector.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxConvexCollider.h">
+      <Filter>Component\PhysX\Collider\Convex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPhysXConvexGeometry.h">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StateMachine.h">
+      <Filter>FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ComSound.h">
+      <Filter>Component\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapMeshInstancingRenderer.h">
+      <Filter>Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\EventManager.h">
+      <Filter>EventBus</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Particle_GPU.h">
       <Filter>Particle</Filter>
@@ -1359,9 +1428,6 @@
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\CreatureEditor.cpp">
-      <Filter>CreatureEditor</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
@@ -1376,6 +1442,9 @@
     </ClCompile>
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp">
+      <Filter>PhysX\Manager\CollisionProxy</Filter>
     </ClCompile>
     <ClCompile Include="..\private\DbgLineRender.cpp">
       <Filter>DbgLineRender</Filter>
@@ -1412,6 +1481,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\Sphere</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXRTTriMeshGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp">
       <Filter>Resource\PhysX\Geometry\TriMesh</Filter>
@@ -1473,6 +1545,12 @@
     <ClCompile Include="..\Private\TweenComponent.cpp">
       <Filter>Component\Tween</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComCharacterMotor.cpp">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\ShadowCamera.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp">
       <Filter>Instance</Filter>
@@ -1518,6 +1596,33 @@
     </ClCompile>
     <ClCompile Include="..\private\MyFSR2_2.cpp">
       <Filter>Renderer\FSR2_2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp">
+      <Filter>Instance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\EventManager.cpp">
+      <Filter>EventBus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComSocket.cpp">
+      <Filter>Component\Model\ComSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTReactiveSelector.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxConvexCollider.cpp">
+      <Filter>Component\PhysX\Collider\Convex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPhysXConvexGeometry.cpp">
+      <Filter>Resource\PhysX\Geometry\Convex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StateMachine.cpp">
+      <Filter>FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComSound.cpp">
+      <Filter>Component\Sound</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1592,13 +1697,7 @@
     <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
@@ -1637,8 +1736,29 @@
     <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
+    <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl">
       <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshBuildIndirectArgs.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGlobalCull.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

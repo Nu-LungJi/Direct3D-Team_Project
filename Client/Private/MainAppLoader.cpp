@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
@@ -12,7 +12,7 @@
 //#include "Particle_Fire_GPU.h"
 //#include "BTHeader_Definse.h"
 
-#include "UIManager.h"
+//#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -276,10 +276,10 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 HRESULT CMainAppLoader::Load_PhysX_Resource()
 {
 	{
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::CreateAndLoad(CResPhysXSphereGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::CreateAndLoad(CResPhysXCapsuleGeometry::DESC{}));
 	}
 	return S_OK;
 }

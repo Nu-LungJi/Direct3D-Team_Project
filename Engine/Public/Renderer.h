@@ -44,7 +44,8 @@ private:
 	HRESULT InitializeTargetPBR();
 	HRESULT InitializeBlendTarget();
 
-	HRESULT InitilizePostProcess();
+	HRESULT InitializePostProcess();
+	HRESULT	InitializeUserInterface();
 	HRESULT InitializeGFSDK_SSAO();
 	HRESULT InitializeFSR2_2();
 	HRESULT InitializeBloom();
@@ -65,10 +66,11 @@ public:
 	SPtr<CResDynamicTexture2D>	Generate_UnorderedAccessView(const StringID& _sResTag, DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
-	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	VOID	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution);
-	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution);
+	HRESULT	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT Generate_CubeMapList(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY);
+	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY);
 
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
@@ -88,8 +90,10 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetLight{};
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
 
@@ -98,6 +102,8 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric{};
+
+	SPtr<CResDynamicTexture2D> m_pResDynTexTargetPreviousRenderView{};
 
 private:
 	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
@@ -135,9 +141,6 @@ private:
 	ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV{};
 	ComPtr<ID3D11DepthStencilView> m_pBackBufferDSV{};
 	SPtr<CResViewPort> m_pBackBufferViewPort{};
-
-private:
-	SPtr<CResDynamicTexture2D> m_pLastTex2DBeforeFullScreenDraw{};
 
 private:
 	SPtr<CResVertexShader> m_pFullscreenVS{};
@@ -186,6 +189,8 @@ private:
 	HRESULT Render_FullScreen();
 
 	VOID	Unbind_Resources();
+
+	VOID	Render_Quad();
 
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0, uint32_t _TexDepth = 0);

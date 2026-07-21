@@ -28,11 +28,12 @@ public:
 	void Update(_float fTimeDelta) override;
 
 public:
+	uint32_t GetInstanceModelNum() { return m_iInstanceModelNum; }
+	void     SetInstanceModelNum(uint32_t iInstacneNum) override { m_iInstanceModelNum = iInstacneNum; }
+
+private:
+	uint32_t m_iInstanceModelNum = 0.f;
 	
-	virtual HRESULT Render_Instanced(
-		ID3D11DeviceContext* pContext,
-		const RENDER_CTX& ctx,
-		const MODEL_INSTANCE_BATCH& Batch) = 0;
 
 };
 

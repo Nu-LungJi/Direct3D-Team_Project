@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
 #include "ComCollider.h"
@@ -8,6 +8,8 @@ class CComPxRigidBody;
 class CComPxBoxCollider;
 class CResPhysXBoxGeometry;
 class CComPxCharacterController;
+class CComCharacterMoveIntent;
+class CComCharacterMotor;
 NS_END
 NS_BEGIN(Client)
 
@@ -19,6 +21,11 @@ public:
 public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
 	};
 
 private:
@@ -42,10 +49,19 @@ public:
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 
 private:
+	struct PROJECTILE_LIFETIME
+	{
+		CHandle hProjectile{};
+		_float fRemainingTime{};
+	};
+
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
+	CComCharacterMoveIntent* m_pComMoveIntent{};
+	CComCharacterMotor* m_pComCharacterMotor{};
+	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 public:
 	static E::UPtr<CTestCharacter> Create();

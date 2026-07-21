@@ -34,7 +34,7 @@ EVALUATE CBTDead::Evaluate(_float fTimeDelta)
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	_float3 vDest = CGameInstance::Get().GetActiveCamera()->GetTransform().GetPosition();
 	if (pTransform == nullptr)
-		return EVALUATE::FAILED;
+		return m_eDebug = EVALUATE::FAILED;
 	_float3 vSrc = pTransform->GetPosition();
 	_float fDistance = XMVectorGetX(XMVector3Length(XMLoadFloat3(&vSrc) - XMLoadFloat3(&vDest)));
 	if (fDistance <= m_fDist)
@@ -42,7 +42,7 @@ EVALUATE CBTDead::Evaluate(_float fTimeDelta)
 		return __super::Evaluate(fTimeDelta);
 	}
 
-	return EVALUATE::FAILED;
+	return m_eDebug = EVALUATE::FAILED;
 }
 nlohmann::json CBTDead::Save_Node()
 {

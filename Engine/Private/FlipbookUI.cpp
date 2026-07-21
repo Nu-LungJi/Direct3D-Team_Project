@@ -38,15 +38,41 @@ void CFlipbookUI::Update(_float fTimeDelta)
 	if (m_Loop == false && m_CurrentFrame == totalFrame)
 		return;
 
-	m_fSumTime += fTimeDelta;
 
-	uint32_t frameCount = (totalFrame - m_StartFrame + 1);
-	float delta = duration / frameCount;
-
-	if (m_fSumTime >= delta)
+	if (m_UIINFO.Name != "House")
 	{
-		m_fSumTime = 0.f;
-		m_CurrentFrame = (m_CurrentFrame + 1) % frameCount;
+		m_fSumTime += fTimeDelta;
+
+		uint32_t frameCount = (totalFrame - m_StartFrame + 1);
+		float delta = duration / frameCount;
+
+		if (m_fSumTime >= delta)
+		{
+			m_fSumTime = 0.f;
+			m_CurrentFrame = (m_CurrentFrame + 1) % frameCount;
+		}
+	}
+	else
+	{
+		if (m_CurrentFrame % m_iPuaseFrame == 0 && m_fPauseSumTime < m_fPauseTime && m_CurrentFrame != 0)
+		{
+			m_fPauseSumTime += fTimeDelta;
+		}
+		else
+		{
+			m_fPauseSumTime = 0.f;
+
+			m_fSumTime += fTimeDelta;
+
+			uint32_t frameCount = (totalFrame - m_StartFrame + 1);
+			float delta = duration / frameCount;
+
+			if (m_fSumTime >= delta)
+			{
+				m_fSumTime = 0.f;
+				m_CurrentFrame = (m_CurrentFrame + 1) % frameCount;
+			}
+		}
 	}
 
 	m_curColum = m_CurrentFrame % m_Columns;
@@ -54,27 +80,6 @@ void CFlipbookUI::Update(_float fTimeDelta)
 
 	m_texcoord = { m_curColum / (float)m_Columns + padding, m_curRow / (float)m_Rows + padding };
 	m_uvSize = { 1 / (float)m_Columns - padding * 2 , 1 / (float)m_Rows - padding * 2 };
-
-	// 잠깐 정지
-	//if (m_CurrentFrame % m_iPuaseFrame == 0 && m_fPauseSumTime < m_fPauseTime && m_CurrentFrame != 0 && m_isPause)
-	//{
-	//	m_fPauseSumTime += fTimeDelta;
-	//}
-	//else
-	//{
-	//	m_fPauseSumTime = 0.f;
-	// 
-	// 		m_fSumTime += fTimeDelta;
-	//
-	//	uint32_t frameCount = (m_TotalFrame - m_StartFrame + 1);
-	//	float delta = m_fDuration / frameCount;
-	//	
-	//	if (m_fSumTime >= delta)
-	//	{
-	//		m_fSumTime = 0.f;
-	//		m_CurrentFrame = (m_CurrentFrame + 1) % frameCount;
-	//	}
-	//}
 }
 
 void CFlipbookUI::LateUpdate(_float fTimeDelta)

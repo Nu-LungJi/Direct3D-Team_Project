@@ -32,6 +32,7 @@ float GetVolumeFogDensity(float3 _Point)
     FinalNoise = 1.f;
     return FogHeight * FinalNoise * FogDensity * NearFadeFactor;
 }
+
 float Compute_ShadowBrightness(float4 _Position)
 {
     // ViewSpace Pos From ShadowCam

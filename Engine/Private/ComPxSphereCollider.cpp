@@ -52,7 +52,7 @@ HRESULT CComPxSphereCollider::Initialize(void* pArg)
 	if (!pGeometry || !pMaterial)
 		return E_FAIL;
 
-	m_pShape = pPhysics->createShape(*pGeometry, *pMaterial);
+	m_pShape = pPhysics->createShape(*pGeometry, *pMaterial, true);
 	if (!m_pShape)
 		return E_FAIL;
 

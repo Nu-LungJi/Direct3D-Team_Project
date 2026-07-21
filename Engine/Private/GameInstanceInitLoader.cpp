@@ -17,6 +17,7 @@
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
+#include "ComSocket.h"
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
@@ -24,10 +25,14 @@
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
 #include "ComPxSphereCollider.h"
+#include "ComPxConvexCollider.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
+#include "ComCharacterMoveIntent.h"
+#include "ComCharacterMotor.h"
+#include "ComSound.h"
 
 #include "ComLuaScript.h"
 
@@ -232,10 +237,17 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PART_ATTACHMENT, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(E::CB_PART_ATTACHMENT) })))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
-	{
-		E::CResStructuredBuffer::DESC Desc{};
+		{
+			E::CResStructuredBuffer::DESC Desc{};
 	
 		Desc.iNumElements = 512;
 	
@@ -249,6 +261,16 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		{
 			return E_FAIL;
 		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_PART_INSTANCE", E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+		Desc.iNumElements = 512;
+		Desc.iStructureByteStride = sizeof(E::GPU_PART_INSTANCE_DATA);
+		Desc.pInitialData = nullptr;
+		Desc.bAppendConsume = false;
+		if (FAILED(res->Load(Desc))) return E_FAIL;
 	}
 
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX", E::CResStructuredBuffer::Create()))
@@ -270,9 +292,17 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
+	// UI용
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_SpellMeter", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_SPELLMETER) })))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MiniMap", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_MINIMAP) })))
 		{
 			return E_FAIL;
 		}
@@ -328,12 +358,42 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		return E_FAIL;
 	}
 
+	if (CGameInstance::Get().AddPrototype(
+		"PERMANENT", "Prototype_Component_Socket", CComSocket::Create()))
+	{
+		return E_FAIL;
+	}
+
 	if (CGameInstance::Get().AddPrototype("BEHAVIOR", "Prototype_Component_BeHavior", CComBeHavior::Create()))
 	{
 		return E_FAIL;
 	}
 
 	if (CGameInstance::Get().AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+		CComCharacterMoveIntent::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+		CComCharacterMotor::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComSound,
+		CComSound::Create()))
 	{
 		return E_FAIL;
 	}
@@ -351,6 +411,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxConvexCollider, CComPxConvexCollider::Create()))
 		{
 			return E_FAIL;
 		}
@@ -410,6 +474,7 @@ HRESULT CGameInstanceInitLoader::LoadRenderState()
 	{
 		return E_FAIL;
 	}
+
 	return S_OK;
 }
 
@@ -581,6 +646,19 @@ HRESULT CGameInstanceInitLoader::LoadRasterizerState()
 		desc.DepthBiasClamp = 0.0f;
 		if (FAILED(res->Load(desc))) return E_FAIL;
 	}
+
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "RS_MULTIPLE_SHADOW", E::CResRasterizerState::Create()))
+	{
+		D3D11_RASTERIZER_DESC desc{};
+		desc.FillMode = D3D11_FILL_SOLID;
+		desc.CullMode = D3D11_CULL_NONE;
+		desc.DepthClipEnable = TRUE;
+		desc.DepthBias = 2;
+		desc.SlopeScaledDepthBias = 0.1f;
+		desc.DepthBiasClamp = 0.0f;
+		if (FAILED(res->Load(desc))) return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -641,8 +719,6 @@ HRESULT CGameInstanceInitLoader::LoadDepthStencilState()
 		{
 			D3D11_DEPTH_STENCIL_DESC depthDesc{};
 			depthDesc.DepthEnable = TRUE;
-	
-			//  핵심: ALL이 아니라 ZERO로 변경 (깊이 쓰기 차단!)
 			depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	
 			depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
@@ -775,10 +851,10 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
-		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
-		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 
 		sampDesc.BorderColor[0] = 1.f;
 		sampDesc.BorderColor[1] = 1.f;
@@ -794,6 +870,31 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 
+	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, "State_SS_LinearBorder", CResSamplerState::Create()))
+	{
+		D3D11_SAMPLER_DESC sampDesc{};
+		sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+
+		sampDesc.BorderColor[0] = 0.f; // R
+		sampDesc.BorderColor[1] = 0.f; // G
+		sampDesc.BorderColor[2] = 0.f; // B
+		sampDesc.BorderColor[3] = 0.f; // A
+
+		sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		sampDesc.MinLOD = 0;
+		sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		if (FAILED(res->Load(sampDesc)))
+		{
+			return E_FAIL;
+		}
+
+		// 요청하신 7번 슬롯에 바인딩 (픽셀 셰이더)
+		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(7, 1, res->GetSamplerState().GetAddressOf());
 	}
 	return S_OK;
 }
@@ -895,7 +996,14 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGpuCull.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull", "./ShaderFiles/Hiz/Shader_CS_MapMeshGlobalCull.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshBuildIndirectArgs", "./ShaderFiles/Hiz/Shader_CS_MapMeshBuildIndirectArgs.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -932,7 +1040,14 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
-
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_9SliceUI", "./ShaderFiles/UI/9SliceUI.hlsl")) // UI HP Bar
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_9SliceUI", "./ShaderFiles/UI/9SliceUI.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
 
 
 	// model shader
@@ -991,6 +1106,23 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 				return E_FAIL;
 			}
 		}
+
+
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PartObject", "./ShaderFiles/TestModel/Shader_VtxPartObject.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PartObject", "./ShaderFiles/TestModel/Shader_VtxPartObject.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
 	}
 	return S_OK;
 }

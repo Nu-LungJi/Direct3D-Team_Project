@@ -83,23 +83,23 @@ EVALUATE CBTDecTimer::TimeInSuccess(_float fTimeDelta)
 		m_fTick += fTimeDelta;
 		if (m_fWaitTime > m_fTick)
 		{
-			return EVALUATE::SUCCESS;
+			return m_eDebug = EVALUATE::SUCCESS;
 		}
 		else
 		{
 			m_bRun = true;
 			m_fTick = 0.f;
-			return EVALUATE::FAILED;
+			return m_eDebug = EVALUATE::FAILED;
 		}
 	}
 	if (m_bRun)
 	{
 		result = __super::Evaluate(fTimeDelta);
-		if (EVALUATE::SUCCESS == __super::Evaluate(fTimeDelta))
+		if (EVALUATE::SUCCESS == result)
 			m_bRun = false;
 	}
 
-	return result;
+	return m_eDebug = m_bFailed == true ? result : EVALUATE::RUN ;
 }
 
 EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
@@ -117,17 +117,14 @@ EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 	else if (m_eTimer == TIMER::TIMEIN_SUCCESS)
 		result = TimeInSuccess(fTimeDelta);
 
-	return result;
+	return m_eDebug = result;
 }
 void CBTDecTimer::Abort()
 {
 	if (auto pBT = Get_ComBT())
 	{
-		if (Check_Flag(ETOUI(BTFLAG::HIT)))
-		{
-			m_bRun = true;
-			m_fTick = 0.f;
-		}
+		m_bRun = true;
+		m_fTick = 0.f;
 	}
 		
 }
@@ -135,6 +132,7 @@ nlohmann::json CBTDecTimer::Save_Node()
 {
 	nlohmann::json j= __super::Save_Node();
 	SaveJsonValue(j, "WaitTime", m_fWaitTime);
+	SaveJsonValue(j, "Run", m_bRun);
 	SaveJsonEnum(j, "TimerType", m_eTimer);
 	return j;
 }
@@ -143,7 +141,7 @@ HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	if (!LoadJsonValue(j, "WaitTime", m_fWaitTime))
 		MSG_BOX("Failed Load MaxTimeTickCnt : BTDecTimer");
-
+	LoadJsonValue(j, "Run", m_bRun);
 	LoadJsonEnum(j, "TimerType", m_eTimer);
 	return S_OK;
 }
@@ -156,7 +154,11 @@ void		CBTDecTimer::Update_Gui()
 
 	if (ImGui::Button("Run : "))
 		m_bRun = !m_bRun;
-	ImGui::SameLine(50.f);  m_bRun == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::SameLine(60.f);  m_bRun == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+
+	if (ImGui::Button("Failed : "))
+		m_bFailed = !m_bFailed;
+	ImGui::SameLine(80.f);  m_bFailed == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	const _char* pName[] = { MagicEnumToStringView(TIMER::PAUSE).data(), MagicEnumToStringView(TIMER::NEXT).data(),
