@@ -6,12 +6,15 @@
 #include "SerializeManager.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -40,6 +43,12 @@ namespace Detail
 		IDLE,
 		ACTIVE,
 		FINISHED
+	};
+
+	enum class SMALL_ENUM_STATE : uint8_t
+	{
+		ZERO,
+		MAX_VALUE = std::numeric_limits<uint8_t>::max()
 	};
 
 	struct NESTED_DATA final : public ISerializable
@@ -172,14 +181,21 @@ namespace Detail
 	struct REGRESSION_DATA final : public ISerializable
 	{
 		bool bEnabled{ true };
+		int8_t iSigned8{};
+		uint8_t iUnsigned8{};
+		int16_t iSigned16{};
+		uint16_t iUnsigned16{};
 		int iCount{ 7 };
 		uint32_t iUnsigned{ 11 };
 		uint64_t iLarge{ 9'000'000'001ull };
+		int64_t iSignedLarge{};
 		float fRatio{ 1.25f };
+		double dPreciseRatio{ 0.125 };
 		std::string sName{ "DefaultName" };
 		StringID sTag{ "DefaultTag" };
 		_float3 vPosition{ 1.f, 2.f, 3.f };
 		TEST_STATE eState{ TEST_STATE::IDLE };
+		SMALL_ENUM_STATE eSmallState{ SMALL_ENUM_STATE::ZERO };
 		NESTED_DATA tNested{ 1, "DefaultNested" };
 		std::vector<int> vecValues{ 1, 2, 3 };
 		std::vector<NESTED_DATA> vecNested{};
@@ -188,18 +204,28 @@ namespace Detail
 		std::unordered_map<int, float> unorderedValues{};
 		std::pair<StringID, StringID> pairTags{ "Left", "Right" };
 		int iFixed[3]{ 4, 5, 6 };
+		std::array<int16_t, 4> arrFixed{ 7, 8, 9, 10 };
+		std::optional<int16_t> optNumber{ 42 };
+		std::optional<NESTED_DATA> optNested{};
 
 		void Serialize(ISerializer& serializer) const override
 		{
 			serializer.Write("Enabled", bEnabled);
+			serializer.Write("Signed8", iSigned8);
+			serializer.Write("Unsigned8", iUnsigned8);
+			serializer.Write("Signed16", iSigned16);
+			serializer.Write("Unsigned16", iUnsigned16);
 			serializer.Write("Count", iCount);
 			serializer.Write("Unsigned", iUnsigned);
 			serializer.Write("Large", iLarge);
+			serializer.Write("SignedLarge", iSignedLarge);
 			serializer.Write("Ratio", fRatio);
+			serializer.Write("PreciseRatio", dPreciseRatio);
 			serializer.Write("Name", sName);
 			serializer.Write("Tag", sTag);
 			serializer.Write("Position", vPosition);
 			serializer.Write("State", eState);
+			serializer.Write("SmallState", eSmallState);
 			serializer.Write("Nested", tNested);
 			serializer.Write("Values", vecValues);
 			serializer.Write("NestedValues", vecNested);
@@ -208,19 +234,29 @@ namespace Detail
 			serializer.Write("UnorderedValues", unorderedValues);
 			serializer.Write("PairTags", pairTags);
 			serializer.Write("Fixed", iFixed);
+			serializer.Write("StdArray", arrFixed);
+			serializer.Write("OptionalNumber", optNumber);
+			serializer.Write("OptionalNested", optNested);
 		}
 
 		void Deserialize(IDeserializer& deserializer) override
 		{
 			deserializer.Read("Enabled", bEnabled);
+			deserializer.Read("Signed8", iSigned8);
+			deserializer.Read("Unsigned8", iUnsigned8);
+			deserializer.Read("Signed16", iSigned16);
+			deserializer.Read("Unsigned16", iUnsigned16);
 			deserializer.Read("Count", iCount);
 			deserializer.Read("Unsigned", iUnsigned);
 			deserializer.Read("Large", iLarge);
+			deserializer.Read("SignedLarge", iSignedLarge);
 			deserializer.Read("Ratio", fRatio);
+			deserializer.Read("PreciseRatio", dPreciseRatio);
 			deserializer.Read("Name", sName);
 			deserializer.Read("Tag", sTag);
 			deserializer.Read("Position", vPosition);
 			deserializer.Read("State", eState);
+			deserializer.Read("SmallState", eSmallState);
 			deserializer.Read("Nested", tNested);
 			deserializer.Read("Values", vecValues);
 			deserializer.Read("NestedValues", vecNested);
@@ -229,21 +265,31 @@ namespace Detail
 			deserializer.Read("UnorderedValues", unorderedValues);
 			deserializer.Read("PairTags", pairTags);
 			deserializer.Read("Fixed", iFixed);
+			deserializer.Read("StdArray", arrFixed);
+			deserializer.Read("OptionalNumber", optNumber);
+			deserializer.Read("OptionalNested", optNested);
 		}
 
 		bool operator==(const REGRESSION_DATA& rhs) const
 		{
 			return bEnabled == rhs.bEnabled &&
+				iSigned8 == rhs.iSigned8 &&
+				iUnsigned8 == rhs.iUnsigned8 &&
+				iSigned16 == rhs.iSigned16 &&
+				iUnsigned16 == rhs.iUnsigned16 &&
 				iCount == rhs.iCount &&
 				iUnsigned == rhs.iUnsigned &&
 				iLarge == rhs.iLarge &&
+				iSignedLarge == rhs.iSignedLarge &&
 				fRatio == rhs.fRatio &&
+				dPreciseRatio == rhs.dPreciseRatio &&
 				sName == rhs.sName &&
 				sTag == rhs.sTag &&
 				vPosition.x == rhs.vPosition.x &&
 				vPosition.y == rhs.vPosition.y &&
 				vPosition.z == rhs.vPosition.z &&
 				eState == rhs.eState &&
+				eSmallState == rhs.eSmallState &&
 				tNested == rhs.tNested &&
 				vecValues == rhs.vecValues &&
 				vecNested == rhs.vecNested &&
@@ -251,7 +297,10 @@ namespace Detail
 				mapValues == rhs.mapValues &&
 				unorderedValues == rhs.unorderedValues &&
 				pairTags == rhs.pairTags &&
-				std::equal(std::begin(iFixed), std::end(iFixed), std::begin(rhs.iFixed));
+				std::equal(std::begin(iFixed), std::end(iFixed), std::begin(rhs.iFixed)) &&
+				arrFixed == rhs.arrFixed &&
+				optNumber == rhs.optNumber &&
+				optNested == rhs.optNested;
 		}
 	};
 
@@ -259,14 +308,21 @@ namespace Detail
 	{
 		REGRESSION_DATA data{};
 		data.bEnabled = false;
+		data.iSigned8 = std::numeric_limits<int8_t>::min();
+		data.iUnsigned8 = std::numeric_limits<uint8_t>::max();
+		data.iSigned16 = std::numeric_limits<int16_t>::min();
+		data.iUnsigned16 = std::numeric_limits<uint16_t>::max();
 		data.iCount = -42;
 		data.iUnsigned = 4'000'000'000u;
 		data.iLarge = 18'446'000'000'000'000'000ull;
+		data.iSignedLarge = std::numeric_limits<int64_t>::min();
 		data.fRatio = 7.5f;
+		data.dPreciseRatio = 0.125;
 		data.sName = "RegressionData";
 		data.sTag = "RegressionTag";
 		data.vPosition = { -3.f, 10.f, 0.5f };
 		data.eState = TEST_STATE::FINISHED;
+		data.eSmallState = SMALL_ENUM_STATE::MAX_VALUE;
 		data.tNested = { 77, "NestedRoot" };
 		data.vecValues = { -10, 0, 10, 20 };
 		data.vecNested = { { 1, "One" }, { 2, "Two" } };
@@ -277,6 +333,12 @@ namespace Detail
 		data.iFixed[0] = 91;
 		data.iFixed[1] = 92;
 		data.iFixed[2] = 93;
+		data.arrFixed = {
+			std::numeric_limits<int16_t>::min(), -1, 0,
+			std::numeric_limits<int16_t>::max()
+		};
+		data.optNumber = std::numeric_limits<int16_t>::max();
+		data.optNested.reset();
 		return data;
 	}
 
@@ -289,6 +351,8 @@ namespace Detail
 		data.vecNestedArrays.clear();
 		data.mapValues.clear();
 		data.unorderedValues.clear();
+		data.optNumber.reset();
+		data.optNested = NESTED_DATA{ 808, "OptionalNested" };
 		return data;
 	}
 
@@ -545,6 +609,37 @@ inline REGRESSION_REPORT RunSerializationRegressionTests(CSerializeManager& mana
 		if (!WriteTextFile(
 			path,
 			R"({"Root":{"Enabled":true,"Count":"invalid"}})"))
+		{
+			return false;
+		}
+
+		REGRESSION_DATA destination = populated;
+		const REGRESSION_DATA before = destination;
+		const SERIALIZE_RESULT result =
+			manager.JsonDeSerializeDetailed(path.string(), destination, ROOT_NAME);
+		return result.eError == SERIALIZE_ERROR::DATA_DESERIALIZATION_FAILED &&
+			destination == before;
+	});
+
+	runner.Run("JSON rejects an out-of-range fixed-width integer", [&]
+	{
+		const auto path = root / "integer_overflow.json";
+		if (!WriteTextFile(path, R"({"Root":{"Unsigned8":256}})")) return false;
+
+		REGRESSION_DATA destination = populated;
+		const REGRESSION_DATA before = destination;
+		const SERIALIZE_RESULT result =
+			manager.JsonDeSerializeDetailed(path.string(), destination, ROOT_NAME);
+		return result.eError == SERIALIZE_ERROR::DATA_DESERIALIZATION_FAILED &&
+			destination == before;
+	});
+
+	runner.Run("JSON rejects an inconsistent optional value state", [&]
+	{
+		const auto path = root / "invalid_optional.json";
+		if (!WriteTextFile(
+			path,
+			R"({"Root":{"OptionalNumber":{"HasValue":true}}})"))
 		{
 			return false;
 		}
