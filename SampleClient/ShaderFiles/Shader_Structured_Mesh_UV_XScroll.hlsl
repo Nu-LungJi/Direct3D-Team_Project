@@ -101,15 +101,24 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
-
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
+    float scrollSpeed = 0.2f; // 흐르는 속도, 필요하면 파라미터로 빼서 조절
+    float2 scrolledUV = In.vTexcoord + float2(scrollSpeed * g_fTime, 0.0f);
+    
+    
+    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, scrolledUV) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
     if (AlbedoTex.a < 0.05f)
         discard;
     float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
-    
+    float lengthMask = In.vTexcoord.y;
+
+// 길이 그라디언트 위주 + 노이즈로 가장자리에 자연스러운 디테일만 살짝
+    float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
     float ratio = 1.0f - (In.life / In.maxLife);
 
-    //if (noise.r < ratio) 
+    if (revealValue > ratio)
+        discard;
+
+    //if (noise.r > ratio) 
     //    discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 

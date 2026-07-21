@@ -521,6 +521,14 @@ HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag
 	return m_pParticleManager->Spawn(sGroupTag, sTypeTag, count, pSpawnData, bLoop, fSpawnInterval);
 }
 
+std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
+{
+	return m_pParticleManager->Parse_Command(strJsonFile);
+}
+
+uint32_t CGameInstance::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos) {
+	return m_pParticleManager->Spawn(templateCommands, worldMat ,endPos);
+}
 HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
 	return m_pParticleManager->Add_Particle(sGroupTag, sTypeTag, std::move(particle));

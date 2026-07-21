@@ -192,19 +192,25 @@ namespace Engine
 	typedef struct tagParticleSpawnData
 	{
 		_float3  position;
-		_float   pad0;        // HLSL이 velocity를 16으로 밀어내기 위해 넣는 패딩
+		_float   pad0;
 		_float3  velocity;
 		_float   life;
 		_float   fSize;
 		_float   fEndSize;
-		_float2  pad1;        // HLSL이 color를 48로 밀어내기 위해 넣는 패딩 (8바이트)
-		_float4 rotation;
+		_float2   pad1;     
+		_float4  rotation;
 		_float4  color;
+		_float4  originalEmissive;
 		_float4  emissive;
+		_float4  endEmissive;
 		_float   spawnDelay;
 		uint32_t ownerID = 0;
 		uint32_t iBehaviorType = 0;
-		_float pad2;
+		_float   pad2;
+		_bool    loop;
+		_float3  originalPosition;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
 	} PARTICLE_SPAWN_DATA;
 	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
 
@@ -243,9 +249,7 @@ namespace Engine
 
 	}MODEL_FILE_HEADER;
 
-	typedef struct tagParticleSpecies {
 
-	}PARTICLE_SPECIES;
 
 	// 여러 청크를 관리할 때 key로 사용할 ChunkCoord
 	typedef struct tagMapChunkCoord

@@ -34,6 +34,8 @@ public:
 		std::pair<StringID, StringID> normalTextureID;
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
+		std::pair<StringID, StringID> hdrPositionTextureID;
+		std::pair<StringID, StringID> hdrNormalTextureID;
         //모델이면 넣어줌
         StringID sGroupTag;
         StringID sResTag;
@@ -96,6 +98,7 @@ private:
     SPtr<class CResSamplerState>     m_pResSamplerState = nullptr;
 
     SPtr<class CResCBuffer>          m_pComCBuffer;
+    SPtr<class CResCBuffer>          m_pComWaveCBuffer;
     SPtr<CResCBuffer>                m_pComSpawnCBuffer;
     SPtr<CResCBuffer>                m_pComInitCBuffer;
 
@@ -103,6 +106,7 @@ private:
     uint32_t                         m_iDeadCount = 0;
 	SPtr<CResComputeShader> m_pResClearByOwnerCS;
 	SPtr<CResCBuffer> m_pComClearCBuffer;
+	_float				m_fTime{};
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

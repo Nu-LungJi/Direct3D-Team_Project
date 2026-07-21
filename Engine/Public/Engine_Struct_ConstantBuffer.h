@@ -100,8 +100,24 @@ namespace Engine
 		uint32_t g_iFlipbookRows;
 		uint32_t g_iFlipbookColumns;
 		uint32_t g_iTotalFrames;
-		_float3    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+		_float	g_fTime;
+		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
+
+	typedef struct CB_CIRCLE_TO_WAVE
+	{
+		_float3 g_vFlowDirection; // 물결이 흘러가는 방향 (정규화, XZ 평면 기준)
+		_float g_fBurstRatio; // ageRatio 기준, 이 시점까지 원형 확산 (예: 0.3)
+
+		_float g_fTransitionRatio; // 전환 구간 폭 (ageRatio 기준, 예: 0.15)
+		_float g_fBurstSpeed; // 원형 확산 초기 속도
+		_float g_fFlowSpeed; // 물결이 흘러가는 이동 속도
+		_float g_fWaveAmplitude; // 상하 진폭
+
+		_float g_fWaveFrequency; // 공간적 파장 (위치에 따른 위상차)
+		_float g_fWaveSpeed; // 시간에 따른 위상 변화 속도
+		_float2 g_fPadding2;
+	}CB_CIRCLE_TO_WAVE;
 	typedef struct CB_SCROLL
 	{
 		_float    g_fScrollOffset;

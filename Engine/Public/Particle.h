@@ -14,6 +14,7 @@ public:
 		BEHAVIOR_DISTORTION = 1 << 1, 
 		BEHAVIOR_BILLBOARD = 1 << 2,
 		BEHAVIOR_GRAVITY = 1 << 3,
+		BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4,
 
 	};
 
@@ -52,6 +53,8 @@ protected:
 	SPtr<class CResTexture2D> m_pNormalTexture;
 	SPtr<class CResTexture2D> m_pDistortionTexture;
 	SPtr<class CResTexture2D> m_pNoiseTexture;
+	SPtr<class CResTexture2D> m_pHdrPositionTexture;
+	SPtr<class CResTexture2D> m_pHdrNormalTexture;
 
 private:
 
