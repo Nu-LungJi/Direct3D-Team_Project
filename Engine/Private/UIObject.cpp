@@ -97,4 +97,5 @@ void CUIObject::CalcUICoord()
 	auto y = -m_UIINFO.fY + clientHeight * 0.5f;
 	
 	GetTransform().SetPosition(XMVectorSet(x, y, GetTransform().GetPosition().z, 1.f));
+	GetTransform().SetRotation({0.f, 0.f, 1.f}, m_UIINFO.Rot);
 }

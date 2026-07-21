@@ -153,11 +153,13 @@ public:
 	_bool GetVisible() { return m_isVisible; }
 	_float GetAlphaRatio() { return m_UIINFO.AlphaRatio; }
 	_float GetScaleRatio() { return m_ScaleRatio; }
+	_float GetLocalRot() { return m_UIINFO.LocalRot; }
 
 	void SetActive(bool isActive) { m_isActive = isActive; }
 	void SetVisible(bool isVisible) { m_isVisible = isVisible; }
 	void SetAlphaRatio(_float alpha) { m_UIINFO.AlphaRatio = alpha; }
 	void SetScaleRatio(_float scale) { m_ScaleRatio = scale; }
+	void SetLocalRot(_float rot) { m_UIINFO.LocalRot = rot; }
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
 	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }

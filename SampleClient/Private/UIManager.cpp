@@ -11,6 +11,7 @@
 #include "SpellMeter.h"
 #include "HPBar.h"
 #include "Level_Defines.h"
+#include "MiniMap.h"
 
 NS_USING(Client)
 
@@ -197,8 +198,8 @@ void UIManager::InitializeActions()
 
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
-		//pCaller->GetAlpha()
-		pTween->PlayTween(0.f, 1.0f, 0.3f,
+		_float originAlpha = pCaller->GetAlpha();
+		pTween->PlayTween(0.f, originAlpha, 0.3f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
 			});
@@ -876,6 +877,11 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		pUI->SetUIType(ETOUI(UI_TYPE::LEFTHPFILL));
+		break;
+	case ETOUI(UI_TYPE::MINIMAP):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_MiniMap", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CMiniMap>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::MINIMAP));
 		break;
 	default:
 		break;

@@ -225,11 +225,11 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 			count++;
 			Desc.sObjectTag = "UI_" + std::to_string(count);
 			Desc.Name = "UI_" + std::to_string(count);
-			Desc.fSizeX = 128.f;
-			Desc.fSizeY = 128.f;
+			Desc.fSizeX = 200.f;
+			Desc.fSizeY = 200.f;
 			Desc.fX = clientSize.x * 0.5f;
 			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 1.f;
+			Desc.fAlpha = 0.4f;
 			Desc.UIType = ETOUI(UI_TYPE::MINIMAP);
 			Desc.ResWeight = count;
 
