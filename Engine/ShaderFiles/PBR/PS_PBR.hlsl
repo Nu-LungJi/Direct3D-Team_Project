@@ -310,9 +310,6 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
     
     if (AlbedoTex.a == 0.0f)
         discard;
-    
-	OUT.Diffuse = float4(AlbedoTex.rgb, 1.f);
-	return OUT;
 	
     float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);

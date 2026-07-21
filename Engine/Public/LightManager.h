@@ -33,8 +33,7 @@ public:
 	VOID	Update(_float fTimeDelta);
 	VOID	UpdateGUI();
 	HRESULT	Capture_ShadowMap();
-	HRESULT	Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
-		const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth);
+	HRESULT	Render_ObjectShadow();
 
 	VOID	Bind_DynamicLight();
 

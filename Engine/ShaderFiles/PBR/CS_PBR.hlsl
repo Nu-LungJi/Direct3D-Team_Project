@@ -6,14 +6,14 @@ Texture2D<float4>	NormalMap		: register(t1);
 Texture2D<float4>	SMROMap			: register(t2);
 Texture2D<float4>	EmissiveMap		: register(t3);
 Texture2D<float4>	AmbientMap		: register(t4);
-
 Texture2D<float>	DepthMap		: register(t5);
 
 // Image Based Lighting
-TextureCube			IrridianceMap	: register(t6);		// 환경광
+TextureCube			IrridianceMap	: register(t6);					// 환경광
 TextureCube			PreFilterMap	: register(t7);
-Texture2D<float4>	LookUpTableMap	: register(t8);		// PostProcess필터
+Texture2D<float4>	LookUpTableMap	: register(t8);					// PostProcess필터
 
+// Shadow Texture
 Texture2DArray<float>	StaticShadowMaps	  : register(t9);		// Directional Static
 Texture2DArray<float>	DynamicShadowMaps	  : register(t10);		// Directional Dynamic
 
@@ -27,8 +27,6 @@ static const float2		ShadowMapResolution = { 1280.f, 720.f };
 
 static const float		ShadowSmoothness = 1.5f;
 static const float		ShadowBrightness = 0.2f;
-
-static const float		DissolveEdgeWidth = 0.025f;
 
 static const float2		PoissonDisk[8] =
 {
@@ -102,6 +100,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
 	float3 ShadowTexCoord = LightPos.xyz / LightPos.w;
 	float2 ShadowUV = ShadowTexCoord.xy * 0.5f + 0.5f;
 
+	[branch]
 	if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f ||
 	 	ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f || LightPos.w <= 0.0f)
 	{
@@ -207,7 +206,7 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughne
     float3 PreFilteredDiffuse = PreFilterMap.SampleLevel(LinearWrap, R, _Roughness * MAX_REFLECTION_LOD).rgb;
     
     float2 lutUV = float2(NDV, _Roughness);
-    float2 brdf = LUTMap.SampleLevel(LinearWrap, lutUV, 0.f).rg;
+	float2 brdf = LookUpTableMap.SampleLevel(LinearWrap, lutUV, 0.f).rg;
     
     float3 SpecularAmbient = PreFilteredDiffuse * (F * brdf.x + brdf.y);
     
@@ -220,6 +219,8 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughne
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
+	
+	[branch]
 	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return; // 스레드가 해상도 넘어가면 출력X
 
     float2	TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
@@ -251,13 +252,17 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
 	
     float3	LightAccumulation = float3(0.f, 0.f, 0.f);
+	
+	[unroll]
     for (uint i = 0; i < LightCount; ++i)
 	{
 		float3 L, Radiance;
+		[branch]
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
 			float RawNDL = dot(WorldNormal, L);
 			
+			[branch]
 			if (RawNDL > 0.f)
 			{
 				float NDL = clamp(RawNDL, 0.f, 1.f);
@@ -278,15 +283,19 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				int ShadowSlot = AffectedLight[i].ShadowSlot;
 				
 				[branch]
-				if (AffectedLight[i].LightType == LIGHT_POINT)
-				{	
-					ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), ShadowSlot);
-				}
-				else
+				if (ShadowSlot >= 0 && ShadowSlot < MAX_LIGHT_MAPCOUNT)
 				{
-					ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), ShadowSlot);
+					[branch]
+					if (AffectedLight[i].LightType == LIGHT_POINT)
+					{
+						ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), ShadowSlot);
+					}
+					else
+					{
+						ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), ShadowSlot);
+					}
 				}
-                
+				
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
 			}
 		}
@@ -308,6 +317,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 {
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
+	
+	[branch]
 	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
 		return; // 스레드가 해상도 넘어가면 출력X
 
@@ -340,13 +351,16 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
 	
 	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+	
+	[unroll]
 	for (uint i = 0; i < LightCount; ++i)
 	{
 		float3 L, Radiance;
+		[branch]
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
 			float RawNDL = dot(WorldNormal, L);
-			
+			[branch]
 			if (RawNDL > 0.f)
 			{
 				float NDL = clamp(RawNDL, 0.f, 1.f);

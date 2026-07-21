@@ -1065,9 +1065,8 @@ VOID	CGameInstance::Clear_DynamicLightList() {
 HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	return m_pLightManager->Add_ShadowRenderGroup(_ATYPE, pRenderObject);
 }
-HRESULT	CGameInstance::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
-	const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth) {
-	return m_pLightManager->Render_ObjectShadow(_Diffuse, _Normal, _SMRO, _Emissive, _Ambient, _Depth);
+HRESULT	CGameInstance::Render_ObjectShadow() {
+	return m_pLightManager->Render_ObjectShadow();
 }
 
 #pragma endregion

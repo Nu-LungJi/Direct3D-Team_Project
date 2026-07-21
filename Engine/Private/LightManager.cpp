@@ -45,14 +45,14 @@ HRESULT CLightManager::Initialize_LightManager() {
 
 		uint32_t ScreenSizeX = ETOUI(ShadowMapResolution.x);
 		uint32_t ScreenSizeY = ETOUI(ShadowMapResolution.y);
-
+		uint32_t ShadowSize  = 1024;
 		uint32_t CubeMapSize = 1024;
 
-		m_pDirectionalShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Directional", ScreenSizeX, ScreenSizeY);
+		m_pDirectionalShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Directional", ShadowSize, ShadowSize);
 		m_pPointShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Point", CubeMapSize, CubeMapSize);
 
-		if (FAILED(Generate_ShadowArray2D(m_pStaticDirectionalShadowList, ScreenSizeX, ScreenSizeY)))	return E_FAIL;
-		if (FAILED(Generate_ShadowArray2D(m_pDynamicDirectionalShadowList, ScreenSizeX, ScreenSizeY)))	return E_FAIL;
+		if (FAILED(Generate_ShadowArray2D(m_pStaticDirectionalShadowList, ShadowSize, ShadowSize)))	return E_FAIL;
+		if (FAILED(Generate_ShadowArray2D(m_pDynamicDirectionalShadowList, ShadowSize, ShadowSize)))	return E_FAIL;
 
 		if (FAILED(Generate_ShadowArrayCube(m_pStaticPointShadowList, CubeMapSize, CubeMapSize)))		return E_FAIL;
 		if (FAILED(Generate_ShadowArrayCube(m_pDynamicPointShadowList, CubeMapSize, CubeMapSize)))	return E_FAIL;
@@ -369,8 +369,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 	return S_OK;
 }
 
-HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
-	const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth) {
+HRESULT CLightManager::Render_ObjectShadow() {
 	ZoneScopedN("Render_ObjectShadow");
 	{
 		if (nullptr == m_pUAVComBinedOutput) return E_FAIL;
@@ -388,8 +387,6 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 	if (nullptr == ActiveCamera) return E_FAIL;
 
 	XMMATRIX InvViewProj = XMMatrixMultiply(XMMatrixInverse(nullptr, ActiveCamera->GetView()), XMMatrixInverse(nullptr, ActiveCamera->GetProj()));
-
-
 
 	uint32_t LightCount = 0;
 	CB_LIGHT LightBuffer{};
@@ -431,19 +428,17 @@ HRESULT CLightManager::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView
 		memcpy(MRES.pData, &LightBuffer, sizeof(CB_LIGHT));
 		m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
-
-	Bind_ShadowResource();
-
 	m_pContext->CSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 	m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 
-	uint32_t ScreenResolutionX = { 1280 };
-	uint32_t ScreenResolutionY = { 720 };
+	Bind_ShadowResource();
 
-	m_pContext->Dispatch((ScreenResolutionX + 15) / 16, (ScreenResolutionY + 15) / 16, 1);
+	_float2 ShadowMapResolution = CGameInstance::Get().GetClientScreenSize();
+	
+	m_pContext->Dispatch((ETOUI(ShadowMapResolution.x) + 15) / 16, (ETOUI(ShadowMapResolution.y) + 15) / 16, 1);
 
-	ID3D11ShaderResourceView* NullSRVs[12] = { nullptr };
-	m_pContext->CSSetShaderResources(0, 12, NullSRVs);
+	ID3D11ShaderResourceView* NullSRV[12] = { nullptr };
+	m_pContext->CSSetShaderResources(0, 12, NullSRV);
 
 	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
 	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
@@ -495,7 +490,7 @@ VOID CLightManager::Bind_DynamicLight() {
 
 VOID CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
 	CLight::DESC LDesc{};
-	if (m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00" + m_LightHandleList.size();
+	if		(m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00" + m_LightHandleList.size();
 	else if (m_LightHandleList.size() < 100)    LDesc.sObjectTag = "Light_Clone0" + m_LightHandleList.size();
 	else if (m_LightHandleList.size() < 1000)   LDesc.sObjectTag = "Light_Clone" + m_LightHandleList.size();
 
@@ -503,6 +498,7 @@ VOID CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _
 	if (!(LightHandle))	return;
 
 	auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+
 	LightOBJ->Change_LightType(LIGHT_TYPE::DIRECTIONAL);
 	LightOBJ->Set_LightDirection(_Direction);
 	LightOBJ->Set_LightColor(_Color);
@@ -635,11 +631,11 @@ VOID CLightManager::Update_ActiveLights() {
 		XMVECTOR CurrentPosition = LightOBJ->GetTransform().GetLoadedPostion();
 		_float	 Distance = XMVectorGetX(XMVector3Length(XMVectorSubtract(CameraPos, CurrentPosition)));
 		
-		if (Distance <= 50.f)// && IsInFrustum(LightOBJ))
+		if (Distance <= 100.f)// && IsInFrustum(LightOBJ))
 			CullingLight.push_back({ LightOBJ, Distance });
 	}
 
-	// 거리 기반 컬링 + 정렬
+	// 거리 기반 컬링 + 정렬(최단거리 순)
 	std::sort(CullingLight.begin(), CullingLight.end(), [](const LightData& SRC, const LightData& DST) {
 		return SRC.Distance < DST.Distance;
 	});
@@ -652,14 +648,17 @@ VOID CLightManager::Update_ActiveLights() {
 }
 
 _bool CLightManager::IsInFrustum(CLight* _LightOBJ) {
-	auto CamCollider = CGameInstance::Get().GetActiveCamera()->GetCollider().Get();
-	if (nullptr == CamCollider) return false;
+	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+	if (nullptr == ActiveCam)			return false;
 
-	auto CameraFrustum = static_cast<CCollFrustum*>(CamCollider);
+	auto ActiveCamCollider = ActiveCam->GetCollider().Get();
+	if (nullptr == ActiveCamCollider)	return false;
+
+	auto CameraFrustum = static_cast<CCollFrustum*>(ActiveCamCollider);
 
 	auto LightCollider = (_LightOBJ->Get_LightType() == LIGHT_TYPE::POINT ? _LightOBJ->Get_SphereCollider() : _LightOBJ->Get_FrustumCollider());
 
-	if (nullptr == LightCollider) return false;
+	if (nullptr == LightCollider)		return false;
 
 	return CameraFrustum->Intersect(*LightCollider.get());
 }
@@ -741,7 +740,6 @@ HRESULT CLightManager::Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32
 }
 
 VOID CLightManager::Update_LightData() {
-
 	m_pLightConstantVariable.LightCount = m_pActiveShadowLightList.size();
 	uint32_t PLSlotIndex = 0, DLSlotIndex = 0;
 

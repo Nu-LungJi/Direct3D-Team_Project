@@ -970,8 +970,8 @@ HRESULT CRenderer::Draw() {
 
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
-	if (bApplyShadow)
-		if (FAILED(Render_Shadow()))	return E_FAIL;
+	//if (bApplyShadow)
+	//	if (FAILED(Render_Shadow()))	return E_FAIL;
 
 	// DepthMap
 	if (FAILED(Render_DepthMap()))       return E_FAIL;
@@ -1249,29 +1249,26 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pResDynTexTargetHBAO->GetSRV(),
 		m_pResDynTexTargetDepth->GetSRV(),
 	};
-	m_pContext->CSSetShaderResources(0, 6, );
+	m_pContext->CSSetShaderResources(0, 6, SRVList->GetAddressOf());
 
-	ID3D11ShaderResourceView* pIBLSRVs[3] = {
-		m_pIrridianceSRV.Get(),
-		m_pPreFilterSRV.Get(),
-		m_pLUTSRV.Get()
-	};
+	//ComPtr<ID3D11ShaderResourceView> ExtraSRVList[3] = {
+	//	m_pIrridianceSRV.Get(),
+	//	m_pPreFilterSRV.Get(),
+	//	m_pLUTSRV.Get()
+	//};
+	//
+	//m_pContext->CSSetShaderResources(10, 1, &pIBLSRVs[0]);
+	//m_pContext->CSSetShaderResources(11, 1, &pIBLSRVs[1]);
+	//m_pContext->CSSetShaderResources(12, 1, &pIBLSRVs[2]);
 
-	m_pContext->CSSetShaderResources(10, 1, &pIBLSRVs[0]);
-	m_pContext->CSSetShaderResources(11, 1, &pIBLSRVs[1]);
-	m_pContext->CSSetShaderResources(12, 1, &pIBLSRVs[2]);
-
-	CGameInstance::Get().Render_ObjectShadow(SRVList[0], SRVList[1], SRVList[2], SRVList[3], SRVList[4], SRVList[5]);
-
-	// Dissolve
-	SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
-	m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+	CGameInstance::Get().Render_ObjectShadow();
 
 	Unbind_Resources();
 	
 	m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
 	
 	return S_OK;
+
 	{
 		CGameInstance::Get().Bind_DynamicLight();
 	
@@ -1344,11 +1341,10 @@ HRESULT CRenderer::Render_Lighting() {
 	
 		// Draw On PBRScreen
 		m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
-	
 	}
 	
-	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetLight);
-	
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetLight;
+
 	Unbind_Resources();
 
 	return S_OK;
@@ -1391,8 +1387,9 @@ HRESULT CRenderer::Render_Alpha() {
 	}
 		
 	Unbind_Resources();
+	
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetPBR;
 
-	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetPBR);
 	return S_OK;
 }
 
@@ -1421,9 +1418,7 @@ HRESULT CRenderer::Render_Effect()
 
 	Unbind_Resources();
 
-	//m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetEffect;
-
-	std::swap(m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetEffect);
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetEffect;
 
 	return S_OK;
 }
@@ -1432,7 +1427,7 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 	if (ApplyVolumetric == false) return S_OK;
 	ZoneScopedN("Render_VolumetricEffect");
 	{
-		ID3D11RenderTargetView* NullRTV[1] = { nullptr };
+		ID3D11RenderTargetView* NullRTV[1] = { nullptr }; 
 		m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
 
 		const auto& cs = m_pVolumetricComputeShader;
@@ -1586,10 +1581,14 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 
 	ID3D11ShaderResourceView* NullSRV[2] = { nullptr, nullptr };
 
+	_float ClearColor[] = { 0.f, 0.f, 1.f, 1.f };
+
 	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 	//////////////////////////// Bright Pass /////////////////////////////////
 	ID3D11RenderTargetView* BRPRTV[1] = { m_pResDynTexTargetPostProcess->GetRTV().Get() };
+
+	m_pContext->ClearRenderTargetView(BRPRTV[0], reinterpret_cast<float*>(&ClearColor));
 	m_pContext->OMSetRenderTargets(1, BRPRTV, nullptr);
 	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
@@ -1606,13 +1605,14 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 	m_pContext->PSSetShaderResources(1, 1, &NullSRV[0]);
 
 	ID3D11RenderTargetView* BlurRTV[1] = { m_pResDynTexTargetBrightPass->GetRTV().Get() };
+
+	m_pContext->ClearRenderTargetView(BlurRTV[0], reinterpret_cast<float*>(&ClearColor));
 	m_pContext->OMSetRenderTargets(1, BlurRTV, nullptr);
 
 	m_pContext->PSSetShader(VerticalBlurPS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPostProcess->GetSRV().GetAddressOf());
+	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());
 
 	m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-
 	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetBrightPass;
@@ -1621,6 +1621,8 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 	m_pContext->PSSetShaderResources(1, 1, &NullSRV[0]);
 
 	ID3D11RenderTargetView* CombinedRTV[1] = { m_pResDynTexTargetPostProcess->GetRTV().Get() };
+
+	m_pContext->ClearRenderTargetView(CombinedRTV[0], reinterpret_cast<float*>(&ClearColor));
 	m_pContext->OMSetRenderTargets(1, CombinedRTV, nullptr);
 
 	m_pContext->PSSetShader(CombinedPS->GetPixelShader().Get(), nullptr, 0);
@@ -1689,8 +1691,8 @@ HRESULT CRenderer::Render_UserInterface() {
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		//_float4 clearColor = { 1.f, 1.f, 1.f, 1.f };
-		//m_pContext->ClearRenderTargetView(m_pLastTex2DBeforeFullScreenDraw->GetRTV().Get(), reinterpret_cast<float*>(&clearColor));
+		_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+		m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
 
 		const auto& vs = m_pFullscreenVS;
 		const auto& ps = m_pFullscreenPS;
@@ -2016,8 +2018,8 @@ HRESULT CRenderer::Initialize_Debugging()
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetEffect);
 
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetLight);
-	m_pResDynTexTargetList.push_back(m_pOffScreenTex2D);
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetBrightPass);
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetUI);
 
 	for (uint32_t i = 0; i < m_pResDynTexTargetList.size(); i++)
 	{
@@ -2062,7 +2064,7 @@ HRESULT CRenderer::Render_Debugging() {
 	m_pContext->IASetPrimitiveTopology(m_pDebugBuffer->GetPrimitiveType());
 
 	auto pCbPerObject = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT);
-	D3D11_MAPPED_SUBRESOURCE MRES;
+	D3D11_MAPPED_SUBRESOURCE MRES{};
 
     for (uint32_t IDX = 0; IDX < 9; ++IDX) {
 	

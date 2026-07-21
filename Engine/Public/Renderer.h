@@ -143,9 +143,6 @@ private:
 	SPtr<CResViewPort> m_pBackBufferViewPort{};
 
 private:
-	SPtr<CResDynamicTexture2D> m_pLastTex2DBeforeFullScreenDraw{};
-
-private:
 	SPtr<CResVertexShader> m_pFullscreenVS{};
 	SPtr<CResPixelShader> m_pFullscreenPS{};
 	SPtr<CResVIBuffer> m_pFullscreenVIBuffer{};

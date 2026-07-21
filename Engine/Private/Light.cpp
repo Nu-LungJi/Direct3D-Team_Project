@@ -81,8 +81,9 @@ VOID CLight::PriorityUpdate(E::_float fTimeDelta) {
 VOID CLight::Update(E::_float fTimeDelta) {
 	m_pComTransform->Update();
 
+	auto LightType = m_pDynamicLight.LightType;
 	// Point Light
-	if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
+	if (LightType == ETOUI(LIGHT_TYPE::POINT)) {
 
 		XMVECTOR LightPosition				= m_pComTransform->GetState(STATE::POSITION);
 		XMVECTOR PositionOffset				= XMVectorSet(0.f, 0.0001f, 0.f, 0.f);
@@ -94,8 +95,8 @@ VOID CLight::Update(E::_float fTimeDelta) {
 			XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ProjMat));
 		}
 	}
-	// Directional & SpotLight 
-	else {
+	// SpotLight 
+	else if(LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)){
 		_float	 fNearZ = 0.01f;
 
 		m_pDynamicLight.OuterAttanuation = std::clamp(m_pDynamicLight.OuterAttanuation, 1.f, 75.f);
@@ -112,6 +113,16 @@ VOID CLight::Update(E::_float fTimeDelta) {
 
 		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
 		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), ScreenSize.x / ScreenSize.y, fNearZ, m_pDynamicLight.LightRange));
+		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
+	}
+	// Directional
+	else {
+		XMVECTOR	LightPosition = m_pComTransform->GetState(STATE::POSITION);
+		XMVECTOR	LightDirection = XMVector3Normalize(XMLoadFloat3(&m_pDynamicLight.LightDirection));
+		XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
+		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(150.f, 150.f, 0.1f, 500.f));
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 
@@ -187,18 +198,14 @@ VOID CLight::Update_Collider() {
 
 	if		(m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
 		if (nullptr == m_pColliderFrustum) return;
-		
-		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
+		_float  fNearZ = 0.01f;
+
+		_float2	ScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+		XMMATRIX FrustumProjMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_pDynamicLight.OuterAttanuation * 1.3f), ScreenSize.x / ScreenSize.y, fNearZ, m_pDynamicLight.LightRange);
+		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(FrustumProjMatrix);
 
 		XMMATRIX InvViewMat = XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView));
-
-		//XMMATRIX WorldMatrix{};
-		//XMVECTOR scale{}, rotation{}, translation{};
-		//if (XMMatrixDecompose(&scale, &rotation, &translation, InvViewMat)) {
-		//	rotation = XMQuaternionNormalize(rotation);
-		//	WorldMatrix = XMMatrixRotationQuaternion(rotation) * XMMatrixTranslationFromVector(translation);
-		//}
-		//m_pColliderFrustum->Transform(WorldMatrix);
 		m_pColliderFrustum->Transform(InvViewMat);
 
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderFrustum.get());

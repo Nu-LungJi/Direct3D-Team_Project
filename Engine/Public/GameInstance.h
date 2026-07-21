@@ -294,8 +294,7 @@ public:
 
 	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 
-	HRESULT	Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
-		const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth);
+	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
 #pragma endregion
 
