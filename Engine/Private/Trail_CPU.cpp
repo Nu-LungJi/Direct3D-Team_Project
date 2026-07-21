@@ -360,6 +360,9 @@ void CTrail_CPU::BuildTrailGeometry()
 
 	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
 	{
+		if (CGameInstance::Get().GetActiveCamera() == nullptr) {
+			return;
+		}
 		XMMATRIX matView = CGameInstance::Get().GetActiveCamera()->GetView();
 		XMMATRIX matViewInv = XMMatrixInverse(nullptr, matView);
 		//XMStoreFloat3(&vCamPos, matViewInv.r[3]);

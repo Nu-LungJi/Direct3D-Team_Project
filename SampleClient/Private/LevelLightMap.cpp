@@ -12,6 +12,7 @@
 #include "Terrain.h"
 #include "TestModel.h"
 #include "LightObject.h"
+#include "LightTerrain.h"
 #include "LevelLightMapLoader.h"
 
 NS_USING(Client)
@@ -37,7 +38,8 @@ HRESULT CLevelLightMap::Initialize()
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
 
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(-2.f, 17.f, -3.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(17.5f, 10.f, 8.f, 1.f));
 	}
 	{
 		CLightObject::DESC LDesc{};
@@ -46,14 +48,14 @@ HRESULT CLevelLightMap::Initialize()
 		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
-
+	
 		LightObject->GetComponent<CComTransform>("Com_Transform")->SetScale(XMVectorSet(70.f, 70.f, 70.f, 1.f));
-		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(-2.f, 17.f, -3.f, 1.f));
+		LightObject->GetComponent<CComTransform>("Com_Transform")->SetPosition(XMVectorSet(6.5f, 10.f, 7.f, 1.f));
 	}
 	{
-		CTerrain::DESC Desc{};
-		Desc.sObjectTag = "Terrain";
-
+		CLightTerrain::DESC Desc{};
+		Desc.sObjectTag = "LightTerrain";
+	
 		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_Terrain",
 			"02_Terrain", &Desc)))
 		{
@@ -68,7 +70,7 @@ HRESULT CLevelLightMap::Initialize()
 		Desc.vEye = { 0.f, 0.f, -5.f };
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
+		Desc.fNear = 0.01f;
 		Desc.fFar = 1000.f;
 		Desc.sObjectTag = "FlyCam";
 
@@ -109,8 +111,9 @@ HRESULT CLevelLightMap::Initialize()
 	}
 
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 5.f);
-	CGameInstance::Get().Add_SpotLight({ 20.f, 6.5f, 10.f }, { 1.f, 0.f, 0.f }, 100.f, 20.f, 10.f, 20.f);
+	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
+	CGameInstance::Get().Add_PointLight({ 15.2f, 4.f, 5.2f }, { 1.f, 1.f, 1.f }, 100.f, 50.f);
+	CGameInstance::Get().Add_SpotLight({ 8.2f, 4.f, 8.2f }, { 1.f, 1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
 	return S_OK;
 }
 

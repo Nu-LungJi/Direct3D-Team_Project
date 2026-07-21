@@ -81,7 +81,7 @@ namespace Engine
 		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
 		XMFLOAT4X4		g_InvViewProj;
 		uint32_t		LightCount;
-		uint32_t		CurrentLightIndex;
+		uint32_t		CurrentShadowLightIndex;
 		_float2			LightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);

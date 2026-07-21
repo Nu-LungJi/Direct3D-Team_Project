@@ -76,11 +76,21 @@ void CLightTerrain::Update(E::_float fTimeDelta)
 void CLightTerrain::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
+	//CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
 HRESULT CLightTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	switch (ctx.pass)
+	{
+	case RENDERPASS::DEFAULT:
+		return RenderDefault(pContext, ctx);
+	case RENDERPASS::SHADOW:
+		return RenderShadow(pContext, ctx);
+	}
+}
+HRESULT CLightTerrain::RenderDefault(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 	{
 		E::CB_PER_OBJECT cbPerObject{};
 		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
@@ -90,16 +100,14 @@ HRESULT CLightTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
+
 	const auto& vs = m_pResVertexShader;
 	const auto& ps = m_pResPixelShader;
 
 	const auto& viBuffer = m_pResTerrainVIBuffer;
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-
-	if (ctx.pass == RENDERPASS::DEFAULT) {			// 오류 메세지 ID3D11DeviceContext::DrawIndexed 제거용
-		pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-	}
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
 	ID3D11Buffer* vertexBuffers[] = {
 		viBuffer->GetVertexBuffer().Get()
@@ -121,7 +129,7 @@ HRESULT CLightTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 	pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
 
 	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
-	D3D11_MAPPED_SUBRESOURCE MRES;
+	D3D11_MAPPED_SUBRESOURCE MRES{};
 	if (SUCCEEDED(pContext->Map(MaterialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 	{
 		CB_MATERIAL   CMMAT;
@@ -142,6 +150,42 @@ HRESULT CLightTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 	pContext->PSSetShaderResources(3, 1, pSRVs);
 
 	CGameInstance::Get().Reset_DefaultShader(RENDERGROUP::NONBLEND);
+
+	return S_OK;
+}
+HRESULT CLightTerrain::RenderShadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+	{
+		E::CB_PER_OBJECT cbPerObject{};
+		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
+
+		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	}
+
+	const auto&		viBuffer = m_pResTerrainVIBuffer;
+	ID3D11Buffer*	vertexBuffers[] = {
+		viBuffer->GetVertexBuffer().Get()
+	};
+	uint32_t strides[] = {
+		viBuffer->GetVertexStride()
+	};
+	uint32_t offsets[] = {
+		0
+	};
+	pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+	pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+
+	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+	pContext->PSSetShaderResources(0, 1, pSRVs);
+	pContext->PSSetShaderResources(1, 1, pSRVs);
+	pContext->PSSetShaderResources(2, 1, pSRVs);
+	pContext->PSSetShaderResources(3, 1, pSRVs);
+
 	// 오브젝트 렌더 할 떄, VSSetShader, PSSetShader 를 해야한다면,
 	// 다시 원래 쉐이더로 돌려놓아야 이후에 렌더하는 오브젝트들이 정상적으로 렌더 됨.
 	// 나중에 오브젝트들 정리해서 배칭으로 전환할 때 삭제 예정.

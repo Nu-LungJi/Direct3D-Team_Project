@@ -85,7 +85,8 @@ namespace Engine
 		_float		InnerAttanuation;
 		_float		OuterAttanuation;
 
-		_float2		LightPadding;
+		int32_t		ShadowSlot;
+		_float		LightPadding;
 	} DYNAMIC_LIGHT;
 
 	typedef struct tagPostProcess

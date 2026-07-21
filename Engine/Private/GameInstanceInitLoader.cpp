@@ -459,6 +459,7 @@ HRESULT CGameInstanceInitLoader::LoadRenderState()
 	{
 		return E_FAIL;
 	}
+
 	return S_OK;
 }
 
@@ -614,6 +615,19 @@ HRESULT CGameInstanceInitLoader::LoadRasterizerState()
 		desc.DepthBiasClamp = 0.0f;
 		if (FAILED(res->Load(desc))) return E_FAIL;
 	}
+
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "RS_MULTIPLE_SHADOW", E::CResRasterizerState::Create()))
+	{
+		D3D11_RASTERIZER_DESC desc{};
+		desc.FillMode = D3D11_FILL_SOLID;
+		desc.CullMode = D3D11_CULL_NONE;
+		desc.DepthClipEnable = TRUE;
+		desc.DepthBias = 2;
+		desc.SlopeScaledDepthBias = 0.1f;
+		desc.DepthBiasClamp = 0.0f;
+		if (FAILED(res->Load(desc))) return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -674,8 +688,6 @@ HRESULT CGameInstanceInitLoader::LoadDepthStencilState()
 		{
 			D3D11_DEPTH_STENCIL_DESC depthDesc{};
 			depthDesc.DepthEnable = TRUE;
-	
-			//  핵심: ALL이 아니라 ZERO로 변경 (깊이 쓰기 차단!)
 			depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	
 			depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
@@ -800,10 +812,10 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_SAHDOW, CResSamplerState::Create()))
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
-		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
-		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
-		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 
 		sampDesc.BorderColor[0] = 1.f;
 		sampDesc.BorderColor[1] = 1.f;

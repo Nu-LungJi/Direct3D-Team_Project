@@ -14,6 +14,8 @@ TextureCube IrridianceMap : register(t7);
 TextureCube PreFilterMap : register(t8);
 Texture2D LUTMap : register(t9);
 
+Texture2D OriginColor : register(t10);
+
 static const float ShadowSmoothness = 1.5f;
 static const float ShadowBrightness = 0.45f;
 static const float2 ShadowMapResolution = { 1280.f, 720.f };
@@ -122,12 +124,12 @@ float Compute_NormalShadow(float4 _WorldPos, float2 _TexCoord)
     
     float ShadowFactor = 1.0f;
     
-    // CurrentPixelDepth = ¿ùµåÀÇ ¾î´À ÇÑ ÁöÁ¡À» Shadow Ä«¸Ş¶ó¸¦ ±âÁØÀ¸·Î Æò°¡ÇÑ ±íÀÌ.
-    // ShadowMapDepth    = Shadow Ä«¸Ş¶ó¿¡ ±â·ÏÇß´ø ±íÀÌ
+    // CurrentPixelDepth = ì›”ë“œì˜ ì–´ëŠ í•œ ì§€ì ì„ Shadow ì¹´ë©”ë¼ë¥¼ ê¸°ì¤€ìœ¼ë¡œ í‰ê°€í•œ ê¹Šì´.
+    // ShadowMapDepth    = Shadow ì¹´ë©”ë¼ì— ê¸°ë¡í–ˆë˜ ê¹Šì´
     
-    // CurrentPixelDepth > ShadowMapDepth : °¡·ÁÁø´Ù.(¾îµÎ¿öÁü(±×¸²ÀÚ))
-    // CurrentPixelDepth = ShadowMapDepth : ¶È°°´Ù.(¹à¾ÆÁü)
-    // CurrentPixelDepth < ShadowMapDepth : Çã°ø
+    // CurrentPixelDepth > ShadowMapDepth : ê°€ë ¤ì§„ë‹¤.(ì–´ë‘ì›Œì§(ê·¸ë¦¼ì))
+    // CurrentPixelDepth = ShadowMapDepth : ë˜‘ê°™ë‹¤.(ë°ì•„ì§)
+    // CurrentPixelDepth < ShadowMapDepth : í—ˆê³µ
     
     [branch]
     if (CurrentPixelDepth > ShadowMapDepth)
@@ -197,7 +199,7 @@ float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
     
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
     
-    // ÁÖº¯ ShadowSmoothness ¹İ°æ±îÁö Sampling
+    // ì£¼ë³€ ShadowSmoothness ë°˜ê²½ê¹Œì§€ Sampling
     float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
     
     float ShadowFactor = 0.0f;
@@ -209,8 +211,8 @@ float Compute_SmoothShadow(float4 _WorldPos, float2 _TexCoord, float2 _PixelPos)
         
         float2 SampleUV = ShadowMapUV + (RotatedOffset * SamplingRange);
         
-        // SampleCmpLevelZero : Texture2D(ShadowMap)ÀÇ ±íÀÌ¿Í CompareValue(CurrentPixelDepth) ¸¦ ºñ±³ÇßÀ» ¶§ 
-        // CompareValue°¡ Å©¸é 1, ¾Æ´Ï¸é 0 ¹İÈ¯.(x°ª¿¡ °á°ú°ª ÀúÀå)
+        // SampleCmpLevelZero : Texture2D(ShadowMap)ì˜ ê¹Šì´ì™€ CompareValue(CurrentPixelDepth) ë¥¼ ë¹„êµí–ˆì„ ë•Œ 
+        // CompareValueê°€ í¬ë©´ 1, ì•„ë‹ˆë©´ 0 ë°˜í™˜.(xê°’ì— ê²°ê³¼ê°’ ì €ì¥)
         ShadowFactor += ShadowMap.SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
     }
     
@@ -285,10 +287,7 @@ PS_OUT PSMain(PS_IN IN)
             LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
         }
     }
-    
-    
     float3 BaseEmissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb;
-    
     
     // Enviroment Light Process
     float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
@@ -306,12 +305,12 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
 {
     PS_OUT OUT;
 
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord) * float4(AlbedoColor, ObjectAlpha);;
+	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, IN.TexCoord) * float4(AlbedoColor, ObjectAlpha);
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
     
     if (AlbedoTex.a == 0.0f)
         discard;
-    
+	
     float3 WorldNormal = Compute_WorldNormal(NormalMap, IN.TexCoord, IN.Normal, IN.Tangent);
     WorldNormal = normalize(WorldNormal * NormalIntensity);
     float3 V = normalize(g_vCamPos - IN.WorldPos.xyz);
@@ -360,8 +359,8 @@ PS_OUT PSMain_Blend(PS_IN_BLEND IN)
         }
     }
     float3 fEmissive = EmissiveMap.Sample(LinearWrap, IN.TexCoord).rgb * EmissiveColor * EmissiveIntensity;
-    fEmissive = pow(fEmissive, 2.2f);
-    
+	fEmissive = pow(fEmissive, 2.2f);
+	
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + fEmissive;
     
