@@ -10,6 +10,7 @@
 #include "Terrain.h"
 #include "Particle.h"
 
+#include "LevelCreatureEditor.h"
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
 #include "LevelLightMap.h"
@@ -42,6 +43,11 @@
 #include "LevelAnimatorLoader.h"
 #include "LevelLightMapLoader.h"
 #include "LevelUIEditorLoader.h"
+#include "LevelCreatureLoader.h"
+
+#include "UIManager.h"
+#include "UICamera.h"
+#include "FlyCamera.h"
 
 NS_USING(Client)
 
@@ -70,12 +76,106 @@ HRESULT CLevelLoading::Initialize()
 
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+		Desc.vAt = { 0.f, 0.f, 0.f };
+		Desc.vEye = { 0.f, 0.f, -5.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fFovY = 75.f;
+		Desc.fNear = 0.1f;
+		Desc.fFar = 100.f;
+		Desc.sObjectTag = "FlyCam";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
+			{
+				int x = 0;
+			}
+			E::CGameInstance::Get().SetActiveCamera("FLY");
+		}
+	}
+
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+		Desc.fNear = 0.f;
+		Desc.fFar = 1.f;
+		Desc.fWidth = g_iWinSizeX;
+		Desc.fHeight = g_iWinSizeY;
+		Desc.sObjectTag = "UICam";
+		Desc.vEye = { 0.f, 0.f, -0.1f };
+
+		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+			{
+				int x = 0;
+			}
+
+			// dynamic_cast vs static_cast benchmark 
+			// dynamic_cast: 472ms, static_cast: 41ms
+			if constexpr (false)
+			{
+				E::CGameObject* volatile val = E::CGameInstance::Get().GetGameObjectByHandle(uiCam.value());
+				{
+					auto start = std::chrono::high_resolution_clock::now();
+					{
+						E::CUICamera* volatile sink = nullptr;
+						for (size_t i = 0; i < 10'000'000; ++i)
+						{
+							sink = dynamic_cast<E::CUICamera*>(val);
+						}
+					}
+					auto end = std::chrono::high_resolution_clock::now();
+					auto cost = std::chrono::duration<double, std::milli>(end - start).count();
+					MSG_BOX_STR(std::to_wstring(cost).c_str());
+				}
+				{
+					auto start = std::chrono::high_resolution_clock::now();
+					{
+						E::CUICamera* volatile sink = nullptr;
+						for (size_t i = 0; i < 10'000'000; ++i)
+						{
+							if (val->IsA(E::CUICamera::StaticType))
+							{
+								sink = static_cast<E::CUICamera*>(val);
+							}
+							else
+							{
+								sink = nullptr;
+							}
+						}
+					}
+					auto end = std::chrono::high_resolution_clock::now();
+					auto cost = std::chrono::duration<double, std::milli>(end - start).count();
+					MSG_BOX_STR(std::to_wstring(cost).c_str());
+				}
+			}
+			{
+				const auto* t = E::CGameInstance::GetConst().GetGameObjectByHandleT<E::CUICamera>(uiCam.value());
+
+				auto* t2 = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUICamera>(uiCam.value());
+			}
+		}
+	}
 
 	return S_OK;
 }
 
 void CLevelLoading::Update(E::_float fTimeDelta)
 {
+	if (!m_bLoadUiResource)
+	{
+		std::optional<CHandle> hLoadingScreen = GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+		m_bLoadUiResource = true;
+	}
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+
+
 	switch (m_ePhase)
 	{
 	case PHASE::READY:
@@ -138,6 +238,10 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::PHYSX:
 		pNewLevel = CLevelPhysX::Create();
 		break;
+	case LEVEL::CREATUREEDIT:
+		pNewLevel = CLevelCreatureEditor::Create();
+		break;
+
 	}
 	assert(pNewLevel);
 
@@ -181,6 +285,10 @@ void CLevelLoading::StartUnload()
 	case LEVEL::PHYSX:
 		m_futUnloadFinish = CLevelPhysXLoader::UnLoad();
 		break;
+	case LEVEL::CREATUREEDIT:
+		m_futUnloadFinish = CLevelCreatureLoader::UnLoad();
+		break;
+	
 	default:
 		StartLoad();
 		break;
@@ -241,6 +349,10 @@ void CLevelLoading::StartLoad()
 	case LEVEL::PHYSX:
 	{
 		m_futLoadFinish = CLevelPhysXLoader::Load();
+	}
+	case LEVEL::CREATUREEDIT:
+	{
+		m_futLoadFinish = CLevelCreatureLoader::Load();
 	}
 	break;
 	default:

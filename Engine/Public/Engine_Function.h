@@ -147,6 +147,28 @@ namespace Engine
 		return wstrTo;
 	}
 
-	
+	inline std::string WStringToUTF8(const std::wstring& wstr)
+	{
+		if (wstr.empty()) return std::string();
+
+		// WideChar -> UTF-8 변환
+		int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+		std::string strTo(sizeNeeded, 0);
+		WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), &strTo[0], sizeNeeded, nullptr, nullptr);
+
+		return strTo;
+	}
+
+	inline std::wstring StringToWUTF8(const std::string& str)
+	{
+		if (str.empty()) return L"";
+
+		// CP_ACP 대신 CP_UTF8로 변경해야 한글 UTF-8 데이터를 올바르게 UTF-16으로 변환합니다.
+		int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), nullptr, 0);
+		std::wstring wstrTo(sizeNeeded, 0);
+		MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), &wstrTo[0], sizeNeeded);
+
+		return wstrTo;
+	}
 }
 

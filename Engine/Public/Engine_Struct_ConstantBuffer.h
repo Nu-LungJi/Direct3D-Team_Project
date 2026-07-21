@@ -31,13 +31,11 @@ namespace Engine
 	typedef struct tagConstantBufferPerUI
 	{
 		_float2  texCoord{};
-		_float2  uvSize{};
+		_float2  uvSize{};	// 그릴사이즈
 		_float4  color{ 0.f, 0.f, 0.f, 1.f };
-		//uint32_t texIndex{};
-		//_float2  borderUV{};
-		//float    _pad0{};
-		//_float2  borderPx{};
-		//_float2  rectSizePx{};
+		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
+		_float2 quadSize{}; // 텍스처의 현제 사이즈
+		_float4 margins{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 
@@ -81,7 +79,7 @@ namespace Engine
 		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
 		XMFLOAT4X4		g_InvViewProj;
 		uint32_t		LightCount;
-		uint32_t		CurrentLightIndex;
+		uint32_t		CurrentShadowLightIndex;
 		_float2			LightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
@@ -100,8 +98,24 @@ namespace Engine
 		uint32_t g_iFlipbookRows;
 		uint32_t g_iFlipbookColumns;
 		uint32_t g_iTotalFrames;
-		_float3    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+		_float	g_fTime;
+		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
+
+	typedef struct CB_CIRCLE_TO_WAVE
+	{
+		_float3 g_vFlowDirection; // 물결이 흘러가는 방향 (정규화, XZ 평면 기준)
+		_float g_fBurstRatio; // ageRatio 기준, 이 시점까지 원형 확산 (예: 0.3)
+
+		_float g_fTransitionRatio; // 전환 구간 폭 (ageRatio 기준, 예: 0.15)
+		_float g_fBurstSpeed; // 원형 확산 초기 속도
+		_float g_fFlowSpeed; // 물결이 흘러가는 이동 속도
+		_float g_fWaveAmplitude; // 상하 진폭
+
+		_float g_fWaveFrequency; // 공간적 파장 (위치에 따른 위상차)
+		_float g_fWaveSpeed; // 시간에 따른 위상 변화 속도
+		_float2 g_fPadding2;
+	}CB_CIRCLE_TO_WAVE;
 	typedef struct CB_SCROLL
 	{
 		_float    g_fScrollOffset;
@@ -133,6 +147,15 @@ namespace Engine
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
 
+	typedef struct CB_PART_ATTACHMENT
+	{
+		_float4x4 m_preTransform;
+		uint32_t gParentInstanceIndex;
+		uint32_t gParentBoneIndex;
+		_float2  gPartAttachmentPadding;
+	}CB_PART_ATTACHMENT;
+	static_assert(sizeof(CB_PART_ATTACHMENT) % 16 == 0);
+
 	typedef struct CB_SpellMeter
 	{
 		float fAmount;
@@ -161,4 +184,11 @@ namespace Engine
 	};
 	static_assert(sizeof(CB_TRAIL_OPTION) % 16 == 0);
 
+	typedef struct CB_Minimap
+	{
+		_float2	mapOffset;
+		float	mapRotation;
+		float	mapScale;
+	}CB_MINIMAP;
+	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
 }

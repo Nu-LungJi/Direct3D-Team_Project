@@ -225,6 +225,18 @@ namespace
 			ImGui::EndPopup();
 		}
 	}
+
+	std::optional<std::string> GetWholeMapGroupTag(std::string_view objectTag)
+	{
+		if (!objectTag.starts_with("WholeMap_"))
+			return std::nullopt;
+
+		const size_t chunkMarker = objectTag.rfind("_Chunk_");
+		if (chunkMarker == std::string_view::npos)
+			return std::nullopt;
+
+		return std::string(objectTag.substr(0, chunkMarker));
+	}
 }
 
 CHierarchy::CHierarchy()
@@ -290,6 +302,39 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 
 			if (bOpen)
 			{
+				std::map<std::string, std::vector<E::CHandle>> wholeMapGroups;
+				for (const E::CHandle& handle : handles)
+				{
+					if (auto* object = E::CGameInstance::Get().GetGameObjectByHandle(handle))
+					{
+						if (auto groupTag = GetWholeMapGroupTag(object->GetObjectTag()))
+							wholeMapGroups[*groupTag].push_back(handle);
+					}
+				}
+
+				for (const auto& [groupTag, groupHandles] : wholeMapGroups)
+				{
+					const bool groupSelected = m_pSelection &&
+						std::all_of(groupHandles.begin(), groupHandles.end(),
+							[this](const E::CHandle& handle)
+							{
+								return m_pSelection->IsSelected(handle);
+							});
+
+					ImGui::PushID(groupTag.c_str());
+					if (ImGui::Selectable(
+						(groupTag + " (" + std::to_string(groupHandles.size()) + " chunks)").c_str(),
+						groupSelected))
+					{
+						if (m_pSelection)
+							m_pSelection->SelectMany(groupHandles);
+					}
+					ImGui::PopID();
+				}
+
+				if (!wholeMapGroups.empty())
+					ImGui::Separator();
+
 				for (size_t handleIndex = 0; handleIndex < handles.size(); ++handleIndex)
 				{
 					const auto& handle = handles[handleIndex];

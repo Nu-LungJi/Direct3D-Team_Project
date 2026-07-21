@@ -56,6 +56,9 @@
 
 
 #include "ResPhysXTriMeshGeometry.h"
+#include "ResPhysXRTTriMeshGeometry.h"
+#include "ResPhysXConvexGeometry.h"
+#include "ResPhysXRTConvexGeometry.h"
 #include "ResPhysXBoxGeometry.h"
 #include "ResPhysXSphereGeometry.h"
 #include "ResPhysXCapsuleGeometry.h"
@@ -126,6 +129,8 @@ static const char* TAG_RES_GRP_PERMANENT_SHADER = "PERMANENT_SHADER";
 static const char* TAG_RES_GRP_PERMANENT_TEXTURE = "PERMANENT_TEXTURE";
 static const char* TAG_RES_GRP_PERMANENT_STATE = "PERMANENT_STATE";
 static const char* TAG_RES_GRP_PERMANENT_VP = "PERMANENT_VP";
+static const char* TAG_RES_GRP_PERMANENT_PARTICLE_VSSHADER = "PERMANENT_PARTICLE_VSSHADER";
+static const char* TAG_RES_GRP_PERMANENT_PARTICLE_PSSHADER = "PERMANENT_PARTICLE_PSSHADER";
 
 
 // RS_: RasterazerState
@@ -152,5 +157,5 @@ constexpr static const char* TAG_RES_CBUFFER_PARTICLE = "CB_PerParticle";
 constexpr static const char* TAG_RES_CBUFFER_SPAWN_PARTICLE = "CB_SpawnParticle";
 constexpr static const char* TAG_RES_CBUFFER_INIT_PARTICLE = "CB_InitGPUParticle";
 constexpr static const char* TAG_RES_CBUFFER_BONE = "CB_Bone";
-
+constexpr static const char* TAG_RES_CBUFFER_PART_ATTACHMENT = "CB_GPU_PART_ATTACHMENT";
 

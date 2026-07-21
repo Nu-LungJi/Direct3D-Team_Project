@@ -53,6 +53,9 @@
 
 #include "GameInstanceInitLoader.h"
 
+#include "MapMeshInstancingRenderer.h"
+
+#include "EventManager.h"
 
 NS_USING(Engine)
 
@@ -144,7 +147,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-	m_pWorkerManager = CWorkerManager::Create("Normal", 3);
+	m_pWorkerManager = CWorkerManager::Create("Normal", std::thread::hardware_concurrency());
 	if (m_pWorkerManager == nullptr)
 	{
 		return E_FAIL;
@@ -155,13 +158,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("Start m_pRenderer()");
 	m_pRenderer = CRenderer::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pRenderer == nullptr)
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("End m_pRenderer()");
 	m_pHizOcclusionCuller = CHizOcclusionCuller::Create();
 	if (m_pHizOcclusionCuller == nullptr)
 	{
@@ -242,13 +245,29 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	if (m_pModel_Instance_Manager == nullptr) {
 		return E_FAIL;
 	}
+
+	m_pMapMeshInstancingRenderer = CMapMeshInstancingRenderer::Create();
+	if (m_pMapMeshInstancingRenderer == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pEventManager = CEventManager::Create();
+	if (m_pEventManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	
 	return S_OK;
 }
 
 void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 {
-	m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	{
+		ZoneScopedN("GameObjectManager_FixedUpdate");
+		m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	}
+	
 	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
 }
 
@@ -291,8 +310,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	// 사운드 붙일때 부활
-	// m_pSoundManager->UpdateGUI();
+	 m_pSoundManager->UpdateGUI();
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
@@ -337,13 +355,6 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		{
 			MouseFix();
 		}
-	}
-
-	// 사운드 붙일때 부활
-	if constexpr (false)
-	{
-		ZoneScopedN("SoundManager_Update");
-		m_pSoundManager->Update();
 	}
 
 	// lua hot reload
@@ -402,6 +413,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pColliderManager->Update();
 
 	m_pMapManager->Update(fTimeDelta);
+	m_pMapMeshInstancingRenderer->Update();
 
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
@@ -409,6 +421,29 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	AddRenderObject(RENDERGROUP::NONBLEND_INSTANCED, m_pModel_Instance_Manager.get());
 	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
+
+	// 모든 게임 오브젝트와 카메라의 LateUpdate가 끝난 뒤 활성 카메라 하나만 Listener 0에 반영한다.
+	if (auto* pCamera = GetActiveCamera())
+	{
+		auto& cameraTransform = pCamera->GetTransform();
+		_float3 vForward{};
+		_float3 vUp{};
+		XMStoreFloat3(&vForward, XMVector3Normalize(cameraTransform.GetState(STATE::LOOK)));
+		XMStoreFloat3(&vUp, XMVector3Normalize(cameraTransform.GetState(STATE::UP)));
+
+		m_pSoundManager->SetListenerAttributes(0, SOUND_LISTENER_DESC{
+			.vPosition = cameraTransform.GetPosition(),
+			.vVelocity = {},
+			.vForward = vForward,
+			.vUp = vUp
+		});
+	}
+
+	// 최신 Listener/Emitter 값을 FMOD에 반영하고 종료된 SOUND_ID를 정리한다.
+	{
+		ZoneScopedN("SoundManager_Update");
+		m_pSoundManager->Update();
+	}
 }
 
 
@@ -429,12 +464,10 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
-
-	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
-	m_pSoundManager.reset();
+	m_pMapMeshInstancingRenderer.reset();
+	m_pNodeEditor.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
-	m_pNodeEditor.reset();
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pModel_Instance_Manager.reset();
@@ -461,10 +494,12 @@ void CGameInstance::Release_Engine()
 
 	if(m_pResourceManager) m_pResourceManager->Release();
 	m_pResourceManager.reset();
+	m_pSoundManager.reset();
 
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
+	m_pEventManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -492,9 +527,10 @@ void CGameInstance::FrameEnd(_float fTimeDelta)
 {
 	m_pGameObjectManager->FrameEnd();
 	m_pLevelManager->FrameEnd(fTimeDelta);
+	m_pEventManager->FrameEnd();
 
 	m_pRenderer->FrameEnd();
-	CMapMeshObject::ClearInstancingData();
+	m_pMapMeshInstancingRenderer->FrameEnd();
 	m_pModel_Instance_Manager->Clear_Frame();
 	m_pColliderManager->FrameEnd();
 	m_pDbgLineRender->FrameEnd();
@@ -521,6 +557,14 @@ HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag
 	return m_pParticleManager->Spawn(sGroupTag, sTypeTag, count, pSpawnData, bLoop, fSpawnInterval);
 }
 
+std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
+{
+	return m_pParticleManager->Parse_Command(strJsonFile);
+}
+
+uint32_t CGameInstance::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos) {
+	return m_pParticleManager->Spawn(templateCommands, worldMat ,endPos);
+}
 HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
 	return m_pParticleManager->Add_Particle(sGroupTag, sTypeTag, std::move(particle));
@@ -755,55 +799,6 @@ void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 #pragma endregion
 
 
-#pragma region SOUND_MANAGER
-HRESULT CGameInstance::CreateSound(const _string& sPath, FMOD_SOUND** ppSound)
-{
-	return m_pSoundManager->CreateSound(sPath, ppSound);
-}
-
-HRESULT CGameInstance::SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources)
-{
-	return m_pSoundManager->AddChannel(channelTag, soundResources);
-}
-
-HRESULT CGameInstance::SoundPlay(const StringID& channelTag, _float fVolume, _float fPitch)
-{
-	return m_pSoundManager->Play(channelTag, fVolume, fPitch);
-}
-
-void CGameInstance::SoundStop(const StringID& channelTag)
-{
-	m_pSoundManager->Stop(channelTag);
-}
-
-void CGameInstance::SoundPause(const StringID& channelTag, _bool bPause)
-{
-	m_pSoundManager->Pause(channelTag, bPause);
-}
-
-_bool CGameInstance::SoundGetVolume(const StringID& channelTag, _float& fVolume)
-{
-	return m_pSoundManager->GetVolume(channelTag, fVolume);
-}
-
-_bool CGameInstance::SoundSetVolume(const StringID& channelTag, _float fVolume)
-{
-	return m_pSoundManager->SetVolume(channelTag, fVolume);
-}
-
-_bool CGameInstance::SoundIsPlaying(const StringID& channelTag) const
-{
-	return m_pSoundManager->IsPlaying(channelTag);
-}
-
-void CGameInstance::SoundSetPitch(const StringID& channelTag, float fPitchRatio)
-{
-	m_pSoundManager->SetPitch(channelTag, fPitchRatio);
-}
-
-#pragma endregion
-
-
 #pragma region FONT_MANAGER
 void CGameInstance::FontDraw(const StringID& fontName, const _tchar* pText, const _float2& vPosition, float fScale, _fvector vColor, _float fRotation, const _float2& vOrigin)
 {
@@ -963,17 +958,17 @@ SPtr<CResDynamicTexture2D>	CGameInstance::Generate_UnorderedAccessView(const Str
 SPtr<CResViewPort>			CGameInstance::Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth, uint32_t _TexHeight) {
 	return m_pRenderer->Generate_ViewPort(_sResTag, _TexWidth, _TexHeight);
 }
-VOID	CGameInstance::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
-	m_pRenderer->Generate_Texture2DArray(_ShadowDSVList, _TextureArray, _SRV, _Resolution, _MaxLightCount);
+HRESULT	CGameInstance::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	return m_pRenderer->Generate_Texture2DArray(_ShadowDSVList, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
-VOID	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
-	m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
+HRESULT	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	return m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
-VOID	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution) {
-	m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _Resolution);
+HRESULT	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY) {
+	return m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _ResolutionX, _ResolutionY);
 }
-HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution) {
-	return m_pRenderer->Generate_ShadowMapOutput(_ShadowUAV, _Texture, _ShadowSRV, _LTYPE, _Resolution);
+HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY) {
+	return m_pRenderer->Generate_ShadowMapOutput(_ShadowUAV, _Texture, _ShadowSRV, _LTYPE, _ResolutionX, _ResolutionY);
 }
 
 #pragma endregion
@@ -1046,9 +1041,6 @@ void CGameInstance::ClearAllChunk()
 #pragma endregion
 
 #pragma region LIGHT_MANAGER
-VOID	CGameInstance::Bind_EnviromentLight() {
-	m_pLightManager->Bind_EnviromentLight();
-}
 VOID	CGameInstance::Bind_DynamicLight() {
 	m_pLightManager->Bind_DynamicLight();
 }
@@ -1068,9 +1060,8 @@ VOID	CGameInstance::Clear_DynamicLightList() {
 HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	return m_pLightManager->Add_ShadowRenderGroup(_ATYPE, pRenderObject);
 }
-HRESULT	CGameInstance::Render_ObjectShadow(const ComPtr<ID3D11ShaderResourceView>& _Diffuse, const ComPtr<ID3D11ShaderResourceView>& _Normal, const ComPtr<ID3D11ShaderResourceView>& _SMRO,
-	const ComPtr<ID3D11ShaderResourceView>& _Emissive, const ComPtr<ID3D11ShaderResourceView> _Ambient, const ComPtr<ID3D11ShaderResourceView> _Depth) {
-	return m_pLightManager->Render_ObjectShadow(_Diffuse, _Normal, _SMRO, _Emissive, _Ambient, _Depth);
+HRESULT	CGameInstance::Render_ObjectShadow() {
+	return m_pLightManager->Render_ObjectShadow();
 }
 
 #pragma endregion
@@ -1113,14 +1104,14 @@ physx::PxControllerManager* CGameInstance::PxGetControllerManager() const
 {
 	return m_pPhysXManager->GetControllerManager();
 }
-_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
-{
-	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
-}
-_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
-{
-	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
-}
+//_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
+//{
+//	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
+//}
+//_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+//{
+//	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
+//}
 #pragma endregion
 
 #pragma endregion
@@ -1135,10 +1126,18 @@ void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, CComAnimator
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, pAnimator, WorldMatrix, iFlags);
 }
 
+void CGameInstance::Add_Instance(CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags) {
+	m_pModel_Instance_Manager->Add_Instance(pModelInstance, WorldMatrix, iFlags);
+}
+
 
 void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData) {
 
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, InstanceData);
+}
+
+void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData) {
+	m_pModel_Instance_Manager->Add_Part_Instance(pModelInstance, InstanceData);
 }
 
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
@@ -1146,6 +1145,40 @@ const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() con
 };
 #pragma endregion
 
+#pragma region MAPMESH_INSTANCE_RENDER
+HRESULT CGameInstance::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData)
+{
+	return m_pMapMeshInstancingRenderer->PushMapObjectInstance(pModel, instanceData, occlusionData);
+}
+// 인스턴싱 On/Off , 드로우 콜 GUI
+_bool CGameInstance::IsInstancingEnabled()
+{
+	return m_pMapMeshInstancingRenderer->IsInstancingEnabled();
+}
+void CGameInstance::SetInstancingEnabled(_bool bEnabled)
+{
+	m_pMapMeshInstancingRenderer->SetInstancingEnabled(bEnabled);
+}
+const INSTANCING_STATS& CGameInstance::GetInstancingStats()
+{
+	return m_pMapMeshInstancingRenderer->GetInstancingStats();
+}
+_bool CGameInstance::IsDebugBoundsEnabled()
+{
+	return m_pMapMeshInstancingRenderer->IsDebugBoundsEnabled();
+}
+void CGameInstance::SetDebugBoundsEnabled(_bool bEnabled)
+{
+	return m_pMapMeshInstancingRenderer->SetDebugBoundsEnabled(bEnabled);
+}
+void CGameInstance::ClearMapMeshTextureCache()
+{
+	if (m_pMapMeshInstancingRenderer)
+	{
+		m_pMapMeshInstancingRenderer->ClearTextureCache();
+	}
+}
+#pragma endregion
 
 void CGameInstance::MouseFix() const
 {

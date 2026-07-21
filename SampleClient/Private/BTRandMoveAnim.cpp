@@ -2,6 +2,7 @@
 #include "BTRandMoveAnim.h"
 #include "ComTransform.h" 
 #include "ComAnimator.h"
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTRandMoveAnim::CBTRandMoveAnim()
@@ -72,7 +73,7 @@ EVALUATE CBTRandMoveAnim::Evaluate(_float fTimeDelta)
 	if (m_GuiNode.bAbort)
 	{
 		//애니매이션 겹침 방지
-		Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
+		//Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
 	}
 	eType = Move(fTimeDelta);
 	return m_eDebug = eType;
@@ -108,8 +109,9 @@ void CBTRandMoveAnim::RandomDirSelect()
 EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 {
 	auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	if (pTransform == nullptr)
-		return EVALUATE::FAILED;
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	if (pTransform == nullptr || pMoveIntent == nullptr)
+		return m_eDebug = EVALUATE::FAILED;
 
 	_vector vCurPos = pTransform->GetState(STATE::POSITION);
 	_float fDis = XMVectorGetX(XMVector3Length(vCurPos - XMLoadFloat3(&m_vFinishPos)));
@@ -118,12 +120,12 @@ EVALUATE CBTRandMoveAnim::Move(_float fTimeDelta)
 	if (fDis <= fMove)
 	{
 		m_bInit = false;
-		return EVALUATE::SUCCESS;
+		return m_eDebug = EVALUATE::SUCCESS;
 	}
-		
-	vCurPos += XMLoadFloat3(&m_vDir) * -m_fClamp * fTimeDelta;
-	pTransform->SetPosition(XMVectorSetW(vCurPos, 1.f));
-	return EVALUATE::RUN;
+
+	const _float3 vMoveDirection{ -m_vDir.x, 0.f, -m_vDir.z };
+	pMoveIntent->SetMoveIntent(vMoveDirection, m_fClamp);
+	return m_eDebug = EVALUATE::RUN;
 }
 void CBTRandMoveAnim::Update_Gui()
 {

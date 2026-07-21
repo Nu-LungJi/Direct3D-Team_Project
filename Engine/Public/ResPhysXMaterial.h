@@ -39,7 +39,7 @@ private:
 
 public:
 	static SPtr<CResPhysXMaterial> Create();
-	static SPtr<CResPhysXMaterial> Create(const DESC& desc);
+	static SPtr<CResPhysXMaterial> CreateAndLoad(const DESC& desc);
 
 private:
 	void Free() override;

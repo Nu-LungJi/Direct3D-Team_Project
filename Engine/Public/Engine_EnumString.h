@@ -17,7 +17,10 @@ namespace Engine
 		Prototype_Component_ModelInstance,
 		Prototype_Component_StaticModelInstance,
 		Prototype_Component_Animator,
-		Prototype_Component_ComLuaScript
+		Prototype_Component_ComLuaScript,
+		Prototype_Component_ComCharacterMoveIntent,
+		Prototype_Component_ComCharacterMotor,
+		Prototype_Component_ComSound
 	};
 
 	enum class ES_EngineProtoPhysXComponent
@@ -25,6 +28,7 @@ namespace Engine
 		Prototype_Component_ComPxBoxCollider,
 		Prototype_Component_ComPxCapsuleCollider,
 		Prototype_Component_ComPxSphereCollider,
+		Prototype_Component_ComPxConvexCollider,
 		Prototype_Component_ComPxTriMeshCollider,
 		Prototype_Component_ComPxRigidBody,
 		Prototype_Component_ComPxCharacterController
@@ -36,7 +40,4 @@ namespace Engine
 		Prototype_GameObject_ShadowCamera,
 		Prototype_GameObject_UICamera
 	};
-
-
-
 }

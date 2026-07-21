@@ -7,32 +7,29 @@ NS_END
 
 NS_BEGIN(Engine)
 
-class ENGINE_DLL CResPhysXTriMeshGeometry final : public CResPhysXGeometry
+class ENGINE_DLL CResPhysXTriMeshGeometry : public CResPhysXGeometry
 {
-public:
-	struct DESC
-	{
-		std::vector<_float3>* pVecVertices{};
-		std::vector<XMINT3>* pVecTriangles{};
-	};
 public:
 	DECLARE_DERIVED_TYPE(CResPhysXTriMeshGeometry, CResPhysXGeometry)
 
-private:
+protected:
 	explicit CResPhysXTriMeshGeometry(const _string& sPath);
 	~CResPhysXTriMeshGeometry() override;
 
 public:
 	physx::PxTriangleMesh* GetTriMesh() const { return m_pTriMesh; }
-
-public:
 	HRESULT Load(const std::any& arg = {}) override;
-	HRESULT Unload(const std::any& arg = {})  override;
+	HRESULT Unload(const std::any& arg = {}) override;
+
+protected:
+	HRESULT CreateFromCookedData(uint8_t* pData, size_t iDataSize);
 
 private:
 	physx::PxTriangleMesh* m_pTriMesh{};
+
 public:
-	static SPtr<CResPhysXTriMeshGeometry> Create();
+	static SPtr<CResPhysXTriMeshGeometry> Create(const _string& sPath);
+	static SPtr<CResPhysXTriMeshGeometry> CreateAndLoad(const _string& sPath);
 
 private:
 	void Free() override;

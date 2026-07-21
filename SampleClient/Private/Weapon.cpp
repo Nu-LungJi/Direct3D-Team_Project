@@ -39,12 +39,12 @@ HRESULT CWeapon::InitializePrototype(void* pArg)
 		return E_FAIL;
 	}
 
-
 	return S_OK;
 }
 
 HRESULT CWeapon::Initialize(void* pArg)
 {
+	
 	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
 	m_iBoneSocketIndex = pDesc->iBoneIndex;
 	m_ParentHandle	   = pDesc->ParentHandle;
@@ -65,8 +65,8 @@ HRESULT CWeapon::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC Desc{};
-		Desc.sGroupTag = "LEVEL_PLAYGROUND";
-		Desc.sResTag = pDesc->WeaponName;
+		Desc.sGroupTag = pDesc->LevelTag;
+		Desc.sResTag   = pDesc->WeaponName;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -75,6 +75,7 @@ HRESULT CWeapon::Initialize(void* pArg)
 	}
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
+	test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
 	return S_OK;
 }
 
@@ -84,11 +85,11 @@ void CWeapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CWeapon::Update(E::_float fTimeDelta)
 {
-	_float3 vstart, vend;
-	vstart = m_pComTransform->GetPosition();
-	vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
-	static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
+	//_float3 vstart, vend;
+	//vstart = m_pComTransform->GetPosition();
+	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
+	//auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
+	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
 
 	if (CGameInstance::Get().KeyPressing(DIK_HOME))
 		m_pComTransform->GoUp(fTimeDelta * 15);
@@ -102,13 +103,21 @@ void CWeapon::Update(E::_float fTimeDelta)
 		m_pComTransform->GoBackward(fTimeDelta * 15);
 	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
 		m_pComTransform->GoRight(fTimeDelta * 15);
+	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
+	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
 
-
-	if (CGameInstance::Get().KeyDown(DIK_K)) {
-		static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
-	
+	if (CGameInstance::Get().KeyPressing(DIK_7)) {
+		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
 	}
+
+
+
+
+	//if (CGameInstance::Get().KeyDown(DIK_K)) {
+	//	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
+	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
+	//
+	//}
 
 
 	//if (CGameInstance::Get().KeyPressing(DIK_P))

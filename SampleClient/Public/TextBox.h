@@ -26,6 +26,16 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+private:
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CButtonComponent* m_pComCButton = nullptr;
+
+private:
+	_bool m_bMouseTracking{ false };
+
+public:
+	void PlayEffect(uint32_t uiState);
+
 public:
 	static E::UPtr<CTextBox> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

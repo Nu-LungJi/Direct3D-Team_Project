@@ -57,7 +57,7 @@ struct SpotLight
 };
 struct DynamicLight
 {
-    float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
+	float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
     float3 LightDirection;
     float LightIntensity;
@@ -69,8 +69,9 @@ struct DynamicLight
 
     float InnerAttanuation;
     float OuterAttanuation;
-
-    float2 LightPadding;
+	
+	int		ShadowSlot;
+    float LightPadding;
 };
 
 struct Material
@@ -127,13 +128,13 @@ cbuffer CB_MATERIAL : register(b3)
     float3  MaterialPadding;
 }
 
-cbuffer CB_LIGHT_BUFFER : register(b4)
+cbuffer CB_LIGHT_BUFFER : register(b4) 
 {
-    DynamicLight AffectedLight[MAX_LIGHT_COUNT];
+	DynamicLight AffectedLight[MAX_LIGHT_COUNT];
     float4x4 g_InvViewProj;
-    uint LightCount;
-    uint CurrentLightIndex;
-    float3 LightPadding;
+    uint	LightCount;
+	uint	CurrentShadowLightIndex;
+    float2	LightPadding;
 }
 
 cbuffer CB_TIME_BUFFER : register(b5)
@@ -158,11 +159,9 @@ cbuffer CB_PER_UI : register(b7)
     float2 g_ui_texCoord;
     float2 g_ui_uvSize;
     float4 g_ui_color;
-    //uint g_ui_texIndex; 
-    //float2 g_ui_borderUV; 
-    //float _pad_perui; 
-    //float2 g_ui_borderPx; 
-    //float2 g_ui_rectSizePx;
+	float2 g_ui_texSize;
+	float2 g_ui_quadSize;
+	float4 g_ui_margins;
 };
 cbuffer PostProcessBuffer : register(b8)
 {
@@ -176,17 +175,33 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
+// 스킬 쿨타임
 cbuffer CB_SPELLMETER : register(b9)
 {
     float g_Amount;         
     float g_DistSpeed;      
     float g_DistStrength;   
     float g_Time;           
+cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
+{
+    float4x4 preTransform;
+    uint gParentInstanceIndex;
+    uint gParentBoneIndex;
+    float2 gPartAttachmentPadding;
+};
 
     float4 g_FillColor;     
     float4 g_EmptyColor;    
     float4 g_RippleColor;   
     float4 g_WispyColor;
+};
+
+// 미니맵용
+cbuffer CB_MINIMAP : register(b10)
+{
+	float2 g_mapOffset;
+	float  g_mapRotation;
+	float  g_mapScale;
 };
 
 SamplerState LinearWrap                 : register(s0);
@@ -195,5 +210,6 @@ SamplerState PointWrap                  : register(s2);
 SamplerState PointClamp                 : register(s3);
 SamplerState PointWrapNoMip             : register(s4);
 SamplerState AnisotropicWrap            : register(s5);
+SamplerState LinearBorder               : register(s7);
 
-SamplerComparisonState ShadowSampler : register(s6);
+SamplerComparisonState ShadowSampler    : register(s6);

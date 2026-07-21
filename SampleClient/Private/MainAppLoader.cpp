@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
@@ -12,7 +12,11 @@
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
 
+// UI
 #include "UIManager.h"
+#include "EffectUI.h"
+#include "TextureUI.h"
+#include "TextBox.h"
 
 NS_USING(Client)
 
@@ -75,14 +79,34 @@ HRESULT CMainAppLoader::Load()
 			return E_FAIL;
 		}
 
+		if (FAILED(Load_UIStaitc_Resources()))
+		{
+			MSG_BOX("Failed Load_UIStaitc_Resources");
+			return E_FAIL;
+		}
+
 		GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
 	}
+
+
+
+	//클라이언트 사운드 버스 초기화
+	{
+		if (FAILED(Initialize_Sound()))
+		{
+			return E_FAIL;
+		}
+		
+	}
+	
+
+	
 	return S_OK;
 }
 
 HRESULT CMainAppLoader::Load_Particle_Resources()
 {
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -91,7 +115,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -99,24 +123,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
-	{
-		if (FAILED(res->Load()))
-		{
-			//MSG_BOX("");
-			return E_FAIL;
-		}
-	}
-
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
-	{
-		if (FAILED(res->Load()))
-		{
-			//MSG_BOX("");
-			return E_FAIL;
-		}
-	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -125,7 +132,15 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -134,7 +149,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -142,7 +157,8 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
+
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -150,7 +166,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_RIBBON_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -158,7 +174,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_RIBBON_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_RIBBON_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -166,7 +182,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_Trail_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Trail.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_RIBBON_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -174,7 +190,79 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_Trail_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Trail.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_Trail_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Trail.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_Trail_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Trail.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SPLASH_TEX", CResVertexShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SPLASH_TEX", CResPixelShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLL_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_NoiseScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLL_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_NoiseScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLL_X_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_UV_XScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLL_X_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_UV_XScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLLUV_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle_UvScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLLUV_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle_UvScroll.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -227,14 +315,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		//노이즈 텍스쳐
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_NoiseGreypack03_D.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		//return E_FAIL;
-		//	}
-		//}
+		if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_NOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/Noise/VFX_T_NoiseGreypack03_D.png")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("");
+				//return E_FAIL;
+			}
+		}
 		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
 		//{
 		//	if (FAILED(res->Load()))
@@ -273,10 +361,10 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 HRESULT CMainAppLoader::Load_PhysX_Resource()
 {
 	{
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::CreateAndLoad(CResPhysXSphereGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::CreateAndLoad(CResPhysXCapsuleGeometry::DESC{}));
 	}
 	return S_OK;
 }
@@ -300,6 +388,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCreatureFlag", CBTCreatureFlag::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMonAttType", CBTMonAttType::Create())))
+		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTRandMoveAnim", CBTRandMoveAnim::Create())))
 		return E_FAIL;
@@ -320,9 +410,98 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHit", CBTDecHit::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecFlag", CBTDecFlag::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHp", CBTDecHp::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHitCnt", CBTDecHitCnt::Create())))
+		return E_FAIL;
+	
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Initialize_Sound()
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+
+	for (const auto eBus : magic_enum::enum_values<Client::SOUND_BUS>())
+	{
+		if (eBus == Client::SOUND_BUS::END)
+			continue;
+
+		if (!pSoundManager->CreateBus(eBus))
+			return E_FAIL;
+	}
+
+	// 사운드 테스트
+	if(false)
+	{
+		const _string sSoundPath = "./Resources/SampleClient/Sound/Verses_1_4_of_the_National_Anthem.mp3";
+		auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+		if (pSoundManager == nullptr ||
+			!pSoundManager->Preload(sSoundPath))
+			return E_FAIL;
+
+		const SOUND_ID iSoundID = pSoundManager->Play2D(
+			sSoundPath,
+			E::SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = true
+			});
+		if (iSoundID == INVALID_SOUND_ID)
+			return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Load_UIStaitc_Resources()
+{
+	{
+		namespace fs = std::filesystem;
+
+		std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI/LoadingScreen";
+
+		if (fs::exists(targetDir) && fs::is_directory(targetDir))
+		{
+			for (const auto& entry : fs::directory_iterator(targetDir))
+			{
+				if (entry.is_regular_file() && entry.path().extension() == ".png")
+				{
+					std::string fileName = entry.path().stem().string();
+
+
+					std::string resTag = "TEX_" + fileName;
+
+					std::string fullPath = entry.path().generic_string();
+
+					if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", resTag, E::CResTexture2D::Create(fullPath)))
+					{
+						res->Load();
+					}
+				}
+			}
+		}
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Houses.png")))
+	{
+		res->Load();
+	}
+
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextBox", CTextBox::Create())))
+	{
+		return false;
+	}
+
 	return S_OK;
 }

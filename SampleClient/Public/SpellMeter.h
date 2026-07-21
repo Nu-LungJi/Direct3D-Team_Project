@@ -35,13 +35,11 @@ private:
 	CButtonComponent* m_pComCButton = nullptr;
 
 private:
-	std::vector<std::optional<CHandle>> m_vEffects;
+	_float s_fAccumulatedTime = 0.f;
+	_float m_fCurrentAmount = 1.f;
 
-private:
-	std::string m_EffectTag;
-	_float s_fAccumulatedTime;
-	_float m_fCurrentAmount;
-
+	uint32_t m_colorType{};
+	_float4 m_BGColor{1.f, 1.f, 1.f, 1.f};
 private:
 	void StartCooldown(float fCooldownTime);
 public:

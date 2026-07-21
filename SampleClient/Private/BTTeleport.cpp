@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTTeleport.h"
 #include "ComTransform.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTTeleport::CBTTeleport()
@@ -34,13 +35,14 @@ HRESULT CBTTeleport::Initalize(void* pArg)
 
 EVALUATE CBTTeleport::Evaluate(_float fTimeDelta)
 {
-	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
-	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+	auto* pTarget = CGameInstance::Get().GetActiveCamera();
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	if (!pTarget || !pMoveIntent)
+		return m_eDebug = EVALUATE::FAILED;
 
-	_vector vDestPos = XMLoadFloat3(&vDest.GetPosition());
-	pTransform->SetPosition(XMVectorSetW(vDestPos,1.f));
+	pMoveIntent->RequestWarp(pTarget->GetTransform().GetPosition());
 	
-	return EVALUATE::SUCCESS;
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTTeleport::Update_Gui()
 {

@@ -50,6 +50,10 @@ private:
 	char m_cLevelName[128] = "";
 	char m_cPrefabName[128] = "";
 	char m_cResTag[128] = "";
+	_float m_ScaleRatio = 1.f;
+
+	char m_cTextBuf[1024] = "";
+	std::string m_sText{};
 
 private:
 	uint32_t count{};
@@ -87,6 +91,7 @@ private:
 
 	void StateView();
 	void LocalStateView();
+	void UpdateTargetState();
 	void DrawFileExplorer();
 
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
@@ -96,6 +101,7 @@ private:
 
 	void DrawHierarchyNode(CHandle uiHandle);
 	void ResetProperty(std::optional<Engine::CHandle> newTargetHandle);
+	void ClearUI();
 private:
 	std::vector<JsonFileInfo> g_JsonFiles;
 	std::vector<JsonFileInfo> g_ImageFiles;

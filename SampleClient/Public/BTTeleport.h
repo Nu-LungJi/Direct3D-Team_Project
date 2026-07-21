@@ -13,11 +13,11 @@ private:
 	~CBTTeleport() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT InitializePrototype(void* pArg = nullptr);
-	HRESULT Initalize(void* pArg) override;
+	HRESULT						InitializePrototype(void* pArg = nullptr);
+	HRESULT						Initalize(void* pArg) override;
 public:
-	EVALUATE Evaluate(_float fTimeDelta) override;
-	virtual void		Update_Gui() override;
+	EVALUATE					Evaluate(_float fTimeDelta) override;
+	virtual void				Update_Gui() override;
 private:
 	MOVE						m_eMove{};
 public:

@@ -107,15 +107,40 @@ HRESULT CResModelAnim::Load(const std::any& arg)
 	
 	}
 
+	// m_Channels is serialized in channel order, not bone-index order.
+	// Build this once while loading so socket sampling can look up only the
+	// channels belonging to its cached bone chain.
+	m_ChannelsByBone.assign(pModel->GetBones().size(), nullptr);
+	for (const auto& pChannel : m_Channels)
+	{
+		if (pChannel == nullptr)
+			continue;
+
+		const int32_t iBoneIndex = pChannel->Get_BoneIndex();
+		if (iBoneIndex < 0 || iBoneIndex >= static_cast<int32_t>(m_ChannelsByBone.size()))
+			return E_FAIL;
+
+		m_ChannelsByBone[iBoneIndex] = pChannel;
+	}
+
 
     m_eState = STATE::LOADED;
     return S_OK;
 }
 HRESULT CResModelAnim::Unload(const std::any& arg)
 {
+	m_ChannelsByBone.clear();
 
 	m_eState = STATE::UNLOAD;
 	return S_OK;
+}
+
+CResModelChanel* CResModelAnim::GetChannelByBoneIndex(uint32_t iBoneIndex) const
+{
+	if (iBoneIndex >= m_ChannelsByBone.size())
+		return nullptr;
+
+	return m_ChannelsByBone[iBoneIndex].get();
 }
 
 

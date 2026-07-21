@@ -61,9 +61,10 @@ HRESULT CLevelPlayground::Initialize()
 	}
 	{
 		//테스트 고블린
-		CGameObject::GAMEOBJECT_DESC Desc{};
+		CTestGob::MONSTER_DESC Desc{};
 		Desc.sObjectTag = "Gobline";
-
+		Desc.LevelTag = "LEVEL_PLAYGROUND";
+		Desc.ReSourceTag = "Model_Resource_TombProtector";
 		auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
 		if (!Gobline.has_value())
 		{
@@ -74,6 +75,7 @@ HRESULT CLevelPlayground::Initialize()
 	}
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
 
 	return S_OK;
 }

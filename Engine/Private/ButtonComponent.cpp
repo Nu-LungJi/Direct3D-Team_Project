@@ -35,8 +35,9 @@ bool CButtonComponent::CheckPixelPerfectCollision(_float2 mousePos, bool bIsTopU
 	}
 
 	if (pOwner->GetInputLcok())
+	{
 		return false;
-
+	}
 
 	if (!m_bIsHovered && bCurrentCollision)
 	{

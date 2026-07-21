@@ -29,9 +29,9 @@ PS_IN VSMain(VS_IN vin)
 // Pixel Shader
 float4 PSMain(PS_IN input) : SV_Target
 {
-    float4 texColor = tex.Sample(LinearWrap, input.uv);
+    float4 texColor = tex.Sample(LinearClamp, input.uv);
 
-    if (texColor.a < 0.1f)
+    if (texColor.a < 0.01f)
     {
         discard;
     }

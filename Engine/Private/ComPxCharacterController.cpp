@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "ComPxCharacterController.h"
 #include "PhysXManager.h"
 
@@ -13,62 +13,182 @@ using namespace physx;
 
 namespace Engine
 {
+	namespace
+	{
+		PX_CCT_HIT_DATA ConvertHitData(const physx::PxControllerHit& hit, CGameObject* pGameObject)
+		{
+			PX_CCT_HIT_DATA tResult{};
+			tResult.pGameObject = pGameObject;
+			tResult.vWorldPosition = {
+				static_cast<_float>(hit.worldPos.x),
+				static_cast<_float>(hit.worldPos.y),
+				static_cast<_float>(hit.worldPos.z) };
+			tResult.vWorldNormal = { hit.worldNormal.x, hit.worldNormal.y, hit.worldNormal.z };
+			tResult.vMoveDirection = { hit.dir.x, hit.dir.y, hit.dir.z };
+			tResult.fMoveLength = hit.length;
+			return tResult;
+		}
+
+		physx::PxControllerBehaviorFlags ConvertBehavior(PX_CCT_BEHAVIOR eBehavior)
+		{
+			const uint8_t iBehavior = static_cast<uint8_t>(eBehavior);
+			physx::PxControllerBehaviorFlags tResult{};
+
+			if (iBehavior & static_cast<uint8_t>(PX_CCT_BEHAVIOR::CAN_RIDE))
+				tResult |= physx::PxControllerBehaviorFlag::eCCT_CAN_RIDE_ON_OBJECT;
+			if (iBehavior & static_cast<uint8_t>(PX_CCT_BEHAVIOR::SLIDE))
+				tResult |= physx::PxControllerBehaviorFlag::eCCT_SLIDE;
+			if (iBehavior & static_cast<uint8_t>(PX_CCT_BEHAVIOR::USER_DEFINED_RIDE))
+				tResult |= physx::PxControllerBehaviorFlag::eCCT_USER_DEFINED_RIDE;
+
+			return tResult;
+		}
+	}
+
 	struct CComPxCharacterController::Impl :
 		// 캐릭터 컨트롤러가 move() 함수를 호출하여 이동하는 도중에 무언가와 부딪혔을 때 호출
 		public physx::PxUserControllerHitReport, 
 		// 캐릭터가 특정 객체 위에 닿았을 때(예: 바닥을 밟거나 움직이는는 엘리베이터 위에 올라탔을 때),
 		// 이 객체 위에서 캐릭터가 어떻게 행동할지(미끄러질지, 올라탈 수 있는지)를 물리 엔진에 알려주는 역할
-		public physx::PxControllerBehaviorCallback 
+		public physx::PxControllerBehaviorCallback,
+		public physx::PxQueryFilterCallback,
+		public physx::PxControllerFilterCallback
 	{
 		CComPxCharacterController* pOwner = nullptr;
 		physx::PxControllerCollisionFlags collisionFlags{};
 
 		
-		virtual void onShapeHit(const physx::PxControllerShapeHit& hit) override
+		void onShapeHit(const physx::PxControllerShapeHit& hit) override
 		{
-			// 1. 충돌한 대상이 동적 물체(RigidDynamic)인지 확인
-			physx::PxActor* pActor = hit.shape->getActor();
-			physx::PxRigidDynamic* pDynamic = pActor ? pActor->is<physx::PxRigidDynamic>() : nullptr;
+			if (!pOwner || !pOwner->GetGameObject())
+				return;
 
-			if (pDynamic)
-			{
-				// 2. 중요: 물체가 잠들어 있으면(Sleeping) 힘을 줘도 안 움직임!
-				pDynamic->wakeUp();
+			auto* pManager = CGameInstance::Get().GetPhysXManager();
+			if (!pManager)
+				return;
 
-				// 3. 밀어낼 방향 결정
-				// hit.worldNormal은 충돌한 면의 법선입니다. 
-				// 컨트롤러가 물체 쪽으로 이동 중이므로, 이 법선 방향으로 힘을 가하면 물체가 밀려납니다.
-				physx::PxVec3 vPushDir = hit.worldNormal;
-				vPushDir.y = 0.0f; // 캐릭터가 물체를 밟고 공중으로 솟구치는 걸 방지 (좌우로만 밀기)
+			CHandle hOther{};
+			if (const auto userData = pManager->FindActorUserData(hit.actor))
+				hOther = userData->hGameObject;
 
-				if (vPushDir.magnitudeSquared() > 0.001f)
-				{
-					vPushDir.normalize();
-
-					// 4. 힘 가하기
-					// eIMPULSE: 순간적인 충격 (툭 치는 느낌)
-					// eVELOCITY_CHANGE: 속도를 강제로 변화시킴 (더 잘 밀리는 느낌)
-					float fForce = 110.0f; // 이 수치를 키우면 더 세게 밀어냅니다.
-					pDynamic->addForce(vPushDir * fForce, physx::PxForceMode::eIMPULSE);
-				}
-			}
+			pManager->QueueCCTShapeHit(
+				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
 		}
-		virtual void onControllerHit(const physx::PxControllersHit& hit) override {}
-		virtual void onObstacleHit(const physx::PxControllerObstacleHit& hit) override {}
+
+		void onControllerHit(const physx::PxControllersHit& hit) override
+		{
+			if (!pOwner || !pOwner->GetGameObject())
+				return;
+
+			auto* pManager = CGameInstance::Get().GetPhysXManager();
+			if (!pManager)
+				return;
+
+			const physx::PxRigidActor* pActor = hit.other ? hit.other->getActor() : nullptr;
+			CHandle hOther{};
+			if (const auto userData = pManager->FindActorUserData(pActor))
+				hOther = userData->hGameObject;
+
+			pManager->QueueCCTControllerHit(
+				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+		}
+
+		void onObstacleHit(const physx::PxControllerObstacleHit& hit) override
+		{
+			if (!pOwner || !pOwner->GetGameObject())
+				return;
+
+			PX_CCT_OBSTACLE_HIT_DATA tResult{};
+			tResult.pUserData = hit.userData;
+			tResult.vWorldPosition = {
+				static_cast<_float>(hit.worldPos.x),
+				static_cast<_float>(hit.worldPos.y),
+				static_cast<_float>(hit.worldPos.z) };
+			tResult.vWorldNormal = { hit.worldNormal.x, hit.worldNormal.y, hit.worldNormal.z };
+			tResult.vMoveDirection = { hit.dir.x, hit.dir.y, hit.dir.z };
+			tResult.fMoveLength = hit.length;
+			if (auto* pManager = CGameInstance::Get().GetPhysXManager())
+				pManager->QueueCCTObstacleHit(pOwner->GetGameObject()->GetHandle(), tResult);
+		}
 		
-		virtual PxControllerBehaviorFlags getBehaviorFlags(const PxObstacle& obstacle)
+		PxControllerBehaviorFlags getBehaviorFlags(const PxObstacle& obstacle) override
 		{
-			return PxControllerBehaviorFlag::eCCT_CAN_RIDE_ON_OBJECT;
-		}
-		virtual PxControllerBehaviorFlags getBehaviorFlags(const PxShape& shape, const PxActor& actor) override
-		{
-			// 모든 충돌체에 대해 "올라탈 수 있음"을 반환
-			return PxControllerBehaviorFlag::eCCT_CAN_RIDE_ON_OBJECT;
+			CGameObject* pGameObject = pOwner ? pOwner->GetGameObject() : nullptr;
+			const PX_CCT_BEHAVIOR eBehavior = pGameObject
+				? pGameObject->GetCCTObstacleBehavior(obstacle.mUserData)
+				: PX_CCT_BEHAVIOR::CAN_RIDE;
+			return ConvertBehavior(eBehavior);
 		}
 
-		virtual PxControllerBehaviorFlags getBehaviorFlags(const PxController& controller) override
+		PxControllerBehaviorFlags getBehaviorFlags(const PxShape& shape, const PxActor& actor) override
 		{
-			return PxControllerBehaviorFlag::eCCT_CAN_RIDE_ON_OBJECT;
+			auto* pManager = CGameInstance::Get().GetPhysXManager();
+			CGameObject* pGameObject = pManager ? pManager->FindGameObject(&actor) : nullptr;
+			CGameObject* pOwnerObject = pOwner ? pOwner->GetGameObject() : nullptr;
+			const PX_CCT_BEHAVIOR eBehavior = pOwnerObject
+				? pOwnerObject->GetCCTShapeBehavior(pGameObject)
+				: PX_CCT_BEHAVIOR::CAN_RIDE;
+			return ConvertBehavior(eBehavior);
+		}
+
+		PxControllerBehaviorFlags getBehaviorFlags(const PxController& controller) override
+		{
+			auto* pManager = CGameInstance::Get().GetPhysXManager();
+			CGameObject* pGameObject = pManager ? pManager->FindGameObject(controller.getActor()) : nullptr;
+			CGameObject* pOwnerObject = pOwner ? pOwner->GetGameObject() : nullptr;
+			const PX_CCT_BEHAVIOR eBehavior = pOwnerObject
+				? pOwnerObject->GetCCTControllerBehavior(pGameObject)
+				: PX_CCT_BEHAVIOR::NONE;
+			return ConvertBehavior(eBehavior);
+		}
+
+		PxQueryHitType::Enum preFilter(
+			const PxFilterData& filterData,
+			const PxShape* shape,
+			const PxRigidActor* actor,
+			PxHitFlags& queryFlags) override
+		{
+			if (!pOwner || !shape || !actor)
+				return PxQueryHitType::eNONE;
+
+			if (pOwner->m_pController && actor == pOwner->m_pController->getActor())
+				return PxQueryHitType::eNONE;
+
+			if (shape->getFlags().isSet(PxShapeFlag::eTRIGGER_SHAPE))
+				return PxQueryHitType::eNONE;
+
+			const PxFilterData tTargetFilter = shape->getQueryFilterData();
+			return (pOwner->m_tFilter.iQueryMask & tTargetFilter.word0) != 0
+				? PxQueryHitType::eBLOCK
+				: PxQueryHitType::eNONE;
+		}
+
+		PxQueryHitType::Enum postFilter(
+			const PxFilterData& filterData,
+			const PxQueryHit& hit,
+			const PxShape* shape,
+			const PxRigidActor* actor) override
+		{
+			return PxQueryHitType::eBLOCK;
+		}
+
+		bool filter(const PxController& a, const PxController& b) override
+		{
+			const PxRigidDynamic* pActorA = a.getActor();
+			const PxRigidDynamic* pActorB = b.getActor();
+			if (!pActorA || !pActorB)
+				return false;
+
+			PxShape* pShapeA{};
+			PxShape* pShapeB{};
+			if (pActorA->getShapes(&pShapeA, 1) != 1 || !pShapeA ||
+				pActorB->getShapes(&pShapeB, 1) != 1 || !pShapeB)
+				return false;
+
+			const PxFilterData tFilterA = pShapeA->getQueryFilterData();
+			const PxFilterData tFilterB = pShapeB->getQueryFilterData();
+			return (tFilterA.word1 & tFilterB.word0) != 0 &&
+				(tFilterB.word1 & tFilterA.word0) != 0;
 		}
 	};
 
@@ -77,6 +197,77 @@ namespace Engine
 
 void CComPxCharacterController::UpdateGUI()
 {
+	CComponent::UpdateGUI();
+	ImGui::PushID(this);
+
+	if (!m_pController)
+	{
+		ImGui::Text("Controller: nullptr");
+		ImGui::PopID();
+		return;
+	}
+
+	ImGui::Text("CCT Callback Target: Owner GameObject");
+	ImGui::Text("Collision Side: %s", IsCollidingSide() ? "true" : "false");
+	ImGui::Text("Collision Up: %s", IsCollidingUp() ? "true" : "false");
+	ImGui::Text("Grounded: %s", IsGrounded() ? "true" : "false");
+
+	_float3 vPosition = GetPosition();
+	float fPosition[3] = { vPosition.x, vPosition.y, vPosition.z };
+	if (ImGui::DragFloat3("Position", fPosition, 0.1f))
+		SetPosition({ fPosition[0], fPosition[1], fPosition[2] });
+
+	if (m_pController->getType() == PxControllerShapeType::eCAPSULE)
+	{
+		auto* pCapsule = static_cast<PxCapsuleController*>(m_pController);
+		float fHeight = pCapsule->getHeight();
+		if (ImGui::DragFloat("Height", &fHeight, 0.05f, 0.01f, 100.f))
+			Resize(fHeight);
+
+		float fRadius = pCapsule->getRadius();
+		if (ImGui::DragFloat("Radius", &fRadius, 0.05f, 0.01f, 100.f))
+			SetRadius(fRadius);
+	}
+
+	float fStepOffset = GetStepOffset();
+	if (ImGui::DragFloat("Step Offset", &fStepOffset, 0.01f, 0.f, 100.f))
+		SetStepOffset(fStepOffset);
+
+	float fSlopeLimit = GetSlopeLimit();
+	if (ImGui::SliderFloat("Slope Limit (cos)", &fSlopeLimit, 0.f, 1.f))
+		SetSlopeLimit(fSlopeLimit);
+
+	float fContactOffset = GetContactOffset();
+	if (ImGui::DragFloat("Contact Offset", &fContactOffset, 0.001f, 0.0001f, 10.f, "%.4f"))
+		SetContactOffset(fContactOffset);
+
+	PX_FILTER_DESC tFilter = GetFilter();
+	bool bFilterChanged{};
+	bFilterChanged |= ImGui::InputScalar(
+		"Layer", ImGuiDataType_U32, &tFilter.iLayer, nullptr, nullptr, "%08X",
+		ImGuiInputTextFlags_CharsHexadecimal);
+	bFilterChanged |= ImGui::InputScalar(
+		"Simulation Mask", ImGuiDataType_U32, &tFilter.iSimulationMask, nullptr, nullptr, "%08X",
+		ImGuiInputTextFlags_CharsHexadecimal);
+	bFilterChanged |= ImGui::InputScalar(
+		"Query Mask", ImGuiDataType_U32, &tFilter.iQueryMask, nullptr, nullptr, "%08X",
+		ImGuiInputTextFlags_CharsHexadecimal);
+	if (bFilterChanged)
+		SetFilter(tFilter);
+
+	static float s_fTestDisplacement[3]{};
+	static float s_fTestTimeStep = 1.f / 60.f;
+	ImGui::Separator();
+	ImGui::DragFloat3("Test Displacement", s_fTestDisplacement, 0.01f);
+	ImGui::DragFloat("Test Time Step", &s_fTestTimeStep, 0.001f, 0.0001f, 1.f, "%.4f");
+	if (ImGui::Button("Move Once"))
+	{
+		Move(
+			{ s_fTestDisplacement[0], s_fTestDisplacement[1], s_fTestDisplacement[2] },
+			s_fTestTimeStep);
+	}
+
+	ImGui::PopID();
 }
 
 CComPxCharacterController::CComPxCharacterController() { }
@@ -101,6 +292,7 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 		return E_FAIL;
 	}
 
+	m_tFilter = pDesc->tFilter;
 	
 	m_pImpl = std::make_unique<CComPxCharacterController::Impl>();
 	m_pImpl->pOwner = this;
@@ -133,41 +325,203 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 
 	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 	auto* pActor = m_pController->getActor();
+	if (!pActor)
+		return E_FAIL;
+
+	PxShape* pShape{};
+	if (pActor->getShapes(&pShape, 1) != 1 || !pShape)
+		return E_FAIL;
+
+	PxFilterData simulationFilter{};
+	simulationFilter.word0 = pDesc->tFilter.iLayer;
+	simulationFilter.word1 = pDesc->tFilter.iSimulationMask;
+	pShape->setSimulationFilterData(simulationFilter);
+
+	PxFilterData queryFilter{};
+	queryFilter.word0 = pDesc->tFilter.iLayer;
+	queryFilter.word1 = pDesc->tFilter.iQueryMask;
+	pShape->setQueryFilterData(queryFilter);
+
 	PX_ACTOR_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
 	userData.eType = PX_ACTOR_TYPE::CHARACTER_CONTROLLER;
-	if (!pPhysXManager || !pActor || !pPhysXManager->RegisterActor(pActor, userData))
+	if (!pPhysXManager || !pPhysXManager->RegisterActor(pActor, userData))
 		return E_FAIL;
 
+	PX_SHAPE_USER_DATA shapeUserData{};
+	shapeUserData.hGameObject = GetGameObject()->GetHandle();
+	shapeUserData.eType = PX_SHAPE_TYPE::CAPSULE;
+	if (!pPhysXManager->RegisterShape(pShape, shapeUserData))
+	{
+		pPhysXManager->UnregisterActor(pActor);
+		return E_FAIL;
+	}
+
 	pActor->userData = nullptr;
+	pShape->userData = nullptr;
 	return S_OK;
 }
 
-void CComPxCharacterController::Move(const XMFLOAT3& vDisplacement, float fTimeStep)
+PX_CCT_COLLISION_FLAG CComPxCharacterController::Move(const XMFLOAT3& vDisplacement, float fTimeStep, float fMinDistance)
 {
-	if (!m_pController) return;
+	if (!m_pController || !m_pImpl)
+		return PX_CCT_COLLISION_FLAG::NONE;
 
 	PxVec3 disp(vDisplacement.x, vDisplacement.y, vDisplacement.z);
+	PxFilterData tMoveFilter{};
+	tMoveFilter.word0 = m_tFilter.iQueryMask;
 	// move 함수는 '속도'가 아니라 '변위(Displacement = Velocity * dt)'를 받습니다.
 	m_pImpl->collisionFlags = m_pController->move(
 		disp,
-		0.00f,      // 최소 이동 거리 (이보다 작으면 연산 생략해 최적화)
+		fMinDistance,
 		fTimeStep,
-		PxControllerFilters() // 필터링 설정 (적이나 아군 통과 여부 등)
+		PxControllerFilters(
+			&tMoveFilter,
+			m_pImpl.get(),
+			m_pImpl.get())
 	);
+
+	uint8_t iResult{};
+	if (m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES))
+		iResult |= static_cast<uint8_t>(PX_CCT_COLLISION_FLAG::SIDE);
+	if (m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_UP))
+		iResult |= static_cast<uint8_t>(PX_CCT_COLLISION_FLAG::UP);
+	if (m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_DOWN))
+		iResult |= static_cast<uint8_t>(PX_CCT_COLLISION_FLAG::DOWN);
+
+	return static_cast<PX_CCT_COLLISION_FLAG>(iResult);
 }
 
 bool CComPxCharacterController::IsGrounded() const
 {
-	return m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_DOWN);
+	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_DOWN);
+}
+
+bool CComPxCharacterController::IsCollidingUp() const
+{
+	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_UP);
+}
+
+bool CComPxCharacterController::IsCollidingSide() const
+{
+	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES);
 }
 
 void CComPxCharacterController::SetPosition(const XMFLOAT3& vPosition)
 {
+	if (!m_pController)
+		return;
+
 	physx::PxExtendedVec3 pos = { vPosition.x, vPosition.y, vPosition.z };
 
 	// 이 함수가 물리 엔진 내의 컨트롤러 위치를 즉시 이동시킵니다.
 	m_pController->setPosition(pos);
+}
+
+_float3 CComPxCharacterController::GetPosition() const
+{
+	if (!m_pController)
+		return {};
+
+	const PxExtendedVec3 vPosition = m_pController->getPosition();
+	return {
+		static_cast<_float>(vPosition.x),
+		static_cast<_float>(vPosition.y),
+		static_cast<_float>(vPosition.z) };
+}
+
+_float3 CComPxCharacterController::GetFootPosition() const
+{
+	if (!m_pController)
+		return {};
+
+	const PxExtendedVec3 vPosition = m_pController->getFootPosition();
+	return {
+		static_cast<_float>(vPosition.x),
+		static_cast<_float>(vPosition.y),
+		static_cast<_float>(vPosition.z) };
+}
+
+_bool CComPxCharacterController::Resize(_float fHeight)
+{
+	if (!m_pController || fHeight <= 0.f)
+		return false;
+
+	m_pController->resize(fHeight);
+	return true;
+}
+
+_bool CComPxCharacterController::SetRadius(_float fRadius)
+{
+	if (!m_pController || fRadius <= 0.f || m_pController->getType() != PxControllerShapeType::eCAPSULE)
+		return false;
+
+	return static_cast<PxCapsuleController*>(m_pController)->setRadius(fRadius);
+}
+
+void CComPxCharacterController::SetStepOffset(_float fStepOffset)
+{
+	if (m_pController && fStepOffset >= 0.f)
+		m_pController->setStepOffset(fStepOffset);
+}
+
+_float CComPxCharacterController::GetStepOffset() const
+{
+	return m_pController ? m_pController->getStepOffset() : 0.f;
+}
+
+void CComPxCharacterController::SetSlopeLimit(_float fSlopeLimit)
+{
+	if (m_pController && fSlopeLimit >= 0.f && fSlopeLimit <= 1.f)
+		m_pController->setSlopeLimit(fSlopeLimit);
+}
+
+_float CComPxCharacterController::GetSlopeLimit() const
+{
+	return m_pController ? m_pController->getSlopeLimit() : 0.f;
+}
+
+void CComPxCharacterController::SetContactOffset(_float fContactOffset)
+{
+	if (m_pController && fContactOffset > 0.f)
+		m_pController->setContactOffset(fContactOffset);
+}
+
+_float CComPxCharacterController::GetContactOffset() const
+{
+	return m_pController ? m_pController->getContactOffset() : 0.f;
+}
+
+_bool CComPxCharacterController::SetFilter(const PX_FILTER_DESC& tFilter)
+{
+	if (!m_pController)
+		return false;
+
+	PxRigidDynamic* pActor = m_pController->getActor();
+	if (!pActor)
+		return false;
+
+	PxShape* pShape{};
+	if (pActor->getShapes(&pShape, 1) != 1 || !pShape)
+		return false;
+
+	m_tFilter = tFilter;
+
+	PxFilterData tSimulationFilter{};
+	tSimulationFilter.word0 = tFilter.iLayer;
+	tSimulationFilter.word1 = tFilter.iSimulationMask;
+	pShape->setSimulationFilterData(tSimulationFilter);
+
+	PxFilterData tQueryFilter{};
+	tQueryFilter.word0 = tFilter.iLayer;
+	tQueryFilter.word1 = tFilter.iQueryMask;
+	pShape->setQueryFilterData(tQueryFilter);
+
+	if (PxScene* pScene = pActor->getScene())
+		pScene->resetFiltering(*pActor);
+	m_pController->invalidateCache();
+
+	return true;
 }
 
 
@@ -200,7 +554,16 @@ void CComPxCharacterController::Free()
 		if (auto* pActor = m_pController->getActor())
 		{
 			if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+			{
+				PxShape* pShape{};
+				if (pActor->getShapes(&pShape, 1) == 1 && pShape)
+				{
+					pPhysXManager->UnregisterShape(pShape);
+					pShape->userData = nullptr;
+				}
+
 				pPhysXManager->UnregisterActor(pActor);
+			}
 
 			pActor->userData = nullptr;
 		}
@@ -208,5 +571,6 @@ void CComPxCharacterController::Free()
 		m_pController->release();
 		m_pController = nullptr;
 	}
+	m_pImpl.reset();
 	CComponent::Free();
 }

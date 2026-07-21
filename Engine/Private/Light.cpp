@@ -9,32 +9,44 @@
 CLight::CLight() : CGameObject{} {}
 CLight::~CLight() {}
 
-
-void	CLight::UpdateGUI()
-{
+VOID	CLight::UpdateGUI() {
 	CGameObject::UpdateGUI();
 }
 
 HRESULT CLight::InitializePrototype(VOID* pArg) {
-	DynamicLight = {
-		.g_LightViewProj = {},
-		.LightDirection = { 1.f, -1.f, 1.f },
-		.LightIntensity = { 10.f },
-		.LightColor = { 1.f, 1.f, 1.f },
-		.LightRange = { 5.f },
+	{
+		m_pDynamicLight.LightDirection = { 1.f, -1.f, 1.f };
+		m_pDynamicLight.LightIntensity = { 10.f };
+		m_pDynamicLight.LightColor = { 1.f, 1.f, 1.f };
+		m_pDynamicLight.LightRange = { 100.f };
 
-		.Position = {0.f, 0.f, 0.f},
-		.LightType = ETOUI(LIGHT_TYPE::DIRECTIONAL),
+		m_pDynamicLight.Position = { 0.f, 0.f, 0.f };
+		m_pDynamicLight.LightType = ETOUI(LIGHT_TYPE::DIRECTIONAL);
 
-		.InnerAttanuation = { 20.f },
-		.OuterAttanuation = { 30.f }
-	};
+		m_pDynamicLight.InnerAttanuation = { 20.f };
+		m_pDynamicLight.OuterAttanuation = { 30.f };
 
-	for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) 
-		XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixIdentity());
+		for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i)
+			XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixIdentity());
+	}
+	{
+		// CubeMap 그림자 촬영 View의 Look벡터
+		DirectionVec[0] = { XMVectorSet(+1.f, 0.f, 0.f, 0.f) }; // +X (Right)
+		DirectionVec[1] = { XMVectorSet(-1.f, 0.f, 0.f, 0.f) }; // -X (Left)
+		DirectionVec[2] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // +Y (Up)
+		DirectionVec[3] = { XMVectorSet(0.f, -1.f, 0.f, 0.f) }; // -Y (Down)
+		DirectionVec[4] = { XMVectorSet(0.f, 0.f, +1.f, 0.f) }; // +Z (Forward)
+		DirectionVec[5] = { XMVectorSet(0.f, 0.f, -1.f, 0.f) }; // -Z (Backward)
+
+		// CubeMap 그림자 촬영 View의 Up벡터
+		BaseUpVec[0] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // +X (Up: +Y)
+		BaseUpVec[1] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // -X (Up: +Y)
+		BaseUpVec[2] = { XMVectorSet(0.f, 0.f, -1.f, 0.f) }; // +Y (Up: -Z)
+		BaseUpVec[3] = { XMVectorSet(0.f, 0.f, +1.f, 0.f) }; // -Y (Up: +Z)
+		BaseUpVec[4] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // +Z (Up: +Y)
+		BaseUpVec[5] = { XMVectorSet(0.f, +1.f, 0.f, 0.f) }; // -Z (Up: +Y)
+	}
 	
-	
-
 	return S_OK;
 }
 
@@ -42,18 +54,22 @@ HRESULT CLight::Initialize(VOID* pArg)
 {
 	if (FAILED(CGameObject::Initialize(pArg)))			return E_FAIL;
 
-	m_pColliderSphere = CCollSphere::Create(m_pComTransform->GetPosition(), 10.f);
-	m_pColliderFrustum = CCollFrustum::Create(XMMatrixIdentity());
-
 	{
-		CComConstantBuffer::DESC Desc{};
-		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))	return E_FAIL;
-	}
+		m_pColliderSphere = CCollSphere::Create(m_pComTransform->GetPosition(), 10.f);
+		if (nullptr == m_pColliderSphere) return E_FAIL;
 
-	// 2K Resolution
-	uint32_t ShadowMapResolutionX = { 1280 * 2 };
-	uint32_t ShadowMapResolutionY = { 720 * 2 };
+		m_pColliderFrustum = CCollFrustum::Create(XMMatrixIdentity());
+		if (nullptr == m_pColliderFrustum) return E_FAIL;
+	}
+	{
+		CComConstantBuffer::DESC PerObjectDesc{};
+		PerObjectDesc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &PerObjectDesc, &m_pComCBufferPerObject)))	return E_FAIL;
+		
+		CComConstantBuffer::DESC PerPassDesc{};
+		PerPassDesc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerPass", &PerPassDesc, &m_pComCBufferPerPass)))			return E_FAIL;
+	}
 
 	return S_OK;
 }
@@ -65,165 +81,190 @@ VOID CLight::PriorityUpdate(E::_float fTimeDelta) {
 VOID CLight::Update(E::_float fTimeDelta) {
 	m_pComTransform->Update();
 
+	auto LightType = m_pDynamicLight.LightType;
+	// Point Light
+	if (LightType == ETOUI(LIGHT_TYPE::POINT)) {
+
+		XMVECTOR LightPosition				= m_pComTransform->GetState(STATE::POSITION);
+		XMVECTOR PositionOffset				= XMVectorSet(0.f, 0.0001f, 0.f, 0.f);
+
+		XMMATRIX ProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, 0.01f, m_pDynamicLight.LightRange);
+
+		for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
+			XMMATRIX ViewMat = XMMatrixLookAtLH(LightPosition, XMVectorAdd(LightPosition + PositionOffset, DirectionVec[i]), BaseUpVec[i]);
+			XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ProjMat));
+		}
+	}
+	// SpotLight 
+	else if(LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)){
+		_float	 fNearZ = 0.01f;
+
+		m_pDynamicLight.OuterAttanuation = std::clamp(m_pDynamicLight.OuterAttanuation, 1.f, 75.f);
+		m_pDynamicLight.LightRange		 = std::clamp(m_pDynamicLight.LightRange, 0.01f + 0.01f, 100.f);
+
+		XMVECTOR	LightPosition  = m_pComTransform->GetState(STATE::POSITION);
+		XMVECTOR	LightDirection = XMVector3Normalize(XMLoadFloat3(&m_pDynamicLight.LightDirection));
+		XMVECTOR	WorldUp		   = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+		_float2		ScreenSize	= CGameInstance::Get().GetClientScreenSize();
+
+		_float		FOVAngle	= m_pDynamicLight.OuterAttanuation * 2.f * 1.2f;
+		if (FOVAngle > 150.f) FOVAngle = 150.f;
+
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
+		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), ScreenSize.x / ScreenSize.y, fNearZ, m_pDynamicLight.LightRange));
+		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
+	}
+	// Directional
+	else {
+		XMVECTOR	LightPosition = m_pComTransform->GetState(STATE::POSITION);
+		XMVECTOR	LightDirection = XMVector3Normalize(XMLoadFloat3(&m_pDynamicLight.LightDirection));
+		XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
+		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(150.f, 150.f, 0.1f, 500.f));
+		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
+	}
+
 	Update_Collider();
 }
 VOID CLight::LateUpdate(E::_float fTimeDelta) {
+
 }
 HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 
 	return S_OK;
 }
 
+VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
+	XMMATRIX LightWorldMatrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+	XMMATRIX LightViewMatrix = XMLoadFloat4x4(&LightView);
+	XMMATRIX LightProjMatrix = XMLoadFloat4x4(&LightProj);
+
+	if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT))
+	{
+		XMVECTOR PositionOffset = XMVectorSet(0.f, 0.0001f, 0.f, 0.f);
+
+		XMVECTOR LightPosition  = LightWorldMatrix.r[3] + PositionOffset;
+		XMVECTOR LightDirection = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+		XMVECTOR WorldUpVector  = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+		_float	 fNearZ = 0.01f;
+		LightViewMatrix = XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUpVector);
+		LightProjMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, m_pDynamicLight.LightRange);
+	}
+	{
+		E::CB_PER_OBJECT cbPerObject{};
+
+		XMMATRIX WorldViewProj = XMMatrixMultiply(XMMatrixMultiply(LightWorldMatrix, LightViewMatrix), LightProjMatrix);
+
+		XMStoreFloat4x4(&cbPerObject.matWVP, WorldViewProj);
+
+		cbPerObject.matWorld = *m_pComTransform->GetWorldMatrix();
+
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return;
+
+		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->GSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->CSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	}
+	{
+		E::CB_PER_PASS pCbPerPass{};
+
+		XMMATRIX LightViewProj = XMMatrixMultiply(LightViewMatrix, LightProjMatrix);
+
+		XMStoreFloat4x4(&pCbPerPass.matView, LightViewMatrix);
+		XMStoreFloat4x4(&pCbPerPass.matProj, LightProjMatrix);
+		XMStoreFloat4x4(&pCbPerPass.matViewProj, LightViewProj);
+		XMStoreFloat4x4(&pCbPerPass.matInvView, XMMatrixInverse(nullptr, LightViewMatrix));
+		XMStoreFloat4x4(&pCbPerPass.matInvProj, XMMatrixInverse(nullptr, LightProjMatrix));
+		XMStoreFloat4x4(&pCbPerPass.matInvViewProj, XMMatrixInverse(nullptr, LightViewProj));
+		XMStoreFloat4x4(&pCbPerPass.matShadowLightViewProj, LightViewProj);
+
+		pCbPerPass.vCamPos = m_pComTransform->GetPosition();
+
+		if (FAILED(m_pComCBufferPerPass->MapDiscard(pContext, &pCbPerPass, sizeof(pCbPerPass))))	return;
+
+		pContext->VSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->GSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->CSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+	}
+}
+
 VOID CLight::Update_Collider() {
 	XMVECTOR PosVec = XMLoadFloat3(&m_pComTransform->GetPosition());
 
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
+	if		(m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
+		if (nullptr == m_pColliderFrustum) return;
+		_float  fNearZ = 0.01f;
+
+		_float2	ScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+		XMMATRIX FrustumProjMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_pDynamicLight.OuterAttanuation * 1.3f), ScreenSize.x / ScreenSize.y, fNearZ, m_pDynamicLight.LightRange);
+		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(FrustumProjMatrix);
+
+		XMMATRIX InvViewMat = XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView));
+		m_pColliderFrustum->Transform(InvViewMat);
+
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderFrustum.get());
-
-		XMVECTOR LookVec = XMVector3Normalize(XMLoadFloat3(&DynamicLight.LightDirection));
-
-		XMVECTOR BaseUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
-		if (fabsf(XMVectorGetY(XMVector3Dot(LookVec, BaseUp))) > 0.99f) {
-			BaseUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
-		}
-
-		XMVECTOR RightVec	= XMVector3Normalize(XMVector3Cross(XMVectorSet(0.f, 1.f, 0.f, 0.f), LookVec));
-		XMVECTOR UpVec		= XMVector3Cross(RightVec, LookVec);
-
-		_float fNearZ = 0.01f;
-		DynamicLight.OuterAttanuation = DynamicLight.OuterAttanuation <= 0.f ? 1.f : DynamicLight.OuterAttanuation;
-		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
-
-		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, LookVec), UpVec));
-		XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(DynamicLight.OuterAttanuation * 2.f), 1.f, fNearZ, DynamicLight.LightRange));
-
-		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
-		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView)));
-
-		XMStoreFloat4x4(&LightViewProj, XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
-	else if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
+	else if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
+		if (nullptr == m_pColliderSphere) return;
+
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 
-		_float fNearZ = 0.01f;
-		DynamicLight.LightRange = DynamicLight.LightRange <= fNearZ ? fNearZ + 0.01f : DynamicLight.LightRange;
-		XMMATRIX HexaProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, DynamicLight.LightRange);
-
-		XMVECTOR DirectionVec[6] = {
-			XMVectorSet(1.f, 0.f, 0.f, 0.f),   // +X
-			XMVectorSet(-1.f, 0.f, 0.f, 0.f),  // -X
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Y
-			XMVectorSet(0.f, -1.f, 0.f, 0.f),  // -Y
-			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // +Z
-			XMVectorSet(0.f, 0.f, -1.f, 0.f)   // -Z
-		};
-
-		XMVECTOR UpVec[6] = {
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +X (Up)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // -X (Up)
-			XMVectorSet(0.f, 0.f, -1.f, 0.f),  // +Y (+Y축 Up벡터)
-			XMVectorSet(0.f, 0.f, 1.f, 0.f),   // -Y (-Y축 Up벡터)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),   // +Z (Up)
-			XMVectorSet(0.f, 1.f, 0.f, 0.f)    // -Z (Up)
-		};
-
-		for (int i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
-			XMMATRIX ViewMat = XMMatrixLookAtLH(PosVec, XMVectorAdd(PosVec, DirectionVec[i]), UpVec[i]);
-			XMStoreFloat4x4(&DynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, HexaProjMat));
-		}
+		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
 	}
 }
 
-HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext) {
-
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) || DynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
-		pContext->GSSetShader(nullptr, nullptr, 0);
-		pContext->PSSetShader(nullptr, nullptr, 0);
-	}
-	else {
-		// pContext->GSSetShader(m_pPointShadowGS, nullptr, 0);
-		// pContext->PSSetShader(m_pPointShadowPS, nullptr, 0);
-	}
-
+HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vector<CGameObject*>& _ObjectList) {
 	RENDER_CTX RCTX{};
 	RCTX.pass = RENDERPASS::SHADOW;
-	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
-	RCTX.matView = XMLoadFloat4x4(&LightView);
-	RCTX.matProj = XMLoadFloat4x4(&LightProj);
-	RCTX.matViewProj = XMLoadFloat4x4(&LightViewProj);
+	RCTX.eye  = XMLoadFloat3(&m_pComTransform->GetPosition());
 
-	for (auto& GOBJ : m_pRenderable_DynamicObjectList) {
+	if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
+		XMMATRIX Identity = XMMatrixIdentity();
+		RCTX.matView = Identity;
+		RCTX.matProj = Identity;
+		RCTX.matViewProj = Identity;
+	}
+	else {
+		RCTX.matView = XMLoadFloat4x4(&LightView);
+		RCTX.matProj = XMLoadFloat4x4(&LightProj);
+		RCTX.matViewProj = RCTX.matView * RCTX.matProj;
+	}
+
+	for (auto& GOBJ : _ObjectList) {
+		if (nullptr == GOBJ) continue;
 		GOBJ->Render(pContext, RCTX);
 	}
-	for (auto& GOBJ : m_pRenderable_StaticObjectList) {
-		GOBJ->Render(pContext, RCTX);
-	}
-
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		pContext->GSSetShader(nullptr, nullptr, 0);
-		pContext->PSSetShader(nullptr, nullptr, 0);
-	}
+	
 	return S_OK;
 }
 
-_bool CLight::Check_ObjectInArea() {
+_bool	CLight::Check_ObjectInArea() {
 
 	return true;
 }
-HRESULT CLight::Change_LightType(ID3D11DeviceContext* pContext, LIGHT_TYPE _LTYPE) {
-	if (DynamicLight.LightType == ETOUI(_LTYPE)) return E_FAIL;
-	DynamicLight.LightType = ETOUI(_LTYPE);
 
-	Safe_Release(m_pStaticShadowTexture);	Safe_Release(m_pStaticShadowDSV);	Safe_Release(m_pStaticShadowSRV);
-	Safe_Release(m_pDynamicShadowTexture);	Safe_Release(m_pDynamicShadowDSV);	Safe_Release(m_pDynamicShadowSRV);
-	Safe_Release(m_pFinalShadowTexture);	Safe_Release(m_pFinalShadowUAV);	Safe_Release(m_pFinalShadowSRV);
-
-	if (DynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		CGameInstance::Get().Generate_CubeMap(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280, 6);
-		CGameInstance::Get().Generate_CubeMap(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280, 6);
-	}
-	else {
-		CGameInstance::Get().Generate_ShadowTexture(m_pStaticShadowDSV.GetAddressOf(), m_pStaticShadowTexture.GetAddressOf(), m_pStaticShadowSRV.GetAddressOf(), 1280);
-		CGameInstance::Get().Generate_ShadowTexture(m_pDynamicShadowDSV.GetAddressOf(), m_pDynamicShadowTexture.GetAddressOf(), m_pDynamicShadowSRV.GetAddressOf(), 1280);
-	}
-
-	if (FAILED(CGameInstance::Get().Generate_ShadowMapOutput(m_pFinalShadowUAV.GetAddressOf(), m_pFinalShadowTexture.GetAddressOf(), m_pFinalShadowSRV.GetAddressOf(), DynamicLight.LightType, 1280)))	return E_FAIL;
+HRESULT CLight::Change_LightType(LIGHT_TYPE _LTYPE) {
+	if (m_pDynamicLight.LightType == ETOUI(_LTYPE)) return E_FAIL;
+	m_pDynamicLight.LightType = ETOUI(_LTYPE);
 
 	DirtyFlag = true;
 	   
 	return S_OK;
 }
 
-VOID CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
+VOID	CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	if (_ATYPE == ACTORTYPE::DYNAMIC) {
 		m_pRenderable_DynamicObjectList.push_back(pRenderObject);
 	}
 	else {
 		m_pRenderable_StaticObjectList.push_back(pRenderObject);
 	}
-}
-
-VOID CLight::Render_StaticShadow(ID3D11DeviceContext* pContext) {
-	for (auto& OBJ : m_pRenderable_StaticObjectList) {
-		//OBJ->Render_Shadow(pContext);
-	}
-}
-VOID CLight::Render_DynamicShadow(ID3D11DeviceContext* pContext) {
-	for (auto& OBJ : m_pRenderable_DynamicObjectList) {
-		//OBJ->Render_Shadow(pContext);
-	}
-}
-
-VOID CLight::Bind_ShadowMapTarget(ID3D11DeviceContext* pContext, _bool _DrawStaticShadow) {
-	//if (_DrawStaticShadow == true) {
-	//	pContext->ClearDepthStencilView(m_pResDynTexStaticShadowMap->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-	//	pContext->OMSetRenderTargets(0, nullptr, m_pResDynTexStaticShadowMap->GetDSV().Get());
-	//}
-	//else {
-	//	pContext->ClearDepthStencilView(m_pResDynTexDynamicShadowMap->GetDSV().Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-	//	pContext->OMSetRenderTargets(0, nullptr, m_pResDynTexDynamicShadowMap->GetDSV().Get());
-	//}
 }
 
 UPtr<CLight>	 CLight::Create()

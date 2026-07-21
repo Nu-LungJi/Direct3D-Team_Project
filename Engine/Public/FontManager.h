@@ -42,8 +42,6 @@ private:
 
 	std::unique_ptr<SpriteBatch> m_pBatch = { };
 
-
-
 public:
 	static UPtr<CFontManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };

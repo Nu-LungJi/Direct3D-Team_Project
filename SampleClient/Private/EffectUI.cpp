@@ -9,6 +9,7 @@
 #include "Client_Defines.h"
 #include "UIManager.h"
 #include "TweenComponent.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -50,6 +51,11 @@ HRESULT CEffectUI::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
+		{
+			return E_FAIL;
+		};
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::FLIPBOOK);
@@ -63,10 +69,14 @@ void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CEffectUI::Update(E::_float fTimeDelta)
 {
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
 	if (!m_isActive)
 		return;
 
 	CFlipbookUI::Update(fTimeDelta);
+
+	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
 
 	if (m_pComTween != nullptr)
 	{
@@ -85,7 +95,8 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
+	//std::string currentLevel = "LEVEL_UIEDITOR";
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");
@@ -160,12 +171,34 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 
 void CEffectUI::PlayEffect(uint32_t uiState)
 {
-	switch (uiState)
+	if (m_pComTween == nullptr)
+		return;
+
+	if (uiState & ETOUI(UI_STATE::APPEAR))
 	{
-	case ETOUI(UI_STATE::HOVERED):
-		std::optional<CHandle> effect = GET_SINGLE(UIManager)->LoadPrefab("Magic");
-		break;
+		ClearEffectTweens();
+		if (Appear) Appear(this);
 	}
+
+	if (uiState & ETOUI(UI_STATE::DISAPPEAR))
+	{
+		ClearEffectTweens();
+		if (Disappear) Disappear(this);
+	}
+
+	if (m_bInputLocked)
+		return;
+
+	if (m_UIINFO.EffectType != ETOUI(UI_EFFECT_TYPE::NONE))
+	{
+		switch (uiState)
+		{
+		case ETOUI(UI_STATE::HOVERED):
+			std::optional<CHandle> effect = GET_SINGLE(UIManager)->LoadPrefab("Magic");
+			break;
+		}
+	}
+
 }
 
 E::UPtr<CEffectUI> CEffectUI::Create()

@@ -64,7 +64,7 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
             return false;
     
         // Decrease By Distance
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+		float Attenuation = 1.f / max(Distance, 0.0001f);
         float DistanceByRange = Distance / Light.LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
     
@@ -84,7 +84,7 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
     
         // Decrease By Distance
         //float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
+        float Attenuation = 1.f / max(Distance, 0.0001f);
         float DistanceByRange = Distance / Light.LightRange;
         float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
         float DistanceFade = Attenuation * Window * Window;

@@ -3,6 +3,7 @@
 #include "Bone.h"
 #include "Mesh.h"
 #include <assimp/config.h>
+#include <cctype>
 #include <cmath>
 
 namespace
@@ -27,6 +28,53 @@ namespace
 			return hxy ^ (hz + 0x9e3779b9u + (hxy << 6) + (hxy >> 2));
 		}
 	};
+
+	std::string NormalizeMaterialTextureToken(std::string value)
+	{
+		std::replace(value.begin(), value.end(), '\\', '/');
+		std::transform(value.begin(), value.end(), value.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		return value;
+	}
+
+	std::string MakeWholeMapMaterialSignature(
+		const std::vector<std::shared_ptr<CMaterial>>& materials,
+		uint32_t materialIndex)
+	{
+		if (materialIndex >= materials.size() || materials[materialIndex] == nullptr)
+			return "unique:" + std::to_string(materialIndex);
+
+		std::vector<std::string> textureTokens;
+		for (const auto& textureGroup : materials[materialIndex]->m_textures)
+		{
+			for (const auto& texture : textureGroup)
+			{
+				if (texture.File.empty())
+					continue;
+
+				textureTokens.push_back(
+					std::to_string(texture.m_textureType) + ":" +
+					std::to_string(texture.m_textureNum) + ":" +
+					NormalizeMaterialTextureToken(texture.File) +
+					NormalizeMaterialTextureToken(texture.Ext));
+			}
+		}
+
+		// Missing texture metadata does not prove that two FBX materials are equal.
+		// Keep those materials separate to avoid an unsafe whole-map merge.
+		if (textureTokens.empty())
+			return "unique:" + std::to_string(materialIndex);
+
+		std::sort(textureTokens.begin(), textureTokens.end());
+		std::string signature = "textures:";
+		for (const auto& token : textureTokens)
+		{
+			signature += std::to_string(token.size());
+			signature += ':';
+			signature += token;
+		}
+		return signature;
+	}
 }
 
 CImporter::CImporter()
@@ -310,7 +358,7 @@ HRESULT CImporter::ImportWholeMapFBX(
 		std::unordered_map<const CMesh*, std::unordered_map<uint32_t, uint32_t>> vertexRemaps{};
 	};
 
-	using MATERIAL_BATCHES = std::unordered_map<uint32_t, MERGED_BATCH>;
+	using MATERIAL_BATCHES = std::unordered_map<std::string, MERGED_BATCH>;
 	std::unordered_map<WHOLE_MAP_CHUNK_KEY, MATERIAL_BATCHES, WHOLE_MAP_CHUNK_KEY_HASH> chunkBatches;
 	uint64_t sourceIndexCount = 0;
 
@@ -358,7 +406,9 @@ HRESULT CImporter::ImportWholeMapFBX(
 				static_cast<int32_t>(std::floor(triangleCenter.z / chunkSize))
 			};
 
-			auto& batch = chunkBatches[key][sourceMesh->m_materialIndex];
+			const std::string materialSignature =
+				MakeWholeMapMaterialSignature(Materials, sourceMesh->m_materialIndex);
+			auto& batch = chunkBatches[key][materialSignature];
 			if (batch.mesh == nullptr)
 			{
 				batch.mesh = std::make_shared<CMesh>();
@@ -402,17 +452,21 @@ HRESULT CImporter::ImportWholeMapFBX(
 	uint64_t mergedIndexCount = 0;
 	for (auto& [key, materialBatches] : chunkBatches)
 	{
-		std::vector<uint32_t> materialIndices;
-		materialIndices.reserve(materialBatches.size());
-		for (const auto& [materialIndex, unused] : materialBatches)
-			materialIndices.push_back(materialIndex);
-		std::sort(materialIndices.begin(), materialIndices.end());
+		std::vector<MERGED_BATCH*> sortedBatches;
+		sortedBatches.reserve(materialBatches.size());
+		for (auto& [materialSignature, batch] : materialBatches)
+			sortedBatches.push_back(&batch);
+		std::sort(sortedBatches.begin(), sortedBatches.end(),
+			[](const MERGED_BATCH* lhs, const MERGED_BATCH* rhs)
+			{
+				return lhs->mesh->m_materialIndex < rhs->mesh->m_materialIndex;
+			});
 
 		auto& chunkMeshes = chunks[key];
-		chunkMeshes.reserve(materialIndices.size());
-		for (const uint32_t materialIndex : materialIndices)
+		chunkMeshes.reserve(sortedBatches.size());
+		for (MERGED_BATCH* batch : sortedBatches)
 		{
-			auto& mergedMesh = materialBatches.at(materialIndex).mesh;
+			auto& mergedMesh = batch->mesh;
 			mergedIndexCount += mergedMesh->m_indices->size();
 			chunkMeshes.push_back(std::move(mergedMesh));
 		}
@@ -1988,7 +2042,7 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		{
 			textureDir = MakeTextureOutputDir(modelDir);
 			std::filesystem::create_directories(textureDir);
-			std::filesystem::create_directories(basePath);
+			std::filesystem::create_directories(modelDir);
 		}
 
 
@@ -2022,7 +2076,7 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		else {
 			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
 			
-			outputPath = basePath / (modelName + ".bin");
+			outputPath = modelDir / (modelName + ".bin");
 
 		}
 

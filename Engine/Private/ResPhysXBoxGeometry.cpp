@@ -59,7 +59,7 @@ SPtr<CResPhysXBoxGeometry> CResPhysXBoxGeometry::Create()
 	return ToSPtr(new CResPhysXBoxGeometry{ "" });
 }
 
-SPtr<CResPhysXBoxGeometry> CResPhysXBoxGeometry::Create(const DESC& desc)
+SPtr<CResPhysXBoxGeometry> CResPhysXBoxGeometry::CreateAndLoad(const DESC& desc)
 {
 	auto pInstance = ToSPtr(new CResPhysXBoxGeometry{ "" });;
 	if (FAILED(pInstance->Load(desc)))

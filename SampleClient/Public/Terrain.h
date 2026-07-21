@@ -7,6 +7,10 @@ class CResTexture2D;
 class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
+
+class CComPxRigidBody;
+class CComPxTriMeshCollider;
+class CResPhysXRTTriMeshGeometry;
 NS_END
 
 NS_BEGIN(Client)
@@ -19,6 +23,7 @@ public:
 public:
 	typedef struct tagTerrainDesc: public CGameObject::GAMEOBJECT_DESC
 	{
+		_string		tagLevelName{};
 	}DESC;
 
 private:
@@ -34,14 +39,23 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
+	HRESULT BuildPxRuntimeTriMesh();
+
+private:
 	SPtr<CResTerrainVIBuffer> m_pResTerrainVIBuffer{};
 	SPtr<CResTexture2D> m_pResTerrainTexture2D{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
+private:
+	CComPxRigidBody* m_pComPxRigidBody{};
+	CComPxTriMeshCollider* m_pComPxTriMeshCollider{};
+	SPtr<CResPhysXRTTriMeshGeometry> m_pResTriMesh{};
+
+
 public:
-	static E::UPtr<CTerrain> Create();
+	static E::UPtr<CTerrain> Create(void* pArg);
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

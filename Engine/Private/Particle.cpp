@@ -78,6 +78,10 @@ void CParticle::ProcessPendingSpawns(E::_float fTimeDelta)
 
 	if (!readyList.empty())
 	{
-		Spawn((uint32_t)readyList.size(), readyList.data()); // 순수가상함수 → 파생클래스(GPU/CPU) 구현 호출
+		HRESULT hr = Spawn((uint32_t)readyList.size(), readyList.data());
+		if (FAILED(hr))
+			OutputDebugStringA("Spawn FAILED!\n");
+		else
+			OutputDebugStringA("Spawn SUCCESS!\n");
 	}
 }
