@@ -142,6 +142,15 @@ HRESULT CLevelCreatureEditor::Initialize()
 			return E_FAIL;
 		hAnimTestPlayer = *hSpawnedPlayer;
 
+		PlayerDesc.vInitialPosition = { 50.f, 50.f, 10.f };
+		auto hSpawnedPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_Player",
+			"02_Player",
+			&PlayerDesc);
+		if (!hSpawnedPlayer)
+			return E_FAIL;
+		hAnimTestPlayer = *hSpawnedPlayer;
 
 
 		CTestPlayer3CameraCreatureEditor::DESC Desc{};
