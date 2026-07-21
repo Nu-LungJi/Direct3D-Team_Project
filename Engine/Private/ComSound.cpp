@@ -26,6 +26,30 @@ HRESULT CComSound::Initialize(void* pArg)
 	return S_OK;
 }
 
+SOUND_ID CComSound::Play2D(const _string& sPath, const SOUND_PLAY_DESC& tPlayDesc,
+	SOUND_LOAD_TYPE eLoadType)
+{
+	return PlayInternal(sPath, tPlayDesc, eLoadType);
+}
+
+SOUND_ID CComSound::PlaySlot2D(const StringID& sSlotID, const _string& sPath,
+	const SOUND_PLAY_DESC& tPlayDesc, SOUND_SLOT_PLAY_MODE ePlayMode,
+	SOUND_LOAD_TYPE eLoadType)
+{
+	if (sSlotID.hash == 0)
+		return INVALID_SOUND_ID;
+
+	if (ePlayMode == SOUND_SLOT_PLAY_MODE::REPLACE)
+		StopSlot(sSlotID);
+
+	const SOUND_ID iSoundID = PlayInternal(sPath, tPlayDesc, eLoadType);
+	if (iSoundID == INVALID_SOUND_ID)
+		return INVALID_SOUND_ID;
+
+	m_Slots[sSlotID].push_back(iSoundID);
+	return iSoundID;
+}
+
 SOUND_ID CComSound::Play3D(const _string& sPath, const SOUND_3D_DESC& t3DDesc,
 	const SOUND_PLAY_DESC& tPlayDesc, SOUND_LOAD_TYPE eLoadType)
 {
@@ -250,6 +274,20 @@ void CComSound::UpdateGUI()
 
 	if (ImGui::Button("Stop All Sounds"))
 		StopAll();
+}
+
+SOUND_ID CComSound::PlayInternal(const _string& sPath,
+	const SOUND_PLAY_DESC& tPlayDesc, SOUND_LOAD_TYPE eLoadType)
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (pSoundManager == nullptr)
+		return INVALID_SOUND_ID;
+
+	const SOUND_ID iSoundID = pSoundManager->Play2D(sPath, tPlayDesc, eLoadType);
+	if (iSoundID != INVALID_SOUND_ID)
+		m_PlayingSounds.emplace(iSoundID);
+
+	return iSoundID;
 }
 
 SOUND_ID CComSound::PlayInternal(const _string& sPath, const SOUND_3D_DESC& t3DDesc,

@@ -31,6 +31,14 @@ private:
 
 public:
 	// 반환 ID는 확장용이며 수명과 소유권은 계속 컴포넌트가 관리한다.
+	SOUND_ID Play2D(const _string& sPath, const SOUND_PLAY_DESC& tPlayDesc,
+		SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
+
+	SOUND_ID PlaySlot2D(const StringID& sSlotID, const _string& sPath,
+		const SOUND_PLAY_DESC& tPlayDesc,
+		SOUND_SLOT_PLAY_MODE ePlayMode = SOUND_SLOT_PLAY_MODE::REPLACE,
+		SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
+
 	SOUND_ID Play3D(const _string& sPath, const SOUND_3D_DESC& t3DDesc,
 		const SOUND_PLAY_DESC& tPlayDesc,
 		SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
@@ -59,6 +67,8 @@ public:
 	void UpdateGUI() override;
 
 private:
+	SOUND_ID PlayInternal(const _string& sPath,
+		const SOUND_PLAY_DESC& tPlayDesc, SOUND_LOAD_TYPE eLoadType);
 	SOUND_ID PlayInternal(const _string& sPath, const SOUND_3D_DESC& t3DDesc,
 		const SOUND_PLAY_DESC& tPlayDesc, SOUND_LOAD_TYPE eLoadType);
 	_bool StopInternal(SOUND_ID iSoundID);

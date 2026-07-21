@@ -30,7 +30,7 @@ void CTest3DSound::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 
-	if (ImGui::Button("Play"))
+	if (ImGui::Button("Play3d"))
 	{
 		auto id = m_pComSound->PlaySlot3D(
 			TEST_SLOT,
@@ -55,7 +55,7 @@ void CTest3DSound::UpdateGUI()
 		}
 	}
 
-	if (ImGui::Button("Play Overlap"))
+	if (ImGui::Button("Play3d Overlap"))
 	{
 		auto id = m_pComSound->PlaySlot3D(
 			TEST_SLOT,
@@ -66,6 +66,44 @@ void CTest3DSound::UpdateGUI()
 				.fMaxDistance = 30.f,
 				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
 			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			}, SOUND_SLOT_PLAY_MODE::OVERLAP);
+
+		if (id == INVALID_SOUND_ID)
+		{
+			MSG_BOX("INVALID_SOUND_ID");
+		}
+	}
+
+	if (ImGui::Button("Play2d"))
+	{
+		auto id = m_pComSound->PlaySlot2D(
+			TEST_SLOT,
+			"./Resources/SampleClient/Sound/avada.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+
+		if (id == INVALID_SOUND_ID)
+		{
+			MSG_BOX("INVALID_SOUND_ID");
+		}
+	}
+
+	if (ImGui::Button("Play2d Overlap"))
+	{
+		auto id = m_pComSound->PlaySlot2D(
+			TEST_SLOT,
+			"./Resources/SampleClient/Sound/avada.wav",
 			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::VOICE,
 				.fVolume = 1.f,
