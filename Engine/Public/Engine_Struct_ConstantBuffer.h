@@ -165,5 +165,5 @@ namespace Engine
 		float	mapRotation;
 		float	mapScale;
 	}CB_MINIMAP;
-	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
+	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
 }
