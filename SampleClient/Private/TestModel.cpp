@@ -24,8 +24,6 @@ void CTestModel::UpdateGUI()
 {
 	CAnimationObject::UpdateGUI();
 
-#ifdef _DEBUG
-
 
 	if (!m_pComModelInstance->GetModel())
 		return;
@@ -111,7 +109,7 @@ void CTestModel::UpdateGUI()
 
 	}
 	ImGui::End();
-#endif
+
 
 }
 
@@ -317,7 +315,7 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			m_pComModelInstance->Bind_Textures(pContext, i);
 			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
-		
+		                                                                                                                                                                                     
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 		//pContext->DrawIndexedInstancedIndirect(viBuffer->GetNumIndices(), 0, 0);
 	}
@@ -331,12 +329,12 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 {
 	ZoneScopedN("Render TestModel");
 
-/*
+
 	auto CurAnim = m_pModelAnimator->GetCurAnimState();
 
 	_float4x4 Dummy;
 	m_pSocket->SetBoneIndex(m_iDebugSelectedBone);
-	m_pSocket->Get_Socket_MatrixAtPose(CurAnim.iAnimIndex, CurAnim.fTrackPosition, Dummy)*/;
+	m_pSocket->Get_Socket_MatrixAtPose(CurAnim.iAnimIndex, CurAnim.fTrackPosition, Dummy);
 	
 	if (!pContext)
 		return E_INVALIDARG;
