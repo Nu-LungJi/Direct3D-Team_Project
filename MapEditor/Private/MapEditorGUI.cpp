@@ -250,7 +250,9 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::Text("Culled: %u (cpu readback)", instancingStats.iCulledInstances);
 	ImGui::Text("----------------------------Occlusion-----------------------------------");
 
-	m_pNavMeshGUI->UpdateGUI(fTimeDelta);
+	m_pTerrainGUI->UpdateGUI(fTimeDelta);
+	if (!m_pTerrainGUI->IsSculptEnabled())
+		m_pNavMeshGUI->UpdateGUI(fTimeDelta);
 
 	ImGui::Separator();
 	m_pHierarchy->UpdateGUI(fTimeDelta);
@@ -264,8 +266,11 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	m_pResourceGUI->UpdateGUI(fTimeDelta);
 	m_pMapChunkGUI->UpdateGUI(fTimeDelta);
-	RenderGizmo();
-	PickMapMeshObject();
+	if (!m_pTerrainGUI->IsSculptEnabled())
+	{
+		RenderGizmo();
+		PickMapMeshObject();
+	}
 }
 
 E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
@@ -309,6 +314,12 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 	pInstance->m_pNavMeshGUI = CNavMeshGUI::Create(pSelectedObject);
 	if (pInstance->m_pNavMeshGUI == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pTerrainGUI = CTerrainGUI::Create(pSelectedObject);
+	if (pInstance->m_pTerrainGUI == nullptr)
 	{
 		return nullptr;
 	}

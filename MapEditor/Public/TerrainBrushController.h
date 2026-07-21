@@ -1,0 +1,53 @@
+#pragma once
+
+#include "Engine_Defines.h"
+
+NS_BEGIN(Engine)
+class CTerrain;
+NS_END
+
+NS_BEGIN(Client)
+
+enum class ETerrainBrushMode : uint8_t
+{
+	Raise,
+	Lower
+};
+
+struct TERRAIN_BRUSH_SETTINGS
+{
+	ETerrainBrushMode mode = ETerrainBrushMode::Raise;
+	float radius = 5.f;
+	float strength = 5.f;
+	float falloff = 2.f;
+	uint32_t tileLayer = 0;
+};
+
+class CTerrainBrushController final : public E::CEngineBase
+{
+public:
+	DECLARE_DERIVED_TYPE(CTerrainBrushController, E::CEngineBase)
+
+private:
+	CTerrainBrushController() = default;
+	~CTerrainBrushController() override = default;
+
+public:
+	TERRAIN_BRUSH_SETTINGS& GetSettings() { return m_Settings; }
+	const TERRAIN_BRUSH_SETTINGS& GetSettings() const { return m_Settings; }
+	HRESULT UpdateStroke(E::CTerrain& terrain, const E::_float3& worldHit, float timeDelta);
+	HRESULT UpdateTextureStroke(E::CTerrain& terrain, const E::_float3& worldHit, float timeDelta);
+	void EndStroke();
+	void DrawPreview(const E::CTerrain& terrain, const E::_float3& worldHit) const;
+	static E::UPtr<CTerrainBrushController> Create();
+
+private:
+	bool ApplyStamp(E::CTerrain& terrain, const E::_float3& worldCenter, float heightDelta,
+		uint32_t& minX, uint32_t& minZ, uint32_t& maxX, uint32_t& maxZ);
+
+private:
+	TERRAIN_BRUSH_SETTINGS m_Settings{};
+	std::optional<E::_float3> m_PreviousHit{};
+};
+
+NS_END

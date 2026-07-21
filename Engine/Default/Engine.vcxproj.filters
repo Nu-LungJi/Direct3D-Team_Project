@@ -502,6 +502,9 @@
     <Filter Include="ShaderFiles\UIShader">
       <UniqueIdentifier>{0d457b52-1b40-4f88-99a7-174c4ddce13f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Terrain">
+      <UniqueIdentifier>{26070ecc-3b99-43d7-9702-d09fb65ddd9e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1093,6 +1096,12 @@
     <ClInclude Include="..\Public\Engine_ParticleDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TerrainChunk.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Terrain.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1623,6 +1632,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\ComSound.cpp">
       <Filter>Component\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TerrainChunk.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Terrain.cpp">
+      <Filter>Terrain</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

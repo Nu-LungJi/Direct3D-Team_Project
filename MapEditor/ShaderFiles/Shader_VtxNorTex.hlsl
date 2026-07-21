@@ -1,9 +1,13 @@
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
-Texture2D g_DiffuseTexture : register(t0);
-Texture2D g_NormalTexture : register(t1);
-Texture2D g_SMROTexture : register(t2);
-Texture2D g_EmissiveTexture : register(t3);
+Texture2D g_TileTextures[4] : register(t0);
+Texture2D g_BlendMask : register(t4);
+
+cbuffer CB_TERRAIN_CHUNK : register(b11)
+{
+    float2 g_ChunkUVOffset;
+    float2 g_ChunkUVSpan;
+};
 
 struct VS_IN
 {
@@ -55,7 +59,14 @@ PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT Out;
 
-    vector vMtrlDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord * 50.f);
+    float2 maskUV = saturate((IN.vTexcoord - g_ChunkUVOffset) / g_ChunkUVSpan);
+    float4 weights = saturate(g_BlendMask.Sample(LinearClamp, maskUV));
+    weights /= max(dot(weights, 1.f), 0.0001f);
+    vector vMtrlDiffuse =
+        g_TileTextures[0].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.r +
+        g_TileTextures[1].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.g +
+        g_TileTextures[2].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.b +
+        g_TileTextures[3].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.a;
 
     Out.vDiffuse = vMtrlDiffuse;
     Out.vNormal = float4(IN.vNormal.xyz * 0.5f + 0.5f, 0.f);

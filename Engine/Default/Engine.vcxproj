@@ -335,6 +335,8 @@
     <ClInclude Include="..\Public\ComModelInstance.h" />
     <ClInclude Include="..\Public\MapManager.h" />
     <ClInclude Include="..\Public\MapMeshObject.h" />
+    <ClInclude Include="..\Public\Terrain.h" />
+    <ClInclude Include="..\Public\TerrainChunk.h" />
     <ClInclude Include="..\public\MyGFSDK_SSAO.h" />
     <ClInclude Include="..\Public\Light.h" />
     <ClInclude Include="..\Public\LightManager.h" />
@@ -622,6 +624,8 @@
     <ClCompile Include="..\Private\LightManager.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
+    <ClCompile Include="..\Private\Terrain.cpp" />
+    <ClCompile Include="..\Private\TerrainChunk.cpp" />
     <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp" />
     <ClCompile Include="..\Private\OctreeNode.cpp" />

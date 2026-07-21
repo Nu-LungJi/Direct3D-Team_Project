@@ -3,8 +3,7 @@
 
 #include "GameInstance.h"
 #include "Resources.h"
-#include "ResMapEditorTerrainVIBuffer.h"
-#include "MapEditorTerrain.h"
+#include "Terrain.h"
 
 NS_USING(Client)
 
@@ -75,29 +74,13 @@ namespace
 
 std::future<bool> CLevelMapEditorLoader::Load()
 {
-	// 터레인 띄우려고 SampleClient에서 복붙해옴
+	if (auto res = CGameInstance::Get().AddResource("MAPEDITOR_TERRAIN_TILE", "Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
 	{
-		if (auto res = CGameInstance::Get().AddResource("MAPEDITOR", "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
+		if (FAILED(res->Load()))
 		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("Terrain Tile Png Load Failed");
-			}
-		}
-
-		if (auto res = CGameInstance::Get().AddResource("MAPEDITOR", "VIBUFFER_Terrain", CResMapEditorTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
-		{
-			if (FAILED(res->Load(CResMapEditorTerrainVIBuffer::DESC{})))
-			{
-				MSG_BOX("Terrain VIBuffer Load Failed");
-			}
+			MSG_BOX("Terrain Tile Png Load Failed");
 		}
 	}
-
-	//if (!LoadLevelAnimEditorStaticModels())
-	//{
-	//	MSG_BOX("StaticModel Load Failed");
-	//}
 
 	const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
 	if (!std::filesystem::exists(staticModelDir))
@@ -127,12 +110,55 @@ std::future<bool> CLevelMapEditorLoader::Load()
 				}
 
 				E::CResStaticModel::DESC desc{};
-				desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationAxis({ 1.f,0.f,0.f }, XMConvertToRadians(90.f));
 
 				if (FAILED(res->Load(desc)))
 				{
 					return false;
 				}
+				return true;
+			}
+		);
+	}
+
+	const std::filesystem::path terrainTileDir = R"(.\Resources\SampleClient\Textures\Terrain)";
+	if (!std::filesystem::exists(terrainTileDir))
+	{
+		MSG_BOX("NO_TERRAIN_TILE_DIR");
+	}
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(terrainTileDir))
+	{
+		if (!entry.is_regular_file())
+		{
+			continue;
+		}
+		const std::string extension = entry.path().extension().string();
+		if ((_stricmp(extension.c_str(), ".dds") != 0 &&
+			_stricmp(extension.c_str(), ".png") != 0 &&
+			_stricmp(extension.c_str(), ".jpg") != 0 &&
+			_stricmp(extension.c_str(), ".jpeg") != 0 &&
+			_stricmp(extension.c_str(), ".tga") != 0) ||
+			_stricmp(entry.path().stem().string().c_str(), "Height") == 0)
+			continue;
+
+		result = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR_TERRAIN_TILE", [=]()
+			{
+				const std::string resourceTag = MakeStaticModelResourceTag(terrainTileDir, entry.path());
+				auto res = E::CGameInstance::Get().AddResourceT<E::CResTexture2D>(
+					"MAPEDITOR_TERRAIN_TILE",
+					resourceTag,
+					E::CResTexture2D::Create(entry.path().string()));
+
+				if (!res)
+					return false;
+
+				if (FAILED(res->Load()))
+				{
+					MSG_BOX("Terrain Tile Png Load Failed");
+					return false;
+				}
+
+				return true;
 			}
 		);
 	}
@@ -140,7 +166,7 @@ std::future<bool> CLevelMapEditorLoader::Load()
 	result = E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_MAPEDITOR", []()
 	{
 		// 터레인
-		if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_MapEditorTerrain", CMapEditorTerrain::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("MAPEDITOR", "Prototype_GameObject_Terrain", E::CTerrain::Create())))
 		{
 			return false;
 		}
@@ -158,6 +184,7 @@ HRESULT CLevelMapEditorLoader::UnLoad()
 	E::CGameInstance::Get().GetNavMeshManager()->Clear();
 	E::CGameInstance::Get().DelPrototype("MAPEDITOR");
 	E::CGameInstance::Get().DelResource("MAPEDITOR");
+	E::CGameInstance::Get().DelResource("MAPEDITOR_TERRAIN_TILE");
 	E::CGameInstance::Get().DelResource(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
 
 	

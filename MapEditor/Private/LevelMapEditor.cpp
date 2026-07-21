@@ -9,7 +9,7 @@
 
 #include "TestGuizmo.h"
 #include "MapMeshObject.h"
-#include "MapEditorTerrain.h"
+#include "Terrain.h"
 #include "LevelMapEditorLoader.h"
 
 NS_USING(Client)
@@ -43,14 +43,23 @@ HRESULT CLevelMapEditor::Initialize()
 	//	}
 	//}
 
-	// MapEditorTerrain
+	// Terrain
 	{
-		CMapEditorTerrain::DESC Desc{};
+		E::CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
+		//Desc.heightMapPath = "./Resources/SampleClient/Textures/Terrain/Height.bmp";
+		Desc.textureGroup = "MAPEDITOR_TERRAIN_TILE";
+		Desc.textureTag = "Tile0";
+		Desc.shaderGroup = "MAP_EDITOR_SHADER";
+		Desc.vertexShaderTag = "VS_VTX_NOR_TEX";
+		Desc.pixelShaderTag = "PS_VTX_NOR_TEX";
+		Desc.chunkQuadCount = 150;
+		Desc.vertexSpacing = 1.f;
+		Desc.heightScale = 0.1f;
 
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
 			"MAPEDITOR",
-			"Prototype_GameObject_MapEditorTerrain",
+			"Prototype_GameObject_Terrain",
 			"01_Terrain",
 			&Desc))
 		{

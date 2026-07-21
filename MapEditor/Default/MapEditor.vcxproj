@@ -170,12 +170,13 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\MainAppLoader.h" />
     <ClInclude Include="..\Public\MapMeshCommandCommon.h" />
     <ClInclude Include="..\Public\Inspector.h" />
-    <ClInclude Include="..\Public\MapEditorTerrain.h" />
     <ClInclude Include="..\Public\MapChunkGUI.h" />
     <ClInclude Include="..\Public\MapEditorGUI.h" />
     <ClInclude Include="..\Public\MapPickingPass.h" />
     <ClInclude Include="..\Public\NavMeshGUI.h" />
-    <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h" />
+    <ClInclude Include="..\Public\TerrainGUI.h" />
+    <ClInclude Include="..\Public\TerrainBrushController.h" />
+    <ClInclude Include="..\Public\TerrainPickingPass.h" />
     <ClInclude Include="..\Public\ResourceGUI.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
@@ -200,13 +201,14 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LevelLogoLoader.cpp" />
     <ClCompile Include="..\Private\LevelMapEditorLoader.cpp" />
     <ClCompile Include="..\Private\MainAppLoader.cpp" />
-    <ClCompile Include="..\Private\MapEditorTerrain.cpp" />
     <ClCompile Include="..\Private\MapChunkGUI.cpp" />
     <ClCompile Include="..\Private\MapEditorGUI.cpp" />
     <ClCompile Include="..\Private\MapMeshCommandCommon.cpp" />
     <ClCompile Include="..\Private\MapPickingPass.cpp" />
     <ClCompile Include="..\Private\NavMeshGUI.cpp" />
-    <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp" />
+    <ClCompile Include="..\Private\TerrainGUI.cpp" />
+    <ClCompile Include="..\Private\TerrainBrushController.cpp" />
+    <ClCompile Include="..\Private\TerrainPickingPass.cpp" />
     <ClCompile Include="..\Private\ResourceGUI.cpp" />
     <ClCompile Include="..\Private\TestGuizmo.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
@@ -228,6 +230,10 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TerrainPicking.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
