@@ -174,8 +174,8 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(9, 1, m_pComCBufferPerSpellMeter->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(9, 1, m_pComCBufferPerSpellMeter->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(10, 1, m_pComCBufferPerSpellMeter->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(10, 1, m_pComCBufferPerSpellMeter->GetAdressOfBuffer());
 	}
 
 	{
@@ -193,8 +193,8 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
 			}
-			pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
 	//m_UIINFO.Restag = "TEX_UI_T_spellmeter_Glacius_Overlay";
@@ -219,6 +219,10 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+
+	ID3D11Buffer* nullBuffer = nullptr;
+	pContext->VSSetConstantBuffers(10, 1, &nullBuffer);
+	pContext->PSSetConstantBuffers(10, 1, &nullBuffer);
 
 	return S_OK;
 }

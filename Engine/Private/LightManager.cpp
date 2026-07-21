@@ -280,9 +280,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				memcpy(MRES.pData, &m_pLightConstantVariable, sizeof(CB_LIGHT));
 				m_pContext->Unmap(LightCB, 0);
 			}
-			m_pContext->VSSetConstantBuffers(4, 1, &LightCB);
-			m_pContext->PSSetConstantBuffers(4, 1, &LightCB); 
-			m_pContext->GSSetConstantBuffers(4, 1, &LightCB);
+			m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB);
+			m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB); 
+			m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB);
 
 			LightOBJ->Update_ObjectConstantBuffer(m_pContext.Get());
 
@@ -323,8 +323,8 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				memcpy(MRES.pData, &m_pLightConstantVariable, sizeof(CB_LIGHT));
 				m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 			}
-			m_pContext->VSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-			m_pContext->PSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+			m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+			m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 
 			LightOBJ->Update_ObjectConstantBuffer(m_pContext.Get());
 
@@ -425,8 +425,8 @@ HRESULT CLightManager::Render_ObjectShadow() {
 		memcpy(MRES.pData, &LightBuffer, sizeof(CB_LIGHT));
 		m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
-	m_pContext->CSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-	m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 
 	Bind_ShadowResource();
 
@@ -481,8 +481,8 @@ VOID CLightManager::Bind_DynamicLight() {
 		m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
 
-	m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 }
 
 VOID CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
@@ -777,10 +777,10 @@ VOID CLightManager::Update_LightData() {
 			memcpy(MRES.pData, &m_pLightConstantVariable, sizeof(CB_LIGHT));
 			m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 		}
-		m_pContext->VSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-		m_pContext->GSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-		m_pContext->CSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-		m_pContext->PSSetConstantBuffers(4, 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 	}
 }
 

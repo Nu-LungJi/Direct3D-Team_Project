@@ -915,32 +915,32 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 		m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
 	}
 
-	m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->CSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, pCbPerPass->GetCBuffer().GetAddressOf());
 
 	return S_OK;
 }
 
 HRESULT CRenderer::Bind_VolumetricFog() {
-	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG");
-	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-	if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-	{
-		CB_FOG cbFog{};
-		cbFog.FogIntensity = m_fFogIntensity;
-		cbFog.FogColor = m_fFogColor;
-		cbFog.FogMaxHeight = m_fFogMaxHeight;
-		cbFog.FogStartPos = m_fFogStartPos;
-		cbFog.FogEndPos = m_fFogEndPos;
-		cbFog.FogDensity = m_fFogDensity;
-
-		memcpy(mappedSubResource.pData, &cbFog, sizeof(cbFog));
-		m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-	}
-	m_pContext->VSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->CSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	//auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG");
+	//D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	//if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+	//{
+	//	CB_FOG cbFog{};
+	//	cbFog.FogIntensity = m_fFogIntensity;
+	//	cbFog.FogColor = m_fFogColor;
+	//	cbFog.FogMaxHeight = m_fFogMaxHeight;
+	//	cbFog.FogStartPos = m_fFogStartPos;
+	//	cbFog.FogEndPos = m_fFogEndPos;
+	//	cbFog.FogDensity = m_fFogDensity;
+	//
+	//	memcpy(mappedSubResource.pData, &cbFog, sizeof(cbFog));
+	//	m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+	//}
+	//m_pContext->VSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	//m_pContext->PSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	//m_pContext->CSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
 
 	return S_OK;
 }
@@ -1525,10 +1525,6 @@ HRESULT CRenderer::Render_OffScreen() {
 			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetEffect->GetSRV() };
 			m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
 		}
-		//{
-		//	ComPtr<ID3D11ShaderResourceView> pSRVs = { E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE")->GetSRV() };
-		//	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());
-		//}
 
 		// Draw On OffScreen
 		m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -1550,21 +1546,6 @@ HRESULT CRenderer::Render_PostProcess() {
 
 	_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
 	m_pContext->ClearRenderTargetView(m_pBackBufferRTV.Get(), reinterpret_cast<float*>(&clearColor));
-
-	D3D11_MAPPED_SUBRESOURCE MRES;
-	if (SUCCEEDED(m_pContext->Map(pCbPostProcess->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-	{
-		POSTPROCESS CBPP{};
-		CBPP.BloomIntensity = 1.f;
-		CBPP.DistortionIntensity = m_pDistortionIntensity;
-		CBPP.ChromaticIntensity = m_pChromaticIntensity;
-		CBPP.VignetteIntensity = m_pVignetteIntensity;
-		CBPP.VignetteSmoothness = m_pVignetteSmoothness;
-
-		memcpy(MRES.pData, &CBPP, sizeof(POSTPROCESS));
-		m_pContext->Unmap(pCbPostProcess->GetCBuffer().Get(), 0);
-	}
-	m_pContext->PSSetConstantBuffers(8, 1, pCbPostProcess->GetCBuffer().GetAddressOf());
 
 	Render_PostProcess_Bloom();
 
@@ -2100,8 +2081,8 @@ HRESULT CRenderer::Render_Debugging() {
             m_pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
         }
         auto pCBufferPtr = pCbPerObject->GetCBuffer().GetAddressOf();
-        m_pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-        m_pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+        m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+        m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 	
         if (IDX == 8) {
             m_pContext->PSSetShaderResources(0, 1, m_pBackBufferSRV.GetAddressOf());

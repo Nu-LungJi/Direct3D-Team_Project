@@ -7,6 +7,8 @@ const static float  BrightThreshold = { 0.2f };
 const static float  Weights[5]      = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
 const static float2 TexelSize       = { 1.0f / (1280.f), 1.0f / (720.f) };
 
+static const float BloomIntensity = 1.f; // 블룸 강도
+    
 float4 PSMain_BrightPass(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
 {
     float4 BrightDiffuse = BrightPassTexture.Sample(LinearWrap, TexCoord);
@@ -18,7 +20,6 @@ float4 PSMain_BrightPass(float4 Position : SV_POSITION, float2 TexCoord : TEXCOO
 float4 PSMain_GaussianBlur_Vertical(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
 {
     float4 CenterPixel = BlurPassTexture.Sample(LinearWrap, TexCoord) * Weights[0];
-	return float4(CenterPixel.rgb, 1.f);
     for (int i = 1; i < 5; ++i)
     {
         CenterPixel += BlurPassTexture.Sample(LinearWrap, TexCoord + float2(TexelSize.x, 0.0f) * i) * Weights[i];

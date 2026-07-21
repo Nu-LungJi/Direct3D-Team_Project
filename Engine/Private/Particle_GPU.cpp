@@ -340,7 +340,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         {
             memcpy(mapped.pData, &cb, sizeof(cb));
             context->Unmap(m_pComInitCBuffer->GetCBuffer().Get(), 0);
-            context->CSSetConstantBuffers(0, 1, m_pComInitCBuffer->GetCBuffer().GetAddressOf());
+            context->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComInitCBuffer->GetCBuffer().GetAddressOf());
         }
     }
 

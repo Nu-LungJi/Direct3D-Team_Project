@@ -348,9 +348,9 @@ private:
 		context->IASetInputLayout(vs->GetInputLayout().Get());
 		context->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 		context->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-		context->VSSetConstantBuffers(0, 1, &objectBuffer);
-		context->VSSetConstantBuffers(1, 1, &passBuffer);
-		context->PSSetConstantBuffers(3, 1, &materialBuffer);
+		context->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, &objectBuffer);
+		context->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &passBuffer);
+		context->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, &materialBuffer);
 
 		const auto& meshes = model->GetMeshes();
 		for (uint32_t i = 0; i < meshes.size(); ++i)

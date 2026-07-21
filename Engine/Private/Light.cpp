@@ -164,10 +164,10 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 
 		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return;
 
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->GSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->CSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 	{
 		E::CB_PER_PASS pCbPerPass{};
@@ -186,10 +186,10 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 
 		if (FAILED(m_pComCBufferPerPass->MapDiscard(pContext, &pCbPerPass, sizeof(pCbPerPass))))	return;
 
-		pContext->VSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
-		pContext->GSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
-		pContext->CSSetConstantBuffers(1, 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, m_pComCBufferPerPass->GetAdressOfBuffer());
+		pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, m_pComCBufferPerPass->GetAdressOfBuffer());
 	}
 }
 

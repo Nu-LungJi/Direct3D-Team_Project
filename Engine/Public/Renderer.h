@@ -149,12 +149,7 @@ private:
 
 	SPtr<CResPixelShader>	m_pPostProcessPS{};
 
-private:	// PostProcess Variable
-	_float m_pBloomIntensity{ 0.f };
-	_float m_pDistortionIntensity{ 0.f };
-	_float m_pChromaticIntensity{ 0.f };
-	_float m_pVignetteIntensity{ 0.f };
-	_float m_pVignetteSmoothness{ 0.f };
+
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
 
