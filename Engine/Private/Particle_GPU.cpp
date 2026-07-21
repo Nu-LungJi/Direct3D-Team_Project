@@ -153,6 +153,8 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
 
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
         //if (FAILED(m_pResVertexShader->Load()))
         //    return E_FAIL;
@@ -177,7 +179,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
     }
     else if (m_Desc.whatKind == MESHORTEXTURE::MESH) {
 
-
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
         //if (FAILED(m_pResVertexShader->Load()))
         //    return E_FAIL;
@@ -358,30 +360,41 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
     return S_OK;
 }
+
+
 void CParticle_GPU::DebugPrintDeadListCount()
 {
-    auto pDevice = CGameInstance::Get().GetGraphicDevice();
-    auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
+	auto pDevice = CGameInstance::Get().GetGraphicDevice();
+	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 
-    ComPtr<ID3D11Buffer> pCounterStaging;
-    D3D11_BUFFER_DESC desc{};
-    desc.ByteWidth = 4;
-    desc.Usage = D3D11_USAGE_STAGING;
-    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-    pDevice->CreateBuffer(&desc, nullptr, &pCounterStaging);
+	// 스테이징 버퍼 2개, 한 번만 생성
+	if (!m_pDeadCountStaging[0])
+	{
+		D3D11_BUFFER_DESC desc{};
+		desc.ByteWidth = 4;
+		desc.Usage = D3D11_USAGE_STAGING;
+		desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		pDevice->CreateBuffer(&desc, nullptr, &m_pDeadCountStaging[0]);
+		pDevice->CreateBuffer(&desc, nullptr, &m_pDeadCountStaging[1]);
+	}
 
-    pContext->CopyStructureCount(pCounterStaging.Get(), 0, m_pDeadListBuffer->GetUAV().Get());
+	UINT writeIdx = 1 - m_iDeadCountReadIdx;
 
-    D3D11_MAPPED_SUBRESOURCE mapped{};
-    if (SUCCEEDED(pContext->Map(pCounterStaging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
-    {
-        uint32_t counterValue = *(uint32_t*)mapped.pData;
-        m_iDeadCount = *(uint32_t*)mapped.pData;
-        //char buf[64];
-        //sprintf_s(buf, "DeadList counter = %u\n", counterValue);
-        //OutputDebugStringA(buf);
-        pContext->Unmap(pCounterStaging.Get(), 0);
-    }
+	// 이번 프레임 값은 반대쪽 버퍼에 복사 (다음 프레임에 읽을 것)
+	pContext->CopyStructureCount(m_pDeadCountStaging[writeIdx].Get(), 0, m_pDeadListBuffer->GetUAV().Get());
+
+	// 지난 프레임에 복사해둔 값을 논블로킹으로 읽기
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	HRESULT hr = pContext->Map(m_pDeadCountStaging[m_iDeadCountReadIdx].Get(), 0,
+		D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+	if (hr == S_OK)
+	{
+		m_iDeadCount = *(uint32_t*)mapped.pData;
+		pContext->Unmap(m_pDeadCountStaging[m_iDeadCountReadIdx].Get(), 0);
+	}
+	// hr == DXGI_ERROR_WAS_STILL_DRAWING이면 아직 준비 안 된 것 → 이전 m_iDeadCount 값 그대로 사용
+
+	m_iDeadCountReadIdx = writeIdx; // 다음 프레임엔 서로 바꿔서 반복
 }
 void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -390,15 +403,19 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
 
-	m_fTime += fTimeDelta;
-    auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
-
-
-
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
 
-
+	bool bSpawnedThisFrame = (m_iCurrentSpawnCount > 0);
+	uint32_t aliveCount = (m_iNumElements > m_iDeadCount) ? (m_iNumElements - m_iDeadCount) : 0;
+	if (aliveCount == 0 && !bSpawnedThisFrame)
+	{
+		ProcessPendingSpawns(fTimeDelta);
+		DebugPrintDeadListCount(); // 다음 프레임을 위해 계속 갱신
+		return;
+	}
+	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
+	m_fTime += fTimeDelta;
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
     {
@@ -518,11 +535,10 @@ HRESULT CParticle_GPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 
 HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
 
-	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
@@ -616,8 +632,8 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	}
 	pContext->OMSetDepthStencilState(nullptr, 0);
 
-	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+
     return S_OK;
 }
 
@@ -630,8 +646,7 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 	//auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
 	//pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
-	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
     pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
@@ -678,8 +693,7 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 	pContext->PSSetConstantBuffers(5, 1, nullCB);
 	pContext->OMSetDepthStencilState(nullptr, 0);
 
-	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
     return S_OK;
 }
@@ -694,7 +708,7 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
     if (pSpawnData == nullptr || count == 0)
         return E_FAIL;
 
-    uint32_t availableCount = GetDeadListCounterSync();
+	uint32_t availableCount = m_iDeadCount;
     if (availableCount == 0)
         return E_FAIL;
 
@@ -727,29 +741,6 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
     m_iCurrentSpawnCount = count;
     return S_OK;
-}
-uint32_t CParticle_GPU::GetDeadListCounterSync()
-{
-    auto pDevice = CGameInstance::Get().GetGraphicDevice();
-    auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
-
-    ComPtr<ID3D11Buffer> pCounterStaging;
-    D3D11_BUFFER_DESC desc{};
-    desc.ByteWidth = 4;
-    desc.Usage = D3D11_USAGE_STAGING;
-    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-    pDevice->CreateBuffer(&desc, nullptr, &pCounterStaging);
-
-    pContext->CopyStructureCount(pCounterStaging.Get(), 0, m_pDeadListBuffer->GetUAV().Get());
-
-    uint32_t counterValue = 0;
-    D3D11_MAPPED_SUBRESOURCE mapped{};
-    if (SUCCEEDED(pContext->Map(pCounterStaging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
-    {
-        counterValue = *(uint32_t*)mapped.pData;
-        pContext->Unmap(pCounterStaging.Get(), 0);
-    }
-    return counterValue;
 }
 
 UPtr<CParticle> CParticle_GPU::Create(void* pArg)
@@ -798,4 +789,28 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 
 	// DeadList 카운터가 즉시 갱신되도록 재동기화
 	m_iDeadCount = GetDeadListCounterSync();
+}
+uint32_t CParticle_GPU::GetDeadListCounterSync()
+{
+	auto pDevice = CGameInstance::Get().GetGraphicDevice();
+	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
+
+	if (!pCounterStaging) {
+		D3D11_BUFFER_DESC desc{};
+		desc.ByteWidth = 4;
+		desc.Usage = D3D11_USAGE_STAGING;
+		desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		pDevice->CreateBuffer(&desc, nullptr, &pCounterStaging);
+	}
+
+	pContext->CopyStructureCount(pCounterStaging.Get(), 0, m_pDeadListBuffer->GetUAV().Get());
+
+	uint32_t counterValue = 0;
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (SUCCEEDED(pContext->Map(pCounterStaging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
+	{
+		counterValue = *(uint32_t*)mapped.pData;
+		pContext->Unmap(pCounterStaging.Get(), 0);
+	}
+	return counterValue;
 }

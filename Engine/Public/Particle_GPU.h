@@ -107,6 +107,11 @@ private:
 	SPtr<CResComputeShader> m_pResClearByOwnerCS;
 	SPtr<CResCBuffer> m_pComClearCBuffer;
 	_float				m_fTime{};
+	
+	ComPtr<ID3D11Buffer> m_pDeadCountStaging[2];
+	ComPtr<ID3D11Buffer> pCounterStaging;
+
+	UINT m_iDeadCountReadIdx = 0;
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

@@ -104,7 +104,7 @@ void CWeapon::Update(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
 		m_pComTransform->GoRight(fTimeDelta * 15);
 	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
+	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
 
 	if (CGameInstance::Get().KeyPressing(DIK_7)) {
 		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
