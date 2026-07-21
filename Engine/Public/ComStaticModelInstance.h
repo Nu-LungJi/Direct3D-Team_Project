@@ -48,13 +48,17 @@ public:
 
 
 
+	StringID Get_GroupTag() { return m_sGroupTag; }
+	StringID Get_ResTag() { return m_sResTag; }
+
 public:
 
 	HRESULT Save_Binary_Json(std::string outpath);
 
 private:
 	SPtr<CResStaticModel> m_pModel;
-
+	StringID m_sGroupTag;
+	StringID m_sResTag;
 public:
 	static UPtr<CComStaticModelInstance> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

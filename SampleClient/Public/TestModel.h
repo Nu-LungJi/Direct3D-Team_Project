@@ -63,7 +63,7 @@ private:
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
-	
+	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 	SPtr<CResComputeShader> m_pAnimComputeShader{};
 
@@ -80,6 +80,7 @@ private:
 	_float	m_fEmissiveIntensity	= 0.f;
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
+
 public:  
 	static E::UPtr<CTestModel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -45,6 +45,7 @@ public:
 
 	uint32_t	GetNumChannel() { return m_iNumChannels; };
 	std::vector<SPtr<CResModelChanel>>& GetChannels() { return m_Channels; }
+	CResModelChanel* GetChannelByBoneIndex(uint32_t iBoneIndex) const;
 
 
 	int32_t     GetRootBoneIndex() { return m_iRootBoneIndex; }
@@ -62,6 +63,9 @@ private:
 	/* 컨트롤해야하는 뼈의 갯수 */
 	uint32_t							m_iNumChannels = {};
 	std::vector<SPtr<CResModelChanel>>	m_Channels;
+	// Animation channels are stored in file order.  Keep a bone-index lookup
+	// table so callers never mistake a bone index for a channel-vector index.
+	std::vector<SPtr<CResModelChanel>>	m_ChannelsByBone;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;
 
 	int32_t								m_iRootBoneIndex{};

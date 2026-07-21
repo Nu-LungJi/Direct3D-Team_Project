@@ -29,7 +29,7 @@ HRESULT CBTActionNode::Initalize(void* pArg)
 	if(nullptr != pDesc)
 		m_Value = pDesc->Value;
     __super::Initalize(pArg);
-    
+	m_GuiNode.vColor = { 1.0f,1.f, 1.f,1 };
     return S_OK;
 }
 

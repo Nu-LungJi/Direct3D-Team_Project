@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTMove.h"
 #include "ComTransform.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTMove::CBTMove()
@@ -50,36 +51,26 @@ HRESULT CBTMove::Load_json(const nlohmann::json& j)
 EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 {
 	auto pTransform =(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	if (pTransform == nullptr)
-	{
-		m_eDebug = EVALUATE::FAILED;
-
-		return EVALUATE::FAILED;
-	}
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	if (pTransform == nullptr || pMoveIntent == nullptr)
+		return m_eDebug = EVALUATE::FAILED;
 	
+	_vector vDirection{};
 	if (m_eMove == MOVE::RIGHT)
-	{
-		pTransform->GoRight(2.f *fTimeDelta);
-		return EVALUATE::SUCCESS;
-	}
+		vDirection = pTransform->GetState(STATE::RIGHT);
 	else if (m_eMove == MOVE::LEFT)
-	{
-		pTransform->GoLeft(2.f * fTimeDelta);
-		return EVALUATE::SUCCESS;
-	}else if (m_eMove == MOVE::STRAIGHT)
-	{
-		pTransform->GoStraight(2.f * fTimeDelta);
-
-		m_eDebug = EVALUATE::SUCCESS;
-		return EVALUATE::SUCCESS;
-	}
+		vDirection = -pTransform->GetState(STATE::RIGHT);
+	else if (m_eMove == MOVE::STRAIGHT)
+		vDirection = pTransform->GetState(STATE::LOOK);
 	else if (m_eMove == MOVE::BACKWARD)
-	{
-		pTransform->GoBackward(2.f *fTimeDelta);
-		return EVALUATE::SUCCESS;
-	}
-		
-	return EVALUATE::FAILED;
+		vDirection = -pTransform->GetState(STATE::LOOK);
+	else
+		return m_eDebug = EVALUATE::FAILED;
+
+	_float3 vMoveDirection{};
+	XMStoreFloat3(&vMoveDirection, vDirection);
+	pMoveIntent->SetMoveIntent(vMoveDirection, 2.f);
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTMove::Update_Gui()
 {

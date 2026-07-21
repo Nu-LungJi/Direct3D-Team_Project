@@ -1088,9 +1088,9 @@ HRESULT CRenderer::Render_NonAlpha() {
 
 	if (FAILED(RenderPriority()))       return E_FAIL;
 
-	if (FAILED(RenderNonBlend()))       return E_FAIL;
-
 	if (FAILED(RenderNonBlend_Instanced()))  return E_FAIL;
+
+	if (FAILED(RenderNonBlend()))       return E_FAIL;
 
 	if (FAILED(RenderLight()))          return E_FAIL;
 

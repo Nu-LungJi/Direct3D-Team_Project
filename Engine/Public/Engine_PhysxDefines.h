@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Handle.h"
 namespace Engine
@@ -18,6 +18,7 @@ namespace Engine
 		BOX,
 		SPHERE,
 		CAPSULE,
+		CONVEX_MESH,
 		TRIANGLE_MESH,
 		RAGDOLL
 	};
@@ -46,20 +47,65 @@ namespace Engine
 		uint32_t iQueryMask{ PX_ALL_LAYERS };
 	};
 
+	enum class PX_CCT_BEHAVIOR : uint8_t
+	{
+		NONE = 0,
+		CAN_RIDE = 1 << 0,
+		SLIDE = 1 << 1,
+		USER_DEFINED_RIDE = 1 << 2
+	};
+
+	struct PX_CCT_HIT_DATA
+	{
+		CGameObject* pGameObject{};
+		_float3 vWorldPosition{};
+		_float3 vWorldNormal{};
+		_float3 vMoveDirection{};
+		_float fMoveLength{};
+	};
+
+	struct PX_CCT_OBSTACLE_HIT_DATA
+	{
+		const void* pUserData{};
+		_float3 vWorldPosition{};
+		_float3 vWorldNormal{};
+		_float3 vMoveDirection{};
+		_float fMoveLength{};
+	};
+
 	struct PX_SYNC_DATA
 	{
 		_float3 vPos{};
 		_float4 vQuat{};
 	};
 
+	inline constexpr uint32_t PX_MAX_CONTACT_POINTS = 8u;
+
+	struct PX_CONTACT_POINT_DATA
+	{
+		_float3 vWorldPosition{};
+		_float3 vWorldNormal{};
+		_float3 vImpulse{};
+		_float fSeparation{};
+	};
+
 	struct PX_ON_COLLISION_DATA
 	{
-		bool hello;
+		std::array<PX_CONTACT_POINT_DATA, PX_MAX_CONTACT_POINTS> Contacts{};
+		uint32_t iContactCount{};
+		PX_SHAPE_TYPE eSelfShapeType{ PX_SHAPE_TYPE::BOX };
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iSelfShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
 	struct PX_ON_TRIGGER_DATA
 	{
-		bool hello;
+		_bool bSelfIsTrigger{};
+		PX_SHAPE_TYPE eSelfShapeType{ PX_SHAPE_TYPE::BOX };
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iSelfShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
 	struct PX_RAYCAST_RESULT
@@ -69,6 +115,73 @@ namespace Engine
 		_float3 vHitNormal{}; // 충돌 표면의 법선 벡터
 		_float fDistance{}; // 시작점으로부터의 거리
 		CGameObject* pGameObject{};
+		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
+	struct PX_QUERY_FILTER_DESC
+	{
+		uint32_t iQueryMask{ PX_ALL_LAYERS };
+		CHandle hIgnoreGameObject{};
+		_bool bQueryStatic{ true };
+		_bool bQueryDynamic{ true };
+		_bool bIncludeTrigger{ false };
+	};
+
+	struct PX_RAYCAST_DESC
+	{
+		_float3 vOrigin{};
+		_float3 vDirection{ 0.f, 0.f, 1.f };
+		_float fMaxDistance{};
+		_bool bHitMeshBothSides{ false };
+		PX_QUERY_FILTER_DESC tFilter{};
+	};
+
+	enum class PX_QUERY_GEOMETRY_TYPE : uint8_t
+	{
+		BOX,
+		SPHERE,
+		CAPSULE
+	};
+
+	struct PX_QUERY_GEOMETRY_DESC
+	{
+		PX_QUERY_GEOMETRY_TYPE eType{ PX_QUERY_GEOMETRY_TYPE::BOX };
+		_float3 vBoxHalfExtents{ 0.5f, 0.5f, 0.5f };
+		_float fRadius{ 0.5f };
+		_float fCapsuleHalfHeight{ 0.5f };
+	};
+
+	struct PX_QUERY_POSE
+	{
+		_float3 vPosition{};
+		_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
+	};
+
+	struct PX_SWEEP_DESC
+	{
+		PX_QUERY_GEOMETRY_DESC tGeometry{};
+		PX_QUERY_POSE tPose{};
+		_float3 vDirection{ 0.f, 0.f, 1.f };
+		_float fMaxDistance{};
+		PX_QUERY_FILTER_DESC tFilter{};
+	};
+
+	using PX_SWEEP_RESULT = PX_RAYCAST_RESULT;
+
+	struct PX_OVERLAP_DESC
+	{
+		PX_QUERY_GEOMETRY_DESC tGeometry{};
+		PX_QUERY_POSE tPose{};
+		PX_QUERY_FILTER_DESC tFilter{};
+	};
+
+	struct PX_OVERLAP_RESULT
+	{
+		_bool bHit{ false };
+		CGameObject* pGameObject{};
+		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
 }

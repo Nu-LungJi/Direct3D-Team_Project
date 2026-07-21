@@ -54,6 +54,7 @@ EVALUATE CBTDamage::Evaluate(_float fTimeDelta)
 	if (pTransform == nullptr)
 		return m_eDebug = EVALUATE::FAILED;
 	//데미지 이후 true시 피격판정 애니매이션인데 슈퍼아머중에는 진입 못하게 막기
+	//흠 쓰나이거..
 	if (Check_Flag(ETOUI(BTFLAG::SUPERARMOR)))
 		return m_eDebug = EVALUATE::FAILED;
 

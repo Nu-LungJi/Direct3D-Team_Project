@@ -17,6 +17,7 @@
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
 #include "ComAnimator.h"
+#include "ComSocket.h"
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
@@ -24,10 +25,14 @@
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
 #include "ComPxSphereCollider.h"
+#include "ComPxConvexCollider.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
+#include "ComCharacterMoveIntent.h"
+#include "ComCharacterMotor.h"
+#include "ComSound.h"
 
 #include "ComLuaScript.h"
 
@@ -225,10 +230,17 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PART_ATTACHMENT, E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(E::CB_PART_ATTACHMENT) })))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON", E::CResStructuredBuffer::Create()))
-	{
-		E::CResStructuredBuffer::DESC Desc{};
+		{
+			E::CResStructuredBuffer::DESC Desc{};
 	
 		Desc.iNumElements = 512;
 	
@@ -242,6 +254,16 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		{
 			return E_FAIL;
 		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_PART_INSTANCE", E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+		Desc.iNumElements = 512;
+		Desc.iStructureByteStride = sizeof(E::GPU_PART_INSTANCE_DATA);
+		Desc.pInitialData = nullptr;
+		Desc.bAppendConsume = false;
+		if (FAILED(res->Load(Desc))) return E_FAIL;
 	}
 
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX", E::CResStructuredBuffer::Create()))
@@ -321,12 +343,42 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		return E_FAIL;
 	}
 
+	if (CGameInstance::Get().AddPrototype(
+		"PERMANENT", "Prototype_Component_Socket", CComSocket::Create()))
+	{
+		return E_FAIL;
+	}
+
 	if (CGameInstance::Get().AddPrototype("BEHAVIOR", "Prototype_Component_BeHavior", CComBeHavior::Create()))
 	{
 		return E_FAIL;
 	}
 
 	if (CGameInstance::Get().AddPrototype("COLLIDER", "Prototype_Component_Collider", CComCollider::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+		CComCharacterMoveIntent::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+		CComCharacterMotor::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComSound,
+		CComSound::Create()))
 	{
 		return E_FAIL;
 	}
@@ -344,6 +396,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, CComPxSphereCollider::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxConvexCollider, CComPxConvexCollider::Create()))
 		{
 			return E_FAIL;
 		}
@@ -959,6 +1015,23 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 				return E_FAIL;
 			}
 		}
+
+
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PartObject", "./ShaderFiles/TestModel/Shader_VtxPartObject.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PartObject", "./ShaderFiles/TestModel/Shader_VtxPartObject.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+
 	}
 	return S_OK;
 }

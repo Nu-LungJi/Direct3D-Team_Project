@@ -29,7 +29,7 @@ public:
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
-	_bool							m_bRun{ true };
+	_bool							m_bRun{ true }, m_bFailed{true};
 	_float							m_fWaitTime{}, m_fTick{};
 	TIMER							m_eTimer{ TIMER::PAUSE };
 public:

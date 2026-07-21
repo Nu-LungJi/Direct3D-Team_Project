@@ -26,15 +26,13 @@ HRESULT CBTOnlyTrue::InitializePrototype(void* pArg)
 HRESULT CBTOnlyTrue::Initalize(void* pArg)
 {
 	__super::Initalize(pArg);
-
 	return S_OK;
 }
 
 
 EVALUATE CBTOnlyTrue::Evaluate(_float fTimeDelta)
 {
-	m_eDebug = EVALUATE::SUCCESS;
-	return EVALUATE::SUCCESS;
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTOnlyTrue::Update_Gui()
 {

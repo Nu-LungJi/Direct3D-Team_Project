@@ -27,6 +27,16 @@
 #define DEBUG_BREAK() ((void)0)
 #endif
 
+#ifdef _DEBUG
+#define DEBUG_LOG(_message) \
+	do { OutputDebugStringA((_message)); } while (0)
+#define DEBUG_LOG_STR(_message) \
+	do { OutputDebugStringA((_message).c_str()); } while (0)
+#else
+#define DEBUG_LOG(_message) ((void)0)
+#define DEBUG_LOG_STR(_message) ((void)0)
+#endif
+
 #define CHECK_HR(hr, fmt, ...) \
     do { \
         HRESULT _hr = (hr); \
@@ -99,6 +109,19 @@ X(RIGHT)            \
 X(STRAIGHT)            \
 X(BACKWARD)               \
 X(END)
+
+#define BTFLAG_M		\
+X(NONE,0x0000001)\
+X(HIT,0x0000002)\
+X(ATTACK,0x0000004)\
+X(ABORT,0x0000008)\
+X(SUPERARMOR,0x0000010)\
+X(THROW,0x0000020)\
+X(DEAD,0x0000040)\
+X(EMISSIVE,0x0000080)
+
+
+#define IMGUI_ENABLE
 
 #define MAX_LIGHT_COUNT 8
 #define MAX_LIGHT_MAPCOUNT 6

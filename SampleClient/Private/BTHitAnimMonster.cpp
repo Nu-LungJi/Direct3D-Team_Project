@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTHitAnimMonster.h"
 #include "ComAnimator.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTHitAnimMonster::CBTHitAnimMonster()
@@ -14,7 +15,7 @@ CBTHitAnimMonster::CBTHitAnimMonster(const CBTHitAnimMonster& rhs) : CBTActionNo
 
 CBTHitAnimMonster::~CBTHitAnimMonster()
 {
-
+	
 }
 HRESULT CBTHitAnimMonster::InitializePrototype(void* pArg)
 {
@@ -32,15 +33,23 @@ HRESULT CBTHitAnimMonster::Initalize(void* pArg)
 
 EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 {
+
 	if (auto pBT = Get_ComBT())
 	{
-
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 
-		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
+		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
-
+		if (m_bStart)
+		{
+			if (false == HitType())
+				return EVALUATE::FAILED;
+			Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
+			m_bStart = false;
+		}
+		
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 
@@ -49,30 +58,32 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
 		{
-			if (m_bStart)
-			{
-				HitType();
-				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
-				m_bStart = false;
-			}
+			
 
+			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
-				pTransform->GoRight(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::LEFT)
-				pTransform->GoLeft(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = -pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::STRAIGHT)
-				pTransform->GoStraight(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
-				pTransform->GoBackward(m_Value.fSpeed * fTimeDelta);
+				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+
+			if (m_eMove != MOVE::END)
+			{
+				_float3 vDirection{};
+				XMStoreFloat3(&vDirection, vMoveDirection);
+				pMoveIntent->SetMoveIntent(vDirection, m_Value.fSpeed);
+			}
 		}
 
 		if (m_bLoop || bFinished)
 		{
-			//Hit 종료는 애니매이션 끝나면
-			//Attack도 애니매이션 끝나면
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
+
 		}
 	}
 	return m_eDebug = EVALUATE::RUN;
@@ -83,9 +94,9 @@ void CBTHitAnimMonster::Update_Gui()
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
 
 	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0, 1);
+	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f, 1.f);
 	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0, 1);
+	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
 
 	if (ImGui::Button("Enable Ratio : "))
 		m_bRatio = !m_bRatio;
@@ -96,24 +107,6 @@ void CBTHitAnimMonster::Update_Gui()
 		m_bLoop = !m_bLoop;
 	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
 	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
-
-	if (ImGui::Button("Animation"))
-		m_bPopup = true;
-	if (m_bPopup)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
-		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
-			m_bPopup = false;
-		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-
-		if (-1 != iIndex)
-		{
-			m_bPopup = false;
-			m_Value.iAnimIndex = iIndex;
-		}
-		ImGui::PopStyleColor();
-	}
-
 
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -134,15 +127,16 @@ void CBTHitAnimMonster::Update_Gui()
 
 		ImGui::EndCombo();
 	}
-	//	NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD","EMISSIVE" };
+
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M};
+#undef X
 	if (ImGui::TreeNode("StartFlag"))
 	{
-
 		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
 			uint32_t iFlag = 1u << i;
@@ -182,26 +176,69 @@ void CBTHitAnimMonster::Update_Gui()
 
 		ImGui::TreePop();
 	}
+	
 	if (!m_bPopup)
 	{
-		for (size_t i = 0; i < ETOUI(TURN::END); ++i)
+		for (size_t i = 0; i < ETOUI(HITMON::END); ++i)
 		{
-			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<TURN>(i)).data();
+
+			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
 			if (ImGui::Button(Name.c_str()))
 			{
 				m_Value.iAnimIndex = i;
 				m_bPopup = true;
 				break;
 			}
+			ImGui::SameLine();
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,0.f,0.f,1.f });
+			_string AttName = _string("##AttType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			if (ImGui::BeginCombo(AttName.c_str(), MagicEnumToStringView(m_HitTable[i].eAttType).data()))
+			{
+				for (uint32_t j = 0; j < ETOUI(ATTMON::END); ++j)
+				{
+					_bool	bSelect = m_HitTable[i].eAttType == static_cast<ATTMON>(j);
+					ImGui::PushID(MagicEnumToStringView(static_cast<ATTMON>(j)).data());
+					if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(j)).data(), bSelect))
+					{
+						m_HitTable[i].eAttType = static_cast<ATTMON>(j);
+					}
+					if (bSelect)
+						ImGui::SetItemDefaultFocus();
+
+					ImGui::PopID();
+				}
+
+				ImGui::EndCombo();
+			}
+			ImGui::SameLine();
+
+			_string HittName = _string("##HitType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			if (ImGui::BeginCombo(HittName.c_str(), MagicEnumToStringView(m_HitTable[i].eHitType).data()))
+			{
+				for (uint32_t j = 0; j < ETOUI(HITMON::END); ++j)
+				{
+					_bool	bSelect = m_HitTable[i].eHitType == static_cast<HITMON>(j);
+					ImGui::PushID(MagicEnumToStringView(static_cast<HITMON>(j)).data());
+					if (ImGui::Selectable(MagicEnumToStringView(static_cast<HITMON>(j)).data(), bSelect))
+					{
+						m_HitTable[i].eHitType = static_cast<HITMON>(j);
+					}
+					if (bSelect)
+						ImGui::SetItemDefaultFocus();
+					ImGui::PopID();
+				}
+
+				ImGui::EndCombo();
+			}
+			ImGui::PopStyleColor();
 		}
 	}
 
 	if (m_bPopup && m_Value.iAnimIndex != -1)
 	{
 		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
-		ImGui::Text(MagicEnumToStringView(static_cast<TURN>(m_Value.iAnimIndex)).data());
-
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
+		ImGui::Text(MagicEnumToStringView(static_cast<HITMON>(m_Value.iAnimIndex)).data());
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,1.f,1.f,1.f });
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
@@ -212,9 +249,14 @@ void CBTHitAnimMonster::Update_Gui()
 			m_iHitAnim[m_Value.iAnimIndex] = iIndex;
 			m_Value.iAnimIndex = -1;
 		}
-
+		ImGui::PopStyleColor();
 	}
 	ImGui::PopStyleColor(2);
+}
+void CBTHitAnimMonster::Abort()
+{
+	m_bStart = true;
+	m_iLoopCnt = 0;
 }
 nlohmann::json CBTHitAnimMonster::Save_Node()
 {
@@ -229,10 +271,17 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 
-	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
+	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
+		_string HitName = "HITType" + std::to_string(i);
 		SaveJsonValue(j, Name, m_iHitAnim[i]);
+		SaveJsonEnum(j, HitName, m_HitTable[i].eHitType);
+	}
+	for (uint32_t i = 0; i < ETOUI(ATTMON::END); ++i)
+	{
+		_string Name = "ATTType" + std::to_string(i);
+		SaveJsonEnum(j, Name, m_HitTable[i].eAttType);
 	}
 	return j;
 }
@@ -243,31 +292,46 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Loop", m_bLoop);
 	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
-	for (uint32_t i = 0; i < ETOUI(TURN::END); ++i)
+
+	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
+		_string HitName = "HITType" + std::to_string(i);
 		LoadJsonValue(j, Name, m_iHitAnim[i]);
+		LoadJsonEnum(j, HitName, m_HitTable[i].eHitType);
+	}
+	for (uint32_t i = 0; i < ETOUI(ATTMON::END); ++i)
+	{
+		_string Name = "ATTType" + std::to_string(i);
+		LoadJsonEnum(j, Name, m_HitTable[i].eAttType);
 	}
 	return S_OK;
 }
-void CBTHitAnimMonster::HitType()
+_bool CBTHitAnimMonster::HitType()
 {
 	//플레이어 공격에 따른..
-	if (CGameInstance::Get().KeyDown(DIK_Q))
+	
+	if (auto pBT = Get_ComBT())
 	{
-		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_1)];
+		if (auto pSrc = pBT->GetGameObject())
+		{
+			
+			for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+			{
+				if (m_HitTable[i] == static_cast<CTestGob*>(pSrc)->Get_HitTable())
+				{
+					m_Value.iAnimIndex = m_iHitAnim[i];
+					return true;
+
+				}
+			}
+		}
 	}
-	else if (CGameInstance::Get().KeyDown(DIK_W))
-	{
-		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_2)];
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_E))
-	{
-		m_Value.iAnimIndex = m_iHitAnim[ETOUI(HITMON::HIT_3)];
-	}
+	return false;
 }
 E::UPtr<CBTHitAnimMonster> CBTHitAnimMonster::Create()
 {

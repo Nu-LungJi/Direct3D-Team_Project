@@ -20,7 +20,7 @@ public:
 public:
 	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
 	{
-		_string	WeaponName;
+		_string	WeaponName{}, LevelTag{};
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
 	}WEAPON_DESC;

@@ -10,6 +10,7 @@
 #include "Terrain.h"
 #include "Particle.h"
 
+#include "LevelCreatureEditor.h"
 #include "LevelUIEditor.h"
 #include "LevelAnimEditor.h"
 #include "LevelLightMap.h"
@@ -42,7 +43,7 @@
 #include "LevelAnimatorLoader.h"
 #include "LevelLightMapLoader.h"
 #include "LevelUIEditorLoader.h"
-
+#include "LevelCreatureLoader.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -138,6 +139,10 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::PHYSX:
 		pNewLevel = CLevelPhysX::Create();
 		break;
+	case LEVEL::CREATUREEDIT:
+		pNewLevel = CLevelCreatureEditor::Create();
+		break;
+
 	}
 	assert(pNewLevel);
 
@@ -181,6 +186,10 @@ void CLevelLoading::StartUnload()
 	case LEVEL::PHYSX:
 		m_futUnloadFinish = CLevelPhysXLoader::UnLoad();
 		break;
+	case LEVEL::CREATUREEDIT:
+		m_futUnloadFinish = CLevelCreatureLoader::UnLoad();
+		break;
+	
 	default:
 		StartLoad();
 		break;
@@ -241,6 +250,10 @@ void CLevelLoading::StartLoad()
 	case LEVEL::PHYSX:
 	{
 		m_futLoadFinish = CLevelPhysXLoader::Load();
+	}
+	case LEVEL::CREATUREEDIT:
+	{
+		m_futLoadFinish = CLevelCreatureLoader::Load();
 	}
 	break;
 	default:

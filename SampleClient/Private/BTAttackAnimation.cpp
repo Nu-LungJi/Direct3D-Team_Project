@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "BTAttackAnimation.h"
 #include "ComAnimator.h" 
-#include "TestGob.h"
+#include "ComCharacterMoveIntent.h"
+#include "Monster.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -38,8 +39,10 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 		
-		if (pTransform == nullptr || pAnimator == nullptr || -1 == m_Value.iAnimIndex)
+		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
+			-1 == m_Value.iAnimIndex)
 			return m_eDebug = EVALUATE::FAILED;
 		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 		pAnimator->SetPlay(true);
@@ -58,35 +61,43 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			}
 
 			m_fTime += fTimeDelta;
-	
-			
+
 			_float tt = (pAnimator->GetPlayAnimRatio() - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
 			if (tt < 0.f)
-				tt = 0;
+				tt = 0.f;
 			if (tt > 1.f)
 				tt = 1.f;
 			if (auto pBT = Get_ComBT())
 			{
 				if (auto pSrc = pBT->GetGameObject())
 				{
-					_float fEmissive = std::lerp(0,0.5, tt);
-					static_cast<CTestGob*>(pSrc)->Set_Emissive(fEmissive);
+					_float fEmissive = std::lerp(0.f,0.5f, tt);
+					static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
 
 			_float fAnimRange = m_fRatio.y - m_fRatio.x;
 			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
-			_float fMove = t * fTimeDelta * fAnimRange * m_Value.fSpeed;
+			const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
-				pTransform->GoRight(fMove);
+				vMoveDirection = pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::LEFT)
-				pTransform->GoLeft(fMove);
+				vMoveDirection = -pTransform->GetState(STATE::RIGHT);
 			else if (m_eMove == MOVE::STRAIGHT)
-				pTransform->GoStraight(fMove);
+				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
-				pTransform->GoBackward(fMove);
+				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+
+			if (m_eMove != MOVE::END)
+			{
+				_float3 vDirection{};
+				XMStoreFloat3(&vDirection, vMoveDirection);
+				pMoveIntent->SetMoveIntent(vDirection, fMoveSpeed);
+			}
 		}
 
+		
 		if (m_bLoop || bFinished)
 		{
 			//Hit 종료는 애니매이션 끝나면
@@ -94,14 +105,6 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			m_fTime = 0.f;
-			//if (!m_bLoop) //루프 한번만 도는거 초기화용
-			//	++m_iLoopCnt;
-			//if (m_iLoopCnt >= 2)
-			//{
-			//	m_iLoopCnt = 0;
-			//	return m_eDebug = EVALUATE::FAILED;
-			//}
-			
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}
@@ -113,19 +116,17 @@ void CBTAttackAnimation::Update_Gui()
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
 
 	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0, 1);
+	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f ,1.f);
 	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0, 1);
+	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
 
 	if (ImGui::Button("Enable Ratio : "))
 		m_bRatio = !m_bRatio;
-	ImGui::SameLine(110.f);
-	m_bRatio == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Abort : %s", m_bRatio ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Loop Change"))
 		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
-	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
@@ -135,7 +136,7 @@ void CBTAttackAnimation::Update_Gui()
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-
+		
 		if (-1 != iIndex)
 		{
 			m_bPopup = false;
@@ -164,12 +165,13 @@ void CBTAttackAnimation::Update_Gui()
 
 		ImGui::EndCombo();
 	}
-	//	NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
 	uint32_t iStart = { m_iStartFlag };
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" ,"EMISSIVE"};
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M };
+#undef X
 	if (ImGui::TreeNode("StartFlag"))
 	{
 		
@@ -218,6 +220,7 @@ void CBTAttackAnimation::Update_Gui()
 void CBTAttackAnimation::Abort()
 {
 	m_fTime = 0.f;
+	m_iLoopCnt = 0;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {
@@ -227,7 +230,6 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "Loop", m_bLoop);
 	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-
 	SaveJsonValue(j, "StartFlag", m_iStartFlag);
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);

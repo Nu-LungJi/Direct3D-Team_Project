@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -12,6 +12,7 @@
 #include "SerializeManager.h"
 #include "PrototypeManager.h"
 #include "LuaManager.h"
+#include "SoundManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -27,7 +28,6 @@ class CGraphicDevice;
 class CDInputManager;
 class CLevelManager;
 class CLevel;
-class CSoundManager;
 class CFontManager;
 class CPrototype;
 class CColliderManager;
@@ -141,16 +141,7 @@ public:
 
 #pragma region SOUND_MANAGER
 public:
-	HRESULT CreateSound(const _string& sPath, FMOD_SOUND** ppSound);
-
-	HRESULT SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources);
-	HRESULT SoundPlay(const StringID& channelTag, _float fVolume = 1.f, _float fPitch = 1.f);
-	void SoundStop(const StringID& channelTag);
-	void SoundPause(const StringID& channelTag, _bool bPause);
-	_bool SoundGetVolume(const StringID& channelTag, _float& fVolume);
-	_bool SoundSetVolume(const StringID& channelTag, _float fVolume);
-	_bool SoundIsPlaying(const StringID& channelTag) const;
-	void SoundSetPitch(const StringID& channelTag, float fPitchRatio);
+	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
 #pragma region FONT_MANAGER
@@ -363,8 +354,8 @@ public:
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
 
-	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
-	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+	//_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	//_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
 #pragma endregion
 
 
@@ -381,9 +372,11 @@ public:
 #pragma region INSTNACE_MANAGER
 public:
 	void Add_Instance(class CComModelInstance* pModelInstance, class CComAnimator* pAnimator, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
+	void Add_Instance(class CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags = 0);
 
 
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
+	void Add_Part_Instance(class CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
 #pragma endregion
 

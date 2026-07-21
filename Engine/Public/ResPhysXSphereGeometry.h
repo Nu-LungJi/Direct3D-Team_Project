@@ -32,7 +32,7 @@ private:
 
 public:
 	static SPtr<CResPhysXSphereGeometry> Create();
-	static SPtr<CResPhysXSphereGeometry> Create(const DESC& desc);
+	static SPtr<CResPhysXSphereGeometry> CreateAndLoad(const DESC& desc);
 };
 
 NS_END

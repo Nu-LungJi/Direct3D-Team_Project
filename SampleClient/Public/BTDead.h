@@ -18,9 +18,9 @@ private:
 public:
 	EVALUATE Evaluate(_float fTimeDelta) override;
 	virtual nlohmann::json			Save_Node()override;
-	HRESULT					Load_json(const nlohmann::json& j) override;
+	HRESULT							Load_json(const nlohmann::json& j) override;
 
-	virtual void		Update_Gui() override;
+	virtual void					Update_Gui() override;
 private:
 	_float				m_fDist{ 10.f };
 public:

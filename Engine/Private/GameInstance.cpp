@@ -155,13 +155,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("Start m_pRenderer()");
 	m_pRenderer = CRenderer::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pRenderer == nullptr)
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("End m_pRenderer()");
 	m_pHizOcclusionCuller = CHizOcclusionCuller::Create();
 	if (m_pHizOcclusionCuller == nullptr)
 	{
@@ -248,7 +248,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 {
-	m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	{
+		ZoneScopedN("GameObjectManager_FixedUpdate");
+		m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+	}
+	
 	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
 }
 
@@ -291,8 +295,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pRenderer->UpdateGUI();
 
-	// 사운드 붙일때 부활
-	// m_pSoundManager->UpdateGUI();
+	 m_pSoundManager->UpdateGUI();
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
@@ -337,13 +340,6 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		{
 			MouseFix();
 		}
-	}
-
-	// 사운드 붙일때 부활
-	if constexpr (false)
-	{
-		ZoneScopedN("SoundManager_Update");
-		m_pSoundManager->Update();
 	}
 
 	// lua hot reload
@@ -409,6 +405,29 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	AddRenderObject(RENDERGROUP::NONBLEND_INSTANCED, m_pModel_Instance_Manager.get());
 	AddRenderObject(RENDERGROUP::EFFECT, m_pParticleManager.get());
 	AddRenderObject(RENDERGROUP::COLLIDER, m_pDbgLineRender.get());
+
+	// 모든 게임 오브젝트와 카메라의 LateUpdate가 끝난 뒤 활성 카메라 하나만 Listener 0에 반영한다.
+	if (auto* pCamera = GetActiveCamera())
+	{
+		auto& cameraTransform = pCamera->GetTransform();
+		_float3 vForward{};
+		_float3 vUp{};
+		XMStoreFloat3(&vForward, XMVector3Normalize(cameraTransform.GetState(STATE::LOOK)));
+		XMStoreFloat3(&vUp, XMVector3Normalize(cameraTransform.GetState(STATE::UP)));
+
+		m_pSoundManager->SetListenerAttributes(0, SOUND_LISTENER_DESC{
+			.vPosition = cameraTransform.GetPosition(),
+			.vVelocity = {},
+			.vForward = vForward,
+			.vUp = vUp
+		});
+	}
+
+	// 최신 Listener/Emitter 값을 FMOD에 반영하고 종료된 SOUND_ID를 정리한다.
+	{
+		ZoneScopedN("SoundManager_Update");
+		m_pSoundManager->Update();
+	}
 }
 
 
@@ -431,10 +450,9 @@ void CGameInstance::Release_Engine()
 {
 
 	CMapMeshObject::ReleaseInstancingResources(); // CMapMeshObject의 static 인스턴스 버퍼 해제
-	m_pSoundManager.reset();
+	m_pNodeEditor.reset();
 	m_pImguiManager.reset();
 	m_pDInputManager.reset();
-	m_pNodeEditor.reset();
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pModel_Instance_Manager.reset();
@@ -461,6 +479,7 @@ void CGameInstance::Release_Engine()
 
 	if(m_pResourceManager) m_pResourceManager->Release();
 	m_pResourceManager.reset();
+	m_pSoundManager.reset();
 
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
@@ -752,55 +771,6 @@ void CGameInstance::RegisterLevelChangeFunc(const _string& ID, _Func func)
 {
 	m_pLevelManager->RegisterLevelChangeFunc(ID, func);
 }
-#pragma endregion
-
-
-#pragma region SOUND_MANAGER
-HRESULT CGameInstance::CreateSound(const _string& sPath, FMOD_SOUND** ppSound)
-{
-	return m_pSoundManager->CreateSound(sPath, ppSound);
-}
-
-HRESULT CGameInstance::SoundAddChannel(const StringID& channelTag, const std::pair<StringID, StringID>& soundResources)
-{
-	return m_pSoundManager->AddChannel(channelTag, soundResources);
-}
-
-HRESULT CGameInstance::SoundPlay(const StringID& channelTag, _float fVolume, _float fPitch)
-{
-	return m_pSoundManager->Play(channelTag, fVolume, fPitch);
-}
-
-void CGameInstance::SoundStop(const StringID& channelTag)
-{
-	m_pSoundManager->Stop(channelTag);
-}
-
-void CGameInstance::SoundPause(const StringID& channelTag, _bool bPause)
-{
-	m_pSoundManager->Pause(channelTag, bPause);
-}
-
-_bool CGameInstance::SoundGetVolume(const StringID& channelTag, _float& fVolume)
-{
-	return m_pSoundManager->GetVolume(channelTag, fVolume);
-}
-
-_bool CGameInstance::SoundSetVolume(const StringID& channelTag, _float fVolume)
-{
-	return m_pSoundManager->SetVolume(channelTag, fVolume);
-}
-
-_bool CGameInstance::SoundIsPlaying(const StringID& channelTag) const
-{
-	return m_pSoundManager->IsPlaying(channelTag);
-}
-
-void CGameInstance::SoundSetPitch(const StringID& channelTag, float fPitchRatio)
-{
-	m_pSoundManager->SetPitch(channelTag, fPitchRatio);
-}
-
 #pragma endregion
 
 
@@ -1113,14 +1083,14 @@ physx::PxControllerManager* CGameInstance::PxGetControllerManager() const
 {
 	return m_pPhysXManager->GetControllerManager();
 }
-_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
-{
-	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
-}
-_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
-{
-	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
-}
+//_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
+//{
+//	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
+//}
+//_bool CGameInstance::PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+//{
+//	return m_pPhysXManager->RayCastMultiple(vOrigin, vNormalizedDir, fMaxDistance, outVecResult, iMaxHit);
+//}
 #pragma endregion
 
 #pragma endregion
@@ -1135,10 +1105,18 @@ void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, CComAnimator
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, pAnimator, WorldMatrix, iFlags);
 }
 
+void CGameInstance::Add_Instance(CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags) {
+	m_pModel_Instance_Manager->Add_Instance(pModelInstance, WorldMatrix, iFlags);
+}
+
 
 void CGameInstance::Add_Instance(CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData) {
 
 	m_pModel_Instance_Manager->Add_Instance(pModelInstance, InstanceData);
+}
+
+void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData) {
+	m_pModel_Instance_Manager->Add_Part_Instance(pModelInstance, InstanceData);
 }
 
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {

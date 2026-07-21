@@ -61,9 +61,10 @@ HRESULT CLevelPlayground::Initialize()
 	}
 	{
 		//테스트 고블린
-		CGameObject::GAMEOBJECT_DESC Desc{};
+		CTestGob::MONSTER_DESC Desc{};
 		Desc.sObjectTag = "Gobline";
-
+		Desc.LevelTag = "LEVEL_PLAYGROUND";
+		Desc.ReSourceTag = "Model_Resource_TombProtector";
 		auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
 		if (!Gobline.has_value())
 		{

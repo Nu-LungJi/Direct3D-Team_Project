@@ -256,7 +256,7 @@ SPtr<CResTexture2D> CComModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_T
 
     if (Textures[eMaterialType].size() == 0)
     {
-        return Textures[1].front();
+		return nullptr;// Textures[1].front();
     }
 
     return Textures[eMaterialType][iTextureIndex];

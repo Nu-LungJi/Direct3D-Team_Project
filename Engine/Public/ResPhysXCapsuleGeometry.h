@@ -33,7 +33,7 @@ private:
 
 public:
 	static SPtr<CResPhysXCapsuleGeometry> Create();
-	static SPtr<CResPhysXCapsuleGeometry> Create(const DESC& desc);
+	static SPtr<CResPhysXCapsuleGeometry> CreateAndLoad(const DESC& desc);
 };
 
 NS_END
