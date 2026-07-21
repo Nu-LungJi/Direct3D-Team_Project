@@ -7,14 +7,6 @@
 
 NS_USING(Client)
 
-namespace
-{
-	constexpr _float START_TURN_THRESHOLD = 22.5f;
-	constexpr _float PIVOT_THRESHOLD = 157.5f;
-	constexpr _float IDLE_TURN_THRESHOLD = 30.f;
-	constexpr _float LOOP_BLEND_DURATION = 0.15f;
-	constexpr _float TRANSITION_BLEND_DURATION = 0.08f;
-}
 
 CPlayer_Locomotion_State::CPlayer_Locomotion_State()
 {
@@ -30,13 +22,14 @@ CPlayer_Locomotion_State::CPlayer_Locomotion_State()
 	for (auto& phaseTable : m_FreeTurnStartAnimations)
 		for (auto& table : phaseTable)
 			table.fill(INVALID_ANIMATION);
-
 	for (auto& from : m_GaitTransitions)
 		for (auto& to : from)
 			to.fill(INVALID_ANIMATION);
 	for (auto& turns : m_IdleTurns)
 		turns.fill(INVALID_ANIMATION);
 	for (auto& pivots : m_JogPivots)
+		pivots.fill(INVALID_ANIMATION);
+	for (auto& pivots : m_SprintPivots)
 		pivots.fill(INVALID_ANIMATION);
 	for (auto& gait : m_FreeTurnStart180)
 		for (auto& side : gait)
@@ -59,6 +52,7 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	m_eTransition = TRANSITION::NONE;
 	m_iTransientAnimation = INVALID_ANIMATION;
 	m_eLastDirection = MOVE_DIRECTION::FRONT;
+	player->SetRootMotionRotationActive(false);
 
 	if (auto* animator = player->GetAnimator(); animator && m_iIdleAnimation != INVALID_ANIMATION)
 		animator->Play_Anim(m_iIdleAnimation, true, LOOP_BLEND_DURATION);
@@ -68,9 +62,7 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 {
 	(void)fTimeDelta;
 
-	auto* player = pStateMachine
-		? CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pStateMachine->GetOwnerHandle())
-		: nullptr;
+	auto* player = pStateMachine ? CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pStateMachine->GetOwnerHandle()) : nullptr;
 	if (!player)
 		return;
 
@@ -79,16 +71,29 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	if (!animator || !moveIntent || !m_bAnimationTableInitialized)
 		return;
 
-	if (UpdateTransient(*player, *animator))
-		return;
-
 	const _bool bHasMoveInput = player->HasMoveInput();
+	// Stop 중 다시 이동을 시작하면 Stop 클립이 끝날 때까지 입력을 막지 않는다.
+	// 기존에는 UpdateTransient()가 true를 반환해 Jog Start/Loop 진입 자체가
+	// 지연되어, 입력은 들어와도 캐릭터가 멈춘 포즈에 남아 있었다.
+	if (m_eTransition == TRANSITION::STOP && bHasMoveInput)
+	{
+		
+		m_eTransition = TRANSITION::NONE;
+		m_ePendingGait = GAIT::END;
+		m_iTransientAnimation = INVALID_ANIMATION;
+		m_eCurrentGait = GAIT::END;
+		player->SetRootMotionRotationActive(false);
+	}
+	else if (UpdateTransient(*player, *animator))
+	{
+		return;
+	}
+
 	const _bool bHover = player->GetLocomotionMode() == CPlayer::LOCOMOTION_MODE::HOVER;
-	const _float fMoveAngle = bHasMoveInput
-		? CalculateSignedAngle(*player, player->GetDesiredMoveDirection())
-		: 0.f;
+	const _float fMoveAngle = bHasMoveInput ? CalculateSignedAngle(*player, player->GetDesiredMoveDirection()): 0.f;
 	const MOVE_DIRECTION eInputDirection = ResolveDirection(fMoveAngle);
 
+	// 움직이고 있냐
 	if (bHasMoveInput)
 	{
 		static constexpr _string_view sDirectionNames[] =
@@ -97,10 +102,13 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			"BACKWARD", "LEFT_135", "LEFT_90", "LEFT_45"
 		};
 		const _vector vMove = XMLoadFloat3(&player->GetDesiredMoveDirection());
-		const _vector vLook = XMVector3Normalize(XMVectorSetY(
-			player->GetTransform().GetState(STATE::LOOK), 0.f));
-		const _vector vRight = XMVector3Normalize(XMVectorSetY(
-			player->GetTransform().GetState(STATE::RIGHT), 0.f));
+
+		// 플레이어 Look
+		const _vector vLook = XMVector3Normalize(XMVectorSetY(player->GetTransform().GetState(STATE::LOOK), 0.f));
+		// 플레이서 Right
+		const _vector vRight = XMVector3Normalize(XMVectorSetY(player->GetTransform().GetState(STATE::RIGHT), 0.f));
+		
+		//  
 		player->SetLocomotionAngleDebug(
 			XMVectorGetX(XMVector3Dot(vMove, vLook)),
 			XMVectorGetX(XMVector3Dot(vMove, vRight)),
@@ -118,15 +126,10 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		if (m_eCurrentGait != GAIT::END)
 		{
 			const FOOT_PHASE ePhase = ResolveFootPhase(animator->GetPlayAnimRatio());
-			const MOVE_DIRECTION eStopDirection = bHover
-				? m_eLastDirection
-				: MOVE_DIRECTION::FRONT;
-			const int32_t iStop = FindPhasedDirectionalAnimation(
-				m_StopAnimations, ePhase, m_eCurrentGait, eStopDirection);
+			const MOVE_DIRECTION eStopDirection = bHover ? m_eLastDirection : MOVE_DIRECTION::FRONT;
+			const int32_t iStop = FindPhasedDirectionalAnimation(m_StopAnimations, ePhase, m_eCurrentGait, eStopDirection);
 
-			if (PlayTransient(
-				*animator, iStop, TRANSITION::STOP, GAIT::END,
-				TRANSITION_BLEND_DURATION))
+			if (PlayTransient(*animator, iStop, TRANSITION::STOP, GAIT::END,TRANSITION_BLEND_DURATION))
 			{
 				return;
 			}
@@ -187,6 +190,11 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			*animator, iStart, TRANSITION::START, eStartGait,
 			TRANSITION_BLEND_DURATION))
 		{
+			const _bool bFreeTurnStart = !bHover &&
+				std::abs(fMoveAngle) >= START_TURN_THRESHOLD;
+			player->SetRootMotionRotationActive(bFreeTurnStart);
+			if (bFreeTurnStart)
+				moveIntent->ClearFacingIntent();
 			return;
 		}
 
@@ -195,12 +203,24 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		return;
 	}
 
-	// Walk와 Sprint 사이의 직접 전환은 사용하지 않고 Jog를 경유한다.
-	GAIT eNextGait = eDesiredGait;
-	if ((m_eCurrentGait == GAIT::WALK && eDesiredGait == GAIT::SPRINT) ||
-		(m_eCurrentGait == GAIT::SPRINT && eDesiredGait == GAIT::WALK))
+	const GAIT eNextGait = eDesiredGait;
+
+	if (!bHover && (m_eCurrentGait == GAIT::JOG || m_eCurrentGait == GAIT::SPRINT) &&
+		std::abs(fMoveAngle) >= PIVOT_THRESHOLD)
 	{
-		eNextGait = GAIT::JOG;
+		const TURN_SIDE eSide = fMoveAngle < 0.f ? TURN_SIDE::LEFT : TURN_SIDE::RIGHT;
+		const FOOT_PHASE ePhase = ResolveFootPhase(animator->GetPlayAnimRatio());
+		const int32_t iPivot = m_eCurrentGait == GAIT::SPRINT
+			? m_SprintPivots[ETOUI(eSide)][ETOUI(ePhase)]
+			: m_JogPivots[ETOUI(eSide)][ETOUI(ePhase)];
+		if (PlayTransient(
+			*animator, iPivot, TRANSITION::PIVOT, m_eCurrentGait,
+			TRANSITION_BLEND_DURATION))
+		{
+			player->SetRootMotionRotationActive(true);
+			moveIntent->ClearFacingIntent();
+			return;
+		}
 	}
 
 	if (m_eCurrentGait != eNextGait)
@@ -216,19 +236,6 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		}
 
 		m_eCurrentGait = eNextGait;
-	}
-
-	if (!bHover && m_eCurrentGait == GAIT::JOG && std::abs(fMoveAngle) >= PIVOT_THRESHOLD)
-	{
-		const TURN_SIDE eSide = fMoveAngle < 0.f ? TURN_SIDE::LEFT : TURN_SIDE::RIGHT;
-		const FOOT_PHASE ePhase = ResolveFootPhase(animator->GetPlayAnimRatio());
-		const int32_t iPivot = m_JogPivots[ETOUI(eSide)][ETOUI(ePhase)];
-		if (PlayTransient(
-			*animator, iPivot, TRANSITION::PIVOT, m_eCurrentGait,
-			TRANSITION_BLEND_DURATION))
-		{
-			return;
-		}
 	}
 
 	m_eLastDirection = bHover ? eInputDirection : MOVE_DIRECTION::FRONT;
@@ -278,7 +285,7 @@ _float CPlayer_Locomotion_State::CalculateSignedAngle(
 CPlayer_Locomotion_State::FOOT_PHASE
 CPlayer_Locomotion_State::ResolveFootPhase(_float fAnimationRatio) const
 {
-	// 이름 기반 1차 매핑. 실제 재생 후 LU/RU가 반대면 이 반환만 교체하면 된다.
+
 	return fAnimationRatio < 0.5f ? FOOT_PHASE::LEFT : FOOT_PHASE::RIGHT;
 }
 
@@ -294,10 +301,7 @@ CPlayer_Locomotion_State::ResolveDesiredGait(const CPlayer& player) const
 	}
 }
 
-int32_t CPlayer_Locomotion_State::FindDirectionalAnimation(
-	const GAIT_DIRECTION_TABLE& table,
-	GAIT eGait,
-	MOVE_DIRECTION eDirection) const
+int32_t CPlayer_Locomotion_State::FindDirectionalAnimation(const GAIT_DIRECTION_TABLE& table,GAIT eGait,MOVE_DIRECTION eDirection) const
 {
 	if (eGait == GAIT::END || eDirection == MOVE_DIRECTION::END)
 		return INVALID_ANIMATION;
@@ -308,11 +312,7 @@ int32_t CPlayer_Locomotion_State::FindDirectionalAnimation(
 	return iAnimation;
 }
 
-int32_t CPlayer_Locomotion_State::FindPhasedDirectionalAnimation(
-	const PHASE_GAIT_DIRECTION_TABLE& table,
-	FOOT_PHASE ePhase,
-	GAIT eGait,
-	MOVE_DIRECTION eDirection) const
+int32_t CPlayer_Locomotion_State::FindPhasedDirectionalAnimation(const PHASE_GAIT_DIRECTION_TABLE& table,FOOT_PHASE ePhase,GAIT eGait,MOVE_DIRECTION eDirection) const
 {
 	if (ePhase == FOOT_PHASE::END || eGait == GAIT::END ||
 		eDirection == MOVE_DIRECTION::END)
@@ -335,12 +335,7 @@ int32_t CPlayer_Locomotion_State::FindPhasedDirectionalAnimation(
 	return iAnimation;
 }
 
-_bool CPlayer_Locomotion_State::PlayTransient(
-	CComAnimator& animator,
-	int32_t iAnimationIndex,
-	TRANSITION eTransition,
-	GAIT ePendingGait,
-	_float fBlendDuration)
+_bool CPlayer_Locomotion_State::PlayTransient(CComAnimator& animator,int32_t iAnimationIndex,TRANSITION eTransition,GAIT ePendingGait,_float fBlendDuration)
 {
 	if (iAnimationIndex == INVALID_ANIMATION)
 		return false;
@@ -352,11 +347,7 @@ _bool CPlayer_Locomotion_State::PlayTransient(
 	return true;
 }
 
-void CPlayer_Locomotion_State::PlayLoop(
-	CPlayer& player,
-	CComAnimator& animator,
-	GAIT eGait,
-	MOVE_DIRECTION eDirection)
+void CPlayer_Locomotion_State::PlayLoop(CPlayer& player,CComAnimator& animator,GAIT eGait,MOVE_DIRECTION eDirection)
 {
 	if (eGait == GAIT::END)
 	{
@@ -364,9 +355,6 @@ void CPlayer_Locomotion_State::PlayLoop(
 			animator.Play_Anim(m_iIdleAnimation, true, LOOP_BLEND_DURATION);
 		return;
 	}
-
-	if (eGait == GAIT::SPRINT)
-		eDirection = MOVE_DIRECTION::FRONT;
 
 	const int32_t iLoop = FindDirectionalAnimation(m_LoopAnimations, eGait, eDirection);
 	if (iLoop != INVALID_ANIMATION)
@@ -377,17 +365,16 @@ void CPlayer_Locomotion_State::PlayLoop(
 	(void)player;
 }
 
-_bool CPlayer_Locomotion_State::UpdateTransient(
-	CPlayer& player,
-	CComAnimator& animator)
+_bool CPlayer_Locomotion_State::UpdateTransient(CPlayer& player,CComAnimator& animator)
 {
 	if (m_eTransition == TRANSITION::NONE)
 		return false;
 
-	if (static_cast<int32_t>(animator.GetPlayAnimIndex()) != m_iTransientAnimation)
+	if ((int32_t)(animator.GetPlayAnimIndex()) != m_iTransientAnimation)
 	{
 		m_eTransition = TRANSITION::NONE;
 		m_iTransientAnimation = INVALID_ANIMATION;
+		player.SetRootMotionRotationActive(false);
 		return false;
 	}
 
@@ -408,14 +395,13 @@ _bool CPlayer_Locomotion_State::UpdateTransient(
 		m_eCurrentGait = m_ePendingGait;
 		m_ePendingGait = GAIT::END;
 	}
+	player.SetRootMotionRotationActive(false);
 
 	(void)player;
 	return false;
 }
 
-_bool CPlayer_Locomotion_State::TryStartIdleTurn(
-	CPlayer& player,
-	CComAnimator& animator)
+_bool CPlayer_Locomotion_State::TryStartIdleTurn(CPlayer& player, CComAnimator& animator)
 {
 	const _float fAngle = CalculateSignedAngle(player, player.GetCameraFacingDirection());
 	const _float fAbsAngle = std::abs(fAngle);
@@ -431,12 +417,18 @@ _bool CPlayer_Locomotion_State::TryStartIdleTurn(
 	else if (fAbsAngle >= 67.5f)
 		iTurnSize = 1;
 
-	return PlayTransient(
+	const _bool bStarted = PlayTransient(
 		animator,
 		m_IdleTurns[ETOUI(eSide)][iTurnSize],
 		TRANSITION::IDLE_TURN,
 		GAIT::END,
 		TRANSITION_BLEND_DURATION);
+	if (bStarted)
+	{
+		player.SetRootMotionRotationActive(true);
+		player.GetMoveIntent()->ClearFacingIntent();
+	}
+	return bStarted;
 }
 
 SPtr<CPlayer_Locomotion_State> CPlayer_Locomotion_State::Create()
@@ -454,12 +446,7 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 	{
 		m_LoopAnimations[ETOUI(eGait)][ETOUI(eDirection)] = find(sName);
 	};
-	auto setPhased = [&find](
-		PHASE_GAIT_DIRECTION_TABLE& table,
-		FOOT_PHASE ePhase,
-		GAIT eGait,
-		MOVE_DIRECTION eDirection,
-		_string_view sName)
+	auto setPhased = [&find](PHASE_GAIT_DIRECTION_TABLE& table,FOOT_PHASE ePhase,GAIT eGait,MOVE_DIRECTION eDirection,_string_view sName)
 	{
 		table[ETOUI(ePhase)][ETOUI(eGait)][ETOUI(eDirection)] = find(sName);
 	};
@@ -477,12 +464,10 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 		const auto eDirection = static_cast<MOVE_DIRECTION>(i);
 		const auto sToken = sDirectionTokens[i];
 
-		setLoop(GAIT::JOG, eDirection,
-			std::format("AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_{}_anm.bin", sToken));
+		setLoop(GAIT::JOG, eDirection, std::format("AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_{}_anm.bin", sToken));
 		if (eDirection != MOVE_DIRECTION::LEFT_90)
 		{
-			setLoop(GAIT::WALK, eDirection,
-				std::format("AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_{}_anm.bin", sToken));
+			setLoop(GAIT::WALK, eDirection, std::format("AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_{}_anm.bin", sToken));
 		}
 
 		for (uint32_t phase = 0; phase < ETOUI(FOOT_PHASE::END); ++phase)
@@ -501,15 +486,37 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 		}
 	}
 
-	// Walk_Loop_Lft_90은 원본 목록에 없어서 Lft_112를 90도 슬롯의 대체로 사용한다.
+
 	setLoop(GAIT::WALK, MOVE_DIRECTION::LEFT_90,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_Lft_112_anm.bin");
+
 	setLoop(GAIT::SPRINT, MOVE_DIRECTION::FRONT,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Fwd_anm.bin");
+	setLoop(GAIT::SPRINT, MOVE_DIRECTION::RIGHT_45,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
+	setLoop(GAIT::SPRINT, MOVE_DIRECTION::RIGHT_90,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
+	setLoop(GAIT::SPRINT, MOVE_DIRECTION::RIGHT_135,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
+	setLoop(GAIT::SPRINT, MOVE_DIRECTION::LEFT_135,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
+	setLoop(GAIT::SPRINT, MOVE_DIRECTION::LEFT_90,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
+	setLoop(GAIT::SPRINT, MOVE_DIRECTION::LEFT_45,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
 	setPhased(m_StopAnimations, FOOT_PHASE::LEFT, GAIT::SPRINT, MOVE_DIRECTION::FRONT,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_LF_Sprint_Stop_Fwd_anm.bin");
 	setPhased(m_StopAnimations, FOOT_PHASE::RIGHT, GAIT::SPRINT, MOVE_DIRECTION::FRONT,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Sprint_Stop_Fwd_anm.bin");
+
+	m_SprintPivots[ETOUI(TURN_SIDE::LEFT)][ETOUI(FOOT_PHASE::LEFT)] = find(
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Pivot_Lft_180_LU_anm.bin");
+	m_SprintPivots[ETOUI(TURN_SIDE::LEFT)][ETOUI(FOOT_PHASE::RIGHT)] = find(
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Pivot_Lft_180_RU_anm.bin");
+	m_SprintPivots[ETOUI(TURN_SIDE::RIGHT)][ETOUI(FOOT_PHASE::LEFT)] = find(
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Pivot_Rht_180_LU_anm.bin");
+	m_SprintPivots[ETOUI(TURN_SIDE::RIGHT)][ETOUI(FOOT_PHASE::RIGHT)] = find(
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Pivot_Rht_180_RU_anm.bin");
 
 	for (GAIT eGait : { GAIT::WALK, GAIT::JOG })
 	{
@@ -576,10 +583,18 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Jog2Sprint_LU_anm.bin");
 	setGaitTransition(GAIT::JOG, GAIT::SPRINT, FOOT_PHASE::RIGHT,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Jog2Sprint_RU_anm.bin");
+	setGaitTransition(GAIT::WALK, GAIT::SPRINT, FOOT_PHASE::LEFT,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Walk2Sprint_LU_anm.bin");
+	setGaitTransition(GAIT::WALK, GAIT::SPRINT, FOOT_PHASE::RIGHT,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Walk2Sprint_RU_anm.bin");
 	setGaitTransition(GAIT::SPRINT, GAIT::JOG, FOOT_PHASE::LEFT,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint2Jog_LU_anm.bin");
 	setGaitTransition(GAIT::SPRINT, GAIT::JOG, FOOT_PHASE::RIGHT,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint2Jog_RU_anm.bin");
+	setGaitTransition(GAIT::SPRINT, GAIT::WALK, FOOT_PHASE::LEFT,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint2Walk_LU_anm.bin");
+	setGaitTransition(GAIT::SPRINT, GAIT::WALK, FOOT_PHASE::RIGHT,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint2Walk_RU_anm.bin");
 
 	m_bAnimationTableInitialized = m_iIdleAnimation != INVALID_ANIMATION;
 }

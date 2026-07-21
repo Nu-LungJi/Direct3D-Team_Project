@@ -212,14 +212,14 @@ HRESULT CTestModel::Initialize(void* pArg)
 	//WeaponDesc.sGroupTag = "TEST"; 
 	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
 
-	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
-	//if (!Weapon.has_value())
-	//{
-	//	MSG_BOX("Create Failed Weapon");
-	//	return E_FAIL;
-	//}
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon");
+		return E_FAIL;
+	}
 
-	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	return S_OK;
 
 }
