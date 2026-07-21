@@ -7,8 +7,7 @@
 #include "Resources.h"
 #include "GameInstance.h"
 #include "TestPartObject.h"
-
-
+#include "ComSocket.h"
 
 NS_USING(Client)
 
@@ -24,6 +23,95 @@ CTestModel::~CTestModel()
 void CTestModel::UpdateGUI()
 {
 	CAnimationObject::UpdateGUI();
+
+#ifdef _DEBUG
+
+
+	if (!m_pComModelInstance->GetModel())
+		return;
+
+	const auto& Bones = m_pComModelInstance->GetModel()->GetBones();
+
+	if (Bones.empty())
+		return;
+
+
+	ImGui::Begin("Bone Editor");
+
+
+
+	ImGui::Text("Bone Count : %d", static_cast<int>(Bones.size()));
+
+	if (m_iDebugSelectedBone < 0)
+		m_iDebugSelectedBone = 0;
+
+	if (m_iDebugSelectedBone >= static_cast<int>(Bones.size()))
+		m_iDebugSelectedBone = static_cast<int>(Bones.size()) - 1;
+
+	std::string previewName = "None";
+
+	if (Bones[m_iDebugSelectedBone])
+	{
+		// Bone 이름 getter 있으면 그걸로 바꿔
+		// previewName = Bones[m_iDebugSelectedBone]->Get_BoneName();
+		previewName = Bones[m_iDebugSelectedBone]->GetBoneName();
+	}
+
+	if (ImGui::BeginCombo("Selected Bone", previewName.c_str()))
+	{
+		for (int i = 0; i < static_cast<int>(Bones.size()); ++i)
+		{
+			if (!Bones[i])
+				continue;
+
+			std::string boneLabel;
+
+			// 이름 getter 있으면 이걸 추천
+			// boneLabel = std::to_string(i) + " : " + Bones[i]->Get_BoneName();
+
+			boneLabel = Bones[i]->GetBoneName();
+
+			bool bSelected = (m_iDebugSelectedBone == i);
+
+			if (ImGui::Selectable(boneLabel.c_str(), bSelected))
+			{
+				m_iDebugSelectedBone = i;
+			}
+
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+		
+			}
+		}
+
+		ImGui::EndCombo();
+	}
+
+	if (Bones[m_iDebugSelectedBone])
+	{
+		int iParentIndex = Bones[m_iDebugSelectedBone]->GetParendBoneIndex();
+
+		ImGui::Separator();
+
+		ImGui::Text("Selected Bone Index : %d", m_iDebugSelectedBone);
+		ImGui::Text("Parent Bone Index   : %d", iParentIndex);
+
+
+		_matrix matCombined =
+			Bones[m_iDebugSelectedBone]->Get_CombinedTransformationMatrix();
+		_float3 vBonePos{};
+		XMStoreFloat3(&vBonePos, matCombined.r[3]);
+
+		ImGui::Separator();
+		ImGui::Text("Current Combined Bone Position");
+		ImGui::Text("X : %.4f", vBonePos.x);
+		ImGui::Text("Y : %.4f", vBonePos.y);
+		ImGui::Text("Z : %.4f", vBonePos.z);
+
+	}
+	ImGui::End();
+#endif
 
 }
 
@@ -99,6 +187,21 @@ HRESULT CTestModel::Initialize(void* pArg)
 		};
 
 		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
+	}
+
+	{
+		CComSocket::DESC des{};
+		des.m_pOwner = GetHandle();
+		des.sModelInstanceName = "ComCModelIntance";
+		des.sAnimationName = "ComCModelAnimator";
+		des.iBoneIndex = m_iDebugSelectedBone;
+		des.m_fOffset = { 0.f,0.f,0.f,0.f };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Socket", "ComSocket", &des, &m_pSocket)))
+		{
+			return E_FAIL;
+		};
+
+
 	}
 
 	//CTestPartObject::DESC WeaponDesc{};
@@ -228,6 +331,13 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 {
 	ZoneScopedN("Render TestModel");
 
+/*
+	auto CurAnim = m_pModelAnimator->GetCurAnimState();
+
+	_float4x4 Dummy;
+	m_pSocket->SetBoneIndex(m_iDebugSelectedBone);
+	m_pSocket->Get_Socket_MatrixAtPose(CurAnim.iAnimIndex, CurAnim.fTrackPosition, Dummy)*/;
+	
 	if (!pContext)
 		return E_INVALIDARG;
 
@@ -381,6 +491,12 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 {
 
 	m_iCurrentInstanceCount =static_cast<uint32_t>(Instances.size());
+
+	_float4x4 animatrix;
+	auto& anim = m_pModelAnimator->GetCurAnimState();
+	m_pSocket->Get_Socket_MatrixAtPose(anim.iAnimIndex, anim.fTrackPosition, animatrix);
+	m_pComModelInstance->DebugDraw_Bones(animatrix);
+
 
 	if (Instances.empty())
 		return S_OK;
