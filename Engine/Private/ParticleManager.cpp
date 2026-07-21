@@ -2980,6 +2980,7 @@ HRESULT CParticleManager::DeleteEffectPreset(const std::string& strJsonPath, con
 	file << j.dump(4);
 	return S_OK;
 }
+
 std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternParamVariant& v)
 {
 	return std::visit([](const auto& param) -> std::vector<PARTICLE_SPAWN_DATA>
@@ -2997,6 +2998,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCircleAndSpread(param);
 			else if constexpr (std::is_same_v<T, STest>)
 				return ParticlePattern::MakeTest(param);
+			else if constexpr (std::is_same_v<T, SSPAWN>)
+				return ParticlePattern::MakeTest1(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
