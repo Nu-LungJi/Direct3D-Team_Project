@@ -94,11 +94,7 @@ HRESULT CMainApp::Initialize()
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::CREATUREEDIT));
 		});
-	if (FAILED(CMainAppLoader::Load()))
-	{
-		MSG_BOX("MainLoader Failed");
-		return E_FAIL;
-	}
+
 	
 	
 	return S_OK;
