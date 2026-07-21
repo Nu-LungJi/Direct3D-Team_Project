@@ -1,5 +1,4 @@
 #pragma once
-
 #include "UITex.h"
 #include "Client_Defines.h"
 
@@ -10,14 +9,14 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CSpellMeter final : public E::CUITex
+class CHPBar final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CSpellMeter, E::CUITex)
+	DECLARE_DERIVED_TYPE(HPBar, E::CUITex)
 
 private:
-	CSpellMeter();
-	~CSpellMeter() override;
+	CHPBar();
+	~CHPBar() override;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
@@ -29,22 +28,31 @@ public:
 
 private:
 	virtual void PlayEffect(uint32_t uiState);
-
-private:
-	CComConstantBuffer* m_pComCBufferPerSpellMeter = nullptr;
-	CButtonComponent* m_pComCButton = nullptr;
-
+	void UpdateFill();
 private:
 	_float s_fAccumulatedTime = 0.f;
 	_float m_fCurrentAmount = 1.f;
-
-	uint32_t m_colorType{};
-	_float4 m_BGColor{1.f, 1.f, 1.f, 1.f};
+	_bool m_bDead = false;
 private:
-	void StartCooldown(float fCooldownTime);
+	_float m_fMaxFill = 1000.f;
+	_float m_fcurrentFill = 1000.f;
+	_float m_fFillDir = 1.f;
+
 public:
-	static E::UPtr<CSpellMeter> Create();
+	_float GetMaxFill() { return m_fMaxFill; }
+	_float GetCurrentFill() { return m_fcurrentFill; }
+
+	void SetMaxFill(_float maxfill) { m_fMaxFill = maxfill; }
+	void SetCurrentFill(_float currentfill) { m_fcurrentFill = currentfill; }
+
+private:
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CButtonComponent* m_pComCButton = nullptr;
+
+public:
+	static E::UPtr<CHPBar> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
 };
 
 NS_END

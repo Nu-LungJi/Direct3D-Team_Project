@@ -10,14 +10,14 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CSpellMeter final : public E::CUITex
+class CMiniMap final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CSpellMeter, E::CUITex)
+	DECLARE_DERIVED_TYPE(CMiniMap, E::CUITex)
 
 private:
-	CSpellMeter();
-	~CSpellMeter() override;
+	CMiniMap();
+	~CMiniMap() override;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
@@ -31,19 +31,16 @@ private:
 	virtual void PlayEffect(uint32_t uiState);
 
 private:
-	CComConstantBuffer* m_pComCBufferPerSpellMeter = nullptr;
+	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
+	CComConstantBuffer* m_pMinimapCBuffer = nullptr;
 	CButtonComponent* m_pComCButton = nullptr;
 
-private:
-	_float s_fAccumulatedTime = 0.f;
-	_float m_fCurrentAmount = 1.f;
+	_float2 tMapOffset{};
+	_float tRotation{ 0.f};
+	_float tScale{1.f};
 
-	uint32_t m_colorType{};
-	_float4 m_BGColor{1.f, 1.f, 1.f, 1.f};
-private:
-	void StartCooldown(float fCooldownTime);
 public:
-	static E::UPtr<CSpellMeter> Create();
+	static E::UPtr<CMiniMap> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

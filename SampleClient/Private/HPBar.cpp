@@ -1,36 +1,32 @@
 #include "pch.h"
-#include "EffectUI.h"
+#include "HPBar.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
-#include "Client_Resources.h"
-#include "ComConstantBuffer.h"
-#include "Resources.h"
-#include "Client_Defines.h"
 #include "UIManager.h"
-#include "TweenComponent.h"
+#include "Client_Defines.h"
 #include "Level_Defines.h"
 
 NS_USING(Client)
 
-CEffectUI::CEffectUI()
+CHPBar::CHPBar()
 {
 }
 
-CEffectUI::~CEffectUI()
+CHPBar::~CHPBar()
 {
 }
 
-HRESULT CEffectUI::InitializePrototype(void* pArg)
+HRESULT CHPBar::InitializePrototype(void* pArg)
 {
 	return S_OK;
 }
 
-HRESULT CEffectUI::Initialize(void* pArg)
+HRESULT CHPBar::Initialize(void* pArg)
 {
-	auto		pDesc = static_cast<CFlipbookUI::FLIPBOOK_DESC*>(pArg);
+	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
 
-	if (FAILED(CFlipbookUI::Initialize(pDesc)))
+	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
 
 
@@ -52,31 +48,75 @@ HRESULT CEffectUI::Initialize(void* pArg)
 			return E_FAIL;
 		};
 
+
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
 		{
 			return E_FAIL;
 		};
 	}
 
-	m_UIINFO.UIType = ETOUI(UI_TYPE::FLIPBOOK);
+	m_UIINFO.UIType = ETOUI(UI_TYPE::HPBAR);
+
+	const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_UIINFO.Restag);
+	const D3D11_TEXTURE2D_DESC& texDesc = srv->GetTexture2DDesc();
+	//m_UIINFO.SizeX = static_cast<float>(texDesc.Width);
+	//m_UIINFO.SizeY = static_cast<float>(texDesc.Height);
 
 	return S_OK;
 }
 
-void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
+void CHPBar::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::LEFTHPFILL))
+		m_fFillDir = 0.f;
 }
 
-void CEffectUI::Update(E::_float fTimeDelta)
+void CHPBar::Update(E::_float fTimeDelta)
 {
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
-
 	if (!m_isActive)
 		return;
 
-	CFlipbookUI::Update(fTimeDelta);
+	// 디버깅용
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::HPFILL))
+	{
+		if (CGameInstance::Get().KeyDown(DIK_8))
+		{
+			m_fcurrentFill -= 400.f;
+			UpdateFill();
+		}
+	}
+	else if (m_UIINFO.UIType == ETOUI(UI_TYPE::LEFTHPFILL))
+	{
+		if (CGameInstance::Get().KeyDown(DIK_9))
+		{
+			m_fcurrentFill -= 100.f;
+			UpdateFill();
+		}
+	}
+
+	CUIObject::Update(fTimeDelta);
+
+	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::HPFILL) &&
+		m_fcurrentFill <= 0.f && !m_bDead)
+	{
+		m_bDead = true;
+		m_pComCButton->SetDisappear(true);
+
+		for (auto child : m_vChildren)
+		{
+			CUIObject* pUi = CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(child);
+			pUi->GetComponent<CButtonComponent>("Com_Button")->SetDisappear(true);
+		}
+	}
 
 	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+
+	for (auto& pComponent : m_UIComponents)
+	{
+		pComponent->Update(fTimeDelta, mousePos);
+	}
 
 	if (m_pComTween != nullptr)
 	{
@@ -84,7 +124,7 @@ void CEffectUI::Update(E::_float fTimeDelta)
 	}
 }
 
-void CEffectUI::LateUpdate(E::_float fTimeDelta)
+void CHPBar::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_isActive)
 		return;
@@ -93,14 +133,13 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 	GetTransform().Update();
 }
 
-HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	//std::string currentLevel = "LEVEL_UIEDITOR";
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
-
 	//VS_QuadTex
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook");
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_9SliceUI");
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_9SliceUI");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -121,10 +160,16 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 	{
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_UIINFO.Restag);
+		const D3D11_TEXTURE2D_DESC& texDesc = srv->GetTexture2DDesc();
+
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = m_texcoord;
-		perUI.uvSize = m_uvSize;
+		perUI.texCoord = { 0.f, 0.f };
+		perUI.uvSize = { m_fCurrentAmount, m_fFillDir };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		perUI.texSize = { static_cast<float>(texDesc.Width), static_cast<float>(texDesc.Height) };
+		perUI.quadSize = { m_UIINFO.fX, m_UIINFO.fY };
+		perUI.margins = { 3.f, 5.f, 3.f, 5.f }; // left top right bottom
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -135,7 +180,6 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	}
 
 	{
-		//auto pUICam = E::CGameInstance::Get().GetActiveUICamera();
 		{
 			auto pCbPerObject = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerObject");
 			D3D11_MAPPED_SUBRESOURCE mappedSubResource;
@@ -157,19 +201,14 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	{
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
-
-		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
-
-
 	return S_OK;
 }
 
-void CEffectUI::PlayEffect(uint32_t uiState)
+void CHPBar::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
 		return;
@@ -188,36 +227,57 @@ void CEffectUI::PlayEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
-
-	if (m_UIINFO.EffectType != ETOUI(UI_EFFECT_TYPE::NONE))
-	{
-		switch (uiState)
-		{
-		case ETOUI(UI_STATE::HOVERED):
-			std::optional<CHandle> effect = GET_SINGLE(UIManager)->LoadPrefab("Magic");
-			break;
-		}
-	}
-
 }
 
-E::UPtr<CEffectUI> CEffectUI::Create()
+void CHPBar::UpdateFill()
 {
-	auto pInstance = E::ToUPtr(new CEffectUI{});
+	if (m_fMaxFill <= 0.f) return;
+
+	float targetAmount = m_fcurrentFill / m_fMaxFill;
+
+	targetAmount = std::clamp(targetAmount, 0.0f, 1.0f);
+
+	auto pTween = GetTweenCom();
+	if (!pTween)
+	{
+		m_fCurrentAmount = targetAmount;
+		return;
+	}
+
+	if (m_fCurrentAmount == targetAmount)
+		return;
+
+	pTween->ClearTweens();
+	pTween->PlayTween(m_fCurrentAmount, targetAmount, 0.1f, 
+		[this](float currentValue) {
+			m_fCurrentAmount = currentValue;
+		},
+		[this]() {
+			// 트윈 종료 후 처리
+		},
+			EEaseType::EaseOutQuad,
+			0.0f,
+			false
+			);
+}
+
+E::UPtr<CHPBar> CHPBar::Create()
+{
+	auto pInstance = E::ToUPtr(new CHPBar{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CFlipBook");
+		MSG_BOX("Failed to Created : CHPBar");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CEffectUI::Clone(void* pArg)
+E::UPtr<E::CPrototype> CHPBar::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CEffectUI{ *this });
+	auto	pInstance = E::ToUPtr(new CHPBar{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CFlipBook");
+		MSG_BOX("Failed to Cloned : CHPBar");
 		return nullptr;
 	}
 

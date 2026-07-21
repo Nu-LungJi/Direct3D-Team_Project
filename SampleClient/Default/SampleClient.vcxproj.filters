@@ -214,6 +214,12 @@
     <Filter Include="GameObject\Player\State_Machine\State\Player_Dead_State">
       <UniqueIdentifier>{e4d8cd4e-a422-496a-998a-61a761dee66c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\HPBar">
+      <UniqueIdentifier>{a23637ff-fbe1-4efd-9c58-6bd2a820f42f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\MiniMap">
+      <UniqueIdentifier>{0dc8a52d-1c4d-4870-974c-d5909d11ab7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -507,6 +513,12 @@
     <ClInclude Include="..\Public\Player_Dead_State.h">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\HPBar.h">
+      <Filter>GameObject\UI\HPBar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MiniMap.h">
+      <Filter>GameObject\UI\MiniMap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -764,6 +776,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HPBar.cpp">
+      <Filter>GameObject\UI\HPBar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MiniMap.cpp">
+      <Filter>GameObject\UI\MiniMap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

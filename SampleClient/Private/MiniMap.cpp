@@ -1,38 +1,33 @@
+#include "MiniMap.h"
 #include "pch.h"
-#include "EffectUI.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
-#include "Client_Resources.h"
-#include "ComConstantBuffer.h"
-#include "Resources.h"
-#include "Client_Defines.h"
 #include "UIManager.h"
-#include "TweenComponent.h"
+#include "Client_Defines.h"
 #include "Level_Defines.h"
 
 NS_USING(Client)
 
-CEffectUI::CEffectUI()
+CMiniMap::CMiniMap()
 {
 }
 
-CEffectUI::~CEffectUI()
+CMiniMap::~CMiniMap()
 {
 }
 
-HRESULT CEffectUI::InitializePrototype(void* pArg)
+HRESULT CMiniMap::InitializePrototype(void* pArg)
 {
 	return S_OK;
 }
 
-HRESULT CEffectUI::Initialize(void* pArg)
+HRESULT CMiniMap::Initialize(void* pArg)
 {
-	auto		pDesc = static_cast<CFlipbookUI::FLIPBOOK_DESC*>(pArg);
+	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
 
-	if (FAILED(CFlipbookUI::Initialize(pDesc)))
+	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
-
 
 	{
 		/* Buffer */
@@ -43,9 +38,17 @@ HRESULT CEffectUI::Initialize(void* pArg)
 			return E_FAIL;
 		};
 
+		CComConstantBuffer::DESC mDesc{};
+		mDesc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, "CB_MiniMap" };
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerMiniMap", &mDesc, &m_pMinimapCBuffer)))
+		{
+			return E_FAIL;
+		}; 
+
+
 		/* Component */
 		CComponent::DESC CDesc{};
-		Desc.pGameObject = this;
+		CDesc.pGameObject = this;
 
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &CDesc, &m_pComTween)))
 		{
@@ -58,23 +61,22 @@ HRESULT CEffectUI::Initialize(void* pArg)
 		};
 	}
 
-	m_UIINFO.UIType = ETOUI(UI_TYPE::FLIPBOOK);
-
+	m_UIINFO.UIType = ETOUI(UI_TYPE::MINIMAP);
 	return S_OK;
 }
 
-void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
+void CMiniMap::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CEffectUI::Update(E::_float fTimeDelta)
+void CMiniMap::Update(E::_float fTimeDelta)
 {
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
 	if (!m_isActive)
 		return;
 
-	CFlipbookUI::Update(fTimeDelta);
+	CUIObject::Update(fTimeDelta);
 
 	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
 
@@ -84,7 +86,7 @@ void CEffectUI::Update(E::_float fTimeDelta)
 	}
 }
 
-void CEffectUI::LateUpdate(E::_float fTimeDelta)
+void CMiniMap::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_isActive)
 		return;
@@ -93,14 +95,12 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 	GetTransform().Update();
 }
 
-HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	//std::string currentLevel = "LEVEL_UIEDITOR";
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
-
-	//VS_QuadTex
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook");
+	//VS_QuadTe
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -122,8 +122,8 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 
 	{
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = m_texcoord;
-		perUI.uvSize = m_uvSize;
+		perUI.texCoord = { 0.f, 0.f };
+		perUI.uvSize = { 0.f, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
@@ -132,6 +132,19 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 		}
 		pContext->VSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
 		pContext->PSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+	}
+
+	{
+		E::CB_MINIMAP minimapBuffer{};
+		minimapBuffer.mapOffset = tMapOffset;
+		minimapBuffer.mapRotation = tRotation;
+		minimapBuffer.mapScale = tScale;
+
+		// 미니맵 전용 컴포넌트나 버퍼 오브젝트를 통해 MapDiscard 진행
+		m_pMinimapCBuffer->MapDiscard(pContext, &minimapBuffer, sizeof(minimapBuffer));
+
+		pContext->VSSetConstantBuffers(10, 1, m_pMinimapCBuffer->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(10, 1, m_pMinimapCBuffer->GetAdressOfBuffer());
 	}
 
 	{
@@ -155,21 +168,25 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	}
 
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
-		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
+		m_UIINFO.Restag = "TEX_UI_T_MapMini_Sanctuary_03_D";
+		const auto& frameSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_HUD_MiniMap_TrimBorder");
+		const auto& minimapSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+		
 
-		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
+		ID3D11ShaderResourceView* srvs[2] = {
+			frameSrv->GetSRV().Get(),      // t0: 프레임
+			minimapSrv->GetSRV().Get(),   // t1: 맵
+		};
+
+		pContext->PSSetShaderResources(0, 2, srvs);
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
-
-
 	return S_OK;
 }
 
-void CEffectUI::PlayEffect(uint32_t uiState)
+void CMiniMap::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
 		return;
@@ -188,36 +205,25 @@ void CEffectUI::PlayEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
-
-	if (m_UIINFO.EffectType != ETOUI(UI_EFFECT_TYPE::NONE))
-	{
-		switch (uiState)
-		{
-		case ETOUI(UI_STATE::HOVERED):
-			std::optional<CHandle> effect = GET_SINGLE(UIManager)->LoadPrefab("Magic");
-			break;
-		}
-	}
-
 }
 
-E::UPtr<CEffectUI> CEffectUI::Create()
+E::UPtr<CMiniMap> CMiniMap::Create()
 {
-	auto pInstance = E::ToUPtr(new CEffectUI{});
+	auto pInstance = E::ToUPtr(new CMiniMap{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CFlipBook");
+		MSG_BOX("Failed to Created : CMiniMap");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CEffectUI::Clone(void* pArg)
+E::UPtr<E::CPrototype> CMiniMap::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CEffectUI{ *this });
+	auto	pInstance = E::ToUPtr(new CMiniMap{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CFlipBook");
+		MSG_BOX("Failed to Cloned : CMiniMap");
 		return nullptr;
 	}
 

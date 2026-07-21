@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
@@ -12,7 +12,7 @@
 //#include "Particle_Fire_GPU.h"
 //#include "BTHeader_Definse.h"
 
-#include "UIManager.h"
+//#include "UIManager.h"
 
 NS_USING(Client)
 

@@ -159,11 +159,9 @@ cbuffer CB_PER_UI : register(b7)
     float2 g_ui_texCoord;
     float2 g_ui_uvSize;
     float4 g_ui_color;
-    //uint g_ui_texIndex; 
-    //float2 g_ui_borderUV; 
-    //float _pad_perui; 
-    //float2 g_ui_borderPx; 
-    //float2 g_ui_rectSizePx;
+	float2 g_ui_texSize;
+	float2 g_ui_quadSize;
+	float4 g_ui_margins;
 };
 cbuffer PostProcessBuffer : register(b8)
 {
@@ -177,6 +175,7 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
+// 스킬 쿨타임
 cbuffer CB_SPELLMETER : register(b9)
 {
     float g_Amount;         
@@ -197,11 +196,20 @@ cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
     float4 g_WispyColor;
 };
 
+// 미니맵용
+cbuffer CB_MINIMAP : register(b10)
+{
+	float2 g_mapOffset;
+	float  g_mapRotation;
+	float  g_mapScale;
+};
+
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);
 SamplerState PointWrap                  : register(s2);
 SamplerState PointClamp                 : register(s3);
 SamplerState PointWrapNoMip             : register(s4);
 SamplerState AnisotropicWrap            : register(s5);
+SamplerState LinearBorder               : register(s7);
 
 SamplerComparisonState ShadowSampler    : register(s6);

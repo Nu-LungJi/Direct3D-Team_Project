@@ -34,13 +34,7 @@ protected:
 
 private:
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
-
-private:
-	uint32_t	m_iPuaseFrame = 9;
-	_float		m_fPauseTime = 0.2f;
-	_float		m_fPauseSumTime = 0.f;
-
-	bool m_isPause = false;
+	CButtonComponent* m_pComCButton = nullptr;
 
 public:
 	static E::UPtr<CEffectUI> Create();

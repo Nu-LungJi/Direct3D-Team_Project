@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "LevelManager.h"
 #include "GameInstance.h"
 #include "Level.h"
@@ -34,22 +34,6 @@ HRESULT CLevelManager::ChangeLevel(UPtr<CLevel> pNewLevel)
 	}
 
 	m_pLevelBeforeLevelChange = std::move(pNewLevel);
-	return S_OK;
-
-	assert(pNewLevel);
-	//if (pNewLevel == nullptr)
-	//{
-	//	return E_FAIL;
-	//}
-
-	if (m_pCurrentLevel != nullptr)
-	{
-		//CGameInstance::Get().ClearResource(m_iCurrentLevelIndex);
-		m_pCurrentLevel.reset();
-	}
-
-	m_pCurrentLevel = std::move(pNewLevel);
-
 	return S_OK;
 }
 

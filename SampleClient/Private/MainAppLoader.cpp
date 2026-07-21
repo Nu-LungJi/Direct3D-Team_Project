@@ -12,7 +12,11 @@
 #include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
 
+// UI
 #include "UIManager.h"
+#include "EffectUI.h"
+#include "TextureUI.h"
+#include "TextBox.h"
 
 NS_USING(Client)
 
@@ -72,6 +76,12 @@ HRESULT CMainAppLoader::Load()
 		if (FAILED(Create_ActionNode()))
 		{
 			MSG_BOX("Failed Action Node To MainApp");
+			return E_FAIL;
+		}
+
+		if (FAILED(Load_UIStaitc_Resources()))
+		{
+			MSG_BOX("Failed Load_UIStaitc_Resources");
 			return E_FAIL;
 		}
 
@@ -444,5 +454,54 @@ HRESULT CMainAppLoader::Initialize_Sound()
 		if (iSoundID == INVALID_SOUND_ID)
 			return E_FAIL;
 	}
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Load_UIStaitc_Resources()
+{
+	{
+		namespace fs = std::filesystem;
+
+		std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI/LoadingScreen";
+
+		if (fs::exists(targetDir) && fs::is_directory(targetDir))
+		{
+			for (const auto& entry : fs::directory_iterator(targetDir))
+			{
+				if (entry.is_regular_file() && entry.path().extension() == ".png")
+				{
+					std::string fileName = entry.path().stem().string();
+
+
+					std::string resTag = "TEX_" + fileName;
+
+					std::string fullPath = entry.path().generic_string();
+
+					if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", resTag, E::CResTexture2D::Create(fullPath)))
+					{
+						res->Load();
+					}
+				}
+			}
+		}
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Houses.png")))
+	{
+		res->Load();
+	}
+
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextBox", CTextBox::Create())))
+	{
+		return false;
+	}
+
 	return S_OK;
 }
