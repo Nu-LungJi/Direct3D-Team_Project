@@ -107,8 +107,8 @@ public:
 		const std::string& FullPath, const std::string& whatKind,
 		const std::string& particleType, const std::string& particleName,
 		int iMaxParticles,
-		const std::string& VSGroup, const std::string& VSID,
-		const std::string& PSGroup, const std::string& PSID,
+		const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint,
 		const std::string& sGroupTag, const std::string& sResTag,
 		const std::string& textureID1, const std::string& textureID2,
 		const std::string& viBufferID1, const std::string& viBufferID2,
@@ -124,7 +124,8 @@ public:
 		const std::string& hdrTexPath = "",
 		const std::string& hdrNormalTexID1 = "",  
 		const std::string& hdrNormalTexID2 = "",  
-		const std::string& hdrNormalTexPath = "");
+		const std::string& hdrNormalTexPath = "",
+		int iSelectedBlend = 0);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,

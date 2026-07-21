@@ -53,6 +53,9 @@ public:
         _float   fMaxDuration = 1.f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
         uint32_t iMaxFrames = 700;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
 		TRAIL_ALIGN_MODE eAlignMode = TRAIL_ALIGN_MODE::VIEW;
+		_string sVEntryPoint = "";
+		_string sPEntryPoint = "";
+		uint32_t blendState = 0;
     };
 
 private:

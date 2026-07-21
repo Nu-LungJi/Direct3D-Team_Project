@@ -258,12 +258,12 @@
     <ClInclude Include="..\Public\BackGround.h">
       <Filter>GameObject\BackGround</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\Terrain.h">
+    <ClInclude Include="..\public\Terrain.h">
       <Filter>GameObject\Terrain</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\MapCollisionProxyObject.h">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClInclude>
+    </ClInclude>
+    <ClInclude Include="..\public\MapCollisionProxyObject.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Client_Resources.h">
       <Filter>Resource</Filter>
     </ClInclude>
@@ -555,12 +555,12 @@
     <ClCompile Include="..\Private\BackGround.cpp">
       <Filter>GameObject\BackGround</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\Terrain.cpp">
+    <ClCompile Include="..\private\Terrain.cpp">
       <Filter>GameObject\Terrain</Filter>
-	</ClCompile>
-	<ClCompile Include="..\private\MapCollisionProxyObject.cpp">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClCompile>
+    </ClCompile>
+    <ClCompile Include="..\private\MapCollisionProxyObject.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
@@ -850,6 +850,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

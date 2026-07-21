@@ -1396,7 +1396,7 @@ HRESULT CRenderer::Render_Alpha() {
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetPBR;
 
 	// Rasterizer Setting - BackCull
-	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	return S_OK;
@@ -1895,7 +1895,7 @@ HRESULT CRenderer::RenderCollider()
 	{
 		if (pRenderObject->HasRenderPass(RenderContext.pass))
 		{
-				pRenderObject->Render(m_pContext.Get(), RenderContext);
+			pRenderObject->Render(m_pContext.Get(), RenderContext);
 		}
 	}
 
@@ -1951,11 +1951,6 @@ VOID	CRenderer::PostProcessGUI() {
 	if (ApplyVolumetric ? ImGui::Button("Volumetric ON", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric OFF", ImVec2(-FLT_MIN, 20))) {
 		ApplyVolumetric = !ApplyVolumetric;
 	}
-
-	ImGui::InputFloat("DistortionIntensity", &m_pDistortionIntensity);
-	ImGui::InputFloat("ChromaticIntensity", &m_pChromaticIntensity);
-	ImGui::InputFloat("VignetteIntensity", &m_pVignetteIntensity);
-	ImGui::InputFloat("VignetteSmoothness", &m_pVignetteSmoothness);
 
 	ImGui::End();
 }

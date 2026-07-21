@@ -36,6 +36,8 @@ public:
 	virtual void SetColor(const _float4& color) {}
 
 	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
+	HRESULT Set_BlendState(BLENDTYPE blendNum);
+	uint32_t Get_BlendState() { return m_iBlendIndex; }
 
 public:
 	PARTICLE_TYPE& Get_Type() { return m_eType; }
@@ -65,5 +67,7 @@ private:
 		E::_float remainingDelay;
 	};
 	std::vector<PENDING_SPAWN> m_PendingSpawns;
+	
+	uint32_t m_iBlendIndex = 0;
 };
 NS_END

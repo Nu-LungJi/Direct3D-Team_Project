@@ -48,13 +48,29 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
         m_pResVertexBuffer = res;
     }
 
-    m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-    //if (FAILED(m_pResVertexShader->Load()))
-    //    return E_FAIL;
+	switch (m_Desc.blendState) {
+	case 0:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	case 1:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+		break;
+	case 2:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+		break;
+	default:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	}
 
-    m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-    //if (FAILED(m_pResPixelShader->Load()))
-    //    return E_FAIL;
+
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
+	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
+		return E_FAIL;
+
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
+	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
+		return E_FAIL;
 
 	if (m_Desc.normalTextureID.first != "") {
 		m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -126,6 +142,7 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
     if (m_vecBeamVertices.empty())
         return S_OK;
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
     pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
@@ -159,6 +176,8 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 
     ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     pContext->PSSetShaderResources(0, 1, nullSRV);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+
 
     return S_OK;
 }

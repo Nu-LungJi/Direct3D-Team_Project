@@ -166,6 +166,8 @@ cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
     float2 gPartAttachmentPadding;
 };
 
+	
+
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);
 SamplerState PointWrap                  : register(s2);

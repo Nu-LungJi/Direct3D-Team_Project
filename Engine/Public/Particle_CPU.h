@@ -69,6 +69,10 @@ public:
         //모델이면 넣어줌
         StringID sGroupTag;
         StringID sResTag;
+
+		_string sVEntryPoint = "";
+		_string sPEntryPoint = "";
+		uint32_t blendState = 0;
     };
 public:
     DECLARE_DERIVED_TYPE(CParticle_CPU, CParticle)

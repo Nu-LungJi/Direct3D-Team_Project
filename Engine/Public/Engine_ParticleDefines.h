@@ -65,6 +65,33 @@ namespace Engine
 	// X(타입, 이름, 기본값)
 	// ============================================================
 
+	/*
+	* 	typedef struct tagParticle {
+		_float3  position;
+		_float   pad1;
+		_float3  velocity;
+		_float   life;
+		_float   maxLife;
+		_float   size;
+		_float   startSize;
+		_float   endSize;
+		_float4  rotation;
+		uint32_t alive;
+		uint32_t loop;
+		_float2  pad2;         // 추가 필요: loop→color (8바이트)
+		_float4  color;
+
+		_float4  originalEmissive, emissive, endEmissive;
+		uint32_t frameIndex;
+		uint32_t ownerID;
+		uint32_t iBehaviorType = 0;
+		_float pad3;
+		_float3 originalPosition; // 원래 스폰 위치
+		_float pad4;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
+	}PARTICLE;
+	*/
 #define COMMON_PATTERN_FIELDS(X) \
     X(uint32_t, iBehaviorType, 0)
 

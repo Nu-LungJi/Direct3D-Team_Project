@@ -24,6 +24,9 @@ public:
         uint32_t    iMaxDisplacementIterations = 10;  // 버퍼 크기 산정용 - 실제 사용 가능한 최댓값
 		uint32_t    geometryType = 0; // 0은 기본 번개 모양 1은 부드러운 곡선 모양
 
+		_string sVEntryPoint = "";
+		_string sPEntryPoint = "";
+		uint32_t blendState = 0;
 
     };
 

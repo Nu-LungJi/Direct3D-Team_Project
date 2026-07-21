@@ -31,7 +31,7 @@ namespace Engine
 	enum class MESHORTEXTURE{ MESH, TEX, END};
 
 	enum class ACTORTYPE { STATIC, DYNAMIC, END };
-
+	enum class BLENDTYPE { ALPHABLEND, ALPHAADD, NONE, END};
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
 	static const uint32_t MAX_SPAWN_PER_CALL = 1000;
 
