@@ -233,6 +233,7 @@
     <ClInclude Include="..\Public\BaseApp.h" />
     <ClInclude Include="..\public\Beam_CPU.h" />
     <ClInclude Include="..\public\BinDeSerializer.h" />
+    <ClInclude Include="..\public\BinSerializeFormat.h" />
     <ClInclude Include="..\public\BinSerializer.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />

@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine_Defines.h"
+#include "BinSerializeFormat.h"
 #include "SerializerInterface.h"
 #include <vector>
 
@@ -54,6 +55,8 @@ private:
 private:
 	// 키 쓰기 및 배열/맵 카운트 증가 처리기
 	void PreWrite(const std::string& key);
+	void WriteRawBytes(const void* pData, size_t iSize);
+	void EndContainer(ENodeType eExpectedType);
 
 	// 버퍼에 데이터를 밀어넣는 템플릿 헬퍼
 	template<typename T>

@@ -1,9 +1,16 @@
 #include "pch.h"
 #include "SerializeManager.h"
 
-//#include "SerDeTestCase.h"
+#include <atomic>
+
+#include "SerDeTestCase.h"
 
 NS_USING(Engine)
+
+namespace
+{
+	std::atomic_uint64_t g_iTemporaryFileSequence{};
+}
 
 // CSerializeManager.cpp 상단
 
@@ -50,9 +57,79 @@ CSerializeManager::~CSerializeManager()
 {
 }
 
+HRESULT CSerializeManager::PrepareSaveTarget(const std::filesystem::path& targetPath) const
+{
+	if (targetPath.empty()) return E_INVALIDARG;
+
+	const std::filesystem::path parentPath = targetPath.parent_path();
+	if (parentPath.empty()) return S_OK;
+
+	std::error_code ec;
+	std::filesystem::create_directories(parentPath, ec);
+	return ec ? HRESULT_FROM_WIN32(ec.value()) : S_OK;
+}
+
+std::filesystem::path CSerializeManager::MakeTemporaryPath(
+	const std::filesystem::path& targetPath) const
+{
+	std::filesystem::path tempPath = targetPath;
+	tempPath += ".tmp.";
+	tempPath += std::to_string(GetCurrentProcessId());
+	tempPath += ".";
+	tempPath += std::to_string(
+		g_iTemporaryFileSequence.fetch_add(1, std::memory_order_relaxed));
+	return tempPath;
+}
+
+HRESULT CSerializeManager::CommitTemporaryFile(
+	const std::filesystem::path& tempPath,
+	const std::filesystem::path& targetPath) const
+{
+	std::error_code ec;
+	const bool bTargetExists = std::filesystem::exists(targetPath, ec);
+	if (ec) return HRESULT_FROM_WIN32(ec.value());
+
+	if (bTargetExists)
+	{
+		if (ReplaceFileW(
+			targetPath.c_str(),
+			tempPath.c_str(),
+			nullptr,
+			REPLACEFILE_WRITE_THROUGH,
+			nullptr,
+			nullptr))
+		{
+			return S_OK;
+		}
+	}
+	else if (MoveFileExW(
+		tempPath.c_str(),
+		targetPath.c_str(),
+		MOVEFILE_WRITE_THROUGH))
+	{
+		return S_OK;
+	}
+
+	return HRESULT_FROM_WIN32(GetLastError());
+}
+
+void CSerializeManager::RemoveTemporaryFile(
+	const std::filesystem::path& tempPath) const noexcept
+{
+	if (tempPath.empty()) return;
+
+	std::error_code ec;
+	std::filesystem::remove(tempPath, ec);
+}
+
 void CSerializeManager::UpdateGUI()
 {
 	ImGui::Begin("Advanced Serialize Tester");
+
+	if (ImGui::Button("SerDeTestCase"))
+	{
+		SerializeTest::RunMegaSerializationTest();
+	}
 
 	// 상태 유지를 위한 정적(static) 변수들
 	static char szFileName[128] = "AdvancedSave";

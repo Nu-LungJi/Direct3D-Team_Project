@@ -172,8 +172,16 @@ void CJsonSerializer::StartMap(const std::string& key)
 {
 	nlohmann::json& currentNode = *m_nodeStack.back();
 
-	currentNode[key] = nlohmann::json::object();
-	m_nodeStack.push_back(&currentNode[key]);
+	if (currentNode.is_array())
+	{
+		currentNode.push_back(nlohmann::json::object());
+		m_nodeStack.push_back(&currentNode.back());
+	}
+	else
+	{
+		currentNode[key] = nlohmann::json::object();
+		m_nodeStack.push_back(&currentNode[key]);
+	}
 }
 
 void CJsonSerializer::EndMap()

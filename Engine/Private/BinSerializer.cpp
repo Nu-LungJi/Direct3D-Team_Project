@@ -1,47 +1,73 @@
 #include "BinSerializer.h"
 #include "ISerializable.h"
+
+#include <cstring>
 #include <fstream>
+#include <stdexcept>
+#include <type_traits>
 
 NS_USING(Engine)
 
 CBinSerializer::CBinSerializer() {}
 CBinSerializer::~CBinSerializer() {}
 
-
-UPtr<CBinSerializer> CBinSerializer::Create() {
+UPtr<CBinSerializer> CBinSerializer::Create()
+{
 	return ToUPtr(new CBinSerializer{});
 }
 
-template<typename T>
-void CBinSerializer::WriteBytes(const T& data) {
-	const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&data);
-	m_buffer.insert(m_buffer.end(), ptr, ptr + sizeof(T));
+void CBinSerializer::WriteRawBytes(const void* pData, size_t iSize)
+{
+	if (iSize == 0) return;
+	if (!pData) throw std::invalid_argument("Binary source buffer is null");
+
+	const uint64_t iCurrentSize = static_cast<uint64_t>(m_buffer.size());
+	const uint64_t iAppendSize = static_cast<uint64_t>(iSize);
+	if (iCurrentSize > BinSerializeFormat::MAX_PAYLOAD_BYTES ||
+		iAppendSize > BinSerializeFormat::MAX_PAYLOAD_BYTES - iCurrentSize)
+	{
+		throw std::length_error("Binary payload exceeds the configured size limit");
+	}
+
+	const auto* pBytes = static_cast<const uint8_t*>(pData);
+	m_buffer.insert(m_buffer.end(), pBytes, pBytes + iSize);
 }
 
-// === 배열/맵 상태 추적기 (핵심 로직) ===
+template<typename T>
+void CBinSerializer::WriteBytes(const T& data)
+{
+	static_assert(std::is_trivially_copyable_v<T>);
+	WriteRawBytes(&data, sizeof(T));
+}
+
 void CBinSerializer::PreWrite(const std::string& key)
 {
 	if (m_nodeStack.empty()) return;
 
 	SNodeState& state = m_nodeStack.back();
+	if (state.type != ENodeType::Map && state.type != ENodeType::Array) return;
+
+	if (state.count >= BinSerializeFormat::MAX_CONTAINER_ELEMENTS)
+		throw std::length_error("Binary container exceeds the configured element limit");
+
 	if (state.type == ENodeType::Map)
 	{
-		// 맵인 경우에만 Key 문자열을 바이너리에 기록 (일반 변수 Key는 용량 절약을 위해 무시!)
-		size_t len = key.size();
-		WriteBytes(len);
-		if (len > 0) m_buffer.insert(m_buffer.end(), key.begin(), key.end());
-		state.count++;
+		if (key.size() > BinSerializeFormat::MAX_STRING_BYTES)
+			throw std::length_error("Binary map key exceeds the configured string limit");
+
+		const uint64_t iLength = static_cast<uint64_t>(key.size());
+		WriteBytes(iLength);
+		WriteRawBytes(key.data(), key.size());
 	}
-	else if (state.type == ENodeType::Array)
-	{
-		state.count++;
-	}
+
+	++state.count;
 }
 
 void CBinSerializer::Write(const std::string& key, bool value)
 {
 	PreWrite(key);
-	WriteBytes(value);
+	const uint8_t iValue = value ? 1u : 0u;
+	WriteBytes(iValue);
 }
 
 void CBinSerializer::Write(const std::string& key, uint32_t value)
@@ -56,21 +82,27 @@ void CBinSerializer::Write(const std::string& key, uint64_t value)
 	WriteBytes(value);
 }
 
-void CBinSerializer::Write(const std::string& key, int value) {
+void CBinSerializer::Write(const std::string& key, int value)
+{
 	PreWrite(key);
 	WriteBytes(value);
 }
 
-void CBinSerializer::Write(const std::string& key, float value) {
+void CBinSerializer::Write(const std::string& key, float value)
+{
 	PreWrite(key);
 	WriteBytes(value);
 }
 
-void CBinSerializer::Write(const std::string& key, const std::string& value) {
+void CBinSerializer::Write(const std::string& key, const std::string& value)
+{
 	PreWrite(key);
-	size_t len = value.size();
-	WriteBytes(len);
-	if (len > 0) m_buffer.insert(m_buffer.end(), value.begin(), value.end());
+	if (value.size() > BinSerializeFormat::MAX_STRING_BYTES)
+		throw std::length_error("Binary string exceeds the configured size limit");
+
+	const uint64_t iLength = static_cast<uint64_t>(value.size());
+	WriteBytes(iLength);
+	WriteRawBytes(value.data(), value.size());
 }
 
 void CBinSerializer::Write(const std::string& key, const StringID& value)
@@ -78,23 +110,22 @@ void CBinSerializer::Write(const std::string& key, const StringID& value)
 	Write(key, std::string(value.GetDbgStr()));
 }
 
-
 void CBinSerializer::Write(const std::string& key, const _float2& value)
 {
 	PreWrite(key);
-	WriteBytes(value); // float x, y (8바이트)
+	WriteBytes(value);
 }
 
 void CBinSerializer::Write(const std::string& key, const _float3& value)
 {
 	PreWrite(key);
-	WriteBytes(value); // float x, y, z (12바이트)
+	WriteBytes(value);
 }
 
 void CBinSerializer::Write(const std::string& key, const _float4& value)
 {
 	PreWrite(key);
-	WriteBytes(value); // float x, y, z, w (16바이트)
+	WriteBytes(value);
 }
 
 void CBinSerializer::Write(const std::string& key, const _float4x4& value)
@@ -103,53 +134,81 @@ void CBinSerializer::Write(const std::string& key, const _float4x4& value)
 	WriteBytes(value);
 }
 
-void CBinSerializer::Write(const std::string& key, const ISerializable& value) {
+void CBinSerializer::Write(const std::string& key, const ISerializable& value)
+{
 	PreWrite(key);
 	m_nodeStack.push_back({ ENodeType::Object, 0, 0 });
-	value.Serialize(*this);
+	try
+	{
+		value.Serialize(*this);
+	}
+	catch (...)
+	{
+		m_nodeStack.pop_back();
+		throw;
+	}
 	m_nodeStack.pop_back();
 }
 
-
-// === 노드 제어 (스트림 패칭 기법) ===
-void CBinSerializer::StartArray(const std::string& key) {
+void CBinSerializer::StartArray(const std::string& key)
+{
 	PreWrite(key);
-	m_nodeStack.push_back({ ENodeType::Array, m_buffer.size(), 0 }); // 현재 위치 기억
-	size_t dummySize = 0;
-	WriteBytes(dummySize); // 빈 깡통 크기를 먼저 기록해둠
+	m_nodeStack.push_back({ ENodeType::Array, m_buffer.size(), 0 });
+	WriteBytes(uint64_t{});
 }
 
-void CBinSerializer::EndArray() {
-	auto state = m_nodeStack.back();
-	m_nodeStack.pop_back();
-	// 기억해둔 위치로 돌아가 진짜 개수(count)를 덮어씀
-	std::memcpy(m_buffer.data() + state.sizePos, &state.count, sizeof(size_t));
+void CBinSerializer::EndArray()
+{
+	EndContainer(ENodeType::Array);
 }
 
-void CBinSerializer::StartMap(const std::string& key) {
+void CBinSerializer::StartMap(const std::string& key)
+{
 	PreWrite(key);
 	m_nodeStack.push_back({ ENodeType::Map, m_buffer.size(), 0 });
-	size_t dummySize = 0;
-	WriteBytes(dummySize);
+	WriteBytes(uint64_t{});
 }
 
-void CBinSerializer::EndMap() {
-	auto state = m_nodeStack.back();
+void CBinSerializer::EndMap()
+{
+	EndContainer(ENodeType::Map);
+}
+
+void CBinSerializer::EndContainer(ENodeType eExpectedType)
+{
+	if (m_nodeStack.empty() || m_nodeStack.back().type != eExpectedType)
+		throw std::logic_error("Binary serializer container stack mismatch");
+
+	const SNodeState state = m_nodeStack.back();
+	if (state.count > BinSerializeFormat::MAX_CONTAINER_ELEMENTS)
+		throw std::length_error("Binary container exceeds the configured element limit");
+	if (state.sizePos > m_buffer.size() || sizeof(uint64_t) > m_buffer.size() - state.sizePos)
+		throw std::logic_error("Binary serializer container size position is invalid");
+
+	const uint64_t iCount = static_cast<uint64_t>(state.count);
+	std::memcpy(m_buffer.data() + state.sizePos, &iCount, sizeof(iCount));
 	m_nodeStack.pop_back();
-	std::memcpy(m_buffer.data() + state.sizePos, &state.count, sizeof(size_t));
 }
 
-// === 최종 파일 출력 ===
-HRESULT CBinSerializer::SaveToFile(const std::string& path) {
-	std::ofstream file(path, std::ios::binary);
-	if (!file.is_open())
-	{
-		MSG_BOX("SaveToFile 파일 저장 실패");
-		return E_FAIL;
-	}
-	if (file.is_open() && !m_buffer.empty()) {
-		file.write(reinterpret_cast<const char*>(m_buffer.data()), m_buffer.size());
-	}
+HRESULT CBinSerializer::SaveToFile(const std::string& path)
+{
+	if (!m_nodeStack.empty()) return E_FAIL;
+	if (m_buffer.size() > BinSerializeFormat::MAX_PAYLOAD_BYTES) return E_FAIL;
 
-	return S_OK;
+	std::ofstream file(path, std::ios::binary | std::ios::trunc);
+	if (!file.is_open()) return E_FAIL;
+
+	BinSerializeFormat::HEADER header{};
+	header.iPayloadSize = static_cast<uint64_t>(m_buffer.size());
+
+	file.write(reinterpret_cast<const char*>(&header), sizeof(header));
+	if (!m_buffer.empty())
+	{
+		file.write(
+			reinterpret_cast<const char*>(m_buffer.data()),
+			static_cast<std::streamsize>(m_buffer.size()));
+	}
+	file.flush();
+
+	return file.good() ? S_OK : E_FAIL;
 }

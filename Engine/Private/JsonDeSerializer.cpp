@@ -3,6 +3,7 @@
 #include "ISerializable.h"
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 NS_USING(Engine)
 
@@ -25,9 +26,23 @@ HRESULT CJsonDeSerializer::LoadFromFile(const std::string& path)
 	if (!file.is_open()) return E_FAIL;
 
 	try { file >> m_json; }
-	catch (nlohmann::json::parse_error& e) { return E_FAIL; }
+	catch (const nlohmann::json::parse_error&) { return E_FAIL; }
 
 	return S_OK;
+}
+
+bool CJsonDeSerializer::HasValue(const std::string& key) const
+{
+	if (m_nodeStack.empty()) return false;
+
+	const nlohmann::json& node = *m_nodeStack.back();
+	if (node.is_array() && !m_arrayIndexStack.empty())
+	{
+		const size_t idx = m_arrayIndexStack.back();
+		return idx < node.size() && !node[idx].is_null();
+	}
+
+	return node.is_object() && node.contains(key) && !node[key].is_null();
 }
 
 void CJsonDeSerializer::Read(const std::string& key, bool& outValue)
@@ -256,6 +271,8 @@ void CJsonDeSerializer::Read(const std::string& key, ISerializable& outValue)
 
 void CJsonDeSerializer::Read(const std::string& key, StringID& outValue)
 {
+	if (!HasValue(key)) return;
+
 	std::string tempStr;
 
 	Read(key, tempStr);
@@ -270,10 +287,11 @@ size_t CJsonDeSerializer::StartArray(const std::string& key)
 
 	if (node.is_array() && !m_arrayIndexStack.empty())
 	{
-		size_t idx = m_arrayIndexStack.back();
+		size_t& idx = m_arrayIndexStack.back();
 		if (idx < node.size() && node[idx].is_array())
 		{
 			m_nodeStack.push_back(&node[idx]);
+			++idx;
 			bSuccess = true;
 		}
 	}
@@ -284,7 +302,8 @@ size_t CJsonDeSerializer::StartArray(const std::string& key)
 	}
 
 	// 실패하더라도 EndArray()의 pop_back()과 짝을 맞추기 위해 자기 자신을 더미로 푸시
-	if (!bSuccess) m_nodeStack.push_back(&node);
+	if (!bSuccess)
+		throw std::runtime_error("JSON array field is missing or has an invalid type: " + key);
 
 	m_arrayIndexStack.push_back(0);
 	return bSuccess ? (*m_nodeStack.back()).size() : 0;
@@ -301,15 +320,28 @@ size_t CJsonDeSerializer::StartMap(const std::string& key)
 	nlohmann::json& node = *m_nodeStack.back();
 	bool bSuccess = false;
 
-	if (node.is_object() && node.contains(key) && node[key].is_object())
+	if (node.is_array() && !m_arrayIndexStack.empty())
+	{
+		size_t& idx = m_arrayIndexStack.back();
+		if (idx < node.size() && node[idx].is_object())
+		{
+			m_nodeStack.push_back(&node[idx]);
+			++idx;
+			bSuccess = true;
+		}
+	}
+	else if (node.is_object() && node.contains(key) && node[key].is_object())
 	{
 		m_nodeStack.push_back(&node[key]);
 		bSuccess = true;
 	}
 	else
 	{
-		m_nodeStack.push_back(&node); // 밸런스 유지용 더미 노드 푸시
+		throw std::runtime_error("JSON map field is missing or has an invalid type: " + key);
 	}
+
+	if (!bSuccess)
+		throw std::runtime_error("JSON map field is missing or has an invalid type: " + key);
 
 	m_mapKeysStack.push_back(std::vector<std::string>());
 	m_mapKeyIndexStack.push_back(0);

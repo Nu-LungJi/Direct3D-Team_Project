@@ -27,10 +27,10 @@ public:
 	void Write(const std::string& key, const std::string& value) override;
 	void Write(const std::string& key, const StringID& value) override;
 public:
-	void StartArray(const std::string& key);
-	void EndArray();
-	void StartMap(const std::string& key);
-	void EndMap();
+	void StartArray(const std::string& key) override;
+	void EndArray() override;
+	void StartMap(const std::string& key) override;
+	void EndMap() override;
 
 public:
 	HRESULT SaveToFile(const std::string& path);

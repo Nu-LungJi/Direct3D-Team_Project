@@ -1,43 +1,102 @@
 #include "BinDeSerializer.h"
 #include "ISerializable.h"
+
+#include <cstring>
 #include <fstream>
+#include <limits>
+#include <stdexcept>
+#include <type_traits>
 
 NS_USING(Engine)
 
 CBinDeSerializer::CBinDeSerializer() {}
 CBinDeSerializer::~CBinDeSerializer() {}
 
-HRESULT CBinDeSerializer::LoadFromFile(const std::string& path) {
-	std::ifstream file(path, std::ios::binary | std::ios::ate); // 파일 끝에서 열어 크기 확인
+HRESULT CBinDeSerializer::LoadFromFile(const std::string& path)
+{
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
 	if (!file.is_open()) return E_FAIL;
 
-	size_t fileSize = file.tellg();
-	file.seekg(0, std::ios::beg); // 다시 처음으로 되돌림
+	const std::streampos endPosition = file.tellg();
+	if (endPosition < std::streampos{}) return E_FAIL;
 
-	m_buffer.resize(fileSize);
-	file.read(reinterpret_cast<char*>(m_buffer.data()), fileSize); // 한 방에 메모리로 카피!
+	const uint64_t iFileSize = static_cast<uint64_t>(endPosition);
+	const uint64_t iHeaderSize = sizeof(BinSerializeFormat::HEADER);
+	if (iFileSize < iHeaderSize ||
+		iFileSize - iHeaderSize > BinSerializeFormat::MAX_PAYLOAD_BYTES)
+	{
+		return E_FAIL;
+	}
+
+	file.seekg(0, std::ios::beg);
+	if (!file.good()) return E_FAIL;
+
+	BinSerializeFormat::HEADER header{};
+	file.read(reinterpret_cast<char*>(&header), sizeof(header));
+	if (!file.good()) return E_FAIL;
+
+	if (header.iMagic != BinSerializeFormat::MAGIC ||
+		header.iVersion != BinSerializeFormat::VERSION ||
+		header.iFlags != BinSerializeFormat::FLAGS ||
+		header.iPayloadSize != iFileSize - iHeaderSize ||
+		header.iPayloadSize > BinSerializeFormat::MAX_PAYLOAD_BYTES ||
+		header.iPayloadSize > static_cast<uint64_t>(std::numeric_limits<size_t>::max()))
+	{
+		return E_FAIL;
+	}
+
+	m_buffer.resize(static_cast<size_t>(header.iPayloadSize));
+	if (!m_buffer.empty())
+	{
+		file.read(
+			reinterpret_cast<char*>(m_buffer.data()),
+			static_cast<std::streamsize>(m_buffer.size()));
+		if (!file.good()) return E_FAIL;
+	}
 
 	m_readPos = 0;
 	return S_OK;
 }
 
-UPtr<CBinDeSerializer> CBinDeSerializer::Create(const std::string& path) {
+UPtr<CBinDeSerializer> CBinDeSerializer::Create(const std::string& path)
+{
 	auto pInstance = ToUPtr(new CBinDeSerializer{});
 	if (FAILED(pInstance->LoadFromFile(path))) return nullptr;
 	return pInstance;
 }
 
+bool CBinDeSerializer::HasValue(const std::string& key) const
+{
+	return RemainingBytes() > 0;
+}
+
+bool CBinDeSerializer::IsFullyConsumed() const noexcept
+{
+	return m_readPos == m_buffer.size();
+}
+
+size_t CBinDeSerializer::RemainingBytes() const noexcept
+{
+	return m_readPos <= m_buffer.size() ? m_buffer.size() - m_readPos : 0;
+}
+
 template<typename T>
-void CBinDeSerializer::ReadBytes(T& outData) {
+void CBinDeSerializer::ReadBytes(T& outData)
+{
+	static_assert(std::is_trivially_copyable_v<T>);
+	if (m_readPos > m_buffer.size() || sizeof(T) > m_buffer.size() - m_readPos)
+		throw std::out_of_range("Binary payload ended before the requested value");
+
 	std::memcpy(&outData, m_buffer.data() + m_readPos, sizeof(T));
 	m_readPos += sizeof(T);
 }
 
-// === 초고속 순차 읽기 ===
-
 void CBinDeSerializer::Read(const std::string& key, bool& outValue)
 {
-	ReadBytes(outValue);
+	uint8_t iValue{};
+	ReadBytes(iValue);
+	if (iValue > 1u) throw std::runtime_error("Binary bool value is invalid");
+	outValue = iValue != 0;
 }
 
 void CBinDeSerializer::Read(const std::string& key, uint32_t& outValue)
@@ -50,75 +109,107 @@ void CBinDeSerializer::Read(const std::string& key, uint64_t& outValue)
 	ReadBytes(outValue);
 }
 
-void CBinDeSerializer::Read(const std::string& key, int& outValue) {
+void CBinDeSerializer::Read(const std::string& key, int& outValue)
+{
 	ReadBytes(outValue);
 }
 
-void CBinDeSerializer::Read(const std::string& key, float& outValue) {
+void CBinDeSerializer::Read(const std::string& key, float& outValue)
+{
 	ReadBytes(outValue);
 }
 
-void CBinDeSerializer::Read(const std::string& key, std::string& outValue) {
-	size_t len = 0;
-	ReadBytes(len);
-	if (len > 0) {
-		outValue.assign(reinterpret_cast<char*>(m_buffer.data() + m_readPos), len);
-		m_readPos += len;
+void CBinDeSerializer::Read(const std::string& key, std::string& outValue)
+{
+	uint64_t iLength{};
+	ReadBytes(iLength);
+	if (iLength > BinSerializeFormat::MAX_STRING_BYTES ||
+		iLength > static_cast<uint64_t>(RemainingBytes()) ||
+		iLength > static_cast<uint64_t>(outValue.max_size()))
+	{
+		throw std::length_error("Binary string length is invalid");
 	}
+
+	const size_t iSize = static_cast<size_t>(iLength);
+	if (iSize == 0)
+	{
+		outValue.clear();
+		return;
+	}
+
+	outValue.assign(
+		reinterpret_cast<const char*>(m_buffer.data() + m_readPos),
+		iSize);
+	m_readPos += iSize;
 }
 
 void CBinDeSerializer::Read(const std::string& key, _float2& outValue)
 {
-	// _float2는 float 2개(8바이트)가 연속되어 있으므로 한 번에 읽기
 	ReadBytes(outValue);
 }
 
 void CBinDeSerializer::Read(const std::string& key, _float3& outValue)
 {
-	// _float3는 float 3개(12바이트)가 연속되어 있으므로 한 번에 읽기
 	ReadBytes(outValue);
 }
 
 void CBinDeSerializer::Read(const std::string& key, _float4& outValue)
 {
-	// _float4는 float 4개(16바이트)가 연속되어 있으므로 한 번에 읽기
 	ReadBytes(outValue);
 }
 
 void CBinDeSerializer::Read(const std::string& key, _float4x4& outValue)
 {
-	ReadBytes(outValue); // 64바이트 그대로 읽기
+	ReadBytes(outValue);
 }
 
-void CBinDeSerializer::Read(const std::string& key, ISerializable& outValue) {
-	outValue.Deserialize(*this); // 하위 객체는 알아서 순서대로 자기 것을 읽음
+void CBinDeSerializer::Read(const std::string& key, ISerializable& outValue)
+{
+	outValue.Deserialize(*this);
 }
 
 void CBinDeSerializer::Read(const std::string& key, StringID& outValue)
 {
+	if (!HasValue(key)) return;
+
 	std::string tempStr;
-	Read(key, tempStr); // 바로 위에 구현된 문자열 Read 호출
-
-	outValue = StringID(tempStr); // 다시 StringID로 복원!
+	Read(key, tempStr);
+	outValue = StringID(tempStr);
 }
 
-// === 배열 및 맵 제어 ===
-size_t CBinDeSerializer::StartArray(const std::string& key) {
-	size_t count = 0;
-	ReadBytes(count);
-	return count;
-}
-void CBinDeSerializer::EndArray() {} // 할 일 없음
+size_t CBinDeSerializer::StartArray(const std::string& key)
+{
+	uint64_t iCount{};
+	ReadBytes(iCount);
+	if (iCount > BinSerializeFormat::MAX_CONTAINER_ELEMENTS ||
+		iCount > static_cast<uint64_t>(std::numeric_limits<size_t>::max()))
+	{
+		throw std::length_error("Binary array element count is invalid");
+	}
 
-size_t CBinDeSerializer::StartMap(const std::string& key) {
-	size_t count = 0;
-	ReadBytes(count);
-	return count;
+	return static_cast<size_t>(iCount);
 }
-void CBinDeSerializer::EndMap() {} // 할 일 없음
 
-std::string CBinDeSerializer::ReadMapKey() {
+void CBinDeSerializer::EndArray() {}
+
+size_t CBinDeSerializer::StartMap(const std::string& key)
+{
+	uint64_t iCount{};
+	ReadBytes(iCount);
+	if (iCount > BinSerializeFormat::MAX_CONTAINER_ELEMENTS ||
+		iCount > static_cast<uint64_t>(std::numeric_limits<size_t>::max()))
+	{
+		throw std::length_error("Binary map element count is invalid");
+	}
+
+	return static_cast<size_t>(iCount);
+}
+
+void CBinDeSerializer::EndMap() {}
+
+std::string CBinDeSerializer::ReadMapKey()
+{
 	std::string key;
-	Read("", key); // 위에서 만든 string Read 함수 재활용
+	Read("", key);
 	return key;
 }

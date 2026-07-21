@@ -144,6 +144,7 @@ class ENGINE_DLL IDeserializer
 {
 public:
 	virtual ~IDeserializer() = default;
+	virtual bool HasValue(const std::string& key) const = 0;
 
 #pragma region PRIMITIVE
 public:
@@ -164,8 +165,10 @@ public:
 	auto Read(const std::string& key, T& outValue)
 		-> std::enable_if_t<std::is_enum_v<T>>
 	{
+		if (!HasValue(key)) return;
+
 		using Underlying = std::underlying_type_t<T>;
-		Underlying temp = 0;
+		Underlying temp = static_cast<Underlying>(outValue);
 		Read(key, temp);
 		outValue = static_cast<T>(temp);
 	}
@@ -173,6 +176,8 @@ public:
 	template<typename T1, typename T2>
 	void Read(const std::string& key, std::pair<T1, T2>& outPair)
 	{
+		if (!HasValue(key)) return;
+
 		size_t count = StartMap(key);
 
 		for (size_t i = 0; i < count; ++i)
@@ -199,7 +204,10 @@ public:
 	template<typename K, typename V>
 	void Read(const std::string& key, std::map<K, V>& outMap)
 	{
+		if (!HasValue(key)) return;
+
 		size_t count = StartMap(key);
+		outMap.clear();
 		for (size_t i = 0; i < count; ++i)
 		{
 			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
@@ -217,7 +225,10 @@ public:
 	template<typename K, typename V>
 	void Read(const std::string& key, std::unordered_map<K, V>& outMap)
 	{
+		if (!HasValue(key)) return;
+
 		size_t count = StartMap(key);
+		outMap.clear();
 		for (size_t i = 0; i < count; ++i)
 		{
 			std::string stringKey = ReadMapKey(); // 항상 문자열 키를 읽음
@@ -248,7 +259,10 @@ public:
 	auto Read(const std::string& key, Container& outContainer)
 		-> decltype(outContainer.resize(1), std::begin(outContainer), void()) 
 	{
+		if (!HasValue(key)) return;
+
 		size_t count = StartArray(key);
+		outContainer.resize(count);
 
 		if (count > 0)
 		{
@@ -269,6 +283,8 @@ public:
 	auto Read(const std::string& key, Container& outContainer)
 		-> decltype(outContainer.insert(*std::begin(outContainer)), void())
 	{
+		if (!HasValue(key)) return;
+
 		size_t count = StartArray(key);
 
 		outContainer.clear();
@@ -288,6 +304,8 @@ public:
 	template<typename T>
 	void Read(const std::string& key, T* outArray, size_t maxElements)
 	{
+		if (!HasValue(key)) return;
+
 		size_t count = StartArray(key);
 
 		// JSON의 배열 크기가 버퍼보다 클 경우를 대비해 안전하게 작은 값을 선택
@@ -296,6 +314,12 @@ public:
 		for (size_t i = 0; i < readCount; ++i)
 		{
 			Read("", outArray[i]);
+		}
+
+		for (size_t i = readCount; i < count; ++i)
+		{
+			T discard{};
+			Read("", discard);
 		}
 
 		// 만약 JSON 데이터가 더 많더라도 스택 밸런스를 위해 남은 것은 무시하고 루프 종료

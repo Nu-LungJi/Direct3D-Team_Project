@@ -990,6 +990,9 @@
     <ClInclude Include="..\public\BinDeSerializer.h">
       <Filter>Serialize\Serializer\Bin</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BinSerializeFormat.h">
+      <Filter>Serialize\Serializer\Bin</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\SerializeManager.h">
       <Filter>Serialize\Manager</Filter>
     </ClInclude>

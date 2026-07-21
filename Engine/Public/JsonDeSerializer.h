@@ -16,6 +16,7 @@ public:
 
 public:
 	HRESULT LoadFromFile(const std::string& path);
+	bool HasValue(const std::string& key) const override;
 
 public:
 	void Read(const std::string& key, bool& outValue) override;
