@@ -475,6 +475,9 @@
     <Filter Include="Renderer\FSR2_2">
       <UniqueIdentifier>{9221965f-150e-4a8a-b47d-5d7e94f7d164}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\UIShader">
+      <UniqueIdentifier>{0d457b52-1b40-4f88-99a7-174c4ddce13f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1583,13 +1586,7 @@
     <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
@@ -1628,11 +1625,20 @@
     <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl">
       <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

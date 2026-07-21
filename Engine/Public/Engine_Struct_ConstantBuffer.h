@@ -158,4 +158,12 @@ namespace Engine
 		float g_fUseDissolve;
 	};
 	static_assert(sizeof(CB_TRAIL_OPTION) % 16 == 0);
+
+	typedef struct CB_Minimap
+	{
+		_float2	mapOffset;
+		float	mapRotation;
+		float	mapScale;
+	}CB_MINIMAP;
+	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 }

@@ -762,6 +762,7 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>

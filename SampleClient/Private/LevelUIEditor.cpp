@@ -204,7 +204,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 
-	_bool bP = CGameInstance::Get().KeyDown(DIK_P);
+	_bool bF1 = CGameInstance::Get().KeyDown(DIK_F1);
 	_bool bLShift = CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	_bool bDelete = CGameInstance::Get().KeyDown(DIK_DELETE);
 
@@ -215,8 +215,27 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	//const _tchar* text = L"Test";
 	//CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "NeoDGM_15px", text, { clientSize.x * 0.5f, clientSize.y * 0.5f });
 
-	if (bP)
+	if (bF1)
 	{
+		// minimap
+		if (true)
+		{
+			CTextureUI::UIOBJECT_DESC Desc{};
+
+			count++;
+			Desc.sObjectTag = "UI_" + std::to_string(count);
+			Desc.Name = "UI_" + std::to_string(count);
+			Desc.fSizeX = 128.f;
+			Desc.fSizeY = 128.f;
+			Desc.fX = clientSize.x * 0.5f;
+			Desc.fY = clientSize.y * 0.5f;
+			Desc.fAlpha = 1.f;
+			Desc.UIType = ETOUI(UI_TYPE::MINIMAP);
+			Desc.ResWeight = count;
+
+			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_MiniMap", "Layer_UI", &Desc);
+		}
+
 		// hp
 		if (false)
 		{
@@ -257,7 +276,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
 		}
 
-		if (true)
+		if (false)
 		{
 			count++;
 			CTextUI::TEXT_DESC desc{};

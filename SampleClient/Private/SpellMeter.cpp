@@ -39,7 +39,7 @@ HRESULT CSpellMeter::Initialize(void* pArg)
 
 		/* Component */
 		CComponent::DESC CDesc{};
-		Desc.pGameObject = this;
+		CDesc.pGameObject = this;
 
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_Tween", "Com_Tween", &CDesc, &m_pComTween)))
 		{

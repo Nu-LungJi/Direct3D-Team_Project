@@ -174,6 +174,7 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
+// 스킬 쿨타임
 cbuffer CB_SPELLMETER : register(b9)
 {
     float g_Amount;         
@@ -187,11 +188,20 @@ cbuffer CB_SPELLMETER : register(b9)
     float4 g_WispyColor;
 };
 
+// 미니맵용
+cbuffer CB_MINIMAP : register(b10)
+{
+	float2 g_mapOffset;
+	float  g_mapRotation;
+	float  g_mapScale;
+};
+
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);
 SamplerState PointWrap                  : register(s2);
 SamplerState PointClamp                 : register(s3);
 SamplerState PointWrapNoMip             : register(s4);
 SamplerState AnisotropicWrap            : register(s5);
+SamplerState LinearBorder               : register(s7);
 
 SamplerComparisonState ShadowSampler : register(s6);

@@ -263,9 +263,17 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
+	// UI용
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_SpellMeter", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_SPELLMETER) })))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MiniMap", E::CResCBuffer::Create()))
+	{
+		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_MINIMAP) })))
 		{
 			return E_FAIL;
 		}
@@ -762,6 +770,31 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 
 		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
 		CGameInstance::Get().GetGraphicDeviceContext()->CSSetSamplers(6, 1, res->GetSamplerState().GetAddressOf());
+	}
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_STATE, "State_SS_LinearBorder", CResSamplerState::Create()))
+	{
+		D3D11_SAMPLER_DESC sampDesc{};
+		sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+
+		sampDesc.BorderColor[0] = 0.f; // R
+		sampDesc.BorderColor[1] = 0.f; // G
+		sampDesc.BorderColor[2] = 0.f; // B
+		sampDesc.BorderColor[3] = 0.f; // A
+
+		sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		sampDesc.MinLOD = 0;
+		sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		if (FAILED(res->Load(sampDesc)))
+		{
+			return E_FAIL;
+		}
+
+		// 요청하신 7번 슬롯에 바인딩 (픽셀 셰이더)
+		CGameInstance::Get().GetGraphicDeviceContext()->PSSetSamplers(7, 1, res->GetSamplerState().GetAddressOf());
 	}
 	return S_OK;
 }
