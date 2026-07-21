@@ -8,8 +8,9 @@ NS_BEGIN(Engine)
 class ENGINE_DLL  CBTRoot : public CPrototype
 {
 public:
-	enum class BTFLAG{NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
-					,EMISSIVE = 0x0000040};
+#define X(name,idx) name = idx,
+	enum class BTFLAG{BTFLAG_M};
+#undef X
 public:
 	DECLARE_DERIVED_TYPE(CBTRoot, CPrototype)
 public:
@@ -50,10 +51,10 @@ public:
 	uint32_t					Get_Flag();
 	void						Set_Flag(uint32_t iFlag, FLAGTYPE eType);
 protected:
-	GUINODE								m_GuiNode;
-	GUINODE_LINK						m_GuiLink;
-	CHandle								m_Handle;
-	_string								m_MasterName, m_OwnerName;
+	GUINODE								m_GuiNode{};
+	GUINODE_LINK						m_GuiLink{};
+	CHandle								m_Handle{};
+	_string								m_MasterName{}, m_OwnerName{};
 	NODEGROUP							m_eGroup{};
 
 	EVALUATE							m_eDebug{};

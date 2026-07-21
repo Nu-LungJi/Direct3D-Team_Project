@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
 #include "PhysXManager.h"
@@ -14,11 +14,175 @@ using namespace physx;
 
 NS_USING(Engine)
 
+namespace
+{
+	PxQuat ToColliderNormalizedQuat(const _float4& vQuaternion)
+	{
+		PxQuat tQuat{ vQuaternion.x, vQuaternion.y, vQuaternion.z, vQuaternion.w };
+		return tQuat.magnitudeSquared() > 0.f ? tQuat.getNormalized() : PxQuat{ PxIdentity };
+	}
+}
+
+_bool CComPxCollider::SetTrigger(_bool bTrigger)
+{
+	if (!m_pShape)
+		return false;
+
+	m_bIsTrigger = bTrigger;
+	if (!m_bSimulationEnabled)
+		return true;
+
+	if (bTrigger)
+	{
+		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
+		m_pShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
+	}
+	else
+	{
+		m_pShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, false);
+		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
+	}
+
+	return true;
+}
+
+_bool CComPxCollider::IsTrigger() const
+{
+	return m_bIsTrigger;
+}
+
+_bool CComPxCollider::SetEnabled(_bool bEnabled)
+{
+	return SetSimulationEnabled(bEnabled) && SetQueryEnabled(bEnabled);
+}
+
+_bool CComPxCollider::IsEnabled() const
+{
+	return IsSimulationEnabled() || IsQueryEnabled();
+}
+
+_bool CComPxCollider::SetSimulationEnabled(_bool bEnabled)
+{
+	if (!m_pShape)
+		return false;
+
+	m_bSimulationEnabled = bEnabled;
+	if (!bEnabled)
+	{
+		m_pShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, false);
+		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
+		return true;
+	}
+
+	if (m_bIsTrigger)
+	{
+		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
+		m_pShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
+	}
+	else
+	{
+		m_pShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, false);
+		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
+	}
+
+	return true;
+}
+
+_bool CComPxCollider::IsSimulationEnabled() const
+{
+	return m_bSimulationEnabled;
+}
+
+_bool CComPxCollider::SetQueryEnabled(_bool bEnabled)
+{
+	if (!m_pShape)
+		return false;
+
+	m_pShape->setFlag(PxShapeFlag::eSCENE_QUERY_SHAPE, bEnabled);
+	return true;
+}
+
+_bool CComPxCollider::IsQueryEnabled() const
+{
+	return m_pShape && m_pShape->getFlags().isSet(PxShapeFlag::eSCENE_QUERY_SHAPE);
+}
+
+_bool CComPxCollider::SetLocalPosition(const _float3& vPosition)
+{
+	if (!m_pShape)
+		return false;
+
+	PxTransform tPose = m_pShape->getLocalPose();
+	tPose.p = PxVec3{ vPosition.x, vPosition.y, vPosition.z };
+	m_pShape->setLocalPose(tPose);
+	return true;
+}
+
+_float3 CComPxCollider::GetLocalPosition() const
+{
+	if (!m_pShape)
+		return {};
+
+	const PxVec3 vPosition = m_pShape->getLocalPose().p;
+	return { vPosition.x, vPosition.y, vPosition.z };
+}
+
+_bool CComPxCollider::SetLocalRotation(const _float4& vQuaternion)
+{
+	if (!m_pShape)
+		return false;
+
+	PxTransform tPose = m_pShape->getLocalPose();
+	tPose.q = ToColliderNormalizedQuat(vQuaternion);
+	m_pShape->setLocalPose(tPose);
+	return true;
+}
+
+_float4 CComPxCollider::GetLocalRotation() const
+{
+	if (!m_pShape)
+		return { 0.f, 0.f, 0.f, 1.f };
+
+	const PxQuat vRotation = m_pShape->getLocalPose().q;
+	return { vRotation.x, vRotation.y, vRotation.z, vRotation.w };
+}
+
+_bool CComPxCollider::SetFilter(const PX_FILTER_DESC& tFilter)
+{
+	if (!m_pShape)
+		return false;
+
+	m_tFilter = tFilter;
+
+	PxFilterData tSimulationFilter{};
+	tSimulationFilter.word0 = tFilter.iLayer;
+	tSimulationFilter.word1 = tFilter.iSimulationMask;
+	m_pShape->setSimulationFilterData(tSimulationFilter);
+
+	PxFilterData tQueryFilter{};
+	tQueryFilter.word0 = tFilter.iLayer;
+	tQueryFilter.word1 = tFilter.iQueryMask;
+	m_pShape->setQueryFilterData(tQueryFilter);
+
+	if (PxRigidActor* pActor = m_pShape->getActor())
+	{
+		if (PxScene* pScene = pActor->getScene())
+			pScene->resetFiltering(*pActor);
+	}
+
+	return true;
+}
+
 void CComPxCollider::UpdateGUI()
 {
-    CComponent::UpdateGUI();
+	CComponent::UpdateGUI();
 	ImGui::PushID(this);
-	//ImGui::Text("Collider Type: %s", GetTypeName());
+	if (!m_pShape)
+	{
+		ImGui::Text("Shape: nullptr");
+		ImGui::PopID();
+		return;
+	}
 
 	// ---- Material ----
 	if (m_pResMaterial != nullptr)
@@ -38,25 +202,48 @@ void CComPxCollider::UpdateGUI()
 	}
 
 	// ---- Trigger ----
-	bool bIsTrigger = m_pShape->getFlags() & PxShapeFlag::eTRIGGER_SHAPE;
+	bool bIsTrigger = IsTrigger();
 	if (ImGui::Checkbox("Is Trigger", &bIsTrigger))
-	{
-		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, !bIsTrigger);
-		m_pShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, bIsTrigger);
-	}
+		SetTrigger(bIsTrigger);
+
+	bool bSimulationEnabled = IsSimulationEnabled();
+	if (ImGui::Checkbox("Simulation Enabled", &bSimulationEnabled))
+		SetSimulationEnabled(bSimulationEnabled);
+
+	bool bQueryEnabled = IsQueryEnabled();
+	if (ImGui::Checkbox("Scene Query Enabled", &bQueryEnabled))
+		SetQueryEnabled(bQueryEnabled);
+
+	if (ImGui::Button("Enable All"))
+		SetEnabled(true);
+	ImGui::SameLine();
+	if (ImGui::Button("Disable All"))
+		SetEnabled(false);
 
 	// ---- Local Pose (오프셋 + 회전) ----
-	PxTransform tLocalPose = m_pShape->getLocalPose();
-	float fOffset[3] = { tLocalPose.p.x, tLocalPose.p.y, tLocalPose.p.z };
+	const _float3 vLocalPosition = GetLocalPosition();
+	float fOffset[3] = { vLocalPosition.x, vLocalPosition.y, vLocalPosition.z };
 	if (ImGui::DragFloat3("Local Offset", fOffset, 0.05f))
-	{
-		tLocalPose.p = PxVec3(fOffset[0], fOffset[1], fOffset[2]);
-		m_pShape->setLocalPose(tLocalPose);
-		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
-		m_pShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
-	}
-	ImGui::Text("Local Rotation (Quat): %.3f, %.3f, %.3f, %.3f",
-		tLocalPose.q.x, tLocalPose.q.y, tLocalPose.q.z, tLocalPose.q.w);
+		SetLocalPosition({ fOffset[0], fOffset[1], fOffset[2] });
+
+	const _float4 vLocalRotation = GetLocalRotation();
+	float fRotation[4] = { vLocalRotation.x, vLocalRotation.y, vLocalRotation.z, vLocalRotation.w };
+	if (ImGui::DragFloat4("Local Rotation (Quaternion)", fRotation, 0.01f))
+		SetLocalRotation({ fRotation[0], fRotation[1], fRotation[2], fRotation[3] });
+
+	PX_FILTER_DESC tFilter = GetFilter();
+	bool bFilterChanged{};
+	bFilterChanged |= ImGui::InputScalar(
+		"Layer", ImGuiDataType_U32, &tFilter.iLayer, nullptr, nullptr, "%08X",
+		ImGuiInputTextFlags_CharsHexadecimal);
+	bFilterChanged |= ImGui::InputScalar(
+		"Simulation Mask", ImGuiDataType_U32, &tFilter.iSimulationMask, nullptr, nullptr, "%08X",
+		ImGuiInputTextFlags_CharsHexadecimal);
+	bFilterChanged |= ImGui::InputScalar(
+		"Query Mask", ImGuiDataType_U32, &tFilter.iQueryMask, nullptr, nullptr, "%08X",
+		ImGuiInputTextFlags_CharsHexadecimal);
+	if (bFilterChanged)
+		SetFilter(tFilter);
 
 	ImGui::Separator();
 	ImGui::PopID();
@@ -88,6 +275,7 @@ HRESULT CComPxCollider::Initialize(void* pArg)
     if (m_pResMaterial == nullptr)
         return E_FAIL;
 	m_tFilter = pDesc->tFilter;
+	m_bIsTrigger = pDesc->bIsTrigger;
 
     return S_OK;
 }

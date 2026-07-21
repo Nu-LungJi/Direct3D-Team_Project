@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -45,6 +45,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <EnableUnitySupport>true</EnableUnitySupport>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -53,6 +54,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <EnableUnitySupport>true</EnableUnitySupport>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -119,7 +121,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -147,7 +149,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -179,11 +181,13 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
+    <ClInclude Include="..\public\BTDecHitCnt.h" />
     <ClInclude Include="..\public\BTDecHp.h" />
     <ClInclude Include="..\public\BTDecInvert.h" />
     <ClInclude Include="..\public\BTDecLier.h" />
-    <ClInclude Include="..\public\BTDecHit.h" />
+    <ClInclude Include="..\public\BTDecFlag.h" />
     <ClInclude Include="..\public\BTHitAnimMonster.h" />
+    <ClInclude Include="..\public\BTMonAttType.h" />
     <ClInclude Include="..\public\BTOnlyFalse.h" />
     <ClInclude Include="..\public\BTOnlyTrue.h" />
     <ClInclude Include="..\public\BTRandMoveAnim.h" />
@@ -196,23 +200,40 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\BTMove.h" />
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\public\BTCreatureFlag.h" />
+    <ClInclude Include="..\public\EnderDragon.h" />
+    <ClInclude Include="..\public\LevelCreatureEditor.h" />
     <ClInclude Include="..\public\EffectUI.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\BTDecTimer.h" />
+    <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\Public\LevelAnimatorLoader.h" />
     <ClInclude Include="..\Public\LevelAnimEditor.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\public\LevelColliderLoader.h" />
+    <ClInclude Include="..\public\LevelCreatureLoader.h" />
     <ClInclude Include="..\public\LevelPlayGroundLoader.h" />
     <ClInclude Include="..\Public\LevelLightMapLoader.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
     <ClInclude Include="..\public\LevelPhysXLoader.h" />
     <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\LightTerrain.h" />
+    <ClInclude Include="..\Public\Player_Attack_State.h" />
+    <ClInclude Include="..\Public\Player_Dead_State.h" />
+    <ClInclude Include="..\Public\Player_Hit_State.h" />
+    <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
+    <ClInclude Include="..\public\Test3DSound.h" />
+    <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\Player_Roll_State.h" />
+    <ClInclude Include="..\Public\Player_StateMachine.h" />
+    <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
+    <ClInclude Include="..\public\TestMonster.h" />
+    <ClInclude Include="..\public\TestThirdPersonCamera.h" />
+    <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
+    <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\public\TestGob.h" />
     <ClInclude Include="..\Public\LevelLightMap.h" />
@@ -239,14 +260,17 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
-    <ClInclude Include="..\public\Terrain.h" />
+	<ClInclude Include="..\public\Terrain.h" />
+	<ClInclude Include="..\public\MapCollisionProxyObject.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
+    <ClInclude Include="..\Public\TestPartObject.h" />
     <ClInclude Include="..\public\TestPhysX.h" />
     <ClInclude Include="..\public\TestPhysXBall.h" />
     <ClInclude Include="..\public\TestPhysXBox.h" />
     <ClInclude Include="..\public\TestPhysXCapsule.h" />
     <ClInclude Include="..\public\TestPhysXTerrain.h" />
+    <ClInclude Include="..\public\TestPhysXTrigger.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h">
@@ -272,11 +296,13 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTAttackAnimation.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
     <ClCompile Include="..\private\BTDamage.cpp" />
+    <ClCompile Include="..\private\BTDecHitCnt.cpp" />
     <ClCompile Include="..\private\BTDecHp.cpp" />
     <ClCompile Include="..\private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecLier.cpp" />
-    <ClCompile Include="..\private\BTDecHit.cpp" />
+    <ClCompile Include="..\private\BTDecFlag.cpp" />
     <ClCompile Include="..\private\BTHitAnimMonster.cpp" />
+    <ClCompile Include="..\private\BTMonAttType.cpp" />
     <ClCompile Include="..\private\BTOnlyFalse.cpp" />
     <ClCompile Include="..\private\BTOnlyTrue.cpp" />
     <ClCompile Include="..\private\BTRandMoveAnim.cpp" />
@@ -288,23 +314,40 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\BTMove.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\private\BTCreatureFlag.cpp" />
+    <ClCompile Include="..\private\EnderDragon.cpp" />
+    <ClCompile Include="..\private\LevelCreatureEditor.cpp" />
     <ClCompile Include="..\private\EffectUI.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\BTDecTimer.cpp" />
+    <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\Private\LevelAnimatorLoader.cpp" />
     <ClCompile Include="..\Private\LevelAnimEditor.cpp" />
+    <ClCompile Include="..\private\LevelCreatureLoader.cpp" />
     <ClCompile Include="..\private\LevelPlayGroundLoader.cpp" />
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
     <ClCompile Include="..\Private\LightTerrain.cpp" />
+    <ClCompile Include="..\Private\Player_Attack_State.cpp" />
+    <ClCompile Include="..\Private\Player_Dead_State.cpp" />
+    <ClCompile Include="..\Private\Player_Hit_State.cpp" />
+    <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\Player_Roll_State.cpp" />
+    <ClCompile Include="..\Private\Player_StateMachine.cpp" />
+    <ClCompile Include="..\Private\MiniMap.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\private\LevelColliderLoader.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
     <ClCompile Include="..\private\LevelPhysXLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\private\Test3DSound.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
+    <ClCompile Include="..\private\TestMonster.cpp" />
+    <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
+    <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
+    <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestGob.cpp" />
     <ClCompile Include="..\Private\LevelLightMap.cpp" />
     <ClCompile Include="..\private\LevelCollider.cpp" />
@@ -328,9 +371,12 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
-    <ClCompile Include="..\private\Terrain.cpp" />
+	<ClCompile Include="..\private\Terrain.cpp" />
+	<ClCompile Include="..\private\MapCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
+    <ClCompile Include="..\Private\TestPartObject.cpp" />
+    <ClCompile Include="..\private\TestPhysXTrigger.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="..\private\TextBox.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp">

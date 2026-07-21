@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "GameObject.h"
 #include "Client_Defines.h"
 #include "ComCollider.h"
@@ -21,6 +21,17 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPos{};
+		_float3 vInitialVelocity{};
+		_float fRadius{ 0.5f };
+		_float fLifetime{ -1.f };
+		_bool bUseGravity{ true };
+		_float fRestitution{ -1.f };
+		_float fPlayerCollisionDelay{ -1.f };
+		PX_FILTER_DESC tFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
 	};
 
 private:
@@ -45,6 +56,9 @@ public:
 private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxSphereCollider* m_pComPxSphereCollider{};
+	_float m_fRadius{ 0.5f };
+	_float m_fLifetime{ -1.f };
+	_float m_fPlayerCollisionDelay{ -1.f };
 
 public:
 	static E::UPtr<CTestPhysXBall> Create();

@@ -132,6 +132,13 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest(const STest& p)
 	return std::vector<PARTICLE_SPAWN_DATA>();
 }
 
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest1(const SSPAWN& p)
+{
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(p.iCount);
+
+	return std::vector<PARTICLE_SPAWN_DATA>();
+}
+
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(
 //    const _float3& vStartPos,
 //    uint32_t iStepCount,

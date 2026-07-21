@@ -40,12 +40,12 @@ EVALUATE CBTDecHp::Evaluate(_float fTimeDelta)
 	if (!m_bDeadCheck)
 	{
 		if (pObj->Get_CurrentHp() <= pObj->Get_MaxHp() / m_fdivided)
-			return __super::Evaluate(fTimeDelta);
+			return m_eDebug = __super::Evaluate(fTimeDelta);
 	}
 	else if (m_bDeadCheck)
 	{
 		if (pObj->Get_CurrentHp() <= 0)
-			return __super::Evaluate(fTimeDelta);
+			return m_eDebug = __super::Evaluate(fTimeDelta);
 
 	}
 	

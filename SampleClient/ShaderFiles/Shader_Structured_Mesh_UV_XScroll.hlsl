@@ -17,7 +17,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//ÇÈ¼¿ ½¦ÀÌ´õ¿ë
+//í”½ì…€ ì‰ì´ë”ìš©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
@@ -46,7 +46,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // Ãß°¡: ¶óÀÌÆÃ °è»ê¿¡ ÇÊ¿ä
+    float3 vWorldPos : TEXCOORD1; // ì¶”ê°€: ë¼ì´íŒ… ê³„ì‚°ì— í•„ìš”
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
 };
@@ -66,7 +66,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
         float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
         float2 uvOffset = float2(col, row) * uvSize;
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ´ë½Å ½ÇÁ¦ ¸Ş½¬ UV »ç¿ë
+        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ëŒ€ì‹  ì‹¤ì œ ë©”ì‰¬ UV ì‚¬ìš©
     }
 
     Out.vTexcoord = finalUV;
@@ -101,23 +101,33 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
-    float scrollSpeed = 0.2f; // Èå¸£´Â ¼Óµµ, ÇÊ¿äÇÏ¸é ÆÄ¶ó¹ÌÅÍ·Î »©¼­ Á¶Àı
-    float2 scrolledUV = In.vTexcoord + float2(scrollSpeed * g_fTime, 0.0f);
+    float scrollSpeed = 0.2f; // íë¥´ëŠ” ì†ë„, í•„ìš”í•˜ë©´ íŒŒë¼ë¯¸í„°ë¡œ ë¹¼ì„œ ì¡°ì ˆ
+    float2 scrolledUV = In.vTexcoord + float2(scrollSpeed , 0.0f);
     
     
     float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, scrolledUV) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
     if (AlbedoTex.a < 0.05f)
         discard;
+    float ratio = 1.0f - (In.life / In.maxLife);
     float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
     float lengthMask = In.vTexcoord.y;
+	
+	float bandWidth = 0.35f;
+// ratio(0~1)ë¥¼ -bandWidth ~ (1+bandWidth) ë²”ìœ„ë¡œ í™•ì¥í•´ì„œ ë§¤í•‘
+	float leadingEdge = lerp(-bandWidth, 1.0f + bandWidth, ratio);
+	float trailingEdge = leadingEdge - bandWidth;
 
-// ±æÀÌ ±×¶óµğ¾ğÆ® À§ÁÖ + ³ëÀÌÁî·Î °¡ÀåÀÚ¸®¿¡ ÀÚ¿¬½º·¯¿î µğÅ×ÀÏ¸¸ »ìÂ¦
-    float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
-    float ratio = 1.0f - (In.life / In.maxLife);
+	if (lengthMask > leadingEdge || lengthMask < trailingEdge)
+		discard;
+// ê¸¸ì´ ê·¸ë¼ë””ì–¸íŠ¸ ìœ„ì£¼ + ë…¸ì´ì¦ˆë¡œ ê°€ì¥ìë¦¬ì— ìì—°ìŠ¤ëŸ¬ìš´ ë””í…Œì¼ë§Œ ì‚´ì§
+    //float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
 
-    if (revealValue > ratio)
-        discard;
-
+	// ë‹¤ ì•ˆë³´ì˜€ë‹¤ê°€ ë³´ì´ê²Œ ë¨
+	//if (lengthMask > ratio)
+	//	discard;
+	//
+	//if (lengthMask < mask2)
+	//	discard;
     //if (noise.r > ratio) 
     //    discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
@@ -168,7 +178,7 @@ PS_OUT PSMain(VS_OUT In)
         }
     }
 
-    // ÀÎ½ºÅÏ½º(ÆÄÆ¼Å¬)º° ÀÌ¹Ì½Ãºê + ¿ÀºêÁ§Æ® ÀÌ¹Ì½Ãºê ÅØ½ºÃ³ µÑ ´Ù ¹İ¿µ
+    // ì¸ìŠ¤í„´ìŠ¤(íŒŒí‹°í´)ë³„ ì´ë¯¸ì‹œë¸Œ + ì˜¤ë¸Œì íŠ¸ ì´ë¯¸ì‹œë¸Œ í…ìŠ¤ì²˜ ë‘˜ ë‹¤ ë°˜ì˜
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);

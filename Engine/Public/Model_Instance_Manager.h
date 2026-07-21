@@ -6,6 +6,7 @@ NS_BEGIN(Engine)
 
 class CComAnimator;
 class CComModelInstance;
+class CComStaticModelInstance;
 class CResModel;
 
 
@@ -25,8 +26,14 @@ public:
 public:
 	void Add_Instance(CComModelInstance* pModelInstance,CComAnimator* pAnimator,const _float4x4& WorldMatrix,uint32_t iFlags = 0);
 
+	void Add_Instance(CComStaticModelInstance* pModelInstance, const _float4x4& WorldMatrix, uint32_t iFlags);
+
 
 	void Add_Instance(CComModelInstance* pModelInstance,const GPU_ANIM_INSTANCE_DATA& InstanceData);
+	void Add_Part_Instance(CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
+
+	void Add_Instance(CComStaticModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
+
 
 public:
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const
@@ -44,6 +51,7 @@ public:
 		return m_iTotalInstanceCount;
 	}
 
+
 	void Clear_Frame();
 
 public:
@@ -54,7 +62,9 @@ public:
 	bool HasRenderPass(RENDERPASS ePass) const override { return ePass == RENDERPASS::DEFAULT; };
 
 private:
-	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComModelInstance* pModelInstance);
+	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComStaticModelInstance* pModelInstance, _bool bStaticModel);
+	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel);
+	MODEL_INSTANCE_BATCH* Find_Or_Create_Part_Batch(CComStaticModelInstance* pModelInstance);
 
 private:
 	// 모델 리소스별 영구 Batch 저장소

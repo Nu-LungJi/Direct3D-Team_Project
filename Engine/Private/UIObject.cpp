@@ -47,10 +47,10 @@ void CUIObject::Update(_float fTimeDelta)
 		CUIObject* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_pParent);
 		UI_INFO& parentInfo = parentUI->GetUIInfo();
 
-		m_UIINFO.fX		= parentInfo.fX + m_UIINFO.LocalX;
-		m_UIINFO.fY		= parentInfo.fY + m_UIINFO.LocalY;
-		m_UIINFO.SizeX	= parentInfo.SizeX * m_UIINFO.WidthRatioX;
-		m_UIINFO.SizeY	= parentInfo.SizeY * m_UIINFO.WidthRatioY;
+		m_ScaleRatio = parentUI->GetScaleRatio();
+
+		m_UIINFO.fX = parentInfo.fX + (m_UIINFO.LocalX * m_ScaleRatio);
+		m_UIINFO.fY = parentInfo.fY + (m_UIINFO.LocalY * m_ScaleRatio);
 		m_UIINFO.Alpha	= parentInfo.Alpha * m_UIINFO.AlphaRatio;
 		m_UIINFO.Weight = parentInfo.Weight + m_UIINFO.WeightOffset;
 		m_UIINFO.Rot	= parentInfo.Rot + m_UIINFO.LocalRot;
@@ -58,11 +58,6 @@ void CUIObject::Update(_float fTimeDelta)
 		m_ScaleRatio = parentUI->GetScaleRatio();
 
 		CalcUICoord();
-	}
-
-	for (auto& pComponent : m_UIComponents)
-	{
-		pComponent->Update(fTimeDelta);
 	}
 
 		
@@ -95,6 +90,8 @@ void CUIObject::CalcUICoord()
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 	auto clientWidth = clientSize.x;
 	auto clientHeight = clientSize.y;
+	if (m_pComTransform == nullptr)
+		return;
 	GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * m_ScaleRatio, m_UIINFO.SizeY * m_ScaleRatio, 1.f });
 	auto x = m_UIINFO.fX - clientWidth * 0.5f;
 	auto y = -m_UIINFO.fY + clientHeight * 0.5f;

@@ -25,12 +25,18 @@ HRESULT CBTSelector::Initalize(void* pArg)
 {
     __super::Initalize(pArg);
     NODEGROUP eGroup = m_eGroup;
+	m_GuiNode.vColor = _float4(0.5294f, 0.9843f, 1.f, 1.f);
 	return S_OK;
 }
 
 EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
-    for (size_t i = 0; i < m_Actions.size(); ++i)
+	int32_t iIndex = 0;
+
+	if (m_NodeValue.bCur)
+		iIndex = m_NodeValue.iPreSecquenceIndex;
+
+    for (size_t i = iIndex; i < m_Actions.size(); ++i)
     {
         if (nullptr == m_Actions[i])
             continue;
@@ -38,16 +44,22 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
+			m_NodeValue.bCur = false;
+			m_NodeValue.iPreSecquenceIndex = 0;
 			return m_eDebug  = EVALUATE::SUCCESS;
         }
         else if (eValuate == EVALUATE::RUN)
 		{
+			m_NodeValue.bCur = true;
 			m_NodeValue.iPreSecquenceIndex = i;
             return m_eDebug =  EVALUATE::RUN;
         }
  
 
     }
+
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
 	return m_eDebug =  EVALUATE::FAILED;
 }
 

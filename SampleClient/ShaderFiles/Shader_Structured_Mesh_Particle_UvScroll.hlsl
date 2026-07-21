@@ -49,6 +49,7 @@ struct VS_OUT
     float3 vWorldPos : TEXCOORD1; // 추가: 라이팅 계산에 필요
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
+    float3 vLocalPos : TEXCOORD4;
 };
 
 VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
@@ -70,7 +71,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     }
 
     Out.vTexcoord = finalUV;
-    
+    Out.vLocalPos = In.vPosition;
 
     float3 localPos = In.vPosition * scale; 
     float3 rotatedLocal = RotateXYZ(localPos, p.rotation); 
@@ -101,30 +102,41 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
-
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord)  * In.vColor;
-    
-    if (all(AlbedoTex.rgb < 0.01f))
-       discard;
-    
-    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
-    
-    float ratio = 1.0f - (In.life / In.maxLife);
-
-    if (noise.r < ratio) 
-        discard;
-    float Offset = (noise.rg - 0.5f) * noise.b * 0.02f;
-    
  
-
-    // 인스턴스(파티클)별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
-    float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
-    float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
-
-    float3 FinalColor = AlbedoTex + (noise.b * instEmissive);
-
+    float fOuterCut = 1.f - smoothstep(0.9, 0.98, In.vTexcoord.y);
     
+    float2 cloudUV = In.vTexcoord * float2(8.f, 1.f);
+    //cloudUV.x += g_fTime * 0.3f;
+    float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
+   
+    //0링 안쪽시작 1 바깥 도착 0.35 바깥으로 퍼지는 속도
+
+    float fProgress = saturate(1.0f - (In.life / In.maxLife));
+    //float fInner = max(0.f, fProgress - 0.35f);
+    //
+    //float fTrail = smoothstep(fInner, fInner + 0.03f,  In.vTexcoord.y) *
+    //        (1.f - smoothstep(fProgress, fProgress + 0.06f, In.vTexcoord.y));
     
-    Out.vDiffuse = float4(FinalColor, 1.f);
+    float2 swirlUV = In.vTexcoord * float2(5.f, 1.f);
+   // float endFade = 1.f - smoothstep(0.85f, 1.f, fProgress);
+   // fTrail *= endFade;
+    swirlUV.x += g_fTime * 0.05f;
+   
+    float2 distortionUV = In.vTexcoord * float2(5.f, 1.f);
+    float3 distortion = NoiseMap.Sample(LinearWrap, distortionUV).rgb;
+    distortion.x += g_fTime * 0.05f;
+   // swirlUV += distortion;
+    
+    float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
+  
+
+    float3 pattern = cloud + swirl; //+swirl;
+    float3 fFinalColor = pattern * In.vColor.rgb;//  fTrail * In.vColor.rgb;
+    
+    float fCut = min(fFinalColor.r, min(fFinalColor.g, fFinalColor.b));
+    if ( fCut < 0.1f)
+        discard;
+    Out.vDiffuse = float4(fFinalColor, fCut);
+   
     return Out;
 }

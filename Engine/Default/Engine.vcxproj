@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -53,6 +53,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <EnableUnitySupport>true</EnableUnitySupport>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -61,6 +62,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <EnableUnitySupport>true</EnableUnitySupport>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -144,7 +146,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -171,7 +173,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -236,8 +238,13 @@
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\public\BTRandSelector.h" />
+    <ClInclude Include="..\public\BTReactiveSelector.h" />
     <ClInclude Include="..\public\ComLuaScript.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
+    <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
+    <ClInclude Include="..\Public\ComCharacterMotor.h" />
+    <ClInclude Include="..\Public\ComSound.h" />
+    <ClInclude Include="..\Public\ComSocket.h" />
     <ClInclude Include="..\Public\ComStaticModelInstance.h" />
     <ClInclude Include="..\Public\ComAnimator.h" />
     <ClInclude Include="..\public\ComBeHavior.h" />
@@ -257,23 +264,26 @@
     <ClInclude Include="..\Public\Component.h" />
     <ClInclude Include="..\public\ComPxBoxCollider.h" />
     <ClInclude Include="..\public\ComPxCapsuleCollider.h" />
+    <ClInclude Include="..\public\ComPxConvexCollider.h" />
     <ClInclude Include="..\public\ComPxCollider.h" />
     <ClInclude Include="..\public\ComPxRigidBody.h" />
     <ClInclude Include="..\public\ComPxSphereCollider.h" />
     <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
-    <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
+    <ClInclude Include="..\Public\MapMeshInstancingRenderer.h" />
     <ClInclude Include="..\Public\Model_Instance_Manager.h" />
     <ClInclude Include="..\public\GameInstanceInitLoader.h" />
     <ClInclude Include="..\public\LuaEnv.h" />
     <ClInclude Include="..\public\LuaManager.h" />
     <ClInclude Include="..\public\LuaWatcher.h" />
     <ClInclude Include="..\Public\ShaderWatcher.h" />
+    <ClInclude Include="..\Public\StateMachine.h" />
     <ClInclude Include="..\public\MyFSR2_2.h" />
     <ClInclude Include="..\public\ResLuaScript.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
@@ -290,6 +300,10 @@
     <ClInclude Include="..\public\ResPhysXGeometry.h" />
     <ClInclude Include="..\public\ResPhysXSphereGeometry.h" />
     <ClInclude Include="..\public\ResPhysXTriMeshGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXRTTriMeshGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXConvexGeometry.h" />
+    <ClInclude Include="..\public\ResPhysXRTConvexGeometry.h" />
+    <ClInclude Include="..\private\PhysXCookedMeshFile.h" />
     <ClInclude Include="..\public\DbgLineRender.h" />
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
@@ -332,6 +346,8 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
+    <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
     <ClInclude Include="..\public\PhysxManagerListener.h" />
     <ClInclude Include="..\Public\ShadowCamera.h" />
     <ClInclude Include="..\public\TextUI.h" />
@@ -526,8 +542,13 @@
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\private\BTRandSelector.cpp" />
+    <ClCompile Include="..\private\BTReactiveSelector.cpp" />
     <ClCompile Include="..\private\ComLuaScript.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
+    <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />
+    <ClCompile Include="..\Private\ComCharacterMotor.cpp" />
+    <ClCompile Include="..\Private\ComSound.cpp" />
+    <ClCompile Include="..\Private\ComSocket.cpp" />
     <ClCompile Include="..\Private\ComStaticModelInstance.cpp" />
     <ClCompile Include="..\Private\ComAnimator.cpp" />
     <ClCompile Include="..\private\ComBeHavior.cpp" />
@@ -548,23 +569,26 @@
     <ClCompile Include="..\Private\Component.cpp" />
     <ClCompile Include="..\private\ComPxBoxCollider.cpp" />
     <ClCompile Include="..\private\ComPxCapsuleCollider.cpp" />
+    <ClCompile Include="..\private\ComPxConvexCollider.cpp" />
     <ClCompile Include="..\private\ComPxCollider.cpp" />
     <ClCompile Include="..\private\ComPxRigidBody.cpp" />
     <ClCompile Include="..\private\ComPxSphereCollider.cpp" />
     <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
-    <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\ButtonComponent.cpp" />
+    <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp" />
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp" />
     <ClCompile Include="..\private\LuaEnv.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
     <ClCompile Include="..\private\LuaWatcher.cpp" />
     <ClCompile Include="..\Private\ShaderWatcher.cpp" />
+    <ClCompile Include="..\Private\StateMachine.cpp" />
     <ClCompile Include="..\private\MyFSR2_2.cpp" />
     <ClCompile Include="..\private\ResLuaScript.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />
@@ -580,6 +604,9 @@
     <ClCompile Include="..\private\ResPhysXGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXSphereGeometry.cpp" />
     <ClCompile Include="..\private\ResPhysXTriMeshGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXRTTriMeshGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXConvexGeometry.cpp" />
+    <ClCompile Include="..\private\ResPhysXRTConvexGeometry.cpp" />
     <ClCompile Include="..\private\DbgLineRender.cpp" />
     <ClCompile Include="..\Private\DInputManager.cpp" />
     <ClCompile Include="..\Private\FlyCamera.cpp" />
@@ -603,6 +630,7 @@
     <ClCompile Include="..\private\Particle_CPU.cpp" />
     <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\private\PhysXManager.cpp" />
+    <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp" />
     <ClCompile Include="..\private\PhysxManagerListener.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />
@@ -698,6 +726,14 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGlobalCull.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshBuildIndirectArgs.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\PBR\CS_PBR.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
@@ -764,6 +800,9 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>

@@ -31,7 +31,9 @@ public:
 
 protected:
 	virtual void PlayEffect(uint32_t uiState);
-
+public:
+	void SetwText(std::wstring text) { m_textInfo.Text = text; }
+	std::wstring GetwText() { return m_textInfo.Text; }
 public:
 	TEXT_INFO& GetTextInfo() { return m_textInfo; }
 	const TEXT_INFO& GetTextInfo() const { return m_textInfo; }

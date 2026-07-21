@@ -13,6 +13,8 @@ private:
 	static HRESULT Load_Particle_Resources();
 	static HRESULT Load_PhysX_Resource();
 	static HRESULT Create_ActionNode();
+	static HRESULT Initialize_Sound();
+	static HRESULT Load_UIStaitc_Resources();
 };
 
 NS_END

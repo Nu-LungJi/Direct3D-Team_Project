@@ -43,12 +43,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 
 	if (m_bLoop || bFinished)
 	{
-		if (m_GuiNode.bAbort)
-		{
-			//애니매이션 겹침 방지
-		//	Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
-			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
-		}
+
+		Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
@@ -58,13 +54,11 @@ void CBTAnimation::Update_Gui()
 {
 	if (ImGui::Button("Abort : ")) 
 		m_GuiNode.bAbort = !m_GuiNode.bAbort;
-	ImGui::SameLine(50.f);
-	m_GuiNode.bAbort == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Abort : %s", m_GuiNode.bAbort ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Loop Change"))
 		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
-	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
+	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
 	
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
@@ -86,7 +80,13 @@ void CBTAnimation::Update_Gui()
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	const _char* Flag[] = { "HIT","ATTACK","ABORT","SUPERARMOR","THORW" ,"DEAD" };
+	
+//NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
+	
+//, EMISSIVE = 0x0000040
+#define X(name)#name,
+	const _char* Flag[] = { BTFLAG_M };
+#undef X
 	if (ImGui::TreeNode("EndFlag"))
 	{
 
@@ -111,6 +111,10 @@ void CBTAnimation::Update_Gui()
 	}
 
 	ImGui::PopStyleColor(2);
+}
+void CBTAnimation::Abort()
+{
+	m_iLoopCnt = 0;
 }
 nlohmann::json CBTAnimation::Save_Node()
 {

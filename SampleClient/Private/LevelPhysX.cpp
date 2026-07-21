@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "LevelPhysX.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
@@ -15,6 +15,8 @@
 #include "TestPhysXTerrain.h"
 #include "TestPhysXBox.h"
 #include "TestCharacter.h"
+#include "TestPhysXTrigger.h"
+#include "TestThirdPersonCamera.h"
 
 #include "LevelPhysXLoader.h"
 
@@ -71,17 +73,32 @@ HRESULT CLevelPhysX::Initialize()
 		}
 	}
 
+	CHandle hTestCharacter{};
 	{
 		CTestCharacter::DESC Desc{ };
 		Desc.sObjectTag = "TestCharacter";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestCharacter",
-			"00_OBJECTS", &Desc)))
+		auto hCharacter = E::CGameInstance::Get().AddGameObjectToLayer(
+			"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestCharacter", "00_OBJECTS", &Desc);
+		if (!hCharacter)
+		{
+			return E_FAIL;
+		}
+		hTestCharacter = *hCharacter;
+	}
+
+	//"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXTrigger"
+	{
+		CTestPhysXTrigger::DESC Desc{ };
+		Desc.sObjectTag = "TestTrigger";
+		Desc.vInitialPos = { 6.f, 4.f, 2.f };
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::INTERACTION);
+		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_BODY);
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXTrigger",
+			"01_TRIGGER", &Desc)))
 		{
 			return E_FAIL;
 		}
 	}
-
-
 
 
 	{
@@ -104,6 +121,32 @@ HRESULT CLevelPhysX::Initialize()
 			}
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
+	}
+
+	{
+			CTestThirdPersonCamera::DESC Desc{};
+			Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+			Desc.vAt = { 0.f, 0.f, 0.f };
+			Desc.vEye = { 0.f, 2.5f, -4.5f };
+			Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+			Desc.fFovY = 75.f;
+			Desc.fNear = 0.1f;
+			Desc.fFar = 100.f;
+			Desc.sObjectTag = "TestPlayerCam";
+			Desc.hTarget = hTestCharacter;
+
+			if (auto playerCam = E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestThirdPersonCamera",
+				"99_CAMERA", &Desc))
+			{
+				if (FAILED(E::CGameInstance::Get().RegistCamera("TestPlayerCam", playerCam.value())))
+				{
+					MSG_BOX("MSG_BOX_123");
+				}
+				else if (FAILED(E::CGameInstance::Get().SetActiveCamera("TestPlayerCam")))
+				{
+					return E_FAIL;
+				}
+			}
 	}
 
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;

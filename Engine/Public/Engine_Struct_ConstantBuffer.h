@@ -31,13 +31,11 @@ namespace Engine
 	typedef struct tagConstantBufferPerUI
 	{
 		_float2  texCoord{};
-		_float2  uvSize{};
+		_float2  uvSize{};	// 그릴사이즈
 		_float4  color{ 0.f, 0.f, 0.f, 1.f };
-		//uint32_t texIndex{};
-		//_float2  borderUV{};
-		//float    _pad0{};
-		//_float2  borderPx{};
-		//_float2  rectSizePx{};
+		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
+		_float2 quadSize{}; // 텍스처의 현제 사이즈
+		_float4 margins{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 
@@ -149,6 +147,15 @@ namespace Engine
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
 
+	typedef struct CB_PART_ATTACHMENT
+	{
+		_float4x4 m_preTransform;
+		uint32_t gParentInstanceIndex;
+		uint32_t gParentBoneIndex;
+		_float2  gPartAttachmentPadding;
+	}CB_PART_ATTACHMENT;
+	static_assert(sizeof(CB_PART_ATTACHMENT) % 16 == 0);
+
 	typedef struct CB_SpellMeter
 	{
 		float fAmount;
@@ -177,4 +184,11 @@ namespace Engine
 	};
 	static_assert(sizeof(CB_TRAIL_OPTION) % 16 == 0);
 
+	typedef struct CB_Minimap
+	{
+		_float2	mapOffset;
+		float	mapRotation;
+		float	mapScale;
+	}CB_MINIMAP;
+	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
 }

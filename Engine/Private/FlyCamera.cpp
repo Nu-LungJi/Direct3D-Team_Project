@@ -40,36 +40,44 @@ HRESULT CFlyCamera::Initialize(void* pArg)
 
 void CFlyCamera::PriorityUpdate(E::_float fTimeDelta)
 {
+	_float moveSpeed = 10.f;
+	_float speedRatio = 1.f;
+
+	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT))
+		speedRatio = 5.f;
+	else
+		speedRatio = 1.f;
+
     if (CGameInstance::Get().GetActiveCamera() == this)
     {
         if (CGameInstance::Get().KeyPressing(DIK_W))
         {
-            GetTransform().GoStraight(fTimeDelta * 10.f);
+            GetTransform().GoStraight(fTimeDelta * moveSpeed * speedRatio);
         }
 
         if (CGameInstance::Get().KeyPressing(DIK_A))
         {
-            GetTransform().GoLeft(fTimeDelta * 10.f);
+            GetTransform().GoLeft(fTimeDelta * moveSpeed * speedRatio);
         }
 
         if (CGameInstance::Get().KeyPressing(DIK_S))
         {
-            GetTransform().GoBackward(fTimeDelta * 10.f);
+            GetTransform().GoBackward(fTimeDelta * moveSpeed * speedRatio);
         }
 
         if (CGameInstance::Get().KeyPressing(DIK_D))
         {
-            GetTransform().GoRight(fTimeDelta * 10.f);
+            GetTransform().GoRight(fTimeDelta * moveSpeed * speedRatio);
         }
 
         if (CGameInstance::Get().KeyPressing(DIK_Q))
         {
-            GetTransform().GoUp(fTimeDelta * 10.f);
+            GetTransform().GoUp(fTimeDelta * moveSpeed * speedRatio);
         }
 
         if (CGameInstance::Get().KeyPressing(DIK_E))
         {
-            GetTransform().GoDown(fTimeDelta * 10.f);
+            GetTransform().GoDown(fTimeDelta * moveSpeed * speedRatio);
         }
 
         if (CGameInstance::Get().GetMouseFix())

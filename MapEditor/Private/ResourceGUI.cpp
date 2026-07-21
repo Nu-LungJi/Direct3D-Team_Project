@@ -730,6 +730,9 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 
 	const std::filesystem::path resourceRoot = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
 	const std::string modelName = manifest.value("modelName", manifestPath.stem().string());
+	static uint32_t wholeMapImportIndex = 1;
+	const std::string wholeMapGroupTag = "WholeMap_" + modelName + "_Import" +
+		std::to_string(wholeMapImportIndex++);
 	uint32_t createdCount = 0;
 	uint32_t skippedCount = 0;
 
@@ -756,7 +759,7 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 
 		const auto& origin = chunk["localOrigin"];
 		MAPMESH_OBJECT_SNAPSHOT snapshot{};
-		snapshot.objectTag = "WholeMap_" + modelName + "_" +
+		snapshot.objectTag = wholeMapGroupTag + "_Chunk_" +
 			std::to_string(chunk.value("x", 0)) + "_" +
 			std::to_string(chunk.value("y", 0)) + "_" +
 			std::to_string(chunk.value("z", 0));

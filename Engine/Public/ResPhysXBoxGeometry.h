@@ -32,7 +32,7 @@ private:
 
 public:
 	static SPtr<CResPhysXBoxGeometry> Create();
-	static SPtr<CResPhysXBoxGeometry> Create(const DESC& desc);
+	static SPtr<CResPhysXBoxGeometry> CreateAndLoad(const DESC& desc);
 
 private:
 	void Free() override;

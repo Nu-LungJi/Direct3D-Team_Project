@@ -14,17 +14,25 @@ private:
 	~CBTTurnAnimation() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT	InitializePrototype(void* pArg = nullptr) override;
-	HRESULT Initalize(void* pArg)override;
+	HRESULT						InitializePrototype(void* pArg = nullptr) override;
+	HRESULT						Initalize(void* pArg)override;
 public:
 	EVALUATE					Evaluate(_float fTimeDelta) override;
 	virtual void				Update_Gui() override;
 
 	virtual nlohmann::json		Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j) override;
+
+	void						Abort()override;
 private:
-	_bool				m_bLoop{ true }, m_bStart{ true };
-	int32_t				m_iTurnAnimIndex[ETOUI(TURN::END)];
+	_bool						SelectAngle(_float fAngle);
+	void						Turn(_float fTimeDelta);
+private:
+	_bool						m_bLoop{ true },  m_bTurn{false};
+	_float						m_fAngle{};
+	_float						m_fTick{};
+	_float3						m_vCurrentLook{}, m_vTargetLook{};
+	int32_t						m_iTurnAnimIndex[ETOUI(TURN::END)], m_iTurnIdx{ -1 };
 public:
 	static UPtr<CBTTurnAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

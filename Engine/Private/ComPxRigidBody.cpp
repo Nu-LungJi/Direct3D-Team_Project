@@ -1,4 +1,4 @@
-﻿
+
 #include "pch.h"
 #include "ComPxRigidBody.h"
 #include "PhysXManager.h"
@@ -14,53 +14,297 @@
 
 using namespace physx;
 
+namespace
+{
+	PxRigidDynamic* GetDynamicActor(PxRigidActor* pActor)
+	{
+		return pActor ? pActor->is<PxRigidDynamic>() : nullptr;
+	}
+
+	PxQuat ToRigidBodyNormalizedQuat(const _float4& vQuaternion)
+	{
+		PxQuat tQuat{ vQuaternion.x, vQuaternion.y, vQuaternion.z, vQuaternion.w };
+		return tQuat.magnitudeSquared() > 0.f ? tQuat.getNormalized() : PxQuat{ PxIdentity };
+	}
+}
+
+_bool CComPxRigidBody::SetPosition(const _float3& vPosition)
+{
+	if (!m_pActor)
+		return false;
+
+	PxTransform tPose = m_pActor->getGlobalPose();
+	tPose.p = PxVec3{ vPosition.x, vPosition.y, vPosition.z };
+	m_pActor->setGlobalPose(tPose);
+	return true;
+}
+
+_float3 CComPxRigidBody::GetPosition() const
+{
+	if (!m_pActor)
+		return {};
+
+	const PxVec3 vPosition = m_pActor->getGlobalPose().p;
+	return { vPosition.x, vPosition.y, vPosition.z };
+}
+
+_bool CComPxRigidBody::SetRotation(const _float4& vQuaternion)
+{
+	if (!m_pActor)
+		return false;
+
+	PxTransform tPose = m_pActor->getGlobalPose();
+	tPose.q = ToRigidBodyNormalizedQuat(vQuaternion);
+	m_pActor->setGlobalPose(tPose);
+	return true;
+}
+
+_float4 CComPxRigidBody::GetRotation() const
+{
+	if (!m_pActor)
+		return { 0.f, 0.f, 0.f, 1.f };
+
+	const PxQuat vRotation = m_pActor->getGlobalPose().q;
+	return { vRotation.x, vRotation.y, vRotation.z, vRotation.w };
+}
+
+_bool CComPxRigidBody::SetPose(const _float3& vPosition, const _float4& vQuaternion)
+{
+	if (!m_pActor)
+		return false;
+
+	m_pActor->setGlobalPose(PxTransform{
+		PxVec3{ vPosition.x, vPosition.y, vPosition.z },
+		ToRigidBodyNormalizedQuat(vQuaternion) });
+	return true;
+}
+
+_bool CComPxRigidBody::SetMass(_float fMass)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || fMass <= 0.f)
+		return false;
+
+	if (!PxRigidBodyExt::setMassAndUpdateInertia(*pDynamic, fMass))
+		return false;
+
+	m_fMass = fMass;
+	return true;
+}
+
+_bool CComPxRigidBody::SetKinematic(_bool bKinematic)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic)
+		return false;
+
+	pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, bKinematic);
+	m_eType = bKinematic ? TYPE::KINEMATIC : TYPE::DYNAMIC;
+	return true;
+}
+
+_bool CComPxRigidBody::IsKinematic() const
+{
+	const auto* pDynamic = GetDynamicActor(m_pActor);
+	return pDynamic && pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC);
+}
+
+_float3 CComPxRigidBody::GetLinearVelocity() const
+{
+	const auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic)
+		return {};
+
+	const PxVec3 vVelocity = pDynamic->getLinearVelocity();
+	return { vVelocity.x, vVelocity.y, vVelocity.z };
+}
+
+_bool CComPxRigidBody::SetLinearVelocity(const _float3& vVelocity)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->setLinearVelocity(PxVec3{ vVelocity.x, vVelocity.y, vVelocity.z });
+	return true;
+}
+
+_float3 CComPxRigidBody::GetAngularVelocity() const
+{
+	const auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic)
+		return {};
+
+	const PxVec3 vVelocity = pDynamic->getAngularVelocity();
+	return { vVelocity.x, vVelocity.y, vVelocity.z };
+}
+
+_bool CComPxRigidBody::SetAngularVelocity(const _float3& vVelocity)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->setAngularVelocity(PxVec3{ vVelocity.x, vVelocity.y, vVelocity.z });
+	return true;
+}
+
+_bool CComPxRigidBody::AddForce(const _float3& vForce)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->addForce(PxVec3{ vForce.x, vForce.y, vForce.z }, PxForceMode::eFORCE);
+	return true;
+}
+
+_bool CComPxRigidBody::AddImpulse(const _float3& vImpulse)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->addForce(PxVec3{ vImpulse.x, vImpulse.y, vImpulse.z }, PxForceMode::eIMPULSE);
+	return true;
+}
+
+_bool CComPxRigidBody::AddTorque(const _float3& vTorque)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->addTorque(PxVec3{ vTorque.x, vTorque.y, vTorque.z }, PxForceMode::eFORCE);
+	return true;
+}
+
+_bool CComPxRigidBody::SetKinematicTarget(const _float3& vPosition, const _float4& vQuaternion)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || !pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->setKinematicTarget(PxTransform{
+		PxVec3{ vPosition.x, vPosition.y, vPosition.z },
+		ToRigidBodyNormalizedQuat(vQuaternion) });
+	return true;
+}
+
+_bool CComPxRigidBody::SetGravityEnabled(_bool bEnabled)
+{
+	if (!m_pActor)
+		return false;
+
+	m_pActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !bEnabled);
+	return true;
+}
+
+_bool CComPxRigidBody::IsGravityEnabled() const
+{
+	return m_pActor && !m_pActor->getActorFlags().isSet(PxActorFlag::eDISABLE_GRAVITY);
+}
+
+_bool CComPxRigidBody::SetLinearDamping(_float fDamping)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || fDamping < 0.f)
+		return false;
+
+	pDynamic->setLinearDamping(fDamping);
+	return true;
+}
+
+_bool CComPxRigidBody::SetAngularDamping(_float fDamping)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || fDamping < 0.f)
+		return false;
+
+	pDynamic->setAngularDamping(fDamping);
+	return true;
+}
+
+_bool CComPxRigidBody::WakeUp()
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->wakeUp();
+	return true;
+}
+
+_bool CComPxRigidBody::PutToSleep()
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		return false;
+
+	pDynamic->putToSleep();
+	return true;
+}
+
+_bool CComPxRigidBody::IsSleeping() const
+{
+	const auto* pDynamic = GetDynamicActor(m_pActor);
+	return pDynamic && !pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC) && pDynamic->isSleeping();
+}
+
 void CComPxRigidBody::UpdateGUI()
 {
     CComponent::UpdateGUI();
+	ImGui::PushID(this);
 
     if (m_pActor == nullptr)
     {
         ImGui::Text("Actor: nullptr");
+		ImGui::PopID();
         return;
     }
 
-    ImGui::Text("Actor Type: %s", m_bIsDynamic ? "Dynamic" : "Static");
+	const char* pTypeName = "Static";
+	if (m_eType == TYPE::DYNAMIC)
+		pTypeName = "Dynamic";
+	else if (m_eType == TYPE::KINEMATIC)
+		pTypeName = "Kinematic";
+	ImGui::Text("Actor Type: %s", pTypeName);
 
-    // ---- Transform (공통) ----
-    PxTransform tPose = m_pActor->getGlobalPose();
-    float fPos[3] = { tPose.p.x, tPose.p.y, tPose.p.z };
+	const _float3 vPosition = GetPosition();
+	float fPos[3] = { vPosition.x, vPosition.y, vPosition.z };
     if (ImGui::DragFloat3("Position", fPos, 0.1f))
-    {
-        tPose.p = PxVec3(fPos[0], fPos[1], fPos[2]);
-        m_pActor->setGlobalPose(tPose);
-    }
+		SetPosition({ fPos[0], fPos[1], fPos[2] });
 
-    // 쿼터니언을 오일러로 보여주되, 직접 수정은 쿼터니언 그대로 두는 게 안전함 (짐벌락 방지)
-    ImGui::Text("Rotation (Quat): %.3f, %.3f, %.3f, %.3f",
-        tPose.q.x, tPose.q.y, tPose.q.z, tPose.q.w);
+	const _float4 vRotation = GetRotation();
+	float fRotation[4] = { vRotation.x, vRotation.y, vRotation.z, vRotation.w };
+	if (ImGui::DragFloat4("Rotation (Quaternion)", fRotation, 0.01f))
+		SetRotation({ fRotation[0], fRotation[1], fRotation[2], fRotation[3] });
 
-    // ---- Dynamic 전용 ----
     if (m_bIsDynamic)
     {
         PxRigidDynamic* pDynamic = static_cast<PxRigidDynamic*>(m_pActor);
 
         float fMass = pDynamic->getMass();
         if (ImGui::DragFloat("Mass", &fMass, 0.1f, 0.01f, 1000.0f))
-            pDynamic->setMass(fMass);
+			SetMass(fMass);
 
-        bool bIsKinematic = pDynamic->getRigidBodyFlags() & PxRigidBodyFlag::eKINEMATIC;
-        if (ImGui::Checkbox("Is Kinematic", &bIsKinematic))
-            pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, bIsKinematic);
+		bool bIsKinematic = IsKinematic();
+		if (ImGui::Checkbox("Is Kinematic", &bIsKinematic))
+			SetKinematic(bIsKinematic);
 
         bool bGravity = !(pDynamic->getActorFlags() & PxActorFlag::eDISABLE_GRAVITY);
         if (ImGui::Checkbox("Use Gravity", &bGravity))
             pDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !bGravity);
 
-        PxVec3 vLinVel = pDynamic->getLinearVelocity();
-        ImGui::Text("Linear Velocity: %.3f, %.3f, %.3f", vLinVel.x, vLinVel.y, vLinVel.z);
+		_float3 vLinearVelocity = GetLinearVelocity();
+		float fLinearVelocity[3] = { vLinearVelocity.x, vLinearVelocity.y, vLinearVelocity.z };
+		if (ImGui::DragFloat3("Linear Velocity", fLinearVelocity, 0.1f))
+			SetLinearVelocity({ fLinearVelocity[0], fLinearVelocity[1], fLinearVelocity[2] });
 
-        PxVec3 vAngVel = pDynamic->getAngularVelocity();
-        ImGui::Text("Angular Velocity: %.3f, %.3f, %.3f", vAngVel.x, vAngVel.y, vAngVel.z);
+		_float3 vAngularVelocity = GetAngularVelocity();
+		float fAngularVelocity[3] = { vAngularVelocity.x, vAngularVelocity.y, vAngularVelocity.z };
+		if (ImGui::DragFloat3("Angular Velocity", fAngularVelocity, 0.1f))
+			SetAngularVelocity({ fAngularVelocity[0], fAngularVelocity[1], fAngularVelocity[2] });
 
         float fLinDamp = pDynamic->getLinearDamping();
         if (ImGui::DragFloat("Linear Damping", &fLinDamp, 0.01f, 0.0f, 10.0f))
@@ -72,13 +316,50 @@ void CComPxRigidBody::UpdateGUI()
 
         bool bIsSleeping = pDynamic->isSleeping();
         ImGui::Text("Sleeping: %s", bIsSleeping ? "true" : "false");
-        if (!bIsSleeping && ImGui::Button("Force Sleep"))
-            pDynamic->putToSleep();
+		if (!bIsSleeping && ImGui::Button("Put To Sleep"))
+			PutToSleep();
+		if (bIsSleeping && ImGui::Button("Wake Up"))
+			WakeUp();
+
+		if (!bIsKinematic)
+		{
+			static float s_fForce[3]{};
+			static float s_fImpulse[3]{};
+			static float s_fTorque[3]{};
+
+			ImGui::Separator();
+			ImGui::DragFloat3("Test Force", s_fForce, 0.1f);
+			if (ImGui::Button("Add Force"))
+				AddForce({ s_fForce[0], s_fForce[1], s_fForce[2] });
+
+			ImGui::DragFloat3("Test Impulse", s_fImpulse, 0.1f);
+			if (ImGui::Button("Add Impulse"))
+				AddImpulse({ s_fImpulse[0], s_fImpulse[1], s_fImpulse[2] });
+
+			ImGui::DragFloat3("Test Torque", s_fTorque, 0.1f);
+			if (ImGui::Button("Add Torque"))
+				AddTorque({ s_fTorque[0], s_fTorque[1], s_fTorque[2] });
+		}
+		else
+		{
+			static float s_fKinematicPosition[3]{};
+			static float s_fKinematicRotation[4]{ 0.f, 0.f, 0.f, 1.f };
+
+			ImGui::Separator();
+			ImGui::DragFloat3("Kinematic Target Position", s_fKinematicPosition, 0.1f);
+			ImGui::DragFloat4("Kinematic Target Rotation", s_fKinematicRotation, 0.01f);
+			if (ImGui::Button("Set Kinematic Target"))
+			{
+				SetKinematicTarget(
+					{ s_fKinematicPosition[0], s_fKinematicPosition[1], s_fKinematicPosition[2] },
+					{ s_fKinematicRotation[0], s_fKinematicRotation[1], s_fKinematicRotation[2], s_fKinematicRotation[3] });
+			}
+		}
     }
 
-    // ---- Shape 개수 (부착된 Collider 확인용) ----
     PxU32 nNbShapes = m_pActor->getNbShapes();
     ImGui::Text("Attached Shapes: %d", nNbShapes);
+	ImGui::PopID();
 }
 
 CComPxRigidBody::CComPxRigidBody()
@@ -94,6 +375,7 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
 		return E_FAIL;
 
     m_eType = pDesc->eType;
+	m_fMass = pDesc->fMass;
     if (FAILED(CComponent::Initialize(pArg)))
     {
         return E_FAIL;

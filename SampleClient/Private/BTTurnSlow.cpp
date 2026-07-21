@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTTurnSlow.h"
 #include "ComTransform.h" 
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 
 CBTTurnSlow::CBTTurnSlow()
@@ -31,33 +32,19 @@ HRESULT CBTTurnSlow::Initalize(void* pArg)
 EVALUATE CBTTurnSlow::Evaluate(_float fTimeDelta)
 {
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
-	if (pTransform == nullptr)
-	{
-		m_eDebug = EVALUATE::FAILED;
-		return EVALUATE::FAILED;
-	}
-	XMMATRIX mat = XMMatrixIdentity();
-	m_Value.fTick += fTimeDelta;
-	_float t = m_Value.fTick / m_Value.fTime;
-	_vector vLook = XMVectorLerp(pTransform->GetState(STATE::LOOK),
-		XMVector3Normalize((vDest.GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION))),t);
-	
-	_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
-	_vector vUp = XMVector3Cross(vLook, vRight);
+	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+	auto* pTarget = CGameInstance::Get().GetActiveCamera();
+	if (pTransform == nullptr || pMoveIntent == nullptr || pTarget == nullptr)
+		return m_eDebug = EVALUATE::FAILED;
 
-	mat.r[0] = vRight;
-	mat.r[1] = vUp;
-	mat.r[2] = vLook;
-	XMVECTOR quat = XMQuaternionRotationMatrix(mat);
-	pTransform->SetQuaternion(quat);
-	if (t <= 1.f)
-	{
-		m_Value.fTick = 0.f;
-	}
+	_float3 vFacingDirection{};
+	XMStoreFloat3(&vFacingDirection,
+		pTarget->GetTransform().GetState(STATE::POSITION) -
+		pTransform->GetState(STATE::POSITION));
+	const _float fTurnTime = std::max(m_Value.fTime, 0.001f);
+	pMoveIntent->SetFacingIntent(vFacingDirection, 180.f / fTurnTime);
 	
-	m_eDebug = EVALUATE::SUCCESS;
-	return EVALUATE::SUCCESS;
+	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTTurnSlow::Update_Gui()
 {

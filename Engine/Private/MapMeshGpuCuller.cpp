@@ -4,292 +4,242 @@
 
 NS_USING(Engine)
 
-HRESULT CMapMeshGpuCuller::EnsureCapacity(uint32_t instanceCount)
+namespace
 {
-	if (instanceCount == 0)
-		return S_OK;
+	uint32_t GrowCapacity(uint32_t current, uint32_t required, uint32_t minimum)
+	{
+		uint32_t capacity = std::max(current, minimum);
+		while (capacity < required)
+			capacity *= 2;
+		return capacity;
+	}
 
-	if (m_iCapacity >= instanceCount &&
-		m_pInstanceInputBuffer &&
-		m_pOcclusionInputBuffer &&
-		m_pVisibleInstanceBuffer &&
-		m_pVisibleInstanceVertexBuffer &&
-		m_pIndirectArgsBuffer &&
-		m_pVisibleCountStagingBuffer &&
-		m_pCBuffer)
+	SPtr<CResStructuredBuffer> CreateStructuredBuffer(
+		uint32_t elementCount,
+		uint32_t stride,
+		uint32_t bindFlags)
+	{
+		auto buffer = CResStructuredBuffer::Create();
+		if (buffer == nullptr)
+			return nullptr;
+
+		CResStructuredBuffer::DESC desc{};
+		desc.iNumElements = elementCount;
+		desc.iStructureByteStride = stride;
+		desc.iBindFlags = bindFlags;
+		if (FAILED(buffer->Load(desc)))
+			return nullptr;
+		return buffer;
+	}
+}
+
+HRESULT CMapMeshGpuCuller::EnsureCapacity(uint32_t instanceCount, uint32_t batchCount, uint32_t drawCount)
+{
+	if (instanceCount == 0 || batchCount == 0 || drawCount == 0)
+		return E_INVALIDARG;
+
+	if (m_iCapacity >= instanceCount && m_iBatchCapacity >= batchCount && m_iDrawCapacity >= drawCount &&
+		m_pInstanceInputBuffer && m_pOcclusionInputBuffer && m_pCullMetaInputBuffer &&
+		m_pDrawBatchInputBuffer && m_pBatchVisibleCountBuffer && m_pVisibleInstanceBuffer &&
+		m_pVisibleInstanceVertexBuffer && m_pIndirectArgsBuffer && m_pIndirectArgsUAV &&
+		m_pCBuffer && m_pArgsCBuffer)
 	{
 		return S_OK;
 	}
 
-	size_t newCapacity = std::max<size_t>(instanceCount, 256);
-	while (newCapacity < instanceCount)
-	{
-		newCapacity *= 2;
-	}
+	const uint32_t newInstanceCapacity = GrowCapacity(m_iCapacity, instanceCount, 256);
+	const uint32_t newBatchCapacity = GrowCapacity(m_iBatchCapacity, batchCount, 64);
+	const uint32_t newDrawCapacity = GrowCapacity(m_iDrawCapacity, drawCount, 256);
 
+	auto instanceInput = CreateStructuredBuffer(newInstanceCapacity, sizeof(MAPMESH_INSTANCE_DATA), D3D11_BIND_SHADER_RESOURCE);
+	auto occlusionInput = CreateStructuredBuffer(newInstanceCapacity, sizeof(MAPMESH_OCCLUSION_DATA), D3D11_BIND_SHADER_RESOURCE);
+	auto cullMetaInput = CreateStructuredBuffer(newInstanceCapacity, sizeof(MAPMESH_CULL_META), D3D11_BIND_SHADER_RESOURCE);
+	auto drawBatchInput = CreateStructuredBuffer(newDrawCapacity, sizeof(uint32_t), D3D11_BIND_SHADER_RESOURCE);
+	auto batchVisibleCount = CreateStructuredBuffer(newBatchCapacity, sizeof(uint32_t), D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
+	auto visibleInstances = CreateStructuredBuffer(newInstanceCapacity, sizeof(MAPMESH_INSTANCE_DATA), D3D11_BIND_UNORDERED_ACCESS);
+	if (!instanceInput || !occlusionInput || !cullMetaInput || !drawBatchInput || !batchVisibleCount || !visibleInstances)
+		return E_FAIL;
 
-	{
-		auto pInstanceInputBuffer = CResStructuredBuffer::Create();
-		if (pInstanceInputBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
+	auto device = CGameInstance::Get().GetGraphicDevice();
+	if (device == nullptr)
+		return E_FAIL;
 
-		CResStructuredBuffer::DESC bufferDesc{};
-		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
-		bufferDesc.iStructureByteStride = sizeof(MAPMESH_INSTANCE_DATA);
-		bufferDesc.pInitialData = nullptr;
-		bufferDesc.bAppendConsume = false;
-		bufferDesc.iBindFlags = D3D11_BIND_SHADER_RESOURCE;
-		if (FAILED(pInstanceInputBuffer->Load(bufferDesc)))
-		{
-			return E_FAIL;
-		}
+	ComPtr<ID3D11Buffer> visibleVertexBuffer;
+	D3D11_BUFFER_DESC vertexDesc{};
+	vertexDesc.ByteWidth = sizeof(MAPMESH_INSTANCE_DATA) * newInstanceCapacity;
+	vertexDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertexDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	if (FAILED(device->CreateBuffer(&vertexDesc, nullptr, visibleVertexBuffer.GetAddressOf())))
+		return E_FAIL;
 
-		m_pInstanceInputBuffer = pInstanceInputBuffer;
-	}
+	ComPtr<ID3D11Buffer> indirectArgsBuffer;
+	D3D11_BUFFER_DESC argsDesc{};
+	argsDesc.ByteWidth = sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS) * newDrawCapacity;
+	argsDesc.Usage = D3D11_USAGE_DEFAULT;
+	argsDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+	argsDesc.MiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS | D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+	if (FAILED(device->CreateBuffer(&argsDesc, nullptr, indirectArgsBuffer.GetAddressOf())))
+		return E_FAIL;
 
-	{
-		auto pOcclusionInputBuffer = CResStructuredBuffer::Create();
-		if (pOcclusionInputBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
-
-		CResStructuredBuffer::DESC bufferDesc{};
-		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
-		bufferDesc.iStructureByteStride = sizeof(MAPMESH_OCCLUSION_DATA);
-		bufferDesc.pInitialData = nullptr;
-		bufferDesc.bAppendConsume = false;
-		bufferDesc.iBindFlags = D3D11_BIND_SHADER_RESOURCE;
-		if (FAILED(pOcclusionInputBuffer->Load(bufferDesc)))
-		{
-			return E_FAIL;
-		}
-
-		m_pOcclusionInputBuffer = pOcclusionInputBuffer;
-	}
-
-	{
-		auto pVisibleInstanceBuffer = CResStructuredBuffer::Create();
-		if (pVisibleInstanceBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
-
-		CResStructuredBuffer::DESC bufferDesc{};
-		bufferDesc.iNumElements = static_cast<uint32_t>(newCapacity);
-		bufferDesc.iStructureByteStride = sizeof(MAPMESH_INSTANCE_DATA);
-		bufferDesc.pInitialData = nullptr;
-		bufferDesc.bAppendConsume = true;
-		bufferDesc.iBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		if (FAILED(pVisibleInstanceBuffer->Load(bufferDesc)))
-		{
-			return E_FAIL;
-		}
-
-		m_pVisibleInstanceBuffer = pVisibleInstanceBuffer;
-	}
-
-	{
-		D3D11_BUFFER_DESC bufferDesc{};
-		bufferDesc.ByteWidth = static_cast<UINT>(sizeof(MAPMESH_INSTANCE_DATA) * newCapacity);
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = sizeof(MAPMESH_INSTANCE_DATA);
-
-		if (FAILED(CGameInstance::Get().GetGraphicDevice()->CreateBuffer(&bufferDesc, nullptr, m_pVisibleInstanceVertexBuffer.ReleaseAndGetAddressOf())))
-		{
-			return E_FAIL;
-		}
-	}
-
-	if (m_pIndirectArgsBuffer == nullptr)
-	{
-		D3D11_BUFFER_DESC bufferDesc{};
-		bufferDesc.ByteWidth = sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS);
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.BindFlags = 0;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
-
-		if (FAILED(CGameInstance::Get().GetGraphicDevice()->CreateBuffer(&bufferDesc, nullptr, m_pIndirectArgsBuffer.GetAddressOf())))
-		{
-			return E_FAIL;
-		}
-	}
-
-	// 디버그 확인용
-	if (m_pVisibleCountStagingBuffer == nullptr)
-	{
-		D3D11_BUFFER_DESC bufferDesc{};
-		bufferDesc.ByteWidth = sizeof(uint32_t);
-		bufferDesc.Usage = D3D11_USAGE_STAGING;
-		bufferDesc.BindFlags = 0;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-		bufferDesc.MiscFlags = 0;
-
-		if (FAILED(CGameInstance::Get().GetGraphicDevice()->CreateBuffer(&bufferDesc, nullptr, m_pVisibleCountStagingBuffer.GetAddressOf())))
-		{
-			return E_FAIL;
-		}
-	}
+	ComPtr<ID3D11UnorderedAccessView> indirectArgsUAV;
+	D3D11_UNORDERED_ACCESS_VIEW_DESC argsUAVDesc{};
+	argsUAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	argsUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	argsUAVDesc.Buffer.NumElements = argsDesc.ByteWidth / sizeof(uint32_t);
+	argsUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+	if (FAILED(device->CreateUnorderedAccessView(indirectArgsBuffer.Get(), &argsUAVDesc, indirectArgsUAV.GetAddressOf())))
+		return E_FAIL;
 
 	if (m_pCBuffer == nullptr)
 	{
-		D3D11_BUFFER_DESC bufferDesc{};
-		bufferDesc.ByteWidth = sizeof(CB_MAPMESH_GPU_CULL);
-		bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-		if (FAILED(CGameInstance::Get().GetGraphicDevice()->CreateBuffer(&bufferDesc, nullptr, m_pCBuffer.GetAddressOf())))
-		{
+		D3D11_BUFFER_DESC cbDesc{};
+		cbDesc.ByteWidth = sizeof(CB_MAPMESH_GPU_CULL);
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		if (FAILED(device->CreateBuffer(&cbDesc, nullptr, m_pCBuffer.GetAddressOf())))
 			return E_FAIL;
-		}
 	}
 
-	m_iCapacity = static_cast<uint32_t>(newCapacity);
+	if (m_pArgsCBuffer == nullptr)
+	{
+		D3D11_BUFFER_DESC cbDesc{};
+		cbDesc.ByteWidth = 16;
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		if (FAILED(device->CreateBuffer(&cbDesc, nullptr, m_pArgsCBuffer.GetAddressOf())))
+			return E_FAIL;
+	}
 
+	m_pInstanceInputBuffer = std::move(instanceInput);
+	m_pOcclusionInputBuffer = std::move(occlusionInput);
+	m_pCullMetaInputBuffer = std::move(cullMetaInput);
+	m_pDrawBatchInputBuffer = std::move(drawBatchInput);
+	m_pBatchVisibleCountBuffer = std::move(batchVisibleCount);
+	m_pVisibleInstanceBuffer = std::move(visibleInstances);
+	m_pVisibleInstanceVertexBuffer = std::move(visibleVertexBuffer);
+	m_pIndirectArgsBuffer = std::move(indirectArgsBuffer);
+	m_pIndirectArgsUAV = std::move(indirectArgsUAV);
+	m_iCapacity = newInstanceCapacity;
+	m_iBatchCapacity = newBatchCapacity;
+	m_iDrawCapacity = newDrawCapacity;
 	return S_OK;
 }
 
-HRESULT CMapMeshGpuCuller::BuildVisibleInstances(
+HRESULT CMapMeshGpuCuller::BuildVisibleInstancesAndIndirectArgs(
 	ID3D11DeviceContext* pContext,
 	const std::vector<MAPMESH_INSTANCE_DATA>& instances,
 	const std::vector<MAPMESH_OCCLUSION_DATA>& occlusionData,
+	const std::vector<MAPMESH_CULL_META>& cullMeta,
+	uint32_t batchCount,
+	const std::vector<uint32_t>& drawBatchIndices,
+	const std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS>& indirectArgs,
 	const CHizBuffer* pPrevHizBuffer,
 	_matrix matViewProj,
 	const _float2& screenSize)
 {
-	if (pContext == nullptr || instances.empty())
-		return E_FAIL;
+	ZoneScopedN("BuildVisibleInstancesAndIndirectArgs");
+	if (pContext == nullptr || instances.empty() || instances.size() != occlusionData.size() ||
+		instances.size() != cullMeta.size() || drawBatchIndices.empty() ||
+		drawBatchIndices.size() != indirectArgs.size())
+		return E_INVALIDARG;
 
 	const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
-	const bool hasOcclusionData = occlusionData.size() == instances.size();
-
-	if (FAILED(EnsureCapacity(instanceCount)))
+	const uint32_t drawCount = static_cast<uint32_t>(indirectArgs.size());
+	if (FAILED(EnsureCapacity(instanceCount, batchCount, drawCount)))
 		return E_FAIL;
 
-	if (FAILED(m_pInstanceInputBuffer->UpdateData(instances.data(), static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA) * instances.size()))))
+	if (FAILED(m_pInstanceInputBuffer->UpdateData(instances.data(), sizeof(MAPMESH_INSTANCE_DATA) * instanceCount)) ||
+		FAILED(m_pOcclusionInputBuffer->UpdateData(occlusionData.data(), sizeof(MAPMESH_OCCLUSION_DATA) * instanceCount)) ||
+		FAILED(m_pCullMetaInputBuffer->UpdateData(cullMeta.data(), sizeof(MAPMESH_CULL_META) * instanceCount)) ||
+		FAILED(m_pDrawBatchInputBuffer->UpdateData(drawBatchIndices.data(), sizeof(uint32_t) * drawCount)))
 		return E_FAIL;
 
-	if (!occlusionData.empty())
-	{
-		if (!hasOcclusionData)
-		{
-			return E_FAIL;
-		}
+	D3D11_BOX argsBox{};
+	argsBox.right = sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS) * drawCount;
+	argsBox.bottom = 1;
+	argsBox.back = 1;
+	pContext->UpdateSubresource(m_pIndirectArgsBuffer.Get(), 0, &argsBox, indirectArgs.data(), 0, 0);
 
-		if (FAILED(m_pOcclusionInputBuffer->UpdateData(occlusionData.data(), static_cast<uint32_t>(sizeof(MAPMESH_OCCLUSION_DATA) * occlusionData.size()))))
-		{
-			return E_FAIL;
-		}
-	}
+	const UINT clearValues[4]{};
+	pContext->ClearUnorderedAccessViewUint(m_pBatchVisibleCountBuffer->GetUAV().Get(), clearValues);
 
-	SPtr<CResComputeShader> shader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull");
-	if (shader == nullptr)
+	auto cullShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshGpuCull");
+	if (cullShader == nullptr)
 		return E_FAIL;
-
-
-	pContext->CSSetShader(shader->GetComputeShader().Get(), nullptr, 0);
 
 	ComPtr<ID3D11ShaderResourceView> prevHizSRV = pPrevHizBuffer ? pPrevHizBuffer->GetSRV() : nullptr;
-	ID3D11ShaderResourceView* srvs[] = {
+	ID3D11ShaderResourceView* cullSRVs[] = {
 		m_pInstanceInputBuffer->GetSRV().Get(),
 		m_pOcclusionInputBuffer->GetSRV().Get(),
-		prevHizSRV.Get()
+		prevHizSRV.Get(),
+		m_pCullMetaInputBuffer->GetSRV().Get()
 	};
-	pContext->CSSetShaderResources(0, 3, srvs);
-
-	ID3D11UnorderedAccessView* uavs[] = { m_pVisibleInstanceBuffer->GetUAV().Get() };
-	UINT initialCounts[] = { 0 };
-	pContext->CSSetUnorderedAccessViews(0, 1, uavs, initialCounts);
+	ID3D11UnorderedAccessView* cullUAVs[] = {
+		m_pVisibleInstanceBuffer->GetUAV().Get(),
+		m_pBatchVisibleCountBuffer->GetUAV().Get()
+	};
+	pContext->CSSetShader(cullShader->GetComputeShader().Get(), nullptr, 0);
+	pContext->CSSetShaderResources(0, 4, cullSRVs);
+	pContext->CSSetUnorderedAccessViews(0, 2, cullUAVs, nullptr);
 
 	CB_MAPMESH_GPU_CULL cb{};
 	XMStoreFloat4x4(&cb.matViewProj, matViewProj);
 	cb.screenSize = screenSize;
-	cb.hizSize = pPrevHizBuffer ? _float2{ static_cast<_float>(pPrevHizBuffer->GetWidth()), static_cast<_float>(pPrevHizBuffer->GetHeight()) } : _float2{};
+	cb.hizSize = pPrevHizBuffer
+		? _float2{ static_cast<_float>(pPrevHizBuffer->GetWidth()), static_cast<_float>(pPrevHizBuffer->GetHeight()) }
+		: _float2{};
 	cb.instanceCount = instanceCount;
 	cb.mipCount = pPrevHizBuffer ? pPrevHizBuffer->GetMipCount() : 0;
-	cb.useHiz = (hasOcclusionData && pPrevHizBuffer != nullptr && prevHizSRV != nullptr && cb.mipCount > 0 && screenSize.x > 0.f && screenSize.y > 0.f) ? 1u : 0u;
-	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-	if (FAILED(pContext->Map(m_pCBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-	{
+	cb.useHiz = pPrevHizBuffer && prevHizSRV && cb.mipCount > 0 && screenSize.x > 0.f && screenSize.y > 0.f;
+
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (FAILED(pContext->Map(m_pCBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 		return E_FAIL;
-	}
-	memcpy(mappedSubResource.pData, &cb, sizeof(CB_MAPMESH_GPU_CULL));
+	memcpy(mapped.pData, &cb, sizeof(cb));
 	pContext->Unmap(m_pCBuffer.Get(), 0);
 	pContext->CSSetConstantBuffers(0, 1, m_pCBuffer.GetAddressOf());
+	pContext->Dispatch((instanceCount + 63) / 64, 1, 1);
 
-	const uint32_t groupX = (instanceCount + 63) / 64;
-	pContext->Dispatch(groupX, 1, 1);
+	ID3D11ShaderResourceView* nullCullSRVs[4]{};
+	ID3D11UnorderedAccessView* nullCullUAVs[2]{};
+	pContext->CSSetShaderResources(0, 4, nullCullSRVs);
+	pContext->CSSetUnorderedAccessViews(0, 2, nullCullUAVs, nullptr);
 
+	auto argsShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "CS_MapMeshBuildIndirectArgs");
+	if (argsShader == nullptr)
+		return E_FAIL;
 
-	ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr };
-	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
-	pContext->CSSetShaderResources(0, 3, nullSRVs);
-	pContext->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-	ID3D11Buffer* nullCBuffers[] = { nullptr };
+	ID3D11ShaderResourceView* argsSRVs[] = {
+		m_pBatchVisibleCountBuffer->GetSRV().Get(),
+		m_pDrawBatchInputBuffer->GetSRV().Get()
+	};
+	ID3D11UnorderedAccessView* argsUAVs[] = { m_pIndirectArgsUAV.Get() };
+	pContext->CSSetShader(argsShader->GetComputeShader().Get(), nullptr, 0);
+	pContext->CSSetShaderResources(0, 2, argsSRVs);
+	pContext->CSSetUnorderedAccessViews(0, 1, argsUAVs, nullptr);
+
+	if (FAILED(pContext->Map(m_pArgsCBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		return E_FAIL;
+	memset(mapped.pData, 0, 16);
+	memcpy(mapped.pData, &drawCount, sizeof(drawCount));
+	pContext->Unmap(m_pArgsCBuffer.Get(), 0);
+	pContext->CSSetConstantBuffers(0, 1, m_pArgsCBuffer.GetAddressOf());
+	pContext->Dispatch((drawCount + 63) / 64, 1, 1);
+
+	ID3D11ShaderResourceView* nullArgsSRVs[2]{};
+	ID3D11UnorderedAccessView* nullArgsUAVs[1]{};
+	ID3D11Buffer* nullCBuffers[1]{};
+	pContext->CSSetShaderResources(0, 2, nullArgsSRVs);
+	pContext->CSSetUnorderedAccessViews(0, 1, nullArgsUAVs, nullptr);
 	pContext->CSSetConstantBuffers(0, 1, nullCBuffers);
 	pContext->CSSetShader(nullptr, nullptr, 0);
 
-	// AppendStructuredBuffer로 visible 인스턴스만 써둔 gpu버퍼를 복사 // gpu-gpu내 메모리 복사
 	pContext->CopyResource(m_pVisibleInstanceVertexBuffer.Get(), m_pVisibleInstanceBuffer->GetBuffer().Get());
-
 	return S_OK;
-}
-
-HRESULT CMapMeshGpuCuller::PrepareIndirectArgs(
-	ID3D11DeviceContext* pContext,
-	uint32_t indexCountPerInstance,
-	uint32_t startIndexLocation,
-	int32_t baseVertexLocation,
-	uint32_t startInstanceLocation)
-{
-	if (pContext == nullptr || m_pIndirectArgsBuffer == nullptr || m_pVisibleInstanceBuffer == nullptr)
-	{
-		return E_FAIL;
-	}
-
-	D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
-	args.IndexCountPerInstance = indexCountPerInstance;
-	args.InstanceCount = 0;
-	args.StartIndexLocation = startIndexLocation;
-	args.BaseVertexLocation = baseVertexLocation;
-	args.StartInstanceLocation = startInstanceLocation;
-
-	pContext->UpdateSubresource(m_pIndirectArgsBuffer.Get(), 0, nullptr, &args, 0, 0);
-
-	// offset 4바이트 줘서 args.InstanceCount 복사해옴
-	// cpu readback하는게 아니라 gpu내부에서 uav가 관리하는 내부카운터를 복사해오는것.
-	pContext->CopyStructureCount(m_pIndirectArgsBuffer.Get(), sizeof(uint32_t), m_pVisibleInstanceBuffer->GetUAV().Get());
-
-
-	return S_OK;
-}
-
-uint32_t CMapMeshGpuCuller::GetVisibleCountForDebug(ID3D11DeviceContext* pContext)
-{
-	if (pContext == nullptr || m_pVisibleCountStagingBuffer == nullptr || m_pVisibleInstanceBuffer == nullptr)
-	{
-		return 0;
-	}
-
-	pContext->CopyStructureCount(m_pVisibleCountStagingBuffer.Get(), 0, m_pVisibleInstanceBuffer->GetUAV().Get());
-
-	D3D11_MAPPED_SUBRESOURCE mapped{};
-	if (FAILED(pContext->Map(m_pVisibleCountStagingBuffer.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
-	{
-		return 0;
-	}
-
-	const uint32_t visibleCount = *static_cast<const uint32_t*>(mapped.pData);
-	pContext->Unmap(m_pVisibleCountStagingBuffer.Get(), 0);
-
-	return visibleCount;
 }
 
 ID3D11Buffer* CMapMeshGpuCuller::GetVisibleInstanceBuffer() const
@@ -301,7 +251,6 @@ ID3D11Buffer* CMapMeshGpuCuller::GetIndirectArgsBuffer() const
 {
 	return m_pIndirectArgsBuffer.Get();
 }
-
 
 UPtr<CMapMeshGpuCuller> CMapMeshGpuCuller::Create()
 {

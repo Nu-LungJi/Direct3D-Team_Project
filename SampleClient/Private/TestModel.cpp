@@ -6,7 +6,7 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "GameInstance.h"
-
+#include "TestPartObject.h"
 
 
 
@@ -50,7 +50,7 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	if (!m_pResSkinMeshCBuffer)
 	{
 		return E_FAIL;
-	}
+	} 
 
 	
 	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
@@ -97,19 +97,37 @@ HRESULT CTestModel::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
-	
+	//CTestPartObject::DESC WeaponDesc{};
+	//WeaponDesc.sObjectTag = "Weapon";
+	//WeaponDesc.hOwner = GetHandle();
+	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	//WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
+	//WeaponDesc.sGroupTag = "TEST"; 
+	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
 
+	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
+	//if (!Weapon.has_value())
+	//{
+	//	MSG_BOX("Create Failed Weapon");
+	//	return E_FAIL;
+	//}
+
+	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	return S_OK;
+
 }
 
 void CTestModel::PriorityUpdate(E::_float fTimeDelta)
-{
+{ 
 }
 
 void CTestModel::Update(E::_float fTimeDelta)
 {
+	ZoneScopedN("Update TestModel");
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 		
@@ -130,9 +148,10 @@ void CTestModel::LateUpdate(E::_float fTimeDelta)
 	if (!pModel->GetAnimations().empty())
 	{
 		CGameInstance::Get().Add_Instance(m_pComModelInstance,m_pModelAnimator,*GetTransform().GetCombinedWorldMatrix());
-
+	
 		return;
 	}
+
 
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND,this);
 }
@@ -207,6 +226,8 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx,const E::MODEL_INSTANCE_BATCH& Batch)
 {
+	ZoneScopedN("Render TestModel");
+
 	if (!pContext)
 		return E_INVALIDARG;
 
@@ -346,6 +367,8 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(),iInstanceCount,0,0,0);
 	}
+
+
 
 	if (FAILED(Unbind_AnimationVS(pContext)))
 	{

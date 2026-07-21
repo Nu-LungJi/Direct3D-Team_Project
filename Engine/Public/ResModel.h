@@ -64,7 +64,7 @@ public:
 	std::vector<SPtr<CResModelMaterial>>& GetMaterials() { return m_Materials; }
 	std::vector<SPtr<CResModelAnim>>& GetAnimations() { return m_Animations; }
 	std::vector<SPtr<CResModelBone>>& GetBones() { return m_Bones; }
-
+	const std::vector<SPtr<CResModelBone>>& GetBones() const{return m_Bones;}
 	ID3D11ShaderResourceView* Get_GPUBoneSRV() const{return m_pGPUBones->GetSRV().Get();}
 
 	ID3D11ShaderResourceView* Get_GPUAnimationSRV() const{return m_pGPUAnimations->GetSRV().Get();}

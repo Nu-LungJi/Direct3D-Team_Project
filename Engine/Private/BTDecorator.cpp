@@ -26,6 +26,7 @@ HRESULT CBTDecorator::Initalize(void* pArg)
     if (FAILED(__super::Initalize(pArg)))
         return E_FAIL;
 
+	m_GuiNode.vColor = { 1.0f,1.f, 1.f,1 };
     return S_OK;
 }
 
