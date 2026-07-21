@@ -44,10 +44,9 @@ float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNor
     return normalize(worldNormal);
 }
 
-
 bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 L, out float3 Radiance)
 {
-    [flatten]
+    [branch]
     if (Light.LightType == LIGHT_DIRECTIONAL)   // Directional Light PBR
     {
         L = normalize(-Light.LightDirection.xyz);
@@ -60,7 +59,7 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
         float3 LightVector = Light.Position - _WorldPosition;
         float Distance = length(LightVector);
     
-        [flatten]
+        [branch]
         if (Distance > Light.LightRange)
             return false;
     
@@ -79,7 +78,7 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
         float3 LightVector = Light.Position - _WorldPosition;
         float Distance = length(LightVector);
     
-        [flatten]
+        [branch]
         if (Distance > Light.LightRange)
             return false;
     
@@ -102,4 +101,16 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
     }
     
     return true;
+}
+
+float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
+{
+    float   DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
+    clip(DissolveFactor);
+
+    float   DissolveEdge = 1.f - smoothstep(0.f, _EdgeWidth, DissolveFactor);
+    
+    float3  DissolveEmissive = DissolveColor.rgb * DissolveEdge;
+    
+    return lerp(_BaseEmissive, DissolveEmissive, DissolveEdge * 0.8f);
 }

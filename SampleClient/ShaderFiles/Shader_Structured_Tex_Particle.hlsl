@@ -118,7 +118,9 @@ PS_OUT PSMain(VS_OUT In)
  
 
     float4 vTextureColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord) ;
-    if (all(vTextureColor.rgb <= 0.03f))
+    if (all(vTextureColor.a <= 0.03f))
+        discard;
+    if (all(vTextureColor.rgb <= 0.f))
         discard;
     float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
@@ -137,7 +139,7 @@ PS_OUT PSMain(VS_OUT In)
         float fEdgeMask = smoothstep(0.0f, 0.3f, vTextureColor.a) *
                           (1.0f - smoothstep(0.3f, 0.9f, vTextureColor.a));
 
-        float distortionStrength = 0.05f * In.vColor.a * fEdgeMask;
+        float distortionStrength = 0.15f * In.vColor.a * fEdgeMask;
 
         distortion *= distortionStrength;
         float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
@@ -152,35 +154,10 @@ PS_OUT PSMain(VS_OUT In)
     float4 vFinalColor = vTextureColor * In.vColor;
     clip(vFinalColor.a - 0.02f);
 
-    // ---- 기존 함수 그대로 재사용 ----
-    float3 WorldNormal = Compute_WorldNormal(g_NormalTexture, In.vTexcoord, In.vNormal, In.vTangent);
-
-    float3 V = normalize(g_vCamPos - In.vWorldPos);
-    float3 Albedo = pow(vFinalColor.rgb, 2.2f);
-
-    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-
-    [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < LightCount; ++i)
-    {
-        float3 L, Radiance;
-
-        [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
-            continue;
-
-        float NDL = saturate(dot(WorldNormal, L));
-
-        [branch]
-        if (NDL > 0.f)
-        {
-            LightAccumulation += Albedo * Radiance * NDL;
-        }
-    }
 
 
     float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
-    float3 FinalColor = Albedo + LightAccumulation + instEmissive;
+    float3 FinalColor = vFinalColor.rgb + instEmissive;
 
     Out.vDiffuse = float4(FinalColor, vFinalColor.a);
    

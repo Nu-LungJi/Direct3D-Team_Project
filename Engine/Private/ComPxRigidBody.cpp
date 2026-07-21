@@ -1,17 +1,14 @@
-
+﻿
 #include "pch.h"
 #include "ComPxRigidBody.h"
+#include "PhysXManager.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 
 
@@ -93,6 +90,9 @@ CComPxRigidBody::~CComPxRigidBody()
 HRESULT CComPxRigidBody::Initialize(void* pArg)
 {
     auto* pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
     m_eType = pDesc->eType;
     if (FAILED(CComponent::Initialize(pArg)))
     {
@@ -118,6 +118,9 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
     case TYPE::DYNAMIC:
     {
         PxRigidDynamic* pDynamic = pPhysics->createRigidDynamic(tPose);
+		if (!pDynamic)
+			return E_FAIL;
+
         pDynamic->setMass(pDesc->fMass);
         pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
         m_pActor = pDynamic;
@@ -127,6 +130,9 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
     case TYPE::KINEMATIC:
     {
         PxRigidDynamic* pDynamic = pPhysics->createRigidDynamic(tPose);
+		if (!pDynamic)
+			return E_FAIL;
+
         pDynamic->setMass(pDesc->fMass);
         pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
         m_pActor = pDynamic;
@@ -139,8 +145,19 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
         return E_FAIL;
 
 
-    m_pActor->userData = this;
-    CGameInstance::Get().PxGetScene()->addActor(*m_pActor);
+	auto* pScene = CGameInstance::Get().PxGetScene();
+	if (!pScene)
+		return E_FAIL;
+
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	PX_ACTOR_USER_DATA userData{};
+	userData.hGameObject = GetGameObject()->GetHandle();
+	userData.eType = PX_ACTOR_TYPE::RIGID_BODY;
+	if (!pPhysXManager || !pPhysXManager->RegisterActor(m_pActor, userData))
+		return E_FAIL;
+
+	m_pActor->userData = nullptr;
+	pScene->addActor(*m_pActor);
     return S_OK;
 }
 UPtr<CComPxRigidBody> CComPxRigidBody::Create()
@@ -169,6 +186,10 @@ void CComPxRigidBody::Free()
 {
     if (m_pActor != nullptr)
     {
+		if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+			pPhysXManager->UnregisterActor(m_pActor);
+
+		m_pActor->userData = nullptr;
         CGameInstance::Get().PxGetScene()->removeActor(*m_pActor);
         m_pActor->release();
         m_pActor = nullptr;

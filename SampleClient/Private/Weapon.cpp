@@ -65,7 +65,7 @@ HRESULT CWeapon::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC Desc{};
-		Desc.sGroupTag = "TEST";
+		Desc.sGroupTag = "LEVEL_PLAYGROUND";
 		Desc.sResTag = pDesc->WeaponName;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
@@ -206,7 +206,7 @@ HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

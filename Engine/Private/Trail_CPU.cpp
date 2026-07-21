@@ -67,12 +67,12 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	}
 
     m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-    if (FAILED(m_pResVertexShader->Load()))
-        return E_FAIL;
+    //if (FAILED(m_pResVertexShader->Load()))
+    //    return E_FAIL;
 
     m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-    if (FAILED(m_pResPixelShader->Load()))
-        return E_FAIL;
+    //if (FAILED(m_pResPixelShader->Load()))
+    //    return E_FAIL;
 
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
@@ -357,7 +357,10 @@ void CTrail_CPU::BuildTrailGeometry()
 
 	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
 	{
-		XMMATRIX matView = CGameInstance::Get().GetActiveCamera()->GetView();
+		auto pCam = CGameInstance::Get().GetActiveCamera();
+		if (pCam == nullptr)
+			return;
+		XMMATRIX matView = pCam->GetView();
 		XMMATRIX matViewInv = XMMatrixInverse(nullptr, matView);
 		//XMStoreFloat3(&vCamPos, matViewInv.r[3]);
 		//camRight = XMVector3Normalize(matViewInv.r[0]);

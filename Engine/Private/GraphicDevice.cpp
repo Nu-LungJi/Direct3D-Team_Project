@@ -152,7 +152,8 @@ HRESULT CGraphicDevice::ReadySwapChain(HWND hWnd, WINMODE isWindowed, uint32_t i
 
 	// DXGI_SWAP_EFFECT_FLIP_DISCARD = 2
 	// DXGI_SWAP_EFFECT_DISCARD = 1
-	SwapChain.BufferCount = 1;
+	SwapChain.BufferCount = 2;
+	//SwapChain.BufferCount = 1;
 
 
 
@@ -164,8 +165,8 @@ HRESULT CGraphicDevice::ReadySwapChain(HWND hWnd, WINMODE isWindowed, uint32_t i
 
 	SwapChain.OutputWindow = hWnd;
 	SwapChain.Windowed = static_cast<BOOL>(isWindowed);
-	//SwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	SwapChain.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	SwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	//SwapChain.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
 	if (FAILED(pFactory->CreateSwapChain(m_pDevice.Get(), &SwapChain, m_pSwapChain.GetAddressOf())))
 	{

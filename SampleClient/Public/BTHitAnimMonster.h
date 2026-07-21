@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "BTActionNode.h"
 
+enum class HITMON{HIT_1, HIT_2,HIT_3,HIT_4 ,END};
 NS_BEGIN(Client)
 class CBTHitAnimMonster final : public CBTActionNode
 {
@@ -23,10 +24,14 @@ public:
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
+	void							HitType();
+private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 	_float2				m_fRatio{  };
 	uint32_t			m_iLoopCnt{ 0 }, m_iStartFlag{}, m_iEndFlag{};
 	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bRatioInvert{ false };
+
+	int32_t				m_iHitAnim[ETOUI(HITMON::END)];
 public:
 	static UPtr<CBTHitAnimMonster> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

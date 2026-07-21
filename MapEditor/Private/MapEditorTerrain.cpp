@@ -18,7 +18,7 @@ CMapEditorTerrain::~CMapEditorTerrain()
 
 HRESULT CMapEditorTerrain::InitializePrototype(void* pArg)
 {
-	m_pResMapEditorTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResMapEditorTerrainVIBuffer>("SAMPLE_CLIENT_BUFFER", "VIBUFFER_Terrain");
+	m_pResMapEditorTerrainVIBuffer = CGameInstance::Get().GetResourceFirst<CResMapEditorTerrainVIBuffer>("MAPEDITOR", "VIBUFFER_Terrain");
 	//m_pResMapEditorTerrainVIBuffer = CResMapEditorTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp");
 	if (!m_pResMapEditorTerrainVIBuffer)
 	{
@@ -26,18 +26,18 @@ HRESULT CMapEditorTerrain::InitializePrototype(void* pArg)
 	}
 
 	//"SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0"
-	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLIENT_TEX", "TEX2D_Terrain_Tile0");
+	m_pResTerrainTexture2D = CGameInstance::Get().GetResourceFirst<CResTexture2D>("MAPEDITOR", "TEX2D_Terrain_Tile0");
 	//m_pResTerrainTexture2D = CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds");
 	if (!m_pResTerrainTexture2D)
 	{
 		return E_FAIL;
 	}
 
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX");
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>("MAP_EDITOR_SHADER", "VS_VTX_NOR_TEX");
 	if (!m_pResVertexShader || FAILED(m_pResVertexShader->Load()))
 		return E_FAIL;
 
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX");
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>("MAP_EDITOR_SHADER", "PS_VTX_NOR_TEX");
 	if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))
 		return E_FAIL;
 

@@ -19,6 +19,7 @@ protected:
 public:
 	void* GetBufferPointer() const { return m_pBlob->GetBufferPointer(); }
 	size_t GetBufferSize() const { return m_pBlob->GetBufferSize(); }
+	HRESULT Reload();
 
 protected:
 	HRESULT CompileShader(const DESC* _desc = nullptr);

@@ -2,6 +2,7 @@
 #include "LevelPlayground.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 #include "FlyCamera.h"
 #include "ResCBuffer.h"
 #include "BackGround.h"
@@ -11,10 +12,11 @@
 #include "TestModel.h"
 #include "TestGob.h"
 #include "LightObject.h"
+#include "LevelPlayGroundLoader.h"
 NS_USING(Client)
 
 CLevelPlayground::CLevelPlayground()
-
+	: CLevel{ ETOUI(LEVEL::PLAYGROUND) }
 {
 }
 
@@ -25,8 +27,6 @@ CLevelPlayground::~CLevelPlayground()
 HRESULT CLevelPlayground::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
-	
-	// Terrain
 	{
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
@@ -36,41 +36,6 @@ HRESULT CLevelPlayground::Initialize()
 		{
 			int x = 0;
 		}
-	}
-	//{
-	//	CLightObject::DESC LDesc{};
-	//	LDesc.sObjectTag = "LightObject";
-	//	auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
-	//	if (!ObjectHandle.has_value())	return E_FAIL;
-	//	auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
-	//	if (!LightObject)	return E_FAIL;
-	//}
-	{
-		//테스트 고블린
-		CGameObject::GAMEOBJECT_DESC Desc{};
-		Desc.sObjectTag = "Gobline";
-		
-		auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline","02_Gobline", &Desc);
-		if (!Gobline.has_value())
-		{
-			MSG_BOX("Craete Failed Gobline");
-			return E_FAIL;
-		}
-		//테스트 고블린 무기 테스트
-	}
-	{
-		//if(false)
-		//{
-		//	CTestModel::DESC Desc{};
-		//	Desc.sObjectTag = "TestModel";
-		//
-		//	if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_TestModel",
-		//		"02_TestModel", &Desc))
-		//	{
-		//		int x = 0;
-		//	}
-		//}
-
 	}
 
 	{
@@ -94,26 +59,19 @@ HRESULT CLevelPlayground::Initialize()
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	{
+		//테스트 고블린
+		CGameObject::GAMEOBJECT_DESC Desc{};
+		Desc.sObjectTag = "Gobline";
 
-	//{
-	//	E::CCameraObject::CAMERA_DESC Desc{};
-	//	Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
-	//	Desc.fNear = 0.f;
-	//	Desc.fFar = 1.f;
-	//	Desc.fWidth = g_iWinSizeX;
-	//	Desc.fHeight = g_iWinSizeY;
-	//	Desc.sObjectTag = "UICam";
-	//	Desc.vEye = { 0.f, 0.f, -0.1f };
-	//
-	//	if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
-	//		"99_CAMERA", &Desc))
-	//	{
-	//		if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
-	//		{
-	//			MSG_BOX("Deb");
-	//		}
-	//	}
-	//}
+		auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
+		if (!Gobline.has_value())
+		{
+			MSG_BOX("Craete Failed Gobline");
+			return E_FAIL;
+		}
+		//테스트 고블린 무기 테스트
+	}
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
@@ -165,6 +123,6 @@ Engine::UPtr<CLevelPlayground> CLevelPlayground::Create()
 
 void CLevelPlayground::Free()
 {
-	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
+
 }

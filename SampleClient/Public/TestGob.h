@@ -55,10 +55,16 @@ public:
 
 	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
 
-public:
+public:	
 	const int32_t			Get_CurrentHp() { return m_iHp; }
 	const int32_t			Get_MaxHp()	  { return m_iMaxHp; }
 	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
+	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
+private:			
+	void					IsHit();
+	void					Flag_Check(_float fTimeDelta);
+	void					StartEmissive() { if (m_bWork || m_fEmissive == 0) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
+	void					EmissiveFadeOut(_float fTimeDelta);
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -85,13 +91,14 @@ private:
 	_float	m_fMetallicIntensity = 1.f;
 	_float	m_fAmbientIntensity = 1.f;
 	_float	m_fSpecularIntensity = 1.f;
-	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
+	_float3 m_fEmissiveColor = { 1.f, 1.f, 0.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
 	uint32_t m_iCurrentInstanceCount = 0.f;
-
+	
+	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{};
-	_bool						m_bDead{ false };
+	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{false};
 	_string						m_SocketName{};
 public:
 	static E::UPtr<CTestGob> Create();

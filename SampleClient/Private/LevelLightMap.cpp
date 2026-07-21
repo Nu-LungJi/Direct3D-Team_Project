@@ -2,6 +2,7 @@
 #include "LevelLightMap.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 
 #include "FlyCamera.h"
 
@@ -11,10 +12,12 @@
 #include "Terrain.h"
 #include "TestModel.h"
 #include "LightObject.h"
+#include "LevelLightMapLoader.h"
 
 NS_USING(Client)
 
 CLevelLightMap::CLevelLightMap()
+	: CLevel{ ETOUI(LEVEL::LIGHTMAP) }
 {
 }
 
@@ -29,7 +32,7 @@ HRESULT CLevelLightMap::Initialize()
 	{
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_LightObject", "01_LightObject", &LDesc);
 		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
@@ -39,7 +42,7 @@ HRESULT CLevelLightMap::Initialize()
 	{
 		CLightObject::DESC LDesc{};
 		LDesc.sObjectTag = "LightObject2";
-		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
+		auto ObjectHandle = E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_LightObject", "02_LightObject", &LDesc);
 		if (!ObjectHandle.has_value())	return E_FAIL;
 		auto LightObject = E::CGameInstance::Get().GetGameObjectByHandle(ObjectHandle.value());
 		if (!LightObject)	return E_FAIL;
@@ -51,13 +54,13 @@ HRESULT CLevelLightMap::Initialize()
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
 
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT", "Prototype_GameObject_Terrain",
+		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LIGHT_SC", "Prototype_GameObject_Terrain",
 			"02_Terrain", &Desc)))
 		{
 			return E_FAIL;
 		}
 	}	
-	
+
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
@@ -106,7 +109,7 @@ HRESULT CLevelLightMap::Initialize()
 	}
 
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 5.f);
 	CGameInstance::Get().Add_SpotLight({ 20.f, 6.5f, 10.f }, { 1.f, 0.f, 0.f }, 100.f, 20.f, 10.f, 20.f);
 	return S_OK;
 }
@@ -148,10 +151,5 @@ Engine::UPtr<CLevelLightMap> CLevelLightMap::Create()
 
 void CLevelLightMap::Free()
 {
-	CGameInstance::Get().Clear_DynamicLightList();
-	E::CGameInstance::Get().DelPrototype("LIGHT");
-	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_TEX");
-	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_BUFFER");
-	E::CGameInstance::Get().DelResource("LOBJ", "Model_Resource");
 	CLevel::Free();
 }

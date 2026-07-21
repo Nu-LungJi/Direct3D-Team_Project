@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -92,6 +92,9 @@ public:
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset)
 	{ return m_pResourceManager->AddResourceT<T>(sGroupTag, sResTag, pAsset); }
+	template<typename T, typename CreateFunc>
+	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc)
+	{ return m_pResourceManager->GetOrCreateResourceByPath<T>(sPath, std::forward<CreateFunc>(createFunc)); }
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
 	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
@@ -110,6 +113,7 @@ public:
 public:
 	HRESULT ChangeLevel(UPtr<CLevel> pNewLevel);
 	HRESULT ChangeLevel(const _string& ID);
+	uint32_t GetCurrentLevelID() const;
 	void RegisterLevelChangeFunc(const _string& ID, _Func func);
 #pragma endregion
 
@@ -160,7 +164,7 @@ public:
 
 #pragma region WORKER_MANAGER
 public:
-	void WorkerEnqueue(_string_view svTaskName, _Func func);
+	_bool WorkerEnqueue(_string_view svTaskName, _Func func);
 	template<typename Func, typename... Args>
 	auto WorkerEnqueueWithFuture(_string_view svTaskName, Func&& f, Args&&... args)
 		-> std::future<std::invoke_result_t<Func, Args...>>
@@ -178,7 +182,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
-	const CPrototypeManager::PROTOTYPES* GetPrototype(const StringID& svGroupTag) const;
+	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
@@ -264,6 +268,8 @@ public:
 
 	VOID	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	VOID	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	VOID	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution);
+	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _Resolution);
 
 #pragma endregion
 
@@ -355,13 +361,13 @@ public:
 #pragma endregion
 
 public:
-	CPhysXManager* GetPhysiXManager() const { return m_pPhysXManager.get(); };
+	CPhysXManager* GetPhysXManager() const { return m_pPhysXManager.get(); };
 	physx::PxScene* PxGetScene() const;
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
 
-	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PHYSIX_RAYCAST_RESULT& outResult) const;
-	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PHYSIX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+	_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
+	_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
 #pragma endregion
 
 

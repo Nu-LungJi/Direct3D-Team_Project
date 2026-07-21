@@ -15,13 +15,15 @@ HRESULT CResPixelShader::Load(const std::any& arg)
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	ComPtr<ID3D11PixelShader> pixelShader{};
 	if (FAILED(m_pDevice->CreatePixelShader(m_pBlob->GetBufferPointer(),
-		m_pBlob->GetBufferSize(), nullptr, &m_pPixelShader)))
+		m_pBlob->GetBufferSize(), nullptr, &pixelShader)))
 	{
 		MSG_BOX_STR(_wstring{ L"CResPixelShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	m_pPixelShader = std::move(pixelShader);
 	m_eState = STATE::LOADED;
 
 	m_pBlob.Reset();

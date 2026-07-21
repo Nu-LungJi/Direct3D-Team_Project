@@ -38,7 +38,7 @@ private:
 public:
 	/*----------- 광윤 추가 -----------*/
 	VOID Bind_Textures(ID3D11DeviceContext* pContext, uint32_t _MeshIndex);
-	VOID Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float _ObjectAlpha);
+	VOID Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float3 _DissolveColor, _float _DissolveIntensity, _float _ObjectAlpha);
 	/*---------------------------------*/
 	SPtr<CResTexture2D> Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 

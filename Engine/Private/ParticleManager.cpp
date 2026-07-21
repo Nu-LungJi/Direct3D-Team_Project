@@ -2214,8 +2214,8 @@ std::vector<std::string> ScanTextureFolder(const std::string& strTextureFolder)
 
 ID3D11ShaderResourceView* CParticleManager::GetOrLoadTextureThumbnail(const std::string& fullPath)
 {
-	auto it = s_TextureThumbnailCache.find(fullPath);
-	if (it != s_TextureThumbnailCache.end())
+	auto it = m_TextureThumbnailCache.find(fullPath);
+	if (it != m_TextureThumbnailCache.end())
 		return it->second.Get();
 
 	ComPtr<ID3D11ShaderResourceView> pSRV;
@@ -2228,7 +2228,7 @@ ID3D11ShaderResourceView* CParticleManager::GetOrLoadTextureThumbnail(const std:
 	if (FAILED(hr) || !pSRV)
 		return nullptr;
 
-	s_TextureThumbnailCache[fullPath] = pSRV;
+	m_TextureThumbnailCache[fullPath] = pSRV;
 	return pSRV.Get();
 }
 HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)

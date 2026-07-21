@@ -48,18 +48,20 @@ void CWorkerManager::UpdateGUI()
 
     if (ImGui::TreeNode("Workers"))
     {
-        for (int i = 0; i < m_Workers.size(); ++i)
+		std::vector<std::string> taskNames;
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			taskNames.reserve(m_Workers.size());
+			for (const auto& worker : m_Workers)
+			{
+				taskNames.push_back(worker.sTaskName);
+			}
+		}
+
+		for (size_t i = 0; i < taskNames.size(); ++i)
         {
-            std::string taskName{};
-            if (m_Workers[i].sTaskName.empty())
-            {
-                taskName = "IDLE";
-            }
-            else
-            {
-                taskName = m_Workers[i].sTaskName;
-            }
-            ImGui::Text("Worker#%i: %s", i, taskName.c_str());
+			const char* taskName = taskNames[i].empty() ? "IDLE" : taskNames[i].c_str();
+			ImGui::Text("Worker#%zu: %s", i, taskName);
         }
         ImGui::TreePop();
     }
@@ -93,10 +95,17 @@ void CWorkerManager::UpdateGUI()
 
 HRESULT CWorkerManager::Initialize(uint32_t iThreadCount)
 {
+	if (iThreadCount == 0)
+	{
+		iThreadCount = 1;
+	}
+
+	// Worker storage must be stable before any worker thread can access it.
+	m_Workers.resize(iThreadCount);
+
     for (uint32_t i = 0; i < iThreadCount; ++i)
     {
-        WORKER worker{};
-        worker.thread = std::thread([this, i]()
+		m_Workers[i].thread = std::thread([this, i]()
             {
                 char threadName[32];
                 sprintf_s(threadName, "Worker-%d", i);
@@ -131,19 +140,36 @@ HRESULT CWorkerManager::Initialize(uint32_t iThreadCount)
                         task = std::move(m_Tasks.front());
                         m_Tasks.pop_front();
                     }
-                    m_Workers[i].sTaskName = task.sTaskName;
+					{
+						std::lock_guard<std::mutex> lock(m_Mutex);
+						m_Workers[i].sTaskName = task.sTaskName;
+					}
                     {
                         ZoneScopedN("WorkerTaskExecution");
                         if (!task.sTaskName.empty()) {
                             TracyMessage(task.sTaskName.c_str(), task.sTaskName.size());
                         }
-                        task.func();
+						try
+						{
+							task.func();
+						}
+						catch (const std::exception& e)
+						{
+							std::string message = "Worker task failed [" + task.sTaskName + "]: " + e.what() + "\n";
+							OutputDebugStringA(message.c_str());
+						}
+						catch (...)
+						{
+							std::string message = "Worker task failed [" + task.sTaskName + "]: unknown exception\n";
+							OutputDebugStringA(message.c_str());
+						}
                     }
-                    m_Workers[i].sTaskName.clear();
+					{
+						std::lock_guard<std::mutex> lock(m_Mutex);
+						m_Workers[i].sTaskName.clear();
+					}
                 }
             });
-
-        m_Workers.push_back(std::move(worker));
     }
 
     return S_OK;
@@ -159,7 +185,10 @@ void CWorkerManager::ShutDown()
 
     for (auto& worker : m_Workers)
     {
-        worker.thread.join();
+		if (worker.thread.joinable())
+		{
+			worker.thread.join();
+		}
     }
 
     m_Workers.clear();

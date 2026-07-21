@@ -4,6 +4,8 @@
 
 NS_BEGIN(Engine)
 
+class CShaderWatcher;
+
 class ENGINE_DLL CResourceManager final: public CEngineBase
 {
 private:
@@ -16,6 +18,8 @@ public:
 public:
 	void Initialize();
 	void Release();
+	void UpdateShaderHotReload();
+	HRESULT RebuildAllShaders();
 
 private:
 	typedef std::unordered_map<StringID, std::vector<SPtr<CResource>>> RESOURCES;
@@ -28,6 +32,8 @@ public:
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, const _string& sPath, void* pArg);
 	template<typename T>
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset);
+	template<typename T, typename CreateFunc>
+	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc);
 	SPtr<CResource> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const;
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const;
@@ -57,6 +63,11 @@ private:
 private:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
+	UPtr<CShaderWatcher> m_pShaderWatcher{};
+	std::unordered_map<_string, std::chrono::steady_clock::time_point> m_PendingShaderChanges{};
+
+private:
+	HRESULT RebuildShadersByPath(const _string& sPath);
 
 private:
 	mutable std::shared_mutex m_Mutex{}; // (const 함수에서도 락을 걸기 위해 mutable 사용)
@@ -110,4 +121,40 @@ inline  Engine::SPtr<T> Engine::CResourceManager::AddResourceT(const StringID& s
 	}
 
 	return std::static_pointer_cast<T>(pAdded);
+}
+
+template<typename T, typename CreateFunc>
+inline Engine::SPtr<T> Engine::CResourceManager::GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc)
+{
+	static_assert(std::is_base_of_v<CResource, T>);
+
+	if (sPath.empty())
+		return std::forward<CreateFunc>(createFunc)();
+
+	const _string normalizedPath = std::filesystem::path{ sPath }.lexically_normal().generic_string();
+	std::unique_lock<std::shared_mutex> lock{ m_Mutex };
+
+	if (m_bIsShutdown)
+		return nullptr;
+
+	auto& cachedResources = m_PathLookup[normalizedPath];
+	std::erase_if(cachedResources,
+		[](const WPtr<CResource>& resource)
+		{
+			return resource.expired();
+		});
+
+	for (const auto& weakResource : cachedResources)
+	{
+		auto resource = weakResource.lock();
+		if (resource && resource->IsA(T::StaticType))
+			return std::static_pointer_cast<T>(resource);
+	}
+
+	auto resource = std::forward<CreateFunc>(createFunc)();
+	if (!resource)
+		return nullptr;
+
+	cachedResources.emplace_back(resource);
+	return resource;
 }

@@ -1,4 +1,4 @@
-#include"pch.h"
+﻿#include"pch.h"
 #include "GameInstance.h"
 #include "TestPhysX.h"
 #include "Collider.h"
@@ -65,12 +65,12 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 		if (Randf(0.f, 1.f) < 0.5f)
 		{
 			{
-				//"SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox"
+				//"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox"
 				CTestPhysXBall::DESC Desc{
 					.vInitialPos = pos
 				};
 				Desc.sObjectTag = "TestPhysXBall";
-				if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBall",
+				if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBall",
 					"00_OBJECTS", &Desc)))
 				{
 					//return E_FAIL;
@@ -81,12 +81,12 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 		{
 			
 			{
-				//"SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox"
+				//"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox"
 				CTestPhysXCapsule::DESC Desc{
 					.vInitialPos = pos
 				};
 				Desc.sObjectTag = "TestPhysXCapsule";
-				if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXCapsule",
+				if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXCapsule",
 					"00_OBJECTS", &Desc)))
 				{
 					//return E_FAIL;
@@ -96,12 +96,12 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 		else
 		{
 			{
-				//"SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox"
+				//"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox"
 				CTestPhysXBox::DESC Desc{
 					.vInitialPos = pos
 				};
 				Desc.sObjectTag = "TestPhysXBox";
-				if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PHYSX", "Prototype_GameObject_TestPhysXBox",
+				if (!(E::CGameInstance::Get().AddGameObjectToLayer("SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBox",
 					"00_OBJECTS", &Desc)))
 				{
 					//return E_FAIL;
@@ -117,7 +117,7 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 			const auto& [ori, Dir] = pCam->GetRay();
 			if(false)
 			{
-				PHYSIX_RAYCAST_RESULT outResult;
+				PX_RAYCAST_RESULT outResult;
 				if (CGameInstance::Get().PxRayCast(ori, Dir, 10.f, outResult))
 				{
 					if (!outResult.pGameObject->IsA(CTestPhysXTerrain::StaticType)
@@ -129,7 +129,7 @@ void CTestPhysX::Update(E::_float fTimeDelta)
 			}
 
 			{
-				std::vector< PHYSIX_RAYCAST_RESULT> vecOutResult{};
+				std::vector< PX_RAYCAST_RESULT> vecOutResult{};
 				if (CGameInstance::Get().PxRayCastMultiple(ori, Dir, 10.f, vecOutResult))
 				{
 					for (auto& result : vecOutResult)
@@ -168,19 +168,19 @@ void CTestPhysX::OnSleep()
 	int x = 0;
 }
 
-void CTestPhysX::OnCollisionEnter(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestPhysX::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestPhysX::OnCollisionExit(CGameObject* pObj, const PHYSIX_ON_COLLISION_DATA& info)
+void CTestPhysX::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
 }
 
-void CTestPhysX::OnTriggerEnter(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestPhysX::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 
-void CTestPhysX::OnTriggerExit(CGameObject* pObj, const PHYSIX_ON_TRIGGER_DATA& info)
+void CTestPhysX::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
 

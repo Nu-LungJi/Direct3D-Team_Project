@@ -256,6 +256,7 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 	{
 		if (ImGui::Button(iter.first.c_str()))
 		{
+			m_BTNodesTmp.clear();
 			m_pBeHavior->Load_Data(iter.second);
 
 		}
@@ -323,6 +324,20 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 	ImGui::PushID(pNode->iID); // 노드 내부에서 생성되는 widget id 중복방지용
 	Widget(pCurNode,pNode, pLink, iNode_hovered_in_list, iNode_hovered_in_scene, fNode_Slot_Radius, fNode_Window_Padding, bOpen_Context_Menu, io);
 	int32_t iSlot = Choice_StartSlot(pNode,fNode_Slot_Radius);
+	if (-1 != pLink->iStartIdx)
+	{ //밀리면 터짐
+		if (auto pBeHaivor = m_pBeHavior->Find_Node(pLink->ParentNode.iDestNode))
+		{
+			if (pBeHaivor->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pBeHaivor->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE || pBeHaivor->Get_GuiNodeInfo().eMyType == BEHAVIOR::RAND_SELECTOR)
+			{
+				if (-1 == ((static_cast<CBTComposite*>(pBeHaivor)->Get_GuiNodeLink().SlotEnd[pLink->iStartIdx].iDestNode)))
+				{
+					assert(0);
+				}
+
+			}
+		}
+	}
 
 	if (-1 != iSlot)
 	{
@@ -972,7 +987,7 @@ void CNodeEditor::Pin(CBTRoot* pNode, _bool bPin)
 			if (auto iter = m_pBeHavior->Find_Node(pDest.iDestNode))
 				Add_NodeToTmp(pDestNode);
 		}
-
+		static_cast<CBTComposite*>(pNode)->Get_Nodes()->pop_back();
 		pNode->Get_GuiNodeLink().SlotEnd.pop_back();
 	}
 }

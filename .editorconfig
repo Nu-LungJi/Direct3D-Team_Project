@@ -4,6 +4,6 @@ root = true
 end_of_line = crlf
 insert_final_newline = true
 
-[*.{h,hpp,c,cpp,inl}]
+[*.{h,hpp,c,cpp,inl,hlsl,hlsli,lua,json}]
 charset = utf-8
 indent_style = tab

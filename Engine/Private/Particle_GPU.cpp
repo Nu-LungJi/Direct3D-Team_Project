@@ -137,8 +137,8 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		}
 	}
 	m_pResClearByOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner");
-	if (FAILED(m_pResClearByOwnerCS->Load()))
-		return E_FAIL;
+	//if (FAILED(m_pResClearByOwnerCS->Load()))
+	//	return E_FAIL;
 
 	if (auto res = CResCBuffer::Create())
 	{
@@ -154,12 +154,12 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
 
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        if (FAILED(m_pResVertexShader->Load()))
-            return E_FAIL;
+        //if (FAILED(m_pResVertexShader->Load()))
+        //    return E_FAIL;
 
         m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-        if (FAILED(m_pResPixelShader->Load()))
-            return E_FAIL;
+        //if (FAILED(m_pResPixelShader->Load()))
+        //    return E_FAIL;
     
 		if (m_Desc.normalTextureID.first != "") {
 			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -179,12 +179,12 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
 
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        if (FAILED(m_pResVertexShader->Load()))
-            return E_FAIL;
+        //if (FAILED(m_pResVertexShader->Load()))
+        //    return E_FAIL;
 
         m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-        if (FAILED(m_pResPixelShader->Load()))
-            return E_FAIL;
+       // if (FAILED(m_pResPixelShader->Load()))
+       //     return E_FAIL;
 
 
 		if (m_pNoiseTexture) {
@@ -628,7 +628,9 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
-	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+	//auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+	//pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
 	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);

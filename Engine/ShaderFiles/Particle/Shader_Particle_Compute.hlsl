@@ -116,6 +116,7 @@ void CSMain(uint id : SV_DispatchThreadID)
             p.velocity = p.originalVelocity;
             p.alive = 1;
             p.emissive = p.originalEmissive;
+                
 
         }
         else

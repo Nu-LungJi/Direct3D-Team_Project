@@ -1,18 +1,14 @@
-#pragma once
+﻿#pragma once
 #include "Engine_Defines.h"
 
-#ifdef _DEBUG
-// 라이브러리 설정 전후로 매크로 잠시 해제
+#pragma push_macro("new")
 #undef new
-#endif
 
 #include "PxPhysicsAPI.h"
 #include <cooking/PxCooking.h>
 #include <extensions/PxExtensionsAPI.h>
 
-#ifdef _DEBUG
-#define new DBG_NEW
-#endif
+#pragma pop_macro("new")
 
 NS_BEGIN(Engine)
 

@@ -65,12 +65,12 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
 
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        if (FAILED(m_pResVertexShader->Load()))
-            return E_FAIL;
+        //if (FAILED(m_pResVertexShader->Load()))
+        //    return E_FAIL;
 
         m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-        if (FAILED(m_pResPixelShader->Load()))
-            return E_FAIL;
+      //  if (FAILED(m_pResPixelShader->Load()))
+      //      return E_FAIL;
 
 		if (m_Desc.normalTextureID.first != "") {
 			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -89,12 +89,12 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 
 
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        if (FAILED(m_pResVertexShader->Load()))
-            return E_FAIL;
+       // if (FAILED(m_pResVertexShader->Load()))
+       //     return E_FAIL;
 
         m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-        if (FAILED(m_pResPixelShader->Load()))
-            return E_FAIL;
+       // if (FAILED(m_pResPixelShader->Load()))
+       //     return E_FAIL;
 
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);

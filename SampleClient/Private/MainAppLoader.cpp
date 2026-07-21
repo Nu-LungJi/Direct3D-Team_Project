@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
@@ -214,6 +214,22 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLL_X_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_UV_XScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLL_X_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_UV_XScroll.hlsl")))
+	{
+		if (FAILED(res->Load()))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLLUV_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle_UvScroll.hlsl")))
 	{
 		if (FAILED(res->Load()))
@@ -321,10 +337,10 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 HRESULT CMainAppLoader::Load_PhysX_Resource()
 {
 	{
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_MATERIAL", CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_BOX", CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_SHPERE", CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PHYSIX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::Create(CResPhysXMaterial::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::Create(CResPhysXBoxGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::Create(CResPhysXSphereGeometry::DESC{}));
+		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::Create(CResPhysXCapsuleGeometry::DESC{}));
 	}
 	return S_OK;
 }

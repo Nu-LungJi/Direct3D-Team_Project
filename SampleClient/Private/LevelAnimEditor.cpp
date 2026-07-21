@@ -2,6 +2,7 @@
 #include "LevelAnimEditor.h"
 #include "GameInstance.h"
 #include "LevelLoading.h"
+#include "Level_Defines.h"
 #include "FlyCamera.h"
 #include "ResCBuffer.h"
 #include "BackGround.h"
@@ -9,10 +10,11 @@
 #include "Test_StaticModel.h"
 #include "LightObject.h"
 #include "ComAnimator.h"
+#include "LevelAnimatorLoader.h"
 NS_USING(Client)
 
 CLevelAnimEditor::CLevelAnimEditor()
-
+	: CLevel{ ETOUI(LEVEL::ANIMEDITOR) }
 {
 }
 
@@ -145,8 +147,8 @@ void CLevelAnimEditor::UpdateGUI()
 			if (!addedObject)
 				continue;
 	
-			_float fRandomX = Randf(-10.f, 10.f);
-			_float fRandomZ = Randf(-10.f, 10.f);
+			_float fRandomX = Randf(-50.f, 50.f);
+			_float fRandomZ = Randf(-50.f, 50.f);
 			auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(addedObject.value());
 			auto& pTransform = pSampleObj->GetTransform();
 		
@@ -155,7 +157,7 @@ void CLevelAnimEditor::UpdateGUI()
 			auto anim = pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
 			
 
-			anim->Play_Anim((int32_t)Randf(0.f, 1.f), true, 0.2f);
+			anim->Play_Anim((int32_t)Randf(0.f, 100.f), true, 0.2f);
 		}
 	}
 
@@ -187,12 +189,9 @@ void CLevelAnimEditor::Free()
 	//
 	//	
 
+	
 
 
 
-	CGameInstance::Get().DelResource("TEST", "Model_Resource");
-	CGameInstance::Get().DelResource("TEST", "Static_Model_Resource");
-
-	CGameInstance::Get().Clear_DynamicLightList();
 	CLevel::Free();
 }

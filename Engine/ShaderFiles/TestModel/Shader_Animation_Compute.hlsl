@@ -1,5 +1,5 @@
 struct GPU_BONE_DESC { float4x4 BindLocalMatrix; float3 BindScale; float4 BindRotation; float3 BindTranslation; float fBindPadding; int iParentBoneIndex; uint iDepth; uint iPadding0; uint iPadding1; };
-struct GPU_ANIM_DESC { uint iChannelOffset; uint iChannelCount; uint iBoneChannelMapOffset; uint iBoneCount; float fDuration; float3 Padding; };
+struct GPU_ANIM_DESC { float4x4 PreTransformMatrix; uint iChannelOffset; uint iChannelCount; uint iBoneChannelMapOffset; uint iBoneCount; float fDuration; float3 Padding; };
 struct GPU_CHANNEL_DESC { uint iBoneIndex; uint iKeyFrameOffset; uint iKeyFrameCount; uint Padding; };
 struct GPU_KEYFRAME_DESC { float3 vScale; float fTrackPosition; float4 vRotation; float3 vTranslation; float Padding; };
 struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; uint RootBoneIndex; uint iPrevAnimIndex; float fPrevTrackPosition; float fBlendWeight; uint bBlending; };
@@ -31,12 +31,17 @@ struct LOCAL_POSE
     float3 vTranslation;
 };
 
-float4x4 MakeLocalMatrix(LOCAL_POSE pose)
+float4x4 MakeLocalMatrix(LOCAL_POSE pose, int boneIndex)
 {
-    float4x4 result = mul(
-        float4x4(pose.vScale.x, 0, 0, 0, 0, pose.vScale.y, 0, 0, 0, 0, pose.vScale.z, 0, 0, 0, 0, 1),
-        QuaternionMatrix(normalize(pose.vRotation)));
+    float4x4 result = mul(float4x4(pose.vScale.x, 0, 0, 0, 0, pose.vScale.y, 0, 0, 0, 0, pose.vScale.z, 0, 0, 0, 0, 1),QuaternionMatrix(normalize(pose.vRotation)));
     result[3] = float4(pose.vTranslation, 1);
+    
+    if (gBones[boneIndex].iParentBoneIndex < 0)
+    {
+        result = mul(result, gAnimations[0].PreTransformMatrix);
+    }
+
+    
     return result;
 }
 
@@ -126,10 +131,12 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
         LOCAL_POSE previousPose = SampleLocalPose(boneIndex, instance.RootBoneIndex, previousAnimation, instance.fPrevTrackPosition);
         localPose = BlendPose(previousPose, localPose, saturate(instance.fBlendWeight));
     }
-    float4x4 local = MakeLocalMatrix(localPose);
+    int parentIndex = gBones[boneIndex].iParentBoneIndex;
+    float4x4 local = MakeLocalMatrix(localPose, parentIndex);
 
     float4x4 combined = local;
-    int parentIndex = gBones[boneIndex].iParentBoneIndex;
+
+
     while(parentIndex>=0){
         LOCAL_POSE parentPose = SampleLocalPose((uint) parentIndex, instance.RootBoneIndex, animation, instance.fTrackPosition);
         if (instance.bBlending != 0)
@@ -138,10 +145,11 @@ void CSMain(uint3 groupId:SV_GroupID,uint3 threadId:SV_GroupThreadID)
             LOCAL_POSE previousParentPose = SampleLocalPose((uint) parentIndex, instance.RootBoneIndex, previousAnimation, instance.fPrevTrackPosition);
             parentPose = BlendPose(previousParentPose, parentPose, saturate(instance.fBlendWeight));
         }
-        float4x4 parentLocal = MakeLocalMatrix(parentPose);
+        float4x4 parentLocal = MakeLocalMatrix(parentPose, parentIndex);
         combined = mul(combined, parentLocal);
-        parentIndex=gBones[parentIndex].iParentBoneIndex;
+        parentIndex = gBones[parentIndex].iParentBoneIndex;
     }
-
+    
+   
     gFinalBoneMatrices[outputIndex]=combined;
 }

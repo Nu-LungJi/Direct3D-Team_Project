@@ -45,6 +45,10 @@ namespace Engine
 	{
 		_float3  EmissiveColor;
 		_float   EmissiveIntensity;
+
+		_float3  DissolveColor;
+		_float   DissolveIntensity;
+
 		_float	 ObjectAlpha;
 
 		_float3  ObjectPadding;
@@ -77,7 +81,8 @@ namespace Engine
 		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
 		XMFLOAT4X4		g_InvViewProj;
 		uint32_t		LightCount;
-		_float3			LightPadding;
+		uint32_t		CurrentLightIndex;
+		_float2			LightPadding;
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 
@@ -144,6 +149,20 @@ namespace Engine
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
 
+	typedef struct CB_SpellMeter
+	{
+		float fAmount;
+		float fDistSpeed;
+		float fDistStrength;
+		float fTime;
+
+		_float4 vFillColor;
+		_float4 vEmptyColor;
+		_float4 vRippleColor;
+		_float4 vWispyColor;
+	}CB_SPELLMETER;
+	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
+
 	struct CB_TRAIL_OPTION 
 	{
 		float g_fNoiseStrength; // 0~1
@@ -159,4 +178,3 @@ namespace Engine
 	static_assert(sizeof(CB_TRAIL_OPTION) % 16 == 0);
 
 }
-
