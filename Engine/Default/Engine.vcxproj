@@ -274,6 +274,7 @@
     <ClInclude Include="..\public\LuaEnv.h" />
     <ClInclude Include="..\public\LuaManager.h" />
     <ClInclude Include="..\public\LuaWatcher.h" />
+    <ClInclude Include="..\Public\ShaderWatcher.h" />
     <ClInclude Include="..\public\MyFSR2_2.h" />
     <ClInclude Include="..\public\ResLuaScript.h" />
     <ClInclude Include="..\public\ParticlePattern.h" />
@@ -566,6 +567,7 @@
     <ClCompile Include="..\private\LuaEnv.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
     <ClCompile Include="..\private\LuaWatcher.cpp" />
+    <ClCompile Include="..\Private\ShaderWatcher.cpp" />
     <ClCompile Include="..\private\MyFSR2_2.cpp" />
     <ClCompile Include="..\private\ResLuaScript.cpp" />
     <ClCompile Include="..\Private\NavMeshManager.cpp" />

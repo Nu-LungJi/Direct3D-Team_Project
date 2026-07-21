@@ -4,6 +4,8 @@
 
 NS_BEGIN(Engine)
 
+class CShaderWatcher;
+
 class ENGINE_DLL CResourceManager final: public CEngineBase
 {
 private:
@@ -16,6 +18,8 @@ public:
 public:
 	void Initialize();
 	void Release();
+	void UpdateShaderHotReload();
+	HRESULT RebuildAllShaders();
 
 private:
 	typedef std::unordered_map<StringID, std::vector<SPtr<CResource>>> RESOURCES;
@@ -59,6 +63,11 @@ private:
 private:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
+	UPtr<CShaderWatcher> m_pShaderWatcher{};
+	std::unordered_map<_string, std::chrono::steady_clock::time_point> m_PendingShaderChanges{};
+
+private:
+	HRESULT RebuildShadersByPath(const _string& sPath);
 
 private:
 	mutable std::shared_mutex m_Mutex{}; // (const 함수에서도 락을 걸기 위해 mutable 사용)

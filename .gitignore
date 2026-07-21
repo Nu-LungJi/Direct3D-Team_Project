@@ -17,4 +17,6 @@ imgui.ini
 
 /vcpkg_installed
 !/ThirdParty/imgui-node-editor-0.9.3
+
+enc_temp_folder/
 /Tools/HogwartsMapImporter

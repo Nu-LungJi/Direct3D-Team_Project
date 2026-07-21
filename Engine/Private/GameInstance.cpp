@@ -367,6 +367,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		m_pLuaManager->Update(fTimeDelta);
 	}
 
+	{
+		ZoneScopedN("ShaderHotReload_Update");
+		m_pResourceManager->UpdateShaderHotReload();
+	}
+
 
 
 	{
