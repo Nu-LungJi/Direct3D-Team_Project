@@ -1687,12 +1687,17 @@ HRESULT CRenderer::Render_UserInterface() {
 
 	ZoneScopedN("Render_UserInterface");
 	{
+		{
+			m_pContext->CopyResource(
+				m_pResDynTexTargetUI->GetTexture().Get(),
+				m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+		}
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
+		//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+		//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
 
 		const auto& vs = m_pFullscreenVS;
 		const auto& ps = m_pFullscreenPS;
@@ -1716,6 +1721,8 @@ HRESULT CRenderer::Render_UserInterface() {
 		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 		m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+		m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());		// Combined Texture
 
 		if (FAILED(Bind_CameraAttribute(pUICame)))			return E_FAIL;
 
