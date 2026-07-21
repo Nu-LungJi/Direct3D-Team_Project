@@ -13,6 +13,7 @@
 #include "PrototypeManager.h"
 #include "LuaManager.h"
 #include "SoundManager.h"
+#include "EventManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -44,6 +45,8 @@ class CDbgLineRender;
 class CSerializeManager;
 class ILuaScriptRelodable;
 class CModel_Instance_Manager;
+class CMapMeshInstancingRenderer;
+class CResStaticModel;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -380,6 +383,54 @@ public:
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
 #pragma endregion
 
+#pragma region MAPMESH_INSTANCE_RENDER
+	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
+	// 인스턴싱 On/Off , 드로우 콜 GUI
+	_bool IsInstancingEnabled();
+	void SetInstancingEnabled(_bool bEnabled);
+	const struct INSTANCING_STATS& GetInstancingStats();
+	_bool IsDebugBoundsEnabled();
+	void SetDebugBoundsEnabled(_bool bEnabled);
+	void ClearMapMeshTextureCache();
+#pragma endregion
+
+#pragma region EVENT_MANAGER
+	template<typename TEvent, typename TCallback>
+	EVENT_LISTENER_ID EventSubscribe(CHandle owner, TCallback&& callback)
+	{
+		return m_pEventManager->Subscribe<TEvent>(owner, std::forward<TCallback>(callback));
+	}
+
+	template<typename TEvent>
+	void EventUnsubscribe(EVENT_LISTENER_ID listenerId)
+	{
+		m_pEventManager->Unsubscribe<TEvent>(listenerId);
+	}
+
+	template<typename TEvent>
+	void EventUnsubscribeAll(CHandle owner)
+	{
+		m_pEventManager->UnsubscribeAll<TEvent>(owner);
+	}
+
+	void EventUnsubscribeAll(CHandle owner)
+	{
+		m_pEventManager->UnsubscribeAll(owner);
+	}
+
+	template<typename TEvent>
+	void EventPublish(TEvent&& event)
+	{
+		m_pEventManager->Publish(std::forward<TEvent>(event));
+	}
+
+	template<typename TEvent>
+	void EventPublish()
+	{
+		m_pEventManager->Publish<TEvent>();
+	}
+#pragma endregion
+
 
 
 #pragma region SERIALIZE_MANAGER
@@ -494,6 +545,8 @@ private:
 	UPtr<CSerializeManager> m_pSerializeManager{};
 	UPtr<CLuaManager> m_pLuaManager{};
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
+	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
+	UPtr<CEventManager> m_pEventManager{};
 };
 
 NS_END

@@ -271,9 +271,12 @@
     <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
+    <ClInclude Include="..\Public\CreatureEditor.h" />
+    <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
+    <ClInclude Include="..\Public\MapMeshInstancingRenderer.h" />
     <ClInclude Include="..\Public\Model_Instance_Manager.h" />
     <ClInclude Include="..\public\GameInstanceInitLoader.h" />
     <ClInclude Include="..\public\LuaEnv.h" />
@@ -573,10 +576,13 @@
     <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
+    <ClCompile Include="..\Private\CreatureEditor.cpp" />
+    <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\ButtonComponent.cpp" />
+    <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp" />
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp" />
     <ClCompile Include="..\private\LuaEnv.cpp" />
@@ -720,6 +726,14 @@
     <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGpuCull.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGlobalCull.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshBuildIndirectArgs.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PBR\CS_PBR.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>

@@ -300,12 +300,22 @@ namespace Engine
 		std::vector<MAPMESH_OCCLUSION_DATA> occlusionData;
 	};
 
-	//class CResStaticModel;
-	//typedef struct tagMapMeshBatch
-	//{
-	//	CResStaticModel* model = nullptr;
-	//	std::vector<MAPMESH_INSTANCE_DATA> instances;
-	//} MAPMESH_BATCH;
+	struct MAPMESH_CULL_META
+	{
+		uint32_t outputOffset = 0;
+		uint32_t batchIndex = 0;
+	};
+
+	struct INSTANCING_STATS
+	{
+		_bool bEnabled = false;
+		uint32_t iObjects = 0;
+		uint32_t iInstances = 0;
+		uint32_t iBatches = 0;
+		uint32_t iDrawCalls = 0;
+		uint32_t iVisibleInstances = 0;
+		uint32_t iCulledInstances = 0;
+	};
 	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
 
 

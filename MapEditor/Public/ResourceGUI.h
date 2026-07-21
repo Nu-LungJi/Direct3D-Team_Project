@@ -56,7 +56,7 @@ private:
 	std::string m_DragModelGroup{};
 	std::string m_DragModelTag{};
 	bool m_bDraggingModel = false;
-	float m_fSceneDropDistance = 20.f;
+	float m_fSceneDropDistance = 5.f;
 	CEditorCommandManager* m_pCommandManager = nullptr;
 	std::string m_WholeMapImportStatus{};
 	float m_fWholeMapScale = 0.3f;

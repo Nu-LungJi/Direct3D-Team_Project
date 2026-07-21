@@ -496,6 +496,9 @@
     <Filter Include="Component\Sound">
       <UniqueIdentifier>{1368aba0-d774-49be-a059-20bb842eeaf9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EventBus">
+      <UniqueIdentifier>{95f85a46-ca51-43e5-aeae-cedb068ad6ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1078,6 +1081,12 @@
     <ClInclude Include="..\Public\ComSound.h">
       <Filter>Component\Sound</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshInstancingRenderer.h">
+      <Filter>Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\EventManager.h">
+      <Filter>EventBus</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1582,6 +1591,12 @@
     <ClCompile Include="..\private\MyFSR2_2.cpp">
       <Filter>Renderer\FSR2_2</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp">
+      <Filter>Instance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\EventManager.cpp">
+      <Filter>EventBus</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\ComSocket.cpp">
       <Filter>Component\Model\ComSocket</Filter>
     </ClCompile>
@@ -1723,6 +1738,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
       <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshBuildIndirectArgs.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Hiz\Shader_CS_MapMeshGlobalCull.hlsl">
+      <Filter>ShaderFiles\Hiz</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>

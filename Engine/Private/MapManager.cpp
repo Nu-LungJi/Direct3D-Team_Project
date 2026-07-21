@@ -11,6 +11,15 @@ NS_USING(Engine)
 
 namespace
 {
+	//constexpr _float3 DEFAULT_MAP_CHUNK_SIZE{ 150.f, 150.f, 150.f };
+
+	_bool IsSameChunkSize(const _float3& lhs, const _float3& rhs)
+	{
+		return std::fabs(lhs.x - rhs.x) <= FLT_EPSILON
+			&& std::fabs(lhs.y - rhs.y) <= FLT_EPSILON
+			&& std::fabs(lhs.z - rhs.z) <= FLT_EPSILON;
+	}
+
 	std::string ChunkFileName(const MAPCHUNK_COORD& coord)
 	{
 		return std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_" + std::to_string(coord.z) + ".json";
@@ -253,11 +262,12 @@ std::vector<MAPCHUNK_COORD> CMapManager::GetNeededChunksAroundCamera(const CCame
 	neededChunks.reserve(27);
 
 	// 카메라가 속한 Chunk 주변의 3*3*3 Chunk들
-	for (int64_t y = -1; y <= 1; ++y)
+	// 카메라가 속한 Chunk 주변의 5*5*5 Chunk들
+	for (int64_t y = -2; y <= 2; ++y)
 	{
-		for (int64_t z = -1; z <= 1; ++z)
+		for (int64_t z = -2; z <= 2; ++z)
 		{
-			for (int64_t x = -1; x <= 1; ++x)
+			for (int64_t x = -2; x <= 2; ++x)
 			{
 				neededChunks.push_back(
 					MAPCHUNK_COORD
@@ -455,9 +465,42 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	std::filesystem::path mapFilePath = mapDir / "map.json";
 	if (std::filesystem::exists(mapFilePath))
 	{
+		const _float3 requestedChunkSize = DEFAULT_MAP_CHUNK_SIZE;
+
 		if (FAILED(LoadMapData(path)))
 		{
 			return E_FAIL;
+		}
+
+		// Older maps keep their original chunk size in map.json. Load every old
+		// chunk once, regroup the live objects using the current chunk size, and
+		// save the migrated chunk metadata/files before normal streaming begins.
+		if (!IsSameChunkSize(m_vChunkSize, requestedChunkSize))
+		{
+			std::vector<MAPCHUNK_COORD> oldChunkCoords;
+			oldChunkCoords.reserve(m_Chunks.size());
+			for (const auto& [coord, chunk] : m_Chunks)
+				oldChunkCoords.push_back(coord);
+
+			for (const MAPCHUNK_COORD& coord : oldChunkCoords)
+			{
+				if (FAILED(LoadChunk(coord)))
+					return E_FAIL;
+			}
+
+			m_vChunkSize = requestedChunkSize;
+			m_Chunks.clear();
+			RebuildChunks();
+
+			if (FAILED(SaveMap(path)))
+				return E_FAIL;
+
+			// Migration only needs the objects temporarily. Restore the same
+			// metadata-only state used by an ordinary streamed map load.
+			CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
+			m_Chunks.clear();
+			if (FAILED(LoadMapData(path)))
+				return E_FAIL;
 		}
 
 		std::vector<MAPCHUNK_COORD> chunkCoords;
@@ -804,7 +847,7 @@ void CMapManager::RebuildChunks()
 			continue;
 
 		chunk.bounds = MakeChunkBoundingBox(coord);
-		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0, 4);
+		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
 		if (chunk.octreeNode)
 		{
 			chunk.octreeNode->BuildOctree(chunk.hObjects);
@@ -836,7 +879,7 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 
 	if (!chunk.octreeNode)
 	{
-		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0, 4);
+		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
 	}
 
 	if (chunk.octreeNode)
@@ -1089,7 +1132,7 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 	chunk.bounds = MakeChunkBoundingBox(result.coord);
 	chunk.loadState = EChunkLoadState::Loaded;
 	chunk.saveState = EChunkSaveState::Saved;
-	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0, 4);
+	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
 	if (chunk.octreeNode)
 	{
 		chunk.octreeNode->BuildOctree(chunk.hObjects);
@@ -1112,7 +1155,8 @@ _bool CMapManager::IsChunkInStreamingRange(const MAPCHUNK_COORD& coord)
 	const int64_t dz = std::llabs(cameraCoord.z - coord.z);
 
 	// -1, 0, 1 // 현재 카메라 기준 3*3*3 범위
-	return dx <= 1 && dy <= 1 && dz <= 1;
+	// -2, -1, 0, 1, 2 // 현재 카메라 기준 5*5*5 범위
+	return dx <= 2 && dy <= 2 && dz <= 2;
 }
 
 UPtr<CMapManager> CMapManager::Create()

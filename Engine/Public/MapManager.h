@@ -55,6 +55,7 @@ struct tagMapChunkCoordHash
 struct MAP_MESH_OBJECT_LOAD_DESC;
 struct PENDING_CHUNK_LOAD_RESULT;
 
+constexpr _float3 DEFAULT_MAP_CHUNK_SIZE{ 150.f, 150.f, 150.f };
 
 class ENGINE_DLL CMapManager : public CEngineBase
 {
@@ -94,7 +95,7 @@ public:
 	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_vChunkSize; }
 	void SetChunkStreaming(_bool enable) { m_bChunkStreaming = enable; }
-	_bool IsChunkStreaming() const { return m_bChunkStreaming; }
+	_bool IsChunkStreaming() const { return m_bChunkStreaming; } 
 
 private:
 	_float3 GetChunkCenter(const MAPCHUNK_COORD& coord);
@@ -105,7 +106,7 @@ private:
 	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 private:
-	_float3 m_vChunkSize = { 100.f, 100.f, 100.f };
+	_float3 m_vChunkSize = DEFAULT_MAP_CHUNK_SIZE;
 	std::string m_sMapRootPath;
 
 private:
