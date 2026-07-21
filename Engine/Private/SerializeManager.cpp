@@ -126,9 +126,15 @@ void CSerializeManager::UpdateGUI()
 {
 	ImGui::Begin("Advanced Serialize Tester");
 
-	if (ImGui::Button("SerDeTestCase"))
+	if (ImGui::Button("Run Serializer Regression Tests"))
 	{
-		SerializeTest::RunMegaSerializationTest();
+		const SerializeTest::REGRESSION_REPORT report =
+			SerializeTest::RunSerializationRegressionTests(*this);
+		MessageBoxA(
+			nullptr,
+			report.sText.c_str(),
+			"Serialization Regression Tests",
+			MB_OK | (report.Passed() ? MB_ICONINFORMATION : MB_ICONERROR));
 	}
 
 	// 상태 유지를 위한 정적(static) 변수들

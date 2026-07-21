@@ -1002,6 +1002,9 @@
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\SerializeResult.h">
+      <Filter>Serialize\Manager</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\MapMeshGpuCuller.h">
       <Filter>HizBuffer</Filter>
     </ClInclude>
