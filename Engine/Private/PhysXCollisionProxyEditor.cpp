@@ -183,10 +183,17 @@ void CPhysXCollisionProxyEditor::RenderGizmo()
 	XMStoreFloat4x4(&projection, camera->GetProj());
 	XMStoreFloat4x4(&world, MakeBoxMatrix(*box));
 
-	const E::_float2 clientSize = E::CGameInstance::Get().GetClientScreenSize();
+	ImGuiViewport* pViewport = ImGui::GetMainViewport();
+	if (!pViewport)
+		return;
+
 	ImGuizmo::SetOrthographic(false);
-	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
-	ImGuizmo::SetRect(0.f, 0.f, clientSize.x, clientSize.y);
+	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
+	ImGuizmo::SetRect(
+		pViewport->Pos.x,
+		pViewport->Pos.y,
+		pViewport->Size.x,
+		pViewport->Size.y);
 	ImGuizmo::SetID(PX_COLLISION_PROXY_GIZMO_ID);
 
 	const _bool wasUsing = ImGuizmo::IsUsing();
