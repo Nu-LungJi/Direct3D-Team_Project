@@ -17,7 +17,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//�ȼ� ���̴���
+//픽셀 쉐이더용
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
@@ -46,7 +46,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // �߰�: ������ ��꿡 �ʿ�
+    float3 vWorldPos : TEXCOORD1; // 추가: 라이팅 계산에 필요
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
 };
@@ -66,7 +66,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
         float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
         float2 uvOffset = float2(col, row) * uvSize;
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ��� ���� �޽� UV ���
+        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV 대신 실제 메쉬 UV 사용
     }
 
     Out.vTexcoord = finalUV;
@@ -101,15 +101,34 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
-
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
+    float scrollSpeed = 0.2f; // 흐르는 속도, 필요하면 파라미터로 빼서 조절
+    float2 scrolledUV = In.vTexcoord + float2(scrollSpeed , 0.0f);
+    
+    
+    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, scrolledUV) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
     if (AlbedoTex.a < 0.05f)
         discard;
-    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
-    
     float ratio = 1.0f - (In.life / In.maxLife);
+    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+    float lengthMask = In.vTexcoord.y;
+	
+	float bandWidth = 0.35f;
+// ratio(0~1)를 -bandWidth ~ (1+bandWidth) 범위로 확장해서 매핑
+	float leadingEdge = lerp(-bandWidth, 1.0f + bandWidth, ratio);
+	float trailingEdge = leadingEdge - bandWidth;
 
-    //if (noise.r < ratio) 
+	if (lengthMask > leadingEdge || lengthMask < trailingEdge)
+		discard;
+// 길이 그라디언트 위주 + 노이즈로 가장자리에 자연스러운 디테일만 살짝
+    //float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
+
+	// 다 안보였다가 보이게 됨
+	//if (lengthMask > ratio)
+	//	discard;
+	//
+	//if (lengthMask < mask2)
+	//	discard;
+    //if (noise.r > ratio) 
     //    discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
@@ -159,7 +178,7 @@ PS_OUT PSMain(VS_OUT In)
         }
     }
 
-    // �ν��Ͻ�(��ƼŬ)�� �̹̽ú� + ������Ʈ �̹̽ú� �ؽ�ó �� �� �ݿ�
+    // 인스턴스(파티클)별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);

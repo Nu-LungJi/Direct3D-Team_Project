@@ -49,6 +49,7 @@ struct VS_OUT
     float3 vWorldPos : TEXCOORD1; // 추가: 라이팅 계산에 필요
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
+    float3 vLocalPos : TEXCOORD4;
 };
 
 VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
@@ -70,7 +71,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     }
 
     Out.vTexcoord = finalUV;
-    
+    Out.vLocalPos = In.vPosition;
 
     float3 localPos = In.vPosition * scale; 
     float3 rotatedLocal = RotateXYZ(localPos, p.rotation); 
@@ -101,75 +102,41 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
+ 
+    float fOuterCut = 1.f - smoothstep(0.9, 0.98, In.vTexcoord.y);
+    
+    float2 cloudUV = In.vTexcoord * float2(8.f, 1.f);
+    //cloudUV.x += g_fTime * 0.3f;
+    float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
+   
+    //0링 안쪽시작 1 바깥 도착 0.35 바깥으로 퍼지는 속도
 
-    float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-    if (AlbedoTex.a < 0.05f)
+    float fProgress = saturate(1.0f - (In.life / In.maxLife));
+    //float fInner = max(0.f, fProgress - 0.35f);
+    //
+    //float fTrail = smoothstep(fInner, fInner + 0.03f,  In.vTexcoord.y) *
+    //        (1.f - smoothstep(fProgress, fProgress + 0.06f, In.vTexcoord.y));
+    
+    float2 swirlUV = In.vTexcoord * float2(5.f, 1.f);
+   // float endFade = 1.f - smoothstep(0.85f, 1.f, fProgress);
+   // fTrail *= endFade;
+    swirlUV.x += g_fTime * 0.05f;
+   
+    float2 distortionUV = In.vTexcoord * float2(5.f, 1.f);
+    float3 distortion = NoiseMap.Sample(LinearWrap, distortionUV).rgb;
+    distortion.x += g_fTime * 0.05f;
+   // swirlUV += distortion;
+    
+    float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
+  
+
+    float3 pattern = cloud + swirl; //+swirl;
+    float3 fFinalColor = pattern * In.vColor.rgb;//  fTrail * In.vColor.rgb;
+    
+    float fCut = min(fFinalColor.r, min(fFinalColor.g, fFinalColor.b));
+    if ( fCut < 0.1f)
         discard;
-    float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
-    
-    float ratio = 1.0f - (In.life / In.maxLife);
-
-    //if (noise.r < ratio) 
-    //    discard;
-    float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
-
-    float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
-    WorldNormal = normalize(WorldNormal * NormalIntensity);
-
-    float3 V = normalize(g_vCamPos - In.vWorldPos);
-    float NDV = max(dot(WorldNormal, V), 0.f);
-
-    float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
-    float fMetallic = SMRO.r * MetallicIntensity;
-    float fRoughness = SMRO.g * RoughnessIntensity;
-    float fAmbient = SMRO.b * AmbientIntensity;
-
-    float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
-
-    float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-
-    [unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < LightCount; ++i)
-    {
-        float3 L, Radiance;
-
-        [branch]
-        if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
-            continue;
-
-        float RawNDL = dot(WorldNormal, L);
-
-        [branch]
-        if (RawNDL > 0.f)
-        {
-            float NDL = clamp(RawNDL, 0.f, 1.f);
-
-            float3 H = normalize(V + L);
-            float D = DistributionGGX(WorldNormal, H, fRoughness);
-            float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
-            float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
-
-            float3 Specular = D * F * V_Spec * SpecularIntensity;
-
-            float3 kS = F;
-            float3 kD = (1.0 - kS) * (1.0 - fMetallic);
-            float3 Diffuse = kD * Albedo / PI;
-
-            LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
-        }
-    }
-
-    // 인스턴스(파티클)별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
-    float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
-    texEmissive = pow(texEmissive, 2.2f);
-    float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
-    float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
-
-    float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
-    float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
-
-    
-    
-    Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+    Out.vDiffuse = float4(fFinalColor, fCut);
+   
     return Out;
 }

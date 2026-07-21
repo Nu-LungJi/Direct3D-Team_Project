@@ -15,6 +15,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
     float2 g_fPadding;
 };
 
+
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
 //픽셀 쉐이더용
@@ -55,40 +56,61 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
 {
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
-    float2 finalUV = In.vTexcoord;
+   // float2 finalUV = In.vTexcoord;
     float scale = p.alive ? p.size : 0.0f;
     
-    if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
-    {
-        uint frame = min(p.frameIndex, g_iTotalFrames - 1);
-        uint col = frame % g_iFlipbookColumns;
-        uint row = frame / g_iFlipbookColumns;
-        float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
-        float2 uvOffset = float2(col, row) * uvSize;
+// ----------------------------------------------------------
+// Noise Vertex Animation
+// ----------------------------------------------------------
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV 대신 실제 메쉬 UV 사용
-    }
+    Out.vTexcoord = In.vTexcoord;
 
-    Out.vTexcoord = finalUV;
-    
+// ----------------------------------------------------------
+// 표면 디테일용 노이즈 (기존 로직 유지, 세기만 약하게 씀)
+// ----------------------------------------------------------
+    float2 uvLarge = In.vTexcoord * 0.6f;
+    uvLarge += float2(0.02f, 0.015f) * g_fTime;
+    float2 uvSmall = In.vTexcoord * 2.5f;
+    uvSmall += float2(-0.04f, 0.03f) * g_fTime;
+    float nLarge = NoiseMap.SampleLevel(LinearWrap, uvLarge, 0).r;
+    float nSmall = NoiseMap.SampleLevel(LinearWrap, uvSmall, 0).r;
+    float noise = lerp(nLarge, nSmall, 0.25f);
+    noise = smoothstep(0.2f, 0.8f, noise);
+    noise = noise * 2.0f - 1.0f;
+    float amplitude = 3.0f;
 
-    float3 localPos = In.vPosition * scale; 
-    float3 rotatedLocal = RotateXYZ(localPos, p.rotation); 
-    float3 vWorldPos = rotatedLocal + p.position;
+// ----------------------------------------------------------
+// 지렁이 꿈틀거림 (몸통 길이를 따라 흐르는 사인파)
+// ----------------------------------------------------------
+    float bodyPos = In.vTexcoord.y;
+    float waveFreq = 6.0f;
+    float waveSpeed = 4.0f;
+    float phase = bodyPos * waveFreq - g_fTime * waveSpeed;
+    float wiggle = sin(phase);
+    float flexMask = pow(saturate(bodyPos), 1.5f);
+    float wiggleAmplitude = 4.0f;
+  //  float3 sideAxis = float3(0, 0, 1); /
+    float3 sideAxis = normalize(In.vTangent); // 
+    float3 vLocalPos = In.vPosition;
+    vLocalPos += sideAxis * wiggle * wiggleAmplitude * flexMask;
+    vLocalPos += normalize(In.vNormal) * noise * (amplitude * 0.3f);
 
+    float3 vLocalNormal = normalize(In.vNormal);
 
-    Out.vPosition = mul(float4(vWorldPos, 1.0f), g_matViewProj);
-    Out.vWorldPos = vWorldPos;
-    //Out.vTexcoord = In.vTexcoord;
-    Out.vNormal = In.vNormal;
-    Out.vTangent = In.vTangent;
-    Out.vBinormal = In.vBinormal;
+    vLocalPos *= scale;
+    float3 rotatedLocal = RotateXYZ(vLocalPos, p.rotation);
+    float3 worldPos = rotatedLocal + p.position;
+    Out.vPosition = mul(float4(worldPos, 1), g_matViewProj);
+    Out.vWorldPos = worldPos;
+    Out.vNormal = normalize(RotateXYZ(vLocalNormal, p.rotation));
+    Out.vTangent = normalize(RotateXYZ(In.vTangent, p.rotation));
+    Out.vBinormal = normalize(RotateXYZ(In.vBinormal, p.rotation));
     Out.vColor = p.alive ? p.color : float4(p.color.rgb, 0.0f);
     Out.vEmissive = p.emissive;
     Out.vEndEmissive = p.endEmissive;
     Out.life = p.life;
     Out.maxLife = p.maxLife;
-    
+
     return Out;
 }
 
@@ -109,8 +131,8 @@ PS_OUT PSMain(VS_OUT In)
     
     float ratio = 1.0f - (In.life / In.maxLife);
 
-    //if (noise.r < ratio) 
-    //    discard;
+    if (noise.r < ratio) 
+        discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
     float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);

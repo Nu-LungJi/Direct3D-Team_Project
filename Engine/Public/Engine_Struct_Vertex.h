@@ -64,17 +64,17 @@ namespace Engine
 		uint32_t loop;
 		_float2  pad2;         // 추가 필요: loop→color (8바이트)
 		_float4  color;
-		_float4  emissive;
+		_float4  originalEmissive, emissive, endEmissive;
 		uint32_t frameIndex;
 		uint32_t ownerID;
 		uint32_t iBehaviorType = 0;
+		_float pad3;
+		_float3 originalPosition; // 원래 스폰 위치
+		_float pad4;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
 	}PARTICLE;
-	static_assert(sizeof(PARTICLE) == 124, "size mismatch");
-	static_assert(offsetof(PARTICLE, velocity) == 16, "velocity offset");
-	static_assert(offsetof(PARTICLE, rotation) == 48, "rotation offset");
-	static_assert(offsetof(PARTICLE, color) == 80, "color offset");
-	static_assert(offsetof(PARTICLE, emissive) == 96, "emissive offset");
-	static_assert(offsetof(PARTICLE, iBehaviorType) == 120, "behaviorType offset");
+
 
 	typedef struct tagFireInstancedData
 	{

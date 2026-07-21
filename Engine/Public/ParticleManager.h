@@ -13,6 +13,7 @@ struct PARTICLE_LOOP_REQUEST
     std::vector<PARTICLE_SPAWN_DATA>  vecSpawnData;
     _float                            fSpawnInterval = 0.1f;
     _float                            fElapsed = 0.f;
+	uint32_t						  iUserId;
 };
 
 typedef struct tagParticlePreset
@@ -26,55 +27,18 @@ typedef struct tagParticlePreset
 	_float fStartSize = 1.f;
 	_float fEndSize = 1.f;
 	_float4   rotation = { 0.f, 0.f, 0.f, 0.f };
-
+	_float3 velocity = { 0,0,0 };
+	_float3 originalVelocity = { 0,0,0 };
 	//EndColor는 보간 로직 만든 뒤에 추가
 	_float4 StartColor = { 1.f, 1.f, 1.f, 1.f };
+	_float4 originalEmissive = { 1.f, 1.f, 1.f, 0.f };
 	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
+	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
 
 } PARTICLE_PRESET;
 
-struct STANDARD_PARAMS
-{
-	bool bRandomPos = false;
-	_float3 posMin = { 0,0,0 };
-	_float3 posMax = { 0,0,0 };
 
-	bool bRandomVel = false;
-	_float3 velMin = { 0,0,0 };
-	_float3 velMax = { 0,0,0 };
-
-    uint32_t count = 1;
-    _float3  position = {};
-    _float3  velocity = {};
-    _float   life = 1.f;
-    _float   fSize = 1.f;
-    _float   fEndSize = 1.f;
-    _float4   rotation = { 0.f, 0.f, 0.f, 0.f };
-    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-    _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
-    _bool    bLoop = false;
-    _float   fSpawnInterval = 0.1f;
-	_float	 fSpawnDelay = 0.f;
-	uint32_t	iBehaviorType;
-};
-
-struct BEAM_PARAMS
-{
-    _float4  beamStart = {};
-    _float4  beamEnd = {};
-    _float4  color = { 1.f, 1.f, 1.f, 1.f };
-    _float4  emissive = { 1.f, 1.f, 1.f, 0.f };
-    int      iDisplacementIterations = 6;
-    _float   fDisplacementAmplitude = 2.5f;
-    _float   fDisplacementDamping = 0.25f;
-    _float   flickerTimeInverval = 0.25f;
-    _float   beamDuration = 0.f;
-	_float	 fSpawnDelay = 0.f;
-	uint32_t ownerId = 0;
-	uint32_t geometryType = 0;
-
-};
 struct TextureSlotState
 {
 	std::string label;              // "Diffuse", "Normal", "Distortion", "Noise"
@@ -85,16 +49,16 @@ struct TextureSlotState
 };
 
 // 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
-enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
-
-struct SPAWN_COMMAND
-{
-    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
-    StringID sGroupTag{};
-    StringID sTypeTag{};
-	uint32_t ownerId = 0;
-    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
-};
+//enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
+//
+//struct SPAWN_COMMAND
+//{
+//    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
+//    StringID sGroupTag{};
+//    StringID sTypeTag{};
+//	uint32_t ownerId = 0;
+//    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
+//};
 struct PARTICLE_EFFECT_PRESET
 {
     std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
@@ -123,8 +87,13 @@ public:
 
     // 정확히 지정해서 스폰
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
-        uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
+        uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData, 
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
+	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos);
+
+	//실제 스폰 함수
+	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
+	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos);
 
 
 
@@ -134,18 +103,28 @@ public:
 
 
 public:
-	HRESULT Save_Binary_Json(std::string outpath, const std::string& fbxFullPath, const std::string& whatKind, const std::string& particleType,
-		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
-		const std::string& PSGroup, const std::string& PSID, const std::string& sGroupTag, const std::string& sResTag, 
-		const std::string& textureID1 = "", const std::string& textureID2 = "", const std::string& viBufferID1 ="",
-		const std::string& viBufferID2= "",
-		int RowCount = 1,
-		int ColCount = 1, const std::string& normalTexID1 = "", const std::string& normalTexID2 = "",
+	HRESULT Save_Binary_Json(std::string outpath,
+		const std::string& FullPath, const std::string& whatKind,
+		const std::string& particleType, const std::string& particleName,
+		int iMaxParticles,
+		const std::string& VSGroup, const std::string& VSID,
+		const std::string& PSGroup, const std::string& PSID,
+		const std::string& sGroupTag, const std::string& sResTag,
+		const std::string& textureID1, const std::string& textureID2,
+		const std::string& viBufferID1, const std::string& viBufferID2,
+		int RowCount, int ColCount,
+		const std::string& normalTexID1 = "", const std::string& normalTexID2 = "",
 		const std::string& distortionTexID1 = "", const std::string& distortionTexID2 = "",
 		const std::string& noiseTexID1 = "", const std::string& noiseTexID2 = "",
 		const std::string& normalTexPath = "",
 		const std::string& distortionTexPath = "",
-		const std::string& noiseTexPath = "");
+		const std::string& noiseTexPath = "",
+		const std::string& hdrTexID1 = "",
+		const std::string& hdrTexID2 = "",
+		const std::string& hdrTexPath = "",
+		const std::string& hdrNormalTexID1 = "",  
+		const std::string& hdrNormalTexID2 = "",  
+		const std::string& hdrNormalTexPath = "");
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -156,19 +135,25 @@ public:
 	HRESULT LoadCommandQueue(const std::string& strJsonPath);
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 
-	HRESULT Spawn(uint32_t owenrId, const std::string& strJsonPath, _fvector startPos, _fvector endPos);
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
 	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
 	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
 	void ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos);
+	void ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX matWorld);
+	std::vector<std::string> ScanBinFolder(const std::string& strBinFolder);
 	// 조회 헬퍼
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag) const;
 	bool HasGroup(const StringID& sGroupTag) const;
+	HRESULT ClearLoopRequests();
+	HRESULT DeleteLoopRequests(uint32_t userId);
+
+
+private:
+	void ComboList(_string comboName, _string resourceName, _string& previewName);
 public:
     static UPtr<CParticleManager> Create();
-
 private:
     // [대분류][소분류] -> 파티클 인스턴스
     std::unordered_map<StringID, std::unordered_map<StringID, UPtr<CParticle>>> m_Particles;
@@ -183,9 +168,10 @@ private:
 	 StringID pendingSyncGroup, pendingSyncType;
 
 private:
-    HRESULT ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
-
-private:
+    uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_TextureThumbnailCache;
+	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> m_ParsedCommandCache;
+private:
+	uint32_t m_iNextOwnerId = 1;
 };
 NS_END

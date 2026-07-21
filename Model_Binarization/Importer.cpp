@@ -2042,7 +2042,7 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		{
 			textureDir = MakeTextureOutputDir(modelDir);
 			std::filesystem::create_directories(textureDir);
-			std::filesystem::create_directories(basePath);
+			std::filesystem::create_directories(modelDir);
 		}
 
 
@@ -2076,7 +2076,7 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		else {
 			CopyUsedTextureFilesToFolder(originTextureDir, textureDir);
 			
-			outputPath = basePath / (modelName + ".bin");
+			outputPath = modelDir / (modelName + ".bin");
 
 		}
 

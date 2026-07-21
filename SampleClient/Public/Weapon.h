@@ -55,6 +55,8 @@ private:
 	int32_t				m_iBoneSocketIndex{ -1 };
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{false};
+
+	std::vector<E::SPAWN_COMMAND> test;
 public:
 	static E::UPtr<CWeapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
