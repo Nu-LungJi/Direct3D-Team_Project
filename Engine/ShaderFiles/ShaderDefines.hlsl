@@ -176,12 +176,17 @@ cbuffer PostProcessBuffer : register(b8)
 };
 
 // 스킬 쿨타임
-cbuffer CB_SPELLMETER : register(b9)
+cbuffer CB_SPELLMETER : register(b13)
 {
-    float g_Amount;         
-    float g_DistSpeed;      
-    float g_DistStrength;   
-    float g_Time;           
+	float g_Amount;
+	float g_DistSpeed;
+	float g_DistStrength;
+	float g_Time;
+	float4 g_FillColor;
+	float4 g_EmptyColor;
+	float4 g_RippleColor;
+	float4 g_WispyColor;
+};
 cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
 {
     float4x4 preTransform;
@@ -190,11 +195,7 @@ cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
     float2 gPartAttachmentPadding;
 };
 
-    float4 g_FillColor;     
-    float4 g_EmptyColor;    
-    float4 g_RippleColor;   
-    float4 g_WispyColor;
-};
+
 
 // 미니맵용
 cbuffer CB_MINIMAP : register(b10)

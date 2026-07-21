@@ -42,7 +42,6 @@ void CParticleManager::UpdateGUI()
 
 	static TextureSlotState* slots[] = { &slotDiffuse, &slotNormal, &slotDistortion, &slotNoise,&slotPositionHdr ,&slotNormalHdr };
 	static int activeSlotIndex = 0;
-
 	// ---- 슬롯별 폴더 경로 (인덱스가 slots[]와 1:1 대응) ----
 	static const std::string kTextureFolders[6] = {
 		"./Resources/SampleClient/Textures/EffectParticle/Diffuse",
@@ -80,6 +79,10 @@ void CParticleManager::UpdateGUI()
 	static char szResTag[128] = "Static_Model_Resource";
 	static char szViBuffer1[128] = "SAMPLE_CLIENT_PARTICLEBF";
 	static char szViBuffer2[128] = "VIBUF_ParticleQuad";
+	static char VSEntryPoint[128] = "VSMain";
+	static char PSEntryPoint[128] = "PSMain";
+
+	static int blendType = 0;
 
 	static int iTexRow = 1;
 	static int iTexCol = 1;
@@ -90,6 +93,13 @@ void CParticleManager::UpdateGUI()
 	static _bool gravity = false;
 	static _bool circleToWave = false;
 
+
+	static _bool alphaBlend = false;
+	static _bool alphaAdd = false;
+	static _bool noneBlend = false;
+	static int	iSelectedBlend = 0;
+
+	
 	static _float4 rotaion = _float4(0, 0, 0, 0);
 	static int iGeometryType = 0;
 
@@ -452,17 +462,12 @@ void CParticleManager::UpdateGUI()
 	ImGui::InputText("Json Name", szJsonName, IM_ARRAYSIZE(szJsonName));
 	ImGui::Combo("Particle Type", &particleTypeIndex, particleTypeNames, IM_ARRAYSIZE(particleTypeNames));
 	ImGui::InputText("Particle Name (e.g. ROCK1_CPU)", szParticleName, IM_ARRAYSIZE(szParticleName));
-
 	ImGui::InputInt("MaxParticles", &iMaxParticles);
-	//ImGui::InputText("VSID1", szVSID1, IM_ARRAYSIZE(szVSID1));
-
 	ComboList("VSID1", "PERMANENT_PARTICLE_VSSHADER", VSIDIName);
-
-
-
-	//ImGui::InputText("VSID2", szVSID2, IM_ARRAYSIZE(szVSID2));
-	//ImGui::InputText("PSID1", szPSID1, IM_ARRAYSIZE(szPSID1));
+	ImGui::InputText("VS EntryPoint (e.g. VSMain)", VSEntryPoint, IM_ARRAYSIZE(VSEntryPoint));
 	ComboList("PSID1", "PERMANENT_PARTICLE_PSSHADER", PSIDIName);
+	ImGui::InputText("PS EntryPoint (e.g. PSMain)", PSEntryPoint, IM_ARRAYSIZE(PSEntryPoint));
+	
 
 	//ImGui::InputText("PSID2", szPSID2, IM_ARRAYSIZE(szPSID2));
 
@@ -550,7 +555,7 @@ void CParticleManager::UpdateGUI()
 				hr = Save_Binary_Json(savePath.string(),
 					targetPath, whatKindStr, particleTypeStr, particleNameStr,
 					iMaxParticles,
-					"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName,
+					"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint,"PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint,
 					szGroupTag, szResTag,
 					"", "",
 					"", "",
@@ -575,7 +580,7 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint,"PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint,
 						szGroupTag, szResTag,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
@@ -602,7 +607,7 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint,
 						szGroupTag, szResTag,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
@@ -869,7 +874,32 @@ void CParticleManager::UpdateGUI()
 		gravity = false;
 		circleToWave = false;
 	}
-
+	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
+	ImGui::Checkbox("ALPHA_ADD", &alphaAdd);
+	ImGui::Checkbox("NONE_BLEND", &noneBlend);
+	auto particle = GetParticle(selectedGroup, selectedType);
+	if (particle) {
+		if (alphaBlend)
+		{
+			alphaAdd = false;
+			noneBlend = false;
+			if(particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
+				particle->Set_BlendState(BLENDTYPE::ALPHABLEND);
+		}
+		else if (alphaAdd) {
+			alphaBlend = false;
+			noneBlend = false;
+			if (particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHAADD))
+				particle->Set_BlendState(BLENDTYPE::ALPHAADD);
+		}
+		else if (noneBlend) {
+			alphaAdd = false;
+			alphaBlend = false;
+			if (particle->Get_BlendState() != ETOUI(BLENDTYPE::NONE))
+				particle->Set_BlendState(BLENDTYPE::NONE);
+		}
+	}
+	
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
@@ -1386,8 +1416,8 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& FullPath, const std::string& whatKind,
 	const std::string& particleType, const std::string& particleName,
 	int iMaxParticles,
-	const std::string& VSGroup, const std::string& VSID,
-	const std::string& PSGroup, const std::string& PSID,
+	const std::string& VSGroup, const std::string& VSID,const std::string& VSEntryPoint,
+	const std::string& PSGroup, const std::string& PSID,const std::string& PSEntryPoint,
 	const std::string& sGroupTag, const std::string& sResTag,
 	const std::string& textureID1, const std::string& textureID2,
 	const std::string& viBufferID1, const std::string& viBufferID2,
@@ -1403,7 +1433,8 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& hdrTexPath,
 	const std::string& hdrNormalTexID1,   
 	const std::string& hdrNormalTexID2,   
-	const std::string& hdrNormalTexPath)  
+	const std::string& hdrNormalTexPath,
+	int iSelectedBlend)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1444,8 +1475,11 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	newEntry["iMaxParticles"] = iMaxParticles;
 	newEntry["VSGroup"] = VSGroup;
 	newEntry["VSID"] = VSID;
+	newEntry["VSEntryPoint"] = VSEntryPoint;
 	newEntry["PSGroup"] = PSGroup;
 	newEntry["PSID"] = PSID;
+	newEntry["PSEntryPoint"] = PSEntryPoint;
+	newEntry["BLENDSTATE"] = iSelectedBlend;
 
 	
 	std::string arrayKey;
@@ -1890,10 +1924,13 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			int iMaxParticles = entry.value("iMaxParticles", 1000);
 			std::string VSGroup = entry.value("VSGroup", "");
 			std::string VSID = entry.value("VSID", "");
+			std::string VSEntryPoint = entry.value("VSEntryPoint", "");
 			std::string PSGroup = entry.value("PSGroup", "");
 			std::string PSID = entry.value("PSID", "");
+			std::string PSEntryPoint = entry.value("PSEntryPoint", "");
 			int RowCount = entry.value("RowCount", 1);
 			int ColCount = entry.value("ColCount", 1);
+			int selectedBlend = entry.value("BLENDSTATE", 0);
 			if (particleType.empty() || sGroupTag.empty() || particleName.empty())
 			{
 				hr = E_FAIL;
@@ -1927,11 +1964,13 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sResTag = sResTag;
 				desc.TexRows = RowCount;      
 				desc.TexColumns = ColCount;
+				desc.sVEntryPoint = VSEntryPoint;
+				desc.sPEntryPoint = PSEntryPoint;
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
-
+				desc.blendState = selectedBlend;
 				if (!VSGroup.empty() && !VSID.empty())
 					desc.VSID = { VSGroup, VSID };
 
@@ -1955,11 +1994,14 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 
 				if (!PSGroup.empty() && !PSID.empty())
 					desc.PSID = { PSGroup, PSID };
+				desc.sVEntryPoint = VSEntryPoint;
+				desc.sPEntryPoint = PSEntryPoint;
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
-				
+				desc.blendState = selectedBlend;
+
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2024,12 +2066,16 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			int iMaxParticles = entry.value("iMaxParticles", 1000);
 			std::string VSGroup = entry.value("VSGroup", "");
 			std::string VSID = entry.value("VSID", "");
+			std::string VSEntryPoint = entry.value("VSEntryPoint", "");
 			std::string PSGroup = entry.value("PSGroup", "");
 			std::string PSID = entry.value("PSID", "");
+			std::string PSEntryPoint = entry.value("PSEntryPoint", "");
 			std::string textureID1 = entry.value("TextureID1", "");
 			std::string textureID2 = entry.value("TextureID2", "");
 			int RowCount = entry.value("RowCount", 1);
 			int ColCount = entry.value("ColCount", 1);
+			int selectedBlend = entry.value("BLENDSTATE", 1);
+
 			if (particleType.empty() || particleName.empty() || textureID1.empty() || textureID2.empty())
 			{
 				hr = E_FAIL;
@@ -2060,11 +2106,13 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexColumns = ColCount;
 				if (!VSGroup.empty() && !VSID.empty()) desc.VSID = { VSGroup, VSID };
 				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
-
+				desc.sVEntryPoint = VSEntryPoint;
+				desc.sPEntryPoint = PSEntryPoint;
 				// ---- 추가 텍스처 로드 ----
 				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
+				desc.blendState = selectedBlend;
 
 				particle = CParticle_GPU::Create(&desc);
 			}
@@ -2082,11 +2130,13 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
-
+				desc.sVEntryPoint = VSEntryPoint;
+				desc.sPEntryPoint = PSEntryPoint;
 				// ---- 추가 텍스처 로드 ----
 				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
+				desc.blendState = selectedBlend;
 
 				particle = CParticle_CPU::Create(&desc);
 			}
@@ -2104,6 +2154,9 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
+				desc.sVEntryPoint = VSEntryPoint;
+				desc.sPEntryPoint = PSEntryPoint;
+				desc.blendState = selectedBlend;
 
 				particle = CBeam_CPU::Create(&desc);
 			}
@@ -2118,6 +2171,9 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
+				desc.sVEntryPoint = VSEntryPoint;
+				desc.sPEntryPoint = PSEntryPoint;
+				desc.blendState = selectedBlend;
 
 				particle = CTrail_CPU::Create(&desc);
 			}

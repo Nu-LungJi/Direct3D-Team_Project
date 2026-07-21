@@ -54,7 +54,20 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 			return E_FAIL;
 		m_pScrollCBuffer = res;
 	}
-
+	switch (m_Desc.blendState) {
+	case 0:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	case 1:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+		break;
+	case 2:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+		break;
+	default:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	}
 
 	if (m_Desc.normalTextureID.first != "") {
 		m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -66,13 +79,13 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 		m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 	}
 
-    m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-    //if (FAILED(m_pResVertexShader->Load()))
-    //    return E_FAIL;
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
+	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
+		return E_FAIL;
 
-    m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-    //if (FAILED(m_pResPixelShader->Load()))
-    //    return E_FAIL;
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
+	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
+		return E_FAIL;
 
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
@@ -256,7 +269,7 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     if (m_vecVertices.size() < 4) // 최소 프레임 2개(=4정점)는 있어야 스윕 면이 성립
         return S_OK;
 
-
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 	//초기화 버퍼 초기화
 	{
 		CB_SCROLL cb{};
@@ -322,12 +335,9 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 	ID3D11Buffer* nullCBuffer[] = { nullptr };
 	pContext->PSSetConstantBuffers(0, 1, nullCBuffer);
 
-    //pContext->RSSetState(nullptr); // 다음에 그려질 오브젝트에 영향 안 주도록 기본 상태로 복구
-	//{	/* --- 광윤 : 다른 RasterizerState 쓰시고 원래 상태로 돌려주시면 됩니다 --- */
-	//	const auto& rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-	//	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-	//}
 	pContext->RSSetState(nullptr);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+
     return S_OK;
 }
 
