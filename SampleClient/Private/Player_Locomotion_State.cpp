@@ -77,7 +77,7 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	// 지연되어, 입력은 들어와도 캐릭터가 멈춘 포즈에 남아 있었다.
 	if (m_eTransition == TRANSITION::STOP && bHasMoveInput)
 	{
-		DEBUG_BREAK();
+		
 		m_eTransition = TRANSITION::NONE;
 		m_ePendingGait = GAIT::END;
 		m_iTransientAnimation = INVALID_ANIMATION;
