@@ -14,6 +14,7 @@
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
 #include "Test3DSound.h"
+#include "MapCollisionProxyObject.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -140,6 +141,13 @@ std::future<bool> CLevelCreatureLoader::Load()
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Terrain", CTerrain::Create(&Terrain))))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Terrain");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE", "Prototype_GameObject_MapCollisionProxy", CMapCollisionProxyObject::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_MapCollisionProxy");
 				return false;
 			}
 

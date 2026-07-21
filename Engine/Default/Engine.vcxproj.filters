@@ -283,6 +283,9 @@
     <Filter Include="PhysX\Manager">
       <UniqueIdentifier>{f5a5eb2a-888e-4d69-bfbd-c08eacd2a9f4}</UniqueIdentifier>
     </Filter>
+	<Filter Include="PhysX\Manager\CollisionProxy">
+	  <UniqueIdentifier>{cfc6213e-5482-4e67-a8de-cc1ad03d442c}</UniqueIdentifier>
+	</Filter>
     <Filter Include="Component\PhysX">
       <UniqueIdentifier>{ffcf98bd-cb43-4bcb-aeb7-f1c348a7cd4a}</UniqueIdentifier>
     </Filter>
@@ -837,6 +840,12 @@
     <ClInclude Include="..\public\PhysXManager.h">
       <Filter>PhysX\Manager</Filter>
     </ClInclude>
+	<ClInclude Include="..\public\PhysXCollisionProxyData.h">
+	  <Filter>PhysX\Manager\CollisionProxy</Filter>
+	</ClInclude>
+	<ClInclude Include="..\public\PhysXCollisionProxyEditor.h">
+	  <Filter>PhysX\Manager\CollisionProxy</Filter>
+	</ClInclude>
     <ClInclude Include="..\Public\Engine_PhysxDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -1419,6 +1428,9 @@
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
     </ClCompile>
+	<ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp">
+	  <Filter>PhysX\Manager\CollisionProxy</Filter>
+	</ClCompile>
     <ClCompile Include="..\private\DbgLineRender.cpp">
       <Filter>DbgLineRender</Filter>
     </ClCompile>

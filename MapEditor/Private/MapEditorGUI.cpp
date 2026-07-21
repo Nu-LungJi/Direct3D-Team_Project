@@ -11,6 +11,8 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr int MAP_EDITOR_GIZMO_ID = 0x4D4150;
+
 	std::string MakeMapPath(const char* mapName)
 	{
 		std::string cleanName = mapName;
@@ -100,8 +102,6 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 		m_pSelection->SyncFromPrimary();
 		m_pSelection->PruneInvalid();
 	}
-
-	ImGuizmo::BeginFrame();
 
 	ImGui::SetNextWindowSize(ImVec2(360.f, 520.f), ImGuiCond_FirstUseEver);
 	ImGui::Begin("MapEditorGUI");
@@ -427,6 +427,7 @@ void CMapEditorGUI::RenderGizmo()
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
 	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
+	ImGuizmo::SetID(MAP_EDITOR_GIZMO_ID);
 	const auto operation = multiSelection ? ImGuizmo::TRANSLATE : m_GizmoOperation;
 	const auto mode = multiSelection ? ImGuizmo::WORLD : m_GizmoMode;
 	if (ImGuizmo::Manipulate(&view._11, &proj._11, operation, mode, &gizmoMatrix._11))

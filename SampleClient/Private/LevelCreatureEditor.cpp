@@ -15,6 +15,7 @@
 #include "LevelPlayGroundLoader.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
+#include "MapCollisionProxyObject.h"
 #include "Test3DSound.h"
 NS_USING(Client)
 
@@ -107,6 +108,18 @@ HRESULT CLevelCreatureEditor::Initialize()
 		{
 			pObj->GetTransform().SetPosition(_float3{ 45.f, 5.f, 27.f });
 		}
+	}
+
+	{
+		CMapCollisionProxyObject::DESC Desc{};
+		Desc.sObjectTag = "MapCollisionProxy";
+		Desc.sCollisionFileName = "LevelA";
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_MapCollisionProxy",
+			"00_MapCollision",
+			&Desc))
+			return E_FAIL;
 	}
 
 
