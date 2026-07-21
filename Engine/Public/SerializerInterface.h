@@ -1,7 +1,10 @@
 #pragma once
 #include "Engine_Defines.h"
 #include <string>
+#include <array>
 #include <map>
+#include <optional>
+#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 #include <type_traits>
@@ -18,10 +21,16 @@ public:
 #pragma region PRIMITIVE
 public:
 	virtual void Write(const std::string& key, bool value) = 0;
+	virtual void Write(const std::string& key, int8_t value) = 0;
+	virtual void Write(const std::string& key, uint8_t value) = 0;
+	virtual void Write(const std::string& key, int16_t value) = 0;
+	virtual void Write(const std::string& key, uint16_t value) = 0;
 	virtual void Write(const std::string& key, uint32_t value) = 0;
 	virtual void Write(const std::string& key, uint64_t value) = 0;
+	virtual void Write(const std::string& key, int64_t value) = 0;
 	virtual void Write(const std::string& key, int value) = 0;
 	virtual void Write(const std::string& key, float value) = 0;
+	virtual void Write(const std::string& key, double value) = 0;
 	virtual void Write(const std::string& key, const std::string& value) = 0;
 	virtual void Write(const std::string& key, const _float2& value) = 0;
 	virtual void Write(const std::string& key, const _float3& value) = 0;
@@ -44,6 +53,15 @@ public:
 		StartMap(key); 
 		Write("First", pairData.first);
 		Write("Second", pairData.second);
+		EndMap();
+	}
+
+	template<typename T>
+	void Write(const std::string& key, const std::optional<T>& optionalData)
+	{
+		StartMap(key);
+		Write("HasValue", optionalData.has_value());
+		if (optionalData) Write("Value", *optionalData);
 		EndMap();
 	}
 #pragma endregion
@@ -149,10 +167,16 @@ public:
 #pragma region PRIMITIVE
 public:
 	virtual void Read(const std::string& key, bool& outValue) = 0;
+	virtual void Read(const std::string& key, int8_t& outValue) = 0;
+	virtual void Read(const std::string& key, uint8_t& outValue) = 0;
+	virtual void Read(const std::string& key, int16_t& outValue) = 0;
+	virtual void Read(const std::string& key, uint16_t& outValue) = 0;
 	virtual void Read(const std::string& key, uint32_t& outValue) = 0;
 	virtual void Read(const std::string& key, uint64_t& outValue) = 0;
+	virtual void Read(const std::string& key, int64_t& outValue) = 0;
 	virtual void Read(const std::string& key, int& outValue) = 0;
 	virtual void Read(const std::string& key, float& outValue) = 0;
+	virtual void Read(const std::string& key, double& outValue) = 0;
 	virtual void Read(const std::string& key, std::string& outValue) = 0;
 	virtual void Read(const std::string& key, _float2& outValue) = 0;
 	virtual void Read(const std::string& key, _float3& outValue) = 0;
@@ -195,6 +219,60 @@ public:
 		}
 
 		EndMap();
+	}
+
+	template<typename T>
+	void Read(const std::string& key, std::optional<T>& outOptional)
+	{
+		if (!HasValue(key)) return;
+
+		static_assert(std::is_default_constructible_v<T>,
+			"Optional deserialization requires a default-constructible value type");
+		static_assert(
+			std::is_move_assignable_v<std::optional<T>> ||
+			std::is_copy_assignable_v<std::optional<T>>,
+			"Optional deserialization requires an assignable optional value type");
+
+		const size_t count = StartMap(key);
+		bool bHasValue = false;
+		bool bReadHasValue = false;
+		std::optional<T> loadedValue{};
+
+		try
+		{
+			for (size_t i = 0; i < count; ++i)
+			{
+				const std::string field = ReadMapKey();
+				if (field == "HasValue")
+				{
+					Read(field, bHasValue);
+					bReadHasValue = true;
+				}
+				else if (field == "Value")
+				{
+					loadedValue.emplace();
+					Read(field, *loadedValue);
+				}
+				else
+				{
+					throw std::runtime_error("Optional data contains an unknown field: " + field);
+				}
+			}
+		}
+		catch (...)
+		{
+			EndMap();
+			throw;
+		}
+
+		EndMap();
+		if (!bReadHasValue || bHasValue != loadedValue.has_value())
+			throw std::runtime_error("Optional data has an inconsistent value state: " + key);
+
+		if constexpr (std::is_move_assignable_v<std::optional<T>>)
+			outOptional = std::move(loadedValue);
+		else
+			outOptional = loadedValue;
 	}
 
 #pragma endregion
@@ -331,6 +409,12 @@ public:
 	void Read(const std::string& key, T(&outArray)[N])
 	{
 		Read(key, outArray, N);
+	}
+
+	template<typename T, size_t N>
+	void Read(const std::string& key, std::array<T, N>& outArray)
+	{
+		Read(key, outArray.data(), N);
 	}
 
 protected:

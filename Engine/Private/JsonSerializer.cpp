@@ -37,6 +37,26 @@ void CJsonSerializer::Write(const std::string& key, bool value)
 	else                 node[key] = value;
 }
 
+void CJsonSerializer::Write(const std::string& key, int8_t value)
+{
+	Write(key, static_cast<int64_t>(value));
+}
+
+void CJsonSerializer::Write(const std::string& key, uint8_t value)
+{
+	Write(key, static_cast<uint64_t>(value));
+}
+
+void CJsonSerializer::Write(const std::string& key, int16_t value)
+{
+	Write(key, static_cast<int64_t>(value));
+}
+
+void CJsonSerializer::Write(const std::string& key, uint16_t value)
+{
+	Write(key, static_cast<uint64_t>(value));
+}
+
 void CJsonSerializer::Write(const std::string& key, uint32_t value)
 {
 	nlohmann::json& node = *m_nodeStack.back();
@@ -52,6 +72,14 @@ void CJsonSerializer::Write(const std::string& key, uint64_t value)
 	if (node.is_array()) node.push_back(value);
 	else                 node[key] = value;
 }
+
+void CJsonSerializer::Write(const std::string& key, int64_t value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
 void CJsonSerializer::Write(const std::string& key, int value)
 {
 	nlohmann::json& node = *m_nodeStack.back();
@@ -61,6 +89,14 @@ void CJsonSerializer::Write(const std::string& key, int value)
 }
 
 void CJsonSerializer::Write(const std::string& key, float value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
+
+void CJsonSerializer::Write(const std::string& key, double value)
 {
 	nlohmann::json& node = *m_nodeStack.back();
 

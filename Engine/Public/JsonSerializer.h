@@ -15,11 +15,17 @@ private:
 
 public:
 	void Write(const std::string& key, bool value) override;
+	void Write(const std::string& key, int8_t value) override;
+	void Write(const std::string& key, uint8_t value) override;
+	void Write(const std::string& key, int16_t value) override;
+	void Write(const std::string& key, uint16_t value) override;
 	void Write(const std::string& key, uint32_t value) override;
 	void Write(const std::string& key, uint64_t value) override;
+	void Write(const std::string& key, int64_t value) override;
 	void Write(const std::string& key, int value) override;
 	void Write(const std::string& key, const ISerializable& value) override;
 	void Write(const std::string& key, float value) override;
+	void Write(const std::string& key, double value) override;
 	void Write(const std::string& key, const _float2& value) override;
 	void Write(const std::string& key, const _float3& value) override;
 	void Write(const std::string& key, const _float4& value) override;

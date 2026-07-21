@@ -3,9 +3,88 @@
 #include "ISerializable.h"
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
+#include <type_traits>
 
 NS_USING(Engine)
+
+namespace
+{
+	const nlohmann::json* FindValue(
+		nlohmann::json& node,
+		std::vector<size_t>& arrayIndexStack,
+		const std::string& key)
+	{
+		if (node.is_array() && !arrayIndexStack.empty())
+		{
+			size_t& index = arrayIndexStack.back();
+			if (index >= node.size()) return nullptr;
+			const nlohmann::json* pValue = &node[index++];
+			return pValue->is_null() ? nullptr : pValue;
+		}
+
+		if (!node.is_object() || !node.contains(key) || node[key].is_null())
+			return nullptr;
+
+		return &node[key];
+	}
+
+	template<typename T>
+	void ReadIntegerValue(
+		nlohmann::json& node,
+		std::vector<size_t>& arrayIndexStack,
+		const std::string& key,
+		T& outValue)
+	{
+		static_assert(std::is_integral_v<T> && !std::is_same_v<T, bool>);
+
+		const nlohmann::json* pValue = FindValue(node, arrayIndexStack, key);
+		if (!pValue) return;
+		if (!pValue->is_number_integer() && !pValue->is_number_unsigned())
+			throw std::runtime_error("JSON integer field has an invalid type: " + key);
+
+		if constexpr (std::is_signed_v<T>)
+		{
+			if (pValue->is_number_unsigned())
+			{
+				const uint64_t value = pValue->get<uint64_t>();
+				if (value > static_cast<uint64_t>(std::numeric_limits<T>::max()))
+					throw std::out_of_range("JSON signed integer field is out of range: " + key);
+				outValue = static_cast<T>(value);
+			}
+			else
+			{
+				const int64_t value = pValue->get<int64_t>();
+				if (value < static_cast<int64_t>(std::numeric_limits<T>::min()) ||
+					value > static_cast<int64_t>(std::numeric_limits<T>::max()))
+				{
+					throw std::out_of_range("JSON signed integer field is out of range: " + key);
+				}
+				outValue = static_cast<T>(value);
+			}
+		}
+		else
+		{
+			uint64_t value{};
+			if (pValue->is_number_unsigned())
+			{
+				value = pValue->get<uint64_t>();
+			}
+			else
+			{
+				const int64_t signedValue = pValue->get<int64_t>();
+				if (signedValue < 0)
+					throw std::out_of_range("JSON unsigned integer field is negative: " + key);
+				value = static_cast<uint64_t>(signedValue);
+			}
+
+			if (value > static_cast<uint64_t>(std::numeric_limits<T>::max()))
+				throw std::out_of_range("JSON unsigned integer field is out of range: " + key);
+			outValue = static_cast<T>(value);
+		}
+	}
+}
 
 CJsonDeSerializer::CJsonDeSerializer() {}
 CJsonDeSerializer::~CJsonDeSerializer() {}
@@ -64,42 +143,39 @@ void CJsonDeSerializer::Read(const std::string& key, bool& outValue)
 	}
 }
 
+void CJsonDeSerializer::Read(const std::string& key, int8_t& outValue)
+{
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
+}
+
+void CJsonDeSerializer::Read(const std::string& key, uint8_t& outValue)
+{
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
+}
+
+void CJsonDeSerializer::Read(const std::string& key, int16_t& outValue)
+{
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
+}
+
+void CJsonDeSerializer::Read(const std::string& key, uint16_t& outValue)
+{
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
+}
+
 void CJsonDeSerializer::Read(const std::string& key, uint32_t& outValue)
 {
-	nlohmann::json& node = *m_nodeStack.back();
-
-	if (node.is_array() && !m_arrayIndexStack.empty())
-	{
-		size_t& idx = m_arrayIndexStack.back();
-		if (idx < node.size())
-		{
-			if (!node[idx].is_null()) outValue = node[idx].get<uint32_t>();
-			idx++;
-		}
-	}
-	else if (node.is_object() && node.contains(key) && !node[key].is_null())
-	{
-		outValue = node[key].get<uint32_t>();
-	}
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
 }
 
 void CJsonDeSerializer::Read(const std::string& key, uint64_t& outValue)
 {
-	nlohmann::json& node = *m_nodeStack.back();
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
+}
 
-	if (node.is_array() && !m_arrayIndexStack.empty())
-	{
-		size_t& idx = m_arrayIndexStack.back();
-		if (idx < node.size())
-		{
-			if (!node[idx].is_null()) outValue = node[idx].get<uint64_t>();
-			idx++;
-		}
-	}
-	else if (node.is_object() && node.contains(key) && !node[key].is_null())
-	{
-		outValue = node[key].get<uint64_t>();
-	}
+void CJsonDeSerializer::Read(const std::string& key, int64_t& outValue)
+{
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
 }
 
 HRESULT CJsonDeSerializer::Initialize()
@@ -110,21 +186,7 @@ HRESULT CJsonDeSerializer::Initialize()
 
 void CJsonDeSerializer::Read(const std::string& key, int& outValue)
 {
-	nlohmann::json& node = *m_nodeStack.back();
-
-	if (node.is_array() && !m_arrayIndexStack.empty())
-	{
-		size_t& idx = m_arrayIndexStack.back();
-		if (idx < node.size())
-		{
-			if (!node[idx].is_null()) outValue = node[idx].get<int>();
-			idx++; 
-		}
-	}
-	else if (node.is_object() && node.contains(key) && !node[key].is_null())
-	{
-		outValue = node[key].get<int>();
-	}
+	ReadIntegerValue(*m_nodeStack.back(), m_arrayIndexStack, key, outValue);
 }
 
 void CJsonDeSerializer::Read(const std::string& key, float& outValue)
@@ -144,6 +206,16 @@ void CJsonDeSerializer::Read(const std::string& key, float& outValue)
 	{
 		outValue = node[key].get<float>();
 	}
+}
+
+void CJsonDeSerializer::Read(const std::string& key, double& outValue)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+	const nlohmann::json* pValue = FindValue(node, m_arrayIndexStack, key);
+	if (!pValue) return;
+	if (!pValue->is_number())
+		throw std::runtime_error("JSON floating-point field has an invalid type: " + key);
+	outValue = pValue->get<double>();
 }
 
 void CJsonDeSerializer::Read(const std::string& key, std::string& outValue)

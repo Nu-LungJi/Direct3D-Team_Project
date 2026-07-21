@@ -20,10 +20,16 @@ public:
 
 public:
 	void Read(const std::string& key, bool& outValue) override;
+	void Read(const std::string& key, int8_t& outValue) override;
+	void Read(const std::string& key, uint8_t& outValue) override;
+	void Read(const std::string& key, int16_t& outValue) override;
+	void Read(const std::string& key, uint16_t& outValue) override;
 	void Read(const std::string& key, uint32_t& outValue) override;
 	void Read(const std::string& key, uint64_t& outValue) override;
+	void Read(const std::string& key, int64_t& outValue) override;
 	void Read(const std::string& key, int& outValue) override;
 	void Read(const std::string& key, float& outValue) override;
+	void Read(const std::string& key, double& outValue) override;
 	void Read(const std::string& key, std::string& outValue) override;
 	void Read(const std::string& key, _float2& outValue)  override;
 	void Read(const std::string& key, _float3& outValue) override;

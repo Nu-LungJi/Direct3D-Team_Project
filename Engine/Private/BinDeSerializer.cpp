@@ -99,6 +99,26 @@ void CBinDeSerializer::Read(const std::string& key, bool& outValue)
 	outValue = iValue != 0;
 }
 
+void CBinDeSerializer::Read(const std::string& key, int8_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
+void CBinDeSerializer::Read(const std::string& key, uint8_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
+void CBinDeSerializer::Read(const std::string& key, int16_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
+void CBinDeSerializer::Read(const std::string& key, uint16_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
 void CBinDeSerializer::Read(const std::string& key, uint32_t& outValue)
 {
 	ReadBytes(outValue);
@@ -109,12 +129,22 @@ void CBinDeSerializer::Read(const std::string& key, uint64_t& outValue)
 	ReadBytes(outValue);
 }
 
+void CBinDeSerializer::Read(const std::string& key, int64_t& outValue)
+{
+	ReadBytes(outValue);
+}
+
 void CBinDeSerializer::Read(const std::string& key, int& outValue)
 {
 	ReadBytes(outValue);
 }
 
 void CBinDeSerializer::Read(const std::string& key, float& outValue)
+{
+	ReadBytes(outValue);
+}
+
+void CBinDeSerializer::Read(const std::string& key, double& outValue)
 {
 	ReadBytes(outValue);
 }

@@ -70,6 +70,30 @@ void CBinSerializer::Write(const std::string& key, bool value)
 	WriteBytes(iValue);
 }
 
+void CBinSerializer::Write(const std::string& key, int8_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
+void CBinSerializer::Write(const std::string& key, uint8_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
+void CBinSerializer::Write(const std::string& key, int16_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
+void CBinSerializer::Write(const std::string& key, uint16_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
 void CBinSerializer::Write(const std::string& key, uint32_t value)
 {
 	PreWrite(key);
@@ -82,6 +106,12 @@ void CBinSerializer::Write(const std::string& key, uint64_t value)
 	WriteBytes(value);
 }
 
+void CBinSerializer::Write(const std::string& key, int64_t value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
 void CBinSerializer::Write(const std::string& key, int value)
 {
 	PreWrite(key);
@@ -89,6 +119,12 @@ void CBinSerializer::Write(const std::string& key, int value)
 }
 
 void CBinSerializer::Write(const std::string& key, float value)
+{
+	PreWrite(key);
+	WriteBytes(value);
+}
+
+void CBinSerializer::Write(const std::string& key, double value)
 {
 	PreWrite(key);
 	WriteBytes(value);
