@@ -43,6 +43,8 @@ private:
 	void HandleSceneInput();
 	void CreateActor(const _float3& position = {});
 	void CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE eType);
+	void CreateCylinderAtCamera();
+	void CreateWedgeAtCamera();
 	void DuplicateSelected();
 	void DeleteSelected();
 	void SelectAtMouse();

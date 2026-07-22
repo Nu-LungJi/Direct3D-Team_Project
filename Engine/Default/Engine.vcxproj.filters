@@ -286,6 +286,9 @@
     <Filter Include="PhysX\Manager\CollisionProxy">
       <UniqueIdentifier>{cfc6213e-5482-4e67-a8de-cc1ad03d442c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PhysX\Manager\Cooking">
+      <UniqueIdentifier>{89c1e6e6-45d4-41fc-8dcc-daa32de593b7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX">
       <UniqueIdentifier>{ffcf98bd-cb43-4bcb-aeb7-f1c348a7cd4a}</UniqueIdentifier>
     </Filter>
@@ -845,6 +848,9 @@
     </ClInclude>
     <ClInclude Include="..\public\PhysXManager.h">
       <Filter>PhysX\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysXCookingEditor.h">
+      <Filter>PhysX\Manager\Cooking</Filter>
     </ClInclude>
     <ClInclude Include="..\public\PhysXCollisionProxyData.h">
       <Filter>PhysX\Manager\CollisionProxy</Filter>
@@ -1451,6 +1457,9 @@
     </ClCompile>
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysXCookingEditor.cpp">
+      <Filter>PhysX\Manager\Cooking</Filter>
     </ClCompile>
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp">
       <Filter>PhysX\Manager\CollisionProxy</Filter>

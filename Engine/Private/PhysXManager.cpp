@@ -3,6 +3,7 @@
 #include "PhysxManagerListener.h"
 #include "GameInstance.h"
 #include "PhysXCollisionProxyEditor.h"
+#include "PhysXCookingEditor.h"
 #include "PhysXCollisionProxyObject.h"
 
 #include <filesystem>
@@ -292,10 +293,17 @@ void CPhysXManager::UpdateGUI()
     {
         m_bDbgRender = !m_bDbgRender;
     }
+	if (ImGui::Button("Open Cooking Editor"))
+	{
+		if (m_pCookingEditor)
+			m_pCookingEditor->Open();
+	}
     ImGui::End();
 
 	if (m_pCollisionProxyEditor)
 		m_pCollisionProxyEditor->UpdateGUI(0.f);
+	if (m_pCookingEditor)
+		m_pCookingEditor->UpdateGUI();
 }
 
 void CPhysXManager::SetCollisionLayerNames(std::vector<std::pair<uint32_t, std::string>> layerNames)
@@ -638,6 +646,9 @@ HRESULT CPhysXManager::Initialize()
 	m_pCollisionProxyEditor = CPhysXCollisionProxyEditor::Create();
 	if (!m_pCollisionProxyEditor)
 		return E_FAIL;
+	m_pCookingEditor = CPhysXCookingEditor::Create();
+	if (!m_pCookingEditor)
+		return E_FAIL;
 
     m_pListener = CPhysxManagerListener::Create();
 	if (!m_pListener)
@@ -863,6 +874,7 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 
 void CPhysXManager::Free()
 {
+	m_pCookingEditor.reset();
 	m_pCollisionProxyEditor.reset();
 
 	{

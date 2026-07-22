@@ -3,6 +3,7 @@
 
 #include "CameraObject.h"
 #include "DbgLineRender.h"
+#include "Engine_PhysxDefines.h"
 #include "GameInstance.h"
 #include "PhysXCollisionProxyObject.h"
 
@@ -18,6 +19,24 @@ namespace
 
 	const char* ACTOR_TYPE_NAMES[] = { "Static", "Dynamic", "Kinematic" };
 	const char* SHAPE_TYPE_NAMES[] = { "Box", "Sphere", "Capsule", "Convex Mesh", "Triangle Mesh" };
+
+	_bool IsUnitCylinderConvexPath(const std::string& path)
+	{
+		if (path.empty())
+			return false;
+
+		return std::filesystem::path{ path }.lexically_normal().generic_string() ==
+			std::filesystem::path{ E::PX_UNIT_CYLINDER_CONVEX_PATH }.lexically_normal().generic_string();
+	}
+
+	_bool IsUnitWedgeConvexPath(const std::string& path)
+	{
+		if (path.empty())
+			return false;
+
+		return std::filesystem::path{ path }.lexically_normal().generic_string() ==
+			std::filesystem::path{ E::PX_UNIT_WEDGE_CONVEX_PATH }.lexically_normal().generic_string();
+	}
 
 	E::_matrix MakeActorMatrix(const E::PX_COLLISION_PROXY_ACTOR& actor)
 	{
@@ -292,6 +311,12 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	ImGui::SameLine();
 	if (ImGui::Button("Create Shape at Camera"))
 		CreateShapeAtCamera(m_eCreateShapeType);
+	ImGui::SameLine();
+	if (ImGui::Button("Create Cylinder at Camera"))
+		CreateCylinderAtCamera();
+	ImGui::SameLine();
+	if (ImGui::Button("Create Wedge at Camera"))
+		CreateWedgeAtCamera();
 	if (ImGui::Button("T", ImVec2(34.f, 0.f))) m_GizmoOperation = ImGuizmo::TRANSLATE;
 	ImGui::SameLine();
 	if (ImGui::Button("R", ImVec2(34.f, 0.f))) m_GizmoOperation = ImGuizmo::ROTATE;
@@ -452,7 +477,11 @@ void CPhysXCollisionProxyEditor::DrawInspector()
 			shape->vScale = { std::max(std::abs(shape->vScale.x), MIN_SHAPE_SIZE),
 				std::max(std::abs(shape->vScale.y), MIN_SHAPE_SIZE),
 				std::max(std::abs(shape->vScale.z), MIN_SHAPE_SIZE) };
-			ImGui::TextDisabled("Cooked mesh preview uses a unit proxy box for now.");
+			if (IsUnitCylinderConvexPath(shape->sCookedResourcePath) ||
+				IsUnitWedgeConvexPath(shape->sCookedResourcePath))
+				ImGui::TextDisabled("Known primitive preset: exact debug outline is available.");
+			else
+				ImGui::TextDisabled("Cooked mesh preview uses a unit proxy box for now.");
 			break;
 		}
 
@@ -600,6 +629,21 @@ void CPhysXCollisionProxyEditor::DrawDebugShapes()
 					XMMatrixRotationZ(XM_PIDIV2) * poseWorld);
 				break;
 			case PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH:
+				if (IsUnitCylinderConvexPath(shape.sCookedResourcePath))
+				{
+					debug->AddCylinder(
+						PX_UNIT_CYLINDER_RADIUS,
+						PX_UNIT_CYLINDER_HALF_HEIGHT,
+						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
+					break;
+				}
+				if (IsUnitWedgeConvexPath(shape.sCookedResourcePath))
+				{
+					debug->AddWedge(
+						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
+					break;
+				}
+				[[fallthrough]];
 			case PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH:
 				debug->AddBox({ shape.vScale.x * 0.5f, shape.vScale.y * 0.5f, shape.vScale.z * 0.5f }, poseWorld);
 				break;
@@ -727,6 +771,32 @@ void CPhysXCollisionProxyEditor::CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TY
 	XMStoreFloat3(&shape.vLocalPosition, localPosition);
 	actor->shapes.push_back(std::move(shape));
 	m_SelectedShapeID = actor->shapes.back().iID;
+}
+
+void CPhysXCollisionProxyEditor::CreateCylinderAtCamera()
+{
+	CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH);
+	auto* shape = GetSelectedShape();
+	if (!shape)
+		return;
+
+	shape->sName = "Cylinder_" + std::to_string(shape->iID);
+	shape->sCookedResourcePath = PX_UNIT_CYLINDER_CONVEX_PATH;
+	shape->vScale = { 1.f, 0.2f, 1.f };
+	m_Status = "Cylinder preset created. Build the PhysX preview after cooking the unit cylinder resource.";
+}
+
+void CPhysXCollisionProxyEditor::CreateWedgeAtCamera()
+{
+	CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH);
+	auto* shape = GetSelectedShape();
+	if (!shape)
+		return;
+
+	shape->sName = "Wedge_" + std::to_string(shape->iID);
+	shape->sCookedResourcePath = PX_UNIT_WEDGE_CONVEX_PATH;
+	shape->vScale = { 1.f, 0.25f, 1.f };
+	m_Status = "Wedge preset created. Build the PhysX preview after cooking the unit wedge resource.";
 }
 
 void CPhysXCollisionProxyEditor::DuplicateSelected()

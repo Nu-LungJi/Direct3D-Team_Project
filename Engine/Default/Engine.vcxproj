@@ -347,6 +347,7 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysXCookingEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyObject.h" />
@@ -633,6 +634,7 @@
     <ClCompile Include="..\private\Particle_CPU.cpp" />
     <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\private\PhysXManager.cpp" />
+    <ClCompile Include="..\private\PhysXCookingEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\PhysxManagerListener.cpp" />

@@ -39,6 +39,14 @@ namespace Engine
 
 	inline constexpr uint32_t PX_DEFAULT_LAYER = 1u;
 	inline constexpr uint32_t PX_ALL_LAYERS = std::numeric_limits<uint32_t>::max();
+	inline constexpr char PX_UNIT_CYLINDER_CONVEX_PATH[] =
+		"./Resources/PhysX/Primitives/UnitCylinder12.pxconvex";
+	inline constexpr _float PX_UNIT_CYLINDER_RADIUS = 0.5f;
+	inline constexpr _float PX_UNIT_CYLINDER_HALF_HEIGHT = 0.5f;
+	inline constexpr int32_t PX_UNIT_CYLINDER_SEGMENTS = 12;
+	inline constexpr char PX_UNIT_WEDGE_CONVEX_PATH[] =
+		"./Resources/PhysX/Primitives/UnitWedge.pxconvex";
+	inline constexpr _float PX_UNIT_WEDGE_HALF_EXTENT = 0.5f;
 
 	struct PX_FILTER_DESC
 	{

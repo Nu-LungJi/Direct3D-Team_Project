@@ -389,6 +389,29 @@ void CDbgLineRender::AddCylinder(float radius, float halfHeight, FXMMATRIX world
         AddLine(top[idx], bottom[idx]);
 }
 
+void CDbgLineRender::AddWedge(FXMMATRIX world)
+{
+    if (!CanAddVertices(18)) return;
+
+    _float3 vertices[6] =
+    {
+        { -0.5f, -0.5f, -0.5f }, { 0.5f, -0.5f, -0.5f },
+        { -0.5f, -0.5f,  0.5f }, { 0.5f, -0.5f,  0.5f },
+        { -0.5f,  0.5f,  0.5f }, { 0.5f,  0.5f,  0.5f }
+    };
+    for (auto& vertex : vertices)
+        XMStoreFloat3(&vertex, XMVector3TransformCoord(XMLoadFloat3(&vertex), world));
+
+    constexpr uint32_t edges[][2] =
+    {
+        { 0, 1 }, { 1, 3 }, { 3, 2 }, { 2, 0 },
+        { 2, 4 }, { 4, 5 }, { 5, 3 },
+        { 0, 4 }, { 1, 5 }
+    };
+    for (const auto& edge : edges)
+        AddLine(vertices[edge[0]], vertices[edge[1]]);
+}
+
 void CDbgLineRender::AddCone(float radius, float height, FXMMATRIX world)
 {
     if (!CanAddVertices(2)) return;

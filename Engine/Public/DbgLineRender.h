@@ -56,6 +56,9 @@ public:
         float halfHeight,
         FXMMATRIX world = XMMatrixIdentity());
 
+    void AddWedge(
+        FXMMATRIX world = XMMatrixIdentity());
+
     void AddCone(
         float radius,
         float height,
