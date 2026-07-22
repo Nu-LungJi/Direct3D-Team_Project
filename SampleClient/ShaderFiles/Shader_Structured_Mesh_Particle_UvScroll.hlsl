@@ -17,7 +17,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//«»ºø Ω¶¿Ã¥ıøÎ
+//ÌîΩÏÖÄ ÏâêÏù¥ÎçîÏö©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
@@ -46,7 +46,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // √ﬂ∞°: ∂Û¿Ã∆√ ∞ËªÍø° « ø‰
+    float3 vWorldPos : TEXCOORD1; // Ï∂îÍ∞Ä: ÎùºÏù¥ÌåÖ Í≥ÑÏÇ∞Ïóê ÌïÑÏöî
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
     float3 vLocalPos : TEXCOORD4;
@@ -67,7 +67,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
         float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
         float2 uvOffset = float2(col, row) * uvSize;
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ¥ÎΩ≈ Ω«¡¶ ∏ﬁΩ¨ UV ªÁøÎ
+        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ÎåÄÏã† Ïã§Ï†ú Î©îÏâ¨ UV ÏÇ¨Ïö©
     }
 
     Out.vTexcoord = finalUV;
@@ -101,42 +101,34 @@ struct PS_OUT
 
 PS_OUT PSMain(VS_OUT In)
 {
-    PS_OUT Out = (PS_OUT) 0;
+	PS_OUT Out = (PS_OUT) 0;
  
-    float fOuterCut = 1.f - smoothstep(0.9, 0.98, In.vTexcoord.y);
-    
-    float2 cloudUV = In.vTexcoord * float2(8.f, 1.f);
-    //cloudUV.x += g_fTime * 0.3f;
-    float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
-   
-    //0∏µ æ»¬ Ω√¿€ 1 πŸ±˘ µµ¬¯ 0.35 πŸ±˘¿∏∑Œ ∆€¡ˆ¥¬ º”µµ
+	float2 distortionUV = In.vTexcoord * float2(2.f, 1.f);
+	distortionUV.y += g_fTime * 0.04f;
 
-    float fProgress = saturate(1.0f - (In.life / In.maxLife));
-    //float fInner = max(0.f, fProgress - 0.35f);
-    //
-    //float fTrail = smoothstep(fInner, fInner + 0.03f,  In.vTexcoord.y) *
-    //        (1.f - smoothstep(fProgress, fProgress + 0.06f, In.vTexcoord.y));
-    
-    float2 swirlUV = In.vTexcoord * float2(5.f, 1.f);
-   // float endFade = 1.f - smoothstep(0.85f, 1.f, fProgress);
-   // fTrail *= endFade;
-    swirlUV.x += g_fTime * 0.05f;
-   
-    float2 distortionUV = In.vTexcoord * float2(5.f, 1.f);
-    float3 distortion = NoiseMap.Sample(LinearWrap, distortionUV).rgb;
-    distortion.x += g_fTime * 0.05f;
-   // swirlUV += distortion;
-    
-    float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
-  
+	float2 cloudUV = In.vTexcoord * float2(8.f, 1.f);
+	cloudUV.y += g_fTime * 0.6f;
 
-    float3 pattern = cloud + swirl; //+swirl;
-    float3 fFinalColor = pattern * In.vColor.rgb;//  fTrail * In.vColor.rgb;
-    
-    float fCut = min(fFinalColor.r, min(fFinalColor.g, fFinalColor.b));
-    if ( fCut < 0.1f)
-        discard;
-    Out.vDiffuse = float4(fFinalColor, fCut);
-   
-    return Out;
+	float2 swirlUV = In.vTexcoord * float2(5.f, 1.f);
+	swirlUV.x -= g_fTime * 0.06f;
+
+	float2 distortion = NoiseMap.Sample(LinearWrap, distortionUV).rg * 2.f - 1.f;
+
+	cloudUV += distortion * 0.04f;
+	swirlUV += distortion * 0.04f;
+
+	float4 cloud = AlbedoMap.Sample(LinearWrap, cloudUV);
+	float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
+	
+	float cloudShape = smoothstep(0.2f, 0.5f, cloud.a);
+	float topMask = 1.f - smoothstep(0.f, 0.5f, In.vTexcoord.y);
+	
+	float shapeMask = lerp(1.f, cloudShape, topMask);
+	if(shapeMask <0.3f)
+		discard;
+	float3 pattern = cloud.rgb + swirl.rgb * 0.5f;
+	float4 final = float4(pattern * float3(0.3f, 0.5f, 0.8f) * shapeMask, 1.f);
+
+	Out.vDiffuse = final;
+	return Out;
 }

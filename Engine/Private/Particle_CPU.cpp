@@ -169,7 +169,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			}
 		}
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
-
+		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 		UpdateBehavior(p, fTimeDelta);
 
 		if (m_vecInstancedData.size() >= m_iNumElements)
@@ -262,7 +262,19 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
 		XMStoreFloat3(&p.vPosition, vPos);
 	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKE) != 0) {
+		MakeSmoke(p, fTimeDelta);
+	}
 	
+}
+void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
+{
+	const float speed = 1.f;
+
+	p.vVelocity.y += speed * fTimeDelta;
+
+	//XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity )* 3.f * fTimeDelta);
+	//for(uint32_t i=0; i<p.)
 }
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {

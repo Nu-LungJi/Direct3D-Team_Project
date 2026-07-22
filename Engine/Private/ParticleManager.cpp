@@ -92,6 +92,7 @@ void CParticleManager::UpdateGUI()
 	static _bool billboard = false;
 	static _bool gravity = false;
 	static _bool circleToWave = false;
+	static _bool bSmoke = false;
 
 
 	static _bool alphaBlend = false;
@@ -865,6 +866,7 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("BILLBOARD", &billboard);
 	ImGui::Checkbox("GRAVITY", &gravity);
 	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+	ImGui::Checkbox("SMOKE", &bSmoke);	
 	ImGui::Checkbox("None", &none);
 
 	if (none)
@@ -873,7 +875,9 @@ void CParticleManager::UpdateGUI()
 		billboard = false;
 		gravity = false;
 		circleToWave = false;
+		bSmoke = false;
 	}
+	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
 	ImGui::Checkbox("ALPHA_ADD", &alphaAdd);
 	ImGui::Checkbox("NONE_BLEND", &noneBlend);
@@ -909,6 +913,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 	if(circleToWave)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
+	if(bSmoke)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
 
 	ImGui::Separator();
 
@@ -1105,6 +1111,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("BILLBOARD", &billboard);
 		ImGui::Checkbox("GRAVITY", &gravity);
 		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::Checkbox("SMOKE", &bSmoke);
 		ImGui::Checkbox("None", &none);
 
 		if (none)
@@ -1113,6 +1120,7 @@ void CParticleManager::UpdateGUI()
 			billboard = false;
 			gravity = false;
 			circleToWave = false;
+			bSmoke = false;
 		}
 
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
@@ -1124,6 +1132,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 		if (circleToWave)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
+		if (bSmoke)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
 
 	}
 	
@@ -3056,6 +3066,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeTest(param);
 			else if constexpr (std::is_same_v<T, SSPAWN>)
 				return ParticlePattern::MakeTest1(param);
+			else if constexpr (std::is_same_v<T, SMOKE>)
+				return ParticlePattern::MakeSmoke(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

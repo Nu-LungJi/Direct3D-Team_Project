@@ -86,7 +86,6 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSpiral(const SSpiralParam&
 {
 	return std::vector<PARTICLE_SPAWN_DATA>();
 }
-
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStraightGroundParam& param)
 {
 	
@@ -126,17 +125,45 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 	}
 	return spawnList;
 }
-
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest(const STest& p)
 {
 	return std::vector<PARTICLE_SPAWN_DATA>();
 }
-
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest1(const SSPAWN& p)
 {
 	std::vector<PARTICLE_SPAWN_DATA> spawnList(p.iCount);
 
 	return std::vector<PARTICLE_SPAWN_DATA>();
+}
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
+{
+
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
+	if (param.iCount == 0)
+		return spawnList;
+
+	const _float fAngleStep = XM_2PI / (_float)param.iCount;
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		PARTICLE_SPAWN_DATA& s = spawnList[i];
+		_float fAngle = fAngleStep * (_float)i;
+		s.position = param.vCenter;
+		s.velocity = _float3(
+			cosf(fAngle) * param.fSpeed ,
+			0,
+			sinf(fAngle) * param.fSpeed
+		);
+		
+		s.life = param.fLife;
+		s.fSize = param.fSize;
+		s.fEndSize = param.fEndSize;
+		s.color = param.color;
+		s.emissive = param.emissive;
+		s.iBehaviorType = param.iBehaviorType;
+		s.originalEmissive = param.emissive;
+		s.originalPosition = param.vCenter;
+	}
+	return spawnList;
 }
 
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(

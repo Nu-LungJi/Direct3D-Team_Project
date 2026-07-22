@@ -14,6 +14,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bBillboard = (flags & BEHAVIOR_BILLBOARD) != 0;
 	bool bGravity = (flags & BEHAVIOR_GRAVITY) != 0;
 	bool bCircleWave = (flags & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
+	bool bSmoke = (flags & BEHAVIOR_SMOKE) != 0;
 
 	if (ImGui::Checkbox("Distortion", &bDistortion))
 		flags = bDistortion ? (flags | BEHAVIOR_DISTORTION) : (flags & ~BEHAVIOR_DISTORTION);
@@ -26,14 +27,18 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("CircleToWave", &bCircleWave))
 		flags = bCircleWave ? (flags | BEHAVIOR_CIRCLE_TO_WAVE) : (flags & ~BEHAVIOR_CIRCLE_TO_WAVE);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Smoke", &bSmoke))
+		flags = bSmoke ? (flags | BEHAVIOR_SMOKE) : (flags & ~BEHAVIOR_SMOKE);
 }
 
 
 
-inline void DrawField(const char* name, _float3& v) { ImGui::DragFloat3(name, &v.x, 0.05f); }
 inline void DrawField(const char* name, _float& v) { ImGui::DragFloat(name, &v, 0.05f); }
+inline void DrawField(const char* name, _float2& v) { ImGui::DragFloat2(name, &v.x, 0.05f); }
+inline void DrawField(const char* name, _float3& v) { ImGui::DragFloat3(name, &v.x, 0.05f); }
+inline void DrawField(const char* name, _float4& v) { ImGui::ColorEdit4(name, &v.x, 0.05f); }
 inline void DrawField(const char* name, uint32_t& v) { int tmp = (int)v; if (ImGui::DragInt(name, &tmp, 1, 0, 9999)) v = (uint32_t)std::max(0, tmp); }
-inline void DrawField(const char* name, _float4& v) { ImGui::ColorEdit4(name, &v.x); }
 inline void DrawField(const char* name, _bool& v){bool tmp = (bool)v;if (ImGui::Checkbox(name, &tmp))v = tmp;}
 
 
@@ -91,6 +96,9 @@ inline void DrawImGui(STest& p) {
 inline void DrawImGui(SSPAWN& p) {
 	SPAWN_S_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
 }
+inline void DrawImGui(SMOKE& p) {
+	SMOKE_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
 #undef DRAW_PARAM_FIELD
 
 //8. save 추가
@@ -101,6 +109,7 @@ inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELD
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const STest& p, nlohmann::json& out) { TEST_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSPAWN& p, nlohmann::json& out) { SPAWN_S_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SMOKE& p, nlohmann::json& out) { SMOKE_FIELDS(SAVE_PARAM_FIELD) }
 
 //9. 로드 추가
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
@@ -110,6 +119,7 @@ inline void LoadParam(SSpiralParam& p, const nlohmann::json& in) { SPIRAL_FIELDS
 inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAIGHT_GROUND_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(STest& p, const nlohmann::json& in) { TEST_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SSPAWN& p, const nlohmann::json& in) { SPAWN_S_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SMOKE& p, const nlohmann::json& in) { SMOKE_FIELDS(LOAD_PARAM_FIELD) }
 
 #undef SAVE_PARAM_FIELD
 #undef LOAD_PARAM_FIELD
