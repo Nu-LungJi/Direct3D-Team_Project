@@ -211,7 +211,10 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 		if (ImGui::Button("Yes", ImVec2(100.f, 0.f)))
 		{
 			const std::string mapPath = MakeMapPath(m_MapName);
-			const bool mapLoaded = SUCCEEDED(CGameInstance::Get().LoadMap(mapPath, true));
+			const bool resourcesLoaded = SUCCEEDED(
+				CGameInstance::Get().LoadMapResources(mapPath));
+			const bool mapLoaded = resourcesLoaded &&
+				SUCCEEDED(CGameInstance::Get().LoadMap(mapPath, true));
 			const bool terrainLoaded = mapLoaded && SUCCEEDED(LoadTerrainForMap(mapPath));
 			if (m_pCommandManager)
 				m_pCommandManager->Clear();

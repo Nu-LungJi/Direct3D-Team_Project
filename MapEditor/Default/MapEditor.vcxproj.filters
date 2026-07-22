@@ -135,6 +135,9 @@
     <ClInclude Include="..\Public\MapEditorGUI.h">
       <Filter>GUIWindow\MapEditorGUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapEditorStaticModelLoader.h">
+      <Filter>Loader\Level\MapEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\MapChunkGUI.h">
       <Filter>GUIWindow\MapChunkGUI</Filter>
     </ClInclude>

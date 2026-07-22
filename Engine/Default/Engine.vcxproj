@@ -334,6 +334,7 @@
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
     <ClInclude Include="..\Public\MapManager.h" />
+    <ClInclude Include="..\Public\MapStaticModelLoader.h" />
     <ClInclude Include="..\Public\MapMeshObject.h" />
     <ClInclude Include="..\Public\Terrain.h" />
     <ClInclude Include="..\Public\TerrainChunk.h" />

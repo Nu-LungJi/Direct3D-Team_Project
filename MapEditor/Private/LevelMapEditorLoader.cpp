@@ -1,76 +1,12 @@
 #include "pch.h"
 #include "LevelMapEditorLoader.h"
+#include "MapEditorStaticModelLoader.h"
 
 #include "GameInstance.h"
 #include "Resources.h"
 #include "Terrain.h"
 
 NS_USING(Client)
-
-namespace
-{
-	std::string MakeStaticModelResourceTag(const std::filesystem::path& rootPath, const std::filesystem::path& binPath)
-	{
-		std::filesystem::path relativePath = binPath.lexically_relative(rootPath);
-		if (relativePath.empty())
-		{
-			relativePath = binPath.filename();
-		}
-
-		relativePath.replace_extension();
-
-		std::string resourceTag = relativePath.string();
-		for (char& ch : resourceTag)
-		{
-			const unsigned char value = static_cast<unsigned char>(ch);
-			if (!std::isalnum(value))
-			{
-				ch = '_';
-			}
-		}
-
-		return resourceTag;
-	}
-
-	bool LoadLevelAnimEditorStaticModels()
-	{
-		const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
-		if (!std::filesystem::exists(staticModelDir))
-		{
-			return false;
-		}
-
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
-		{
-			if (!entry.is_regular_file() || _stricmp(entry.path().extension().string().c_str(), ".bin") != 0)
-			{
-				continue;
-			}
-
-			const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
-			auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
-				E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL,
-				resourceTag,
-				E::CResStaticModel::Create(entry.path().string()));
-
-			if (!res)
-			{
-				return false;
-			}
-
-			E::CResStaticModel::DESC desc{};
-			desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-			if (FAILED(res->Load(desc)))
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-}
-
 
 std::future<bool> CLevelMapEditorLoader::Load()
 {
@@ -82,44 +18,12 @@ std::future<bool> CLevelMapEditorLoader::Load()
 		}
 	}
 
-	const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
-	if (!std::filesystem::exists(staticModelDir))
+	if (!std::filesystem::exists(E::PATH_MAPEDITOR_STATIC_MODEL_DIR))
 	{
 		MSG_BOX("NO_STATIC_MODEL_DIR");
 	}
 
 	std::future<bool> result;
-	for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
-	{
-		if (!entry.is_regular_file() || _stricmp(entry.path().extension().string().c_str(), ".bin") != 0)
-		{
-			continue;
-		}
-
-		result = E::CGameInstance::Get().WorkerEnqueueWithFuture("Loading_MapFast", [=]()
-			{
-				const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
-				auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
-					E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL,
-					resourceTag,
-					E::CResStaticModel::Create(entry.path().string()));
-
-				if (!res)
-				{
-					return false;
-				}
-
-				E::CResStaticModel::DESC desc{};
-				desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationAxis({ 1.f,0.f,0.f }, XMConvertToRadians(90.f));
-
-				if (FAILED(res->Load(desc)))
-				{
-					return false;
-				}
-				return true;
-			}
-		);
-	}
 
 	const std::filesystem::path terrainTileDir = R"(.\Resources\SampleClient\Textures\Terrain\Tile)";
 	if (!std::filesystem::exists(terrainTileDir))
@@ -142,7 +46,7 @@ std::future<bool> CLevelMapEditorLoader::Load()
 			_stricmp(entry.path().stem().string().c_str(), "Height") == 0)
 			continue;
 
-		const std::string resourceTag = MakeStaticModelResourceTag(terrainTileDir, entry.path());
+		const std::string resourceTag = MakeMapEditorStaticModelTag(terrainTileDir, entry.path());
 		auto res = E::CGameInstance::Get().AddResourceT<E::CResTexture2D>(
 			"MAPEDITOR_TERRAIN_TILE", resourceTag,
 			E::CResTexture2D::Create(entry.path().string()));

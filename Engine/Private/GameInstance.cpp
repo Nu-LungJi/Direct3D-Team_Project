@@ -28,6 +28,7 @@
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
+#include "MapStaticModelLoader.h"
 #include "MapManager.h"
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
@@ -983,6 +984,12 @@ HRESULT CGameInstance::SetupTestModel() {
 HRESULT CGameInstance::SaveMap(const std::string& path)
 {
 	return m_pMapManager->SaveMap(path);
+}
+HRESULT CGameInstance::LoadMapResources(const std::string& path)
+{
+	const auto modelLoad = LoadStaticModelsRequiredByMap(
+		path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	return modelLoad.Succeeded() ? S_OK : E_FAIL;
 }
 HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {

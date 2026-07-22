@@ -172,6 +172,7 @@ call CopyMapEditor.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Inspector.h" />
     <ClInclude Include="..\Public\MapChunkGUI.h" />
     <ClInclude Include="..\Public\MapEditorGUI.h" />
+    <ClInclude Include="..\Public\MapEditorStaticModelLoader.h" />
     <ClInclude Include="..\Public\MapPickingPass.h" />
     <ClInclude Include="..\Public\NavMeshGUI.h" />
     <ClInclude Include="..\Public\TerrainGUI.h" />

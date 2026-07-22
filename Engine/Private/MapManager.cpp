@@ -472,9 +472,6 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			return E_FAIL;
 		}
 
-		// Older maps keep their original chunk size in map.json. Load every old
-		// chunk once, regroup the live objects using the current chunk size, and
-		// save the migrated chunk metadata/files before normal streaming begins.
 		if (!IsSameChunkSize(m_vChunkSize, requestedChunkSize))
 		{
 			std::vector<MAPCHUNK_COORD> oldChunkCoords;

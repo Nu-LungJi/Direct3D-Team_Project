@@ -335,6 +335,7 @@ public:
 #pragma region MAP_MANAGER
 public:
 	HRESULT SaveMap(const std::string& path);
+	HRESULT LoadMapResources(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
 	HRESULT LoadMapData(const std::string& path);
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
