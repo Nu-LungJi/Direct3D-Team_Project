@@ -36,6 +36,7 @@ public:
 		std::pair<StringID, StringID> noiseTextureID;
 		std::pair<StringID, StringID> hdrPositionTextureID;
 		std::pair<StringID, StringID> hdrNormalTextureID;
+		std::pair<StringID, StringID> anyTextureID;
         //모델이면 넣어줌
         StringID sGroupTag;
         StringID sResTag;
@@ -88,7 +89,6 @@ private:
     SPtr<class CResSamplerState>     m_pResSamplerState = nullptr;
 
     SPtr<class CResCBuffer>          m_pComCBuffer;
-    SPtr<class CResCBuffer>          m_pComWaveCBuffer;
     SPtr<CResCBuffer>                m_pComSpawnCBuffer;
     SPtr<CResCBuffer>                m_pComInitCBuffer;
 	SPtr<CResCBuffer> m_pComClearCBuffer;
@@ -104,15 +104,7 @@ private:
 	uint32_t m_iDeadCountReadIdx = 0;
 
 private:
-	ComPtr<ID3D11Buffer>               m_pDeadCountGPUBuffer;   // DeadList 카운터를 GPU 안에서만 읽기용 (CPU readback 없음)
-	ComPtr<ID3D11ShaderResourceView>   m_pDeadCountGPUSRV;
-	ComPtr<ID3D11Buffer>               m_pIndirectArgsMesh;     // DrawIndexedInstancedIndirect 인자 (5 uint)
-	ComPtr<ID3D11UnorderedAccessView>  m_pIndirectArgsMeshUAV;
-	ComPtr<ID3D11Buffer>               m_pIndirectArgsQuad;     // DrawInstancedIndirect 인자 (4 uint)
-	ComPtr<ID3D11UnorderedAccessView>  m_pIndirectArgsQuadUAV;
-	SPtr<CResCBuffer>                  m_pComBuildArgsCBuffer;
-	SPtr<CResComputeShader>            m_pResBuildIndirectArgsCS;
-	uint32_t                          m_iCachedMeshIndexCount = 0;
+
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

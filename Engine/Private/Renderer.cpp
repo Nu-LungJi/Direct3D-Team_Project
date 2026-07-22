@@ -1406,6 +1406,10 @@ HRESULT CRenderer::Render_Effect()
 			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
 	}
 	{
+		ID3D11ShaderResourceView* pBackgroundSRV = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
+		m_pContext->PSSetShaderResources(7, 1, &pBackgroundSRV);
+	}
+	{
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());

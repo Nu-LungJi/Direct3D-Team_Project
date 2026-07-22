@@ -72,6 +72,18 @@ namespace Engine
 		std::uniform_int_distribution<int> dist(min, max);
 		return dist(gen);
 	}
+	inline float Hash01(uint32_t x)
+	{
+		x = (x ^ 61u) ^ (x >> 16u);
+		x *= 9u;
+		x = x ^ (x >> 4u);
+		x *= 0x27d4eb2du;
+		x = x ^ (x >> 15u);
+
+		// x는 uint32_t라 (float)x * (1/2^32) 결과가 이미 [0, 1) 범위이므로
+		// HLSL의 frac() 호출이 CPU에서는 필요 없음
+		return (float)x * 2.3283064365386963e-10f; // 1 / 2^32
+	}
 	template<typename T>
 	constexpr int32_t ETOI(T e)
 	{

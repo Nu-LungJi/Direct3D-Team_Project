@@ -9,9 +9,9 @@ struct PARTICLE_CPU_DATA
     _float3 vPosition;
     _float3 vVelocity;
     _float4 vColor = { 1.f, 1.f, 1.f, 1.f };
-    _float  fSize = 0.f;
-    _float  fStartSize = 0.f;
-    _float  fEndSize = 1.f;
+    _float3  fSize = { 0.f, 0.f, 0.f};
+    _float3  fStartSize = { 0.f, 0.f, 0.f};
+    _float3  fEndSize = { 0.f, 0.f, 0.f };
     _float4  rotation = { 0.f, 0.f, 0.f, 0.f };
     _float  life = 0.f;
     _float  fMaxLife = 1.f;
@@ -44,6 +44,20 @@ struct VTX_PARTICLE_INSTANCED_DATA
 	uint32_t iBehaviorType = 0;
 };
 
+typedef struct tagParticleCircleToWave
+{
+	_float3 g_vFlowDirection; // 물결이 흘러가는 방향 (정규화, XZ 평면 기준)
+	_float g_fBurstRatio; // ageRatio 기준, 이 시점까지 원형 확산 (예: 0.3)
+
+	_float g_fTransitionRatio; // 전환 구간 폭 (ageRatio 기준, 예: 0.15)
+	_float g_fBurstSpeed; // 원형 확산 초기 속도
+	_float g_fFlowSpeed; // 물결이 흘러가는 이동 속도
+	_float g_fWaveAmplitude; // 상하 진폭
+
+	_float g_fWaveFrequency; // 공간적 파장 (위치에 따른 위상차)
+	_float g_fWaveSpeed; // 시간에 따른 위상 변화 속도
+	_float2 g_fPadding2;
+}CIRCLE_TO_WAVE;
 // CPU 파티클 중간 추상 클래스.
 // 슬롯 관리(Spawn/재활용), 인스턴스 버퍼 업로드, 렌더링은 여기서 공통으로 처리하고,
 // "파티클이 실제로 어떻게 움직이는가"만 자식 클래스에게 맡긴다 (UpdateBehavior).
@@ -62,6 +76,7 @@ public:
 		std::pair<StringID, StringID> noiseTextureID;
 		std::pair<StringID, StringID> hdrPositionTextureID;
 		std::pair<StringID, StringID> hdrNormalTextureID;
+		std::pair<StringID, StringID> anyTextureID;
         PARTICLE_TYPE                  type;
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
 		uint32_t TexRows = 1;
@@ -94,7 +109,7 @@ public:
 	virtual void ClearByOwner(uint32_t ownerID) override;
 	virtual void SetPosition(const _float3& pos) override;
 	virtual void SetVelocity(const _float3& vel) override;
-	virtual void SetSize(const _float& size) override;
+	virtual void SetSize(const _float3& size) override;
 	virtual void SetColor(const _float4& color) override;
 private:
     virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
@@ -119,5 +134,7 @@ protected:
 public:
 	static UPtr<CParticle> Create(void* pArg);
 
+private:
+	CIRCLE_TO_WAVE m_waveCb{};
 };
 NS_END

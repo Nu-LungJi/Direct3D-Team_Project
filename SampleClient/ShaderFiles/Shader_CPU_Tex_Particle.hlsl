@@ -90,6 +90,7 @@ Texture2D g_DiffuseTexture : register(t1);
 Texture2D g_NormalTexture : register(t2);
 Texture2D g_DistortionTexture : register(t3);
 Texture2D g_NoiseTexture : register(t4);
+Texture2D g_AnyTexture : register(t5);
 Texture2D g_BackgroundTex : register(t7);
 
 struct PS_OUT
@@ -105,13 +106,14 @@ PS_OUT PSMain(VS_OUT In)
 
     float4 texColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
-    
-    if (all(texColor.rgb <= 0.03f))
-        discard;
 	float4 noise = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
     
-	float ratio = 1.0f - (In.life / In.maxLife);
+	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
 
+	//if (noise.r < ratio) 
+	//	discard;
+    if (all(texColor.rgb <= 0.03f))
+        discard;
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
     
     if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
@@ -199,31 +201,31 @@ PS_OUT SMOKE(VS_OUT In)
 
 	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
     
-	//if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
-	//{
-	//	clip(texColor.a - 0.02f);
-	//	clip(In.vColor.a - 0.02f);
-	//
-	//	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
-	//	screenUV.x = screenUV.x * 0.5f + 0.5f;
-	//	screenUV.y = -screenUV.y * 0.5f + 0.5f;
-	//
-	//	float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
-	//	float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
-	//
-	//	float fEdgeMask = smoothstep(0.0f, 0.3f, texColor.a) *  (1.0f - smoothstep(0.3f, 0.9f, texColor.a));
-	//	float distortionStrength = 0.003f * In.vColor.a * fEdgeMask;
-	//
-	//	distortion *= distortionStrength;
-	//	
-	//	float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
-	//	float3 finalRGB = lerp(distortedBackground.rgb, texColor.rgb, texColor.a);
-	//	
-	//	finalRGB *= lerpedEmissive.rgb * lerpedEmissive.a;
-	//
-	//	Out.vDiffuse = float4(finalRGB, 1.0f);
-	//	return Out;
-	//}
+	if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
+	{
+		clip(texColor.a - 0.02f);
+		clip(In.vColor.a - 0.02f);
+
+		float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+		screenUV.x = screenUV.x * 0.5f + 0.5f;
+		screenUV.y = -screenUV.y * 0.5f + 0.5f;
+
+		float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
+		float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
+
+		float fEdgeMask = smoothstep(0.0f, 0.3f, texColor.a) *
+                          (1.0f - smoothstep(0.3f, 0.9f, texColor.a));
+
+		float distortionStrength = 0.05f * In.vColor.a * fEdgeMask;
+
+		distortion *= distortionStrength;
+		float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
+		float3 finalRGB = lerp(distortedBackground.rgb, texColor.rgb, texColor.a);
+		finalRGB += lerpedEmissive.rgb * lerpedEmissive.a;
+
+		Out.vDiffuse = float4(finalRGB, 1.0f);
+		return Out;
+	}
  
 	float4 vFinalColor = texColor * In.vColor;;
 	clip(vFinalColor.a - 0.02f);

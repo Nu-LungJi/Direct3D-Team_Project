@@ -5,15 +5,15 @@
 #define BEHAVIOR_BILLBOARD (1u << 2)
 #define BEHAVIOR_GRAVITY (1u << 3)
 #define BEHAVIOR_CIRCLE_TO_WAVE (1u << 4)
+
 struct SPAWN_DATA
 {
     float3 position;
     float pad0;
     float3 velocity;
     float life;
-    float size;
-    float endSize;
-    float2 pad1;
+    float3 size;
+    float3 endSize;
     float4 rotation;
     float4 color;
     float4 originalEmissive;
@@ -22,11 +22,9 @@ struct SPAWN_DATA
     float spawnDelay;
     uint ownerID;
     uint iBehaviorType;
-    float pad2;
     uint loop;
-    float3 originalPosition; // ¿ø·¡ ½ºÆù À§Ä¡
-    float3 originalVelocity; // ¿ø·¡ ½ºÆù ¼Óµµ+ ¹æÇâ
-    float pad3;
+    float3 originalPosition; // ì›ëž˜ ìŠ¤í° ìœ„ì¹˜
+    float3 originalVelocity; // ì›ëž˜ ìŠ¤í° ì†ë„+ ë°©í–¥
 };
 
 
@@ -37,13 +35,13 @@ struct ParticleData
     float3 velocity;
     float life;
     float maxLife;
-    float size;
-    float startSize;
-    float endSize;
+    float3 size;
+    float3 startSize;
+    float3 endSize;
     float4 rotation;
     uint alive;
     uint loop;
-    float2 pad2; // Ãß°¡ ÇÊ¿ä: loop¡æcolor (8¹ÙÀÌÆ®)
+    float2 pad2; // ì¶”ê°€ í•„ìš”: loopâ†’color (8ë°”ì´íŠ¸)
     float4 color;
     float4 originalEmissive;
     float4 emissive;
@@ -52,15 +50,16 @@ struct ParticleData
     uint ownerID;
     uint iBehaviorType ;
     float pad3;
-    float3 originalPosition; // ¿ø·¡ ½ºÆù À§Ä¡
-    float pad4;
-    float3 originalVelocity; // ¿ø·¡ ½ºÆù ¼Óµµ+ ¹æÇâ
-    float pad5;
+    float3 originalPosition; // ì›ëž˜ ìŠ¤í° ìœ„ì¹˜
+    float3 originalVelocity; // ì›ëž˜ ìŠ¤í° ì†ë„+ ë°©í–¥
 };
+
+
+
 float3 RotateXYZ(float3 pos, float4 rotation)
 {
-    // rotation.x = pitch (XÃà È¸Àü), rotation.y = yaw (YÃà), rotation.z = roll (ZÃà)
-    // ´ÜÀ§: ¶óµð¾È
+    // rotation.x = pitch (Xì¶• íšŒì „), rotation.y = yaw (Yì¶•), rotation.z = roll (Zì¶•)
+    // ë‹¨ìœ„: ë¼ë””ì•ˆ
 
     float sx = sin(rotation.x);
     float cx = cos(rotation.x);
@@ -69,7 +68,7 @@ float3 RotateXYZ(float3 pos, float4 rotation)
     float sz = sin(rotation.z);
     float cz = cos(rotation.z);
 
-    // XÃà È¸Àü
+    // Xì¶• íšŒì „
     float3 p = pos;
     p = float3(
         p.x,
@@ -77,14 +76,14 @@ float3 RotateXYZ(float3 pos, float4 rotation)
         p.y * sx + p.z * cx
     );
 
-    // YÃà È¸Àü
+    // Yì¶• íšŒì „
     p = float3(
         p.x * cy + p.z * sy,
         p.y,
         -p.x * sy + p.z * cy
     );
 
-    // ZÃà È¸Àü
+    // Zì¶• íšŒì „
     p = float3(
         p.x * cz - p.y * sz,
         p.x * sz + p.y * cz,

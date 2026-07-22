@@ -13,6 +13,7 @@ public:
 		std::pair<StringID, StringID> normalTextureID;
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
+		std::pair<StringID, StringID> anyTextureID;
         PARTICLE_TYPE type;
         _float      fWidth = 1.f;
         _float      fScrollSpeed = 1.f;

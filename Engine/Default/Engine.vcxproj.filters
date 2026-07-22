@@ -502,6 +502,9 @@
     <Filter Include="ShaderFiles\UIShader">
       <UniqueIdentifier>{0d457b52-1b40-4f88-99a7-174c4ddce13f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EffectManager">
+      <UniqueIdentifier>{cb2813fe-4666-4ecf-94d8-96da9dd72328}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1093,6 +1096,12 @@
     <ClInclude Include="..\Public\Engine_ParticleDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="EffectDefines.h">
+      <Filter>EffectManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EffectManager.h">
+      <Filter>EffectManager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1623,6 +1632,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\ComSound.cpp">
       <Filter>Component\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EffectManager.cpp">
+      <Filter>EffectManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

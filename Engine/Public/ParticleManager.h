@@ -24,8 +24,8 @@ typedef struct tagParticlePreset
 	uint32_t groupTypeIndex = 0;      // 0:PARTICLE_CPU, 1:PARTICLE_GPU, 2:BEAM_CPU, 3:RIBBON_CPU
 	uint32_t whatKindFilterIndex = 0;
 	_float maxLife = 1.f;
-	_float fStartSize = 1.f;
-	_float fEndSize = 1.f;
+	_float3 fStartSize = {1.f,1.f ,1.f };
+	_float3 fEndSize = { 1.f ,1.f ,1.f };
 	_float4   rotation = { 0.f, 0.f, 0.f, 0.f };
 	_float3 velocity = { 0,0,0 };
 	_float3 originalVelocity = { 0,0,0 };
@@ -125,6 +125,9 @@ public:
 		const std::string& hdrNormalTexID1 = "",  
 		const std::string& hdrNormalTexID2 = "",  
 		const std::string& hdrNormalTexPath = "",
+		const std::string& AnyTexID1 = "",  
+		const std::string& AnyTexID2 = "",
+		const std::string& AnyTexPath = "",
 		int iSelectedBlend = 0);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
@@ -150,6 +153,8 @@ public:
 	HRESULT ClearLoopRequests();
 	HRESULT DeleteLoopRequests(uint32_t userId);
 
+public:
+	void ClearByOwner(uint32_t ownerId);
 
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);
