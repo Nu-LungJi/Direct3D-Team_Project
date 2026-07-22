@@ -24,7 +24,6 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.eWinMode = Engine::WINMODE::WIN;
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
-	//EngineDesc.iNumLevels = Engine::ETOUI(LEVEL::END);
 
 	if (FAILED(CBaseApp::Initialize(EngineDesc)))
 	{
@@ -60,6 +59,10 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::BOSS_CHARLES_ROOKWOOD));
 		});
 
+	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
+	CGameInstance::Get().UpdateTimeProvider();
+
+	LOG_MEMORY("CMainApp::Initialize End");
 	return S_OK;
 }
 

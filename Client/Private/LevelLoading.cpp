@@ -31,6 +31,8 @@ bool CLevelLoading::IsLevelChangeLocked() const
 
 HRESULT CLevelLoading::Initialize()
 {
+	LOG_MEMORY("CLevelLoading::Initialize");
+
 	const uint32_t iCurrentLevelID = Engine::CGameInstance::Get().GetCurrentLevelID();
 	if (iCurrentLevelID != Engine::CLevel::INVALID_LEVEL_ID)
 		m_ePreviousLevelIndex = static_cast<LEVEL>(iCurrentLevelID);
@@ -206,5 +208,6 @@ Engine::UPtr<CLevelLoading> CLevelLoading::Create(ComPtr<ID3D11Device> pDevice, 
 
 void CLevelLoading::Free()
 {
+	LOG_MEMORY("CLevelLoading::Free");
 	CLevel::Free();
 }
