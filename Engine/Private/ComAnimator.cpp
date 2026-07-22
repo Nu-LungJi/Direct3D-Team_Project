@@ -29,9 +29,9 @@ CComAnimator::CComAnimator()
 
 CComAnimator::~CComAnimator()
 {
-	OutputDebugStringA(
-		std::format("[Destroy] CBTThinkAnimMonster: {}\n",
-			static_cast<void*>(this)).c_str());
+	char szLog[128]{};
+	sprintf_s(szLog, "[Destroy] CBTThinkAnimMonster: %p\n", static_cast<void*>(this));
+	OutputDebugStringA(szLog);
 
 }
 

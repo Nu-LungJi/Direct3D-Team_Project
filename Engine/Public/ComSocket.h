@@ -26,7 +26,7 @@ public:
 public:
 	virtual void UpdateGUI() override;
 	_bool Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosition, _float4x4& OutSocketMatrix) const;
-
+	void SetBoneIndex(uint32_t iBoneIndex);
 	void BuildBoneChain(const CResModel& model) const;
 
 private:
@@ -50,6 +50,7 @@ private:
 	CHandle					m_pOwner{};
 	mutable  std::vector<uint32_t> m_BoneChain;
 	uint32_t		m_iBoneIndex;
+	uint32_t		m_ipreBoneIndex;
 	_float4			m_fOffset;
 	_float4x4		m_SocketMatrix{};
 

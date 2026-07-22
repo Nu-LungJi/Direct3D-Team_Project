@@ -840,6 +840,11 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
+void CGameInstance::DelPrototype(
+	const StringID& sGroupTag, const StringID& sPrototypeTag)
+{
+	m_pPrototypeManager->DelPrototype(sGroupTag, sPrototypeTag);
+}
 std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
