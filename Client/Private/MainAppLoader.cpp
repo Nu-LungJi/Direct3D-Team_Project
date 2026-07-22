@@ -2,6 +2,7 @@
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
+#include "PhysXManager.h"
 #include "LevelLoading.h"
 #include "Resources.h"
 //#include "Particle_Fire_CPU.h"
@@ -19,6 +20,13 @@ NS_USING(Client)
 HRESULT CMainAppLoader::Load()
 {
 	LOG_MEMORY("CMainAppLoader::Load() start");
+	{
+		std::vector<std::pair<uint32_t, std::string>> layerNames{};
+		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
+			layerNames.emplace_back(ETOUI(layer), std::string{ name });
+		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
+	}
+
 	{
 		// TODO   SampleClinet  초기 이니셜라이즈
 		{

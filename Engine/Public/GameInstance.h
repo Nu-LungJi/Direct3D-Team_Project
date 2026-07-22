@@ -176,6 +176,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
+	void DelPrototype(const StringID& sGroupTag, const StringID& sPrototypeTag);
 	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 #pragma endregion
 
