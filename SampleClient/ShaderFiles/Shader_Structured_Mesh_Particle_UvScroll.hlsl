@@ -4,7 +4,7 @@
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-cbuffer CB_PER_PARTICLE : register(b5)
+cbuffer CB_PER_PARTICLE : register(b11)
 {
     float g_fTimeDelta;
     uint g_iNumInstances;
@@ -17,7 +17,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//ÇÈ¼¿ ½¦ÀÌ´õ¿ë
+//í”½ì…€ ì‰ì´ë”ìš©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
@@ -46,7 +46,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // Ãß°¡: ¶óÀÌÆÃ °è»ê¿¡ ÇÊ¿ä
+    float3 vWorldPos : TEXCOORD1; // ì¶”ê°€: ë¼ì´íŒ… ê³„ì‚°ì— í•„ìš”
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
     float3 vLocalPos : TEXCOORD4;
@@ -57,7 +57,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
     float2 finalUV = In.vTexcoord;
-    float scale = p.alive ? p.size : 0.0f;
+	float3 scale = p.alive ? p.size : float3(0.0f, 0.0f, 0.0f);
     
     if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
     {
@@ -67,7 +67,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
         float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
         float2 uvOffset = float2(col, row) * uvSize;
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ´ë½Å ½ÇÁ¦ ¸Ş½¬ UV »ç¿ë
+        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ëŒ€ì‹  ì‹¤ì œ ë©”ì‰¬ UV ì‚¬ìš©
     }
 
     Out.vTexcoord = finalUV;
@@ -109,7 +109,7 @@ PS_OUT PSMain(VS_OUT In)
     //cloudUV.x += g_fTime * 0.3f;
     float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
    
-    //0¸µ ¾ÈÂÊ½ÃÀÛ 1 ¹Ù±ù µµÂø 0.35 ¹Ù±ùÀ¸·Î ÆÛÁö´Â ¼Óµµ
+    //0ë§ ì•ˆìª½ì‹œì‘ 1 ë°”ê¹¥ ë„ì°© 0.35 ë°”ê¹¥ìœ¼ë¡œ í¼ì§€ëŠ” ì†ë„
 
     float fProgress = saturate(1.0f - (In.life / In.maxLife));
     //float fInner = max(0.f, fProgress - 0.35f);

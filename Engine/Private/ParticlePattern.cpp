@@ -15,7 +15,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(const SStairsParam&
 		);
 		s.velocity = _float3(0.f, 0.f, 0.f);
 		s.life = param.fLife;
-		s.fSize = param.fStepWidth;
+		s.fSize = _float3(param.fStepWidth, param.fStepWidth, param.fStepWidth);
 		s.color = param.color;
 		s.emissive = param.emissive;
 	}
@@ -127,17 +127,6 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 	return spawnList;
 }
 
-std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest(const STest& p)
-{
-	return std::vector<PARTICLE_SPAWN_DATA>();
-}
-
-std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest1(const SSPAWN& p)
-{
-	std::vector<PARTICLE_SPAWN_DATA> spawnList(p.iCount);
-
-	return std::vector<PARTICLE_SPAWN_DATA>();
-}
 
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(
 //    const _float3& vStartPos,

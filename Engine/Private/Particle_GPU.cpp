@@ -37,9 +37,9 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         initParticles[i].velocity = _float3(0.f, 0.f, 0.f);
         initParticles[i].life = 0.f;
         initParticles[i].maxLife = 0.f;
-		initParticles[i].size = 1.f;
-		initParticles[i].startSize = 1.f;
-		initParticles[i].endSize = 1.f;
+		initParticles[i].size = _float3(0.f, 0.f, 0.f);
+		initParticles[i].startSize = _float3(0.f, 0.f, 0.f);
+		initParticles[i].endSize = _float3(0.f, 0.f, 0.f);
 		initParticles[i].rotation = { 0,0,0,0 };
 		initParticles[i].color = _float4(1.f, 1.f, 1.f, 0.f);
 		initParticles[i].alive = false;
@@ -116,14 +116,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 			return E_FAIL;
 		m_pComCBuffer = res;
 	}
-	if (auto res = CResCBuffer::Create())
-	{
-		CResCBuffer::CBUFFER_DESC bufDesc{};
-		bufDesc.byteWidth = sizeof(CB_CIRCLE_TO_WAVE);
-		if (FAILED(res->Load(bufDesc)))
-			return E_FAIL;
-		m_pComWaveCBuffer = res;
-	}
+
 
 	{
 
@@ -177,6 +170,12 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 			return E_FAIL;
 	}
 	
+	if (m_Desc.distortionTextureID.first != "") {
+		m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.distortionTextureID.first, m_Desc.distortionTextureID.second);
+	}
+	if (m_Desc.anyTextureID.second != "") {
+		m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+	}
 
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
@@ -185,9 +184,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		if (m_Desc.normalTextureID.first != "") {
 			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
 		}
-		if (m_Desc.distortionTextureID.first != "") {
-			m_pDistortionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.distortionTextureID.first, m_Desc.distortionTextureID.second);
-		}
+	
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 		}
@@ -348,7 +345,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
         {
             memcpy(mapped.pData, &cb, sizeof(cb));
             context->Unmap(m_pComInitCBuffer->GetCBuffer().Get(), 0);
-            context->CSSetConstantBuffers(0, 1, m_pComInitCBuffer->GetCBuffer().GetAddressOf());
+            context->CSSetConstantBuffers(10, 1, m_pComInitCBuffer->GetCBuffer().GetAddressOf());
         }
     }
 
@@ -414,41 +411,14 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
 
-	bool bSpawnedThisFrame = (m_iCurrentSpawnCount > 0);
-	uint32_t aliveCount = (m_iNumElements > m_iDeadCount) ? (m_iNumElements - m_iDeadCount) : 0;
-	if (aliveCount == 0 && !bSpawnedThisFrame)
-	{
-		ProcessPendingSpawns(fTimeDelta);
-		DebugPrintDeadListCount(); // 다음 프레임을 위해 계속 갱신
-		return;
-	}
+
 	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 	m_fTime += fTimeDelta;
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
     {
-		CB_CIRCLE_TO_WAVE waveCb{};
-		waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
-		waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
-		waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
-		waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
-		waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
-		waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
-		waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
-		waveCb.g_vFlowDirection = _float3(Randf(-1, 1), Randf(-1, 1), Randf(-1, 1));
 
-
-		{
-			D3D11_MAPPED_SUBRESOURCE mapped{};
-			if (SUCCEEDED(pContext->Map(m_pComWaveCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-			{
-				memcpy(mapped.pData, &waveCb, sizeof(waveCb));
-				pContext->Unmap(m_pComWaveCBuffer->GetCBuffer().Get(), 0);
-			}
-		}
-
-
-        pContext->CSSetConstantBuffers(6, 1, m_pComSpawnCBuffer->GetCBuffer().GetAddressOf());
+        pContext->CSSetConstantBuffers(12, 1, m_pComSpawnCBuffer->GetCBuffer().GetAddressOf());
 
         ID3D11ShaderResourceView* spawnSRV = m_pSpawnListBuffer->GetSRV().Get();
         pContext->CSSetShaderResources(6, 1, &spawnSRV);
@@ -469,7 +439,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
         pContext->CSSetUnorderedAccessViews(0, 2, nullUAVs2, nullptr);
 
         ID3D11ShaderResourceView* nullSRV[] = { nullptr };
-        pContext->CSSetShaderResources(0, 1, nullSRV);
+        pContext->CSSetShaderResources(6, 1, nullSRV);
 
         m_iCurrentSpawnCount = 0;
     }
@@ -491,12 +461,11 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
         {
             memcpy(mapped.pData, &cb, sizeof(cb));
             pContext->Unmap(m_pComCBuffer->GetCBuffer().Get(), 0);
-            pContext->CSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
+            pContext->CSSetConstantBuffers(11, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
         }
     }
 	
 	
-	pContext->CSSetConstantBuffers(10, 1, m_pComWaveCBuffer->GetCBuffer().GetAddressOf());
 
     ID3D11UnorderedAccessView* updateUAVs[] = {
         m_pDeadListBuffer->GetUAV().Get(),
@@ -536,7 +505,7 @@ HRESULT CParticle_GPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 
 	}
 	ID3D11Buffer* nullCBuffer[] = { nullptr, nullptr };
-	pContext->CSSetConstantBuffers(5, 2, nullCBuffer);
+	pContext->CSSetConstantBuffers(11, 2, nullCBuffer);
 	return S_OK;
 
 }
@@ -549,8 +518,8 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
     pContext->VSSetShaderResources(4, 1, &pParticleSRV);
-	pContext->VSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
-	pContext->PSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
+	pContext->VSSetConstantBuffers(11, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
+	pContext->PSSetConstantBuffers(11, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
     const auto& vs = m_pResVertexShader; // 인스턴싱용 신규 VS 필요
     const auto& ps = m_pResPixelShader;
     pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -576,7 +545,16 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->VSSetShaderResources(5, 1, &pNoiseSRV);
 	}
 
-
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(6, 1, &pDistortionSRV);
+	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnyTextureSRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(8, 1, &pAnyTextureSRV);
+	}
     auto pModel = m_pComModelInstance->GetModel();
     uint32_t iNumMeshes = pModel->Get_NumMeshes();
 
@@ -624,12 +602,14 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->PSSetShaderResources(2, 1, pSRVs);
 	pContext->PSSetShaderResources(3, 1, pSRVs);
 	pContext->PSSetShaderResources(5, 1, pSRVs);
+	pContext->PSSetShaderResources(6, 1, pSRVs);
+	pContext->PSSetShaderResources(8, 1, pSRVs);
 	pContext->VSSetShaderResources(10, 1, pSRVs);
 	pContext->VSSetShaderResources(11, 1, pSRVs);
 	ID3D11Buffer* nullCB[] = { nullptr };
 
-	pContext->VSSetConstantBuffers(5, 1, nullCB);
-	pContext->PSSetConstantBuffers(5, 1, nullCB);
+	pContext->VSSetConstantBuffers(11, 1, nullCB);
+	pContext->PSSetConstantBuffers(11, 1, nullCB);
 	{
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		pContext->VSSetShaderResources(4, 1, nullSRV);
@@ -645,22 +625,22 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 
-	
+
 
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
-    pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
-    pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
+	pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
 
-    pContext->IASetInputLayout(nullptr);
-    pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	pContext->IASetInputLayout(nullptr);
+	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    ID3D11ShaderResourceView* pSRV = m_pParticleStructuredBuffer->GetSRV().Get();
-    pContext->VSSetShaderResources(0, 1, &pSRV);
-	pContext->VSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
-	pContext->PSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
+	ID3D11ShaderResourceView* pSRV = m_pParticleStructuredBuffer->GetSRV().Get();
+	pContext->VSSetShaderResources(0, 1, &pSRV);
+	pContext->VSSetConstantBuffers(11, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
+	pContext->PSSetConstantBuffers(11, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
 
 
 	SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
@@ -684,16 +664,24 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
 	}
-    pContext->DrawInstanced(4, m_iNumElements, 0, 0);
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnySRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(8, 1, &pAnySRV);
 
+	}
+	pContext->DrawInstanced(4, m_iNumElements, 0, 0);
+
+	ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     ID3D11ShaderResourceView* nullSRV1[] = { nullptr, nullptr };
     ID3D11ShaderResourceView* nullSRV2[] = { nullptr,nullptr ,nullptr,nullptr,nullptr,nullptr};
     pContext->VSSetShaderResources(0, 2, nullSRV1);
     pContext->PSSetShaderResources(0, 6, nullSRV2);
+    pContext->PSSetShaderResources(8, 1, nullSRV);
 
 	ID3D11Buffer* nullCB[] = { nullptr };
-	pContext->VSSetConstantBuffers(5, 1, nullCB);
-	pContext->PSSetConstantBuffers(5, 1, nullCB);
+	pContext->VSSetConstantBuffers(11, 1, nullCB);
+	pContext->PSSetConstantBuffers(11, 1, nullCB);
 	pContext->OMSetDepthStencilState(nullptr, 0);
 
 	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
@@ -768,12 +756,12 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 	{
 		memcpy(mapped.pData, &cb, sizeof(cb));
 		context->Unmap(m_pComClearCBuffer->GetCBuffer().Get(), 0);
-		context->CSSetConstantBuffers(7, 1, m_pComClearCBuffer->GetCBuffer().GetAddressOf());
+		context->CSSetConstantBuffers(13, 1, m_pComClearCBuffer->GetCBuffer().GetAddressOf());
 	}
 
 	ID3D11UnorderedAccessView* clearUAVs[] = {
-		m_pParticleStructuredBuffer->GetUAV().Get(),
-		m_pDeadListBuffer->GetUAV().Get()
+		m_pDeadListBuffer->GetUAV().Get(),           // u0
+		m_pParticleStructuredBuffer->GetUAV().Get()  // u1
 	};
 	UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
 	context->CSSetUnorderedAccessViews(0, 2, clearUAVs, initialCounts);
@@ -788,7 +776,7 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 	context->CSSetShader(nullptr, nullptr, 0);
 
 	ID3D11Buffer* nullCB[] = { nullptr };
-	context->CSSetConstantBuffers(7, 1, nullCB);
+	context->CSSetConstantBuffers(13, 1, nullCB);
 
 	// DeadList 카운터가 즉시 갱신되도록 재동기화
 	m_iDeadCount = GetDeadListCounterSync();

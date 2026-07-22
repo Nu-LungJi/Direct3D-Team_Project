@@ -67,6 +67,8 @@ Texture2D   SMROMap      : register(t2);
 Texture2D   EmissiveMap : register(t3);
 Texture2D   DepthMap    : register(t4);
 Texture2D   NoiseMap    : register(t5);
+Texture2D   DistortionMap    : register(t6);
+Texture2D  AnyTextureMap    : register(t7);
 
 //SamplerState g_LinearSampler : register(s0);
 
@@ -146,7 +148,7 @@ PS_OUT PSMain(VS_OUT In)
         }
     }
 
-    // ÀÎ½ºÅÏ½ºº° ÀÌ¹Ì½Ãºê + ¿ÀºêÁ§Æ® ÀÌ¹Ì½Ãºê ÅØ½ºÃ³ µÑ ´Ù ¹İ¿µ
+    // ì¸ìŠ¤í„´ìŠ¤ë³„ ì´ë¯¸ì‹œë¸Œ + ì˜¤ë¸Œì íŠ¸ ì´ë¯¸ì‹œë¸Œ í…ìŠ¤ì²˜ ë‘˜ ë‹¤ ë°˜ì˜
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
@@ -155,8 +157,7 @@ PS_OUT PSMain(VS_OUT In)
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
 
-    //Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
-    Out.vDiffuse = float4(1.f, 1.f, 1.f, 1.f);
+    Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
     
 }

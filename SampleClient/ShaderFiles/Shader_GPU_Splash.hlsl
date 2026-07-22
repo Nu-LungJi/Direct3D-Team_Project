@@ -4,7 +4,7 @@
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-cbuffer CB_PER_PARTICLE : register(b5)
+cbuffer CB_PER_PARTICLE : register(b11)
 {
     float g_fTimeDelta;
     uint g_iNumInstances;
@@ -17,14 +17,14 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//ÇÈ¼¿ ½¦ÀÌ´õ¿ë
+//í”½ì…€ ì‰ì´ë”ìš©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
 
-//¹öÅØ½º ½¦ÀÌ´õ¿ë 
+//ë²„í…ìŠ¤ ì‰ì´ë”ìš© 
 
 Texture2D hdrPoisitonMap : register(t10);
 Texture2D hdrNormalMap : register(t11);
@@ -49,7 +49,7 @@ struct VS_OUT
     float3 vTangent : TANGENT0;
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE;
-    float3 vWorldPos : TEXCOORD1; // Ãß°¡: ¶óÀÌÆÃ °è»ê¿¡ ÇÊ¿ä
+    float3 vWorldPos : TEXCOORD1; // ì¶”ê°€: ë¼ì´íŒ… ê³„ì‚°ì— í•„ìš”
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
 };
@@ -59,7 +59,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID, uint vertID : SV_VertexID)
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
     float2 finalUV = In.vTexcoord;
-    float scale = p.alive ? p.size : 0.0f;
+	float3 scale = p.alive ? p.size : float3(0.0f, 0.0f, 0.0f);
 
     if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
     {
@@ -72,14 +72,14 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID, uint vertID : SV_VertexID)
     }
     Out.vTexcoord = finalUV;
 
-// ---- VAT (Ripple: UV0 ±â¹İ) ----------------------------------------------------
+// ---- VAT (Ripple: UV0 ê¸°ë°˜) ----------------------------------------------------
     //uint vatWidth, vatHeight;
     //hdrPoisitonMap.GetDimensions(vatWidth, vatHeight);
     //
     //float ratio = saturate(1.0f - (p.life / p.maxLife));
     //float u = In.vTexcoord.x;
     //
-    //// ÇÁ·¹ÀÓ(Çà) µÎ °³¸¦ ±¸ÇØ¼­ ¼öµ¿ º¸°£
+    //// í”„ë ˆì„(í–‰) ë‘ ê°œë¥¼ êµ¬í•´ì„œ ìˆ˜ë™ ë³´ê°„
     //float frameF = ratio * (vatHeight - 1);
     //uint row0 = (uint) floor(frameF);
     //uint row1 = min(row0 + 1, vatHeight - 1);
@@ -104,7 +104,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID, uint vertID : SV_VertexID)
     float ratio = saturate(1.0f - (p.life / p.maxLife));
     float u = (float(vertID) + 0.5f) / float(vatWidth);
 
-    // ÇÁ·¹ÀÓ(Çà) µÎ °³ ±¸ÇØ¼­ º¸°£
+    // í”„ë ˆì„(í–‰) ë‘ ê°œ êµ¬í•´ì„œ ë³´ê°„
     float frameF = ratio * (vatHeight - 1);
     uint row0 = (uint) floor(frameF);
     uint row1 = min(row0 + 1, vatHeight - 1);
@@ -119,20 +119,20 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID, uint vertID : SV_VertexID)
 
     float3 n0 = hdrNormalMap.SampleLevel(PointClamp, float2(u, v0), 0).xyz;
     float3 n1 = hdrNormalMap.SampleLevel(PointClamp, float2(u, v1), 0).xyz;
-    float3 vLocalNormal = normalize(lerp(n0, n1, blend) * 2.0f - 1.0f); // VNÀÌ 8ºñÆ® PNG¶ó *2-1 µğÄÚµå ÇÊ¿ä
-// ½ºÄÉÀÏ Àû¿ë
+    float3 vLocalNormal = normalize(lerp(n0, n1, blend) * 2.0f - 1.0f); // VNì´ 8ë¹„íŠ¸ PNGë¼ *2-1 ë””ì½”ë“œ í•„ìš”
+// ìŠ¤ì¼€ì¼ ì ìš©
     vLocalPos *= scale;
 
-// ÆÄÆ¼Å¬ È¸Àü
+// íŒŒí‹°í´ íšŒì „
     float3 rotatedLocal = RotateXYZ(vLocalPos, p.rotation);
 
-// ¿ùµå À§Ä¡
+// ì›”ë“œ ìœ„ì¹˜
     float3 worldPos = rotatedLocal + p.position;
 
     Out.vPosition = mul(float4(worldPos, 1.0f), g_matViewProj);
     Out.vWorldPos = worldPos;
 
-// ³ë¸Ö/ÅºÁ¨Æ®/¹ÙÀÌ³ë¸Ö È¸Àü
+// ë…¸ë©€/íƒ„ì  íŠ¸/ë°”ì´ë…¸ë©€ íšŒì „
     Out.vNormal = normalize(RotateXYZ(vLocalNormal, p.rotation));
     Out.vTangent = normalize(RotateXYZ(In.vTangent, p.rotation));
     Out.vBinormal = normalize(RotateXYZ(In.vBinormal, p.rotation));
@@ -152,22 +152,22 @@ PS_OUT PSMain(VS_OUT In)
 {
     PS_OUT Out = (PS_OUT) 0;
 
-    // AlbedoMap »ùÇÃ¸µ Á¦°Å, ÀçÁú »ó¼ö + ÆÄÆ¼Å¬ ÄÃ·¯¸¸ »ç¿ë
+    // AlbedoMap ìƒ˜í”Œë§ ì œê±°, ì¬ì§ˆ ìƒìˆ˜ + íŒŒí‹°í´ ì»¬ëŸ¬ë§Œ ì‚¬ìš©
     float4 AlbedoTex = float4(AlbedoColor, ObjectAlpha) * In.vColor;
     if (AlbedoTex.a < 0.05f)
         discard;
 
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
-    // NormalMap ¾øÀÌ VAT¿¡¼­ ÀÌ¹Ì °è»êµÈ ¿ùµå ³ë¸» ±×´ë·Î »ç¿ë
+    // NormalMap ì—†ì´ VATì—ì„œ ì´ë¯¸ ê³„ì‚°ëœ ì›”ë“œ ë…¸ë§ ê·¸ëŒ€ë¡œ ì‚¬ìš©
     float3 WorldNormal = normalize(In.vNormal);
 
     float3 V = normalize(g_vCamPos - In.vWorldPos);
     float NDV = max(dot(WorldNormal, V), 0.f);
 
-    // SMROMap ¾øÀÌ °íÁ¤°ª(¿øÇÏ´Â ´À³¦À¸·Î Æ©´×)
-    float fMetallic = MetallicIntensity; // ¿¹: 0
-    float fRoughness = max(RoughnessIntensity, 0.05f); // 0 ¹æÁö
+    // SMROMap ì—†ì´ ê³ ì •ê°’(ì›í•˜ëŠ” ëŠë‚Œìœ¼ë¡œ íŠœë‹)
+    float fMetallic = MetallicIntensity; // ì˜ˆ: 0
+    float fRoughness = max(RoughnessIntensity, 0.05f); // 0 ë°©ì§€
     float fAmbient = AmbientIntensity;
 
     float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);

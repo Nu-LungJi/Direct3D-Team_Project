@@ -1,10 +1,10 @@
 #include "../Particle/Particle_Common_Struct_Func.hlsl"
 
 
-cbuffer CB_SPAWN_COUNT : register(b6)
+cbuffer CB_SPAWN_COUNT : register(b12)
 {
     uint g_iSpawnCount;
-    uint g_iMaxParticles; // Ãß°¡: ¹öÆÛ Å©±â
+    uint g_iMaxParticles; // ì¶”ê°€: ë²„í¼ í¬ê¸°
     float2 pad;
 };
 
@@ -19,7 +19,7 @@ void CSMain(uint id : SV_DispatchThreadID)
         return;
 
     uint index = gDeadList.Consume();
-    if (index >= g_iMaxParticles)   // ¾ğ´õÇÃ·Î¿ì·Î ÀÎÇÑ ¾²·¹±â°ª ¹æ¾î
+    if (index >= g_iMaxParticles)   // ì–¸ë”í”Œë¡œìš°ë¡œ ì¸í•œ ì“°ë ˆê¸°ê°’ ë°©ì–´
         return;
 
     SPAWN_DATA s = gSpawnBuffer[id];

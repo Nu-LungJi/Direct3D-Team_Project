@@ -90,6 +90,7 @@ Texture2D g_DiffuseTexture : register(t1);
 Texture2D g_NormalTexture : register(t2);
 Texture2D g_DistortionTexture : register(t3);
 Texture2D g_NoiseTexture : register(t4);
+Texture2D g_AnyTexture : register(t5);
 Texture2D g_BackgroundTex : register(t7);
 
 struct PS_OUT
@@ -105,10 +106,14 @@ PS_OUT PSMain(VS_OUT In)
 
     float4 texColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
     float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
+	float4 noise = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
     
+	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+
+	//if (noise.r < ratio) 
+	//	discard;
     if (all(texColor.rgb <= 0.03f))
         discard;
-    float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
     
     if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)

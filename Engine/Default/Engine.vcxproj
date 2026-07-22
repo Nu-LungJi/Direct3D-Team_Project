@@ -271,6 +271,7 @@
     <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
+    <ClInclude Include="..\public\EffectManager.h" />
     <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
@@ -425,6 +426,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="ParticleParams.h" />
     <ClInclude Include="ParticleParamImGui.h" />
+    <ClInclude Include="EffectDefines.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">
@@ -576,6 +578,7 @@
     <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
+    <ClCompile Include="..\private\EffectManager.cpp" />
     <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />

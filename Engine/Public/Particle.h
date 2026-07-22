@@ -32,7 +32,7 @@ public:
 public:
 	virtual void SetPosition(const _float3& pos) {}
 	virtual void SetVelocity(const _float3& vel) {}
-	virtual void SetSize(const _float& size) {}
+	virtual void SetSize(const _float3& size) {}
 	virtual void SetColor(const _float4& color) {}
 
 	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
@@ -57,6 +57,7 @@ protected:
 	SPtr<class CResTexture2D> m_pNoiseTexture;
 	SPtr<class CResTexture2D> m_pHdrPositionTexture;
 	SPtr<class CResTexture2D> m_pHdrNormalTexture;
+	SPtr<class CResTexture2D> m_pAnyTexture;
 	SPtr<class CResBlendState> m_pBlendState;
 
 private:

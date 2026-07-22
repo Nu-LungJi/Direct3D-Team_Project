@@ -14,7 +14,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bBillboard = (flags & BEHAVIOR_BILLBOARD) != 0;
 	bool bGravity = (flags & BEHAVIOR_GRAVITY) != 0;
 	bool bCircleWave = (flags & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
-
+	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
 		flags = bDistortion ? (flags | BEHAVIOR_DISTORTION) : (flags & ~BEHAVIOR_DISTORTION);
 	ImGui::SameLine();
@@ -23,9 +23,12 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("Gravity", &bGravity))
 		flags = bGravity ? (flags | BEHAVIOR_GRAVITY) : (flags & ~BEHAVIOR_GRAVITY);
-	ImGui::SameLine();
+	ImGui::Separator();
+	ImGui::Text("Only For CPU Pattern");
 	if (ImGui::Checkbox("CircleToWave", &bCircleWave))
 		flags = bCircleWave ? (flags | BEHAVIOR_CIRCLE_TO_WAVE) : (flags & ~BEHAVIOR_CIRCLE_TO_WAVE);
+	ImGui::Separator();
+	ImGui::Text("Only For GPU Pattern");
 }
 
 
@@ -85,12 +88,7 @@ inline void DrawImGui(SSpiralParam& p) {
 inline void DrawImGui(SStraightGroundParam& p) {
 	STRAIGHT_GROUND_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
 }
-inline void DrawImGui(STest& p) {
-	TEST_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
-}
-inline void DrawImGui(SSPAWN& p) {
-	SPAWN_S_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
-}
+
 #undef DRAW_PARAM_FIELD
 
 //8. save 추가
@@ -99,8 +97,6 @@ inline void SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELD
 inline void SaveParam(const SCircleSpreadParam& p, nlohmann::json& out) { CIRCLE_SPREAD_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
-inline void SaveParam(const STest& p, nlohmann::json& out) { TEST_FIELDS(SAVE_PARAM_FIELD) }
-inline void SaveParam(const SSPAWN& p, nlohmann::json& out) { SPAWN_S_FIELDS(SAVE_PARAM_FIELD) }
 
 //9. 로드 추가
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
@@ -108,8 +104,6 @@ inline void LoadParam(SCircleParam& p, const nlohmann::json& in) { CIRCLE_FIELDS
 inline void LoadParam(SCircleSpreadParam& p, const nlohmann::json& in) { CIRCLE_SPREAD_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SSpiralParam& p, const nlohmann::json& in) { SPIRAL_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAIGHT_GROUND_FIELDS(LOAD_PARAM_FIELD) }
-inline void LoadParam(STest& p, const nlohmann::json& in) { TEST_FIELDS(LOAD_PARAM_FIELD) }
-inline void LoadParam(SSPAWN& p, const nlohmann::json& in) { SPAWN_S_FIELDS(LOAD_PARAM_FIELD) }
 
 #undef SAVE_PARAM_FIELD
 #undef LOAD_PARAM_FIELD

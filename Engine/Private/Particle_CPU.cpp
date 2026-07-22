@@ -122,7 +122,21 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		if (m_Desc.hdrNormalTextureID.first != "") {
 			m_pHdrNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.hdrNormalTextureID.first, m_Desc.hdrNormalTextureID.second);
 		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+		}
     }
+
+	{
+		m_waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
+		m_waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
+		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
+		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
+		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
+		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
+		m_waveCb.g_vFlowDirection = _float3(Randf(-1, 1), Randf(-1, 1), Randf(-1, 1));
+	}
     return S_OK;
 
 }
@@ -188,10 +202,12 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		VTX_PARTICLE_INSTANCED_DATA inst{};
 		inst.iBehaviorType = p.iBehaviorType;
 		
-		p.fSize = std::lerp(p.fStartSize, p.fEndSize, ageRatio);
+		p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+		p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+		p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
 
 		
-		_matrix matScale = XMMatrixScaling(p.fSize, p.fSize, p.fSize);
+		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
 		_matrix matTrans = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
 
 		_matrix matWorld;
@@ -262,7 +278,64 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
 		XMStoreFloat3(&p.vPosition, vPos);
 	}
-	
+	// UpdateBehavior - waveCb / waveParticleIndex(클래스 멤버) 대신 p의 값을 사용, 증가 로직 제거
+	if ((p.iBehaviorType & BEHAVIOR_CIRCLE_TO_WAVE) != 0)
+	{
+		uint32_t particleIndex = (uint32_t)(&p - m_Particles.data());
+
+		float rnd1 = Hash01(particleIndex);
+		float rnd2 = Hash01(particleIndex ^ 0x9E3779B9u);
+		float angle = rnd1 * XM_2PI;
+		float phaseOffset = rnd2 * XM_2PI;
+
+		const auto& waveCb = m_waveCb; // 파티클 고유값, 매 프레임 그대로 유지
+
+		auto Saturate = [](float v) { return std::max(0.0f, std::min(1.0f, v)); };
+		auto SmoothStep = [](float edge0, float edge1, float x) -> float
+			{
+				float denom = edge1 - edge0;
+				float t = (denom > 1e-6f) ? (x - edge0) / denom : 0.0f;
+				t = std::max(0.0f, std::min(1.0f, t));
+				return t * t * (3.0f - 2.0f * t);
+			};
+
+		float ageRatio = Saturate(p.life / p.fMaxLife);
+
+		float burstT = Saturate(ageRatio / std::max(waveCb.g_fBurstRatio, 0.0001f));
+		float burstProfile = sinf(XM_PI * burstT);
+
+		float radialX = cosf(angle);
+		float radialY = sinf(angle);
+		float burstVelX = radialX * waveCb.g_fBurstSpeed * burstProfile;
+		float burstVelY = radialY * waveCb.g_fBurstSpeed * burstProfile;
+
+		float flowDirX = radialX;
+		float flowDirY = radialY;
+		float perpX = -flowDirY;
+		float perpY = flowDirX;
+
+		float elapsed = p.life;
+		float wavePhase = waveCb.g_fWaveSpeed * elapsed + phaseOffset
+			+ (p.vPosition.x * flowDirX + p.vPosition.y * flowDirY) * waveCb.g_fWaveFrequency;
+		float waveBob = sinf(wavePhase);
+
+		float waveVelX = flowDirX * waveCb.g_fFlowSpeed + perpX * (waveBob * waveCb.g_fWaveAmplitude);
+		float waveVelY = flowDirY * waveCb.g_fFlowSpeed + perpY * (waveBob * waveCb.g_fWaveAmplitude);
+
+		float blend = SmoothStep(waveCb.g_fBurstRatio - waveCb.g_fTransitionRatio * 0.5f,
+			waveCb.g_fBurstRatio + waveCb.g_fTransitionRatio * 0.5f,
+			ageRatio);
+
+		p.vVelocity.x = burstVelX + (waveVelX - burstVelX) * blend;
+		p.vVelocity.y = burstVelY + (waveVelY - burstVelY) * blend;
+		p.vVelocity.z = 0.0f;
+
+		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+		XMStoreFloat3(&p.vPosition, vPos);
+		// waveParticleIndex++;  <- 제거: 더 이상 필요 없음, p.iParticleID로 대체
+	}
 }
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
@@ -270,6 +343,8 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		return E_FAIL;
 
 	uint32_t iSpawned = 0;
+
+
 	for (uint32_t i = 0; i < m_Particles.size() && iSpawned < count; ++i)
 	{
 		if (m_Particles[i].bAlive)
@@ -294,6 +369,9 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].rotation = src.rotation;
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
+
+
+	
 		++iSpawned;
 	}
 
@@ -336,6 +414,18 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	{
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(5, 1, &pNoiseSRV);
+
+	}
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(6, 1, &pDistortionSRV);
+
+	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnySRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(8, 1, &pAnySRV);
 
 	}
 
@@ -418,6 +508,8 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->PSSetShaderResources(2, 1, pSRVs);
 	pContext->PSSetShaderResources(3, 1, pSRVs);
 	pContext->PSSetShaderResources(5, 1, pSRVs);
+	pContext->PSSetShaderResources(6, 1, pSRVs);
+	pContext->PSSetShaderResources(8, 1, pSRVs);
 	pContext->VSSetShaderResources(1, 1, pSRVs);
 	pContext->VSSetShaderResources(2, 1, pSRVs);
 	ID3D11Buffer* nullCB[] = { nullptr };
@@ -498,12 +590,18 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
 	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnySRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(5, 1, &pAnySRV);
+
+	}
 
 
     pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr };
-    pContext->PSSetShaderResources(0, 5, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr,nullptr };
+    pContext->PSSetShaderResources(0, 6, nullSRV);
 
 	pContext->OMSetDepthStencilState(nullptr, 0);
 	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
@@ -547,7 +645,7 @@ void CParticle_CPU::SetVelocity(const _float3& vel)
 	m_Particles[0].vVelocity = vel;
 }
 
-void CParticle_CPU::SetSize(const _float& size)
+void CParticle_CPU::SetSize(const _float3& size)
 {
 	if (m_Particles.empty())
 		return;

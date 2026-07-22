@@ -2,6 +2,7 @@
 
 namespace Engine
 {
+	inline constexpr uint32_t INVALID_PARTICLE_OWNER_ID = 0;
 
 	typedef struct STANDARD_PARAMS
 	{
@@ -19,8 +20,15 @@ namespace Engine
 		_float3  originalVelocity = { 0.f,0.f, 0.f };
 
 		_float   life = 1.f;
-		_float   fSize = 1.f;
-		_float   fEndSize = 1.f;
+		bool bRandomSize = false;
+
+		_float3   startSizeMin = { 1.f, 1.f, 1.f};
+		_float3   startSizeMax = { 1.f, 1.f, 1.f};
+		_float3   endSizeMin =	 { 1.f, 1.f, 1.f};
+		_float3   endSizeMax =	 {1.f, 1.f, 1.f};
+
+		_float3   fSize{ 1.f,1.f,1.f};
+		_float3   fEndSize{ 1.f,1.f,1.f};
 		bool bRandomRot = false;
 		_float3 rotMin = { 0,0,0 };
 		_float3 rotMax = { 0,0,0 };
@@ -83,8 +91,8 @@ namespace Engine
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
-    X(_float, fSize, 1.f) \
-    X(_float, fEndSize, 1.f) \
+    X(_float3, fSize,  _float3(1,1,1)) \
+    X(_float3, fEndSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
@@ -96,8 +104,8 @@ namespace Engine
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
-    X(_float, fSize, 1.f) \
-    X(_float, fEndSize, 1.f) \
+    X(_float3, fSize, _float3(1,1,1)) \
+    X(_float3, fEndSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
@@ -112,7 +120,7 @@ namespace Engine
     X(uint32_t, iCount, 20) \
     X(_float, fHeightPerStep, 0.2f) \
     X(_float, fAngleStepDeg, 15.f) \
-    X(_float, fSize, 1.f) \
+    X(_float3, fSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0))\
@@ -134,30 +142,14 @@ namespace Engine
     X(_float3, vMaxRot, _float3(0,0,0)) \
     X(_float3, vRotation, _float3(0,0,0)) \
     X(_float, fSpawnDelay, 0.1f) \
-    X(_float, fSize, 1.f) \
+    X(_float3, fSize,_float3(1,1,1)) \
     X(_float, fLife, 1.f) \
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0))\
    COMMON_PATTERN_FIELDS(X)
 
 
-#define TEST_FIELDS(X) \
-    X(_float3, vCenter, _float3(0,0,0)) \
-    X(_float, fRadius, 3.f) \
-    X(uint32_t, iCount, 12) \
-    X(_float, fSize, 1.f) \
-    X(_float, fEndSize, 1.f) \
-    X(_float, fLife, 1.f) \
-	X(_float3, fVelocity, _float3(0,0,0))\
-    X(_float4, color, _float4(1,1,1,1)) \
-    X(_float4, emissive, _float4(0,0,0,0)) \
-    X(_float, fYOffset, 0.f)\
-   COMMON_PATTERN_FIELDS(X)
 
-#define SPAWN_S_FIELDS(X) \
-    X(_float3, vCenter, _float3(0,0,0)) \
-    X(uint32_t, iCount, 1) \
-   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -175,19 +167,16 @@ struct StructName \
 	struct SCircleSpreadParam { CIRCLE_SPREAD_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
-	struct STest { TEST_FIELDS(DECLARE_PARAM_FIELD) };
-	struct SSPAWN { SPAWN_S_FIELDS(DECLARE_PARAM_FIELD) };
-
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,STest, SSPAWN>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","Test","KYTEST"
+		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave"
 	};
 
 	//5. 여기에 CASE 추가
@@ -201,15 +190,13 @@ struct StructName \
 		case 2: return SSpiralParam{};
 		case 3: return SStraightGroundParam{};
 		case 4: return SCircleSpreadParam{};
-		case 5: return STest{};
-		case 6: return SSPAWN{};
 		default: return SStairsParam{};
 		}
 	}
 
 
 	//6. particleparmaImgui 로 이동
-	enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
+	enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN ,LIGHT };
 
 	struct SPAWN_COMMAND
 	{
