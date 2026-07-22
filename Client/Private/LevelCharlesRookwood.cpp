@@ -25,50 +25,14 @@ HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 
-	CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true);
+	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
+		return E_FAIL;
 
-	{
-		E::CCameraObject::CAMERA_DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-		Desc.vAt = { 0.f, 0.f, 0.f };
-		Desc.vEye = { 0.f, 0.f, -5.f };
-		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
-		Desc.fFar = 1000.f;
-		Desc.sObjectTag = "FlyCam";
+	if (FAILED(SpawnFlyCamera()))
+		return E_FAIL;
 
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
-			"99_CAMERA", &Desc))
-		{
-			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
-			{
-				MSG_BOX("FailedToRegistCamera");
-			}
-			E::CGameInstance::Get().SetActiveCamera("FLY");
-		}
-	}
-
-	{
-		E::CCameraObject::CAMERA_DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
-		Desc.fNear = 0.f;
-		Desc.fFar = 1.f;
-		Desc.fWidth = g_iWinSizeX;
-		Desc.fHeight = g_iWinSizeY;
-		Desc.sObjectTag = "UICam";
-		Desc.vEye = { 0.f, 0.f, -0.1f };
-
-		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
-			"99_CAMERA", &Desc))
-		{
-			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
-			{
-				MSG_BOX("FailedToRegistCamera");
-			}
-		}
-	}
-
+	if (FAILED(SpawnUICamera()))
+		return E_FAIL;
 
 	return S_OK;
 }
@@ -104,6 +68,58 @@ Engine::UPtr<CLevelCharlesRookwood> CLevelCharlesRookwood::Create()
 	}
 
 	return pInstance;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnFlyCamera()
+{
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+		Desc.vAt = { 0.f, 0.f, 0.f };
+		Desc.vEye = { 0.f, 0.f, -5.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fFovY = 75.f;
+		Desc.fNear = 0.1f;
+		Desc.fFar = 1000.f;
+		Desc.sObjectTag = "FlyCam";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_FlyCamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
+			{
+				MSG_BOX("FailedToRegistCamera");
+				return E_FAIL;
+			}
+			E::CGameInstance::Get().SetActiveCamera("FLY");
+		}
+	}
+	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnUICamera()
+{
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+		Desc.fNear = 0.f;
+		Desc.fFar = 1.f;
+		Desc.fWidth = g_iWinSizeX;
+		Desc.fHeight = g_iWinSizeY;
+		Desc.sObjectTag = "UICam";
+		Desc.vEye = { 0.f, 0.f, -0.1f };
+
+		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer("CAMERAS", "Prototype_GameObject_UICamera",
+			"99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+			{
+				MSG_BOX("FailedToRegistCamera");
+				return E_FAIL;
+			}
+		}
+	}
+	return S_OK;
 }
 
 void CLevelCharlesRookwood::Free()

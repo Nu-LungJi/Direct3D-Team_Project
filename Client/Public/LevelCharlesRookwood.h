@@ -24,6 +24,10 @@ public:
 	static UPtr<CLevelCharlesRookwood> Create();
 
 private:
+	HRESULT SpawnFlyCamera();
+	HRESULT SpawnUICamera();
+
+private:
 	void Free() override;
 };
 
