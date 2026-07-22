@@ -34,6 +34,12 @@ HRESULT CMainApp::Initialize()
 
 	CGameInstance::Get().ImguiEnableDocking(true, true);
 
+	if (FAILED(CMainAppLoader::Load()))
+	{
+		MSG_BOX("MainLoader Failed");
+		return E_FAIL;
+	}
+
 	if (CBaseApp::StartLevel(CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO)))
 	{
 		return E_FAIL;
@@ -44,16 +50,15 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
 		});
 
-	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_Persibal", [=]() {
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_CHARLES_ROOKWOOD", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
-			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PERCIVAL));
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::CHARLES_ROOKWOOD));
 		});
 
-	if (FAILED(CMainAppLoader::Load()))
-	{
-		MSG_BOX("MainLoader Failed");
-		return E_FAIL;
-	}
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_BOSS_CHARLES_ROOKWOOD", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::BOSS_CHARLES_ROOKWOOD));
+		});
 
 	return S_OK;
 }

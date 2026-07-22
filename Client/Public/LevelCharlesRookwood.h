@@ -4,11 +4,14 @@
 
 NS_BEGIN(Client)
 
-class CLevelPercival final : public CLevel
+class CLevelCharlesRookwood final : public CLevel
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevelCharlesRookwood, CLevel)
+
 private:
-	explicit CLevelPercival();
-	~CLevelPercival() override;
+	explicit CLevelCharlesRookwood();
+	~CLevelCharlesRookwood() override;
 
 public:
 	HRESULT Initialize() override;
@@ -18,7 +21,7 @@ public:
 	void FrameStart(E::_float fTimeDelta) override;
 
 public:
-	static UPtr<CLevelPercival> Create();
+	static UPtr<CLevelCharlesRookwood> Create();
 
 private:
 	void Free() override;

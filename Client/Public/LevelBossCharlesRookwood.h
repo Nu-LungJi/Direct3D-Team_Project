@@ -4,14 +4,14 @@
 
 NS_BEGIN(Client)
 
-class CLevelLogo final : public Engine::CLevel
+class CLevelBossCharlesRookwood final : public CLevel
 {
 public:
-	DECLARE_DERIVED_TYPE(CLevelLogo, CLevel)
+	DECLARE_DERIVED_TYPE(CLevelBossCharlesRookwood, CLevel)
 
 private:
-	explicit CLevelLogo();
-	~CLevelLogo() override;
+	explicit CLevelBossCharlesRookwood();
+	~CLevelBossCharlesRookwood() override;
 
 public:
 	HRESULT Initialize() override;
@@ -21,7 +21,7 @@ public:
 	void FrameStart(E::_float fTimeDelta) override;
 
 public:
-	static Engine::UPtr<CLevelLogo> Create();
+	static UPtr<CLevelBossCharlesRookwood> Create();
 
 private:
 	void Free() override;

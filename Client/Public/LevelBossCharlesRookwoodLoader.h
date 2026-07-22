@@ -2,7 +2,7 @@
 #include "Engine_Defines.h"
 
 NS_BEGIN(Client)
-class CLevelPercivalLoader
+class CLevelBossCharlesRookwoodLoader
 {
 public:
 	static std::future<bool> Load();

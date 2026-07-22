@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstdint>
 
@@ -27,6 +27,7 @@ namespace Client
 		CLOTH_COLLIDER = 1u << 14,	// 망토·의상 시뮬레이션에 제공할 충돌체
 		DEBRIS = 1u << 15,		// 파편과 장식용 소형 물리 오브젝트
 	};
+
 
 }
 

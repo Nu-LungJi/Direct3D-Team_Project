@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "LevelPercival.h"
+#include "LevelCharlesRookwood.h"
 #include "GameInstance.h"
 #include "Level_Defines.h"
 #include "FlyCamera.h"
@@ -8,32 +8,22 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 
-#include "LevelPercivalLoader.h"
+#include "LevelCharlesRookwoodLoader.h"
 
 NS_USING(Client)
 
-CLevelPercival::CLevelPercival()
-	: CLevel{ ETOUI(LEVEL::PERCIVAL) }
+CLevelCharlesRookwood::CLevelCharlesRookwood()
+	: CLevel{ ETOUI(LEVEL::CHARLES_ROOKWOOD) }
 {
 }
 
-CLevelPercival::~CLevelPercival()
+CLevelCharlesRookwood::~CLevelCharlesRookwood()
 {
 }
 
-HRESULT CLevelPercival::Initialize()
+HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
-
-	//{
-	//	CBackGround::UIOBJECT_DESC Desc{};
-	//	Desc.sObjectTag = "BackGround";
-	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PERCIVAL", "Prototype_GameObject_BackGround",
-	//		"00_OBJECTS", &Desc)))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
 
 	CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true);
 
@@ -83,30 +73,30 @@ HRESULT CLevelPercival::Initialize()
 	return S_OK;
 }
 
-void CLevelPercival::Update(E::_float fTimeDelta)
+void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 {
 }
 
-HRESULT CLevelPercival::Render()
+HRESULT CLevelCharlesRookwood::Render()
 {
 	return S_OK;
 }
 
-void CLevelPercival::UpdateGUI()
+void CLevelCharlesRookwood::UpdateGUI()
 {
-	ImGui::Begin("level: Persibal");
+	ImGui::Begin("level: CharlesRookwood");
 
 	ImGui::End();
 }
 
-void CLevelPercival::FrameStart(E::_float fTimeDelta)
+void CLevelCharlesRookwood::FrameStart(E::_float fTimeDelta)
 {
 
 }
 
-Engine::UPtr<CLevelPercival> CLevelPercival::Create()
+Engine::UPtr<CLevelCharlesRookwood> CLevelCharlesRookwood::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelPercival>(new CLevelPercival{});
+	auto	pInstance = Engine::UPtr<CLevelCharlesRookwood>(new CLevelCharlesRookwood{});
 
 	if (FAILED(pInstance->Initialize()))
 	{
@@ -116,7 +106,7 @@ Engine::UPtr<CLevelPercival> CLevelPercival::Create()
 	return pInstance;
 }
 
-void CLevelPercival::Free()
+void CLevelCharlesRookwood::Free()
 {
 	CLevel::Free();
 }

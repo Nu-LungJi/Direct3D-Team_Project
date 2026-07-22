@@ -1,11 +1,14 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "LevelLoading.h"
 #include "GameInstance.h"
 #include "Resources.h"
 #include "LevelLogo.h"
 #include "LevelLogoLoader.h"
-#include "LevelPercival.h"
-#include "LevelPercivalLoader.h"
+#include "LevelCharlesRookwood.h"
+#include "LevelCharlesRookwoodLoader.h"
+
+#include "LevelBossCharlesRookwood.h"
+#include "LevelBossCharlesRookwoodLoader.h"
 
 NS_USING(Client)
 
@@ -84,8 +87,11 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::LOGO:
 		pNewLevel = CLevelLogo::Create();
 		break;
-	case LEVEL::PERCIVAL:
-		pNewLevel = CLevelPercival::Create();
+	case LEVEL::CHARLES_ROOKWOOD:
+		pNewLevel = CLevelCharlesRookwood::Create();
+		break;
+	case LEVEL::BOSS_CHARLES_ROOKWOOD:
+		pNewLevel = CLevelBossCharlesRookwood::Create();
 		break;
 	}
 	assert(pNewLevel);
@@ -112,8 +118,11 @@ void CLevelLoading::StartUnload()
 	case LEVEL::LOGO:
 		m_futUnloadFinish = CLevelLogoLoader::UnLoad();
 		break;
-	case LEVEL::PERCIVAL:
-		m_futUnloadFinish = CLevelPercivalLoader::UnLoad();
+	case LEVEL::CHARLES_ROOKWOOD:
+		m_futUnloadFinish = CLevelCharlesRookwoodLoader::UnLoad();
+		break;
+	case LEVEL::BOSS_CHARLES_ROOKWOOD:
+		m_futUnloadFinish = CLevelBossCharlesRookwoodLoader::UnLoad();
 		break;
 	default:
 		StartLoad();
@@ -145,15 +154,14 @@ void CLevelLoading::StartLoad()
 	switch (m_eNextLevelIndex)
 	{
 	case LEVEL::LOGO:
-	{
 		m_futLoadFinish = CLevelLogoLoader::Load();
-	}
-	break;
-	case LEVEL::PERCIVAL:
-	{
-		m_futLoadFinish = CLevelPercivalLoader::Load();
-	}
-	break;
+		break;
+	case LEVEL::CHARLES_ROOKWOOD:
+		m_futLoadFinish = CLevelCharlesRookwoodLoader::Load();
+		break;
+	case LEVEL::BOSS_CHARLES_ROOKWOOD:
+		m_futLoadFinish = CLevelBossCharlesRookwoodLoader::Load();
+		break;
 	default:
 		m_ePhase = PHASE::COMPLETE;
 		m_bLoadEnd = true;
