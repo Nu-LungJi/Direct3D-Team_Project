@@ -36,6 +36,25 @@ void CTestModel::UpdateGUI()
 
 	ImGui::Begin("Bone Editor");
 
+	if (m_pModelAnimator)
+	{
+		constexpr CComAnimator::EVALUATION_MODE EvaluationModes[] =
+		{
+			CComAnimator::EVALUATION_MODE::GPU,
+			CComAnimator::EVALUATION_MODE::CPU_GPU,
+		};
+		constexpr const char* EvaluationModeNames[] = { "GPU", "CPU + GPU" };
+		int iEvaluationMode = m_pModelAnimator->GetEvaluationMode() == CComAnimator::EVALUATION_MODE::GPU ? 0 : 1;
+
+		if (ImGui::Combo("Animation Evaluation", &iEvaluationMode, EvaluationModeNames, IM_ARRAYSIZE(EvaluationModeNames)))
+		{
+			m_pModelAnimator->SetEvaluationMode(EvaluationModes[iEvaluationMode]);
+		}
+
+		ImGui::TextDisabled("GPU: existing GPU animation path");
+		ImGui::TextDisabled("CPU + GPU: CPU pose + Compute skinning + instanced draw");
+		ImGui::Separator();
+	}
 
 
 	ImGui::Text("Bone Count : %d", static_cast<int>(Bones.size()));
@@ -50,7 +69,7 @@ void CTestModel::UpdateGUI()
 
 	if (Bones[m_iDebugSelectedBone])
 	{
-		// Bone 이름 getter 있으면 그걸로 바꿔
+		// Bone ?�름 getter ?�으�?그걸�?바꿔
 		// previewName = Bones[m_iDebugSelectedBone]->Get_BoneName();
 		previewName = Bones[m_iDebugSelectedBone]->GetBoneName();
 	}
@@ -64,7 +83,7 @@ void CTestModel::UpdateGUI()
 
 			std::string boneLabel;
 
-			// 이름 getter 있으면 이걸 추천
+			// ?�름 getter ?�으�??�걸 추천
 			// boneLabel = std::to_string(i) + " : " + Bones[i]->Get_BoneName();
 
 			boneLabel = Bones[i]->GetBoneName();
@@ -132,11 +151,21 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
+	m_pResVertexCPUGPUShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_GPU");
+	if (!m_pResVertexCPUGPUShader || FAILED(m_pResVertexCPUGPUShader->Load()))
+	{
+		return E_FAIL;
+	}
 	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
 	if (!m_pResSkinMeshCBuffer)
 	{
 		return E_FAIL;
 	} 
+	m_pCPUGPUSkinningComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_CPU_GPU_Skinning");
+	if (!m_pCPUGPUSkinningComputeShader || FAILED(m_pCPUGPUSkinningComputeShader->Load()))
+	{
+		return E_FAIL;
+	}
 
 	
 	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
@@ -187,20 +216,7 @@ HRESULT CTestModel::Initialize(void* pArg)
 		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
-	{
-		CComSocket::DESC des{};
-		des.m_pOwner = GetHandle();
-		des.sModelInstanceName = "ComCModelIntance";
-		des.sAnimationName = "ComCModelAnimator";
-		des.iBoneIndex = m_iDebugSelectedBone;
-		des.m_fOffset = { 0.f,0.f,0.f,0.f };
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Socket", "ComSocket", &des, &m_pSocket)))
-		{
-			return E_FAIL;
-		};
 
-
-	}
 
 	//CTestPartObject::DESC WeaponDesc{};
 	//WeaponDesc.sObjectTag = "Weapon";
@@ -248,8 +264,7 @@ void CTestModel::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel->GetAnimations().empty())
 	{
-		CGameInstance::Get().Add_Instance(m_pComModelInstance,m_pModelAnimator,*GetTransform().GetCombinedWorldMatrix());
-	
+CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
 		return;
 	}
 
@@ -274,6 +289,10 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);
 		
+	}
+	if (m_pModelAnimator->GetEvaluationMode() == CComAnimator::EVALUATION_MODE::CPU_GPU)
+	{
+		return Render_CPU_GPU(pContext, ctx);
 	}
 	const auto& vs = m_pResVertexShader;
 	
@@ -313,7 +332,7 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha ??
 		}
 		                                                                                                                                                                                     
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -325,17 +344,191 @@ HRESULT CTestModel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	return S_OK;
 }
 
+HRESULT CTestModel::Render_CPU_GPU(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+{
+	if (!pContext || !m_pCPUGPUSkinningComputeShader || !m_pResVertexCPUGPUShader || !m_pResPixelShader)
+		return E_FAIL;
+
+	auto pModel = m_pComModelInstance->GetModel();
+	if (!pModel)
+		return E_FAIL;
+
+	const auto& vs = m_pResVertexCPUGPUShader;
+	const auto& ps = m_pResPixelShader;
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	{
+		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		if (!mesh || FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, iMeshIndex)))
+			return E_FAIL;
+
+		if (FAILED(mesh->EnsureSkinnedVertexBuffer(1)))
+			return E_FAIL;
+
+		auto inputBuffer = mesh->GetSkinningInputBuffer();
+		auto outputBuffer = mesh->GetSkinnedVertexBuffer();
+		if (!inputBuffer || !outputBuffer)
+			return E_FAIL;
+
+		ID3D11ShaderResourceView* nullVSSRV = nullptr;
+		pContext->VSSetShaderResources(6, 1, &nullVSSRV);
+
+		ID3D11ShaderResourceView* inputSRV = inputBuffer->GetSRV().Get();
+		ID3D11UnorderedAccessView* outputUAV = outputBuffer->GetUAV().Get();
+		if (!inputSRV || !outputUAV)
+			return E_FAIL;
+
+		E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+		skinningConstants.iSkinBoneOffset = mesh->GetNumVertices();
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+			return E_FAIL;
+		memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
+		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+		pContext->CSSetConstantBuffers(5, 1, &skinningCB);
+		pContext->CSSetShaderResources(0, 1, &inputSRV);
+		pContext->CSSetUnorderedAccessViews(0, 1, &outputUAV, nullptr);
+		pContext->CSSetShader(m_pCPUGPUSkinningComputeShader->GetComputeShader().Get(), nullptr, 0);
+		pContext->Dispatch((mesh->GetNumVertices() + 63) / 64, 1, 1);
+
+		ID3D11ShaderResourceView* nullCSSRV = nullptr;
+		ID3D11UnorderedAccessView* nullUAV = nullptr;
+		pContext->CSSetShaderResources(0, 1, &nullCSSRV);
+		pContext->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
+		pContext->CSSetShader(nullptr, nullptr, 0);
+
+		ID3D11ShaderResourceView* outputSRV = outputBuffer->GetSRV().Get();
+		pContext->VSSetShaderResources(6, 1, &outputSRV);
+
+		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+		const UINT stride = mesh->GetVertexStride();
+		const UINT offset = 0;
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		pContext->DrawIndexed(mesh->GetNumIndices(), 0, 0);
+	}
+
+	ID3D11ShaderResourceView* nullVSSRV = nullptr;
+	pContext->VSSetShaderResources(6, 1, &nullVSSRV);
+	return S_OK;
+}
+HRESULT CTestModel::Render_CPU_GPU_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
+{
+	if (!pContext || !m_pCPUGPUSkinningComputeShader || !m_pResVertexCPUGPUShader || !m_pResPixelShader)
+		return E_FAIL;
+
+	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+	if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)
+		return E_FAIL;
+
+	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))
+		return E_FAIL;
+
+	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+	auto pSkinPaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
+	if (!pModel || !pSkinPaletteBuffer)
+		return E_FAIL;
+
+	const auto& vs = m_pResVertexCPUGPUShader;
+	const auto& ps = m_pResPixelShader;
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+	if (FAILED(Bind_InstanceBuffer_VS(pContext)))
+		return E_FAIL;
+
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	{
+		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		if (!mesh)
+			continue;
+
+if (FAILED(mesh->EnsureSkinnedVertexBuffer(iInstanceCount)))
+			return E_FAIL;
+
+		auto inputBuffer = mesh->GetSkinningInputBuffer();
+		auto outputBuffer = mesh->GetSkinnedVertexBuffer();
+		if (!inputBuffer || !outputBuffer || !inputBuffer->GetSRV() || !outputBuffer->GetUAV() || !outputBuffer->GetSRV())
+			return E_FAIL;
+
+		E::_float4x4 identity{};
+		XMStoreFloat4x4(&identity, XMMatrixIdentity());
+		std::vector<E::_float4x4> skinPalette(iInstanceCount * 512, identity);
+		for (uint32_t iInstance = 0; iInstance < iInstanceCount; ++iInstance)
+		{
+			const auto& combinedMatrices = Batch.CombinedBoneMatrices[iInstance];
+			const uint32_t iBoneCount = static_cast<uint32_t>(std::min<size_t>(combinedMatrices.size(), 512));
+			if (iBoneCount != combinedMatrices.size())
+				return E_FAIL;
+			memcpy(&skinPalette[iInstance * 512], combinedMatrices.data(), sizeof(E::_float4x4) * iBoneCount);
+		}
+
+		if (FAILED(pSkinPaletteBuffer->UpdateData(skinPalette.data(), static_cast<uint32_t>(skinPalette.size() * sizeof(E::_float4x4)))))
+			return E_FAIL;
+
+		E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+		skinningConstants.iSkinBoneOffset = pModel->Get_GPUMeshSkinRange(iMeshIndex).iSkinBoneOffset;
+		skinningConstants.iPadding0 = mesh->GetNumVertices();
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+			return E_FAIL;
+		memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
+		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+		pContext->CSSetConstantBuffers(5, 1, &skinningCB);
+		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+
+		ID3D11ShaderResourceView* inputSRV = inputBuffer->GetSRV().Get();
+		ID3D11ShaderResourceView* paletteSRV = pSkinPaletteBuffer->GetSRV().Get();
+		ID3D11ShaderResourceView* skinBonesSRV = pModel->Get_GPUSkinBoneSRV();
+		ID3D11UnorderedAccessView* outputUAV = outputBuffer->GetUAV().Get();
+		if (!skinBonesSRV)
+			return E_FAIL;
+		pContext->CSSetShaderResources(0, 1, &inputSRV);
+		pContext->CSSetShaderResources(1, 1, &paletteSRV);
+		pContext->CSSetShaderResources(2, 1, &skinBonesSRV);
+		pContext->CSSetUnorderedAccessViews(0, 1, &outputUAV, nullptr);
+		pContext->CSSetShader(m_pCPUGPUSkinningComputeShader->GetComputeShader().Get(), nullptr, 0);
+		pContext->Dispatch((mesh->GetNumVertices() + 63) / 64, iInstanceCount, 1);
+
+		ID3D11ShaderResourceView* nullCSSRVs[3]{};
+		ID3D11UnorderedAccessView* nullUAV = nullptr;
+		pContext->CSSetShaderResources(0, 3, nullCSSRVs);
+		pContext->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
+		pContext->CSSetShader(nullptr, nullptr, 0);
+
+		ID3D11ShaderResourceView* outputSRV = outputBuffer->GetSRV().Get();
+		pContext->VSSetShaderResources(7, 1, &outputSRV);
+		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+		const UINT stride = mesh->GetVertexStride();
+		const UINT offset = 0;
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
+	}
+
+	ID3D11ShaderResourceView* nullVSSRVs[2]{};
+	pContext->VSSetShaderResources(6, 2, nullVSSRVs);
+	return S_OK;
+}
 HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx,const E::MODEL_INSTANCE_BATCH& Batch)
 {
+	if (Batch.Key.iEvaluationMode == static_cast<uint32_t>(CComAnimator::EVALUATION_MODE::CPU_GPU))
+		return Render_CPU_GPU_Instanced(pContext, ctx, Batch);
+
 	ZoneScopedN("Render TestModel");
 
-
-	auto CurAnim = m_pModelAnimator->GetCurAnimState();
-
-	_float4x4 Dummy;
-	m_pSocket->SetBoneIndex(m_iDebugSelectedBone);
-	m_pSocket->Get_Socket_MatrixAtPose(CurAnim.iAnimIndex, CurAnim.fTrackPosition, Dummy);
-	
 	if (!pContext)
 		return E_INVALIDARG;
 
@@ -381,7 +574,7 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(),nullptr,0);
 
 	/*
-	 * 한 Thread Group = 한 인스턴스라는 전제.
+	 * ??Thread Group = ???�스?�스?�는 ?�제.
 	 */
 	pContext->Dispatch(iInstanceCount,1,1);
 
@@ -391,7 +584,7 @@ HRESULT CTestModel::Render_Instanced(ID3D11DeviceContext* pContext,const E::REND
 	}
 
 	// -------------------------------------------------
-	// Vertex Shader용 SRV
+	// Vertex Shader??SRV
 	// -------------------------------------------------
 
 	// VS t6 = InstanceData
@@ -490,10 +683,6 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 
 	m_iCurrentInstanceCount =static_cast<uint32_t>(Instances.size());
 
-	_float4x4 animatrix;
-	auto& anim = m_pModelAnimator->GetCurAnimState();
-	m_pSocket->Get_Socket_MatrixAtPose(anim.iAnimIndex, anim.fTrackPosition, animatrix);
-	m_pComModelInstance->DebugDraw_Bones(animatrix);
 
 
 	if (Instances.empty())
@@ -515,8 +704,8 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 		return E_FAIL;
 
 	/*
-	 * 이전 Batch에서 VS/CS에 연결되어 있을 수 있으므로
-	 * Map 전에 SRV를 해제한다.
+	 * ?�전 Batch?�서 VS/CS???�결?�어 ?�을 ???�으므�?
+	 * Map ?�에 SRV�??�제?�다.
 	 */
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 
@@ -526,8 +715,8 @@ HRESULT CTestModel::Update_InstanceBuffer(ID3D11DeviceContext* pContext,const st
 
 	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
 
-	// pDstBox가 nullptr이면 D3D11은 버퍼 전체(현재 512개)를 복사한다.
-	// Instances에는 이번 배치의 원소만 있으므로, 유효한 원소 범위만 갱신해야 한다.
+	// pDstBox가 nullptr?�면 D3D11?� 버퍼 ?�체(?�재 512�?�?복사?�다.
+	// Instances?�는 ?�번 배치???�소�??�으므�? ?�효???�소 범위�?갱신?�야 ?�다.
 	D3D11_BOX updateBox{};
 	updateBox.left = 0;
 	updateBox.right = static_cast<UINT>(iCopySize);
@@ -570,20 +759,20 @@ HRESULT CTestModel::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
 	if (!pUAV)
 		return E_FAIL;
 
-	// 이전 Draw에서 FinalBone 버퍼가 VS의 SRV로
-	// 연결되어 있었다면 먼저 연결 해제
+	// ?�전 Draw?�서 FinalBone 버퍼가 VS??SRV�?
+	// ?�결?�어 ?�었?�면 먼�? ?�결 ?�제
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 
 	pContext->VSSetShaderResources(7,1,&pNullSRV);
 
-	// CS의 u0 슬롯에 출력 UAV 연결
+	// CS??u0 ?�롯??출력 UAV ?�결
 	pContext->CSSetUnorderedAccessViews(0,1,&pUAV,nullptr);
 
 	return S_OK;
 }
 HRESULT CTestModel::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 {
-	// CS t0 ~ t6 SRV 해제
+	// CS t0 ~ t6 SRV ?�제
 	ID3D11ShaderResourceView* pNullSRVs[7] =
 	{
 		nullptr,
@@ -597,12 +786,12 @@ HRESULT CTestModel::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
 
 	pContext->CSSetShaderResources(0,7,pNullSRVs);
 
-	// CS u0 UAV 해제
+	// CS u0 UAV ?�제
 	ID3D11UnorderedAccessView* pNullUAV = nullptr;
 
 	pContext->CSSetUnorderedAccessViews(0,1,&pNullUAV,nullptr);
 
-	// Compute Shader 자체도 해제
+	// Compute Shader ?�체???�제
 	pContext->CSSetShader(nullptr,nullptr,0);
 
 	return S_OK;
@@ -621,7 +810,7 @@ HRESULT CTestModel::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 	if (!pSRV)
 		return E_FAIL;
 
-	// VS의 t6 슬롯에 InstanceData 연결
+	// VS??t6 ?�롯??InstanceData ?�결
 	pContext->VSSetShaderResources(6,1,&pSRV);
 
 	return S_OK;
@@ -640,7 +829,7 @@ HRESULT CTestModel::Bind_FinalBoneSRV_VS( ID3D11DeviceContext* pContext)
 	if (!pSRV)
 		return E_FAIL;
 
-	// VS의 t7 슬롯에 Compute 결과 연결
+	// VS??t7 ?�롯??Compute 결과 ?�결
 	pContext->VSSetShaderResources(7,1,&pSRV);
 
 	return S_OK;

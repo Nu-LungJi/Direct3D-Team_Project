@@ -18,14 +18,14 @@ std::future<bool> CLevelAnimatorLoader::Load()
 	// 메인 스레드 종료
 	 return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LEVEL", []()
 		{
-			 if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
-				 CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+			 //if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+				// CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
-				 E::CResModel::DESC pDesc{};
-				 pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+				// E::CResModel::DESC pDesc{};
+				// pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
-				 res->Load(pDesc);
-			 }
+				// res->Load(pDesc);
+			 //}
 			 //if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
 				// CResModel::Create("./Resources/SampleClient/Models/Skeleton/Test/SK_Test.bin"))) {
 
@@ -35,14 +35,14 @@ std::future<bool> CLevelAnimatorLoader::Load()
 				// res->Load(pDesc);
 			 //}
 
-			 //if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
-				// CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
+			 if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+				 CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin"))) {
 
-				// E::CResModel::DESC pDesc{};
-				// pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+				 E::CResModel::DESC pDesc{};
+				 pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
-				// res->Load(pDesc);
-			 //}
+				 res->Load(pDesc);
+			 }
 			 if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("TEST", "Static_Axe_Model_Resource",
 				 CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx"))) {
 

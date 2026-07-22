@@ -123,6 +123,18 @@ HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
         m_eState = STATE::LOADFAIL;
         return E_FAIL;
     }
+    {
+        CResStructuredBuffer::DESC skinInputDesc{};
+        skinInputDesc.iNumElements = m_iNumVertices;
+        skinInputDesc.iStructureByteStride = sizeof(VTXANIMMESH);
+        skinInputDesc.iBindFlags = D3D11_BIND_SHADER_RESOURCE;
+        skinInputDesc.pInitialData = pVertexData;
+        m_pSkinningInputBuffer = CResStructuredBuffer::Create();
+        if (!m_pSkinningInputBuffer || FAILED(m_pSkinningInputBuffer->Load(skinInputDesc)))
+            return E_FAIL;
+
+
+    }
 
     D3D11_BUFFER_DESC IndexBufferDesc{};
     IndexBufferDesc.ByteWidth = m_iNumIndices * m_iIndexStride;
@@ -140,6 +152,36 @@ HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
     }
 
     return S_OK;
+}
+SPtr<CResStructuredBuffer> CResModelMesh::GetSkinningInputBuffer() const
+{
+    return m_pSkinningInputBuffer;
+}
+
+HRESULT CResModelMesh::EnsureSkinnedVertexBuffer(uint32_t iInstanceCapacity)
+{
+    if (iInstanceCapacity == 0 || m_iNumVertices == 0)
+        return E_INVALIDARG;
+
+    if (m_pSkinnedVertexBuffer && m_iSkinnedVertexInstanceCapacity >= iInstanceCapacity)
+        return S_OK;
+
+    CResStructuredBuffer::DESC desc{};
+    desc.iNumElements = m_iNumVertices * iInstanceCapacity;
+    desc.iStructureByteStride = sizeof(_float4) * 4;
+    desc.iBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+
+    auto pNewBuffer = CResStructuredBuffer::Create();
+    if (!pNewBuffer || FAILED(pNewBuffer->Load(desc)))
+        return E_FAIL;
+
+    m_pSkinnedVertexBuffer = std::move(pNewBuffer);
+    m_iSkinnedVertexInstanceCapacity = iInstanceCapacity;
+    return S_OK;
+}
+SPtr<CResStructuredBuffer> CResModelMesh::GetSkinnedVertexBuffer() const
+{
+    return m_pSkinnedVertexBuffer;
 }
 SPtr<CResModelMesh> CResModelMesh::Create()
 {

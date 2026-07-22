@@ -305,6 +305,13 @@ private:
 	HRESULT Initialize(void* pArg) override;
 
 public:
+	enum class EVALUATION_MODE : uint32_t
+	{
+		CPU,
+		GPU,
+		CPU_GPU,
+	};
+
 	HRESULT Update(_float fTimeDelta);
 
 
@@ -325,6 +332,8 @@ public:
 
 	// ActionUpdate
 	HRESULT Update_Action(_float fTimeDelta);
+	HRESULT Update_Anim_CPU_GPU(_float fTimeDelta);
+	HRESULT Update_Action_CPU_GPU(_float fTimeDelta);
 
 	HRESULT Update_Anim_GPU(_float fTimeDelta);
 
@@ -377,6 +386,8 @@ public:
 	}
 	void Advance_GPUBlend(_float fTimeDelta);
 private:
+	EVALUATION_MODE m_eEvaluationMode{ EVALUATION_MODE::GPU };
+
 	CComModelInstance* m_pModelInstance;
 
 
@@ -433,7 +444,9 @@ public:
 	
 public:
 	uint32_t GetAnimationTYPE() const { return ETOUI(m_iPlayAnimationType); }
-	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }	
+	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }
+	EVALUATION_MODE GetEvaluationMode() const { return m_eEvaluationMode; }
+	void SetEvaluationMode(EVALUATION_MODE mode) { m_eEvaluationMode = mode; }
 
 	uint32_t GetPlayAnimIndex() const { return m_CurAnimState.iAnimIndex; }
 	void SetPlayAnimIndex(uint32_t iIndex) { m_iPlayAnimIndex = iIndex; }

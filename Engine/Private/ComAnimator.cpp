@@ -74,18 +74,16 @@ HRESULT CComAnimator::Update(_float fTimeDelta)
 
     if (m_bPlay) {
         switch (m_iPlayAnimationType) {
-        case ANIMTYPE::ANIM: {
-				
-			//Update_Anim(fTimeDelta);
-			Update_Anim_GPU(fTimeDelta);
-        }
-         break;
-		case ANIMTYPE::ACTION: {
-				
-			//Update_Action(fTimeDelta);
-			Update_Action_GPU(fTimeDelta);
-        }
-         break;
+        case ANIMTYPE::ANIM:
+            if (m_eEvaluationMode == EVALUATION_MODE::GPU) Update_Anim_GPU(fTimeDelta);
+            else if (m_eEvaluationMode == EVALUATION_MODE::CPU_GPU) Update_Anim_CPU_GPU(fTimeDelta);
+            else Update_Anim(fTimeDelta);
+            break;
+        case ANIMTYPE::ACTION:
+            if (m_eEvaluationMode == EVALUATION_MODE::GPU) Update_Action_GPU(fTimeDelta);
+            else if (m_eEvaluationMode == EVALUATION_MODE::CPU_GPU) Update_Action_CPU_GPU(fTimeDelta);
+            else Update_Action(fTimeDelta);
+            break;
         }
     }
 
@@ -278,6 +276,16 @@ HRESULT CComAnimator::Update_Action(_float fTimeDelta)
 
 	return S_OK;
 
+}
+
+HRESULT CComAnimator::Update_Anim_CPU_GPU(_float fTimeDelta)
+{
+	return Update_Anim(fTimeDelta);
+}
+
+HRESULT CComAnimator::Update_Action_CPU_GPU(_float fTimeDelta)
+{
+	return Update_Action(fTimeDelta);
 }
 
 HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {

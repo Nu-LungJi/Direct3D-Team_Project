@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ResVIBuffer.h"
+#include "ResStructuredBuffer.h"
 
 NS_BEGIN(Engine)
 
@@ -39,6 +40,9 @@ public:
 	std::vector<uint32_t>& GetBoneIndices() { return m_BoneIndices; }
 	std::vector<_float4x4>& GetBoneMatrices() { return m_BoneMatrices; }
 	std::vector<_float4x4>& GetOffsetMatrices() { return m_OffsetMatrices; }
+	SPtr<CResStructuredBuffer> GetSkinningInputBuffer() const;
+	SPtr<CResStructuredBuffer> GetSkinnedVertexBuffer() const;
+	HRESULT EnsureSkinnedVertexBuffer(uint32_t iInstanceCapacity);
 
 private:
 
@@ -54,6 +58,10 @@ private:
 	std::vector<uint32_t>	m_BoneIndices;
 	std::vector<_float4x4>	m_BoneMatrices;
 	std::vector<_float4x4>	m_OffsetMatrices;
+
+	SPtr<CResStructuredBuffer> m_pSkinningInputBuffer{};
+	SPtr<CResStructuredBuffer> m_pSkinnedVertexBuffer{};
+	uint32_t m_iSkinnedVertexInstanceCapacity = 0;
 
 
 public:

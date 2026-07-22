@@ -39,8 +39,7 @@ void CComModelInstance::UpdateGUI()
 
 	if (Bones[m_iDebugSelectedBone])
 	{
-		// Bone 이름 getter 있으면 그걸로 바꿔
-		// previewName = Bones[m_iDebugSelectedBone]->Get_BoneName();
+
 		previewName = Bones[m_iDebugSelectedBone]->GetBoneName();
 	}
 
@@ -52,9 +51,6 @@ void CComModelInstance::UpdateGUI()
 				continue;
 
 			std::string boneLabel;
-
-			// 이름 getter 있으면 이걸 추천
-			// boneLabel = std::to_string(i) + " : " + Bones[i]->Get_BoneName();
 
 			boneLabel = Bones[i]->GetBoneName();
 
@@ -178,6 +174,7 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
         ID3D11Buffer* pCBBones = m_Buffer->GetCBuffer().Get();
 
         pContext->VSSetConstantBuffers(2, 1, &pCBBones);
+        pContext->CSSetConstantBuffers(2, 1, &pCBBones);
     }
 
 

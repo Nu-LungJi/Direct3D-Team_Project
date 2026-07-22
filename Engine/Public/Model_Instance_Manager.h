@@ -63,7 +63,7 @@ public:
 
 private:
 	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComStaticModelInstance* pModelInstance, _bool bStaticModel);
-	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel);
+	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel, uint32_t iEvaluationMode = 0);
 	MODEL_INSTANCE_BATCH* Find_Or_Create_Part_Batch(CComStaticModelInstance* pModelInstance);
 
 private:
