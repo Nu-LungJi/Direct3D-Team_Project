@@ -141,12 +141,7 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     float2	LightPadding;
 }
 
-cbuffer CB_SPAWN_COUNT : register(b6)
-{
-	uint g_iSpawnCount;
-	uint g_iMaxParticles; // 추가: 버퍼 크기
-	float2 pad;
-};
+
 
 cbuffer CB_PER_UI : register(b7)
 {

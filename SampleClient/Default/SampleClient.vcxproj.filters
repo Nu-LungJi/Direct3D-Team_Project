@@ -220,6 +220,9 @@
     <Filter Include="GameObject\UI\MiniMap">
       <UniqueIdentifier>{0dc8a52d-1c4d-4870-974c-d5909d11ab7a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\EffectLight">
+      <UniqueIdentifier>{ded5e76a-6a62-4477-a39c-dd2fde0061e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -853,6 +856,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning_Texture.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

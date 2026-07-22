@@ -3054,8 +3054,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCircleAndSpread(param);
 			else if constexpr (std::is_same_v<T, STest>)
 				return ParticlePattern::MakeTest(param);
-			else if constexpr (std::is_same_v<T, SSPAWN>)
-				return ParticlePattern::MakeTest1(param);
+			else if constexpr (std::is_same_v<T, SLightning>)
+				return ParticlePattern::MakeLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

@@ -132,11 +132,28 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest(const STest& p)
 	return std::vector<PARTICLE_SPAWN_DATA>();
 }
 
-std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest1(const SSPAWN& p)
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning& param)
 {
-	std::vector<PARTICLE_SPAWN_DATA> spawnList(p.iCount);
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
 
-	return std::vector<PARTICLE_SPAWN_DATA>();
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		PARTICLE_SPAWN_DATA& s = spawnList[i];
+		s.position = param.vCenter;
+		s.velocity = param.fVelocity;
+		s.life = param.fLife;
+		s.fSize = param.fSize;
+		s.fEndSize = param.fEndSize;
+		s.color = param.color;
+		s.emissive = param.emissive;
+		s.endEmissive = param.endEmissive;
+		s.iBehaviorType = param.iBehaviorType;
+		s.originalEmissive = param.emissive;
+		s.originalPosition = param.vCenter;
+		uint32_t degree = 360 / param.iCount;
+	}
+
+	return spawnList;
 }
 
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(

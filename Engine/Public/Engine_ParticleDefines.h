@@ -185,6 +185,20 @@ namespace Engine
     X(_float3, vCenter, _float3(0,0,0)) \
     X(uint32_t, iCount, 1) \
    COMMON_PATTERN_FIELDS(X)
+
+#define LIGHTNING_STREIGHT(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(_float, fRadius, 3.f) \
+    X(uint32_t, iCount, 12) \
+    X(_float, fSize, 1.f) \
+    X(_float, fEndSize, 1.f) \
+    X(_float, fLife, 1.f) \
+	X(_float3, fVelocity, _float3(0,0,0))\
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+    X(_float, fYOffset, 0.f)\
+   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -203,18 +217,18 @@ struct StructName \
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
 	struct STest { TEST_FIELDS(DECLARE_PARAM_FIELD) };
-	struct SSPAWN { SPAWN_S_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,STest, SSPAWN>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, STest, SLightning>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","Test","KYTEST"
+		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","Test","SLightning"
 	};
 
 	//5. 여기에 CASE 추가
@@ -229,7 +243,7 @@ struct StructName \
 		case 3: return SStraightGroundParam{};
 		case 4: return SCircleSpreadParam{};
 		case 5: return STest{};
-		case 6: return SSPAWN{};
+		case 6: return SLightning{};
 		default: return SStairsParam{};
 		}
 	}

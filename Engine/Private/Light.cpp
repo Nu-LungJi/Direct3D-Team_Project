@@ -74,11 +74,16 @@ HRESULT CLight::Initialize(VOID* pArg)
 	return S_OK;
 }
 
-VOID CLight::PriorityUpdate(E::_float fTimeDelta) {
+VOID CLight::PriorityUpdate(E::_float _DT) {
 
 }
 
-VOID CLight::Update(E::_float fTimeDelta) {
+VOID CLight::Update(E::_float _DT) {
+	if (m_bActivate_State == false) return;
+
+	if (m_bEffectLightFlag) 
+		Update_EffectLight(_DT);
+	
 	m_pComTransform->Update();
 
 	auto LightType = m_pDynamicLight.LightType;
@@ -128,7 +133,7 @@ VOID CLight::Update(E::_float fTimeDelta) {
 
 	Update_Collider();
 }
-VOID CLight::LateUpdate(E::_float fTimeDelta) {
+VOID CLight::LateUpdate(E::_float _DT) {
 
 }
 HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
@@ -137,6 +142,7 @@ HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) 
 }
 
 VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
+	if (m_bActivate_State == false) return;
 	XMMATRIX LightWorldMatrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
 	XMMATRIX LightViewMatrix = XMLoadFloat4x4(&LightView);
 	XMMATRIX LightProjMatrix = XMLoadFloat4x4(&LightProj);
@@ -193,7 +199,22 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 	}
 }
 
+VOID CLight::Update_EffectLight(const _float& _DT){
+	if (m_fLifeTime > 0.f) {   
+		m_fLifeTime -= _DT;
+		XMVECTOR VelocityVec = XMLoadFloat3(&m_fVelocity);
+		if (!XMVectorGetX(XMVectorEqual(VelocityVec, XMVectorZero()))) {
+			XMVECTOR CurrentPosition = m_pComTransform->GetLoadedPostion();
+			m_pComTransform->SetPosition(CurrentPosition + XMLoadFloat3(&m_fVelocity) * _DT);
+		}
+	}
+	else {
+		Reset_Light(); 
+	}
+}
+
 VOID CLight::Update_Collider() {
+	if (m_bActivate_State == false) return;
 	XMVECTOR PosVec = XMLoadFloat3(&m_pComTransform->GetPosition());
 
 	if		(m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
@@ -220,6 +241,7 @@ VOID CLight::Update_Collider() {
 }
 
 HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vector<CGameObject*>& _ObjectList) {
+	if (m_bActivate_State == false) return E_FAIL;
 	RENDER_CTX RCTX{};
 	RCTX.pass = RENDERPASS::SHADOW;
 	RCTX.eye  = XMLoadFloat3(&m_pComTransform->GetPosition());
@@ -244,6 +266,23 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vect
 	return S_OK;
 }
 
+VOID CLight::Reset_Light(){
+	m_pDynamicLight.LightDirection = { 1.f, -1.f, 1.f };
+	m_pDynamicLight.LightIntensity = { 0.f };
+	m_pDynamicLight.LightColor = { 1.f, 1.f, 1.f };
+	m_pDynamicLight.LightRange = { 10.f };
+
+	m_pDynamicLight.Position = { 0.f, 0.f, 0.f };
+	m_pDynamicLight.LightType = ETOUI(LIGHT_TYPE::POINT);
+
+	m_pDynamicLight.InnerAttanuation = { 20.f };
+	m_pDynamicLight.OuterAttanuation = { 30.f };
+
+	m_fLifeTime = 0.f;
+	m_fVelocity = { 0.f, 0.f, 0.f };
+	m_bActivate_State = false;
+}
+
 _bool	CLight::Check_ObjectInArea() {
 
 	return true;
@@ -253,7 +292,7 @@ HRESULT CLight::Change_LightType(LIGHT_TYPE _LTYPE) {
 	if (m_pDynamicLight.LightType == ETOUI(_LTYPE)) return E_FAIL;
 	m_pDynamicLight.LightType = ETOUI(_LTYPE);
 
-	DirtyFlag = true;
+	m_bDirtyFlag = true;
 	   
 	return S_OK;
 }

@@ -1423,6 +1423,8 @@ HRESULT CRenderer::Render_Effect()
 
 	if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
 
+	if (FAILED(RenderEffectLight()))								return E_FAIL;
+
 	if (FAILED(RenderEffect()))										return E_FAIL;
 
 	Unbind_Resources();
@@ -1884,6 +1886,13 @@ HRESULT CRenderer::RenderEffect()
 	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
 
+	return S_OK;
+}
+
+HRESULT CRenderer::RenderEffectLight() {
+	if (FAILED(CGameInstance::Get().Render_EffectLight())) {
+		return E_FAIL;
+	}
 	return S_OK;
 }
 

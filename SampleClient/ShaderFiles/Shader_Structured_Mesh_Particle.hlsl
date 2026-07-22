@@ -167,9 +167,7 @@ PS_OUT PSMain(VS_OUT In)
 
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
-
-    
-    
+	
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
 }

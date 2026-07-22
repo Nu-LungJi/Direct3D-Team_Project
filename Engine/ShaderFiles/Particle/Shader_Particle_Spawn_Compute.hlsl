@@ -1,5 +1,12 @@
 #include "../Particle/Particle_Common_Struct_Func.hlsl"
 
+cbuffer CB_SPAWN_COUNT : register(b6)
+{
+	uint g_iSpawnCount;
+	uint g_iMaxParticles; // 추가: 버퍼 크기
+	float2 pad;
+};
+
 StructuredBuffer<SPAWN_DATA> gSpawnBuffer : register(t6);
 ConsumeStructuredBuffer<uint> gDeadList : register(u0);
 RWStructuredBuffer<ParticleData> gParticles : register(u1);

@@ -13,6 +13,6 @@ namespace ParticlePattern
 	std::vector<PARTICLE_SPAWN_DATA> MakeSpiral(const SSpiralParam& p);
 	std::vector<PARTICLE_SPAWN_DATA> MakeStraightGround(const SStraightGroundParam& p);
 	std::vector<PARTICLE_SPAWN_DATA> MakeTest(const STest& p);
-	std::vector<PARTICLE_SPAWN_DATA> MakeTest1(const SSPAWN& p);
+	std::vector<PARTICLE_SPAWN_DATA> MakeLightning(const SLightning& p);
 }
 NS_END

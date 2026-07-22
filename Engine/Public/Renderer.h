@@ -219,6 +219,7 @@ private:
 	HRESULT RenderLight();
 	HRESULT RenderSkybox();
 	HRESULT RenderEffect();
+	HRESULT RenderEffectLight();
 	HRESULT RenderCollider();
 	HRESULT RenderUI();
 

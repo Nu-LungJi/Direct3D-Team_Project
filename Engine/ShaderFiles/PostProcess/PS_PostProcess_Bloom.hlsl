@@ -1,16 +1,16 @@
 #include "../ShaderDefines.hlsl"
 
 Texture2D BrightPassTexture : register(t0);     // PostProcess 이전 텍스쳐
-Texture2D BlurPassTexture   : register(t1);     // BrightPass 이후 텍스쳐
+Texture2D BlurPassTexture   : register(t1);     // BrightPass  이후 텍스쳐
 
 const static float  BrightThreshold = { 0.2f };
 const static float  Weights[5]      = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
-const static float2 TexelSize       = { 1.0f / (1280.f), 1.0f / (720.f) };
+const static float2 TexelSize       = { 1.0f / 1280.f, 1.0f / 720.f };
 
-static const float BloomIntensity = 1.f; // 블룸 강도
+static const float	BloomIntensity  = { 1.f }; // 블룸 강도
     
 float4 PSMain_BrightPass(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
-{
+{ 
     float4 BrightDiffuse = BrightPassTexture.Sample(LinearWrap, TexCoord);
     float  Luminance     = dot(BrightDiffuse.rgb, float3(0.2126f, 0.7152f, 0.0722f));
     

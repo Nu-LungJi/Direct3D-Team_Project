@@ -414,14 +414,14 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
 
-	bool bSpawnedThisFrame = (m_iCurrentSpawnCount > 0);
-	uint32_t aliveCount = (m_iNumElements > m_iDeadCount) ? (m_iNumElements - m_iDeadCount) : 0;
-	if (aliveCount == 0 && !bSpawnedThisFrame)
-	{
-		ProcessPendingSpawns(fTimeDelta);
-		DebugPrintDeadListCount(); // 다음 프레임을 위해 계속 갱신
-		return;
-	}
+	//bool bSpawnedThisFrame = (m_iCurrentSpawnCount > 0);
+	//uint32_t aliveCount = (m_iNumElements > m_iDeadCount) ? (m_iNumElements - m_iDeadCount) : 0;
+	//if (aliveCount == 0 && !bSpawnedThisFrame)
+	//{
+	//	ProcessPendingSpawns(fTimeDelta);
+	//	DebugPrintDeadListCount(); // 다음 프레임을 위해 계속 갱신
+	//	return;
+	//}
 	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 	m_fTime += fTimeDelta;
     // 1. 스폰
@@ -550,7 +550,7 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
     ID3D11ShaderResourceView* pParticleSRV = m_pParticleStructuredBuffer->GetSRV().Get();
     pContext->VSSetShaderResources(4, 1, &pParticleSRV);
-	pContext->VSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
+	pContext->VSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());	
 	pContext->PSSetConstantBuffers(5, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
     const auto& vs = m_pResVertexShader; // 인스턴싱용 신규 VS 필요
     const auto& ps = m_pResPixelShader;

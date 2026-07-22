@@ -79,6 +79,9 @@ std::future<bool> CLevelPlayGroundLoader::Load()
 			//return false;
 		}
 	}
+
+	
+
 	// 메인 스레드 종료
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_PLAY_GROUND", []()
 		{
