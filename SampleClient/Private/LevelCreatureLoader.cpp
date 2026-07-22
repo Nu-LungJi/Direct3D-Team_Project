@@ -15,6 +15,7 @@
 #include "TestPlayer3CameraCreatureEditor.h"
 #include "Test3DSound.h"
 #include "MapCollisionProxyObject.h"
+#include "TestPhysXCollisionProxyTrigger.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -151,6 +152,15 @@ std::future<bool> CLevelCreatureLoader::Load()
 				return false;
 			}
 
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				E::PX_COLLISION_PROXY_PROTOTYPE_GROUP,
+				"Prototype_GameObject_TestPhysXCollisionProxyTrigger",
+				CTestPhysXCollisionProxyTrigger::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestPhysXCollisionProxyTrigger");
+				return false;
+			}
+
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Gobline", CTestGob::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Gobline");
@@ -213,6 +223,9 @@ std::future<bool> CLevelCreatureLoader::UnLoad()
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_LEVEL_CREATURE", []()
 		{
 			E::CGameInstance::Get().DelPrototype("LEVEL_CREATURE");
+			E::CGameInstance::Get().DelPrototype(
+				E::PX_COLLISION_PROXY_PROTOTYPE_GROUP,
+				"Prototype_GameObject_TestPhysXCollisionProxyTrigger");
 			E::CGameInstance::Get().DelResource("LEVEL_CREATURE");
 
 			return  true;
