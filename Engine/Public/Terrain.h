@@ -82,6 +82,7 @@ private:
 	void RecalculateNormals();
 	void RecalculateNormals(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 	void RecalculateBounds();
+	void ExpandBoundsForRegion(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 	void UpdateChunkVisibility();
 	HRESULT UpdateChunks(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 

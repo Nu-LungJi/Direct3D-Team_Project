@@ -530,7 +530,7 @@ HRESULT CTerrain::CommitHeightRegion(uint32_t minX, uint32_t minZ, uint32_t maxX
 	const uint32_t normalMaxX = std::min(maxX + 1, m_iVertexCountX - 1);
 	const uint32_t normalMaxZ = std::min(maxZ + 1, m_iVertexCountZ - 1);
 	RecalculateNormals(normalMinX, normalMinZ, normalMaxX, normalMaxZ);
-	RecalculateBounds();
+	ExpandBoundsForRegion(minX, minZ, maxX, maxZ);
 	return UpdateChunks(normalMinX, normalMinZ, normalMaxX, normalMaxZ);
 }
 
@@ -904,6 +904,25 @@ void CTerrain::RecalculateBounds()
 		  (maxPosition.z - minPosition.z) * 0.5f } };
 }
 
+void CTerrain::ExpandBoundsForRegion(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ)
+{
+	_float3 boundsMin{ m_LocalBounds.Center.x - m_LocalBounds.Extents.x,
+		m_LocalBounds.Center.y - m_LocalBounds.Extents.y,
+		m_LocalBounds.Center.z - m_LocalBounds.Extents.z };
+	_float3 boundsMax{ m_LocalBounds.Center.x + m_LocalBounds.Extents.x,
+		m_LocalBounds.Center.y + m_LocalBounds.Extents.y,
+		m_LocalBounds.Center.z + m_LocalBounds.Extents.z };
+	for (uint32_t z = minZ; z <= maxZ; ++z)
+		for (uint32_t x = minX; x <= maxX; ++x)
+		{
+			const auto& position = m_Vertices[static_cast<size_t>(z) * m_iVertexCountX + x].pos;
+			boundsMin.y = std::min(boundsMin.y, position.y);
+			boundsMax.y = std::max(boundsMax.y, position.y);
+		}
+	m_LocalBounds.Center.y = (boundsMin.y + boundsMax.y) * 0.5f;
+	m_LocalBounds.Extents.y = (boundsMax.y - boundsMin.y) * 0.5f;
+}
+
 void CTerrain::UpdateChunkVisibility()
 {
 	m_VisibleChunks.clear();
@@ -934,29 +953,40 @@ void CTerrain::UpdateChunkVisibility()
 
 HRESULT CTerrain::UpdateChunks(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ)
 {
-	for (const auto& chunk : m_Chunks)
+	if (m_iChunkQuadCount == 0) return E_FAIL;
+	const uint32_t chunkCountX = (m_iVertexCountX - 1 + m_iChunkQuadCount - 1) / m_iChunkQuadCount;
+	const uint32_t chunkCountZ = (m_iVertexCountZ - 1 + m_iChunkQuadCount - 1) / m_iChunkQuadCount;
+	const uint32_t minChunkX = minX > 0 ? (minX - 1) / m_iChunkQuadCount : 0;
+	const uint32_t minChunkZ = minZ > 0 ? (minZ - 1) / m_iChunkQuadCount : 0;
+	const uint32_t maxChunkX = std::min(maxX / m_iChunkQuadCount, chunkCountX - 1);
+	const uint32_t maxChunkZ = std::min(maxZ / m_iChunkQuadCount, chunkCountZ - 1);
+	for (uint32_t chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ)
 	{
-		const auto& coord = chunk->GetCoord();
-		const uint32_t chunkStartX = static_cast<uint32_t>(coord.x) * m_iChunkQuadCount;
-		const uint32_t chunkStartZ = static_cast<uint32_t>(coord.z) * m_iChunkQuadCount;
-		const uint32_t chunkEndX = chunkStartX + chunk->GetVertexCountX() - 1;
-		const uint32_t chunkEndZ = chunkStartZ + chunk->GetVertexCountZ() - 1;
-		if (maxX < chunkStartX || minX > chunkEndX || maxZ < chunkStartZ || minZ > chunkEndZ)
-			continue;
-
-		auto vertices = chunk->GetVertices();
-		for (uint32_t localZ = 0; localZ < chunk->GetVertexCountZ(); ++localZ)
+		for (uint32_t chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX)
 		{
-			for (uint32_t localX = 0; localX < chunk->GetVertexCountX(); ++localX)
+			auto* chunk = FindChunk(chunkX, chunkZ);
+			if (!chunk) continue;
+			const uint32_t chunkStartX = chunkX * m_iChunkQuadCount;
+			const uint32_t chunkStartZ = chunkZ * m_iChunkQuadCount;
+			const uint32_t chunkEndX = chunkStartX + chunk->GetVertexCountX() - 1;
+			const uint32_t chunkEndZ = chunkStartZ + chunk->GetVertexCountZ() - 1;
+			if (maxX < chunkStartX || minX > chunkEndX || maxZ < chunkStartZ || minZ > chunkEndZ)
+				continue;
+
+			auto vertices = chunk->GetVertices();
+			for (uint32_t localZ = 0; localZ < chunk->GetVertexCountZ(); ++localZ)
 			{
-				const uint32_t globalX = chunkStartX + localX;
-				const uint32_t globalZ = chunkStartZ + localZ;
-				vertices[static_cast<size_t>(localZ) * chunk->GetVertexCountX() + localX] =
-					m_Vertices[static_cast<size_t>(globalZ) * m_iVertexCountX + globalX];
+				for (uint32_t localX = 0; localX < chunk->GetVertexCountX(); ++localX)
+				{
+					const uint32_t globalX = chunkStartX + localX;
+					const uint32_t globalZ = chunkStartZ + localZ;
+					vertices[static_cast<size_t>(localZ) * chunk->GetVertexCountX() + localX] =
+						m_Vertices[static_cast<size_t>(globalZ) * m_iVertexCountX + globalX];
+				}
 			}
+			if (FAILED(chunk->UpdateVertices(vertices)))
+				return E_FAIL;
 		}
-		if (FAILED(chunk->UpdateVertices(vertices)))
-			return E_FAIL;
 	}
 	return S_OK;
 }
