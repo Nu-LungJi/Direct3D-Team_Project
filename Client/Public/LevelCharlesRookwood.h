@@ -1,7 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "Level.h"
-
+#include "Handle.h"
 NS_BEGIN(Client)
 
 class CLevelCharlesRookwood final : public CLevel
@@ -26,6 +26,9 @@ public:
 private:
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
+	HRESULT SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer);
+	std::optional<CHandle> SpawnDebugPlayer();
+	HRESULT SpawnStaticCollision();
 
 private:
 	void Free() override;

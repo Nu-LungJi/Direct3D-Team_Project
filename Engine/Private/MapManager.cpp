@@ -4,7 +4,7 @@
 #include <fstream>
 #include <filesystem>
 
-#include "FlyCamera.h"
+#include "CameraObject.h"
 #include "CollFrustum.h"
 #include "OctreeNode.h"
 NS_USING(Engine)
@@ -236,12 +236,12 @@ void CMapManager::Update(_float fTimeDelta)
 		return;
 	}
 
-	auto* pFlyCamera = dynamic_cast<CFlyCamera*>(pCamera);
-	if (pFlyCamera == nullptr || pFlyCamera->GetFrustumCollider() == nullptr)
+	const auto* pFrustumCollider = pCamera->GetFrustumCollider();
+	if (pFrustumCollider == nullptr)
 		return;
 
 	const auto neededChunks = GetNeededChunksAroundCamera(pCamera);
-	const auto& boundingFrustum = pFlyCamera->GetFrustumCollider()->GetBoundingFrustum();
+	const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
 
 	CullLoadedChunksByCameraFrustum(neededChunks, boundingFrustum);
 

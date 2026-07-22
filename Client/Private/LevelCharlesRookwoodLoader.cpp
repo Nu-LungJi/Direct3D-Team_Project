@@ -1,8 +1,10 @@
 #include "pch.h"
 #include "LevelCharlesRookwoodLoader.h"
-
 #include "GameInstance.h"
-#include "BackGround.h"
+
+#include "DebugPlayer.h"
+#include "DebugPlayerThirdPersonCamera.h"
+#include "Level_Defines.h"
 
 NS_USING(Client)
 
@@ -11,6 +13,8 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_CharlesRookwood", []()
 		{
 			_bool bWorkerReturn = true;
+			
+
 
 			// STEP: 맵 로딩
 			{
@@ -78,6 +82,21 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				}
 			}// END STEP: 맵 로딩
 
+			// 디버그 플레이어 프로토타입 등록
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayer, CDebugPlayer::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayer");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera, CDebugPlayerThirdPersonCamera::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayerThirdPersonCamera");
+				return false;
+			}
+
 			return true;
 		});
 }
@@ -96,6 +115,8 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 			// 워커스레드 MAP 해제
 			E::CGameInstance::Get().DelPrototype("MAPEDITOR");
 			E::CGameInstance::Get().DelResource("MAPEDITOR");   E::CGameInstance::Get().DelResource(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+
+			CGameInstance::Get().DelPrototype(LEVEL::CHARLES_ROOKWOOD);
 
 			return true;
 		});

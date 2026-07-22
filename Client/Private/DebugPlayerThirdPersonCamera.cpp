@@ -1,22 +1,20 @@
 #include "pch.h"
-#include "TestPlayer3CameraCreatureEditor.h"
+#include "DebugPlayerThirdPersonCamera.h"
 
-#include "CollFrustum.h"
 #include "GameInstance.h"
 
 NS_USING(Client)
 
-CTestPlayer3CameraCreatureEditor::CTestPlayer3CameraCreatureEditor() = default;
+CDebugPlayerThirdPersonCamera::CDebugPlayerThirdPersonCamera() = default;
 
-CTestPlayer3CameraCreatureEditor::CTestPlayer3CameraCreatureEditor(
-	const CTestPlayer3CameraCreatureEditor& rhs)
+CDebugPlayerThirdPersonCamera::CDebugPlayerThirdPersonCamera(const CDebugPlayerThirdPersonCamera& rhs)
 	: CCameraObject{ rhs }
 {
 }
 
-CTestPlayer3CameraCreatureEditor::~CTestPlayer3CameraCreatureEditor() = default;
+CDebugPlayerThirdPersonCamera::~CDebugPlayerThirdPersonCamera() = default;
 
-HRESULT CTestPlayer3CameraCreatureEditor::Initialize(void* pArg)
+HRESULT CDebugPlayerThirdPersonCamera::Initialize(void* pArg)
 {
 	auto* pDesc = static_cast<DESC*>(pArg);
 	if (!pDesc || pDesc->fDistance <= 0.f || pDesc->fMinPitch > pDesc->fMaxPitch)
@@ -32,12 +30,10 @@ HRESULT CTestPlayer3CameraCreatureEditor::Initialize(void* pArg)
 	m_fMinPitch = pDesc->fMinPitch;
 	m_fMaxPitch = pDesc->fMaxPitch;
 	m_fMouseSensitivity = pDesc->fMouseSensitivity;
-
-	UpdateFollow();
 	return S_OK;
 }
 
-void CTestPlayer3CameraCreatureEditor::PriorityUpdate(_float fTimeDelta)
+void CDebugPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 {
 	if (CGameInstance::Get().GetActiveCamera() != this ||
 		!CGameInstance::Get().GetMouseFix())
@@ -52,18 +48,11 @@ void CTestPlayer3CameraCreatureEditor::PriorityUpdate(_float fTimeDelta)
 	m_fPitch = std::clamp(m_fPitch, m_fMinPitch, m_fMaxPitch);
 }
 
-void CTestPlayer3CameraCreatureEditor::LateUpdate(_float)
+void CDebugPlayerThirdPersonCamera::UpdateFollow()
 {
-	auto* pViewVolumeCollider = GetMutableViewVolumeCollider();
-	if (!pViewVolumeCollider)
+	if (CGameInstance::Get().GetActiveCamera() != this)
 		return;
 
-	CGameInstance::Get().AddColliderGroup(
-		"Coll_TestPlayer3CameraCreatureEditor", pViewVolumeCollider);
-}
-
-void CTestPlayer3CameraCreatureEditor::UpdateFollow()
-{
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hTarget);
 	if (!pTarget)
 		return;
@@ -90,17 +79,17 @@ void CTestPlayer3CameraCreatureEditor::UpdateFollow()
 	UpdateViewMatrix();
 }
 
-UPtr<CTestPlayer3CameraCreatureEditor> CTestPlayer3CameraCreatureEditor::Create()
+UPtr<CDebugPlayerThirdPersonCamera> CDebugPlayerThirdPersonCamera::Create()
 {
-	auto pInstance = ToUPtr(new CTestPlayer3CameraCreatureEditor{});
+	auto pInstance = ToUPtr(new CDebugPlayerThirdPersonCamera{});
 	if (FAILED(pInstance->InitializePrototype()))
 		return nullptr;
 	return pInstance;
 }
 
-UPtr<CPrototype> CTestPlayer3CameraCreatureEditor::Clone(void* pArg)
+UPtr<CPrototype> CDebugPlayerThirdPersonCamera::Clone(void* pArg)
 {
-	auto pInstance = ToUPtr(new CTestPlayer3CameraCreatureEditor{ *this });
+	auto pInstance = ToUPtr(new CDebugPlayerThirdPersonCamera{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 		return nullptr;
 	return pInstance;

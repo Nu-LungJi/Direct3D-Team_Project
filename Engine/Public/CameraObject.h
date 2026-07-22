@@ -4,6 +4,10 @@
 
 NS_BEGIN(Engine)
 
+class CCollider;
+class CCollFrustum;
+class CCollOrientedBox;
+
 class ENGINE_DLL CCameraObject : public CGameObject
 {
 public:
@@ -34,6 +38,11 @@ protected:
 public:
 	_matrix GetView() const { return XMLoadFloat4x4(&m_matView); }
 	_matrix GetProj() const { return XMLoadFloat4x4(&m_matProj); }
+	const CCollider* GetViewVolumeCollider() const { return m_pViewVolumeCollider.get(); }
+	const CCollFrustum* GetFrustumCollider() const;
+	const CCollOrientedBox* GetOrientedBoxCollider() const;
+	ContainmentType ContainsViewVolume(const BoundingBox& bounds) const;
+	_bool IntersectsViewVolume(const BoundingBox& bounds) const;
 	const _float4* GetFrustumFarCorner() const { return m_FrustumFarCorner; }
 	
 
@@ -70,6 +79,10 @@ public:
 	HRESULT UpdateViewMatrix();
 	HRESULT UpdateProjMatrix();
 
+protected:
+	CCollider* GetMutableViewVolumeCollider() { return m_pViewVolumeCollider.get(); }
+	HRESULT UpdateViewVolume();
+
 public:
 	void FSRCameraJitter();
 	std::pair<float, float> GetFSRCameraJitter() const { return m_pairCameraJitter; }
@@ -80,6 +93,7 @@ protected:
 	CAMERA_DESC m_cameraDesc{};
 	_float4x4 m_matView{};
 	_float4x4 m_matProj{};
+	UPtr<CCollider> m_pViewVolumeCollider{};
 
 	_float4 m_FrustumFarCorner[4]{};
 };
