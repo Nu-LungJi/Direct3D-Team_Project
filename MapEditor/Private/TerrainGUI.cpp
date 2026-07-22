@@ -241,7 +241,7 @@ void CTerrainGUI::UpdateGUI(E::_float fTimeDelta)
 			!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
 		{
 			if (!m_pActiveEditCommand) m_pActiveEditCommand = std::make_unique<CTerrainEditCommand>(terrain);
-			m_pActiveEditCommand->CaptureBefore(hit, brush.radius);
+			m_pActiveEditCommand->CaptureHeightBefore(hit, brush.radius);
 			m_pBrushController->UpdateStroke(*terrain, hit, brushTimeDelta);
 		}
 		else
@@ -257,7 +257,7 @@ void CTerrainGUI::UpdateGUI(E::_float fTimeDelta)
 			!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
 		{
 			if (!m_pActiveEditCommand) m_pActiveEditCommand = std::make_unique<CTerrainEditCommand>(terrain);
-			m_pActiveEditCommand->CaptureBefore(hit, brush.radius);
+			m_pActiveEditCommand->CaptureMaskBefore(hit, brush.radius);
 			m_pBrushController->UpdateTextureStroke(*terrain, hit, brushTimeDelta);
 		}
 		else

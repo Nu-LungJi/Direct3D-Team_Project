@@ -12,7 +12,8 @@ class CTerrainEditCommand final : public IEditorCommand
 {
 public:
 	explicit CTerrainEditCommand(E::CTerrain* terrain);
-	void CaptureBefore(const E::_float3& worldCenter, float radius);
+	void CaptureHeightBefore(const E::_float3& worldCenter, float radius);
+	void CaptureMaskBefore(const E::_float3& worldCenter, float radius);
 	bool Finalize();
 	_bool Execute() override;
 	_bool Undo() override;

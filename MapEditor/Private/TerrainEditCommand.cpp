@@ -7,7 +7,7 @@ NS_USING(Client)
 
 CTerrainEditCommand::CTerrainEditCommand(E::CTerrain* terrain) : m_pTerrain{ terrain } {}
 
-void CTerrainEditCommand::CaptureBefore(const E::_float3& worldCenter, float radius)
+void CTerrainEditCommand::CaptureHeightBefore(const E::_float3& worldCenter, float radius)
 {
 	if (!m_pTerrain || radius <= 0.f) return;
 	const E::_matrix inverseWorld = XMMatrixInverse(nullptr,
@@ -31,6 +31,19 @@ void CTerrainEditCommand::CaptureBefore(const E::_float3& worldCenter, float rad
 				static_cast<uint32_t>(z);
 			m_HeightBefore.try_emplace(key, m_pTerrain->GetVertexHeight(x, z));
 		}
+}
+
+void CTerrainEditCommand::CaptureMaskBefore(const E::_float3& worldCenter, float radius)
+{
+	if (!m_pTerrain || radius <= 0.f) return;
+	const E::_matrix inverseWorld = XMMatrixInverse(nullptr,
+		m_pTerrain->GetTransform().GetLoadedCombinedWorldMatrix());
+	E::_float3 local{};
+	XMStoreFloat3(&local, XMVector3TransformCoord(XMLoadFloat3(&worldCenter), inverseWorld));
+	const auto& scale = m_pTerrain->GetTransform().GetScale();
+	const float radiusX = radius / std::max(std::abs(scale.x), 0.0001f);
+	const float radiusZ = radius / std::max(std::abs(scale.z), 0.0001f);
+	const float spacing = m_pTerrain->GetVertexSpacing();
 	const float chunkSize = m_pTerrain->GetChunkQuadCount() * spacing;
 	for (const auto& chunk : m_pTerrain->GetChunks())
 	{
