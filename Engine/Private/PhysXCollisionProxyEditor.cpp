@@ -6,8 +6,15 @@
 #include "Engine_PhysxDefines.h"
 #include "GameInstance.h"
 #include "PhysXCollisionProxyObject.h"
+#include "ResPhysXConvexGeometry.h"
+#include "ResPhysXTriMeshGeometry.h"
 
 #include <filesystem>
+
+#pragma push_macro("new")
+#undef new
+#include "PxPhysicsAPI.h"
+#pragma pop_macro("new")
 
 NS_USING(Engine)
 
@@ -472,16 +479,15 @@ void CPhysXCollisionProxyEditor::DrawInspector()
 			break;
 		case PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH:
 		case PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH:
-			EditString("Cooked Path", shape->sCookedResourcePath, 1024);
+			if (EditString("Cooked Path", shape->sCookedResourcePath, 1024))
+				m_CookedMeshDebugCache.clear();
 			ImGui::DragFloat3("Mesh Scale", &shape->vScale.x, 0.05f, MIN_SHAPE_SIZE, 10000.f);
 			shape->vScale = { std::max(std::abs(shape->vScale.x), MIN_SHAPE_SIZE),
 				std::max(std::abs(shape->vScale.y), MIN_SHAPE_SIZE),
 				std::max(std::abs(shape->vScale.z), MIN_SHAPE_SIZE) };
-			if (IsUnitCylinderConvexPath(shape->sCookedResourcePath) ||
-				IsUnitWedgeConvexPath(shape->sCookedResourcePath))
-				ImGui::TextDisabled("Known primitive preset: exact debug outline is available.");
-			else
-				ImGui::TextDisabled("Cooked mesh preview uses a unit proxy box for now.");
+			ImGui::TextDisabled("Cooked mesh preview uses the actual PhysX mesh when the file is valid.");
+			if (ImGui::Button("Refresh Cooked Preview"))
+				m_CookedMeshDebugCache.clear();
 			break;
 		}
 
@@ -643,8 +649,27 @@ void CPhysXCollisionProxyEditor::DrawDebugShapes()
 						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
 					break;
 				}
-				[[fallthrough]];
+				if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+					shape.eType, shape.sCookedResourcePath))
+				{
+					debug->AddConvexHull(
+						mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
+						mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3),
+						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
+					break;
+				}
+				debug->AddBox({ shape.vScale.x * 0.5f, shape.vScale.y * 0.5f, shape.vScale.z * 0.5f }, poseWorld);
+				break;
 			case PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH:
+				if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+					shape.eType, shape.sCookedResourcePath))
+				{
+					debug->AddTriangleMesh(
+						mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
+						mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3),
+						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
+					break;
+				}
 				debug->AddBox({ shape.vScale.x * 0.5f, shape.vScale.y * 0.5f, shape.vScale.z * 0.5f }, poseWorld);
 				break;
 			}
@@ -653,6 +678,83 @@ void CPhysXCollisionProxyEditor::DrawDebugShapes()
 
 	debug->SetColor(previousColor);
 	debug->SetDepthMode(previousDepth);
+}
+
+const CPhysXCollisionProxyEditor::COOKED_MESH_DEBUG_DATA*
+CPhysXCollisionProxyEditor::GetOrBuildCookedMeshDebugData(
+	PX_COLLISION_PROXY_SHAPE_TYPE eType, const std::string& path)
+{
+	if (path.empty() || (eType != PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH &&
+		eType != PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH))
+		return nullptr;
+
+	const std::filesystem::path normalizedPath = std::filesystem::path{ path }.lexically_normal();
+	const std::string key = (eType == PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH ? "C:" : "T:") +
+		normalizedPath.generic_string();
+
+	if (const auto iter = m_CookedMeshDebugCache.find(key); iter != m_CookedMeshDebugCache.end())
+	{
+		return !iter->second.vertices.empty() && !iter->second.indices.empty()
+			? &iter->second : nullptr;
+	}
+
+	auto& debugData = m_CookedMeshDebugCache[key];
+
+	if (eType == PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH)
+	{
+		auto resource = CResPhysXConvexGeometry::CreateAndLoad(normalizedPath.generic_string());
+		auto* mesh = resource ? resource->GetConvexMesh() : nullptr;
+		if (!mesh || mesh->getNbVertices() == 0 || mesh->getNbPolygons() == 0)
+			return nullptr;
+
+		const physx::PxVec3* vertices = mesh->getVertices();
+		debugData.vertices.reserve(mesh->getNbVertices());
+		for (physx::PxU32 i = 0; i < mesh->getNbVertices(); ++i)
+			debugData.vertices.push_back({ vertices[i].x, vertices[i].y, vertices[i].z });
+
+		const physx::PxU8* indexBuffer = mesh->getIndexBuffer();
+		for (physx::PxU32 polygonIndex = 0; polygonIndex < mesh->getNbPolygons(); ++polygonIndex)
+		{
+			physx::PxHullPolygon polygon{};
+			if (!mesh->getPolygonData(polygonIndex, polygon) || polygon.mNbVerts < 3)
+				continue;
+			const uint32_t first = indexBuffer[polygon.mIndexBase];
+			for (physx::PxU32 i = 1; i + 1 < polygon.mNbVerts; ++i)
+			{
+				debugData.indices.push_back(first);
+				debugData.indices.push_back(indexBuffer[polygon.mIndexBase + i]);
+				debugData.indices.push_back(indexBuffer[polygon.mIndexBase + i + 1]);
+			}
+		}
+	}
+	else
+	{
+		auto resource = CResPhysXTriMeshGeometry::CreateAndLoad(normalizedPath.generic_string());
+		auto* mesh = resource ? resource->GetTriMesh() : nullptr;
+		if (!mesh || mesh->getNbVertices() == 0 || mesh->getNbTriangles() == 0)
+			return nullptr;
+
+		const physx::PxVec3* vertices = mesh->getVertices();
+		debugData.vertices.reserve(mesh->getNbVertices());
+		for (physx::PxU32 i = 0; i < mesh->getNbVertices(); ++i)
+			debugData.vertices.push_back({ vertices[i].x, vertices[i].y, vertices[i].z });
+
+		const size_t indexCount = static_cast<size_t>(mesh->getNbTriangles()) * 3;
+		debugData.indices.resize(indexCount);
+		if (mesh->getTriangleMeshFlags().isSet(physx::PxTriangleMeshFlag::e16_BIT_INDICES))
+		{
+			const auto* indices = static_cast<const physx::PxU16*>(mesh->getTriangles());
+			std::transform(indices, indices + indexCount, debugData.indices.begin(),
+				[](physx::PxU16 index) { return static_cast<uint32_t>(index); });
+		}
+		else
+		{
+			const auto* indices = static_cast<const physx::PxU32*>(mesh->getTriangles());
+			std::copy(indices, indices + indexCount, debugData.indices.begin());
+		}
+	}
+
+	return !debugData.vertices.empty() && !debugData.indices.empty() ? &debugData : nullptr;
 }
 
 void CPhysXCollisionProxyEditor::RenderGizmo()
@@ -1051,6 +1153,7 @@ HRESULT CPhysXCollisionProxyEditor::Load()
 void CPhysXCollisionProxyEditor::Clear()
 {
 	RemovePhysicsPreview();
+	m_CookedMeshDebugCache.clear();
 	m_Actors.clear();
 	m_SelectedActorID.reset();
 	m_SelectedShapeID.reset();

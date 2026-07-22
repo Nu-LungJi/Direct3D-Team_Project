@@ -34,6 +34,12 @@ private:
 		std::vector<uint32_t> indices{};
 	};
 
+	struct MODEL_MESH_SOURCE
+	{
+		std::string name{};
+		SOURCE_GEOMETRY geometry{};
+	};
+
 private:
 	CPhysXCookingEditor();
 	~CPhysXCookingEditor() override = default;
@@ -45,9 +51,11 @@ public:
 private:
 	void DrawWindow();
 	HRESULT Cook();
+	HRESULT InspectModelBin();
 	HRESULT BuildSourceGeometry(SOURCE_GEOMETRY& outGeometry) const;
 	HRESULT BuildUnitCylinder(SOURCE_GEOMETRY& outGeometry) const;
 	HRESULT BuildUnitWedge(SOURCE_GEOMETRY& outGeometry) const;
+	HRESULT BuildModelGeometry(SOURCE_GEOMETRY& outGeometry) const;
 	HRESULT CookGeometry(const SOURCE_GEOMETRY& geometry, const _string& outputPath) const;
 	HRESULT ValidateCookedFile(const _string& outputPath) const;
 	void QueueResult(std::string message, _bool success);
@@ -63,8 +71,14 @@ private:
 	_bool m_bResultSuccess{};
 	uint32_t m_iLastVertexCount{};
 	uint32_t m_iLastIndexCount{};
+	int32_t m_iSelectedModelMesh{ -1 };
+	_float3 m_vModelScale{ 1.f, 1.f, 1.f };
+	_float3 m_vModelRotation{};
+	_float3 m_vModelTranslation{};
+	std::vector<MODEL_MESH_SOURCE> m_ModelMeshes{};
 	std::string m_Status{ "Ready." };
 	std::string m_ResultMessage{};
+	char m_ModelInputPath[512]{};
 	char m_OutputPath[512]{};
 
 public:

@@ -18,6 +18,12 @@ private:
 		std::optional<uint64_t> selectedShapeID{};
 	};
 
+	struct COOKED_MESH_DEBUG_DATA
+	{
+		std::vector<_float3> vertices{};
+		std::vector<uint32_t> indices{};
+	};
+
 private:
 	CPhysXCollisionProxyEditor() = default;
 	~CPhysXCollisionProxyEditor() override = default;
@@ -39,6 +45,8 @@ private:
 	void DrawLayerSelector(const char* label, uint32_t& layer) const;
 	void DrawLayerMaskSelector(const char* label, uint32_t& mask) const;
 	void DrawDebugShapes();
+	const COOKED_MESH_DEBUG_DATA* GetOrBuildCookedMeshDebugData(
+		PX_COLLISION_PROXY_SHAPE_TYPE eType, const std::string& path);
 	void RenderGizmo();
 	void HandleSceneInput();
 	void CreateActor(const _float3& position = {});
@@ -80,6 +88,7 @@ private:
 	std::vector<std::pair<uint32_t, std::string>> m_CollisionLayerNames{};
 	std::optional<SNAPSHOT> m_GizmoStartSnapshot{};
 	std::vector<CHandle> m_PhysicsPreviewHandles{};
+	std::unordered_map<std::string, COOKED_MESH_DEBUG_DATA> m_CookedMeshDebugCache{};
 	std::string m_Status{};
 	std::string m_ResultPopupMessage{};
 	_bool m_bOpenResultPopup{};
