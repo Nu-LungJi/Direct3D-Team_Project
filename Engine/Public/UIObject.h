@@ -126,6 +126,7 @@ protected:
 	_bool		m_isActive = true;
 	_bool		m_isVisible = true;
 	_float		m_ScaleRatio = 1.f;
+	_float2		m_vPivot{};
 
 	bool m_bInputLocked = false;
 
@@ -168,14 +169,18 @@ public:
 	int GetWeight() { return m_UIINFO.Weight; }
 	int GetWeight() const { return m_UIINFO.Weight; }
 public:
-	void SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
-	std::optional<CHandle>  GetParent() { return m_pParent; }
-	void AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
+	void						SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
+	std::optional<CHandle>		GetParent() { return m_pParent; }
+	void						AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
 	const std::vector<CHandle>& GetChildren() const { return m_vChildren; }
+	void SetPivot(_float2 vPivot) { m_vPivot = vPivot; }
+	_float2 GetPivot() { return m_vPivot; }
 
 public:
 	void DeleteChild(CHandle childHandle);
 	void CalcUICoord();
+private:
+	void SetChildPivot();
 
 protected:
 	std::optional<CHandle> m_pParent = std::nullopt;

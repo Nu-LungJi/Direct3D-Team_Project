@@ -361,6 +361,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 		selectInfo.Color = m_UIINFO.Color;
 		selectInfo.UIType = m_UIINFO.UIType;
 		selectInfo.EffectType = m_UIINFO.EffectType;
+		selectInfo.Rot = m_UIINFO.Rot;
 		selectUI->SetScaleRatio(m_ScaleRatio);
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
@@ -1185,6 +1186,7 @@ void CLevelUIEditor::Picking()
 		m_UIINFO.Color = selectInfo.Color;
 		m_UIINFO.UIType = selectInfo.UIType;
 		m_UIINFO.EffectType = selectInfo.EffectType;
+		m_UIINFO.Rot = selectInfo.Rot;
 		strcpy_s(m_cName, sizeof(m_cName), selectInfo.Name.c_str());
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == selectInfo.UIType)
@@ -1749,6 +1751,11 @@ void CLevelUIEditor::StateView()
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Weight"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragInt("##Weight", &m_UIINFO.Weight, 1, 0, 100);
+
+		// weight
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("Rot"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##Rot", &m_UIINFO.Rot, 0.1f, -360, 360);
 	
 		// Color
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
@@ -1875,6 +1882,11 @@ void CLevelUIEditor::LocalStateView()
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Weight Offset"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragInt("##WeightOffset", &weightOffset, 1, -100, 100);
+
+		// weight
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("LocalRot"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##LocalRot", &m_UIINFO.LocalRot, 0.1f, -360, 360);
 
 		// Color 
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
@@ -2070,6 +2082,7 @@ void CLevelUIEditor::UpdateTargetState()
 		selectInfo.Color = m_UIINFO.Color;
 		selectInfo.UIType = m_UIINFO.UIType;
 		selectInfo.EffectType = m_UIINFO.EffectType;
+		selectInfo.Rot = m_UIINFO.Rot;
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
 		{
