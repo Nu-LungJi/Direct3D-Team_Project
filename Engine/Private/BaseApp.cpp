@@ -47,14 +47,27 @@ HRESULT CBaseApp::Loop()
 		{
 			const float fFixedGoalTime = m_FixedUpdateTimer.Get_GoalTime();
 			float fFixedCurrTime = m_FixedUpdateTimer.Get_CurrTime();
+			constexpr uint32_t MAX_FIXED_UPDATE_COUNT_PER_FRAME = 8;
+			uint32_t iFixedUpdateCount = 0;
 
 			while (fFixedCurrTime >= fFixedGoalTime)
 			{
+				if (iFixedUpdateCount >= MAX_FIXED_UPDATE_COUNT_PER_FRAME)
+				{
+					DEBUG_LOG_STR(std::format(
+						"[FixedUpdate] Per-frame limit exceeded. Limit: {}, discarded accumulated time: {:.6f}s\n",
+						MAX_FIXED_UPDATE_COUNT_PER_FRAME,
+						fFixedCurrTime));
+					fFixedCurrTime = fmodf(fFixedCurrTime, fFixedGoalTime);
+					break;
+				}
+
 				{
 					ZoneScopedN("FixedUpdate");
 					FixedUpdate(fFixedGoalTime);
 				}
 				
+				++iFixedUpdateCount;
 				fFixedCurrTime -= fFixedGoalTime;
 			}
 
