@@ -35,6 +35,8 @@ HRESULT CLevelPercival::Initialize()
 	//	}
 	//}
 
+	CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true);
+
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
