@@ -15,7 +15,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bGravity = (flags & BEHAVIOR_GRAVITY) != 0;
 	bool bCircleWave = (flags & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
 	bool bSmoke = (flags & BEHAVIOR_SMOKE) != 0;
-
+	bool bSmokeJump = (flags & BEHAVIOR_SMOKEJUMP) != 0;
 	if (ImGui::Checkbox("Distortion", &bDistortion))
 		flags = bDistortion ? (flags | BEHAVIOR_DISTORTION) : (flags & ~BEHAVIOR_DISTORTION);
 	ImGui::SameLine();
@@ -30,6 +30,9 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("Smoke", &bSmoke))
 		flags = bSmoke ? (flags | BEHAVIOR_SMOKE) : (flags & ~BEHAVIOR_SMOKE);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("SmokeJump", &bSmokeJump))
+		flags = bSmokeJump ? (flags | BEHAVIOR_SMOKEJUMP) : (flags & ~BEHAVIOR_SMOKEJUMP);
 }
 
 
@@ -44,12 +47,18 @@ inline void DrawField(const char* name, _bool& v){bool tmp = (bool)v;if (ImGui::
 
 
 // ---- json 저장/로드 (타입별 헬퍼) ----
+
+inline void SaveField(nlohmann::json& out, const char* name, const _float2& v) { out[name] = { v.x, v.y }; }
 inline void SaveField(nlohmann::json& out, const char* name, const _float3& v) { out[name] = { v.x, v.y, v.z }; }
 inline void SaveField(nlohmann::json& out, const char* name, const _float4& v) { out[name] = { v.x, v.y, v.z, v.w }; }
 inline void SaveField(nlohmann::json& out, const char* name, const _float& v) { out[name] = v; }
 inline void SaveField(nlohmann::json& out, const char* name, const uint32_t& v) { out[name] = v; }
 inline void SaveField(nlohmann::json& out, const char* name, const _bool& v){out[name] = (bool)v;}
-
+inline void LoadField(const nlohmann::json& in, const char* name, _float2& v)
+{
+	auto a = in.value(name, std::vector<float>{v.x, v.y});
+	v = { a[0], a[1]};
+}
 inline void LoadField(const nlohmann::json& in, const char* name, _float3& v)
 {
 	auto a = in.value(name, std::vector<float>{v.x, v.y, v.z});
@@ -60,6 +69,7 @@ inline void LoadField(const nlohmann::json& in, const char* name, _float4& v)
 	auto a = in.value(name, std::vector<float>{v.x, v.y, v.z, v.w});
 	v = { a[0], a[1], a[2], a[3] };
 }
+
 inline void LoadField(const nlohmann::json& in, const char* name, _float& v) { v = in.value(name, v); }
 inline void LoadField(const nlohmann::json& in, const char* name, uint32_t& v) { v = in.value(name, v); }
 inline void LoadField(const nlohmann::json& in, const char* name, _bool& v)

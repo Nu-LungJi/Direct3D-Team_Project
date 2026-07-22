@@ -93,7 +93,7 @@ void CParticleManager::UpdateGUI()
 	static _bool gravity = false;
 	static _bool circleToWave = false;
 	static _bool bSmoke = false;
-
+	static _bool bSmokeJump = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -867,6 +867,7 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("GRAVITY", &gravity);
 	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 	ImGui::Checkbox("SMOKE", &bSmoke);	
+	ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 	ImGui::Checkbox("None", &none);
 
 	if (none)
@@ -876,6 +877,7 @@ void CParticleManager::UpdateGUI()
 		gravity = false;
 		circleToWave = false;
 		bSmoke = false;
+		bSmokeJump = false;
 	}
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
@@ -915,7 +917,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
 	if(bSmoke)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
-
+	if (bSmokeJump)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEJUMP;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1112,6 +1115,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("GRAVITY", &gravity);
 		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 		ImGui::Checkbox("SMOKE", &bSmoke);
+		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 		ImGui::Checkbox("None", &none);
 
 		if (none)
@@ -1121,6 +1125,7 @@ void CParticleManager::UpdateGUI()
 			gravity = false;
 			circleToWave = false;
 			bSmoke = false;
+			bSmokeJump = false;
 		}
 
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
@@ -1134,7 +1139,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
 		if (bSmoke)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
-
+		if (bSmokeJump)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEJUMP;
 	}
 	
 	ImGui::Separator();
@@ -2412,7 +2418,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 	if (!j.contains("commands") || !j["commands"].is_array())
 		return E_FAIL;
 
-	m_vecCommandQueue.clear();
+	//m_vecCommandQueue.clear();
 
 	for (const auto& entry : j["commands"])
 	{

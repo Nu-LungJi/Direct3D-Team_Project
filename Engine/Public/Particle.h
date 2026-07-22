@@ -16,6 +16,7 @@ public:
 		BEHAVIOR_GRAVITY = 1 << 3,
 		BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4,
 		BEHAVIOR_SMOKE = 1 << 5,
+		BEHAVIOR_SMOKEJUMP = 1<<6,
 	};
 
 protected:

@@ -264,17 +264,33 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKE) != 0) {
 		MakeSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEJUMP) != 0) {
+		JumpSmoke(p, fTimeDelta);
 	}
 	
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
-	const float speed = 1.f;
+	_float fSpeed = 1.5f;
+	
+	_float t = p.life / p.fMaxLife;
+	p.vColor.w = 0.7f + (0.f - 0.7f) * t;
+	
+	if(t >=0.5f)
+		p.vVelocity.y += fSpeed * fTimeDelta;
+	
+	  
+}
+void CParticle_CPU::JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
 
-	p.vVelocity.y += speed * fTimeDelta;
+	_float fSpeed = 5.5f;
 
-	//XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity )* 3.f * fTimeDelta);
-	//for(uint32_t i=0; i<p.)
+	_float t = p.life / p.fMaxLife;
+	p.vColor.w = 0.7f + (0.f - 0.7f) * t;
+
+	if (t >= 0.2f)
+		p.vVelocity.y += fSpeed * fTimeDelta;
 }
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {

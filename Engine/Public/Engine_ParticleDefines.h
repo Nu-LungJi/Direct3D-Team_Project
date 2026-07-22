@@ -59,6 +59,7 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_GRAVITY = 1 << 3;
 	constexpr uint32_t BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4;
 	constexpr uint32_t BEHAVIOR_SMOKE = 1 << 5;
+	constexpr uint32_t BEHAVIOR_SMOKEJUMP = 1 << 6;
 
 	// 
 	// ============================================================
@@ -172,6 +173,8 @@ namespace Engine
     X(_float4, emissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)\
 	X(_float, fSpeed, 0.f)\
+	X(_float2,vRand,_float2(0,0))\
+	X(_float3,vRot,_float3(0,0,0))\
 COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로

@@ -100,6 +100,7 @@ private:
     virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
 
 	void		 MakeSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void         JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 private:
     // m_Particles를 순회하며 수명/UpdateBehavior 처리 후 m_vecInstancedData 재구성
     void Simulate(E::_float fTimeDelta);
