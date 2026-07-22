@@ -463,26 +463,30 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 	{
 		const auto eDirection = static_cast<MOVE_DIRECTION>(i);
 		const auto sToken = sDirectionTokens[i];
+		const _string sTokenString{ sToken };
 
-		setLoop(GAIT::JOG, eDirection, std::format("AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_{}_anm.bin", sToken));
+		setLoop(GAIT::JOG, eDirection,
+			"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_" + sTokenString + "_anm.bin");
 		if (eDirection != MOVE_DIRECTION::LEFT_90)
 		{
-			setLoop(GAIT::WALK, eDirection, std::format("AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_{}_anm.bin", sToken));
+			setLoop(GAIT::WALK, eDirection,
+				"AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_" + sTokenString + "_anm.bin");
 		}
 
 		for (uint32_t phase = 0; phase < ETOUI(FOOT_PHASE::END); ++phase)
 		{
 			const auto ePhase = static_cast<FOOT_PHASE>(phase);
 			const _string_view sFoot = ePhase == FOOT_PHASE::LEFT ? "LF" : "RF";
+			const _string sFootString{ sFoot };
 
 			setPhased(m_StartAnimations, ePhase, GAIT::WALK, eDirection,
-				std::format("AN_ProfessorSharp_MasterRig_Hu_BM_{}_Walk_Start_{}_anm.bin", sFoot, sToken));
+				"AN_ProfessorSharp_MasterRig_Hu_BM_" + sFootString + "_Walk_Start_" + sTokenString + "_anm.bin");
 			setPhased(m_StopAnimations, ePhase, GAIT::WALK, eDirection,
-				std::format("AN_ProfessorSharp_MasterRig_Hu_BM_{}_Walk_Stop_{}_anm.bin", sFoot, sToken));
+				"AN_ProfessorSharp_MasterRig_Hu_BM_" + sFootString + "_Walk_Stop_" + sTokenString + "_anm.bin");
 			setPhased(m_StartAnimations, ePhase, GAIT::JOG, eDirection,
-				std::format("AN_ProfessorSharp_MasterRig_Hu_BM_{}_Jog_Start_{}_anm.bin", sFoot, sToken));
+				"AN_ProfessorSharp_MasterRig_Hu_BM_" + sFootString + "_Jog_Start_" + sTokenString + "_anm.bin");
 			setPhased(m_StopAnimations, ePhase, GAIT::JOG, eDirection,
-				std::format("AN_ProfessorSharp_MasterRig_Hu_BM_{}_Jog_Stop_{}_anm.bin", sFoot, sToken));
+				"AN_ProfessorSharp_MasterRig_Hu_BM_" + sFootString + "_Jog_Stop_" + sTokenString + "_anm.bin");
 		}
 	}
 
@@ -531,18 +535,17 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 			{
 				const auto sToken = sDirectionTokens[ETOUI(eDirection)];
 				setPhased(m_FreeTurnStartAnimations, ePhase, eGait, eDirection,
-					std::format(
-						"AN_ProfessorSharp_MasterRig_Hu_BM_{}_{}_Turn_Start_{}_anm.bin",
-						sFoot, sGait, sToken));
+					"AN_ProfessorSharp_MasterRig_Hu_BM_" + _string{ sFoot } + "_" +
+					_string{ sGait } + "_Turn_Start_" + _string{ sToken } + "_anm.bin");
 			}
 
 			for (uint32_t side = 0; side < ETOUI(TURN_SIDE::END); ++side)
 			{
 				const auto eSide = static_cast<TURN_SIDE>(side);
 				const _string_view sSide = eSide == TURN_SIDE::LEFT ? "Lft" : "Rht";
-				m_FreeTurnStart180[ETOUI(eGait)][side][phase] = find(std::format(
-					"AN_ProfessorSharp_MasterRig_Hu_BM_{}_{}_Turn_Start_{}_180_anm.bin",
-					sFoot, sGait, sSide));
+				m_FreeTurnStart180[ETOUI(eGait)][side][phase] = find(
+					"AN_ProfessorSharp_MasterRig_Hu_BM_" + _string{ sFoot } + "_" +
+					_string{ sGait } + "_Turn_Start_" + _string{ sSide } + "_180_anm.bin");
 			}
 		}
 	}
@@ -553,16 +556,16 @@ void CPlayer_Locomotion_State::InitializeAnimationTable(CPlayer& player)
 		const _string_view sSide = side == ETOUI(TURN_SIDE::LEFT) ? "Lft" : "Rht";
 		for (uint32_t angle = 0; angle < std::size(sTurnAngles); ++angle)
 		{
-			m_IdleTurns[side][angle] = find(std::format(
-				"AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_{}_{}_anm.bin",
-				sSide, sTurnAngles[angle]));
+			m_IdleTurns[side][angle] = find(
+				"AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_" + _string{ sSide } + "_" +
+				std::to_string(sTurnAngles[angle]) + "_anm.bin");
 		}
 		for (uint32_t phase = 0; phase < ETOUI(FOOT_PHASE::END); ++phase)
 		{
 			const _string_view sPhase = phase == ETOUI(FOOT_PHASE::LEFT) ? "LU" : "RU";
-			m_JogPivots[side][phase] = find(std::format(
-				"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Pivot_{}_180_{}_anm.bin",
-				sSide, sPhase));
+			m_JogPivots[side][phase] = find(
+				"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Pivot_" + _string{ sSide } +
+				"_180_" + _string{ sPhase } + "_anm.bin");
 		}
 	}
 
