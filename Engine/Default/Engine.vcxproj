@@ -233,6 +233,7 @@
     <ClInclude Include="..\Public\BaseApp.h" />
     <ClInclude Include="..\public\Beam_CPU.h" />
     <ClInclude Include="..\public\BinDeSerializer.h" />
+    <ClInclude Include="..\public\BinSerializeFormat.h" />
     <ClInclude Include="..\public\BinSerializer.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
@@ -348,6 +349,7 @@
     <ClInclude Include="..\public\PhysXManager.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
+    <ClInclude Include="..\public\PhysXCollisionProxyObject.h" />
     <ClInclude Include="..\public\PhysxManagerListener.h" />
     <ClInclude Include="..\Public\ShadowCamera.h" />
     <ClInclude Include="..\public\TextUI.h" />
@@ -420,6 +422,7 @@
     <ClInclude Include="..\Public\Engine_EnumString.h" />
     <ClInclude Include="..\Public\SerializerInterface.h" />
     <ClInclude Include="..\Public\SerDeTestCase.h" />
+    <ClInclude Include="..\Public\SerializeResult.h" />
     <ClInclude Include="..\Public\ILuaScriptRelodable.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -631,6 +634,7 @@
     <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\private\PhysXManager.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp" />
+    <ClCompile Include="..\private\PhysXCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\PhysxManagerListener.cpp" />
     <ClCompile Include="..\Private\Prototype.cpp" />
     <ClCompile Include="..\Private\PrototypeManager.cpp" />
