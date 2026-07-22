@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx11.h>
+#include <ImGuizmo.h>
 #include "NodeEditor.h"
 NS_USING(Engine)
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -82,6 +83,7 @@ void CImguiManager::Update_Imgui()
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 	//m_pNodeEditor->UpdateGUI();
 	m_bNewFrame = true;
 }

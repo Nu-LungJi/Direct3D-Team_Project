@@ -19,13 +19,13 @@ private:
 public:
 	EVALUATE				Evaluate(_float fTimeDelta) override;
 	virtual void			Update_Gui() override;
-
+	void					Abort()override;
 	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
-	_bool				m_bLoop{ true }, m_bStart{true};
+	_bool				m_bLoop{ true }, m_bStart{ true };
 
-	uint32_t			m_iEndFlag{}, m_iStartFlag{};
+	uint32_t			m_iEndFlag{}, m_iStartFlag{}, m_iLoopCnt{ 0 };
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

@@ -13,13 +13,15 @@ HRESULT CResTessDomainShader::Load(const std::any& arg)
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	ComPtr<ID3D11DomainShader> domainShader{};
 	if (FAILED(m_pDevice->CreateDomainShader(m_pBlob->GetBufferPointer(),
-		m_pBlob->GetBufferSize(), nullptr, &m_pTessDomainShader)))
+		m_pBlob->GetBufferSize(), nullptr, &domainShader)))
 	{
 		MSG_BOX_STR(_wstring{ L"CResTessDomainShader Create Faield Path:" + StringToWString(m_sPath) }.c_str());
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
+	m_pTessDomainShader = std::move(domainShader);
 	m_eState = STATE::LOADED;
 
 	m_pBlob.Reset();

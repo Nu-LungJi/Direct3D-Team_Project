@@ -111,7 +111,22 @@ HRESULT CResTexture2D::Load(const std::any& arg)
             pResource.GetAddressOf(),
             m_pSRV.GetAddressOf()
         );
-    }
+	}
+	else if (ext == L".hdr")
+	{
+		DirectX::ScratchImage image;
+		hr = DirectX::LoadFromHDRFile(path.c_str(), nullptr, image);
+		if (SUCCEEDED(hr))
+		{
+			hr = DirectX::CreateShaderResourceView(
+				m_pDevice.Get(), image.GetImages(), image.GetImageCount(),
+				image.GetMetadata(), m_pSRV.GetAddressOf());
+		}
+		if (SUCCEEDED(hr))
+		{
+			m_pSRV->GetResource(pResource.GetAddressOf()); // 여기서 pResource 채워줌
+		}
+	}
     else
     {
 		DirectX::TexMetadata metadata{};

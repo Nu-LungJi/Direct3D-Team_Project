@@ -38,7 +38,7 @@ EVALUATE CBTDecLier::Evaluate(_float fTimeDelta)
 	if (eType == EVALUATE::SUCCESS)
 		m_bEnter = true;
 	
-	return eType;
+	return m_eDebug = eType;
 }
 
 void		CBTDecLier::Update_Gui()

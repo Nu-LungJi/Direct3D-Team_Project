@@ -57,7 +57,7 @@ struct SpotLight
 };
 struct DynamicLight
 {
-    float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
+	float4x4 g_LightViewProj[MAX_LIGHT_MAPCOUNT];
 
     float3 LightDirection;
     float LightIntensity;
@@ -69,8 +69,9 @@ struct DynamicLight
 
     float InnerAttanuation;
     float OuterAttanuation;
-
-    float2 LightPadding;
+	
+	int		ShadowSlot;
+    float LightPadding;
 };
 
 struct Material
@@ -127,13 +128,13 @@ cbuffer CB_MATERIAL : register(b3)
     float3  MaterialPadding;
 }
 
-cbuffer CB_LIGHT_BUFFER : register(b4)
+cbuffer CB_LIGHT_BUFFER : register(b4) 
 {
-    DynamicLight AffectedLight[MAX_LIGHT_COUNT];
+	DynamicLight AffectedLight[MAX_LIGHT_COUNT];
     float4x4 g_InvViewProj;
-    uint LightCount;
-    uint CurrentLightIndex;
-    float3 LightPadding;
+    uint	LightCount;
+	uint	CurrentShadowLightIndex;
+    float2	LightPadding;
 }
 
 cbuffer CB_TIME_BUFFER : register(b5)
@@ -174,6 +175,15 @@ cbuffer PostProcessBuffer : register(b8)
     float3 Padding;
 };
 
+cbuffer CB_GPU_PART_ATTACHMENT : register(b9)
+{
+    float4x4 preTransform;
+    uint gParentInstanceIndex;
+    uint gParentBoneIndex;
+    float2 gPartAttachmentPadding;
+};
+
+
 SamplerState LinearWrap                 : register(s0);
 SamplerState LinearClamp                : register(s1);
 SamplerState PointWrap                  : register(s2);
@@ -182,4 +192,4 @@ SamplerState PointWrapNoMip             : register(s4);
 SamplerState AnisotropicWrap            : register(s5);
 SamplerState LinearBorder               : register(s7);
 
-SamplerComparisonState ShadowSampler : register(s6);
+SamplerComparisonState ShadowSampler    : register(s6);

@@ -65,12 +65,12 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
 
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        if (FAILED(m_pResVertexShader->Load()))
-            return E_FAIL;
+        //if (FAILED(m_pResVertexShader->Load()))
+        //    return E_FAIL;
 
         m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-        if (FAILED(m_pResPixelShader->Load()))
-            return E_FAIL;
+      //  if (FAILED(m_pResPixelShader->Load()))
+      //      return E_FAIL;
 
 		if (m_Desc.normalTextureID.first != "") {
 			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -89,12 +89,12 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 
 
         m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        if (FAILED(m_pResVertexShader->Load()))
-            return E_FAIL;
+       // if (FAILED(m_pResVertexShader->Load()))
+       //     return E_FAIL;
 
         m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-        if (FAILED(m_pResPixelShader->Load()))
-            return E_FAIL;
+       // if (FAILED(m_pResPixelShader->Load()))
+       //     return E_FAIL;
 
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
@@ -121,6 +121,12 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
             if (!m_pComModelInstance)
                 return E_FAIL;
         }
+		if (m_Desc.hdrPositionTextureID.first != "") {
+			m_pHdrPositionTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.hdrPositionTextureID.first, m_Desc.hdrPositionTextureID.second);
+		}
+		if (m_Desc.hdrNormalTextureID.first != "") {
+			m_pHdrNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.hdrNormalTextureID.first, m_Desc.hdrNormalTextureID.second);
+		}
     }
     return S_OK;
 
@@ -146,21 +152,28 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 	m_vecInstancedData.clear();
 	uint32_t totalFrames = m_Desc.TexRows * m_Desc.TexColumns;
 
-	// 카메라의 역-뷰 행렬에서 camRight/camUp 추출 (한 번만 가져오면 됨)
-	
-
-
 	for (auto& p : m_Particles)
 	{
 		if (!p.bAlive)
 			continue;
 
-		p.fAge += fTimeDelta;
-		if (p.fAge >= p.fLifeTime)
+		p.life += fTimeDelta; // "지난 시간" 방식 그대로 유지 (원래 Simulate 스타일)
+
+		if (p.life >= p.fMaxLife)
 		{
-			p.bAlive = false;
-			continue;
+			if (p.loop)
+			{
+				p.life = 0.f;                       // 지난 시간 리셋
+				p.vPosition = p.originalPosition;    // 원래 위치로 복귀
+				continue;                            // 리셋된 프레임은 렌더링 스킵
+			}
+			else
+			{
+				p.bAlive = false;
+				continue;
+			}
 		}
+		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
 
 		UpdateBehavior(p, fTimeDelta);
 
@@ -169,7 +182,6 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 
 		if (totalFrames > 1)
 		{
-			float ageRatio = std::clamp(p.fAge / p.fLifeTime, 0.f, 1.f);
 			uint32_t frame = (uint32_t)(ageRatio * totalFrames);
 			p.iFrameIndex = std::min(frame, totalFrames - 1);
 		}
@@ -179,6 +191,11 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		}
 
 		VTX_PARTICLE_INSTANCED_DATA inst{};
+		inst.iBehaviorType = p.iBehaviorType;
+		
+		p.fSize = std::lerp(p.fStartSize, p.fEndSize, ageRatio);
+
+		
 		_matrix matScale = XMMatrixScaling(p.fSize, p.fSize, p.fSize);
 		_matrix matTrans = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
 
@@ -194,7 +211,6 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			XMVECTOR camUp = matInvView.r[1];
 			XMVECTOR camForward = matInvView.r[2];
 
-			// 카메라를 향하는 회전 행렬 (camRight, camUp, camForward를 그대로 축으로 사용)
 			_matrix matBillboardRot = XMMatrixIdentity();
 			matBillboardRot.r[0] = camRight;
 			matBillboardRot.r[1] = camUp;
@@ -211,9 +227,12 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 
 		XMStoreFloat4x4(&inst.matWorld, matWorld);
 		inst.vColor = p.vColor;
+		inst.originalEmissive = p.originalEmissive;
 		inst.emissive = p.emissive;
-		inst.life = p.fAge > 0.f ? (p.fLifeTime - p.fAge) : p.fLifeTime;
-		inst.maxLife = p.fLifeTime;
+		inst.endEmissive = p.endEmissive;
+		inst.life = p.life;
+		inst.maxLife = p.fMaxLife;
+		//inst.iBehaviorType = p.iBehaviorType;
 
 		if (m_Desc.TexColumns > 0 && m_Desc.TexRows > 0)
 		{
@@ -233,11 +252,9 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 }
 void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 {
-	//if ((p.iBehaviorType & CParticle::BEHAVIOR_BILLBOARD) != 0) {
-	//
-	//}
-	if ((p.iBehaviorType & CParticle::BEHAVIOR_DISTORTION) != 0) {
 
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_DISTORTION) != 0) {
+		int a = 0;
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_GRAVITY) != 0) {
 		const float kGravity = -9.8f;
@@ -254,35 +271,39 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 }
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
-    if (pSpawnData == nullptr || count == 0)
-        return E_FAIL;
+	if (pSpawnData == nullptr || count == 0)
+		return E_FAIL;
 
-    uint32_t iSpawned = 0;
-    for (uint32_t i = 0; i < m_Particles.size() && iSpawned < count; ++i)
-    {
-        if (m_Particles[i].bAlive)
-            continue;
+	uint32_t iSpawned = 0;
+	for (uint32_t i = 0; i < m_Particles.size() && iSpawned < count; ++i)
+	{
+		if (m_Particles[i].bAlive)
+			continue;
 
-        const auto& src = pSpawnData[iSpawned];
-        m_Particles[i].vPosition = src.position;
+		const auto& src = pSpawnData[iSpawned];
+		m_Particles[i].vPosition = src.position;
 		m_Particles[i].vVelocity = src.velocity;
-        m_Particles[i].fLifeTime = src.life;
-        m_Particles[i].fAge = 0.f;
-        m_Particles[i].bAlive = true;
-        m_Particles[i].fSize = src.fSize;
-        m_Particles[i].fEndSize = src.fEndSize;
-        m_Particles[i].vColor = src.color;
-        m_Particles[i].emissive = src.emissive;
+		m_Particles[i].originalPosition = src.originalPosition;
+		m_Particles[i].life = 0.f;
+		m_Particles[i].fMaxLife = src.life; 
+		m_Particles[i].bAlive = true;
+		m_Particles[i].fSize = src.fSize;
+		m_Particles[i].fStartSize = src.fSize;
+		m_Particles[i].fEndSize = src.fEndSize;
+		m_Particles[i].vColor = src.color;
+		m_Particles[i].originalEmissive = src.originalEmissive;
+		m_Particles[i].emissive = src.emissive;
+		m_Particles[i].endEmissive = src.endEmissive;
 		m_Particles[i].spawnDelay = src.spawnDelay;
 		m_Particles[i].ownerID = src.ownerID;
 		m_Particles[i].rotation = src.rotation;
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
-        ++iSpawned;
-    }
+		m_Particles[i].loop = src.loop;
+		++iSpawned;
+	}
 
-    return (iSpawned == count) ? S_OK : E_FAIL;
+	return (iSpawned == count) ? S_OK : E_FAIL;
 }
-
 
 HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
@@ -299,10 +320,22 @@ HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 
 HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     if (m_vecInstancedData.empty())
         return S_OK;
+
+
+	if (m_pHdrPositionTexture) {
+		ID3D11ShaderResourceView* pHdrSRV = m_pHdrPositionTexture->GetSRV().Get();
+		pContext->VSSetShaderResources(1, 1, &pHdrSRV);
+	}
+
+	if (m_pHdrNormalTexture) {
+		ID3D11ShaderResourceView* pHdrSRV = m_pHdrNormalTexture->GetSRV().Get();
+		pContext->VSSetShaderResources(2, 1, &pHdrSRV);
+	}
 
 	if (m_pNoiseTexture)
 	{
@@ -381,9 +414,29 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 
         pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
     }
-	ID3D11ShaderResourceView* nullNoiseSRV[] = { nullptr };
-	pContext->PSSetShaderResources(5, 1, nullNoiseSRV);
 
+
+
+	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
+	pContext->PSSetShaderResources(0, 1, pSRVs);
+	pContext->PSSetShaderResources(1, 1, pSRVs);
+	pContext->PSSetShaderResources(2, 1, pSRVs);
+	pContext->PSSetShaderResources(3, 1, pSRVs);
+	pContext->PSSetShaderResources(5, 1, pSRVs);
+	pContext->VSSetShaderResources(1, 1, pSRVs);
+	pContext->VSSetShaderResources(2, 1, pSRVs);
+	ID3D11Buffer* nullCB[] = { nullptr };
+
+	pContext->VSSetConstantBuffers(5, 1, nullCB);
+	pContext->PSSetConstantBuffers(5, 1, nullCB);
+	{
+		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
+		pContext->VSSetShaderResources(4, 1, nullSRV);
+	}
+	pContext->OMSetDepthStencilState(nullptr, 0);
+
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     return S_OK;
 }
@@ -394,7 +447,8 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     if (m_vecInstancedData.empty())
         return S_OK;
 
-
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
@@ -429,14 +483,18 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
         }
     }
 
-    pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
-
-
-	if (m_pNormalTexture)
-	{
-		ID3D11ShaderResourceView* pNormalSRV = m_pNormalTexture->GetSRV().Get();
-		pContext->PSSetShaderResources(2, 1, &pNormalSRV);
+	SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
+	if (m_pParticleTexture) {
+		DiffuseTexture = m_pParticleTexture;
 	}
+	pContext->PSSetShaderResources(1, 1, DiffuseTexture->GetSRV().GetAddressOf());
+	SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
+	if (m_pNormalTexture) {
+		NormalTexture = m_pNormalTexture;
+	}
+	pContext->PSSetShaderResources(2, 1, NormalTexture->GetSRV().GetAddressOf());
+
+
 	if (m_pDistortionTexture)
 	{
 		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
@@ -449,13 +507,15 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 	}
 
 
-
     pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr };
-    pContext->PSSetShaderResources(0, 4, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr };
+    pContext->PSSetShaderResources(0, 5, nullSRV);
 
 	pContext->OMSetDepthStencilState(nullptr, 0);
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
     return S_OK;
 }
 UPtr<CParticle> CParticle_CPU::Create(void* pArg)
@@ -473,10 +533,11 @@ void CParticle_CPU::ClearByOwner(uint32_t ownerID)
 	for (auto& p : m_Particles)
 	{
 		if (p.bAlive && p.ownerID == ownerID)
-			p.bAlive = false;
+		{
+			p = PARTICLE_CPU_DATA{}; // 통째로 기본값으로 리셋 (bAlive=false 포함)
+		}
 	}
 }
-
 void CParticle_CPU::SetPosition(const _float3& pos)
 {
 	if (m_Particles.empty())

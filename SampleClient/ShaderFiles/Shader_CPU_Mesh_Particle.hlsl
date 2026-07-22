@@ -20,6 +20,7 @@ struct VS_IN
     float4 vInstRow3 : INSTANCE_WORLD3;
     float4 vInstColor : INSTANCE_COLOR;
     float4 vInstEmissive : INSTANCE_EMISSIVE;
+    float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
     float vInstLife : INSTANCE_LIFE;
     float vInstMaxLife : INSTANCE_MAXLIFE; 
 };
@@ -33,6 +34,7 @@ struct VS_OUT
     float3 vTangent : TANGENT0;
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : COLOR1;
+    float4 vEndEmissive : COLOR2;
     float3 vWorldPos : TEXCOORD1;
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
@@ -55,6 +57,7 @@ VS_OUT VSMain(VS_IN In)
     Out.vEmissive = In.vInstEmissive;
     Out.life = In.vInstLife; 
     Out.maxLife = In.vInstMaxLife;
+    Out.vEndEmissive = In.vInstEndEmissive;
     return Out;
 }
 
@@ -146,8 +149,9 @@ PS_OUT PSMain(VS_OUT In)
     // 인스턴스별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
-    float3 instEmissive = In.vEmissive.rgb * In.vEmissive.a;
-
+    float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+    float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+    
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
 

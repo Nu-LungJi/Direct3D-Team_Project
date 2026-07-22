@@ -31,7 +31,7 @@ HRESULT CResViewPort::Load(const std::any& arg)
     {
         memcpy(&m_ViewPort, desc, sizeof(D3D11_VIEWPORT));
     }
- 
+
 
     m_eState = STATE::LOADED;
     return S_OK;

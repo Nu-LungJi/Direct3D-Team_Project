@@ -25,6 +25,8 @@ HRESULT CBTSecqunce::Initalize(void* pArg)
     if (FAILED(__super::Initalize(pArg)))
         return E_FAIL;
 
+	m_GuiNode.vColor = _float4(0.1f, 1.f, 0.1f, 1.f);
+
 	return S_OK;
 }
 EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)

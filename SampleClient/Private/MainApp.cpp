@@ -16,7 +16,6 @@
 
 #include "MainAppLoader.h"
 
-
 NS_USING(Client)
 
 CMainApp::CMainApp()
@@ -91,8 +90,14 @@ HRESULT CMainApp::Initialize()
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PHYSX));
 		});
-	
-	
+	CGameInstance::Get().RegisterLevelChangeFunc("TO_CreatureEditor", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::CREATUREEDIT));
+		});
+
+	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
+	CGameInstance::Get().UpdateTimeProvider();
+
 	return S_OK;
 }
 

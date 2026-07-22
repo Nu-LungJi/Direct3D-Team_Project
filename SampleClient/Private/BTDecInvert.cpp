@@ -37,7 +37,7 @@ EVALUATE CBTDecInvert::Evaluate(_float fTimeDelta)
 	else if (eType == EVALUATE::FAILED)
 		eType = EVALUATE::SUCCESS;
 
-	return eType;
+	return m_eDebug = eType;
 }
 
 void		CBTDecInvert::Update_Gui()

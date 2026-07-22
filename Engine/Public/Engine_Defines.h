@@ -65,6 +65,7 @@ using namespace Microsoft::WRL;
 #include "Engine_Base.h"
 #include "Engine_PhysxDefines.h"
 #include "Engine_EnumString.h"
+#include "Engine_ParticleDefines.h"
 namespace E = Engine;
 
 // for study

@@ -92,6 +92,8 @@ void CLevelManager::FrameStart(_float fTimeDelta)
 
 	if (m_pLevelBeforeLevelChange.get())
 	{
+		CGameInstance::Get().ClearMapMeshTextureCache();
+
 		if (m_pCurrentLevel.get())
 		{
 			//m_pCurrentLevel->BeforeLevelChange();

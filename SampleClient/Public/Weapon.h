@@ -20,7 +20,7 @@ public:
 public:
 	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
 	{
-		_string	WeaponName;
+		_string	WeaponName{}, LevelTag{};
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
 	}WEAPON_DESC;
@@ -55,6 +55,8 @@ private:
 	int32_t				m_iBoneSocketIndex{ -1 };
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{false};
+
+	std::vector<E::SPAWN_COMMAND> test;
 public:
 	static E::UPtr<CWeapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

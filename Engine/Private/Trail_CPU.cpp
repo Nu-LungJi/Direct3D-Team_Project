@@ -67,12 +67,12 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	}
 
     m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-    if (FAILED(m_pResVertexShader->Load()))
-        return E_FAIL;
+    //if (FAILED(m_pResVertexShader->Load()))
+    //    return E_FAIL;
 
     m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-    if (FAILED(m_pResPixelShader->Load()))
-        return E_FAIL;
+    //if (FAILED(m_pResPixelShader->Load()))
+    //    return E_FAIL;
 
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
@@ -300,27 +300,24 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 
     pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
 
-	if (m_pNormalTexture)
+
 	{
-		ID3D11ShaderResourceView* pNormalSRV = m_pNormalTexture->GetSRV().Get();
+		ID3D11ShaderResourceView* pNormalSRV = m_pNormalTexture ? m_pNormalTexture->GetSRV().Get() : nullptr;
 		pContext->PSSetShaderResources(2, 1, &pNormalSRV);
 	}
-	if (m_pDistortionTexture)
 	{
-		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture ? m_pDistortionTexture->GetSRV().Get() : nullptr;
 		pContext->PSSetShaderResources(3, 1, &pDistortionSRV);
 	}
-	if (m_pNoiseTexture)
 	{
-		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture ? m_pNoiseTexture->GetSRV().Get() : nullptr;
 		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
 	}
 
-
     pContext->Draw((UINT)m_vecVertices.size(), 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr,nullptr};
-    pContext->PSSetShaderResources(0, 4, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr,nullptr,nullptr ,nullptr };
+    pContext->PSSetShaderResources(0, 6, nullSRV);
 
 	ID3D11Buffer* nullCBuffer[] = { nullptr };
 	pContext->PSSetConstantBuffers(0, 1, nullCBuffer);
@@ -360,7 +357,10 @@ void CTrail_CPU::BuildTrailGeometry()
 
 	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
 	{
-		XMMATRIX matView = CGameInstance::Get().GetActiveCamera()->GetView();
+		auto pCam = CGameInstance::Get().GetActiveCamera();
+		if (pCam == nullptr)
+			return;
+		XMMATRIX matView = pCam->GetView();
 		XMMATRIX matViewInv = XMMatrixInverse(nullptr, matView);
 		//XMStoreFloat3(&vCamPos, matViewInv.r[3]);
 		//camRight = XMVector3Normalize(matViewInv.r[0]);

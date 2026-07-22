@@ -54,7 +54,8 @@ std::future<bool> CLevelLightMapLoader::UnLoad()
 	LOG_MEMORY("start");
 	CGameInstance::Get().Clear_DynamicLightList();
 
-	E::CGameInstance::Get().DelPrototype("LIGHT");
+	E::CGameInstance::Get().DelPrototype("LIGHT_SC");
+	E::CGameInstance::Get().DelResource("LIGHT_SC");
 	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_TEX");
 	E::CGameInstance::Get().DelResource("SAMPLE_CLIENT_BUFFER");
 	E::CGameInstance::Get().DelResource("LOBJ", "Model_Resource");
