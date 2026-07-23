@@ -55,12 +55,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
-    while (true)
+    bool bQuit = false;
+    while (!bQuit)
     {
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
             if (WM_QUIT == msg.message)
             {
+                bQuit = true;
                 break;
             }
 
@@ -69,6 +71,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
             }
+        }
+
+        if (bQuit)
+        {
+            break;
         }
 
         if (FAILED(pMainApp->Loop()))
