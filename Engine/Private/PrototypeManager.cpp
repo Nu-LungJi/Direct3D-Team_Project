@@ -85,6 +85,17 @@ void CPrototypeManager::DelPrototype(const StringID& sGroupTag)
 	}
 }
 
+void CPrototypeManager::DelPrototype(
+	const StringID& sGroupTag, const StringID& sPrototypeTag)
+{
+	std::unique_lock lock{ m_PrototypeMutex };
+	auto groupIter = m_pPrototypes.find(sGroupTag);
+	if (groupIter == m_pPrototypes.end())
+		return;
+
+	groupIter->second.erase(sPrototypeTag);
+}
+
 std::vector<StringID> CPrototypeManager::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	std::vector<StringID> tags{};

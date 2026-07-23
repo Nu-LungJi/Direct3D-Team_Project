@@ -474,6 +474,9 @@
     <ClInclude Include="..\public\TestPhysXTrigger.h">
       <Filter>GameObject\TestPhysx\Trigger</Filter>
     </ClInclude>
+	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h">
+	  <Filter>GameObject\TestPhysx\Trigger</Filter>
+	</ClInclude>
     <ClInclude Include="..\public\BTDecHitCnt.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
@@ -606,6 +609,9 @@
     <ClCompile Include="..\private\TestPhysXCapsule.cpp">
       <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
+	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp">
+	  <Filter>GameObject\TestPhysx\Trigger</Filter>
+	</ClCompile>
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>

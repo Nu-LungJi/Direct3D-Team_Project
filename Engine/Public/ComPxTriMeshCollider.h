@@ -14,6 +14,7 @@ public:
 	struct DESC : CComPxCollider::DESC
 	{
 		SPtr<CResPhysXTriMeshGeometry> pResTriMesh{};
+		_float3 vScale{ 1.f, 1.f, 1.f };
 	};
 public:
 	DECLARE_DERIVED_TYPE(CComPxTriMeshCollider, CComPxCollider)

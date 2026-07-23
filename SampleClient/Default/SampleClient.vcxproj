@@ -271,6 +271,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestPhysXCapsule.h" />
     <ClInclude Include="..\public\TestPhysXTerrain.h" />
     <ClInclude Include="..\public\TestPhysXTrigger.h" />
+	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h">
@@ -377,6 +378,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="..\Private\TestPartObject.cpp" />
     <ClCompile Include="..\private\TestPhysXTrigger.cpp" />
+	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="..\private\TextBox.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp">

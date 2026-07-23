@@ -121,8 +121,8 @@ float4 PSMain(VS_OUT In) : SV_TARGET
 	float2	UVScale  = float2(1.f, 1.f);
 	float2  UVScroll = float2(0.f, 0.f);
 	
-	float2	UVNoise = In.vTexcoord * float2(1.f, 2.f) - float2(0.f, In.maxLife * 2.f);
-	
+	float2 UVNoise = In.vTexcoord * float2(1.f, 1.f);//-float2(0.f, In.maxLife * 2.f);
+	UVNoise += In.life * 0.5f;
 	float4	PackColor = AlbedoMap.Sample(LinearWrap, UVNoise);
 	
 	float	DistortionNoiseValue = AlbedoMap.Sample(LinearWrap, UVNoise).r;
@@ -165,7 +165,7 @@ float4 PSMain(VS_OUT In) : SV_TARGET
 	float3 Emissive = (OuterMask + CoreMask) * LifeMask;
 	float  Alpha = OuterMask * LifeMask;
 	
-	return float4(Emissive, Alpha);
+	return float4(In.vTexcoord.yyy, Alpha);
 }
 
 float4 PSMain_Extra(VS_OUT In) : SV_TARGET

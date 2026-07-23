@@ -176,6 +176,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
+	void DelPrototype(const StringID& sGroupTag, const StringID& sPrototypeTag);
 	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 #pragma endregion
 
@@ -443,24 +444,76 @@ public:
 #pragma region SERIALIZE_MANAGER
 public:
 	template<typename T>
-	HRESULT BinDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "BIN")
+	HRESULT BinDeSerialize(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "BIN",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->BinDeSerialize(path, outValue, rootName);
+		return m_pSerializeManager->BinDeSerialize(path, outValue, rootName, bShowError);
 	}
 	template<typename T>
-	HRESULT BinSerialize(const std::string& path, const T& value, const std::string& rootName = "BIN")
+	HRESULT BinSerialize(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "BIN",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->BinSerialize(path, value, rootName);
+		return m_pSerializeManager->BinSerialize(path, value, rootName, bShowError);
 	}
 	template<typename T>
-	HRESULT JsonDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "JSON")
+	HRESULT JsonDeSerialize(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "JSON",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName);
+		return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName, bShowError);
 	}
 	template<typename T>
-	HRESULT JsonSerialize(const std::string& path, const T& value, const std::string& rootName = "JSON")
+	HRESULT JsonSerialize(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "JSON",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->JsonSerialize(path, value, rootName);
+		return m_pSerializeManager->JsonSerialize(path, value, rootName, bShowError);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT BinDeSerializeDetailed(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "BIN")
+	{
+		return m_pSerializeManager->BinDeSerializeDetailed(path, outValue, rootName);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT BinSerializeDetailed(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "BIN")
+	{
+		return m_pSerializeManager->BinSerializeDetailed(path, value, rootName);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT JsonDeSerializeDetailed(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "JSON")
+	{
+		return m_pSerializeManager->JsonDeSerializeDetailed(path, outValue, rootName);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT JsonSerializeDetailed(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "JSON")
+	{
+		return m_pSerializeManager->JsonSerializeDetailed(path, value, rootName);
 	}
 #pragma endregion
 
