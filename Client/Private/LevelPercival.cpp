@@ -24,6 +24,8 @@ CLevelPercival::~CLevelPercival()
 HRESULT CLevelPercival::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
+	if (FAILED(E::CGameInstance::Get().LoadMap(CLevelPercivalLoader::MAP_PATH, true)))
+		return E_FAIL;
 
 	//{
 	//	CBackGround::UIOBJECT_DESC Desc{};

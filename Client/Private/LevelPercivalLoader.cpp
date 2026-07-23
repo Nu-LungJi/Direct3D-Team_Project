@@ -17,7 +17,7 @@ std::future<bool> CLevelPercivalLoader::Load()
 			// 워커 스레드
 			
 			// 워커 스레드 종료
-			return  true;
+			return SUCCEEDED(E::CGameInstance::Get().LoadMapResources(MAP_PATH));
 		});
 }
 
@@ -28,6 +28,9 @@ std::future<bool> CLevelPercivalLoader::UnLoad()
 	LOG_MEMORY("end");
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_PERCIVAL", []()
 		{
+			E::CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
+			E::CGameInstance::Get().ClearAllChunk();
+			E::CGameInstance::Get().DelResource(E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
 			return true;
 		});
 }
