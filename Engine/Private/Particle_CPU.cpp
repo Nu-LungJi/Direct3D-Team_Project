@@ -342,6 +342,10 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		MakeSmoke(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEJUMP) != 0) {
 		JumpSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGV) != 0) {
+		GVBurstSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGW) != 0) {
+		GWWaveSmoke(p, fTimeDelta);
 	}
 
 	
@@ -369,7 +373,19 @@ void CParticle_CPU::JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	if (t >= 0.2f)
 		p.vVelocity.y += fSpeed * fTimeDelta;
 }
-	
+
+void CParticle_CPU::GVBurstSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	XMStoreFloat3(&p.vVelocity,XMLoadFloat3(&p.vVelocity) * expf(-2.f * fTimeDelta));
+}
+
+void CParticle_CPU::GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	XMStoreFloat3(&p.vVelocity, XMLoadFloat3(&p.vVelocity) * expf(-4.f * fTimeDelta));
+
+}
+
+
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
 	if (pSpawnData == nullptr || count == 0)

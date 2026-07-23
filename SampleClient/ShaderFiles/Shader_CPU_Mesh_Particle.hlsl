@@ -8,21 +8,28 @@
 
 struct VS_IN
 {
-    float3 vPosition : POSITION;
-    float3 vNormal : NORMAL;
-    float3 vTangent : TANGENT;
-    float3 vBinormal : BINORMAL;
-    float2 vTexcoord : TEXCOORD0;
+	float3 vPosition : POSITION;
+	float3 vNormal : NORMAL;
+	float3 vTangent : TANGENT;
+	float3 vBinormal : BINORMAL;
+	float2 vTexcoord : TEXCOORD0;
 
-    float4 vInstRow0 : INSTANCE_WORLD0;
-    float4 vInstRow1 : INSTANCE_WORLD1;
-    float4 vInstRow2 : INSTANCE_WORLD2;
-    float4 vInstRow3 : INSTANCE_WORLD3;
-    float4 vInstColor : INSTANCE_COLOR;
-    float4 vInstEmissive : INSTANCE_EMISSIVE;
-    float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
-    float vInstLife : INSTANCE_LIFE;
-    float vInstMaxLife : INSTANCE_MAXLIFE; 
+    // Per-Instance - VTX_PARTICLE_INSTANCED_DATA와 바이트 레이아웃 일치.
+    // "INSTANCE_" 접두사가 있어야 CResVertexShader::Load()의 리플렉션이
+    // 이 필드들을 슬롯 1(인스턴스 버퍼)로 인식한다.
+	float4 vWorld0 : INSTANCE_WORLD0;
+	float4 vWorld1 : INSTANCE_WORLD1;
+	float4 vWorld2 : INSTANCE_WORLD2;
+	float4 vWorld3 : INSTANCE_WORLD3;
+	float4 vColor : INSTANCE_COLOR0;
+	float4 vInstEmissive : INSTANCE_EMISSIVE;
+	float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
+	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
+	float2 uvOffset : INSTANCE_UVOFFSET;
+	float2 uvSize : INSTANCE_UVSIZE;
+	float life : INSTANCE_LIFE; // 추가 
+	float maxLife : INSTANCE_MAXLIFE; // 추가
+	uint iBehaviorType : INSTANCE_BEHAVIORTYPE;
 };
 
 struct VS_OUT
@@ -44,7 +51,7 @@ VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out = (VS_OUT) 0;
 
-    matrix matWorld = matrix(In.vInstRow0, In.vInstRow1, In.vInstRow2, In.vInstRow3);
+	matrix matWorld = matrix(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
     float4 vWorldPos = mul(float4(In.vPosition, 1.0f), matWorld);
 
     Out.vPosition = mul(vWorldPos, g_matViewProj);
@@ -53,10 +60,10 @@ VS_OUT VSMain(VS_IN In)
     Out.vNormal = normalize(mul(In.vNormal, (float3x3) matWorld));
     Out.vTangent = normalize(mul(In.vTangent, (float3x3) matWorld));
     Out.vBinormal = normalize(mul(In.vBinormal, (float3x3) matWorld));
-    Out.vColor = In.vInstColor;
+    Out.vColor = In.vColor;
     Out.vEmissive = In.vInstEmissive;
-    Out.life = In.vInstLife; 
-    Out.maxLife = In.vInstMaxLife;
+    Out.life = In.life; 
+    Out.maxLife = In.maxLife;
     Out.vEndEmissive = In.vInstEndEmissive;
     return Out;
 }
@@ -160,4 +167,36 @@ PS_OUT PSMain(VS_OUT In)
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
     
+}
+PS_OUT PS_SMOKE_MAIN(VS_OUT In)
+{
+	PS_OUT Out;
+	float2 noiseUV = float2(In.vTexcoord.x * 5.f , In.vTexcoord.y * 0.12f);
+	noiseUV.y += In.life * 0.05f;
+		
+	float2 warpUV = float2(In.vTexcoord.x * 3.f, In.vTexcoord.y * 0.35f);
+	warpUV.y += In.life * 0.015f;
+
+	float2 warp = NormalMap.Sample(LinearWrap, warpUV).rg * 2.f - 1.f;
+	float noise = NoiseMap.Sample(LinearWrap, noiseUV + warp * 0.015f).r;
+
+	
+		//마스크는 픽셀을 얼마나 보여주는지에대한것	
+	float heightMask = smoothstep(0.35f, 1.f, In.vTexcoord.y + (noise - 0.5f) * 0.45f);
+	float softnoise = smoothstep(0.15f, 0.85f, noise);
+	heightMask *= 1.f - smoothstep(0.85f, 1.f, In.vTexcoord.y);
+	
+	float t = saturate(In.life / In.maxLife);
+	float lifeFade = smoothstep(0.f, 0.1f, t)*
+	(1.f - smoothstep(0.5f, 1.f, t));
+	float alpha = heightMask * In.vColor.a * lifeFade * lerp(0.08f, 1.f, softnoise);
+	
+	alpha = saturate(alpha);
+	
+	float2 distortion = warp * 0.01f * alpha;
+	float3 glowColor = In.vColor.rgb * lerp(0.3f ,1.f, softnoise);
+
+	Out.vDiffuse = float4(glowColor, alpha);
+	
+	return Out;
 }

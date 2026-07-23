@@ -1396,8 +1396,8 @@ HRESULT CRenderer::Render_Alpha() {
 HRESULT CRenderer::Render_Effect()
 {
 	// Rasterizer Setting
-	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
-	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	ZoneScopedN("Render_Effect");
 	{
@@ -1427,8 +1427,8 @@ HRESULT CRenderer::Render_Effect()
 	Unbind_Resources();
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetEffect;
-	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	return S_OK;
 }
 

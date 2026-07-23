@@ -43,7 +43,7 @@ struct VTX_PARTICLE_INSTANCED_DATA
 	_float    maxLife;
 	uint32_t iBehaviorType = 0;
 };
-
+ 
 typedef struct tagParticleCircleToWave
 {
 	_float3 g_vFlowDirection; // 물결이 흘러가는 방향 (정규화, XZ 평면 기준)
@@ -116,6 +116,8 @@ private:
 
 	void		 MakeSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 	void         JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void	     GVBurstSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void		 GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 private:
     // m_Particles를 순회하며 수명/UpdateBehavior 처리 후 m_vecInstancedData 재구성
     void Simulate(E::_float fTimeDelta);
