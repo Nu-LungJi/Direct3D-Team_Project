@@ -16,7 +16,12 @@ class CMyMagicSquareStep final: public CGameObject
 {
 public:
 	enum class STATE
-	{ IDLE, MOVE };
+	{
+		IDLE,
+		MOVE,
+		BOUNCE_RISE,
+		BOUNCE_SETTLE
+	};
 public:
 	DECLARE_DERIVED_TYPE(CMyMagicSquareStep, CGameObject)
 
@@ -67,9 +72,18 @@ private:
 
 public:
 	void SetMoveTarget(_fvector vMoveTarget);
+	void SetBounceMoveTarget(
+		_fvector vFinalTarget,
+		_float fRiseSpeed,
+		_float fBounceHeight,
+		_float fSettleSpeed);
+	void SetKinematicPosition(
+		const _float3& vPosition);
 	_fvector GetMoveTarget() const { return XMLoadFloat3(&m_vMoveTarget); };
 private:
 	_float3 m_vMoveTarget{};
+	_float3 m_vFinalMoveTarget{};
+	_float m_fBounceSettleSpeed{ 1.f };
 
 public:
 	STATE GetState() const { return m_eState; }

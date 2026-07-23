@@ -25,10 +25,23 @@ public:
 		Z
 	};
 
+	enum class RISE_FILL_MODE
+	{
+		X,
+		Z,
+		RADIAL
+	};
+
 	enum class FILL_DIRECTION
 	{
 		FORWARD,
 		REVERSE
+	};
+
+	enum class LAYOUT_TYPE
+	{
+		RECT,
+		FILLED_CIRCLE
 	};
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
@@ -36,7 +49,7 @@ public:
 		uint32_t iMaxSpawnPerFrame{ 50 };
 	};
 
-	struct GROUP_DESC
+	struct RECT_GROUP_DESC
 	{
 		_float3 vStartPosition{};
 		uint32_t iCountX{ 1 };
@@ -45,14 +58,50 @@ public:
 		_float fSpacingZ{ 1.007f };
 	};
 
+	struct FILLED_CIRCLE_GROUP_DESC
+	{
+		_float3 vCenter{};
+		_float fRadius{ 5.f };
+		_float fSpacing{ 1.007f };
+	};
+
 	struct RISE_PATTERN_DESC
 	{
-		_float fTargetY{};
+		_float fStartTargetY{};
+		_float fEndTargetY{};
 		_float fMoveSpeed{ 2.f };
+		_float fBounceHeight{};
+		_float fBounceSettleSpeed{ 1.f };
+		_float fLineInterval{ 0.1f };
+		_float fStepInterval{ 0.02f };
+		_float fStepTimingCurve{ 0.55f };
+		_float fStepTimingJitter{ 0.01f };
+		RISE_FILL_MODE eFillMode{
+			RISE_FILL_MODE::X };
+		FILL_AXIS eHeightAxis{ FILL_AXIS::X };
+		FILL_DIRECTION eDirection{
+			FILL_DIRECTION::FORWARD };
+	};
+
+	struct WAVE_PATTERN_DESC
+	{
+		_float fAmplitude{ 1.f };
+		_float fWaveDuration{ 1.f };
 		_float fLineInterval{ 0.1f };
 		FILL_AXIS eAxis{ FILL_AXIS::X };
 		FILL_DIRECTION eDirection{
 			FILL_DIRECTION::FORWARD };
+	};
+
+	struct LAYOUT_POINT
+	{
+		_float3 vPosition{};
+		uint32_t iIndexX{};
+		uint32_t iIndexZ{};
+		_float fNormalizedX{};
+		_float fNormalizedZ{};
+		_float fRadialDistance{};
+		_float fNormalizedRadius{};
 	};
 
 	struct STEP_DATA
@@ -61,18 +110,31 @@ public:
 		uint32_t iIndexX{};
 		uint32_t iIndexZ{};
 		_float3 vSpawnPosition{};
+		_float3 vPatternBasePosition{};
+		_float fNormalizedX{};
+		_float fNormalizedZ{};
+		_float fRadialDistance{};
+		_float fNormalizedRadius{};
+		_bool bRiseIssued{};
 	};
 
 	struct GROUP
 	{
-		GROUP_DESC tDesc{};
+		LAYOUT_TYPE eLayoutType{
+			LAYOUT_TYPE::RECT };
+		std::vector<LAYOUT_POINT> vecLayoutPoints{};
 		std::vector<STEP_DATA> vecSteps{};
+		_float fSpawnBaseY{};
+		uint32_t iGridCountX{};
+		uint32_t iGridCountZ{};
+		_float fMaxRadialDistance{};
 		GROUP_STATE eState{ GROUP_STATE::REGISTERED };
 		size_t iTargetCount{};
 		size_t iSpawnedCount{};
 		std::optional<RISE_PATTERN_DESC> oRisePattern{};
+		std::optional<WAVE_PATTERN_DESC> oWavePattern{};
 		_float fPatternElapsed{};
-		uint32_t iIssuedLineCount{};
+		size_t iIssuedStepCount{};
 	};
 
 private:
@@ -82,6 +144,10 @@ private:
 		_float3 vPosition{};
 		uint32_t iIndexX{};
 		uint32_t iIndexZ{};
+		_float fNormalizedX{};
+		_float fNormalizedZ{};
+		_float fRadialDistance{};
+		_float fNormalizedRadius{};
 	};
 
 private:
@@ -93,17 +159,24 @@ private:
 public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(_float fTimeDelta) override;
+	void FixedUpdate(_float fTimeDelta) override;
 	void Update(_float fTimeDelta) override;
 	void UpdateGUI() override;
 
-	_bool RegistGroup(
+	_bool RegistRectGroup(
 		StringID GroupID,
-		const GROUP_DESC& Desc);
+		const RECT_GROUP_DESC& Desc);
+	_bool RegistFilledCircleGroup(
+		StringID GroupID,
+		const FILLED_CIRCLE_GROUP_DESC& Desc);
 	_bool SpawnGroup(StringID GroupID);
 	_bool DeleteGroup(StringID GroupID);
 	_bool StartRisePattern(
 		StringID GroupID,
 		const RISE_PATTERN_DESC& Desc);
+	_bool StartWavePattern(
+		StringID GroupID,
+		const WAVE_PATTERN_DESC& Desc);
 
 	std::optional<GROUP_STATE> GetGroupState(
 		StringID GroupID) const;
@@ -119,9 +192,12 @@ private:
 	void UpdateRisePattern(
 		GROUP& Group,
 		_float fTimeDelta);
-	_bool IssueRiseLine(
+	_bool IssueRiseStep(
 		GROUP& Group,
-		uint32_t iLineIndex);
+		STEP_DATA& StepData);
+	void UpdateWavePattern(
+		GROUP& Group,
+		_float fTimeDelta);
 
 private:
 	std::unordered_map<StringID, GROUP> m_mapGroup{};
@@ -129,11 +205,25 @@ private:
 	uint32_t m_iMaxSpawnPerFrame{ 50 };
 
 private:
-	_float m_fGUIRiseTargetY{ 3.f };
+	_float m_fGUIStartTargetY{ 3.f };
+	_float m_fGUIEndTargetY{ 3.f };
 	_float m_fGUIMoveSpeed{ 2.f };
+	_float m_fGUIBounceHeight{ 0.3f };
+	_float m_fGUIBounceSettleSpeed{ 1.f };
 	_float m_fGUILineInterval{ 0.1f };
-	FILL_AXIS m_eGUIFillAxis{ FILL_AXIS::X };
+	_float m_fGUIStepInterval{ 0.02f };
+	_float m_fGUIStepTimingCurve{ 0.55f };
+	_float m_fGUIStepTimingJitter{ 0.01f };
+	RISE_FILL_MODE m_eGUIRiseFillMode{
+		RISE_FILL_MODE::X };
+	FILL_AXIS m_eGUIHeightAxis{ FILL_AXIS::X };
 	FILL_DIRECTION m_eGUIFillDirection{
+		FILL_DIRECTION::FORWARD };
+	_float m_fGUIWaveAmplitude{ 1.f };
+	_float m_fGUIWaveDuration{ 1.f };
+	_float m_fGUIWaveLineInterval{ 0.1f };
+	FILL_AXIS m_eGUIWaveAxis{ FILL_AXIS::X };
+	FILL_DIRECTION m_eGUIWaveDirection{
 		FILL_DIRECTION::FORWARD };
 };
 

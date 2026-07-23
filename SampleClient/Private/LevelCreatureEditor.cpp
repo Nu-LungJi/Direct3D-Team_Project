@@ -451,31 +451,65 @@ HRESULT CLevelCreatureEditor::InitializeMyMagicSquareStep()
 			return E_FAIL;
 
 		const StringID GroupID{ "CreatureMagicSquareGrid" };
-		CMyMagicSquareStepController::GROUP_DESC GroupDesc{};
-		GroupDesc.vStartPosition = { 0.f, -3.f, 0.f };
-		GroupDesc.iCountX = 30;
-		GroupDesc.iCountZ = 10;
-		GroupDesc.fSpacingX = 1.007f;
-		GroupDesc.fSpacingZ = 1.007f;
+		CMyMagicSquareStepController::RECT_GROUP_DESC
+			RectDesc{};
+		RectDesc.vStartPosition = { 0.f, -3.f, 0.f };
+		RectDesc.iCountX = 30;
+		RectDesc.iCountZ = 10;
+		RectDesc.fSpacingX = 1.007f;
+		RectDesc.fSpacingZ = 1.007f;
 
-		if (!pController->RegistGroup(GroupID, GroupDesc) ||
-			!pController->SpawnGroup(GroupID))
-			return E_FAIL;
+		//if (!pController->RegistRectGroup(
+		//		GroupID,
+		//		RectDesc) ||
+		//	!pController->SpawnGroup(GroupID))
+		//	return E_FAIL;
 
 		CMyMagicSquareStepController::RISE_PATTERN_DESC
 			RiseDesc{};
-		RiseDesc.fTargetY = 3.f;
+		RiseDesc.fStartTargetY = 3.f;
+		RiseDesc.fEndTargetY = 3.f;
 		RiseDesc.fMoveSpeed = 2.f;
+		RiseDesc.fBounceHeight = 0.3f;
+		RiseDesc.fBounceSettleSpeed = 1.f;
 		RiseDesc.fLineInterval = 0.1f;
-		RiseDesc.eAxis =
+		RiseDesc.fStepInterval = 0.02f;
+		RiseDesc.fStepTimingCurve = 0.55f;
+		RiseDesc.fStepTimingJitter = 0.01f;
+		RiseDesc.eFillMode =
+			CMyMagicSquareStepController::
+				RISE_FILL_MODE::X;
+		RiseDesc.eHeightAxis =
 			CMyMagicSquareStepController::
 				FILL_AXIS::X;
 		RiseDesc.eDirection =
 			CMyMagicSquareStepController::
 				FILL_DIRECTION::FORWARD;
-		if (!pController->StartRisePattern(
-			GroupID,
-			RiseDesc))
+		//if (!pController->StartRisePattern(
+		//	GroupID,
+		//	RiseDesc))
+		//	return E_FAIL;
+
+		const StringID CircleGroupID{
+			"CreatureMagicCircleGrid" };
+		CMyMagicSquareStepController::
+			FILLED_CIRCLE_GROUP_DESC CircleDesc{};
+		CircleDesc.vCenter = { 40.f, -3.f, 5.f };
+		CircleDesc.fRadius = 13.f;
+		CircleDesc.fSpacing = 1.007f;
+		RiseDesc.eFillMode =
+			CMyMagicSquareStepController::
+				RISE_FILL_MODE::RADIAL;
+		RiseDesc.fStepTimingJitter = 0.08f;
+
+		if (!pController->RegistFilledCircleGroup(
+				CircleGroupID,
+				CircleDesc) ||
+			!pController->SpawnGroup(
+				CircleGroupID) ||
+			!pController->StartRisePattern(
+				CircleGroupID,
+				RiseDesc))
 			return E_FAIL;
 	}
 

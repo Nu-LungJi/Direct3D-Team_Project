@@ -39,6 +39,7 @@ HRESULT CMyMagicSquareStep::Initialize(void* pArg)
 	GetTransform().SetScale(pDesc->vInitialScale);
 
 	m_vMoveTarget = pDesc->vInitialPosition;
+	m_vFinalMoveTarget = pDesc->vInitialPosition;
 
 	{
 		CComStaticModelInstance::DESC Desc{};
@@ -103,14 +104,30 @@ void CMyMagicSquareStep::FixedUpdate(_float fTimeDelta)
 	if (fDistance <= FLT_EPSILON)
 	{
 		vNext = m_vMoveTarget;
-		m_eState = STATE::IDLE;
-		return;
 	}
 	else
 	{
 		const _float fMoveDistance = std::min(m_fSpeed * fTimeDelta, fDistance);
 		XMStoreFloat3(&vNext, XMLoadFloat3(&vCurrent) + XMVector3Normalize(vDelta) * fMoveDistance);
 		if (fMoveDistance >= fDistance)
+			vNext = m_vMoveTarget;
+	}
+
+	if (fDistance <= FLT_EPSILON ||
+		XMVector3Equal(
+			XMLoadFloat3(&vNext),
+			XMLoadFloat3(&m_vMoveTarget)))
+	{
+		if (m_eState == STATE::BOUNCE_RISE)
+		{
+			m_vMoveTarget =
+				m_vFinalMoveTarget;
+			m_fSpeed =
+				m_fBounceSettleSpeed;
+			m_eState =
+				STATE::BOUNCE_SETTLE;
+		}
+		else
 		{
 			m_eState = STATE::IDLE;
 		}
@@ -184,7 +201,40 @@ void CMyMagicSquareStep::UpdateGUI()
 void CMyMagicSquareStep::SetMoveTarget(_fvector vMoveTarget)
 {
 	XMStoreFloat3(&m_vMoveTarget, vMoveTarget);
+	m_vFinalMoveTarget = m_vMoveTarget;
 	m_eState = STATE::MOVE;
+}
+
+void CMyMagicSquareStep::SetBounceMoveTarget(
+	_fvector vFinalTarget,
+	_float fRiseSpeed,
+	_float fBounceHeight,
+	_float fSettleSpeed)
+{
+	XMStoreFloat3(
+		&m_vFinalMoveTarget,
+		vFinalTarget);
+	m_vMoveTarget = m_vFinalMoveTarget;
+	m_vMoveTarget.y += fBounceHeight;
+	m_fSpeed = fRiseSpeed;
+	m_fBounceSettleSpeed = fSettleSpeed;
+	m_eState = STATE::BOUNCE_RISE;
+}
+
+void CMyMagicSquareStep::SetKinematicPosition(
+	const _float3& vPosition)
+{
+	m_vMoveTarget = vPosition;
+	m_vFinalMoveTarget = vPosition;
+	m_eState = STATE::IDLE;
+	GetTransform().SetPosition(vPosition);
+
+	if (m_pComPxRigidBody)
+	{
+		m_pComPxRigidBody->SetKinematicTarget(
+			vPosition,
+			GetTransform().GetQuaternion());
+	}
 }
 
 UPtr<CMyMagicSquareStep> CMyMagicSquareStep::Create()

@@ -37,11 +37,27 @@ void CMyMagicSquareStepController::PriorityUpdate(
 		{
 			Group.eState = GROUP_STATE::PATTERN_RUNNING;
 			Group.fPatternElapsed = 0.f;
-			Group.iIssuedLineCount = 0;
+			Group.iIssuedStepCount = 0;
 		}
 
 		if (Group.eState == GROUP_STATE::PATTERN_RUNNING)
 			UpdateRisePattern(Group, fTimeDelta);
+	}
+}
+
+void CMyMagicSquareStepController::FixedUpdate(
+	_float fTimeDelta)
+{
+	for (auto& [GroupID, Group] : m_mapGroup)
+	{
+		if (Group.eState ==
+				GROUP_STATE::PATTERN_RUNNING &&
+			Group.oWavePattern)
+		{
+			UpdateWavePattern(
+				Group,
+				fTimeDelta);
+		}
 	}
 }
 
@@ -78,8 +94,12 @@ void CMyMagicSquareStepController::UpdateGUI()
 	ImGui::Separator();
 	ImGui::Text("Rise Pattern Test");
 	ImGui::DragFloat(
-		"Rise Target Y",
-		&m_fGUIRiseTargetY,
+		"Start Target Y",
+		&m_fGUIStartTargetY,
+		0.1f);
+	ImGui::DragFloat(
+		"End Target Y",
+		&m_fGUIEndTargetY,
 		0.1f);
 	ImGui::DragFloat(
 		"Move Speed",
@@ -87,27 +107,80 @@ void CMyMagicSquareStepController::UpdateGUI()
 		0.1f,
 		0.01f);
 	ImGui::DragFloat(
+		"Bounce Height",
+		&m_fGUIBounceHeight,
+		0.05f,
+		0.f);
+	ImGui::DragFloat(
+		"Bounce Settle Speed",
+		&m_fGUIBounceSettleSpeed,
+		0.1f,
+		0.01f);
+	ImGui::DragFloat(
 		"Line Interval",
 		&m_fGUILineInterval,
 		0.01f,
 		0.f);
+	ImGui::DragFloat(
+		"Step Interval",
+		&m_fGUIStepInterval,
+		0.005f,
+		0.f);
+	ImGui::DragFloat(
+		"Step Timing Curve",
+		&m_fGUIStepTimingCurve,
+		0.05f,
+		0.1f,
+		2.f);
+	ImGui::DragFloat(
+		"Step Timing Jitter",
+		&m_fGUIStepTimingJitter,
+		0.001f,
+		0.f);
 
 	if (ImGui::RadioButton(
-		"Axis X",
-		m_eGUIFillAxis == FILL_AXIS::X))
+		"Fill Axis X",
+		m_eGUIRiseFillMode ==
+			RISE_FILL_MODE::X))
 	{
-		m_eGUIFillAxis = FILL_AXIS::X;
+		m_eGUIRiseFillMode =
+			RISE_FILL_MODE::X;
 	}
 	ImGui::SameLine();
 	if (ImGui::RadioButton(
-		"Axis Z",
-		m_eGUIFillAxis == FILL_AXIS::Z))
+		"Fill Axis Z",
+		m_eGUIRiseFillMode ==
+			RISE_FILL_MODE::Z))
 	{
-		m_eGUIFillAxis = FILL_AXIS::Z;
+		m_eGUIRiseFillMode =
+			RISE_FILL_MODE::Z;
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton(
+		"Fill Radial",
+		m_eGUIRiseFillMode ==
+			RISE_FILL_MODE::RADIAL))
+	{
+		m_eGUIRiseFillMode =
+			RISE_FILL_MODE::RADIAL;
 	}
 
 	if (ImGui::RadioButton(
-		"Forward",
+		"Height Axis X",
+		m_eGUIHeightAxis == FILL_AXIS::X))
+	{
+		m_eGUIHeightAxis = FILL_AXIS::X;
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton(
+		"Height Axis Z",
+		m_eGUIHeightAxis == FILL_AXIS::Z))
+	{
+		m_eGUIHeightAxis = FILL_AXIS::Z;
+	}
+
+	if (ImGui::RadioButton(
+		"Forward / Center Out",
 		m_eGUIFillDirection ==
 			FILL_DIRECTION::FORWARD))
 	{
@@ -116,11 +189,60 @@ void CMyMagicSquareStepController::UpdateGUI()
 	}
 	ImGui::SameLine();
 	if (ImGui::RadioButton(
-		"Reverse",
+		"Reverse / Outside In",
 		m_eGUIFillDirection ==
 			FILL_DIRECTION::REVERSE))
 	{
 		m_eGUIFillDirection =
+			FILL_DIRECTION::REVERSE;
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Wave Pattern Test");
+	ImGui::DragFloat(
+		"Wave Amplitude",
+		&m_fGUIWaveAmplitude,
+		0.1f);
+	ImGui::DragFloat(
+		"Wave Duration",
+		&m_fGUIWaveDuration,
+		0.05f,
+		0.01f);
+	ImGui::DragFloat(
+		"Wave Line Interval",
+		&m_fGUIWaveLineInterval,
+		0.01f,
+		0.f);
+
+	if (ImGui::RadioButton(
+		"Wave Axis X",
+		m_eGUIWaveAxis == FILL_AXIS::X))
+	{
+		m_eGUIWaveAxis = FILL_AXIS::X;
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton(
+		"Wave Axis Z",
+		m_eGUIWaveAxis == FILL_AXIS::Z))
+	{
+		m_eGUIWaveAxis = FILL_AXIS::Z;
+	}
+
+	if (ImGui::RadioButton(
+		"Wave Forward",
+		m_eGUIWaveDirection ==
+			FILL_DIRECTION::FORWARD))
+	{
+		m_eGUIWaveDirection =
+			FILL_DIRECTION::FORWARD;
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton(
+		"Wave Reverse",
+		m_eGUIWaveDirection ==
+			FILL_DIRECTION::REVERSE))
+	{
+		m_eGUIWaveDirection =
 			FILL_DIRECTION::REVERSE;
 	}
 
@@ -149,15 +271,29 @@ void CMyMagicSquareStepController::UpdateGUI()
 					m_fGUIMoveSpeed;
 				PatternDesc.fLineInterval =
 					m_fGUILineInterval;
-				PatternDesc.eAxis =
-					m_eGUIFillAxis;
+				PatternDesc.fStepInterval =
+					m_fGUIStepInterval;
+				PatternDesc.fStepTimingCurve =
+					m_fGUIStepTimingCurve;
+				PatternDesc.fStepTimingJitter =
+					m_fGUIStepTimingJitter;
+				PatternDesc.eFillMode =
+					m_eGUIRiseFillMode;
+				PatternDesc.eHeightAxis =
+					m_eGUIHeightAxis;
 				PatternDesc.eDirection =
 					m_eGUIFillDirection;
 
 				if (ImGui::Button("Move Up"))
 				{
-					PatternDesc.fTargetY =
-						m_fGUIRiseTargetY;
+					PatternDesc.fStartTargetY =
+						m_fGUIStartTargetY;
+					PatternDesc.fEndTargetY =
+						m_fGUIEndTargetY;
+					PatternDesc.fBounceHeight =
+						m_fGUIBounceHeight;
+					PatternDesc.fBounceSettleSpeed =
+						m_fGUIBounceSettleSpeed;
 					StartRisePattern(
 						GroupID,
 						PatternDesc);
@@ -165,12 +301,31 @@ void CMyMagicSquareStepController::UpdateGUI()
 				ImGui::SameLine();
 				if (ImGui::Button("Move Down"))
 				{
-					PatternDesc.fTargetY =
-						Group.tDesc
-							.vStartPosition.y;
+					PatternDesc.fStartTargetY =
+						Group.fSpawnBaseY;
+					PatternDesc.fEndTargetY =
+						Group.fSpawnBaseY;
 					StartRisePattern(
 						GroupID,
 						PatternDesc);
+				}
+
+				WAVE_PATTERN_DESC WaveDesc{};
+				WaveDesc.fAmplitude =
+					m_fGUIWaveAmplitude;
+				WaveDesc.fWaveDuration =
+					m_fGUIWaveDuration;
+				WaveDesc.fLineInterval =
+					m_fGUIWaveLineInterval;
+				WaveDesc.eAxis =
+					m_eGUIWaveAxis;
+				WaveDesc.eDirection =
+					m_eGUIWaveDirection;
+				if (ImGui::Button("Start Wave"))
+				{
+					StartWavePattern(
+						GroupID,
+						WaveDesc);
 				}
 			}
 			else
@@ -191,9 +346,9 @@ void CMyMagicSquareStepController::UpdateGUI()
 		DeleteGroup(*oDeleteGroup);
 }
 
-_bool CMyMagicSquareStepController::RegistGroup(
+_bool CMyMagicSquareStepController::RegistRectGroup(
 	StringID GroupID,
-	const GROUP_DESC& Desc)
+	const RECT_GROUP_DESC& Desc)
 {
 	if (GroupID.hash == 0 ||
 		Desc.iCountX == 0 ||
@@ -209,10 +364,192 @@ _bool CMyMagicSquareStepController::RegistGroup(
 		return false;
 
 	GROUP Group{};
-	Group.tDesc = Desc;
+	Group.eLayoutType = LAYOUT_TYPE::RECT;
+	Group.fSpawnBaseY = Desc.vStartPosition.y;
+	Group.iGridCountX = Desc.iCountX;
+	Group.iGridCountZ = Desc.iCountZ;
+	const _float fCenterIndexX =
+		static_cast<_float>(Desc.iCountX - 1) *
+		0.5f;
+	const _float fCenterIndexZ =
+		static_cast<_float>(Desc.iCountZ - 1) *
+		0.5f;
+	Group.fMaxRadialDistance =
+		sqrtf(
+			fCenterIndexX * fCenterIndexX +
+			fCenterIndexZ * fCenterIndexZ);
 	Group.iTargetCount =
 		static_cast<size_t>(iTargetCount);
+	Group.vecLayoutPoints.reserve(
+		Group.iTargetCount);
 	Group.vecSteps.reserve(Group.iTargetCount);
+
+	for (uint32_t z = 0; z < Desc.iCountZ; ++z)
+	{
+		for (uint32_t x = 0; x < Desc.iCountX; ++x)
+		{
+			Group.vecLayoutPoints.push_back({
+				.vPosition = {
+					Desc.vStartPosition.x +
+						static_cast<_float>(x) *
+						Desc.fSpacingX,
+					Desc.vStartPosition.y,
+					Desc.vStartPosition.z +
+						static_cast<_float>(z) *
+						Desc.fSpacingZ
+				},
+				.iIndexX = x,
+				.iIndexZ = z,
+				.fNormalizedX =
+					Desc.iCountX > 1 ?
+					static_cast<_float>(x) /
+						static_cast<_float>(
+							Desc.iCountX - 1) :
+					0.f,
+				.fNormalizedZ =
+					Desc.iCountZ > 1 ?
+					static_cast<_float>(z) /
+						static_cast<_float>(
+							Desc.iCountZ - 1) :
+					0.f,
+				.fRadialDistance =
+					sqrtf(
+						(static_cast<_float>(x) -
+							fCenterIndexX) *
+						(static_cast<_float>(x) -
+							fCenterIndexX) +
+						(static_cast<_float>(z) -
+							fCenterIndexZ) *
+						(static_cast<_float>(z) -
+							fCenterIndexZ)),
+				.fNormalizedRadius =
+					Group.fMaxRadialDistance >
+						FLT_EPSILON ?
+					sqrtf(
+						(static_cast<_float>(x) -
+							fCenterIndexX) *
+						(static_cast<_float>(x) -
+							fCenterIndexX) +
+						(static_cast<_float>(z) -
+							fCenterIndexZ) *
+						(static_cast<_float>(z) -
+							fCenterIndexZ)) /
+						Group.fMaxRadialDistance :
+					0.f
+			});
+		}
+	}
+
+	return m_mapGroup.emplace(
+		std::move(GroupID),
+		std::move(Group)).second;
+}
+
+_bool CMyMagicSquareStepController::
+RegistFilledCircleGroup(
+	StringID GroupID,
+	const FILLED_CIRCLE_GROUP_DESC& Desc)
+{
+	if (GroupID.hash == 0 ||
+		Desc.fRadius <= 0.f ||
+		Desc.fSpacing <= 0.f ||
+		m_mapGroup.contains(GroupID))
+		return false;
+
+	const double fHalfCount =
+		std::floor(
+			static_cast<double>(Desc.fRadius) /
+			static_cast<double>(Desc.fSpacing));
+	const double fMaxHalfCount =
+		static_cast<double>(
+			(std::numeric_limits<uint32_t>::max() -
+				1u) /
+			2u);
+	if (fHalfCount > fMaxHalfCount)
+		return false;
+
+	const uint32_t iHalfCount =
+		static_cast<uint32_t>(fHalfCount);
+	const uint32_t iGridCount =
+		iHalfCount * 2u + 1u;
+	const uint64_t iGridCapacity =
+		static_cast<uint64_t>(iGridCount) *
+		iGridCount;
+	if (iGridCapacity >
+		std::numeric_limits<size_t>::max())
+		return false;
+
+	GROUP Group{};
+	Group.eLayoutType =
+		LAYOUT_TYPE::FILLED_CIRCLE;
+	Group.fSpawnBaseY = Desc.vCenter.y;
+	Group.iGridCountX = iGridCount;
+	Group.iGridCountZ = iGridCount;
+	Group.fMaxRadialDistance =
+		static_cast<_float>(iHalfCount);
+	Group.vecLayoutPoints.reserve(
+		static_cast<size_t>(iGridCapacity));
+
+	const _float fRadiusSq =
+		Desc.fRadius * Desc.fRadius;
+	for (uint32_t z = 0; z < iGridCount; ++z)
+	{
+		for (uint32_t x = 0; x < iGridCount; ++x)
+		{
+			const int64_t iOffsetX =
+				static_cast<int64_t>(x) -
+				iHalfCount;
+			const int64_t iOffsetZ =
+				static_cast<int64_t>(z) -
+				iHalfCount;
+			const _float fLocalX =
+				static_cast<_float>(iOffsetX) *
+				Desc.fSpacing;
+			const _float fLocalZ =
+				static_cast<_float>(iOffsetZ) *
+				Desc.fSpacing;
+			const _float fLocalRadiusSq =
+				fLocalX * fLocalX +
+				fLocalZ * fLocalZ;
+			if (fLocalRadiusSq > fRadiusSq)
+				continue;
+			const _float fLocalRadius =
+				sqrtf(fLocalRadiusSq);
+
+			Group.vecLayoutPoints.push_back({
+				.vPosition = {
+					Desc.vCenter.x + fLocalX,
+					Desc.vCenter.y,
+					Desc.vCenter.z + fLocalZ
+				},
+				.iIndexX = x,
+				.iIndexZ = z,
+				.fNormalizedX =
+					iGridCount > 1 ?
+					static_cast<_float>(x) /
+						static_cast<_float>(
+							iGridCount - 1) :
+					0.f,
+				.fNormalizedZ =
+					iGridCount > 1 ?
+					static_cast<_float>(z) /
+						static_cast<_float>(
+							iGridCount - 1) :
+					0.f,
+				.fRadialDistance =
+					fLocalRadius /
+					Desc.fSpacing,
+				.fNormalizedRadius =
+					fLocalRadius /
+					Desc.fRadius
+			});
+		}
+	}
+
+	Group.iTargetCount =
+		Group.vecLayoutPoints.size();
+	Group.vecSteps.reserve(
+		Group.iTargetCount);
 
 	return m_mapGroup.emplace(
 		std::move(GroupID),
@@ -230,25 +567,21 @@ _bool CMyMagicSquareStepController::SpawnGroup(
 	GROUP& Group = iter->second;
 	Group.eState = GROUP_STATE::SPAWNING;
 
-	for (uint32_t z = 0; z < Group.tDesc.iCountZ; ++z)
+	for (const LAYOUT_POINT& Point :
+		Group.vecLayoutPoints)
 	{
-		for (uint32_t x = 0; x < Group.tDesc.iCountX; ++x)
-		{
-			m_qSpawn.push({
-				.GroupID = GroupID,
-				.vPosition = {
-					Group.tDesc.vStartPosition.x +
-						static_cast<_float>(x) *
-						Group.tDesc.fSpacingX,
-					Group.tDesc.vStartPosition.y,
-					Group.tDesc.vStartPosition.z +
-						static_cast<_float>(z) *
-						Group.tDesc.fSpacingZ
-				},
-				.iIndexX = x,
-				.iIndexZ = z
-			});
-		}
+		m_qSpawn.push({
+			.GroupID = GroupID,
+			.vPosition = Point.vPosition,
+			.iIndexX = Point.iIndexX,
+			.iIndexZ = Point.iIndexZ,
+			.fNormalizedX = Point.fNormalizedX,
+			.fNormalizedZ = Point.fNormalizedZ,
+			.fRadialDistance =
+				Point.fRadialDistance,
+			.fNormalizedRadius =
+				Point.fNormalizedRadius
+		});
 	}
 
 	return true;
@@ -295,7 +628,12 @@ _bool CMyMagicSquareStepController::StartRisePattern(
 	auto iter = m_mapGroup.find(GroupID);
 	if (iter == m_mapGroup.end() ||
 		Desc.fMoveSpeed <= 0.f ||
-		Desc.fLineInterval < 0.f)
+		Desc.fBounceHeight < 0.f ||
+		Desc.fBounceSettleSpeed <= 0.f ||
+		Desc.fLineInterval < 0.f ||
+		Desc.fStepInterval < 0.f ||
+		Desc.fStepTimingCurve <= 0.f ||
+		Desc.fStepTimingJitter < 0.f)
 		return false;
 
 	GROUP& Group = iter->second;
@@ -305,12 +643,54 @@ _bool CMyMagicSquareStepController::StartRisePattern(
 		return false;
 
 	Group.oRisePattern = Desc;
+	Group.oWavePattern.reset();
 	Group.fPatternElapsed = 0.f;
-	Group.iIssuedLineCount = 0;
+	Group.iIssuedStepCount = 0;
+	for (STEP_DATA& StepData : Group.vecSteps)
+		StepData.bRiseIssued = false;
 
 	if (Group.eState == GROUP_STATE::PATTERN_COMPLETE)
 		Group.eState = GROUP_STATE::READY;
 
+	return true;
+}
+
+_bool CMyMagicSquareStepController::StartWavePattern(
+	StringID GroupID,
+	const WAVE_PATTERN_DESC& Desc)
+{
+	auto iter = m_mapGroup.find(GroupID);
+	if (iter == m_mapGroup.end() ||
+		Desc.fWaveDuration <= 0.f ||
+		Desc.fLineInterval < 0.f)
+		return false;
+
+	GROUP& Group = iter->second;
+	if (Group.eState != GROUP_STATE::READY &&
+		Group.eState !=
+			GROUP_STATE::PATTERN_COMPLETE)
+		return false;
+
+	for (STEP_DATA& StepData : Group.vecSteps)
+	{
+		auto* pStep = CGameInstance::Get()
+			.GetGameObjectByHandleT<
+				CMyMagicSquareStep>(
+					StepData.hStep);
+		if (!pStep)
+		{
+			Group.eState = GROUP_STATE::FAILED;
+			return false;
+		}
+
+		StepData.vPatternBasePosition =
+			pStep->GetTransform().GetPosition();
+	}
+
+	Group.oRisePattern.reset();
+	Group.oWavePattern = Desc;
+	Group.fPatternElapsed = 0.f;
+	Group.eState = GROUP_STATE::PATTERN_RUNNING;
 	return true;
 }
 
@@ -359,7 +739,15 @@ _bool CMyMagicSquareStepController::SpawnOne(
 		.hStep = *hStep,
 		.iIndexX = Data.iIndexX,
 		.iIndexZ = Data.iIndexZ,
-		.vSpawnPosition = Data.vPosition
+		.vSpawnPosition = Data.vPosition,
+		.vPatternBasePosition = Data.vPosition,
+		.fNormalizedX = Data.fNormalizedX,
+		.fNormalizedZ = Data.fNormalizedZ,
+		.fRadialDistance =
+			Data.fRadialDistance,
+		.fNormalizedRadius =
+			Data.fNormalizedRadius,
+		.bRiseIssued = false
 	});
 	++Group.iSpawnedCount;
 	if (Group.iSpawnedCount == Group.iTargetCount)
@@ -374,45 +762,112 @@ void CMyMagicSquareStepController::UpdateRisePattern(
 {
 	const RISE_PATTERN_DESC& Desc =
 		*Group.oRisePattern;
-	const uint32_t iLineCount =
-		Desc.eAxis == FILL_AXIS::X ?
-		Group.tDesc.iCountX :
-		Group.tDesc.iCountZ;
 
 	Group.fPatternElapsed += fTimeDelta;
 
-	uint32_t iTargetIssuedLineCount = iLineCount;
-	if (Desc.fLineInterval > 0.f)
+	for (STEP_DATA& StepData : Group.vecSteps)
 	{
-		iTargetIssuedLineCount = std::min(
-			iLineCount,
-			static_cast<uint32_t>(
-				Group.fPatternElapsed /
-				Desc.fLineInterval) + 1);
-	}
+		if (StepData.bRiseIssued)
+			continue;
 
-	while (Group.iIssuedLineCount <
-		iTargetIssuedLineCount)
-	{
-		uint32_t iLineIndex =
-			Group.iIssuedLineCount;
-		if (Desc.eDirection ==
-			FILL_DIRECTION::REVERSE)
+		const uint32_t iTimingHash =
+			StepData.iIndexX * 73856093u ^
+			StepData.iIndexZ * 19349663u;
+		const _float fNormalizedJitter =
+			static_cast<_float>(
+				iTimingHash & 0xffffu) /
+			65535.f;
+		const _float fTimingJitter =
+			(fNormalizedJitter * 2.f - 1.f) *
+			Desc.fStepTimingJitter;
+
+		_float fStartDelay{};
+		if (Desc.eFillMode ==
+			RISE_FILL_MODE::RADIAL)
 		{
-			iLineIndex =
-				iLineCount - 1 - iLineIndex;
+			_float fRadialOrder =
+				StepData.fRadialDistance;
+			if (Desc.eDirection ==
+				FILL_DIRECTION::REVERSE)
+			{
+				fRadialOrder =
+					Group.fMaxRadialDistance -
+					fRadialOrder;
+			}
+
+			const _float fRadialRandomDelay =
+				fNormalizedJitter *
+				Desc.fStepTimingJitter *
+				std::min(1.f, fRadialOrder);
+			fStartDelay = std::max(
+				0.f,
+				powf(
+					std::max(
+						0.f,
+						fRadialOrder),
+					Desc.fStepTimingCurve) *
+					Desc.fLineInterval +
+				fRadialRandomDelay);
+		}
+		else
+		{
+			const _bool bFillX =
+				Desc.eFillMode ==
+				RISE_FILL_MODE::X;
+			const uint32_t iPrimaryCount =
+				bFillX ?
+				Group.iGridCountX :
+				Group.iGridCountZ;
+			uint32_t iPrimaryIndex =
+				bFillX ?
+				StepData.iIndexX :
+				StepData.iIndexZ;
+			if (Desc.eDirection ==
+				FILL_DIRECTION::REVERSE)
+			{
+				iPrimaryIndex =
+					iPrimaryCount - 1 -
+					iPrimaryIndex;
+			}
+
+			const uint32_t iSecondaryIndex =
+				bFillX ?
+				StepData.iIndexZ :
+				StepData.iIndexX;
+			const _float fCurvedStepDelay =
+				powf(
+					static_cast<_float>(
+						iSecondaryIndex),
+					Desc.fStepTimingCurve) *
+				Desc.fStepInterval;
+			const _float fSecondaryDelay =
+				std::max(
+					0.f,
+					fCurvedStepDelay +
+						fTimingJitter);
+			fStartDelay =
+				static_cast<_float>(
+					iPrimaryIndex) *
+					Desc.fLineInterval +
+				fSecondaryDelay;
 		}
 
-		if (!IssueRiseLine(Group, iLineIndex))
+		if (Group.fPatternElapsed <
+			fStartDelay)
+			continue;
+
+		if (!IssueRiseStep(Group, StepData))
 		{
 			Group.eState = GROUP_STATE::FAILED;
 			return;
 		}
 
-		++Group.iIssuedLineCount;
+		StepData.bRiseIssued = true;
+		++Group.iIssuedStepCount;
 	}
 
-	if (Group.iIssuedLineCount != iLineCount)
+	if (Group.iIssuedStepCount !=
+		Group.vecSteps.size())
 		return;
 
 	for (const STEP_DATA& StepData :
@@ -437,39 +892,118 @@ void CMyMagicSquareStepController::UpdateRisePattern(
 	Group.oRisePattern.reset();
 }
 
-_bool CMyMagicSquareStepController::IssueRiseLine(
+_bool CMyMagicSquareStepController::IssueRiseStep(
 	GROUP& Group,
-	uint32_t iLineIndex)
+	STEP_DATA& StepData)
 {
 	const RISE_PATTERN_DESC& Desc =
 		*Group.oRisePattern;
 
-	for (const STEP_DATA& StepData :
-		Group.vecSteps)
+	auto* pStep = CGameInstance::Get()
+		.GetGameObjectByHandleT<
+			CMyMagicSquareStep>(
+				StepData.hStep);
+	if (!pStep)
+		return false;
+
+	_float3 vTarget =
+		StepData.vSpawnPosition;
+	const _float fHeightRatio =
+		Desc.eHeightAxis == FILL_AXIS::X ?
+		StepData.fNormalizedX :
+		StepData.fNormalizedZ;
+	vTarget.y =
+		Desc.fStartTargetY +
+		(Desc.fEndTargetY -
+			Desc.fStartTargetY) *
+		fHeightRatio;
+	if (Desc.fBounceHeight > 0.f)
 	{
-		const uint32_t iStepLine =
-			Desc.eAxis == FILL_AXIS::X ?
-			StepData.iIndexX :
-			StepData.iIndexZ;
-		if (iStepLine != iLineIndex)
-			continue;
-
-		auto* pStep = CGameInstance::Get()
-			.GetGameObjectByHandleT<
-				CMyMagicSquareStep>(
-					StepData.hStep);
-		if (!pStep)
-			return false;
-
-		_float3 vTarget =
-			StepData.vSpawnPosition;
-		vTarget.y = Desc.fTargetY;
+		pStep->SetBounceMoveTarget(
+			XMLoadFloat3(&vTarget),
+			Desc.fMoveSpeed,
+			Desc.fBounceHeight,
+			Desc.fBounceSettleSpeed);
+	}
+	else
+	{
 		pStep->SetSpeed(Desc.fMoveSpeed);
 		pStep->SetMoveTarget(
 			XMLoadFloat3(&vTarget));
 	}
 
 	return true;
+}
+
+void CMyMagicSquareStepController::UpdateWavePattern(
+	GROUP& Group,
+	_float fTimeDelta)
+{
+	const WAVE_PATTERN_DESC& Desc =
+		*Group.oWavePattern;
+	const uint32_t iLineCount =
+		Desc.eAxis == FILL_AXIS::X ?
+		Group.iGridCountX :
+		Group.iGridCountZ;
+	const _float fLastLineDelay =
+		static_cast<_float>(iLineCount - 1) *
+		Desc.fLineInterval;
+	const _float fTotalDuration =
+		fLastLineDelay + Desc.fWaveDuration;
+
+	Group.fPatternElapsed += fTimeDelta;
+
+	for (const STEP_DATA& StepData :
+		Group.vecSteps)
+	{
+		auto* pStep = CGameInstance::Get()
+			.GetGameObjectByHandleT<
+				CMyMagicSquareStep>(
+					StepData.hStep);
+		if (!pStep)
+		{
+			Group.eState = GROUP_STATE::FAILED;
+			return;
+		}
+
+		uint32_t iLineIndex =
+			Desc.eAxis == FILL_AXIS::X ?
+			StepData.iIndexX :
+			StepData.iIndexZ;
+		if (Desc.eDirection ==
+			FILL_DIRECTION::REVERSE)
+		{
+			iLineIndex =
+				iLineCount - 1 - iLineIndex;
+		}
+
+		const _float fLocalTime =
+			Group.fPatternElapsed -
+			static_cast<_float>(iLineIndex) *
+				Desc.fLineInterval;
+		_float fOffsetY{};
+		if (fLocalTime > 0.f &&
+			fLocalTime < Desc.fWaveDuration)
+		{
+			const _float fRatio =
+				fLocalTime /
+				Desc.fWaveDuration;
+			fOffsetY =
+				XMScalarSin(XM_PI * fRatio) *
+				Desc.fAmplitude;
+		}
+
+		_float3 vPosition =
+			StepData.vPatternBasePosition;
+		vPosition.y += fOffsetY;
+		pStep->SetKinematicPosition(vPosition);
+	}
+
+	if (Group.fPatternElapsed < fTotalDuration)
+		return;
+
+	Group.eState = GROUP_STATE::PATTERN_COMPLETE;
+	Group.oWavePattern.reset();
 }
 
 UPtr<CMyMagicSquareStepController>
