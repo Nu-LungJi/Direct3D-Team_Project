@@ -692,3 +692,67 @@ void CParticle_CPU::SetColor(const _float4& color)
 
 	m_Particles[0].vColor = color;
 }
+void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
+{
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive ||
+			particle.ownerID != ownerId)
+		{
+			continue;
+		}
+
+		particle.vPosition.x += delta.x;
+		particle.vPosition.y += delta.y;
+		particle.vPosition.z += delta.z;
+
+		particle.originalPosition.x += delta.x;
+		particle.originalPosition.y += delta.y;
+		particle.originalPosition.z += delta.z;
+	}
+}
+void CParticle_CPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
+{
+	const XMMATRIX deltaMatrix =
+		XMLoadFloat4x4(
+			&deltaMatrixData);
+
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive ||
+			particle.ownerID != ownerId)
+		{
+			continue;
+		}
+
+		// 위치: 회전 + 이동
+		XMStoreFloat3(
+			&particle.vPosition,
+			XMVector3TransformCoord(
+				XMLoadFloat3(
+					&particle.vPosition),
+				deltaMatrix));
+
+		XMStoreFloat3(
+			&particle.originalPosition,
+			XMVector3TransformCoord(
+				XMLoadFloat3(
+					&particle.originalPosition),
+				deltaMatrix));
+
+		// 속도: 이동은 제외하고 회전만 적용
+		XMStoreFloat3(
+			&particle.vVelocity,
+			XMVector3TransformNormal(
+				XMLoadFloat3(
+					&particle.vVelocity),
+				deltaMatrix));
+
+		XMStoreFloat3(
+			&particle.originalVelocity,
+			XMVector3TransformNormal(
+				XMLoadFloat3(
+					&particle.originalVelocity),
+				deltaMatrix));
+	}
+}

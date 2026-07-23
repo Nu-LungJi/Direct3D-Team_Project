@@ -156,6 +156,9 @@ public:
 public:
 	void ClearByOwner(uint32_t ownerId);
 
+	void TranslateOwner(uint32_t ownerId, const _float3& delta);
+	void TransformOwner(uint32_t ownerId , const _float4x4& deltaMatrixData);
+
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);
 public:

@@ -271,7 +271,10 @@
     <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
     <ClInclude Include="..\Public\ComTransform.h" />
     <ClInclude Include="..\Public\DebugDraw.h" />
-    <ClInclude Include="..\public\EffectManager.h" />
+    <ClInclude Include="..\public\EffectManager.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
@@ -578,7 +581,10 @@
     <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />
     <ClCompile Include="..\Private\ComTransform.cpp" />
     <ClCompile Include="..\Private\DebugDraw.cpp" />
-    <ClCompile Include="..\private\EffectManager.cpp" />
+    <ClCompile Include="..\private\EffectManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />

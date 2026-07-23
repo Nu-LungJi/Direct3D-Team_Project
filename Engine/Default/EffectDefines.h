@@ -61,7 +61,7 @@ using EffectCommandVariant = std::variant<EFFECT_LIGHT_COMMAND,EFFECT_SOUND_COMM
 
 struct EFFECT_COMMAND
 {
-	EFFECT_COMMAND_TYPE eType = EFFECT_COMMAND_TYPE::END;;
+	EFFECT_COMMAND_TYPE eType = EFFECT_COMMAND_TYPE::END;
 	EffectCommandVariant data{};
 
 	_float fSpawnDelay = 0.f;
@@ -79,6 +79,7 @@ struct EFFECT_INSTANCE
 {
 	EFFECT_INSTANCE_ID iEffectId =INVALID_EFFECT_INSTANCE_ID;
 	uint32_t iParticleOwnerId = INVALID_PARTICLE_OWNER_ID;
+	_bool bParticleDispatched = false;
 
 	std::vector<CHandle> vecLightHandles;
 	std::vector<SOUND_ID> vecSoundIds;

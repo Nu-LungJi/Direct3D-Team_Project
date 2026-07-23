@@ -3277,3 +3277,33 @@ void CParticleManager::ClearByOwner(uint32_t ownerId)
 
 	DeleteLoopRequests(ownerId);
 }
+void CParticleManager::TranslateOwner(
+	uint32_t ownerId,
+	const _float3& delta)
+{
+	for (auto& [groupTag, particleGroup] :m_Particles)
+	{
+		for (auto& [typeTag, particle] :
+			particleGroup)
+		{
+			if (particle)
+			{
+				particle->TranslateOwner(ownerId,delta);
+			}
+		}
+	}
+}
+void CParticleManager::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+{
+	for (auto& [groupTag, particleGroup] :m_Particles)
+	{
+		for (auto& [typeTag, particle] :
+			particleGroup)
+		{
+			if (particle)
+			{
+				particle->TransformOwner(ownerId, deltaMatrixData);
+			}
+		}
+	}
+}

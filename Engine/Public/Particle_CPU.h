@@ -111,6 +111,8 @@ public:
 	virtual void SetVelocity(const _float3& vel) override;
 	virtual void SetSize(const _float3& size) override;
 	virtual void SetColor(const _float4& color) override;
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 private:
     virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
 

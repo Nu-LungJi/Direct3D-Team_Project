@@ -30,6 +30,8 @@ public:
 	virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) = 0;
 	virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) = 0;
 	virtual void ClearByOwner(uint32_t ownerID) = 0;
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta);
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData);
 public:
 	virtual void SetPosition(const _float3& pos) {}
 	virtual void SetVelocity(const _float3& vel) {}
