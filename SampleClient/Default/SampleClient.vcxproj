@@ -219,6 +219,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\LevelPhysXLoader.h" />
     <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\LightTerrain.h" />
+    <ClInclude Include="..\public\MagicSquareStep.h" />
+    <ClInclude Include="..\public\MagicSquareStepController.h" />
+    <ClInclude Include="..\public\MyMagicSquareStep.h" />
+    <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_Dead_State.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
@@ -233,6 +237,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestDynamic.h" />
     <ClInclude Include="..\public\TestMonster.h" />
     <ClInclude Include="..\public\TestSquareStep.h" />
+    <ClInclude Include="..\public\TestSquareStepController.h" />
+    <ClInclude Include="..\public\MagicBridgeController.h" />
     <ClInclude Include="..\public\TestThirdPersonCamera.h" />
     <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
@@ -331,6 +337,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
     <ClCompile Include="..\Private\LightTerrain.cpp" />
+    <ClCompile Include="..\private\MagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MagicSquareStepController.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_Dead_State.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
@@ -350,6 +360,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestDynamic.cpp" />
     <ClCompile Include="..\private\TestMonster.cpp" />
     <ClCompile Include="..\private\TestSquareStep.cpp" />
+    <ClCompile Include="..\private\TestSquareStepController.cpp" />
+    <ClCompile Include="..\private\MagicBridgeController.cpp" />
     <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
     <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />

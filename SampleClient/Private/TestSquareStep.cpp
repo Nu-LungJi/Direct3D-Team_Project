@@ -25,6 +25,8 @@ CTestSquareStep::CTestSquareStep() = default;
 
 CTestSquareStep::CTestSquareStep(const CTestSquareStep& prototype)
 	: CGameObject{ prototype }
+	, m_pResBoxGeometry{ prototype.m_pResBoxGeometry }
+	, m_pResPhysXMaterial{ prototype.m_pResPhysXMaterial }
 	, m_pResVertexShader{ prototype.m_pResVertexShader }
 	, m_pResPixelShader{ prototype.m_pResPixelShader }
 {
@@ -42,6 +44,12 @@ HRESULT CTestSquareStep::InitializePrototype(void*)
 	if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))
 		return E_FAIL;
 
+	m_pResBoxGeometry = CResPhysXBoxGeometry::CreateAndLoad({
+		.vHalfExtents = SQUARE_STEP_BOX_HALF_EXTENTS });
+	m_pResPhysXMaterial = CResPhysXMaterial::CreateAndLoad({});
+	if (!m_pResBoxGeometry || !m_pResPhysXMaterial)
+		return E_FAIL;
+
 	return S_OK;
 }
 
@@ -54,6 +62,8 @@ HRESULT CTestSquareStep::Initialize(void* pArg)
 	GetTransform().SetPosition(pDesc->vInitialPosition);
 	GetTransform().SetRotationEuler(pDesc->vInitialRotation);
 	GetTransform().SetScale(pDesc->vInitialScale);
+	m_vBasePosition = pDesc->vInitialPosition;
+	m_fTargetY = m_vBasePosition.y;
 
 	{
 		CComConstantBuffer::DESC Desc{};
@@ -74,38 +84,52 @@ HRESULT CTestSquareStep::Initialize(void* pArg)
 			return E_FAIL;
 	}
 
+	if (pDesc->bEnablePhysics)
 	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		Desc.vPosition = pDesc->vInitialPosition;
-		Desc.vRotation = GetTransform().GetQuaternion();
-		if (FAILED(AddComponentFromProto(
-			"PHYSX", "Prototype_Component_ComPxRigidBody", "ComPxRigidBody",
-			&Desc, &m_pComPxRigidBody)))
-			return E_FAIL;
-	}
+		{
+			CComPxRigidBody::DESC Desc{};
+			Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+			Desc.vPosition = pDesc->vInitialPosition;
+			Desc.vRotation = GetTransform().GetQuaternion();
+			if (FAILED(AddComponentFromProto(
+				"PHYSX", "Prototype_Component_ComPxRigidBody", "ComPxRigidBody",
+				&Desc, &m_pComPxRigidBody)))
+				return E_FAIL;
+		}
 
-	{
-		CComPxBoxCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({
-			.vHalfExtents = SQUARE_STEP_BOX_HALF_EXTENTS });
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.vLocalOffset = SQUARE_STEP_BOX_LOCAL_OFFSET;
-		Desc.tFilter = pDesc->tFilter;
-		if (!Desc.pResBoxGeo || !Desc.pResMaterial ||
-			FAILED(AddComponentFromProto(
-				"PHYSX", "Prototype_Component_ComPxBoxCollider", "ComPxBoxCollider",
-				&Desc, &m_pComPxBoxCollider)))
-			return E_FAIL;
+		{
+			CComPxBoxCollider::DESC Desc{};
+			Desc.pComPxRigidBody = m_pComPxRigidBody;
+			Desc.pResBoxGeo = m_pResBoxGeometry;
+			Desc.pResMaterial = m_pResPhysXMaterial;
+			Desc.vLocalOffset = SQUARE_STEP_BOX_LOCAL_OFFSET;
+			Desc.tFilter = pDesc->tFilter;
+			if (!Desc.pResBoxGeo || !Desc.pResMaterial ||
+				FAILED(AddComponentFromProto(
+					"PHYSX", "Prototype_Component_ComPxBoxCollider", "ComPxBoxCollider",
+					&Desc, &m_pComPxBoxCollider)))
+				return E_FAIL;
+		}
 	}
 
 	return S_OK;
 }
 
-void CTestSquareStep::FixedUpdate(_float)
+void CTestSquareStep::FixedUpdate(_float fTimeDelta)
 {
-	if (!m_pComPxRigidBody)
+	_float3 vPosition = GetTransform().GetPosition();
+	const _float fHeightDelta = m_fTargetY - vPosition.y;
+	_bool bHeightChanged = false;
+	if (std::abs(fHeightDelta) > FLT_EPSILON && m_fMoveSpeed > 0.f)
+	{
+		const _float fMaxMove = m_fMoveSpeed * fTimeDelta;
+		vPosition.y += std::clamp(
+			fHeightDelta, -fMaxMove, fMaxMove);
+		GetTransform().SetPosition(vPosition);
+		bHeightChanged = true;
+	}
+
+	if (!m_pComPxRigidBody || !bHeightChanged)
 		return;
 
 	m_pComPxRigidBody->SetKinematicTarget(
@@ -113,10 +137,48 @@ void CTestSquareStep::FixedUpdate(_float)
 		GetTransform().GetQuaternion());
 }
 
+void CTestSquareStep::SetHeightTarget(
+	_float fTargetY, _float fMoveSpeed)
+{
+	m_fTargetY = fTargetY;
+	m_fMoveSpeed = std::max(fMoveSpeed, 0.f);
+}
+
 void CTestSquareStep::LateUpdate(_float)
 {
 	GetTransform().Update();
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return;
+
+	if (!CGameInstance::Get().IsInstancingEnabled())
+	{
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+		return;
+	}
+
+	const auto& pModel = m_pComModelInstance->GetModel();
+	if (!pModel->HasLocalBounds())
+		return;
+
+	MAPMESH_INSTANCE_DATA InstanceData{};
+	XMStoreFloat4x4(
+		&InstanceData.world,
+		GetTransform().GetLoadedCombinedWorldMatrix());
+
+	BoundingBox WorldBounds{};
+	pModel->GetLocalBounds().Transform(
+		WorldBounds,
+		GetTransform().GetLoadedCombinedWorldMatrix());
+
+	MAPMESH_OCCLUSION_DATA OcclusionData{};
+	OcclusionData.worldCenter = WorldBounds.Center;
+	OcclusionData.worldExtents = WorldBounds.Extents;
+
+	CGameInstance::Get().PushMapObjectInstance(
+		pModel,
+		InstanceData,
+		OcclusionData);
 }
 
 HRESULT CTestSquareStep::Render(

@@ -17,7 +17,9 @@
 #include "MapCollisionProxyObject.h"
 #include "TestPhysXCollisionProxyTrigger.h"
 #include "TestDynamic.h"
-#include "TestSquareStep.h"
+
+#include "MyMagicSquareStepController.h"
+#include "MyMagicSquareStep.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -208,11 +210,27 @@ std::future<bool> CLevelCreatureLoader::Load()
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestDynamic");
 				return false;
 			}
+			
+			
+			
+			
+
+			//MyMagicSquareStep
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				"LEVEL_CREATURE", "Prototype_GameObject_TestSquareStep",
-				CTestSquareStep::Create())))
+				"LEVEL_CREATURE",
+				"Prototype_GameObject_MyMagicSquareStep",
+				CMyMagicSquareStep::Create())))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestSquareStep");
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_MyMagicSquareStep");
+				return false;
+			}
+			//CMyMagicSquareStepController
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE",
+				"Prototype_GameObject_MyMagicSquareStepController",
+				CMyMagicSquareStepController::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_MyMagicSquareStepController");
 				return false;
 			}
 

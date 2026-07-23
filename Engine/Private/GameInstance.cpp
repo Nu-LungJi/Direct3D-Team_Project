@@ -531,9 +531,20 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 	}
 	m_iFrameCnt++;
 
-	m_pLevelManager->FrameStart(fTimeDelta);
-	m_pGameObjectManager->FrameStart();
-	m_pColliderManager->FrameStart();
+	{
+		ZoneScopedN("m_pLevelManager_FrameStart");
+		m_pLevelManager->FrameStart(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("m_pGameObjectManager_FrameStart");
+		m_pGameObjectManager->FrameStart();
+	}
+	
+	{
+		ZoneScopedN("m_pColliderManager_FrameStart");
+		m_pColliderManager->FrameStart();
+	}
 
 
 

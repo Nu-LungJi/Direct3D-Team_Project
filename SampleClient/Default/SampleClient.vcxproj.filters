@@ -220,6 +220,12 @@
     <Filter Include="GameObject\UI\MiniMap">
       <UniqueIdentifier>{0dc8a52d-1c4d-4870-974c-d5909d11ab7a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\MagicSquareStep">
+      <UniqueIdentifier>{8a755450-51f3-4267-ae19-fc7022c471a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\MyMagicSquareStep">
+      <UniqueIdentifier>{f107aa8a-9b42-4cc4-b287-79f234030638}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -525,7 +531,27 @@
     <ClInclude Include="..\Public\MiniMap.h">
       <Filter>GameObject\UI\MiniMap</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\TestSquareStep.h" />
+    <ClInclude Include="..\public\TestSquareStep.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicSquareStepController.h">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicSquareStep.h">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStep.h">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStepController.h">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicBridgeController.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestSquareStepController.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -796,7 +822,27 @@
     <ClCompile Include="..\Private\MiniMap.cpp">
       <Filter>GameObject\UI\MiniMap</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\TestSquareStep.cpp" />
+    <ClCompile Include="..\private\TestSquareStep.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicSquareStep.cpp">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicSquareStepController.cpp">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicBridgeController.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestSquareStepController.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">

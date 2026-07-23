@@ -16,10 +16,10 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CTestSquareStep final : public CGameObject
+class CMagicSquareStep final : public CGameObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CTestSquareStep, CGameObject)
+	DECLARE_DERIVED_TYPE(CMagicSquareStep, CGameObject)
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
@@ -40,22 +40,29 @@ public:
 	};
 
 private:
-	CTestSquareStep();
-	CTestSquareStep(const CTestSquareStep& prototype);
-	~CTestSquareStep() override = default;
+	CMagicSquareStep();
+	CMagicSquareStep(const CMagicSquareStep& prototype);
+	~CMagicSquareStep() override = default;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
 	void FixedUpdate(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	HRESULT Render(
+		ID3D11DeviceContext* pContext,
+		const RENDER_CTX& ctx) override;
 
-	void SetHeightTarget(_float fTargetY, _float fMoveSpeed);
-	const _float3& GetBasePosition() const { return m_vBasePosition; }
+	void SetMoveTarget(
+		const _float3& vTargetPosition,
+		_float fMoveSpeed);
+	const _float3& GetCurrentPosition() const
+	{
+		return GetTransform().GetPosition();
+	}
 
 public:
-	static UPtr<CTestSquareStep> Create();
+	static UPtr<CMagicSquareStep> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 private:
@@ -67,9 +74,9 @@ private:
 	SPtr<CResPhysXMaterial> m_pResPhysXMaterial{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
-	_float3 m_vBasePosition{};
-	_float m_fTargetY{};
+	_float3 m_vMoveTarget{};
 	_float m_fMoveSpeed{};
+	_bool m_bHasMoveTarget{};
 };
 
 NS_END

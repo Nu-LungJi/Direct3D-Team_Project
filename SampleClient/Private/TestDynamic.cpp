@@ -130,7 +130,38 @@ void CTestDynamic::LateUpdate(E::_float fTimeDelta)
 {
 	UpdatePhysicData();
 	GetTransform().Update();
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return;
+
+	if (!CGameInstance::Get().IsInstancingEnabled())
+	{
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+		return;
+	}
+
+	const auto& pModel = m_pComModelInstance->GetModel();
+	if (!pModel->HasLocalBounds())
+		return;
+
+	MAPMESH_INSTANCE_DATA InstanceData{};
+	XMStoreFloat4x4(
+		&InstanceData.world,
+		GetTransform().GetLoadedCombinedWorldMatrix());
+
+	BoundingBox WorldBounds{};
+	pModel->GetLocalBounds().Transform(
+		WorldBounds,
+		GetTransform().GetLoadedCombinedWorldMatrix());
+
+	MAPMESH_OCCLUSION_DATA OcclusionData{};
+	OcclusionData.worldCenter = WorldBounds.Center;
+	OcclusionData.worldExtents = WorldBounds.Extents;
+
+	CGameInstance::Get().PushMapObjectInstance(
+		pModel,
+		InstanceData,
+		OcclusionData);
 }
 
 HRESULT CTestDynamic::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

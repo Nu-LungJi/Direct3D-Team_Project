@@ -18,7 +18,10 @@
 #include "MapCollisionProxyObject.h"
 #include "Test3DSound.h"
 #include "TestDynamic.h"
-#include "TestSquareStep.h"
+#include "TestSquareStepController.h"
+#include "MagicSquareStepController.h"
+#include "MyMagicSquareStep.h"
+#include "MyMagicSquareStepController.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -112,22 +115,10 @@ HRESULT CLevelCreatureEditor::Initialize()
 		}
 	}
 
-	if(false)
-	{
-		CMapCollisionProxyObject::DESC Desc{};
-		Desc.sObjectTag = "MapCollisionProxy";
-		Desc.sCollisionFileName = "LevelA";
-		if (!E::CGameInstance::Get().AddGameObjectToLayer(
-			m_strLevelName,
-			"Prototype_GameObject_MapCollisionProxy",
-			"00_MapCollision",
-			&Desc))
-			return E_FAIL;
-	}
-
+	
 	{
 		CTestDynamic::DESC desc{};
-		desc.sObjectTag = "TestDynamicSword";
+		desc.sObjectTag = "TestDynamic";
 		desc.vInitialPosition = { 15.f, 55.f, 15.f };
 		desc.vConvexScale = { 300.f, 300.f, 300.f };
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
@@ -138,16 +129,9 @@ HRESULT CLevelCreatureEditor::Initialize()
 			return E_FAIL;
 	}
 
+	if (FAILED(InitializeMyMagicSquareStep()))
 	{
-		CTestSquareStep::DESC Desc{};
-		Desc.sObjectTag = "TestSquareStep";
-		Desc.vInitialPosition = { 0.f, 0.f, 0.f };
-		if (!E::CGameInstance::Get().AddGameObjectToLayer(
-			m_strLevelName,
-			"Prototype_GameObject_TestSquareStep",
-			"03_PhysXTest",
-			&Desc))
-			return E_FAIL;
+		return E_FAIL;
 	}
 
 
@@ -430,6 +414,73 @@ Engine::UPtr<CLevelCreatureEditor> CLevelCreatureEditor::Create()
 	}
 
 	return pInstance;
+}
+
+HRESULT CLevelCreatureEditor::InitializeMyMagicSquareStep()
+{
+	//{
+	//	CMyMagicSquareStep::DESC Desc{};
+	//	Desc.sObjectTag = "MyMagicSquareStep";
+
+	//	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+	//		m_strLevelName,
+	//		"Prototype_GameObject_MyMagicSquareStep",
+	//		"03_MyMagicSquareStep",
+	//		&Desc))
+	//		return E_FAIL;
+	//}
+
+	{
+		CMyMagicSquareStepController::DESC Desc{};
+		Desc.sObjectTag = "MyMagicSquareStepController";
+		Desc.iMaxSpawnPerFrame = 50;
+
+		const auto hController =
+			E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_MyMagicSquareStepController",
+			"03_MyMagicSquareStepController",
+			&Desc);
+		if (!hController)
+			return E_FAIL;
+
+		auto* pController = E::CGameInstance::Get()
+			.GetGameObjectByHandleT<CMyMagicSquareStepController>(
+				*hController);
+		if (!pController)
+			return E_FAIL;
+
+		const StringID GroupID{ "CreatureMagicSquareGrid" };
+		CMyMagicSquareStepController::GROUP_DESC GroupDesc{};
+		GroupDesc.vStartPosition = { 0.f, -3.f, 0.f };
+		GroupDesc.iCountX = 30;
+		GroupDesc.iCountZ = 10;
+		GroupDesc.fSpacingX = 1.007f;
+		GroupDesc.fSpacingZ = 1.007f;
+
+		if (!pController->RegistGroup(GroupID, GroupDesc) ||
+			!pController->SpawnGroup(GroupID))
+			return E_FAIL;
+
+		CMyMagicSquareStepController::RISE_PATTERN_DESC
+			RiseDesc{};
+		RiseDesc.fTargetY = 3.f;
+		RiseDesc.fMoveSpeed = 2.f;
+		RiseDesc.fLineInterval = 0.1f;
+		RiseDesc.eAxis =
+			CMyMagicSquareStepController::
+				FILL_AXIS::X;
+		RiseDesc.eDirection =
+			CMyMagicSquareStepController::
+				FILL_DIRECTION::FORWARD;
+		if (!pController->StartRisePattern(
+			GroupID,
+			RiseDesc))
+			return E_FAIL;
+	}
+
+
+	return S_OK;
 }
 
 void CLevelCreatureEditor::Free()
