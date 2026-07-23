@@ -144,6 +144,9 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
     if (m_vecBeamVertices.empty())
         return S_OK;
+
+	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
     pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());

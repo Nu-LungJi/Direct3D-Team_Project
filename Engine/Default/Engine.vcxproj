@@ -276,6 +276,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_EffectDefines.h" />
     <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
@@ -287,6 +288,7 @@
     <ClInclude Include="..\public\LuaEnv.h" />
     <ClInclude Include="..\public\LuaManager.h" />
     <ClInclude Include="..\public\LuaWatcher.h" />
+    <ClInclude Include="..\Public\ParticleParamImGui.h" />
     <ClInclude Include="..\Public\ShaderWatcher.h" />
     <ClInclude Include="..\Public\StateMachine.h" />
     <ClInclude Include="..\public\MyFSR2_2.h" />
@@ -430,9 +432,6 @@
     <ClInclude Include="..\Public\ILuaScriptRelodable.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="ParticleParams.h" />
-    <ClInclude Include="ParticleParamImGui.h" />
-    <ClInclude Include="EffectDefines.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\ThirdParty\imgui-1.83\imgui.cpp">

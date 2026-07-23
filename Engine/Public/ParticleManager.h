@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine_Defines.h"
-#include "ParticleParams.h"
 
 NS_BEGIN(Engine)
 class CParticle;
@@ -48,17 +47,7 @@ struct TextureSlotState
 	std::string selectedPath;
 };
 
-// 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
-//enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
-//
-//struct SPAWN_COMMAND
-//{
-//    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
-//    StringID sGroupTag{};
-//    StringID sTypeTag{};
-//	uint32_t ownerId = 0;
-//    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
-//};
+
 struct PARTICLE_EFFECT_PRESET
 {
     std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")

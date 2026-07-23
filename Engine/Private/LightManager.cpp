@@ -467,11 +467,11 @@ HRESULT CLightManager::Render_ObjectShadow() {
 	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
 	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
 
-	UnBind_ShadowResource();
-
 //#ifdef _DEBUG
 //	Render_DebugIcon();
 //#endif
+
+	UnBind_ShadowResource();
 
 	return S_OK;
 }

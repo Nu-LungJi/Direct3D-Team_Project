@@ -1,6 +1,5 @@
 // ParticleParamImGui.h
 #pragma once
-#include "ParticleParams.h"
 NS_BEGIN(Engine)
 
 // ---- 타입별 그리기 함수 (전 패턴이 재사용) ----

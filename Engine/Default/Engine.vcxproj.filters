@@ -1030,12 +1030,6 @@
     <ClInclude Include="..\Public\VolumetricFog.h">
       <Filter>GameObject\Volumetric</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleParams.h">
-      <Filter>Particle\Param</Filter>
-    </ClInclude>
-    <ClInclude Include="ParticleParamImGui.h">
-      <Filter>Particle\Param</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
     </ClInclude>
@@ -1105,10 +1099,13 @@
     <ClInclude Include="..\Public\Engine_ParticleDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
-    <ClInclude Include="EffectDefines.h">
+    <ClInclude Include="..\public\EffectManager.h">
       <Filter>EffectManager</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\EffectManager.h">
+    <ClInclude Include="..\Public\ParticleParamImGui.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Engine_EffectDefines.h">
       <Filter>EffectManager</Filter>
     </ClInclude>
   </ItemGroup>
