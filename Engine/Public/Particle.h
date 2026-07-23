@@ -17,6 +17,8 @@ public:
 		BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4,
 		BEHAVIOR_SMOKE = 1 << 5,
 		BEHAVIOR_SMOKEJUMP = 1<<6,
+		BEHAVIOR_SMOKEGV = 1 << 7,
+		BEHAVIOR_SMOKEGW = 1 << 8,
 	};
 
 protected:

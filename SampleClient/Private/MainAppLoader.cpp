@@ -165,6 +165,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_MESH_SMOKE", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
+	{
+		if (FAILED(!res->Load(CResShader::DESC{ .sEntryPoint = "PS_SMOKE_MAIN", .sTarget = "ps_5_0" })))
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (!res)
@@ -189,7 +197,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_TEX_SMOKE_DEF", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PS_SMOKE_DEF", .sTarget = "ps_5_0" })))
+		{
+			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_RIBBON_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
 	{

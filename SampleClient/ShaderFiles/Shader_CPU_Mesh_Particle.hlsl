@@ -168,3 +168,35 @@ PS_OUT PSMain(VS_OUT In)
 
 	return Out;
 }
+PS_OUT PS_SMOKE_MAIN(VS_OUT In)
+{
+	PS_OUT Out;
+	float2 noiseUV = float2(In.vTexcoord.x * 5.f , In.vTexcoord.y * 0.12f);
+	noiseUV.y += In.life * 0.05f;
+		
+	float2 warpUV = float2(In.vTexcoord.x * 3.f, In.vTexcoord.y * 0.35f);
+	warpUV.y += In.life * 0.015f;
+
+	float2 warp = NormalMap.Sample(LinearWrap, warpUV).rg * 2.f - 1.f;
+	float noise = NoiseMap.Sample(LinearWrap, noiseUV + warp * 0.015f).r;
+
+	
+		//ÎßàÏä§?¨Îäî ?ΩÏ????ºÎßà??Î≥¥Ïó¨Ï£ºÎäîÏßÄ?êÎ??úÍ≤É	
+	float heightMask = smoothstep(0.35f, 1.f, In.vTexcoord.y + (noise - 0.5f) * 0.45f);
+	float softnoise = smoothstep(0.15f, 0.85f, noise);
+	heightMask *= 1.f - smoothstep(0.85f, 1.f, In.vTexcoord.y);
+	
+	float t = saturate(In.life / In.maxLife);
+	float lifeFade = smoothstep(0.f, 0.1f, t)*
+	(1.f - smoothstep(0.5f, 1.f, t));
+	float alpha = heightMask * In.vColor.a * lifeFade * lerp(0.08f, 1.f, softnoise);
+	
+	alpha = saturate(alpha);
+	
+	float2 distortion = warp * 0.01f * alpha;
+	float3 glowColor = In.vColor.rgb * lerp(0.3f ,1.f, softnoise);
+
+	Out.vDiffuse = float4(glowColor, alpha);
+	
+	return Out;
+}

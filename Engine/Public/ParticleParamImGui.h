@@ -15,6 +15,9 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bCircleWave = (flags & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
 	bool bSmoke = (flags & BEHAVIOR_SMOKE) != 0;
 	bool bSmokeJump = (flags & BEHAVIOR_SMOKEJUMP) != 0;
+	bool bSmokegv = (flags & BEHAVIOR_SMOKEGV) != 0;
+	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
+
 	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
 		flags = bDistortion ? (flags | BEHAVIOR_DISTORTION) : (flags & ~BEHAVIOR_DISTORTION);
@@ -36,6 +39,12 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("SmokeJump", &bSmokeJump))
 		flags = bSmokeJump ? (flags | BEHAVIOR_SMOKEJUMP) : (flags & ~BEHAVIOR_SMOKEJUMP);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Smokegv", &bSmokegv))
+		flags = bSmokegv ? (flags | BEHAVIOR_SMOKEGV) : (flags & ~BEHAVIOR_SMOKEGV);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Smokegw", &bSmokegw))
+		flags = bSmokegw ? (flags | BEHAVIOR_SMOKEGW) : (flags & ~BEHAVIOR_SMOKEGW);
 	ImGui::Separator();
 
 

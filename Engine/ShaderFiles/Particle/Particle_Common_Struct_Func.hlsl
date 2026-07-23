@@ -5,6 +5,10 @@
 #define BEHAVIOR_BILLBOARD (1u << 2)
 #define BEHAVIOR_GRAVITY (1u << 3)
 #define BEHAVIOR_CIRCLE_TO_WAVE (1u << 4)
+#define BEHAVIOR_SMOKE (1u << 5)
+#define BEHAVIOR_SMOKEJUMP (1u << 6)
+#define BEHAVIOR_SMOKEGV (1u << 7)
+#define BEHAVIOR_SMOKEGW (1u << 8)
 
 struct SPAWN_DATA
 {
