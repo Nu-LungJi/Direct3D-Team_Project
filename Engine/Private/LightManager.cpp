@@ -469,9 +469,9 @@ HRESULT CLightManager::Render_ObjectShadow() {
 
 	UnBind_ShadowResource();
 
-#ifdef _DEBUG
-	Render_DebugIcon();
-#endif
+//#ifdef _DEBUG
+//	Render_DebugIcon();
+//#endif
 
 	return S_OK;
 }

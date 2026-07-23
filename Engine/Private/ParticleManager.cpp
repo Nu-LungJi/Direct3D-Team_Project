@@ -1073,7 +1073,7 @@ void CParticleManager::UpdateGUI()
 			Spawn(previewGroup, previewType, 1, &data, false, 0.f);
 		}
 	}
-	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+	if (CGameInstance::Get().KeyDown(DIK_SPACE)) {
 		auto pParticle = GetParticle(previewGroup, previewType);
 		if (pParticle)
 		{

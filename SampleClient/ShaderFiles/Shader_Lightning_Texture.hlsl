@@ -1,6 +1,9 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
-const static float DistortionSTR = 0.3f;
+const static float  DistortionSTR = 0.03f;
+const static float  EdgeWidth = 0.01f;
+const static float4 EdgeColor = { 0.f, 0.f, 1.f, 1.f };
+
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
@@ -94,47 +97,74 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
-
-	float4 DiffuseTex	 = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
 	
-	float4 DistortionTex = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
-
+	//float4 DiffuseTex	 = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+	//float4 DistortTex	 = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
 	float4 NoiseTex		 = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
 
-	float  Ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
-	 
-	if (all(DiffuseTex.rgb <= 0.03f))
-		discard;
+	float  Ratio		 = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
 	
-	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, Ratio);
-    
+	float4 Emissive		 = lerp(In.vEmissive, In.vEndEmissive, Ratio);
+	
+	[branch]
 	if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
 	{
-		clip(DiffuseTex.a - 0.02f);
-		clip(In.vColor.a - 0.02f);
+		float2 ScrollUV		= In.vTexcoord + float2(Ratio * 0.002f, Ratio * -0.025f);
+		float4 DistortTex	= g_DistortionTexture.Sample(LinearWrap, ScrollUV);
 
-		float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
-		screenUV.x = screenUV.x * 0.5f + 0.5f;
-		screenUV.y = -screenUV.y * 0.5f + 0.5f;
+		float2 Offset		= (DistortTex.rg - 0.5f) * 2.f * DistortionSTR;
 
-		float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
-		float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
+		float4 DissolveTex	= g_NoiseTexture.Sample(LinearWrap, In.vTexcoord * float2(2.f, 2.f));
 
-		float fEdgeMask = smoothstep(0.0f, 0.3f, DiffuseTex.a) *
-                          (1.0f - smoothstep(0.3f, 0.9f, DiffuseTex.a));
+		
+		float4 FinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord + Offset);
+		
+		float DissolveMask = FinalColor.a;
+		
+		float FadeInDuration = 0.025f;
+		float FadeOutDuration = 0.8f;
+		
+		float DissolveProgress = 1.f;
+		
+		[branch]
+		if (Ratio < FadeInDuration)
+		{
+			DissolveProgress = 1.f - saturate(Ratio / FadeInDuration);
+		}
+		else if (Ratio > FadeOutDuration)
+		{
+			DissolveProgress = saturate((Ratio - FadeOutDuration) / (1.f - FadeOutDuration));
+		}
+		else
+		{
+			DissolveProgress = 0.f;
+		}
+		
+		clip(DissolveMask - 0.01f);
+		clip(DissolveTex.r - DissolveProgress);
+		
+		if (DissolveProgress > 0.001f && (DissolveTex.r - DissolveProgress < EdgeWidth))
+			FinalColor.rgb = EdgeColor.rgb;
 
-		float distortionStrength = DistortionSTR * In.vColor.a * fEdgeMask;
-
-		distortion *= distortionStrength;
-		float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
-		float3 finalRGB = lerp(distortedBackground.rgb, DiffuseTex.rgb, DiffuseTex.a);
-		finalRGB += lerpedEmissive.rgb * lerpedEmissive.a;
-
-		Out.vDiffuse = float4(finalRGB, DiffuseTex.a);
+		Out.vDiffuse = float4(FinalColor.ggg, FinalColor.g);
 		return Out;
+		
+		//float fEdgeMask = smoothstep(0.0f, 0.3f, DiffuseTex.r) *
+        //                  (1.0f - smoothstep(0.3f, 0.9f, DiffuseTex.r));
+		//
+		//float distortionStrength = DistortionSTR * In.vColor.a * fEdgeMask;
+		//
+		//Distortion *= distortionStrength;
+		//float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + Distortion);
+		//float3 finalRGB = lerp(distortedBackground.rgb, DiffuseTex.rrr, DiffuseTex.r);
+		//finalRGB += Emissive.rgb * Emissive.a;
+		//
+		//Out.vDiffuse = float4(finalRGB, DiffuseTex.a);
+		//return Out;
 	}
  
-	float4 vFinalColor = DiffuseTex * In.vColor;;
+	float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+	vFinalColor = vFinalColor * In.vColor;;
 	clip(vFinalColor.a - 0.02f);
 
 	float3 WorldNormal = Compute_WorldNormal(
@@ -159,8 +189,8 @@ PS_OUT PSMain(VS_OUT In)
 		LightAccumulation += Albedo * Radiance * NDL;
 	}
 
-	float3 FinalColor = Albedo + LightAccumulation + lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 FinalColor = Albedo + LightAccumulation + Emissive.rgb * Emissive.a;
 
-	Out.vDiffuse = float4(FinalColor, vFinalColor.a);
+	Out.vDiffuse = float4(FinalColor.rrr, vFinalColor.r);
 	return Out;
 }
