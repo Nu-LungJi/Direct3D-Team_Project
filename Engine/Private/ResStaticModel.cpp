@@ -214,7 +214,8 @@ HRESULT CResStaticModel::Ready_Materials(const _string& strModelFilePath, _char*
 
 		auto  pMaterial = CResModelMaterial::Create(strModelFilePath);
 
-		if (FAILED(pMaterial->Load(CResModelMaterial::DESC{ .ptr = ptr }))) {
+		if (FAILED(pMaterial->Load(CResModelMaterial::DESC{
+			.ptr = ptr, .recursiveTextureSearch = true }))) {
 			return E_FAIL;
 		}
 

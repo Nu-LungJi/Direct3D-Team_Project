@@ -11,6 +11,15 @@ void CEditorCommandManager::Submit(std::unique_ptr<IEditorCommand> command)
 		m_RequestQueue.push_back({ REQUEST_TYPE::EXECUTE, std::move(command) });
 }
 
+void CEditorCommandManager::RecordExecuted(std::unique_ptr<IEditorCommand> command)
+{
+	if (!command) return;
+	m_UndoStack.push_back(std::move(command));
+	if (m_UndoStack.size() > MAX_HISTORY)
+		m_UndoStack.erase(m_UndoStack.begin());
+	m_RedoStack.clear();
+}
+
 void CEditorCommandManager::RequestUndo()
 {
 	m_RequestQueue.push_back({ REQUEST_TYPE::UNDO, nullptr });

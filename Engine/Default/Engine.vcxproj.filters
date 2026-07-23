@@ -397,6 +397,9 @@
     <Filter Include="ShaderFiles\Hiz">
       <UniqueIdentifier>{e0e7be52-836f-4e14-a329-df3c1fdd8171}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Terrain">
+      <UniqueIdentifier>{d2e30737-5779-4c35-9edb-56b276d22c13}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Serialize">
       <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
     </Filter>
@@ -504,6 +507,9 @@
     </Filter>
     <Filter Include="ShaderFiles\UIShader">
       <UniqueIdentifier>{0d457b52-1b40-4f88-99a7-174c4ddce13f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Terrain">
+      <UniqueIdentifier>{26070ecc-3b99-43d7-9702-d09fb65ddd9e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -924,6 +930,9 @@
     <ClInclude Include="..\Public\MapManager.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapStaticModelLoader.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\DebugDraw.h">
       <Filter>DebugDraw</Filter>
     </ClInclude>
@@ -1107,6 +1116,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\Engine_ParticleDefines.h">
       <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TerrainChunk.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Terrain.h">
+      <Filter>Terrain</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1645,6 +1660,12 @@
     <ClCompile Include="..\Private\ComSound.cpp">
       <Filter>Component\Sound</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\TerrainChunk.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Terrain.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1667,6 +1688,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
+      <Filter>ShaderFiles\Terrain</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
