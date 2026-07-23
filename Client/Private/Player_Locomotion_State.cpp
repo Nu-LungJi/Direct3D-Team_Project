@@ -56,6 +56,15 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	m_iJogStopForwardAnimation = FindAnimationIndex(
 		*player,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Stop_Fwd_RU_anm.bin");
+	m_iSprintForwardAnimation = FindAnimationIndex(
+		*player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Fwd_anm.bin");
+	m_iSprintLeanLeftAnimation = FindAnimationIndex(
+		*player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
+	m_iSprintLeanRightAnimation = FindAnimationIndex(
+		*player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
 
 	if (auto* pAnimator = player->GetAnimator();
 		pAnimator && m_iIdleAnimation >= 0)
@@ -146,10 +155,13 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			player->SetMovementLocked(false);
 			player->SetCurrentMoveSpeed(5.f);
 			if (m_iJogForwardAnimation >= 0)
+			{
 				pAnimator->Play_Anim(
 					m_iJogForwardAnimation,
 					true,
 					0.1f);
+				m_iActiveMoveLoopAnimation = m_iJogForwardAnimation;
+			}
 		}
 
 		pMoveIntent->SetFacingIntent(
@@ -168,10 +180,13 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			player->SetMovementLocked(false);
 			player->SetCurrentMoveSpeed(2.5f);
 			if (m_iJogForwardAnimation >= 0)
+			{
 				pAnimator->Play_Anim(
 					m_iJogForwardAnimation,
 					true,
 					0.1f);
+				m_iActiveMoveLoopAnimation = m_iJogForwardAnimation;
+			}
 			return;
 		}
 
@@ -234,6 +249,28 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	// 일반 이동에서는 입력 방향으로 순간이동하듯 꺾지 않고
 	// 연속적인 월드 방향을 유지한 채 일정 회전속도로 따라간다.
 	pMoveIntent->SetFacingIntent(tMoveOutput.vMoveDirection, 360.f);
+
+	int32_t iDesiredMoveAnimation = m_iJogForwardAnimation;
+	if (player->IsSprintRequested())
+	{
+		const _float fLeanAngle = CalculateSignedAngle(
+			*player,
+			player->GetRawMoveDirection());
+
+		if (fLeanAngle >= 10.f && fLeanAngle <= 45.f)
+			iDesiredMoveAnimation = m_iSprintLeanRightAnimation;
+		else if (fLeanAngle <= -10.f && fLeanAngle >= -45.f)
+			iDesiredMoveAnimation = m_iSprintLeanLeftAnimation;
+		else
+			iDesiredMoveAnimation = m_iSprintForwardAnimation;
+	}
+
+	if (iDesiredMoveAnimation >= 0 &&
+		iDesiredMoveAnimation != m_iActiveMoveLoopAnimation)
+	{
+		pAnimator->Play_Anim(iDesiredMoveAnimation, true, 0.15f);
+		m_iActiveMoveLoopAnimation = iDesiredMoveAnimation;
+	}
 	m_bWasMoving = true;
 }
 
@@ -426,6 +463,7 @@ void CPlayer_Locomotion_State::BeginJogStart(CPlayer& player)
 			m_iJogStartForwardAnimation,
 			false,
 			0.1f);
+		m_iActiveMoveLoopAnimation = -1;
 	}
 	else if (m_iJogForwardAnimation >= 0)
 	{
@@ -436,6 +474,7 @@ void CPlayer_Locomotion_State::BeginJogStart(CPlayer& player)
 			m_iJogForwardAnimation,
 			true,
 			0.1f);
+		m_iActiveMoveLoopAnimation = m_iJogForwardAnimation;
 	}
 }
 
@@ -456,6 +495,7 @@ void CPlayer_Locomotion_State::BeginJogStop(CPlayer& player)
 			m_iJogStopForwardAnimation,
 			false,
 			0.1f);
+		m_iActiveMoveLoopAnimation = -1;
 	}
 	else
 	{

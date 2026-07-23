@@ -93,6 +93,10 @@ private:
 	int32_t m_iJogStartForwardAnimation{ -1 };
 	int32_t m_iJogForwardAnimation{ -1 };
 	int32_t m_iJogStopForwardAnimation{ -1 };
+	int32_t m_iSprintForwardAnimation{ -1 };
+	int32_t m_iSprintLeanLeftAnimation{ -1 };
+	int32_t m_iSprintLeanRightAnimation{ -1 };
+	int32_t m_iActiveMoveLoopAnimation{ -1 };
 	int32_t m_iPendingIdleTurnAnimation{ -1 };
 	_bool m_bTurnPending{};
 	_bool m_bIdleTurning{};
