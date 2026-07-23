@@ -20,9 +20,6 @@ public:
 		_string heightMapPath{};
 		_string textureGroup{};
 		_string textureTag{};
-		_string shaderGroup{};
-		_string vertexShaderTag{};
-		_string pixelShaderTag{};
 		uint32_t chunkQuadCount = 150;
 		uint32_t vertexCountX = 151;
 		uint32_t vertexCountZ = 151;

@@ -28,8 +28,7 @@ HRESULT CTerrain::Initialize(void* pArg)
 {
 	const auto* desc = static_cast<const DESC*>(pArg);
 	if (!desc || desc->textureGroup.empty() || desc->textureTag.empty() ||
-		desc->shaderGroup.empty() || desc->vertexShaderTag.empty() ||
-		desc->pixelShaderTag.empty() || desc->chunkQuadCount == 0 ||
+		desc->chunkQuadCount == 0 ||
 		desc->vertexCountX < 2 || desc->vertexCountZ < 2 ||
 		desc->vertexSpacing <= 0.f || desc->heightScale < 0.f)
 		return E_INVALIDARG;
@@ -40,8 +39,10 @@ HRESULT CTerrain::Initialize(void* pArg)
 	m_pTerrainTextures[0] = CGameInstance::Get().GetResourceFirst<CResTexture2D>(desc->textureGroup, desc->textureTag);
 	for (uint32_t layer = 1; layer < m_pTerrainTextures.size(); ++layer)
 		m_pTerrainTextures[layer] = m_pTerrainTextures[0];
-	m_pVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(desc->shaderGroup, desc->vertexShaderTag);
-	m_pPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(desc->shaderGroup, desc->pixelShaderTag);
+	m_pVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_VS_TERRAIN);
+	m_pPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PS_TERRAIN);
 	if (!m_pTerrainTextures[0] || !m_pVertexShader || !m_pPixelShader ||
 		FAILED(m_pVertexShader->Load()) || FAILED(m_pPixelShader->Load()))
 		return E_FAIL;

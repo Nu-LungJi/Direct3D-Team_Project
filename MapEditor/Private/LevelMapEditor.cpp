@@ -50,9 +50,6 @@ HRESULT CLevelMapEditor::Initialize()
 		//Desc.heightMapPath = "./Resources/SampleClient/Textures/Terrain/Height.bmp";
 		Desc.textureGroup = "MAPEDITOR_TERRAIN_TILE";
 		Desc.textureTag = "Tile0";
-		Desc.shaderGroup = "MAP_EDITOR_SHADER";
-		Desc.vertexShaderTag = "VS_VTX_NOR_TEX";
-		Desc.pixelShaderTag = "PS_VTX_NOR_TEX";
 		Desc.chunkQuadCount = 150;
 		Desc.vertexSpacing = 1.f;
 		Desc.heightScale = 0.1f;

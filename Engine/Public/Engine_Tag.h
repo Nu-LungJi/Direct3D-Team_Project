@@ -1,6 +1,9 @@
 #pragma once
 namespace Engine
 {
+	static constexpr const char* TAG_RES_VS_TERRAIN = "VS_Terrain";
+	static constexpr const char* TAG_RES_PS_TERRAIN = "PS_Terrain";
+
 #define DECLARE_TAG(a, b) \
     static constexpr const char* a = #b; \
     static constexpr const _string_id ID##a = STRID(#b);

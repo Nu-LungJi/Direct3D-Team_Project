@@ -34,9 +34,11 @@ namespace Engine
 
 	inline bool LoadMapStaticModelFile(const std::filesystem::path& binPath,
 		const std::filesystem::path& staticRoot, const std::string& resourceGroup,
-		std::string* outTag = nullptr)
+		std::string* outTag = nullptr, const std::string& requestedTag = {})
 	{
-		const std::string tag = MakeMapStaticModelTag(staticRoot, binPath);
+		const std::string tag = requestedTag.empty()
+			? MakeMapStaticModelTag(staticRoot, binPath)
+			: requestedTag;
 		if (outTag) *outTag = tag;
 		if (auto cached = CGameInstance::Get().GetResourceFirst<CResStaticModel>(resourceGroup, tag))
 		{
@@ -142,7 +144,8 @@ namespace Engine
 				}
 				found = byTag.emplace(tag, stemFound->second).first;
 			}
-			if (LoadMapStaticModelFile(found->second, staticRoot, resourceGroup)) ++result.loaded;
+			if (LoadMapStaticModelFile(found->second, staticRoot, resourceGroup, nullptr, tag))
+				++result.loaded;
 			else result.failed.push_back(tag);
 		}
 		return result;

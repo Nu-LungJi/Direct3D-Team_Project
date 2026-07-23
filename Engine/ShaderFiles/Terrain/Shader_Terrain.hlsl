@@ -1,4 +1,4 @@
-#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+#include "../ShaderDefines.hlsl"
 
 Texture2D g_TileTextures[4] : register(t0);
 Texture2D g_BlendMask : register(t4);
@@ -28,13 +28,11 @@ struct VS_OUT
 VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out;
-
     Out.vPosition = mul(float4(In.vPosition, 1.f), g_matWVP);
     Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
     Out.vProjPos = Out.vPosition;
-
     return Out;
 }
 
@@ -55,23 +53,20 @@ struct PS_OUT
     vector vEmissive : SV_TARGET3;
 };
 
-PS_OUT PSMain(PS_IN IN)
+PS_OUT PSMain(PS_IN In)
 {
     PS_OUT Out;
-
-    float2 maskUV = saturate((IN.vTexcoord - g_ChunkUVOffset) / g_ChunkUVSpan);
+    float2 maskUV = saturate((In.vTexcoord - g_ChunkUVOffset) / g_ChunkUVSpan);
     float4 weights = saturate(g_BlendMask.Sample(LinearClamp, maskUV));
     weights /= max(dot(weights, 1.f), 0.0001f);
-    vector vMtrlDiffuse =
-        g_TileTextures[0].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.r +
-        g_TileTextures[1].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.g +
-        g_TileTextures[2].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.b +
-        g_TileTextures[3].Sample(LinearWrap, IN.vTexcoord * 50.f) * weights.a;
-
-    Out.vDiffuse = vMtrlDiffuse;
-    Out.vNormal = float4(IN.vNormal.xyz * 0.5f + 0.5f, 0.f);
+    vector materialDiffuse =
+        g_TileTextures[0].Sample(LinearWrap, In.vTexcoord * 50.f) * weights.r +
+        g_TileTextures[1].Sample(LinearWrap, In.vTexcoord * 50.f) * weights.g +
+        g_TileTextures[2].Sample(LinearWrap, In.vTexcoord * 50.f) * weights.b +
+        g_TileTextures[3].Sample(LinearWrap, In.vTexcoord * 50.f) * weights.a;
+    Out.vDiffuse = materialDiffuse;
+    Out.vNormal = float4(In.vNormal.xyz * 0.5f + 0.5f, 0.f);
     Out.vSMRO = float4(0.f, 0.f, 0.f, 1.f);
     Out.vEmissive = float4(0.f, 0.f, 0.f, 1.f);
-
     return Out;
 }

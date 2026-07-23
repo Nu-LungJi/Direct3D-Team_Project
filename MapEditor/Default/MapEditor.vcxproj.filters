@@ -296,9 +296,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>

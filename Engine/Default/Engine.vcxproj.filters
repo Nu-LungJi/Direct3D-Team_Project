@@ -394,6 +394,9 @@
     <Filter Include="ShaderFiles\Hiz">
       <UniqueIdentifier>{e0e7be52-836f-4e14-a329-df3c1fdd8171}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Terrain">
+      <UniqueIdentifier>{d2e30737-5779-4c35-9edb-56b276d22c13}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Serialize">
       <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
     </Filter>
@@ -1676,6 +1679,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
+      <Filter>ShaderFiles\Terrain</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>

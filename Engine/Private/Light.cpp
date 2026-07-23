@@ -122,7 +122,7 @@ VOID CLight::Update(E::_float fTimeDelta) {
 		XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
 		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
-		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(150.f, 150.f, 0.1f, 500.f));
+		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(500.f, 500.f, 0.1f, 1000.f));
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 
