@@ -81,6 +81,7 @@ VS_OUT VSMain(VS_IN input, uint instanceId : SV_InstanceID)
         mul(skinBoneW.OffsetMatrix, gCPUCombinedBoneMatrices[instanceBoneOffset + skinBoneW.iSkeletonBoneIndex]) * weightW;
 
 	const float4 skinnedPosition = mul(float4(input.vPosition, 1.f), BoneMatrix);
+	//const float4 skinnedPosition = float4(input.vPosition, 1.f);
 	const float4 skinnedNormal = mul(float4(input.vNormal, 0.f), BoneMatrix);
 	const float4 skinnedTangent = mul(float4(input.vTangent, 0.f), BoneMatrix);
     const float4 skinnedBinormal = mul(float4(input.vBinormal, 0.f), BoneMatrix);

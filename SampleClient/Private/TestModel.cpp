@@ -86,7 +86,8 @@ void CTestModel::UpdateGUI()
 			// ?�름 getter ?�으�??�걸 추천
 			// boneLabel = std::to_string(i) + " : " + Bones[i]->Get_BoneName();
 
-			boneLabel = Bones[i]->GetBoneName();
+			boneLabel =
+				std::to_string(i) + " : " + Bones[i]->GetBoneName();
 
 			bool bSelected = (m_iDebugSelectedBone == i);
 
@@ -127,6 +128,158 @@ void CTestModel::UpdateGUI()
 		ImGui::Text("Z : %.4f", vBonePos.z);
 
 	}
+
+	ImGui::Separator();
+	ImGui::Text("CPU + GPU Skinning Diagnostics");
+
+	const auto DrawMatrix = [](const char* pLabel, const _float4x4& matrix)
+		{
+			if (!ImGui::TreeNode(pLabel))
+				return;
+
+			for (uint32_t row = 0; row < 4; ++row)
+			{
+				ImGui::Text(
+					"[%u] % .6f  % .6f  % .6f  % .6f",
+					row,
+					matrix.m[row][0],
+					matrix.m[row][1],
+					matrix.m[row][2],
+					matrix.m[row][3]);
+			}
+			ImGui::TreePop();
+		};
+
+	const auto DrawMatrixStatus = [&](const char* pLabel, const _float4x4& matrix)
+		{
+			bool bFinite = true;
+			for (uint32_t row = 0; row < 4; ++row)
+			{
+				for (uint32_t column = 0; column < 4; ++column)
+					bFinite &= std::isfinite(matrix.m[row][column]);
+			}
+
+			const _matrix loadedMatrix = XMLoadFloat4x4(&matrix);
+			const float fDeterminant =
+				XMVectorGetX(XMMatrixDeterminant(loadedMatrix));
+
+			_vector scale{};
+			_vector rotation{};
+			_vector translation{};
+			const bool bDecomposed = XMMatrixDecompose(
+				&scale,
+				&rotation,
+				&translation,
+				loadedMatrix);
+
+			_float3 scaleValue{};
+			_float3 translationValue{};
+			XMStoreFloat3(&scaleValue, scale);
+			XMStoreFloat3(&translationValue, translation);
+
+			// 0.01 uniform scale has a valid determinant of 1e-6.
+			// Only treat a matrix as singular when its determinant is effectively zero.
+			if (!bFinite || !bDecomposed || std::abs(fDeterminant) < 0.000000000001f)
+			{
+				ImGui::TextColored(
+					ImVec4(1.f, 0.2f, 0.2f, 1.f),
+					"%s : INVALID",
+					pLabel);
+			}
+			else
+			{
+				ImGui::TextColored(
+					ImVec4(0.2f, 1.f, 0.2f, 1.f),
+					"%s : VALID",
+					pLabel);
+			}
+
+			ImGui::Text(
+				"Det %.8f | Scale %.4f %.4f %.4f | Pos %.4f %.4f %.4f",
+				fDeterminant,
+				scaleValue.x,
+				scaleValue.y,
+				scaleValue.z,
+				translationValue.x,
+				translationValue.y,
+				translationValue.z);
+			DrawMatrix(pLabel, matrix);
+		};
+
+	auto pDebugModel = m_pComModelInstance->GetModel();
+	const auto& cpuCombinedMatrices =
+		m_pComModelInstance->Get_CombinedBoneMatrices();
+
+	ImGui::Text(
+		"CPU Palette Count : %u / Skeleton : %u",
+		static_cast<uint32_t>(cpuCombinedMatrices.size()),
+		static_cast<uint32_t>(Bones.size()));
+
+	if (m_iDebugSelectedBone >= cpuCombinedMatrices.size())
+	{
+		ImGui::TextColored(
+			ImVec4(1.f, 0.2f, 0.2f, 1.f),
+			"Selected bone is missing from the CPU palette.");
+	}
+	else
+	{
+		const _float4x4& combinedMatrix =
+			cpuCombinedMatrices[m_iDebugSelectedBone];
+		DrawMatrixStatus("CPU Combined Matrix", combinedMatrix);
+		DrawMatrix("PreTransform Matrix", pDebugModel->Get_PreTransformMatrix());
+
+		uint32_t iMatchingMeshBoneCount = 0;
+		const auto& meshes = pDebugModel->GetMeshes();
+		for (uint32_t iMeshIndex = 0;
+			iMeshIndex < static_cast<uint32_t>(meshes.size());
+			++iMeshIndex)
+		{
+			const auto& mesh = meshes[iMeshIndex];
+			if (!mesh)
+				continue;
+
+			const auto& boneIndices = mesh->GetBoneIndices();
+			const auto& offsetMatrices = mesh->GetOffsetMatrices();
+			for (uint32_t iMeshBoneIndex = 0;
+				iMeshBoneIndex < static_cast<uint32_t>(boneIndices.size());
+				++iMeshBoneIndex)
+			{
+				if (boneIndices[iMeshBoneIndex] != m_iDebugSelectedBone)
+					continue;
+
+				++iMatchingMeshBoneCount;
+				ImGui::Separator();
+				ImGui::Text(
+					"Mesh %u | Mesh Bone %u | Skeleton Bone %u",
+					iMeshIndex,
+					iMeshBoneIndex,
+					boneIndices[iMeshBoneIndex]);
+
+				if (iMeshBoneIndex >= offsetMatrices.size())
+				{
+					ImGui::TextColored(
+						ImVec4(1.f, 0.2f, 0.2f, 1.f),
+						"Offset matrix is missing.");
+					continue;
+				}
+
+				_float4x4 skinMatrix{};
+				XMStoreFloat4x4(
+					&skinMatrix,
+					XMLoadFloat4x4(&offsetMatrices[iMeshBoneIndex]) *
+						XMLoadFloat4x4(&combinedMatrix));
+
+				DrawMatrixStatus("Offset Matrix", offsetMatrices[iMeshBoneIndex]);
+				DrawMatrixStatus("CPU Final Skin Matrix", skinMatrix);
+			}
+		}
+
+		if (iMatchingMeshBoneCount == 0)
+		{
+			ImGui::TextDisabled(
+				"Selected skeleton bone does not influence any mesh.");
+		}
+	}
 	ImGui::End();
 
 
@@ -151,10 +304,8 @@ HRESULT CTestModel::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
-	if (!m_pResVertexCPUSkinningInstancedShader ||
-		FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
+	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>( TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
+	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
 	{
 		return E_FAIL;
 	}
@@ -476,10 +627,17 @@ HRESULT CTestModel::Render_CPU_GPU_Instanced(ID3D11DeviceContext* pContext, cons
 		if (combinedMatrices.empty() || combinedMatrices.size() > 512)
 			return E_FAIL;
 
-		memcpy(
-			&combinedPalette[instanceIndex * 512],
-			combinedMatrices.data(),
-			combinedMatrices.size() * sizeof(_float4x4));
+		// DirectXMath로 계산한 CPU Combined 행렬을 VS의 t7 행렬 규약에 맞춘다.
+		// CPU 원본은 다른 CPU 기능에서도 사용하므로 업로드 복사본만 전치한다.
+		for (uint32_t boneIndex = 0;
+			boneIndex < static_cast<uint32_t>(combinedMatrices.size());
+			++boneIndex)
+		{
+			XMStoreFloat4x4(
+				&combinedPalette[instanceIndex * 512 + boneIndex],
+				XMMatrixTranspose(
+					XMLoadFloat4x4(&combinedMatrices[boneIndex])));
+		}
 	}
 
 	// CPU가 계산한 CombinedBone palette는 batch당 한 번만 갱신한다.

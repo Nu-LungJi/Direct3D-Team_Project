@@ -1125,9 +1125,7 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
-			TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced",
-			"./ShaderFiles/TestModel/Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl"))
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced","./ShaderFiles/TestModel/Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
 				return E_FAIL;

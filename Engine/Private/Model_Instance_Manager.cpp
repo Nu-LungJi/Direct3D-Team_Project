@@ -77,10 +77,7 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 
 	const auto eAnimatorMode = pAnimator->GetEvaluationMode();
 	// CPU 단독 모드는 구현 보존용이다. 소환·배치는 CPU+GPU 스키닝 경로로 정규화한다.
-	const uint32_t iEvaluationMode = static_cast<uint32_t>(
-		eAnimatorMode == CComAnimator::EVALUATION_MODE::CPU
-			? CComAnimator::EVALUATION_MODE::CPU_GPU
-			: eAnimatorMode);
+	const uint32_t iEvaluationMode = static_cast<uint32_t>(eAnimatorMode == CComAnimator::EVALUATION_MODE::CPU? CComAnimator::EVALUATION_MODE::CPU_GPU: eAnimatorMode);
 	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, false, iEvaluationMode);
 	if (!pBatch)
 		return;
