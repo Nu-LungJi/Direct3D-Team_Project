@@ -17,6 +17,7 @@
 #include "MapCollisionProxyObject.h"
 #include "TestPhysXCollisionProxyTrigger.h"
 #include "TestDynamic.h"
+#include "TestSquareStep.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -142,6 +143,20 @@ std::future<bool> CLevelCreatureLoader::Load()
 					//return false;
 				}
 			}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(
+				"LEVEL_CREATURE", "Static_SquareStep_A_Resource",
+				CResStaticModel::Create(
+					"./Resources/SampleClient/Models/Static/Sanctum/SM_SanctumDun_SquareStep_A.bin")))
+			{
+				E::CResStaticModel::DESC Desc{};
+				Desc.PreTransformMatrix =
+					XMMatrixRotationX(XMConvertToRadians(90.f));
+				if (FAILED(res->Load(Desc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Static_SquareStep_A_Resource");
+					return false;
+				}
+			}
 			if (auto res = CGameInstance::Get().AddResource("LEVEL_CREATURE", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
 			{
 				if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
@@ -191,6 +206,13 @@ std::future<bool> CLevelCreatureLoader::Load()
 				"LEVEL_CREATURE", "Prototype_GameObject_TestDynamic", CTestDynamic::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestDynamic");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE", "Prototype_GameObject_TestSquareStep",
+				CTestSquareStep::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestSquareStep");
 				return false;
 			}
 

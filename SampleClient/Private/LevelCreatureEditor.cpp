@@ -18,6 +18,7 @@
 #include "MapCollisionProxyObject.h"
 #include "Test3DSound.h"
 #include "TestDynamic.h"
+#include "TestSquareStep.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -134,6 +135,18 @@ HRESULT CLevelCreatureEditor::Initialize()
 			"Prototype_GameObject_TestDynamic",
 			"03_PhysXTest",
 			&desc))
+			return E_FAIL;
+	}
+
+	{
+		CTestSquareStep::DESC Desc{};
+		Desc.sObjectTag = "TestSquareStep";
+		Desc.vInitialPosition = { 0.f, 0.f, 0.f };
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_TestSquareStep",
+			"03_PhysXTest",
+			&Desc))
 			return E_FAIL;
 	}
 
