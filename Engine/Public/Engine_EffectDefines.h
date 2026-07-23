@@ -13,16 +13,6 @@ inline constexpr EFFECT_INSTANCE_ID INVALID_EFFECT_INSTANCE_ID = 0;
 
 
 
-using EffectCommandVariant = std::variant<EFFECT_LIGHT_COMMAND, EFFECT_SOUND_COMMAND>;
-
-struct EFFECT_COMMAND
-{
-	EFFECT_COMMAND_TYPE eType = EFFECT_COMMAND_TYPE::END;
-	EffectCommandVariant data{};
-
-	_float fSpawnDelay = 0.f;
-};
-
 
 struct EFFECT_PARTICLE_COMMAND
 {
@@ -67,6 +57,8 @@ struct EFFECT_SOUND_COMMAND
 	_bool b3D = true;
 };
 
+using EffectCommandVariant = std::variant<EFFECT_PARTICLE_COMMAND, EFFECT_LIGHT_COMMAND, EFFECT_SOUND_COMMAND>;
+
 
 enum class EFFECT_COMMAND_TYPE
 {
@@ -76,19 +68,17 @@ enum class EFFECT_COMMAND_TYPE
 	END
 };
 
-
-using EffectCommandVariant =
-std::variant< EFFECT_PARTICLE_COMMAND,
-	EFFECT_LIGHT_COMMAND,
-	EFFECT_SOUND_COMMAND>;
-
 struct EFFECT_COMMAND
 {
 	EFFECT_COMMAND_TYPE eType = EFFECT_COMMAND_TYPE::END;
-	// 정렬 및 디스패치에서 사용하는 단일 지연 시간
+	EffectCommandVariant data{};
+
 	_float fSpawnDelay = 0.f;
-	EffectCommandVariant data;
 };
+
+
+
+
 
 struct EFFECT_PRESET
 {
