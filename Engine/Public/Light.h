@@ -58,6 +58,7 @@ public:
 	_float			Get_LightRange()				{ return m_pDynamicLight.LightRange; }
 
 	VOID			Set_LightPosition(XMFLOAT3 _Position) { m_pComTransform->SetPosition(_Position); m_bDirtyFlag = true;}
+	VOID			Set_LightPosition(XMVECTOR _Position) { m_pComTransform->SetPosition(_Position); m_bDirtyFlag = true;}
 	XMFLOAT3		Get_LightPosition() { return m_pComTransform->GetPosition(); }
 
 	VOID			Set_LightInnerAttenuation(_float _Attenuation) { m_pDynamicLight.InnerAttanuation = _Attenuation; }

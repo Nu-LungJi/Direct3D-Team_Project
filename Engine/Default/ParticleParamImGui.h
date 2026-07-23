@@ -111,6 +111,9 @@ inline void DrawImGui(SMOKE& p) {
 inline void DrawImGui(SLightning& p) {
 	LIGHTNING_STREIGHT(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
 }
+//inline void DrawImGui(SLightning_Tex& p) {
+//	LIGHTNING_TEX(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+//}
 #undef DRAW_PARAM_FIELD
 
 //8. save 추가
@@ -121,6 +124,7 @@ inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELD
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SMOKE& p, nlohmann::json& out) { SMOKE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SLightning& p, nlohmann::json& out) { SPAWN_S_FIELDS(SAVE_PARAM_FIELD) }
+//inline void SaveParam(const SLightning_Tex& p, nlohmann::json& out) { LIGHTNING_TEX(SAVE_PARAM_FIELD) }
 
 //9. 로드 추가
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
@@ -130,6 +134,7 @@ inline void LoadParam(SSpiralParam& p, const nlohmann::json& in) { SPIRAL_FIELDS
 inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAIGHT_GROUND_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SMOKE& p, const nlohmann::json& in) { SMOKE_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SLightning& p, const nlohmann::json& in) { LIGHTNING_STREIGHT(LOAD_PARAM_FIELD) }
+//inline void LoadParam(SLightning_Tex& p, const nlohmann::json& in) { LIGHTNING_TEX(LOAD_PARAM_FIELD) }
 
 #undef SAVE_PARAM_FIELD
 #undef LOAD_PARAM_FIELD

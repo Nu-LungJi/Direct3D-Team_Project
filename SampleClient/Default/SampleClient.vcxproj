@@ -271,7 +271,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestPhysXCapsule.h" />
     <ClInclude Include="..\public\TestPhysXTerrain.h" />
     <ClInclude Include="..\public\TestPhysXTrigger.h" />
-	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
+    <ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h">
@@ -378,7 +378,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="..\Private\TestPartObject.cpp" />
     <ClCompile Include="..\private\TestPhysXTrigger.cpp" />
-	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
+    <ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="..\private\TextBox.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp">
@@ -418,6 +418,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl" />

@@ -296,8 +296,6 @@ public:
 	
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
 
-	HRESULT	Render_EffectLight();
-
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER

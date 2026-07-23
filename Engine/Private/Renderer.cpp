@@ -57,6 +57,8 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeUserInterface()))		return E_FAIL;
 
+	if (FAILED(InitializeUI3D()))				return E_FAIL;
+
 	if (FAILED(InitializeHizBuffer()))			return E_FAIL;
 
 	return S_OK;
@@ -125,6 +127,14 @@ HRESULT CRenderer::InitializeShaderResource()
 	if (auto res = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_NonAlpha", .sTarget = "ps_5_0" })))			return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_UI3D", "./ShaderFiles/UI/UI3D.hlsl"))
+	{
+		if (FAILED(res->Load()))			return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_UI3D", "./ShaderFiles/UI/UI3D.hlsl"))
+	{
+		if (FAILED(res->Load()))			return E_FAIL;
 	}
 	return S_OK;
 }
@@ -384,6 +394,20 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	//	MSG_BOX("Cannot Create BlueNoise Texture File.");
 	//	return E_FAIL;
 	//}
+	return S_OK;
+}
+HRESULT CRenderer::InitializeUI3D()
+{
+	if (m_pUI3DVertexShader = CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_UI3D")) {
+		if (FAILED(m_pUI3DVertexShader->Load()))   return E_FAIL;
+	}
+
+	if (m_pUI3DPixelShader = CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_UI3D")) {
+		if (FAILED(m_pUI3DPixelShader->Load()))    return E_FAIL;
+	}
+
+	m_pResDynTexTargetUI3D = Generate_RenderTarget("DynTex2D_UI3D", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+
 	return S_OK;
 }
 #pragma endregion
@@ -1008,6 +1032,9 @@ HRESULT CRenderer::Draw() {
 		m_pResDynTexTargetPreviousRenderView = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
 	}
 
+	// UI 3D
+	if (FAILED(Render_UI3D()))				return E_FAIL;
+
 	// UI
 	if (FAILED(Render_UserInterface()))     return E_FAIL;
 
@@ -1431,8 +1458,6 @@ HRESULT CRenderer::Render_Effect()
 
 	if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
 
-	//if (FAILED(RenderEffectLight()))								return E_FAIL;
-
 	if (FAILED(RenderEffect()))										return E_FAIL;
 
 	Unbind_Resources();
@@ -1676,7 +1701,100 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 
 	return S_OK;
 }
+HRESULT CRenderer::Render_UI3D() {
+	auto pUICame = CGameInstance::Get().GetCamera("UI");
+	if (nullptr == pUICame) return S_OK;
 
+	RenderContext.matProj = pUICame->GetProj();
+	RenderContext.matView = pUICame->GetView();
+	RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
+	RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
+
+	ZoneScopedN("Render_UserInterface");
+	{
+		{
+			m_pContext->CopyResource(
+				m_pResDynTexTargetUI3D->GetTexture().Get(),
+				m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+		}
+		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
+		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		//_float4 ClearColor = { 0.f, 0.f, 0.f, 0.f };
+		//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI3D->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
+
+		const auto& vs = m_pUI3DVertexShader;
+		const auto& ps = m_pUI3DPixelShader;
+		const auto& viBuffer = m_pFullscreenVIBuffer;
+
+		m_pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+		m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
+
+		ID3D11Buffer* vertexBuffers[] = {
+			   viBuffer->GetVertexBuffer().Get()
+		};
+		uint32_t strides[] = {
+			   viBuffer->GetVertexStride()
+		};
+		uint32_t offsets[] = {
+			   0
+		};
+
+		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+		m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+		m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());		// Combined Texture
+		
+
+		if (FAILED(Bind_CameraAttribute(pUICame)))			return E_FAIL;
+
+		if (FAILED(RenderUI3D()))			return E_FAIL;
+
+		Unbind_Resources();
+
+		m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
+	}
+
+	return S_OK;
+	//ZoneScopedN("Render_UI3D");
+	//{
+	//	m_pContext->CopyResource(
+	//		m_pResDynTexTargetUI3D->GetTexture().Get(),
+	//		m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+	//}
+	//{
+	//	ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
+	//	m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+	//	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+	//}
+	//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+	//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI3D->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
+	//
+	//{
+	//	m_pContext->IASetInputLayout(m_pUI3DVertexShader->GetInputLayout().Get());
+	//	m_pContext->VSSetShader(m_pUI3DVertexShader->GetVertexShader().Get(), nullptr, 0);
+	//	m_pContext->PSSetShader(m_pUI3DPixelShader->GetPixelShader().Get(), nullptr, 0);
+	//}
+	//
+	//auto pGameCam = CGameInstance::Get().GetActiveCamera();
+	//if (nullptr == pGameCam)    return S_OK;
+	//
+	//if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
+	//
+	//if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
+	//
+	//if (FAILED(RenderUI3D()))										return E_FAIL;
+	//
+	//Unbind_Resources();
+	//
+	//m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
+
+	return S_OK;
+}
 HRESULT CRenderer::Render_UserInterface() {
 	auto pUICame = CGameInstance::Get().GetCamera("UI");
 	if (nullptr == pUICame) return S_OK;
@@ -1697,7 +1815,7 @@ HRESULT CRenderer::Render_UserInterface() {
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+		//_float4 ClearColor = { 0.f, 0.f, 0.f, 0.f };
 		//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
 
 		const auto& vs = m_pFullscreenVS;
@@ -1898,13 +2016,6 @@ HRESULT CRenderer::RenderEffect()
 	return S_OK;
 }
 
-HRESULT CRenderer::RenderEffectLight() {
-	if (FAILED(CGameInstance::Get().Render_EffectLight())) {
-		return E_FAIL;
-	}
-	return S_OK;
-}
-
 HRESULT CRenderer::RenderCollider()
 {
 	ZoneScopedN("RenderCollider");
@@ -1916,6 +2027,26 @@ HRESULT CRenderer::RenderCollider()
 			pRenderObject->Render(m_pContext.Get(), RenderContext);
 		}
 	}
+
+	return S_OK;
+}
+
+HRESULT CRenderer::RenderUI3D(){
+	ZoneScopedN("RenderUI3D");
+
+	auto Alphablend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	m_pContext->OMSetBlendState(Alphablend->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI3D)])
+	{
+		if (pRenderObject->HasRenderPass(RenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), RenderContext);
+		}
+	}
+
+	auto Nonblend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	m_pContext->OMSetBlendState(Nonblend->GetBlendState().Get(), nullptr, 0xffffffff);
 
 	return S_OK;
 }
@@ -2025,11 +2156,10 @@ HRESULT CRenderer::Initialize_Debugging()
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetSMRO);
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetEmissive);
 
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetEffect);
-
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetBrightPass);
+	m_pResDynTexTargetList.push_back(m_pOffScreenTex2D);
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetUI);
+
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetUI3D);
 
 	for (uint32_t i = 0; i < m_pResDynTexTargetList.size(); i++)
 	{

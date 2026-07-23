@@ -288,9 +288,13 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		}
 	}
 	////////// -- 광윤 추가 -- //////////
-	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))	return E_FAIL;
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))		 return E_FAIL;
 
-	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))	return E_FAIL;
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))		 return E_FAIL;
+	
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Lightning_Texture.hlsl"))) return E_FAIL;
+
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Lightning_Texture.hlsl")))	 return E_FAIL;
 	/////////////////////////////////////
 
 	{
@@ -319,6 +323,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
+		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Texture.json");
 		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 	}
 	return S_OK;

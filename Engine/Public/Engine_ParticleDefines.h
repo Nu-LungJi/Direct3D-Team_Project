@@ -213,6 +213,13 @@ COMMON_PATTERN_FIELDS(X)
     X(_float4, endEmissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)\
    COMMON_PATTERN_FIELDS(X)
+
+#define LIGHTNING_TEX(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(uint32_t, iCount, 1) \
+    X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+    X(_float4, color, _float4(1,1,1,1)) \
+   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -232,17 +239,18 @@ struct StructName \
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SMOKE { SMOKE_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
+	//struct SLightning_Tex { LIGHTNING_TEX(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,SMOKE, SLightning>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning/*, SLightning_Tex*/>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","SMOKE","SLightning",
+		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","SMOKE","SLightning"/*, "SLightning_Tex"*/,
 	};
 
 	//5. 여기에 CASE 추가
@@ -258,6 +266,8 @@ struct StructName \
 		case 4: return SCircleSpreadParam{};
 		case 5: return SMOKE{};
 		case 6: return SLightning{};
+		//case 7: return SLightning_Tex{};
+			  
 		default: return SStairsParam{};
 		}
 	}
