@@ -1074,9 +1074,7 @@ HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity) {
 	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _Range, _LifeTime, _Velocity);
 }
-HRESULT	CGameInstance::Render_EffectLight() {
-	return m_pLightManager->Render_EffectLight();
-}
+
 
 #pragma endregion
 #pragma endregion

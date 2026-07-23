@@ -33,8 +33,7 @@ public:
 	VOID	Update(_float fTimeDelta);
 	VOID	UpdateGUI();
 	HRESULT	Capture_ShadowMap();
-	HRESULT	Render_ObjectShadow();
-	HRESULT Render_EffectLight();
+	HRESULT	Render_ObjectShadow();	
 
 	VOID	Bind_DynamicLight();
 
@@ -57,6 +56,11 @@ public:
 
 	_bool	IsInFrustum(CLight* _LightOBJ);
 
+	HRESULT Reset_EffectLight(const std::optional<CHandle>& _Handle);
+	HRESULT Reset_AllEffectLight();
+
+	HRESULT Transform_EffectLight(const std::optional<CHandle>& _Handle, XMFLOAT3 _Position);
+	HRESULT Transform_EffectLight(const std::optional<CHandle>& _Handle, XMVECTOR _Position);
 private:
 	HRESULT	Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
 	HRESULT	Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);

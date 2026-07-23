@@ -239,8 +239,7 @@ VOID CLightManager::UpdateGUI() {
 }
 
 VOID CLightManager::Update(_float fTimeDelta) {
-	if (CGameInstance::Get().KeyDown(DIK_P))
-		Allocate_EffectLight({ 10.f, 3.f, 10.f }, 30.f, { 1.f, 0.f, 0.f }, 10.f, 1.f, {1.f, 0.f, 0.f});
+
 }
 
 HRESULT CLightManager::Capture_ShadowMap() {
@@ -470,40 +469,9 @@ HRESULT CLightManager::Render_ObjectShadow() {
 
 	UnBind_ShadowResource();
 
-	return S_OK;
-}
-
-HRESULT CLightManager::Render_EffectLight() {
-	ZoneScopedN("Render_EffectLight");
-	CB_LIGHT LightBuffer{};
-	uint32_t LightCount = 0;
-
-	for (auto& LightHandle : m_pEffectLightPool) {
-		if (LightCount >= MAX_LIGHT_COUNT) break;
-		if (!LightHandle) continue;
-		// Need Culling - Frustum & Distance
-		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false)	continue;
-
-		// Distance Culling
-		// Frustum Culling
-
-		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
-		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
-		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
-
-		LightCount++;
-	}
-	LightBuffer.LightCount = LightCount;
-
-	D3D11_MAPPED_SUBRESOURCE MRES{};
-	if (SUCCEEDED(m_pContext->Map(m_pLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-	{
-		memcpy(MRES.pData, &LightBuffer, sizeof(CB_LIGHT));
-		m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
-	}
-	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+#ifdef _DEBUG
+	Render_DebugIcon();
+#endif
 
 	return S_OK;
 }
@@ -727,6 +695,55 @@ _bool CLightManager::IsInFrustum(CLight* _LightOBJ) {
 	return CameraFrustum->Intersect(*LightCollider.get());
 }
 
+HRESULT CLightManager::Reset_EffectLight(const std::optional<CHandle>& _Handle) {
+	auto iter = std::find(m_pEffectLightPool.begin(), m_pEffectLightPool.end(), _Handle);
+	if (iter == m_pEffectLightPool.end()) return E_FAIL;
+
+	auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>((*iter).value());
+	if (nullptr == LightOBJ) return E_FAIL;
+
+	LightOBJ->Reset_Light();
+
+	return S_OK;
+}
+
+HRESULT CLightManager::Reset_AllEffectLight() {
+	for (auto& LightHandle : m_pEffectLightPool) {
+		if (!LightHandle) return E_FAIL;
+
+		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+		if (nullptr == LightOBJ)return E_FAIL;
+
+		LightOBJ->Reset_Light();
+	}
+
+	return S_OK;
+}
+
+HRESULT CLightManager::Transform_EffectLight(const std::optional<CHandle>& _Handle, XMFLOAT3 _Position){
+	auto iter = std::find(m_pEffectLightPool.begin(), m_pEffectLightPool.end(), _Handle);
+	if (iter == m_pEffectLightPool.end()) return E_FAIL;
+
+	auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>((*iter).value());
+	if (nullptr == LightOBJ) return E_FAIL;
+
+	LightOBJ->Set_LightPosition(_Position);
+
+	return S_OK;
+}
+
+HRESULT CLightManager::Transform_EffectLight(const std::optional<CHandle>& _Handle, XMVECTOR _Position) {
+	auto iter = std::find(m_pEffectLightPool.begin(), m_pEffectLightPool.end(), _Handle);
+	if (iter == m_pEffectLightPool.end()) return E_FAIL;
+
+	auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>((*iter).value());
+	if (nullptr == LightOBJ) return E_FAIL;
+
+	LightOBJ->Set_LightPosition(_Position);
+
+	return S_OK;
+}
+
 HRESULT CLightManager::Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY) {
 	D3D11_TEXTURE2D_DESC TEXDesc = {};
 	TEXDesc.Width = _ResolutionX;
@@ -819,7 +836,7 @@ HRESULT CLightManager::Initialize_EffectLight(uint32_t _PoolSize){
 
 		LightOBJ->Change_LightType(LIGHT_TYPE::POINT);
 
-		LightOBJ->Set_LightPosition({ 0.f, 0.f , 0.f });
+		LightOBJ->Set_LightPosition(XMFLOAT3(0.f, 0.f, 0.f));
 		LightOBJ->Set_LightColor({ 1.f, 1.f, 1.f });
 		LightOBJ->Set_LightIntensity(10.f);
 		LightOBJ->Set_LightRange(10.f);
