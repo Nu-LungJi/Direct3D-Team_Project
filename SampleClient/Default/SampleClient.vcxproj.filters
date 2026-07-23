@@ -220,6 +220,12 @@
     <Filter Include="GameObject\UI\MiniMap">
       <UniqueIdentifier>{0dc8a52d-1c4d-4870-974c-d5909d11ab7a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\EffectLight">
+      <UniqueIdentifier>{ded5e76a-6a62-4477-a39c-dd2fde0061e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTAction\Animation\Child">
+      <UniqueIdentifier>{daa2ade4-a4a0-4290-a852-3e28282a96fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -258,12 +264,12 @@
     <ClInclude Include="..\Public\BackGround.h">
       <Filter>GameObject\BackGround</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\Terrain.h">
+    <ClInclude Include="..\public\Terrain.h">
       <Filter>GameObject\Terrain</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\MapCollisionProxyObject.h">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClInclude>
+    </ClInclude>
+    <ClInclude Include="..\public\MapCollisionProxyObject.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Client_Resources.h">
       <Filter>Resource</Filter>
     </ClInclude>
@@ -360,12 +366,6 @@
     <ClInclude Include="..\public\BTDecHp.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTAnimation.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTTurnAnimation.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\BTMove.h">
       <Filter>GameObject\AI\BTAction\Motion</Filter>
     </ClInclude>
@@ -390,9 +390,6 @@
     <ClInclude Include="..\public\BTOnlyFalse.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTAttackAnimation.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\TextureUI.h">
       <Filter>GameObject\UI\TexUI</Filter>
     </ClInclude>
@@ -416,12 +413,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTRandMoveAnim.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTHitAnimMonster.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTCreatureFlag.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
@@ -471,9 +462,9 @@
     <ClInclude Include="..\public\TestPhysXTrigger.h">
       <Filter>GameObject\TestPhysx\Trigger</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h">
-	  <Filter>GameObject\TestPhysx\Trigger</Filter>
-	</ClInclude>
+    <ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\BTDecHitCnt.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
@@ -522,6 +513,24 @@
     <ClInclude Include="..\Public\MiniMap.h">
       <Filter>GameObject\UI\MiniMap</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTAnimRoot.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -558,12 +567,12 @@
     <ClCompile Include="..\Private\BackGround.cpp">
       <Filter>GameObject\BackGround</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\Terrain.cpp">
+    <ClCompile Include="..\private\Terrain.cpp">
       <Filter>GameObject\Terrain</Filter>
-	</ClCompile>
-	<ClCompile Include="..\private\MapCollisionProxyObject.cpp">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClCompile>
+    </ClCompile>
+    <ClCompile Include="..\private\MapCollisionProxyObject.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
@@ -606,9 +615,9 @@
     <ClCompile Include="..\private\TestPhysXCapsule.cpp">
       <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp">
-	  <Filter>GameObject\TestPhysx\Trigger</Filter>
-	</ClCompile>
+    <ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
@@ -629,9 +638,6 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecHp.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTTurnAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTMove.cpp">
       <Filter>GameObject\AI\BTAction\Motion</Filter>
@@ -657,9 +663,6 @@
     <ClCompile Include="..\private\BTOnlyTrue.cpp">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTAttackAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Weapon.cpp">
       <Filter>GameObject\AI\Weapon</Filter>
     </ClCompile>
@@ -683,12 +686,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\Button.cpp">
       <Filter>GameObject\UI\Button</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTRandMoveAnim.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTHitAnimMonster.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTCreatureFlag.cpp">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
@@ -780,14 +777,29 @@
     <ClCompile Include="..\Private\Player_Dead_State.cpp">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\HPBar.cpp">
       <Filter>GameObject\UI\HPBar</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\MiniMap.cpp">
       <Filter>GameObject\UI\MiniMap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimRoot.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -856,6 +868,12 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning_Texture.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

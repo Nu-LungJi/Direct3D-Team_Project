@@ -7,7 +7,7 @@ CBTAnimation::CBTAnimation()
 {
 
 }
-CBTAnimation::CBTAnimation(const CBTAnimation& rhs) : CBTActionNode(rhs)
+CBTAnimation::CBTAnimation(const CBTAnimation& rhs) : CBTAnimRoot(rhs)
 {
 
 }
@@ -18,7 +18,6 @@ CBTAnimation::~CBTAnimation()
 HRESULT CBTAnimation::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
-	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTAnimation";
 	return S_OK;
 }
@@ -40,7 +39,7 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	
 	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 	_bool bFinished = pAnimator->GetFinish();
-
+	Active_Skill();
 	if (m_bLoop || bFinished)
 	{
 
@@ -52,14 +51,11 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 }
 void CBTAnimation::Update_Gui()
 {
+	__super::Update_Gui();
 	if (ImGui::Button("Abort : ")) 
 		m_GuiNode.bAbort = !m_GuiNode.bAbort;
 	ImGui::Text("Abort : %s", m_GuiNode.bAbort ? "TRUE" : "FALSE");
 
-	if (ImGui::Button("Loop Change"))
-		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
-	
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)
@@ -114,20 +110,18 @@ void CBTAnimation::Update_Gui()
 }
 void CBTAnimation::Abort()
 {
-	m_iLoopCnt = 0;
+	__super::Abort();
 }
 nlohmann::json CBTAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 	
-	SaveJsonValue(j, "Loop", m_bLoop);
 	SaveJsonValue(j ,"EndFlag", m_iEndFlag);
 	return j;
 }
 HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	LoadJsonValue(j, "Loop", m_bLoop);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	return S_OK;
 }

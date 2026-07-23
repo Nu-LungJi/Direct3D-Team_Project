@@ -51,6 +51,8 @@ private:
 	HRESULT InitializeBloom();
 	HRESULT InitializeVolumetricEffect();
 
+	HRESULT InitializeUI3D();
+
 public:
 	HRESULT Draw();
 	void FrameEnd();
@@ -94,6 +96,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetLight{};
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3D{};			// 3DUI
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
 
@@ -117,6 +120,9 @@ private:
 
 	SPtr<CResVertexShader>		m_pBlendVertexShader{};
 	SPtr<CResPixelShader>		m_pBlendPixelShader{};
+
+	SPtr<CResVertexShader>		m_pUI3DVertexShader{};
+	SPtr<CResPixelShader>		m_pUI3DPixelShader{};
 
 	SPtr<CResPixelShader>		m_pBrightPassPixelShader{};
 	SPtr<CResPixelShader>		m_pVerticalBlurPixelShader{};
@@ -149,12 +155,7 @@ private:
 
 	SPtr<CResPixelShader>	m_pPostProcessPS{};
 
-private:	// PostProcess Variable
-	_float m_pBloomIntensity{ 0.f };
-	_float m_pDistortionIntensity{ 0.f };
-	_float m_pChromaticIntensity{ 0.f };
-	_float m_pVignetteIntensity{ 0.f };
-	_float m_pVignetteSmoothness{ 0.f };
+
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
 
@@ -175,6 +176,7 @@ private:
 	HRESULT Render_UserInterface();
 
 	HRESULT Render_Lighting();
+	HRESULT Render_UI3D();
 
 	HRESULT Render_PostProcess();
 	HRESULT Render_PostProcess_Bloom();
@@ -225,6 +227,7 @@ private:
 	HRESULT RenderSkybox();
 	HRESULT RenderEffect();
 	HRESULT RenderCollider();
+	HRESULT RenderUI3D();
 	HRESULT RenderUI();
 
 

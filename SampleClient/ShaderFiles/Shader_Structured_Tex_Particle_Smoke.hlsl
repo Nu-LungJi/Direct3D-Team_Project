@@ -1,6 +1,6 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
-cbuffer CB_PER_PARTICLE : register(b11)
+cbuffer CB_PER_PARTICLE : register(b5)
 {
     float g_fTimeDelta;
     uint g_iNumInstances;
@@ -16,7 +16,6 @@ Texture2D g_DiffuseTexture : register(t1);
 Texture2D g_NormalTexture : register(t2);
 Texture2D g_DistortionTexture : register(t3);
 Texture2D g_NoiseTexture : register(t4);
-Texture2D g_AnyTexture : register(t5);
 Texture2D g_BackgroundTex : register(t7);
 
 struct VS_OUT
@@ -78,7 +77,7 @@ VS_OUT VSMain(uint vID : SV_VertexID, uint instID : SV_InstanceID)
         camUp * local.y;
         vWorldPos = float4(worldPos, 1.0f);
 
-        // Compute_WorldNormalì€ Normal/Tangent ë‘ ê°œë§Œ ë°›ìœ¼ë‹ˆ, Binormalì€ í•¨ìˆ˜ ë‚´ë¶€ì—ì„œ ìë™ ê³„ì‚°ë¨
+        // Compute_WorldNormalÀº Normal/Tangent µÎ °³¸¸ ¹ŞÀ¸´Ï, BinormalÀº ÇÔ¼ö ³»ºÎ¿¡¼­ ÀÚµ¿ °è»êµÊ
         Out.vNormal = -camFwd;
         Out.vTangent = camRight;
     }
@@ -140,7 +139,7 @@ PS_OUT PSMain(VS_OUT In)
         float fEdgeMask = smoothstep(0.0f, 0.3f, vTextureColor.a) *
                           (1.0f - smoothstep(0.3f, 0.9f, vTextureColor.a));
 
-        float distortionStrength = 0.01f * In.vColor.a * fEdgeMask;
+        float distortionStrength = 0.15f * In.vColor.a * fEdgeMask;
 
         distortion *= distortionStrength;
         float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);

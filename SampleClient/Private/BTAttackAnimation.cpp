@@ -9,19 +9,18 @@ CBTAttackAnimation::CBTAttackAnimation()
 {
 
 }
-CBTAttackAnimation::CBTAttackAnimation(const CBTAttackAnimation& rhs) : CBTActionNode(rhs)
+CBTAttackAnimation::CBTAttackAnimation(const CBTAttackAnimation& rhs) : CBTAnimRoot(rhs)
 {
 
 }
 
 CBTAttackAnimation::~CBTAttackAnimation()
 {
-	
+
 }
 HRESULT CBTAttackAnimation::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
-	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTAttackAnimation";
 	return S_OK;
 }
@@ -40,14 +39,16 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
-		
+
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
 			-1 == m_Value.iAnimIndex)
 			return m_eDebug = EVALUATE::FAILED;
 		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
-
+	
+		Active_Skill();
+	
 		_bool bFinished = pAnimator->GetFinish();
 
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
@@ -71,13 +72,13 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			{
 				if (auto pSrc = pBT->GetGameObject())
 				{
-					_float fEmissive = std::lerp(0.f,0.5f, tt);
+					_float fEmissive = std::lerp(0.f, 0.5f, tt);
 					static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
 
 			_float fAnimRange = m_fRatio.y - m_fRatio.x;
-			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x) ;
+			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x);
 			const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
 			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
@@ -97,7 +98,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			}
 		}
 
-		
+
 		if (m_bLoop || bFinished)
 		{
 			//Hit 종료는 애니매이션 끝나면
@@ -112,21 +113,9 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 }
 void CBTAttackAnimation::Update_Gui()
 {
+	__super::Update_Gui();
 	ImGui::Text("Move Speed");
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
-
-	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f ,1.f);
-	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
-
-	if (ImGui::Button("Enable Ratio : "))
-		m_bRatio = !m_bRatio;
-	ImGui::Text("Abort : %s", m_bRatio ? "TRUE" : "FALSE");
-
-	if (ImGui::Button("Loop Change"))
-		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
 
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
@@ -136,7 +125,7 @@ void CBTAttackAnimation::Update_Gui()
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
 		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-		
+
 		if (-1 != iIndex)
 		{
 			m_bPopup = false;
@@ -144,15 +133,13 @@ void CBTAttackAnimation::Update_Gui()
 		}
 		ImGui::PopStyleColor();
 	}
-
-
 #define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M "NONE"};
+	const _char* pMoveType[] = { MOVE_M "NONE" };
 #undef X
 	ImGui::Text("Move Selector");
 	if (ImGui::BeginCombo("##Move Seletor", pMoveType[(ETOUI(m_eMove))]))
 	{
-		for (uint32_t i = 0; i < ETOUI(MOVE::END)+1; ++i)
+		for (uint32_t i = 0; i < ETOUI(MOVE::END) + 1; ++i)
 		{
 			_bool bSelect = static_cast<int32_t>(m_eMove) == i;
 
@@ -174,7 +161,7 @@ void CBTAttackAnimation::Update_Gui()
 #undef X
 	if (ImGui::TreeNode("StartFlag"))
 	{
-		
+
 		for (uint32_t i = 0; i < std::size(Flag); ++i)
 		{
 			uint32_t iFlag = 1u << i;
@@ -219,32 +206,26 @@ void CBTAttackAnimation::Update_Gui()
 }
 void CBTAttackAnimation::Abort()
 {
+	__super::Abort();
 	m_fTime = 0.f;
-	m_iLoopCnt = 0;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	SaveJsonValue(j, "Loop", m_bLoop);
-	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "StartFlag", m_iStartFlag);
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return j;
 }
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	LoadJsonValue(j, "Loop", m_bLoop);
-	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return S_OK;
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()

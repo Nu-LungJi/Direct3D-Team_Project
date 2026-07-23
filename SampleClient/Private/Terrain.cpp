@@ -123,8 +123,8 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
 		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
 
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 	const auto& vs = m_pResVertexShader;
 	const auto& ps = m_pResPixelShader;
@@ -168,7 +168,7 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
 	}
-	pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+	pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
 	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };

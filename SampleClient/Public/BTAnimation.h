@@ -1,12 +1,12 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTAnimRoot.h"
 
 NS_BEGIN(Client)
-class CBTAnimation final : public CBTActionNode
+class CBTAnimation final : public CBTAnimRoot
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTAnimation, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTAnimation, CBTAnimRoot)
 private:
 	CBTAnimation();
 
@@ -23,9 +23,7 @@ public:
 	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
-	_bool				m_bLoop{ true }, m_bStart{ true };
-
-	uint32_t			m_iEndFlag{}, m_iStartFlag{}, m_iLoopCnt{ 0 };
+	uint32_t			m_iEndFlag{}, m_iStartFlag{};
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

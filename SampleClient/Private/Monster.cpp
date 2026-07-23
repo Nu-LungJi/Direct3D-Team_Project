@@ -28,7 +28,7 @@ void CMonster::UpdateGUI()
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
 	ImGui::DragFloat("EE", &ff, 0, 1);
 
-	
+
 	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_f), 0, 100);
 }
 
@@ -93,6 +93,9 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 
 void CMonster::Update(E::_float fTimeDelta)
 {
+	//파티클 테스트용
+	if (CGameInstance::Get().KeyDown(DIK_0))
+		m_bSkill = false;
 	__super::Update(fTimeDelta);
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
@@ -103,6 +106,8 @@ void CMonster::Update(E::_float fTimeDelta)
 
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
+
+	RunningSkill(fTimeDelta);
 }
 
 void CMonster::LateUpdate(E::_float fTimeDelta)
@@ -135,8 +140,8 @@ HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 	const auto& vs = m_pResVertexShader;
 	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
@@ -329,7 +334,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		//	"B" : 0.592157,
 		//1.2f, 0.7f, 0.f
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, {0.585,0.685,1}, m_fEmissive, {1.f, 1.f, 1.f}, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, { 0.585,0.685,1 }, m_fEmissive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 
 		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
@@ -499,6 +504,26 @@ HRESULT CMonster::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 	pContext->VSSetShaderResources(6, 3, pNullSRVs);
 
 	return S_OK;
+}
+void CMonster::RunningSkill(_float fTimeDelta)
+{
+	if (m_bSkill)
+	{
+		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
+
+		if (m_MonTable.eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
+		{
+			CGameInstance::Get().Spawn(test[ETOUI(m_MonTable.eAttType)], *m_pComTransform->GetWorldMatrix());
+			m_MonTable.eAttType = ATTMON::END;
+			
+		}
+		if (fCurrRatio >= 1.f)
+		{
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::DEL);
+			m_bSkill = false;
+		}
+			
+	}
 }
 void CMonster::IsHit()
 {

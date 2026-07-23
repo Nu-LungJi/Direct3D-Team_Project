@@ -195,9 +195,8 @@ namespace Engine
 		_float   pad0;
 		_float3  velocity;
 		_float   life;
-		_float   fSize;
-		_float   fEndSize;
-		_float2   pad1;     
+		_float3   fSize;
+		_float3   fEndSize;
 		_float4  rotation;
 		_float4  color;
 		_float4  originalEmissive;
@@ -206,15 +205,17 @@ namespace Engine
 		_float   spawnDelay;
 		uint32_t ownerID = 0;
 		uint32_t iBehaviorType = 0;
-		_float   pad2;
 		_bool    loop;
 		_float3  originalPosition;
 		_float3 originalVelocity; // 원래 스폰 속도+ 방향
-		_float pad5;
 	} PARTICLE_SPAWN_DATA;
 	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
 
 	constexpr uint32_t PREVIEW_OWNER_ID = 0xFFFFFFFF; //미리보기 전용 
+
+
+
+
 
 	typedef struct tagParticleEmitRequest
 	{

@@ -280,6 +280,7 @@ public:
 
 #pragma region LIGHT_MANAGER
 public:
+	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 	VOID	Bind_DynamicLight();
 
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
@@ -292,6 +293,9 @@ public:
 
 	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
+	
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER

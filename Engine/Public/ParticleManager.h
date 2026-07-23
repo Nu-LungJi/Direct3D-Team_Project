@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine_Defines.h"
-#include "ParticleParams.h"
 
 NS_BEGIN(Engine)
 class CParticle;
@@ -24,8 +23,8 @@ typedef struct tagParticlePreset
 	uint32_t groupTypeIndex = 0;      // 0:PARTICLE_CPU, 1:PARTICLE_GPU, 2:BEAM_CPU, 3:RIBBON_CPU
 	uint32_t whatKindFilterIndex = 0;
 	_float maxLife = 1.f;
-	_float fStartSize = 1.f;
-	_float fEndSize = 1.f;
+	_float3 fStartSize = {1.f,1.f ,1.f };
+	_float3 fEndSize = { 1.f ,1.f ,1.f };
 	_float4   rotation = { 0.f, 0.f, 0.f, 0.f };
 	_float3 velocity = { 0,0,0 };
 	_float3 originalVelocity = { 0,0,0 };
@@ -48,17 +47,7 @@ struct TextureSlotState
 	std::string selectedPath;
 };
 
-// 나중에 새 파티클 종류(예: RIBBON, DECAL 등) 추가되면 여기 구조체만 추가하면 됨
-//enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
-//
-//struct SPAWN_COMMAND
-//{
-//    SPAWN_COMMAND_KIND sGroupTag_KindTag{};
-//    StringID sGroupTag{};
-//    StringID sTypeTag{};
-//	uint32_t ownerId = 0;
-//    std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
-//};
+
 struct PARTICLE_EFFECT_PRESET
 {
     std::string sEffectName;              // 저장 시 식별용 이름 (예: "Explosion_Fire")
@@ -107,8 +96,8 @@ public:
 		const std::string& FullPath, const std::string& whatKind,
 		const std::string& particleType, const std::string& particleName,
 		int iMaxParticles,
-		const std::string& VSGroup, const std::string& VSID,
-		const std::string& PSGroup, const std::string& PSID,
+		const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint,
 		const std::string& sGroupTag, const std::string& sResTag,
 		const std::string& textureID1, const std::string& textureID2,
 		const std::string& viBufferID1, const std::string& viBufferID2,
@@ -124,7 +113,11 @@ public:
 		const std::string& hdrTexPath = "",
 		const std::string& hdrNormalTexID1 = "",  
 		const std::string& hdrNormalTexID2 = "",  
-		const std::string& hdrNormalTexPath = "");
+		const std::string& hdrNormalTexPath = "",
+		const std::string& AnyTexID1 = "",  
+		const std::string& AnyTexID2 = "",
+		const std::string& AnyTexPath = "",
+		int iSelectedBlend = 0);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -149,6 +142,11 @@ public:
 	HRESULT ClearLoopRequests();
 	HRESULT DeleteLoopRequests(uint32_t userId);
 
+public:
+	void ClearByOwner(uint32_t ownerId);
+
+	void TranslateOwner(uint32_t ownerId, const _float3& delta);
+	void TransformOwner(uint32_t ownerId , const _float4x4& deltaMatrixData);
 
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);

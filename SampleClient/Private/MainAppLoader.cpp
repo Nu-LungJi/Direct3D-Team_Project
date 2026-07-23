@@ -116,210 +116,201 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 {
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_MESH", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
-
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_MESH_SMOKE", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Mesh_Particle.hlsl")))
+	{
+		if (FAILED(!res->Load(CResShader::DESC{ .sEntryPoint = "PS_SMOKE_MAIN", .sTarget = "ps_5_0" })))
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}	
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_TEX_SMOKE", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "SMOKE", .sTarget = "ps_5_0" })))
 		{
 			//MSG_BOX("");
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_RIBBON_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_TEX_SMOKE_DEF", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PS_SMOKE_DEF", .sTarget = "ps_5_0" })))
 		{
 			//MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_RIBBON_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_RIBBON_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_Trail_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Trail.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_Trail_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Trail.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SPLASH_TEX", CResVertexShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SPLASH_TEX", CResPixelShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLL_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_NoiseScroll.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLL_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_NoiseScroll.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLL_X_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_UV_XScroll.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLL_X_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_UV_XScroll.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SCROLLUV_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle_UvScroll.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_SCROLLUV_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle_UvScroll.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (!res)
 		{
-			//MSG_BOX("");
+			MSG_BOX("");
 			return E_FAIL;
 		}
 	}
+	////////// -- 광윤 추가 -- //////////
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))		 return E_FAIL;
 
-	{
-		//파티클 텍스쳐 로드
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONDISTORTION", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/T_FX_Distortion_Ring3_N.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		//return E_FAIL;
-		//	}
-		//}
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBON", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/VFX_T_AncientMagicStreak_E.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		//return E_FAIL;
-		//	}
-		//}
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_TRAIL", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		return E_FAIL;
-		//	}
-		//}
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))		 return E_FAIL;
+	
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Lightning_Texture.hlsl"))) return E_FAIL;
 
-		//// model-> cpu  용인지 gpu용인지 구분하고 메쉬를 쓰는지 텍스쳐를 쓰는지 구분을하고 
-		//if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("Rock1", "Static_Model_Resource",
-		//	CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/SM_rock1.fbx"))) {
-
-		//	E::CResStaticModel::DESC pDesc{};
-		//	pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-		//	if (FAILED(res->Load(pDesc)))
-		//	{
-		//		return E_FAIL;
-		//	}
-		//}
-
-	}
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Lightning_Texture.hlsl")))	 return E_FAIL;
+	/////////////////////////////////////
 
 	{
 		//노이즈 텍스쳐
@@ -331,14 +322,6 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 				//return E_FAIL;
 			}
 		}
-		//if (auto res = E::CGameInstance::Get().AddResource("SAMPLE_CLINET_TEXTURE", "TEX_RIBBONNOISE", E::CResTexture2D::Create("./Resources/SampleClient/Textures/EffectParticle/trail.png")))
-		//{
-		//	if (FAILED(res->Load()))
-		//	{
-		//		MSG_BOX("");
-		//		//return E_FAIL;
-		//	}
-		//}
 	}
 
 	{
@@ -355,13 +338,8 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
-		CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
-		//파티클 객채들 생성
-		//CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
-		//CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());
-		//CGameInstance::Get().Add_Particle("BEAM", "ATTACK", CParticle_Ribbon::Create());
-		//CGameInstance::Get().Add_Particle("TRAIL", "SLASH", CTrail_Example::Create());
-
+		//CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Texture.json");
+		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 	}
 	return S_OK;
 }

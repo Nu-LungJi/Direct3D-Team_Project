@@ -35,7 +35,13 @@ HRESULT CGraphicDevice::Initialize(ComPtr<ID3D11Device>& ppDevice, ComPtr<ID3D11
 
 	ppDevice = m_pDevice;
 	ppContext = m_pDeviceContext;
+	ID3D11InfoQueue* pInfoQueue = nullptr;
 
+	if (SUCCEEDED(ppDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue))))
+	{
+		pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE);
+		pInfoQueue->Release();
+	}
 	return S_OK;
 }
 

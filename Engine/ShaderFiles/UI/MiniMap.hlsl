@@ -3,6 +3,13 @@
 Texture2D g_FrameTex : register(t0);   // t0: 프레임 (나침반)
 Texture2D g_MinimapTex : register(t1);
 
+cbuffer CB_MINIMAP : register(b10)
+{
+	float2 g_mapOffset;
+	float g_mapRotation;
+	float g_mapScale;
+}
+
 struct VS_IN
 {
 	float3 posL : POSITION;

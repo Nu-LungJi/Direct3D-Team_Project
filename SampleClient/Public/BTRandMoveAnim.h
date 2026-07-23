@@ -1,12 +1,12 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTAnimRoot.h"
 
 NS_BEGIN(Client)
-class CBTRandMoveAnim final : public CBTActionNode
+class CBTRandMoveAnim final : public CBTAnimRoot
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTRandMoveAnim, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTRandMoveAnim, CBTAnimRoot)
 private:
 	CBTRandMoveAnim();
 	CBTRandMoveAnim(const CBTRandMoveAnim& rhs);

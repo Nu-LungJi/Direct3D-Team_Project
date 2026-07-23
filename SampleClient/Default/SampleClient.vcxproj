@@ -178,6 +178,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
     <ClInclude Include="..\public\BTAttackAnimation.h" />
+    <ClInclude Include="..\public\BTAnimRoot.h" />
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
@@ -260,8 +261,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
-	<ClInclude Include="..\public\Terrain.h" />
-	<ClInclude Include="..\public\MapCollisionProxyObject.h" />
+    <ClInclude Include="..\public\Terrain.h" />
+    <ClInclude Include="..\public\MapCollisionProxyObject.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
     <ClInclude Include="..\Public\TestPartObject.h" />
@@ -271,7 +272,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestPhysXCapsule.h" />
     <ClInclude Include="..\public\TestPhysXTerrain.h" />
     <ClInclude Include="..\public\TestPhysXTrigger.h" />
-	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
+    <ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h">
@@ -295,6 +296,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
     <ClCompile Include="..\private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\private\BTAnimRoot.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
     <ClCompile Include="..\private\BTDamage.cpp" />
     <ClCompile Include="..\private\BTDecHitCnt.cpp" />
@@ -372,13 +374,13 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
-	<ClCompile Include="..\private\Terrain.cpp" />
-	<ClCompile Include="..\private\MapCollisionProxyObject.cpp" />
+    <ClCompile Include="..\private\Terrain.cpp" />
+    <ClCompile Include="..\private\MapCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="..\Private\TestPartObject.cpp" />
     <ClCompile Include="..\private\TestPhysXTrigger.cpp" />
-	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
+    <ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="..\private\TextBox.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp">
@@ -412,6 +414,14 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning_Texture.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
