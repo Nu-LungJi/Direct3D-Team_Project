@@ -226,7 +226,6 @@ PS_OUT SMOKE(VS_OUT In)
 		Out.vDiffuse = float4(finalRGB, 1.0f);
 		return Out;
 	}
- 
 	float4 vFinalColor = texColor * In.vColor;;
 	clip(vFinalColor.a - 0.02f);
 
@@ -237,5 +236,59 @@ PS_OUT SMOKE(VS_OUT In)
 	float3 FinalColor = vFinalColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
 
 	Out.vDiffuse = float4(FinalColor, vFinalColor.a );
+	return Out;
+}
+PS_OUT PS_SMOKE_DEF(VS_OUT In)
+{
+ 
+	PS_OUT Out = (PS_OUT) 0;
+	
+	if ((In.iBehaviorType & BEHAVIOR_SMOKEGV) != 0)
+	{
+		float Mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		float4 Diffuse = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+		float t = saturate(In.life / In.maxLife);
+		Diffuse.a *= Diffuse.r * Mask * (1.f - t);
+		Diffuse.rgb = 1.f;
+
+		Out.vDiffuse = float4(Diffuse.rgb * In.vColor.rgb, Diffuse.a);
+		return Out;		
+	}
+	else if ((In.iBehaviorType & BEHAVIOR_SMOKEGW) != 0)
+	{
+		float2 noiseUV = float2(In.vTexcoord.x * 0.8f, In.vTexcoord.y * 0.25f);
+		float random = frac(sin(In.maxLife * 12.9898f) * 43758.5453f);
+		
+		noiseUV += float2(random, random * 0.618f);
+		noiseUV.y += In.life * 0.7f;
+		
+		float2 warp = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).rg * 2.f - 1.f;
+		float noise = g_NoiseTexture.Sample(LinearWrap, noiseUV + warp * 0.05f).r;
+		
+		//마스크는 픽셀을 얼마나 보여주는지에대한것
+	
+		float heightMask = smoothstep(0.f, 0.75f, In.vTexcoord.y);
+		float sideMask = smoothstep(0.f, 0.25f, In.vTexcoord.x) * (1.f - smoothstep(0.75f, 1.f, In.vTexcoord.x));
+		float noiseMask = smoothstep(0.4f, 0.65f, noise);
+		
+		float t = saturate(In.life / In.maxLife);
+		float lifeFade = 1.f - smoothstep(0.5f, 1.f, t);
+		float alpha = noiseMask * sideMask * heightMask * In.vColor.a * lifeFade;
+		alpha = saturate(alpha * 2.f);
+		float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+		screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+		
+		float2 distortion = warp * 0.01f * alpha;
+		
+		float3 bg = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
+		float3 glowColor = In.vColor.rgb * (1.f + noiseMask * 2.f);
+		float3 result = lerp(bg, glowColor, alpha);
+		
+		Out.vDiffuse = float4(result, 1.f);
+		
+		return Out;
+	}
+	
+	
 	return Out;
 }

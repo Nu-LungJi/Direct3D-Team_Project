@@ -68,8 +68,8 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4;
 	constexpr uint32_t BEHAVIOR_SMOKE = 1 << 5;
 	constexpr uint32_t BEHAVIOR_SMOKEJUMP = 1 << 6;
-
-	// 
+	constexpr uint32_t BEHAVIOR_SMOKEGV = 1 << 7;
+	constexpr uint32_t BEHAVIOR_SMOKEGW = 1 << 8;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
@@ -185,6 +185,7 @@ namespace Engine
    COMMON_PATTERN_FIELDS(X)
 
 #define SMOKE_FIELDS(X)\
+	 X(uint32_t, iFlag, 0) \
 	 X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
@@ -196,8 +197,12 @@ namespace Engine
     X(_float4, emissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)\
 	X(_float, fSpeed, 0.f)\
-	X(_float2,vRand,_float2(0,0))\
+	X(_float2,vRand,_float2(0.8f,1.2f))\
+	X(_float2,vRandAngle,_float2(-0.1f,0.1f))\
+	X(_float2,vRandSize, _float2(0.8f,1.2f))\
+	X(_float2,vRandLife, _float2(0.9f,1.1f))\
 	X(_float3,vRot,_float3(0,0,0))\
+	X(uint32_t, iArray,1)\
 COMMON_PATTERN_FIELDS(X)
 
 #define LIGHTNING_STREIGHT(X) \

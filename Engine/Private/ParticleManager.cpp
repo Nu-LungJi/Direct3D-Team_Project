@@ -99,6 +99,8 @@ void CParticleManager::UpdateGUI()
 	static _bool circleToWave = false;
 	static _bool bSmoke = false;
 	static _bool bSmokeJump = false;
+	static _bool bSmokegv = false;
+	static _bool bSmokegw = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -906,17 +908,13 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 	ImGui::Checkbox("SMOKE", &bSmoke);	
 	ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+	ImGui::Checkbox("SMOKEGV", &bSmokegv);
+	ImGui::Checkbox("SMOKEGW", &bSmokegw);
 	ImGui::Checkbox("None", &none);
 
 	if (none)
-	{
-		distortion = false;
-		billboard = false;
-		gravity = false;
-		circleToWave = false;
-		bSmoke = false;
-		bSmokeJump = false;
-	}
+		bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
 	ImGui::Checkbox("ALPHA_ADD", &alphaAdd);
@@ -957,6 +955,10 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
 	if (bSmokeJump)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEJUMP;
+	if (bSmokegv)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
+	if (bSmokegw)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1177,17 +1179,13 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 		ImGui::Checkbox("SMOKE", &bSmoke);
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+		ImGui::Checkbox("SMOKEGV", &bSmokegv);
+		ImGui::Checkbox("SMOKEGW", &bSmokegw);
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-		{
-			distortion = false;
-			billboard = false;
-			gravity = false;
-			circleToWave = false;
-			bSmoke = false;
-			bSmokeJump = false;
-		}
+			bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+	
 
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		if (distortion)
@@ -1202,6 +1200,10 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
 		if (bSmokeJump)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEJUMP;
+		if (bSmokegv)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
+		if (bSmokegw)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	}
 	
 	ImGui::Separator();
