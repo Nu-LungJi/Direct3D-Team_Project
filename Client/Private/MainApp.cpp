@@ -30,7 +30,6 @@ HRESULT CMainApp::Initialize()
 	{
 		return E_FAIL;
 	}
-
 	LOG_MEMORY("CBaseApp::Initialize End");
 
 	CGameInstance::Get().ImguiEnableDocking(true, true);

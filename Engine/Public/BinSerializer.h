@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine_Defines.h"
+#include "BinSerializeFormat.h"
 #include "SerializerInterface.h"
 #include <vector>
 
@@ -17,10 +18,16 @@ private:
 
 public:
 	void Write(const std::string& key, bool value) override;
+	void Write(const std::string& key, int8_t value) override;
+	void Write(const std::string& key, uint8_t value) override;
+	void Write(const std::string& key, int16_t value) override;
+	void Write(const std::string& key, uint16_t value) override;
 	void Write(const std::string& key, uint32_t value) override;
 	void Write(const std::string& key, uint64_t value) override;
+	void Write(const std::string& key, int64_t value) override;
 	void Write(const std::string& key, int value) override;
 	void Write(const std::string& key, float value) override;
+	void Write(const std::string& key, double value) override;
 	void Write(const std::string& key, const std::string& value) override;
 	void Write(const std::string& key, const _float2& value)  override;
 	void Write(const std::string& key, const _float3& value)  override;
@@ -54,6 +61,8 @@ private:
 private:
 	// 키 쓰기 및 배열/맵 카운트 증가 처리기
 	void PreWrite(const std::string& key);
+	void WriteRawBytes(const void* pData, size_t iSize);
+	void EndContainer(ENodeType eExpectedType);
 
 	// 버퍼에 데이터를 밀어넣는 템플릿 헬퍼
 	template<typename T>

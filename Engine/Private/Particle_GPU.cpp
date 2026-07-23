@@ -781,6 +781,12 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 	// DeadList 카운터가 즉시 갱신되도록 재동기화
 	m_iDeadCount = GetDeadListCounterSync();
 }
+void CParticle_GPU::TranslateOwner(uint32_t ownerId, const _float3& delta)
+{
+}
+void CParticle_GPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+{
+}
 uint32_t CParticle_GPU::GetDeadListCounterSync()
 {
 	auto pDevice = CGameInstance::Get().GetGraphicDevice();

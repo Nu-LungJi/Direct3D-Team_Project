@@ -109,3 +109,9 @@ void CParticle::ProcessPendingSpawns(E::_float fTimeDelta)
 			OutputDebugStringA("Spawn SUCCESS!\n");
 	}
 }
+void CParticle::TranslateOwner(uint32_t ownerId, const _float3& delta) {
+
+}
+void CParticle::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) {
+
+}

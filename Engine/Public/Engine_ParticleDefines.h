@@ -75,6 +75,33 @@ namespace Engine
 	// X(타입, 이름, 기본값)
 	// ============================================================
 
+	/*
+	* 	typedef struct tagParticle {
+		_float3  position;
+		_float   pad1;
+		_float3  velocity;
+		_float   life;
+		_float   maxLife;
+		_float   size;
+		_float   startSize;
+		_float   endSize;
+		_float4  rotation;
+		uint32_t alive;
+		uint32_t loop;
+		_float2  pad2;         // 추가 필요: loop→color (8바이트)
+		_float4  color;
+
+		_float4  originalEmissive, emissive, endEmissive;
+		uint32_t frameIndex;
+		uint32_t ownerID;
+		uint32_t iBehaviorType = 0;
+		_float pad3;
+		_float3 originalPosition; // 원래 스폰 위치
+		_float pad4;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
+	}PARTICLE;
+	*/
 #define COMMON_PATTERN_FIELDS(X) \
     X(uint32_t, iBehaviorType, 0)
 
@@ -172,6 +199,20 @@ namespace Engine
 	X(_float2,vRand,_float2(0,0))\
 	X(_float3,vRot,_float3(0,0,0))\
 COMMON_PATTERN_FIELDS(X)
+
+#define LIGHTNING_STREIGHT(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(_float, fRadius, 3.f) \
+    X(uint32_t, iCount, 12) \
+    X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+    X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
+    X(_float, fLife, 1.f) \
+	X(_float3, fVelocity, _float3(0,0,0))\
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+    X(_float, fYOffset, 0.f)\
+   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -190,16 +231,18 @@ struct StructName \
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SMOKE { SMOKE_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
+
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,SMOKE>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,SMOKE, SLightning>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","SMOKE",
+		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","SMOKE","SLightning",
 	};
 
 	//5. 여기에 CASE 추가
@@ -214,6 +257,7 @@ struct StructName \
 		case 3: return SStraightGroundParam{};
 		case 4: return SCircleSpreadParam{};
 		case 5: return SMOKE{};
+		case 6: return SLightning{};
 		default: return SStairsParam{};
 		}
 	}

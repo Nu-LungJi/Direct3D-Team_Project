@@ -69,8 +69,7 @@ public:
 private:
 	using DIRECTION_TABLE = std::array<int32_t, ETOUI(MOVE_DIRECTION::END)>;
 	using GAIT_DIRECTION_TABLE = std::array<DIRECTION_TABLE, ETOUI(GAIT::END)>;
-	using PHASE_GAIT_DIRECTION_TABLE =
-		std::array<GAIT_DIRECTION_TABLE, ETOUI(FOOT_PHASE::END)>;
+	using PHASE_GAIT_DIRECTION_TABLE = std::array<GAIT_DIRECTION_TABLE, ETOUI(FOOT_PHASE::END)>;
 
 	void InitializeAnimationTable(class CPlayer& player);
 	MOVE_DIRECTION ResolveDirection(_float fSignedAngle) const;
@@ -78,27 +77,11 @@ private:
 	FOOT_PHASE ResolveFootPhase(_float fAnimationRatio) const;
 	GAIT ResolveDesiredGait(const CPlayer& player) const;
 
-	int32_t FindDirectionalAnimation(
-		const GAIT_DIRECTION_TABLE& table,
-		GAIT eGait,
-		MOVE_DIRECTION eDirection) const;
-	int32_t FindPhasedDirectionalAnimation(
-		const PHASE_GAIT_DIRECTION_TABLE& table,
-		FOOT_PHASE ePhase,
-		GAIT eGait,
-		MOVE_DIRECTION eDirection) const;
+	int32_t FindDirectionalAnimation(const GAIT_DIRECTION_TABLE& table,GAIT eGait,MOVE_DIRECTION eDirection) const;
+	int32_t FindPhasedDirectionalAnimation(const PHASE_GAIT_DIRECTION_TABLE& table,FOOT_PHASE ePhase,GAIT eGait,MOVE_DIRECTION eDirection) const;
 
-	_bool PlayTransient(
-		class CComAnimator& animator,
-		int32_t iAnimationIndex,
-		TRANSITION eTransition,
-		GAIT ePendingGait,
-		_float fBlendDuration = 0.1f);
-	void PlayLoop(
-		CPlayer& player,
-		class CComAnimator& animator,
-		GAIT eGait,
-		MOVE_DIRECTION eDirection);
+	_bool PlayTransient(class CComAnimator& animator,int32_t iAnimationIndex,TRANSITION eTransition,GAIT ePendingGait,_float fBlendDuration = 0.1f);
+	void PlayLoop(CPlayer& player,class CComAnimator& animator,GAIT eGait,MOVE_DIRECTION eDirection);
 	_bool UpdateTransient(CPlayer& player, class CComAnimator& animator);
 	_bool TryStartIdleTurn(CPlayer& player, class CComAnimator& animator);
 
@@ -111,31 +94,27 @@ private:
 	PHASE_GAIT_DIRECTION_TABLE m_StopAnimations{};
 	PHASE_GAIT_DIRECTION_TABLE m_FreeTurnStartAnimations{};
 
-	// [from gait][to gait][foot phase]
-	std::array<
-		std::array<
-			std::array<int32_t, ETOUI(FOOT_PHASE::END)>,
-			ETOUI(GAIT::END)>,
-		ETOUI(GAIT::END)> m_GaitTransitions{};
+	std::array<std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(GAIT::END)>,ETOUI(GAIT::END)> m_GaitTransitions{};
 
-	// [turn side][45, 90, 135, 180]
+
 	std::array<std::array<int32_t, 4>, ETOUI(TURN_SIDE::END)> m_IdleTurns{};
-	// [turn side][foot phase], Jog 180 pivot
-	std::array<
-		std::array<int32_t, ETOUI(FOOT_PHASE::END)>,
-		ETOUI(TURN_SIDE::END)> m_JogPivots{};
-	// [gait][turn side][foot phase], free start 180
-	std::array<
-		std::array<
-			std::array<int32_t, ETOUI(FOOT_PHASE::END)>,
-			ETOUI(TURN_SIDE::END)>,
-		ETOUI(GAIT::END)> m_FreeTurnStart180{};
+
+	std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(TURN_SIDE::END)> m_JogPivots{};
+	std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(TURN_SIDE::END)> m_SprintPivots{};
+
+	std::array<std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(TURN_SIDE::END)>,ETOUI(GAIT::END)> m_FreeTurnStart180{};
 
 	GAIT m_eCurrentGait = GAIT::END;
 	GAIT m_ePendingGait = GAIT::END;
 	MOVE_DIRECTION m_eLastDirection = MOVE_DIRECTION::FRONT;
 	TRANSITION m_eTransition = TRANSITION::NONE;
 	int32_t m_iTransientAnimation = INVALID_ANIMATION;
+
+	_float START_TURN_THRESHOLD = 22.5f;
+	_float PIVOT_THRESHOLD = 157.5f;
+	_float IDLE_TURN_THRESHOLD = 30.f;
+	_float LOOP_BLEND_DURATION = 0.15f;
+	_float TRANSITION_BLEND_DURATION = 0.08f;
 };
 
 NS_END

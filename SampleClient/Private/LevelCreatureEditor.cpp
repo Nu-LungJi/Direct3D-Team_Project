@@ -133,6 +133,9 @@ HRESULT CLevelCreatureEditor::Initialize()
 		PlayerDesc.sResTag = "Model_Resource_Player";
 
 		PlayerDesc.vInitialPosition = { 50.f, 50.f, 10.f };
+	
+
+
 		auto hSpawnedPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
 			"Prototype_GameObject_Player",
@@ -141,7 +144,6 @@ HRESULT CLevelCreatureEditor::Initialize()
 		if (!hSpawnedPlayer)
 			return E_FAIL;
 		hAnimTestPlayer = *hSpawnedPlayer;
-
 
 
 		CTestPlayer3CameraCreatureEditor::DESC Desc{};
@@ -212,7 +214,6 @@ HRESULT CLevelCreatureEditor::Initialize()
 
 	if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
 		return E_FAIL;
-	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	
 

@@ -101,6 +101,8 @@ public:
 	_bool HasMoveInput() const { return m_bMoveInput; }
 	const _float3& GetDesiredMoveDirection() const { return m_vDesiredMoveDirection; }
 	const _float3& GetCameraFacingDirection() const { return m_vCameraFacingDirection; }
+	_bool IsRootMotionRotationActive() const { return m_bRootMotionRotationActive; }
+	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetLocomotionAngleDebug(_float fForward, _float fRight, _float fAngle, _float fSpeed, _string_view sDirection);
 	void ClearLocomotionAngleDebug();
 
@@ -151,12 +153,13 @@ private:
 	_float m_fWalkSpeed = 2.f;
 	_float m_fJogSpeed = 5.f;
 	_float m_fSprintSpeed = 8.5f;
-	_float m_fAcceleration = 2.f;
+	_float m_fAcceleration = 12.f;
 	_float m_fDeceleration = 18.f;
 	_float3 m_vLastMoveDirection{};
 	_float3 m_vDesiredMoveDirection{};
 	_float3 m_vCameraFacingDirection{ 0.f, 0.f, 1.f };
 	_bool m_bMoveInput = false;
+	_bool m_bRootMotionRotationActive = false;
 	LOCOMOTION_MODE m_eLocomotionMode = LOCOMOTION_MODE::FREE;
 	LOCOMOTION_GAIT m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
 

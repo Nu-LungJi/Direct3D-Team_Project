@@ -23,7 +23,7 @@ Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
-
+Texture2D g_BackgroundTex : register(t7);
 //버텍스 쉐이더용 
 
 Texture2D hdrPoisitonMap : register(t10);

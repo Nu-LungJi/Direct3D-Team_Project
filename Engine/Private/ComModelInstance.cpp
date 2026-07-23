@@ -177,7 +177,7 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
 
         ID3D11Buffer* pCBBones = m_Buffer->GetCBuffer().Get();
 
-        pContext->VSSetConstantBuffers(2, 1, &pCBBones);
+        pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::BONES), 1, &pCBBones);
     }
 
 
@@ -233,7 +233,7 @@ VOID CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _E
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
 	}
-	pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+	pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 }
 
 HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)

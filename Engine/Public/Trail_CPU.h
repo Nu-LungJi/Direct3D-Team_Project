@@ -85,6 +85,8 @@ public:
 	virtual void SetSize(const _float3& size) override;
 	virtual void SetColor(const _float4& color) override;
 	void SetEmissive(const _float4& emissive) { m_vEmissive = emissive; }
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 private:
     void BuildTrailGeometry();
 

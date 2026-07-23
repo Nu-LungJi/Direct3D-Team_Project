@@ -3,9 +3,9 @@
 
 cbuffer CB_SPAWN_COUNT : register(b12)
 {
-    uint g_iSpawnCount;
-    uint g_iMaxParticles; // 추가: 버퍼 크기
-    float2 pad;
+	uint g_iSpawnCount;
+	uint g_iMaxParticles; // 추가: 버퍼 크기
+	float2 pad;
 };
 
 StructuredBuffer<SPAWN_DATA> gSpawnBuffer : register(t6);

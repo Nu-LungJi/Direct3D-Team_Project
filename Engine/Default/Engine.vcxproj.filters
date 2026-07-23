@@ -855,6 +855,9 @@
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h">
       <Filter>PhysX\Manager\CollisionProxy</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\PhysXCollisionProxyObject.h">
+      <Filter>PhysX\Manager\CollisionProxy</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Engine_PhysxDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -993,6 +996,9 @@
     <ClInclude Include="..\public\BinDeSerializer.h">
       <Filter>Serialize\Serializer\Bin</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BinSerializeFormat.h">
+      <Filter>Serialize\Serializer\Bin</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\SerializeManager.h">
       <Filter>Serialize\Manager</Filter>
     </ClInclude>
@@ -1001,6 +1007,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\SerDeTestCase.h">
       <Filter>Serialize\TestCase</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\SerializeResult.h">
+      <Filter>Serialize\Manager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\MapMeshGpuCuller.h">
       <Filter>HizBuffer</Filter>
@@ -1453,6 +1462,9 @@
       <Filter>PhysX\Manager</Filter>
     </ClCompile>
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp">
+      <Filter>PhysX\Manager\CollisionProxy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysXCollisionProxyObject.cpp">
       <Filter>PhysX\Manager\CollisionProxy</Filter>
     </ClCompile>
     <ClCompile Include="..\private\DbgLineRender.cpp">

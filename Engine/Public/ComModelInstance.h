@@ -81,7 +81,7 @@ private:
 
 	std::vector<_float3> m_DebugBoneLocalOffsets;
 
-private:
+public:
 	void EnsureDebugBoneOffsetSize();
 	void ApplyDebugBoneLocalOffsets();
 

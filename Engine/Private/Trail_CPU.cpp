@@ -265,6 +265,14 @@ void CTrail_CPU::SetColor(const _float4& color)
 	m_vColor.z = color.z;
 }
 
+void CTrail_CPU::TranslateOwner(uint32_t ownerId, const _float3& delta)
+{
+}
+
+void CTrail_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+{
+}
+
 
 HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {

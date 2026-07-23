@@ -14,6 +14,7 @@ class CResModel;
 class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
+class CComSocket;
 NS_END
 
 NS_BEGIN(Client)
@@ -53,7 +54,7 @@ public:
 	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
 
 	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
-	
+
 private:
 	CComModelInstance*   m_pComModelInstance{};
 	CComAnimator*		 m_pModelAnimator{};
@@ -69,7 +70,7 @@ private:
 
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
-
+	CComSocket* m_pSocket;
 	_float4 m_fAlbedoColor			= { 1.f, 1.f, 1.f, 1.f };
 	_float	m_fNormalIntensity		= 1.f;
 	_float	m_fRoughnessIntensity	= 1.f;
@@ -79,6 +80,7 @@ private:
 	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity	= 0.f;
 
+	uint32_t m_iDebugSelectedBone = 0;
 	uint32_t m_iCurrentInstanceCount = 0.f;
 
 public:  

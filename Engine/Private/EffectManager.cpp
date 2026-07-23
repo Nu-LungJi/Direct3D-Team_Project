@@ -215,95 +215,95 @@ void CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_
 	 * TransformNormal을 사용해야 한다.
 	 */
 	const _float3 worldDirection =TransformDirection(command.vDirection,instance.matWorld);
-
-	auto lightHandle =
-		m_pLightManager->SpawnEffectLight(
-			command.eType,
-			worldPosition,
-			worldDirection,
-			command.vColor,
-			command.fIntensity,
-			command.fRange,
-			command.fDuration);
-
-	/*
-	 * 현재 작성한 코드처럼 SpawnEffectLight가
-	 * optional<CHandle>을 반환한다고 가정한다.
-	 */
-	if (lightHandle)
-	{
-		instance.vecLightHandles.push_back(
-			*lightHandle);
-	}
+	//
+	//auto lightHandle =
+	//	m_pLightManager->SpawnEffectLight(
+	//		command.eType,
+	//		worldPosition,
+	//		worldDirection,
+	//		command.vColor,
+	//		command.fIntensity,
+	//		command.fRange,
+	//		command.fDuration);
+	//
+	///*
+	// * 현재 작성한 코드처럼 SpawnEffectLight가
+	// * optional<CHandle>을 반환한다고 가정한다.
+	// */
+	//if (lightHandle)
+	//{
+	//	instance.vecLightHandles.push_back(
+	//		*lightHandle);
+	//}
 }
 
 void CEffectManager::DispatchSound(
 	EFFECT_INSTANCE& instance,
 	const EFFECT_SOUND_COMMAND& command)
 {
-	if (!m_pSoundManager)
-		return;
-
-	const _float3 worldPosition =
-		TransformPosition(
-			command.vLocalPosition,
-			instance.matWorld);
-
-	/*
-	 * 이 부분은 실제 SoundManager의 재생 함수
-	 * 시그니처에 맞춰 이름과 인자를 변경해야 한다.
-	 */
-	const SOUND_ID soundId =
-		m_pSoundManager->PlayEffectSound(
-			command.sSoundPath,
-			worldPosition,
-			command.fVolume,
-			command.fPitch,
-			command.fMinDistance,
-			command.fMaxDistance,
-			command.bLoop,
-			command.b3D);
-
-	if (soundId != INVALID_SOUND_ID)
-	{
-		instance.vecSoundIds.push_back(
-			soundId);
-	}
+	//if (!m_pSoundManager)
+	//	return;
+	//
+	//const _float3 worldPosition =
+	//	TransformPosition(
+	//		command.vLocalPosition,
+	//		instance.matWorld);
+	//
+	///*
+	// * 이 부분은 실제 SoundManager의 재생 함수
+	// * 시그니처에 맞춰 이름과 인자를 변경해야 한다.
+	// */
+	//const SOUND_ID soundId =
+	//	m_pSoundManager->PlayEffectSound(
+	//		command.sSoundPath,
+	//		worldPosition,
+	//		command.fVolume,
+	//		command.fPitch,
+	//		command.fMinDistance,
+	//		command.fMaxDistance,
+	//		command.bLoop,
+	//		command.b3D);
+	//
+	//if (soundId != INVALID_SOUND_ID)
+	//{
+	//	instance.vecSoundIds.push_back(
+	//		soundId);
+	//}
 }
 
 void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 {
-	auto iter =m_Instances.find(iEffectId);
-
-	if (iter == m_Instances.end())
-		return;
-
-	EFFECT_INSTANCE& instance =
-		iter->second;
-
-	if (instance.iParticleOwnerId != INVALID_PARTICLE_OWNER_ID)
-	{
-		m_pParticleManager->ClearByOwner(instance.iParticleOwnerId);
-	}
-
-	if (m_pLightManager)
-	{
-		for (const CHandle& lightHandle :
-			instance.vecLightHandles)
-		{
-			m_pLightManager->StopEffectLight(lightHandle);
-		}
-	}
-
-	if (m_pSoundManager)
-	{
-		for (SOUND_ID soundId :instance.vecSoundIds)
-		{
-			m_pSoundManager->Stop(soundId);
-		}
-	}
-
-	m_Instances.erase(iter);
+	//auto iter =m_Instances.find(iEffectId);
+	//
+	//if (iter == m_Instances.end())
+	//	return;
+	//
+	//EFFECT_INSTANCE& instance =
+	//	iter->second;
+	//
+	//if (instance.iParticleOwnerId != INVALID_PARTICLE_OWNER_ID)
+	//{
+	//	m_pParticleManager->ClearByOwner(instance.iParticleOwnerId);
+	//}
+	//
+	//if (m_pLightManager)
+	//{
+	//	for (const CHandle& lightHandle :
+	//		instance.vecLightHandles)
+	//	{
+	//		m_pLightManager->StopEffectLight(lightHandle);
+	//	}
+	//}
+	//
+	//if (m_pSoundManager)
+	//{
+	//	for (SOUND_ID soundId :instance.vecSoundIds)
+	//	{
+	//		m_pSoundManager->Stop(soundId);
+	//	}
+	//}
+	//
+	//m_Instances.erase(iter);
 }
 
 void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
@@ -360,28 +360,28 @@ void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4
 			deltaMatrixData);
 	}
 
-	if (m_pLightManager)
-	{
-		for (const CHandle& lightHandle :
-			instance.vecLightHandles)
-		{
-			m_pLightManager->TransformLight(
-				lightHandle,
-				deltaMatrixData);
-		}
-	}
-
-	if (m_pSoundManager)
-	{
-		for (SOUND_ID soundId :
-		instance.vecSoundIds)
-		{
-			m_pSoundManager
-				->Transform3DPosition(
-					soundId,
-					deltaMatrixData);
-		}
-	}
+	//if (m_pLightManager)
+	//{
+	//	for (const CHandle& lightHandle :
+	//		instance.vecLightHandles)
+	//	{
+	//		m_pLightManager->TransformLight(
+	//			lightHandle,
+	//			deltaMatrixData);
+	//	}
+	//}
+	//
+	//if (m_pSoundManager)
+	//{
+	//	for (SOUND_ID soundId :
+	//	instance.vecSoundIds)
+	//	{
+	//		m_pSoundManager
+	//			->Transform3DPosition(
+	//				soundId,
+	//				deltaMatrixData);
+	//	}
+	//}
 }
 
 void CEffectManager::SetPosition(

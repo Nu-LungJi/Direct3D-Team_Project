@@ -72,6 +72,8 @@ public:
     void    SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration = 0.f);
     void    SetStartPos(uint32_t beamIndex, const _float4& vPos);
     void    SetEndPos(uint32_t beamIndex, const _float4& vPos);
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 
 private:
     void RegenerateJaggedPath(BEAM_INSTANCE& beam);

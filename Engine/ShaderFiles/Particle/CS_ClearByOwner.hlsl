@@ -5,7 +5,7 @@
 cbuffer CB_CLEAR : register(b13)
 {
     uint g_uiTargetOwnerID;
-    float3 pad;
+    float3 padding;
 };
 
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u0);

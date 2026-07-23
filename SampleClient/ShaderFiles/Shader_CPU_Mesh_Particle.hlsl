@@ -68,7 +68,8 @@ Texture2D   EmissiveMap : register(t3);
 Texture2D   DepthMap    : register(t4);
 Texture2D   NoiseMap    : register(t5);
 Texture2D   DistortionMap    : register(t6);
-Texture2D  AnyTextureMap    : register(t7);
+Texture2D g_BackgroundTex : register(t7);
+Texture2D  AnyTextureMap    : register(t8);
 
 //SamplerState g_LinearSampler : register(s0);
 

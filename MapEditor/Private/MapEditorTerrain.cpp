@@ -139,8 +139,8 @@ HRESULT CMapEditorTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 	const auto& vs = m_pResVertexShader;
 	const auto& ps = m_pResPixelShader;
@@ -182,7 +182,7 @@ HRESULT CMapEditorTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER
 			memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 			pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
 		}
-		pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 	}
 	{
 		pContext->PSSetShaderResources(0, 1, m_pResTerrainTexture2D->GetSRV().GetAddressOf());

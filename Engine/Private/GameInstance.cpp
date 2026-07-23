@@ -839,6 +839,11 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
+void CGameInstance::DelPrototype(
+	const StringID& sGroupTag, const StringID& sPrototypeTag)
+{
+	m_pPrototypeManager->DelPrototype(sGroupTag, sPrototypeTag);
+}
 std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
@@ -1062,6 +1067,15 @@ HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRen
 }
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
+}
+HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
+	return m_pLightManager->Initialize_EffectLight(_PoolSize);
+}
+std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity) {
+	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _Range, _LifeTime, _Velocity);
+}
+HRESULT	CGameInstance::Render_EffectLight() {
+	return m_pLightManager->Render_EffectLight();
 }
 
 #pragma endregion

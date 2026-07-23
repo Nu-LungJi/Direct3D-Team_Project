@@ -135,8 +135,8 @@ HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 	const auto& vs = m_pResVertexShader;
 	//!m_pComModelInstance->GetModel()->GetAnimations().empty()

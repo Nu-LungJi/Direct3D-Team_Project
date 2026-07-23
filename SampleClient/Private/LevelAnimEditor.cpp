@@ -103,11 +103,15 @@ HRESULT CLevelAnimEditor::Initialize()
 			}
 		}
 	}
-	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
 
 
-	CGameInstance::Get().SetupTestModel();;
+	CGameInstance::Get().SetupTestModel();
+
+	if (FAILED(E::CGameInstance::Get().Initialize_EffectLight(MAX_EFFECTLIGHT_COUNT))) {
+		MSG_BOX("Cannot Initialize EffectLight.");
+	}	// 이펙트용 라이트 풀 생성
+
 	return S_OK;
 }
 

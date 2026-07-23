@@ -301,6 +301,14 @@ void CBeam_CPU::SetEndPos(uint32_t beamIndex, const _float4& vPos)
         m_vecBeams[beamIndex].vEndPos = vPos;
 }
 
+void CBeam_CPU::TranslateOwner(uint32_t ownerId, const _float3& delta)
+{
+}
+
+void CBeam_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+{
+}
+
 static void MidpointDisplace(std::vector<_float3>& points, uint32_t iStartIdx, uint32_t iEndIdx,
     const XMVECTOR& right1, const XMVECTOR& right2,
     _float fAmplitude, _float fDamping, uint32_t iDepth)

@@ -241,6 +241,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (!m_bStateInitailzie) {
+		// 기존 상태 
 		m_pStateMachine->AddPlayerState(PLAYER_STATE::LOCOMOTION, CPlayer_Locomotion_State::Create());
 		m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION);
 		m_bStateInitailzie = true;
@@ -269,9 +270,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyPressing(DIK_A))
 		fInputRight -= 1.f;
 
-	// Hogwarts Legacy 방식: 입력의 월드 방향은 카메라 수평축으로 만든다.
-	// FREE에서는 Player가 이 이동 방향을 향하고, HOVER에서는 카메라를 향한 채
-	// 이 방향으로 스트레이프한다.
+
 	_float3 vForward{};
 	_float3 vRight{};
 	XMStoreFloat3(&vForward, pCamera->GetTransform().GetState(STATE::LOOK));
@@ -308,20 +307,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 
 
-	const _float fMoveLength = std::sqrt(
-		vMoveDirection.x * vMoveDirection.x + vMoveDirection.z * vMoveDirection.z);
+	const _float fMoveLength = std::sqrt(vMoveDirection.x * vMoveDirection.x + vMoveDirection.z * vMoveDirection.z);
 	m_bMoveInput = fMoveLength > std::numeric_limits<_float>::epsilon();
 	if (m_bMoveInput)
 	{
-		m_vDesiredMoveDirection = {
-			vMoveDirection.x / fMoveLength,
-			0.f,
-			vMoveDirection.z / fMoveLength };
+		m_vDesiredMoveDirection = { vMoveDirection.x / fMoveLength, 0.f, vMoveDirection.z / fMoveLength };
 	}
 
-	m_eLocomotionMode = CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB)
-		? LOCOMOTION_MODE::HOVER
-		: LOCOMOTION_MODE::FREE;
+	m_eLocomotionMode = CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB)? LOCOMOTION_MODE::HOVER : LOCOMOTION_MODE::FREE;
 
 	m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
 	if (m_bMoveInput)
@@ -332,8 +325,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		else
 		{
-			const _bool bForwardSprint = fInputForward > 0.5f && std::abs(fInputRight) < 0.5f;
-			m_eDesiredGait = CGameInstance::Get().KeyPressing(DIK_LSHIFT) && bForwardSprint
+
+			m_eDesiredGait = CGameInstance::Get().KeyPressing(DIK_LSHIFT)
 				? LOCOMOTION_GAIT::SPRINT
 				: LOCOMOTION_GAIT::JOG;
 		}
@@ -361,8 +354,15 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_fCurrentMoveSpeed = 0.f;
 		m_pMoveIntent->ClearMoveIntent();
 	}
-
-	if (m_eLocomotionMode == LOCOMOTION_MODE::HOVER)
+	
+	// 호버링 될 때 경우
+	// SetFacingIntent 얘는 내가 바라보는 방향으로 바로 돌리는 함수 
+	if (m_bRootMotionRotationActive)
+	{
+		// Turn and pivot clips own the character rotation through root motion.
+		m_pMoveIntent->ClearFacingIntent();
+	}
+	else if (m_eLocomotionMode == LOCOMOTION_MODE::HOVER)
 	{
 		m_pMoveIntent->SetFacingIntent(m_vCameraFacingDirection, 360.f);
 	}
@@ -398,6 +398,15 @@ void CPlayer::Update(E::_float fTimeDelta)
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
+
+		if (m_bRootMotionRotationActive)
+		{
+			const _float4 qRootDelta = m_pModelAnimator->GetRootMotionRotationDelta();
+			const _vector qCurrent = GetTransform().GetLoadedQuaternion();
+			const _vector qDelta = XMLoadFloat4(&qRootDelta);
+			GetTransform().SetQuaternion(XMQuaternionNormalize(
+				XMQuaternionMultiply(qCurrent, qDelta)));
+		}
 
 	}
 
@@ -479,8 +488,8 @@ HRESULT CPlayer::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 
 
 		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);

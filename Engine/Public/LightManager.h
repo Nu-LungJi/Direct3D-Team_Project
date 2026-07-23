@@ -34,12 +34,13 @@ public:
 	VOID	UpdateGUI();
 	HRESULT	Capture_ShadowMap();
 	HRESULT	Render_ObjectShadow();
+	HRESULT Render_EffectLight();
 
 	VOID	Bind_DynamicLight();
 
 	std::optional<CHandle>	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
-	std::optional<CHandle>	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
-	std::optional<CHandle>	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 
 	VOID	Clear_DynamicLightList()							{ m_LightHandleList.clear(); }
 
@@ -60,6 +61,15 @@ private:
 	HRESULT	Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
 	HRESULT	Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
 
+public:
+	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+
+
+private:
+	std::vector<std::optional<CHandle>>				m_pEffectLightPool{};
+	uint32_t							m_iEffectLightPoolSize{};
+	uint32_t							m_iLastAllocatedIndex{};
 #ifdef _DEBUG
 public:
 	HRESULT	Initialize_DebugRender();
@@ -77,11 +87,12 @@ private:
 	SPtr<CResTexture2D>		m_pResSpotLightTexture2D		= { nullptr };
 
 #endif
+
 private:
 	ComPtr<ID3D11Device>				m_pDevice = { nullptr };
 	ComPtr<ID3D11DeviceContext>			m_pContext = { nullptr };
 
-	std::vector<CHandle>				m_LightHandleList; 
+	std::vector<std::optional<CHandle>>	m_LightHandleList;
 
 	ComPtr<ID3D11ShaderResourceView>	m_pIrridianceSRV = { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pPreFilterSRV = { nullptr };
@@ -98,7 +109,7 @@ private:
 	SPtr<CResPixelShader>				m_pPointLightPS = { nullptr };
 
 	SPtr<CResComputeShader>				m_pShadowComputeShader = { nullptr };
-	SPtr<CResComputeShader>				m_pPBRComputeShader = { nullptr };
+	SPtr<CResComputeShader>				m_pNonShadowComputeShader = { nullptr };
 	SPtr<CResDynamicTexture2D>			m_pUAVComBinedOutput = { nullptr };
 	SPtr<CResViewPort>					m_pDirectionalShadowViewPort{};
 	SPtr<CResViewPort>					m_pPointShadowViewPort{};
@@ -106,7 +117,7 @@ private:
 	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
 	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
 
-	std::vector<CLight*>				m_pActiveShadowLightList{};
+	std::vector<std::optional<CHandle>>	m_pActiveShadowLightList{};
 
 	CB_LIGHT							m_pLightConstantVariable{};
 

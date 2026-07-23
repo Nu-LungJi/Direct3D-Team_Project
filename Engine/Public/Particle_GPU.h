@@ -73,6 +73,8 @@ public:
     uint32_t GetDeadListCounterSync();
 	MESHORTEXTURE GetWhatKind() const { return m_Desc.whatKind; }
 	virtual void ClearByOwner(uint32_t ownerID) override;
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 private:
     DESC m_Desc;
 

@@ -2,6 +2,7 @@
 
 #include "MainAppLoader.h"
 #include "GameInstance.h"
+#include "PhysXManager.h"
 #include "LevelLoading.h"
 #include "Resources.h"
 #include "Particle_Fire_CPU.h"
@@ -22,6 +23,13 @@ NS_USING(Client)
 
 HRESULT CMainAppLoader::Load()
 {
+	{
+		std::vector<std::pair<uint32_t, std::string>> layerNames{};
+		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
+			layerNames.emplace_back(ETOUI(layer), std::string{ name });
+		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
+	}
+
 	{
 		// TODO   SampleClinet  초기 이니셜라이즈
 		{
@@ -279,7 +287,11 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	////////// -- 광윤 추가 -- //////////
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))	return E_FAIL;
 
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))	return E_FAIL;
+	/////////////////////////////////////
 
 	{
 		//노이즈 텍스쳐

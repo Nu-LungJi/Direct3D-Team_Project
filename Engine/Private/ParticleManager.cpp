@@ -3180,6 +3180,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCircleAndSpread(param);
 			else if constexpr (std::is_same_v<T, SMOKE>)
 				return ParticlePattern::MakeSmoke(param);
+			else if constexpr (std::is_same_v<T, SLightning>)
+				return ParticlePattern::MakeLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3277,9 +3279,7 @@ void CParticleManager::ClearByOwner(uint32_t ownerId)
 
 	DeleteLoopRequests(ownerId);
 }
-void CParticleManager::TranslateOwner(
-	uint32_t ownerId,
-	const _float3& delta)
+void CParticleManager::TranslateOwner(uint32_t ownerId,const _float3& delta)
 {
 	for (auto& [groupTag, particleGroup] :m_Particles)
 	{

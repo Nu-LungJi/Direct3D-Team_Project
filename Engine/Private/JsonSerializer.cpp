@@ -37,6 +37,26 @@ void CJsonSerializer::Write(const std::string& key, bool value)
 	else                 node[key] = value;
 }
 
+void CJsonSerializer::Write(const std::string& key, int8_t value)
+{
+	Write(key, static_cast<int64_t>(value));
+}
+
+void CJsonSerializer::Write(const std::string& key, uint8_t value)
+{
+	Write(key, static_cast<uint64_t>(value));
+}
+
+void CJsonSerializer::Write(const std::string& key, int16_t value)
+{
+	Write(key, static_cast<int64_t>(value));
+}
+
+void CJsonSerializer::Write(const std::string& key, uint16_t value)
+{
+	Write(key, static_cast<uint64_t>(value));
+}
+
 void CJsonSerializer::Write(const std::string& key, uint32_t value)
 {
 	nlohmann::json& node = *m_nodeStack.back();
@@ -52,6 +72,14 @@ void CJsonSerializer::Write(const std::string& key, uint64_t value)
 	if (node.is_array()) node.push_back(value);
 	else                 node[key] = value;
 }
+
+void CJsonSerializer::Write(const std::string& key, int64_t value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
 void CJsonSerializer::Write(const std::string& key, int value)
 {
 	nlohmann::json& node = *m_nodeStack.back();
@@ -61,6 +89,14 @@ void CJsonSerializer::Write(const std::string& key, int value)
 }
 
 void CJsonSerializer::Write(const std::string& key, float value)
+{
+	nlohmann::json& node = *m_nodeStack.back();
+
+	if (node.is_array()) node.push_back(value);
+	else                 node[key] = value;
+}
+
+void CJsonSerializer::Write(const std::string& key, double value)
 {
 	nlohmann::json& node = *m_nodeStack.back();
 
@@ -172,8 +208,16 @@ void CJsonSerializer::StartMap(const std::string& key)
 {
 	nlohmann::json& currentNode = *m_nodeStack.back();
 
-	currentNode[key] = nlohmann::json::object();
-	m_nodeStack.push_back(&currentNode[key]);
+	if (currentNode.is_array())
+	{
+		currentNode.push_back(nlohmann::json::object());
+		m_nodeStack.push_back(&currentNode.back());
+	}
+	else
+	{
+		currentNode[key] = nlohmann::json::object();
+		m_nodeStack.push_back(&currentNode[key]);
+	}
 }
 
 void CJsonSerializer::EndMap()
@@ -189,11 +233,15 @@ HRESULT CJsonSerializer::SaveToFile(const std::string& path)
 	std::ofstream file(path);
 	if (!file.is_open())
 	{
-		MSG_BOX("파일 저장 실패");
 		return E_FAIL;
 	}
 
 	file << m_json.dump(4);
+	file.flush();
+	if (!file.good())
+	{
+		return E_FAIL;
+	}
 	file.close();
 
 	// 세이브 후 인스턴스를 재활용할 수도 있으므로 스택을 초기 상태로 복구

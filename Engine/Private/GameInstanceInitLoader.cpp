@@ -21,6 +21,7 @@
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
+#include "PhysXCollisionProxyObject.h"
 
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
@@ -129,6 +130,13 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 	
 
 	if (CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_GameObject_MapMeshObject", CMapMeshObject::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		"PERMANENT", "Prototype_GameObject_PhysXCollisionProxy",
+		CPhysXCollisionProxyObject::Create()))
 	{
 		return E_FAIL;
 	}
