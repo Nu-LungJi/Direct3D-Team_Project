@@ -102,7 +102,8 @@ struct PS_OUT
 PS_OUT PSMain(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
-
+	Out.vDiffuse = float4(1, 1, 1, 1);
+	return Out;
 	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
 	AlbedoTex *= In.vColor;
 

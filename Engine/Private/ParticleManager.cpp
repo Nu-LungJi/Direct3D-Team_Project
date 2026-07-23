@@ -1231,18 +1231,18 @@ void CParticleManager::UpdateGUI()
 
 		ImGui::DragFloat("Life", &pendingStandard.life, 0.01f);
 
-		ImGui::Checkbox("RandomSize?", &previewParams.bRandomSize);
-		if (previewParams.bRandomSize) {
-			ImGui::DragFloat3("MinStartSize", &previewParams.startSizeMin.x, 0.01f);
-			ImGui::DragFloat3("MaxStartSize", &previewParams.startSizeMax.x, 0.01f);
+		ImGui::Checkbox("RandomSize?", &pendingStandard.bRandomSize);
+		if (pendingStandard.bRandomSize) {
+			ImGui::DragFloat3("MinStartSize", &pendingStandard.startSizeMin.x, 0.01f);
+			ImGui::DragFloat3("MaxStartSize", &pendingStandard.startSizeMax.x, 0.01f);
 
 			ImGui::Separator();
-			ImGui::DragFloat3("MinEndSize", &previewParams.endSizeMin.x, 0.01f);
-			ImGui::DragFloat3("MaxEndSize", &previewParams.endSizeMax.x, 0.01f);
+			ImGui::DragFloat3("MinEndSize", &pendingStandard.endSizeMin.x, 0.01f);
+			ImGui::DragFloat3("MaxEndSize", &pendingStandard.endSizeMax.x, 0.01f);
 		}
 		else {
-			ImGui::DragFloat3("StartSize", &previewParams.fSize.x, 0.01f);
-			ImGui::DragFloat3("EndSize", &previewParams.fEndSize.x, 0.01f);
+			ImGui::DragFloat3("StartSize", &pendingStandard.fSize.x, 0.01f);
+			ImGui::DragFloat3("EndSize", &pendingStandard.fEndSize.x, 0.01f);
 		}
 
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);

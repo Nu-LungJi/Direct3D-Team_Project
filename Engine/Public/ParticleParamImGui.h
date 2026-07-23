@@ -25,6 +25,8 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	if (ImGui::Checkbox("Gravity", &bGravity))
 		flags = bGravity ? (flags | BEHAVIOR_GRAVITY) : (flags & ~BEHAVIOR_GRAVITY);
 	ImGui::Separator();
+
+
 	ImGui::Text("Only For CPU Pattern");
 	if (ImGui::Checkbox("CircleToWave", &bCircleWave))
 		flags = bCircleWave ? (flags | BEHAVIOR_CIRCLE_TO_WAVE) : (flags & ~BEHAVIOR_CIRCLE_TO_WAVE);
@@ -35,6 +37,8 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	if (ImGui::Checkbox("SmokeJump", &bSmokeJump))
 		flags = bSmokeJump ? (flags | BEHAVIOR_SMOKEJUMP) : (flags & ~BEHAVIOR_SMOKEJUMP);
 	ImGui::Separator();
+
+
 	ImGui::Text("Only For GPU Pattern");
 
 }
