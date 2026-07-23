@@ -71,9 +71,17 @@ public:
 	const int32_t			Get_MaxHp()		const { return m_iMaxHp; }
 	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
 	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
-	void					Set_AttTable(ATTMON eType) { m_MonTable.eAttType = eType; }
+	void					Set_AttTable(ATTMON eType, _float2 fSkillRatio)
+	{
+		if (!m_bSkill) {
+			m_MonTable.eAttType = eType;
+			m_fSkillRatio = fSkillRatio;
+			m_bSkill = true;
+		}
+	}
 	const HITTABLE			Get_HitTable()const { return m_MonTable; }
 private:
+	void					RunningSkill(_float fTimeDelta);
 	void					IsHit();
 	void					Flag_Check(_float fTimeDelta);
 	void					StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
@@ -102,13 +110,16 @@ protected:
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	_float3 m_f{};
 	_float ff{};
+
+	_float2						m_fSkillRatio{ };
 	uint32_t					m_iCurrentInstanceCount = 0.f;
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{};
-	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{ false };
+	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
 	_string						m_SocketName{};
-
 	HITTABLE					m_MonTable{};
+
+	std::vector<E::SPAWN_COMMAND> test[ETOUI(ATTMON::END)];
 public:
 	E::UPtr<E::CPrototype> Clone(void* pArg) PURE;
 };
