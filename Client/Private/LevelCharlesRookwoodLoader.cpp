@@ -12,75 +12,11 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 {
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_CharlesRookwood", []()
 		{
-			_bool bWorkerReturn = true;
-			
-
-
-			// STEP: 맵 로딩
+			// Map Load
+			if (FAILED(E::CGameInstance::Get().LoadMapResources(MAP_PATH)))
 			{
-				const std::filesystem::path staticModelDir = /*E::PATH_MINSOO_FBX;*/ E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
-				if (!std::filesystem::exists(staticModelDir))
-				{
-					MSG_BOX("NO_STATIC_MODEL_DIR");
-				}
-				std::list<std::future<bool>> result;
-
-				for (const auto& entry : std::filesystem::recursive_directory_iterator(staticModelDir))
-				{
-					if (!entry.is_regular_file() || _stricmp(entry.path().extension().string().c_str(), ".bin") != 0)
-					{
-						continue;
-					}
-					result.emplace_back(E::CGameInstance::Get().WorkerEnqueueWithFuture("Loading_MapFast", [=]()
-						{
-							const std::string resourceTag = MakeStaticModelResourceTag(staticModelDir, entry.path());
-							auto res = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
-								E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL,
-								resourceTag,
-								E::CResStaticModel::Create(entry.path().string()));
-
-							if (!res)
-							{
-								return false;
-							}
-
-							E::CResStaticModel::DESC desc{};
-							desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-
-							if (FAILED(res->Load(desc)))
-							{
-								return false;
-							}
-						}
-					));
-				}
-
-				for (auto& future : result)
-				{
-					if (!future.valid())
-					{
-						bWorkerReturn = false;
-						continue;
-					}
-
-					try
-					{
-						if (!future.get())
-							bWorkerReturn = false;
-					}
-					catch (const std::exception& e)
-					{
-						bWorkerReturn = false;
-						DEBUG_LOG_STR(
-							std::string("[Future] Exception: ") + e.what() + "\n");
-					}
-				}
-
-				if (!bWorkerReturn)
-				{
-					return false;
-				}
-			}// END STEP: 맵 로딩
+				return false;
+			}
 
 			// 디버그 플레이어 프로토타입 등록
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
