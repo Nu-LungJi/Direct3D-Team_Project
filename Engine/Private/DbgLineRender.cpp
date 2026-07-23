@@ -40,7 +40,8 @@ void CDbgLineRender::SetColor(const _float4& vColor)
 _bool CDbgLineRender::CanAddVertices(size_t iVertexCount) const
 {
     const size_t iCurrentCount = std::min<size_t>(
-        m_DepthVertices.size() + m_NoDepthVertices.size(), m_iVertexCnt);
+        m_DepthVertices.size() + m_NoDepthVertices.size() +
+        m_DepthSolidVertices.size() + m_NoDepthSolidVertices.size(), m_iVertexCnt);
     return iVertexCount <= m_iVertexCnt - iCurrentCount;
 }
 
@@ -56,6 +57,23 @@ const std::vector<VTX_DBG_LINE>& CDbgLineRender::GetCurrentVertices() const
     return m_eDepthMode == DBG_LINE_DEPTH_MODE::ENABLED
         ? m_DepthVertices
         : m_NoDepthVertices;
+}
+
+std::vector<VTX_DBG_LINE>& CDbgLineRender::GetCurrentSolidVertices()
+{
+    return m_eDepthMode == DBG_LINE_DEPTH_MODE::ENABLED
+        ? m_DepthSolidVertices
+        : m_NoDepthSolidVertices;
+}
+
+void CDbgLineRender::AddSolidTriangle(
+    const _float3& p0, const _float3& p1, const _float3& p2, uint32_t color)
+{
+    if (!CanAddVertices(3)) return;
+    auto& vertices = GetCurrentSolidVertices();
+    vertices.push_back({ p0, color });
+    vertices.push_back({ p1, color });
+    vertices.push_back({ p2, color });
 }
 
 void CDbgLineRender::AddLine(const _float3& p0, const _float3& p1)
@@ -827,6 +845,182 @@ void CDbgLineRender::AddConvexHull(const _float3* vertices, uint32_t vertexCount
     }
 }
 
+void CDbgLineRender::AddSolidMesh(
+    const _float3* vertices,
+    uint32_t vertexCount,
+    const uint32_t* indices,
+    uint32_t triangleCount,
+    FXMMATRIX world,
+    const _float4& color)
+{
+    if (!vertices || !indices || triangleCount == 0) return;
+    const uint32_t packedColor = PackDbgLineColor(color);
+    for (uint32_t i = 0; i < triangleCount; ++i)
+    {
+        const uint32_t i0 = indices[i * 3];
+        const uint32_t i1 = indices[i * 3 + 1];
+        const uint32_t i2 = indices[i * 3 + 2];
+        if (i0 >= vertexCount || i1 >= vertexCount || i2 >= vertexCount)
+            continue;
+
+        _float3 p0{}, p1{}, p2{};
+        XMStoreFloat3(&p0, XMVector3TransformCoord(XMLoadFloat3(&vertices[i0]), world));
+        XMStoreFloat3(&p1, XMVector3TransformCoord(XMLoadFloat3(&vertices[i1]), world));
+        XMStoreFloat3(&p2, XMVector3TransformCoord(XMLoadFloat3(&vertices[i2]), world));
+        AddSolidTriangle(p0, p1, p2, packedColor);
+    }
+}
+
+void CDbgLineRender::AddSolidBox(
+    const _float3& halfExtent, FXMMATRIX world, const _float4& color)
+{
+    static constexpr _float3 vertices[] =
+    {
+        { -1.f, -1.f, -1.f }, { 1.f, -1.f, -1.f },
+        { 1.f, 1.f, -1.f }, { -1.f, 1.f, -1.f },
+        { -1.f, -1.f, 1.f }, { 1.f, -1.f, 1.f },
+        { 1.f, 1.f, 1.f }, { -1.f, 1.f, 1.f }
+    };
+    static constexpr uint32_t indices[] =
+    {
+        0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
+        0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2,
+        0, 4, 7, 0, 7, 3, 1, 2, 6, 1, 6, 5
+    };
+    AddSolidMesh(vertices, static_cast<uint32_t>(std::size(vertices)), indices,
+        static_cast<uint32_t>(std::size(indices) / 3),
+        XMMatrixScaling(halfExtent.x, halfExtent.y, halfExtent.z) * world, color);
+}
+
+void CDbgLineRender::AddSolidSphere(float radius, FXMMATRIX world, const _float4& color)
+{
+    constexpr uint32_t slices = 24;
+    constexpr uint32_t stacks = 12;
+    std::vector<_float3> vertices{};
+    std::vector<uint32_t> indices{};
+    vertices.reserve((stacks + 1) * (slices + 1));
+    indices.reserve(stacks * slices * 6);
+    for (uint32_t stack = 0; stack <= stacks; ++stack)
+    {
+        const float phi = XM_PI * static_cast<float>(stack) / static_cast<float>(stacks);
+        for (uint32_t slice = 0; slice <= slices; ++slice)
+        {
+            const float theta = XM_2PI * static_cast<float>(slice) / static_cast<float>(slices);
+            vertices.push_back({
+                radius * std::sin(phi) * std::cos(theta),
+                radius * std::cos(phi),
+                radius * std::sin(phi) * std::sin(theta) });
+        }
+    }
+    for (uint32_t stack = 0; stack < stacks; ++stack)
+    {
+        for (uint32_t slice = 0; slice < slices; ++slice)
+        {
+            const uint32_t a = stack * (slices + 1) + slice;
+            const uint32_t b = a + slices + 1;
+            indices.insert(indices.end(), { a, b, a + 1, a + 1, b, b + 1 });
+        }
+    }
+    AddSolidMesh(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(),
+        static_cast<uint32_t>(indices.size() / 3), world, color);
+}
+
+void CDbgLineRender::AddSolidCapsule(
+    float radius, float halfHeight, FXMMATRIX world, const _float4& color)
+{
+    constexpr uint32_t slices = 24;
+    constexpr uint32_t arcs = 8;
+    std::vector<std::pair<float, float>> profile{};
+    profile.reserve(arcs * 2 + 2);
+    for (uint32_t i = 0; i <= arcs; ++i)
+    {
+        const float angle = XM_PIDIV2 * static_cast<float>(i) / static_cast<float>(arcs);
+        profile.emplace_back(radius * std::sin(angle), halfHeight + radius * std::cos(angle));
+    }
+    profile.emplace_back(radius, -halfHeight);
+    for (uint32_t i = 1; i <= arcs; ++i)
+    {
+        const float angle = XM_PIDIV2 * static_cast<float>(i) / static_cast<float>(arcs);
+        profile.emplace_back(radius * std::cos(angle), -halfHeight - radius * std::sin(angle));
+    }
+
+    std::vector<_float3> vertices{};
+    std::vector<uint32_t> indices{};
+    vertices.reserve(profile.size() * (slices + 1));
+    for (const auto& [ringRadius, y] : profile)
+    {
+        for (uint32_t slice = 0; slice <= slices; ++slice)
+        {
+            const float theta = XM_2PI * static_cast<float>(slice) / static_cast<float>(slices);
+            vertices.push_back({ ringRadius * std::cos(theta), y, ringRadius * std::sin(theta) });
+        }
+    }
+    indices.reserve((profile.size() - 1) * slices * 6);
+    for (uint32_t ring = 0; ring + 1 < profile.size(); ++ring)
+    {
+        for (uint32_t slice = 0; slice < slices; ++slice)
+        {
+            const uint32_t a = ring * (slices + 1) + slice;
+            const uint32_t b = a + slices + 1;
+            indices.insert(indices.end(), { a, b, a + 1, a + 1, b, b + 1 });
+        }
+    }
+    AddSolidMesh(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(),
+        static_cast<uint32_t>(indices.size() / 3), world, color);
+}
+
+void CDbgLineRender::AddSolidCylinder(
+    float radius, float halfHeight, FXMMATRIX world, const _float4& color)
+{
+    constexpr uint32_t slices = 24;
+    std::vector<_float3> vertices{};
+    std::vector<uint32_t> indices{};
+    vertices.reserve(slices * 2 + 2);
+    for (uint32_t i = 0; i < slices; ++i)
+    {
+        const float angle = XM_2PI * static_cast<float>(i) / static_cast<float>(slices);
+        vertices.push_back({ radius * std::cos(angle), -halfHeight, radius * std::sin(angle) });
+        vertices.push_back({ radius * std::cos(angle), halfHeight, radius * std::sin(angle) });
+    }
+    const uint32_t bottomCenter = static_cast<uint32_t>(vertices.size());
+    vertices.push_back({ 0.f, -halfHeight, 0.f });
+    const uint32_t topCenter = static_cast<uint32_t>(vertices.size());
+    vertices.push_back({ 0.f, halfHeight, 0.f });
+    indices.reserve(slices * 12);
+    for (uint32_t i = 0; i < slices; ++i)
+    {
+        const uint32_t next = (i + 1) % slices;
+        const uint32_t b0 = i * 2;
+        const uint32_t t0 = b0 + 1;
+        const uint32_t b1 = next * 2;
+        const uint32_t t1 = b1 + 1;
+        indices.insert(indices.end(), {
+            b0, b1, t0, t0, b1, t1,
+            bottomCenter, b1, b0, topCenter, t0, t1 });
+    }
+    AddSolidMesh(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(),
+        static_cast<uint32_t>(indices.size() / 3), world, color);
+}
+
+void CDbgLineRender::AddSolidWedge(FXMMATRIX world, const _float4& color)
+{
+    static constexpr _float3 vertices[] =
+    {
+        { -0.5f, -0.5f, -0.5f }, { 0.5f, -0.5f, -0.5f },
+        { -0.5f, -0.5f, 0.5f }, { 0.5f, -0.5f, 0.5f },
+        { -0.5f, 0.5f, 0.5f }, { 0.5f, 0.5f, 0.5f }
+    };
+    static constexpr uint32_t indices[] =
+    {
+        0, 1, 3, 0, 3, 2,
+        2, 3, 5, 2, 5, 4,
+        0, 2, 4, 1, 5, 3,
+        0, 4, 5, 0, 5, 1
+    };
+    AddSolidMesh(vertices, static_cast<uint32_t>(std::size(vertices)), indices,
+        static_cast<uint32_t>(std::size(indices) / 3), world, color);
+}
+
 void CDbgLineRender::AddBuiltedVertices(const std::vector<VTX_COL>& vecVertices)
 {
     if (!CanAddVertices(vecVertices.size())) return;
@@ -863,9 +1057,13 @@ void CDbgLineRender::AddPackedLineVertices(const void* pVertexData, size_t iVert
 
 HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
+    const uint32_t depthSolidCount = static_cast<uint32_t>(m_DepthSolidVertices.size());
+    const uint32_t noDepthSolidCount = static_cast<uint32_t>(m_NoDepthSolidVertices.size());
     const uint32_t depthVertexCount = static_cast<uint32_t>(m_DepthVertices.size());
     const uint32_t noDepthVertexCount = static_cast<uint32_t>(m_NoDepthVertices.size());
-    if (!m_bRender || (depthVertexCount == 0 && noDepthVertexCount == 0))
+    const uint32_t solidCount = depthSolidCount + noDepthSolidCount;
+    const uint32_t lineCount = depthVertexCount + noDepthVertexCount;
+    if (!m_bRender || (solidCount == 0 && lineCount == 0))
     {
         return S_OK;
     }
@@ -891,9 +1089,6 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
     };
     pContext->IASetInputLayout(vs->GetInputLayout().Get());
     pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-    //m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-    pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
 
     {
         D3D11_MAPPED_SUBRESOURCE mappedResource{};
@@ -906,11 +1101,15 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
             return E_FAIL;
 
 		auto* pDst = static_cast<VTX_DBG_LINE*>(mappedResource.pData);
+		if (depthSolidCount > 0)
+			memcpy(pDst, m_DepthSolidVertices.data(), sizeof(VTX_DBG_LINE) * depthSolidCount);
+		if (noDepthSolidCount > 0)
+			memcpy(pDst + depthSolidCount, m_NoDepthSolidVertices.data(), sizeof(VTX_DBG_LINE) * noDepthSolidCount);
 		if (depthVertexCount > 0)
-			memcpy(pDst, m_DepthVertices.data(), sizeof(VTX_DBG_LINE) * depthVertexCount);
+			memcpy(pDst + solidCount, m_DepthVertices.data(), sizeof(VTX_DBG_LINE) * depthVertexCount);
 
 		if (noDepthVertexCount > 0)
-			memcpy(pDst + depthVertexCount, m_NoDepthVertices.data(), sizeof(VTX_DBG_LINE) * noDepthVertexCount);
+			memcpy(pDst + solidCount + depthVertexCount, m_NoDepthVertices.data(), sizeof(VTX_DBG_LINE) * noDepthVertexCount);
 
 		pContext->Unmap(viBuffer->GetVertexBuffer().Get(), 0);
     }
@@ -930,23 +1129,63 @@ HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& 
         if (!m_pNoDepthState)
             return E_FAIL;
     }
+	if (solidCount > 0 && !m_pAlphaBlendState)
+	{
+		m_pAlphaBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(
+			TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+		if (!m_pAlphaBlendState)
+			return E_FAIL;
+	}
 
 	ComPtr<ID3D11DepthStencilState> previousDepthState{};
     UINT previousStencilRef = 0;
 	pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
+	ComPtr<ID3D11BlendState> previousBlendState{};
+	FLOAT previousBlendFactor[4]{};
+	UINT previousSampleMask{};
+	pContext->OMGetBlendState(previousBlendState.GetAddressOf(), previousBlendFactor, &previousSampleMask);
+	ComPtr<ID3D11RasterizerState> previousRasterizer{};
+	pContext->RSGetState(previousRasterizer.GetAddressOf());
+	D3D11_PRIMITIVE_TOPOLOGY previousTopology{};
+	pContext->IAGetPrimitiveTopology(&previousTopology);
+
+	if (solidCount > 0)
+	{
+		pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		pContext->OMSetBlendState(m_pAlphaBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+		pContext->RSSetState((m_bSolidDepthBias
+			? m_pSolidBiasRasterizer : m_pSolidExactRasterizer).Get());
+		if (depthSolidCount > 0)
+		{
+			pContext->OMSetDepthStencilState(m_pDepthState->GetDepthStencilState().Get(), 0);
+			pContext->Draw(depthSolidCount, 0);
+		}
+		if (noDepthSolidCount > 0)
+		{
+			pContext->OMSetDepthStencilState(m_pNoDepthState->GetDepthStencilState().Get(), 0);
+			pContext->Draw(noDepthSolidCount, depthSolidCount);
+		}
+		pContext->OMSetBlendState(previousBlendState.Get(), previousBlendFactor, previousSampleMask);
+		pContext->RSSetState(previousRasterizer.Get());
+	}
 
 	if (depthVertexCount > 0)
 	{
+		pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 		pContext->OMSetDepthStencilState(m_pDepthState->GetDepthStencilState().Get(), 0);
-		pContext->Draw(depthVertexCount, 0);
+		pContext->Draw(depthVertexCount, solidCount);
 	}
 
 	if (noDepthVertexCount > 0)
 	{
+		pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 		pContext->OMSetDepthStencilState(m_pNoDepthState->GetDepthStencilState().Get(), 0);
-		pContext->Draw(noDepthVertexCount, depthVertexCount);
+		pContext->Draw(noDepthVertexCount, solidCount + depthVertexCount);
 	}
 	pContext->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
+	pContext->OMSetBlendState(previousBlendState.Get(), previousBlendFactor, previousSampleMask);
+	pContext->RSSetState(previousRasterizer.Get());
+	pContext->IASetPrimitiveTopology(previousTopology);
 
     return S_OK;
 }
@@ -955,7 +1194,10 @@ void CDbgLineRender::FrameEnd()
 {
     m_DepthVertices.clear();
     m_NoDepthVertices.clear();
+    m_DepthSolidVertices.clear();
+    m_NoDepthSolidVertices.clear();
     m_eDepthMode = DBG_LINE_DEPTH_MODE::DISABLED;
+	m_bSolidDepthBias = true;
 }
 
 HRESULT CDbgLineRender::Initialize()
@@ -1003,6 +1245,19 @@ HRESULT CDbgLineRender::Initialize()
     }
     m_DepthVertices.reserve(m_iVertexCnt / 2);
     m_NoDepthVertices.reserve(m_iVertexCnt / 2);
+	m_DepthSolidVertices.reserve(m_iVertexCnt / 4);
+	m_NoDepthSolidVertices.reserve(m_iVertexCnt / 4);
+
+	D3D11_RASTERIZER_DESC rasterizerDesc{};
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode = D3D11_CULL_NONE;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	if (FAILED(m_pDevice->CreateRasterizerState(&rasterizerDesc, m_pSolidExactRasterizer.GetAddressOf())))
+		return E_FAIL;
+	rasterizerDesc.DepthBias = -10;
+	rasterizerDesc.SlopeScaledDepthBias = -0.5f;
+	if (FAILED(m_pDevice->CreateRasterizerState(&rasterizerDesc, m_pSolidBiasRasterizer.GetAddressOf())))
+		return E_FAIL;
     return S_OK;
 }
 

@@ -14,6 +14,7 @@ class CResVertexShader;
 class CResDynamicVIBuffer;
 class CResPixelShader;
 class CResDepthStencilState;
+class CResBlendState;
 class ENGINE_DLL CDbgLineRender  final : public CEngineBase, public IRenderable
 {
 private:
@@ -125,6 +126,21 @@ public:
         uint32_t triangleCount,
         FXMMATRIX world = XMMatrixIdentity());
 
+    void SetSolidDepthBias(_bool bEnable) { m_bSolidDepthBias = bEnable; }
+    _bool IsSolidDepthBiasEnabled() const { return m_bSolidDepthBias; }
+    void AddSolidBox(const _float3& halfExtent, FXMMATRIX world, const _float4& color);
+    void AddSolidSphere(float radius, FXMMATRIX world, const _float4& color);
+    void AddSolidCapsule(float radius, float halfHeight, FXMMATRIX world, const _float4& color);
+    void AddSolidCylinder(float radius, float halfHeight, FXMMATRIX world, const _float4& color);
+    void AddSolidWedge(FXMMATRIX world, const _float4& color);
+    void AddSolidMesh(
+        const _float3* vertices,
+        uint32_t vertexCount,
+        const uint32_t* indices,
+        uint32_t triangleCount,
+        FXMMATRIX world,
+        const _float4& color);
+
     void AddBuiltedVertices(const std::vector<VTX_COL>& vecVertices);
     void AddPackedLineVertices(const void* pVertexData, size_t iVertexCount);
 
@@ -138,6 +154,8 @@ private:
 	_bool CanAddVertices(size_t iVertexCount) const;
 	std::vector<VTX_DBG_LINE>& GetCurrentVertices();
 	const std::vector<VTX_DBG_LINE>& GetCurrentVertices() const;
+	std::vector<VTX_DBG_LINE>& GetCurrentSolidVertices();
+	void AddSolidTriangle(const _float3& p0, const _float3& p1, const _float3& p2, uint32_t color);
 
 private:
 	ComPtr<ID3D11Device> m_pDevice{};
@@ -155,8 +173,14 @@ private:
     SPtr<CResPixelShader> m_pDbgPShader{};
     SPtr<CResDepthStencilState> m_pDepthState{};
     SPtr<CResDepthStencilState> m_pNoDepthState{};
+    SPtr<CResBlendState> m_pAlphaBlendState{};
+    ComPtr<ID3D11RasterizerState> m_pSolidBiasRasterizer{};
+    ComPtr<ID3D11RasterizerState> m_pSolidExactRasterizer{};
     std::vector<VTX_DBG_LINE> m_DepthVertices{};
     std::vector<VTX_DBG_LINE> m_NoDepthVertices{};
+    std::vector<VTX_DBG_LINE> m_DepthSolidVertices{};
+    std::vector<VTX_DBG_LINE> m_NoDepthSolidVertices{};
+    _bool m_bSolidDepthBias{ true };
 
 public:
 	static UPtr<CDbgLineRender> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

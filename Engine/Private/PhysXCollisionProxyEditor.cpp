@@ -26,6 +26,7 @@ namespace
 
 	const char* ACTOR_TYPE_NAMES[] = { "Static", "Dynamic", "Kinematic" };
 	const char* SHAPE_TYPE_NAMES[] = { "Box", "Sphere", "Capsule", "Convex Mesh", "Triangle Mesh" };
+	const char* DEBUG_DRAW_MODE_NAMES[] = { "Wire", "Solid", "Solid + Wire" };
 
 	_bool IsUnitCylinderConvexPath(const std::string& path)
 	{
@@ -166,6 +167,57 @@ namespace
 			break;
 		}
 	}
+
+	BoundingOrientedBox MakeShapeBounds(
+		const E::PX_COLLISION_PROXY_ACTOR& actor,
+		const E::PX_COLLISION_PROXY_SHAPE& shape)
+	{
+		_vector scale{};
+		_vector rotation{};
+		_vector translation{};
+		BoundingOrientedBox bounds{};
+		if (!XMMatrixDecompose(&scale, &rotation, &translation, MakeShapeWorldMatrix(actor, shape)))
+			return bounds;
+
+		XMStoreFloat3(&bounds.Center, translation);
+		E::_float3 dimensions{};
+		XMStoreFloat3(&dimensions, scale);
+		bounds.Extents = { std::abs(dimensions.x) * 0.5f,
+			std::abs(dimensions.y) * 0.5f, std::abs(dimensions.z) * 0.5f };
+		XMStoreFloat4(&bounds.Orientation, XMQuaternionNormalize(rotation));
+		return bounds;
+	}
+
+	_bool RaycastBounds(const BoundingOrientedBox& bounds,
+		E::_vector origin, E::_vector direction, E::_float& outDistance, E::_vector& outNormal)
+	{
+		if (!bounds.Intersects(origin, direction, outDistance))
+			return false;
+
+		const E::_vector hit = origin + direction * outDistance;
+		const E::_vector center = XMLoadFloat3(&bounds.Center);
+		const E::_vector inverseRotation = XMQuaternionInverse(XMLoadFloat4(&bounds.Orientation));
+		const E::_vector localHit = XMVector3Rotate(hit - center, inverseRotation);
+		E::_float3 local{};
+		XMStoreFloat3(&local, localHit);
+		const E::_float3 normalized{
+			bounds.Extents.x > 0.f ? local.x / bounds.Extents.x : 0.f,
+			bounds.Extents.y > 0.f ? local.y / bounds.Extents.y : 0.f,
+			bounds.Extents.z > 0.f ? local.z / bounds.Extents.z : 0.f
+		};
+
+		E::_vector localNormal{};
+		if (std::abs(normalized.x) >= std::abs(normalized.y) &&
+			std::abs(normalized.x) >= std::abs(normalized.z))
+			localNormal = XMVectorSet(normalized.x >= 0.f ? 1.f : -1.f, 0.f, 0.f, 0.f);
+		else if (std::abs(normalized.y) >= std::abs(normalized.z))
+			localNormal = XMVectorSet(0.f, normalized.y >= 0.f ? 1.f : -1.f, 0.f, 0.f);
+		else
+			localNormal = XMVectorSet(0.f, 0.f, normalized.z >= 0.f ? 1.f : -1.f, 0.f);
+
+		outNormal = XMVector3Normalize(XMVector3Rotate(localNormal, XMLoadFloat4(&bounds.Orientation)));
+		return true;
+	}
 }
 
 void CPhysXCollisionProxyEditor::UpdateGUI(_float fTimeDelta)
@@ -215,6 +267,17 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	ImGui::Checkbox("Visible", &m_bVisible);
 	ImGui::SameLine();
 	ImGui::Checkbox("Depth", &m_bDepthTest);
+	int debugDrawMode = static_cast<int>(m_eDebugDrawMode);
+	ImGui::SetNextItemWidth(140.f);
+	if (ImGui::Combo("Preview", &debugDrawMode, DEBUG_DRAW_MODE_NAMES,
+		static_cast<int>(std::size(DEBUG_DRAW_MODE_NAMES))))
+		m_eDebugDrawMode = static_cast<DEBUG_DRAW_MODE>(debugDrawMode);
+	if (m_eDebugDrawMode != DEBUG_DRAW_MODE::WIRE)
+	{
+		ImGui::SliderFloat("Solid Alpha", &m_fSolidAlpha, 0.05f, 0.8f, "%.2f");
+		ImGui::SameLine();
+		ImGui::Checkbox("Solid Depth Bias", &m_bSolidDepthBias);
+	}
 	ImGui::Checkbox("Edit File Name", &m_bEditCollisionFileName);
 	ImGui::SameLine();
 	if (m_bEditCollisionFileName)
@@ -333,6 +396,43 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	if (ImGui::RadioButton("Local", m_GizmoMode == ImGuizmo::LOCAL)) m_GizmoMode = ImGuizmo::LOCAL;
 	ImGui::SameLine();
 	if (ImGui::RadioButton("World", m_GizmoMode == ImGuizmo::WORLD)) m_GizmoMode = ImGuizmo::WORLD;
+	ImGui::SameLine();
+	ImGui::Checkbox("Snap", &m_bSnapEnabled);
+	if (m_bSnapEnabled)
+	{
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(90.f);
+		if (m_GizmoOperation == ImGuizmo::TRANSLATE)
+		{
+			ImGui::DragFloat("Move Step", &m_fTranslationSnap, 0.05f, 0.001f, 10000.f, "%.3f");
+			m_fTranslationSnap = std::max(m_fTranslationSnap, 0.001f);
+		}
+		else if (m_GizmoOperation == ImGuizmo::ROTATE)
+		{
+			ImGui::DragFloat("Angle Step", &m_fRotationSnap, 1.f, 0.1f, 180.f, "%.1f deg");
+			m_fRotationSnap = std::clamp(m_fRotationSnap, 0.1f, 180.f);
+		}
+		else
+		{
+			ImGui::DragFloat("Scale Step", &m_fScaleSnap, 0.01f, 0.001f, 100.f, "%.3f");
+			m_fScaleSnap = std::max(m_fScaleSnap, 0.001f);
+		}
+	}
+	if (ImGui::Checkbox("Surface Snap Mode", &m_bSurfaceSnapMode))
+	{
+		m_Status = m_bSurfaceSnapMode ?
+			"Surface Snap: select a shape, then click another collision surface." :
+			"Surface Snap disabled.";
+	}
+	if (m_bSurfaceSnapMode)
+	{
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(90.f);
+		ImGui::DragFloat("Surface Gap", &m_fSurfaceSnapGap, 0.001f, 0.f, 10.f, "%.3f");
+		m_fSurfaceSnapGap = std::max(m_fSurfaceSnapGap, 0.f);
+		ImGui::SameLine();
+		ImGui::TextDisabled("Click a target surface");
+	}
 
 	if (ImGui::Button("Undo")) Undo();
 	ImGui::SameLine();
@@ -443,6 +543,27 @@ void CPhysXCollisionProxyEditor::DrawInspector()
 	else
 	{
 		ImGui::Text("Shape / Actor: %s", actor->sName.c_str());
+		std::optional<uint64_t> moveTargetActorID{};
+		if (ImGui::BeginCombo("Move To Actor", actor->sName.c_str()))
+		{
+			for (const auto& targetActor : m_Actors)
+			{
+				if (targetActor.iID == actor->iID)
+					continue;
+
+				ImGui::PushID(static_cast<int>(targetActor.iID));
+				if (ImGui::Selectable(targetActor.sName.c_str()))
+					moveTargetActorID = targetActor.iID;
+				ImGui::PopID();
+			}
+			ImGui::EndCombo();
+		}
+		if (moveTargetActorID)
+		{
+			MoveSelectedShapeToActor(*moveTargetActorID);
+			ImGui::EndChild();
+			return;
+		}
 		EditString("Name", shape->sName);
 		ImGui::Checkbox("Enabled", &shape->bEnabled);
 		int shapeType = static_cast<int>(shape->eType);
@@ -604,7 +725,11 @@ void CPhysXCollisionProxyEditor::DrawDebugShapes()
 
 	const auto previousColor = debug->GetColor();
 	const auto previousDepth = debug->GetDepthMode();
+	const _bool previousSolidDepthBias = debug->IsSolidDepthBiasEnabled();
 	debug->SetDepthTest(m_bDepthTest);
+	debug->SetSolidDepthBias(m_bSolidDepthBias);
+	const _bool drawSolid = m_eDebugDrawMode != DEBUG_DRAW_MODE::WIRE;
+	const _bool drawWire = m_eDebugDrawMode != DEBUG_DRAW_MODE::SOLID;
 
 	for (const auto& actor : m_Actors)
 	{
@@ -622,62 +747,123 @@ void CPhysXCollisionProxyEditor::DrawDebugShapes()
 				debug->SetColor({ 0.f, 0.9f, 1.f, 1.f });
 
 			const _matrix poseWorld = MakeShapePoseWorldMatrix(actor, shape);
-			switch (shape.eType)
+			const _matrix meshWorld =
+				XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld;
+			_float4 solidColor = debug->GetColor();
+			solidColor.w = m_fSolidAlpha;
+
+			if (drawSolid)
 			{
-			case PX_COLLISION_PROXY_SHAPE_TYPE::BOX:
-				debug->AddBox({ shape.vSize.x * 0.5f, shape.vSize.y * 0.5f, shape.vSize.z * 0.5f }, poseWorld);
-				break;
-			case PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE:
-				debug->AddSphere(shape.fRadius, poseWorld);
-				break;
-			case PX_COLLISION_PROXY_SHAPE_TYPE::CAPSULE:
-				debug->AddCapsule(shape.fRadius, shape.fHalfHeight,
-					XMMatrixRotationZ(XM_PIDIV2) * poseWorld);
-				break;
-			case PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH:
-				if (IsUnitCylinderConvexPath(shape.sCookedResourcePath))
+				switch (shape.eType)
 				{
-					debug->AddCylinder(
+				case PX_COLLISION_PROXY_SHAPE_TYPE::BOX:
+					debug->AddSolidBox(
+						{ shape.vSize.x * 0.5f, shape.vSize.y * 0.5f, shape.vSize.z * 0.5f },
+						poseWorld, solidColor);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE:
+					debug->AddSolidSphere(shape.fRadius, poseWorld, solidColor);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::CAPSULE:
+					debug->AddSolidCapsule(shape.fRadius, shape.fHalfHeight,
+						XMMatrixRotationZ(XM_PIDIV2) * poseWorld, solidColor);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH:
+					if (IsUnitCylinderConvexPath(shape.sCookedResourcePath))
+					{
+						debug->AddSolidCylinder(
+							PX_UNIT_CYLINDER_RADIUS, PX_UNIT_CYLINDER_HALF_HEIGHT,
+							meshWorld, solidColor);
+						break;
+					}
+					if (IsUnitWedgeConvexPath(shape.sCookedResourcePath))
+					{
+						debug->AddSolidWedge(meshWorld, solidColor);
+						break;
+					}
+					if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+						shape.eType, shape.sCookedResourcePath))
+					{
+						debug->AddSolidMesh(
+							mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
+							mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3),
+							meshWorld, solidColor);
+						break;
+					}
+					debug->AddSolidBox({ 0.5f, 0.5f, 0.5f }, meshWorld, solidColor);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH:
+					if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+						shape.eType, shape.sCookedResourcePath))
+					{
+						debug->AddSolidMesh(
+							mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
+							mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3),
+							meshWorld, solidColor);
+						break;
+					}
+					debug->AddSolidBox({ 0.5f, 0.5f, 0.5f }, meshWorld, solidColor);
+					break;
+				}
+			}
+
+			if (drawWire)
+			{
+				switch (shape.eType)
+				{
+				case PX_COLLISION_PROXY_SHAPE_TYPE::BOX:
+					debug->AddBox({ shape.vSize.x * 0.5f, shape.vSize.y * 0.5f, shape.vSize.z * 0.5f }, poseWorld);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE:
+					debug->AddSphere(shape.fRadius, poseWorld);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::CAPSULE:
+					debug->AddCapsule(shape.fRadius, shape.fHalfHeight,
+						XMMatrixRotationZ(XM_PIDIV2) * poseWorld);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH:
+					if (IsUnitCylinderConvexPath(shape.sCookedResourcePath))
+					{
+						debug->AddCylinder(
 						PX_UNIT_CYLINDER_RADIUS,
 						PX_UNIT_CYLINDER_HALF_HEIGHT,
-						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
+							meshWorld);
+						break;
+					}
+					if (IsUnitWedgeConvexPath(shape.sCookedResourcePath))
+					{
+						debug->AddWedge(meshWorld);
+						break;
+					}
+					if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+						shape.eType, shape.sCookedResourcePath))
+					{
+						debug->AddConvexHull(
+							mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
+							mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3), meshWorld);
+						break;
+					}
+					debug->AddBox({ 0.5f, 0.5f, 0.5f }, meshWorld);
+					break;
+				case PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH:
+					if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+						shape.eType, shape.sCookedResourcePath))
+					{
+						debug->AddTriangleMesh(
+							mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
+							mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3), meshWorld);
+						break;
+					}
+					debug->AddBox({ 0.5f, 0.5f, 0.5f }, meshWorld);
 					break;
 				}
-				if (IsUnitWedgeConvexPath(shape.sCookedResourcePath))
-				{
-					debug->AddWedge(
-						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
-					break;
-				}
-				if (const auto* mesh = GetOrBuildCookedMeshDebugData(
-					shape.eType, shape.sCookedResourcePath))
-				{
-					debug->AddConvexHull(
-						mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
-						mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3),
-						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
-					break;
-				}
-				debug->AddBox({ shape.vScale.x * 0.5f, shape.vScale.y * 0.5f, shape.vScale.z * 0.5f }, poseWorld);
-				break;
-			case PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH:
-				if (const auto* mesh = GetOrBuildCookedMeshDebugData(
-					shape.eType, shape.sCookedResourcePath))
-				{
-					debug->AddTriangleMesh(
-						mesh->vertices.data(), static_cast<uint32_t>(mesh->vertices.size()),
-						mesh->indices.data(), static_cast<uint32_t>(mesh->indices.size() / 3),
-						XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) * poseWorld);
-					break;
-				}
-				debug->AddBox({ shape.vScale.x * 0.5f, shape.vScale.y * 0.5f, shape.vScale.z * 0.5f }, poseWorld);
-				break;
 			}
 		}
 	}
 
 	debug->SetColor(previousColor);
 	debug->SetDepthMode(previousDepth);
+	debug->SetSolidDepthBias(previousSolidDepthBias);
 }
 
 const CPhysXCollisionProxyEditor::COOKED_MESH_DEBUG_DATA*
@@ -784,8 +970,22 @@ void CPhysXCollisionProxyEditor::RenderGizmo()
 	ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
 	ImGuizmo::SetID(PX_COLLISION_PROXY_GIZMO_ID);
 
+	_float3 snap{};
+	const _float* pSnap = nullptr;
+	if (m_bSnapEnabled)
+	{
+		if (m_GizmoOperation == ImGuizmo::TRANSLATE)
+			snap = { m_fTranslationSnap, m_fTranslationSnap, m_fTranslationSnap };
+		else if (m_GizmoOperation == ImGuizmo::ROTATE)
+			snap = { m_fRotationSnap, m_fRotationSnap, m_fRotationSnap };
+		else
+			snap = { m_fScaleSnap, m_fScaleSnap, m_fScaleSnap };
+		pSnap = &snap.x;
+	}
+
 	if (ImGuizmo::Manipulate(&view._11, &projection._11, m_GizmoOperation,
-		m_GizmoOperation == ImGuizmo::SCALE ? ImGuizmo::LOCAL : m_GizmoMode, &world._11))
+		m_GizmoOperation == ImGuizmo::SCALE ? ImGuizmo::LOCAL : m_GizmoMode,
+		&world._11, nullptr, pSnap))
 	{
 		if (!m_GizmoStartSnapshot)
 			m_GizmoStartSnapshot = SNAPSHOT{ m_Actors, m_SelectedActorID, m_SelectedShapeID };
@@ -823,6 +1023,48 @@ void CPhysXCollisionProxyEditor::RenderGizmo()
 	m_bWasUsingGizmo = isUsing;
 }
 
+void CPhysXCollisionProxyEditor::MoveSelectedShapeToActor(uint64_t iTargetActorID)
+{
+	if (!m_SelectedActorID || !m_SelectedShapeID || *m_SelectedActorID == iTargetActorID)
+		return;
+
+	auto sourceActorIt = std::ranges::find_if(m_Actors,
+		[this](const PX_COLLISION_PROXY_ACTOR& actor) { return actor.iID == *m_SelectedActorID; });
+	auto targetActorIt = std::ranges::find_if(m_Actors,
+		[iTargetActorID](const PX_COLLISION_PROXY_ACTOR& actor) { return actor.iID == iTargetActorID; });
+	if (sourceActorIt == m_Actors.end() || targetActorIt == m_Actors.end())
+		return;
+
+	auto shapeIt = std::ranges::find_if(sourceActorIt->shapes,
+		[this](const PX_COLLISION_PROXY_SHAPE& shape) { return shape.iID == *m_SelectedShapeID; });
+	if (shapeIt == sourceActorIt->shapes.end())
+		return;
+
+	PX_COLLISION_PROXY_SHAPE movedShape = *shapeIt;
+	const _matrix shapeWorldPose = MakeShapePoseWorldMatrix(*sourceActorIt, movedShape);
+	const _matrix targetLocalPose = shapeWorldPose * XMMatrixInverse(nullptr, MakeActorMatrix(*targetActorIt));
+	_vector scale{};
+	_vector rotation{};
+	_vector translation{};
+	if (!XMMatrixDecompose(&scale, &rotation, &translation, targetLocalPose))
+	{
+		m_Status = "Failed to move shape: target actor transform is invalid.";
+		return;
+	}
+
+	PushUndo();
+	XMStoreFloat3(&movedShape.vLocalPosition, translation);
+	XMStoreFloat4(&movedShape.vLocalRotation, XMQuaternionNormalize(rotation));
+
+	const uint64_t movedShapeID = movedShape.iID;
+	const std::string targetActorName = targetActorIt->sName;
+	sourceActorIt->shapes.erase(shapeIt);
+	targetActorIt->shapes.push_back(std::move(movedShape));
+	m_SelectedActorID = iTargetActorID;
+	m_SelectedShapeID = movedShapeID;
+	m_Status = "Moved shape to actor: " + targetActorName;
+}
+
 void CPhysXCollisionProxyEditor::HandleSceneInput()
 {
 	const ImGuiIO& io = ImGui::GetIO();
@@ -830,7 +1072,12 @@ void CPhysXCollisionProxyEditor::HandleSceneInput()
 		return;
 
 	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-		SelectAtMouse();
+	{
+		if (m_bSurfaceSnapMode)
+			SnapSelectedShapeAtMouse();
+		else
+			SelectAtMouse();
+	}
 }
 
 void CPhysXCollisionProxyEditor::CreateActor(const _float3& position)
@@ -993,6 +1240,191 @@ void CPhysXCollisionProxyEditor::SelectAtMouse()
 
 	m_SelectedActorID = actorID;
 	m_SelectedShapeID = shapeID;
+}
+
+void CPhysXCollisionProxyEditor::SnapSelectedShapeAtMouse()
+{
+	auto* selectedActor = GetSelectedActor();
+	auto* selectedShape = GetSelectedShape();
+	if (!selectedActor || !selectedShape)
+	{
+		m_Status = "Surface Snap requires a selected shape.";
+		return;
+	}
+
+	_float3 rayOrigin{};
+	_float3 rayDirection{};
+	if (!MakeMouseRay(rayOrigin, rayDirection))
+		return;
+
+	const _vector origin = XMLoadFloat3(&rayOrigin);
+	const _vector direction = XMLoadFloat3(&rayDirection);
+	_float nearest = FLT_MAX;
+	_vector nearestNormal{};
+	_bool found{};
+
+	for (const auto& actor : m_Actors)
+	{
+		if (!actor.bEnabled)
+			continue;
+		for (const auto& shape : actor.shapes)
+		{
+			if (!shape.bEnabled || shape.iID == selectedShape->iID)
+				continue;
+
+			_float distance{};
+			_vector normal{};
+			_bool hit{};
+			if (shape.eType == PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE)
+			{
+				_float3 center{};
+				XMStoreFloat3(&center, MakeShapePoseWorldMatrix(actor, shape).r[3]);
+				BoundingSphere bounds{ center, shape.fRadius };
+				if (bounds.Intersects(origin, direction, distance))
+				{
+					const _vector hitPoint = origin + direction * distance;
+					normal = XMVector3Normalize(hitPoint - XMLoadFloat3(&center));
+					hit = true;
+				}
+			}
+			else if (shape.eType == PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH ||
+				shape.eType == PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH)
+			{
+				_float boundsDistance{};
+				_vector boundsNormal{};
+				const _bool boundsHit = RaycastBounds(MakeShapeBounds(actor, shape),
+					origin, direction, boundsDistance, boundsNormal);
+				if (!boundsHit || boundsDistance >= nearest)
+					continue;
+
+				if (const auto* mesh = GetOrBuildCookedMeshDebugData(shape.eType, shape.sCookedResourcePath))
+				{
+					const _matrix world = XMMatrixScaling(shape.vScale.x, shape.vScale.y, shape.vScale.z) *
+						MakeShapePoseWorldMatrix(actor, shape);
+					_float meshNearest = FLT_MAX;
+					_vector meshNormal{};
+					for (size_t i = 0; i + 2 < mesh->indices.size(); i += 3)
+					{
+						const uint32_t i0 = mesh->indices[i];
+						const uint32_t i1 = mesh->indices[i + 1];
+						const uint32_t i2 = mesh->indices[i + 2];
+						if (i0 >= mesh->vertices.size() || i1 >= mesh->vertices.size() || i2 >= mesh->vertices.size())
+							continue;
+
+						const _vector v0 = XMVector3TransformCoord(XMLoadFloat3(&mesh->vertices[i0]), world);
+						const _vector v1 = XMVector3TransformCoord(XMLoadFloat3(&mesh->vertices[i1]), world);
+						const _vector v2 = XMVector3TransformCoord(XMLoadFloat3(&mesh->vertices[i2]), world);
+						_float triangleDistance{};
+						if (!TriangleTests::Intersects(origin, direction, v0, v1, v2, triangleDistance) ||
+							triangleDistance >= meshNearest)
+							continue;
+
+						_vector triangleNormal = XMVector3Cross(v1 - v0, v2 - v0);
+						if (XMVectorGetX(XMVector3LengthSq(triangleNormal)) <= 1e-10f)
+							continue;
+						triangleNormal = XMVector3Normalize(triangleNormal);
+						if (XMVectorGetX(XMVector3Dot(triangleNormal, direction)) > 0.f)
+							triangleNormal = -triangleNormal;
+						meshNearest = triangleDistance;
+						meshNormal = triangleNormal;
+					}
+					if (meshNearest != FLT_MAX)
+					{
+						distance = meshNearest;
+						normal = meshNormal;
+						hit = true;
+					}
+				}
+				if (!hit)
+				{
+					distance = boundsDistance;
+					normal = boundsNormal;
+					hit = true;
+				}
+			}
+			else
+			{
+				hit = RaycastBounds(MakeShapeBounds(actor, shape), origin, direction, distance, normal);
+			}
+
+			if (hit && distance < nearest)
+			{
+				nearest = distance;
+				nearestNormal = normal;
+				found = true;
+			}
+		}
+	}
+
+	if (!found)
+	{
+		m_Status = "Surface Snap: no collision surface under the mouse.";
+		return;
+	}
+
+	const _matrix selectedPose = MakeShapePoseWorldMatrix(*selectedActor, *selectedShape);
+	const _vector selectedOrigin = selectedPose.r[3];
+	_float supportDistance{};
+	_bool supportFound{};
+	if (selectedShape->eType == PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE)
+	{
+		supportDistance = selectedShape->fRadius;
+		supportFound = true;
+	}
+	else if (selectedShape->eType == PX_COLLISION_PROXY_SHAPE_TYPE::CAPSULE)
+	{
+		const _vector capsuleAxis = XMVector3Normalize(selectedPose.r[0]);
+		supportDistance = selectedShape->fRadius + selectedShape->fHalfHeight *
+			std::abs(XMVectorGetX(XMVector3Dot(capsuleAxis, nearestNormal)));
+		supportFound = true;
+	}
+	else if (selectedShape->eType == PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH ||
+		selectedShape->eType == PX_COLLISION_PROXY_SHAPE_TYPE::TRIANGLE_MESH)
+	{
+		if (const auto* mesh = GetOrBuildCookedMeshDebugData(
+			selectedShape->eType, selectedShape->sCookedResourcePath))
+		{
+			const _matrix meshWorld = XMMatrixScaling(selectedShape->vScale.x,
+				selectedShape->vScale.y, selectedShape->vScale.z) * selectedPose;
+			_float minimumProjection = FLT_MAX;
+			for (const auto& vertex : mesh->vertices)
+			{
+				const _vector worldVertex = XMVector3TransformCoord(XMLoadFloat3(&vertex), meshWorld);
+				minimumProjection = std::min(minimumProjection,
+					XMVectorGetX(XMVector3Dot(worldVertex - selectedOrigin, nearestNormal)));
+			}
+			if (minimumProjection != FLT_MAX)
+			{
+				supportDistance = -minimumProjection;
+				supportFound = true;
+			}
+		}
+	}
+
+	if (!supportFound)
+	{
+		const BoundingOrientedBox bounds = MakeShapeBounds(*selectedActor, *selectedShape);
+		const _matrix rotation = XMMatrixRotationQuaternion(XMLoadFloat4(&bounds.Orientation));
+		const _vector axisX = XMVector3Normalize(rotation.r[0]);
+		const _vector axisY = XMVector3Normalize(rotation.r[1]);
+		const _vector axisZ = XMVector3Normalize(rotation.r[2]);
+		supportDistance = bounds.Extents.x * std::abs(XMVectorGetX(XMVector3Dot(axisX, nearestNormal))) +
+			bounds.Extents.y * std::abs(XMVectorGetX(XMVector3Dot(axisY, nearestNormal))) +
+			bounds.Extents.z * std::abs(XMVectorGetX(XMVector3Dot(axisZ, nearestNormal)));
+	}
+
+	const _vector hitPoint = origin + direction * nearest;
+	const _vector snappedWorldPosition = hitPoint + nearestNormal * (supportDistance + m_fSurfaceSnapGap);
+	const _vector snappedLocalPosition = XMVector3TransformCoord(snappedWorldPosition,
+		XMMatrixInverse(nullptr, MakeActorMatrix(*selectedActor)));
+
+	PushUndo();
+	selectedActor = GetSelectedActor();
+	selectedShape = GetSelectedShape();
+	if (!selectedActor || !selectedShape)
+		return;
+	XMStoreFloat3(&selectedShape->vLocalPosition, snappedLocalPosition);
+	m_Status = "Surface Snap applied.";
 }
 
 _bool CPhysXCollisionProxyEditor::MakeMouseRay(_float3& outOrigin, _float3& outDirection) const

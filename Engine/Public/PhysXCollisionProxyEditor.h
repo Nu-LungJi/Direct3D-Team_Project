@@ -11,6 +11,13 @@ public:
 	DECLARE_DERIVED_TYPE(CPhysXCollisionProxyEditor, CEngineBase)
 
 private:
+	enum class DEBUG_DRAW_MODE : uint8_t
+	{
+		WIRE,
+		SOLID,
+		SOLID_WIRE
+	};
+
 	struct SNAPSHOT
 	{
 		std::vector<PX_COLLISION_PROXY_ACTOR> actors{};
@@ -53,9 +60,11 @@ private:
 	void CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE eType);
 	void CreateCylinderAtCamera();
 	void CreateWedgeAtCamera();
+	void MoveSelectedShapeToActor(uint64_t iTargetActorID);
 	void DuplicateSelected();
 	void DeleteSelected();
 	void SelectAtMouse();
+	void SnapSelectedShapeAtMouse();
 	_bool MakeMouseRay(_float3& outOrigin, _float3& outDirection) const;
 	PX_COLLISION_PROXY_ACTOR* GetSelectedActor();
 	const PX_COLLISION_PROXY_ACTOR* GetSelectedActor() const;
@@ -78,9 +87,18 @@ private:
 	_bool m_bEditMode{};
 	_bool m_bVisible{ true };
 	_bool m_bDepthTest{ true };
+	_bool m_bSolidDepthBias{ true };
 	_bool m_bEditCollisionFileName{};
 	_bool m_bWasUsingGizmo{};
 	PX_COLLISION_PROXY_SHAPE_TYPE m_eCreateShapeType{ PX_COLLISION_PROXY_SHAPE_TYPE::BOX };
+	DEBUG_DRAW_MODE m_eDebugDrawMode{ DEBUG_DRAW_MODE::SOLID_WIRE };
+	_float m_fSolidAlpha{ 0.25f };
+	_bool m_bSnapEnabled{};
+	_float m_fTranslationSnap{ 0.5f };
+	_float m_fRotationSnap{ 15.f };
+	_float m_fScaleSnap{ 0.1f };
+	_bool m_bSurfaceSnapMode{};
+	_float m_fSurfaceSnapGap{ 0.002f };
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
 	std::vector<SNAPSHOT> m_UndoStack{};
