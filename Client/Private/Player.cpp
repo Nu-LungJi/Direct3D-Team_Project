@@ -18,6 +18,8 @@
 #include "ComCharacterMotor.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
+#include "Player_StateMachine.h"
+#include "Player_Locomotion_State.h"
 
 NS_USING(Client)
 
@@ -75,7 +77,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
 	{
 		CComModelInstance::DESC Desc{};
 		Desc.sGroupTag = "MODEL";
@@ -98,7 +99,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 		// TestModel은 생성 직후부터 CPU pose + VS skinning 경로를 사용한다.
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
 	}
 
 	{
@@ -135,6 +135,32 @@ HRESULT CPlayer::Initialize(void* pArg)
 		}
 	}
 
+	{
+		CPlayer_StateMachine::DESC Desc{};
+		if (FAILED(AddComponentFromProto(
+			"PLAYER_STATEMACHINE",
+			"Prototype_Component_Player_StateMachine",
+			"Player_StateMachine",
+			&Desc,
+			&m_pStateMachine)) ||
+			!m_pStateMachine)
+		{
+			return E_FAIL;
+		}
+
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::LOCOMOTION,
+			CPlayer_Locomotion_State::Create()))
+		{
+			return E_FAIL;
+		}
+
+		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
+		{
+			return E_FAIL;
+		}
+	}
+
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
 	//CTestPartObject::DESC WeaponDesc{};
@@ -162,9 +188,14 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_pStateMachine)
+		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
 	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
 	if (!pPlayerCamera)
 	{
+		m_bRawMoveInput = false;
+		m_vRawMoveDirection = {};
 		m_pComMoveIntent->ClearMoveIntent();
 		return;
 	}
@@ -189,10 +220,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	vCameraForward.y = 0.f;
 	vCameraRight.y = 0.f;
 
-	const _float fForwardLengthSq =
-		vCameraForward.x * vCameraForward.x + vCameraForward.z * vCameraForward.z;
-	const _float fRightLengthSq =
-		vCameraRight.x * vCameraRight.x + vCameraRight.z * vCameraRight.z;
+	const _float fForwardLengthSq = vCameraForward.x * vCameraForward.x + vCameraForward.z * vCameraForward.z;
+	const _float fRightLengthSq = vCameraRight.x * vCameraRight.x + vCameraRight.z * vCameraRight.z;
 	if (fForwardLengthSq > std::numeric_limits<_float>::epsilon())
 	{
 		const _float fInvLength = 1.f / std::sqrt(fForwardLengthSq);
@@ -206,17 +235,78 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		vCameraRight.z *= fInvLength;
 	}
 
-	const _float3 vMoveDirection{
-		vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent,
-		0.f,
-		vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
+	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
+	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
+	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
+	if (m_bRawMoveInput)
+	{
+		m_vLastMoveDirection = vMoveDirection;
 
-	if (vMoveDirection.x != 0.f || vMoveDirection.z != 0.f)
-		m_pComMoveIntent->SetMoveIntent(vMoveDirection, 5.f);
-	else
+		const _vector vTargetDirection = XMVector3Normalize(
+			XMLoadFloat3(&m_vRawMoveDirection));
+
+		if (m_bMovementLocked ||
+			m_fCurrentMoveSpeed <= std::numeric_limits<_float>::epsilon())
+		{
+			XMStoreFloat3(&m_vSmoothedMoveDirection, vTargetDirection);
+		}
+		else
+		{
+			const _float fDirectionBlend =
+				1.f - std::exp(-m_fJogDirectionResponse * fTimeDelta);
+			const _vector vSmoothedDirection = XMVector3Normalize(
+				XMVectorLerp(
+					XMLoadFloat3(&m_vSmoothedMoveDirection),
+					vTargetDirection,
+					std::clamp(fDirectionBlend, 0.f, 1.f)));
+			XMStoreFloat3(
+				&m_vSmoothedMoveDirection,
+				vSmoothedDirection);
+		}
+	}
+
+	if (m_bMovementLocked)
+	{
+		m_fCurrentMoveSpeed = 0.f;
 		m_pComMoveIntent->ClearMoveIntent();
+	}
+	else
+	{
+		const _float fTargetSpeed =
+			m_bRawMoveInput ? m_fJogSpeed : 0.f;
+		const _float fSpeedChange =
+			(m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) *
+			fTimeDelta;
 
-	if (CGameInstance::Get().KeyDown(DIK_SPACE))
+		if (m_fCurrentMoveSpeed < fTargetSpeed)
+		{
+			m_fCurrentMoveSpeed = std::min(
+				m_fCurrentMoveSpeed + fSpeedChange,
+				fTargetSpeed);
+		}
+		else
+		{
+			m_fCurrentMoveSpeed = std::max(
+				m_fCurrentMoveSpeed - fSpeedChange,
+				fTargetSpeed);
+		}
+
+		if (m_fCurrentMoveSpeed > std::numeric_limits<_float>::epsilon())
+		{
+			m_pComMoveIntent->SetMoveIntent(
+				m_bRawMoveInput
+					? m_vSmoothedMoveDirection
+					: m_vLastMoveDirection,
+				m_fCurrentMoveSpeed);
+		}
+		else
+		{
+			m_fCurrentMoveSpeed = 0.f;
+			m_pComMoveIntent->ClearMoveIntent();
+		}
+	}
+
+	if (!m_bMovementLocked && CGameInstance::Get().KeyDown(DIK_SPACE))
 		m_pComMoveIntent->RequestJump();
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
@@ -224,18 +314,32 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
 		m_pComCharacterMotor->SetVelocity({});
 	}
+
 }
 
 
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
 {
+	if (m_bMovementLocked)
+	{
+		m_pComMoveIntent->ClearMoveIntent();
+
+		_float3 vVelocity = m_pComCharacterMotor->GetVelocity();
+		vVelocity.x = 0.f;
+		vVelocity.z = 0.f;
+		m_pComCharacterMotor->SetVelocity(vVelocity);
+	}
+
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
 }
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
+	_bool bApplyRootMotionTranslation{};
+	_float3 vRootMotionDelta{};
+
 	for (auto iter = m_Projectiles.begin(); iter != m_Projectiles.end();)
 	{
 		auto* pProjectile = CGameInstance::Get().GetGameObjectByHandle(iter->hProjectile);
@@ -259,12 +363,55 @@ void CPlayer::Update(E::_float fTimeDelta)
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
+		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
+		vRootMotionDelta = m_pModelAnimator->GetRootMotionDelta();
+
+		if (m_bRootMotionRotationActive)
+		{
+			const _float4 vRotationDelta =
+				m_pModelAnimator->GetRootMotionRotationDelta();
+			const _vector qCurrent =
+				GetTransform().GetLoadedQuaternion();
+			const _vector qDelta =
+				XMLoadFloat4(&vRotationDelta);
+
+			GetTransform().SetQuaternion(
+				XMQuaternionNormalize(
+					XMQuaternionMultiply(qCurrent, qDelta)));
+		}
+	}
+
+	// Animator를 먼저 진행해야 Locomotion State가 현재 프레임의
+	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
+	if (m_pStateMachine)
+		m_pStateMachine->Update(fTimeDelta);
+
+	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
+	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
+	if (bApplyRootMotionTranslation && m_pComCharacterController)
+	{
+		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
+		const _vector vWorldDelta = XMVector3Rotate(
+			vLocalDelta,
+			GetTransform().GetLoadedQuaternion());
+
+		_float3 vWorldDisplacement{};
+		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
+
+		m_pComCharacterController->Move(
+			vWorldDisplacement,
+			fTimeDelta,
+			0.f);
+		GetTransform().SetPosition(
+			m_pComCharacterController->GetPosition());
 	}
 
 }
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
+	if (m_pStateMachine)
+		m_pStateMachine->LateUpdate(fTimeDelta);
 
 
 	//m_pComPhysX->UpdateSyncedDataToTransform(m_pComTransform);
@@ -346,9 +493,7 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 
 		// DirectXMath로 계산한 CPU Combined 행렬을 VS의 t7 행렬 규약에 맞춘다.
 		// CPU 원본은 다른 CPU 기능에서도 사용하므로 업로드 복사본만 전치한다.
-		for (uint32_t boneIndex = 0;
-			boneIndex < static_cast<uint32_t>(combinedMatrices.size());
-			++boneIndex)
+		for (uint32_t boneIndex = 0; boneIndex < static_cast<uint32_t>(combinedMatrices.size()); ++boneIndex)
 		{
 			XMStoreFloat4x4(
 				&combinedPalette[instanceIndex * 512 + boneIndex],

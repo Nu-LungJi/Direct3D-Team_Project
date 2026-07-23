@@ -5,6 +5,7 @@
 #include "PhysXManager.h"
 #include "LevelLoading.h"
 #include "Resources.h"
+#include "Player_StateMachine.h"
 //#include "Particle_Fire_CPU.h"
 //#include "Particle_Ribbon.h"
 //#include "BTMove.h"
@@ -23,6 +24,8 @@ HRESULT CMainAppLoader::Load()
 
 	// 전체 레벨에서 사용할 라이트 오브젝트 프로토타입 등록
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
+	if (E::CGameInstance::Get().AddPrototype("PLAYER_STATEMACHINE","Prototype_Component_Player_StateMachine",CPlayer_StateMachine::Create())) return E_FAIL;
+
 
 
 	{

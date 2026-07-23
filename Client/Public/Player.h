@@ -28,6 +28,8 @@ class CComCharacterMotor;
 NS_END
 
 NS_BEGIN(Client)
+class CPlayer_StateMachine;
+
 class CPlayer final : public CAnimationObject
 {
 public:
@@ -70,6 +72,18 @@ public:
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 
+	CComCharacterMoveIntent* GetMoveIntent() const { return m_pComMoveIntent; }
+	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
+	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
+
+	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
+	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
+	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
+	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
+	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
+	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
+
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -84,6 +98,8 @@ private:
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	CComSocket* m_pSocket;
+
+
 	_float4 m_fAlbedoColor = { 1.f, 1.f, 1.f, 1.f };
 	_float	m_fNormalIntensity = 1.f;
 	_float	m_fRoughnessIntensity = 1.f;
@@ -109,6 +125,19 @@ private:
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
 	CComCharacterMotor* m_pComCharacterMotor{};
+	CPlayer_StateMachine* m_pStateMachine{};
+	_bool m_bMovementLocked{};
+	_bool m_bRootMotionRotationActive{};
+	_bool m_bRootMotionTranslationActive{};
+	_bool m_bRawMoveInput{};
+	_float3 m_vRawMoveDirection{};
+	_float3 m_vLastMoveDirection{ 0.f, 0.f, 1.f };
+	_float3 m_vSmoothedMoveDirection{ 0.f, 0.f, 1.f };
+	_float m_fCurrentMoveSpeed{};
+	_float m_fJogSpeed{ 5.f };
+	_float m_fAcceleration{ 12.f };
+	_float m_fDeceleration{ 18.f };
+	_float m_fJogDirectionResponse{ 7.f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 
