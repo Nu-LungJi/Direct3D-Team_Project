@@ -237,6 +237,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
+	m_bSprintRequested =
+		m_bRawMoveInput &&
+		CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
 	if (m_bRawMoveInput)
 	{
@@ -252,8 +255,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		else
 		{
+			const _float fDirectionResponse = m_bSprintRequested
+				? m_fSprintDirectionResponse
+				: m_fJogDirectionResponse;
 			const _float fDirectionBlend =
-				1.f - std::exp(-m_fJogDirectionResponse * fTimeDelta);
+				1.f - std::exp(-fDirectionResponse * fTimeDelta);
 			const _vector vSmoothedDirection = XMVector3Normalize(
 				XMVectorLerp(
 					XMLoadFloat3(&m_vSmoothedMoveDirection),
@@ -273,7 +279,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else
 	{
 		const _float fTargetSpeed =
-			m_bRawMoveInput ? m_fJogSpeed : 0.f;
+			m_bRawMoveInput
+				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+				: 0.f;
 		const _float fSpeedChange =
 			(m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) *
 			fTimeDelta;

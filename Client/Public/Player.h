@@ -80,6 +80,7 @@ public:
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
+	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
@@ -130,14 +131,17 @@ private:
 	_bool m_bRootMotionRotationActive{};
 	_bool m_bRootMotionTranslationActive{};
 	_bool m_bRawMoveInput{};
+	_bool m_bSprintRequested{};
 	_float3 m_vRawMoveDirection{};
 	_float3 m_vLastMoveDirection{ 0.f, 0.f, 1.f };
 	_float3 m_vSmoothedMoveDirection{ 0.f, 0.f, 1.f };
 	_float m_fCurrentMoveSpeed{};
 	_float m_fJogSpeed{ 5.f };
+	_float m_fSprintSpeed{ 8.f };
 	_float m_fAcceleration{ 12.f };
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
+	_float m_fSprintDirectionResponse{ 4.5f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 
