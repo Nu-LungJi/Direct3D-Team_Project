@@ -61,6 +61,12 @@
     <Filter Include="GameObject\DebugPlayer">
       <UniqueIdentifier>{18bf3c9f-aaf9-4b4c-8f7d-28b960f8e56a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player">
+      <UniqueIdentifier>{0da9ac46-8ea4-464b-b315-14e07602156b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Camera">
+      <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -126,6 +132,12 @@
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h">
       <Filter>GameObject\DebugPlayer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
+      <Filter>GameObject\Player\Camera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -182,6 +194,12 @@
     </ClCompile>
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
       <Filter>GameObject\DebugPlayer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\Player\Camera</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

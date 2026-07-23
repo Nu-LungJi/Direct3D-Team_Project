@@ -2,8 +2,10 @@
 #include "LevelCharlesRookwoodLoader.h"
 #include "GameInstance.h"
 
+#include "Player.h"
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
+#include "PlayerThirdPersonCamera.h"
 #include "Level_Defines.h"
 
 NS_USING(Client)
@@ -15,6 +17,26 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			// Map Load
 			if (FAILED(E::CGameInstance::Get().LoadMapResources(MAP_PATH)))
 			{
+				return false;
+			}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("MODEL", "PLAYER_MODEL_RESROUCE",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix =
+					XMMatrixScaling(1.5f, 1.5f, 1.5f) *
+					XMMatrixRotationY(XMConvertToRadians(180.f)) *
+					XMMatrixTranslation(0.f, -1.5f, 0.f);
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
+					return false;
+				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Player, CPlayer::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
 				return false;
 			}
 
@@ -30,6 +52,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera, CDebugPlayerThirdPersonCamera::Create())))
 			{
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayerThirdPersonCamera");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera, CPlayerThirdPersonCamera::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerThirdPersonCamera");
 				return false;
 			}
 
