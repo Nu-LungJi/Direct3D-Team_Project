@@ -194,10 +194,10 @@ namespace Engine
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
-    X(_float4, emissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)\
 	X(_float, fSpeed, 0.f)\
-	X(_float2,vRand,_float2(0.8f,1.2f))\
+	X(_float2,vRandSpeed,_float2(0.8f,1.2f))\
+	X(_float2,vRandAlpha,_float2(1.f,1.f))\
 	X(_float2,vRandAngle,_float2(-0.1f,0.1f))\
 	X(_float2,vRandSize, _float2(0.8f,1.2f))\
 	X(_float2,vRandLife, _float2(0.9f,1.1f))\
