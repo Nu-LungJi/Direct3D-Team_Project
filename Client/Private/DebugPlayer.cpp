@@ -159,7 +159,7 @@ void CDebugPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
-		m_pComCharacterController->SetPosition({ 5.f, 5.f, 5.f });
+		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
 		m_pComCharacterMotor->SetVelocity({});
 	}
 }
