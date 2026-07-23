@@ -19,6 +19,7 @@ private:
 	enum class PRIMITIVE_TYPE : uint8_t
 	{
 		CYLINDER,
+		OCTAGONAL_PRISM,
 		WEDGE
 	};
 
@@ -54,6 +55,9 @@ private:
 	HRESULT InspectModelBin();
 	HRESULT BuildSourceGeometry(SOURCE_GEOMETRY& outGeometry) const;
 	HRESULT BuildUnitCylinder(SOURCE_GEOMETRY& outGeometry) const;
+	HRESULT BuildUnitOctagonalPrism(SOURCE_GEOMETRY& outGeometry) const;
+	HRESULT BuildUnitPrism(
+		SOURCE_GEOMETRY& outGeometry, uint32_t segmentCount, _float angleOffset = 0.f) const;
 	HRESULT BuildUnitWedge(SOURCE_GEOMETRY& outGeometry) const;
 	HRESULT BuildModelGeometry(SOURCE_GEOMETRY& outGeometry) const;
 	HRESULT CookGeometry(const SOURCE_GEOMETRY& geometry, const _string& outputPath) const;

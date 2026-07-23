@@ -23,6 +23,7 @@ namespace
 
 	const char* PRIMITIVE_TYPE_NAMES[] = {
 		"Unit Cylinder",
+		"Unit Octagonal Prism",
 		"Unit Wedge"
 	};
 
@@ -73,6 +74,20 @@ void CPhysXCookingEditor::DrawWindow()
 		ImGui::End();
 		return;
 	}
+	const auto getDefaultPrimitivePath = [this]() -> const char*
+	{
+		switch (m_ePrimitiveType)
+		{
+		case PRIMITIVE_TYPE::CYLINDER:
+			return PX_UNIT_CYLINDER_CONVEX_PATH;
+		case PRIMITIVE_TYPE::OCTAGONAL_PRISM:
+			return PX_UNIT_OCTAGONAL_PRISM_CONVEX_PATH;
+		case PRIMITIVE_TYPE::WEDGE:
+			return PX_UNIT_WEDGE_CONVEX_PATH;
+		default:
+			return "";
+		}
+	};
 
 	int sourceType = static_cast<int>(m_eSourceType);
 	if (ImGui::Combo("Source Type", &sourceType, SOURCE_TYPE_NAMES,
@@ -81,10 +96,7 @@ void CPhysXCookingEditor::DrawWindow()
 		m_eSourceType = static_cast<SOURCE_TYPE>(sourceType);
 		if (m_eSourceType == SOURCE_TYPE::PROCEDURAL_PRIMITIVE)
 		{
-			const char* path = m_ePrimitiveType == PRIMITIVE_TYPE::CYLINDER
-				? PX_UNIT_CYLINDER_CONVEX_PATH
-				: PX_UNIT_WEDGE_CONVEX_PATH;
-			strncpy_s(m_OutputPath, path, _TRUNCATE);
+			strncpy_s(m_OutputPath, getDefaultPrimitivePath(), _TRUNCATE);
 		}
 		else
 		{
@@ -99,10 +111,7 @@ void CPhysXCookingEditor::DrawWindow()
 			static_cast<int>(std::size(PRIMITIVE_TYPE_NAMES))))
 		{
 			m_ePrimitiveType = static_cast<PRIMITIVE_TYPE>(primitiveType);
-			const char* defaultPath = m_ePrimitiveType == PRIMITIVE_TYPE::CYLINDER
-				? PX_UNIT_CYLINDER_CONVEX_PATH
-				: PX_UNIT_WEDGE_CONVEX_PATH;
-			strncpy_s(m_OutputPath, defaultPath, _TRUNCATE);
+			strncpy_s(m_OutputPath, getDefaultPrimitivePath(), _TRUNCATE);
 		}
 
 		if (m_ePrimitiveType == PRIMITIVE_TYPE::CYLINDER)
@@ -111,6 +120,11 @@ void CPhysXCookingEditor::DrawWindow()
 				MIN_CYLINDER_SEGMENTS, MAX_CYLINDER_SEGMENTS);
 			ImGui::TextDisabled("Unit cylinder: radius 0.5, height 1.0, Y axis");
 			ImGui::Text("Expected vertices: %d", m_iCylinderSegments * 2);
+		}
+		else if (m_ePrimitiveType == PRIMITIVE_TYPE::OCTAGONAL_PRISM)
+		{
+			ImGui::TextDisabled("Unit octagonal prism: radius 0.5, height 1.0, Y axis");
+			ImGui::Text("Expected vertices: %d", PX_UNIT_OCTAGONAL_PRISM_SEGMENTS * 2);
 		}
 		else
 		{
@@ -426,6 +440,8 @@ HRESULT CPhysXCookingEditor::BuildSourceGeometry(SOURCE_GEOMETRY& outGeometry) c
 	{
 	case PRIMITIVE_TYPE::CYLINDER:
 		return BuildUnitCylinder(outGeometry);
+	case PRIMITIVE_TYPE::OCTAGONAL_PRISM:
+		return BuildUnitOctagonalPrism(outGeometry);
 	case PRIMITIVE_TYPE::WEDGE:
 		return BuildUnitWedge(outGeometry);
 	default:
@@ -437,13 +453,27 @@ HRESULT CPhysXCookingEditor::BuildUnitCylinder(SOURCE_GEOMETRY& outGeometry) con
 {
 	const uint32_t segmentCount = static_cast<uint32_t>(
 		std::clamp(m_iCylinderSegments, MIN_CYLINDER_SEGMENTS, MAX_CYLINDER_SEGMENTS));
+	return BuildUnitPrism(outGeometry, segmentCount);
+}
+
+HRESULT CPhysXCookingEditor::BuildUnitOctagonalPrism(SOURCE_GEOMETRY& outGeometry) const
+{
+	return BuildUnitPrism(outGeometry, PX_UNIT_OCTAGONAL_PRISM_SEGMENTS, XM_PI / 8.f);
+}
+
+HRESULT CPhysXCookingEditor::BuildUnitPrism(
+	SOURCE_GEOMETRY& outGeometry, uint32_t segmentCount, _float angleOffset) const
+{
+	if (segmentCount < static_cast<uint32_t>(MIN_CYLINDER_SEGMENTS))
+		return E_INVALIDARG;
+
 	outGeometry.vertices.clear();
 	outGeometry.indices.clear();
 	outGeometry.vertices.reserve(segmentCount * 2);
 
 	for (uint32_t i = 0; i < segmentCount; ++i)
 	{
-		const _float angle = XM_2PI * static_cast<_float>(i) /
+		const _float angle = angleOffset + XM_2PI * static_cast<_float>(i) /
 			static_cast<_float>(segmentCount);
 		const _float x = std::cos(angle) * PX_UNIT_CYLINDER_RADIUS;
 		const _float z = std::sin(angle) * PX_UNIT_CYLINDER_RADIUS;

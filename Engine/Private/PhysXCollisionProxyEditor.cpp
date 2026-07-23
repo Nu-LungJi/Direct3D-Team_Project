@@ -385,6 +385,9 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	if (ImGui::Button("Create Cylinder at Camera"))
 		CreateCylinderAtCamera();
 	ImGui::SameLine();
+	if (ImGui::Button("Create Octagonal Prism at Camera"))
+		CreateOctagonalPrismAtCamera();
+	ImGui::SameLine();
 	if (ImGui::Button("Create Wedge at Camera"))
 		CreateWedgeAtCamera();
 	if (ImGui::Button("T", ImVec2(34.f, 0.f))) m_GizmoOperation = ImGuizmo::TRANSLATE;
@@ -1133,6 +1136,19 @@ void CPhysXCollisionProxyEditor::CreateCylinderAtCamera()
 	shape->sCookedResourcePath = PX_UNIT_CYLINDER_CONVEX_PATH;
 	shape->vScale = { 1.f, 0.2f, 1.f };
 	m_Status = "Cylinder preset created. Build the PhysX preview after cooking the unit cylinder resource.";
+}
+
+void CPhysXCollisionProxyEditor::CreateOctagonalPrismAtCamera()
+{
+	CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE::CONVEX_MESH);
+	auto* shape = GetSelectedShape();
+	if (!shape)
+		return;
+
+	shape->sName = "OctagonalPrism_" + std::to_string(shape->iID);
+	shape->sCookedResourcePath = PX_UNIT_OCTAGONAL_PRISM_CONVEX_PATH;
+	shape->vScale = { 1.f, 0.2f, 1.f };
+	m_Status = "Octagonal prism preset created. Cook Unit Octagonal Prism before building the PhysX preview.";
 }
 
 void CPhysXCollisionProxyEditor::CreateWedgeAtCamera()

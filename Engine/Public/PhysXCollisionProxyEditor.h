@@ -59,6 +59,7 @@ private:
 	void CreateActor(const _float3& position = {});
 	void CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE eType);
 	void CreateCylinderAtCamera();
+	void CreateOctagonalPrismAtCamera();
 	void CreateWedgeAtCamera();
 	void MoveSelectedShapeToActor(uint64_t iTargetActorID);
 	void DuplicateSelected();
