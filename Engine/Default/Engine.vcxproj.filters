@@ -1105,7 +1105,7 @@
     <ClInclude Include="..\Public\Engine_ParticleDefines.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
-    <ClInclude Include="EffectDefines.h">
+    <ClInclude Include="Engine_EffectDefines.h">
       <Filter>EffectManager</Filter>
     </ClInclude>
     <ClInclude Include="..\public\EffectManager.h">
