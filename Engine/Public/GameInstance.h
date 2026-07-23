@@ -14,6 +14,7 @@
 #include "LuaManager.h"
 #include "SoundManager.h"
 #include "EventManager.h"
+#include "PhysXManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -41,7 +42,6 @@ class CNodeEditor;
 class CParticleManager;
 struct SPAWN_COMMAND;
 class CAction_Manager;
-class CPhysXManager;
 class CDbgLineRender;
 class CSerializeManager;
 class ILuaScriptRelodable;
@@ -336,6 +336,7 @@ public:
 #pragma region MAP_MANAGER
 public:
 	HRESULT SaveMap(const std::string& path);
+	HRESULT LoadMapResources(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
 	HRESULT LoadMapData(const std::string& path);
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);

@@ -20,12 +20,10 @@ NS_USING(Client)
 HRESULT CMainAppLoader::Load()
 {
 	LOG_MEMORY("CMainAppLoader::Load() start");
-	{
-		std::vector<std::pair<uint32_t, std::string>> layerNames{};
-		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
-			layerNames.emplace_back(ETOUI(layer), std::string{ name });
-		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
-	}
+
+	// 전체 레벨에서 사용할 라이트 오브젝트 프로토타입 등록
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
+
 
 	{
 		// TODO   SampleClinet  초기 이니셜라이즈
@@ -283,6 +281,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 HRESULT CMainAppLoader::Load_PhysX_Resource()
 {
+	// 피직스 디버그 충돌 정보 전달
+	{
+		std::vector<std::pair<uint32_t, std::string>> layerNames{};
+		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
+			layerNames.emplace_back(ETOUI(layer), std::string{ name });
+		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
+	}
+
 	{
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));

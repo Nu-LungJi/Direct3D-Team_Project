@@ -923,6 +923,18 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 HRESULT CGameInstanceInitLoader::LoadShader()
 {
 	//ShaderFiles
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_VS_TERRAIN,
+		"./ShaderFiles/Terrain/Shader_Terrain.hlsl"))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PS_TERRAIN,
+		"./ShaderFiles/Terrain/Shader_Terrain.hlsl"))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))

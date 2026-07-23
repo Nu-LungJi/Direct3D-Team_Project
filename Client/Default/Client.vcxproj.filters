@@ -43,14 +43,23 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Level\Percival">
-      <UniqueIdentifier>{7facda9e-60d6-4cfe-b47c-0708369e1fd0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Loader\Level\Percival">
-      <UniqueIdentifier>{1d100ce6-9a11-43e7-95c8-4e2e46e144f9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{ea673d2d-2797-484e-8c21-2bc2a74e811d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\CharlesRookwood">
+      <UniqueIdentifier>{7facda9e-60d6-4cfe-b47c-0708369e1fd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\CharlesRookwood">
+      <UniqueIdentifier>{1d100ce6-9a11-43e7-95c8-4e2e46e144f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\BossCharlesRookwood">
+      <UniqueIdentifier>{37b08c28-9d3d-4f84-af81-2cd8f61ac26c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\BossCharlesRookwood">
+      <UniqueIdentifier>{135bdbd6-2572-49c2-9ed7-a4bfc53cfd5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\DebugPlayer">
+      <UniqueIdentifier>{18bf3c9f-aaf9-4b4c-8f7d-28b960f8e56a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -93,14 +102,29 @@
     <ClInclude Include="..\public\MainAppLoader.h">
       <Filter>Loader\MainApp</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\LevelPercival.h">
-      <Filter>Level\Percival</Filter>
+    <ClInclude Include="..\public\LevelCharlesRookwood.h">
+      <Filter>Level\CharlesRookwood</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\LevelPercivalLoader.h">
-      <Filter>Loader\Level\Percival</Filter>
+    <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h">
+      <Filter>Loader\Level\CharlesRookwood</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Client_Resources.h">
       <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelBossCharlesRookwood.h">
+      <Filter>Level\BossCharlesRookwood</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h">
+      <Filter>Loader\Level\BossCharlesRookwood</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Client_Function.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugPlayer.h">
+      <Filter>GameObject\DebugPlayer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h">
+      <Filter>GameObject\DebugPlayer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -141,11 +165,23 @@
     <ClCompile Include="..\private\MainAppLoader.cpp">
       <Filter>Loader\MainApp</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\LevelPercival.cpp">
-      <Filter>Level\Percival</Filter>
+    <ClCompile Include="..\private\LevelCharlesRookwood.cpp">
+      <Filter>Level\CharlesRookwood</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\LevelPercivalLoader.cpp">
-      <Filter>Loader\Level\Percival</Filter>
+    <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp">
+      <Filter>Loader\Level\CharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp">
+      <Filter>Level\BossCharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp">
+      <Filter>Loader\Level\BossCharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DebugPlayer.cpp">
+      <Filter>GameObject\DebugPlayer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\DebugPlayer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

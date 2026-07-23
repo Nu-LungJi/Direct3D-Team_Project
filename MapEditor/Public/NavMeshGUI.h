@@ -2,9 +2,11 @@
 #include "GUIWindow.h"
 #include "NavMeshManager.h"
 
-NS_BEGIN(Client)
+NS_BEGIN(Engine)
+class CTerrain;
+NS_END
 
-class CMapEditorTerrain;
+NS_BEGIN(Client)
 
 class CNavMeshGUI : public CGUIWindow
 {
@@ -24,8 +26,8 @@ public:
 	static E::UPtr<CNavMeshGUI> Create(E::CHandle* pSelectedObject);
 
 private:
-	bool BuildNavMeshFromTerrain(CMapEditorTerrain& terrain, E::CNavMeshManager& navMeshManager);
-	CMapEditorTerrain* FindFirstMapEditorTerrain();
+	bool BuildNavMeshFromTerrain(E::CTerrain& terrain, E::CNavMeshManager& navMeshManager);
+	E::CTerrain* FindFirstTerrain();
 
 private:
 	E::NAVMESH_BUILD_DESC m_NavDesc{};

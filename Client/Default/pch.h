@@ -12,5 +12,6 @@
 
 #include "Resources.h"
 #include "GameInstance.h"
+#include "Client_Function.h"
 
 #endif //PCH_H

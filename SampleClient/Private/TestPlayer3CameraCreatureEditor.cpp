@@ -32,9 +32,6 @@ HRESULT CTestPlayer3CameraCreatureEditor::Initialize(void* pArg)
 	m_fMinPitch = pDesc->fMinPitch;
 	m_fMaxPitch = pDesc->fMaxPitch;
 	m_fMouseSensitivity = pDesc->fMouseSensitivity;
-	m_pFrustumCollider = CCollFrustum::Create(XMLoadFloat4x4(&m_matProj));
-	if (!m_pFrustumCollider)
-		return E_FAIL;
 
 	UpdateFollow();
 	return S_OK;
@@ -57,12 +54,12 @@ void CTestPlayer3CameraCreatureEditor::PriorityUpdate(_float fTimeDelta)
 
 void CTestPlayer3CameraCreatureEditor::LateUpdate(_float)
 {
-	if (!m_pFrustumCollider)
+	auto* pViewVolumeCollider = GetMutableViewVolumeCollider();
+	if (!pViewVolumeCollider)
 		return;
 
 	CGameInstance::Get().AddColliderGroup(
-		"Coll_TestPlayer3CameraCreatureEditor", m_pFrustumCollider.get());
-	m_pFrustumCollider->Transform(GetTransform().GetLoadedWorldMatrix());
+		"Coll_TestPlayer3CameraCreatureEditor", pViewVolumeCollider);
 }
 
 void CTestPlayer3CameraCreatureEditor::UpdateFollow()
@@ -91,11 +88,6 @@ void CTestPlayer3CameraCreatureEditor::UpdateFollow()
 	CameraTransform.LookAt(XMLoadFloat3(&vTarget));
 	CameraTransform.Update();
 	UpdateViewMatrix();
-}
-
-const CCollFrustum* CTestPlayer3CameraCreatureEditor::GetFrustumCollider() const
-{
-	return static_cast<const CCollFrustum*>(m_pFrustumCollider.get());
 }
 
 UPtr<CTestPlayer3CameraCreatureEditor> CTestPlayer3CameraCreatureEditor::Create()
