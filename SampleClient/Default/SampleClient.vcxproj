@@ -230,7 +230,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
+    <ClInclude Include="..\public\TestDynamic.h" />
     <ClInclude Include="..\public\TestMonster.h" />
+    <ClInclude Include="..\public\TestSquareStep.h" />
     <ClInclude Include="..\public\TestThirdPersonCamera.h" />
     <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
@@ -260,8 +262,8 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
-	<ClInclude Include="..\public\Terrain.h" />
-	<ClInclude Include="..\public\MapCollisionProxyObject.h" />
+    <ClInclude Include="..\public\Terrain.h" />
+    <ClInclude Include="..\public\MapCollisionProxyObject.h" />
     <ClInclude Include="..\public\TestCollider.h" />
     <ClInclude Include="..\Public\TestModel.h" />
     <ClInclude Include="..\Public\TestPartObject.h" />
@@ -271,7 +273,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\TestPhysXCapsule.h" />
     <ClInclude Include="..\public\TestPhysXTerrain.h" />
     <ClInclude Include="..\public\TestPhysXTrigger.h" />
-	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
+    <ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h" />
     <ClInclude Include="..\Public\Test_StaticModel.h" />
     <ClInclude Include="..\public\TextBox.h" />
     <ClInclude Include="..\public\Trail_Example.h">
@@ -345,7 +347,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\private\Test3DSound.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
+    <ClCompile Include="..\private\TestDynamic.cpp" />
     <ClCompile Include="..\private\TestMonster.cpp" />
+    <ClCompile Include="..\private\TestSquareStep.cpp" />
     <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
     <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />
@@ -372,13 +376,13 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
-	<ClCompile Include="..\private\Terrain.cpp" />
-	<ClCompile Include="..\private\MapCollisionProxyObject.cpp" />
+    <ClCompile Include="..\private\Terrain.cpp" />
+    <ClCompile Include="..\private\MapCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\TestCollider.cpp" />
     <ClCompile Include="..\Private\TestModel.cpp" />
     <ClCompile Include="..\Private\TestPartObject.cpp" />
     <ClCompile Include="..\private\TestPhysXTrigger.cpp" />
-	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
+    <ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp" />
     <ClCompile Include="..\Private\Test_StaticModel.cpp" />
     <ClCompile Include="..\private\TextBox.cpp" />
     <ClCompile Include="..\private\Trail_Example.cpp">

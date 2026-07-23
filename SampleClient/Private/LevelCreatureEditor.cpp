@@ -17,6 +17,7 @@
 #include "TestPlayer3CameraCreatureEditor.h"
 #include "MapCollisionProxyObject.h"
 #include "Test3DSound.h"
+#include "TestDynamic.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -120,6 +121,19 @@ HRESULT CLevelCreatureEditor::Initialize()
 			"Prototype_GameObject_MapCollisionProxy",
 			"00_MapCollision",
 			&Desc))
+			return E_FAIL;
+	}
+
+	{
+		CTestDynamic::DESC desc{};
+		desc.sObjectTag = "TestDynamicSword";
+		desc.vInitialPosition = { 15.f, 55.f, 15.f };
+		desc.vConvexScale = { 300.f, 300.f, 300.f };
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_TestDynamic",
+			"03_PhysXTest",
+			&desc))
 			return E_FAIL;
 	}
 

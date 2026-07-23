@@ -258,12 +258,12 @@
     <ClInclude Include="..\Public\BackGround.h">
       <Filter>GameObject\BackGround</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\Terrain.h">
+    <ClInclude Include="..\public\Terrain.h">
       <Filter>GameObject\Terrain</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\MapCollisionProxyObject.h">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClInclude>
+    </ClInclude>
+    <ClInclude Include="..\public\MapCollisionProxyObject.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Client_Resources.h">
       <Filter>Resource</Filter>
     </ClInclude>
@@ -471,9 +471,9 @@
     <ClInclude Include="..\public\TestPhysXTrigger.h">
       <Filter>GameObject\TestPhysx\Trigger</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h">
-	  <Filter>GameObject\TestPhysx\Trigger</Filter>
-	</ClInclude>
+    <ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\BTDecHitCnt.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
@@ -496,6 +496,9 @@
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestDynamic.h">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\EnderDragon.h">
@@ -522,6 +525,7 @@
     <ClInclude Include="..\Public\MiniMap.h">
       <Filter>GameObject\UI\MiniMap</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestSquareStep.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -558,12 +562,12 @@
     <ClCompile Include="..\Private\BackGround.cpp">
       <Filter>GameObject\BackGround</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\Terrain.cpp">
+    <ClCompile Include="..\private\Terrain.cpp">
       <Filter>GameObject\Terrain</Filter>
-	</ClCompile>
-	<ClCompile Include="..\private\MapCollisionProxyObject.cpp">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClCompile>
+    </ClCompile>
+    <ClCompile Include="..\private\MapCollisionProxyObject.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
@@ -606,9 +610,9 @@
     <ClCompile Include="..\private\TestPhysXCapsule.cpp">
       <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp">
-	  <Filter>GameObject\TestPhysx\Trigger</Filter>
-	</ClCompile>
+    <ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
@@ -762,6 +766,9 @@
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\TestDynamic.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\EnderDragon.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
@@ -789,6 +796,7 @@
     <ClCompile Include="..\Private\MiniMap.cpp">
       <Filter>GameObject\UI\MiniMap</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\TestSquareStep.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\TestModel.cpp">

@@ -16,6 +16,7 @@
 #include "Test3DSound.h"
 #include "MapCollisionProxyObject.h"
 #include "TestPhysXCollisionProxyTrigger.h"
+#include "TestDynamic.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -128,6 +129,19 @@ std::future<bool> CLevelCreatureLoader::Load()
 					//return false;
 				}
 			}
+
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_OilBarrel_Resource",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_oil_barrel_0001.bin"))) {
+
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(300.f, 300.f, 300.f);
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Static_OilBarrel_Resource");
+					//return false;
+				}
+			}
 			if (auto res = CGameInstance::Get().AddResource("LEVEL_CREATURE", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))
 			{
 				if (FAILED(res->Load(CResTerrainVIBuffer::DESC{})))
@@ -170,6 +184,13 @@ std::future<bool> CLevelCreatureLoader::Load()
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_TestModel", CTestModel::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestModel");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE", "Prototype_GameObject_TestDynamic", CTestDynamic::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TestDynamic");
 				return false;
 			}
 
