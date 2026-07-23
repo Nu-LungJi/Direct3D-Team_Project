@@ -300,6 +300,19 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
+	// CPU/CPU+GPU evaluation 전용 bone palette.
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX",E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+		Desc.iNumElements = 512 * 512;
+		Desc.iStructureByteStride = sizeof(_float4x4);
+		Desc.pInitialData = nullptr;
+		Desc.bAppendConsume = false;
+		Desc.iBindFlags = D3D11_BIND_SHADER_RESOURCE;
+		if (FAILED(res->Load(Desc)))
+			return E_FAIL;
+	}
+
 	// UI용
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_SpellMeter", E::CResCBuffer::Create()))
 	{
@@ -1111,6 +1124,13 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			{
 				return E_FAIL;
 			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced",
+			"./ShaderFiles/TestModel/Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl"))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
 		}
 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))

@@ -65,6 +65,7 @@ private:
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
+	SPtr<CResVertexShader> m_pResVertexCPUSkinningInstancedShader{};
 	SPtr<CResVertexShader> m_pResVertexCPUGPUShader{};
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};

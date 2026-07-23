@@ -283,17 +283,41 @@ UPtr<CPrototype> CComModelInstance::Clone(void* pArg)
 
 void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 {
-	
+	std::vector<_float4x4> combinedMatrices;
+	if (m_pModel)
+	{
+		const auto& bones = m_pModel->GetBones();
+		combinedMatrices.reserve(bones.size());
+		for (const auto& bone : bones)
+		{
+			_float4x4 matrix{};
+			if (bone)
+				XMStoreFloat4x4(&matrix, bone->Get_CombinedTransformationMatrix());
+			combinedMatrices.push_back(matrix);
+		}
+	}
+	DebugDraw_Bones(WorldMatrix, combinedMatrices);
+}
+
+void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix,
+	const std::vector<_float4x4>& CombinedBoneMatrices)
+{
+	if (!m_bDebugBoneEdit || !m_pModel)
+		return;
+
 	_matrix matWorld = XMLoadFloat4x4(&WorldMatrix);
 
 	const auto& Bones = m_pModel->GetBones();
+	if (CombinedBoneMatrices.size() < Bones.size())
+		return;
 
-	for (auto& pBone : Bones)
+	for (size_t boneIndex = 0; boneIndex < Bones.size(); ++boneIndex)
 	{
+		auto& pBone = Bones[boneIndex];
 		if (!pBone)
 			continue;
 
-		_matrix matBone = pBone->Get_CombinedTransformationMatrix();
+		_matrix matBone = XMLoadFloat4x4(&CombinedBoneMatrices[boneIndex]);
 		_matrix matBoneWorld = matBone * matWorld;
 
 		if (Bones[m_iDebugSelectedBone]->Compare_Name(pBone->GetBoneName().c_str())) {
@@ -318,11 +342,9 @@ void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 
 
 
-		if (iParentIndex > 0)
+		if (iParentIndex >= 0 && static_cast<size_t>(iParentIndex) < CombinedBoneMatrices.size())
 		{
-			auto pParent = Bones[iParentIndex];
-
-			_matrix matParent = pParent->Get_CombinedTransformationMatrix();
+			_matrix matParent = XMLoadFloat4x4(&CombinedBoneMatrices[iParentIndex]);
 			_matrix matParentWorld = matParent * matWorld;
 
 			_float3 vParentPos{};

@@ -802,6 +802,7 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	_matrix matPreTransform = XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
 
 
+	uint32_t iMaxBoneDepth = 0;
 	for (size_t i = 0; i < iBoneCount; ++i)
 	{
 

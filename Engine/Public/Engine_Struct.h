@@ -399,9 +399,9 @@ namespace Engine
 	typedef struct GPU_SKIN_MESH_CONSTANTS
 	{
 		uint32_t iSkinBoneOffset = 0;
-		uint32_t iPadding0 = 0;
+		uint32_t iVertexCount = 0;
+		uint32_t iSkinBoneCount = 0;
 		uint32_t iPadding1 = 0;
-		uint32_t iPadding2 = 0;
 	}GPU_SKIN_MESH_CONSTANTS;
 
 

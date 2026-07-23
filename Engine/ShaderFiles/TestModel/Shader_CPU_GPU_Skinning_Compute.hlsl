@@ -36,7 +36,8 @@ RWStructuredBuffer<SKINNED_VERTEX> gOutputVertices : register(u0);
 cbuffer CB_GPU_SKIN_MESH : register(b5)
 {
     uint gSkinBoneOffset;
-    uint3 gSkinMeshPadding;
+    uint gVertexCount;
+    uint2 gSkinMeshPadding;
 };
 
 [numthreads(64, 1, 1)]
@@ -52,12 +53,15 @@ void CSMain(uint3 dispatchThreadId : SV_DispatchThreadID)
         return;
 
     const VTXANIMMESH input = gInputVertices[vertexIndex];
-    const float weightW = 1.f - (input.vBlendWeights.x + input.vBlendWeights.y + input.vBlendWeights.z);
+    // GPU-only VS와 동일한 weight 계산을 사용한다.
+    const float weightW = 1.f -
+        (input.vBlendWeights.x + input.vBlendWeights.y + input.vBlendWeights.z);
     const uint boneOffset = instanceIndex * 512;
     const GPU_SKIN_BONE_DESC skinBoneX = gSkinBones[gSkinBoneOffset + input.vBlendIndices.x];
     const GPU_SKIN_BONE_DESC skinBoneY = gSkinBones[gSkinBoneOffset + input.vBlendIndices.y];
     const GPU_SKIN_BONE_DESC skinBoneZ = gSkinBones[gSkinBoneOffset + input.vBlendIndices.z];
     const GPU_SKIN_BONE_DESC skinBoneW = gSkinBones[gSkinBoneOffset + input.vBlendIndices.w];
+
     const float4x4 skinMatrix =
         mul(skinBoneX.OffsetMatrix, gFinalBoneMatrices[boneOffset + skinBoneX.iSkeletonBoneIndex]) * input.vBlendWeights.x +
         mul(skinBoneY.OffsetMatrix, gFinalBoneMatrices[boneOffset + skinBoneY.iSkeletonBoneIndex]) * input.vBlendWeights.y +

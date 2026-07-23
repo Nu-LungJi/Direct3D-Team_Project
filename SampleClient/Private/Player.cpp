@@ -404,8 +404,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 			const _float4 qRootDelta = m_pModelAnimator->GetRootMotionRotationDelta();
 			const _vector qCurrent = GetTransform().GetLoadedQuaternion();
 			const _vector qDelta = XMLoadFloat4(&qRootDelta);
-			GetTransform().SetQuaternion(XMQuaternionNormalize(
-				XMQuaternionMultiply(qCurrent, qDelta)));
+			GetTransform().SetQuaternion(XMQuaternionNormalize(XMQuaternionMultiply(qCurrent, qDelta)));
 		}
 
 	}

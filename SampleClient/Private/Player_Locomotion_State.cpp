@@ -38,9 +38,8 @@ CPlayer_Locomotion_State::CPlayer_Locomotion_State()
 
 void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 {
-	auto* player = pStateMachine
-		? CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pStateMachine->GetOwnerHandle())
-		: nullptr;
+	auto* player = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pStateMachine->GetOwnerHandle());
+
 	if (!player)
 		return;
 
@@ -60,7 +59,6 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 
 void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
-	(void)fTimeDelta;
 
 	auto* player = pStateMachine ? CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pStateMachine->GetOwnerHandle()) : nullptr;
 	if (!player)
@@ -151,7 +149,6 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 
 	if (m_eCurrentGait == GAIT::END)
 	{
-		// Sprint에는 별도 Start가 없으므로 Jog Start 후 Jog2Sprint를 거친다.
 		const GAIT eStartGait = eDesiredGait == GAIT::SPRINT ? GAIT::JOG : eDesiredGait;
 		const FOOT_PHASE eStartPhase = FOOT_PHASE::LEFT;
 		int32_t iStart = INVALID_ANIMATION;

@@ -248,7 +248,7 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelIns
 	pBatch->Key =Key;
 	pBatch->bModelStatic = bStaticModel;
 
-	// ?몄뒪??�뒪 媛쒖???????�?�?
+
 	pBatch->Instances.reserve(16);
 	pBatch->CombinedBoneMatrices.reserve(16);
 
