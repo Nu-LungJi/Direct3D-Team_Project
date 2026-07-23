@@ -48,6 +48,8 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
 		return E_FAIL;
 
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
 	return S_OK;
 }
 

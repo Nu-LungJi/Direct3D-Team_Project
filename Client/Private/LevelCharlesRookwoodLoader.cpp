@@ -22,7 +22,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("MODEL", "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
 					return false;
