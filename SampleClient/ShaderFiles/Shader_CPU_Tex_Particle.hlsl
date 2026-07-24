@@ -51,7 +51,12 @@ VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out = (VS_OUT) 0;
 
-    float4x4 matWorld = float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
+	//vector vPos = In.vWorld3;
+	//float tipWeight = pow(1.f - In.vTexcoord.y, 2.f);
+	//float flutter =  0.5f + 0.5f * sin(In.life * 3.f - In.vTexcoord.y * 6.f);
+	//float bend = lerp(0.12f, 0.18f, flutter);
+	//vPos.xyz += normalize(In.vWorld0.xyz) * saturate(bend) * tipWeight;
+	float4x4 matWorld = float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
 
     // matWorld엔 회전이 없다 (C++ 쪽에서 Scale * Translation만 곱함).
     // 중심 위치/스케일만 뽑아내고, 회전은 여기서 카메라 축으로 직접 만든다 (빌보드).
@@ -200,17 +205,30 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 	
 	if ((In.iBehaviorType & BEHAVIOR_SMOKEGV) != 0)
 	{
-		float Mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		float  mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
-		float2 DiffuseUV = In.vTexcoord * float2(0.549206f, 0.453968f);
-		DiffuseUV.x += In.life *0.5f;
-		float4 Diffuse = g_DiffuseTexture.Sample(LinearWrap, DiffuseUV);
 		
-		float t = saturate(In.life / In.maxLife);
-		Diffuse.a *= Diffuse.r * Mask * (1.f - t);
-		Diffuse.rgb = 1.f;
-
-		Out.vDiffuse = float4(Diffuse.rgb * In.vColor.rgb, Diffuse.a);
+		float2 distoionUV = In.vTexcoord;
+		distoionUV.y += In.life * 0.13f * In.maxLife * 0.2f;
+		//noiseUV.x +=  In.life * 0.2f * In.maxLife * 0.04f;
+		float2 distoion = g_DistortionTexture.Sample(LinearWrap, distoionUV).rg * 2.f -1.f;
+		
+		float2 wispsUV = In.vTexcoord * float2(0.549206f, 0.453968f);
+		float bendMask = 1.f - smoothstep(0.45f, 1.f, In.vTangent.y);
+		wispsUV += distoion * 0.02 * bendMask; // * In.life * 0.2f * In.maxLife * 0.2f;
+		//wispsUV.x += (distoion.x - 0.5f) * In.life * 0.2f * In.maxLife * 0.2f;
+		//wispsUV.y += In.life * 0.2f * In.maxLife * 0.2f;
+		float4 wisps = g_DiffuseTexture.Sample(LinearWrap, wispsUV);
+		
+		
+		float t = In.life / In.maxLife;
+		
+		float lifeFade = 1.f - smoothstep(0.65f, 0.8f, t);
+		float smokeShape = pow(saturate(wisps.r),0.4f);
+		float topFade = smoothstep(0.f, 0.3f, In.vTexcoord.y);
+		
+		float fAlpha = wisps.r * mask * In.vColor.a * lifeFade * topFade;
+		Out.vDiffuse = float4(In.vColor.rgb * 1.4f, saturate(fAlpha * 0.34f));
 		return Out;		
 	}
 	else if ((In.iBehaviorType & BEHAVIOR_SMOKEGW) != 0)

@@ -190,7 +190,7 @@ namespace Engine
 	 X(uint32_t, iFlag, 0) \
 	 X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
-    X(uint32_t, iCount, 12) \
+	X(uint32_t, iCount, 12) \
     X(_float3, fSize,    _float3(1.f,1.f,1.f)) \
     X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
     X(_float, fLife, 1.f) \
@@ -198,6 +198,7 @@ namespace Engine
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float, fYOffset, 0.f)\
 	X(_float, fSpeed, 0.f)\
+	X(_float2,vRandRaidus, _float2(1.f,1.f)) \
 	X(_float2,vRandSpeed,_float2(0.8f,1.2f))\
 	X(_float2,vRandAlpha,_float2(1.f,1.f))\
 	X(_float2,vRandAngle,_float2(-0.1f,0.1f))\
