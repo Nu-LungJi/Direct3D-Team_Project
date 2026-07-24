@@ -1,3 +1,4 @@
+
 #pragma once
 #include "AnimationObject.h"
 #include "Client_Defines.h"
@@ -14,97 +15,76 @@ class CResModel;
 class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
-class CResComputeShader;
+class CComSocket;
 
-// 물리
+
+class CComPxRigidBody;
+class CComPxBoxCollider;
+class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
+
 NS_END
 
 NS_BEGIN(Client)
 class CPlayer_StateMachine;
+
 class CPlayer final : public CAnimationObject
 {
 public:
-	enum class LOCOMOTION_MODE : uint32_t
-	{
-		FREE,
-		HOVER,
-	};
-
-	enum class LOCOMOTION_GAIT : uint32_t
-	{
-		IDLE,
-		WALK,
-		JOG,
-		SPRINT,
-	};
-
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
 
-public:
-	typedef struct tagPlayerDesc : public CGameObject::GAMEOBJECT_DESC
-	{
-		StringID sGroupTag;
-		StringID sResTag;
 
+public:
+	struct DESC : public CGameObject::GAMEOBJECT_DESC
+	{
 		_float3 vInitialPosition{ 50.f, 50.f, 10.f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
-
-	}DESC;	
+	};
 
 private:
 	CPlayer();
-	CPlayer(const CPlayer& rhs);
 	~CPlayer() override;
 
-public:
-	void UpdateGUI() override;
+
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
-
 	void FixedUpdate(_float fTimeDelta) override;
-
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 
-	HRESULT Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext);
-	HRESULT Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext);
 
-	HRESULT Unbind_AnimationCompute(ID3D11DeviceContext* pContext);
-
-	HRESULT Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext);
-
-	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
-
-	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
-	int32_t FindAnimationIndex(_string_view sAnimationName) const;
-
-
+	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
 public:
+	void OnWake() override;
+	void OnSleep() override;
+	void OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
+	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
+	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
+	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 
+	CComCharacterMoveIntent* GetMoveIntent() const { return m_pComMoveIntent; }
+	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
-	CComCharacterMoveIntent* GetMoveIntent() const { return m_pMoveIntent; }
-	CComCharacterMotor* GetCharacterMotor() const { return m_pCharacterMotor; }
-	LOCOMOTION_MODE GetLocomotionMode() const { return m_eLocomotionMode; }
-	LOCOMOTION_GAIT GetDesiredGait() const { return m_eDesiredGait; }
-	_bool HasMoveInput() const { return m_bMoveInput; }
-	const _float3& GetDesiredMoveDirection() const { return m_vDesiredMoveDirection; }
-	const _float3& GetCameraFacingDirection() const { return m_vCameraFacingDirection; }
-	_bool IsRootMotionRotationActive() const { return m_bRootMotionRotationActive; }
+	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
+
+	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
-	void SetLocomotionAngleDebug(_float fForward, _float fRight, _float fAngle, _float fSpeed, _string_view sDirection);
-	void ClearLocomotionAngleDebug();
+	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
+	_bool IsSprintRequested() const { return m_bSprintRequested; }
+	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
+	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
+	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
 
 private:
 	CComModelInstance* m_pComModelInstance{};
@@ -112,15 +92,15 @@ private:
 
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
-	SPtr<CResVertexShader> m_pResVertexShader{};
-	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
+
+	SPtr<CResVertexShader> m_pResVertexCPUSkinningInstancedShader{};
+
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
-	SPtr<CResComputeShader> m_pAnimComputeShader{};
-
-
 	CComConstantBuffer* m_pComCBufferPerObject{};
+	CComSocket* m_pSocket;
+
 
 	_float4 m_fAlbedoColor = { 1.f, 1.f, 1.f, 1.f };
 	_float	m_fNormalIntensity = 1.f;
@@ -131,38 +111,39 @@ private:
 	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
+	uint32_t m_iDebugSelectedBone = 0;
 	uint32_t m_iCurrentInstanceCount = 0.f;
 
 private:
-	_bool   m_bStateInitailzie = false;
-private:
-	CComPxCharacterController* m_pCharacterController{};
-	CComCharacterMoveIntent* m_pMoveIntent{};
-	CComCharacterMotor* m_pCharacterMotor{};
+	struct PROJECTILE_LIFETIME
+	{
+		CHandle hProjectile{};
+		_float fRemainingTime{};
+	};
+
+	CComPxRigidBody* m_pComPxRigidBody{};
+	CComPxBoxCollider* m_pComPxBoxCollider{};
+	CComCollider* m_pComCollider{};
+	CComPxCharacterController* m_pComCharacterController{};
+	CComCharacterMoveIntent* m_pComMoveIntent{};
+	CComCharacterMotor* m_pComCharacterMotor{};
 	CPlayer_StateMachine* m_pStateMachine{};
-
-	_bool m_bHasLocomotionAngleDebug = false;
-	_float m_fLocomotionForward = 0.f;
-	_float m_fLocomotionRight = 0.f;
-	_float m_fLocomotionAngle = 0.f;
-	_float m_fLocomotionSpeed = 0.f;
-	_string m_sLocomotionDirection;
-
-private:
-	_float m_fCurrentMoveSpeed = 0.f;
-	_float m_fWalkSpeed = 2.f;
-	_float m_fJogSpeed = 5.f;
-	_float m_fSprintSpeed = 8.5f;
-	_float m_fAcceleration = 12.f;
-	_float m_fDeceleration = 18.f;
-	_float3 m_vLastMoveDirection{};
-	_float3 m_vDesiredMoveDirection{};
-	_float3 m_vCameraFacingDirection{ 0.f, 0.f, 1.f };
-	_bool m_bMoveInput = false;
-	_bool m_bRootMotionRotationActive = false;
-	LOCOMOTION_MODE m_eLocomotionMode = LOCOMOTION_MODE::FREE;
-	LOCOMOTION_GAIT m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
-
+	_bool m_bMovementLocked{};
+	_bool m_bRootMotionRotationActive{};
+	_bool m_bRootMotionTranslationActive{};
+	_bool m_bRawMoveInput{};
+	_bool m_bSprintRequested{};
+	_float3 m_vRawMoveDirection{};
+	_float3 m_vLastMoveDirection{ 0.f, 0.f, 1.f };
+	_float3 m_vSmoothedMoveDirection{ 0.f, 0.f, 1.f };
+	_float m_fCurrentMoveSpeed{};
+	_float m_fJogSpeed{ 7.5f };
+	_float m_fSprintSpeed{ 15.f };
+	_float m_fAcceleration{ 12.f };
+	_float m_fDeceleration{ 18.f };
+	_float m_fJogDirectionResponse{ 7.f };
+	_float m_fSprintDirectionResponse{ 4.5f };
+	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 
 public:

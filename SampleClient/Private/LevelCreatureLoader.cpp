@@ -10,6 +10,7 @@
 #include "TestModel.h"
 #include "Weapon.h"
 #include "Player.h"
+#include "PlayerThirdPersonCamera.h"
 #include "Player_StateMachine.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
@@ -42,14 +43,14 @@ std::future<bool> CLevelCreatureLoader::Load()
 				}
 			}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("LEVEL_CREATURE", "Model_Resource_Player",
+
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
+				"LEVEL_CREATURE",
+				"Model_Resource_Player",
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin")))
 			{
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix =
-					XMMatrixScaling(1.f, 1.f, 1.f) *
-					XMMatrixRotationY(XMConvertToRadians(180.f)) *
-					XMMatrixTranslation(0.f, -0.7f, 0.f);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
 				if (FAILED(res->Load(pDesc)))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Model_Resource_Player");
@@ -179,15 +180,26 @@ std::future<bool> CLevelCreatureLoader::Load()
 				return false;
 			}
 
-			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE","Prototype_Component_PlayerStateMachine",CPlayer_StateMachine::Create())))
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"PLAYER_STATEMACHINE",
+				"Prototype_Component_Player_StateMachine",
+				CPlayer_StateMachine::Create())))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Prototype_Component_PlayerStateMachine");
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_Component_Player_StateMachine");
 				return false;
 			}
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Player", CPlayer::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				"LEVEL_CREATURE",
+				"Prototype_GameObject_PlayerThirdPersonCamera",
+				CPlayerThirdPersonCamera::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_PlayerThirdPersonCamera");
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype(

@@ -214,6 +214,9 @@
     <Filter Include="GameObject\Player\State_Machine\State\Player_Dead_State">
       <UniqueIdentifier>{e4d8cd4e-a422-496a-998a-61a761dee66c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\State_Machine\State\Player_Jump_State">
+      <UniqueIdentifier>{a5eed29b-8c80-4cca-b182-871e2e08b759}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\UI\HPBar">
       <UniqueIdentifier>{a23637ff-fbe1-4efd-9c58-6bd2a820f42f}</UniqueIdentifier>
     </Filter>
@@ -486,6 +489,9 @@
     <ClInclude Include="..\Public\Player.h">
       <Filter>GameObject\Player</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_StateMachine.h">
       <Filter>GameObject\Player\State_Machine</Filter>
     </ClInclude>
@@ -515,6 +521,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Dead_State.h">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Jump_State.h">
+      <Filter>GameObject\Player\State_Machine\State\Player_Jump_State</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\HPBar.h">
       <Filter>GameObject\UI\HPBar</Filter>
@@ -753,6 +762,9 @@
     <ClCompile Include="..\Private\Player.cpp">
       <Filter>GameObject\Player</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_StateMachine.cpp">
       <Filter>GameObject\Player\State_Machine</Filter>
     </ClCompile>
@@ -779,6 +791,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Dead_State.cpp">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Jump_State.cpp">
+      <Filter>GameObject\Player\State_Machine\State\Player_Jump_State</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>

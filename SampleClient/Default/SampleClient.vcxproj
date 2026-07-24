@@ -222,7 +222,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_Dead_State.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
+    <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\public\Test3DSound.h" />
     <ClInclude Include="..\Public\Player.h" />
@@ -332,7 +334,9 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_Dead_State.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
+    <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
