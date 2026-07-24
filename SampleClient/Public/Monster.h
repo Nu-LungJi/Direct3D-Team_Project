@@ -39,7 +39,7 @@ public:
 	{
 		_string SocketName{}, LevelTag{}, ReSourceTag{}, BeHaviorTag{};
 		_bool	bDonMove{ false };
-		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{};
+		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
