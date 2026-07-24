@@ -28,6 +28,11 @@ namespace
 	const char* SHAPE_TYPE_NAMES[] = { "Box", "Sphere", "Capsule", "Convex Mesh", "Triangle Mesh" };
 	const char* DEBUG_DRAW_MODE_NAMES[] = { "Wire", "Solid", "Solid + Wire" };
 
+	const char* EDIT_FILE_PRESETS[] = {
+		"Level_CharlesRookwood",
+		"Level_CharlesRookwood_Trigger",
+		"Level_BossCharlesRookwood",
+	};
 	_bool IsUnitCylinderConvexPath(const std::string& path)
 	{
 		if (path.empty())
@@ -284,6 +289,17 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	{
 		ImGui::SetNextItemWidth(220.f);
 		ImGui::InputText("Collision File", m_CollisionFileName, std::size(m_CollisionFileName));
+		//ImGui::SameLine();
+		//EDIT_FILE_PRESETS
+		int presetId{};
+		if (ImGui::Combo("Preset", &presetId, EDIT_FILE_PRESETS, static_cast<int>(std::size(EDIT_FILE_PRESETS))))
+		{
+			strcpy_s(
+				m_CollisionFileName,
+				sizeof(m_CollisionFileName),
+				EDIT_FILE_PRESETS[presetId]
+			);
+		}
 	}
 	else
 	{
