@@ -79,6 +79,8 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 
 			CGameInstance::Get().DelPrototype(LEVEL::CHARLES_ROOKWOOD);
 
+			CGameInstance::Get().DelResource("MODEL");
+
 			return true;
 		});
 }
