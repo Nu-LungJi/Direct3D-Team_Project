@@ -62,7 +62,7 @@ void CParticleManager::UpdateGUI()
 	static char szPresetName[128] = "";
 	static char szPresetSavePath[MAX_PATH] = "./Resources/json/Particle/Preset/ParticlePresets.json";
 	static const std::string kFbxListJsonPath = "./Resources/SampleClient/Models/ParticleModelJson/ParticleModel.json";
-	static const std::string kJsonFolder = "./Resources/json/Particle";
+	static const std::string kJsonFolder = "./Resources/json/Particle/ParticleData";
 
 	static std::vector<std::string> fbxFileList;
 	static bool bFbxScanned = false;
@@ -1377,7 +1377,7 @@ void CParticleManager::UpdateGUI()
 		uint32_t newOwnerId = ExecuteCommandQueue(m_vecCommandQueue);
 	}
 
-	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/SpawnQueue.json";
+	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/ParticleQueue/SpawnQueue.json";
 	ImGui::InputText("Queue Save Path", szQueueSavePath, IM_ARRAYSIZE(szQueueSavePath));
 
 	if (ImGui::Button("Save Queue"))
