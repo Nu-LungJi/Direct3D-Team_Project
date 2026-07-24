@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Client_Defines.h"
 
@@ -9,6 +9,9 @@ NS_BEGIN(Client)
 
 class CLevelLoading final : public Engine::CLevel
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevelLoading, CLevel)
+
 private:
 	explicit CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept;
 	~CLevelLoading() override;

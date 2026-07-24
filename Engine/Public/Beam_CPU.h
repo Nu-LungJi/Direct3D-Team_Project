@@ -13,6 +13,7 @@ public:
 		std::pair<StringID, StringID> normalTextureID;
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
+		std::pair<StringID, StringID> anyTextureID;
         PARTICLE_TYPE type;
         _float      fWidth = 1.f;
         _float      fScrollSpeed = 1.f;
@@ -24,6 +25,9 @@ public:
         uint32_t    iMaxDisplacementIterations = 10;  // 버퍼 크기 산정용 - 실제 사용 가능한 최댓값
 		uint32_t    geometryType = 0; // 0은 기본 번개 모양 1은 부드러운 곡선 모양
 
+		_string sVEntryPoint = "";
+		_string sPEntryPoint = "";
+		uint32_t blendState = 0;
 
     };
 
@@ -68,6 +72,8 @@ public:
     void    SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration = 0.f);
     void    SetStartPos(uint32_t beamIndex, const _float4& vPos);
     void    SetEndPos(uint32_t beamIndex, const _float4& vPos);
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 
 private:
     void RegenerateJaggedPath(BEAM_INSTANCE& beam);

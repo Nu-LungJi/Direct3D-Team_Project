@@ -69,6 +69,9 @@ public:
 
 public:
 	void DebugDraw_Bones(const _float4x4& WorldMatrix);
+	void DebugDraw_Bones(const _float4x4& WorldMatrix,
+		const std::vector<_float4x4>& CombinedBoneMatrices);
+	bool IsDebugBoneDrawEnabled() const { return m_bDebugBoneEdit; }
 
 public:
 	HRESULT Bind_GPUAnimationSRVs_CS(ID3D11DeviceContext* pContext);
@@ -81,7 +84,7 @@ private:
 
 	std::vector<_float3> m_DebugBoneLocalOffsets;
 
-private:
+public:
 	void EnsureDebugBoneOffsetSize();
 	void ApplyDebugBoneLocalOffsets();
 

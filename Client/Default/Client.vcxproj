@@ -205,15 +205,26 @@
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
+    <ClInclude Include="..\Public\Client_Function.h" />
+    <ClInclude Include="..\public\DebugPlayer.h" />
+    <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
+    <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
+    <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
-    <ClInclude Include="..\public\LevelPercival.h" />
-    <ClInclude Include="..\public\LevelPercivalLoader.h" />
+    <ClInclude Include="..\public\LevelCharlesRookwood.h" />
+    <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
+    <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
+    <ClInclude Include="..\Public\Player_Locomotion_State.h" />
+    <ClInclude Include="..\Public\Player_Jump_State.h" />
+    <ClInclude Include="..\Public\Player_Roll_State.h" />
+    <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -222,13 +233,23 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\DebugPlayer.cpp" />
+    <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
+    <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
+    <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
     <ClCompile Include="..\Private\LevelLogo.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
-    <ClCompile Include="..\private\LevelPercival.cpp" />
-    <ClCompile Include="..\private\LevelPercivalLoader.cpp" />
+    <ClCompile Include="..\private\LevelCharlesRookwood.cpp" />
+    <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
+    <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\Player_Jump_State.cpp" />
+    <ClCompile Include="..\Private\Player_Roll_State.cpp" />
+    <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

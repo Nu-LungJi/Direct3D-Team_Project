@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine_Defines.h"
 #include "Handle.h"
+#include "PhysXCollisionProxyData.h"
 #include <mutex>
 #include <shared_mutex>
 namespace physx {
@@ -19,6 +20,7 @@ namespace physx {
 NS_BEGIN(Engine)
 class CPhysxManagerListener;
 class CPhysXCollisionProxyEditor;
+class CPhysXCookingEditor;
 class CGameObject;
 struct PX_CCT_HIT_DATA;
 struct PX_CCT_OBSTACLE_HIT_DATA;
@@ -34,6 +36,11 @@ private:
 public:
 	void Update(_float fTimeDelta);
 	void UpdateGUI();
+	void SetCollisionLayerNames(std::vector<std::pair<uint32_t, std::string>> layerNames);
+	std::vector<CHandle> CreateCollisionProxyObjects(
+		const PX_COLLISION_PROXY_FILE& data, std::string_view layerName);
+	std::vector<CHandle> CreateCollisionProxyObjectsFromFile(
+		std::string collisionFileName, std::string_view layerName);
 
 public:
 	//_bool RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
@@ -88,6 +95,7 @@ private:
 private:
 	UPtr<CPhysxManagerListener> m_pListener{};
 	UPtr<CPhysXCollisionProxyEditor> m_pCollisionProxyEditor{};
+	UPtr<CPhysXCookingEditor> m_pCookingEditor{};
 
 private:
 	mutable std::shared_mutex m_UserDataRegistryMutex{};

@@ -24,16 +24,20 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.eWinMode = Engine::WINMODE::WIN;
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
-	//EngineDesc.iNumLevels = Engine::ETOUI(LEVEL::END);
 
 	if (FAILED(CBaseApp::Initialize(EngineDesc)))
 	{
 		return E_FAIL;
 	}
-
 	LOG_MEMORY("CBaseApp::Initialize End");
 
 	CGameInstance::Get().ImguiEnableDocking(true, true);
+
+	if (FAILED(CMainAppLoader::Load()))
+	{
+		MSG_BOX("MainLoader Failed");
+		return E_FAIL;
+	}
 
 	if (CBaseApp::StartLevel(CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO)))
 	{
@@ -45,17 +49,20 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
 		});
 
-	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_Persibal", [=]() {
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_CHARLES_ROOKWOOD", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
-			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::PERCIVAL));
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::CHARLES_ROOKWOOD));
 		});
 
-	if (FAILED(CMainAppLoader::Load()))
-	{
-		MSG_BOX("MainLoader Failed");
-		return E_FAIL;
-	}
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_BOSS_CHARLES_ROOKWOOD", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::BOSS_CHARLES_ROOKWOOD));
+		});
 
+	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
+	CGameInstance::Get().UpdateTimeProvider();
+
+	LOG_MEMORY("CMainApp::Initialize End");
 	return S_OK;
 }
 

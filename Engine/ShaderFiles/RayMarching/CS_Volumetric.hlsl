@@ -14,6 +14,13 @@ const static float2 NoiseResolution     = { 256.f, 256.f };
 const static int    FogMaxStep          = { 32 };
 //const static float  FogDensity          = { 0.01f };
 
+const static float4x4 FogVolumeInvWorld;
+const static float FogIntensity;
+const static float3 FogColor;
+const static float FogMaxHeight;
+const static float FogStartPos;
+const static float FogEndPos;
+const static float FogDensity;
 
 float GetVolumeFogDensity(float3 _Point)    
 {
@@ -43,7 +50,7 @@ float Compute_ShadowBrightness(float4 _Position)
             
     float DepthFromShadowCam = ShadowSpacePos.z;
             
-    float ShadowBrightness = 1.f; // ÃÖ´ë ¹à±â (1.f = ±×¸²ÀÚ°¡ ¾È Áö´Â ÇÈ¼¿ÀÇ °ª)
+    float ShadowBrightness = 1.f; // ìµœëŒ€ ë°ê¸° (1.f = ê·¸ë¦¼ìê°€ ì•ˆ ì§€ëŠ” í”½ì…€ì˜ ê°’)
     
     [branch]
     if (ShadowMapUV.x >= 0.0f && ShadowMapUV.x <= 1.0f && ShadowMapUV.y >= 0.0f && ShadowMapUV.y <= 1.0f)
@@ -54,7 +61,7 @@ float Compute_ShadowBrightness(float4 _Position)
         float ShadowFactor = ShadowMapTexture.SampleCmpLevelZero(ShadowSampler, ShadowMapUV, DepthFromShadowCam + 0.002f);
 
         //lerp(0.15f, 1.0f, ShadowFactor);
-        ShadowBrightness = pow(ShadowFactor, 3.0f); // ShadowBrightness : ±×¸²ÀÚÀÇ ¹à±â(´ëºÎºĞ 1.f or 0.f)
+        ShadowBrightness = pow(ShadowFactor, 3.0f); // ShadowBrightness : ê·¸ë¦¼ìì˜ ë°ê¸°(ëŒ€ë¶€ë¶„ 1.f or 0.f)
     }
     return ShadowBrightness;
 }
@@ -62,10 +69,10 @@ float Compute_ShadowBrightness(float4 _Position)
 [numthreads(16, 16, 1)]
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
-    if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)  return; // ½º·¹µå°¡ ÇØ»óµµ ³Ñ¾î°¡¸é Ãâ·ÂX
+    if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)  return; // ìŠ¤ë ˆë“œê°€ í•´ìƒë„ ë„˜ì–´ê°€ë©´ ì¶œë ¥X
     
     float2  DepthTexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
-    float   Depth = DepthTexture[ID.xy];                                                 // ÇØ´ç ÇÈ¼¿ ±íÀÌ Read
+    float   Depth = DepthTexture[ID.xy];                                                 // í•´ë‹¹ í”½ì…€ ê¹Šì´ Read
 
     float4  SceneColor = SceneColorTexture.Load(int3(ID.xy, 0));
     
@@ -86,7 +93,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     float  RayLength    = length(RayVector);
     
     [branch]
-    if (Depth == 0.f) RayLength = 50.f;             // ºó °ø°£ (> Camera Far) ÃÖ´ë ±æÀÌ·Î ¼³Á¤
+    if (Depth == 0.f) RayLength = 50.f;             // ë¹ˆ ê³µê°„ (> Camera Far) ìµœëŒ€ ê¸¸ì´ë¡œ ì„¤ì •
     
     float RayStepSize = RayLength / FogMaxStep;     // StepSize = 1 Step Distance
     
@@ -96,7 +103,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     
     // Initialize Fog Data
     float3  LightAccumulation = float3(0.f, 0.f, 0.f);
-    float   LightTransmittance = 1.f;               // ºû Åõ°úÀ² (1.f : ¿ÏÀü Åõ°ú ~ 0.f : ºÒÅõ°ú)
+    float   LightTransmittance = 1.f;               // ë¹› íˆ¬ê³¼ìœ¨ (1.f : ì™„ì „ íˆ¬ê³¼ ~ 0.f : ë¶ˆíˆ¬ê³¼)
     
     [unroll]
     for (int i = 0; i < FogMaxStep; ++i)
@@ -115,17 +122,17 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
         {
             float ShadowBrightness = Compute_ShadowBrightness(float4(CurrentPosition, 1.f));
         
-            float3 Scattering = VolumeDensity * ShadowBrightness; // ºû »ê¶õµµ ((¹Ğµµ * »ö»ó) * ±×¸²ÀÚ Factor)
-            float  Extinction = VolumeDensity;                                                 // ºû Èí¼öµµ (¹Ğµµ)
+            float3 Scattering = VolumeDensity * ShadowBrightness; // ë¹› ì‚°ë€ë„ ((ë°€ë„ * ìƒ‰ìƒ) * ê·¸ë¦¼ì Factor)
+            float  Extinction = VolumeDensity;                                                 // ë¹› í¡ìˆ˜ë„ (ë°€ë„)
         
-            float   SampledTransmittance = exp(-Extinction * RayStepSize);                      // SampledTransmittance : ÀÌ¹ø Ä­À» Áö³ª¸ç »ì¾Æ³²Àº ºûÀÇ ºñÀ² (0.f ~ 1.f)
+            float   SampledTransmittance = exp(-Extinction * RayStepSize);                      // SampledTransmittance : ì´ë²ˆ ì¹¸ì„ ì§€ë‚˜ë©° ì‚´ì•„ë‚¨ì€ ë¹›ì˜ ë¹„ìœ¨ (0.f ~ 1.f)
         
             LightAccumulation += Scattering * LightTransmittance * RayStepSize;
         
-            LightTransmittance *= SampledTransmittance;                                         // ±íÀÌ ±â¹İ °¨¼â (ÀüÁøÇÒ ¼ö·Ï °¨¼â)
+            LightTransmittance *= SampledTransmittance;                                         // ê¹Šì´ ê¸°ë°˜ ê°ì‡„ (ì „ì§„í•  ìˆ˜ë¡ ê°ì‡„)
 
             [branch]
-            if (LightTransmittance < 0.01f)                                                     // Max Fog Transmittance = Fog°¡ ÃÖ´ë ¹Ğµµ¸é Å»Ãâ
+            if (LightTransmittance < 0.01f)                                                     // Max Fog Transmittance = Fogê°€ ìµœëŒ€ ë°€ë„ë©´ íƒˆì¶œ
             {
                 LightTransmittance = 0.f;
                 break;

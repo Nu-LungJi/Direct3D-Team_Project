@@ -126,7 +126,7 @@ HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext, _float3 emissiveColor
 
 		memcpy(mapped.pData, &material, sizeof(CB_MATERIAL));
 		pContext->Unmap(materialConstantBuffer->GetCBuffer().Get(), 0);
-		pContext->PSSetConstantBuffers(3, 1, materialConstantBuffer->GetCBuffer().GetAddressOf());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, materialConstantBuffer->GetCBuffer().GetAddressOf());
 
 		return S_OK;
 	}

@@ -57,6 +57,8 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeUserInterface()))		return E_FAIL;
 
+	if (FAILED(InitializeUI3D()))				return E_FAIL;
+
 	if (FAILED(InitializeHizBuffer()))			return E_FAIL;
 
 	return S_OK;
@@ -126,6 +128,14 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_NonAlpha", .sTarget = "ps_5_0" })))			return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_UI3D", "./ShaderFiles/UI/UI3D.hlsl"))
+	{
+		if (FAILED(res->Load()))			return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_UI3D", "./ShaderFiles/UI/UI3D.hlsl"))
+	{
+		if (FAILED(res->Load()))			return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -164,8 +174,8 @@ HRESULT CRenderer::InitializeBackBuffer()
 	if (nullptr == m_pBackBufferViewPort) { MSG_BOX("Invalid : m_pBackBufferViewPort");   return E_FAIL; }
 	if (nullptr == m_pBackBufferTexture) { MSG_BOX("Invalid : m_pBackBufferTexture");    return E_FAIL; }
 
-	// Rasterizer Setting
-	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	// Rasterizer Setting - BackCull
+	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	return S_OK;
@@ -384,6 +394,20 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	//	MSG_BOX("Cannot Create BlueNoise Texture File.");
 	//	return E_FAIL;
 	//}
+	return S_OK;
+}
+HRESULT CRenderer::InitializeUI3D()
+{
+	if (m_pUI3DVertexShader = CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_UI3D")) {
+		if (FAILED(m_pUI3DVertexShader->Load()))   return E_FAIL;
+	}
+
+	if (m_pUI3DPixelShader = CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_UI3D")) {
+		if (FAILED(m_pUI3DPixelShader->Load()))    return E_FAIL;
+	}
+
+	m_pResDynTexTargetUI3D = Generate_RenderTarget("DynTex2D_UI3D", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+
 	return S_OK;
 }
 #pragma endregion
@@ -848,6 +872,9 @@ VOID	CRenderer::Unbind_Resources()
 	ID3D11RenderTargetView* pRTVs[8] = { nullptr };
 	m_pContext->OMSetRenderTargets(8, pRTVs, nullptr);
 
+	ID3D11UnorderedAccessView* pUAVs[8] = { nullptr };
+	m_pContext->CSSetUnorderedAccessViews(0, 8, pUAVs, nullptr);
+
 	ID3D11ShaderResourceView* pNullSRVs[12] = { nullptr };
 	m_pContext->PSSetShaderResources(0, 12, pNullSRVs);
 	m_pContext->VSSetShaderResources(0, 12, pNullSRVs);
@@ -915,32 +942,32 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 		m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
 	}
 
-	m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->CSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, pCbPerPass->GetCBuffer().GetAddressOf());
 
 	return S_OK;
 }
 
 HRESULT CRenderer::Bind_VolumetricFog() {
-	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG");
-	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-	if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-	{
-		CB_FOG cbFog{};
-		cbFog.FogIntensity = m_fFogIntensity;
-		cbFog.FogColor = m_fFogColor;
-		cbFog.FogMaxHeight = m_fFogMaxHeight;
-		cbFog.FogStartPos = m_fFogStartPos;
-		cbFog.FogEndPos = m_fFogEndPos;
-		cbFog.FogDensity = m_fFogDensity;
-
-		memcpy(mappedSubResource.pData, &cbFog, sizeof(cbFog));
-		m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-	}
-	m_pContext->VSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	m_pContext->CSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	//auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG");
+	//D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	//if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
+	//{
+	//	CB_FOG cbFog{};
+	//	cbFog.FogIntensity = m_fFogIntensity;
+	//	cbFog.FogColor = m_fFogColor;
+	//	cbFog.FogMaxHeight = m_fFogMaxHeight;
+	//	cbFog.FogStartPos = m_fFogStartPos;
+	//	cbFog.FogEndPos = m_fFogEndPos;
+	//	cbFog.FogDensity = m_fFogDensity;
+	//
+	//	memcpy(mappedSubResource.pData, &cbFog, sizeof(cbFog));
+	//	m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+	//}
+	//m_pContext->VSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	//m_pContext->PSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	//m_pContext->CSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
 
 	return S_OK;
 }
@@ -968,6 +995,7 @@ _float CRenderer::NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z)
 HRESULT CRenderer::Draw() {
 	ZoneScopedN("Draw");
 
+	// Rasterizer Setting - BackCull
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	//if (bApplyShadow)
@@ -1006,6 +1034,9 @@ HRESULT CRenderer::Draw() {
 	{
 		m_pResDynTexTargetPreviousRenderView = ApplyFilter ? m_pResDynTexTargetPostProcess : m_pOffScreenTex2D;
 	}
+
+	// UI 3D
+	if (FAILED(Render_UI3D()))				return E_FAIL;
 
 	// UI
 	if (FAILED(Render_UserInterface()))     return E_FAIL;
@@ -1260,8 +1291,10 @@ HRESULT CRenderer::Render_Lighting() {
 	//m_pContext->CSSetShaderResources(10, 1, &pIBLSRVs[0]);
 	//m_pContext->CSSetShaderResources(11, 1, &pIBLSRVs[1]);
 	//m_pContext->CSSetShaderResources(12, 1, &pIBLSRVs[2]);
-
-	CGameInstance::Get().Render_ObjectShadow();
+	if (FAILED(CGameInstance::Get().Render_ObjectShadow())) {
+		Unbind_Resources();
+		return S_OK;
+	}
 
 	Unbind_Resources();
 	
@@ -1363,6 +1396,10 @@ HRESULT CRenderer::Render_Alpha() {
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPBR->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		// Rasterizer Setting - NoCull
+		Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+		m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	}
 	{
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
@@ -1390,11 +1427,19 @@ HRESULT CRenderer::Render_Alpha() {
 	
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetPBR;
 
+	// Rasterizer Setting - BackCull
+	Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+
 	return S_OK;
 }
 
 HRESULT CRenderer::Render_Effect()
 {
+	// Rasterizer Setting
+	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+
 	ZoneScopedN("Render_Effect");
 	{
 		m_pContext->CopyResource(
@@ -1402,6 +1447,17 @@ HRESULT CRenderer::Render_Effect()
 			m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
 	}
 	{
+		ID3D11ShaderResourceView* pBackgroundSRV = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
+		m_pContext->PSSetShaderResources(7, 1, &pBackgroundSRV);
+	}
+	{
+		if (nullptr == m_pResDynTexTargetEffect) {
+			MSG_BOX("RTVS");
+		}
+		auto RTV = m_pResDynTexTargetEffect->GetRTV();
+		if (nullptr == RTV) {
+			MSG_BOX("RTV");
+		}
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
@@ -1419,7 +1475,8 @@ HRESULT CRenderer::Render_Effect()
 	Unbind_Resources();
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetEffect;
-
+	//Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	//m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	return S_OK;
 }
 
@@ -1516,10 +1573,6 @@ HRESULT CRenderer::Render_OffScreen() {
 			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetEffect->GetSRV() };
 			m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
 		}
-		//{
-		//	ComPtr<ID3D11ShaderResourceView> pSRVs = { E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE")->GetSRV() };
-		//	m_pContext->PSSetShaderResources(1, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());
-		//}
 
 		// Draw On OffScreen
 		m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -1541,21 +1594,6 @@ HRESULT CRenderer::Render_PostProcess() {
 
 	_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
 	m_pContext->ClearRenderTargetView(m_pBackBufferRTV.Get(), reinterpret_cast<float*>(&clearColor));
-
-	D3D11_MAPPED_SUBRESOURCE MRES;
-	if (SUCCEEDED(m_pContext->Map(pCbPostProcess->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
-	{
-		POSTPROCESS CBPP{};
-		CBPP.BloomIntensity = 1.f;
-		CBPP.DistortionIntensity = m_pDistortionIntensity;
-		CBPP.ChromaticIntensity = m_pChromaticIntensity;
-		CBPP.VignetteIntensity = m_pVignetteIntensity;
-		CBPP.VignetteSmoothness = m_pVignetteSmoothness;
-
-		memcpy(MRES.pData, &CBPP, sizeof(POSTPROCESS));
-		m_pContext->Unmap(pCbPostProcess->GetCBuffer().Get(), 0);
-	}
-	m_pContext->PSSetConstantBuffers(8, 1, pCbPostProcess->GetCBuffer().GetAddressOf());
 
 	Render_PostProcess_Bloom();
 
@@ -1675,7 +1713,100 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 
 	return S_OK;
 }
+HRESULT CRenderer::Render_UI3D() {
+	auto pUICame = CGameInstance::Get().GetCamera("UI");
+	if (nullptr == pUICame) return S_OK;
 
+	RenderContext.matProj = pUICame->GetProj();
+	RenderContext.matView = pUICame->GetView();
+	RenderContext.matViewProj = RenderContext.matView * RenderContext.matProj;
+	RenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
+
+	ZoneScopedN("Render_UserInterface");
+	{
+		{
+			m_pContext->CopyResource(
+				m_pResDynTexTargetUI3D->GetTexture().Get(),
+				m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+		}
+		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
+		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		//_float4 ClearColor = { 0.f, 0.f, 0.f, 0.f };
+		//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI3D->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
+
+		const auto& vs = m_pUI3DVertexShader;
+		const auto& ps = m_pUI3DPixelShader;
+		const auto& viBuffer = m_pFullscreenVIBuffer;
+
+		m_pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+		m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
+
+		ID3D11Buffer* vertexBuffers[] = {
+			   viBuffer->GetVertexBuffer().Get()
+		};
+		uint32_t strides[] = {
+			   viBuffer->GetVertexStride()
+		};
+		uint32_t offsets[] = {
+			   0
+		};
+
+		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+		m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+		m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());		// Combined Texture
+		
+
+		if (FAILED(Bind_CameraAttribute(pUICame)))			return E_FAIL;
+
+		if (FAILED(RenderUI3D()))			return E_FAIL;
+
+		Unbind_Resources();
+
+		m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
+	}
+
+	return S_OK;
+	//ZoneScopedN("Render_UI3D");
+	//{
+	//	m_pContext->CopyResource(
+	//		m_pResDynTexTargetUI3D->GetTexture().Get(),
+	//		m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+	//}
+	//{
+	//	ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
+	//	m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+	//	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+	//}
+	//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+	//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI3D->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
+	//
+	//{
+	//	m_pContext->IASetInputLayout(m_pUI3DVertexShader->GetInputLayout().Get());
+	//	m_pContext->VSSetShader(m_pUI3DVertexShader->GetVertexShader().Get(), nullptr, 0);
+	//	m_pContext->PSSetShader(m_pUI3DPixelShader->GetPixelShader().Get(), nullptr, 0);
+	//}
+	//
+	//auto pGameCam = CGameInstance::Get().GetActiveCamera();
+	//if (nullptr == pGameCam)    return S_OK;
+	//
+	//if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
+	//
+	//if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
+	//
+	//if (FAILED(RenderUI3D()))										return E_FAIL;
+	//
+	//Unbind_Resources();
+	//
+	//m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
+
+	return S_OK;
+}
 HRESULT CRenderer::Render_UserInterface() {
 	auto pUICame = CGameInstance::Get().GetCamera("UI");
 	if (nullptr == pUICame) return S_OK;
@@ -1696,7 +1827,7 @@ HRESULT CRenderer::Render_UserInterface() {
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+		//_float4 ClearColor = { 0.f, 0.f, 0.f, 0.f };
 		//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
 
 		const auto& vs = m_pFullscreenVS;
@@ -1909,9 +2040,29 @@ HRESULT CRenderer::RenderCollider()
 	{
 		if (pRenderObject->HasRenderPass(RenderContext.pass))
 		{
-				pRenderObject->Render(m_pContext.Get(), RenderContext);
+			pRenderObject->Render(m_pContext.Get(), RenderContext);
 		}
 	}
+
+	return S_OK;
+}
+
+HRESULT CRenderer::RenderUI3D(){
+	ZoneScopedN("RenderUI3D");
+
+	auto Alphablend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	m_pContext->OMSetBlendState(Alphablend->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	for (auto& pRenderObject : m_RenderObject[ETOUI(RENDERGROUP::UI3D)])
+	{
+		if (pRenderObject->HasRenderPass(RenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), RenderContext);
+		}
+	}
+
+	auto Nonblend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	m_pContext->OMSetBlendState(Nonblend->GetBlendState().Get(), nullptr, 0xffffffff);
 
 	return S_OK;
 }
@@ -1965,11 +2116,6 @@ VOID	CRenderer::PostProcessGUI() {
 	if (ApplyVolumetric ? ImGui::Button("Volumetric ON", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric OFF", ImVec2(-FLT_MIN, 20))) {
 		ApplyVolumetric = !ApplyVolumetric;
 	}
-
-	ImGui::InputFloat("DistortionIntensity", &m_pDistortionIntensity);
-	ImGui::InputFloat("ChromaticIntensity", &m_pChromaticIntensity);
-	ImGui::InputFloat("VignetteIntensity", &m_pVignetteIntensity);
-	ImGui::InputFloat("VignetteSmoothness", &m_pVignetteSmoothness);
 
 	ImGui::End();
 }
@@ -2026,11 +2172,10 @@ HRESULT CRenderer::Initialize_Debugging()
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetSMRO);
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetEmissive);
 
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetPBR);
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetEffect);
-
-	m_pResDynTexTargetList.push_back(m_pResDynTexTargetBrightPass);
+	m_pResDynTexTargetList.push_back(m_pOffScreenTex2D);
 	m_pResDynTexTargetList.push_back(m_pResDynTexTargetUI);
+
+	m_pResDynTexTargetList.push_back(m_pResDynTexTargetUI3D);
 
 	for (uint32_t i = 0; i < m_pResDynTexTargetList.size(); i++)
 	{
@@ -2095,8 +2240,8 @@ HRESULT CRenderer::Render_Debugging() {
             m_pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
         }
         auto pCBufferPtr = pCbPerObject->GetCBuffer().GetAddressOf();
-        m_pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-        m_pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+        m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+        m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 	
         if (IDX == 8) {
             m_pContext->PSSetShaderResources(0, 1, m_pBackBufferSRV.GetAddressOf());

@@ -33,7 +33,8 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 	if (!pDesc)
 		return E_FAIL;
 
-    if (pDesc->pResTriMesh == nullptr)
+    if (pDesc->pResTriMesh == nullptr ||
+		pDesc->vScale.x <= 0.f || pDesc->vScale.y <= 0.f || pDesc->vScale.z <= 0.f)
         return E_FAIL;
 	if (pDesc->bIsTrigger)
 	{
@@ -62,7 +63,9 @@ HRESULT CComPxTriMeshCollider::Initialize(void* pArg)
 		return E_FAIL;
 	}
 
-    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh), *pMaterial, true);
+	const PxMeshScale meshScale{ PxVec3{
+		pDesc->vScale.x, pDesc->vScale.y, pDesc->vScale.z } };
+    m_pShape = pPhysics->createShape(PxTriangleMeshGeometry(pTriMesh, meshScale), *pMaterial, true);
     if (m_pShape == nullptr)
         return E_FAIL;
 

@@ -3,6 +3,10 @@
 #include "PhysxManagerListener.h"
 #include "GameInstance.h"
 #include "PhysXCollisionProxyEditor.h"
+#include "PhysXCookingEditor.h"
+#include "PhysXCollisionProxyObject.h"
+
+#include <filesystem>
 
 #pragma push_macro("new")
 #undef new
@@ -289,10 +293,89 @@ void CPhysXManager::UpdateGUI()
     {
         m_bDbgRender = !m_bDbgRender;
     }
+	if (ImGui::Button("Open Cooking Editor"))
+	{
+		if (m_pCookingEditor)
+			m_pCookingEditor->Open();
+	}
     ImGui::End();
 
 	if (m_pCollisionProxyEditor)
 		m_pCollisionProxyEditor->UpdateGUI(0.f);
+	if (m_pCookingEditor)
+		m_pCookingEditor->UpdateGUI();
+}
+
+void CPhysXManager::SetCollisionLayerNames(std::vector<std::pair<uint32_t, std::string>> layerNames)
+{
+	if (m_pCollisionProxyEditor)
+		m_pCollisionProxyEditor->SetCollisionLayerNames(std::move(layerNames));
+}
+
+std::vector<CHandle> CPhysXManager::CreateCollisionProxyObjects(
+	const PX_COLLISION_PROXY_FILE& data, std::string_view layerName)
+{
+	std::vector<CHandle> handles{};
+	if (data.iVersion != 3 || layerName.empty())
+		return handles;
+
+	auto destroyCreatedObjects = [&]()
+	{
+		for (const CHandle& handle : handles)
+		{
+			if (auto* object = CGameInstance::Get().GetGameObjectByHandle(handle))
+				object->SetPendingDestroyCascade();
+		}
+		handles.clear();
+	};
+
+	for (const auto& actor : data.actors)
+	{
+		if (!actor.bEnabled)
+			continue;
+
+		StringID prototypeGroup{ "PERMANENT" };
+		StringID prototypeTag{ "Prototype_GameObject_PhysXCollisionProxy" };
+		if (!actor.sPrototypeTag.empty())
+		{
+			prototypeGroup = StringID{ PX_COLLISION_PROXY_PROTOTYPE_GROUP };
+			prototypeTag = StringID{ actor.sPrototypeTag };
+		}
+
+		PX_COLLISION_PROXY_FILE actorData{};
+		actorData.actors.push_back(actor);
+		CPhysXCollisionProxyObject::DESC desc{};
+		desc.sObjectTag = actor.sName;
+		desc.pCollisionData = &actorData;
+
+		auto handle = CGameInstance::Get().AddGameObjectToLayer(
+			prototypeGroup, prototypeTag, layerName, &desc);
+		if (!handle)
+		{
+			DEBUG_LOG_STR(std::string("[PX][CollisionProxy] Failed to create actor: ") +
+				actor.sName + " (type: " +
+				(actor.sPrototypeTag.empty() ? "EngineDefault" : actor.sPrototypeTag) + ")\n");
+			destroyCreatedObjects();
+			return handles;
+		}
+		handles.push_back(*handle);
+	}
+
+	return handles;
+}
+
+std::vector<CHandle> CPhysXManager::CreateCollisionProxyObjectsFromFile(
+	std::string collisionFileName, std::string_view layerName)
+{
+	PX_COLLISION_PROXY_FILE data{};
+	const std::string path = MakePxCollisionFilePath(std::move(collisionFileName));
+	if (!std::filesystem::exists(path) ||
+		FAILED(CGameInstance::Get().JsonDeSerialize(path, data, "CollisionProxies")))
+	{
+		DEBUG_LOG_STR(std::string("[PX][CollisionProxy] Failed to load file: ") + path + "\n");
+		return {};
+	}
+	return CreateCollisionProxyObjects(data, layerName);
 }
 
 //_bool CPhysXManager::RayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
@@ -563,6 +646,9 @@ HRESULT CPhysXManager::Initialize()
 	m_pCollisionProxyEditor = CPhysXCollisionProxyEditor::Create();
 	if (!m_pCollisionProxyEditor)
 		return E_FAIL;
+	m_pCookingEditor = CPhysXCookingEditor::Create();
+	if (!m_pCookingEditor)
+		return E_FAIL;
 
     m_pListener = CPhysxManagerListener::Create();
 	if (!m_pListener)
@@ -788,6 +874,7 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 
 void CPhysXManager::Free()
 {
+	m_pCookingEditor.reset();
 	m_pCollisionProxyEditor.reset();
 
 	{

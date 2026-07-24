@@ -14,6 +14,7 @@
 #include "LuaManager.h"
 #include "SoundManager.h"
 #include "EventManager.h"
+#include "PhysXManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -41,13 +42,13 @@ class CNodeEditor;
 class CParticleManager;
 struct SPAWN_COMMAND;
 class CAction_Manager;
-class CPhysXManager;
 class CDbgLineRender;
 class CSerializeManager;
 class ILuaScriptRelodable;
 class CModel_Instance_Manager;
 class CMapMeshInstancingRenderer;
 class CResStaticModel;
+class CEffectManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -178,6 +179,7 @@ public:
 	HRESULT AddPrototype(const StringID& svGroupTag, const StringID& svPrototypetag, UPtr<CPrototype> pPrototype);
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
+	void DelPrototype(const StringID& sGroupTag, const StringID& sPrototypeTag);
 	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 #pragma endregion
 
@@ -281,6 +283,7 @@ public:
 
 #pragma region LIGHT_MANAGER
 public:
+	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 	VOID	Bind_DynamicLight();
 
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
@@ -293,6 +296,9 @@ public:
 
 	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
+	
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER
@@ -332,11 +338,14 @@ public:
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
 #pragma endregion
 
 #pragma region MAP_MANAGER
 public:
 	HRESULT SaveMap(const std::string& path);
+	HRESULT LoadMapResources(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
 	HRESULT LoadMapData(const std::string& path);
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
@@ -439,24 +448,76 @@ public:
 #pragma region SERIALIZE_MANAGER
 public:
 	template<typename T>
-	HRESULT BinDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "BIN")
+	HRESULT BinDeSerialize(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "BIN",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->BinDeSerialize(path, outValue, rootName);
+		return m_pSerializeManager->BinDeSerialize(path, outValue, rootName, bShowError);
 	}
 	template<typename T>
-	HRESULT BinSerialize(const std::string& path, const T& value, const std::string& rootName = "BIN")
+	HRESULT BinSerialize(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "BIN",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->BinSerialize(path, value, rootName);
+		return m_pSerializeManager->BinSerialize(path, value, rootName, bShowError);
 	}
 	template<typename T>
-	HRESULT JsonDeSerialize(const std::string& path, T& outValue, const std::string& rootName = "JSON")
+	HRESULT JsonDeSerialize(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "JSON",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName);
+		return m_pSerializeManager->JsonDeSerialize(path, outValue, rootName, bShowError);
 	}
 	template<typename T>
-	HRESULT JsonSerialize(const std::string& path, const T& value, const std::string& rootName = "JSON")
+	HRESULT JsonSerialize(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "JSON",
+		bool bShowError = true)
 	{
-		return m_pSerializeManager->JsonSerialize(path, value, rootName);
+		return m_pSerializeManager->JsonSerialize(path, value, rootName, bShowError);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT BinDeSerializeDetailed(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "BIN")
+	{
+		return m_pSerializeManager->BinDeSerializeDetailed(path, outValue, rootName);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT BinSerializeDetailed(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "BIN")
+	{
+		return m_pSerializeManager->BinSerializeDetailed(path, value, rootName);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT JsonDeSerializeDetailed(
+		const std::string& path,
+		T& outValue,
+		const std::string& rootName = "JSON")
+	{
+		return m_pSerializeManager->JsonDeSerializeDetailed(path, outValue, rootName);
+	}
+
+	template<typename T>
+	SERIALIZE_RESULT JsonSerializeDetailed(
+		const std::string& path,
+		const T& value,
+		const std::string& rootName = "JSON")
+	{
+		return m_pSerializeManager->JsonSerializeDetailed(path, value, rootName);
 	}
 #pragma endregion
 
@@ -550,6 +611,7 @@ private:
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
 	UPtr<CEventManager> m_pEventManager{};
+	UPtr<CEffectManager> m_pEffectManager{};
 };
 
 NS_END

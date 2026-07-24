@@ -10,12 +10,16 @@ public:
 
 	enum PARTICLE_BEHAVIOR : uint32_t
 	{
-		BEHAVIOR_NONE = 0,
-		BEHAVIOR_DISTORTION = 1 << 1, 
-		BEHAVIOR_BILLBOARD = 1 << 2,
-		BEHAVIOR_GRAVITY = 1 << 3,
-		BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4,
-
+		BEHAVIOR_NONE				= 0,
+		BEHAVIOR_DISTORTION			= 1 << 1, 
+		BEHAVIOR_BILLBOARD			= 1 << 2,
+		BEHAVIOR_GRAVITY			= 1 << 3,
+		BEHAVIOR_CIRCLE_TO_WAVE		= 1 << 4,
+		BEHAVIOR_SMOKE				= 1 << 5,
+		BEHAVIOR_SMOKEJUMP			= 1	<< 6,
+		BEHAVIOR_SMOKEGV			= 1 << 7,
+		BEHAVIOR_SMOKEGW			= 1 << 8,
+		BEHAVIOR_LIGHTNING			= 1 << 9,
 	};
 
 protected:
@@ -29,13 +33,17 @@ public:
 	virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) = 0;
 	virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) = 0;
 	virtual void ClearByOwner(uint32_t ownerID) = 0;
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta);
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData);
 public:
 	virtual void SetPosition(const _float3& pos) {}
 	virtual void SetVelocity(const _float3& vel) {}
-	virtual void SetSize(const _float& size) {}
+	virtual void SetSize(const _float3& size) {}
 	virtual void SetColor(const _float4& color) {}
 
 	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
+	HRESULT Set_BlendState(BLENDTYPE blendNum);
+	uint32_t Get_BlendState() { return m_iBlendIndex; }
 
 public:
 	PARTICLE_TYPE& Get_Type() { return m_eType; }
@@ -55,6 +63,7 @@ protected:
 	SPtr<class CResTexture2D> m_pNoiseTexture;
 	SPtr<class CResTexture2D> m_pHdrPositionTexture;
 	SPtr<class CResTexture2D> m_pHdrNormalTexture;
+	SPtr<class CResTexture2D> m_pAnyTexture;
 	SPtr<class CResBlendState> m_pBlendState;
 
 private:
@@ -65,5 +74,7 @@ private:
 		E::_float remainingDelay;
 	};
 	std::vector<PENDING_SPAWN> m_PendingSpawns;
+	
+	uint32_t m_iBlendIndex = 0;
 };
 NS_END

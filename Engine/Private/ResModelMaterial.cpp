@@ -2,8 +2,98 @@
 #include "ResModelMaterial.h"
 #include "ResTexture2D.h"
 #include <fstream>
+#include <mutex>
+#include <unordered_map>
 
 NS_USING(Engine)
+
+namespace
+{
+	std::string LowerPathString(const std::filesystem::path& path)
+	{
+		std::string value = path.string();
+		std::transform(value.begin(), value.end(), value.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		return value;
+	}
+
+	std::filesystem::path FindTextureRoot(const std::filesystem::path& modelPath)
+	{
+		std::filesystem::path result{};
+		for (const auto& part : modelPath.parent_path())
+		{
+			if (_stricmp(part.string().c_str(), "Models") == 0)
+			{
+				result /= "Textures";
+				return result;
+			}
+			result /= part;
+		}
+		return {};
+	}
+
+	std::filesystem::path ResolveModelTexture(
+		const std::filesystem::path& modelPath,
+		const std::filesystem::path& preferredDirectory,
+		const std::string& file, const std::string& extension)
+	{
+		const auto ExistingIn = [&](const std::filesystem::path& directory)
+			{
+				std::filesystem::path original = directory / (file + extension);
+				std::filesystem::path dds = original;
+				dds.replace_extension(".dds");
+				if (std::filesystem::exists(dds)) return dds;
+				if (std::filesystem::exists(original)) return original;
+				return std::filesystem::path{};
+			};
+		if (auto found = ExistingIn(preferredDirectory); !found.empty()) return found;
+
+		const std::filesystem::path textureRoot = FindTextureRoot(modelPath);
+		if (textureRoot.empty()) return preferredDirectory / (file + extension);
+		std::filesystem::path desired = file + extension;
+		desired.replace_extension(".dds");
+
+		using INDEX = std::unordered_map<std::string, std::vector<std::filesystem::path>>;
+		static std::mutex indexMutex{};
+		static std::unordered_map<std::string, INDEX> indexes{};
+		std::scoped_lock lock(indexMutex);
+		const std::string rootKey = LowerPathString(textureRoot);
+		auto [indexIt, inserted] = indexes.try_emplace(rootKey);
+		if (inserted)
+		{
+			std::error_code ec{};
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(
+				textureRoot, std::filesystem::directory_options::skip_permission_denied, ec))
+			{
+				if (ec) break;
+				if (!entry.is_regular_file(ec)) continue;
+				indexIt->second[LowerPathString(entry.path().filename())].push_back(entry.path());
+			}
+		}
+
+		auto candidates = indexIt->second.find(LowerPathString(desired.filename()));
+		if (candidates == indexIt->second.end())
+		{
+			std::filesystem::path originalName = file + extension;
+			candidates = indexIt->second.find(LowerPathString(originalName.filename()));
+		}
+		if (candidates == indexIt->second.end() || candidates->second.empty())
+			return preferredDirectory / desired.filename();
+
+		std::string modelName = modelPath.stem().string();
+		if (modelName.rfind("SM_", 0) == 0 || modelName.rfind("SK_", 0) == 0)
+			modelName = modelName.substr(3);
+		const auto exactModelFolder = std::find_if(candidates->second.begin(), candidates->second.end(),
+			[&](const auto& candidate)
+			{
+				return _stricmp(candidate.parent_path().filename().string().c_str(),
+					modelName.c_str()) == 0;
+			});
+		if (exactModelFolder != candidates->second.end()) return *exactModelFolder;
+		std::sort(candidates->second.begin(), candidates->second.end());
+		return candidates->second.front();
+	}
+}
 
 CResModelMaterial::CResModelMaterial(const _string& sPath)
 	: CResource{ sPath }
@@ -73,8 +163,9 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				// 핵심:
 				// Models 기준이 아니라 Textures 기준으로 텍스처 경로 생성
 				// ------------------------------------------------------------
-				std::filesystem::path texPath =
-					textureBaseDir / (file + ext);
+				std::filesystem::path texPath = descArg->recursiveTextureSearch
+					? ResolveModelTexture(strModelFilePath, textureBaseDir, file, ext)
+					: textureBaseDir / (file + ext);
 
 				std::filesystem::path ddsPath = texPath;
 				ddsPath.replace_extension(".dds");
@@ -173,8 +264,8 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 				MAX_PATH
 			);
 
-			std::filesystem::path texPath =
-				textureBaseDir / (std::string(szFileName) + std::string(szExt));
+			std::filesystem::path texPath = ResolveModelTexture(
+				m_sPath, textureBaseDir, szFileName, szExt);
 
 			std::filesystem::path ddsPath = texPath;
 			ddsPath.replace_extension(".dds");

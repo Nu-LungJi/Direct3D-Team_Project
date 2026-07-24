@@ -4,7 +4,7 @@
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-cbuffer CB_PER_PARTICLE : register(b5)
+cbuffer CB_PER_PARTICLE : register(b11)
 {
     float g_fTimeDelta;
     uint g_iNumInstances;
@@ -17,12 +17,14 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//ÇÈ¼¿ ½¦ÀÌ´õ¿ë
+//í”½ì…€ ì‰ì´ë”ìš©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
+Texture2D DistortionMap : register(t6);
+Texture2D AnyTextureMap : register(t8);
 
 
 
@@ -46,7 +48,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // Ãß°¡: ¶óÀÌÆÃ °è»ê¿¡ ÇÊ¿ä
+    float3 vWorldPos : TEXCOORD1; // ì¶”ê°€: ë¼ì´íŒ… ê³„ì‚°ì— í•„ìš”
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
 };
@@ -56,7 +58,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
     float2 finalUV = In.vTexcoord;
-    float scale = p.alive ? p.size : 0.0f;
+	float3 scale = p.alive ? p.size : float3(0.0f, 0.0f, 0.0f);
     
     if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
     {
@@ -66,7 +68,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
         float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
         float2 uvOffset = float2(col, row) * uvSize;
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ´ë½Å ½ÇÁ¦ ¸Þ½¬ UV »ç¿ë
+        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ëŒ€ì‹  ì‹¤ì œ ë©”ì‰¬ UV ì‚¬ìš©
     }
 
     Out.vTexcoord = finalUV;
@@ -109,8 +111,8 @@ PS_OUT PSMain(VS_OUT In)
     
     float ratio = 1.0f - (In.life / In.maxLife);
 
-    //if (noise.r < ratio) 
-    //    discard;
+    if (noise.r < ratio) 
+        discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
     float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
@@ -159,7 +161,7 @@ PS_OUT PSMain(VS_OUT In)
         }
     }
 
-    // ÀÎ½ºÅÏ½º(ÆÄÆ¼Å¬)º° ÀÌ¹Ì½Ãºê + ¿ÀºêÁ§Æ® ÀÌ¹Ì½Ãºê ÅØ½ºÃ³ µÑ ´Ù ¹Ý¿µ
+    // ì¸ìŠ¤í„´ìŠ¤(íŒŒí‹°í´)ë³„ ì´ë¯¸ì‹œë¸Œ + ì˜¤ë¸Œì íŠ¸ ì´ë¯¸ì‹œë¸Œ í…ìŠ¤ì²˜ ë‘˜ ë‹¤ ë°˜ì˜
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
@@ -167,9 +169,7 @@ PS_OUT PSMain(VS_OUT In)
 
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
     float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
-
-    
-    
+	
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
 }

@@ -4,7 +4,7 @@
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-cbuffer CB_PER_PARTICLE : register(b5)
+cbuffer CB_PER_PARTICLE : register(b11)
 {
     float g_fTimeDelta;
     uint g_iNumInstances;
@@ -17,7 +17,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//«»ºø Ω¶¿Ã¥ıøÎ
+//ÌîΩÏÖÄ ÏâêÏù¥ÎçîÏö©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
@@ -46,7 +46,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // √ﬂ∞°: ∂Û¿Ã∆√ ∞ËªÍø° « ø‰
+    float3 vWorldPos : TEXCOORD1; // Ï∂îÍ∞Ä: ÎùºÏù¥ÌåÖ Í≥ÑÏÇ∞Ïóê ÌïÑÏöî
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
     float3 vLocalPos : TEXCOORD4;
@@ -57,7 +57,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
     float2 finalUV = In.vTexcoord;
-    float scale = p.alive ? p.size : 0.0f;
+	float3 scale = p.alive ? p.size : float3(0.0f, 0.0f, 0.0f);
     
     if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
     {
@@ -67,7 +67,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
         float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
         float2 uvOffset = float2(col, row) * uvSize;
 
-        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ¥ÎΩ≈ Ω«¡¶ ∏ﬁΩ¨ UV ªÁøÎ
+        finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV ÎåÄÏã† Ïã§Ï†ú Î©îÏâ¨ UV ÏÇ¨Ïö©
     }
 
     Out.vTexcoord = finalUV;
@@ -101,42 +101,43 @@ struct PS_OUT
 
 PS_OUT PSMain(VS_OUT In)
 {
-    PS_OUT Out = (PS_OUT) 0;
+	
+	PS_OUT Out = (PS_OUT) 0;
  
-    float fOuterCut = 1.f - smoothstep(0.9, 0.98, In.vTexcoord.y);
-    
-    float2 cloudUV = In.vTexcoord * float2(8.f, 1.f);
-    //cloudUV.x += g_fTime * 0.3f;
-    float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
+	float fOuterCut = 1.f - smoothstep(0.9, 0.98, In.vTexcoord.y);
+	float2 distortion = NoiseMap.Sample(LinearWrap, In.vTexcoord).rg * 2.f - 1.f;
+	distortion += g_fTime * 0.0001f;
+	
+	float2 cloudUV = In.vTexcoord * float2(10.f, 1.f);
+	//cloudUV += distortion;
+	cloudUV.y -= g_fTime * 0.03f;
+	float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
    
-    //0∏µ æ»¬ Ω√¿€ 1 πŸ±˘ µµ¬¯ 0.35 πŸ±˘¿∏∑Œ ∆€¡ˆ¥¬ º”µµ
+    //0ÎßÅ ÏïàÏ™ΩÏãúÏûë 1 Î∞îÍπ• ÎèÑÏ∞© 0.35 Î∞îÍπ•ÏúºÎ°ú ÌçºÏßÄÎäî ÏÜçÎèÑ
 
-    float fProgress = saturate(1.0f - (In.life / In.maxLife));
-    //float fInner = max(0.f, fProgress - 0.35f);
-    //
-    //float fTrail = smoothstep(fInner, fInner + 0.03f,  In.vTexcoord.y) *
-    //        (1.f - smoothstep(fProgress, fProgress + 0.06f, In.vTexcoord.y));
+	float fProgress = saturate(1.0f - (In.life / In.maxLife));
+	float fInner = max(0.f, fProgress - 0.45f);
     
-    float2 swirlUV = In.vTexcoord * float2(5.f, 1.f);
-   // float endFade = 1.f - smoothstep(0.85f, 1.f, fProgress);
-   // fTrail *= endFade;
-    swirlUV.x += g_fTime * 0.05f;
-   
-    float2 distortionUV = In.vTexcoord * float2(5.f, 1.f);
-    float3 distortion = NoiseMap.Sample(LinearWrap, distortionUV).rgb;
-    distortion.x += g_fTime * 0.05f;
-   // swirlUV += distortion;
+	float fTrail = smoothstep(fInner - 0.05f, fInner + 0.03f, In.vTexcoord.y) *
+            (1.f - smoothstep(fProgress, fProgress + 0.06f, In.vTexcoord.y));
     
-    float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
+	float2 swirlUV = In.vTexcoord * float2(4.f, 0.4f);
+	float endFade = 1.f - smoothstep(0.9f, 1.f, fProgress);
+	fTrail *= endFade;
+	swirlUV += distortion;
+	swirlUV.y += g_fTime * 0.05f;
+ 
+    
+	float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
   
 
-    float3 pattern = cloud + swirl; //+swirl;
-    float3 fFinalColor = pattern * In.vColor.rgb;//  fTrail * In.vColor.rgb;
+	float3 pattern = cloud + swirl; //+swirl;
+	float3 fFinalColor = pattern * fTrail * In.vColor.rgb;
     
-    float fCut = min(fFinalColor.r, min(fFinalColor.g, fFinalColor.b));
-    if ( fCut < 0.1f)
-        discard;
-    Out.vDiffuse = float4(fFinalColor, fCut);
+	float fCut = max(fFinalColor.r, max(fFinalColor.g, fFinalColor.b));
+	if (fCut - 0.2f < 0.3f)
+		discard;
+	Out.vDiffuse = float4(fFinalColor, fCut);
    
-    return Out;
+	return Out;
 }

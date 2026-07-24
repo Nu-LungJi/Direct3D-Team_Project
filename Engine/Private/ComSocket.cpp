@@ -38,7 +38,16 @@ HRESULT CComSocket::Initialize(void* pArg)
 	m_fOffset		=	pDesc->m_fOffset;
 	m_sModelInstanceName = pDesc->sModelInstanceName;
 	m_sAnimatorName = pDesc->sAnimationName;
+
+	m_ipreBoneIndex = m_iBoneIndex;
 	return S_OK;
+}
+
+_bool CComSocket::Get_Socket_Matrix(_float4x4& OutSocketMatrix) const {
+
+
+
+	return true;
 }
 
 _bool CComSocket::Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosition, _float4x4& OutSocketMatrix) const
@@ -54,7 +63,7 @@ _bool CComSocket::Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosit
 	if (pModelInstance == nullptr || pAnimator == nullptr)
 		return false;
 
-	if (m_BoneChain.size() == 0) {
+	if (m_BoneChain.size() == 0 || m_ipreBoneIndex != m_iBoneIndex) {
 		const auto pModel = pModelInstance->GetModel();
 
 		if (!pModel)
@@ -74,6 +83,12 @@ _bool CComSocket::Get_Socket_MatrixAtPose(int32_t iAnimIndex, _float fTrackPosit
 
 	XMStoreFloat4x4(&OutSocketMatrix, matOffset * matBone);
 	return true;
+}
+
+void CComSocket::SetBoneIndex(uint32_t iBoneIndex)
+{
+	m_ipreBoneIndex = m_iBoneIndex;
+	 m_iBoneIndex = iBoneIndex; 
 }
 
 void CComSocket::BuildBoneChain(const CResModel& model) const

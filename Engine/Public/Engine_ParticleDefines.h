@@ -2,6 +2,7 @@
 
 namespace Engine
 {
+	inline constexpr uint32_t INVALID_PARTICLE_OWNER_ID = 0;
 
 	typedef struct STANDARD_PARAMS
 	{
@@ -19,8 +20,15 @@ namespace Engine
 		_float3  originalVelocity = { 0.f,0.f, 0.f };
 
 		_float   life = 1.f;
-		_float   fSize = 1.f;
-		_float   fEndSize = 1.f;
+		bool bRandomSize = false;
+
+		_float3   startSizeMin = { 1.f, 1.f, 1.f};
+		_float3   startSizeMax = { 1.f, 1.f, 1.f};
+		_float3   endSizeMin =	 { 1.f, 1.f, 1.f};
+		_float3   endSizeMax =	 {1.f, 1.f, 1.f};
+
+		_float3   fSize{ 1.f,1.f,1.f};
+		_float3   fEndSize{ 1.f,1.f,1.f};
 		bool bRandomRot = false;
 		_float3 rotMin = { 0,0,0 };
 		_float3 rotMax = { 0,0,0 };
@@ -58,13 +66,43 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_BILLBOARD = 1 << 2;
 	constexpr uint32_t BEHAVIOR_GRAVITY = 1 << 3;
 	constexpr uint32_t BEHAVIOR_CIRCLE_TO_WAVE = 1 << 4;
-
-	// 
+	constexpr uint32_t BEHAVIOR_SMOKE = 1 << 5;
+	constexpr uint32_t BEHAVIOR_SMOKEJUMP = 1 << 6;
+	constexpr uint32_t BEHAVIOR_SMOKEGV = 1 << 7;
+	constexpr uint32_t BEHAVIOR_SMOKEGW = 1 << 8;
+	constexpr uint32_t BEHAVIOR_LIGHTNING = 1 << 9;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
 	// ============================================================
 
+	/*
+	* 	typedef struct tagParticle {
+		_float3  position;
+		_float   pad1;
+		_float3  velocity;
+		_float   life;
+		_float   maxLife;
+		_float   size;
+		_float   startSize;
+		_float   endSize;
+		_float4  rotation;
+		uint32_t alive;
+		uint32_t loop;
+		_float2  pad2;         // 추가 필요: loop→color (8바이트)
+		_float4  color;
+
+		_float4  originalEmissive, emissive, endEmissive;
+		uint32_t frameIndex;
+		uint32_t ownerID;
+		uint32_t iBehaviorType = 0;
+		_float pad3;
+		_float3 originalPosition; // 원래 스폰 위치
+		_float pad4;
+		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float pad5;
+	}PARTICLE;
+	*/
 #define COMMON_PATTERN_FIELDS(X) \
     X(uint32_t, iBehaviorType, 0)
 
@@ -83,8 +121,8 @@ namespace Engine
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
-    X(_float, fSize, 1.f) \
-    X(_float, fEndSize, 1.f) \
+    X(_float3, fSize,  _float3(1,1,1)) \
+    X(_float3, fEndSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
@@ -96,8 +134,8 @@ namespace Engine
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
-    X(_float, fSize, 1.f) \
-    X(_float, fEndSize, 1.f) \
+    X(_float3, fSize, _float3(1,1,1)) \
+    X(_float3, fEndSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
@@ -112,7 +150,7 @@ namespace Engine
     X(uint32_t, iCount, 20) \
     X(_float, fHeightPerStep, 0.2f) \
     X(_float, fAngleStepDeg, 15.f) \
-    X(_float, fSize, 1.f) \
+    X(_float3, fSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0))\
@@ -134,27 +172,60 @@ namespace Engine
     X(_float3, vMaxRot, _float3(0,0,0)) \
     X(_float3, vRotation, _float3(0,0,0)) \
     X(_float, fSpawnDelay, 0.1f) \
-    X(_float, fSize, 1.f) \
+    X(_float3, fSize,_float3(1,1,1)) \
     X(_float, fLife, 1.f) \
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0))\
    COMMON_PATTERN_FIELDS(X)
 
 
-#define TEST_FIELDS(X) \
+
+#define SPAWN_S_FIELDS(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(uint32_t, iCount, 1) \
+   COMMON_PATTERN_FIELDS(X)
+
+#define SMOKE_FIELDS(X)\
+	 X(uint32_t, iFlag, 0) \
+	 X(_float3, vCenter, _float3(0,0,0)) \
+    X(_float, fRadius, 3.f) \
+    X(uint32_t, iCount, 12) \
+    X(_float3, fSize,    _float3(1.f,1.f,1.f)) \
+    X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
+    X(_float, fLife, 1.f) \
+	X(_float3, fVelocity, _float3(0,0,0))\
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float, fYOffset, 0.f)\
+	X(_float, fSpeed, 0.f)\
+	X(_float2,vRandSpeed,_float2(0.8f,1.2f))\
+	X(_float2,vRandAlpha,_float2(1.f,1.f))\
+	X(_float2,vRandAngle,_float2(-0.1f,0.1f))\
+	X(_float2,vRandSize, _float2(0.8f,1.2f))\
+	X(_float2,vRandLife, _float2(0.9f,1.1f))\
+	X(_float3,vRot,_float3(0,0,0))\
+	X(uint32_t, iArray,1)\
+COMMON_PATTERN_FIELDS(X)
+
+#define LIGHTNING_STREIGHT(X) \
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
-    X(_float, fSize, 1.f) \
-    X(_float, fEndSize, 1.f) \
+    X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+    X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
     X(_float, fLife, 1.f) \
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)\
    COMMON_PATTERN_FIELDS(X)
 
-
+#define LIGHTNING_TEX(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(uint32_t, iCount, 1) \
+    X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+    X(_float4, color, _float4(1,1,1,1)) \
+   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -172,20 +243,23 @@ struct StructName \
 	struct SCircleSpreadParam { CIRCLE_SPREAD_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
-	struct STest { TEST_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SMOKE { SMOKE_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
+	//struct SLightning_Tex { LIGHTNING_TEX(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
+	//3. STRUCT 추가
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning/*, SLightning_Tex*/>;
 
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam,STest>;
-
-	// 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
+	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","Test"
+		"Stairs", "Circle",  "Spiral", "StraightGround","CircleToWave","SMOKE","SLightning"/*, "SLightning_Tex"*/,
 	};
 
+	//5. 여기에 CASE 추가
 	// 인덱스로 기본값 variant 생성 (콤보박스에서 종류 바꿀 때 사용)
 	inline PatternParamVariant MakeDefaultPatternParam(int index)
 	{
@@ -196,12 +270,17 @@ struct StructName \
 		case 2: return SSpiralParam{};
 		case 3: return SStraightGroundParam{};
 		case 4: return SCircleSpreadParam{};
-		case 5: return STest{};
+		case 5: return SMOKE{};
+		case 6: return SLightning{};
+		//case 7: return SLightning_Tex{};
+			  
 		default: return SStairsParam{};
 		}
 	}
 
-	enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN };
+
+	//6. particleparmaImgui 로 이동
+	enum class SPAWN_COMMAND_KIND { STANDARD, BEAM, PATTERN ,LIGHT };
 
 	struct SPAWN_COMMAND
 	{

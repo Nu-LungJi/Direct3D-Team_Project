@@ -28,6 +28,7 @@
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
+#include "MapStaticModelLoader.h"
 #include "MapManager.h"
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
@@ -56,6 +57,7 @@
 #include "MapMeshInstancingRenderer.h"
 
 #include "EventManager.h"
+#include "EffectManager.h"
 
 NS_USING(Engine)
 
@@ -170,69 +172,83 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pHizOcclusionCuller");
 
 	m_pCameraManager = CCameraManager::Create();
 	if (m_pCameraManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pCameraManager");
 
 	m_pColliderManager = CColliderManager::Create();
 	if (m_pColliderManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pColliderManager");
 
 	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
 	if (m_pAnimEdit_Manager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pAnimEdit_Manager");
 
 	m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pLightManager == nullptr)
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("End m_pLightManager");
 
 	m_pParticleManager = CParticleManager::Create();
 	if (m_pParticleManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pParticleManager");
 
 	m_pFontManager = CFontManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pFontManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pFontManager");
 
 	m_pMapManager = CMapManager::Create();
 	if (m_pMapManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pMapManager");
+
 	m_pNavMeshManager = CNavMeshManager::Create();
 	if (m_pNavMeshManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pNavMeshManager");
+
 	m_pNodeEditor = CNodeEditor::Create();
 	if (m_pNodeEditor == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pNodeEditor");
+
 	m_pPhysXManager = CPhysXManager::Create();
 	if (m_pPhysXManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pPhysXManager");
+
 
 	m_pActionManager = CAction_Manager::Create();
 	if (m_pActionManager == nullptr)
 		return E_FAIL;
-
+	LOG_MEMORY("End m_pActionManager");
 
 
 	m_pSerializeManager = CSerializeManager::Create();
@@ -240,20 +256,28 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pSerializeManager");
 
 	m_pModel_Instance_Manager = CModel_Instance_Manager::Create();
 	if (m_pModel_Instance_Manager == nullptr) {
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pModel_Instance_Manager");
 
 	m_pMapMeshInstancingRenderer = CMapMeshInstancingRenderer::Create();
 	if (m_pMapMeshInstancingRenderer == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pMapMeshInstancingRenderer");
 
 	m_pEventManager = CEventManager::Create();
 	if (m_pEventManager == nullptr)
+	{
+		return E_FAIL;
+	}
+	m_pEffectManager = CEffectManager::Create(m_pParticleManager.get(), m_pLightManager.get(), m_pSoundManager.get());
+	if (m_pEffectManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -318,6 +342,7 @@ void CGameInstance::UpdateGUI()
 	m_pSerializeManager->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
+	m_pEffectManager->UpdateGUI();
 	//if (ImGui::Button("ShaderRebuild"))
 	//{
 	//	//TAG_RES_GRP_PERMANENT_SHADER
@@ -355,6 +380,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		{
 			MouseFix();
 		}
+	}
+
+	{
+		ZoneScopedN("EffectManager_Update");
+		m_pEffectManager->Update(fTimeDelta);
 	}
 
 	// lua hot reload
@@ -500,6 +530,7 @@ void CGameInstance::Release_Engine()
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
 	m_pEventManager.reset();
+	m_pEffectManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -512,9 +543,20 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 	}
 	m_iFrameCnt++;
 
-	m_pLevelManager->FrameStart(fTimeDelta);
-	m_pGameObjectManager->FrameStart();
-	m_pColliderManager->FrameStart();
+	{
+		ZoneScopedN("m_pLevelManager_FrameStart");
+		m_pLevelManager->FrameStart(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("m_pGameObjectManager_FrameStart");
+		m_pGameObjectManager->FrameStart();
+	}
+	
+	{
+		ZoneScopedN("m_pColliderManager_FrameStart");
+		m_pColliderManager->FrameStart();
+	}
 
 
 
@@ -574,6 +616,14 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
 {
 	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
+}
+std::vector<std::string> CGameInstance::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension)
+{
+	return m_pParticleManager->Load_FilePath_ByExtension(_FolderPath, _Extension);
+}
+HRESULT CGameInstance::Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage)
+{
+	return m_pParticleManager->Load_ParticleJsonPackage(_FilePathPackage);
 }
 #pragma endregion
 
@@ -847,6 +897,11 @@ void CGameInstance::DelPrototype(const StringID& sGroupTag)
 {
 	m_pPrototypeManager->DelPrototype(sGroupTag);
 }
+void CGameInstance::DelPrototype(
+	const StringID& sGroupTag, const StringID& sPrototypeTag)
+{
+	m_pPrototypeManager->DelPrototype(sGroupTag, sPrototypeTag);
+}
 std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
@@ -992,6 +1047,12 @@ HRESULT CGameInstance::SaveMap(const std::string& path)
 {
 	return m_pMapManager->SaveMap(path);
 }
+HRESULT CGameInstance::LoadMapResources(const std::string& path)
+{
+	const auto modelLoad = LoadStaticModelsRequiredByMap(
+		path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	return modelLoad.Succeeded() ? S_OK : E_FAIL;
+}
 HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {
 	return m_pMapManager->LoadMap(path, clearBeforeLoad);
@@ -1071,6 +1132,13 @@ HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRen
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
 }
+HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
+	return m_pLightManager->Initialize_EffectLight(_PoolSize);
+}
+std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity) {
+	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _Range, _LifeTime, _Velocity);
+}
+
 
 #pragma endregion
 #pragma endregion

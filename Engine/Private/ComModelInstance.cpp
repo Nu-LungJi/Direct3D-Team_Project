@@ -39,8 +39,7 @@ void CComModelInstance::UpdateGUI()
 
 	if (Bones[m_iDebugSelectedBone])
 	{
-		// Bone 이름 getter 있으면 그걸로 바꿔
-		// previewName = Bones[m_iDebugSelectedBone]->Get_BoneName();
+
 		previewName = Bones[m_iDebugSelectedBone]->GetBoneName();
 	}
 
@@ -52,9 +51,6 @@ void CComModelInstance::UpdateGUI()
 				continue;
 
 			std::string boneLabel;
-
-			// 이름 getter 있으면 이걸 추천
-			// boneLabel = std::to_string(i) + " : " + Bones[i]->Get_BoneName();
 
 			boneLabel = Bones[i]->GetBoneName();
 
@@ -178,6 +174,7 @@ HRESULT CComModelInstance::Bind_BoneMatrices(ID3D11DeviceContext* pContext, uint
         ID3D11Buffer* pCBBones = m_Buffer->GetCBuffer().Get();
 
         pContext->VSSetConstantBuffers(2, 1, &pCBBones);
+        pContext->CSSetConstantBuffers(2, 1, &pCBBones);
     }
 
 
@@ -233,7 +230,7 @@ VOID CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _E
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
 	}
-	pContext->PSSetConstantBuffers(3, 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+	pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
 }
 
 HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID& sResTag)
@@ -286,17 +283,41 @@ UPtr<CPrototype> CComModelInstance::Clone(void* pArg)
 
 void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 {
-	
+	std::vector<_float4x4> combinedMatrices;
+	if (m_pModel)
+	{
+		const auto& bones = m_pModel->GetBones();
+		combinedMatrices.reserve(bones.size());
+		for (const auto& bone : bones)
+		{
+			_float4x4 matrix{};
+			if (bone)
+				XMStoreFloat4x4(&matrix, bone->Get_CombinedTransformationMatrix());
+			combinedMatrices.push_back(matrix);
+		}
+	}
+	DebugDraw_Bones(WorldMatrix, combinedMatrices);
+}
+
+void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix,
+	const std::vector<_float4x4>& CombinedBoneMatrices)
+{
+	if (!m_bDebugBoneEdit || !m_pModel)
+		return;
+
 	_matrix matWorld = XMLoadFloat4x4(&WorldMatrix);
 
 	const auto& Bones = m_pModel->GetBones();
+	if (CombinedBoneMatrices.size() < Bones.size())
+		return;
 
-	for (auto& pBone : Bones)
+	for (size_t boneIndex = 0; boneIndex < Bones.size(); ++boneIndex)
 	{
+		auto& pBone = Bones[boneIndex];
 		if (!pBone)
 			continue;
 
-		_matrix matBone = pBone->Get_CombinedTransformationMatrix();
+		_matrix matBone = XMLoadFloat4x4(&CombinedBoneMatrices[boneIndex]);
 		_matrix matBoneWorld = matBone * matWorld;
 
 		if (Bones[m_iDebugSelectedBone]->Compare_Name(pBone->GetBoneName().c_str())) {
@@ -321,11 +342,9 @@ void CComModelInstance::DebugDraw_Bones(const _float4x4& WorldMatrix)
 
 
 
-		if (iParentIndex > 0)
+		if (iParentIndex >= 0 && static_cast<size_t>(iParentIndex) < CombinedBoneMatrices.size())
 		{
-			auto pParent = Bones[iParentIndex];
-
-			_matrix matParent = pParent->Get_CombinedTransformationMatrix();
+			_matrix matParent = XMLoadFloat4x4(&CombinedBoneMatrices[iParentIndex]);
 			_matrix matParentWorld = matParent * matWorld;
 
 			_float3 vParentPos{};

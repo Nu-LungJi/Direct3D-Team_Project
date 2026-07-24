@@ -214,11 +214,26 @@
     <Filter Include="GameObject\Player\State_Machine\State\Player_Dead_State">
       <UniqueIdentifier>{e4d8cd4e-a422-496a-998a-61a761dee66c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\State_Machine\State\Player_Jump_State">
+      <UniqueIdentifier>{a5eed29b-8c80-4cca-b182-871e2e08b759}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\UI\HPBar">
       <UniqueIdentifier>{a23637ff-fbe1-4efd-9c58-6bd2a820f42f}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\UI\MiniMap">
       <UniqueIdentifier>{0dc8a52d-1c4d-4870-974c-d5909d11ab7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\EffectLight">
+      <UniqueIdentifier>{ded5e76a-6a62-4477-a39c-dd2fde0061e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\BTAction\Animation\Child">
+      <UniqueIdentifier>{daa2ade4-a4a0-4290-a852-3e28282a96fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\MagicSquareStep">
+      <UniqueIdentifier>{8a755450-51f3-4267-ae19-fc7022c471a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\MyMagicSquareStep">
+      <UniqueIdentifier>{f107aa8a-9b42-4cc4-b287-79f234030638}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -258,12 +273,12 @@
     <ClInclude Include="..\Public\BackGround.h">
       <Filter>GameObject\BackGround</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\Terrain.h">
+    <ClInclude Include="..\public\Terrain.h">
       <Filter>GameObject\Terrain</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\MapCollisionProxyObject.h">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClInclude>
+    </ClInclude>
+    <ClInclude Include="..\public\MapCollisionProxyObject.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Client_Resources.h">
       <Filter>Resource</Filter>
     </ClInclude>
@@ -360,12 +375,6 @@
     <ClInclude Include="..\public\BTDecHp.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTAnimation.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTTurnAnimation.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\BTMove.h">
       <Filter>GameObject\AI\BTAction\Motion</Filter>
     </ClInclude>
@@ -390,9 +399,6 @@
     <ClInclude Include="..\public\BTOnlyFalse.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BTAttackAnimation.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\TextureUI.h">
       <Filter>GameObject\UI\TexUI</Filter>
     </ClInclude>
@@ -416,12 +422,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTRandMoveAnim.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTHitAnimMonster.h">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTCreatureFlag.h">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
@@ -471,6 +471,9 @@
     <ClInclude Include="..\public\TestPhysXTrigger.h">
       <Filter>GameObject\TestPhysx\Trigger</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestPhysXCollisionProxyTrigger.h">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\BTDecHitCnt.h">
       <Filter>GameObject\AI\BTDecorator</Filter>
     </ClInclude>
@@ -483,6 +486,9 @@
     <ClInclude Include="..\Public\Player.h">
       <Filter>GameObject\Player</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_StateMachine.h">
       <Filter>GameObject\Player\State_Machine</Filter>
     </ClInclude>
@@ -493,6 +499,9 @@
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestDynamic.h">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\EnderDragon.h">
@@ -513,11 +522,53 @@
     <ClInclude Include="..\Public\Player_Dead_State.h">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Jump_State.h">
+      <Filter>GameObject\Player\State_Machine\State\Player_Jump_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\HPBar.h">
       <Filter>GameObject\UI\HPBar</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\MiniMap.h">
       <Filter>GameObject\UI\MiniMap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAnimRoot.h">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestSquareStep.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicSquareStepController.h">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicSquareStep.h">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStep.h">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStepController.h">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicBridgeController.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestSquareStepController.h">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -555,12 +606,12 @@
     <ClCompile Include="..\Private\BackGround.cpp">
       <Filter>GameObject\BackGround</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\Terrain.cpp">
+    <ClCompile Include="..\private\Terrain.cpp">
       <Filter>GameObject\Terrain</Filter>
-	</ClCompile>
-	<ClCompile Include="..\private\MapCollisionProxyObject.cpp">
-		<Filter>GameObject\CreatureEditor</Filter>
-	</ClCompile>
+    </ClCompile>
+    <ClCompile Include="..\private\MapCollisionProxyObject.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resource\Buffer</Filter>
     </ClCompile>
@@ -603,6 +654,9 @@
     <ClCompile Include="..\private\TestPhysXCapsule.cpp">
       <Filter>GameObject\TestPhysx\Capsule</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\TestPhysXCollisionProxyTrigger.cpp">
+      <Filter>GameObject\TestPhysx\Trigger</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\TestGob.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
@@ -623,9 +677,6 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecHp.cpp">
       <Filter>GameObject\AI\BTDecorator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTTurnAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTMove.cpp">
       <Filter>GameObject\AI\BTAction\Motion</Filter>
@@ -651,9 +702,6 @@
     <ClCompile Include="..\private\BTOnlyTrue.cpp">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BTAttackAnimation.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Weapon.cpp">
       <Filter>GameObject\AI\Weapon</Filter>
     </ClCompile>
@@ -677,12 +725,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\Button.cpp">
       <Filter>GameObject\UI\Button</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTRandMoveAnim.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTHitAnimMonster.cpp">
-      <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTCreatureFlag.cpp">
       <Filter>GameObject\AI\BTAction\Flow</Filter>
@@ -747,6 +789,9 @@
     <ClCompile Include="..\Private\Player.cpp">
       <Filter>GameObject\Player</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_StateMachine.cpp">
       <Filter>GameObject\Player\State_Machine</Filter>
     </ClCompile>
@@ -754,6 +799,9 @@
       <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestDynamic.cpp">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\EnderDragon.cpp">
@@ -774,6 +822,9 @@
     <ClCompile Include="..\Private\Player_Dead_State.cpp">
       <Filter>GameObject\Player\State_Machine\State\Player_Dead_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_Jump_State.cpp">
+      <Filter>GameObject\Player\State_Machine\State\Player_Jump_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation</Filter>
     </ClCompile>
@@ -782,6 +833,45 @@
     </ClCompile>
     <ClCompile Include="..\Private\MiniMap.cpp">
       <Filter>GameObject\UI\MiniMap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimRoot.cpp">
+      <Filter>GameObject\AI\BTAction\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestSquareStep.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicSquareStep.cpp">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicSquareStepController.cpp">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicBridgeController.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestSquareStepController.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -850,6 +940,12 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

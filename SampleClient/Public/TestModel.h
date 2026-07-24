@@ -14,6 +14,7 @@ class CResModel;
 class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
+class CComSocket;
 NS_END
 
 NS_BEGIN(Client)
@@ -41,6 +42,8 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx,const E::MODEL_INSTANCE_BATCH& Batch) override;
+	HRESULT Render_CPU_GPU(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+	HRESULT Render_CPU_GPU_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 
 	HRESULT Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext);
@@ -53,7 +56,7 @@ public:
 	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
 
 	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
-	
+
 private:
 	CComModelInstance*   m_pComModelInstance{};
 	CComAnimator*		 m_pModelAnimator{};
@@ -62,14 +65,17 @@ private:
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
+	SPtr<CResVertexShader> m_pResVertexCPUSkinningInstancedShader{};
+	SPtr<CResVertexShader> m_pResVertexCPUGPUShader{};
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 	SPtr<CResComputeShader> m_pAnimComputeShader{};
+	SPtr<CResComputeShader> m_pCPUGPUSkinningComputeShader{};
 
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
-
+	CComSocket* m_pSocket;
 	_float4 m_fAlbedoColor			= { 1.f, 1.f, 1.f, 1.f };
 	_float	m_fNormalIntensity		= 1.f;
 	_float	m_fRoughnessIntensity	= 1.f;
@@ -79,6 +85,7 @@ private:
 	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity	= 0.f;
 
+	uint32_t m_iDebugSelectedBone = 0;
 	uint32_t m_iCurrentInstanceCount = 0.f;
 
 public:  

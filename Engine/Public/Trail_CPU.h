@@ -49,10 +49,14 @@ public:
 		std::pair<StringID, StringID> normalTextureID;
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
+		std::pair<StringID, StringID> anyTextureID;
         TRAIL_TYPE  tType = TRAIL_TYPE::END;
         _float   fMaxDuration = 1.f; // 기록된 프레임 하나가 얼마나 오래 남아있을지 (꼬리 길이)
         uint32_t iMaxFrames = 700;    // 최대 보관 프레임 개수 (버퍼 크기 결정)
 		TRAIL_ALIGN_MODE eAlignMode = TRAIL_ALIGN_MODE::VIEW;
+		_string sVEntryPoint = "";
+		_string sPEntryPoint = "";
+		uint32_t blendState = 0;
     };
 
 private:
@@ -78,9 +82,11 @@ public:
     uint32_t Debug_GetVertexCount() const { return (uint32_t)m_vecVertices.size(); }
 	virtual void SetPosition(const _float3& pos) override;
 	virtual void SetVelocity(const _float3& vel) override;
-	virtual void SetSize(const _float& size) override;
+	virtual void SetSize(const _float3& size) override;
 	virtual void SetColor(const _float4& color) override;
 	void SetEmissive(const _float4& emissive) { m_vEmissive = emissive; }
+	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
+	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 private:
     void BuildTrailGeometry();
 

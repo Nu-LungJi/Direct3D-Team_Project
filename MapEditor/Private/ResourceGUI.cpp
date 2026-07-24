@@ -11,7 +11,9 @@
 #include "ResVertexShader.h"
 #include "ResOffscreenTexture.h"
 #include "ResModelMaterial.h"
+#include "MapEditorStaticModelLoader.h"
 #include <commdlg.h>
+#include <shlobj.h>
 #include <nlohmann/json.hpp>
 
 NS_USING(Client)
@@ -348,9 +350,9 @@ private:
 		context->IASetInputLayout(vs->GetInputLayout().Get());
 		context->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 		context->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-		context->VSSetConstantBuffers(0, 1, &objectBuffer);
-		context->VSSetConstantBuffers(1, 1, &passBuffer);
-		context->PSSetConstantBuffers(3, 1, &materialBuffer);
+		context->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, &objectBuffer);
+		context->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &passBuffer);
+		context->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, &materialBuffer);
 
 		const auto& meshes = model->GetMeshes();
 		for (uint32_t i = 0; i < meshes.size(); ++i)
@@ -494,6 +496,15 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 	if (ImGui::Button("Refresh Resouce List"))
 	{
 		CachingAllResource();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Load Model Folder"))
+	{
+		SelectAndLoadStaticModelFolder();
+	}
+	if (!m_ModelFolderLoadStatus.empty())
+	{
+		ImGui::TextWrapped("%s", m_ModelFolderLoadStatus.c_str());
 	}
 
 	if (ImGui::BeginTabBar("##ResourceCategories"))
@@ -678,6 +689,32 @@ void CResourceGUI::CreateDroppedMapMeshObject(const E::_float3& worldPosition)
 		std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
 }
 
+void CResourceGUI::SelectAndLoadStaticModelFolder()
+{
+	BROWSEINFOA browse{};
+	browse.hwndOwner = g_hWnd;
+	browse.lpszTitle = "Select a folder containing static-model BIN files";
+	browse.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+	PIDLIST_ABSOLUTE item = SHBrowseForFolderA(&browse);
+	if (item == nullptr) return;
+	char selectedPath[MAX_PATH]{};
+	const bool resolved = SHGetPathFromIDListA(item, selectedPath) == TRUE;
+	CoTaskMemFree(item);
+	if (!resolved)
+	{
+		m_ModelFolderLoadStatus = "Model folder load failed: invalid folder.";
+		return;
+	}
+
+	const auto result = LoadMapEditorStaticModelFolder(selectedPath);
+	m_ModelFolderLoadStatus = "Model folder: " + std::to_string(result.loaded) +
+		" loaded, " + std::to_string(result.cached) + " cached";
+	if (!result.failed.empty())
+		m_ModelFolderLoadStatus += ", " + std::to_string(result.failed.size()) + " failed";
+	m_ModelFolderLoadStatus += ".";
+	CachingAllResource();
+}
+
 void CResourceGUI::SelectAndImportWholeMapManifest()
 {
 	char selectedPath[MAX_PATH]{};
@@ -749,8 +786,14 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 		const std::filesystem::path binPath = manifestPath.parent_path() /
 			chunk["file"].get<std::string>();
 		const std::string resourceTag = MakeStaticModelResourceTag(resourceRoot, binPath);
-		const auto modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
+		auto modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
 			E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);
+		if (modelResource == nullptr &&
+			LoadMapEditorStaticModelFile(binPath, resourceRoot))
+		{
+			modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
+				E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);
+		}
 		if (modelResource == nullptr)
 		{
 			++skippedCount;

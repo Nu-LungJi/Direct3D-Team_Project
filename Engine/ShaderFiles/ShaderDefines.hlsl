@@ -74,6 +74,7 @@ struct DynamicLight
     float LightPadding;
 };
 
+const static float alpha = 0;
 struct Material
 {
     float4 ambient;
@@ -82,15 +83,11 @@ struct Material
     float4 reflect;
 };
 
-
 // 1. 오브젝트당 n회 갱신 (슬롯 b0)
 cbuffer CB_PER_OBJECT : register(b0)
 {
     matrix g_matWorld;
     matrix g_matWVP;
-    float4 g_objectColor;
-    uint g_objectLight;
-    float3 _g_object_pad;
 };
 
 // 2. 프레임당 1회 갱신 (슬롯 b1)
@@ -99,21 +96,23 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matView; // _float4x4와 1:1 대응
     matrix g_matProj;
     matrix g_matViewProj;
+	
     matrix g_matInvView;
     matrix g_matInvProj;
     matrix g_matInvViewProj;
+	
     matrix g_matShadowLightViewProj;
+	
     float3 g_vCamPos;
-    float g_PerPassPadding1;
+	float  g_fDeltaTime;
     float3 g_vShadowLightDir;
-    float g_PerPassPadding2;
+	float  g_fTimeAccumulation;
 };
 
 cbuffer CB_BONES : register(b2)
 {
     matrix g_BoneMatrices[512];
 };
-
 
 cbuffer CB_MATERIAL : register(b3)
 {
@@ -137,22 +136,7 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     float2	LightPadding;
 }
 
-cbuffer CB_TIME_BUFFER : register(b5)
-{
-    float g_fDeltaTime;
-    float g_fTimeAccumulation;
-}
 
-cbuffer CB_FOG : register(b6)
-{
-    float4x4 FogVolumeInvWorld;
-    float FogIntensity;
-    float3 FogColor;
-    float FogMaxHeight;
-    float FogStartPos;
-    float FogEndPos;
-    float FogDensity;
-}; 
 
 cbuffer CB_PER_UI : register(b7)
 {
@@ -162,17 +146,6 @@ cbuffer CB_PER_UI : register(b7)
 	float2 g_ui_texSize;
 	float2 g_ui_quadSize;
 	float4 g_ui_margins;
-};
-cbuffer PostProcessBuffer : register(b8)
-{
-    float BloomIntensity; // 블룸 강도
-    
-    float DistortionIntensity; // 왜곡 강도
-    float ChromaticIntensity; // 색수차 강도
-    float VignetteIntensity; // 비네팅 강도
-    float VignetteSmoothness; // 비네팅
-    
-    float3 Padding;
 };
 
 cbuffer CB_GPU_PART_ATTACHMENT : register(b9)

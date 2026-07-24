@@ -1,11 +1,6 @@
 #pragma once
 #include "CameraObject.h"
 
-NS_BEGIN(Engine)
-class CCollider;
-class CCollFrustum;
-NS_END
-
 NS_BEGIN(Client)
 
 class CTestPlayer3CameraCreatureEditor final : public CCameraObject
@@ -44,7 +39,6 @@ public:
 	void PriorityUpdate(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 	void UpdateFollow();
-	const CCollFrustum* GetFrustumCollider() const;
 
 private:
 	CHandle m_hTarget{};
@@ -55,7 +49,6 @@ private:
 	_float m_fMinPitch{ -20.f };
 	_float m_fMaxPitch{ 65.f };
 	_float m_fMouseSensitivity{ 10.f };
-	UPtr<CCollider> m_pFrustumCollider{};
 
 public:
 	static UPtr<CTestPlayer3CameraCreatureEditor> Create();
