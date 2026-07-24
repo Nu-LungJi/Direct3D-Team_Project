@@ -511,6 +511,9 @@
     <Filter Include="Terrain">
       <UniqueIdentifier>{26070ecc-3b99-43d7-9702-d09fb65ddd9e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EffectManager">
+      <UniqueIdentifier>{cb2813fe-4666-4ecf-94d8-96da9dd72328}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1042,12 +1045,6 @@
     <ClInclude Include="..\Public\VolumetricFog.h">
       <Filter>GameObject\Volumetric</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleParams.h">
-      <Filter>Particle\Param</Filter>
-    </ClInclude>
-    <ClInclude Include="ParticleParamImGui.h">
-      <Filter>Particle\Param</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
     </ClInclude>
@@ -1116,6 +1113,15 @@
     </ClInclude>
     <ClInclude Include="..\Public\Engine_ParticleDefines.h">
       <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EffectManager.h">
+      <Filter>EffectManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ParticleParamImGui.h">
+      <Filter>Particle\Param</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Engine_EffectDefines.h">
+      <Filter>EffectManager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TerrainChunk.h">
       <Filter>Terrain</Filter>
@@ -1660,6 +1666,9 @@
     <ClCompile Include="..\Private\ComSound.cpp">
       <Filter>Component\Sound</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\EffectManager.cpp">
+      <Filter>EffectManager</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\TerrainChunk.cpp">
       <Filter>Terrain</Filter>
     </ClCompile>
@@ -1804,6 +1813,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>

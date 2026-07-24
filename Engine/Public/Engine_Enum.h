@@ -5,7 +5,7 @@ namespace Engine
 	enum class WINMODE { FULL, WIN };
 	enum class MOUSEKEYSTATE { LB, RB, MB, END };
 	enum class MOUSEMOVESTATE { X, Y, Z, END };
-	enum class RENDERGROUP { PRIORITY, NONBLEND_INSTANCED, NONBLEND, BLEND, LIGHT, EFFECT, SKYBOX, COLLIDER, UI, END };
+	enum class RENDERGROUP { PRIORITY, NONBLEND_INSTANCED, NONBLEND, BLEND, LIGHT, EFFECT, SKYBOX, COLLIDER, UI3D, UI, END };
 	enum class RENDERPASS : uint32_t
 	{
 		DEFAULT = 1 << 0,	// 1
@@ -31,7 +31,7 @@ namespace Engine
 	enum class MESHORTEXTURE{ MESH, TEX, END};
 
 	enum class ACTORTYPE { STATIC, DYNAMIC, END };
-
+	enum class BLENDTYPE { ALPHABLEND, ALPHAADD, NONE, END};
 	//나중에 이 성 민 씨 가 옮길거임 접근 금지
 	static const uint32_t MAX_SPAWN_PER_CALL = 1000;
 
@@ -39,4 +39,5 @@ namespace Engine
 	enum class UI_EFFECT_TYPE { NONE, HOVER, CLICK, END};
 	enum class EUITweenTarget { SCALE, EFFECT_ALPHA, POSITION_X, POSITION_Y }; // 제어할 UI 속성 타입
 
+	enum class B_SLOTNUMBER { PER_OBJECT, PER_PASS, BONES, MATERIAL, LIGHT, UI = 7, GPUPART = 9 };
 }

@@ -57,6 +57,7 @@
 #include "MapMeshInstancingRenderer.h"
 
 #include "EventManager.h"
+#include "EffectManager.h"
 
 NS_USING(Engine)
 
@@ -275,7 +276,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-	LOG_MEMORY("End m_pMapMeshInstancingRenderer");
+	m_pEffectManager = CEffectManager::Create(m_pParticleManager.get(), m_pLightManager.get(), m_pSoundManager.get());
+	if (m_pEffectManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	
 	return S_OK;
 }
@@ -337,6 +342,7 @@ void CGameInstance::UpdateGUI()
 	m_pSerializeManager->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
+	m_pEffectManager->UpdateGUI();
 	//if (ImGui::Button("ShaderRebuild"))
 	//{
 	//	//TAG_RES_GRP_PERMANENT_SHADER
@@ -374,6 +380,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		{
 			MouseFix();
 		}
+	}
+
+	{
+		ZoneScopedN("EffectManager_Update");
+		m_pEffectManager->Update(fTimeDelta);
 	}
 
 	// lua hot reload
@@ -519,6 +530,7 @@ void CGameInstance::Release_Engine()
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
 	m_pEventManager.reset();
+	m_pEffectManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -531,9 +543,20 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 	}
 	m_iFrameCnt++;
 
-	m_pLevelManager->FrameStart(fTimeDelta);
-	m_pGameObjectManager->FrameStart();
-	m_pColliderManager->FrameStart();
+	{
+		ZoneScopedN("m_pLevelManager_FrameStart");
+		m_pLevelManager->FrameStart(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("m_pGameObjectManager_FrameStart");
+		m_pGameObjectManager->FrameStart();
+	}
+	
+	{
+		ZoneScopedN("m_pColliderManager_FrameStart");
+		m_pColliderManager->FrameStart();
+	}
 
 
 
@@ -593,6 +616,14 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
 {
 	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
+}
+std::vector<std::string> CGameInstance::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension)
+{
+	return m_pParticleManager->Load_FilePath_ByExtension(_FolderPath, _Extension);
+}
+HRESULT CGameInstance::Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage)
+{
+	return m_pParticleManager->Load_ParticleJsonPackage(_FilePathPackage);
 }
 #pragma endregion
 
@@ -834,6 +865,14 @@ _float2 CGameInstance::FontMeasureString(const StringID& fontName, const wchar_t
 void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 {
 	m_pFontManager->LateDraw(eRenderGroup);
+}
+void CGameInstance::FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot)
+{
+	m_pFontManager->FontAddLateDraw3D(fontTag, text, matWVP, color, pivot);
+}
+void CGameInstance::Render3DFont()
+{
+	m_pFontManager->Render3DFont();
 }
 #pragma endregion
 
@@ -1093,6 +1132,13 @@ HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRen
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
 }
+HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
+	return m_pLightManager->Initialize_EffectLight(_PoolSize);
+}
+std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity) {
+	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _Range, _LifeTime, _Velocity);
+}
+
 
 #pragma endregion
 #pragma endregion

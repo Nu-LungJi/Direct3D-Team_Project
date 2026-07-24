@@ -183,13 +183,7 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PARTICLE, E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_CIRCLE_TO_WAVE) })))
-		{
-			return E_FAIL;
-		}
-	}
+
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_SPAWN_PARTICLE, E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_PARTICLE_SPAWN) })))
@@ -225,14 +219,6 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_BONE, E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(_float4x4) * 512 })))
-		{
-			return E_FAIL;
-		}
-	}
-
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG", E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FOG) })))
 		{
 			return E_FAIL;
 		}
@@ -1092,6 +1078,15 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MiniMap", "./ShaderFiles/UI/MiniMap.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_MiniMap", "./ShaderFiles/UI/MiniMap.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+
 
 
 	// model shader

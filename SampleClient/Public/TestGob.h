@@ -22,6 +22,7 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 
+private:
 public:
 	static E::UPtr<CTestGob> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -11,6 +11,7 @@
 #include "SpellMeter.h"
 #include "HPBar.h"
 #include "Level_Defines.h"
+#include "MiniMap.h"
 
 NS_USING(Client)
 
@@ -31,6 +32,16 @@ void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceCont
 
 void UIManager::InitializeActions()
 {
+	m_EventMap["ClearAction"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pTween->ClearTweens();
+		};
+	m_vEventNames.push_back("ClearAction");
+
 	// ==========================================
 	// 1. 사이즈 업
 	// ==========================================
@@ -41,16 +52,32 @@ void UIManager::InitializeActions()
 		if (!pTween) return;
 
 		CHandle handle = pCaller->GetHandle();
-
+		_float originScaleRatio = pCaller->GetScaleRatio();
 		pTween->PlayTween(pCaller->GetScaleRatio(), 1.1f, 0.1f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) {
 					pObj->SetScaleRatio(currentValue);
 					pObj->CalcUICoord();
-				}
-			});
+				}});
 	};
 	m_vEventNames.push_back("ScaleUp");
+
+	m_EventMap["ScaleUp0.6"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			CHandle handle = pCaller->GetHandle();
+			_float originScaleRatio = pCaller->GetScaleRatio();
+			pTween->PlayTween(pCaller->GetScaleRatio(), 0.65f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}});
+		};
+	m_vEventNames.push_back("ScaleUp0.6");
 
 	m_EventMap["AppearScaleUp"] = [](CUIObject* pCaller)
 	{
@@ -81,6 +108,36 @@ void UIManager::InitializeActions()
 			}, nullptr, EEaseType::EaseOutQuad);
 	};
 	m_vEventNames.push_back("AppearScaleUp");
+
+	m_EventMap["AppearScaleUp0.1"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetActive(true);
+			CHandle handle = pCaller->GetHandle();
+			_float scaleRatio = pCaller->GetScaleRatio();
+
+			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 0.1f);
+
+			pTween->PlayTween(0.f, 1.f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetAlpha(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 0.1f);
+		};
+	m_vEventNames.push_back("AppearScaleUp0.1");
 
 	m_EventMap["TextScaleUp"] = [](CUIObject* pCaller)
 	{
@@ -133,6 +190,24 @@ void UIManager::InitializeActions()
 			});
 	};
 	m_vEventNames.push_back("ScaleDown");
+
+	m_EventMap["ScaleDown0.6"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			CHandle handle = pCaller->GetHandle();
+
+			pTween->PlayTween(pCaller->GetScaleRatio(), 0.6f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}
+				});
+		};
+	m_vEventNames.push_back("ScaleDown0.6");
 
 	m_EventMap["DisappearScaleDown"] = [](CUIObject* pCaller)
 	{
@@ -197,8 +272,8 @@ void UIManager::InitializeActions()
 
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
-		//pCaller->GetAlpha()
-		pTween->PlayTween(0.f, 1.0f, 0.3f,
+		_float originAlpha = pCaller->GetAlpha();
+		pTween->PlayTween(0.f, originAlpha, 0.3f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
 			});
@@ -219,6 +294,21 @@ void UIManager::InitializeActions()
 			});
 	};
 	m_vEventNames.push_back("LocalFadeIn");
+
+	m_EventMap["LocalFadeIn0.2"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetActive(true);
+			CHandle handle = pCaller->GetHandle();
+			pTween->PlayTween(pCaller->GetAlphaRatio(), 1.0f, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
+				});
+		};
+	m_vEventNames.push_back("LocalFadeIn0.2");
 
 	// ==========================================
 	// 4. 페이드 아웃
@@ -259,6 +349,25 @@ void UIManager::InitializeActions()
 			});
 	};
 	m_vEventNames.push_back("LocalFadeOut");
+
+	m_EventMap["LocalFadeOut0.2"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetInputLcok(true);
+			CHandle handle = pCaller->GetHandle();
+
+			pTween->PlayTween(pCaller->GetAlphaRatio(), 0.0f, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
+				},
+				[handle]() {
+					if (auto pObj = GetSafeUI(handle)) pObj->SetActive(false);
+				});
+		};
+	m_vEventNames.push_back("LocalFadeOut0.2");
 
 	m_EventMap["FadeOut_D"] = [this](CUIObject* pCaller)
 	{
@@ -546,7 +655,7 @@ void UIManager::InitializeActions()
 		float startY = pCaller->GetUIInfo().fY;
 		float endY = startY + 15.0f;
 
-		pTween->PlayTween(startY, endY, 0.7f,
+		pTween->PlayTween(startY, endY, 1.5f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) {
 					pObj->GetUIInfo().fY = currentValue;
@@ -705,7 +814,10 @@ std::optional<CHandle> UIManager::RootUIPicking()
 		CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(uiHandle);
 		const UI_INFO& pInfo = pUI->GetUIInfo();
 
-		if (PtInRect(pInfo))
+		if (pUI->GetWorldSpace())
+			continue;
+
+		if (PtInRect(pInfo, pUI->GetScaleRatio()))
 		{
 			if (std::nullopt == targetHandle)
 				targetHandle = uiHandle;
@@ -726,16 +838,16 @@ std::optional<CHandle> UIManager::RootUIPicking()
 	return targetHandle;
 }
 
-_bool UIManager::PtInRect(const UI_INFO& selectInfo)
+_bool UIManager::PtInRect(const UI_INFO& selectInfo, _float scaleRatio)
 {
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
 	_float2 origin = { selectInfo.fX, selectInfo.fY };
-	_float2 size = { selectInfo.SizeX, selectInfo.SizeY };
+	_float2 size = { selectInfo.SizeX * scaleRatio, selectInfo.SizeY * scaleRatio };
 
 	if (selectInfo.UIType == ETOUI(UI_TYPE::TEXT))
 	{
-		size = { selectInfo.SizeX * 50.f, selectInfo.SizeY * 50.f };
+		size = { selectInfo.SizeX * 50.f, selectInfo.SizeY * 50.f  };
 		origin = { selectInfo.fX + size.x * 0.5f, selectInfo.fY + size.y * 0.5f};
 	}
 
@@ -816,6 +928,25 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	case ETOUI(UI_TYPE::TEXUI):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+
+		if (EffectType == ETOUI(UI_EFFECT_TYPE::HOVER))
+		{
+			pUI->SetActive(false);
+			if (parent &&
+				*parent->GetUIType() == ETOUI(UI_TYPE::BUTTON))
+			{
+				static_cast<CButton*>(parent)->SetEffectHovered(uiHandle);
+			}
+		}
+		else if (EffectType == ETOUI(UI_EFFECT_TYPE::CLICK))
+		{
+			pUI->SetActive(false);
+			if (parent &&
+				*parent->GetUIType() == ETOUI(UI_TYPE::BUTTON))
+			{
+				static_cast<CButton*>(parent)->SetEffectClicked(uiHandle);
+			}
+		}
 		break;
 	case ETOUI(UI_TYPE::FLIPBOOK):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
@@ -876,6 +1007,11 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*uiHandle);
 		pUI->SetUIType(ETOUI(UI_TYPE::LEFTHPFILL));
+		break;
+	case ETOUI(UI_TYPE::MINIMAP):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_MiniMap", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CMiniMap>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::MINIMAP));
 		break;
 	default:
 		break;
@@ -961,7 +1097,26 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	}
 
 	// 부모 기준으로 다시 계산
-	pUI->CalcUICoord();
+	if (obj.contains("IsWorldSpace"))
+	{
+		bool isWorldSpace = obj["IsWorldSpace"];
+		pUI->SetWorldSpace(isWorldSpace);
+
+		if (isWorldSpace && obj.contains("WorldPos"))
+		{
+			auto posArr = obj["WorldPos"];
+			_float3 loadedPos = { posArr[0], posArr[1], posArr[2] };
+
+			// Transform에 3D 월드 좌표 적용 (XMLoadFloat3 사용)
+			pUI->GetTransform().SetPosition(XMLoadFloat3(&loadedPos));
+		}
+
+		if(!isWorldSpace)
+			pUI->CalcUICoord();
+	}
+	else
+		pUI->CalcUICoord();
+	
 
 	for (const auto& child : obj["Children"])
 	{

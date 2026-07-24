@@ -35,6 +35,8 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 
 void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 {
+
+
 	if (CGameInstance::Get().GetActiveCamera() != this ||
 		!CGameInstance::Get().GetMouseFix())
 	{

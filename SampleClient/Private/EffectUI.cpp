@@ -89,8 +89,10 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	GetTransform().Update();
+	CUIObject::LateUpdate(fTimeDelta);
+
+	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
+	//GetTransform().Update();
 }
 
 HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -130,8 +132,8 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
 	}
 
 	{
@@ -149,8 +151,8 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
 			}
-			pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
 

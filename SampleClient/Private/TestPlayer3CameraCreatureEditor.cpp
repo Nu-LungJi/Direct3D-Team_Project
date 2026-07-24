@@ -39,6 +39,7 @@ HRESULT CTestPlayer3CameraCreatureEditor::Initialize(void* pArg)
 
 void CTestPlayer3CameraCreatureEditor::PriorityUpdate(_float fTimeDelta)
 {
+	
 	if (CGameInstance::Get().GetActiveCamera() != this ||
 		!CGameInstance::Get().GetMouseFix())
 	{

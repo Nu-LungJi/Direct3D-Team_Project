@@ -178,6 +178,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
     <ClInclude Include="..\public\BTAttackAnimation.h" />
+    <ClInclude Include="..\public\BTAnimRoot.h" />
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
@@ -219,6 +220,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\LevelPhysXLoader.h" />
     <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\LightTerrain.h" />
+    <ClInclude Include="..\public\MagicSquareStep.h" />
+    <ClInclude Include="..\public\MagicSquareStepController.h" />
+    <ClInclude Include="..\public\MyMagicSquareStep.h" />
+    <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_Dead_State.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
@@ -232,7 +237,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
+    <ClInclude Include="..\public\TestDynamic.h" />
     <ClInclude Include="..\public\TestMonster.h" />
+    <ClInclude Include="..\public\TestSquareStep.h" />
+    <ClInclude Include="..\public\TestSquareStepController.h" />
+    <ClInclude Include="..\public\MagicBridgeController.h" />
     <ClInclude Include="..\public\TestThirdPersonCamera.h" />
     <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
@@ -297,6 +306,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
     <ClCompile Include="..\private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\private\BTAnimRoot.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
     <ClCompile Include="..\private\BTDamage.cpp" />
     <ClCompile Include="..\private\BTDecHitCnt.cpp" />
@@ -331,6 +341,10 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
     <ClCompile Include="..\Private\LightTerrain.cpp" />
+    <ClCompile Include="..\private\MagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MagicSquareStepController.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_Dead_State.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
@@ -349,7 +363,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\private\Test3DSound.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
+    <ClCompile Include="..\private\TestDynamic.cpp" />
     <ClCompile Include="..\private\TestMonster.cpp" />
+    <ClCompile Include="..\private\TestSquareStep.cpp" />
+    <ClCompile Include="..\private\TestSquareStepController.cpp" />
+    <ClCompile Include="..\private\MagicBridgeController.cpp" />
     <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
     <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />
@@ -416,6 +434,14 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />

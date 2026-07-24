@@ -48,13 +48,29 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
         m_pResVertexBuffer = res;
     }
 
-    m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-    //if (FAILED(m_pResVertexShader->Load()))
-    //    return E_FAIL;
+	switch (m_Desc.blendState) {
+	case 0:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	case 1:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+		break;
+	case 2:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+		break;
+	default:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	}
 
-    m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-    //if (FAILED(m_pResPixelShader->Load()))
-    //    return E_FAIL;
+
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
+	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
+		return E_FAIL;
+
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
+	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
+		return E_FAIL;
 
 	if (m_Desc.normalTextureID.first != "") {
 		m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -65,7 +81,9 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
 	if (m_Desc.noiseTextureID.first != "") {
 		m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 	}
-
+	if (m_Desc.anyTextureID.second != "") {
+		m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+	}
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
 
@@ -127,6 +145,10 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     if (m_vecBeamVertices.empty())
         return S_OK;
 
+	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
     pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
     pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
     pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
@@ -159,6 +181,8 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 
     ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     pContext->PSSetShaderResources(0, 1, nullSRV);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+
 
     return S_OK;
 }
@@ -278,6 +302,14 @@ void CBeam_CPU::SetEndPos(uint32_t beamIndex, const _float4& vPos)
 {
     if (beamIndex < m_vecBeams.size())
         m_vecBeams[beamIndex].vEndPos = vPos;
+}
+
+void CBeam_CPU::TranslateOwner(uint32_t ownerId, const _float3& delta)
+{
+}
+
+void CBeam_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+{
 }
 
 static void MidpointDisplace(std::vector<_float3>& points, uint32_t iStartIdx, uint32_t iEndIdx,

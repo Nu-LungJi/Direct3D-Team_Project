@@ -120,8 +120,10 @@ void CButton::LateUpdate(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	GetTransform().Update();
+	CUIObject::LateUpdate(fTimeDelta);
+
+	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
+	//GetTransform().Update();
 }
 
 HRESULT CButton::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -160,8 +162,8 @@ HRESULT CButton::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
 	}
 
 	{
@@ -179,8 +181,8 @@ HRESULT CButton::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
 			}
-			pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
 
@@ -218,13 +220,15 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::ENTER))
 	{
-		ClearEffectTweens();
-		if (OnHoverEnter) OnHoverEnter(this);
+		if (OnHoverEnter) {
+			ClearEffectTweens();
+			OnHoverEnter(this);
+		}
 
 		if (m_Effect_Hovered_Handle != std::nullopt && 
 			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 		{
-			CEffectUI* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Hovered_Handle);
+			CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
 			ClearHoveredEffect();
 			pHoverUI->OnHoverEnter(pHoverUI);
 		}
@@ -232,13 +236,15 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::EXIT))
 	{
-		ClearEffectTweens();
-		if (OnHoverExit) OnHoverExit(this);
+		if (OnHoverExit) {
+			ClearEffectTweens();
+			OnHoverExit(this);
+		}
 
 		if (m_Effect_Hovered_Handle != std::nullopt &&
 			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 		{
-			CEffectUI* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Hovered_Handle);
+			CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
 			ClearHoveredEffect();
 			pHoverUI->OnHoverExit(pHoverUI);
 		}
@@ -246,8 +252,11 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::CLICK))
 	{
-		ClearEffectTweens();
-		if (OnClicked) OnClicked(this);
+		
+		if (OnClicked) {
+			ClearEffectTweens();
+			OnClicked(this);
+		}
 		if (OnClickedAction) OnClickedAction(ClickTargetName);
 
 
@@ -271,7 +280,7 @@ void CButton::ClearHoveredEffect()
 	if (m_Effect_Hovered_Handle != std::nullopt &&
 		(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 	{
-		CEffectUI* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Hovered_Handle);
+		CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
 
 		pHoverUI->GetTweenCom()->ClearTweens();
 	}
@@ -282,7 +291,7 @@ void CButton::ClearClickEffect()
 	if (m_Effect_Clicked_Handle != std::nullopt &&
 		(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Clicked_Handle)))
 	{
-		CEffectUI* pClickUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*m_Effect_Clicked_Handle);
+		CUIObject* pClickUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Clicked_Handle);
 
 		pClickUI->GetTweenCom()->ClearTweens();
 	}

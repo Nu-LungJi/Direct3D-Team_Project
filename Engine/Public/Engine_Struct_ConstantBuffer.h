@@ -1,43 +1,33 @@
 #pragma once
 namespace Engine
-{
+{	
+	typedef struct tagConstantBufferPerObject
+	{
+		_float4x4 matWorld{};
+		_float4x4 matWVP{};
+	} CB_PER_OBJECT;
+	static_assert(sizeof(CB_PER_OBJECT) % 16 == 0);
+
 	typedef struct tagConstantBufferPerPass
 	{
 		//DIRECTIONAL_LIGHT dirLight{};
 		_float4x4	matView{};            // 뷰 행렬
 		_float4x4	matProj{};            // 투영 행렬 (Perspective 또는 Ortho)
 		_float4x4	matViewProj{};        // 곱해진 행렬 (VS에서 연산 절약)
+
 		_float4x4	matInvView{};			// 뷰 역행렬 (빌보드 계산이나 월드 좌표 복원용)
 		_float4x4	matInvProj{};
 		_float4x4	matInvViewProj{};
+
 		_float4x4	matShadowLightViewProj{};
+
 		_float3		vCamPos{};
-		_float		_pad1{};
+		_float		fDeltaTime{};
+
 		_float3		vShadowLightDir{};
-		_float		_pad2{};
+		_float		fTimeAccumulation{};
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
-
-	typedef struct tagConstantBufferPerObject
-	{
-		_float4x4 matWorld{};
-		_float4x4 matWVP{};
-		_float4   vBaseColor{ 1.f, 1.f, 1.f, 1.f };
-		uint32_t light{ 0xFF };
-		_float3 _pad{};
-	} CB_PER_OBJECT;
-	static_assert(sizeof(CB_PER_OBJECT) % 16 == 0);
-
-	typedef struct tagConstantBufferPerUI
-	{
-		_float2  texCoord{};
-		_float2  uvSize{};	// 그릴사이즈
-		_float4  color{ 0.f, 0.f, 0.f, 1.f };
-		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
-		_float2 quadSize{}; // 텍스처의 현제 사이즈
-		_float4 margins{};
-	} CB_PER_UI;
-	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 
 	typedef struct tagConstantBufferObjectMaterial
 	{
@@ -54,35 +44,35 @@ namespace Engine
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
 
-	typedef struct tagConstantBufferTime
-	{
-		_float	DeltaTime;
-		_float	TimeAccumulation;
-		_float2 TimePadding;
-	} CB_TIME;
-	static_assert(sizeof(CB_TIME) % 16 == 0);
-
-	typedef struct tagConstantBufferFog
-	{
-		_float4x4	FogVolumeInvWorld;
-		_float		FogIntensity;
-		_float3		FogColor;
-		_float		FogMaxHeight;
-		_float		FogStartPos;
-		_float		FogEndPos;
-		_float		FogDensity;
-	} CB_FOG;
-	static_assert(sizeof(CB_FOG) % 16 == 0);
-
 	typedef struct tagConstantBufferLight
 	{
 		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
-		XMFLOAT4X4		g_InvViewProj;
-		uint32_t		LightCount;
-		uint32_t		CurrentShadowLightIndex;
-		_float2			LightPadding;
+		XMFLOAT4X4		g_InvViewProj{};
+		uint32_t		LightCount{};
+		uint32_t		CurrentShadowLightIndex{};
+		_float2			LightPadding{};
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
+
+	typedef struct tagConstantBufferPerUI
+	{
+		_float2  texCoord{};
+		_float2  uvSize{};	// 그릴사이즈
+		_float4  color{ 0.f, 0.f, 0.f, 1.f };
+		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
+		_float2 quadSize{}; // 텍스처의 현제 사이즈
+		_float4 margins{};
+	} CB_PER_UI;
+	static_assert(sizeof(CB_PER_UI) % 16 == 0);
+
+	typedef struct CB_PART_ATTACHMENT
+	{
+		_float4x4 m_preTransform;
+		uint32_t gParentInstanceIndex;
+		uint32_t gParentBoneIndex;
+		_float2  gPartAttachmentPadding;
+	}CB_PART_ATTACHMENT;
+	static_assert(sizeof(CB_PART_ATTACHMENT) % 16 == 0);
 
 	typedef struct tagInitParticle
 	{
@@ -102,20 +92,6 @@ namespace Engine
 		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
 
-	typedef struct CB_CIRCLE_TO_WAVE
-	{
-		_float3 g_vFlowDirection; // 물결이 흘러가는 방향 (정규화, XZ 평면 기준)
-		_float g_fBurstRatio; // ageRatio 기준, 이 시점까지 원형 확산 (예: 0.3)
-
-		_float g_fTransitionRatio; // 전환 구간 폭 (ageRatio 기준, 예: 0.15)
-		_float g_fBurstSpeed; // 원형 확산 초기 속도
-		_float g_fFlowSpeed; // 물결이 흘러가는 이동 속도
-		_float g_fWaveAmplitude; // 상하 진폭
-
-		_float g_fWaveFrequency; // 공간적 파장 (위치에 따른 위상차)
-		_float g_fWaveSpeed; // 시간에 따른 위상 변화 속도
-		_float2 g_fPadding2;
-	}CB_CIRCLE_TO_WAVE;
 	typedef struct CB_SCROLL
 	{
 		_float    g_fScrollOffset;
@@ -140,21 +116,13 @@ namespace Engine
 		PARTICLE_SPAWN_DATA  g_SpawnData[MAX_SPAWN_PER_CALL];
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
+
 	struct CB_CLEAR
 	{
 		uint32_t ownerID;
 		_float3 pad;
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
-
-	typedef struct CB_PART_ATTACHMENT
-	{
-		_float4x4 m_preTransform;
-		uint32_t gParentInstanceIndex;
-		uint32_t gParentBoneIndex;
-		_float2  gPartAttachmentPadding;
-	}CB_PART_ATTACHMENT;
-	static_assert(sizeof(CB_PART_ATTACHMENT) % 16 == 0);
 
 	typedef struct CB_SpellMeter
 	{

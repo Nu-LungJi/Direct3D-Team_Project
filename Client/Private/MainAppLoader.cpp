@@ -111,7 +111,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Mesh_Particle.hlsl")))
+	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -271,7 +271,8 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
-		CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
+		CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
+		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 		//파티클 객채들 생성
 		//CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
 		//CGameInstance::Get().Add_Particle("FIRE", "FIRESMOKE", CParticle_Fire_GPU::Create());

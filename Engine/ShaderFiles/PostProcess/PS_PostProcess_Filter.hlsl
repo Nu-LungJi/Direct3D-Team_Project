@@ -1,9 +1,9 @@
 #include "../ShaderDefines.hlsl"
 // Color LUT + ToneMapping + Vignetting + Noise
 
-// Áö±İ±îÁö ¾À¿¡ ±×·ÁÁø ÅØ½ºÃÄ ¹ÙÀÎµù
+// ì§€ê¸ˆê¹Œì§€ ì”¬ì— ê·¸ë ¤ì§„ í…ìŠ¤ì³ ë°”ì¸ë”©
 Texture2D SceneColorTexture : register(t0);
-Texture2D LUT_Texture       : register(t1); // LUT ÇÊÅÍ 3D ÅØ½ºÃÄ
+Texture2D LUT_Texture       : register(t1); // LUT í•„í„° 3D í…ìŠ¤ì³
 
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
@@ -22,6 +22,11 @@ static const float3x3 AGX_OutMatrix = float3x3(
 );
 static const float Min_Luminance = 0.00018442211f;
 static const float Max_Luminance = 16.f;
+
+static const float DistortionIntensity	= 0.f; // ì™œê³¡ ê°•ë„
+static const float ChromaticIntensity	= 0.f; // ìƒ‰ìˆ˜ì°¨ ê°•ë„
+static const float VignetteIntensity	= 0.f; // ë¹„ë„¤íŒ… ê°•ë„
+static const float VignetteSmoothness	= 0.f; // ë¹„ë„¤íŒ…
 
 // Distortion
 float2 Distortion(float2 _UV)
@@ -152,7 +157,7 @@ PS_OUT PSMain(PS_IN IN)
     // ToneMapping
      FinalColor = ToneMap_ACESFilm(FinalColor);
     //FinalColor = ToneMap_Reinhard(FinalColor);
-    //FinalColor = ToneMap_AGXFilm(FinalColor); // ÀÏ´Ü »ç¿ëX
+    //FinalColor = ToneMap_AGXFilm(FinalColor); // ì¼ë‹¨ ì‚¬ìš©X
     
     // LUT ColorGrading
     FinalColor = LUT_Filtering(FinalColor);

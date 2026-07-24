@@ -430,8 +430,6 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	GetTransform().Update();
 
 	// 플레이어 Transform을 먼저 확정한 뒤 같은 프레임의 카메라 View를 갱신한다.
-
-
 	if (auto* pCamera = Cast<CPlayerThirdPersonCamera>(CGameInstance::Get().GetActiveCamera("PlayerCamera")))
 	{
 		pCamera->UpdateFollow();

@@ -2,10 +2,10 @@
 
 
 
-cbuffer CB_CLEAR : register(b7)
+cbuffer CB_CLEAR : register(b13)
 {
     uint g_uiTargetOwnerID;
-    float3 pad;
+    float3 padding;
 };
 
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u0);
@@ -19,7 +19,7 @@ void CSMain(uint id : SV_DispatchThreadID)
     if (p.alive == 1 && p.ownerID == g_uiTargetOwnerID)
     {
         p.alive = 0;
-        p.color = float4(0, 0, 0, 0); // È¤½Ã discard ¿ìÈ¸ÇØµµ ÃÖ¼ÒÇÑ ¾È º¸ÀÌ°Ô
+        p.color = float4(0, 0, 0, 0); // í˜¹ì‹œ discard ìš°íšŒí•´ë„ ìµœì†Œí•œ ì•ˆ ë³´ì´ê²Œ
         p.emissive = float4(0, 0, 0, 0);
         p.life = 0;
         p.size = 0;

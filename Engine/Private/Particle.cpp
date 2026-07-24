@@ -51,6 +51,30 @@ void CParticle::RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList)
 	}
 }
 
+HRESULT CParticle::Set_BlendState(BLENDTYPE blendType)
+{
+	switch (ETOUI(blendType)){
+	case 0:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	case 1:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+		break;
+	case 2:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+		break;
+	default:
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		break;
+	}
+	if (m_pBlendState == nullptr) {
+		MSG_BOX("BlendState Nullptr");
+		return E_FAIL;
+	}
+	m_iBlendIndex = ETOUI(blendType);
+	return S_OK;
+}
+
 void CParticle::ProcessPendingSpawns(E::_float fTimeDelta)
 {
 	if (m_PendingSpawns.empty())
@@ -84,4 +108,10 @@ void CParticle::ProcessPendingSpawns(E::_float fTimeDelta)
 		else
 			OutputDebugStringA("Spawn SUCCESS!\n");
 	}
+}
+void CParticle::TranslateOwner(uint32_t ownerId, const _float3& delta) {
+
+}
+void CParticle::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) {
+
 }
