@@ -38,6 +38,7 @@ private:
 	~CEffectManager()override;
 
 public:
+	HRESULT Initialize();
 	void UpdateGUI();
 	void Update(_float fTimeDelta);
 
@@ -48,7 +49,7 @@ public:
 
 	EFFECT_INSTANCE_ID Spawn(const std::string& sEffectName,
 		const _float4x4& matWorld,
-		_fvector vEndPosition);
+		_fvector vEndPosition = XMVectorZero());
 
 	void Stop(EFFECT_INSTANCE_ID iEffectId);
 
