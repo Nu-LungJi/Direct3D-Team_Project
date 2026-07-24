@@ -32,6 +32,16 @@ void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceCont
 
 void UIManager::InitializeActions()
 {
+	m_EventMap["ClearAction"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pTween->ClearTweens();
+		};
+	m_vEventNames.push_back("ClearAction");
+
 	// ==========================================
 	// 1. 사이즈 업
 	// ==========================================
@@ -645,7 +655,7 @@ void UIManager::InitializeActions()
 		float startY = pCaller->GetUIInfo().fY;
 		float endY = startY + 15.0f;
 
-		pTween->PlayTween(startY, endY, 0.7f,
+		pTween->PlayTween(startY, endY, 1.5f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) {
 					pObj->GetUIInfo().fY = currentValue;
