@@ -17,17 +17,29 @@ CEffectManager::~CEffectManager()
 {
 }
 
+HRESULT CEffectManager::Initialize() {
+
+	if (FAILED(LoadEffectPreset("./Resources/json/Effect/BossRockPattern.json"))) {
+		MSG_BOX("Load Effect Failed");
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
 void CEffectManager::UpdateGUI()
 {
 	static EFFECT_PRESET preset{};
-	static std::string savePath = "../../Resources/json/Effect/NewEffect.json";
+	static std::string savePath = "./Resources/json/Effect/NewEffect.json";
 	static int removeCommandIndex = -1;
+	static std::string effectName = "";
+	static std::string playEffectName = "";
 
+	static float Duration = 0;
 	ImGui::Begin("Effect Manager");
 
-	InputText("Effect Name", preset.sEffectName);
+	InputText("Effect Name", effectName);
 	InputText("Save Path", savePath);
-	ImGui::InputFloat("Effect Duration", &preset.fDuration);
+	ImGui::InputFloat("Effect Duration", &Duration);
 
 	ImGui::Separator();
 
@@ -86,7 +98,7 @@ void CEffectManager::UpdateGUI()
 			if (ImGui::CollapsingHeader("Particle Command", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				InputText("Command Name", particle->sCommandName);
-				InputText("Particle JSON", particle->sParticleJson);
+				InputText("Particle JSON File Name. Include .json", particle->sParticleJson);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
 
 				if (ImGui::Button("Remove Particle"))
@@ -187,6 +199,8 @@ void CEffectManager::UpdateGUI()
 
 	if (ImGui::Button("Save Effect Preset"))
 	{
+		preset.sEffectName = effectName;
+		preset.fDuration = Duration;
 		if (FAILED(SaveEffectPreset(savePath, preset)))
 			MSG_BOX("Failed to save effect preset");
 	}
@@ -199,6 +213,21 @@ void CEffectManager::UpdateGUI()
 	ImGui::Text("Command Count: %zu", preset.vecCommands.size());
 	ImGui::Text("Active Effects: %zu", m_Instances.size());
 
+
+	ImGui::Separator();
+
+	InputText("Load Effect Name", playEffectName);
+
+	if (ImGui::Button("Play Effect"))
+	{
+		_float4x4 matWorld{};
+
+		XMStoreFloat4x4(
+			&matWorld,
+			XMMatrixTranslation(5.f, 3.f, 5.f));
+
+		Spawn(playEffectName, matWorld);
+	}
 	ImGui::End();
 }
 
@@ -772,26 +801,22 @@ void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_
 
 	const _float3 worldPosition =TransformPosition(command.vLocalPosition,instance.matWorld);
 
-	/*
-	 * 이 부분은 실제 SoundManager의 재생 함수
-	 * 시그니처에 맞춰 이름과 인자를 변경해야 한다.
-	 */
-	/*const SOUND_ID soundId =
-		m_pSoundManager->PlayEffectSound(
-			command.sSoundPath,
-			worldPosition,
-			command.fVolume,
-			command.fPitch,
-			command.fMinDistance,
-			command.fMaxDistance,
-			command.bLoop,
-			command.b3D);
+	SOUND_PLAY_DESC playDesc{};
+	playDesc.fVolume = command.fVolume;
+	playDesc.bLoop = command.bLoop;
+	playDesc.sBusID = "SFX";
+	SOUND_3D_DESC desc3D{};
+	desc3D.fMinDistance = command.fMinDistance;
+	desc3D.fMaxDistance = command.fMaxDistance;
+	desc3D.vPosition = worldPosition;
+	
+	const SOUND_ID soundId = m_pSoundManager->Play3D(command.sSoundPath, desc3D,playDesc);
 
 	if (soundId != INVALID_SOUND_ID)
 	{
 		instance.vecSoundIds.push_back(
 			soundId);
-	}*/
+	}
 }
 
 void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
@@ -801,8 +826,13 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 	if (iter == m_Instances.end())
 		return;
 
-	EFFECT_INSTANCE& instance =
-		iter->second;
+	EFFECT_INSTANCE& instance = iter->second;
+
+	if (m_pParticleManager)
+	{
+		for (uint32_t ownerId : instance.vecParticleOwnerId)
+			m_pParticleManager->ClearByOwner(ownerId);
+	}
 
 	for (uint32_t ownerId :instance.vecParticleOwnerId)
 	{
@@ -814,7 +844,7 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 		for (const CHandle& lightHandle :
 			instance.vecLightHandles)
 		{
-		//	m_pLightManager->StopEffectLight(lightHandle);
+			m_pLightManager->Reset_EffectLight(lightHandle);
 		}
 	}
 
@@ -1060,5 +1090,13 @@ HRESULT CEffectManager::AddPreset(EFFECT_PRESET&& preset)
 UPtr<CEffectManager>
 CEffectManager::Create(CParticleManager* pParticleManager,CLightManager* pLightManager,CSoundManager* pSoundManager)
 {
-	return UPtr<CEffectManager>(new CEffectManager{pParticleManager,pLightManager,pSoundManager});
+	auto pInstance = UPtr<CEffectManager>(new CEffectManager{ pParticleManager,pLightManager,pSoundManager });
+
+	if (!pInstance) {
+		MSG_BOX("Failed to create Effect Manager");
+		return nullptr;
+	}
+	pInstance->Initialize();
+
+	return pInstance;
 }

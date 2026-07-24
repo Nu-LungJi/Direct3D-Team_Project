@@ -117,8 +117,8 @@ PS_OUT PSMain(VS_OUT In)
 	float leadingEdge = lerp(-bandWidth, 1.0f + bandWidth, ratio);
 	float trailingEdge = leadingEdge - bandWidth;
 
-	if (lengthMask > leadingEdge || lengthMask < trailingEdge)
-		discard;
+	//if (lengthMask > leadingEdge || lengthMask < trailingEdge)
+	//	discard;
 // 길이 그라디언트 위주 + 노이즈로 가장자리에 자연스러운 디테일만 살짝
     //float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
 
