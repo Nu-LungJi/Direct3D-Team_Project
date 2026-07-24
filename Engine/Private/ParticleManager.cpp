@@ -690,7 +690,8 @@ void CParticleManager::UpdateGUI()
 				slotNormalHdr.selectedPath.clear();
 				selectedHdrNormalIndex = -1;
 				m_Particles.clear();
-				CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
+				auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
+				CGameInstance::Get().Load_ParticleJsonPackage(k);
 
 			}
 		}
@@ -709,6 +710,8 @@ void CParticleManager::UpdateGUI()
 
 
 	ImGui::Begin("CParticleManager");
+
+
 
 
 	if (ImGui::Button("Erase")) {

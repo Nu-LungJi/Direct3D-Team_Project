@@ -175,7 +175,8 @@ namespace Engine
     X(_float3, fSize,_float3(1,1,1)) \
     X(_float, fLife, 1.f) \
     X(_float4, color, _float4(1,1,1,1)) \
-    X(_float4, emissive, _float4(0,0,0,0))\
+    X(_float4, startEmissive, _float4(0,0,0,0))\
+    X(_float4, endEmissive, _float4(0,0,0,0))\
    COMMON_PATTERN_FIELDS(X)
 
 

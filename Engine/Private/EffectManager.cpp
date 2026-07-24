@@ -217,15 +217,17 @@ void CEffectManager::UpdateGUI()
 	ImGui::Separator();
 
 	InputText("Load Effect Name", playEffectName);
-	if (ImGui::Button("Play Effect")) {
-		_float4x4 matworld;
-		 XMStoreFloat4x4(&matworld, XMMatrixIdentity());
-		 _matrix mat = XMLoadFloat4x4(&matworld);
-		XMVector3TransformCoord(XMVectorSet(5, 5, 5, 1), mat);
-		XMStoreFloat4x4(&matworld, mat);
-		Spawn(playEffectName, matworld);
+
+	if (ImGui::Button("Play Effect"))
+	{
+		_float4x4 matWorld{};
+
+		XMStoreFloat4x4(
+			&matWorld,
+			XMMatrixTranslation(5.f, 3.f, 5.f));
+
+		Spawn(playEffectName, matWorld);
 	}
-		
 	ImGui::End();
 }
 
