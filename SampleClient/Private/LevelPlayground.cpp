@@ -83,7 +83,7 @@ HRESULT CLevelPlayground::Initialize()
 		MonDesc.fAngle = 180.f;
 		MonDesc.ReSourceTag = "Model_Resource_TombProtector";
 		MonDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
-		XMStoreFloat3(&MonDesc.vScale, XMVectorSet(5.f, 5.f, 5.f, 1));
+		XMStoreFloat3(&MonDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
 
 		auto testBoss = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", "02_Gobline", &MonDesc);
 		

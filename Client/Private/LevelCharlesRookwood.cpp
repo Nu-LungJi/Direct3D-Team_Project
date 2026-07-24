@@ -221,7 +221,7 @@ HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
-			"Level_CharlesRockwood",
+			"Level_CharlesRookwood",
 			"00_MapCollision");
 
 	if (handles.empty())

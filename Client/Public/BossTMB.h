@@ -6,6 +6,11 @@ NS_BEGIN(Client)
 class CBossTMB final : public CMonster
 {
 public:
+	struct TMB_DESC:public  CMonster::MONSTER_DESC
+	{
+
+	};
+public:
 	DECLARE_DERIVED_TYPE(CBossTMB, CMonster)
 
 private:

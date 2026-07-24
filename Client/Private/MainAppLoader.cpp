@@ -73,17 +73,17 @@ HRESULT CMainAppLoader::Load()
 		//	return E_FAIL;
 		//}
 
-		//if (FAILED(Load_PhysX_Resource()))
-		//{
-		//	MSG_BOX("Failed Load_PhysX_Resource");
-		//	return E_FAIL;
-		//}
+		if (FAILED(Load_PhysX_Resource()))
+		{
+			MSG_BOX("Failed Load_PhysX_Resource");
+			return E_FAIL;
+		}
 
-		//if (FAILED(Create_ActionNode()))
-		//{
-		//	MSG_BOX("Failed Action Node To MainApp");
-		//	return E_FAIL;
-		//}
+		if (FAILED(Create_ActionNode()))
+		{
+			MSG_BOX("Failed BT Node To MainApp");
+			return E_FAIL;
+		}
 
 		//GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
 	}

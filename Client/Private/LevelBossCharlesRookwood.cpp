@@ -9,7 +9,13 @@
 #include "UiCamera.h"
 
 #include "LevelCharlesRookwoodLoader.h"
+#include "DebugPlayerThirdPersonCamera.h"
+#include "DebugPlayer.h"
 
+#include "PlayerThirdPersonCamera.h"
+#include "Player.h"
+
+#include "BossTMB.h"
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -25,11 +31,28 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 
+	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/TombBoss", true)))
+		return E_FAIL;
+
+	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
+
 	if (FAILED(SpawnFlyCamera()))
 		return E_FAIL;
 
 	if (FAILED(SpawnUICamera()))
 		return E_FAIL;
+
+	if (FAILED(SpawnDebugPlayerCamera(SpawnDebugPlayer())))
+		return E_FAIL;
+
+	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+		return E_FAIL;
+
+	if (FAILED(SpawnMonster()))
+		return E_FAIL;
+
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -61,7 +84,7 @@ Engine::UPtr<CLevelBossCharlesRookwood> CLevelBossCharlesRookwood::Create()
 
 	if (FAILED(pInstance->Initialize()))
 	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
+		MSG_BOX("Failed to Created : CLevel_BossCharlesRookwood");
 	}
 
 	return pInstance;
@@ -118,7 +141,119 @@ HRESULT CLevelBossCharlesRookwood::SpawnUICamera()
 	}
 	return S_OK;
 }
+std::optional<CHandle> CLevelBossCharlesRookwood::SpawnDebugPlayer()
+{
+	CDebugPlayer::DESC PlayerDesc{};
+	PlayerDesc.sObjectTag = "DebugPlayer";
+	PlayerDesc.vInitialPosition = { -80.f, 20.f, 0.f };
+	return  E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayer,
+		"02_Player",
+		&PlayerDesc);
+}
 
+HRESULT CLevelBossCharlesRookwood::SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer)
+{
+	if (!hDebugPlayer) return E_FAIL;
+	CDebugPlayerThirdPersonCamera::DESC Desc{};
+	Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+	Desc.vAt = { 10.f, 50.f, 10.f };
+	Desc.vEye = { 10.f, 53.f, 5.f };
+	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+	Desc.fFovY = 75.f;
+	Desc.fNear = 0.1f;
+	Desc.fFar = 1000.f;
+	Desc.sObjectTag = "DebugPlayerCamera";
+	Desc.hTarget = hDebugPlayer.value();
+
+	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera,
+		"100_CAMERA",
+		&Desc);
+	if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
+		"DebugPlayerCamera", *hPlayerCamera)))
+	{
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
+{
+	if (!hPlayer) return E_FAIL;
+	CPlayerThirdPersonCamera::DESC Desc{};
+	Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+	Desc.vAt = { 10.f, 50.f, 10.f };
+	Desc.vEye = { 10.f, 53.f, 5.f };
+	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+	Desc.fFovY = 75.f;
+	Desc.fNear = 0.1f;
+	Desc.fFar = 1000.f;
+	Desc.sObjectTag = "PlayerCamera";
+	Desc.hTarget = hPlayer.value();
+
+	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera,
+		"101_CAMERA",
+		&Desc);
+	if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
+		"PlayerCamera", *hPlayerCamera)))
+	{
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
+{
+	CPlayer::DESC PlayerDesc{};
+	PlayerDesc.sObjectTag = "Player";
+	PlayerDesc.vInitialPosition = { -80.f, 20.f, 10.f };
+	return  E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
+		"03_Player",
+		&PlayerDesc);
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()
+{
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_BossCharlesRookwood",
+			"00_MapCollision");
+
+	if (handles.empty())
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnMonster()
+{
+	CBossTMB::TMB_DESC TmbDesc{};
+
+	TmbDesc.sObjectTag = "BossTmb";
+	TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
+	XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
+	TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+	TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+	XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+	auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
+
+	if (!BossTmb)
+	{
+		MSG_BOX("Create BossTmb Failed in Rookwood");
+		return E_FAIL;
+	}
+			
+	
+	return S_OK;
+}
 
 void CLevelBossCharlesRookwood::Free()
 {

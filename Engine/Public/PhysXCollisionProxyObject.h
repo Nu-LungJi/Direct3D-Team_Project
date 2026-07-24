@@ -5,6 +5,7 @@
 NS_BEGIN(Engine)
 
 class CComPxRigidBody;
+class CComPxCollider;
 
 class ENGINE_DLL CPhysXCollisionProxyObject : public CGameObject
 {
@@ -29,6 +30,7 @@ public:
 	void Update(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	_bool SetCollisionEnabled(_bool bEnabled);
 
 public:
 	static UPtr<CPhysXCollisionProxyObject> Create();
@@ -39,7 +41,16 @@ private:
 	HRESULT BuildCollision(const PX_COLLISION_PROXY_FILE& data);
 
 private:
+	struct COLLIDER_STATE
+	{
+		CComPxCollider* pCollider{};
+		_bool bSimulationEnabled{};
+		_bool bQueryEnabled{};
+	};
+
 	std::vector<CComPxRigidBody*> m_pComPxRigidBodies{};
+	std::vector<COLLIDER_STATE> m_ColliderStates{};
+	_bool m_bCollisionEnabled{ true };
 };
 
 NS_END
