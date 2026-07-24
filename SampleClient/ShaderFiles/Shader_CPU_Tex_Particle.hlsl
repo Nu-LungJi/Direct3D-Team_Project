@@ -142,7 +142,7 @@ PS_OUT PSMain(VS_OUT In)
         return Out;
     }
  
-    float4 vFinalColor = texColor * In.vColor;;
+    float4 vFinalColor = texColor * In.vColor;
     clip(vFinalColor.a - 0.02f);
 
     float3 WorldNormal = Compute_WorldNormal(

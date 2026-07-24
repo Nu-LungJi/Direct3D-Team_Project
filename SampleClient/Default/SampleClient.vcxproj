@@ -413,7 +413,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
-    <FxCompile Include="..\ShaderFiles\Shader_Lightning_Texture.hlsl">
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

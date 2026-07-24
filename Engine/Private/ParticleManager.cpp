@@ -101,6 +101,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokeJump = false;
 	static _bool bSmokegv = false;
 	static _bool bSmokegw = false;
+	static _bool bLightning = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -910,10 +911,11 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 	ImGui::Checkbox("SMOKEGV", &bSmokegv);
 	ImGui::Checkbox("SMOKEGW", &bSmokegw);
+	ImGui::Checkbox("LIGHTNING", &bLightning);
 	ImGui::Checkbox("None", &none);
 
 	if (none)
-		bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+		bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
 
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
@@ -959,6 +961,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
 	if (bSmokegw)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
+	if (bLightning)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1181,10 +1185,11 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 		ImGui::Checkbox("SMOKEGV", &bSmokegv);
 		ImGui::Checkbox("SMOKEGW", &bSmokegw);
+		ImGui::Checkbox("LIGHTNING", &bLightning);
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+			bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
 	
 
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
@@ -1204,6 +1209,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
 		if (bSmokegw)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
+		if (bLightning)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 	}
 	
 	ImGui::Separator();
@@ -3184,8 +3191,6 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
-			//else if constexpr (std::is_same_v<T, SLightning_Tex>)
-			//	return ParticlePattern::MakeLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

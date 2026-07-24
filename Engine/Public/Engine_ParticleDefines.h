@@ -70,6 +70,7 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_SMOKEJUMP = 1 << 6;
 	constexpr uint32_t BEHAVIOR_SMOKEGV = 1 << 7;
 	constexpr uint32_t BEHAVIOR_SMOKEGW = 1 << 8;
+	constexpr uint32_t BEHAVIOR_LIGHTNING = 1 << 9;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
