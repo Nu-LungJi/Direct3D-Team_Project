@@ -19,10 +19,10 @@ CEffectManager::~CEffectManager()
 
 HRESULT CEffectManager::Initialize() {
 
-	if (FAILED(LoadEffectPreset("./Resources/json/Effect/BossRockPattern.json"))) {
-		MSG_BOX("Load Effect Failed");
-		return E_FAIL;
-	}
+	//if (FAILED(LoadEffectPreset("./Resources/json/Effect/BossRockPattern.json"))) {
+	//	MSG_BOX("Load Effect Failed");
+	//	return E_FAIL;  
+	//}
 	return S_OK;
 }
 

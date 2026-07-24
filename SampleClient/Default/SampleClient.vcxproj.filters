@@ -945,7 +945,10 @@
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning.hlsl">
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

@@ -20,6 +20,7 @@ public:
 		BEHAVIOR_SMOKEGV			= 1 << 7,
 		BEHAVIOR_SMOKEGW			= 1 << 8,
 		BEHAVIOR_LIGHTNING			= 1 << 9,
+		BEHAVIOR_EXTRALIGHTNING		= 1 << 10,
 	};
 
 protected:

@@ -6,6 +6,10 @@ const static float4 EdgeColor = { 0.f, 0.f, 1.f, 1.f };
 
 const static float PressingValue = 0.125f;  
 
+const static float BranchDensity = 3.f;
+const static float Sharpness = 6.f;
+const static float FlickeringSpeed = 25.f;
+
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
@@ -54,28 +58,30 @@ Texture2D g_NoiseTexture : register(t4);
 Texture2D g_AnyTexture : register(t5);
 Texture2D g_BackgroundTex : register(t7);
 
+struct PS_OUT
+{
+	float4 vDiffuse : SV_TARGET0;
+};
+float Jitter(float _Ratio)
+{
+	return frac(sin(_Ratio * 123.45f) * 43758.5453f) * 0.02f;
+}
+
 VS_OUT VSMain(VS_IN In)
 {
 	VS_OUT Out = (VS_OUT) 0;
 
-	float4x4 matWorld = float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
-
-    // matWorld엔 회전이 없다 (C++ 쪽에서 Scale * Translation만 곱함).
-    // 중심 위치/스케일만 뽑아내고, 회전은 여기서 카메라 축으로 직접 만든다 (빌보드).
-	float3 vCenter = float3(matWorld._41, matWorld._42, matWorld._43);
-	float3 vRow0 = float3(matWorld._11, matWorld._12, matWorld._13);
-	float fScale = length(vRow0);
-	float3 vRight, vUp;
-	vRight = normalize(float3(matWorld._11, matWorld._12, matWorld._13));
-	vUp = normalize(float3(matWorld._21, matWorld._22, matWorld._23));
-
-	float scaleX = length(float3(matWorld._11, matWorld._12, matWorld._13));
-	float scaleY = length(float3(matWorld._21, matWorld._22, matWorld._23));
-
-	float3 vWorldPos =
-    vCenter +
-    vRight * In.vPosition.x * scaleX +
-    vUp * In.vPosition.y * scaleY;
+	float4x4 matWorld	= float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
+	
+	float3	 vCenter	= float3(matWorld._41, matWorld._42, matWorld._43);
+			 
+	float3	 vRight		= normalize(float3(matWorld._11, matWorld._12, matWorld._13));
+	float3	 vUp		= normalize(float3(matWorld._21, matWorld._22, matWorld._23));
+			 
+	float	 fscaleX	= length(float3(matWorld._11, matWorld._12, matWorld._13));
+	float	 fscaleY	= length(float3(matWorld._21, matWorld._22, matWorld._23));
+			 
+	float3	 vWorldPos  = vCenter + vRight * In.vPosition.x * fscaleX + vUp * In.vPosition.y * fscaleY;
 
 	Out.vPosition = mul(float4(vWorldPos, 1.f), g_matViewProj);
 	Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
@@ -92,14 +98,36 @@ VS_OUT VSMain(VS_IN In)
     
 	return Out;
 }
+VS_OUT VSMain_Extra(VS_IN In)
+{
+	VS_OUT Out = (VS_OUT) 0;
 
-struct PS_OUT
-{
-	float4 vDiffuse : SV_TARGET0;
-};
-float Jitter(float _Ratio)
-{
-	return frac(sin(_Ratio * 123.45f) * 43758.5453f) * 0.02f;
+	float4x4 matWorld	= float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
+	
+	float3	 vCenter	= float3(matWorld._41, matWorld._42, matWorld._43);
+
+	float3	 vRight		= normalize(float3(matWorld._11, matWorld._12, matWorld._13));
+	float3	 vUp		= normalize(float3(matWorld._21, matWorld._22, matWorld._23));
+
+	float	 fscaleX	= length(float3(matWorld._11, matWorld._12, matWorld._13));
+	float	 fscaleY	= length(float3(matWorld._21, matWorld._22, matWorld._23));
+
+	float3	 vWorldPos	= vCenter + vRight * In.vPosition.x * fscaleX + vUp * In.vPosition.y * fscaleY;
+
+	Out.vPosition = mul(float4(vWorldPos, 1.f), g_matViewProj);
+	Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
+	Out.vColor = In.vColor;
+	Out.vEmissive = In.vInstEmissive;
+	Out.vEndEmissive = In.vInstEndEmissive;
+	Out.vScreenPos = Out.vPosition;
+	Out.iBehaviorType = In.iBehaviorType;
+	Out.vWorldPos = vWorldPos;
+	Out.vTangent = vRight;
+	Out.vNormal = normalize(cross(vRight, vUp));
+	Out.life = In.life;
+	Out.maxLife = In.maxLife;
+    
+	return Out;
 }
 
 PS_OUT PSMain_RChannel(VS_OUT In)
@@ -321,5 +349,36 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		Out.vDiffuse = float4(vFinalColor.bbb + Emissive.rgb, vFinalColor.b * In.vColor.a);
 	}
  
+	return Out;
+}
+PS_OUT PSMain_ExtraLightning(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0; 
+
+	float2	ScrollUVA  = In.vTexcoord * float2(1.f, BranchDensity) + float2(+In.life * 2.f, In.life * 12.f);
+	float2	ScrollUVB  = In.vTexcoord * float2(1.f, BranchDensity) + float2(-In.life * 3.f, In.life * 18.f);
+	
+	float	DistortTex = g_DiffuseTexture.Sample(LinearWrap, ScrollUVA).r;
+	
+	float2	DistortUV  = ScrollUVB + (DistortTex - 0.5f) * 0.2f;
+	float	RawNoise = g_DiffuseTexture.Sample(LinearWrap, DistortUV).r;
+	
+	float	LightningMask = pow(RawNoise, Sharpness);
+	
+	float	Flickering = frac(sin(floor(In.life * FlickeringSpeed)) * 43758.5453);
+	float	ActiveMask = smoothstep(0.1f, 0.4f, LightningMask * Flickering);
+	
+	if (ActiveMask > 0.f)	clip(-1);
+		
+	float3	CoreDiffuse	= { 12.f, 14.f, 15.f };
+	float3	GlowDiffuse = { 0.5f, 3.f, 10.f };
+	
+	float	CoreFactor  = pow(LightningMask, 2.0);
+	float3	FinalColor  = lerp(GlowDiffuse, CoreDiffuse, CoreFactor) * ActiveMask;
+	
+	Out.vDiffuse = float4(CoreFactor, CoreFactor, CoreFactor, 1.f);
+	return Out;
+	
+	Out.vDiffuse = float4(FinalColor, ActiveMask);
 	return Out;
 }

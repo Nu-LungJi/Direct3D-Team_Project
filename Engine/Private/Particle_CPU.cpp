@@ -348,6 +348,8 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		GWWaveSmoke(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
 		Lightning(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
+		ExtraLightning(p, fTimeDelta);
 	}
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
@@ -421,7 +423,12 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 		XMStoreFloat3(&p.vVelocity, Velocity);
 	}
 }
+void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
+	_float Ratio = p.life / p.fMaxLife;
+	p.rotation.x = Ratio * 15.f;
 
+
+}
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
