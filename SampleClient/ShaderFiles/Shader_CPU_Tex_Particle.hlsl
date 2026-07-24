@@ -203,7 +203,7 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 		float Mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
 		float2 DiffuseUV = In.vTexcoord * float2(0.549206f, 0.453968f);
-		DiffuseUV.x += In.life *0.5f;
+		DiffuseUV.y += In.life *0.5f;
 		float4 Diffuse = g_DiffuseTexture.Sample(LinearWrap, DiffuseUV);
 		
 		float t = saturate(In.life / In.maxLife);

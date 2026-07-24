@@ -152,6 +152,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
 	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
+
+	m_pComTransform->SetScale(XMVectorSet(2, 2, 2, 0));
 	return S_OK;
 }
 
