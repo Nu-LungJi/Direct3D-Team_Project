@@ -4,6 +4,8 @@ const static float  DistortionSTR = 0.03f;
 const static float  EdgeWidth = 0.02f;
 const static float4 EdgeColor = { 0.f, 0.f, 1.f, 1.f };
 
+const static float PressingValue = 0.125f;  
+
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
@@ -111,14 +113,12 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 	[branch]
 	if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
 	{
-		//Ratio * -0.025f
-		//Ratio * 0.002f
-		float2 ScrollUV		= In.vTexcoord + float2(0.5F, 0.5F);
+		float2 ScrollUV		= In.vTexcoord + float2(Ratio * 0.002f, Ratio * -0.025f);
 		float4 DistortTex	= g_DistortionTexture.Sample(LinearWrap, ScrollUV);
 
 		float2 Offset		= (DistortTex.rg - 0.5f) * 2.f * DistortionSTR;
 			
-		float Jittering = Jitter(Ratio);
+		float  Jittering  = Jitter(Ratio);
 		float2 DissolveTiling = float2(8.f, 15.f);
 		float2 DissolveUV = ScrollUV + Offset * 0.3f * float2(Jittering, Jittering);
 		
@@ -126,8 +126,9 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 		
 		DissolveTex.r = pow(DissolveTex.r, 1.5f); 
 		
-		
-		float4 FinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
+		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
+		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
+		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
 		
 		float DissolveMask = FinalColor.a;
 
@@ -164,12 +165,12 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
 		}
 
-		Out.vDiffuse = float4(FinalColor.rrr / 4.f + Emissive.rgb, FinalColor.r * In.vColor.a);
+		Out.vDiffuse = float4(FinalColor.rrr / 2.f + Emissive.rgb, FinalColor.r * In.vColor.a);
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.rrr + Emissive.rgb, vFinalColor.r * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.rrr / 2.f + Emissive.rgb, vFinalColor.r * In.vColor.a);
 	}
  
 	return Out;
@@ -197,7 +198,10 @@ PS_OUT PSMain_GChannel(VS_OUT In)
 		float4 DissolveTex = g_NoiseTexture.Sample(LinearWrap, DissolveUV * DissolveTiling);
 		
 		DissolveTex.r = pow(DissolveTex.r, 1.5f);
-		float4 FinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord + Offset);
+		//float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
+		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
+		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
+		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
 		
 		float DissolveMask = FinalColor.a;
 
@@ -224,22 +228,22 @@ PS_OUT PSMain_GChannel(VS_OUT In)
 		{
 			DissolveProgress = 0.f;
 		}
-		DissolveProgress *= 2.f;
+		DissolveProgress *= 2.2f;
 		clip(DissolveMask - 0.3f);
 		clip(FinalColor.g - DissolveProgress);
 		
-		if (DissolveProgress > 0.001f && (FinalColor.r - DissolveProgress < EdgeWidth))
+		if (DissolveProgress > 0.001f && (FinalColor.g - DissolveProgress < EdgeWidth))
 		{
-			float EdgeGlow = 1.0f - saturate((FinalColor.r - DissolveProgress) / EdgeWidth);
+			float EdgeGlow = 1.0f - saturate((FinalColor.g - DissolveProgress) / EdgeWidth);
 			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
 		}
 
-		Out.vDiffuse = float4(FinalColor.ggg / 4.f + Emissive.rgb, FinalColor.g * In.vColor.a);
+		Out.vDiffuse = float4(FinalColor.ggg / 2.f + Emissive.rgb, FinalColor.g * In.vColor.a);
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.ggg + Emissive.rgb, vFinalColor.g * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.ggg / 2.f + Emissive.rgb, vFinalColor.g * In.vColor.a);
 	}
  
 	return Out;
@@ -259,16 +263,20 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		float4 DistortTex = g_DistortionTexture.Sample(LinearWrap, ScrollUV);
 
 		float2 Offset = (DistortTex.rg - 0.5f) * 2.f * DistortionSTR;
-			
+		
 		float Jittering = Jitter(Ratio);
 		float2 DissolveTiling = float2(8.f, 15.f);
 		float2 DissolveUV = ScrollUV + Offset * 0.3f * float2(Jittering, Jittering);
 		
 		float4 DissolveTex = g_NoiseTexture.Sample(LinearWrap, DissolveUV * DissolveTiling);
 		
-		DissolveTex.r = pow(DissolveTex.r, 1.5f);
-		float4 FinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord + Offset);
+		DissolveTex.b = pow(DissolveTex.b, 1.5f);
+		//float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
+		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
+		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
+		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
 		
+		float CleanB = smoothstep(0.05f, 0.95f, FinalColor.b);
 		float DissolveMask = FinalColor.a;
 
 		float FadeInDuration = 0.08f; // 시작 후, N초
@@ -284,7 +292,7 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		[branch]
 		if (Ratio < FadeInRatio)
 		{
-			DissolveProgress = 1.f - (Ratio / FadeInRatio);
+			DissolveProgress = 1.f - (Ratio / Ratio);
 		}
 		else if (Ratio > FadeOutStart)
 		{
@@ -294,17 +302,18 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		{
 			DissolveProgress = 0.f;
 		}
-		DissolveProgress *= 2.f;
-		clip(DissolveMask - 0.3f);
-		clip(FinalColor.b - DissolveProgress);
 		
-		//if (DissolveProgress > 0.001f && (FinalColor.r - DissolveProgress < EdgeWidth))
-		//{
-		//	float EdgeGlow = 1.0f - saturate((FinalColor.r - DissolveProgress) / EdgeWidth);
-		//	FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
-		//}
-
-		Out.vDiffuse = float4(FinalColor.bbb / 4.f + Emissive.rgb, FinalColor.b * In.vColor.a);
+		DissolveProgress *= 2.5f;
+		clip(DissolveMask - 0.3f);
+		clip(CleanB - DissolveProgress);
+		
+		if (DissolveProgress > 0.001f && (CleanB - DissolveProgress < EdgeWidth))
+		{
+			float EdgeGlow = 1.0f - saturate((CleanB - DissolveProgress) / EdgeWidth);
+			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
+		}
+		 
+		Out.vDiffuse = float4(CleanB.rrr / 2.f + Emissive.rgb, CleanB * In.vColor.a);
 	}
 	else
 	{
