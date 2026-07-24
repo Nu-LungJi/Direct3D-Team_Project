@@ -364,14 +364,11 @@ void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 }
 void CParticle_CPU::JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 {
-
-	_float fSpeed = 5.5f;
-
 	_float t = p.life / p.fMaxLife;
 	p.vColor.w = 0.7f + (0.f - 0.7f) * t;
 
 	if (t >= 0.2f)
-		p.vVelocity.y += fSpeed * fTimeDelta;
+		p.vVelocity.y += p.vVelocity.y * fTimeDelta;
 }
 
 void CParticle_CPU::GVBurstSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)

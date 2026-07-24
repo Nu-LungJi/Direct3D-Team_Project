@@ -175,67 +175,22 @@ PS_OUT PSMain(VS_OUT In)
 
 PS_OUT SMOKE(VS_OUT In)
 {
- 
-	PS_OUT Out = (PS_OUT) 0;
-	
+	PS_OUT Out = (PS_OUT) 0;	
 	float2 NoiseUV = In.vTexcoord;
 	NoiseUV += In.life * 0.2f;
 	float2 noise = g_NoiseTexture.Sample(LinearWrap, NoiseUV).rg * 2.f - 1.f;
-	float2 offset2 = NoiseUV * 0.003f;
+	float2 distrotedUV = In.vTexcoord + noise * 0.03f;
 	
-	float2 normalXY = In.vTexcoord* 0.03f;
-	
-	normalXY = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).rg * 2.f - 1.f;
-	float2 offset = normalXY * 0.03f;
+	float NoiseMask = smoothstep(0.55f, 0.85f, In.vTexcoord.y);
 
-	float4 texColor = { 1, 1, 1, 1 };
-	texColor.r = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord + offset).r;
-	texColor.g = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord ).g;
-	texColor.b = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord + offset).b;
-	texColor.a = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord).a;
-
-	if (all(texColor.rgb <= 0.2f))
-		discard;
-    
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, distrotedUV);
 	float ratio = 1.0f - (In.life / In.maxLife);
-
-	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
-    
-	if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
-	{
-		clip(texColor.a - 0.02f);
-		clip(In.vColor.a - 0.02f);
-
-		float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
-		screenUV.x = screenUV.x * 0.5f + 0.5f;
-		screenUV.y = -screenUV.y * 0.5f + 0.5f;
-
-		float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
-		float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
-
-		float fEdgeMask = smoothstep(0.0f, 0.3f, texColor.a) *
-                          (1.0f - smoothstep(0.3f, 0.9f, texColor.a));
-
-		float distortionStrength = 0.05f * In.vColor.a * fEdgeMask;
-
-		distortion *= distortionStrength;
-		float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
-		float3 finalRGB = lerp(distortedBackground.rgb, texColor.rgb, texColor.a);
-		finalRGB += lerpedEmissive.rgb * lerpedEmissive.a;
-
-		Out.vDiffuse = float4(finalRGB, 1.0f);
-		return Out;
-	}
-	float4 vFinalColor = texColor * In.vColor;;
-	clip(vFinalColor.a - 0.02f);
-
 	
-	float3 Albedo = pow(vFinalColor.rgb, 2.2f);
+	float fAlpha = texColor.r * NoiseMask * In.vColor.a * ratio;
+	
+	float3 FinalColor = lerp(In.vColor.rgb, float3(1, 1, 1), 0.8f);
 
-
-	float3 FinalColor = vFinalColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
-
-	Out.vDiffuse = float4(FinalColor, vFinalColor.a );
+	Out.vDiffuse = float4(FinalColor, saturate(fAlpha*1.4f));
 	return Out;
 }
 PS_OUT PS_SMOKE_DEF(VS_OUT In)
@@ -246,7 +201,11 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 	if ((In.iBehaviorType & BEHAVIOR_SMOKEGV) != 0)
 	{
 		float Mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
-		float4 Diffuse = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+		
+		float2 DiffuseUV = In.vTexcoord * float2(0.549206f, 0.453968f);
+		DiffuseUV.x += In.life *0.5f;
+		float4 Diffuse = g_DiffuseTexture.Sample(LinearWrap, DiffuseUV);
+		
 		float t = saturate(In.life / In.maxLife);
 		Diffuse.a *= Diffuse.r * Mask * (1.f - t);
 		Diffuse.rgb = 1.f;
@@ -261,7 +220,7 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 		
 		noiseUV += float2(random, random * 0.618f);
 		noiseUV.y += In.life * 0.7f;
-		
+		noiseUV.x += In.life * 0.4f;
 		float2 warp = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).rg * 2.f - 1.f;
 		float noise = g_NoiseTexture.Sample(LinearWrap, noiseUV + warp * 0.05f).r;
 		
@@ -288,6 +247,7 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 		
 		return Out;
 	}
+	
 	
 	
 	return Out;

@@ -84,7 +84,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 			return E_FAIL;
 		}
 	}
-	
+
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
 	Desc.LoadPath = MonDesc->BeHaviorTag;
@@ -125,7 +125,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 	{
 		CComCollider::DESC Desc{};
 		Desc.eCollType = CollType::Box;
-		Desc.vExtents = {1.f, 1.f, 1.f};
+		Desc.vExtents = { 1.f, 1.f, 1.f };
 		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
 		{
 			return E_FAIL;
@@ -147,6 +147,9 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
+	test[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
+	test[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
+
 	return S_OK;
 }
 
