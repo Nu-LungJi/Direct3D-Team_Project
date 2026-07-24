@@ -21,6 +21,7 @@
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
 #include "Player_Roll_State.h"
+#include "Player_Attack_State.h"
 
 NS_USING(Client)
 
@@ -158,6 +159,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::ROLL,
 			CPlayer_Roll_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ATTACK,
+			CPlayer_Attack_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -326,6 +333,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
 		m_pComCharacterMotor->SetVelocity({});
+	}
+
+	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
 	}
 
 }
