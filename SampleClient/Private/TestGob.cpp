@@ -150,6 +150,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 	test[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
 	test[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
 
+	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
+	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
 	return S_OK;
 }
 

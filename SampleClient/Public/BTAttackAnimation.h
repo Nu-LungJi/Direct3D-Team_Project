@@ -1,12 +1,12 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTAnimRoot.h"
 
 NS_BEGIN(Client)
-class CBTAttackAnimation final : public CBTActionNode
+class CBTAttackAnimation final : public CBTAnimRoot
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTAttackAnimation, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTAttackAnimation, CBTAnimRoot)
 private:
 	CBTAttackAnimation();
 
@@ -24,12 +24,10 @@ public:
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	ATTMON				m_eSkillType{ ATTMON::END };
-	_float2				m_fRatio{}, m_fSkillRatio{};
 
 	_float				m_fDis{}, m_fTime{};
-	uint32_t			m_iLoopCnt{ 0 }, m_iStartFlag{}, m_iEndFlag{};
-	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bRatioInvert{ false };
+	uint32_t		    m_iStartFlag{}, m_iEndFlag{};
+	_bool				m_bRatioInvert{ false };
 public:
 	static UPtr<CBTAttackAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

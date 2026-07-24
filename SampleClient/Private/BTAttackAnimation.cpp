@@ -9,7 +9,7 @@ CBTAttackAnimation::CBTAttackAnimation()
 {
 
 }
-CBTAttackAnimation::CBTAttackAnimation(const CBTAttackAnimation& rhs) : CBTActionNode(rhs)
+CBTAttackAnimation::CBTAttackAnimation(const CBTAttackAnimation& rhs) : CBTAnimRoot(rhs)
 {
 
 }
@@ -21,7 +21,6 @@ CBTAttackAnimation::~CBTAttackAnimation()
 HRESULT CBTAttackAnimation::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
-	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTAttackAnimation";
 	return S_OK;
 }
@@ -47,16 +46,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
-
+	
+		Active_Skill();
+	
 		_bool bFinished = pAnimator->GetFinish();
 
-		if (m_eSkillType != ATTMON::END)
-		{
-			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
-			{
-				pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
-			}
-		}
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
 		{
@@ -119,41 +113,9 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 }
 void CBTAttackAnimation::Update_Gui()
 {
+	__super::Update_Gui();
 	ImGui::Text("Move Speed");
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
-
-	ImGui::Text("SkillRatio");
-	ImGui::DragFloat2("##SKRaito", reinterpret_cast<_float*>(&m_fSkillRatio), 0.f, 1.f);
-
-	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f, 1.f);
-	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
-
-	if (ImGui::Button("Enable Ratio : "))
-		m_bRatio = !m_bRatio;
-	ImGui::Text("Abort : %s", m_bRatio ? "TRUE" : "FALSE");
-
-	if (ImGui::Button("Loop Change"))
-		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
-
-	ImGui::Text("AttMon Type");
-	if (ImGui::BeginCombo("##AttMon Typer", MagicEnumToStringView(m_eSkillType).data()))
-	{
-		for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
-		{
-			_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
-
-			if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(i)).data()))
-				m_eSkillType = static_cast<ATTMON>(i);
-
-			if (bSelect)
-				ImGui::SetItemDefaultFocus();
-		}
-
-		ImGui::EndCombo();
-	}
 
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
@@ -244,36 +206,26 @@ void CBTAttackAnimation::Update_Gui()
 }
 void CBTAttackAnimation::Abort()
 {
+	__super::Abort();
 	m_fTime = 0.f;
-	m_iLoopCnt = 0;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	SaveJsonValue(j, "Loop", m_bLoop);
-	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "StartFlag", m_iStartFlag);
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
-	SaveJsonEnum(j, "SkillType", m_eSkillType);
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return j;
 }
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	LoadJsonValue(j, "Loop", m_bLoop);
-	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
-	LoadJsonEnum(j, "SkillType", m_eSkillType);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	return S_OK;
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()

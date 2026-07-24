@@ -1,12 +1,12 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTAnimRoot.h"
 
 NS_BEGIN(Client)
-class CBTTurnAnimation final : public CBTActionNode
+class CBTTurnAnimation final : public CBTAnimRoot
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTTurnAnimation, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTTurnAnimation, CBTAnimRoot)
 private:
 	CBTTurnAnimation();
 
@@ -28,9 +28,9 @@ private:
 	_bool						SelectAngle(_float fAngle);
 	void						Turn(_float fTimeDelta);
 private:
-	_bool						m_bLoop{ true },  m_bTurn{false};
+	_bool						m_bTurn{false};
 	_float						m_fAngle{};
-	_float						m_fTick{};
+	float						m_fTick{};
 	_float3						m_vCurrentLook{}, m_vTargetLook{};
 	int32_t						m_iTurnAnimIndex[ETOUI(TURN::END)], m_iTurnIdx{ -1 };
 public:

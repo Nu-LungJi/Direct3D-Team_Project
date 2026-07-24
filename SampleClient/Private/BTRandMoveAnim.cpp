@@ -9,7 +9,7 @@ CBTRandMoveAnim::CBTRandMoveAnim()
 {
 
 }
-CBTRandMoveAnim::CBTRandMoveAnim(const CBTRandMoveAnim& rhs) : CBTActionNode(rhs)
+CBTRandMoveAnim::CBTRandMoveAnim(const CBTRandMoveAnim& rhs) : CBTAnimRoot(rhs)
 {
 
 }
@@ -20,8 +20,6 @@ CBTRandMoveAnim::~CBTRandMoveAnim()
 HRESULT CBTRandMoveAnim::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
-
-	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTRandMoveAnim";
 	return S_OK;
 }

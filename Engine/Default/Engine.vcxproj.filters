@@ -1784,6 +1784,9 @@
     <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

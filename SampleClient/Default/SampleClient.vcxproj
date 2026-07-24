@@ -178,6 +178,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
     <ClInclude Include="..\public\BTAttackAnimation.h" />
+    <ClInclude Include="..\public\BTAnimRoot.h" />
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
@@ -295,6 +296,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
     <ClCompile Include="..\private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\private\BTAnimRoot.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
     <ClCompile Include="..\private\BTDamage.cpp" />
     <ClCompile Include="..\private\BTDecHitCnt.cpp" />

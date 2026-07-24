@@ -27,9 +27,15 @@ void CMonster::UpdateGUI()
 	CGameObject::UpdateGUI();
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
 	ImGui::DragFloat("EE", &ff, 0, 1);
-
-
 	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_f), 0, 100);
+
+	
+	ImGui::Text("ReLoad Data");
+	for (auto& [key, value] : m_ParticleData)
+	{
+		if (ImGui::Button(MagicEnumToStringView(key).data()))
+			test[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
+	}
 }
 
 HRESULT CMonster::InitializePrototype(void* pArg)
@@ -89,10 +95,14 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
 	m_pBeHavior->Update(fTimeDelta);
+	RunningSkill(fTimeDelta);
 }
 
 void CMonster::Update(E::_float fTimeDelta)
 {
+	//파티클 테스트용
+	if (CGameInstance::Get().KeyDown(DIK_0))
+		m_bSkill = false;
 	__super::Update(fTimeDelta);
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
@@ -103,7 +113,6 @@ void CMonster::Update(E::_float fTimeDelta)
 
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
-	RunningSkill(fTimeDelta);
 }
 
 void CMonster::LateUpdate(E::_float fTimeDelta)
@@ -503,18 +512,23 @@ HRESULT CMonster::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
 }
 void CMonster::RunningSkill(_float fTimeDelta)
 {
-	if (m_bSkill)
+	if (m_bSkill && !m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
 	{
 		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
-		if (fCurrRatio >= m_fSkillRatio.x)
+		if (m_MonTable.eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
 		{
-			if (m_MonTable.eAttType != ATTMON::END)
-				CGameInstance::Get().Spawn(test[ETOUI(m_MonTable.eAttType)], *m_pComTransform->GetWorldMatrix());
-
+			CGameInstance::Get().Spawn(test[ETOUI(m_MonTable.eAttType)], *m_pComTransform->GetWorldMatrix());
 			m_MonTable.eAttType = ATTMON::END;
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
+			
+		}
+		if (fCurrRatio >= 1.f)
+		{
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::DEL);
 			m_bSkill = false;
 		}
+			
 	}
 }
 void CMonster::IsHit()

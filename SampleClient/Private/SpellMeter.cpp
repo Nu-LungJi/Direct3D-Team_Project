@@ -5,7 +5,7 @@
 #include "Resources.h"
 #include "UIManager.h"
 #include "Client_Defines.h"
-
+#include "Level_Defines.h"
 NS_USING(Client)
 
 CSpellMeter::CSpellMeter()

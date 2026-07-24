@@ -120,6 +120,10 @@ protected:
 	HITTABLE					m_MonTable{};
 
 	std::vector<E::SPAWN_COMMAND> test[ETOUI(ATTMON::END)];
+
+
+	//파티클 재설정용
+	std::map<ATTMON, _string>			m_ParticleData;
 public:
 	E::UPtr<E::CPrototype> Clone(void* pArg) PURE;
 };

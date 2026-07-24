@@ -75,7 +75,26 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 		InstanceData.bBlending = 1;
 	}
 
-	Add_Instance(pModelInstance, InstanceData);
+	const auto eAnimatorMode = pAnimator->GetEvaluationMode();
+	// CPU 단독 모드는 구현 보존용이다. 소환·배치는 CPU+GPU 스키닝 경로로 정규화한다.
+	const uint32_t iEvaluationMode = static_cast<uint32_t>(eAnimatorMode == CComAnimator::EVALUATION_MODE::CPU? CComAnimator::EVALUATION_MODE::CPU_GPU: eAnimatorMode);
+	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, false, iEvaluationMode);
+	if (!pBatch)
+		return;
+
+	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
+	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
+	if (CGameObject* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle))
+		pObject->SetInstanceModelNum(iBatchInstanceIndex);
+
+	pBatch->Instances.push_back(InstanceData);
+	pBatch->CombinedBoneMatrices.push_back(pModelInstance->Get_CombinedBoneMatrices());
+	++m_iTotalInstanceCount;
+	if (!pBatch->bActiveThisFrame)
+	{
+		pBatch->bActiveThisFrame = true;
+		m_ActiveBatches.push_back(pBatch);
+	}
 }
 
 
@@ -125,7 +144,7 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 	
 	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
 	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
-	// Instance 번호를 알기 위해 다시 Object에 등록을 해줘야 한다.
+	// Instance 踰덊?�瑜????�� ?꾪빐 ??�떆 Object???깅줉????�쨾????�떎.
 	if (CGameObject* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle))
 	{
 		pObject->SetInstanceModelNum(iBatchInstanceIndex);
@@ -174,7 +193,7 @@ void CModel_Instance_Manager::Add_Instance(CComStaticModelInstance* pModelInstan
 
 	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
 	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
-	// Instance 번호를 알기 위해 다시 Object에 등록을 해줘야 한다.
+	// Instance 踰덊?�瑜????�� ?꾪빐 ??�떆 Object???깅줉????�쨾????�떎.
 	if (CGameObject* pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle))
 	{
 		pObject->SetInstanceModelNum(iBatchInstanceIndex);
@@ -193,7 +212,7 @@ void CModel_Instance_Manager::Add_Instance(CComStaticModelInstance* pModelInstan
 
 
 
-MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel)
+MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel, uint32_t iEvaluationMode)
 {
 	if (!pModelInstance)
 		return nullptr;
@@ -209,6 +228,7 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelIns
 
 	Key.modelTag = pModelInstance->Get_ResTag();
 	Key.bStaticModel = bStaticModel;
+	Key.iEvaluationMode = iEvaluationMode;
 
 	auto Iter = m_InstanceBatches.find(Key);
 
@@ -225,8 +245,9 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelIns
 	pBatch->Key =Key;
 	pBatch->bModelStatic = bStaticModel;
 
-	// 인스턴스 개수 대충 넣은거
+
 	pBatch->Instances.reserve(16);
+	pBatch->CombinedBoneMatrices.reserve(16);
 
 	MODEL_INSTANCE_BATCH* pBatchRaw =pBatch.get();
 
@@ -287,8 +308,9 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComStaticMo
 	pBatch->Key = Key;
 	pBatch->bModelStatic = bStaticModel;
 
-	// 인스턴스 개수 대충 넣은거
+	// ?몄뒪??�뒪 媛쒖???????�?�?
 	pBatch->Instances.reserve(16);
+	pBatch->CombinedBoneMatrices.reserve(16);
 
 	MODEL_INSTANCE_BATCH* pBatchRaw = pBatch.get();
 
@@ -305,6 +327,7 @@ void CModel_Instance_Manager::Clear_Frame()
 
 		pBatch->Instances.clear();
 		pBatch->PartInstances.clear();
+		pBatch->CombinedBoneMatrices.clear();
 
 		pBatch->bActiveThisFrame = false;
 	}

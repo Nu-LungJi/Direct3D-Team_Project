@@ -809,6 +809,7 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />

@@ -24,6 +24,7 @@ public:
 	HRESULT						Load_json(const nlohmann::json& j) override;
 private:
 	ATTMON						m_eAttType{ ATTMON::END };
+	_float2						m_fSkillRatio{};
 public:
 	static UPtr<CBTMonAttType> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
