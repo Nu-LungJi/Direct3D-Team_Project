@@ -55,6 +55,9 @@ private:
 	char m_cTextBuf[1024] = "";
 	std::string m_sText{};
 
+	_bool m_IsWorldSpace{ false };
+	_float m_fWorldScaleFactor = 0.01f;
+	_float3 m_WorldPos{0.f, 0.f, 0.f};
 private:
 	uint32_t count{};
 	_float2 m_vDragOffset{};
@@ -88,6 +91,7 @@ private:
 
 	void SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& obj);
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
+	void ApplyWorldSpaceRecursive(Engine::CUIObject* pUI, _bool bWorldSpace, _float scaleFactor);
 
 	void StateView();
 	void LocalStateView();

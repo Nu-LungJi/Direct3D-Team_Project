@@ -129,6 +129,7 @@ protected:
 	_float2		m_vPivot{};
 
 	bool m_bInputLocked = false;
+	bool m_bWorldSpace = false;
 
 public:
 	const UI_INFO& GetUIInfo() const { return m_UIINFO; }
@@ -176,6 +177,8 @@ public:
 	void SetPivot(_float2 vPivot) { m_vPivot = vPivot; }
 	_float2 GetPivot() { return m_vPivot; }
 
+	void SetWorldSpace(bool bWorldSpace) { m_bWorldSpace = bWorldSpace; }
+	_bool GetWorldSpace() { return m_bWorldSpace; }
 public:
 	void DeleteChild(CHandle childHandle);
 	void CalcUICoord();

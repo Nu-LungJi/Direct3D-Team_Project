@@ -816,6 +816,14 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 {
 	m_pFontManager->LateDraw(eRenderGroup);
 }
+void CGameInstance::FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot)
+{
+	m_pFontManager->FontAddLateDraw3D(fontTag, text, matWVP, color, pivot);
+}
+void CGameInstance::Render3DFont()
+{
+	m_pFontManager->Render3DFont();
+}
 #pragma endregion
 
 

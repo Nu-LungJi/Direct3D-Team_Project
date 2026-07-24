@@ -153,6 +153,8 @@ public:
 	void FontAddLateDraw(RENDERGROUP eRenderGroup, const StringID& fontName, const _wstring& pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
 	_float2 FontMeasureString(const StringID& fontName, const wchar_t* txt, float scale = 1.f) const;
 	void FontLateDraw(RENDERGROUP eRenderGroup);
+	void FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot);
+	void Render3DFont();
 #pragma
 
 

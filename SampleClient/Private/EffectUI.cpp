@@ -89,8 +89,10 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	GetTransform().Update();
+	CUIObject::LateUpdate(fTimeDelta);
+
+	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
+	//GetTransform().Update();
 }
 
 HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
