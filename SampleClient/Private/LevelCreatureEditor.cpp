@@ -129,10 +129,10 @@ HRESULT CLevelCreatureEditor::Initialize()
 			return E_FAIL;
 	}
 
-	if (FAILED(InitializeMyMagicSquareStep()))
-	{
-		return E_FAIL;
-	}
+	//if (FAILED(InitializeMyMagicSquareStep()))
+	//{
+	//	return E_FAIL;
+	//}
 
 
 	CHandle hAnimTestPlayer{};
