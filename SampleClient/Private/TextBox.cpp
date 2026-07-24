@@ -4,6 +4,7 @@
 #include "CameraObject.h"
 #include "Resources.h"
 #include "Level_Defines.h"
+#include "FlyCamera.h"
 
 NS_USING(Client)
 
@@ -93,12 +94,59 @@ void CTextBox::LateUpdate(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	GetTransform().Update();
+	CUIObject::LateUpdate(fTimeDelta);
 }
 
 HRESULT CTextBox::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	if (m_bWorldSpace)
+	{
+		GetTransform().Update();
+
+		auto pCamera = E::CGameInstance::Get().GetActiveCamera("FLY");
+		
+		_matrix matView = pCamera->GetView();
+		_matrix matProj = pCamera->GetProj();
+
+		_vector vWorldPos = GetTransform().GetLoadedPostion();
+		_vector vCamPos = XMLoadFloat3(&pCamera->GetTransform().GetPosition());
+
+		auto clientSize = CGameInstance::Get().GetClientScreenSize();
+
+		_vector vScreenPos = XMVector3Project(
+			vWorldPos,
+			0.f, 0.f, (float)clientSize.x, (float)clientSize.y, 0.f, 1.f,
+			matProj, matView, XMMatrixIdentity()
+		);
+
+		_float3 screenPos;
+		XMStoreFloat3(&screenPos, vScreenPos);
+
+		if (screenPos.z >= 0.f && screenPos.z <= 1.f)
+		{
+			float fDistance = XMVectorGetX(XMVector3Length(vWorldPos - vCamPos));
+
+			float fPerspectiveScale = 5.0f / (fDistance + 0.001f);
+			fPerspectiveScale = std::clamp(fPerspectiveScale, 0.1f, 3.0f);
+
+			CGameInstance::Get().FontAddLateDraw(
+				RENDERGROUP::UI,
+				"Pretendard",
+				m_textInfo.Text,
+				{ screenPos.x, screenPos.y },
+				fPerspectiveScale, 
+				XMVectorSet(1.f, 1.f, 1.f, m_UIINFO.Alpha),
+				0.f,
+				{ m_UIINFO.SizeX * 0.5f, m_UIINFO.SizeY * 0.5f }
+			);
+		}
+	}
+	else
+	{
+		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(),
+			{ m_UIINFO.fX, m_UIINFO.fY }, m_UIINFO.SizeX, XMVectorSet(1.f, 1.f, 1.f, m_UIINFO.Alpha), 0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f });
+	}
+
 	return S_OK;
 }
 

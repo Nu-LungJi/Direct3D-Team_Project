@@ -74,12 +74,23 @@ void CSpellMeter::Update(E::_float fTimeDelta)
 
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
-	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
-
 	for (auto& pComponent : m_UIComponents)
 	{
 		pComponent->Update(fTimeDelta, mousePos);
 	}
+
+	if (m_bWorldSpace)
+	{
+		E::_float scaleFactor = 0.01f;
+		GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * scaleFactor, m_UIINFO.SizeY * scaleFactor, 1.f });
+
+		// 캐릭터를 따라다녀야 한다면 여기서 SetPosition을 갱신
+	}
+	else
+	{
+		m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+	}
+
 
 	if (m_pComTween != nullptr)
 	{
@@ -101,16 +112,16 @@ void CSpellMeter::Update(E::_float fTimeDelta)
 	switch (m_colorType)
 	{
 	case 0:
-		m_BGColor = { 1.3f, 0.f, 0.f, 1.f };
+		m_BGColor = { 1.2f, 0.f, 0.f, 1.f };
 		break;
 	case 1:
-		m_BGColor = { 0.f, 1.3f, 0.f, 1.f };
+		m_BGColor = { 0.f, 1.2f, 0.f, 1.f };
 		break;
 	case 2:
 		m_BGColor = { 1.5f, 1.5f, 0.f, 1.f };
 		break;
 	case 3:
-		m_BGColor = { 0.62f * 1.5f, 0.12f * 1.5f, 0.94f * 1.5f, 1.0f };
+		m_BGColor = { 0.62f * 1.2f, 0.12f * 1.2f, 0.94f * 1.2f, 1.0f };
 		break;
 	default:
 		m_BGColor = { 1.f, 0.f, 0.f, 1.f };
@@ -187,8 +198,22 @@ HRESULT CSpellMeter::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 			{
 
 				E::CB_PER_OBJECT cbPerObject{};
-				cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
-				XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
+				//cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
+				//XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
+
+				if (m_bWorldSpace)
+				{
+					// 3D 월드 공간: 월드 x 뷰 x 투영
+					_matrix world = GetTransform().GetLoadedWorldMatrix();
+					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matView * ctx.matProj;
+					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
+				}
+				else
+				{
+					// 2D 스크린 공간: 월드 x 투영 (기존 로직 유지)
+					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matProj;
+					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
+				}
 
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);

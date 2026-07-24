@@ -1964,6 +1964,10 @@ HRESULT CRenderer::RenderBlend()
 		}
 	}
 
+	{
+		E::CGameInstance::Get().Render3DFont();
+	}
+
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
