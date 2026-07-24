@@ -110,7 +110,8 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 			s.life = param.fLife;
 			s.fSize = param.fSize;
 			s.color = param.color;
-			s.emissive = param.emissive;
+			s.emissive = param.startEmissive;
+			s.endEmissive = param.endEmissive;
 			s.spawnDelay = param.fSpawnDelay * (_float)r;
 
 			s.rotation = param.bRandomRot
