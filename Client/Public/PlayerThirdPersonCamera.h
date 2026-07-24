@@ -11,7 +11,7 @@ public:
 	struct DESC : public CCameraObject::CAMERA_DESC
 	{
 		CHandle hTarget{};
-		_float fDistance{ 20.f };
+		_float fDistance{ 10.f };
 		_float fTargetHeight{};
 		_float fPitch{ 15.f };
 		_float fMinPitch{ -20.f };

@@ -22,6 +22,17 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	if (!player)
 		return;
 
+	m_bTurnPending = false;
+	m_bIdleTurning = false;
+	m_bJogTurning = false;
+	m_bJogStarting = false;
+	m_bJogStopping = false;
+	m_fTurnHoldTime = 0.f;
+	m_fJogTurnEntrySpeed = 0.f;
+	player->SetMovementLocked(false);
+	player->SetRootMotionRotationActive(false);
+	player->SetRootMotionTranslationActive(false);
+
 	m_iIdleAnimation = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
 	m_LeftIdleTurns = {
 		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_45_anm.bin"),
@@ -129,9 +140,51 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 
 	if (m_bIdleTurning)
 	{
-		pMoveIntent->ClearMoveIntent();
 		pMoveIntent->ClearFacingIntent();
 		UpdateIdleTurnRotation(*player, pAnimator->GetPlayAnimRatio());
+
+		if (m_bJogTurning)
+		{
+			const _float fRatio =
+				std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f);
+			const _float fSpeedRatio =
+				fRatio < m_fJogTurnSlowdownEndRatio
+				? std::lerp(
+					1.f,
+					m_fJogTurnMinimumSpeedRatio,
+					fRatio / m_fJogTurnSlowdownEndRatio)
+				: std::lerp(
+					m_fJogTurnMinimumSpeedRatio,
+					1.f,
+					std::clamp(
+						(fRatio - m_fJogTurnSlowdownEndRatio) /
+						m_fJogTurnRecoveryDurationRatio,
+						0.f,
+						1.f));
+			const _float fTurnSpeed = std::max(
+				m_fJogTurnMinimumSpeed,
+				m_fJogTurnEntrySpeed * fSpeedRatio);
+
+			_vector vLook = XMVectorSetY(
+				player->GetTransform().GetState(STATE::LOOK),
+				0.f);
+			if (XMVectorGetX(XMVector3LengthSq(vLook)) >
+				std::numeric_limits<_float>::epsilon())
+			{
+				_float3 vMoveDirection{};
+				XMStoreFloat3(
+					&vMoveDirection,
+					XMVector3Normalize(vLook));
+				player->SetCurrentMoveSpeed(fTurnSpeed);
+				pMoveIntent->SetMoveIntent(
+					vMoveDirection,
+					fTurnSpeed);
+			}
+		}
+		else
+		{
+			pMoveIntent->ClearMoveIntent();
+		}
 
 		if (pAnimator->GetFinish())
 			FinishIdleTurn(*player);
@@ -228,6 +281,23 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	// 플레이어가 아직 회전하기 전의 Look을 기준으로 애니메이션용 각도를 구한다.
 	m_fSignedMoveAngle = CalculateSignedAngle(*player, tMoveOutput.vMoveDirection);
 	m_eMoveDirection = ResolveDirection(m_fSignedMoveAngle);
+
+	// Play the authored jog-turn clips for substantial direction changes while
+	// running. Previously moving characters skipped these clips entirely.
+	if (m_bWasMoving &&
+		std::abs(m_fSignedMoveAngle) >= m_fRunningTurnThreshold)
+	{
+		const int32_t iJogTurnAnimation =
+			ResolveJogTurnAnimation(m_fSignedMoveAngle);
+		if (iJogTurnAnimation >= 0)
+		{
+			BeginJogTurn(
+				*player,
+				tMoveOutput.vMoveDirection,
+				iJogTurnAnimation);
+			return;
+		}
+	}
 
 	// 회전 보간 없이 입력 방향을 즉시 바라본다.
 	const int32_t iTurnAnimation = m_bWasMoving? -1: ResolveIdleTurnAnimation(m_fSignedMoveAngle);
@@ -443,6 +513,11 @@ void CPlayer_Locomotion_State::BeginJogTurn(
 {
 	BeginIdleTurn(player, vTargetDirection, iAnimationIndex);
 	m_bJogTurning = true;
+	m_fJogTurnEntrySpeed = std::max(
+		player.GetCurrentMoveSpeed(),
+		m_fJogTurnMinimumSpeed);
+	player.SetMovementLocked(false);
+	player.SetRootMotionTranslationActive(false);
 }
 
 void CPlayer_Locomotion_State::BeginJogStart(CPlayer& player)
@@ -520,8 +595,11 @@ void CPlayer_Locomotion_State::UpdateIdleTurnRotation(
 
 	// 애니메이션 마지막 10%는 발 정리 구간으로 남기고,
 	// 실제 회전은 SmoothStep으로 천천히 시작하고 천천히 끝낸다.
+	const _float fRotationCompletionRatio = m_bJogTurning
+		? m_fJogTurnRotationCompletionRatio
+		: 0.9f;
 	const _float fNormalizedTurnRatio =
-		std::clamp(fRatio / 0.9f, 0.f, 1.f);
+		std::clamp(fRatio / fRotationCompletionRatio, 0.f, 1.f);
 	const _float fTurnRatio =
 		fNormalizedTurnRatio *
 		fNormalizedTurnRatio *
@@ -556,7 +634,7 @@ void CPlayer_Locomotion_State::FinishIdleTurn(CPlayer& player)
 	{
 		if (bContinueJog)
 		{
-			player.SetCurrentMoveSpeed(5.f);
+			player.SetCurrentMoveSpeed(m_fJogTurnEntrySpeed);
 			pMoveIntent->SetMoveIntent(
 				player.GetRawMoveDirection(),
 				player.GetCurrentMoveSpeed());
@@ -586,6 +664,7 @@ void CPlayer_Locomotion_State::FinishIdleTurn(CPlayer& player)
 	m_bWasMoving = bContinueJog;
 	m_vTurnTargetDirection = {};
 	m_fTurnSignedAngleRadians = 0.f;
+	m_fJogTurnEntrySpeed = 0.f;
 	m_iPendingIdleTurnAnimation = -1;
 }
 

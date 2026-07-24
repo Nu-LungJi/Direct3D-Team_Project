@@ -136,8 +136,8 @@ private:
 	_float3 m_vLastMoveDirection{ 0.f, 0.f, 1.f };
 	_float3 m_vSmoothedMoveDirection{ 0.f, 0.f, 1.f };
 	_float m_fCurrentMoveSpeed{};
-	_float m_fJogSpeed{ 10.f };
-	_float m_fSprintSpeed{ 20.f };
+	_float m_fJogSpeed{ 7.5f };
+	_float m_fSprintSpeed{ 15.f };
 	_float m_fAcceleration{ 12.f };
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };

@@ -20,6 +20,7 @@
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
+#include "Player_Roll_State.h"
 
 NS_USING(Client)
 
@@ -154,6 +155,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ROLL,
+			CPlayer_Roll_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
@@ -241,6 +248,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_bRawMoveInput &&
 		CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
+	
 	if (m_bRawMoveInput)
 	{
 		m_vLastMoveDirection = vMoveDirection;

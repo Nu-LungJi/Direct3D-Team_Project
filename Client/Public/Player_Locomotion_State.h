@@ -106,6 +106,13 @@ private:
 	_bool m_bWasMoving{};
 	_float m_fTurnHoldTime{};
 	_float m_fJogTurnHoldThreshold{ 0.15f };
+	_float m_fRunningTurnThreshold{ 67.5f };
+	_float m_fJogTurnEntrySpeed{};
+	_float m_fJogTurnMinimumSpeed{5.f };
+	_float m_fJogTurnMinimumSpeedRatio{ 0.1f };
+	_float m_fJogTurnSlowdownEndRatio{ 0.45f };
+	_float m_fJogTurnRecoveryDurationRatio{ 0.15f };
+	_float m_fJogTurnRotationCompletionRatio{ 0.25f };
 	_float3 m_vTurnTargetDirection{};
 	_float4 m_qTurnStartRotation{ 0.f, 0.f, 0.f, 1.f };
 	_float4 m_qTurnTargetRotation{ 0.f, 0.f, 0.f, 1.f };
