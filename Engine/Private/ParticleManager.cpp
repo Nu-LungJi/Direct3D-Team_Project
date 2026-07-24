@@ -101,6 +101,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokeJump = false;
 	static _bool bSmokegv = false;
 	static _bool bSmokegw = false;
+	static _bool bLightning = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -910,10 +911,11 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 	ImGui::Checkbox("SMOKEGV", &bSmokegv);
 	ImGui::Checkbox("SMOKEGW", &bSmokegw);
+	ImGui::Checkbox("LIGHTNING", &bLightning);
 	ImGui::Checkbox("None", &none);
 
 	if (none)
-		bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+		bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
 
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
@@ -959,6 +961,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
 	if (bSmokegw)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
+	if (bLightning)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1075,7 +1079,7 @@ void CParticleManager::UpdateGUI()
 			Spawn(previewGroup, previewType, 1, &data, false, 0.f);
 		}
 	}
-	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+	if (CGameInstance::Get().KeyDown(DIK_SPACE)) {
 		auto pParticle = GetParticle(previewGroup, previewType);
 		if (pParticle)
 		{
@@ -1181,10 +1185,11 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 		ImGui::Checkbox("SMOKEGV", &bSmokegv);
 		ImGui::Checkbox("SMOKEGW", &bSmokegw);
+		ImGui::Checkbox("LIGHTNING", &bLightning);
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+			bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
 	
 
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
@@ -1204,6 +1209,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
 		if (bSmokegw)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
+		if (bLightning)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 	}
 	
 	ImGui::Separator();
@@ -1233,18 +1240,18 @@ void CParticleManager::UpdateGUI()
 
 		ImGui::DragFloat("Life", &pendingStandard.life, 0.01f);
 
-		ImGui::Checkbox("RandomSize?", &previewParams.bRandomSize);
-		if (previewParams.bRandomSize) {
-			ImGui::DragFloat3("MinStartSize", &previewParams.startSizeMin.x, 0.01f);
-			ImGui::DragFloat3("MaxStartSize", &previewParams.startSizeMax.x, 0.01f);
+		ImGui::Checkbox("RandomSize?", &pendingStandard.bRandomSize);
+		if (pendingStandard.bRandomSize) {
+			ImGui::DragFloat3("MinStartSize", &pendingStandard.startSizeMin.x, 0.01f);
+			ImGui::DragFloat3("MaxStartSize", &pendingStandard.startSizeMax.x, 0.01f);
 
 			ImGui::Separator();
-			ImGui::DragFloat3("MinEndSize", &previewParams.endSizeMin.x, 0.01f);
-			ImGui::DragFloat3("MaxEndSize", &previewParams.endSizeMax.x, 0.01f);
+			ImGui::DragFloat3("MinEndSize", &pendingStandard.endSizeMin.x, 0.01f);
+			ImGui::DragFloat3("MaxEndSize", &pendingStandard.endSizeMax.x, 0.01f);
 		}
 		else {
-			ImGui::DragFloat3("StartSize", &previewParams.fSize.x, 0.01f);
-			ImGui::DragFloat3("EndSize", &previewParams.fEndSize.x, 0.01f);
+			ImGui::DragFloat3("StartSize", &pendingStandard.fSize.x, 0.01f);
+			ImGui::DragFloat3("EndSize", &pendingStandard.fEndSize.x, 0.01f);
 		}
 
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
@@ -3184,8 +3191,6 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
-			//else if constexpr (std::is_same_v<T, SLightning_Tex>)
-			//	return ParticlePattern::MakeLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

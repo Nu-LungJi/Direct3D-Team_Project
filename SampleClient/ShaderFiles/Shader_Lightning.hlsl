@@ -25,97 +25,45 @@ const static float SliceCount = 64.f;
 
 struct VS_IN
 {
+    // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
 	float3 vPosition : POSITION;
-	float3 vNormal	 : NORMAL;
-	float3 vTangent  : TANGENT;
-	float3 vBinormal : BINORMAL;
 	float2 vTexcoord : TEXCOORD0;
+
+    // Per-Instance - VTX_PARTICLE_INSTANCED_DATA와 바이트 레이아웃 일치.
+    // "INSTANCE_" 접두사가 있어야 CResVertexShader::Load()의 리플렉션이
+    // 이 필드들을 슬롯 1(인스턴스 버퍼)로 인식한다.
+	float4 vWorld0 : INSTANCE_WORLD0;
+	float4 vWorld1 : INSTANCE_WORLD1;
+	float4 vWorld2 : INSTANCE_WORLD2;
+	float4 vWorld3 : INSTANCE_WORLD3;
+	float4 vColor : INSTANCE_COLOR0;
+	float4 vInstEmissive : INSTANCE_EMISSIVE;
+	float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
+	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
+	float2 uvOffset : INSTANCE_UVOFFSET;
+	float2 uvSize : INSTANCE_UVSIZE;
+	float life : INSTANCE_LIFE; // 추가 
+	float maxLife : INSTANCE_MAXLIFE; // 추가
+	uint iBehaviorType : INSTANCE_BEHAVIORTYPE;
 };
 
 struct VS_OUT
 {
 	float4 vPosition : SV_POSITION;
 	float2 vTexcoord : TEXCOORD0;
-	float4 vColor	 : COLOR0;
-	float3 vNormal	 : NORMAL0;
-	float3 vTangent  : TANGENT0;
-	float3 vBinormal : BINORMAL0;
-	float4 vEmissive : EMISSIVE0;
-	float4 vEndEmissive : EMISSIVE1;
-	float3 vWorldPos : TEXCOORD1;
-	float life		 : TEXCOORD2;
-	float maxLife	 : TEXCOORD3;
+
+	float4 vColor : TEXCOORD1;
+	float4 vEmissive : TEXCOORD2;
+	float4 vEndEmissive : TEXCOORD3;
+
+	uint iBehaviorType : TEXCOORD4;
+	float4 vScreenPos : TEXCOORD5;
+	float3 vNormal : TEXCOORD6;
+	float3 vTangent : TEXCOORD7;
+	float3 vWorldPos : TEXCOORD8;
+	float life : TEXCOORD9;
+	float maxLife : TEXCOORD10;
 };
-
-VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
-{
-	VS_OUT Out = (VS_OUT) 0;
-	ParticleData p = g_RenderBuffer[instID];
-	
-	float2 finalUV = In.vTexcoord;
-	float scale = p.alive ? p.size : 0.0f;
-    
-	if (g_iTotalFrames > 1 && g_iFlipbookColumns > 0 && g_iFlipbookRows > 0)
-	{
-		uint frame = min(p.frameIndex, g_iTotalFrames - 1);
-		uint col = frame % g_iFlipbookColumns;
-		uint row = frame / g_iFlipbookColumns;
-		float2 uvSize = float2(1.0f / g_iFlipbookColumns, 1.0f / g_iFlipbookRows);
-		float2 uvOffset = float2(col, row) * uvSize;
-
-		finalUV = uvOffset + In.vTexcoord * uvSize; // baseUV 대신 실제 메쉬 UV 사용
-	}
-
-	Out.vTexcoord = finalUV;
-
-	float3 localPos = In.vPosition * scale;
-	float3 rotatedLocal = RotateXYZ(localPos, p.rotation);
-	float3 vWorldPos = rotatedLocal + p.position;
-
-
-	Out.vPosition = mul(float4(vWorldPos, 1.0f), g_matViewProj);
-	Out.vWorldPos = vWorldPos;
-	Out.vNormal = In.vNormal;
-	Out.vTangent = In.vTangent;
-	Out.vBinormal = In.vBinormal;
-	Out.vColor = p.alive ? p.color : float4(p.color.rgb, 0.0f);
-	Out.vEmissive = p.emissive;
-	Out.vEndEmissive = p.endEmissive;
-	Out.life = p.life;
-	Out.maxLife = p.maxLife;
-    
-	return Out;
-}
-
-float SampleTextureSlice(Texture2D _Texture, float2 _TexCoord, float _Slice)
-{
-	_TexCoord = frac(_TexCoord);
-	float2 Tex3DTexCoord;
-	Tex3DTexCoord.x = _TexCoord.x;
-	Tex3DTexCoord.y = (_TexCoord.y + _Slice) / SliceCount;
-	
-	return _Texture.Sample(LinearWrap, Tex3DTexCoord).r;
-}
-
-float SampleTexture3D(Texture2D _Texture, float3 _TexCoord3D)
-{
-	_TexCoord3D = frac(_TexCoord3D);
-	
-	float Z = _TexCoord3D.z * (SliceCount - 1.f);
-	float Slice0 = floor(Z);
-	float Slice1 = min(Slice0 + 1.f, SliceCount - 1.f);
-	
-	float BlendValue = frac(Z);
-	
-	float Value0 = SampleTextureSlice(_Texture, _TexCoord3D.xy, Slice0);
-	float Value1 = SampleTextureSlice(_Texture, _TexCoord3D.xy, Slice1);
-
-	return lerp(Value0, Value1, BlendValue);
-}
-float Hash(float value)
-{
-	return frac(sin(value * 12.9898) * 43758.5453);
-}
 
 float4 PSMain(VS_OUT In) : SV_TARGET
 {

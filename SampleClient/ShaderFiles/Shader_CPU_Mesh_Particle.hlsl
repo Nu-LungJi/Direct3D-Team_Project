@@ -180,7 +180,7 @@ PS_OUT PS_SMOKE_MAIN(VS_OUT In)
 	float noise = NoiseMap.Sample(LinearWrap, noiseUV + warp * 0.015f).r;
 
 	
-		//마스?�는 ?��????�마??보여주는지?��??�것	
+		//留덉뒪?щ뒗 ?쎌????쇰쭏??蹂댁뿬二쇰뒗吏?먮??쒓쾬	
 	float heightMask = smoothstep(0.35f, 1.f, In.vTexcoord.y + (noise - 0.5f) * 0.45f);
 	float softnoise = smoothstep(0.15f, 0.85f, noise);
 	heightMask *= 1.f - smoothstep(0.85f, 1.f, In.vTexcoord.y);
