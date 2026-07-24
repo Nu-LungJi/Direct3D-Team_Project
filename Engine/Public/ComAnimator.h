@@ -340,7 +340,9 @@ public:
 	HRESULT Update_Action_GPU(_float fTimeDelta);
 
 
-	void	SetTrackPosition(_float fTrackPosition);
+	void	SetTrackPosition(
+		_float fTrackPosition,
+		_bool bPreserveBlend = false);
 
 
 public:

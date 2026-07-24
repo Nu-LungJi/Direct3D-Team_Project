@@ -322,9 +322,6 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 
-	if (!m_bMovementLocked && CGameInstance::Get().KeyDown(DIK_SPACE))
-		m_pComMoveIntent->RequestJump();
-
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
 		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });

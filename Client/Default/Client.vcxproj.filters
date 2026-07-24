@@ -79,6 +79,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Roll_State">
       <UniqueIdentifier>{9a4caa44-f46e-447a-8a58-58c13ec27b7d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
+      <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -159,6 +162,9 @@
     <ClInclude Include="..\Public\Player_Roll_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Jump_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -230,6 +236,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Roll_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Jump_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

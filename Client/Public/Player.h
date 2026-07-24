@@ -73,6 +73,7 @@ public:
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 
 	CComCharacterMoveIntent* GetMoveIntent() const { return m_pComMoveIntent; }
+	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
 

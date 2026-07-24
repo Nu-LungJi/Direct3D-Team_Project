@@ -10,6 +10,7 @@ enum class PLAYER_STATE : uint32_t
 	NONE = 0,
 	LOCOMOTION,
 	ROLL,
+	JUMP,
 	ATTACK,
 	HIT,
 	DEAD,

@@ -147,38 +147,72 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		{
 			const _float fRatio =
 				std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f);
-			const _float fSpeedRatio =
-				fRatio < m_fJogTurnSlowdownEndRatio
-				? std::lerp(
-					1.f,
-					m_fJogTurnMinimumSpeedRatio,
-					fRatio / m_fJogTurnSlowdownEndRatio)
-				: std::lerp(
-					m_fJogTurnMinimumSpeedRatio,
-					1.f,
-					std::clamp(
-						(fRatio - m_fJogTurnSlowdownEndRatio) /
-						m_fJogTurnRecoveryDurationRatio,
-						0.f,
-						1.f));
-			const _float fTurnSpeed = std::max(
-				m_fJogTurnMinimumSpeed,
-				m_fJogTurnEntrySpeed * fSpeedRatio);
-
-			_vector vLook = XMVectorSetY(
-				player->GetTransform().GetState(STATE::LOOK),
-				0.f);
-			if (XMVectorGetX(XMVector3LengthSq(vLook)) >
-				std::numeric_limits<_float>::epsilon())
+			if (fRatio < m_fJogTurnMoveRecoveryStartRatio)
 			{
-				_float3 vMoveDirection{};
-				XMStoreFloat3(
-					&vMoveDirection,
-					XMVector3Normalize(vLook));
+				const _float fDecelerationRatio = std::clamp(
+					fRatio / m_fJogTurnMoveRecoveryStartRatio,
+					0.f,
+					1.f);
+				const _float fSmoothDeceleration =
+					fDecelerationRatio * fDecelerationRatio *
+					(3.f - 2.f * fDecelerationRatio);
+				const _float fDriftSpeed = m_fJogTurnEntrySpeed *
+					std::lerp(
+						1.f,
+						m_fJogTurnDriftSpeedRatio,
+						fSmoothDeceleration);
+
+				_vector vEntryDirection = XMVectorSetY(
+					XMLoadFloat3(&m_vJogTurnEntryDirection),
+					0.f);
+				player->SetMovementLocked(false);
+				player->SetCurrentMoveSpeed(fDriftSpeed);
+
+				if (XMVectorGetX(XMVector3LengthSq(vEntryDirection)) >
+					std::numeric_limits<_float>::epsilon())
+				{
+					_float3 vMoveDirection{};
+					XMStoreFloat3(
+						&vMoveDirection,
+						XMVector3Normalize(vEntryDirection));
+					pMoveIntent->SetMoveIntent(
+						vMoveDirection,
+						fDriftSpeed);
+				}
+			}
+			else
+			{
+				const _float fRecoveryRatio = std::clamp(
+					(fRatio - m_fJogTurnMoveRecoveryStartRatio) /
+					m_fJogTurnRecoveryDurationRatio,
+					0.f,
+					1.f);
+				const _float fSmoothRecovery =
+					fRecoveryRatio * fRecoveryRatio *
+					(3.f - 2.f * fRecoveryRatio);
+				const _float fTurnSpeed = m_fJogTurnEntrySpeed *
+					std::lerp(
+						m_fJogTurnDriftSpeedRatio,
+						1.f,
+						fSmoothRecovery);
+
+				_vector vTurnDirection = XMVectorSetY(
+					XMLoadFloat3(&m_vTurnTargetDirection),
+					0.f);
+				player->SetMovementLocked(false);
 				player->SetCurrentMoveSpeed(fTurnSpeed);
-				pMoveIntent->SetMoveIntent(
-					vMoveDirection,
-					fTurnSpeed);
+
+				if (XMVectorGetX(XMVector3LengthSq(vTurnDirection)) >
+					std::numeric_limits<_float>::epsilon())
+				{
+					_float3 vMoveDirection{};
+					XMStoreFloat3(
+						&vMoveDirection,
+						XMVector3Normalize(vTurnDirection));
+					pMoveIntent->SetMoveIntent(
+						vMoveDirection,
+						fTurnSpeed);
+				}
 			}
 		}
 		else
@@ -318,7 +352,41 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 
 	// 일반 이동에서는 입력 방향으로 순간이동하듯 꺾지 않고
 	// 연속적인 월드 방향을 유지한 채 일정 회전속도로 따라간다.
-	pMoveIntent->SetFacingIntent(tMoveOutput.vMoveDirection, 360.f);
+	if (player->IsSprintRequested())
+	{
+		pMoveIntent->SetFacingIntent(
+			tMoveOutput.vMoveDirection,
+			m_fSprintTurnSpeed);
+
+		_vector vLook = XMVectorSetY(
+			player->GetTransform().GetState(STATE::LOOK),
+			0.f);
+		_vector vRequestedDirection = XMVectorSetY(
+			XMLoadFloat3(&tMoveOutput.vMoveDirection),
+			0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) >
+				std::numeric_limits<_float>::epsilon() &&
+			XMVectorGetX(XMVector3LengthSq(vRequestedDirection)) >
+				std::numeric_limits<_float>::epsilon())
+		{
+			const _vector vCurvedMoveDirection = XMVector3Normalize(
+				XMVectorLerp(
+					XMVector3Normalize(vLook),
+					XMVector3Normalize(vRequestedDirection),
+					m_fSprintMoveDirectionBlend));
+			_float3 vMoveDirection{};
+			XMStoreFloat3(&vMoveDirection, vCurvedMoveDirection);
+			pMoveIntent->SetMoveIntent(
+				vMoveDirection,
+				player->GetCurrentMoveSpeed());
+		}
+	}
+	else
+	{
+		pMoveIntent->SetFacingIntent(
+			tMoveOutput.vMoveDirection,
+			360.f);
+	}
 
 	int32_t iDesiredMoveAnimation = m_iJogForwardAnimation;
 	if (player->IsSprintRequested())
@@ -327,9 +395,18 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			*player,
 			player->GetRawMoveDirection());
 
-		if (fLeanAngle >= 10.f && fLeanAngle <= 45.f)
+		const _bool bKeepRightLean =
+			m_iActiveMoveLoopAnimation == m_iSprintLeanRightAnimation &&
+			fLeanAngle >= 2.f;
+		const _bool bKeepLeftLean =
+			m_iActiveMoveLoopAnimation == m_iSprintLeanLeftAnimation &&
+			fLeanAngle <= -2.f;
+
+		if (bKeepRightLean ||
+			fLeanAngle >= 7.f)
 			iDesiredMoveAnimation = m_iSprintLeanRightAnimation;
-		else if (fLeanAngle <= -10.f && fLeanAngle >= -45.f)
+		else if (bKeepLeftLean ||
+			fLeanAngle <= -7.f)
 			iDesiredMoveAnimation = m_iSprintLeanLeftAnimation;
 		else
 			iDesiredMoveAnimation = m_iSprintForwardAnimation;
@@ -338,7 +415,26 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	if (iDesiredMoveAnimation >= 0 &&
 		iDesiredMoveAnimation != m_iActiveMoveLoopAnimation)
 	{
-		pAnimator->Play_Anim(iDesiredMoveAnimation, true, 0.15f);
+		const _float fPreviousLoopRatio =
+			std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f);
+		pAnimator->Play_Anim(iDesiredMoveAnimation, true, 0.22f);
+
+		auto* pModelInstance = player->GetModelInstance();
+		if (pModelInstance && pModelInstance->GetModel())
+		{
+			const auto& animations =
+				pModelInstance->GetModel()->GetAnimations();
+			if (static_cast<size_t>(iDesiredMoveAnimation) <
+				animations.size() &&
+				animations[iDesiredMoveAnimation])
+			{
+				pAnimator->SetTrackPosition(
+					animations[iDesiredMoveAnimation]->GetDuration() *
+					fPreviousLoopRatio,
+					true);
+			}
+		}
+
 		m_iActiveMoveLoopAnimation = iDesiredMoveAnimation;
 	}
 	m_bWasMoving = true;
@@ -516,7 +612,17 @@ void CPlayer_Locomotion_State::BeginJogTurn(
 	m_fJogTurnEntrySpeed = std::max(
 		player.GetCurrentMoveSpeed(),
 		m_fJogTurnMinimumSpeed);
-	player.SetMovementLocked(false);
+	_vector vEntryDirection = XMVectorSetY(
+		player.GetTransform().GetState(STATE::LOOK),
+		0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vEntryDirection)) >
+		std::numeric_limits<_float>::epsilon())
+	{
+		XMStoreFloat3(
+			&m_vJogTurnEntryDirection,
+			XMVector3Normalize(vEntryDirection));
+	}
+	player.SetMovementLocked(true);
 	player.SetRootMotionTranslationActive(false);
 }
 
@@ -665,6 +771,7 @@ void CPlayer_Locomotion_State::FinishIdleTurn(CPlayer& player)
 	m_vTurnTargetDirection = {};
 	m_fTurnSignedAngleRadians = 0.f;
 	m_fJogTurnEntrySpeed = 0.f;
+	m_vJogTurnEntryDirection = {};
 	m_iPendingIdleTurnAnimation = -1;
 }
 
