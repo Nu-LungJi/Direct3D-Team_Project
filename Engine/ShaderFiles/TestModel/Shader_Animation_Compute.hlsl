@@ -95,21 +95,21 @@ LOCAL_POSE SampleLocalPose(uint boneIndex, uint RootBoneIndex, GPU_ANIM_DESC ani
     result.vTranslation = lerp(a.vTranslation,b.vTranslation,t);
     if (boneIndex == RootBoneIndex)
     {
-		result.vTranslation = 0.0f;
+		//result.vTranslation = 0.0f;
 
-		float4 yaw = normalize(float4(0.0f, result.vRotation.y, 0.0f, result.vRotation.w));
+		//float4 yaw = normalize(float4(0.0f, result.vRotation.y, 0.0f, result.vRotation.w));
 
-		 // yaw의 역쿼터니언
-		float4 invYaw = float4(-yaw.xyz, yaw.w);
+		// // yaw의 역쿼터니언
+		//float4 invYaw = float4(-yaw.xyz, yaw.w);
 
-		 // q * inverse(yaw)
-		float4 q = result.vRotation;
-		result.vRotation = normalize(float4(
-        q.w * invYaw.x + q.x * invYaw.w + q.y * invYaw.z - q.z * invYaw.y,
-        q.w * invYaw.y - q.x * invYaw.z + q.y * invYaw.w + q.z * invYaw.x,
-        q.w * invYaw.z + q.x * invYaw.y - q.y * invYaw.x + q.z * invYaw.w,
-        q.w * invYaw.w - q.x * invYaw.x - q.y * invYaw.y - q.z * invYaw.z
-		));
+		// // q * inverse(yaw)
+		//float4 q = result.vRotation;
+		//result.vRotation = normalize(float4(
+  //      q.w * invYaw.x + q.x * invYaw.w + q.y * invYaw.z - q.z * invYaw.y,
+  //      q.w * invYaw.y - q.x * invYaw.z + q.y * invYaw.w + q.z * invYaw.x,
+  //      q.w * invYaw.z + q.x * invYaw.y - q.y * invYaw.x + q.z * invYaw.w,
+  //      q.w * invYaw.w - q.x * invYaw.x - q.y * invYaw.y - q.z * invYaw.z
+		//));
 
 	}
     return result;

@@ -34,8 +34,8 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "ComSound.h"
-
 #include "ComLuaScript.h"
+#include "StateMachine.h"
 
 #include "ParticleManager.h"
 #include "Particle.h"
@@ -413,6 +413,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		return E_FAIL;
 	}
 
+	if (CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_Component_StateMachine", CStateMachine::Create()))
+	{
+		return E_FAIL;
+	}
 
 	// 피직스관련
 	{

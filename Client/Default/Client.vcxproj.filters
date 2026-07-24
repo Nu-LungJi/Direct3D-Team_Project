@@ -61,6 +61,27 @@
     <Filter Include="GameObject\DebugPlayer">
       <UniqueIdentifier>{18bf3c9f-aaf9-4b4c-8f7d-28b960f8e56a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player">
+      <UniqueIdentifier>{0da9ac46-8ea4-464b-b315-14e07602156b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Camera">
+      <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine">
+      <UniqueIdentifier>{0c382f62-6f66-469f-a311-7b79bb8775d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State">
+      <UniqueIdentifier>{d9117423-2851-4ff2-8aa0-f96c1b8f260a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Locomotion_State">
+      <UniqueIdentifier>{232233f9-be49-49ae-b9af-884605ffdcad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Roll_State">
+      <UniqueIdentifier>{9a4caa44-f46e-447a-8a58-58c13ec27b7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
+      <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -126,6 +147,24 @@
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h">
       <Filter>GameObject\DebugPlayer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
+      <Filter>GameObject\Player\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_StateMachine.h">
+      <Filter>GameObject\Player\StateMachine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Locomotion_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Roll_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Jump_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -182,6 +221,24 @@
     </ClCompile>
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
       <Filter>GameObject\DebugPlayer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\Player\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_StateMachine.cpp">
+      <Filter>GameObject\Player\StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Locomotion_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Roll_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Jump_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

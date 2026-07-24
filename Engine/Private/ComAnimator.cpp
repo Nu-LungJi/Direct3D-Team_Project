@@ -1138,7 +1138,9 @@ void CComAnimator::Advance_GPUBlend(_float fTimeDelta)
 	}
 }
 
-void CComAnimator::SetTrackPosition(_float fTrackPosition)
+void CComAnimator::SetTrackPosition(
+	_float fTrackPosition,
+	_bool bPreserveBlend)
 {
 	if (m_pModelInstance == nullptr)
 		return;
@@ -1178,9 +1180,12 @@ void CComAnimator::SetTrackPosition(_float fTrackPosition)
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
 
-	m_bBlending = false;
-	m_fBlendTime = 0.f;
-	m_fBlendDuration = 0.f;
+	if (!bPreserveBlend)
+	{
+		m_bBlending = false;
+		m_fBlendTime = 0.f;
+		m_fBlendDuration = 0.f;
+	}
 
 
 	Build_BoneMatrices_CPU(0.f);

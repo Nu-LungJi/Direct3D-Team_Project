@@ -32,7 +32,9 @@ namespace Client
 	enum class PROTO_GAMEOBJECT
 	{
 		Prototype_GameObject_DebugPlayer,
-		Prototype_GameObject_DebugPlayerThirdPersonCamera
+		Prototype_GameObject_Player,
+		Prototype_GameObject_DebugPlayerThirdPersonCamera,
+		Prototype_GameObject_PlayerThirdPersonCamera
 	};
 
 	enum class PROTO_COMPONENT
@@ -40,6 +42,8 @@ namespace Client
 
 	};
 
+
+	enum class PARTES { WEAPON, END };
 }
 
 extern HWND g_hWnd;
