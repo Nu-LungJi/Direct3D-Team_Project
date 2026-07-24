@@ -113,7 +113,6 @@ void CBTAnimRoot::Active_Skill()
 			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 			{
 				pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
-				pBT->Set_Flag(ETOUI(BTFLAG::ATTACK), FLAGTYPE::ADD);
 			}
 		}
 	}
