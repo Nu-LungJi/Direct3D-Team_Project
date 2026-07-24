@@ -187,6 +187,8 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 		XMStoreFloat4x4(&pCbPerPass.matInvProj, XMMatrixInverse(nullptr, LightProjMatrix));
 		XMStoreFloat4x4(&pCbPerPass.matInvViewProj, XMMatrixInverse(nullptr, LightViewProj));
 		XMStoreFloat4x4(&pCbPerPass.matShadowLightViewProj, LightViewProj);
+		pCbPerPass.fDeltaTime = 0.f;
+		pCbPerPass.fTimeAccumulation = 0.f;
 
 		pCbPerPass.vCamPos = m_pComTransform->GetPosition();
 

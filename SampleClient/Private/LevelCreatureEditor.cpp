@@ -37,8 +37,9 @@ CLevelCreatureEditor::~CLevelCreatureEditor()
 HRESULT CLevelCreatureEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
-	CHandle hPlayer{};
+	
 	{
+		CHandle hPlayer{};
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Terrain",
@@ -57,6 +58,29 @@ HRESULT CLevelCreatureEditor::Initialize()
 		if (!hSpawnedPlayer)
 			return E_FAIL;
 		hPlayer = *hSpawnedPlayer;
+
+		{
+			CTestPlayer3CameraCreatureEditor::DESC Desc{};
+			Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+			Desc.vAt = { 10.f, 50.f, 10.f };
+			Desc.vEye = { 10.f, 53.f, 5.f };
+			Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+			Desc.fFovY = 75.f;
+			Desc.fNear = 0.1f;
+			Desc.fFar = 1000.f;
+			Desc.sObjectTag = "CREATURE_PLAYER_CAMERA";
+			Desc.hTarget = hPlayer;
+
+			auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+				m_strLevelName,
+				"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
+				"99_CAMERA",
+				&Desc);
+			if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera("CREATURE_PLAYER_CAMERA", *hPlayerCamera)))
+			{
+				return E_FAIL;
+			}
+		}
 	}
 
 	{
@@ -116,11 +140,12 @@ HRESULT CLevelCreatureEditor::Initialize()
 		}
 	}
 
-	
+	for(uint32_t i = 0; i < 6; ++i)
 	{
+		
 		CTestDynamic::DESC desc{};
 		desc.sObjectTag = "TestDynamic";
-		desc.vInitialPosition = { 15.f, 55.f, 15.f };
+		desc.vInitialPosition = { 15.f, 55.f + (i * 3.f), 15.f };
 		desc.vConvexScale = { 300.f, 300.f, 300.f };
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
@@ -146,17 +171,17 @@ HRESULT CLevelCreatureEditor::Initialize()
 	
 
 
-		auto hSpawnedPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
+		auto hSpawnedAnimPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
 			"Prototype_GameObject_Player",
 			"02_Player",
 			&PlayerDesc);
-		if (!hSpawnedPlayer)
+		if (!hSpawnedAnimPlayer)
 			return E_FAIL;
-		hAnimTestPlayer = *hSpawnedPlayer;
+		hAnimTestPlayer = *hSpawnedAnimPlayer;
 
 
-		CTestPlayer3CameraCreatureEditor::DESC Desc{};
+		CPlayerThirdPersonCamera::DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
 		Desc.vAt = { 10.f, 50.f, 10.f };
 		Desc.vEye = { 10.f, 53.f, 5.f };
@@ -164,16 +189,15 @@ HRESULT CLevelCreatureEditor::Initialize()
 		Desc.fFovY = 75.f;
 		Desc.fNear = 0.1f;
 		Desc.fFar = 1000.f;
-		Desc.sObjectTag = "TestPlayer3CameraCreatureEditor1231";
+		Desc.sObjectTag = "PlayerCamera";
 		Desc.hTarget = hAnimTestPlayer;
-
-		auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+	
+		auto hAnimPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
-			"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
+			"Prototype_GameObject_PlayerThirdPersonCamera",
 			"100_CAMERA",
 			&Desc);
-		if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
-			"CREATURE_ANIM_PLAYER_CAMERA", *hPlayerCamera)))
+		if (!hAnimPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera("PlayerCamera", *hAnimPlayerCamera)))
 		{
 			return E_FAIL;
 		}
@@ -198,29 +222,7 @@ HRESULT CLevelCreatureEditor::Initialize()
 			}
 		}
 	}
-	{
-		CPlayerThirdPersonCamera::DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-		Desc.vAt = { 10.f, 50.f, 10.f };
-		Desc.vEye = { 10.f, 53.f, 5.f };
-		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
-		Desc.fFar = 1000.f;
-		Desc.sObjectTag = "PlayerCamera";
-		Desc.hTarget = hPlayer;
-
-		auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
-			m_strLevelName,
-			"Prototype_GameObject_PlayerThirdPersonCamera",
-			"99_CAMERA",
-			&Desc);
-		if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
-			"PlayerCamera", *hPlayerCamera)))
-		{
-			return E_FAIL;
-		}
-	}
+	
 
 	if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
 		return E_FAIL;

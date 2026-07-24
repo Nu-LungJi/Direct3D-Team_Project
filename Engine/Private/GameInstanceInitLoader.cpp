@@ -224,14 +224,6 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG", E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FOG) })))
-		{
-			return E_FAIL;
-		}
-	}
-
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(E::GPU_SKIN_MESH_CONSTANTS) })))

@@ -2915,7 +2915,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 {
 	std::vector<SPAWN_COMMAND> parsed;
 
-	std::string path = "./Resources/json/Particle/" + strJsonPath;
+	std::string path = "./Resources/json/Particle/ParticleQueue/" + strJsonPath;
 	std::ifstream file(path);
 	if (!file.is_open())
 		return parsed;

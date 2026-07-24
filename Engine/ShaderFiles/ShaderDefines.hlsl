@@ -88,7 +88,6 @@ cbuffer CB_PER_OBJECT : register(b0)
 {
     matrix g_matWorld;
     matrix g_matWVP;
-    float3 _g_object_pad;
 };
 
 // 2. 프레임당 1회 갱신 (슬롯 b1)
@@ -105,13 +104,9 @@ cbuffer CB_PER_PASS : register(b1)
     matrix g_matShadowLightViewProj;
 	
     float3 g_vCamPos;
-    float g_PerPassPadding1;
-    float3 g_vShadowLightDir;
-    float g_PerPassPadding2;
-	
 	float  g_fDeltaTime;
+    float3 g_vShadowLightDir;
 	float  g_fTimeAccumulation;
-	float2 g_PerPassPadding3;
 };
 
 cbuffer CB_BONES : register(b2)

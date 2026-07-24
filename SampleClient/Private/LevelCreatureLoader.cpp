@@ -255,9 +255,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");
 				return false;
 			}
-			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				"LEVEL_CREATURE",
-				"Prototype_GameObject_PlayerThirdPersonCamera",
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE","Prototype_GameObject_PlayerThirdPersonCamera",
 				CPlayerThirdPersonCamera::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_PlayerThirdPersonCamera");
