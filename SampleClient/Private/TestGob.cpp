@@ -153,7 +153,8 @@ HRESULT CTestGob::Initialize(void* pArg)
 	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
 	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
 
-	m_pComTransform->SetScale(XMVectorSet(2, 2, 2, 0));
+	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
+	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	return S_OK;
 }
 
@@ -165,6 +166,7 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestGob::FixedUpdate(E::_float fTimeDelta)
 {
+	if(!m_bDonMove)
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 

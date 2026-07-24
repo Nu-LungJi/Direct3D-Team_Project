@@ -150,7 +150,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
 			s.position = param.vCenter;
 			if (ETOUI(CParticle::BEHAVIOR_SMOKEGW) == param.iFlag)
 			{
-				_float iOffset = _float(j+1.f) * param.fRadius;
+				_float iOffset = _float(j+1.f) *param.fRadius * E::Randf(param.vRandRaidus.x, param.vRandRaidus.y);
 				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
 				XMStoreFloat3(&s.velocity, radial * fSpeed );
 				fY += XMConvertToDegrees(atan2f(XMVectorGetX(radial), XMVectorGetZ(radial)));

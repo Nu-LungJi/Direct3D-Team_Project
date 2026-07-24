@@ -284,8 +284,41 @@ void CLevelCreatureEditor::UpdateGUI()
 				auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, m_SelectObjecteTag, "02_Gobline", &Desc);
 			}
 		}
+
+		
 	}
 	
+	if (ImGui::TreeNode("Particle Test Monster"))
+	{
+
+		CTestGob::MONSTER_DESC Desc{};
+
+		Desc.bDonMove = true;
+		Desc.sObjectTag = "Gobline";
+		Desc.LevelTag = m_strLevelName;
+		XMStoreFloat3(&Desc.vPos, XMVectorSet(0, 0, 0, 1));
+		XMStoreFloat3(&Desc.vRot, XMVectorSet(0, 1, 0, 1));
+		Desc.fAngle = 180.f;
+		if (ImGui::Button("BOSS"))
+		{
+			Desc.ReSourceTag = "Model_Resource_TombProtector";
+			Desc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+			XMStoreFloat3(&Desc.vScale, XMVectorSet(5.f, 5.f, 5.f, 1));
+
+			auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
+
+		}
+		if (ImGui::Button("NORMAL"))
+		{
+			Desc.ReSourceTag = "Model_Resource_TombNormalProtector";
+			Desc.BeHaviorTag = "./Resources/json/BeHavior/NormalDef.json";
+			XMStoreFloat3(&Desc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+
+			auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
+
+		}
+		ImGui::TreePop();
+	}
 	ImGui::End();
 
 }

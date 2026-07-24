@@ -38,7 +38,9 @@ public:
 	typedef struct tagGoblnedesc : CAnimationObject::GAMEOBJECT_DESC
 	{
 		_string SocketName{}, LevelTag{}, ReSourceTag{}, BeHaviorTag{};
-		_float3 vPos{};
+		_bool	bDonMove{ false };
+		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{};
+		_float fAngle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
@@ -119,10 +121,12 @@ protected:
 	_string						m_SocketName{};
 	HITTABLE					m_MonTable{};
 
+	
 	std::vector<E::SPAWN_COMMAND> test[ETOUI(ATTMON::END)];
 
 
 	//파티클 재설정용
+	_bool								m_bDonMove{ false };
 	std::map<ATTMON, _string>			m_ParticleData;
 public:
 	E::UPtr<E::CPrototype> Clone(void* pArg) PURE;
