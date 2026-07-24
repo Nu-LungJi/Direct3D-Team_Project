@@ -117,8 +117,8 @@ PS_OUT PSMain(VS_OUT In)
 	float leadingEdge = lerp(-bandWidth, 1.0f + bandWidth, ratio);
 	float trailingEdge = leadingEdge - bandWidth;
 
-	//if (lengthMask > leadingEdge || lengthMask < trailingEdge)
-	//	discard;
+	if (lengthMask > leadingEdge || lengthMask < trailingEdge)
+		discard;
 // 길이 그라디언트 위주 + 노이즈로 가장자리에 자연스러운 디테일만 살짝
     //float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
 
@@ -191,4 +191,80 @@ PS_OUT PSMain(VS_OUT In)
     
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
+}
+
+PS_OUT PSTexScrollMain(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	float scrollSpeed = 0.2f; // 흐르는 속도, 필요하면 파라미터로 빼서 조절
+	float2 scrollDirection = float2(1.f, 0.f);
+	float2 scrolledUV = In.vTexcoord + scrollDirection * scrollSpeed * g_fTime;
+    
+    
+	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, scrolledUV) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
+	if (AlbedoTex.a < 0.05f)
+		discard;
+	float ratio = 1.0f - (In.life / In.maxLife);
+	float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+	float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+
+	float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
+	WorldNormal = normalize(WorldNormal * NormalIntensity);
+
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float NDV = max(dot(WorldNormal, V), 0.f);
+
+	float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
+	float fMetallic = SMRO.r * MetallicIntensity;
+	float fRoughness = SMRO.g * RoughnessIntensity;
+	float fAmbient = SMRO.b * AmbientIntensity;
+
+	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
+
+	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+
+    [unroll(MAX_LIGHT_COUNT)]
+	for (int i = 0; i < LightCount; ++i)
+	{
+		float3 L, Radiance;
+
+        [branch]
+		if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
+			continue;
+
+		float RawNDL = dot(WorldNormal, L);
+
+        [branch]
+		if (RawNDL > 0.f)
+		{
+			float NDL = clamp(RawNDL, 0.f, 1.f);
+
+			float3 H = normalize(V + L);
+			float D = DistributionGGX(WorldNormal, H, fRoughness);
+			float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+			float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
+
+			float3 Specular = D * F * V_Spec * SpecularIntensity;
+
+			float3 kS = F;
+			float3 kD = (1.0 - kS) * (1.0 - fMetallic);
+			float3 Diffuse = kD * Albedo / PI;
+
+			LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
+		}
+	}
+
+    // 인스턴스(파티클)별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
+	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
+	texEmissive = pow(texEmissive, 2.2f);
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+
+	float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
+	float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
+
+    
+    
+	Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+	return Out;
 }

@@ -9,6 +9,7 @@
 #define BEHAVIOR_SMOKEJUMP (1u << 6)
 #define BEHAVIOR_SMOKEGV (1u << 7)
 #define BEHAVIOR_SMOKEGW (1u << 8)
+#define BEHAVIOR_SIZESTOP (1u << 9)
 
 struct SPAWN_DATA
 {
@@ -29,6 +30,8 @@ struct SPAWN_DATA
     uint loop;
     float3 originalPosition; // 원래 스폰 위치
     float3 originalVelocity; // 원래 스폰 속도+ 방향
+	float stopSizeTime;
+	float3 pad1;
 };
 
 
@@ -56,6 +59,8 @@ struct ParticleData
     float pad3;
     float3 originalPosition; // 원래 스폰 위치
     float3 originalVelocity; // 원래 스폰 속도+ 방향
+	float stopSizeTime;
+	float3 pad4;
 };
 
 

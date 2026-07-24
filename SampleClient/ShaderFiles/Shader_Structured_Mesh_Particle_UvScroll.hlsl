@@ -117,7 +117,7 @@ PS_OUT PSMain(VS_OUT In)
 	cloudUV += distortion * 0.04f;
 	swirlUV += distortion * 0.04f;
 
-	float4 cloud = AlbedoMap.Sample(LinearWrap, cloudUV);
+	float4 cloud = AlbedoMap.Sample(LinearWrap, cloudUV) * In.vColor;
 	float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
 	
 	float cloudShape = smoothstep(0.2f, 0.5f, cloud.a);

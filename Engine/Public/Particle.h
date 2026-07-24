@@ -19,6 +19,7 @@ public:
 		BEHAVIOR_SMOKEJUMP = 1<<6,
 		BEHAVIOR_SMOKEGV = 1 << 7,
 		BEHAVIOR_SMOKEGW = 1 << 8,
+		BEHAVIOR_SIZESTOP = 1 << 9,
 	};
 
 protected:

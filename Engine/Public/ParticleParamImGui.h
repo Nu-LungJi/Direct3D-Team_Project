@@ -17,6 +17,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bSmokeJump = (flags & BEHAVIOR_SMOKEJUMP) != 0;
 	bool bSmokegv = (flags & BEHAVIOR_SMOKEGV) != 0;
 	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
+	bool bSizeStop = (flags & BEHAVIOR_SIZESTOP) != 0;
 
 	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
@@ -24,9 +25,12 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("Billboard", &bBillboard))
 		flags = bBillboard ? (flags | BEHAVIOR_BILLBOARD) : (flags & ~BEHAVIOR_BILLBOARD);
-	ImGui::SameLine();
+
 	if (ImGui::Checkbox("Gravity", &bGravity))
 		flags = bGravity ? (flags | BEHAVIOR_GRAVITY) : (flags & ~BEHAVIOR_GRAVITY);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("SizeStop", &bSizeStop))
+		flags = bSizeStop ? (flags | BEHAVIOR_SIZESTOP) : (flags & ~BEHAVIOR_SIZESTOP);
 	ImGui::Separator();
 	ImGui::Text("Only For CPU Pattern");
 	if (ImGui::Checkbox("CircleToWave", &bCircleWave))

@@ -50,6 +50,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		initParticles[i].iBehaviorType = 0;
 		initParticles[i].originalPosition = _float3(0.f, 0.f, 0.f);
 		initParticles[i].originalEmissive = _float4(0.f, 0.f, 0.f,0.f);
+		initParticles[i].fStopSizeTime = 0;
 	}
 
 	std::vector<uint32_t> initDeadIndices(m_iNumElements);
@@ -754,7 +755,7 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 
 	CB_CLEAR cb{};
 	cb.ownerID = ownerID;
-
+	cb.maxParticles = m_iNumElements;
 	D3D11_MAPPED_SUBRESOURCE mapped{};
 	if (SUCCEEDED(context->Map(m_pComClearCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 	{
@@ -764,8 +765,8 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 	}
 
 	ID3D11UnorderedAccessView* clearUAVs[] = {
+		m_pParticleStructuredBuffer->GetUAV().Get(),  // u1
 		m_pDeadListBuffer->GetUAV().Get(),           // u0
-		m_pParticleStructuredBuffer->GetUAV().Get()  // u1
 	};
 	UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
 	context->CSSetUnorderedAccessViews(0, 2, clearUAVs, initialCounts);

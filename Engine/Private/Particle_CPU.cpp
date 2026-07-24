@@ -202,9 +202,15 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		VTX_PARTICLE_INSTANCED_DATA inst{};
 		inst.iBehaviorType = p.iBehaviorType;
 		
-		p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
-		p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
-		p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP) != 0) {
+			SizeLerp(p, fTimeDelta);
+		}
+		else {
+			p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+			p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+			p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+		}
+	
 
 		
 		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
@@ -381,6 +387,16 @@ void CParticle_CPU::GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	XMStoreFloat3(&p.vVelocity, XMLoadFloat3(&p.vVelocity) * expf(-4.f * fTimeDelta));
 
 }
+void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	_float stopSizeTime = p.fStopSizeTime;
+
+	float ageRatio = std::clamp(p.life / stopSizeTime, 0.f, 1.f);
+
+	p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+	p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+	p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+}
 
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
@@ -415,6 +431,7 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].rotation = src.rotation;
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
+		m_Particles[i].fStopSizeTime = src.fStopSizeTime;
 
 
 	
