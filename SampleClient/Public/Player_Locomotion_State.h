@@ -1,15 +1,17 @@
+
 #pragma once
 #include "Client_Defines.h"
 #include "StateMachine.h"
 
 NS_BEGIN(Client)
 
+class CPlayer;
+
 class CPlayer_Locomotion_State final : public CState
 {
 public:
 	DECLARE_DERIVED_TYPE(CPlayer_Locomotion_State, CState)
 
-	static constexpr int32_t INVALID_ANIMATION = -1;
 
 	enum class MOVE_DIRECTION : uint32_t
 	{
@@ -67,54 +69,62 @@ public:
 	static SPtr<CPlayer_Locomotion_State> Create();
 
 private:
-	using DIRECTION_TABLE = std::array<int32_t, ETOUI(MOVE_DIRECTION::END)>;
-	using GAIT_DIRECTION_TABLE = std::array<DIRECTION_TABLE, ETOUI(GAIT::END)>;
-	using PHASE_GAIT_DIRECTION_TABLE = std::array<GAIT_DIRECTION_TABLE, ETOUI(FOOT_PHASE::END)>;
+	_float CalculateSignedAngle(const CPlayer& player,const _float3& vMoveDirection) const;
 
-	void InitializeAnimationTable(class CPlayer& player);
 	MOVE_DIRECTION ResolveDirection(_float fSignedAngle) const;
-	_float CalculateSignedAngle(const CPlayer& player, const _float3& vWorldDirection) const;
-	FOOT_PHASE ResolveFootPhase(_float fAnimationRatio) const;
-	GAIT ResolveDesiredGait(const CPlayer& player) const;
+	void CacheAnimationIndices(const CPlayer& player);
+	int32_t FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const;
+	int32_t ResolveIdleTurnAnimation(_float fSignedAngle) const;
+	int32_t ResolveJogTurnAnimation(_float fSignedAngle) const;
+	void BeginTurnDecision(CPlayer& player, const _float3& vTargetDirection, int32_t iIdleAnimation);
+	void BeginIdleTurn(CPlayer& player, const _float3& vTargetDirection, int32_t iAnimationIndex);
+	void BeginJogTurn(CPlayer& player, const _float3& vTargetDirection, int32_t iAnimationIndex);
+	void BeginJogStart(CPlayer& player);
+	void BeginJogStop(CPlayer& player);
+	void UpdateIdleTurnRotation(CPlayer& player, _float fAnimationRatio);
+	void FinishIdleTurn(CPlayer& player);
 
-	int32_t FindDirectionalAnimation(const GAIT_DIRECTION_TABLE& table,GAIT eGait,MOVE_DIRECTION eDirection) const;
-	int32_t FindPhasedDirectionalAnimation(const PHASE_GAIT_DIRECTION_TABLE& table,FOOT_PHASE ePhase,GAIT eGait,MOVE_DIRECTION eDirection) const;
-
-	_bool PlayTransient(class CComAnimator& animator,int32_t iAnimationIndex,TRANSITION eTransition,GAIT ePendingGait,_float fBlendDuration = 0.1f);
-	void PlayLoop(CPlayer& player,class CComAnimator& animator,GAIT eGait,MOVE_DIRECTION eDirection);
-	_bool UpdateTransient(CPlayer& player, class CComAnimator& animator);
-	_bool TryStartIdleTurn(CPlayer& player, class CComAnimator& animator);
-
-private:
-	_bool m_bAnimationTableInitialized = false;
-	int32_t m_iIdleAnimation = INVALID_ANIMATION;
-
-	GAIT_DIRECTION_TABLE m_LoopAnimations{};
-	PHASE_GAIT_DIRECTION_TABLE m_StartAnimations{};
-	PHASE_GAIT_DIRECTION_TABLE m_StopAnimations{};
-	PHASE_GAIT_DIRECTION_TABLE m_FreeTurnStartAnimations{};
-
-	std::array<std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(GAIT::END)>,ETOUI(GAIT::END)> m_GaitTransitions{};
-
-
-	std::array<std::array<int32_t, 4>, ETOUI(TURN_SIDE::END)> m_IdleTurns{};
-
-	std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(TURN_SIDE::END)> m_JogPivots{};
-	std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(TURN_SIDE::END)> m_SprintPivots{};
-
-	std::array<std::array<std::array<int32_t, ETOUI(FOOT_PHASE::END)>,ETOUI(TURN_SIDE::END)>,ETOUI(GAIT::END)> m_FreeTurnStart180{};
-
-	GAIT m_eCurrentGait = GAIT::END;
-	GAIT m_ePendingGait = GAIT::END;
-	MOVE_DIRECTION m_eLastDirection = MOVE_DIRECTION::FRONT;
-	TRANSITION m_eTransition = TRANSITION::NONE;
-	int32_t m_iTransientAnimation = INVALID_ANIMATION;
-
-	_float START_TURN_THRESHOLD = 22.5f;
-	_float PIVOT_THRESHOLD = 157.5f;
-	_float IDLE_TURN_THRESHOLD = 30.f;
-	_float LOOP_BLEND_DURATION = 0.15f;
-	_float TRANSITION_BLEND_DURATION = 0.08f;
+	_float m_fSignedMoveAngle{};
+	MOVE_DIRECTION m_eMoveDirection{ MOVE_DIRECTION::FRONT };
+	std::array<int32_t, 4> m_LeftIdleTurns{ -1, -1, -1, -1 };
+	std::array<int32_t, 4> m_RightIdleTurns{ -1, -1, -1, -1 };
+	std::array<int32_t, 4> m_LeftJogTurns{ -1, -1, -1, -1 };
+	std::array<int32_t, 4> m_RightJogTurns{ -1, -1, -1, -1 };
+	int32_t m_iIdleAnimation{ -1 };
+	int32_t m_iJogStartForwardAnimation{ -1 };
+	int32_t m_iJogForwardAnimation{ -1 };
+	int32_t m_iJogStopForwardAnimation{ -1 };
+	int32_t m_iSprintForwardAnimation{ -1 };
+	int32_t m_iSprintLeanLeftAnimation{ -1 };
+	int32_t m_iSprintLeanRightAnimation{ -1 };
+	_bool m_bAnimationIndicesCached{};
+	int32_t m_iActiveMoveLoopAnimation{ -1 };
+	int32_t m_iPendingIdleTurnAnimation{ -1 };
+	_bool m_bTurnPending{};
+	_bool m_bIdleTurning{};
+	_bool m_bJogTurning{};
+	_bool m_bJogStarting{};
+	_bool m_bJogStopping{};
+	_bool m_bWasMoving{};
+	_float m_fTurnHoldTime{};
+	_float m_fJogTurnHoldThreshold{ 0.15f };
+	_float m_fRunningTurnThreshold{ 67.5f };
+	_float m_fJogTurnEntrySpeed{};
+	_float m_fJogTurnMinimumSpeed{10.f };
+	_float m_fJogTurnMinimumSpeedRatio{ 0.f };
+	_float m_fJogTurnSlowdownEndRatio{ 0.15f };
+	_float m_fJogTurnMoveRecoveryStartRatio{ 0.55f };
+	_float m_fJogTurnRecoveryDurationRatio{ 0.15f };
+	_float m_fJogTurnDriftSpeedRatio{ 0.02f };
+	_float m_fJogTurnRotationCompletionRatio{ 0.15f };
+	_float m_fSprintTurnSpeed{ 240.f };
+	_float m_fSprintMoveDirectionBlend{ 0.3f };
+	_float m_fFallStateVerticalSpeed{ -3.f };
+	_float3 m_vJogTurnEntryDirection{};
+	_float3 m_vTurnTargetDirection{};
+	_float4 m_qTurnStartRotation{ 0.f, 0.f, 0.f, 1.f };
+	_float4 m_qTurnTargetRotation{ 0.f, 0.f, 0.f, 1.f };
+	_float m_fTurnSignedAngleRadians{};
 };
 
 NS_END
