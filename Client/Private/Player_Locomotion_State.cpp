@@ -76,7 +76,7 @@ void CPlayer_Locomotion_State::CacheAnimationIndices(const CPlayer& player)
 	};
 	m_iJogStartForwardAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Start_Fwd_RU_anm.bin");
+		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Start_Fwd_anm.bin");
 	m_iJogForwardAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_Fwd_anm.bin");
@@ -328,20 +328,22 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	m_fSignedMoveAngle = CalculateSignedAngle(*player, tMoveOutput.vMoveDirection);
 	m_eMoveDirection = ResolveDirection(m_fSignedMoveAngle);
 
-	// 정지 상태에서 이동 입력이 시작되면 방향과 관계없이 Start 모션을
-	// 먼저 재생한다. 이동 중 방향 전환 애니메이션은 Start가 끝난 뒤 판정한다.
-	if (!m_bWasMoving)
+	// 정지 상태에서 처음 들어온 이동 입력은 곧바로 이동 루프로 연결한다.
+	// 이 프레임의 큰 방향 차이는 달리기 중 방향 전환으로 취급하지 않는다.
+	const _bool bStartedFromIdle = !m_bWasMoving;
+	if (bStartedFromIdle)
 	{
-		BeginJogStart(*player);
-		pMoveIntent->SetFacingIntent(
-			tMoveOutput.vMoveDirection,
-			360.f);
-		return;
+		m_bWasMoving = true;
+		m_bJogStarting = false;
+		player->SetMovementLocked(false);
+		player->SetRootMotionTranslationActive(false);
 	}
 
 	// Play the authored jog-turn clips for substantial direction changes while
 	// running. Previously moving characters skipped these clips entirely.
-	if (std::abs(m_fSignedMoveAngle) >= m_fRunningTurnThreshold)
+	if (!bStartedFromIdle &&
+		player->IsSprintRequested() &&
+		std::abs(m_fSignedMoveAngle) >= m_fRunningTurnThreshold)
 	{
 		const int32_t iJogTurnAnimation =
 			ResolveJogTurnAnimation(m_fSignedMoveAngle);
