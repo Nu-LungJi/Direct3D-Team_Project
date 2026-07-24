@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstdint>
 
@@ -28,6 +28,22 @@ namespace Client
 		DEBRIS = 1u << 15,		// 파편과 장식용 소형 물리 오브젝트
 	};
 
+
+	enum class PROTO_GAMEOBJECT
+	{
+		Prototype_GameObject_DebugPlayer,
+		Prototype_GameObject_Player,
+		Prototype_GameObject_DebugPlayerThirdPersonCamera,
+		Prototype_GameObject_PlayerThirdPersonCamera
+	};
+
+	enum class PROTO_COMPONENT
+	{
+
+	};
+
+
+	enum class PARTES { WEAPON, END };
 }
 
 extern HWND g_hWnd;

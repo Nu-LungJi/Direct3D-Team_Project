@@ -6,14 +6,20 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "GameInstance.h"
-#include "TestPartObject.h"
-
-#include "ComCharacterMotor.h"
-#include "ComCharacterMoveIntent.h"
+#include "ComSocket.h"
+#include "Collider.h"
+#include "ComPxRigidBody.h"
+#include "ComPxBoxCollider.h"
+#include "ComPxSphereCollider.h"
+#include "ComPxCapsuleCollider.h"
 #include "ComPxCharacterController.h"
-#include "TestPlayer3CameraCreatureEditor.h"
+#include "ComCharacterMoveIntent.h"
+#include "ComCharacterMotor.h"
+#include "PlayerThirdPersonCamera.h"
+#include "DbgLineRender.h"
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
+#include "Player_Roll_State.h"
 
 NS_USING(Client)
 
@@ -22,79 +28,22 @@ CPlayer::CPlayer()
 {
 }
 
-CPlayer::CPlayer(const CPlayer& rhs)
-	: CAnimationObject{ rhs }
-{
-	m_pResVertexShader = rhs.m_pResVertexShader;
-	m_pResPixelShader = rhs.m_pResPixelShader;
-	m_pResVertexInstancedShader = rhs.m_pResVertexInstancedShader;
-	m_pResSkinMeshCBuffer = rhs.m_pResSkinMeshCBuffer;
-	m_pAnimComputeShader = rhs.m_pAnimComputeShader;
-}
 CPlayer::~CPlayer()
 {
 }
 
-void CPlayer::UpdateGUI()
-{
-	CGameObject::UpdateGUI();
-
-	if (ImGui::CollapsingHeader("Locomotion Angle Debug", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		ImGui::Text("Mode        : %s",
-			m_eLocomotionMode == LOCOMOTION_MODE::HOVER ? "HOVER" : "FREE");
-		static constexpr const char* sGaitNames[] = { "IDLE", "WALK", "JOG", "SPRINT" };
-		ImGui::Text("Desired gait: %s", sGaitNames[ETOUI(m_eDesiredGait)]);
-		if (!m_bHasLocomotionAngleDebug)
-		{
-			ImGui::TextDisabled("No movement input");
-		}
-		else
-		{
-			ImGui::Text("Current speed: %.2f / Target speed: %.2f", m_fCurrentMoveSpeed, m_fJogSpeed);
-			ImGui::Text("Acceleration : %.2f / Deceleration: %.2f", m_fAcceleration, m_fDeceleration);
-			ImGui::Separator();
-			ImGui::Text("Forward dot : %.3f", m_fLocomotionForward);
-			ImGui::Text("Right dot   : %.3f", m_fLocomotionRight);
-			ImGui::Separator();
-			ImGui::Text("Speed       : %.2f", m_fLocomotionSpeed);
-			ImGui::Text("Angle (deg) : %.2f", m_fLocomotionAngle);
-			ImGui::Text("Direction   : %s", m_sLocomotionDirection.c_str());
-		}
-	}
-}
-
-void CPlayer::SetLocomotionAngleDebug(_float fForward, _float fRight, _float fAngle, _float fSpeed, _string_view sDirection)
-{
-	m_bHasLocomotionAngleDebug = true;
-	m_fLocomotionForward = fForward;
-	m_fLocomotionRight = fRight;
-	m_fLocomotionAngle = fAngle;
-	m_fLocomotionSpeed = fSpeed;
-	m_sLocomotionDirection = sDirection;
-}
-
-void CPlayer::ClearLocomotionAngleDebug()
-{
-	m_bHasLocomotionAngleDebug = false;
-}
 
 HRESULT CPlayer::InitializePrototype(void* pArg)
 {
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
-	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
-	if (FAILED(m_pResVertexShader->Load()))
+
+
+	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
+	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
 	{
 		return E_FAIL;
 	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
-	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResPixelShader->Load()))
-	{
-		return E_FAIL;
-	}
-	m_pResVertexInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_Instanced");
-	if (!m_pResVertexInstancedShader || FAILED(m_pResVertexInstancedShader->Load()))
 	{
 		return E_FAIL;
 	}
@@ -105,25 +54,20 @@ HRESULT CPlayer::InitializePrototype(void* pArg)
 	}
 
 
-	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
-	if (FAILED(m_pAnimComputeShader->Load()))
-	{
-		return E_FAIL;
-	}
 
 	return S_OK;
 }
 
 HRESULT CPlayer::Initialize(void* pArg)
 {
+	auto		pDesc = static_cast<DESC*>(pArg);
+	if (!pDesc)
+		return E_FAIL;
+
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
-	
-	auto* pDesc = static_cast<DESC*>(pArg);
-	auto pGroup = pDesc->sGroupTag;
-	auto pRes = pDesc->sResTag;
 
 	{
 		CComConstantBuffer::DESC Desc{};
@@ -132,13 +76,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
-	}
-
+	}	
 	{
-	
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = pGroup;
-		Desc.sResTag = pRes;
+		Desc.sGroupTag = "LEVEL_CREATURE";
+		Desc.sResTag =	 "Model_Resource_Player";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -155,30 +97,25 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		};
 
-
+		// TestModel은 생성 직후부터 CPU pose + VS skinning 경로를 사용한다.
+		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	}
-
 
 	{
 		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.tFilter = pDesc->tFilter;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
-			"ComPxCharacterController", &Desc, &m_pCharacterController)))
+		//Desc.fStepOffset = 0.f;
+		//Desc.fSlopeLimit = 1.f;	
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
 		{
 			return E_FAIL;
-		}
+		};
 	}
 
 	{
 		CComCharacterMoveIntent::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComMoveIntent", &Desc, &m_pMoveIntent)))
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PERMANENT,ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,"ComCharacterMoveIntent", &Desc, &m_pComMoveIntent)))
 		{
 			return E_FAIL;
 		}
@@ -186,37 +123,51 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	{
 		CComCharacterMotor::DESC Desc{};
-		Desc.pMoveIntent = m_pMoveIntent;
-		Desc.pCharacterController = m_pCharacterController;
+		Desc.pMoveIntent = m_pComMoveIntent;
+		Desc.pCharacterController = m_pComCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.fJumpVelocity = 5.f;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
-
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
-			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PERMANENT,ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,"ComCharacterMotor", &Desc, &m_pComCharacterMotor)))
 		{
 			return E_FAIL;
 		}
 	}
 
 	{
-		CStateMachine::DESC Desc{};
-
-		if (FAILED(AddComponentFromProto(pGroup,"Prototype_Component_PlayerStateMachine","ComPlayerStateMachine", &Desc, &m_pStateMachine)))
+		CPlayer_StateMachine::DESC Desc{};
+		if (FAILED(AddComponentFromProto(
+			"PLAYER_STATEMACHINE",
+			"Prototype_Component_Player_StateMachine",
+			"Player_StateMachine",
+			&Desc,
+			&m_pStateMachine)) ||
+			!m_pStateMachine)
 		{
-
-
 			return E_FAIL;
 		}
 
-	
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::LOCOMOTION,
+			CPlayer_Locomotion_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ROLL,
+			CPlayer_Roll_State::Create()))
+		{
+			return E_FAIL;
+		}
+
+		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
+		{
+			return E_FAIL;
+		}
 	}
-	GetTransform().SetScale(_float3{2.f,2.f,2.f });
-	GetTransform().SetPosition(pDesc->vInitialPosition);
-	GetTransform().Update();
+
+	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
 	//CTestPartObject::DESC WeaponDesc{};
 	//WeaponDesc.sObjectTag = "Weapon";
@@ -234,198 +185,239 @@ HRESULT CPlayer::Initialize(void* pArg)
 	//}
 
 	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+
+
 	return S_OK;
 
 }
 
+
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (!m_bStateInitailzie) {
-		// 기존 상태 
-		m_pStateMachine->AddPlayerState(PLAYER_STATE::LOCOMOTION, CPlayer_Locomotion_State::Create());
-		m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION);
-		m_bStateInitailzie = true;
-	}
+	if (m_pStateMachine)
+		m_pStateMachine->PriorityUpdate(fTimeDelta);
 
-
-	auto* pCamera = CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA");
-	if (!pCamera)
+	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
+	if (!pPlayerCamera)
 	{
-		m_bMoveInput = false;
-		m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
-		m_pMoveIntent->ClearMoveIntent();
-		m_pMoveIntent->ClearFacingIntent();
-		
+		m_bRawMoveInput = false;
+		m_vRawMoveDirection = {};
+		m_pComMoveIntent->ClearMoveIntent();
 		return;
 	}
 
-	_float fInputForward{};
-	_float fInputRight{};
-	if (CGameInstance::Get().KeyPressing(DIK_W))
-		fInputForward += 1.f;
-	if (CGameInstance::Get().KeyPressing(DIK_S))
-		fInputForward -= 1.f;
-	if (CGameInstance::Get().KeyPressing(DIK_D))
-		fInputRight += 1.f;
-	if (CGameInstance::Get().KeyPressing(DIK_A))
-		fInputRight -= 1.f;
 
+	// 실제 콘텐츠에서는 BT가 이 입력 코드 대신 이동 의도만 Locomotion에 전달한다.
+	_float fForwardIntent{};
+	_float fRightIntent{};
+	if (CGameInstance::Get().KeyPressing(DIK_W) || CGameInstance::Get().KeyPressing(DIK_UP))
+		fForwardIntent += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_S) || CGameInstance::Get().KeyPressing(DIK_DOWN))
+		fForwardIntent -= 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_D) || CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		fRightIntent += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_A) || CGameInstance::Get().KeyPressing(DIK_LEFT))
+		fRightIntent -= 1.f;
 
-	_float3 vForward{};
-	_float3 vRight{};
-	XMStoreFloat3(&vForward, pCamera->GetTransform().GetState(STATE::LOOK));
-	XMStoreFloat3(&vRight, pCamera->GetTransform().GetState(STATE::RIGHT));
-	vForward.y = 0.f;
-	vRight.y = 0.f;
-	const _float fForwardLength = std::sqrt(vForward.x * vForward.x + vForward.z * vForward.z);
-	const _float fRightLength = std::sqrt(vRight.x * vRight.x + vRight.z * vRight.z);
-	if (fForwardLength > std::numeric_limits<_float>::epsilon())
+	_float3 vCameraForward{};
+	_float3 vCameraRight{};
+	XMStoreFloat3(&vCameraForward, pPlayerCamera->GetTransform().GetState(STATE::LOOK));
+	XMStoreFloat3(&vCameraRight, pPlayerCamera->GetTransform().GetState(STATE::RIGHT));
+	vCameraForward.y = 0.f;
+	vCameraRight.y = 0.f;
+
+	const _float fForwardLengthSq = vCameraForward.x * vCameraForward.x + vCameraForward.z * vCameraForward.z;
+	const _float fRightLengthSq = vCameraRight.x * vCameraRight.x + vCameraRight.z * vCameraRight.z;
+	if (fForwardLengthSq > std::numeric_limits<_float>::epsilon())
 	{
-		vForward.x /= fForwardLength;
-		vForward.z /= fForwardLength;
+		const _float fInvLength = 1.f / std::sqrt(fForwardLengthSq);
+		vCameraForward.x *= fInvLength;
+		vCameraForward.z *= fInvLength;
 	}
-	if (fRightLength > std::numeric_limits<_float>::epsilon())
+	if (fRightLengthSq > std::numeric_limits<_float>::epsilon())
 	{
-		vRight.x /= fRightLength;
-		vRight.z /= fRightLength;
-	}
-
-	m_vCameraFacingDirection = vForward;
-	const _float fCameraLookLength = std::sqrt(
-		m_vCameraFacingDirection.x * m_vCameraFacingDirection.x +
-		m_vCameraFacingDirection.z * m_vCameraFacingDirection.z);
-	if (fCameraLookLength > std::numeric_limits<_float>::epsilon())
-	{
-		m_vCameraFacingDirection.x /= fCameraLookLength;
-		m_vCameraFacingDirection.z /= fCameraLookLength;
+		const _float fInvLength = 1.f / std::sqrt(fRightLengthSq);
+		vCameraRight.x *= fInvLength;
+		vCameraRight.z *= fInvLength;
 	}
 
-	const _float3 vMoveDirection{
-		vForward.x * fInputForward + vRight.x * fInputRight,
-		0.f,
-		vForward.z * fInputForward + vRight.z * fInputRight };
-
-
-
-	const _float fMoveLength = std::sqrt(vMoveDirection.x * vMoveDirection.x + vMoveDirection.z * vMoveDirection.z);
-	m_bMoveInput = fMoveLength > std::numeric_limits<_float>::epsilon();
-	if (m_bMoveInput)
+	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
+	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
+	m_bSprintRequested =
+		m_bRawMoveInput &&
+		CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
+	
+	if (m_bRawMoveInput)
 	{
-		m_vDesiredMoveDirection = { vMoveDirection.x / fMoveLength, 0.f, vMoveDirection.z / fMoveLength };
-	}
+		m_vLastMoveDirection = vMoveDirection;
 
-	m_eLocomotionMode = CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB)? LOCOMOTION_MODE::HOVER : LOCOMOTION_MODE::FREE;
+		const _vector vTargetDirection = XMVector3Normalize(
+			XMLoadFloat3(&m_vRawMoveDirection));
 
-	m_eDesiredGait = LOCOMOTION_GAIT::IDLE;
-	if (m_bMoveInput)
-	{
-		if (CGameInstance::Get().KeyPressing(DIK_LCONTROL))
+		if (m_bMovementLocked ||
+			m_fCurrentMoveSpeed <= std::numeric_limits<_float>::epsilon())
 		{
-			m_eDesiredGait = LOCOMOTION_GAIT::WALK;
+			XMStoreFloat3(&m_vSmoothedMoveDirection, vTargetDirection);
 		}
 		else
 		{
-
-			m_eDesiredGait = CGameInstance::Get().KeyPressing(DIK_LSHIFT)
-				? LOCOMOTION_GAIT::SPRINT
-				: LOCOMOTION_GAIT::JOG;
+			const _float fDirectionResponse = m_bSprintRequested
+				? m_fSprintDirectionResponse
+				: m_fJogDirectionResponse;
+			const _float fDirectionBlend =
+				1.f - std::exp(-fDirectionResponse * fTimeDelta);
+			const _vector vSmoothedDirection = XMVector3Normalize(
+				XMVectorLerp(
+					XMLoadFloat3(&m_vSmoothedMoveDirection),
+					vTargetDirection,
+					std::clamp(fDirectionBlend, 0.f, 1.f)));
+			XMStoreFloat3(
+				&m_vSmoothedMoveDirection,
+				vSmoothedDirection);
 		}
 	}
 
-	_float fTargetSpeed = 0.f;
-	switch (m_eDesiredGait)
-	{
-	case LOCOMOTION_GAIT::WALK:   fTargetSpeed = m_fWalkSpeed; break;
-	case LOCOMOTION_GAIT::JOG:    fTargetSpeed = m_fJogSpeed; break;
-	case LOCOMOTION_GAIT::SPRINT: fTargetSpeed = m_fSprintSpeed; break;
-	default: break;
-	}
-	const _float fRate = m_bMoveInput ? m_fAcceleration : m_fDeceleration;
-
-	m_fCurrentMoveSpeed = std::lerp(m_fCurrentMoveSpeed,fTargetSpeed,std::min(1.f, fRate * fTimeDelta));
-
-	if (m_bMoveInput)
-		m_vLastMoveDirection = m_vDesiredMoveDirection;
-
-	if (m_fCurrentMoveSpeed > 0.01f)
-		m_pMoveIntent->SetMoveIntent(m_vLastMoveDirection, m_fCurrentMoveSpeed);
-	else
+	if (m_bMovementLocked)
 	{
 		m_fCurrentMoveSpeed = 0.f;
-		m_pMoveIntent->ClearMoveIntent();
-	}
-	
-	// 호버링 될 때 경우
-	// SetFacingIntent 얘는 내가 바라보는 방향으로 바로 돌리는 함수 
-	if (m_bRootMotionRotationActive)
-	{
-		// Turn and pivot clips own the character rotation through root motion.
-		m_pMoveIntent->ClearFacingIntent();
-	}
-	else if (m_eLocomotionMode == LOCOMOTION_MODE::HOVER)
-	{
-		m_pMoveIntent->SetFacingIntent(m_vCameraFacingDirection, 360.f);
-	}
-	else if (m_bMoveInput)
-	{
-		m_pMoveIntent->SetFacingIntent(m_vDesiredMoveDirection, 540.f);
+		m_pComMoveIntent->ClearMoveIntent();
 	}
 	else
 	{
-		m_pMoveIntent->ClearFacingIntent();
+		const _float fTargetSpeed =
+			m_bRawMoveInput
+				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+				: 0.f;
+		const _float fSpeedChange =
+			(m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) *
+			fTimeDelta;
+
+		if (m_fCurrentMoveSpeed < fTargetSpeed)
+		{
+			m_fCurrentMoveSpeed = std::min(
+				m_fCurrentMoveSpeed + fSpeedChange,
+				fTargetSpeed);
+		}
+		else
+		{
+			m_fCurrentMoveSpeed = std::max(
+				m_fCurrentMoveSpeed - fSpeedChange,
+				fTargetSpeed);
+		}
+
+		if (m_fCurrentMoveSpeed > std::numeric_limits<_float>::epsilon())
+		{
+			m_pComMoveIntent->SetMoveIntent(
+				m_bRawMoveInput
+					? m_vSmoothedMoveDirection
+					: m_vLastMoveDirection,
+				m_fCurrentMoveSpeed);
+		}
+		else
+		{
+			m_fCurrentMoveSpeed = 0.f;
+			m_pComMoveIntent->ClearMoveIntent();
+		}
 	}
 
-	if (CGameInstance::Get().KeyDown(DIK_SPACE))
-		m_pMoveIntent->RequestJump();
+	if (CGameInstance::Get().KeyDown(DIK_R))
+	{
+		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
+		m_pComCharacterMotor->SetVelocity({});
+	}
 
-	if (m_pStateMachine)
-		m_pStateMachine->PriorityUpdate(fTimeDelta);
 }
+
+
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
 {
-	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	if (m_bMovementLocked)
+	{
+		m_pComMoveIntent->ClearMoveIntent();
+
+		_float3 vVelocity = m_pComCharacterMotor->GetVelocity();
+		vVelocity.x = 0.f;
+		vVelocity.z = 0.f;
+		m_pComCharacterMotor->SetVelocity(vVelocity);
+	}
+
+	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
+
 }
-
-
 void CPlayer::Update(E::_float fTimeDelta)
 {
-	ZoneScopedN("Update CPlayer");
+	ZoneScopedN("Update TestModel");
+	_bool bApplyRootMotionTranslation{};
+	_float3 vRootMotionDelta{};
 
-	if (m_pStateMachine)
-		m_pStateMachine->Update(fTimeDelta);
+	for (auto iter = m_Projectiles.begin(); iter != m_Projectiles.end();)
+	{
+		auto* pProjectile = CGameInstance::Get().GetGameObjectByHandle(iter->hProjectile);
+		if (!pProjectile)
+		{
+			iter = m_Projectiles.erase(iter);
+			continue;
+		}
+
+		iter->fRemainingTime -= fTimeDelta;
+		if (iter->fRemainingTime <= 0.f)
+		{
+			pProjectile->SetPendingDestroyCascade();
+			iter = m_Projectiles.erase(iter);
+			continue;
+		}
+
+		++iter;
+	}
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
+		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
+		vRootMotionDelta = m_pModelAnimator->GetRootMotionDelta();
 
 		if (m_bRootMotionRotationActive)
 		{
-			const _float4 qRootDelta = m_pModelAnimator->GetRootMotionRotationDelta();
-			const _vector qCurrent = GetTransform().GetLoadedQuaternion();
-			const _vector qDelta = XMLoadFloat4(&qRootDelta);
-			GetTransform().SetQuaternion(XMQuaternionNormalize(
-				XMQuaternionMultiply(qCurrent, qDelta)));
+			const _float4 vRotationDelta =
+				m_pModelAnimator->GetRootMotionRotationDelta();
+			const _vector qCurrent =
+				GetTransform().GetLoadedQuaternion();
+			const _vector qDelta =
+				XMLoadFloat4(&vRotationDelta);
+
+			GetTransform().SetQuaternion(
+				XMQuaternionNormalize(
+					XMQuaternionMultiply(qCurrent, qDelta)));
 		}
-
 	}
 
-	UpdateGUI();
-}
+	// Animator를 먼저 진행해야 Locomotion State가 현재 프레임의
+	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
+	if (m_pStateMachine)
+		m_pStateMachine->Update(fTimeDelta);
 
-int32_t CPlayer::FindAnimationIndex(_string_view sAnimationName) const
-{
-	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
-		return -1;
-
-	const auto& animations = m_pComModelInstance->GetModel()->GetAnimations();
-	for (uint32_t i = 0; i < animations.size(); ++i)
+	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
+	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
+	if (bApplyRootMotionTranslation && m_pComCharacterController)
 	{
-		if (animations[i] && animations[i]->GetAnimName() == sAnimationName)
-			return (int32_t)(i);
+		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
+		const _vector vWorldDelta = XMVector3Rotate(
+			vLocalDelta,
+			GetTransform().GetLoadedQuaternion());
+
+		_float3 vWorldDisplacement{};
+		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
+
+		m_pComCharacterController->Move(
+			vWorldDisplacement,
+			fTimeDelta,
+			0.f);
+		GetTransform().SetPosition(
+			m_pComCharacterController->GetPosition());
 	}
 
-	return -1;
 }
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)
@@ -433,34 +425,35 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine)
 		m_pStateMachine->LateUpdate(fTimeDelta);
 
+
+	//m_pComPhysX->UpdateSyncedDataToTransform(m_pComTransform);
 	GetTransform().Update();
 
-	if (auto* pCamera = Cast<CTestPlayer3CameraCreatureEditor>(
-		CGameInstance::Get().GetActiveCamera("CREATURE_ANIM_PLAYER_CAMERA")))
+	// 플레이어 Transform을 먼저 확정한 뒤 같은 프레임의 카메라 View를 갱신한다.
+	if (auto* pCamera = Cast<CPlayerThirdPersonCamera>(CGameInstance::Get().GetActiveCamera("PlayerCamera")))
 	{
 		pCamera->UpdateFollow();
 	}
 
-	if (false) {
-		if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
-		{
-			const auto vPreviousColor = pDbgLineRender->GetColor();
-			const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
-			const _float3 vPosition = GetTransform().GetPosition();
+	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
+	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
+	{
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		const _float3 vPosition = GetTransform().GetPosition();
 
-			pDbgLineRender->SetColor({ 0.2f, 0.7f, 1.f, 1.f });
-			pDbgLineRender->SetDepthTest(true);
-			pDbgLineRender->AddCapsule(
-				0.5f,
-				1.f,
-				XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+		pDbgLineRender->SetColor({ 1.f, 1.f, 1.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddCapsule(
+			0.5f,
+			1.f,
+			XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+		pDbgLineRender->AddCross(vPosition, 0.15f);
 
-			pDbgLineRender->SetColor(vPreviousColor);
-			pDbgLineRender->SetDepthMode(ePreviousDepthMode);
-		}
-
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
-		
+
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)
@@ -469,239 +462,123 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	if (!pModel->GetAnimations().empty())
 	{
 		CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
-
 		return;
 	}
 
 
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
-
-HRESULT CPlayer::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
-{
-
-	{
-		E::CB_PER_OBJECT cbPerObject{};
-		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
-		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
-		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
-		{
-			return E_FAIL;
-		}
-		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-
-
-		m_pComModelInstance->DebugDraw_Bones(cbPerObject.matWorld);
-
-	}
-	const auto& vs = m_pResVertexShader;
-
-	const auto& ps = m_pResPixelShader;
-
-
-	pContext->IASetInputLayout(vs->GetInputLayout().Get());
-	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-	auto pModel = m_pComModelInstance->GetModel();
-
-	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
-	for (uint32_t i = 0; i < iNumMeshes; ++i) {
-		const auto& viBuffer = pModel->GetMeshes()[i];
-
-
-		ID3D11Buffer* vertexBuffers[] = {
-				viBuffer->GetVertexBuffer().Get()
-		};
-		uint32_t strides[] = {
-			viBuffer->GetVertexStride()
-		};
-		uint32_t offsets[] = {
-			0
-		};
-		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		{
-			if (!m_pComModelInstance->GetModel()->GetAnimations().empty())
-				if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i))) {
-					return E_FAIL;
-				}
-		}
-
-		{
-			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
-		}
-
-		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-		//pContext->DrawIndexedInstancedIndirect(viBuffer->GetNumIndices(), 0, 0);
-	}
-
-
-
-	return S_OK;
-}
-
+// CPU + GPU 버전
 HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
-	ZoneScopedN("Render TestModel");
-
-	if (!pContext)
-		return E_INVALIDARG;
-
-	const uint32_t iInstanceCount = Batch.Instances.size();
-
-	if (iInstanceCount == 0)
-		return S_OK;
-
-
-
-	if (!m_pAnimComputeShader || !m_pAnimComputeShader->GetComputeShader())
-	{
+	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
-	}
 
-	// -------------------------------------------------
-	// Compute Shader
-	// -------------------------------------------------
-
-	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))
-	{
-		return E_FAIL;
-	}
-
-	// CS t0 ~ t5
-	if (FAILED(m_pComModelInstance->Bind_GPUAnimationSRVs_CS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// CS t6
-	if (FAILED(Bind_InstanceBuffer_CS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// CS u0
-	if (FAILED(Bind_FinalBoneUAV_CS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(), nullptr, 0);
-
-	/*
-	 * 한 Thread Group = 한 인스턴스라는 전제.
-	 */
-	pContext->Dispatch(iInstanceCount, 1, 1);
-
-	if (FAILED(Unbind_AnimationCompute(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// -------------------------------------------------
-	// Vertex Shader용 SRV
-	// -------------------------------------------------
-
-	// VS t6 = InstanceData
-	if (FAILED(Bind_InstanceBuffer_VS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// VS t7 = Compute 결과 FinalBoneMatrix
-	if (FAILED(Bind_FinalBoneSRV_VS(pContext)))
-	{
-		return E_FAIL;
-	}
-	if (FAILED(m_pComModelInstance->Bind_GPUSkinBones_VS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// -------------------------------------------------
-	// Graphics Shader
-	// -------------------------------------------------
-
-	const auto& vs = m_pResVertexInstancedShader;
-
+	const auto& vs = m_pResVertexCPUSkinningInstancedShader;
 	const auto& ps = m_pResPixelShader;
-
-	if (!vs || !ps)
-		return E_FAIL;
-
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
-
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
+	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+	if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)
+		return E_FAIL;
+
+	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))
+		return E_FAIL;
+
 	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+	auto pCPUBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
+	if (!pModel || !pCPUBonePaletteBuffer)
+		return E_FAIL;
 
-	const uint32_t iNumMeshes = pModel->Get_NumMeshes();
-
-	for (uint32_t iMeshIndex = 0; iMeshIndex < iNumMeshes; ++iMeshIndex)
+	_float4x4 identity{};
+	XMStoreFloat4x4(&identity, XMMatrixIdentity());
+	std::vector<_float4x4> combinedPalette(iInstanceCount * 512, identity);
+	for (uint32_t instanceIndex = 0; instanceIndex < iInstanceCount; ++instanceIndex)
 	{
-		const auto& viBuffer = pModel->GetMeshes()[iMeshIndex];
+		const auto& combinedMatrices = Batch.CombinedBoneMatrices[instanceIndex];
+		if (combinedMatrices.empty() || combinedMatrices.size() > 512)
+			return E_FAIL;
 
-		if (!viBuffer)
+		// DirectXMath로 계산한 CPU Combined 행렬을 VS의 t7 행렬 규약에 맞춘다.
+		// CPU 원본은 다른 CPU 기능에서도 사용하므로 업로드 복사본만 전치한다.
+		for (uint32_t boneIndex = 0; boneIndex < static_cast<uint32_t>(combinedMatrices.size()); ++boneIndex)
+		{
+			XMStoreFloat4x4(
+				&combinedPalette[instanceIndex * 512 + boneIndex],
+				XMMatrixTranspose(
+					XMLoadFloat4x4(&combinedMatrices[boneIndex])));
+		}
+	}
+
+	// CPU가 계산한 CombinedBone palette는 batch당 한 번만 갱신한다.
+	ID3D11ShaderResourceView* nullPaletteSRV = nullptr;
+	pContext->VSSetShaderResources(7, 1, &nullPaletteSRV);
+	if (FAILED(pCPUBonePaletteBuffer->UpdateData(
+		combinedPalette.data(),
+		static_cast<uint32_t>(combinedPalette.size() * sizeof(_float4x4)))))
+		return E_FAIL;
+
+
+
+	if (FAILED(Bind_InstanceBuffer(pContext)))
+		return E_FAIL;
+	ID3D11ShaderResourceView* cpuBonePaletteSRV = pCPUBonePaletteBuffer->GetSRV().Get();
+	if (!cpuBonePaletteSRV)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* skinBonesSRV = pModel->Get_GPUSkinBoneSRV();
+	if (!skinBonesSRV)
+		return E_FAIL;
+
+	pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
+	pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
+
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	{
+		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		if (!mesh)
 			continue;
 
-		ID3D11Buffer* vertexBuffers[] =
-		{
-			viBuffer->GetVertexBuffer().Get()
-		};
-
-		UINT strides[] =
-		{
-			viBuffer->GetVertexStride()
-		};
-
-		UINT offsets[] =
-		{
-			0
-		};
-
-		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-
-		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		E::GPU_SKIN_MESH_CONSTANTS skinConstants{};
-		skinConstants.iSkinBoneOffset = pModel->Get_GPUMeshSkinRange(iMeshIndex).iSkinBoneOffset;
-		D3D11_MAPPED_SUBRESOURCE mappedResource{};
-		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
+		if (skinRange.iSkinBoneCount == 0)
 			return E_FAIL;
-		memcpy(mappedResource.pData, &skinConstants, sizeof(skinConstants));
+
+		E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
+		skinningConstants.iVertexCount = mesh->GetNumVertices();
+		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+			return E_FAIL;
+		memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
-		ID3D11Buffer* pSkinMeshCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
-		pContext->VSSetConstantBuffers(5, 1, &pSkinMeshCB);
-
-
+		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+		const UINT stride = mesh->GetVertexStride();
+		const UINT offset = 0;
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
 		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
-
-		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
+		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-
-
-	if (FAILED(Unbind_AnimationVS(pContext)))
-	{
-		return E_FAIL;
-	}
+	ID3D11ShaderResourceView* nullVSSRVs[3]{};
+	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
 
 	return S_OK;
 }
+
 HRESULT CPlayer::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
 
 	m_iCurrentInstanceCount = static_cast<uint32_t>(Instances.size());
+
+
 
 	if (Instances.empty())
 		return S_OK;
@@ -721,20 +598,14 @@ HRESULT CPlayer::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std:
 	if (!pBuffer)
 		return E_FAIL;
 
-	/*
-	 * 이전 Batch에서 VS/CS에 연결되어 있을 수 있으므로
-	 * Map 전에 SRV를 해제한다.
-	 */
 	ID3D11ShaderResourceView* pNullSRV = nullptr;
 
-	pContext->CSSetShaderResources(6, 1, &pNullSRV);
 
 	pContext->VSSetShaderResources(6, 1, &pNullSRV);
 
 	const size_t iCopySize = sizeof(GPU_ANIM_INSTANCE_DATA) * m_iCurrentInstanceCount;
 
-	// pDstBox가 nullptr이면 D3D11은 버퍼 전체(현재 512개)를 복사한다.
-	// Instances에는 이번 배치의 원소만 있으므로, 유효한 원소 범위만 갱신해야 한다.
+
 	D3D11_BOX updateBox{};
 	updateBox.left = 0;
 	updateBox.right = static_cast<UINT>(iCopySize);
@@ -748,74 +619,7 @@ HRESULT CPlayer::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std:
 	return S_OK;
 
 }
-
-HRESULT CPlayer::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
-{
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
-
-	if (!pStructuredBuffer)
-		return E_FAIL;
-
-	ID3D11ShaderResourceView* pSRV = pStructuredBuffer->GetSRV().Get();
-
-	if (!pSRV)
-		return E_FAIL;
-
-	pContext->CSSetShaderResources(6, 1, &pSRV);
-
-	return S_OK;
-}
-HRESULT CPlayer::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
-{
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
-
-	if (!pStructuredBuffer)
-		return E_FAIL;
-
-	ID3D11UnorderedAccessView* pUAV = pStructuredBuffer->GetUAV().Get();
-
-	if (!pUAV)
-		return E_FAIL;
-
-	// 이전 Draw에서 FinalBone 버퍼가 VS의 SRV로
-	// 연결되어 있었다면 먼저 연결 해제
-	ID3D11ShaderResourceView* pNullSRV = nullptr;
-
-	pContext->VSSetShaderResources(7, 1, &pNullSRV);
-
-	// CS의 u0 슬롯에 출력 UAV 연결
-	pContext->CSSetUnorderedAccessViews(0, 1, &pUAV, nullptr);
-
-	return S_OK;
-}
-HRESULT CPlayer::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
-{
-	// CS t0 ~ t6 SRV 해제
-	ID3D11ShaderResourceView* pNullSRVs[7] =
-	{
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr
-	};
-
-	pContext->CSSetShaderResources(0, 7, pNullSRVs);
-
-	// CS u0 UAV 해제
-	ID3D11UnorderedAccessView* pNullUAV = nullptr;
-
-	pContext->CSSetUnorderedAccessViews(0, 1, &pNullUAV, nullptr);
-
-	// Compute Shader 자체도 해제
-	pContext->CSSetShader(nullptr, nullptr, 0);
-
-	return S_OK;
-}
-
-HRESULT CPlayer::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
+HRESULT CPlayer::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 {
 
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
@@ -834,35 +638,40 @@ HRESULT CPlayer::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 	return S_OK;
 }
 
-HRESULT CPlayer::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
+
+void CPlayer::OnWake()
 {
-
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
-
-	if (!pStructuredBuffer)
-		return E_FAIL;
-
-	ID3D11ShaderResourceView* pSRV = pStructuredBuffer->GetSRV().Get();
-
-	if (!pSRV)
-		return E_FAIL;
-
-	// VS의 t7 슬롯에 Compute 결과 연결
-	pContext->VSSetShaderResources(7, 1, &pSRV);
-
-	return S_OK;
 }
-HRESULT CPlayer::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
+
+void CPlayer::OnSleep()
 {
-	if (!pContext)
-		return E_INVALIDARG;
-
-	ID3D11ShaderResourceView* pNullSRVs[3]{};
-
-	pContext->VSSetShaderResources(6, 3, pNullSRVs);
-
-	return S_OK;
+	int x = 0;
 }
+
+void CPlayer::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+{
+	DEBUG_LOG_STR(std::string("[PX][Character] Collision Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+}
+
+void CPlayer::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+{
+	DEBUG_LOG_STR(std::string("[PX][Character] Collision Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+}
+
+void CPlayer::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+{
+	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Enter : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+}
+
+void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+{
+	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Exit : ") +
+		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+}
+
 
 E::UPtr<CPlayer> CPlayer::Create()
 {
@@ -874,6 +683,7 @@ E::UPtr<CPlayer> CPlayer::Create()
 	}
 	return  pInstance;
 }
+
 
 E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 {

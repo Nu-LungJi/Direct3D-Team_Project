@@ -5,6 +5,7 @@
 #include "ResourceGUI.h"
 #include "MapChunkGUI.h"
 #include "NavMeshGUI.h"
+#include "TerrainGUI.h"
 
 NS_BEGIN(Client)
 
@@ -42,6 +43,7 @@ private:
 	E::UPtr<CResourceGUI> m_pResourceGUI{};
 	E::UPtr<CMapChunkGUI> m_pMapChunkGUI{};
 	E::UPtr<CNavMeshGUI> m_pNavMeshGUI{};
+	E::UPtr<CTerrainGUI> m_pTerrainGUI{};
 	E::UPtr<CMapPickingPass> m_pMapPickingPass{};
 	char m_MapName[64] = "LevelA";
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };

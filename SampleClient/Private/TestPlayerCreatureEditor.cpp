@@ -7,6 +7,7 @@
 #include "DbgLineRender.h"
 #include "GameInstance.h"
 #include "Resources.h"
+#include "TestDynamic.h"
 #include "TestPlayer3CameraCreatureEditor.h"
 
 NS_USING(Client)
@@ -112,6 +113,37 @@ void CTestPlayerCreatureEditor::PriorityUpdate(_float)
 
 	if (CGameInstance::Get().KeyDown(DIK_SPACE))
 		m_pMoveIntent->RequestJump();
+
+	if (CGameInstance::Get().KeyDown(DIK_K))
+	{
+		_vector vSpawnForward = XMVectorSet(vForward.x, 0.f, vForward.z, 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vSpawnForward)) <= FLT_EPSILON)
+			vSpawnForward = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+		vSpawnForward = XMVector3Normalize(vSpawnForward);
+
+		_float3 vSpawnPosition{};
+		XMStoreFloat3(
+			&vSpawnPosition,
+			XMLoadFloat3(&GetTransform().GetPosition()) +
+			vSpawnForward * 2.f +
+			XMVectorSet(0.f, 1.f, 0.f, 0.f));
+
+		CTestDynamic::DESC Desc{};
+		Desc.sObjectTag = "TestDynamicDrum";
+		Desc.vInitialPosition = vSpawnPosition;
+		Desc.vConvexScale = { 300.f, 300.f, 300.f };
+		Desc.fMass = 5.f;
+		Desc.tFilter = {
+			.iLayer = ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS };
+
+		CGameInstance::Get().AddGameObjectToLayer(
+			"LEVEL_CREATURE",
+			"Prototype_GameObject_TestDynamic",
+			"03_PhysXTest",
+			&Desc);
+	}
 }
 
 void CTestPlayerCreatureEditor::FixedUpdate(_float fTimeDelta)
@@ -150,6 +182,26 @@ void CTestPlayerCreatureEditor::LateUpdate(_float)
 HRESULT CTestPlayerCreatureEditor::Render(ID3D11DeviceContext*, const RENDER_CTX&)
 {
 	return S_OK;
+}
+
+void CTestPlayerCreatureEditor::OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit)
+{
+	auto* pDynamic = Cast<CTestDynamic>(tHit.pGameObject);
+	if (!pDynamic)
+		return;
+
+	_float3 vPushDirection = tHit.vMoveDirection;
+	vPushDirection.y = 0.f;
+	pDynamic->ApplyPushForce(vPushDirection, 120.f);
+}
+
+PX_CCT_BEHAVIOR CTestPlayerCreatureEditor::GetCCTShapeBehavior(
+	CGameObject* pGameObject) const
+{
+	if (Cast<CTestDynamic>(pGameObject))
+		return PX_CCT_BEHAVIOR::SLIDE;
+
+	return PX_CCT_BEHAVIOR::CAN_RIDE;
 }
 
 UPtr<CTestPlayerCreatureEditor> CTestPlayerCreatureEditor::Create()

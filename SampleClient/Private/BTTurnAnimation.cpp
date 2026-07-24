@@ -8,7 +8,7 @@ CBTTurnAnimation::CBTTurnAnimation()
 {
 
 }
-CBTTurnAnimation::CBTTurnAnimation(const CBTTurnAnimation& rhs) : CBTActionNode(rhs)
+CBTTurnAnimation::CBTTurnAnimation(const CBTTurnAnimation& rhs) : CBTAnimRoot(rhs)
 {
 
 }
@@ -19,7 +19,6 @@ CBTTurnAnimation::~CBTTurnAnimation()
 HRESULT CBTTurnAnimation::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
-	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTTurnAnimation";
 	return S_OK;
 }
@@ -81,12 +80,9 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 }
 void CBTTurnAnimation::Update_Gui()
 {
+	__super::Update_Gui();
 	ImGui::Text("Angle : %2.f", m_GuiNode.fValue);
 
-	if (ImGui::Button("Loop Change"))
-		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
-	
 	if (!m_bPopup)
 	{
 		for (size_t i = 0; i < ETOUI(TURN::END); ++i)
@@ -109,18 +105,17 @@ void CBTTurnAnimation::Update_Gui()
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
-			int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-			
-			if (-1 != iIndex)
-			{
-				m_bPopup = false;
-				m_iTurnAnimIndex[m_iTurnIdx] = iIndex;
-				m_iTurnIdx = -1;
-			}
+		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
 
-			ImGui::PopStyleColor();
+		if (-1 != iIndex)
+		{
+			m_bPopup = false;
+			m_iTurnAnimIndex[m_iTurnIdx] = iIndex;
+			m_iTurnIdx = -1;
+		}
+
+		ImGui::PopStyleColor();
 	}
-
 }
 nlohmann::json CBTTurnAnimation::Save_Node()
 {
@@ -131,8 +126,6 @@ nlohmann::json CBTTurnAnimation::Save_Node()
 		_string Name = "AnimIndex" + std::to_string(i);
 		SaveJsonValue(j, Name,m_iTurnAnimIndex[i]);
 	}
-		
-	SaveJsonValue(j, "Loop", m_bLoop);
 	return j;
 }
 HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
@@ -143,7 +136,6 @@ HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
 		_string Name = "AnimIndex" + std::to_string(i);
 		LoadJsonValue(j, Name, m_iTurnAnimIndex[i]);
 	}
-	LoadJsonValue(j, "Loop", m_bLoop);
 	return S_OK;
 }
 void CBTTurnAnimation::Abort()

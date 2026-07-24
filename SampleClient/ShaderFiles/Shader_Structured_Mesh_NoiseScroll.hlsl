@@ -4,7 +4,7 @@
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-cbuffer CB_PER_PARTICLE : register(b5)
+cbuffer CB_PER_PARTICLE : register(b11)
 {
     float g_fTimeDelta;
     uint g_iNumInstances;
@@ -18,7 +18,7 @@ cbuffer CB_PER_PARTICLE : register(b5)
 
 StructuredBuffer<ParticleData> g_RenderBuffer : register(t4);
 
-//ÇÈ¼¿ ½¦ÀÌ´õ¿ë
+//í”½ì…€ ì‰ì´ë”ìš©
 Texture2D AlbedoMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
@@ -47,7 +47,7 @@ struct VS_OUT
     float3 vBinormal : BINORMAL0;
     float4 vEmissive : EMISSIVE0;
     float4 vEndEmissive : EMISSIVE1;
-    float3 vWorldPos : TEXCOORD1; // Ãß°¡: ¶óÀÌÆÃ °è»ê¿¡ ÇÊ¿ä
+    float3 vWorldPos : TEXCOORD1; // ì¶”ê°€: ë¼ì´íŒ… ê³„ì‚°ì— í•„ìš”
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
 };
@@ -57,7 +57,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     VS_OUT Out = (VS_OUT) 0;
     ParticleData p = g_RenderBuffer[instID];
    // float2 finalUV = In.vTexcoord;
-    float scale = p.alive ? p.size : 0.0f;
+	float3 scale = p.alive ? p.size : float3(0.0f, 0.0f, 0.0f);
     
 // ----------------------------------------------------------
 // Noise Vertex Animation
@@ -66,7 +66,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     Out.vTexcoord = In.vTexcoord;
 
 // ----------------------------------------------------------
-// Ç¥¸é µğÅ×ÀÏ¿ë ³ëÀÌÁî (±âÁ¸ ·ÎÁ÷ À¯Áö, ¼¼±â¸¸ ¾àÇÏ°Ô ¾¸)
+// í‘œë©´ ë””í…Œì¼ìš© ë…¸ì´ì¦ˆ (ê¸°ì¡´ ë¡œì§ ìœ ì§€, ì„¸ê¸°ë§Œ ì•½í•˜ê²Œ ì”€)
 // ----------------------------------------------------------
     float2 uvLarge = In.vTexcoord * 0.6f;
     uvLarge += float2(0.02f, 0.015f) * g_fTime;
@@ -80,7 +80,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     float amplitude = 3.0f;
 
 // ----------------------------------------------------------
-// Áö··ÀÌ ²ŞÆ²°Å¸² (¸öÅë ±æÀÌ¸¦ µû¶ó Èå¸£´Â »çÀÎÆÄ)
+// ì§€ë ì´ ê¿ˆí‹€ê±°ë¦¼ (ëª¸í†µ ê¸¸ì´ë¥¼ ë”°ë¼ íë¥´ëŠ” ì‚¬ì¸íŒŒ)
 // ----------------------------------------------------------
     float bodyPos = In.vTexcoord.y;
     float waveFreq = 6.0f;
@@ -181,7 +181,7 @@ PS_OUT PSMain(VS_OUT In)
         }
     }
 
-    // ÀÎ½ºÅÏ½º(ÆÄÆ¼Å¬)º° ÀÌ¹Ì½Ãºê + ¿ÀºêÁ§Æ® ÀÌ¹Ì½Ãºê ÅØ½ºÃ³ µÑ ´Ù ¹İ¿µ
+    // ì¸ìŠ¤í„´ìŠ¤(íŒŒí‹°í´)ë³„ ì´ë¯¸ì‹œë¸Œ + ì˜¤ë¸Œì íŠ¸ ì´ë¯¸ì‹œë¸Œ í…ìŠ¤ì²˜ ë‘˜ ë‹¤ ë°˜ì˜
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);

@@ -35,9 +35,20 @@ private:
 	CComConstantBuffer* m_pMinimapCBuffer = nullptr;
 	CButtonComponent* m_pComCButton = nullptr;
 
+	_float3 m_cameraLook{0.f, 0.f, 1.f};
+	_float3 m_playerLook{1.f, 0.f, 1.f};
+
 	_float2 tMapOffset{};
 	_float tRotation{ 0.f};
-	_float tScale{1.f};
+	_float tScale{0.6f};
+
+	_bool m_SearchPlayerIcon{false};
+	CHandle m_hPlayerIcon{};
+
+private:
+	void SearchPlayerIcon();
+	void SetPlayerIconRot(_float rot);
+	void CalcDir();
 
 public:
 	static E::UPtr<CMiniMap> Create();

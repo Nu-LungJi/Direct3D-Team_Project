@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "NavMeshGUI.h"
 #include "GameInstance.h"
-#include "MapEditorTerrain.h"
+#include "Terrain.h"
 
 #include <cfloat>
 #include <filesystem>
@@ -91,7 +91,7 @@ namespace
 		return true;
 	}
 
-	bool PickTerrainTriangle(const CMapEditorTerrain& terrain, uint32_t& outTriangleIndex, E::_float3& outHitPos)
+	bool PickTerrainTriangle(const E::CTerrain& terrain, uint32_t& outTriangleIndex, E::_float3& outHitPos)
 	{
 		E::_float3 rayOrigin{};
 		E::_float3 rayDir{};
@@ -149,7 +149,7 @@ namespace
 		return true;
 	}
 
-	E::_float3 GetTriangleCenter(const CMapEditorTerrain& terrain, uint32_t triangleIndex)
+	E::_float3 GetTriangleCenter(const E::CTerrain& terrain, uint32_t triangleIndex)
 	{
 		const auto& vertices = terrain.GetVertices();
 		const auto& indices = terrain.GetIndices();
@@ -167,7 +167,7 @@ namespace
 		return center;
 	}
 
-	void PaintTerrainTriangles(CMapEditorTerrain& terrain, E::CNavMeshManager& navMeshManager, const E::_float3& hitPos, float radius, E::ENavAreaType areaType)
+	void PaintTerrainTriangles(E::CTerrain& terrain, E::CNavMeshManager& navMeshManager, const E::_float3& hitPos, float radius, E::ENavAreaType areaType)
 	{
 		const auto& indices = terrain.GetIndices();
 		const uint32_t triangleCount = static_cast<uint32_t>(indices.size() / 3);
@@ -216,7 +216,7 @@ void CNavMeshGUI::LoadNavMesh(const std::string& mapPath)
 		return;
 	}
 
-	if (auto* terrain = FindFirstMapEditorTerrain())
+	if (auto* terrain = FindFirstTerrain())
 	{
 		m_bBuildTried = true;
 		m_bBuildSucceeded = BuildNavMeshFromTerrain(*terrain, *navMeshManager);
@@ -231,7 +231,7 @@ void CNavMeshGUI::UpdateGUI(E::_float fTimeDelta)
 		return;
 	}
 
-	CMapEditorTerrain* pTerrain = E::CGameInstance::Get().GetGameObjectByHandleT<CMapEditorTerrain>(*phandle);
+	E::CTerrain* pTerrain = E::CGameInstance::Get().GetGameObjectByHandleT<E::CTerrain>(*phandle);
 	if (pTerrain == nullptr)
 	{
 		return;
@@ -410,7 +410,7 @@ void CNavMeshGUI::UpdateGUI(E::_float fTimeDelta)
 	}
 }
 
-bool CNavMeshGUI::BuildNavMeshFromTerrain(CMapEditorTerrain& terrain, E::CNavMeshManager& navMeshManager)
+bool CNavMeshGUI::BuildNavMeshFromTerrain(E::CTerrain& terrain, E::CNavMeshManager& navMeshManager)
 {
 	const auto& srcVertices = terrain.GetVertices();
 	const auto& srcIndices = terrain.GetIndices();
@@ -426,14 +426,14 @@ bool CNavMeshGUI::BuildNavMeshFromTerrain(CMapEditorTerrain& terrain, E::CNavMes
 	return navMeshManager.Build(navVertices, srcIndices, m_NavDesc);
 }
 
-CMapEditorTerrain* CNavMeshGUI::FindFirstMapEditorTerrain()
+E::CTerrain* CNavMeshGUI::FindFirstTerrain()
 {
 	const auto& layers = E::CGameInstance::Get().GetGameObjectLayers();
 	for (const auto& [layerName, layer] : layers)
 	{
 		for (const auto& handle : layer)
 		{
-			if (auto* terrain = E::CGameInstance::Get().GetGameObjectByHandleT<CMapEditorTerrain>(handle))
+			if (auto* terrain = E::CGameInstance::Get().GetGameObjectByHandleT<E::CTerrain>(handle))
 			{
 				return terrain;
 			}

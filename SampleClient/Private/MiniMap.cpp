@@ -67,6 +67,7 @@ HRESULT CMiniMap::Initialize(void* pArg)
 
 void CMiniMap::PriorityUpdate(E::_float fTimeDelta)
 {
+	SearchPlayerIcon();
 }
 
 void CMiniMap::Update(E::_float fTimeDelta)
@@ -84,6 +85,58 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	{
 		m_pComTween->Tick(fTimeDelta);
 	}
+
+	_bool bA = CGameInstance::Get().KeyPressing(DIK_A);
+	_bool bD = CGameInstance::Get().KeyPressing(DIK_D);
+	_bool bW = CGameInstance::Get().KeyPressing(DIK_W);
+	_bool bS = CGameInstance::Get().KeyPressing(DIK_S);
+	//if (bA) {
+	//	//m_UIINFO.Rot -= 1.f;
+	//	//CalcUICoord();
+	//	_float rotationSpeed = XMConvertToRadians(-45.f);
+	//	_float angle = rotationSpeed * fTimeDelta; // 프레임 속도 보정
+	//
+	//	// 3. 현재 m_cameraLook의 X, Z 평면 성분 추출
+	//	_float oldX = m_cameraLook.x;
+	//	_float oldZ = m_cameraLook.z;
+	//
+	//	// 4. 2D 회전 변환 행렬 공식 적용
+	//	// 회전 방향이 반대라면 sin의 부호를 (+angle, -angle)로 서로 바꾸어 매칭하면 됩니다.
+	//	m_cameraLook.x = oldX * cosf(angle) + oldZ * sinf(angle);
+	//	m_cameraLook.z = -oldX * sinf(angle) + oldZ * cosf(angle);
+	//
+	//	// 5. 방향 벡터의 크기를 항상 1로 유지하기 위해 정규화(Normalize)
+	//	XMVECTOR vLook = XMLoadFloat3(&m_cameraLook);
+	//	vLook = XMVector3Normalize(vLook);
+	//	XMStoreFloat3(&m_cameraLook, vLook);
+	//}
+	//else if (bD)
+	//{
+	//	//m_UIINFO.Rot += 1.f;
+	//	//CalcUICoord();
+	//	_float rotationSpeed = XMConvertToRadians(45.f);
+	//	_float angle = rotationSpeed * fTimeDelta; // 프레임 속도 보정
+	//
+	//	// 3. 현재 m_cameraLook의 X, Z 평면 성분 추출
+	//	_float oldX = m_cameraLook.x;
+	//	_float oldZ = m_cameraLook.z;
+	//
+	//	// 4. 2D 회전 변환 행렬 공식 적용
+	//	// 회전 방향이 반대라면 sin의 부호를 (+angle, -angle)로 서로 바꾸어 매칭하면 됩니다.
+	//	m_cameraLook.x = oldX * cosf(angle) + oldZ * sinf(angle);
+	//	m_cameraLook.z = -oldX * sinf(angle) + oldZ * cosf(angle);
+	//
+	//	// 5. 방향 벡터의 크기를 항상 1로 유지하기 위해 정규화(Normalize)
+	//	XMVECTOR vLook = XMLoadFloat3(&m_cameraLook);
+	//	vLook = XMVector3Normalize(vLook);
+	//	XMStoreFloat3(&m_cameraLook, vLook);
+	//}
+	//else if (bW)
+	//	tMapOffset.y += 0.01f;
+	//else if (bS)
+	//	tMapOffset.y -= 0.01f;
+
+	CalcDir();
 }
 
 void CMiniMap::LateUpdate(E::_float fTimeDelta)
@@ -98,9 +151,9 @@ void CMiniMap::LateUpdate(E::_float fTimeDelta)
 HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
-	//VS_QuadTe
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MiniMap");
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_MiniMap");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -130,8 +183,8 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
 	}
 
 	{
@@ -162,14 +215,14 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
 			}
-			pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
 
 	{
 		m_UIINFO.Restag = "TEX_UI_T_MapMini_Sanctuary_03_D";
-		const auto& frameSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_HUD_MiniMap_TrimBorder");
+		const auto& frameSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_HUD_MiniMap_Fade");
 		const auto& minimapSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		
 
@@ -182,6 +235,10 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+
+	ID3D11Buffer* nullBuffer = nullptr;
+	pContext->VSSetConstantBuffers(10, 1, &nullBuffer);
+	pContext->PSSetConstantBuffers(10, 1, &nullBuffer);
 
 	return S_OK;
 }
@@ -205,6 +262,52 @@ void CMiniMap::PlayEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
+}
+
+void CMiniMap::SearchPlayerIcon()
+{
+	if (!m_SearchPlayerIcon)
+	{
+		m_SearchPlayerIcon = true;
+		for (auto pHandle : m_vChildren)
+		{
+			if (nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(pHandle))
+				return;
+
+			Engine::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(pHandle);
+			UI_INFO& pInfo = pUI->GetUIInfo();
+			if (pInfo.Restag == "TEX_UI_T_HUD_MiniMap_PlayerBlip")
+				m_hPlayerIcon = pHandle;
+		}
+	}
+}
+
+void CMiniMap::SetPlayerIconRot(_float rot)
+{
+	if (nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(m_hPlayerIcon))
+		return;
+
+	Engine::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(m_hPlayerIcon);
+	pUI->SetLocalRot(rot);
+	pUI->CalcUICoord();
+}
+
+void CMiniMap::CalcDir()
+{
+	_float2 camLook2D = _float2(m_cameraLook.x, m_cameraLook.z);
+	_float2 playerLook2D = _float2(m_playerLook.x, m_playerLook.z);
+
+	XMVECTOR vCam = XMVector3Normalize(XMVectorSet(camLook2D.x, 0.f, camLook2D.y, 0.f));
+	XMVECTOR vPlayer = XMVector3Normalize(XMVectorSet(playerLook2D.x, 0.f, playerLook2D.y, 0.f));
+
+	_float camRadian = atan2f(XMVectorGetZ(vCam), XMVectorGetX(vCam)) - XM_PI / 2;
+	_float playerRadian = atan2f(XMVectorGetZ(vPlayer), XMVectorGetX(vPlayer)) - XM_PI / 2;
+
+	m_UIINFO.Rot = XMConvertToDegrees(camRadian);
+	CalcUICoord();
+
+	_float playerIconRotDegree = XMConvertToDegrees(playerRadian);
+	SetPlayerIconRot(playerIconRotDegree);
 }
 
 E::UPtr<CMiniMap> CMiniMap::Create()

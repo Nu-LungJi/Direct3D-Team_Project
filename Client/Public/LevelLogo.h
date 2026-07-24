@@ -6,6 +6,9 @@ NS_BEGIN(Client)
 
 class CLevelLogo final : public Engine::CLevel
 {
+public:
+	DECLARE_DERIVED_TYPE(CLevelLogo, CLevel)
+
 private:
 	explicit CLevelLogo();
 	~CLevelLogo() override;

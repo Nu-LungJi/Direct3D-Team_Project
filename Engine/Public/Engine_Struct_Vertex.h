@@ -56,9 +56,9 @@ namespace Engine
 		_float3  velocity;
 		_float   life;
 		_float   maxLife;
-		_float   size;
-		_float   startSize;
-		_float   endSize;
+		_float3   size;
+		_float3   startSize;
+		_float3   endSize;
 		_float4  rotation;
 		uint32_t alive;
 		uint32_t loop;
@@ -70,10 +70,10 @@ namespace Engine
 		uint32_t iBehaviorType = 0;
 		_float pad3;
 		_float3 originalPosition; // 원래 스폰 위치
-		_float pad4;
 		_float3 originalVelocity; // 원래 스폰 속도+ 방향
-		_float pad5;
 	}PARTICLE;
+	static_assert(sizeof(PARTICLE) % 16 == 0);
+
 
 
 	typedef struct tagFireInstancedData

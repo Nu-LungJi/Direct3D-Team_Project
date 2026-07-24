@@ -184,7 +184,13 @@ HRESULT CPhysXCollisionProxyObject::BuildCollision(const PX_COLLISION_PROXY_FILE
 				if (shape.sCookedResourcePath.empty()) return E_FAIL;
 				CComPxConvexCollider::DESC colliderDesc{};
 				setCommonDesc(colliderDesc);
-				colliderDesc.pResConvex = CResPhysXConvexGeometry::CreateAndLoad(shape.sCookedResourcePath);
+				colliderDesc.pResConvex = CGameInstance::Get()
+					.GetOrCreateResourceByPath<CResPhysXConvexGeometry>(
+						shape.sCookedResourcePath,
+						[path = shape.sCookedResourcePath]()
+						{
+							return CResPhysXConvexGeometry::CreateAndLoad(path);
+						});
 				colliderDesc.vScale = shape.vScale;
 				CComPxConvexCollider* concrete{};
 				if (!colliderDesc.pResConvex || FAILED(AddComponentFromProto(
@@ -198,7 +204,13 @@ HRESULT CPhysXCollisionProxyObject::BuildCollision(const PX_COLLISION_PROXY_FILE
 				if (shape.sCookedResourcePath.empty()) return E_FAIL;
 				CComPxTriMeshCollider::DESC colliderDesc{};
 				setCommonDesc(colliderDesc);
-				colliderDesc.pResTriMesh = CResPhysXTriMeshGeometry::CreateAndLoad(shape.sCookedResourcePath);
+				colliderDesc.pResTriMesh = CGameInstance::Get()
+					.GetOrCreateResourceByPath<CResPhysXTriMeshGeometry>(
+						shape.sCookedResourcePath,
+						[path = shape.sCookedResourcePath]()
+						{
+							return CResPhysXTriMeshGeometry::CreateAndLoad(path);
+						});
 				colliderDesc.vScale = shape.vScale;
 				CComPxTriMeshCollider* concrete{};
 				if (!colliderDesc.pResTriMesh || FAILED(AddComponentFromProto(

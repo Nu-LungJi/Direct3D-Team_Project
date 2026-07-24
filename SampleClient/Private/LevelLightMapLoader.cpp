@@ -24,7 +24,7 @@ std::future<bool> CLevelLightMapLoader::Load()
 	{
 		int a = 0;
 		//return false;
-	}
+	}	
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_LIGHTMAP", []()
 		{
 			if (auto res = CGameInstance::Get().AddResource("LIGHT_SC", "VIBUFFER_Terrain", CResTerrainVIBuffer::Create("./Resources/SampleClient/Textures/Terrain/Height.bmp")))

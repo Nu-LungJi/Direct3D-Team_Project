@@ -11,12 +11,18 @@
 #include "TestModel.h"
 #include "TestGob.h"
 #include "Player.h"
+#include "PlayerThirdPersonCamera.h"
 #include "LightObject.h"
 #include "LevelPlayGroundLoader.h"
 #include "TestPlayerCreatureEditor.h"
 #include "TestPlayer3CameraCreatureEditor.h"
 #include "MapCollisionProxyObject.h"
 #include "Test3DSound.h"
+#include "TestDynamic.h"
+#include "TestSquareStepController.h"
+#include "MagicSquareStepController.h"
+#include "MyMagicSquareStep.h"
+#include "MyMagicSquareStepController.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -31,8 +37,9 @@ CLevelCreatureEditor::~CLevelCreatureEditor()
 HRESULT CLevelCreatureEditor::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
-	CHandle hPlayer{};
+	
 	{
+		CHandle hPlayer{};
 		CTerrain::DESC Desc{};
 		Desc.sObjectTag = "Terrain";
 		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Terrain",
@@ -51,6 +58,29 @@ HRESULT CLevelCreatureEditor::Initialize()
 		if (!hSpawnedPlayer)
 			return E_FAIL;
 		hPlayer = *hSpawnedPlayer;
+
+		{
+			CTestPlayer3CameraCreatureEditor::DESC Desc{};
+			Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+			Desc.vAt = { 10.f, 50.f, 10.f };
+			Desc.vEye = { 10.f, 53.f, 5.f };
+			Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+			Desc.fFovY = 75.f;
+			Desc.fNear = 0.1f;
+			Desc.fFar = 1000.f;
+			Desc.sObjectTag = "CREATURE_PLAYER_CAMERA";
+			Desc.hTarget = hPlayer;
+
+			auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+				m_strLevelName,
+				"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
+				"99_CAMERA",
+				&Desc);
+			if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera("CREATURE_PLAYER_CAMERA", *hPlayerCamera)))
+			{
+				return E_FAIL;
+			}
+		}
 	}
 
 	{
@@ -110,18 +140,25 @@ HRESULT CLevelCreatureEditor::Initialize()
 		}
 	}
 
-	if(false)
+	for(uint32_t i = 0; i < 6; ++i)
 	{
-		CMapCollisionProxyObject::DESC Desc{};
-		Desc.sObjectTag = "MapCollisionProxy";
-		Desc.sCollisionFileName = "LevelA";
+		
+		CTestDynamic::DESC desc{};
+		desc.sObjectTag = "TestDynamic";
+		desc.vInitialPosition = { 15.f, 55.f + (i * 3.f), 15.f };
+		desc.vConvexScale = { 300.f, 300.f, 300.f };
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
-			"Prototype_GameObject_MapCollisionProxy",
-			"00_MapCollision",
-			&Desc))
+			"Prototype_GameObject_TestDynamic",
+			"03_PhysXTest",
+			&desc))
 			return E_FAIL;
 	}
+
+	//if (FAILED(InitializeMyMagicSquareStep()))
+	//{
+	//	return E_FAIL;
+	//}
 
 
 	CHandle hAnimTestPlayer{};
@@ -129,24 +166,22 @@ HRESULT CLevelCreatureEditor::Initialize()
 	
 		CPlayer::DESC PlayerDesc{};
 		PlayerDesc.sObjectTag = "TestAnimPlayerCreatureEditor";
-		PlayerDesc.sGroupTag = "LEVEL_CREATURE" ;
-		PlayerDesc.sResTag = "Model_Resource_Player";
 
 		PlayerDesc.vInitialPosition = { 50.f, 50.f, 10.f };
 	
 
 
-		auto hSpawnedPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
+		auto hSpawnedAnimPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
 			"Prototype_GameObject_Player",
 			"02_Player",
 			&PlayerDesc);
-		if (!hSpawnedPlayer)
+		if (!hSpawnedAnimPlayer)
 			return E_FAIL;
-		hAnimTestPlayer = *hSpawnedPlayer;
+		hAnimTestPlayer = *hSpawnedAnimPlayer;
 
 
-		CTestPlayer3CameraCreatureEditor::DESC Desc{};
+		CPlayerThirdPersonCamera::DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
 		Desc.vAt = { 10.f, 50.f, 10.f };
 		Desc.vEye = { 10.f, 53.f, 5.f };
@@ -154,16 +189,15 @@ HRESULT CLevelCreatureEditor::Initialize()
 		Desc.fFovY = 75.f;
 		Desc.fNear = 0.1f;
 		Desc.fFar = 1000.f;
-		Desc.sObjectTag = "TestPlayer3CameraCreatureEditor1231";
+		Desc.sObjectTag = "PlayerCamera";
 		Desc.hTarget = hAnimTestPlayer;
-
-		auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
+	
+		auto hAnimPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
 			m_strLevelName,
-			"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
+			"Prototype_GameObject_PlayerThirdPersonCamera",
 			"100_CAMERA",
 			&Desc);
-		if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
-			"CREATURE_ANIM_PLAYER_CAMERA", *hPlayerCamera)))
+		if (!hAnimPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera("PlayerCamera", *hAnimPlayerCamera)))
 		{
 			return E_FAIL;
 		}
@@ -188,33 +222,10 @@ HRESULT CLevelCreatureEditor::Initialize()
 			}
 		}
 	}
-	{
-		CTestPlayer3CameraCreatureEditor::DESC Desc{};
-		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-		Desc.vAt = { 10.f, 50.f, 10.f };
-		Desc.vEye = { 10.f, 53.f, 5.f };
-		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
-		Desc.fFar = 1000.f;
-		Desc.sObjectTag = "TestPlayer3CameraCreatureEditor";
-		Desc.hTarget = hPlayer;
-
-		auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
-			m_strLevelName,
-			"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
-			"99_CAMERA",
-			&Desc);
-		if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
-			"CREATURE_PLAYER_CAMERA", *hPlayerCamera)))
-		{
-			return E_FAIL;
-		}
-	}
+	
 
 	if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
 		return E_FAIL;
-	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	
 
@@ -403,6 +414,107 @@ Engine::UPtr<CLevelCreatureEditor> CLevelCreatureEditor::Create()
 	}
 
 	return pInstance;
+}
+
+HRESULT CLevelCreatureEditor::InitializeMyMagicSquareStep()
+{
+	//{
+	//	CMyMagicSquareStep::DESC Desc{};
+	//	Desc.sObjectTag = "MyMagicSquareStep";
+
+	//	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+	//		m_strLevelName,
+	//		"Prototype_GameObject_MyMagicSquareStep",
+	//		"03_MyMagicSquareStep",
+	//		&Desc))
+	//		return E_FAIL;
+	//}
+
+	{
+		CMyMagicSquareStepController::DESC Desc{};
+		Desc.sObjectTag = "MyMagicSquareStepController";
+		Desc.iMaxSpawnPerFrame = 50;
+
+		const auto hController =
+			E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_MyMagicSquareStepController",
+			"03_MyMagicSquareStepController",
+			&Desc);
+		if (!hController)
+			return E_FAIL;
+
+		auto* pController = E::CGameInstance::Get()
+			.GetGameObjectByHandleT<CMyMagicSquareStepController>(
+				*hController);
+		if (!pController)
+			return E_FAIL;
+
+		const StringID GroupID{ "CreatureMagicSquareGrid" };
+		CMyMagicSquareStepController::RECT_GROUP_DESC
+			RectDesc{};
+		RectDesc.vStartPosition = { 0.f, -3.f, 0.f };
+		RectDesc.iCountX = 30;
+		RectDesc.iCountZ = 10;
+		RectDesc.fSpacingX = 1.007f;
+		RectDesc.fSpacingZ = 1.007f;
+
+		//if (!pController->RegistRectGroup(
+		//		GroupID,
+		//		RectDesc) ||
+		//	!pController->SpawnGroup(GroupID))
+		//	return E_FAIL;
+
+		CMyMagicSquareStepController::RISE_PATTERN_DESC
+			RiseDesc{};
+		RiseDesc.fStartTargetY = 3.f;
+		RiseDesc.fEndTargetY = 3.f;
+		RiseDesc.fMoveSpeed = 2.f;
+		RiseDesc.fBounceHeight = 0.3f;
+		RiseDesc.fBounceSettleSpeed = 1.f;
+		RiseDesc.fLineInterval = 0.1f;
+		RiseDesc.fStepInterval = 0.02f;
+		RiseDesc.fStepTimingCurve = 0.55f;
+		RiseDesc.fStepTimingJitter = 0.01f;
+		RiseDesc.eFillMode =
+			CMyMagicSquareStepController::
+				RISE_FILL_MODE::X;
+		RiseDesc.eHeightAxis =
+			CMyMagicSquareStepController::
+				FILL_AXIS::X;
+		RiseDesc.eDirection =
+			CMyMagicSquareStepController::
+				FILL_DIRECTION::FORWARD;
+		//if (!pController->StartRisePattern(
+		//	GroupID,
+		//	RiseDesc))
+		//	return E_FAIL;
+
+		const StringID CircleGroupID{
+			"CreatureMagicCircleGrid" };
+		CMyMagicSquareStepController::
+			FILLED_CIRCLE_GROUP_DESC CircleDesc{};
+		CircleDesc.vCenter = { 40.f, -3.f, 5.f };
+		CircleDesc.fRadius = 13.f;
+		CircleDesc.fSpacing = 1.007f;
+		RiseDesc.eFillMode =
+			CMyMagicSquareStepController::
+				RISE_FILL_MODE::RADIAL;
+		RiseDesc.fStepTimingJitter = 0.08f;
+
+		if (!pController->RegistFilledCircleGroup(
+				CircleGroupID,
+				CircleDesc) ||
+			!pController->SpawnGroup(
+				CircleGroupID) ||
+			!pController->StartRisePattern(
+				CircleGroupID,
+				RiseDesc))
+			return E_FAIL;
+	}
+
+
+	return S_OK;
 }
 
 void CLevelCreatureEditor::Free()

@@ -109,8 +109,10 @@ HRESULT CLevelLightMap::Initialize()
 			}
 		}
 	}
+	if (FAILED(E::CGameInstance::Get().Initialize_EffectLight(MAX_EFFECTLIGHT_COUNT))) {
+		MSG_BOX("Cannot Initialize EffectLight.");
+	}	// 이펙트용 라이트 풀 생성
 
-	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
 	CGameInstance::Get().Add_PointLight({ 15.2f, 4.f, 5.2f }, { 1.f, 1.f, 1.f }, 100.f, 50.f);
 	CGameInstance::Get().Add_SpotLight({ 8.2f, 4.f, 8.2f }, { 1.f, 1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);

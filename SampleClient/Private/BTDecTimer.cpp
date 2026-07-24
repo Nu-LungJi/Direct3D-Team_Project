@@ -104,8 +104,8 @@ EVALUATE CBTDecTimer::TimeInSuccess(_float fTimeDelta)
 
 EVALUATE CBTDecTimer::Evaluate(_float fTimeDelta)
 {
-	if (Check_Flag(ETOUI(BTFLAG::ATTACK)))
-		return EVALUATE::FAILED;
+//	if (Check_Flag(ETOUI(BTFLAG::ATTACK)))
+//		return EVALUATE::FAILED;
 	EVALUATE result{ EVALUATE::END };
 	//m_bRun 이 true 일떄만 해당노드 재진입
 	if (m_eTimer == TIMER::PAUSE) //타이머 지나기 전까지 하위노드 실행 안됨 RUN 또는 FAILED 반환

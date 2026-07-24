@@ -14,6 +14,7 @@
 #include "LuaManager.h"
 #include "SoundManager.h"
 #include "EventManager.h"
+#include "PhysXManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -41,13 +42,13 @@ class CNodeEditor;
 class CParticleManager;
 struct SPAWN_COMMAND;
 class CAction_Manager;
-class CPhysXManager;
 class CDbgLineRender;
 class CSerializeManager;
 class ILuaScriptRelodable;
 class CModel_Instance_Manager;
 class CMapMeshInstancingRenderer;
 class CResStaticModel;
+class CEffectManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -153,6 +154,8 @@ public:
 	void FontAddLateDraw(RENDERGROUP eRenderGroup, const StringID& fontName, const _wstring& pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
 	_float2 FontMeasureString(const StringID& fontName, const wchar_t* txt, float scale = 1.f) const;
 	void FontLateDraw(RENDERGROUP eRenderGroup);
+	void FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot);
+	void Render3DFont();
 #pragma
 
 
@@ -280,6 +283,7 @@ public:
 
 #pragma region LIGHT_MANAGER
 public:
+	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 	VOID	Bind_DynamicLight();
 
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
@@ -292,6 +296,9 @@ public:
 
 	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
+	
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER
@@ -331,11 +338,14 @@ public:
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
 #pragma endregion
 
 #pragma region MAP_MANAGER
 public:
 	HRESULT SaveMap(const std::string& path);
+	HRESULT LoadMapResources(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
 	HRESULT LoadMapData(const std::string& path);
 	HRESULT LoadMapChunk(const MAPCHUNK_COORD& coord);
@@ -601,6 +611,7 @@ private:
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
 	UPtr<CEventManager> m_pEventManager{};
+	UPtr<CEffectManager> m_pEffectManager{};
 };
 
 NS_END

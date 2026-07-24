@@ -53,25 +53,33 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (!m_pResSamplerState)
         return E_FAIL;
 	m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>("SAMPLE_CLINET_TEXTURE", "TEX_NOISE");
+	switch (m_Desc.blendState) {
+		case 0:
+			m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+			break;
+		case 1:
+			m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+			break;
+		case 2:
+			m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+			break;
+		default:
+			m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+			break;
+	}
 
-    //m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-    //if (FAILED(m_pResVertexShader->Load()))
-    //    return E_FAIL;
-    //
-    //m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-    //if (FAILED(m_pResPixelShader->Load()))
-    //    return E_FAIL;
+
+	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
+
+	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
+		return E_FAIL;
+
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
+	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
+		return E_FAIL;
+
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
-
-        m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-        //if (FAILED(m_pResVertexShader->Load()))
-        //    return E_FAIL;
-
-        m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-      //  if (FAILED(m_pResPixelShader->Load()))
-      //      return E_FAIL;
-
 		if (m_Desc.normalTextureID.first != "") {
 			m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
 		}
@@ -87,15 +95,6 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
     else if (m_Desc.whatKind == MESHORTEXTURE::MESH) {
 
-
-        m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-       // if (FAILED(m_pResVertexShader->Load()))
-       //     return E_FAIL;
-
-        m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-       // if (FAILED(m_pResPixelShader->Load()))
-       //     return E_FAIL;
-
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 		}
@@ -103,11 +102,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
         if (!m_pComCBuffer)
             return E_FAIL;
 
-        // 모델 인스턴스는 컴포넌트 프로토타입 clone이 필요하다면 아래처럼
-        // (AddComponentFromProto 대신, GameObject 없이도 쓸 수 있는 형태로)
         {
-    
-
             CComStaticModelInstance::DESC modelDesc{};
             modelDesc.sGroupTag = m_Desc.sGroupTag;   // 밖에서 주입
             modelDesc.sResTag = m_Desc.sResTag;     // 밖에서 주입
@@ -127,7 +122,21 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		if (m_Desc.hdrNormalTextureID.first != "") {
 			m_pHdrNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.hdrNormalTextureID.first, m_Desc.hdrNormalTextureID.second);
 		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+		}
     }
+
+	{
+		m_waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
+		m_waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
+		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
+		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
+		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
+		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
+		m_waveCb.g_vFlowDirection = _float3(Randf(-1, 1), Randf(-1, 1), Randf(-1, 1));
+	}
     return S_OK;
 
 }
@@ -174,7 +183,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			}
 		}
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
-
+		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 		UpdateBehavior(p, fTimeDelta);
 
 		if (m_vecInstancedData.size() >= m_iNumElements)
@@ -193,10 +202,12 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		VTX_PARTICLE_INSTANCED_DATA inst{};
 		inst.iBehaviorType = p.iBehaviorType;
 		
-		p.fSize = std::lerp(p.fStartSize, p.fEndSize, ageRatio);
+		p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+		p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+		p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
 
 		
-		_matrix matScale = XMMatrixScaling(p.fSize, p.fSize, p.fSize);
+		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
 		_matrix matTrans = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
 
 		_matrix matWorld;
@@ -267,14 +278,159 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
 		XMStoreFloat3(&p.vPosition, vPos);
 	}
-	
+
+	// UpdateBehavior - waveCb / waveParticleIndex(클래스 멤버) 대신 p의 값을 사용, 증가 로직 제거
+	if ((p.iBehaviorType & BEHAVIOR_CIRCLE_TO_WAVE) != 0)
+	{
+		uint32_t particleIndex = (uint32_t)(&p - m_Particles.data());
+
+		float rnd1 = Hash01(particleIndex);
+		float rnd2 = Hash01(particleIndex ^ 0x9E3779B9u);
+		float angle = rnd1 * XM_2PI;
+		float phaseOffset = rnd2 * XM_2PI;
+
+		const auto& waveCb = m_waveCb; // 파티클 고유값, 매 프레임 그대로 유지
+
+		auto Saturate = [](float v) { return std::max(0.0f, std::min(1.0f, v)); };
+		auto SmoothStep = [](float edge0, float edge1, float x) -> float
+			{
+				float denom = edge1 - edge0;
+				float t = (denom > 1e-6f) ? (x - edge0) / denom : 0.0f;
+				t = std::max(0.0f, std::min(1.0f, t));
+				return t * t * (3.0f - 2.0f * t);
+			};
+
+		float ageRatio = Saturate(p.life / p.fMaxLife);
+
+		float burstT = Saturate(ageRatio / std::max(waveCb.g_fBurstRatio, 0.0001f));
+		float burstProfile = sinf(XM_PI * burstT);
+
+		float radialX = cosf(angle);
+		float radialY = sinf(angle);
+		float burstVelX = radialX * waveCb.g_fBurstSpeed * burstProfile;
+		float burstVelY = radialY * waveCb.g_fBurstSpeed * burstProfile;
+
+		float flowDirX = radialX;
+		float flowDirY = radialY;
+		float perpX = -flowDirY;
+		float perpY = flowDirX;
+
+		float elapsed = p.life;
+		float wavePhase = waveCb.g_fWaveSpeed * elapsed + phaseOffset
+			+ (p.vPosition.x * flowDirX + p.vPosition.y * flowDirY) * waveCb.g_fWaveFrequency;
+		float waveBob = sinf(wavePhase);
+
+		float waveVelX = flowDirX * waveCb.g_fFlowSpeed + perpX * (waveBob * waveCb.g_fWaveAmplitude);
+		float waveVelY = flowDirY * waveCb.g_fFlowSpeed + perpY * (waveBob * waveCb.g_fWaveAmplitude);
+
+		float blend = SmoothStep(waveCb.g_fBurstRatio - waveCb.g_fTransitionRatio * 0.5f,
+			waveCb.g_fBurstRatio + waveCb.g_fTransitionRatio * 0.5f,
+			ageRatio);
+
+		p.vVelocity.x = burstVelX + (waveVelX - burstVelX) * blend;
+		p.vVelocity.y = burstVelY + (waveVelY - burstVelY) * blend;
+		p.vVelocity.z = 0.0f;
+
+		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+		XMStoreFloat3(&p.vPosition, vPos);
+		// waveParticleIndex++;  <- 제거: 더 이상 필요 없음, p.iParticleID로 대체
+	}
+
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKE) != 0) {
+		MakeSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEJUMP) != 0) {
+		JumpSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGV) != 0) {
+		GVBurstSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGW) != 0) {
+		GWWaveSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
+		Lightning(p, fTimeDelta);
+	}
 }
+void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
+{
+	_float fSpeed = 1.5f;
+	
+	_float t = p.life / p.fMaxLife;
+	p.vColor.w = 0.7f + (0.f - 0.7f) * t;
+	
+	if(t >=0.5f)
+		p.vVelocity.y += fSpeed * fTimeDelta;
+	
+	  
+}
+void CParticle_CPU::JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	_float t = p.life / p.fMaxLife;
+	p.vColor.w = 0.7f + (0.f - 0.7f) * t;
+
+	if (t >= 0.2f)
+		p.vVelocity.y += p.vVelocity.y * fTimeDelta;
+}
+
+void CParticle_CPU::GVBurstSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	XMStoreFloat3(&p.vVelocity,XMLoadFloat3(&p.vVelocity) * expf(-2.f * fTimeDelta));
+}
+
+void CParticle_CPU::GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	XMStoreFloat3(&p.vVelocity, XMLoadFloat3(&p.vVelocity) * expf(-4.f * fTimeDelta));
+
+}
+
+void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
+	{
+		///////////////////////////////////////////// Fade Out
+		if (p.fMaxLife - 2.f <= p.life) {
+			p.vColor.w -= fTimeDelta / 2.f;
+		}
+	}
+	{
+		///////////////////////////////////////////// Stop Particle
+		if (p.originalPosition.y > p.vPosition.y) {
+			p.vVelocity = { 0.f, 0.f, 0.f };
+			return;
+		}
+	}
+	
+	{
+		///////////////////////////////////////////// Gravity
+		const float kGravity = -9.8f * 0.5f;
+
+		p.vVelocity.y += kGravity * fTimeDelta;
+
+		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+		XMStoreFloat3(&p.vPosition, vPos);
+	}
+	{
+		///////////////////////////////////////////// Particle Spread Type
+
+	}
+	{
+		///////////////////////////////////////////// Velocity Control
+		_float DragFactor = 3.f;
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
+
+		XMStoreFloat3(&p.vVelocity, Velocity);
+	}
+}
+
+
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
 	if (pSpawnData == nullptr || count == 0)
 		return E_FAIL;
 
 	uint32_t iSpawned = 0;
+
+
 	for (uint32_t i = 0; i < m_Particles.size() && iSpawned < count; ++i)
 	{
 		if (m_Particles[i].bAlive)
@@ -299,6 +455,9 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].rotation = src.rotation;
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
+
+
+	
 		++iSpawned;
 	}
 
@@ -307,6 +466,7 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
 HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+
 
     if (m_vecInstancedData.empty())
         return S_OK;
@@ -320,135 +480,195 @@ HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 
 HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	if (!pContext || m_vecInstancedData.empty() || !m_pComModelInstance || !m_pResInstancedBuffer)
+		return S_OK;
 
-    if (m_vecInstancedData.empty())
-        return S_OK;
+	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(
+		TAG_RES_GRP_PERMANENT_STATE,
+		TAG_RES_STATE_RS_SOLID_BACKCULL);
 
+	if (!rasterizer)
+		return E_FAIL;
 
-	if (m_pHdrPositionTexture) {
-		ID3D11ShaderResourceView* pHdrSRV = m_pHdrPositionTexture->GetSRV().Get();
-		pContext->VSSetShaderResources(1, 1, &pHdrSRV);
+	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
+
+	if (!m_pBlendState)
+		return E_FAIL;
+
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
+		TAG_RES_GRP_PERMANENT_STATE,
+		"DS_DEPTHREAD");
+
+	if (!depthState)
+		return E_FAIL;
+
+	pContext->OMSetDepthStencilState(depthState->GetDepthStencilState().Get(), 0);
+
+	const auto& vs = m_pResVertexShader;
+	const auto& ps = m_pResPixelShader;
+
+	if (!vs || !ps)
+		return E_FAIL;
+
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+	if (m_pHdrPositionTexture)
+	{
+		ID3D11ShaderResourceView* hdrPositionSRV = m_pHdrPositionTexture->GetSRV().Get();
+		pContext->VSSetShaderResources(10, 1, &hdrPositionSRV);
 	}
 
-	if (m_pHdrNormalTexture) {
-		ID3D11ShaderResourceView* pHdrSRV = m_pHdrNormalTexture->GetSRV().Get();
-		pContext->VSSetShaderResources(2, 1, &pHdrSRV);
+	if (m_pHdrNormalTexture)
+	{
+		ID3D11ShaderResourceView* hdrNormalSRV = m_pHdrNormalTexture->GetSRV().Get();
+		pContext->VSSetShaderResources(11, 1, &hdrNormalSRV);
 	}
 
 	if (m_pNoiseTexture)
 	{
-		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
-		pContext->PSSetShaderResources(5, 1, &pNoiseSRV);
-
+		ID3D11ShaderResourceView* noiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(5, 1, &noiseSRV);
+		pContext->VSSetShaderResources(5, 1, &noiseSRV);
 	}
 
-    const auto& vs = m_pResVertexShader;
-    const auto& ps = m_pResPixelShader;
-    pContext->IASetInputLayout(vs->GetInputLayout().Get());
-    pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-    pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-    auto pModel = m_pComModelInstance->GetModel();
-    uint32_t iNumMeshes = pModel->Get_NumMeshes();
-
-
-
-
-    // 인스턴스 데이터(월드행렬/컬러) 업로드 -- 텍스처 버전과 동일
-    {
-        D3D11_MAPPED_SUBRESOURCE mapped{};
-        if (SUCCEEDED(pContext->Map(m_pResInstancedBuffer->GetBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-        {
-            std::memcpy(mapped.pData, m_vecInstancedData.data(),
-                sizeof(VTX_PARTICLE_INSTANCED_DATA) * m_vecInstancedData.size());
-            pContext->Unmap(m_pResInstancedBuffer->GetBuffer().Get(), 0);
-        }
-    }
-  //  auto& viBuffer0 = pModel->GetMeshes()[1];
-    for (uint32_t i = 0; i < iNumMeshes; ++i)
-    {
-        const auto& viBuffer = pModel->GetMeshes()[i];
-        ID3D11Buffer* vertexBuffers[] = {
-            viBuffer->GetVertexBuffer().Get(),
-            m_pResInstancedBuffer->GetBuffer().Get()  // 슬롯1: 인스턴스별 월드행렬/컬러
-        };
-        uint32_t strides[] = {
-            viBuffer->GetVertexStride(),
-            (uint32_t)sizeof(VTX_PARTICLE_INSTANCED_DATA)
-        };
-        uint32_t offsets[] = { 0, 0 };
-
-
-        pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
-        pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-        pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		SPtr<CResTexture2D> DiffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE");
-		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0)) {
-			DiffuseTexture = Resource;
-		}
-		pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
-		SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
-		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
-			NormalTexture = Resource;
-		}
-		pContext->PSSetShaderResources(1, 1, NormalTexture->GetSRV().GetAddressOf());
-
-		SPtr<CResTexture2D> SMROTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO");
-		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0)) {
-			SMROTexture = Resource;
-		}
-		pContext->PSSetShaderResources(2, 1, SMROTexture->GetSRV().GetAddressOf());
-
-		SPtr<CResTexture2D> EmissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE");
-		if (auto Resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0)) {
-			EmissiveTexture = Resource;
-		}
-		pContext->PSSetShaderResources(3, 1, EmissiveTexture->GetSRV().GetAddressOf());
-        //m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0);
-        //m_pComModelInstance->Bind_Materials(pContext, i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0);
-
-      //  pContext->PSSetSamplers(0, 1, m_pResSamplerState->GetSamplerState().GetAddressOf());
-
-        pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
-    }
-
-
-
-	ID3D11ShaderResourceView* pSRVs[1] = { nullptr };
-	pContext->PSSetShaderResources(0, 1, pSRVs);
-	pContext->PSSetShaderResources(1, 1, pSRVs);
-	pContext->PSSetShaderResources(2, 1, pSRVs);
-	pContext->PSSetShaderResources(3, 1, pSRVs);
-	pContext->PSSetShaderResources(5, 1, pSRVs);
-	pContext->VSSetShaderResources(1, 1, pSRVs);
-	pContext->VSSetShaderResources(2, 1, pSRVs);
-	ID3D11Buffer* nullCB[] = { nullptr };
-
-	pContext->VSSetConstantBuffers(5, 1, nullCB);
-	pContext->PSSetConstantBuffers(5, 1, nullCB);
+	if (m_pDistortionTexture)
 	{
-		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
-		pContext->VSSetShaderResources(4, 1, nullSRV);
+		ID3D11ShaderResourceView* distortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(6, 1, &distortionSRV);
 	}
+
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* anyTextureSRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(8, 1, &anyTextureSRV);
+	}
+
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+
+	HRESULT hr = pContext->Map(
+		m_pResInstancedBuffer->GetBuffer().Get(),
+		0,
+		D3D11_MAP_WRITE_DISCARD,
+		0,
+		&mapped);
+
+	if (FAILED(hr))
+		return hr;
+
+	std::memcpy(
+		mapped.pData,
+		m_vecInstancedData.data(),
+		sizeof(VTX_PARTICLE_INSTANCED_DATA) * m_vecInstancedData.size());
+
+	pContext->Unmap(m_pResInstancedBuffer->GetBuffer().Get(), 0);
+
+	auto pModel = m_pComModelInstance->GetModel();
+
+	if (!pModel)
+		return E_FAIL;
+
+	uint32_t iNumMeshes = pModel->Get_NumMeshes();
+
+	for (uint32_t i = 0; i < iNumMeshes; ++i)
+	{
+		const auto& viBuffer = pModel->GetMeshes()[i];
+
+		if (!viBuffer)
+			continue;
+
+		ID3D11Buffer* vertexBuffers[] = {
+			viBuffer->GetVertexBuffer().Get(),
+			m_pResInstancedBuffer->GetBuffer().Get()
+		};
+
+		uint32_t strides[] = {
+			viBuffer->GetVertexStride(),
+			static_cast<uint32_t>(sizeof(VTX_PARTICLE_INSTANCED_DATA))
+		};
+
+		uint32_t offsets[] = { 0, 0 };
+
+		pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+
+		auto diffuseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>(
+			"DEFAULT_TEXTURE",
+			"TEX_DEFAULT_DIFFUSE");
+
+		if (auto resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE, 0))
+			diffuseTexture = resource;
+
+		auto normalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>(
+			"DEFAULT_TEXTURE",
+			"TEX_DEFAULT_NORMAL");
+
+		if (auto resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0))
+			normalTexture = resource;
+
+		auto smroTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>(
+			"DEFAULT_TEXTURE",
+			"TEX_DEFAULT_SMRO");
+
+		if (auto resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_METALNESS, 0))
+			smroTexture = resource;
+
+		auto emissiveTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>(
+			"DEFAULT_TEXTURE",
+			"TEX_DEFAULT_EMISSIVE");
+
+		if (auto resource = m_pComModelInstance->Get_MeshTexture(i, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE, 0))
+			emissiveTexture = resource;
+
+		if (!diffuseTexture || !normalTexture || !smroTexture || !emissiveTexture)
+			continue;
+
+		pContext->PSSetShaderResources(0, 1, diffuseTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(1, 1, normalTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(2, 1, smroTexture->GetSRV().GetAddressOf());
+		pContext->PSSetShaderResources(3, 1, emissiveTexture->GetSRV().GetAddressOf());
+
+		pContext->DrawIndexedInstanced(
+			static_cast<UINT>(viBuffer->GetNumIndices()),
+			static_cast<UINT>(m_vecInstancedData.size()),
+			0,
+			0,
+			0);
+	}
+
+	ID3D11ShaderResourceView* nullSRV[] = { nullptr };
+
+	pContext->PSSetShaderResources(0, 1, nullSRV);
+	pContext->PSSetShaderResources(1, 1, nullSRV);
+	pContext->PSSetShaderResources(2, 1, nullSRV);
+	pContext->PSSetShaderResources(3, 1, nullSRV);
+	pContext->PSSetShaderResources(5, 1, nullSRV);
+	pContext->PSSetShaderResources(6, 1, nullSRV);
+	pContext->PSSetShaderResources(8, 1, nullSRV);
+
+	pContext->VSSetShaderResources(5, 1, nullSRV);
+	pContext->VSSetShaderResources(10, 1, nullSRV);
+	pContext->VSSetShaderResources(11, 1, nullSRV);
+
 	pContext->OMSetDepthStencilState(nullptr, 0);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
-	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
-
-    return S_OK;
+	return S_OK;
 }
-
 
 HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
     if (m_vecInstancedData.empty())
         return S_OK;
 
-	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+;
+	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 	SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
@@ -505,16 +725,22 @@ HRESULT CParticle_CPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
 	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnySRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(5, 1, &pAnySRV);
+
+	}
 
 
     pContext->DrawIndexedInstanced((UINT)viBuffer->GetNumIndices(), (UINT)m_vecInstancedData.size(), 0, 0, 0);
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr };
-    pContext->PSSetShaderResources(0, 5, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr,nullptr };
+    pContext->PSSetShaderResources(0, 6, nullSRV);
 
 	pContext->OMSetDepthStencilState(nullptr, 0);
-	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
-	pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+
 
     return S_OK;
 }
@@ -554,7 +780,7 @@ void CParticle_CPU::SetVelocity(const _float3& vel)
 	m_Particles[0].vVelocity = vel;
 }
 
-void CParticle_CPU::SetSize(const _float& size)
+void CParticle_CPU::SetSize(const _float3& size)
 {
 	if (m_Particles.empty())
 		return;
@@ -567,4 +793,68 @@ void CParticle_CPU::SetColor(const _float4& color)
 		return;
 
 	m_Particles[0].vColor = color;
+}
+void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
+{
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive ||
+			particle.ownerID != ownerId)
+		{
+			continue;
+		}
+
+		particle.vPosition.x += delta.x;
+		particle.vPosition.y += delta.y;
+		particle.vPosition.z += delta.z;
+
+		particle.originalPosition.x += delta.x;
+		particle.originalPosition.y += delta.y;
+		particle.originalPosition.z += delta.z;
+	}
+}
+void CParticle_CPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
+{
+	const XMMATRIX deltaMatrix =
+		XMLoadFloat4x4(
+			&deltaMatrixData);
+
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive ||
+			particle.ownerID != ownerId)
+		{
+			continue;
+		}
+
+		// 위치: 회전 + 이동
+		XMStoreFloat3(
+			&particle.vPosition,
+			XMVector3TransformCoord(
+				XMLoadFloat3(
+					&particle.vPosition),
+				deltaMatrix));
+
+		XMStoreFloat3(
+			&particle.originalPosition,
+			XMVector3TransformCoord(
+				XMLoadFloat3(
+					&particle.originalPosition),
+				deltaMatrix));
+
+		// 속도: 이동은 제외하고 회전만 적용
+		XMStoreFloat3(
+			&particle.vVelocity,
+			XMVector3TransformNormal(
+				XMLoadFloat3(
+					&particle.vVelocity),
+				deltaMatrix));
+
+		XMStoreFloat3(
+			&particle.originalVelocity,
+			XMVector3TransformNormal(
+				XMLoadFloat3(
+					&particle.originalVelocity),
+				deltaMatrix));
+	}
 }

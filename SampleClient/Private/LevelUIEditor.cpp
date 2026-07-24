@@ -218,18 +218,18 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	if (bF1)
 	{
 		// minimap
-		if (true)
+		if (false)
 		{
 			CTextureUI::UIOBJECT_DESC Desc{};
 
 			count++;
 			Desc.sObjectTag = "UI_" + std::to_string(count);
 			Desc.Name = "UI_" + std::to_string(count);
-			Desc.fSizeX = 128.f;
-			Desc.fSizeY = 128.f;
+			Desc.fSizeX = 200.f;
+			Desc.fSizeY = 200.f;
 			Desc.fX = clientSize.x * 0.5f;
 			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 1.f;
+			Desc.fAlpha = 0.4f;
 			Desc.UIType = ETOUI(UI_TYPE::MINIMAP);
 			Desc.ResWeight = count;
 
@@ -276,7 +276,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
 		}
 
-		if (false)
+		if (true)
 		{
 			count++;
 			CTextUI::TEXT_DESC desc{};
@@ -345,36 +345,45 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 		selectUI->CalcUICoord();
 	}
 
-	if (std::nullopt != Target_UI && 
-		(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI)))
-	{
-		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
-		UI_INFO& selectInfo = selectUI->GetUIInfo();
-
-		selectInfo.fX = m_UIINFO.fX;
-		selectInfo.fY = m_UIINFO.fY;
-		selectInfo.SizeX = m_UIINFO.SizeX;
-		selectInfo.SizeY = m_UIINFO.SizeY;
-		selectInfo.Alpha = m_UIINFO.Alpha;
-		selectInfo.Weight = m_UIINFO.Weight;
-		selectInfo.Name = m_cName;
-		selectInfo.Color = m_UIINFO.Color;
-		selectInfo.UIType = m_UIINFO.UIType;
-		selectInfo.EffectType = m_UIINFO.EffectType;
-		selectUI->SetScaleRatio(m_ScaleRatio);
-
-		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
-		{
-			FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(selectUI)->GetFlipInfo();
-
-			m_FLIPINFO.cellsize = flipInfo.cellsize;
-			m_FLIPINFO.Duration = flipInfo.Duration;
-			m_FLIPINFO.TotalFrame = flipInfo.TotalFrame;
-			m_FLIPINFO.Padding = flipInfo.Padding;
-		}
-		selectUI->CalcUICoord();
-	}
-
+	//if (std::nullopt != Target_UI && 
+	//	(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI)))
+	//{
+	//	Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+	//	UI_INFO& selectInfo = selectUI->GetUIInfo();
+	//
+	//	selectInfo.fX = m_UIINFO.fX;
+	//	selectInfo.fY = m_UIINFO.fY;
+	//	selectInfo.SizeX = m_UIINFO.SizeX;
+	//	selectInfo.SizeY = m_UIINFO.SizeY;
+	//	selectInfo.Alpha = m_UIINFO.Alpha;
+	//	selectInfo.Weight = m_UIINFO.Weight;
+	//	selectInfo.Name = m_cName;
+	//	selectInfo.Color = m_UIINFO.Color;
+	//	selectInfo.UIType = m_UIINFO.UIType;
+	//	selectInfo.EffectType = m_UIINFO.EffectType;
+	//	selectInfo.Rot = m_UIINFO.Rot;
+	//	selectUI->SetScaleRatio(m_ScaleRatio);
+	//
+	//	if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
+	//	{
+	//		FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(selectUI)->GetFlipInfo();
+	//
+	//		m_FLIPINFO.cellsize = flipInfo.cellsize;
+	//		m_FLIPINFO.Duration = flipInfo.Duration;
+	//		m_FLIPINFO.TotalFrame = flipInfo.TotalFrame;
+	//		m_FLIPINFO.Padding = flipInfo.Padding;
+	//	}
+	//	
+	//	if (!selectUI->GetWorldSpace())
+	//	{
+	//		selectUI->CalcUICoord();
+	//	}
+	//	else
+	//	{
+	//		selectUI->GetTransform().SetScale(E::_float3{ selectInfo.SizeX * 0.01f, selectInfo.SizeY * 0.01f, 1.f });
+	//	}
+	//}
+	UpdateTargetState();
 	switch (m_iButtonMode)
 	{
 	case ETOUI(UiButtonMode::DEFAULT):
@@ -390,6 +399,8 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	}
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+
+	
 }
 
 HRESULT CLevelUIEditor::Render()
@@ -399,7 +410,7 @@ HRESULT CLevelUIEditor::Render()
 
 void CLevelUIEditor::UpdateGUI()
 {
-
+	//ResetProperty(Target_UI);
 	switch (m_iEditorMode)
 	{
 	case ETOUI(UiEditorMode::ARRANGE):
@@ -414,6 +425,7 @@ void CLevelUIEditor::UpdateGUI()
 	default:
 		break;
 	}
+	//UpdateTargetState();
 }
 
 void CLevelUIEditor::FrameStart(E::_float fTimeDelta)
@@ -639,6 +651,70 @@ void CLevelUIEditor::PrefabMode()
 		if (ImGui::Button("ClearUI", ImVec2(90, 0))) {
 			ClearUI();
 		}
+
+		ImGui::Separator();
+		ImGui::Text("--- 3D World Space Settings ---");
+
+		// 1. 3D 변환 토글 버튼
+		if (ImGui::Checkbox("Is World Space UI", &m_IsWorldSpace))
+		{
+			// 체크박스 상태가 변할 때 현재 선택된 UI 객체에 즉시 반영
+			if (Target_UI != std::nullopt &&
+				nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*Target_UI))
+			{
+				CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*Target_UI);
+				m_WorldPos = { 0.f, 0.f, 0.f };
+				pUI->GetTransform().SetPosition(m_WorldPos);
+				ApplyWorldSpaceRecursive(pUI, m_IsWorldSpace, m_fWorldScaleFactor);
+			}
+		}
+
+		if (m_IsWorldSpace)
+		{
+			ImGui::Indent();
+
+			// 스케일 팩터 조절 
+			if (ImGui::DragFloat("World Scale Factor", &m_fWorldScaleFactor, 0.001f, 0.0001f, 1.0f, "%.4f"))
+			{
+				if (Target_UI != std::nullopt &&
+					nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*Target_UI))
+				{
+					CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*Target_UI);
+					//pUI->SetWorldScaleFactor(m_fWorldScaleFactor);
+				}
+			}
+
+			if (ImGui::DragFloat3("World Position (X,Y,Z)", (float*)&m_WorldPos, 0.1f))
+			{
+				if (Target_UI != std::nullopt &&
+					nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*Target_UI))
+				{
+					CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*Target_UI);
+					pUI->GetTransform().SetPosition(XMLoadFloat3(&m_WorldPos));
+				}
+			}
+
+			// 타겟 기준 오프셋 조절
+			//if (ImGui::DragFloat3("World Offset (X,Y,Z)", (float*)&m_vWorldOffset, 0.1f))
+			//{
+			//	if (pSelectedUI) pSelectedUI->SetWorldOffset(m_vWorldOffset);
+			//}
+			//
+			//// 빌보드 (카메라 마주보기) 토글
+			//if (ImGui::Checkbox("Look At Camera (Billboard)", &m_bIsBillboard))
+			//{
+			//	if (pSelectedUI) pSelectedUI->SetBillboard(m_bIsBillboard);
+			//}
+			//
+			//// 뎁스 무시 (투시) 토글
+			//if (ImGui::Checkbox("Ignore Depth (Render on Top)", &m_bIgnoreDepth))
+			//{
+			//	if (pSelectedUI) pSelectedUI->SetIgnoreDepth(m_bIgnoreDepth);
+			//}
+
+			ImGui::Unindent(); // 들여쓰기 복구
+		}
+		ImGui::Separator();
 	}
 	
 	// ---------------------------------------------------------
@@ -1120,88 +1196,20 @@ void CLevelUIEditor::Picking()
 	Target_UI = GET_SINGLE(UIManager)->RootUIPicking();
 
 	if (Target_UI == std::nullopt)
+	{
+		m_IsWorldSpace = false;
 		return;
+	}
 
 	Engine::CUIObject* ptargetUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
 	UI_INFO& ptargetInfo = ptargetUI->GetUIInfo();
 	m_vDragOffset = { CGameInstance::Get().GetMousePos().x - ptargetInfo.fX,
 		CGameInstance::Get().GetMousePos().y - ptargetInfo.fY };
 
-	//uint32_t maxWeight = 0;
-	//
-	//for (auto ui : uiHandles)
-	//{
-	//	Engine::CUIObject* checkUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(ui);
-	//
-	//	if (nullptr == checkUI)
-	//		continue;
-	//
-	//	Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(ui);
-	//	const UI_INFO& selectInfo = selectUI->GetUIInfo();
-	//
-	//	_float2 origin = { selectInfo.fX, selectInfo.fY };
-	//	_float2 size = { selectInfo.SizeX, selectInfo.SizeY };
-	//
-	//	_float2 minPos =
-	//	{
-	//		origin.x - size.x * 0.5f,
-	//		origin.y - size.y * 0.5f
-	//	};
-	//
-	//	_float2 maxPos =
-	//	{
-	//		origin.x + size.x * 0.5f,
-	//		origin.y + size.y * 0.5f
-	//	};
-	//
-	//	if (mousePos.x >= minPos.x &&
-	//		mousePos.x <= maxPos.x &&
-	//		mousePos.y >= minPos.y &&
-	//		mousePos.y <= maxPos.y)
-	//	{
-	//		uint32_t curWeight = selectInfo.Weight;
-	//		if (curWeight >= maxWeight)
-	//		{
-	//			maxWeight = curWeight;
-	//			Target_UI = ui;
-	//
-	//			m_vDragOffset = { CGameInstance::Get().GetMousePos().x - origin.x,
-	//				CGameInstance::Get().GetMousePos().y - origin.y };
-	//		}
-	//	}
-	//}
-
-	if (std::nullopt != Target_UI)
+	if (std::nullopt != Target_UI && 
+		nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI))
 	{
-		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
-		UI_INFO& selectInfo = selectUI->GetUIInfo();
-		m_UIINFO.fX = selectInfo.fX;
-		m_UIINFO.fY = selectInfo.fY;
-		m_UIINFO.SizeX = selectInfo.SizeX;
-		m_UIINFO.SizeY = selectInfo.SizeY;
-		m_ScaleRatio = selectUI->GetScaleRatio();
-		m_UIINFO.Alpha = selectInfo.Alpha;
-		m_UIINFO.Weight = selectInfo.Weight;
-		m_UIINFO.Color = selectInfo.Color;
-		m_UIINFO.UIType = selectInfo.UIType;
-		m_UIINFO.EffectType = selectInfo.EffectType;
-		strcpy_s(m_cName, sizeof(m_cName), selectInfo.Name.c_str());
-
-		if (ETOUI(UI_TYPE::FLIPBOOK) == selectInfo.UIType)
-		{
-			FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(selectUI)->GetFlipInfo();
-
-			m_FLIPINFO.cellsize = flipInfo.cellsize;
-			m_FLIPINFO.Duration = flipInfo.Duration;
-			m_FLIPINFO.TotalFrame = flipInfo.TotalFrame;
-			m_FLIPINFO.Padding = flipInfo.Padding;
-		}
-		if (ETOUI(UI_TYPE::TEXT) == selectInfo.UIType)
-		{
-			CTextBox* ptextbox = static_cast<CTextBox*>(selectUI);
-			m_sText = WStringToUTF8(ptextbox->GetwText());
-			strcpy_s(m_cTextBuf, sizeof(m_cTextBuf), m_sText.c_str());
-		}
+		ResetProperty(Target_UI);
 	}
 }
 
@@ -1548,6 +1556,13 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 		break;
 	}
 
+	obj["IsWorldSpace"] = pUI->GetWorldSpace();
+	if (pUI->GetWorldSpace())
+	{
+		_float3 pos = pUI->GetTransform().GetPosition();
+		obj["WorldPos"] = { pos.x, pos.y, pos.z };
+	}
+
 	obj["Children"] = nlohmann::ordered_json::array();
 
 	for (CHandle childHandle : pUI->GetChildren())
@@ -1681,6 +1696,28 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 	return pUI;
 }
 
+void CLevelUIEditor::ApplyWorldSpaceRecursive(Engine::CUIObject* pUI, _bool bWorldSpace, _float scaleFactor)
+{
+	if (pUI == nullptr) return;
+
+	// 1. 상태 변경
+	pUI->SetWorldSpace(bWorldSpace);
+
+	if (!bWorldSpace)
+	{
+		pUI->GetTransform().SetParentWorldMatrix(std::nullopt);
+
+		pUI->CalcUICoord();
+	}
+
+	for (Engine::CHandle childHandle : pUI->GetChildren())
+	{
+		Engine::CUIObject* pChild = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(childHandle);
+		ApplyWorldSpaceRecursive(pChild, bWorldSpace, scaleFactor);
+	}
+}
+
+
 void CLevelUIEditor::StateView()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
@@ -1749,6 +1786,11 @@ void CLevelUIEditor::StateView()
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Weight"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragInt("##Weight", &m_UIINFO.Weight, 1, 0, 100);
+
+		// Rot
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("Rot"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##Rot", &m_UIINFO.Rot, 0.1f, -360, 360);
 	
 		// Color
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
@@ -1816,6 +1858,8 @@ void CLevelUIEditor::LocalStateView()
 	_float widthX = selectInfo.WidthRatioX;
 	_float widthY = selectInfo.WidthRatioY;
 	_float alphaRatio = selectInfo.AlphaRatio;
+	_float localRot = selectInfo.LocalRot;
+	_float scaleRatio = selectUI->GetScaleRatio();
 	int weightOffset = selectInfo.WeightOffset;
 
 	if (!ImGui::CollapsingHeader("Local Properties (Child)", ImGuiTreeNodeFlags_DefaultOpen))
@@ -1853,7 +1897,11 @@ void CLevelUIEditor::LocalStateView()
 		// SizeRatio
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("SizeRatio"); ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##SizeRatio", &m_ScaleRatio, 0.001f, 0.2f, 2.f);
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##SizeRatio", &scaleRatio, 0.001f, 0.2f, 2.f);
+
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("Rot"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##Rot", &localRot, 0.1f, -360, 360);
 
 		// Local Transform
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
@@ -1875,6 +1923,11 @@ void CLevelUIEditor::LocalStateView()
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Weight Offset"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragInt("##WeightOffset", &weightOffset, 1, -100, 100);
+
+		// weight
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("LocalRot"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##LocalRot", &m_UIINFO.LocalRot, 0.1f, -360, 360);
 
 		// Color 
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
@@ -1911,6 +1964,9 @@ void CLevelUIEditor::LocalStateView()
 	selectInfo.WidthRatioY = widthY;
 	selectInfo.AlphaRatio = alphaRatio;
 	selectInfo.WeightOffset = weightOffset;
+	selectUI->SetScaleRatio(scaleRatio);
+	m_ScaleRatio = scaleRatio;
+	selectInfo.LocalRot = localRot;
 }
 
 void CLevelUIEditor::DrawFileExplorer()
@@ -2055,7 +2111,8 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 
 void CLevelUIEditor::UpdateTargetState()
 {
-	if (std::nullopt != Target_UI)
+	if (std::nullopt != Target_UI && 
+		nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI))
 	{
 		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
 		UI_INFO& selectInfo = selectUI->GetUIInfo();
@@ -2070,6 +2127,8 @@ void CLevelUIEditor::UpdateTargetState()
 		selectInfo.Color = m_UIINFO.Color;
 		selectInfo.UIType = m_UIINFO.UIType;
 		selectInfo.EffectType = m_UIINFO.EffectType;
+		selectInfo.Rot = m_UIINFO.Rot;
+		selectUI->SetScaleRatio(m_ScaleRatio);
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
 		{
@@ -2081,6 +2140,15 @@ void CLevelUIEditor::UpdateTargetState()
 			m_FLIPINFO.Padding = flipInfo.Padding;
 		}
 		selectUI->CalcUICoord();
+
+		if (!selectUI->GetWorldSpace())
+		{
+			selectUI->CalcUICoord();
+		}
+		else
+		{
+			selectUI->GetTransform().SetScale(E::_float3{ selectInfo.SizeX * 0.01f, selectInfo.SizeY * 0.01f, 1.f });
+		}
 	}
 }
 
@@ -2167,6 +2235,9 @@ void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandl
 		m_sText = WStringToUTF8(textBox->GetwText());
 		strcpy_s(m_cTextBuf, sizeof(m_cTextBuf), m_sText.c_str());
 	}
+
+	m_WorldPos = pTargetUI->GetTransform().GetPosition();
+	m_IsWorldSpace = pTargetUI->GetWorldSpace();
 }
 
 void CLevelUIEditor::ClearUI()

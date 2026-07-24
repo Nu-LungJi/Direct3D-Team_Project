@@ -38,7 +38,7 @@ public:
 	TEXT_INFO& GetTextInfo() { return m_textInfo; }
 	const TEXT_INFO& GetTextInfo() const { return m_textInfo; }
 
-private:
+protected:
 	TEXT_INFO m_textInfo{};
 };
 

@@ -3,6 +3,15 @@
 
 NS_BEGIN(Engine)
 
+struct FONT_DESC_3D
+{
+	std::string sFontTag;
+	std::wstring sText;
+	_float4x4 matWVP;
+	_float4 vColor;
+	_float2 vPivot;
+};
+
 class CFontManager final : public CEngineBase
 {
 private:
@@ -21,12 +30,13 @@ private:
 
 public:
 	void UpdateGUI();
+	void Render3DFont();
 
 public:
 	void Draw(const StringID& fontName, const _tchar* pText, const _float2& vPosition, float fScale, _fvector vColor, _float fRotation, const _float2& vOrigin);
 	void AddLateDraw(RENDERGROUP eRenderGroup, const StringID& fontName, const _wstring& pText, const _float2& vPosition, float fScale, _fvector vColor, _float fRotation, const _float2& vOrigin);
 	_float2 MeasureString(const StringID& fontName, const wchar_t* txt, float scale = 1.f) const;
-
+	void FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot);
 public:
 	void LateDraw(RENDERGROUP eRenderGroup);
 
@@ -35,7 +45,7 @@ private:
 
 private:
 	std::unordered_map<StringID, std::vector<LateDrawDesc>> m_mapLateDraws[ETOUI(RENDERGROUP::END)]{};
-
+	std::vector<FONT_DESC_3D> m_vecRender3D;
 private:
 	ComPtr<ID3D11Device> m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};

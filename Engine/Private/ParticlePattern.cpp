@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Particle.h"
 #include "ParticlePattern.h"
 NS_USING(Engine)
 
@@ -15,7 +16,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(const SStairsParam&
 		);
 		s.velocity = _float3(0.f, 0.f, 0.f);
 		s.life = param.fLife;
-		s.fSize = param.fStepWidth;
+		s.fSize = _float3(param.fStepWidth, param.fStepWidth, param.fStepWidth);
 		s.color = param.color;
 		s.emissive = param.emissive;
 	}
@@ -86,7 +87,6 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSpiral(const SSpiralParam&
 {
 	return std::vector<PARTICLE_SPAWN_DATA>();
 }
-
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStraightGroundParam& param)
 {
 	
@@ -127,11 +127,86 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 	return spawnList;
 }
 
-std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeTest(const STest& p)
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
 {
-	return std::vector<PARTICLE_SPAWN_DATA>();
-}
 
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount * param.iArray);
+	if (param.iCount == 0)
+		return spawnList;
+
+	for (uint32_t j = 0; j < param.iArray; ++j)
+	{
+		for (uint32_t i = 0; i < param.iCount; ++i)
+		{
+
+			PARTICLE_SPAWN_DATA& s = spawnList[j * param.iCount + i];
+			_float fAngle = XM_2PI * (_float)i / (_float)param.iCount;
+
+			fAngle += E::Randf(param.vRandAngle.x, param.vRandAngle.y);
+
+			_float fSpeed = param.fSpeed * E::Randf(param.vRandSpeed.x, param.vRandSpeed.y);
+			_float fY = param.vRot.y;
+			s.position = param.vCenter;
+			if (ETOUI(CParticle::BEHAVIOR_SMOKEGW) == param.iFlag)
+			{
+				_float iOffset = _float(j+1.f) * param.fRadius;
+				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
+				XMStoreFloat3(&s.velocity, radial * fSpeed );
+				fY += XMConvertToDegrees(atan2f(XMVectorGetX(radial), XMVectorGetZ(radial)));
+	
+			}else if (ETOUI(CParticle::BEHAVIOR_SMOKEJUMP) == param.iFlag)
+			{
+				s.position = param.vCenter;
+				s.velocity = _float3(0, E::Randf(param.vRandSpeed.x, param.vRandSpeed.y),0);
+			}
+			else
+			{
+				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
+				XMStoreFloat3(&s.position, XMLoadFloat3(&param.vCenter) + radial * param.fRadius);
+				
+				s.velocity = _float3(
+					cosf(fAngle) * fSpeed,
+					0,
+					sinf(fAngle) * fSpeed
+				);
+			}
+
+			s.rotation = _float4(XMConvertToRadians(param.vRot.x), XMConvertToRadians(fY), XMConvertToRadians(param.vRot.z) , 0);
+			s.life = param.fLife * E::Randf(param.vRandLife.x, param.vRandLife.y);
+			XMStoreFloat3(&s.fSize, XMLoadFloat3(&param.fSize) * E::Randf(param.vRandSize.x, param.vRandSize.y));
+			s.position.y += param.fYOffset;
+			s.fEndSize = param.fEndSize;
+			s.color = param.color;
+			s.color.w = param.color.w * E::Randf(param.vRandAlpha.x, param.vRandAlpha.y);
+			s.iBehaviorType = param.iBehaviorType;
+			s.originalPosition = param.vCenter;
+		}
+	}
+
+	return spawnList;
+}
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning& param)
+{
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
+
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		PARTICLE_SPAWN_DATA& s = spawnList[i];
+		s.position = param.vCenter;
+		s.velocity = param.fVelocity;
+		s.life = param.fLife;
+		s.fSize = param.fSize;
+		s.fEndSize = param.fEndSize;
+		s.color = param.color;
+		s.emissive = param.emissive;
+		s.endEmissive = param.endEmissive;
+		s.iBehaviorType = param.iBehaviorType;
+		s.originalEmissive = param.emissive;
+		s.originalPosition = param.vCenter;
+		uint32_t degree = 360 / param.iCount;
+	}
+	return spawnList;
+}
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(
 //    const _float3& vStartPos,
 //    uint32_t iStepCount,

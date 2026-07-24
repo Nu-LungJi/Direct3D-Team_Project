@@ -26,18 +26,6 @@ void CFlyCamera::UpdateGUI()
     ImGui::Text("intersect: %i", m_iColliderIntersect);
 }
 
-HRESULT CFlyCamera::Initialize(void* pArg)
-{
-    if (FAILED(CCameraObject::Initialize(pArg)))
-    {
-        return E_FAIL;
-    }
-
-    m_pCollider = CCollFrustum::Create(XMLoadFloat4x4(&m_matProj));
-
-    return S_OK;
-}
-
 void CFlyCamera::PriorityUpdate(E::_float fTimeDelta)
 {
 	_float moveSpeed = 10.f;
@@ -153,11 +141,12 @@ void CFlyCamera::LateUpdate(E::_float fTimeDelta)
 
     m_pComTransform->Update();
 
-    E::CGameInstance::Get().AddColliderGroup("Coll_FlyCamera", m_pCollider.get());
-
-    m_pCollider->Transform(m_pComTransform->GetLoadedWorldMatrix());
-
     CCameraObject::UpdateViewMatrix();
+
+	if (auto* pViewVolume = GetMutableViewVolumeCollider())
+	{
+		E::CGameInstance::Get().AddColliderGroup("Coll_FlyCamera", pViewVolume);
+	}
 
     m_iColliderIntersect = 0;
     //if (auto colliders = E::CGameInstance::Get().GetColliders())
@@ -180,11 +169,6 @@ void CFlyCamera::LateUpdate(E::_float fTimeDelta)
     //}
 
 
-}
-
-const CCollFrustum* CFlyCamera::GetFrustumCollider() const
-{
-    return static_cast<const CCollFrustum*>(m_pCollider.get());
 }
 
 Engine::UPtr<CFlyCamera> CFlyCamera::Create()

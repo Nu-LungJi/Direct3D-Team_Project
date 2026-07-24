@@ -1,4 +1,4 @@
-cbuffer CB_INIT_PARTICLE : register(b0)
+cbuffer CB_INIT_PARTICLE : register(b10)
 {
     uint g_iMaxParticles;
     float3 pad;

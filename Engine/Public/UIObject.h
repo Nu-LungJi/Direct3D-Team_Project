@@ -126,8 +126,10 @@ protected:
 	_bool		m_isActive = true;
 	_bool		m_isVisible = true;
 	_float		m_ScaleRatio = 1.f;
+	_float2		m_vPivot{};
 
 	bool m_bInputLocked = false;
+	bool m_bWorldSpace = false;
 
 public:
 	const UI_INFO& GetUIInfo() const { return m_UIINFO; }
@@ -153,11 +155,13 @@ public:
 	_bool GetVisible() { return m_isVisible; }
 	_float GetAlphaRatio() { return m_UIINFO.AlphaRatio; }
 	_float GetScaleRatio() { return m_ScaleRatio; }
+	_float GetLocalRot() { return m_UIINFO.LocalRot; }
 
 	void SetActive(bool isActive) { m_isActive = isActive; }
 	void SetVisible(bool isVisible) { m_isVisible = isVisible; }
 	void SetAlphaRatio(_float alpha) { m_UIINFO.AlphaRatio = alpha; }
 	void SetScaleRatio(_float scale) { m_ScaleRatio = scale; }
+	void SetLocalRot(_float rot) { m_UIINFO.LocalRot = rot; }
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
 	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }
@@ -166,14 +170,20 @@ public:
 	int GetWeight() { return m_UIINFO.Weight; }
 	int GetWeight() const { return m_UIINFO.Weight; }
 public:
-	void SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
-	std::optional<CHandle>  GetParent() { return m_pParent; }
-	void AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
+	void						SetParent(std::optional<CHandle> parentUI) { m_pParent = parentUI; }
+	std::optional<CHandle>		GetParent() { return m_pParent; }
+	void						AddChildren(CHandle childUI) { m_vChildren.push_back(childUI); }
 	const std::vector<CHandle>& GetChildren() const { return m_vChildren; }
+	void SetPivot(_float2 vPivot) { m_vPivot = vPivot; }
+	_float2 GetPivot() { return m_vPivot; }
 
+	void SetWorldSpace(bool bWorldSpace) { m_bWorldSpace = bWorldSpace; }
+	_bool GetWorldSpace() { return m_bWorldSpace; }
 public:
 	void DeleteChild(CHandle childHandle);
 	void CalcUICoord();
+private:
+	void SetChildPivot();
 
 protected:
 	std::optional<CHandle> m_pParent = std::nullopt;
