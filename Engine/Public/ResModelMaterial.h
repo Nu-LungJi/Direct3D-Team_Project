@@ -14,6 +14,7 @@ public:
 public:
 	typedef struct tagDesc {
 		_char* ptr;
+		_bool recursiveTextureSearch{ false };
 	}DESC;
 private:
 	explicit CResModelMaterial(const _string& sPath);

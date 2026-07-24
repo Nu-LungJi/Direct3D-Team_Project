@@ -226,6 +226,12 @@
     <Filter Include="GameObject\AI\BTAction\Animation\Child">
       <UniqueIdentifier>{daa2ade4-a4a0-4290-a852-3e28282a96fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\MagicSquareStep">
+      <UniqueIdentifier>{8a755450-51f3-4267-ae19-fc7022c471a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\MyMagicSquareStep">
+      <UniqueIdentifier>{f107aa8a-9b42-4cc4-b287-79f234030638}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -489,6 +495,9 @@
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TestDynamic.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\EnderDragon.h">
       <Filter>GameObject\AI</Filter>
     </ClInclude>
@@ -530,6 +539,27 @@
     </ClInclude>
     <ClInclude Include="..\public\BTTurnAnimation.h">
       <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestSquareStep.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicSquareStepController.h">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicSquareStep.h">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStep.h">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStepController.h">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MagicBridgeController.h">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestSquareStepController.h">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -759,6 +789,9 @@
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\TestDynamic.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\EnderDragon.cpp">
       <Filter>GameObject\AI</Filter>
     </ClCompile>
@@ -800,6 +833,27 @@
     </ClCompile>
     <ClCompile Include="..\private\BTTurnAnimation.cpp">
       <Filter>GameObject\AI\BTAction\Animation\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestSquareStep.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicSquareStep.cpp">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicSquareStepController.cpp">
+      <Filter>GameObject\MagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp">
+      <Filter>GameObject\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MagicBridgeController.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestSquareStepController.cpp">
+      <Filter>GameObject\CreatureEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

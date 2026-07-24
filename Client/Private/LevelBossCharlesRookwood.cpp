@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "LevelPercival.h"
+#include "LevelBossCharlesRookwood.h"
 #include "GameInstance.h"
 #include "Level_Defines.h"
 #include "FlyCamera.h"
@@ -8,33 +8,67 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 
-#include "LevelPercivalLoader.h"
+#include "LevelCharlesRookwoodLoader.h"
 
 NS_USING(Client)
 
-CLevelPercival::CLevelPercival()
-	: CLevel{ ETOUI(LEVEL::PERCIVAL) }
+CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
+	: CLevel{ ETOUI(LEVEL::BOSS_CHARLES_ROOKWOOD) }
 {
 }
 
-CLevelPercival::~CLevelPercival()
+CLevelBossCharlesRookwood::~CLevelBossCharlesRookwood()
 {
 }
 
-HRESULT CLevelPercival::Initialize()
+HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 
-	//{
-	//	CBackGround::UIOBJECT_DESC Desc{};
-	//	Desc.sObjectTag = "BackGround";
-	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PERCIVAL", "Prototype_GameObject_BackGround",
-	//		"00_OBJECTS", &Desc)))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
+	if (FAILED(SpawnFlyCamera()))
+		return E_FAIL;
 
+	if (FAILED(SpawnUICamera()))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
+{
+}
+
+HRESULT CLevelBossCharlesRookwood::Render()
+{
+	return S_OK;
+}
+
+void CLevelBossCharlesRookwood::UpdateGUI()
+{
+	ImGui::Begin("level: Boss CharlesRookwood");
+
+	ImGui::End();
+}
+
+void CLevelBossCharlesRookwood::FrameStart(E::_float fTimeDelta)
+{
+
+}
+
+Engine::UPtr<CLevelBossCharlesRookwood> CLevelBossCharlesRookwood::Create()
+{
+	auto	pInstance = Engine::UPtr<CLevelBossCharlesRookwood>(new CLevelBossCharlesRookwood{});
+
+	if (FAILED(pInstance->Initialize()))
+	{
+		MSG_BOX("Failed to Created : CLevel_Logo");
+	}
+
+	return pInstance;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnFlyCamera()
+{
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
@@ -52,11 +86,16 @@ HRESULT CLevelPercival::Initialize()
 			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
 			{
 				MSG_BOX("FailedToRegistCamera");
+				return E_FAIL;
 			}
 			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	return S_OK;
+}
 
+HRESULT CLevelBossCharlesRookwood::SpawnUICamera()
+{
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
 		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
@@ -73,48 +112,15 @@ HRESULT CLevelPercival::Initialize()
 			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
 			{
 				MSG_BOX("FailedToRegistCamera");
+				return E_FAIL;
 			}
 		}
 	}
-
-
 	return S_OK;
 }
 
-void CLevelPercival::Update(E::_float fTimeDelta)
-{
-}
 
-HRESULT CLevelPercival::Render()
-{
-	return S_OK;
-}
-
-void CLevelPercival::UpdateGUI()
-{
-	ImGui::Begin("level: Persibal");
-
-	ImGui::End();
-}
-
-void CLevelPercival::FrameStart(E::_float fTimeDelta)
-{
-
-}
-
-Engine::UPtr<CLevelPercival> CLevelPercival::Create()
-{
-	auto	pInstance = Engine::UPtr<CLevelPercival>(new CLevelPercival{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
-	}
-
-	return pInstance;
-}
-
-void CLevelPercival::Free()
+void CLevelBossCharlesRookwood::Free()
 {
 	CLevel::Free();
 }

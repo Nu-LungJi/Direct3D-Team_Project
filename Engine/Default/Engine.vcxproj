@@ -341,7 +341,10 @@
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
     <ClInclude Include="..\Public\MapManager.h" />
+    <ClInclude Include="..\Public\MapStaticModelLoader.h" />
     <ClInclude Include="..\Public\MapMeshObject.h" />
+    <ClInclude Include="..\Public\Terrain.h" />
+    <ClInclude Include="..\Public\TerrainChunk.h" />
     <ClInclude Include="..\public\MyGFSDK_SSAO.h" />
     <ClInclude Include="..\Public\Light.h" />
     <ClInclude Include="..\Public\LightManager.h" />
@@ -353,6 +356,7 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysXCookingEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyObject.h" />
@@ -633,6 +637,8 @@
     <ClCompile Include="..\Private\LightManager.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
+    <ClCompile Include="..\Private\Terrain.cpp" />
+    <ClCompile Include="..\Private\TerrainChunk.cpp" />
     <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp" />
     <ClCompile Include="..\Private\OctreeNode.cpp" />
@@ -641,6 +647,7 @@
     <ClCompile Include="..\private\Particle_CPU.cpp" />
     <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\private\PhysXManager.cpp" />
+    <ClCompile Include="..\private\PhysXCookingEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\PhysxManagerListener.cpp" />
@@ -718,6 +725,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>

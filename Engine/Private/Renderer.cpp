@@ -872,6 +872,9 @@ VOID	CRenderer::Unbind_Resources()
 	ID3D11RenderTargetView* pRTVs[8] = { nullptr };
 	m_pContext->OMSetRenderTargets(8, pRTVs, nullptr);
 
+	ID3D11UnorderedAccessView* pUAVs[8] = { nullptr };
+	m_pContext->CSSetUnorderedAccessViews(0, 8, pUAVs, nullptr);
+
 	ID3D11ShaderResourceView* pNullSRVs[12] = { nullptr };
 	m_pContext->PSSetShaderResources(0, 12, pNullSRVs);
 	m_pContext->VSSetShaderResources(0, 12, pNullSRVs);
@@ -1288,8 +1291,10 @@ HRESULT CRenderer::Render_Lighting() {
 	//m_pContext->CSSetShaderResources(10, 1, &pIBLSRVs[0]);
 	//m_pContext->CSSetShaderResources(11, 1, &pIBLSRVs[1]);
 	//m_pContext->CSSetShaderResources(12, 1, &pIBLSRVs[2]);
-
-	CGameInstance::Get().Render_ObjectShadow();
+	if (FAILED(CGameInstance::Get().Render_ObjectShadow())) {
+		Unbind_Resources();
+		return S_OK;
+	}
 
 	Unbind_Resources();
 	
@@ -1446,6 +1451,13 @@ HRESULT CRenderer::Render_Effect()
 		m_pContext->PSSetShaderResources(7, 1, &pBackgroundSRV);
 	}
 	{
+		if (nullptr == m_pResDynTexTargetEffect) {
+			MSG_BOX("RTVS");
+		}
+		auto RTV = m_pResDynTexTargetEffect->GetRTV();
+		if (nullptr == RTV) {
+			MSG_BOX("RTV");
+		}
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetEffect->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs,  m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());

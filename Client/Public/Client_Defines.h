@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstdint>
 
@@ -26,6 +26,18 @@ namespace Client
 		RAGDOLL = 1u << 13,		// 래그돌 본과 다른 물리 객체 사이의 충돌
 		CLOTH_COLLIDER = 1u << 14,	// 망토·의상 시뮬레이션에 제공할 충돌체
 		DEBRIS = 1u << 15,		// 파편과 장식용 소형 물리 오브젝트
+	};
+
+
+	enum class PROTO_GAMEOBJECT
+	{
+		Prototype_GameObject_DebugPlayer,
+		Prototype_GameObject_DebugPlayerThirdPersonCamera
+	};
+
+	enum class PROTO_COMPONENT
+	{
+
 	};
 
 }

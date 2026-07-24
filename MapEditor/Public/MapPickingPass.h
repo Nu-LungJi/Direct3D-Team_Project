@@ -38,6 +38,8 @@ private:
 	UINT m_iTargetWidth = 0;
 	UINT m_iTargetHeight = 0;
 
+	ComPtr<ID3D11RasterizerState> m_pRsState{};
+
 private:
 	ComPtr<ID3D11Device> m_pDevice {};
 	ComPtr<ID3D11DeviceContext> m_pContext {};

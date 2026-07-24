@@ -7,6 +7,8 @@
 #include "DeleteMapMeshCommand.h"
 #include "MapMeshCommandCommon.h"
 #include "EditorSelection.h"
+#include "Terrain.h"
+#include <nlohmann/json.hpp>
 NS_USING(Client)
 
 namespace
@@ -83,6 +85,55 @@ namespace
 		}
 	}
 
+	E::CTerrain* FindTerrain()
+	{
+		for (const auto& [layer, handles] : E::CGameInstance::Get().GetGameObjectLayers())
+		{
+			for (const auto& handle : handles)
+			{
+				if (auto* terrain = E::CGameInstance::Get().GetGameObjectByHandleT<E::CTerrain>(handle))
+					return terrain;
+			}
+		}
+		return nullptr;
+	}
+
+	HRESULT SaveTerrainForMap(const std::string& mapPath)
+	{
+		auto* terrain = FindTerrain();
+		if (!terrain) return S_FALSE;
+		const std::filesystem::path mapDirectory = mapPath;
+		const std::filesystem::path terrainRelativePath = std::filesystem::path("terrain") / "terrain.json";
+		if (FAILED(terrain->SaveTerrain((mapDirectory / terrainRelativePath).generic_string())))
+			return E_FAIL;
+		const std::filesystem::path mapJsonPath = mapDirectory / "map.json";
+		std::ifstream input(mapJsonPath);
+		if (!input) return E_FAIL;
+		nlohmann::ordered_json mapJson{};
+		input >> mapJson;
+		input.close();
+		mapJson["terrain"] = { { "file", terrainRelativePath.generic_string() } };
+		std::ofstream output(mapJsonPath, std::ios::trunc);
+		if (!output) return E_FAIL;
+		output << mapJson.dump(4);
+		return output ? S_OK : E_FAIL;
+	}
+
+	HRESULT LoadTerrainForMap(const std::string& mapPath)
+	{
+		const std::filesystem::path mapDirectory = mapPath;
+		std::ifstream input(mapDirectory / "map.json");
+		if (!input) return E_FAIL;
+		nlohmann::ordered_json mapJson{};
+		input >> mapJson;
+		if (!mapJson.contains("terrain")) return S_FALSE;
+		auto* terrain = FindTerrain();
+		if (!terrain) return E_FAIL;
+		const std::filesystem::path terrainPath = mapDirectory /
+			mapJson["terrain"].at("file").get<std::string>();
+		return terrain->LoadTerrain(terrainPath.generic_string());
+	}
+
 }
 
 CMapEditorGUI::CMapEditorGUI()
@@ -139,10 +190,11 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 		if (ImGui::Button("Yes", ImVec2(100.f, 0.f)))
 		{
 			const std::string mapPath = MakeMapPath(m_MapName);
-			CGameInstance::Get().SaveMap(mapPath);
-			if (m_pNavMeshGUI)
+			const bool mapSaved = SUCCEEDED(CGameInstance::Get().SaveMap(mapPath));
+			const bool terrainSaved = mapSaved && SUCCEEDED(SaveTerrainForMap(mapPath));
+			if (terrainSaved && m_pNavMeshGUI)
 				m_pNavMeshGUI->SaveNavMesh(mapPath);
-			m_bOpenSaveComplete = true;
+			m_bOpenSaveComplete = terrainSaved;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -159,14 +211,18 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 		if (ImGui::Button("Yes", ImVec2(100.f, 0.f)))
 		{
 			const std::string mapPath = MakeMapPath(m_MapName);
-			CGameInstance::Get().LoadMap(mapPath, true);
+			const bool resourcesLoaded = SUCCEEDED(
+				CGameInstance::Get().LoadMapResources(mapPath));
+			const bool mapLoaded = resourcesLoaded &&
+				SUCCEEDED(CGameInstance::Get().LoadMap(mapPath, true));
+			const bool terrainLoaded = mapLoaded && SUCCEEDED(LoadTerrainForMap(mapPath));
 			if (m_pCommandManager)
 				m_pCommandManager->Clear();
 			if (m_pSelection)
 				m_pSelection->Clear();
-			if (m_pNavMeshGUI)
+			if (terrainLoaded && m_pNavMeshGUI)
 				m_pNavMeshGUI->LoadNavMesh(mapPath);
-			m_bOpenLoadComplete = true;
+			m_bOpenLoadComplete = terrainLoaded;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -250,7 +306,9 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::Text("Culled: %u (cpu readback)", instancingStats.iCulledInstances);
 	ImGui::Text("----------------------------Occlusion-----------------------------------");
 
-	m_pNavMeshGUI->UpdateGUI(fTimeDelta);
+	m_pTerrainGUI->UpdateGUI(fTimeDelta);
+	if (!m_pTerrainGUI->IsSculptEnabled())
+		m_pNavMeshGUI->UpdateGUI(fTimeDelta);
 
 	ImGui::Separator();
 	m_pHierarchy->UpdateGUI(fTimeDelta);
@@ -264,8 +322,11 @@ void CMapEditorGUI::UpdateGUI(E::_float fTimeDelta)
 
 	m_pResourceGUI->UpdateGUI(fTimeDelta);
 	m_pMapChunkGUI->UpdateGUI(fTimeDelta);
-	RenderGizmo();
-	PickMapMeshObject();
+	if (!m_pTerrainGUI->IsSculptEnabled())
+	{
+		RenderGizmo();
+		PickMapMeshObject();
+	}
 }
 
 E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
@@ -309,6 +370,12 @@ E::UPtr<CMapEditorGUI> CMapEditorGUI::Create(E::CHandle* pSelectedObject)
 
 	pInstance->m_pNavMeshGUI = CNavMeshGUI::Create(pSelectedObject);
 	if (pInstance->m_pNavMeshGUI == nullptr)
+	{
+		return nullptr;
+	}
+
+	pInstance->m_pTerrainGUI = CTerrainGUI::Create(pSelectedObject, pInstance->m_pCommandManager.get());
+	if (pInstance->m_pTerrainGUI == nullptr)
 	{
 		return nullptr;
 	}

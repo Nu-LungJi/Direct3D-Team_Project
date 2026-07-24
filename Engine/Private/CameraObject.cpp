@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include "CameraObject.h"
+#include "CollFrustum.h"
+#include "CollOrientedBox.h"
 #include "GameInstance.h"
 #include "ffx_fsr2.h"
 
@@ -57,6 +59,7 @@ HRESULT CCameraObject::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+
 	if (FAILED(UpdateViewMatrix()))
 	{
 		return E_FAIL;
@@ -90,7 +93,8 @@ HRESULT CCameraObject::UpdateViewMatrix()
 
 	XMStoreFloat4x4(&m_matView,
 		XMMatrixLookAtLH(vEye, vAt, XMLoadFloat3(&m_cameraDesc.vUp)));
-	return S_OK;
+
+	return UpdateViewVolume();
 }
 
 HRESULT CCameraObject::UpdateProjMatrix()
@@ -115,5 +119,92 @@ HRESULT CCameraObject::UpdateProjMatrix()
 	{
 		return E_FAIL;
 	}
+
+	if (m_cameraDesc.eProj == PROJ::PERSPECTIVE)
+	{
+		if (!m_pViewVolumeCollider || m_pViewVolumeCollider->GetCollType() != CollType::Frustum)
+		{
+			m_pViewVolumeCollider = CCollFrustum::Create(XMLoadFloat4x4(&m_matProj));
+		}
+		else
+		{
+			static_cast<CCollFrustum*>(m_pViewVolumeCollider.get())
+				->SetLocalFrustum(XMLoadFloat4x4(&m_matProj));
+		}
+	}
+	else
+	{
+		const _float fDepth = m_cameraDesc.fFar - m_cameraDesc.fNear;
+		const _float3 vCenter{ 0.f, 0.f, m_cameraDesc.fNear + fDepth * 0.5f };
+		const _float3 vExtents{
+			m_cameraDesc.fWidth * 0.5f,
+			m_cameraDesc.fHeight * 0.5f,
+			fDepth * 0.5f };
+		const _float4 vOrientation{ 0.f, 0.f, 0.f, 1.f };
+
+		if (!m_pViewVolumeCollider || m_pViewVolumeCollider->GetCollType() != CollType::OrientedBox)
+		{
+			m_pViewVolumeCollider = CCollOrientedBox::Create(vCenter, vExtents, vOrientation);
+		}
+		else
+		{
+			static_cast<CCollOrientedBox*>(m_pViewVolumeCollider.get())
+				->SetLocalBoundingOrientedBox(vCenter, vExtents, vOrientation);
+		}
+	}
+
+	if (!m_pViewVolumeCollider)
+		return E_FAIL;
+
+	return UpdateViewVolume();
+}
+
+HRESULT CCameraObject::UpdateViewVolume()
+{
+	if (!m_pViewVolumeCollider)
+		return E_FAIL;
+
+	const _matrix matView = XMLoadFloat4x4(&m_matView);
+	_vector vDeterminant = XMMatrixDeterminant(matView);
+	m_pViewVolumeCollider->Transform(XMMatrixInverse(&vDeterminant, matView));
 	return S_OK;
+}
+
+ContainmentType CCameraObject::ContainsViewVolume(const BoundingBox& bounds) const
+{
+	if (!m_pViewVolumeCollider)
+		return DirectX::DISJOINT;
+
+	switch (m_pViewVolumeCollider->GetCollType())
+	{
+	case CollType::Frustum:
+		return static_cast<const CCollFrustum*>(m_pViewVolumeCollider.get())
+			->GetBoundingFrustum().Contains(bounds);
+	case CollType::OrientedBox:
+		return static_cast<const CCollOrientedBox*>(m_pViewVolumeCollider.get())
+			->GetBoundingOrientedBox().Contains(bounds);
+	default:
+		return DirectX::DISJOINT;
+	}
+}
+
+_bool CCameraObject::IntersectsViewVolume(const BoundingBox& bounds) const
+{
+	return ContainsViewVolume(bounds) != DirectX::DISJOINT;
+}
+
+const CCollFrustum* CCameraObject::GetFrustumCollider() const
+{
+	if (!m_pViewVolumeCollider || m_pViewVolumeCollider->GetCollType() != CollType::Frustum)
+		return nullptr;
+
+	return static_cast<const CCollFrustum*>(m_pViewVolumeCollider.get());
+}
+
+const CCollOrientedBox* CCameraObject::GetOrientedBoxCollider() const
+{
+	if (!m_pViewVolumeCollider || m_pViewVolumeCollider->GetCollType() != CollType::OrientedBox)
+		return nullptr;
+
+	return static_cast<const CCollOrientedBox*>(m_pViewVolumeCollider.get());
 }
