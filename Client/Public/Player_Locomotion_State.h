@@ -72,6 +72,7 @@ private:
 	_float CalculateSignedAngle(const CPlayer& player,const _float3& vMoveDirection) const;
 
 	MOVE_DIRECTION ResolveDirection(_float fSignedAngle) const;
+	void CacheAnimationIndices(const CPlayer& player);
 	int32_t FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const;
 	int32_t ResolveIdleTurnAnimation(_float fSignedAngle) const;
 	int32_t ResolveJogTurnAnimation(_float fSignedAngle) const;
@@ -96,6 +97,7 @@ private:
 	int32_t m_iSprintForwardAnimation{ -1 };
 	int32_t m_iSprintLeanLeftAnimation{ -1 };
 	int32_t m_iSprintLeanRightAnimation{ -1 };
+	_bool m_bAnimationIndicesCached{};
 	int32_t m_iActiveMoveLoopAnimation{ -1 };
 	int32_t m_iPendingIdleTurnAnimation{ -1 };
 	_bool m_bTurnPending{};

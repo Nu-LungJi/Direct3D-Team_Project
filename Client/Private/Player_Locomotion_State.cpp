@@ -33,55 +33,65 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	player->SetRootMotionRotationActive(false);
 	player->SetRootMotionTranslationActive(false);
 
-	m_iIdleAnimation = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
-	m_LeftIdleTurns = {
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_45_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_90_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_135_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_180_anm.bin")
-	};
-	m_RightIdleTurns = {
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_45_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_90_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_135_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_180_anm.bin")
-	};
-	m_LeftJogTurns = {
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn45_L_RU_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn90_L_RU_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn135_L_RU_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_Jog_FwdTurn180_L_RU_anm.bin")
-	};
-	m_RightJogTurns = {
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn45_R_RU_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn90_R_RU_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn135_R_RU_anm.bin"),
-		FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_AD_BM_Jog_FwdTurn180_R_RU_anm.bin")
-	};
-	m_iJogStartForwardAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Start_Fwd_RU_anm.bin");
-	m_iJogForwardAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_Fwd_anm.bin");
-	m_iJogStopForwardAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Stop_Fwd_RU_anm.bin");
-	m_iSprintForwardAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Fwd_anm.bin");
-	m_iSprintLeanLeftAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
-	m_iSprintLeanRightAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
+	CacheAnimationIndices(*player);
 
 	if (auto* pAnimator = player->GetAnimator();
 		pAnimator && m_iIdleAnimation >= 0)
 	{
 		pAnimator->Play_Anim(m_iIdleAnimation, true, 0.f);
 	}
+}
+
+void CPlayer_Locomotion_State::CacheAnimationIndices(const CPlayer& player)
+{
+	if (m_bAnimationIndicesCached)
+		return;
+
+	m_iIdleAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
+	m_LeftIdleTurns = {
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_45_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_90_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_135_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_180_anm.bin")
+	};
+	m_RightIdleTurns = {
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_45_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_90_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_135_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_180_anm.bin")
+	};
+	m_LeftJogTurns = {
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn45_L_RU_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn90_L_RU_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn135_L_RU_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_Jog_FwdTurn180_L_RU_anm.bin")
+	};
+	m_RightJogTurns = {
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn45_R_RU_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn90_R_RU_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn135_R_RU_anm.bin"),
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_Jog_FwdTurn180_R_RU_anm.bin")
+	};
+	m_iJogStartForwardAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Start_Fwd_RU_anm.bin");
+	m_iJogForwardAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_Fwd_anm.bin");
+	m_iJogStopForwardAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Stop_Fwd_RU_anm.bin");
+	m_iSprintForwardAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Fwd_anm.bin");
+	m_iSprintLeanLeftAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
+	m_iSprintLeanRightAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
+
+	m_bAnimationIndicesCached = true;
 }
 
 void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
