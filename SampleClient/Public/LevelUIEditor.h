@@ -51,6 +51,7 @@ private:
 	char m_cPrefabName[128] = "";
 	char m_cResTag[128] = "";
 	_float m_ScaleRatio = 1.f;
+	_float m_LocalScaleRatio = 1.f;
 
 	char m_cTextBuf[1024] = "";
 	std::string m_sText{};

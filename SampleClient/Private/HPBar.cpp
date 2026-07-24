@@ -168,8 +168,11 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 		perUI.uvSize = { m_fCurrentAmount, m_fFillDir };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 		perUI.texSize = { static_cast<float>(texDesc.Width), static_cast<float>(texDesc.Height) };
-		perUI.quadSize = { m_UIINFO.fX, m_UIINFO.fY };
+		perUI.quadSize = { m_UIINFO.SizeX, m_UIINFO.SizeY };
 		perUI.margins = { 3.f, 5.f, 3.f, 5.f }; // left top right bottom
+
+		if(m_UIINFO.Restag == "TEX_UI_T_TutorialMediaBorder")
+			perUI.margins = { 97.f, 57.f, 97.f, 57.f };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{

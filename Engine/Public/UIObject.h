@@ -126,6 +126,7 @@ protected:
 	_bool		m_isActive = true;
 	_bool		m_isVisible = true;
 	_float		m_ScaleRatio = 1.f;
+	_float		m_localScaleRatio = 1.f;
 	_float2		m_vPivot{};
 
 	bool m_bInputLocked = false;
@@ -156,12 +157,14 @@ public:
 	_float GetAlphaRatio() { return m_UIINFO.AlphaRatio; }
 	_float GetScaleRatio() { return m_ScaleRatio; }
 	_float GetLocalRot() { return m_UIINFO.LocalRot; }
+	_float GetLocalScaleRatio() { return m_localScaleRatio; }
 
 	void SetActive(bool isActive) { m_isActive = isActive; }
 	void SetVisible(bool isVisible) { m_isVisible = isVisible; }
 	void SetAlphaRatio(_float alpha) { m_UIINFO.AlphaRatio = alpha; }
 	void SetScaleRatio(_float scale) { m_ScaleRatio = scale; }
 	void SetLocalRot(_float rot) { m_UIINFO.LocalRot = rot; }
+	void SetLocalScaleRatio(_float scale) { m_localScaleRatio = scale; }
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
 	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }

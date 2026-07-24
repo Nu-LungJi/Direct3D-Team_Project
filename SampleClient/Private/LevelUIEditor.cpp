@@ -1510,6 +1510,7 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 	obj["SizeY"] = uiInfo.SizeY;
 
 	obj["ScaleRatio"] = pUI->GetScaleRatio();
+	obj["LocalScaleRatio"] = pUI->GetLocalScaleRatio();
 
 	obj["WidthRatioX"] = uiInfo.WidthRatioX;
 	obj["WidthRatioY"] = uiInfo.WidthRatioY;
@@ -1860,6 +1861,7 @@ void CLevelUIEditor::LocalStateView()
 	_float alphaRatio = selectInfo.AlphaRatio;
 	_float localRot = selectInfo.LocalRot;
 	_float scaleRatio = selectUI->GetScaleRatio();
+	_float localScaleRatio = selectUI->GetLocalScaleRatio();
 	int weightOffset = selectInfo.WeightOffset;
 
 	if (!ImGui::CollapsingHeader("Local Properties (Child)", ImGuiTreeNodeFlags_DefaultOpen))
@@ -1898,6 +1900,11 @@ void CLevelUIEditor::LocalStateView()
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("SizeRatio"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##SizeRatio", &scaleRatio, 0.001f, 0.2f, 2.f);
+
+		// localSizeRatio
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("LocalScaleRatio"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##LocalScaleRatio", &localScaleRatio, 0.001f, 0.2f, 2.f);
 
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Rot"); ImGui::TableNextColumn();
@@ -1967,6 +1974,7 @@ void CLevelUIEditor::LocalStateView()
 	selectUI->SetScaleRatio(scaleRatio);
 	m_ScaleRatio = scaleRatio;
 	selectInfo.LocalRot = localRot;
+	m_LocalScaleRatio = localScaleRatio;
 }
 
 void CLevelUIEditor::DrawFileExplorer()
@@ -2129,6 +2137,7 @@ void CLevelUIEditor::UpdateTargetState()
 		selectInfo.EffectType = m_UIINFO.EffectType;
 		selectInfo.Rot = m_UIINFO.Rot;
 		selectUI->SetScaleRatio(m_ScaleRatio);
+		selectUI->SetLocalScaleRatio(m_LocalScaleRatio);
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
 		{
@@ -2194,40 +2203,32 @@ void CLevelUIEditor::DrawHierarchyNode(CHandle uiHandle)
 
 void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandle)
 {
-	// 1. 타겟 갱신
 	Target_UI = newTargetHandle;
 
-	// 2. 선택이 해제된 경우 (빈 공간 클릭 등), 에디터 변수를 기본값으로 초기화
 	if (Target_UI == std::nullopt)
 	{
-		m_UIINFO = UI_INFO{};		// 구조체 기본값으로 싹 초기화
+		m_UIINFO = UI_INFO{};		
 		m_FLIPINFO = FLIP_INFO{};
 		return;
 	}
 
-	// 3. 엔진에서 실제 UI 객체 포인터 가져오기
 	Engine::CUIObject* pTargetUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
 	if (pTargetUI == nullptr)
 		return;
 
-	//Target_Parent_UI = pTargetUI->GetParent();
-
-	// 4. 공통 프로퍼티 동기화 (TextureUI, FlipbookUI 등 모든 CUIObject 공통)
 	m_UIINFO = pTargetUI->GetUIInfo();
 	strcpy_s(m_cName, sizeof(m_cName), m_UIINFO.Name.c_str());
 
 	m_ScaleRatio = pTargetUI->GetScaleRatio();
+	m_LocalScaleRatio = pTargetUI->GetLocalScaleRatio();
 
-	// 5. 타입별 특수 프로퍼티 동기화 (플립북일 경우 FLIP_INFO 갱신)
 	if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::FLIPBOOK))
 	{
-		// CUIObject를 CFlipbookUI로 안전하게 캐스팅해서 가져옴
 		CFlipbookUI* pFlipbook = static_cast<CFlipbookUI*>(pTargetUI);
 		m_FLIPINFO = pFlipbook->GetFlipInfo();
 	}
 	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::TEXUI))
 	{
-		// TextureUI 전용으로 동기화할 데이터가 나중에 생긴다면 여기에 추가
 	}
 	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::TEXT))
 	{

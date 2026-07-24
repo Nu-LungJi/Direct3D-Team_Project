@@ -337,7 +337,7 @@ void UIManager::InitializeActions()
 		auto pTween = pCaller->GetTweenCom();
 		if (!pTween) return;
 
-		pCaller->SetInputLcok(true);
+		//pCaller->SetInputLcok(true);
 		CHandle handle = pCaller->GetHandle();
 
 		pTween->PlayTween(pCaller->GetAlphaRatio(), 0.0f, 0.3f,
@@ -345,7 +345,7 @@ void UIManager::InitializeActions()
 				if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
 			},
 			[handle]() {
-				if (auto pObj = GetSafeUI(handle)) pObj->SetActive(false);
+				//if (auto pObj = GetSafeUI(handle)) pObj->SetActive(false);
 			});
 	};
 	m_vEventNames.push_back("LocalFadeOut");
@@ -356,7 +356,6 @@ void UIManager::InitializeActions()
 			auto pTween = pCaller->GetTweenCom();
 			if (!pTween) return;
 
-			pCaller->SetInputLcok(true);
 			CHandle handle = pCaller->GetHandle();
 
 			pTween->PlayTween(pCaller->GetAlphaRatio(), 0.0f, 0.2f,
@@ -364,7 +363,7 @@ void UIManager::InitializeActions()
 					if (auto pObj = GetSafeUI(handle)) pObj->SetAlphaRatio(currentValue);
 				},
 				[handle]() {
-					if (auto pObj = GetSafeUI(handle)) pObj->SetActive(false);
+					//if (auto pObj = GetSafeUI(handle)) pObj->SetActive(false);
 				});
 		};
 	m_vEventNames.push_back("LocalFadeOut0.2");
@@ -756,6 +755,12 @@ void UIManager::InitializeFunc()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LOGO));
 	};
 	m_vFuncNames.push_back("SceneChange");
+
+	m_FuncMap["SpellTypeDesCreate"] = [](std::string name)
+		{
+			GET_SINGLE(UIManager)->LoadPrefab(name);
+		};
+	m_vFuncNames.push_back("SpellTypeDesCreate");
 }
 
 void UIManager::UpdateRootUIHandles()
@@ -1026,6 +1031,8 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 			pUI->SetScaleRatio(obj["ScaleRatio"]);
 	}
 		
+	if (obj.contains("LocalScaleRatio"))
+		pUI->SetLocalScaleRatio(obj["LocalScaleRatio"]);
 
 	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
 
