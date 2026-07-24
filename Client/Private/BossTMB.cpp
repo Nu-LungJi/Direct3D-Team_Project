@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "TestGob.h"
+#include "BossTMB.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -15,27 +15,27 @@
 #include "DbgLineRender.h"
 NS_USING(Client)
 
-CTestGob::CTestGob()
+CBossTMB::CBossTMB()
 {
 }
 
-CTestGob::~CTestGob()
+CBossTMB::~CBossTMB()
 {
 }
 
-void CTestGob::UpdateGUI()
+void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
 
 }
 
-HRESULT CTestGob::InitializePrototype(void* pArg)
+HRESULT CBossTMB::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
 	return S_OK;
 }
 
-HRESULT CTestGob::Initialize(void* pArg)
+HRESULT CBossTMB::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
@@ -131,24 +131,9 @@ HRESULT CTestGob::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	CWeapon::WEAPON_DESC WeaponDesc{};
-	WeaponDesc.sObjectTag = "Weapon";
-	WeaponDesc.ParentHandle = GetHandle();
-	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	WeaponDesc.LevelTag = MonDesc->LevelTag;
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
-	if (!Weapon.has_value())
-	{
-		MSG_BOX("Create Failed Weapon");
-		return E_FAIL;
-	}
-	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
-	test[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
-	test[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
 
 	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
 	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
@@ -158,58 +143,46 @@ HRESULT CTestGob::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CTestGob::PriorityUpdate(E::_float fTimeDelta)
+void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
 
 }
 
-void CTestGob::FixedUpdate(E::_float fTimeDelta)
+void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 {
-	if(!m_bDonMove)
-	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	if (!m_bDonMove)
+		m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 
-void CTestGob::Update(E::_float fTimeDelta)
+void CBossTMB::Update(E::_float fTimeDelta)
 {
-	if (CGameInstance::Get().KeyPressing(DIK_HOME))
-		m_pComTransform->GoUp(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_END))
-		m_pComTransform->GoDown(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_UP))
-		m_pComTransform->GoStraight(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
-		m_pComTransform->GoRight(fTimeDelta * -15);
-	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
-		m_pComTransform->GoBackward(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
-		m_pComTransform->GoRight(fTimeDelta * 15);
 	__super::Update(fTimeDelta);
 
 }
 
-void CTestGob::LateUpdate(E::_float fTimeDelta)
+void CBossTMB::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
 }
 
-E::UPtr<CTestGob> CTestGob::Create()
+E::UPtr<CBossTMB> CBossTMB::Create()
 {
-	auto pInstance = E::ToUPtr(new CTestGob{});
+	auto pInstance = E::ToUPtr(new CBossTMB{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTestGob");
+		MSG_BOX("Failed to Created : CBossTMB");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTestGob::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBossTMB::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTestGob{ *this });
+	auto	pInstance = E::ToUPtr(new CBossTMB{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTestGob");
+		MSG_BOX("Failed to Cloned : CBossTMB");
 		return nullptr;
 	}
 

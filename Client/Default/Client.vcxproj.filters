@@ -82,6 +82,27 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
       <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AI">
+      <UniqueIdentifier>{7f27c2a0-0347-42cb-bd94-0642b1cd0643}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster">
+      <UniqueIdentifier>{168fd55f-37d9-4a25-ac51-3ed41d6e6e92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action">
+      <UniqueIdentifier>{80c3829e-8c2f-4612-a5b6-0233a52f27d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Decorator">
+      <UniqueIdentifier>{ba0122b0-64db-491b-836f-a56b3b9bfe22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot">
+      <UniqueIdentifier>{ab746481-684a-4a1e-9656-3918f260c268}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim">
+      <UniqueIdentifier>{beb0d131-70a6-43c7-ba82-70ca1fb45d49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Flow">
+      <UniqueIdentifier>{b26f59e3-d32a-4155-b0a6-67acaff44883}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -165,6 +186,81 @@
     <ClInclude Include="..\Public\Player_Jump_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\BTAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimRoot.h">
+      <Filter>GameObject\AI\AnimRoot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecFlag.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecHitCnt.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecInvert.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecLier.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecSearch.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecTimer.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnSlow.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTeleport.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnDirect.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMove.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMonAttType.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHeader_Definse.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTOnlyTrue.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTCreatureFlag.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTOnlyFalse.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Monster.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Weapon.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BossTMB.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecHp.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -239,6 +335,75 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Jump_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Weapon.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Monster.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTCreatureFlag.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecFlag.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecHp.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecInvert.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecLier.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecSearch.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecTimer.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTOnlyTrue.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTOnlyFalse.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMonAttType.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMove.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTeleport.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimRoot.cpp">
+      <Filter>GameObject\AI\AnimRoot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossTMB.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnSlow.cpp">
+      <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

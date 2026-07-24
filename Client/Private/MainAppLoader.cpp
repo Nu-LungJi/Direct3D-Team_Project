@@ -12,7 +12,7 @@
 //#include "BTAnimation.h"
 //#include "Trail_Example.h"
 //#include "Particle_Fire_GPU.h"
-//#include "BTHeader_Definse.h"
+#include "BTHeader_Definse.h"
 
 //#include "UIManager.h"
 
@@ -305,7 +305,7 @@ HRESULT CMainAppLoader::Load_PhysX_Resource()
 HRESULT CMainAppLoader::Create_ActionNode()
 {
 	//프로토타입 이니셜라이즈랑 이름 맞출것
-	/*if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMove", CBTMove::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMove", CBTMove::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
 		return E_FAIL;
@@ -316,8 +316,6 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTeleport", CBTTeleport::Create())))
-		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTDamage", CBTDamage::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCreatureFlag", CBTCreatureFlag::Create())))
 		return E_FAIL;
@@ -341,9 +339,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHit", CBTDecHit::Create())))
-		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHp", CBTDecHp::Create())))
-		return E_FAIL;*/
+		return E_FAIL;
 	return S_OK;
 }
