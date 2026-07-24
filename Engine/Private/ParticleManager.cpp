@@ -1379,7 +1379,7 @@ void CParticleManager::UpdateGUI()
 
 	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/ParticleQueue/SpawnQueue.json";
 	ImGui::InputText("Queue Save Path", szQueueSavePath, IM_ARRAYSIZE(szQueueSavePath));
-
+	
 	if (ImGui::Button("Save Queue"))
 	{
 		HRESULT hr = SaveCommandQueue(szQueueSavePath);
@@ -2440,6 +2440,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["bRandomVel"] = p.bRandomVel;
 				entry["velMin"] = { p.velMin.x, p.velMin.y, p.velMin.z };
 				entry["velMax"] = { p.velMax.x, p.velMax.y, p.velMax.z };
+				entry["iBehaviorType"] = p.iBehaviorType;
 				break;
 			}
 			case SPAWN_COMMAND_KIND::BEAM:
@@ -2457,6 +2458,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 				entry["endEmissive"] = { p.endEmissive.x, p.endEmissive.y, p.endEmissive.z, p.endEmissive.w };
 				entry["GeometryType"] = p.geometryType;
+		
 
 				break;
 			}
@@ -2580,7 +2582,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
 			p.bLoop = entry.value("bLoop", false);
 			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
-
+			p.iBehaviorType = entry.value("iBehaviorType", 0.f);
 			cmd.params = p;
 			break;
 		}
@@ -2908,7 +2910,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 {
 	std::vector<SPAWN_COMMAND> parsed;
 
-	std::string path = "./Resources/json/Particle/" + strJsonPath;
+	std::string path = "./Resources/json/Particle/ParticleQueue/" + strJsonPath;
 	std::ifstream file(path);
 	if (!file.is_open())
 		return parsed;
