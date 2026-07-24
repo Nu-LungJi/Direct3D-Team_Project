@@ -885,6 +885,9 @@ HRESULT CLuaManager::Initialize_ClassBindnig()
 			// 2. 행렬 반환 함수 (루아 쪽에 _matrix 타입이 바인딩되어 있어야 합니다)
 			"GetView", &CCameraObject::GetView,
 			"GetProj", &CCameraObject::GetProj,
+			"GetViewVolumeCollider", &CCameraObject::GetViewVolumeCollider,
+			"GetFrustumCollider", &CCameraObject::GetFrustumCollider,
+			"GetOrientedBoxCollider", &CCameraObject::GetOrientedBoxCollider,
 
 			// 3. GetRay: std::pair를 루아의 2개 반환값으로 자동 처리!
 			"GetRay", &CCameraObject::GetRay,
@@ -904,11 +907,7 @@ HRESULT CLuaManager::Initialize_ClassBindnig()
 
 			// [핵심] 부모 클래스가 CCameraObject와 CGameObject임을 명시!
 			// 이렇게 하면 GetRay()나 GetComponent()를 루아에서 그대로 쓸 수 있습니다.
-			sol::base_classes, sol::bases<CCameraObject, CGameObject, CEngineBase>(),
-
-			// CFlyCamera만의 고유 함수 바인딩 (필요한 경우에만 엽니다)
-			// 주의: CCollFrustum이 루아에 바인딩되어 있지 않다면 주석 처리하는 것이 좋습니다.
-			"GetFrustumCollider", &CFlyCamera::GetFrustumCollider
+			sol::base_classes, sol::bases<CCameraObject, CGameObject, CEngineBase>()
 		);
 	}
 #pragma endregion

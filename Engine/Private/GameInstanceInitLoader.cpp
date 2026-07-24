@@ -34,8 +34,8 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "ComSound.h"
-
 #include "ComLuaScript.h"
+#include "StateMachine.h"
 
 #include "ParticleManager.h"
 #include "Particle.h"
@@ -224,14 +224,6 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG", E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FOG) })))
-		{
-			return E_FAIL;
-		}
-	}
-
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(E::GPU_SKIN_MESH_CONSTANTS) })))
@@ -292,6 +284,19 @@ HRESULT CGameInstanceInitLoader::LoadBufferConstant()
 		{
 			return E_FAIL;
 		}
+	}
+
+	// CPU/CPU+GPU evaluation 전용 bone palette.
+	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX",E::CResStructuredBuffer::Create()))
+	{
+		E::CResStructuredBuffer::DESC Desc{};
+		Desc.iNumElements = 512 * 512;
+		Desc.iStructureByteStride = sizeof(_float4x4);
+		Desc.pInitialData = nullptr;
+		Desc.bAppendConsume = false;
+		Desc.iBindFlags = D3D11_BIND_SHADER_RESOURCE;
+		if (FAILED(res->Load(Desc)))
+			return E_FAIL;
 	}
 
 	// UI용
@@ -400,6 +405,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		return E_FAIL;
 	}
 
+	if (CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_Component_StateMachine", CStateMachine::Create()))
+	{
+		return E_FAIL;
+	}
 
 	// 피직스관련
 	{
@@ -904,6 +913,18 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 HRESULT CGameInstanceInitLoader::LoadShader()
 {
 	//ShaderFiles
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_VS_TERRAIN,
+		"./ShaderFiles/Terrain/Shader_Terrain.hlsl"))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PS_TERRAIN,
+		"./ShaderFiles/Terrain/Shader_Terrain.hlsl"))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTex", "./ShaderFiles/QuadTex/QuadTex.hlsl"))
 	{
 		if (FAILED(res->Load()))
@@ -1029,6 +1050,13 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_CPU_GPU_Skinning", "./ShaderFiles/TestModel/Shader_CPU_GPU_Skinning_Compute.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
 	{
@@ -1050,6 +1078,15 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MiniMap", "./ShaderFiles/UI/MiniMap.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_MiniMap", "./ShaderFiles/UI/MiniMap.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+
 
 
 	// model shader
@@ -1092,7 +1129,18 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
-
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_GPU", "./ShaderFiles/TestModel/Shader_VtxAnimMesh_CPU_GPU.hlsl"))
+		{
+			if (FAILED(res->Load()))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced","./ShaderFiles/TestModel/Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl"))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim", "./ShaderFiles/TestModel/Shader_VtxAnimMesh.hlsl"))
 		{

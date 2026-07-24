@@ -8,6 +8,24 @@ int main(int argc, char* argv[])
 {
 	shared_ptr<CImporter> import = make_shared<CImporter>();
 
+	// Targeted static conversion used by the verified asset pipeline.
+	// The input directory must be named Static so the existing output layout is
+	// preserved: <root>/Models/Static/<model>.bin.
+	if (argc > 1 && std::string(argv[1]) == "--static-folder")
+	{
+		if (argc != 3)
+		{
+			cerr << "Usage: Model_Binarization.exe --static-folder <OriginData/Static>\n";
+			return 1;
+		}
+		if (FAILED(import->ImportFBXFolder("", argv[2])))
+		{
+			cerr << "Static-folder conversion failed.\n";
+			return 1;
+		}
+		return 0;
+	}
+
 	// Dedicated whole-map conversion. The existing no-argument batch behavior is
 	// intentionally kept unchanged.
 	// Model_Binarization.exe --whole-map <input.fbx> <output-dir> <chunk-size>

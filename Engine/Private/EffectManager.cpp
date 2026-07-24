@@ -19,11 +19,185 @@ CEffectManager::~CEffectManager()
 
 void CEffectManager::UpdateGUI()
 {
+	static EFFECT_PRESET preset{};
+	static std::string savePath = "../../Resources/json/Effect/NewEffect.json";
+	static int removeCommandIndex = -1;
+
 	ImGui::Begin("Effect Manager");
 
-	ImGui::Text(
-		"Active Effects: %zu",
-		m_Instances.size());
+	InputText("Effect Name", preset.sEffectName);
+	InputText("Save Path", savePath);
+	ImGui::InputFloat("Effect Duration", &preset.fDuration);
+
+	ImGui::Separator();
+
+	if (ImGui::Button("Add Particle"))
+	{
+		EFFECT_COMMAND command{};
+		command.eType = EFFECT_COMMAND_TYPE::PARTICLE;
+		command.data = EFFECT_PARTICLE_COMMAND{};
+		command.fSpawnDelay = 0.f;
+
+		preset.vecCommands.push_back(std::move(command));
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Add Light"))
+	{
+		EFFECT_COMMAND command{};
+		command.eType = EFFECT_COMMAND_TYPE::LIGHT;
+		command.data = EFFECT_LIGHT_COMMAND{};
+		command.fSpawnDelay = 0.f;
+
+		preset.vecCommands.push_back(std::move(command));
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Add Sound"))
+	{
+		EFFECT_COMMAND command{};
+		command.eType = EFFECT_COMMAND_TYPE::SOUND;
+		command.data = EFFECT_SOUND_COMMAND{};
+		command.fSpawnDelay = 0.f;
+
+		preset.vecCommands.push_back(std::move(command));
+	}
+
+	ImGui::Separator();
+
+	for (int i = 0; i < static_cast<int>(preset.vecCommands.size()); ++i)
+	{
+		EFFECT_COMMAND& command = preset.vecCommands[i];
+
+		ImGui::PushID(i);
+
+		switch (command.eType)
+		{
+		case EFFECT_COMMAND_TYPE::PARTICLE:
+		{
+			EFFECT_PARTICLE_COMMAND* particle =
+				std::get_if<EFFECT_PARTICLE_COMMAND>(&command.data);
+
+			if (!particle)
+				break;
+
+			if (ImGui::CollapsingHeader("Particle Command", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				InputText("Command Name", particle->sCommandName);
+				InputText("Particle JSON", particle->sParticleJson);
+				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
+
+				if (ImGui::Button("Remove Particle"))
+					removeCommandIndex = i;
+			}
+
+			break;
+		}
+
+		case EFFECT_COMMAND_TYPE::LIGHT:
+		{
+			EFFECT_LIGHT_COMMAND* light =
+				std::get_if<EFFECT_LIGHT_COMMAND>(&command.data);
+
+			if (!light)
+				break;
+
+			if (ImGui::CollapsingHeader("Light Command", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				InputText("Command Name", light->sCommandName);
+				InputText("Light Preset Name", light->sLightPresetName);
+
+				ImGui::InputFloat3("Local Position", &light->vLocalPosition.x);
+				ImGui::InputFloat3("Velocity", &light->vVelocity.x);
+				ImGui::ColorEdit3("Color", &light->vColor.x);
+
+				ImGui::InputFloat("Intensity", &light->fIntensity);
+				ImGui::InputFloat("Range", &light->fRange);
+				ImGui::InputFloat("Duration", &light->fDuration);
+				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
+
+				if (ImGui::Button("Remove Light"))
+					removeCommandIndex = i;
+			}
+
+			break;
+		}
+
+		case EFFECT_COMMAND_TYPE::SOUND:
+		{
+			EFFECT_SOUND_COMMAND* sound =
+				std::get_if<EFFECT_SOUND_COMMAND>(&command.data);
+
+			if (!sound)
+				break;
+
+			if (ImGui::CollapsingHeader("Sound Command", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				InputText("Command Name", sound->sCommandName);
+
+				std::string soundPath(
+					sound->sSoundPath.begin(),
+					sound->sSoundPath.end());
+
+				if (InputText("Sound Path", soundPath))
+				{
+					sound->sSoundPath = _string(
+						soundPath.begin(),
+						soundPath.end());
+				}
+
+				ImGui::InputFloat3("Local Position", &sound->vLocalPosition.x);
+				ImGui::InputFloat("Volume", &sound->fVolume);
+				ImGui::InputFloat("Min Distance", &sound->fMinDistance);
+				ImGui::InputFloat("Max Distance", &sound->fMaxDistance);
+				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
+
+				ImGui::Checkbox("Loop", &sound->bLoop);
+
+				if (ImGui::Button("Remove Sound"))
+					removeCommandIndex = i;
+			}
+
+			break;
+		}
+
+		default:
+			ImGui::Text("Invalid Effect Command");
+
+			if (ImGui::Button("Remove Invalid Command"))
+				removeCommandIndex = i;
+
+			break;
+		}
+
+		ImGui::Separator();
+		ImGui::PopID();
+	}
+
+	if (removeCommandIndex >= 0 &&
+		removeCommandIndex < static_cast<int>(preset.vecCommands.size()))
+	{
+		preset.vecCommands.erase(
+			preset.vecCommands.begin() + removeCommandIndex);
+
+		removeCommandIndex = -1;
+	}
+
+	if (ImGui::Button("Save Effect Preset"))
+	{
+		if (FAILED(SaveEffectPreset(savePath, preset)))
+			MSG_BOX("Failed to save effect preset");
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Clear Editor"))
+		preset = EFFECT_PRESET{};
+
+	ImGui::Text("Command Count: %zu", preset.vecCommands.size());
+	ImGui::Text("Active Effects: %zu", m_Instances.size());
 
 	ImGui::End();
 }
@@ -40,25 +214,7 @@ void CEffectManager::Update(_float fTimeDelta)
 	RemoveFinishedInstances();
 }
 
-HRESULT CEffectManager::AddPreset(
-	EFFECT_PRESET preset)
-{
-	if (preset.sEffectName.empty())
-		return E_FAIL;
 
-	std::sort(preset.vecCommands.begin(),preset.vecCommands.end(),
-		[](const EFFECT_COMMAND& lhs,
-			const EFFECT_COMMAND& rhs)
-		{
-			return lhs.fSpawnDelay <
-				rhs.fSpawnDelay;
-		});
-
-	m_Presets[preset.sEffectName] =
-		std::move(preset);
-
-	return S_OK;
-}
 
 HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT_PRESET& preset)
 {
@@ -206,9 +362,6 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 				{ "volume",
 					sound.fVolume },
 
-				{ "pitch",
-					sound.fPitch },
-
 				{ "minDistance",
 					sound.fMinDistance },
 
@@ -220,9 +373,6 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 
 				{ "loop",
 					sound.bLoop },
-
-				{ "is3D",
-					sound.b3D }
 				});
 
 			break;
@@ -248,6 +398,213 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 
 HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 {
+	if (strPath.empty())
+		return E_FAIL;
+
+	std::ifstream file(strPath);
+
+	if (!file.is_open())
+		return E_FAIL;
+
+	try
+	{
+		nlohmann::json json;
+		file >> json;
+
+		if (!json.is_object() ||
+			!json.contains("effectName") ||
+			!json.contains("duration") ||
+			!json.contains("commands"))
+		{
+			return E_FAIL;
+		}
+
+		if (!json["effectName"].is_string() ||
+			!json["duration"].is_number() ||
+			!json["commands"].is_array())
+		{
+			return E_FAIL;
+		}
+
+		EFFECT_PRESET loadedPreset{};
+
+		loadedPreset.sEffectName = json["effectName"].get<std::string>();
+		loadedPreset.fDuration = json["duration"].get<_float>();
+
+		if (loadedPreset.sEffectName.empty())
+			return E_FAIL;
+
+		for (const nlohmann::json& commandJson : json["commands"])
+		{
+			if (!commandJson.is_object() ||
+				!commandJson.contains("type") ||
+				!commandJson["type"].is_string())
+			{
+				return E_FAIL;
+			}
+
+			const std::string commandType = commandJson["type"].get<std::string>();
+
+			EFFECT_COMMAND command{};
+
+			if (commandJson.contains("spawnDelay"))
+				command.fSpawnDelay = commandJson["spawnDelay"].get<_float>();
+
+			if (commandType == "PARTICLE")
+			{
+				EFFECT_PARTICLE_COMMAND particle{};
+
+				command.eType = EFFECT_COMMAND_TYPE::PARTICLE;
+
+				if (commandJson.contains("commandName"))
+					particle.sCommandName = commandJson["commandName"].get<std::string>();
+
+				if (commandJson.contains("particleJson"))
+					particle.sParticleJson = commandJson["particleJson"].get<std::string>();
+
+				if (particle.sParticleJson.empty())
+					return E_FAIL;
+
+				command.data = std::move(particle);
+			}
+			else if (commandType == "LIGHT")
+			{
+				EFFECT_LIGHT_COMMAND light{};
+
+				command.eType = EFFECT_COMMAND_TYPE::LIGHT;
+
+				if (commandJson.contains("commandName"))
+					light.sCommandName = commandJson["commandName"].get<std::string>();
+
+				if (commandJson.contains("lightPresetName"))
+					light.sLightPresetName = commandJson["lightPresetName"].get<std::string>();
+
+				if (commandJson.contains("localPosition"))
+				{
+					const auto& position = commandJson["localPosition"];
+
+					if (!position.is_array() || position.size() != 3)
+						return E_FAIL;
+
+					light.vLocalPosition = {
+						position[0].get<_float>(),
+						position[1].get<_float>(),
+						position[2].get<_float>()
+					};
+				}
+
+				if (commandJson.contains("velocity"))
+				{
+					const auto& velocity = commandJson["velocity"];
+
+					if (!velocity.is_array() || velocity.size() != 3)
+						return E_FAIL;
+
+					light.vVelocity = {
+						velocity[0].get<_float>(),
+						velocity[1].get<_float>(),
+						velocity[2].get<_float>()
+					};
+				}
+
+				if (commandJson.contains("color"))
+				{
+					const auto& color = commandJson["color"];
+
+					if (!color.is_array() || color.size() != 3)
+						return E_FAIL;
+
+					light.vColor = {
+						color[0].get<_float>(),
+						color[1].get<_float>(),
+						color[2].get<_float>()
+					};
+				}
+
+				if (commandJson.contains("intensity"))
+					light.fIntensity = commandJson["intensity"].get<_float>();
+
+				if (commandJson.contains("range"))
+					light.fRange = commandJson["range"].get<_float>();
+
+				if (commandJson.contains("duration"))
+					light.fDuration = commandJson["duration"].get<_float>();
+
+				command.data = std::move(light);
+			}
+			else if (commandType == "SOUND")
+			{
+				EFFECT_SOUND_COMMAND sound{};
+
+				command.eType = EFFECT_COMMAND_TYPE::SOUND;
+
+				if (commandJson.contains("commandName"))
+					sound.sCommandName = commandJson["commandName"].get<std::string>();
+
+				if (commandJson.contains("soundPath"))
+				{
+					const std::string soundPath = commandJson["soundPath"].get<std::string>();
+					sound.sSoundPath = _string(soundPath.begin(), soundPath.end());
+				}
+
+				if (commandJson.contains("localPosition"))
+				{
+					const auto& position = commandJson["localPosition"];
+
+					if (!position.is_array() || position.size() != 3)
+						return E_FAIL;
+
+					sound.vLocalPosition = {
+						position[0].get<_float>(),
+						position[1].get<_float>(),
+						position[2].get<_float>()
+					};
+				}
+
+				if (commandJson.contains("volume"))
+					sound.fVolume = commandJson["volume"].get<_float>();
+
+				if (commandJson.contains("minDistance"))
+					sound.fMinDistance = commandJson["minDistance"].get<_float>();
+
+				if (commandJson.contains("maxDistance"))
+					sound.fMaxDistance = commandJson["maxDistance"].get<_float>();
+
+				if (commandJson.contains("loop"))
+					sound.bLoop = commandJson["loop"].get<_bool>();
+
+				if (sound.sSoundPath.empty())
+					return E_FAIL;
+
+				command.data = std::move(sound);
+			}
+			else
+			{
+				return E_FAIL;
+			}
+
+			loadedPreset.vecCommands.push_back(std::move(command));
+		}
+
+		std::stable_sort(
+			loadedPreset.vecCommands.begin(),
+			loadedPreset.vecCommands.end(),
+			[](const EFFECT_COMMAND& lhs, const EFFECT_COMMAND& rhs)
+			{
+				return lhs.fSpawnDelay < rhs.fSpawnDelay;
+			});
+
+		return AddPreset(std::move(loadedPreset));
+	}
+	catch (const nlohmann::json::exception&)
+	{
+		return E_FAIL;
+	}
+	catch (const std::exception&)
+	{
+		return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -680,6 +1037,24 @@ _bool CEffectManager::MakeNoScaleWorldMatrix(
 		noScaleMatrix);
 
 	return true;
+}
+
+HRESULT CEffectManager::AddPreset(EFFECT_PRESET&& preset)
+{
+	if (preset.sEffectName.empty()) {
+		MSG_BOX("Failed to add Preset: Effect Name is Empty");
+		return E_FAIL;
+	}
+
+	auto iter = m_Presets.find(preset.sEffectName);
+	if (iter != m_Presets.end())
+	{
+		MSG_BOX("Failed to add Preset: Duplicate Effect Name");
+		return E_FAIL;
+	}
+	m_Presets.emplace(preset.sEffectName, std::move(preset));
+
+	return S_OK;
 }
 
 UPtr<CEffectManager>

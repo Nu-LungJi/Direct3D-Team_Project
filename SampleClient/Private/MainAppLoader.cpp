@@ -341,13 +341,10 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 	}
 
 	{
-		//auto FilePathStorage = Load_FilePath_ByExtension("./Resources/json/Particle/", ".json");
-
-		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
-		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Core_RC.json");
-		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Core_GC.json");
-		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Core_BC.json");
-		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Particle.json");
+		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
+		CGameInstance::Get().Load_ParticleJsonPackage(k);
+		//CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Texture.json");
+		//CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Particle.json");
 		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 	}
 	return S_OK;

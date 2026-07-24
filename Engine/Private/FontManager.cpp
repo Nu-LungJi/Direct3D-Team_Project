@@ -19,6 +19,89 @@ void CFontManager::UpdateGUI()
 {
 }
 
+void CFontManager::Render3DFont()
+{
+	if (m_vecRender3D.empty())
+		return;
+
+	// 1. 블렌드 스테이트 가져오기 (기존 2D 코드와 동일)
+	auto Alphablend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	ComPtr<ID3D11BlendState> pAlphaBlend = Alphablend->GetBlendState();
+
+	// 2. 파이프라인 이전 상태 백업 (SpriteBatch가 덮어씌우는 것을 방지)
+	ComPtr<ID3D11BlendState>        pPrevBlendState;
+	FLOAT                           prevBlendFactor[4];
+	UINT                            prevSampleMask;
+	ComPtr<ID3D11DepthStencilState> pPrevDepthStencilState;
+	UINT                            prevStencilRef;
+	ComPtr<ID3D11RasterizerState>   pPrevRasterizerState;
+	ComPtr<ID3D11SamplerState>      pPrevSamplerState;
+
+	m_pContext->OMGetBlendState(&pPrevBlendState, prevBlendFactor, &prevSampleMask);
+	m_pContext->OMGetDepthStencilState(&pPrevDepthStencilState, &prevStencilRef);
+	m_pContext->RSGetState(&pPrevRasterizerState);
+	m_pContext->PSGetSamplers(0, 1, &pPrevSamplerState);
+
+	// 3. SpriteBatch의 2D 직교 투영을 무효화할 역행렬 계산 (1회만 계산)
+	float w = (float)CGameInstance::Get().GetClientScreenSize().x;
+	float h = (float)CGameInstance::Get().GetClientScreenSize().y;
+
+	_matrix matOrtho = XMMatrixOrthographicOffCenterRH(0.f, w, h, 0.f, 0.f, 1.f);
+	_matrix matOrthoInv = XMMatrixInverse(nullptr, matOrtho);
+
+	auto RasterizerState = E::CGameInstance::Get().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	ComPtr<ID3D11RasterizerState> pCullNoneState = RasterizerState ? RasterizerState->GetRasterizerState() : nullptr;
+
+	// 4. 예약된 3D 텍스트들을 순회하며 렌더링
+	for (const auto& desc : m_vecRender3D)
+	{
+		// CResFontCustom 가져오기
+		auto font = CGameInstance::Get().GetResourceFirst<CResFontCustom>("FONT", desc.sFontTag);
+		if (font == nullptr)
+			continue;
+
+		// 3D WVP 행렬 * 2D 역행렬 적용
+		_matrix matWVP = XMLoadFloat4x4(&desc.matWVP);
+		_matrix finalTransform = matWVP * matOrthoInv;
+
+		// Begin의 7번째 매개변수에 우리가 만든 3D 변환 행렬을 넘겨줍니다.
+		m_pBatch->Begin(
+			DirectX::SpriteSortMode_Deferred,
+			pAlphaBlend.Get(),  // 블렌드 상태 적용
+			nullptr, nullptr, pCullNoneState.Get(), nullptr,
+			finalTransform      // 3D 행렬 적용
+		);
+
+		//font->GetFont()->DrawString(
+		//	m_pBatch.get(),
+		//	desc.sText.c_str(),
+		//	XMFLOAT2(0.f, 0.f), // 위치는 행렬에 포함되어 있으므로 0,0
+		//	XMLoadFloat4(&desc.vColor),
+		//	0.f,                // 회전도 행렬에 포함
+		//	desc.vPivot,
+		//	1.f                 // 스케일도 행렬에 포함
+		//);
+
+		font->GetFont()->DrawString(
+			m_pBatch.get(),
+			L"TEST",
+			XMFLOAT2(100, 100),
+			Colors::White);
+
+		m_pBatch->End();
+	}
+
+	// 5. 렌더링 큐 비우기
+	m_vecRender3D.clear();
+
+	// 6. 파이프라인 상태 원상 복구 (기존 2D 코드와 동일)
+	m_pContext->OMSetBlendState(pPrevBlendState.Get(), prevBlendFactor, prevSampleMask);
+	m_pContext->OMSetDepthStencilState(pPrevDepthStencilState.Get(), prevStencilRef);
+	m_pContext->RSSetState(pPrevRasterizerState.Get());
+	ID3D11SamplerState* ppSamplers[] = { pPrevSamplerState.Get() };
+	m_pContext->PSSetSamplers(0, 1, ppSamplers);
+}
+
 void CFontManager::Draw(const StringID& fontName, const _tchar* pText, const _float2& vPosition, float fScale, _fvector vColor, _float fRotation, const _float2& vOrigin)
 {
     if (auto font = CGameInstance::Get().GetResourceFirst<CResFontCustom>("FONT", fontName))
@@ -64,6 +147,18 @@ _float2 CFontManager::MeasureString(const StringID& fontName, const wchar_t* txt
     return { 0.f, 0.f };
 }
 
+void CFontManager::FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot)
+{
+	FONT_DESC_3D desc;
+	desc.sFontTag = fontTag;
+	desc.sText = text;
+	XMStoreFloat4x4(&desc.matWVP, matWVP);
+	XMStoreFloat4(&desc.vColor, color);
+	desc.vPivot = pivot;
+
+	m_vecRender3D.push_back(desc);
+}
+
 void CFontManager::LateDraw(RENDERGROUP eRenderGroup)
 {
 	//std::unique_ptr<DirectX::CommonStates> states = std::make_unique<DirectX::CommonStates>(m_pDevice);
@@ -106,13 +201,6 @@ void CFontManager::LateDraw(RENDERGROUP eRenderGroup)
 
 
     {
-        //m_pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
-		//
-        //// 2. 깊이/스텐실 스테이트 복구 (3D 렌더링을 위해 다시 켜기)
-        //m_pContext->OMSetDepthStencilState(nullptr, 0); // 엔진 내 기본 DepthStencilState가 있다면 nullptr 대신 그걸 대입
-		//
-        //// 3. 래스터라이저 스테이트 복구 (CullMode 등을 다시 원래대로)
-        //m_pContext->RSSetState(nullptr); // 엔진 내 기본 RasterizerState가 있다면 대입
 		m_pContext->OMSetBlendState(pPrevBlendState.Get(), prevBlendFactor, prevSampleMask);
 		m_pContext->OMSetDepthStencilState(pPrevDepthStencilState.Get(), prevStencilRef);
 		m_pContext->RSSetState(pPrevRasterizerState.Get());

@@ -34,6 +34,7 @@ HRESULT CMapPickingPass::Initialize()
 	m_ReadbackTexture.Reset();
 	m_pPickingCBuffer.Reset();
 	m_pPickingContext.Reset();
+	m_pRsState.Reset();
 
 	m_pDevice = E::CGameInstance::Get().GetGraphicDevice();
 	m_pContext = E::CGameInstance::Get().GetGraphicDeviceContext();
@@ -116,6 +117,16 @@ HRESULT CMapPickingPass::Initialize()
 		return E_FAIL;
 	}
 
+	D3D11_RASTERIZER_DESC rsDesc{};
+	ZeroMemory(&rsDesc, sizeof(rsDesc));
+	rsDesc.FillMode = D3D11_FILL_SOLID;
+	rsDesc.CullMode = D3D11_CULL_NONE;
+	rsDesc.FrontCounterClockwise = FALSE;
+	rsDesc.DepthClipEnable = TRUE;
+
+	if (FAILED(m_pDevice->CreateRasterizerState(&rsDesc, m_pRsState.GetAddressOf())))
+		return E_FAIL;
+
 	m_pPickingVS = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(
 		PICKING_SHADER_GROUP, PICKING_VS_TAG);
 	m_pPickingPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
@@ -125,6 +136,7 @@ HRESULT CMapPickingPass::Initialize()
 	{
 		return E_FAIL;
 	}
+
 
 	return S_OK;
 }
@@ -218,7 +230,8 @@ HRESULT CMapPickingPass::RenderMapMeshObjectID(ID3D11DeviceContext* context)
 	viewport.MaxDepth = 1.f;
 	context->RSSetViewports(1, &viewport);
 
-	context->RSSetState(nullptr);
+
+	context->RSSetState(m_pRsState.Get());
 	context->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 	context->OMSetDepthStencilState(nullptr, 0);
 	context->GSSetShader(nullptr, nullptr, 0);

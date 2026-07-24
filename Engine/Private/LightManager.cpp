@@ -373,9 +373,13 @@ HRESULT CLightManager::Capture_ShadowMap() {
 
 HRESULT CLightManager::Render_ObjectShadow() {
 	ZoneScopedN("Render_ObjectShadow");
-	{
-		if (nullptr == m_pUAVComBinedOutput) return E_FAIL;
 
+	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
+	if (nullptr == ActiveCamera) return E_FAIL;
+
+	if (nullptr == m_pUAVComBinedOutput) return E_FAIL;
+
+	{
 		ID3D11UnorderedAccessView* UAV[1] = { m_pUAVComBinedOutput->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, UAV, nullptr);
 
@@ -384,10 +388,6 @@ HRESULT CLightManager::Render_ObjectShadow() {
 		m_pContext->RSSetViewports(1, &m_pDirectionalShadowViewPort->GetViewPort());
 	}
 	
-
-	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
-	if (nullptr == ActiveCamera) return E_FAIL;
-
 	XMMATRIX InvViewProj = XMMatrixMultiply(XMMatrixInverse(nullptr, ActiveCamera->GetView()), XMMatrixInverse(nullptr, ActiveCamera->GetProj()));
 
 	uint32_t LightCount = 0;

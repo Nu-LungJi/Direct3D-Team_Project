@@ -129,7 +129,44 @@ void CLevelAnimEditor::UpdateGUI()
 	ImGui::Begin("LEVEL: CLevelAnimEditor");
 
 
-	if (ImGui::Button("Spawn TestModel x10"))
+	if (ImGui::Button("Spawn GPU / CPU+GPU Compare"))
+	{
+		struct COMPARE_DESC
+		{
+			const char* Label;
+			CComAnimator::EVALUATION_MODE Mode;
+			_float3 Position;
+		};
+
+		const COMPARE_DESC CompareModels[] =
+		{
+			{ "GPU",     CComAnimator::EVALUATION_MODE::GPU,     { -1.5f, 0.f, 0.f } },
+			{ "CPU+GPU", CComAnimator::EVALUATION_MODE::CPU_GPU, {  1.5f, 0.f, 0.f } },
+		};
+
+		for (const COMPARE_DESC& compare : CompareModels)
+		{
+			CTestModel::DESC Desc{};
+			Desc.sObjectTag = "AnimCompare_" + std::string(compare.Label) + "_" + std::to_string(iTestCount++);
+
+			auto addedObject = E::CGameInstance::Get().AddGameObjectToLayer(
+				"LEVEL_TEST", "Prototype_GameObject_TestModel", "TestModelLayer", &Desc);
+			if (!addedObject)
+				continue;
+
+			auto* pModel = CGameInstance::Get().GetGameObjectByHandle(addedObject.value());
+			if (!pModel)
+				continue;
+
+			pModel->GetTransform().SetPosition(compare.Position);
+			if (auto* pAnimator = pModel->GetComponent<CComAnimator>("ComCModelAnimator"))
+			{
+				pAnimator->SetEvaluationMode(compare.Mode);
+				pAnimator->Play_Anim(1, true, 0.2f);
+			}
+		}
+	}
+if (ImGui::Button("Spawn TestModel x10"))
 	{
 	
 

@@ -8,7 +8,7 @@ CBTHitAnimMonster::CBTHitAnimMonster()
 {
 
 }
-CBTHitAnimMonster::CBTHitAnimMonster(const CBTHitAnimMonster& rhs) : CBTActionNode(rhs)
+CBTHitAnimMonster::CBTHitAnimMonster(const CBTHitAnimMonster& rhs) : CBTAnimRoot(rhs)
 {
 
 }
@@ -20,7 +20,6 @@ CBTHitAnimMonster::~CBTHitAnimMonster()
 HRESULT CBTHitAnimMonster::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
-	m_eGroup = NODEGROUP::ANIMATION;
 	m_MasterName = "BTHitAnimMonster";
 	return S_OK;
 }
@@ -52,7 +51,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
-
+		Active_Skill();
 		_bool bFinished = pAnimator->GetFinish();
 
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
@@ -90,23 +89,9 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 }
 void CBTHitAnimMonster::Update_Gui()
 {
+	__super::Update_Gui();
 	ImGui::Text("Move Speed");
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
-
-	ImGui::Text("StartRatio");
-	ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f, 1.f);
-	ImGui::Text("EndRatio");
-	ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
-
-	if (ImGui::Button("Enable Ratio : "))
-		m_bRatio = !m_bRatio;
-	ImGui::SameLine(110.f);
-	m_bRatio == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
-
-	if (ImGui::Button("Loop Change"))
-		m_bLoop = !m_bLoop;
-	ImGui::Text("Loop : "); ImGui::SameLine(50.f);
-	m_bLoop == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
 
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -255,21 +240,17 @@ void CBTHitAnimMonster::Update_Gui()
 }
 void CBTHitAnimMonster::Abort()
 {
-	m_bStart = true;
-	m_iLoopCnt = 0;
+	__super::Abort();
 }
 nlohmann::json CBTHitAnimMonster::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	SaveJsonValue(j, "Loop", m_bLoop);
-	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 
 	SaveJsonValue(j, "StartFlag", m_iStartFlag);
 	SaveJsonValue(j, "EndFlag", m_iEndFlag);
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 
 	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
@@ -289,13 +270,10 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	LoadJsonValue(j, "Loop", m_bLoop);
-	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 
 	LoadJsonValue(j, "StartFlag", m_iStartFlag);
 	LoadJsonValue(j, "EndFlag", m_iEndFlag);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 
 	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{

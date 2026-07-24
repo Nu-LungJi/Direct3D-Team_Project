@@ -45,15 +45,12 @@ struct EFFECT_SOUND_COMMAND
 	_float3 vLocalPosition{};
 
 	_float fVolume = 1.f;
-	_float fPitch = 1.f;
-
 	_float fMinDistance = 1.f;
 	_float fMaxDistance = 50.f;
 
 	_float fSpawnDelay = 0.f;
 
 	_bool bLoop = false;
-	_bool b3D = true;
 };
 
 using EffectCommandVariant = std::variant<EFFECT_PARTICLE_COMMAND, EFFECT_LIGHT_COMMAND, EFFECT_SOUND_COMMAND>;

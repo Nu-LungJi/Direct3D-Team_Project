@@ -11,11 +11,24 @@ public:
 	DECLARE_DERIVED_TYPE(CPhysXCollisionProxyEditor, CEngineBase)
 
 private:
+	enum class DEBUG_DRAW_MODE : uint8_t
+	{
+		WIRE,
+		SOLID,
+		SOLID_WIRE
+	};
+
 	struct SNAPSHOT
 	{
 		std::vector<PX_COLLISION_PROXY_ACTOR> actors{};
 		std::optional<uint64_t> selectedActorID{};
 		std::optional<uint64_t> selectedShapeID{};
+	};
+
+	struct COOKED_MESH_DEBUG_DATA
+	{
+		std::vector<_float3> vertices{};
+		std::vector<uint32_t> indices{};
 	};
 
 private:
@@ -39,13 +52,20 @@ private:
 	void DrawLayerSelector(const char* label, uint32_t& layer) const;
 	void DrawLayerMaskSelector(const char* label, uint32_t& mask) const;
 	void DrawDebugShapes();
+	const COOKED_MESH_DEBUG_DATA* GetOrBuildCookedMeshDebugData(
+		PX_COLLISION_PROXY_SHAPE_TYPE eType, const std::string& path);
 	void RenderGizmo();
 	void HandleSceneInput();
 	void CreateActor(const _float3& position = {});
 	void CreateShapeAtCamera(PX_COLLISION_PROXY_SHAPE_TYPE eType);
+	void CreateCylinderAtCamera();
+	void CreateOctagonalPrismAtCamera();
+	void CreateWedgeAtCamera();
+	void MoveSelectedShapeToActor(uint64_t iTargetActorID);
 	void DuplicateSelected();
 	void DeleteSelected();
 	void SelectAtMouse();
+	void SnapSelectedShapeAtMouse();
 	_bool MakeMouseRay(_float3& outOrigin, _float3& outDirection) const;
 	PX_COLLISION_PROXY_ACTOR* GetSelectedActor();
 	const PX_COLLISION_PROXY_ACTOR* GetSelectedActor() const;
@@ -68,9 +88,18 @@ private:
 	_bool m_bEditMode{};
 	_bool m_bVisible{ true };
 	_bool m_bDepthTest{ true };
+	_bool m_bSolidDepthBias{ true };
 	_bool m_bEditCollisionFileName{};
 	_bool m_bWasUsingGizmo{};
 	PX_COLLISION_PROXY_SHAPE_TYPE m_eCreateShapeType{ PX_COLLISION_PROXY_SHAPE_TYPE::BOX };
+	DEBUG_DRAW_MODE m_eDebugDrawMode{ DEBUG_DRAW_MODE::SOLID_WIRE };
+	_float m_fSolidAlpha{ 0.25f };
+	_bool m_bSnapEnabled{};
+	_float m_fTranslationSnap{ 0.5f };
+	_float m_fRotationSnap{ 15.f };
+	_float m_fScaleSnap{ 0.1f };
+	_bool m_bSurfaceSnapMode{};
+	_float m_fSurfaceSnapGap{ 0.002f };
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	ImGuizmo::MODE m_GizmoMode{ ImGuizmo::WORLD };
 	std::vector<SNAPSHOT> m_UndoStack{};
@@ -78,6 +107,7 @@ private:
 	std::vector<std::pair<uint32_t, std::string>> m_CollisionLayerNames{};
 	std::optional<SNAPSHOT> m_GizmoStartSnapshot{};
 	std::vector<CHandle> m_PhysicsPreviewHandles{};
+	std::unordered_map<std::string, COOKED_MESH_DEBUG_DATA> m_CookedMeshDebugCache{};
 	std::string m_Status{};
 	std::string m_ResultPopupMessage{};
 	_bool m_bOpenResultPopup{};

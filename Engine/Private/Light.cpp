@@ -127,7 +127,7 @@ VOID CLight::Update(E::_float _DT) {
 		XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
 		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
-		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(150.f, 150.f, 0.1f, 500.f));
+		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(500.f, 500.f, 0.1f, 1000.f));
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 
@@ -187,6 +187,8 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 		XMStoreFloat4x4(&pCbPerPass.matInvProj, XMMatrixInverse(nullptr, LightProjMatrix));
 		XMStoreFloat4x4(&pCbPerPass.matInvViewProj, XMMatrixInverse(nullptr, LightViewProj));
 		XMStoreFloat4x4(&pCbPerPass.matShadowLightViewProj, LightViewProj);
+		pCbPerPass.fDeltaTime = 0.f;
+		pCbPerPass.fTimeAccumulation = 0.f;
 
 		pCbPerPass.vCamPos = m_pComTransform->GetPosition();
 

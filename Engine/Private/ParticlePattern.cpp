@@ -139,25 +139,31 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
 		for (uint32_t i = 0; i < param.iCount; ++i)
 		{
 
-			PARTICLE_SPAWN_DATA& s = spawnList[i];
+			PARTICLE_SPAWN_DATA& s = spawnList[j * param.iCount + i];
 			_float fAngle = XM_2PI * (_float)i / (_float)param.iCount;
 
 			fAngle += E::Randf(param.vRandAngle.x, param.vRandAngle.y);
 
-			_float fSpeed = param.fSpeed * E::Randf(param.vRand.x, param.vRand.y);
+			_float fSpeed = param.fSpeed * E::Randf(param.vRandSpeed.x, param.vRandSpeed.y);
 			_float fY = param.vRot.y;
 			s.position = param.vCenter;
 			if (ETOUI(CParticle::BEHAVIOR_SMOKEGW) == param.iFlag)
 			{
 				_float iOffset = _float(j+1.f) * param.fRadius;
 				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
-				XMStoreFloat3(&s.velocity, radial * fSpeed);
-				XMStoreFloat3(&s.position, XMLoadFloat3(&param.vCenter) + radial * iOffset);
-				fY = XMConvertToDegrees(atan2f(XMVectorGetX(radial), XMVectorGetZ(radial)));
+				XMStoreFloat3(&s.velocity, radial * fSpeed );
+				fY += XMConvertToDegrees(atan2f(XMVectorGetX(radial), XMVectorGetZ(radial)));
+	
+			}else if (ETOUI(CParticle::BEHAVIOR_SMOKEJUMP) == param.iFlag)
+			{
+				s.position = param.vCenter;
+				s.velocity = _float3(0, E::Randf(param.vRandSpeed.x, param.vRandSpeed.y),0);
 			}
 			else
 			{
-				s.position = param.vCenter;
+				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
+				XMStoreFloat3(&s.position, XMLoadFloat3(&param.vCenter) + radial * param.fRadius);
+				
 				s.velocity = _float3(
 					cosf(fAngle) * fSpeed,
 					0,
@@ -165,15 +171,14 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
 				);
 			}
 
-			s.rotation = _float4(XMConvertToRadians(param.vRot.x), XMConvertToRadians(fY), XMConvertToRadians(param.vRot.z), 0);
+			s.rotation = _float4(XMConvertToRadians(param.vRot.x), XMConvertToRadians(fY), XMConvertToRadians(param.vRot.z) , 0);
 			s.life = param.fLife * E::Randf(param.vRandLife.x, param.vRandLife.y);
 			XMStoreFloat3(&s.fSize, XMLoadFloat3(&param.fSize) * E::Randf(param.vRandSize.x, param.vRandSize.y));
 			s.position.y += param.fYOffset;
 			s.fEndSize = param.fEndSize;
 			s.color = param.color;
-			s.emissive = param.emissive;
+			s.color.w = param.color.w * E::Randf(param.vRandAlpha.x, param.vRandAlpha.y);
 			s.iBehaviorType = param.iBehaviorType;
-			s.originalEmissive = param.emissive;
 			s.originalPosition = param.vCenter;
 		}
 	}

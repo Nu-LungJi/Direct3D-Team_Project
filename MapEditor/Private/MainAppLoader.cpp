@@ -13,24 +13,6 @@ HRESULT CMainAppLoader::Load()
 	{
 		if (auto res = CGameInstance::Get().AddResource(
 			"MAP_EDITOR_SHADER",
-			"VS_VTX_NOR_TEX",
-			CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
-		{
-			if (FAILED(res->Load()))
-				return E_FAIL;
-		}
-
-		if (auto res = CGameInstance::Get().AddResource(
-			"MAP_EDITOR_SHADER",
-			"PS_VTX_NOR_TEX",
-			CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
-		{
-			if (FAILED(res->Load()))
-				return E_FAIL;
-		}
-
-		if (auto res = CGameInstance::Get().AddResource(
-			"MAP_EDITOR_SHADER",
 			"VS_MAP_PICKING",
 			CResVertexShader::Create("./ShaderFiles/MapPicking.hlsl")))
 		{
@@ -42,6 +24,24 @@ HRESULT CMainAppLoader::Load()
 			"MAP_EDITOR_SHADER",
 			"PS_MAP_PICKING",
 			CResPixelShader::Create("./ShaderFiles/MapPicking.hlsl")))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
+
+		if (auto res = CGameInstance::Get().AddResource(
+			"MAP_EDITOR_SHADER",
+			"VS_TERRAIN_PICKING",
+			CResVertexShader::Create("./ShaderFiles/TerrainPicking.hlsl")))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
+
+		if (auto res = CGameInstance::Get().AddResource(
+			"MAP_EDITOR_SHADER",
+			"PS_TERRAIN_PICKING",
+			CResPixelShader::Create("./ShaderFiles/TerrainPicking.hlsl")))
 		{
 			if (FAILED(res->Load()))
 				return E_FAIL;

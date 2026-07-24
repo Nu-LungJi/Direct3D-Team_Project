@@ -62,7 +62,7 @@ void CParticleManager::UpdateGUI()
 	static char szPresetName[128] = "";
 	static char szPresetSavePath[MAX_PATH] = "./Resources/json/Particle/Preset/ParticlePresets.json";
 	static const std::string kFbxListJsonPath = "./Resources/SampleClient/Models/ParticleModelJson/ParticleModel.json";
-	static const std::string kJsonFolder = "./Resources/json/Particle";
+	static const std::string kJsonFolder = "./Resources/json/Particle/ParticleData";
 
 	static std::vector<std::string> fbxFileList;
 	static bool bFbxScanned = false;
@@ -1384,7 +1384,7 @@ void CParticleManager::UpdateGUI()
 		uint32_t newOwnerId = ExecuteCommandQueue(m_vecCommandQueue);
 	}
 
-	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/SpawnQueue.json";
+	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/ParticleQueue/SpawnQueue.json";
 	ImGui::InputText("Queue Save Path", szQueueSavePath, IM_ARRAYSIZE(szQueueSavePath));
 
 	if (ImGui::Button("Save Queue"))
@@ -2915,7 +2915,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 {
 	std::vector<SPAWN_COMMAND> parsed;
 
-	std::string path = "./Resources/json/Particle/" + strJsonPath;
+	std::string path = "./Resources/json/Particle/ParticleQueue/" + strJsonPath;
 	std::ifstream file(path);
 	if (!file.is_open())
 		return parsed;
@@ -3250,6 +3250,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 			{
 				XMStoreFloat3(&p.vStartPos, vWorldOrigin);
 			}
+			else if constexpr (std::is_same_v<T, SMOKE>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
 		}, pv);
 }
 std::vector<std::string> CParticleManager::ScanBinFolder(const std::string& strBinFolder)
@@ -3315,4 +3319,44 @@ void CParticleManager::TransformOwner(uint32_t ownerId, const _float4x4& deltaMa
 			}
 		}
 	}
+}
+std::vector<std::string> CParticleManager::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension) {
+	std::vector<std::string> FilePathStorage{};
+	FilePathStorage.reserve(32);
+
+	{
+		namespace fs = std::filesystem;
+
+		std::error_code ErrorCode{};
+
+		if (fs::exists(_FolderPath) == false || fs::is_directory(_FolderPath) == false) {
+			std::wstring MSGContent = L"Invalid FolderPath : " + _FolderPath.wstring();
+			MessageBoxW(NULL, MSGContent.c_str(), L"System Message", MB_OK);
+
+			return FilePathStorage;      // Empty vector return
+		}
+		auto Optimization = fs::directory_options::skip_permission_denied;
+
+		fs::recursive_directory_iterator iterator(_FolderPath, Optimization, ErrorCode);
+		fs::recursive_directory_iterator End;
+
+		for (; iterator != End && !ErrorCode; iterator.increment(ErrorCode)) {
+			if (iterator->is_regular_file(ErrorCode)) {
+				const auto& FilePath = iterator->path();
+
+				if (FilePath.extension() == _Extension) {
+					FilePathStorage.push_back(FilePath.string());
+				}
+			}
+		}
+		return FilePathStorage;
+	}
+}
+
+HRESULT CParticleManager::Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage) {
+	if (_FilePathPackage.size() <= 0) return E_FAIL;
+	for (const auto& FilePath : _FilePathPackage) {
+		CGameInstance::Get().LoadParticleJson(FilePath.c_str());
+	}
+	return S_OK;
 }
