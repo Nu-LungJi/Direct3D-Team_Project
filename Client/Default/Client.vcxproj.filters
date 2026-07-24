@@ -82,6 +82,12 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
       <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Trigger">
+      <UniqueIdentifier>{83e632ef-a5bb-4406-876d-0a8b177adbdf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Trigger\CharlesRookwood">
+      <UniqueIdentifier>{9961a9a2-af7f-4c4f-ba27-7f11bb960aab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -165,6 +171,9 @@
     <ClInclude Include="..\Public\Player_Jump_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClInclude>
+    <ClInclude Include="TriggerCRW_SpawnStep.h">
+      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -239,6 +248,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Jump_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClCompile>
+    <ClCompile Include="TriggerCRW_SpawnStep.cpp">
+      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -8,6 +8,8 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Level_Defines.h"
 
+#include "TriggerCRW_SpawnStep.h"
+
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -58,6 +60,16 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				return false;
 			}
 
+			// 찰리스록우드맵 관련 트리거 프로토 타입
+			{
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep, CTriggerCRW_SpawnStep::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnStep");
+					return false;
+				}
+			}
+
 			return true;
 		});
 }
@@ -78,6 +90,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 			E::CGameInstance::Get().DelResource("MAPEDITOR");   E::CGameInstance::Get().DelResource(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
 
 			CGameInstance::Get().DelPrototype(LEVEL::CHARLES_ROOKWOOD);
+			CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep);
 
 			CGameInstance::Get().DelResource("MODEL");
 

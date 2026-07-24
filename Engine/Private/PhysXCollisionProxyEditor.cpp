@@ -386,6 +386,17 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	ImGui::SameLine();
 	ImGui::TextDisabled(!m_PhysicsPreviewHandles.empty() ? "Active (rebuild after edits)" : "Inactive");
 
+	ImGui::SetNextItemWidth(180.f);
+	ImGui::InputText("Loaded Collision Layer", m_LoadedCollisionLayerName,
+		std::size(m_LoadedCollisionLayerName));
+	if (ImGui::Button("Loaded Collision OFF", ImVec2(160.f, 0.f)))
+		SetLoadedCollisionEnabled(false);
+	ImGui::SameLine();
+	if (ImGui::Button("Loaded Collision ON", ImVec2(170.f, 0.f)))
+		SetLoadedCollisionEnabled(true);
+	ImGui::SameLine();
+	ImGui::TextDisabled(!m_LoadedCollisionHandles.empty() ? "Suspended" : "Active");
+
 	ImGui::Separator();
 	if (ImGui::Button("Add Actor")) CreateActor();
 	ImGui::SameLine();
@@ -1693,6 +1704,51 @@ void CPhysXCollisionProxyEditor::RemovePhysicsPreview()
 			preview->SetPendingDestroyCascade();
 	}
 	m_PhysicsPreviewHandles.clear();
+}
+
+void CPhysXCollisionProxyEditor::SetLoadedCollisionEnabled(_bool bEnabled)
+{
+	if (!bEnabled)
+	{
+		if (!m_LoadedCollisionHandles.empty())
+		{
+			m_Status = "Loaded collision is already suspended.";
+			return;
+		}
+
+		const auto* layer = CGameInstance::Get().GetGameObjectLayer(
+			m_LoadedCollisionLayerName);
+		if (!layer)
+		{
+			m_Status = std::string{ "Loaded collision layer not found: " } +
+				m_LoadedCollisionLayerName;
+			return;
+		}
+
+		for (const CHandle& handle : *layer)
+		{
+			auto* proxy = CGameInstance::Get()
+				.GetGameObjectByHandleT<CPhysXCollisionProxyObject>(handle);
+			if (proxy && proxy->SetCollisionEnabled(false))
+				m_LoadedCollisionHandles.push_back(handle);
+		}
+
+		m_Status = !m_LoadedCollisionHandles.empty()
+			? "Loaded collision suspended."
+			: "No collision proxy objects found in the target layer.";
+		return;
+	}
+
+	for (const CHandle& handle : m_LoadedCollisionHandles)
+	{
+		if (auto* proxy = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPhysXCollisionProxyObject>(handle))
+		{
+			proxy->SetCollisionEnabled(true);
+		}
+	}
+	m_LoadedCollisionHandles.clear();
+	m_Status = "Loaded collision restored.";
 }
 
 void CPhysXCollisionProxyEditor::QueueResultPopup(std::string message, _bool success)
