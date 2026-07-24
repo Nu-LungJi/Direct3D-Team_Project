@@ -22,14 +22,9 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	if (!player)
 		return;
 
-	m_bTurnPending = false;
-	m_bIdleTurning = false;
-	m_bJogTurning = false;
 	m_bJogStarting = false;
 	m_bJogStopping = false;
 	m_bWasMoving = false;
-	m_fTurnHoldTime = 0.f;
-	m_fJogTurnEntrySpeed = 0.f;
 	m_iActiveMoveLoopAnimation = -1;
 	player->SetMovementLocked(false);
 	player->SetRootMotionRotationActive(false);
@@ -50,30 +45,6 @@ void CPlayer_Locomotion_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	m_iIdleAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
-	m_LeftIdleTurns = {
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_45_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_90_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_135_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Lft_180_anm.bin")
-	};
-	m_RightIdleTurns = {
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_45_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_90_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_135_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_Turn_Rht_180_anm.bin")
-	};
-	m_LeftJogTurns = {
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn45_L_RU_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn90_L_RU_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn135_L_RU_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_Jog_FwdTurn180_L_RU_anm.bin")
-	};
-	m_RightJogTurns = {
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn45_R_RU_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn90_R_RU_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_JogFwdTurn135_R_RU_anm.bin"),
-		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_AD_BM_Jog_FwdTurn180_R_RU_anm.bin")
-	};
 	m_iJogStartForwardAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Start_Fwd_anm.bin");
@@ -106,137 +77,6 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	auto* pAnimator = player->GetAnimator();
 	if (!pMoveIntent || !pAnimator)
 		return;
-
-	if (m_bTurnPending)
-	{
-		pMoveIntent->ClearMoveIntent();
-		pMoveIntent->ClearFacingIntent();
-
-		if (!player->HasRawMoveInput())
-		{
-			m_bTurnPending = false;
-			BeginIdleTurn(
-				*player,
-				m_vTurnTargetDirection,
-				m_iPendingIdleTurnAnimation);
-			return;
-		}
-
-		m_fTurnHoldTime += fTimeDelta;
-		if (m_fTurnHoldTime >= m_fJogTurnHoldThreshold)
-		{
-			const _float fTurnAngle =
-				CalculateSignedAngle(*player, m_vTurnTargetDirection);
-			const int32_t iJogTurnAnimation =
-				ResolveJogTurnAnimation(fTurnAngle);
-
-			m_bTurnPending = false;
-			if (iJogTurnAnimation >= 0)
-			{
-				BeginJogTurn(
-					*player,
-					m_vTurnTargetDirection,
-					iJogTurnAnimation);
-			}
-			else
-			{
-				BeginIdleTurn(
-					*player,
-					m_vTurnTargetDirection,
-					m_iPendingIdleTurnAnimation);
-			}
-		}
-
-		return;
-	}
-
-	if (m_bIdleTurning)
-	{
-		pMoveIntent->ClearFacingIntent();
-		UpdateIdleTurnRotation(*player, pAnimator->GetPlayAnimRatio());
-
-		if (m_bJogTurning)
-		{
-			const _float fRatio =
-				std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f);
-			if (fRatio < m_fJogTurnMoveRecoveryStartRatio)
-			{
-				const _float fDecelerationRatio = std::clamp(
-					fRatio / m_fJogTurnMoveRecoveryStartRatio,
-					0.f,
-					1.f);
-				const _float fSmoothDeceleration =
-					fDecelerationRatio * fDecelerationRatio *
-					(3.f - 2.f * fDecelerationRatio);
-				const _float fDriftSpeed = m_fJogTurnEntrySpeed *
-					std::lerp(
-						1.f,
-						m_fJogTurnDriftSpeedRatio,
-						fSmoothDeceleration);
-
-				_vector vEntryDirection = XMVectorSetY(
-					XMLoadFloat3(&m_vJogTurnEntryDirection),
-					0.f);
-				player->SetMovementLocked(false);
-				player->SetCurrentMoveSpeed(fDriftSpeed);
-
-				if (XMVectorGetX(XMVector3LengthSq(vEntryDirection)) >
-					std::numeric_limits<_float>::epsilon())
-				{
-					_float3 vMoveDirection{};
-					XMStoreFloat3(
-						&vMoveDirection,
-						XMVector3Normalize(vEntryDirection));
-					pMoveIntent->SetMoveIntent(
-						vMoveDirection,
-						fDriftSpeed);
-				}
-			}
-			else
-			{
-				const _float fRecoveryRatio = std::clamp(
-					(fRatio - m_fJogTurnMoveRecoveryStartRatio) /
-					m_fJogTurnRecoveryDurationRatio,
-					0.f,
-					1.f);
-				const _float fSmoothRecovery =
-					fRecoveryRatio * fRecoveryRatio *
-					(3.f - 2.f * fRecoveryRatio);
-				const _float fTurnSpeed = m_fJogTurnEntrySpeed *
-					std::lerp(
-						m_fJogTurnDriftSpeedRatio,
-						1.f,
-						fSmoothRecovery);
-
-				_vector vTurnDirection = XMVectorSetY(
-					XMLoadFloat3(&m_vTurnTargetDirection),
-					0.f);
-				player->SetMovementLocked(false);
-				player->SetCurrentMoveSpeed(fTurnSpeed);
-
-				if (XMVectorGetX(XMVector3LengthSq(vTurnDirection)) >
-					std::numeric_limits<_float>::epsilon())
-				{
-					_float3 vMoveDirection{};
-					XMStoreFloat3(
-						&vMoveDirection,
-						XMVector3Normalize(vTurnDirection));
-					pMoveIntent->SetMoveIntent(
-						vMoveDirection,
-						fTurnSpeed);
-				}
-			}
-		}
-		else
-		{
-			pMoveIntent->ClearMoveIntent();
-		}
-
-		if (pAnimator->GetFinish())
-			FinishIdleTurn(*player);
-
-		return;
-	}
 
 	if (m_bJogStarting)
 	{
@@ -320,7 +160,22 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		m_fSignedMoveAngle = 0.f;
 		m_eMoveDirection = MOVE_DIRECTION::FRONT;
 		m_bWasMoving = false;
+		m_bJogStarting = false;
+		m_bJogStopping = false;
+		m_iActiveMoveLoopAnimation = -1;
+		player->SetRootMotionTranslationActive(false);
+		player->SetMovementLocked(false);
+		pMoveIntent->ClearMoveIntent();
 		pMoveIntent->ClearFacingIntent();
+		if (m_iIdleAnimation >= 0 &&
+			pAnimator->GetPlayAnimIndex() !=
+				static_cast<uint32_t>(m_iIdleAnimation))
+		{
+			pAnimator->Play_Anim(
+				m_iIdleAnimation,
+				true,
+				0.15f);
+		}
 		return;
 	}
 
@@ -337,24 +192,6 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		m_bJogStarting = false;
 		player->SetMovementLocked(false);
 		player->SetRootMotionTranslationActive(false);
-	}
-
-	// Play the authored jog-turn clips for substantial direction changes while
-	// running. Previously moving characters skipped these clips entirely.
-	if (!bStartedFromIdle &&
-		player->IsSprintRequested() &&
-		std::abs(m_fSignedMoveAngle) >= m_fRunningTurnThreshold)
-	{
-		const int32_t iJogTurnAnimation =
-			ResolveJogTurnAnimation(m_fSignedMoveAngle);
-		if (iJogTurnAnimation >= 0)
-		{
-			BeginJogTurn(
-				*player,
-				tMoveOutput.vMoveDirection,
-				iJogTurnAnimation);
-			return;
-		}
 	}
 
 	// 일반 이동에서는 입력 방향으로 순간이동하듯 꺾지 않고
@@ -509,130 +346,6 @@ int32_t CPlayer_Locomotion_State::FindAnimationIndex(const CPlayer& player,const
 	return -1;
 }
 
-int32_t CPlayer_Locomotion_State::ResolveIdleTurnAnimation(
-	_float fSignedAngle) const
-{
-	const _float fAbsoluteAngle = std::abs(fSignedAngle);
-	if (fAbsoluteAngle < 22.5f)
-		return -1;
-
-	size_t iAngleIndex{};
-	if (fAbsoluteAngle < 67.5f)
-		iAngleIndex = 0;
-	else if (fAbsoluteAngle < 112.5f)
-		iAngleIndex = 1;
-	else if (fAbsoluteAngle < 157.5f)
-		iAngleIndex = 2;
-	else
-		iAngleIndex = 3;
-
-	return fSignedAngle < 0.f
-		? m_LeftIdleTurns[iAngleIndex]
-		: m_RightIdleTurns[iAngleIndex];
-}
-
-int32_t CPlayer_Locomotion_State::ResolveJogTurnAnimation(
-	_float fSignedAngle) const
-{
-	const _float fAbsoluteAngle = std::abs(fSignedAngle);
-	if (fAbsoluteAngle < 22.5f)
-		return -1;
-
-	size_t iAngleIndex{};
-	if (fAbsoluteAngle < 67.5f)
-		iAngleIndex = 0;
-	else if (fAbsoluteAngle < 112.5f)
-		iAngleIndex = 1;
-	else if (fAbsoluteAngle < 157.5f)
-		iAngleIndex = 2;
-	else
-		iAngleIndex = 3;
-
-	return fSignedAngle < 0.f
-		? m_LeftJogTurns[iAngleIndex]
-		: m_RightJogTurns[iAngleIndex];
-}
-
-void CPlayer_Locomotion_State::BeginTurnDecision(
-	CPlayer& player,
-	const _float3& vTargetDirection,
-	int32_t iIdleAnimation)
-{
-	m_bTurnPending = true;
-	m_fTurnHoldTime = 0.f;
-	m_iPendingIdleTurnAnimation = iIdleAnimation;
-	m_vTurnTargetDirection = vTargetDirection;
-
-	player.SetMovementLocked(true);
-	if (auto* pMoveIntent = player.GetMoveIntent())
-	{
-		pMoveIntent->ClearMoveIntent();
-		pMoveIntent->ClearFacingIntent();
-	}
-}
-
-void CPlayer_Locomotion_State::BeginIdleTurn(
-	CPlayer& player,
-	const _float3& vTargetDirection,
-	int32_t iAnimationIndex)
-{
-	auto* pAnimator = player.GetAnimator();
-	auto* pMoveIntent = player.GetMoveIntent();
-	if (!pAnimator || !pMoveIntent || iAnimationIndex < 0)
-		return;
-
-	m_bIdleTurning = true;
-	m_bJogTurning = false;
-	m_vTurnTargetDirection = vTargetDirection;
-
-	player.SetMovementLocked(true);
-	player.SetRootMotionRotationActive(false);
-	player.SetRootMotionTranslationActive(true);
-	pMoveIntent->ClearMoveIntent();
-	pMoveIntent->ClearFacingIntent();
-
-	XMStoreFloat4(
-		&m_qTurnStartRotation,
-		player.GetTransform().GetLoadedQuaternion());
-	m_fTurnSignedAngleRadians = XMConvertToRadians(
-		CalculateSignedAngle(player, vTargetDirection));
-
-	const _float fTargetYaw = std::atan2(
-		vTargetDirection.x,
-		vTargetDirection.z);
-	XMStoreFloat4(
-		&m_qTurnTargetRotation,
-		XMQuaternionRotationAxis(
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),
-			fTargetYaw));
-
-	pAnimator->Play_Anim(iAnimationIndex, false, 0.1f);
-}
-
-void CPlayer_Locomotion_State::BeginJogTurn(
-	CPlayer& player,
-	const _float3& vTargetDirection,
-	int32_t iAnimationIndex)
-{
-	BeginIdleTurn(player, vTargetDirection, iAnimationIndex);
-	m_bJogTurning = true;
-	m_fJogTurnEntrySpeed = std::max(
-		player.GetCurrentMoveSpeed(),
-		m_fJogTurnMinimumSpeed);
-	_vector vEntryDirection = XMVectorSetY(
-		player.GetTransform().GetState(STATE::LOOK),
-		0.f);
-	if (XMVectorGetX(XMVector3LengthSq(vEntryDirection)) >
-		std::numeric_limits<_float>::epsilon())
-	{
-		XMStoreFloat3(
-			&m_vJogTurnEntryDirection,
-			XMVector3Normalize(vEntryDirection));
-	}
-	player.SetMovementLocked(true);
-	player.SetRootMotionTranslationActive(false);
-}
-
 void CPlayer_Locomotion_State::BeginJogStart(CPlayer& player)
 {
 	auto* pAnimator = player.GetAnimator();
@@ -674,15 +387,15 @@ void CPlayer_Locomotion_State::BeginJogStop(CPlayer& player)
 
 	m_bJogStarting = false;
 	m_bJogStopping = true;
-	player.SetMovementLocked(true);
-	player.SetRootMotionTranslationActive(true);
+	player.SetMovementLocked(false);
+	player.SetRootMotionTranslationActive(false);
 
 	if (m_iJogStopForwardAnimation >= 0)
 	{
 		pAnimator->Play_Anim(
 			m_iJogStopForwardAnimation,
 			false,
-			0.1f);
+			0.12f);
 		m_iActiveMoveLoopAnimation = -1;
 	}
 	else
@@ -700,6 +413,7 @@ void CPlayer_Locomotion_State::BeginJogStop(CPlayer& player)
 	}
 }
 
+#if 0
 void CPlayer_Locomotion_State::UpdateIdleTurnRotation(
 	CPlayer& player,
 	_float fAnimationRatio)
@@ -781,6 +495,7 @@ void CPlayer_Locomotion_State::FinishIdleTurn(CPlayer& player)
 	m_vJogTurnEntryDirection = {};
 	m_iPendingIdleTurnAnimation = -1;
 }
+#endif
 
 SPtr<CPlayer_Locomotion_State> CPlayer_Locomotion_State::Create()
 {
