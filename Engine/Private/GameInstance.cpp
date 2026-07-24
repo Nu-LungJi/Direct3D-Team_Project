@@ -56,6 +56,7 @@
 #include "MapMeshInstancingRenderer.h"
 
 #include "EventManager.h"
+#include "EffectManager.h"
 
 NS_USING(Engine)
 
@@ -257,6 +258,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	m_pEffectManager = CEffectManager::Create(m_pParticleManager.get(), m_pLightManager.get(), m_pSoundManager.get());
+	if (m_pEffectManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	
 	return S_OK;
 }
@@ -318,6 +324,7 @@ void CGameInstance::UpdateGUI()
 	m_pSerializeManager->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
+	m_pEffectManager->UpdateGUI();
 	//if (ImGui::Button("ShaderRebuild"))
 	//{
 	//	//TAG_RES_GRP_PERMANENT_SHADER
@@ -355,6 +362,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 		{
 			MouseFix();
 		}
+	}
+
+	{
+		ZoneScopedN("EffectManager_Update");
+		m_pEffectManager->Update(fTimeDelta);
 	}
 
 	// lua hot reload
@@ -500,6 +512,7 @@ void CGameInstance::Release_Engine()
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
 	m_pEventManager.reset();
+	m_pEffectManager.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -574,6 +587,14 @@ HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, cons
 	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
 {
 	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
+}
+std::vector<std::string> CGameInstance::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension)
+{
+	return m_pParticleManager->Load_FilePath_ByExtension(_FolderPath, _Extension);
+}
+HRESULT CGameInstance::Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage)
+{
+	return m_pParticleManager->Load_ParticleJsonPackage(_FilePathPackage);
 }
 #pragma endregion
 

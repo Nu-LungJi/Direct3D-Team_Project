@@ -337,7 +337,8 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 	}
 
 	{
-		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
+		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
+		CGameInstance::Get().Load_ParticleJsonPackage(k);
 		//CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Texture.json");
 		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 	}

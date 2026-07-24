@@ -11,33 +11,42 @@ class CLightManager;
 class CSoundManager;
 
 
-
-class CEffectManager final
+inline bool InputText(const char* label, std::string& str, size_t maxLen = 256)
 {
-private:
-	CEffectManager(
-		CParticleManager* pParticleManager,
-		CLightManager* pLightManager,
-		CSoundManager* pSoundManager);
+	std::vector<char> buf(maxLen);
+	strncpy_s(buf.data(), buf.size(), str.c_str(), _TRUNCATE);
+
+	bool changed = ImGui::InputText(label, buf.data(), buf.size());
+	if (changed)
+		str = buf.data(); // 수정됐으면 다시 std::string에 반영
+
+	return changed;
+}
+
+class ENGINE_DLL CEffectManager final : public CEngineBase
+{
 
 public:
-	~CEffectManager();
+	CEffectManager(const CEffectManager&) = delete;
+	CEffectManager& operator=(const CEffectManager& rhs) = delete;
+
+
+private:
+	CEffectManager(CParticleManager* pParticleManager,
+		CLightManager* pLightManager,
+		CSoundManager* pSoundManager);
+	~CEffectManager()override;
 
 public:
 	void UpdateGUI();
 	void Update(_float fTimeDelta);
 
-	HRESULT AddPreset(EFFECT_PRESET preset);
 
-	HRESULT SaveEffectPreset(
-		const std::string& strPath,
-		const EFFECT_PRESET& preset);
+	HRESULT SaveEffectPreset(const std::string& strPath,const EFFECT_PRESET& preset);
 
-	HRESULT LoadEffectPreset(
-		const std::string& strPath);
+	HRESULT LoadEffectPreset(const std::string& strPath);
 
-	EFFECT_INSTANCE_ID Spawn(
-		const std::string& sEffectName,
+	EFFECT_INSTANCE_ID Spawn(const std::string& sEffectName,
 		const _float4x4& matWorld,
 		_fvector vEndPosition);
 
@@ -73,6 +82,7 @@ private:
 
 	_bool MakeNoScaleWorldMatrix(const _float4x4& sourceMatrix,_float4x4& outMatrix) const;
 
+	HRESULT AddPreset(EFFECT_PRESET&& preset);
 private:
 	CParticleManager* m_pParticleManager = nullptr;
 	CLightManager* m_pLightManager = nullptr;

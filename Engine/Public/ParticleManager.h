@@ -148,6 +148,10 @@ public:
 	void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	void TransformOwner(uint32_t ownerId , const _float4x4& deltaMatrixData);
 
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+
+	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
+
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);
 public:

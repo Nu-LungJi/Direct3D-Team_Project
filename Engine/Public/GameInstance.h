@@ -48,6 +48,7 @@ class ILuaScriptRelodable;
 class CModel_Instance_Manager;
 class CMapMeshInstancingRenderer;
 class CResStaticModel;
+class CEffectManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -335,6 +336,8 @@ public:
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
 #pragma endregion
 
 #pragma region MAP_MANAGER
@@ -605,6 +608,7 @@ private:
 	UPtr<CModel_Instance_Manager> m_pModel_Instance_Manager{};
 	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
 	UPtr<CEventManager> m_pEventManager{};
+	UPtr<CEffectManager> m_pEffectManager{};
 };
 
 NS_END
