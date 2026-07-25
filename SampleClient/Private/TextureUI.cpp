@@ -77,13 +77,33 @@ void CTextureUI::Update(E::_float fTimeDelta)
 
 	CUIObject::Update(fTimeDelta);
 
-	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+	//m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+	//
+	//if (m_bMouseTracking)
+	//{
+	//	m_UIINFO.fX = mousePos.x;
+	//	m_UIINFO.fY = mousePos.y;
+	//	CalcUICoord();
+	//}
 
-	if (m_bMouseTracking)
+	if (m_bWorldSpace)
 	{
-		m_UIINFO.fX = mousePos.x;
-		m_UIINFO.fY = mousePos.y;
-		CalcUICoord();
+		E::_float scaleFactor = 0.01f;
+		GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * scaleFactor, m_UIINFO.SizeY * scaleFactor, 1.f });
+
+		// 캐릭터를 따라다녀야 한다면 여기서 SetPosition을 갱신
+	}
+	else
+	{
+		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+		m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
+
+		if (m_bMouseTracking)
+		{
+			m_UIINFO.fX = mousePos.x;
+			m_UIINFO.fY = mousePos.y;
+			CalcUICoord();
+		}
 	}
 
 	if (m_pComTween != nullptr)
@@ -97,8 +117,10 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	GetTransform().Update();
+	CUIObject::LateUpdate(fTimeDelta);
+
+	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
+	//GetTransform().Update();
 }
 
 HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -149,8 +171,22 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			{
 
 				E::CB_PER_OBJECT cbPerObject{};
-				cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
-				XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
+
+				if (m_bWorldSpace)
+				{
+					// 3D 월드 공간: 월드 x 뷰 x 투영
+					_matrix world = GetTransform().GetLoadedWorldMatrix();
+					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matView * ctx.matProj;
+					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
+				}
+				else
+				{
+					// 2D 스크린 공간: 월드 x 투영 (기존 로직 유지)
+					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matProj;
+					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
+				}
+				//cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
+				//XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
 
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);

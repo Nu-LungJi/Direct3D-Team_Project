@@ -1,13 +1,13 @@
 #pragma once
 #include "Client_Defines.h"
-#include "BTActionNode.h"
+#include "BTAnimRoot.h"
 #include "TestGob.h"
 NS_BEGIN(Client)
 
-class CBTHitAnimMonster final : public CBTActionNode
+class CBTHitAnimMonster final : public CBTAnimRoot
 {
 public:
-	DECLARE_DERIVED_TYPE(CBTHitAnimMonster, CBTActionNode)
+	DECLARE_DERIVED_TYPE(CBTHitAnimMonster, CBTAnimRoot)
 private:
 	CBTHitAnimMonster();
 
@@ -31,9 +31,8 @@ private:
 private:
 
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	_float2				m_fRatio{  };
-	uint32_t			m_iLoopCnt{ 0 }, m_iStartFlag{}, m_iEndFlag{};
-	_bool				m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bRatioInvert{ false };
+	uint32_t			m_iStartFlag{}, m_iEndFlag{};
+	_bool				m_bRatioInvert{ false };
 
 	HITTABLE			m_HitTable[ETOUI(HITMON::END)];
 	int32_t				m_iHitAnim[ETOUI(HITMON::END)];

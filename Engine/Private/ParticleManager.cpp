@@ -101,6 +101,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokeJump = false;
 	static _bool bSmokegv = false;
 	static _bool bSmokegw = false;
+	static _bool bLightning = false;
 	static _bool bSizeStop = false;
 
 	static _bool alphaBlend = false;
@@ -930,7 +931,8 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("SMOKEGV", &bSmokegv);
 	ImGui::SameLine();
 	ImGui::Checkbox("SMOKEGW", &bSmokegw);
-
+	ImGui::SameLine();
+	ImGui::Checkbox("LIGHTNING", &bLightning);
 	ImGui::Separator();
 
 	ImGui::Checkbox("None", &none);
@@ -964,7 +966,7 @@ void CParticleManager::UpdateGUI()
 		}
 	}
 	if (none) {
-		bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
@@ -987,6 +989,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
 	if (bSmokegw)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
+	if (bLightning)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1109,7 +1113,7 @@ void CParticleManager::UpdateGUI()
 			Spawn(previewGroup, previewType, 1, &data, false, 0.f);
 		}
 	}
-	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+	if (CGameInstance::Get().KeyDown(DIK_SPACE)) {
 		auto pParticle = GetParticle(previewGroup, previewType);
 		if (pParticle)
 		{
@@ -1222,12 +1226,13 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
 		ImGui::Checkbox("SMOKEGV", &bSmokegv);
 		ImGui::Checkbox("SMOKEGW", &bSmokegw);
+		ImGui::Checkbox("LIGHTNING", &bLightning);
 		ImGui::Separator();
 
 		ImGui::Checkbox("None", &none);
 
 		if (none) {
-			bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+			bLightning =bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 		}
 
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
@@ -1249,6 +1254,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGV;
 		if (bSmokegw)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
+		if (bLightning)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 		if (bSizeStop)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
 	}
@@ -3245,8 +3252,6 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
-			//else if constexpr (std::is_same_v<T, SLightning_Tex>)
-			//	return ParticlePattern::MakeLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3305,6 +3310,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 			else if constexpr (std::is_same_v<T, SStraightGroundParam>)
 			{
 				XMStoreFloat3(&p.vStartPos, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SMOKE>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 		}, pv);
 }

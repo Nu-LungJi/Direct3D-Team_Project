@@ -74,18 +74,16 @@ HRESULT CComAnimator::Update(_float fTimeDelta)
 
     if (m_bPlay) {
         switch (m_iPlayAnimationType) {
-        case ANIMTYPE::ANIM: {
-				
-			//Update_Anim(fTimeDelta);
-			Update_Anim_GPU(fTimeDelta);
-        }
-         break;
-		case ANIMTYPE::ACTION: {
-				
-			//Update_Action(fTimeDelta);
-			Update_Action_GPU(fTimeDelta);
-        }
-         break;
+        case ANIMTYPE::ANIM:
+            if (m_eEvaluationMode == EVALUATION_MODE::GPU) Update_Anim_GPU(fTimeDelta);
+            else if (m_eEvaluationMode == EVALUATION_MODE::CPU_GPU) Update_Anim_CPU_GPU(fTimeDelta);
+            else Update_Anim(fTimeDelta);
+            break;
+        case ANIMTYPE::ACTION:
+            if (m_eEvaluationMode == EVALUATION_MODE::GPU) Update_Action_GPU(fTimeDelta);
+            else if (m_eEvaluationMode == EVALUATION_MODE::CPU_GPU) Update_Action_CPU_GPU(fTimeDelta);
+            else Update_Action(fTimeDelta);
+            break;
         }
     }
 
@@ -278,6 +276,16 @@ HRESULT CComAnimator::Update_Action(_float fTimeDelta)
 
 	return S_OK;
 
+}
+
+HRESULT CComAnimator::Update_Anim_CPU_GPU(_float fTimeDelta)
+{
+	return Update_Anim(fTimeDelta);
+}
+
+HRESULT CComAnimator::Update_Action_CPU_GPU(_float fTimeDelta)
+{
+	return Update_Action(fTimeDelta);
 }
 
 HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
@@ -794,6 +802,7 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	_matrix matPreTransform = XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
 
 
+	uint32_t iMaxBoneDepth = 0;
 	for (size_t i = 0; i < iBoneCount; ++i)
 	{
 
@@ -885,11 +894,9 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 		return;
 
 	const int32_t iBoneIndex = pChannel->Get_BoneIndex();
-
-
-
-	if (fTrackPosition == 0.f)
-		iCurrentKeyFrameIndex = 0;
+	if (iBoneIndex < 0 ||
+		static_cast<size_t>(iBoneIndex) >= OutLocalBoneMatrices.size())
+		return;
 
 	const auto& LastKeyFrame = KeyFrames.back();
 
@@ -897,14 +904,24 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 	_vector vRotation;
 	_vector vTranslation;
 
-	if (fTrackPosition >= LastKeyFrame.fTrackPosition)
+	if (KeyFrames.size() == 1 || fTrackPosition >= LastKeyFrame.fTrackPosition)
 	{
 		vScale = XMLoadFloat3(&LastKeyFrame.vScale);
 		vRotation = XMLoadFloat4(&LastKeyFrame.vRotation);
 		vTranslation = XMVectorSetW(XMLoadFloat3(&LastKeyFrame.vTranslation),1.f);
+		iCurrentKeyFrameIndex =
+			static_cast<uint32_t>(KeyFrames.size() - 1);
 	}
 	else
 	{
+		// 애니메이션이 루프되어 시간이 되감겼거나 캐시가 범위를 벗어난 경우
+		// 첫 키프레임부터 다시 탐색한다.
+		if (iCurrentKeyFrameIndex + 1 >= KeyFrames.size() ||
+			fTrackPosition < KeyFrames[iCurrentKeyFrameIndex].fTrackPosition)
+		{
+			iCurrentKeyFrameIndex = 0;
+		}
+
 		while (iCurrentKeyFrameIndex + 1 < KeyFrames.size() &&
 			fTrackPosition >= KeyFrames[iCurrentKeyFrameIndex + 1].fTrackPosition)
 		{
@@ -912,11 +929,18 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 		}
 
 		const auto& CurKeyFrame = KeyFrames[iCurrentKeyFrameIndex];
-		const auto& NextKeyFrame = KeyFrames[iCurrentKeyFrameIndex + 1];
+		const uint32_t iNextKeyFrameIndex = std::min(
+			iCurrentKeyFrameIndex + 1,
+			static_cast<uint32_t>(KeyFrames.size() - 1));
+		const auto& NextKeyFrame = KeyFrames[iNextKeyFrameIndex];
 
-		_float fRatio =
+		const _float fTimeDelta =
+			NextKeyFrame.fTrackPosition - CurKeyFrame.fTrackPosition;
+		const _float fRatio = std::clamp(
 			(fTrackPosition - CurKeyFrame.fTrackPosition) /
-			(NextKeyFrame.fTrackPosition - CurKeyFrame.fTrackPosition);
+				std::max(fTimeDelta, 0.00001f),
+			0.f,
+			1.f);
 
 		vScale = XMVectorLerp(
 			XMLoadFloat3(&CurKeyFrame.vScale),
@@ -1114,7 +1138,9 @@ void CComAnimator::Advance_GPUBlend(_float fTimeDelta)
 	}
 }
 
-void CComAnimator::SetTrackPosition(_float fTrackPosition)
+void CComAnimator::SetTrackPosition(
+	_float fTrackPosition,
+	_bool bPreserveBlend)
 {
 	if (m_pModelInstance == nullptr)
 		return;
@@ -1154,9 +1180,12 @@ void CComAnimator::SetTrackPosition(_float fTrackPosition)
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
 
-	m_bBlending = false;
-	m_fBlendTime = 0.f;
-	m_fBlendDuration = 0.f;
+	if (!bPreserveBlend)
+	{
+		m_bBlending = false;
+		m_fBlendTime = 0.f;
+		m_fBlendDuration = 0.f;
+	}
 
 
 	Build_BoneMatrices_CPU(0.f);

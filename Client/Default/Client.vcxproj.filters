@@ -43,14 +43,71 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Level\Percival">
-      <UniqueIdentifier>{7facda9e-60d6-4cfe-b47c-0708369e1fd0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Loader\Level\Percival">
-      <UniqueIdentifier>{1d100ce6-9a11-43e7-95c8-4e2e46e144f9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{ea673d2d-2797-484e-8c21-2bc2a74e811d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\CharlesRookwood">
+      <UniqueIdentifier>{7facda9e-60d6-4cfe-b47c-0708369e1fd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\CharlesRookwood">
+      <UniqueIdentifier>{1d100ce6-9a11-43e7-95c8-4e2e46e144f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\BossCharlesRookwood">
+      <UniqueIdentifier>{37b08c28-9d3d-4f84-af81-2cd8f61ac26c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\BossCharlesRookwood">
+      <UniqueIdentifier>{135bdbd6-2572-49c2-9ed7-a4bfc53cfd5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\DebugPlayer">
+      <UniqueIdentifier>{18bf3c9f-aaf9-4b4c-8f7d-28b960f8e56a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player">
+      <UniqueIdentifier>{0da9ac46-8ea4-464b-b315-14e07602156b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Camera">
+      <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine">
+      <UniqueIdentifier>{0c382f62-6f66-469f-a311-7b79bb8775d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State">
+      <UniqueIdentifier>{d9117423-2851-4ff2-8aa0-f96c1b8f260a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Locomotion_State">
+      <UniqueIdentifier>{232233f9-be49-49ae-b9af-884605ffdcad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Roll_State">
+      <UniqueIdentifier>{9a4caa44-f46e-447a-8a58-58c13ec27b7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
+      <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Trigger">
+      <UniqueIdentifier>{83e632ef-a5bb-4406-876d-0a8b177adbdf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Trigger\CharlesRookwood">
+      <UniqueIdentifier>{9961a9a2-af7f-4c4f-ba27-7f11bb960aab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI">
+      <UniqueIdentifier>{7f27c2a0-0347-42cb-bd94-0642b1cd0643}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster">
+      <UniqueIdentifier>{168fd55f-37d9-4a25-ac51-3ed41d6e6e92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action">
+      <UniqueIdentifier>{80c3829e-8c2f-4612-a5b6-0233a52f27d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Decorator">
+      <UniqueIdentifier>{ba0122b0-64db-491b-836f-a56b3b9bfe22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot">
+      <UniqueIdentifier>{ab746481-684a-4a1e-9656-3918f260c268}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim">
+      <UniqueIdentifier>{beb0d131-70a6-43c7-ba82-70ca1fb45d49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Flow">
+      <UniqueIdentifier>{b26f59e3-d32a-4155-b0a6-67acaff44883}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -93,14 +150,125 @@
     <ClInclude Include="..\public\MainAppLoader.h">
       <Filter>Loader\MainApp</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\LevelPercival.h">
-      <Filter>Level\Percival</Filter>
+    <ClInclude Include="..\public\LevelCharlesRookwood.h">
+      <Filter>Level\CharlesRookwood</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\LevelPercivalLoader.h">
-      <Filter>Loader\Level\Percival</Filter>
+    <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h">
+      <Filter>Loader\Level\CharlesRookwood</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Client_Resources.h">
       <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelBossCharlesRookwood.h">
+      <Filter>Level\BossCharlesRookwood</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h">
+      <Filter>Loader\Level\BossCharlesRookwood</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Client_Function.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugPlayer.h">
+      <Filter>GameObject\DebugPlayer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h">
+      <Filter>GameObject\DebugPlayer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
+      <Filter>GameObject\Player\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_StateMachine.h">
+      <Filter>GameObject\Player\StateMachine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Locomotion_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Roll_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Jump_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimRoot.h">
+      <Filter>GameObject\AI\AnimRoot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecFlag.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecHitCnt.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecInvert.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecLier.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecSearch.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecTimer.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnSlow.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTeleport.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnDirect.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMove.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMonAttType.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHeader_Definse.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTOnlyTrue.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTCreatureFlag.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTOnlyFalse.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Monster.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Weapon.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BossTMB.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecHp.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerCRW_SpawnStep.h">
+      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -141,11 +309,113 @@
     <ClCompile Include="..\private\MainAppLoader.cpp">
       <Filter>Loader\MainApp</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\LevelPercival.cpp">
-      <Filter>Level\Percival</Filter>
+    <ClCompile Include="..\private\LevelCharlesRookwood.cpp">
+      <Filter>Level\CharlesRookwood</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\LevelPercivalLoader.cpp">
-      <Filter>Loader\Level\Percival</Filter>
+    <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp">
+      <Filter>Loader\Level\CharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp">
+      <Filter>Level\BossCharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp">
+      <Filter>Loader\Level\BossCharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DebugPlayer.cpp">
+      <Filter>GameObject\DebugPlayer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\DebugPlayer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
+      <Filter>GameObject\Player\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_StateMachine.cpp">
+      <Filter>GameObject\Player\StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Locomotion_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Roll_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Jump_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Weapon.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Monster.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTCreatureFlag.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecFlag.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecHp.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecInvert.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecLier.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecSearch.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecTimer.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTOnlyTrue.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTOnlyFalse.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMonAttType.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMove.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTeleport.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimRoot.cpp">
+      <Filter>GameObject\AI\AnimRoot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossTMB.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnSlow.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="TriggerCRW_SpawnStep.cpp">
+      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

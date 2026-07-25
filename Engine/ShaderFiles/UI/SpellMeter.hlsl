@@ -7,17 +7,19 @@ Texture2D g_WavyNormal  : register(t3); //
 Texture2D g_RippleTex   : register(t4);
 Texture2D g_SkillIconTex: register(t5);
 
+// 스킬 쿨타임
 cbuffer CB_SPELLMETER : register(b10)
 {
 	float g_Amount;
 	float g_DistSpeed;
 	float g_DistStrength;
 	float g_Time;
+
 	float4 g_FillColor;
 	float4 g_EmptyColor;
 	float4 g_RippleColor;
 	float4 g_WispyColor;
-}
+};
 
 struct VS_IN
 {

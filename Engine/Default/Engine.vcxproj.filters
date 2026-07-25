@@ -286,6 +286,9 @@
     <Filter Include="PhysX\Manager\CollisionProxy">
       <UniqueIdentifier>{cfc6213e-5482-4e67-a8de-cc1ad03d442c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PhysX\Manager\Cooking">
+      <UniqueIdentifier>{89c1e6e6-45d4-41fc-8dcc-daa32de593b7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX">
       <UniqueIdentifier>{ffcf98bd-cb43-4bcb-aeb7-f1c348a7cd4a}</UniqueIdentifier>
     </Filter>
@@ -394,6 +397,9 @@
     <Filter Include="ShaderFiles\Hiz">
       <UniqueIdentifier>{e0e7be52-836f-4e14-a329-df3c1fdd8171}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Terrain">
+      <UniqueIdentifier>{d2e30737-5779-4c35-9edb-56b276d22c13}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Serialize">
       <UniqueIdentifier>{0de11d8a-74ae-4ec3-8306-1f6a9ce6b93a}</UniqueIdentifier>
     </Filter>
@@ -501,6 +507,9 @@
     </Filter>
     <Filter Include="ShaderFiles\UIShader">
       <UniqueIdentifier>{0d457b52-1b40-4f88-99a7-174c4ddce13f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Terrain">
+      <UniqueIdentifier>{26070ecc-3b99-43d7-9702-d09fb65ddd9e}</UniqueIdentifier>
     </Filter>
     <Filter Include="EffectManager">
       <UniqueIdentifier>{cb2813fe-4666-4ecf-94d8-96da9dd72328}</UniqueIdentifier>
@@ -849,6 +858,9 @@
     <ClInclude Include="..\public\PhysXManager.h">
       <Filter>PhysX\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\PhysXCookingEditor.h">
+      <Filter>PhysX\Manager\Cooking</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\PhysXCollisionProxyData.h">
       <Filter>PhysX\Manager\CollisionProxy</Filter>
     </ClInclude>
@@ -919,6 +931,9 @@
       <Filter>GameObject\MapMeshObject</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\MapManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapStaticModelLoader.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\DebugDraw.h">
@@ -1107,6 +1122,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\Engine_EffectDefines.h">
       <Filter>EffectManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TerrainChunk.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Terrain.h">
+      <Filter>Terrain</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1458,6 +1479,9 @@
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\PhysXCookingEditor.cpp">
+      <Filter>PhysX\Manager\Cooking</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp">
       <Filter>PhysX\Manager\CollisionProxy</Filter>
     </ClCompile>
@@ -1645,6 +1669,12 @@
     <ClCompile Include="..\private\EffectManager.cpp">
       <Filter>EffectManager</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\TerrainChunk.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Terrain.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1667,6 +1697,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
+      <Filter>ShaderFiles\Terrain</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\ShaderDefines.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
@@ -1783,6 +1816,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

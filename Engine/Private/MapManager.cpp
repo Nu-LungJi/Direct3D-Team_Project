@@ -4,7 +4,7 @@
 #include <fstream>
 #include <filesystem>
 
-#include "FlyCamera.h"
+#include "CameraObject.h"
 #include "CollFrustum.h"
 #include "OctreeNode.h"
 NS_USING(Engine)
@@ -236,12 +236,12 @@ void CMapManager::Update(_float fTimeDelta)
 		return;
 	}
 
-	auto* pFlyCamera = dynamic_cast<CFlyCamera*>(pCamera);
-	if (pFlyCamera == nullptr || pFlyCamera->GetFrustumCollider() == nullptr)
+	const auto* pFrustumCollider = pCamera->GetFrustumCollider();
+	if (pFrustumCollider == nullptr)
 		return;
 
 	const auto neededChunks = GetNeededChunksAroundCamera(pCamera);
-	const auto& boundingFrustum = pFlyCamera->GetFrustumCollider()->GetBoundingFrustum();
+	const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
 
 	CullLoadedChunksByCameraFrustum(neededChunks, boundingFrustum);
 
@@ -472,9 +472,6 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			return E_FAIL;
 		}
 
-		// Older maps keep their original chunk size in map.json. Load every old
-		// chunk once, regroup the live objects using the current chunk size, and
-		// save the migrated chunk metadata/files before normal streaming begins.
 		if (!IsSameChunkSize(m_vChunkSize, requestedChunkSize))
 		{
 			std::vector<MAPCHUNK_COORD> oldChunkCoords;

@@ -121,7 +121,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -149,7 +149,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -178,6 +178,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClInclude>
     <ClInclude Include="..\public\BTAnimation.h" />
     <ClInclude Include="..\public\BTAttackAnimation.h" />
+    <ClInclude Include="..\public\BTAnimRoot.h" />
     <ClInclude Include="..\public\BTChase.h" />
     <ClInclude Include="..\public\BTDamage.h" />
     <ClInclude Include="..\public\BTDead.h" />
@@ -219,10 +220,16 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\public\LevelPhysXLoader.h" />
     <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\LightTerrain.h" />
+    <ClInclude Include="..\public\MagicSquareStep.h" />
+    <ClInclude Include="..\public\MagicSquareStepController.h" />
+    <ClInclude Include="..\public\MyMagicSquareStep.h" />
+    <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_Dead_State.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
+    <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
+    <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\public\Test3DSound.h" />
     <ClInclude Include="..\Public\Player.h" />
@@ -230,7 +237,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\public\TestCharacter.h" />
+    <ClInclude Include="..\public\TestDynamic.h" />
     <ClInclude Include="..\public\TestMonster.h" />
+    <ClInclude Include="..\public\TestSquareStep.h" />
+    <ClInclude Include="..\public\TestSquareStepController.h" />
+    <ClInclude Include="..\public\MagicBridgeController.h" />
     <ClInclude Include="..\public\TestThirdPersonCamera.h" />
     <ClInclude Include="..\public\TestPlayer3CameraCreatureEditor.h" />
     <ClInclude Include="..\public\TestPlayerCreatureEditor.h" />
@@ -295,6 +306,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     </ClCompile>
     <ClCompile Include="..\private\BTAnimation.cpp" />
     <ClCompile Include="..\private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\private\BTAnimRoot.cpp" />
     <ClCompile Include="..\private\BTChase.cpp" />
     <ClCompile Include="..\private\BTDamage.cpp" />
     <ClCompile Include="..\private\BTDecHitCnt.cpp" />
@@ -329,10 +341,16 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LevelLightMapLoader.cpp" />
     <ClCompile Include="..\Private\LevelUIEditor.cpp" />
     <ClCompile Include="..\Private\LightTerrain.cpp" />
+    <ClCompile Include="..\private\MagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MagicSquareStepController.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_Dead_State.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
+    <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
@@ -345,7 +363,11 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\private\Test3DSound.cpp" />
     <ClCompile Include="..\private\TestCharacter.cpp" />
+    <ClCompile Include="..\private\TestDynamic.cpp" />
     <ClCompile Include="..\private\TestMonster.cpp" />
+    <ClCompile Include="..\private\TestSquareStep.cpp" />
+    <ClCompile Include="..\private\TestSquareStepController.cpp" />
+    <ClCompile Include="..\private\MagicBridgeController.cpp" />
     <ClCompile Include="..\private\TestThirdPersonCamera.cpp" />
     <ClCompile Include="..\private\TestPlayer3CameraCreatureEditor.cpp" />
     <ClCompile Include="..\private\TestPlayerCreatureEditor.cpp" />
@@ -413,7 +435,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
-    <FxCompile Include="..\ShaderFiles\Shader_Lightning_Texture.hlsl">
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

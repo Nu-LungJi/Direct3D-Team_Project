@@ -303,13 +303,17 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		}
 	}
 	////////// -- 광윤 추가 -- //////////
-	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_MESH", CResVertexShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))		 return E_FAIL;
+	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_LIGHTNING_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Lightning.hlsl"))) return E_FAIL;
 
-	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_Lightning.hlsl")))		 return E_FAIL;
-	
-	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_LIGHTNING_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Lightning_Texture.hlsl"))) return E_FAIL;
-
-	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_GPU_LIGHTNING_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Lightning_Texture.hlsl")))	 return E_FAIL;
+	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_LIGHTNING_TEX_RC", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Lightning.hlsl"))) {
+		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_RChannel", .sTarget = "ps_5_0" })))	return E_FAIL;
+	}
+	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_LIGHTNING_TEX_GC", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Lightning.hlsl"))) {
+		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_GChannel", .sTarget = "ps_5_0" })))	return E_FAIL;
+	}
+	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_LIGHTNING_TEX_BC", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Lightning.hlsl"))) {
+		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_BChannel", .sTarget = "ps_5_0" })))	return E_FAIL;
+	}
 	/////////////////////////////////////
 
 	{
@@ -340,6 +344,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
 		CGameInstance::Get().Load_ParticleJsonPackage(k);
 		//CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Texture.json");
+		//CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/Lightning_Particle.json");
 		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 	}
 	return S_OK;

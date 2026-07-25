@@ -20,6 +20,7 @@ namespace physx {
 NS_BEGIN(Engine)
 class CPhysxManagerListener;
 class CPhysXCollisionProxyEditor;
+class CPhysXCookingEditor;
 class CGameObject;
 struct PX_CCT_HIT_DATA;
 struct PX_CCT_OBSTACLE_HIT_DATA;
@@ -94,6 +95,7 @@ private:
 private:
 	UPtr<CPhysxManagerListener> m_pListener{};
 	UPtr<CPhysXCollisionProxyEditor> m_pCollisionProxyEditor{};
+	UPtr<CPhysXCookingEditor> m_pCookingEditor{};
 
 private:
 	mutable std::shared_mutex m_UserDataRegistryMutex{};

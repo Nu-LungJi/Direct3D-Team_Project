@@ -146,7 +146,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -173,7 +173,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -341,7 +341,10 @@
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
     <ClInclude Include="..\Public\MapManager.h" />
+    <ClInclude Include="..\Public\MapStaticModelLoader.h" />
     <ClInclude Include="..\Public\MapMeshObject.h" />
+    <ClInclude Include="..\Public\Terrain.h" />
+    <ClInclude Include="..\Public\TerrainChunk.h" />
     <ClInclude Include="..\public\MyGFSDK_SSAO.h" />
     <ClInclude Include="..\Public\Light.h" />
     <ClInclude Include="..\Public\LightManager.h" />
@@ -353,6 +356,7 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysXCookingEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyObject.h" />
@@ -633,6 +637,8 @@
     <ClCompile Include="..\Private\LightManager.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
+    <ClCompile Include="..\Private\Terrain.cpp" />
+    <ClCompile Include="..\Private\TerrainChunk.cpp" />
     <ClCompile Include="..\Private\NodeEditor.cpp" />
     <ClCompile Include="..\private\MyGFSDK_SSAO.cpp" />
     <ClCompile Include="..\Private\OctreeNode.cpp" />
@@ -641,6 +647,7 @@
     <ClCompile Include="..\private\Particle_CPU.cpp" />
     <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\private\PhysXManager.cpp" />
+    <ClCompile Include="..\private\PhysXCookingEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyObject.cpp" />
     <ClCompile Include="..\private\PhysxManagerListener.cpp" />
@@ -718,6 +725,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
@@ -809,6 +820,7 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />

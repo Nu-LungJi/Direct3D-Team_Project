@@ -324,7 +324,7 @@ namespace Engine
 		uint32_t iVisibleInstances = 0;
 		uint32_t iCulledInstances = 0;
 	};
-	//----------------------------MapMeshObject ?몄뒪?댁떛------------------------
+	//----------------------------MapMeshObject ?몄뒪??�떛------------------------
 
 
 	//----------------------------AnimationObject------------------------------------
@@ -333,7 +333,6 @@ namespace Engine
 	typedef struct GPU_BONE_DESC
 	{
 		_float4x4 BindLocalMatrix;
-
 		// Bind pose도 애니메이션 키와 같은 SRT 형태로 보관한다.
 		// GPU 블렌딩 시 행렬 원소를 직접 보간하지 않기 위해 사용한다.
 		_float3 BindScale{ 1.f, 1.f, 1.f };
@@ -403,9 +402,9 @@ namespace Engine
 	typedef struct GPU_SKIN_MESH_CONSTANTS
 	{
 		uint32_t iSkinBoneOffset = 0;
-		uint32_t iPadding0 = 0;
+		uint32_t iVertexCount = 0;
+		uint32_t iSkinBoneCount = 0;
 		uint32_t iPadding1 = 0;
-		uint32_t iPadding2 = 0;
 	}GPU_SKIN_MESH_CONSTANTS;
 
 
@@ -453,13 +452,15 @@ namespace Engine
 		StringID modelGroup{};
 		StringID modelTag{};
 		_bool bStaticModel = false;
+		uint32_t iEvaluationMode = 0;
 
 		_bool operator==(const MODEL_INSTANCE_KEY& rhs) const
 		{
 			return
 				modelGroup == rhs.modelGroup &&
 				modelTag == rhs.modelTag &&
-				bStaticModel == rhs.bStaticModel;
+				bStaticModel == rhs.bStaticModel &&
+				iEvaluationMode == rhs.iEvaluationMode;
 		}
 	}MODEL_INSTANCE_KEY;
 	typedef struct MODEL_INSTANCE_KEY_HASH
@@ -486,6 +487,7 @@ namespace Engine
 					Key.modelTag));
 
 			HashCombine(std::hash<_bool>{}(Key.bStaticModel));
+			HashCombine(std::hash<uint32_t>{}(Key.iEvaluationMode));
 
 			return Seed;
 		}
@@ -498,6 +500,7 @@ namespace Engine
 		CHandle		ObjectHandle;
 		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
 		std::vector<GPU_PART_INSTANCE_DATA> PartInstances;
+		std::vector<std::vector<_float4x4>> CombinedBoneMatrices;
 		
 		_bool bModelStatic = false;
 

@@ -34,6 +34,9 @@ private:
 	_string	m_SelectResourceTag{}, m_SelectObjecteTag{}, m_SelectFileName{}, m_SelectFilePath{};
 
 	std::map<_string, _string>		m_BeHaviorJsonList;
+
+private:
+	HRESULT InitializeMyMagicSquareStep();
 private:
 	void Free() override;
 };

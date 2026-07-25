@@ -51,7 +51,7 @@ private:
 	std::string m_CurrentLevel;
 
 	// 피킹용
-	_bool PtInRect(const UI_INFO& selectInfo);
+	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:
 	std::optional<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);

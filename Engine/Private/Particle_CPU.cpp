@@ -352,9 +352,9 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		GVBurstSmoke(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGW) != 0) {
 		GWWaveSmoke(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
+		Lightning(p, fTimeDelta);
 	}
-
-	
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
@@ -396,6 +396,46 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
 	p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
 	p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+}
+
+void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
+	{
+		///////////////////////////////////////////// Fade Out
+		if (p.fMaxLife - 2.f <= p.life) {
+			p.vColor.w -= fTimeDelta / 2.f;
+		}
+	}
+	{
+		///////////////////////////////////////////// Stop Particle
+		if (p.originalPosition.y > p.vPosition.y) {
+			p.vVelocity = { 0.f, 0.f, 0.f };
+			return;
+		}
+	}
+	
+	{
+		///////////////////////////////////////////// Gravity
+		const float kGravity = -9.8f * 0.5f;
+
+		p.vVelocity.y += kGravity * fTimeDelta;
+
+		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+		XMStoreFloat3(&p.vPosition, vPos);
+	}
+	{
+		///////////////////////////////////////////// Particle Spread Type
+
+	}
+	{
+		///////////////////////////////////////////// Velocity Control
+		_float DragFactor = 3.f;
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
+
+		XMStoreFloat3(&p.vVelocity, Velocity);
+	}
 }
 
 

@@ -76,6 +76,15 @@
     <Filter Include="Loader\Level\MapEditor">
       <UniqueIdentifier>{73913414-693c-4b8e-8edd-7fe01195e26a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\TerrainPickingPass">
+      <UniqueIdentifier>{64c76f41-7cf3-4029-a692-e094c172c926}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\ResourceGUI">
+      <UniqueIdentifier>{7017940f-5035-4ea5-ad05-3c07aeeada4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUIWindow\MapEditorGUI\TerrainGUI">
+      <UniqueIdentifier>{1b201ae9-80e3-4ad9-972b-77a489ac715f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -126,17 +135,11 @@
     <ClInclude Include="..\Public\MapEditorGUI.h">
       <Filter>GUIWindow\MapEditorGUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ResourceGUI.h">
-      <Filter>GUIWindow\MapEditorGUI</Filter>
+    <ClInclude Include="..\Public\MapEditorStaticModelLoader.h">
+      <Filter>Loader\Level\MapEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\MapChunkGUI.h">
       <Filter>GUIWindow\MapChunkGUI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\MapEditorTerrain.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\ResMapEditorTerrainVIBuffer.h">
-      <Filter>Resource\Buffer</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\NavMeshGUI.h">
       <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
@@ -173,6 +176,24 @@
     </ClInclude>
     <ClInclude Include="..\Public\ClientEvents.h">
       <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TerrainPickingPass.h">
+      <Filter>GUIWindow\MapEditorGUI\TerrainPickingPass</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ResourceGUI.h">
+      <Filter>GUIWindow\MapEditorGUI\ResourceGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TerrainBrushController.h">
+      <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
+    </ClInclude>
+	<ClInclude Include="..\Public\TerrainEditCommand.h">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClInclude>
+	<ClInclude Include="..\Public\ScatterObjectsCommand.h">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClInclude>
+    <ClInclude Include="..\Public\TerrainGUI.h">
+      <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -222,17 +243,8 @@
     <ClCompile Include="..\Private\MapEditorGUI.cpp">
       <Filter>GUIWindow\MapEditorGUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\ResourceGUI.cpp">
-      <Filter>GUIWindow\MapEditorGUI</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\MapChunkGUI.cpp">
       <Filter>GUIWindow\MapChunkGUI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\MapEditorTerrain.cpp">
-      <Filter>GameObject</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\ResMapEditorTerrainVIBuffer.cpp">
-      <Filter>Resource\Buffer</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\NavMeshGUI.cpp">
       <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
@@ -264,12 +276,30 @@
     <ClCompile Include="..\Private\LevelMapEditorLoader.cpp">
       <Filter>Loader\Level\MapEditor</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\TerrainPickingPass.cpp">
+      <Filter>GUIWindow\MapEditorGUI\TerrainPickingPass</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ResourceGUI.cpp">
+      <Filter>GUIWindow\MapEditorGUI\ResourceGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TerrainBrushController.cpp">
+      <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
+    </ClCompile>
+	<ClCompile Include="..\Private\TerrainEditCommand.cpp">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClCompile>
+	<ClCompile Include="..\Private\ScatterObjectsCommand.cpp">
+		<Filter>Command\CreateDeleteCommand</Filter>
+	</ClCompile>
+    <ClCompile Include="..\Private\TerrainGUI.cpp">
+      <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\ShaderFiles\Shader_VtxNorTex.hlsl">
+    <FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\MapPicking.hlsl">
+    <FxCompile Include="..\ShaderFiles\TerrainPicking.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

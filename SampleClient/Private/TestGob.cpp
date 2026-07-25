@@ -150,6 +150,11 @@ HRESULT CTestGob::Initialize(void* pArg)
 	test[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
 	test[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
 
+	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
+	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
+
+	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
+	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	return S_OK;
 }
 
@@ -161,11 +166,24 @@ void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 
 void CTestGob::FixedUpdate(E::_float fTimeDelta)
 {
+	if(!m_bDonMove)
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_HOME))
+		m_pComTransform->GoUp(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_END))
+		m_pComTransform->GoDown(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_UP))
+		m_pComTransform->GoStraight(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
+		m_pComTransform->GoRight(fTimeDelta * -15);
+	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
+		m_pComTransform->GoBackward(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		m_pComTransform->GoRight(fTimeDelta * 15);
 	__super::Update(fTimeDelta);
 
 }

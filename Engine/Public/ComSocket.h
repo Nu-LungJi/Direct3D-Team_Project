@@ -37,6 +37,8 @@ private:
 private:
 	HRESULT Initialize(void* pArg) override;
 
+	_bool Get_Socket_Matrix(_float4x4& OutSocketMatrix) const;
+
 
 
 

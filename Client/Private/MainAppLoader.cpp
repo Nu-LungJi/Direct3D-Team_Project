@@ -5,13 +5,14 @@
 #include "PhysXManager.h"
 #include "LevelLoading.h"
 #include "Resources.h"
+#include "Player_StateMachine.h"
 //#include "Particle_Fire_CPU.h"
 //#include "Particle_Ribbon.h"
 //#include "BTMove.h"
 //#include "BTAnimation.h"
 //#include "Trail_Example.h"
 //#include "Particle_Fire_GPU.h"
-//#include "BTHeader_Definse.h"
+#include "BTHeader_Definse.h"
 
 //#include "UIManager.h"
 
@@ -20,12 +21,12 @@ NS_USING(Client)
 HRESULT CMainAppLoader::Load()
 {
 	LOG_MEMORY("CMainAppLoader::Load() start");
-	{
-		std::vector<std::pair<uint32_t, std::string>> layerNames{};
-		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
-			layerNames.emplace_back(ETOUI(layer), std::string{ name });
-		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
-	}
+
+	// 전체 레벨에서 사용할 라이트 오브젝트 프로토타입 등록
+	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
+	if (E::CGameInstance::Get().AddPrototype("PLAYER_STATEMACHINE","Prototype_Component_Player_StateMachine",CPlayer_StateMachine::Create())) return E_FAIL;
+
+
 
 	{
 		// TODO   SampleClinet  초기 이니셜라이즈
@@ -72,17 +73,17 @@ HRESULT CMainAppLoader::Load()
 		//	return E_FAIL;
 		//}
 
-		//if (FAILED(Load_PhysX_Resource()))
-		//{
-		//	MSG_BOX("Failed Load_PhysX_Resource");
-		//	return E_FAIL;
-		//}
+		if (FAILED(Load_PhysX_Resource()))
+		{
+			MSG_BOX("Failed Load_PhysX_Resource");
+			return E_FAIL;
+		}
 
-		//if (FAILED(Create_ActionNode()))
-		//{
-		//	MSG_BOX("Failed Action Node To MainApp");
-		//	return E_FAIL;
-		//}
+		if (FAILED(Create_ActionNode()))
+		{
+			MSG_BOX("Failed BT Node To MainApp");
+			return E_FAIL;
+		}
 
 		//GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
 	}
@@ -270,7 +271,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	{
 		CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
-		CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData.json");
+		CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
 		//CGameInstance::Get().LoadParticlePresets("./Resources/json/Particle/Preset/ParticlePresets.json");
 		//파티클 객채들 생성
 		//CGameInstance::Get().Add_Particle("FIRE", "FIREBALL", CParticle_Fire_CPU::Create());
@@ -284,6 +285,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 HRESULT CMainAppLoader::Load_PhysX_Resource()
 {
+	// 피직스 디버그 충돌 정보 전달
+	{
+		std::vector<std::pair<uint32_t, std::string>> layerNames{};
+		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
+			layerNames.emplace_back(ETOUI(layer), std::string{ name });
+		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
+	}
+
 	{
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
 		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
@@ -296,7 +305,7 @@ HRESULT CMainAppLoader::Load_PhysX_Resource()
 HRESULT CMainAppLoader::Create_ActionNode()
 {
 	//프로토타입 이니셜라이즈랑 이름 맞출것
-	/*if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMove", CBTMove::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMove", CBTMove::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
 		return E_FAIL;
@@ -307,8 +316,6 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTeleport", CBTTeleport::Create())))
-		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTDamage", CBTDamage::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCreatureFlag", CBTCreatureFlag::Create())))
 		return E_FAIL;
@@ -332,9 +339,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHit", CBTDecHit::Create())))
-		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHp", CBTDecHp::Create())))
-		return E_FAIL;*/
+		return E_FAIL;
 	return S_OK;
 }

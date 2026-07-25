@@ -120,7 +120,9 @@ private:
 	void         JumpSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 	void	     GVBurstSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 	void		 GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
-    void		SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+
+	void		 Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+    void		 SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 private:
     // m_Particles를 순회하며 수명/UpdateBehavior 처리 후 m_vecInstancedData 재구성
     void Simulate(E::_float fTimeDelta);

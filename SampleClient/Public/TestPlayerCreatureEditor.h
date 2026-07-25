@@ -37,6 +37,8 @@ public:
 	void PriorityUpdate(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	void OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override;
+	PX_CCT_BEHAVIOR GetCCTShapeBehavior(CGameObject* pGameObject) const override;
 
 private:
 	CComPxCharacterController* m_pCharacterController{};

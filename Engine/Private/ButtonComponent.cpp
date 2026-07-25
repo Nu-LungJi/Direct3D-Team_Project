@@ -18,7 +18,7 @@ bool CButtonComponent::CheckPixelPerfectCollision(_float2 mousePos, bool bIsTopU
 	CUIObject* pOwner = static_cast<CUIObject*>(m_pGameObject);
 	if (!pOwner) return false;
 
-	bool bCurrentCollision = bIsTopUI && PtInRect(mousePos);
+	bool bCurrentCollision = bIsTopUI && PtInRect(mousePos, pOwner->GetScaleRatio());
 
 	uint32_t currentStates = 0;
 
@@ -67,13 +67,13 @@ bool CButtonComponent::CheckPixelPerfectCollision(_float2 mousePos, bool bIsTopU
 	return bCurrentCollision;
 }
 
-bool CButtonComponent::PtInRect(_float2 mousePos)
+bool CButtonComponent::PtInRect(_float2 mousePos, _float scaleRatio)
 {
 	CUIObject* pOwner = static_cast<CUIObject*>(m_pGameObject);
 	const UI_INFO& selectInfo = pOwner->GetUIInfo();
 
 	_float2 origin = { selectInfo.fX, selectInfo.fY };
-	_float2 size = { selectInfo.SizeX, selectInfo.SizeY };
+	_float2 size = { selectInfo.SizeX * scaleRatio, selectInfo.SizeY * scaleRatio };
 
 	_float2 minPos =
 	{

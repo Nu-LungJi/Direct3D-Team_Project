@@ -101,34 +101,43 @@ struct PS_OUT
 
 PS_OUT PSMain(VS_OUT In)
 {
+	
 	PS_OUT Out = (PS_OUT) 0;
  
-	float2 distortionUV = In.vTexcoord * float2(2.f, 1.f);
-	distortionUV.y += g_fTime * 0.04f;
+	float fOuterCut = 1.f - smoothstep(0.9, 0.98, In.vTexcoord.y);
+	float2 distortion = NoiseMap.Sample(LinearWrap, In.vTexcoord).rg * 2.f - 1.f;
+	distortion += g_fTime * 0.0001f;
+	
+	float2 cloudUV = In.vTexcoord * float2(10.f, 1.f);
+	//cloudUV += distortion;
+	cloudUV.y -= g_fTime * 0.03f;
+	float3 cloud = AlbedoMap.Sample(LinearWrap, cloudUV).rgb;
+   
+    //0링 안쪽시작 1 바깥 도착 0.35 바깥으로 퍼지는 속도
 
-	float2 cloudUV = In.vTexcoord * float2(8.f, 1.f);
-	cloudUV.y += g_fTime * 0.6f;
-
-	float2 swirlUV = In.vTexcoord * float2(5.f, 1.f);
-	swirlUV.x -= g_fTime * 0.06f;
-
-	float2 distortion = NoiseMap.Sample(LinearWrap, distortionUV).rg * 2.f - 1.f;
-
-	cloudUV += distortion * 0.04f;
-	swirlUV += distortion * 0.04f;
-
-	float4 cloud = AlbedoMap.Sample(LinearWrap, cloudUV) * In.vColor;
+	float fProgress = saturate(1.0f - (In.life / In.maxLife));
+	float fInner = max(0.f, fProgress - 0.45f);
+    
+	float fTrail = smoothstep(fInner - 0.05f, fInner + 0.03f, In.vTexcoord.y) *
+            (1.f - smoothstep(fProgress, fProgress + 0.06f, In.vTexcoord.y));
+    
+	float2 swirlUV = In.vTexcoord * float2(4.f, 0.4f);
+	float endFade = 1.f - smoothstep(0.9f, 1.f, fProgress);
+	fTrail *= endFade;
+	swirlUV += distortion;
+	swirlUV.y += g_fTime * 0.05f;
+ 
+    
 	float3 swirl = NormalMap.Sample(LinearWrap, swirlUV).rgb;
-	
-	float cloudShape = smoothstep(0.2f, 0.5f, cloud.a);
-	float topMask = 1.f - smoothstep(0.f, 0.5f, In.vTexcoord.y);
-	
-	float shapeMask = lerp(1.f, cloudShape, topMask);
-	if(shapeMask <0.3f)
-		discard;
-	float3 pattern = cloud.rgb + swirl.rgb * 0.5f;
-	float4 final = float4(pattern * float3(0.3f, 0.5f, 0.8f) * shapeMask, 1.f);
+  
 
-	Out.vDiffuse = final;
+	float3 pattern = cloud + swirl; //+swirl;
+	float3 fFinalColor = pattern * fTrail * In.vColor.rgb;
+    
+	float fCut = max(fFinalColor.r, max(fFinalColor.g, fFinalColor.b));
+	if (fCut - 0.2f < 0.3f)
+		discard;
+	Out.vDiffuse = float4(fFinalColor, fCut);
+   
 	return Out;
 }

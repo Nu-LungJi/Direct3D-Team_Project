@@ -7,6 +7,7 @@ namespace Client
 	enum class LEVEL {
 		LOADING,
 		LOGO,
-		PERCIVAL
+		CHARLES_ROOKWOOD,
+		BOSS_CHARLES_ROOKWOOD,
 	};
 }

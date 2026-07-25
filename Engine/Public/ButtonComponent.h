@@ -17,7 +17,7 @@ public:
 	bool CheckPixelPerfectCollision(_float2 mousePos, bool bIsTopUI);
 
 private:
-	bool PtInRect(_float2 mousePos);
+	bool PtInRect(_float2 mousePos, _float scaleRatio);
 private:
 	bool m_bIsHovered = false;
 	bool m_bAppear = true;

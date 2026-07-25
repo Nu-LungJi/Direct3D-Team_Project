@@ -46,6 +46,9 @@ HRESULT CPhysXCollisionProxyObject::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
+	m_ColliderStates.clear();
+	m_bCollisionEnabled = true;
+
 	PX_COLLISION_PROXY_FILE data{};
 	if (FAILED(LoadCollisionData(*desc, data)))
 		return E_FAIL;
@@ -184,7 +187,13 @@ HRESULT CPhysXCollisionProxyObject::BuildCollision(const PX_COLLISION_PROXY_FILE
 				if (shape.sCookedResourcePath.empty()) return E_FAIL;
 				CComPxConvexCollider::DESC colliderDesc{};
 				setCommonDesc(colliderDesc);
-				colliderDesc.pResConvex = CResPhysXConvexGeometry::CreateAndLoad(shape.sCookedResourcePath);
+				colliderDesc.pResConvex = CGameInstance::Get()
+					.GetOrCreateResourceByPath<CResPhysXConvexGeometry>(
+						shape.sCookedResourcePath,
+						[path = shape.sCookedResourcePath]()
+						{
+							return CResPhysXConvexGeometry::CreateAndLoad(path);
+						});
 				colliderDesc.vScale = shape.vScale;
 				CComPxConvexCollider* concrete{};
 				if (!colliderDesc.pResConvex || FAILED(AddComponentFromProto(
@@ -198,7 +207,13 @@ HRESULT CPhysXCollisionProxyObject::BuildCollision(const PX_COLLISION_PROXY_FILE
 				if (shape.sCookedResourcePath.empty()) return E_FAIL;
 				CComPxTriMeshCollider::DESC colliderDesc{};
 				setCommonDesc(colliderDesc);
-				colliderDesc.pResTriMesh = CResPhysXTriMeshGeometry::CreateAndLoad(shape.sCookedResourcePath);
+				colliderDesc.pResTriMesh = CGameInstance::Get()
+					.GetOrCreateResourceByPath<CResPhysXTriMeshGeometry>(
+						shape.sCookedResourcePath,
+						[path = shape.sCookedResourcePath]()
+						{
+							return CResPhysXTriMeshGeometry::CreateAndLoad(path);
+						});
 				colliderDesc.vScale = shape.vScale;
 				CComPxTriMeshCollider* concrete{};
 				if (!colliderDesc.pResTriMesh || FAILED(AddComponentFromProto(
@@ -215,6 +230,11 @@ HRESULT CPhysXCollisionProxyObject::BuildCollision(const PX_COLLISION_PROXY_FILE
 			{
 				return E_FAIL;
 			}
+			m_ColliderStates.push_back({
+				.pCollider = collider,
+				.bSimulationEnabled = shape.bSimulationEnabled,
+				.bQueryEnabled = shape.bQueryEnabled
+			});
 			++createdShapeCount;
 		}
 	}
@@ -222,6 +242,29 @@ HRESULT CPhysXCollisionProxyObject::BuildCollision(const PX_COLLISION_PROXY_FILE
 	DEBUG_LOG_STR(std::string("[PX][CollisionProxy] Created actors: ") +
 		std::to_string(createdActorCount) + ", shapes: " + std::to_string(createdShapeCount) + "\n");
 	return S_OK;
+}
+
+_bool CPhysXCollisionProxyObject::SetCollisionEnabled(_bool bEnabled)
+{
+	if (m_bCollisionEnabled == bEnabled)
+		return true;
+
+	_bool bSucceeded = true;
+	for (const auto& state : m_ColliderStates)
+	{
+		if (!state.pCollider)
+			continue;
+
+		const _bool bSimulationResult = state.pCollider->SetSimulationEnabled(
+			bEnabled && state.bSimulationEnabled);
+		const _bool bQueryResult = state.pCollider->SetQueryEnabled(
+			bEnabled && state.bQueryEnabled);
+		bSucceeded = bSimulationResult && bQueryResult && bSucceeded;
+	}
+
+	if (bSucceeded)
+		m_bCollisionEnabled = bEnabled;
+	return bSucceeded;
 }
 
 void CPhysXCollisionProxyObject::PriorityUpdate(_float fTimeDelta)

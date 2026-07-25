@@ -28,6 +28,7 @@
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
+#include "MapStaticModelLoader.h"
 #include "MapManager.h"
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
@@ -171,69 +172,83 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pHizOcclusionCuller");
 
 	m_pCameraManager = CCameraManager::Create();
 	if (m_pCameraManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pCameraManager");
 
 	m_pColliderManager = CColliderManager::Create();
 	if (m_pColliderManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pColliderManager");
 
 	m_pAnimEdit_Manager = CAnimEdit_Manager::Create();
 	if (m_pAnimEdit_Manager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pAnimEdit_Manager");
 
 	m_pLightManager = CLightManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pLightManager == nullptr)
 	{
 		return E_FAIL;
 	}
-
+	LOG_MEMORY("End m_pLightManager");
 
 	m_pParticleManager = CParticleManager::Create();
 	if (m_pParticleManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pParticleManager");
 
 	m_pFontManager = CFontManager::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pFontManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pFontManager");
 
 	m_pMapManager = CMapManager::Create();
 	if (m_pMapManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pMapManager");
+
 	m_pNavMeshManager = CNavMeshManager::Create();
 	if (m_pNavMeshManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pNavMeshManager");
+
 	m_pNodeEditor = CNodeEditor::Create();
 	if (m_pNodeEditor == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pNodeEditor");
+
 	m_pPhysXManager = CPhysXManager::Create();
 	if (m_pPhysXManager == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pPhysXManager");
+
 
 	m_pActionManager = CAction_Manager::Create();
 	if (m_pActionManager == nullptr)
 		return E_FAIL;
-
+	LOG_MEMORY("End m_pActionManager");
 
 
 	m_pSerializeManager = CSerializeManager::Create();
@@ -241,17 +256,20 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pSerializeManager");
 
 	m_pModel_Instance_Manager = CModel_Instance_Manager::Create();
 	if (m_pModel_Instance_Manager == nullptr) {
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pModel_Instance_Manager");
 
 	m_pMapMeshInstancingRenderer = CMapMeshInstancingRenderer::Create();
 	if (m_pMapMeshInstancingRenderer == nullptr)
 	{
 		return E_FAIL;
 	}
+	LOG_MEMORY("End m_pMapMeshInstancingRenderer");
 
 	m_pEventManager = CEventManager::Create();
 	if (m_pEventManager == nullptr)
@@ -525,9 +543,20 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 	}
 	m_iFrameCnt++;
 
-	m_pLevelManager->FrameStart(fTimeDelta);
-	m_pGameObjectManager->FrameStart();
-	m_pColliderManager->FrameStart();
+	{
+		ZoneScopedN("m_pLevelManager_FrameStart");
+		m_pLevelManager->FrameStart(fTimeDelta);
+	}
+
+	{
+		ZoneScopedN("m_pGameObjectManager_FrameStart");
+		m_pGameObjectManager->FrameStart();
+	}
+	
+	{
+		ZoneScopedN("m_pColliderManager_FrameStart");
+		m_pColliderManager->FrameStart();
+	}
 
 
 
@@ -837,6 +866,14 @@ void CGameInstance::FontLateDraw(RENDERGROUP eRenderGroup)
 {
 	m_pFontManager->LateDraw(eRenderGroup);
 }
+void CGameInstance::FontAddLateDraw3D(const std::string& fontTag, const std::wstring& text, _fmatrix matWVP, _fvector color, _float2 pivot)
+{
+	m_pFontManager->FontAddLateDraw3D(fontTag, text, matWVP, color, pivot);
+}
+void CGameInstance::Render3DFont()
+{
+	m_pFontManager->Render3DFont();
+}
 #pragma endregion
 
 
@@ -1009,6 +1046,12 @@ HRESULT CGameInstance::SetupTestModel() {
 HRESULT CGameInstance::SaveMap(const std::string& path)
 {
 	return m_pMapManager->SaveMap(path);
+}
+HRESULT CGameInstance::LoadMapResources(const std::string& path)
+{
+	const auto modelLoad = LoadStaticModelsRequiredByMap(
+		path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	return modelLoad.Succeeded() ? S_OK : E_FAIL;
 }
 HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
 {
