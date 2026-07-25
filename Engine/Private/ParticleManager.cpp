@@ -1251,7 +1251,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+			bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		if (distortion)
@@ -1275,6 +1275,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 		if (bLightning)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
+		if (bSizeStop)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
 		if (bExtraLightning)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	}

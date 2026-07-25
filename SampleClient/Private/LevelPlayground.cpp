@@ -78,7 +78,7 @@ HRESULT CLevelPlayground::Initialize()
 		MonDesc.bDonMove = true;
 		MonDesc.sObjectTag = "Gobline";
 		MonDesc.LevelTag = "LEVEL_PLAYGROUND";
-		XMStoreFloat3(&MonDesc.vPos, XMVectorSet(0, 0, 0, 1));
+		XMStoreFloat3(&MonDesc.vPos, XMVectorSet(0, 0, 3, 1));
 		XMStoreFloat3(&MonDesc.vRot, XMVectorSet(0, 1, 0, 1));
 		MonDesc.fAngle = 180.f;
 		MonDesc.ReSourceTag = "Model_Resource_TombProtector";
