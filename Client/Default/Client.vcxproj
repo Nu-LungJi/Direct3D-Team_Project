@@ -204,6 +204,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BossTMB.h" />
+    <ClInclude Include="..\Public\BTAnimation.h" />
+    <ClInclude Include="..\Public\BTAnimRoot.h" />
+    <ClInclude Include="..\Public\BTAttackAnimation.h" />
+    <ClInclude Include="..\Public\BTCreatureFlag.h" />
+    <ClInclude Include="..\Public\BTDecFlag.h" />
+    <ClInclude Include="..\Public\BTDecHitCnt.h" />
+    <ClInclude Include="..\Public\BTDecHp.h" />
+    <ClInclude Include="..\Public\BTDecInvert.h" />
+    <ClInclude Include="..\Public\BTDecLier.h" />
+    <ClInclude Include="..\Public\BTDecSearch.h" />
+    <ClInclude Include="..\Public\BTDecTimer.h" />
+    <ClInclude Include="..\Public\BTHeader_Definse.h" />
+    <ClInclude Include="..\Public\BTHitAnimMonster.h" />
+    <ClInclude Include="..\Public\BTMonAttType.h" />
+    <ClInclude Include="..\Public\BTMove.h" />
+    <ClInclude Include="..\Public\BTOnlyFalse.h" />
+    <ClInclude Include="..\Public\BTOnlyTrue.h" />
+    <ClInclude Include="..\Public\BTRandMoveAnim.h" />
+    <ClInclude Include="..\Public\BTTeleport.h" />
+    <ClInclude Include="..\Public\BTTurnAnimation.h" />
+    <ClInclude Include="..\Public\BTTurnDirect.h" />
+    <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
@@ -219,13 +242,16 @@
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
+    <ClInclude Include="..\Public\Monster.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
+    <ClInclude Include="..\Public\Weapon.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="TriggerCRW_SpawnStep.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -233,6 +259,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BossTMB.cpp" />
+    <ClCompile Include="..\Private\BTAnimation.cpp" />
+    <ClCompile Include="..\Private\BTAnimRoot.cpp" />
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\Private\BTCreatureFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecHp.cpp" />
+    <ClCompile Include="..\Private\BTDecInvert.cpp" />
+    <ClCompile Include="..\Private\BTDecLier.cpp" />
+    <ClCompile Include="..\Private\BTDecSearch.cpp" />
+    <ClCompile Include="..\Private\BTDecTimer.cpp" />
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp" />
+    <ClCompile Include="..\Private\BTMonAttType.cpp" />
+    <ClCompile Include="..\Private\BTMove.cpp" />
+    <ClCompile Include="..\Private\BTOnlyFalse.cpp" />
+    <ClCompile Include="..\Private\BTOnlyTrue.cpp" />
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp" />
+    <ClCompile Include="..\Private\BTTeleport.cpp" />
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp" />
+    <ClCompile Include="..\Private\BTTurnDirect.cpp" />
+    <ClCompile Include="..\Private\BTTurnSlow.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
@@ -244,13 +291,16 @@
     <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\Private\Monster.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
+    <ClCompile Include="..\Private\Weapon.cpp" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="TriggerCRW_SpawnStep.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

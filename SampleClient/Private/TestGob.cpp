@@ -172,6 +172,18 @@ void CTestGob::FixedUpdate(E::_float fTimeDelta)
 
 void CTestGob::Update(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_HOME))
+		m_pComTransform->GoUp(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_END))
+		m_pComTransform->GoDown(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_UP))
+		m_pComTransform->GoStraight(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
+		m_pComTransform->GoRight(fTimeDelta * -15);
+	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
+		m_pComTransform->GoBackward(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		m_pComTransform->GoRight(fTimeDelta * 15);
 	__super::Update(fTimeDelta);
 
 }

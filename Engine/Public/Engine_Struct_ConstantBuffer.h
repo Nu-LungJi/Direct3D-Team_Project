@@ -120,7 +120,8 @@ namespace Engine
 	struct CB_CLEAR
 	{
 		uint32_t ownerID;
-		_float3 pad;
+		uint32_t maxParticles;
+		_float2 padding;
 	};
 	static_assert(sizeof(CB_CLEAR) % 16 == 0);
 

@@ -34,7 +34,7 @@ typedef struct tagParticlePreset
 	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
 	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
-
+	_float fStopSizeTime = 0;
 } PARTICLE_PRESET;
 
 

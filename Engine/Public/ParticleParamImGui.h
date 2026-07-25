@@ -17,8 +17,9 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bSmokeJump = (flags & BEHAVIOR_SMOKEJUMP) != 0;
 	bool bSmokegv = (flags & BEHAVIOR_SMOKEGV) != 0;
 	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
-	bool bLightning = (flags & BEHAVIOR_SMOKEGW) != 0;
-	bool bExtraLightning = (flags & BEHAVIOR_SMOKEGW) != 0;
+	bool bLightning = (flags & BEHAVIOR_LIGHTNING) != 0;
+	bool bSizeStop = (flags & BEHAVIOR_SIZESTOP) != 0;
+	bool bExtraLightning = (flags & BEHAVIOR_EXTRALIGHTNING) != 0;
 
 	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
@@ -26,9 +27,12 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("Billboard", &bBillboard))
 		flags = bBillboard ? (flags | BEHAVIOR_BILLBOARD) : (flags & ~BEHAVIOR_BILLBOARD);
-	ImGui::SameLine();
+
 	if (ImGui::Checkbox("Gravity", &bGravity))
 		flags = bGravity ? (flags | BEHAVIOR_GRAVITY) : (flags & ~BEHAVIOR_GRAVITY);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("SizeStop", &bSizeStop))
+		flags = bSizeStop ? (flags | BEHAVIOR_SIZESTOP) : (flags & ~BEHAVIOR_SIZESTOP);
 	ImGui::Separator();
 
 
@@ -50,7 +54,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	if (ImGui::Checkbox("Lightning", &bLightning))
 		flags = bLightning ? (flags | BEHAVIOR_LIGHTNING) : (flags & ~BEHAVIOR_LIGHTNING);
 	if (ImGui::Checkbox("ExtraLightning", &bExtraLightning))
-		flags = bExtraLightning ? (flags | BEHAVIOR_LIGHTNING) : (flags & ~BEHAVIOR_LIGHTNING);
+		flags = bExtraLightning ? (flags | BEHAVIOR_EXTRALIGHTNING) : (flags & ~BEHAVIOR_EXTRALIGHTNING);
 	ImGui::Separator();
 
 

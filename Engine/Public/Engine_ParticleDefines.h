@@ -41,6 +41,7 @@ namespace Engine
 		_float   fSpawnInterval = 0.1f;
 		_float	 fSpawnDelay = 0.f;
 		uint32_t	iBehaviorType;
+		_float fStopSizeTime = 0.f;
 	}STANDARD_PARAMS;
 
 	typedef struct BEAM_PARAMS
@@ -71,6 +72,8 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_SMOKEGV = 1 << 7;
 	constexpr uint32_t BEHAVIOR_SMOKEGW = 1 << 8;
 	constexpr uint32_t BEHAVIOR_LIGHTNING = 1 << 9;
+	constexpr uint32_t BEHAVIOR_SIZESTOP = 1 << 10;
+	constexpr uint32_t BEHAVIOR_EXTRALIGHTNING = 1 << 11;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
@@ -235,6 +238,8 @@ COMMON_PATTERN_FIELDS(X)
     X(_float4, endEmissive, _float4(0,0,0,0)) \
     X(_float, fYOffset, 0.f)\
    COMMON_PATTERN_FIELDS(X)
+
+
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================

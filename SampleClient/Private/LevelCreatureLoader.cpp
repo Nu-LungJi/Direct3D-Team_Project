@@ -153,7 +153,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			{
 				E::CResStaticModel::DESC Desc{};
 				Desc.PreTransformMatrix =
-					XMMatrixRotationX(XMConvertToRadians(90.f));
+					XMMatrixRotationX(XMConvertToRadians(0.f));
 				if (FAILED(res->Load(Desc)))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Static_SquareStep_A_Resource");

@@ -451,18 +451,19 @@ Engine::UPtr<CLevelCreatureEditor> CLevelCreatureEditor::Create()
 
 HRESULT CLevelCreatureEditor::InitializeMyMagicSquareStep()
 {
-	//{
-	//	CMyMagicSquareStep::DESC Desc{};
-	//	Desc.sObjectTag = "MyMagicSquareStep";
+	if (false)
+	{
+		CMyMagicSquareStep::DESC Desc{};
+		Desc.sObjectTag = "MyMagicSquareStep";
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_MyMagicSquareStep",
+			"03_MyMagicSquareStep",
+			&Desc))
+			return E_FAIL;
+	}
 
-	//	if (!E::CGameInstance::Get().AddGameObjectToLayer(
-	//		m_strLevelName,
-	//		"Prototype_GameObject_MyMagicSquareStep",
-	//		"03_MyMagicSquareStep",
-	//		&Desc))
-	//		return E_FAIL;
-	//}
-
+	
 	{
 		CMyMagicSquareStepController::DESC Desc{};
 		Desc.sObjectTag = "MyMagicSquareStepController";
