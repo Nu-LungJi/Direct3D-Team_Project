@@ -194,7 +194,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning
 	{
 		PARTICLE_SPAWN_DATA& s = spawnList[i];
 		s.position = param.vCenter;
-		s.velocity = param.fVelocity;
+		s.velocity = _float3(E::Randf(-30.f, 30.f), E::Randf(15.f, 30.f), E::Randf(-30.f, 30.f));
 		s.life = param.fLife;
 		s.fSize = param.fSize;
 		s.fEndSize = param.fEndSize;

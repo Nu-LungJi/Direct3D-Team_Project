@@ -414,7 +414,14 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 			return;
 		}
 	}
-	
+	{
+		///////////////////////////////////////////// Velocity Control
+		_float DragFactor = 3.f;
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
+
+		XMStoreFloat3(&p.vVelocity, Velocity);
+	} 
 	{
 		///////////////////////////////////////////// Gravity
 		const float kGravity = -9.8f * 0.5f;
@@ -430,21 +437,33 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 		///////////////////////////////////////////// Particle Spread Type
 
 	}
-	{
-		///////////////////////////////////////////// Velocity Control
-		_float DragFactor = 3.f;
-		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
-		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
 
-		XMStoreFloat3(&p.vVelocity, Velocity);
+	{
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		if (XMVectorGetX(XMVector3LengthSq(Velocity)) > 0.1f) {
+			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.x) + XM_PIDIV2;
+			_float CurrentAngle = p.rotation.z;
+
+			_float DeltaAngle = TargetAngle - CurrentAngle;
+
+			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
+			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
+
+			const _float AngleVelocity = XM_PI * 0.25f;
+			_float MaxStep = AngleVelocity * fTimeDelta;
+
+			if (fabsf(DeltaAngle) > MaxStep) {
+				DeltaAngle = DeltaAngle > 0.f ? MaxStep : -MaxStep;
+			}
+			p.rotation.z = CurrentAngle + DeltaAngle;
+			
+			if (p.rotation.z > +XM_PI) p.rotation.z -= XM_2PI;
+			if (p.rotation.z < -XM_PI) p.rotation.z += XM_2PI;
+		}
 	}
 }
 void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
-	_float Ratio = p.life / p.fMaxLife;
-	p.rotation.x = Ratio * 15.f;
-	p.rotation.y = Ratio * 15.f;
-	p.rotation.z = Ratio * 15.f;
-
+	
 }
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
