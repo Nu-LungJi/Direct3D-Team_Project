@@ -1723,12 +1723,10 @@ HRESULT CRenderer::Render_UI3D() {
 				m_pResDynTexTargetUI3D->GetTexture().Get(),
 				m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
 		}
+
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-
-		//_float4 ClearColor = { 0.f, 0.f, 0.f, 0.f };
-		//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI3D->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
 
 		const auto& vs = m_pUI3DVertexShader;
 		const auto& ps = m_pUI3DPixelShader;
@@ -1764,40 +1762,6 @@ HRESULT CRenderer::Render_UI3D() {
 
 		m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
 	}
-
-	return S_OK;
-	//ZoneScopedN("Render_UI3D");
-	//{
-	//	m_pContext->CopyResource(
-	//		m_pResDynTexTargetUI3D->GetTexture().Get(),
-	//		m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
-	//}
-	//{
-	//	ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
-	//	m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
-	//	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-	//}
-	//_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
-	//m_pContext->ClearRenderTargetView(m_pResDynTexTargetUI3D->GetRTV().Get(), reinterpret_cast<float*>(&ClearColor));
-	//
-	//{
-	//	m_pContext->IASetInputLayout(m_pUI3DVertexShader->GetInputLayout().Get());
-	//	m_pContext->VSSetShader(m_pUI3DVertexShader->GetVertexShader().Get(), nullptr, 0);
-	//	m_pContext->PSSetShader(m_pUI3DPixelShader->GetPixelShader().Get(), nullptr, 0);
-	//}
-	//
-	//auto pGameCam = CGameInstance::Get().GetActiveCamera();
-	//if (nullptr == pGameCam)    return S_OK;
-	//
-	//if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
-	//
-	//if (FAILED(Bind_CameraAttribute(pGameCam)))                     return E_FAIL;
-	//
-	//if (FAILED(RenderUI3D()))										return E_FAIL;
-	//
-	//Unbind_Resources();
-	//
-	//m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
 
 	return S_OK;
 }
