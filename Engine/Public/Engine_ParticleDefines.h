@@ -213,16 +213,18 @@ COMMON_PATTERN_FIELDS(X)
 
 #define LIGHTNING_STREIGHT(X) \
     X(_float3, vCenter, _float3(0,0,0)) \
-    X(_float, fRadius, 3.f) \
+    X(_float3, vRotation, _float3(0,0,0)) \
     X(uint32_t, iCount, 12) \
     X(_float3, fSize, _float3(1.f,1.f,1.f)) \
     X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
     X(_float, fLife, 1.f) \
+    X(_bool, bRandomVel, false) \
 	X(_float3, fVelocity, _float3(0,0,0))\
+	X(_float3, fVelMin, _float3(0,0,0))\
+	X(_float3, fVelMax, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0)) \
     X(_float4, endEmissive, _float4(0,0,0,0)) \
-    X(_float, fYOffset, 0.f)\
    COMMON_PATTERN_FIELDS(X)
 
 #define EXTRA_LIGHTNING(X) \

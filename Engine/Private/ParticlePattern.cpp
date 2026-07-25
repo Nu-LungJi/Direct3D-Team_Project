@@ -194,12 +194,20 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning
 	{
 		PARTICLE_SPAWN_DATA& s = spawnList[i];
 		s.position = param.vCenter;
-		s.velocity = _float3(E::Randf(-30.f, 30.f), E::Randf(15.f, 30.f), E::Randf(-30.f, 30.f));
+
+
+		if (param.bRandomVel) {
+			s.velocity = _float3(E::Randf(param.fVelMin.x, param.fVelMax.x), E::Randf(param.fVelMin.y, param.fVelMax.y), E::Randf(param.fVelMin.z, param.fVelMax.z));
+		}
+		else {
+			s.velocity = param.fVelocity;
+		}
 		s.life = param.fLife;
 		s.fSize = param.fSize;
 		s.fEndSize = param.fEndSize;
 		s.color = param.color;
-		s.emissive = param.emissive;
+		s.emissive = param.emissive; 
+		s.rotation.z = atan2f(s.velocity.y, s.velocity.x) + XM_PIDIV2;
 		s.endEmissive = param.endEmissive;
 		s.iBehaviorType = param.iBehaviorType;
 		s.originalEmissive = param.emissive;

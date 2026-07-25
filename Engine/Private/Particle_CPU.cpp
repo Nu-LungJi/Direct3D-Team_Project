@@ -420,7 +420,7 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	}
 	{
 		///////////////////////////////////////////// Velocity Control
-		_float DragFactor = 3.f;
+		_float DragFactor = 5.f;
 		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
 		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
 
@@ -428,7 +428,7 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	} 
 	{
 		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f * 0.5f;
+		const float kGravity = -9.8f;
 
 		p.vVelocity.y += kGravity * fTimeDelta;
 
@@ -439,7 +439,17 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	}
 	{
 		///////////////////////////////////////////// Particle Spread Type
-
+		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+		//if (nullptr == ActiveCam) return;
+		//
+		//XMVECTOR CamtoParticle = XMVectorSubtract(ActiveCam->GetTransform().GetLoadedPostion(), XMLoadFloat3(&p.vPosition));
+		//
+		//_float CamX = XMVectorGetX(CamtoParticle);
+		//_float CamZ = XMVectorGetZ(CamtoParticle);
+		//
+		//if (CamX * CamX * CamZ * CamZ > 0.001f) {
+		//	p.rotation.y = atan2f(CamX, CamZ);
+		//}
 	}
 
 	{
