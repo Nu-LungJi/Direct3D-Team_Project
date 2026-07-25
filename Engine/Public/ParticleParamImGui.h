@@ -17,7 +17,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bSmokeJump = (flags & BEHAVIOR_SMOKEJUMP) != 0;
 	bool bSmokegv = (flags & BEHAVIOR_SMOKEGV) != 0;
 	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
-	bool bLightning = (flags & BEHAVIOR_SMOKEGW) != 0;
+	bool bLightning = (flags & BEHAVIOR_LIGHTNING) != 0;
 
 	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
