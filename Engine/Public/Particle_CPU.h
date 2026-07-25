@@ -88,6 +88,8 @@ public:
 		_string sVEntryPoint = "";
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
+		SPtr<CParticleShaderCache> pShaderCache;
+
     };
 public:
     DECLARE_DERIVED_TYPE(CParticle_CPU, CParticle)

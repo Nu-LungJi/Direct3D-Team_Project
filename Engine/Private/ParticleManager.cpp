@@ -8,6 +8,7 @@
 #include "Particle_CPU.h"
 #include "ParticleParamImGui.h"
 #include "EffectManager.h"
+#include "ParticleShaderCache.h"
 NS_USING(Engine)
 
 std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
@@ -32,6 +33,15 @@ CParticleManager::~CParticleManager()
 {
 }
 
+HRESULT CParticleManager::Initialize()
+{
+	m_pShaderCache = std::make_shared<CParticleShaderCache>();
+
+	if (!m_pShaderCache)
+		return E_FAIL;
+
+	return S_OK;
+}
 void CParticleManager::UpdateGUI()
 {
 	static TextureSlotState slotDiffuse{ "Diffuse",    "SAMPLE_CLINET_TEXTURE", "TEX_RIBBON" };
@@ -1828,7 +1838,12 @@ void CParticleManager::ComboList(_string comboName, _string resourceName, _strin
 
 UPtr<CParticleManager> CParticleManager::Create()
 {
-	return UPtr<CParticleManager>(new CParticleManager{});
+	auto instance = UPtr<CParticleManager>(new CParticleManager{});
+
+	if (FAILED(instance->Initialize()))
+		return nullptr;
+
+	return instance;
 }
 
 uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
@@ -2154,6 +2169,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
+				desc.pShaderCache = m_pShaderCache;
 				desc.blendState = selectedBlend;
 				if (!VSGroup.empty() && !VSID.empty())
 					desc.VSID = { VSGroup, VSID };
@@ -2187,7 +2203,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2301,7 +2317,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_GPU::Create(&desc);
 			}
 			else if (particleType == "PARTICLE_CPU")
@@ -2327,7 +2343,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2349,7 +2365,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CBeam_CPU::Create(&desc);
 			}
 			else if (particleType == "TRAIL_CPU")
@@ -2368,7 +2384,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CTrail_CPU::Create(&desc);
 			}
 			else

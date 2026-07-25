@@ -21,6 +21,11 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
     if (pDesc == nullptr)
         return E_FAIL;
 
+	m_pParticleShaderCache = pDesc->pShaderCache;
+
+	if (!m_pParticleShaderCache)
+		return E_FAIL;
+
     m_Desc = *pDesc;
 	m_vColor = _float4(1,1,1,0);
 	m_vEmissive = _float4(0, 0, 0, 0);
@@ -81,13 +86,16 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	if (m_Desc.anyTextureID.second != "") {
 		m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
 	}
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
-		return E_FAIL;
 
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
-		return E_FAIL;
+	{
+		m_pResVertexShader = m_pParticleShaderCache->GetVertexShader(pDesc->VSID.first, pDesc->VSID.second, m_Desc.sVEntryPoint);
+		if (!m_pResVertexShader)
+			return E_FAIL;
+		m_pResPixelShader = m_pParticleShaderCache->GetPixelShader(pDesc->PSID.first, pDesc->PSID.second, m_Desc.sPEntryPoint);
+		if (!m_pResPixelShader)
+			return E_FAIL;
+	}
+
 
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
