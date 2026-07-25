@@ -359,6 +359,42 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
 }
+
+void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
+{
+	if (!m_pComCharacterController ||
+		fSpeed <= 0.f ||
+		fTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	_vector vForward = XMVectorSetY(
+		GetTransform().GetState(STATE::LOOK),
+		0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vForward)) <=
+		std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	vForward = XMVector3Normalize(vForward);
+
+	_float3 vDisplacement{};
+	XMStoreFloat3(
+		&vDisplacement,
+		vForward * fSpeed * fTimeDelta);
+
+	m_pComCharacterController->Move(
+		vDisplacement,
+		fTimeDelta,
+		0.f);
+
+	GetTransform().SetPosition(
+		m_pComCharacterController->GetPosition());
+}
+
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");

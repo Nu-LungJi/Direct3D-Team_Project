@@ -22,31 +22,12 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 
 
 
-	
-	m_ForwardLightAnimations[0] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
-	m_ForwardLightAnimations[1] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_02_anm.bin");
-	m_ForwardLightAnimations[2] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_03_Uppercut_anm.bin");
-	m_ForwardLightAnimations[3] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_04_anm.bin");
-	m_ForwardLightAnimations[4] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_05_anm.bin");
-	m_ForwardLightAnimations[5] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_06_anm.bin");
-	m_ForwardLightAnimations[6] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_07_anm.bin");
-	m_ForwardLightAnimations[7] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_08_anm.bin");
-	m_ForwardLightAnimations[8] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_09_anm.bin");
-
-	m_ForwardHvyAnimations[0] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_01_Spin_anm.bin");
-	m_ForwardHvyAnimations[1] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_02_anm.bin");
-	m_ForwardHvyAnimations[2] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_03_anm.bin");
-	m_ForwardHvyAnimations[3] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_04_anm.bin");
-	m_ForwardHvyAnimations[4] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_05_anm.bin");
-	m_ForwardHvyAnimations[5] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_06_anm.bin");
-	m_ForwardHvyAnimations[6] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_08_anm.bin");
-	m_ForwardHvyAnimations[7] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_09_anm.bin");
-	m_ForwardHvyAnimations[8] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmLft_anm.bin");
-	m_ForwardHvyAnimations[9] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmRht_anm.bin");
+	CacheAnimationIndices(*player);
 
 	m_iCurrentForwardLightAnimation = 0;
 	m_iComboCount = 1;
 	m_bAttackQueued = false;
+	m_bPlayingHeavy = false;
 
 	auto* animator = player->GetAnimator();
 	if (!animator || m_ForwardLightAnimations[m_iCurrentForwardLightAnimation] < 0)
@@ -79,6 +60,7 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	player->SetRootMotionRotationActive(false);
 	m_iComboCount = 0;
 	m_bAttackQueued = false;
+	m_bPlayingHeavy = false;
 }
 
 void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -97,7 +79,18 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	const _float fAnimRatio = animator->GetPlayAnimRatio();
 
-	if (fAnimRatio >= MOVE_CANCEL_START_RATIO && player->HasRawMoveInput()) {
+	if (!m_bPlayingHeavy &&
+		fAnimRatio >= LIGHT_FORWARD_MOVE_START_RATIO &&
+		fAnimRatio <= LIGHT_FORWARD_MOVE_END_RATIO)
+	{
+		player->ApplyAttackForwardMovement(
+			LIGHT_FORWARD_MOVE_SPEED,
+			fTimeDelta);
+	}
+
+	if (!m_bPlayingHeavy &&
+		fAnimRatio >= MOVE_CANCEL_START_RATIO &&
+		player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -106,7 +99,9 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	const _bool bInComboInputWindow = fAnimRatio >= COMBO_INPUT_START_RATIO && fAnimRatio <= COMBO_INPUT_END_RATIO;
 
-	if (bInComboInputWindow && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (!m_bPlayingHeavy &&
+		bInComboInputWindow &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
@@ -120,6 +115,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			m_bAttackQueued = false;
 			++m_iComboCount;
 			if (m_iComboCount == 3) {
+				m_bPlayingHeavy = true;
 				player->SetRootMotionTranslationActive(true);
 				player->SetRootMotionRotationActive(true);
 				animator->Play_Anim(m_ForwardHvyAnimations[0], false, ATTACK_BLEND_DURATION);
@@ -127,6 +123,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 				return;
 			}
 			else {
+				m_bPlayingHeavy = false;
 				player->SetRootMotionTranslationActive(true);
 				player->SetRootMotionRotationActive(false);
 				m_iCurrentForwardLightAnimation = iNextAnimation;
@@ -141,6 +138,35 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	if (animator->GetFinish())
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+}
+
+void CPlayer_Attack_State::CacheAnimationIndices(const CPlayer& player)
+{
+	if (m_bAnimationIndicesCached)
+		return;
+
+	m_ForwardLightAnimations[0] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
+	m_ForwardLightAnimations[1] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_02_anm.bin");
+	m_ForwardLightAnimations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_03_Uppercut_anm.bin");
+	m_ForwardLightAnimations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_04_anm.bin");
+	m_ForwardLightAnimations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_05_anm.bin");
+	m_ForwardLightAnimations[5] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_06_anm.bin");
+	m_ForwardLightAnimations[6] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_07_anm.bin");
+	m_ForwardLightAnimations[7] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_08_anm.bin");
+	m_ForwardLightAnimations[8] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_09_anm.bin");
+
+	m_ForwardHvyAnimations[0] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_01_Spin_anm.bin");
+	m_ForwardHvyAnimations[1] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_02_anm.bin");
+	m_ForwardHvyAnimations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_03_anm.bin");
+	m_ForwardHvyAnimations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_04_anm.bin");
+	m_ForwardHvyAnimations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_05_anm.bin");
+	m_ForwardHvyAnimations[5] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_06_anm.bin");
+	m_ForwardHvyAnimations[6] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_08_anm.bin");
+	m_ForwardHvyAnimations[7] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_09_anm.bin");
+	m_ForwardHvyAnimations[8] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmLft_anm.bin");
+	m_ForwardHvyAnimations[9] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmRht_anm.bin");
+
+	m_bAnimationIndicesCached = true;
 }
 
 int32_t CPlayer_Attack_State::FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const

@@ -25,6 +25,8 @@ public:
 	static SPtr<CPlayer_Attack_State> Create();
 
 private:
+	void CacheAnimationIndices(const CPlayer& player);
+
 	int32_t FindAnimationIndex(
 		const CPlayer& player,
 		_string_view sAnimationName) const;
@@ -37,6 +39,9 @@ private:
 	static constexpr _float COMBO_LINK_RATIO = 0.20f;
 	static constexpr _float COMBO_INPUT_END_RATIO = 0.85f;
 	static constexpr _float MOVE_CANCEL_START_RATIO = 0.35f;
+	static constexpr _float LIGHT_FORWARD_MOVE_START_RATIO = 0.05f;
+	static constexpr _float LIGHT_FORWARD_MOVE_END_RATIO = 0.1f;
+	static constexpr _float LIGHT_FORWARD_MOVE_SPEED = 1.5f;
 
 	std::array<int32_t, FORWARD_LIGHT_ANIMATION_COUNT> m_ForwardLightAnimations{};
 	std::array<int32_t, FORWARD_HVY_ANIMATION_COUNT > m_ForwardHvyAnimations{};
@@ -44,6 +49,8 @@ private:
 	size_t m_iCurrentForwardHvyAnimation{};
 	uint32_t m_iComboCount{};
 	_bool m_bAttackQueued{};
+	_bool m_bAnimationIndicesCached{};
+	_bool m_bPlayingHeavy{};
 };
 
 NS_END
