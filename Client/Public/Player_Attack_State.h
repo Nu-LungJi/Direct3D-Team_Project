@@ -36,6 +36,7 @@ private:
 	static constexpr _float COMBO_INPUT_START_RATIO = 0.25f;
 	static constexpr _float COMBO_LINK_RATIO = 0.20f;
 	static constexpr _float COMBO_INPUT_END_RATIO = 0.85f;
+	static constexpr _float MOVE_CANCEL_START_RATIO = 0.35f;
 
 	std::array<int32_t, FORWARD_LIGHT_ANIMATION_COUNT> m_ForwardLightAnimations{};
 	std::array<int32_t, FORWARD_HVY_ANIMATION_COUNT > m_ForwardHvyAnimations{};

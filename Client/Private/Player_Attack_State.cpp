@@ -81,7 +81,7 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_bAttackQueued = false;
 }
 
-void CPlayer_Attack_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
+void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
 	auto* player = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	auto* playerStateMachine = Cast<CPlayer_StateMachine>(pStateMachine);
@@ -96,12 +96,17 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine,_float fTimeDelta
 	}
 
 	const _float fAnimRatio = animator->GetPlayAnimRatio();
-	const _bool bInComboInputWindow =
-		fAnimRatio >= COMBO_INPUT_START_RATIO &&
-		fAnimRatio <= COMBO_INPUT_END_RATIO;
 
-	if (bInComboInputWindow &&
-		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (fAnimRatio >= MOVE_CANCEL_START_RATIO && player->HasRawMoveInput()) {
+		m_bAttackQueued = false;
+		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+		return;
+	}
+
+
+	const _bool bInComboInputWindow = fAnimRatio >= COMBO_INPUT_START_RATIO && fAnimRatio <= COMBO_INPUT_END_RATIO;
+
+	if (bInComboInputWindow && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}

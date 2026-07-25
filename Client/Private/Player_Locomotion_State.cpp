@@ -33,9 +33,11 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	CacheAnimationIndices(*player);
 
 	if (auto* pAnimator = player->GetAnimator();
-		pAnimator && m_iIdleAnimation >= 0)
+		pAnimator &&
+		!player->HasRawMoveInput() &&
+		m_iIdleAnimation >= 0)
 	{
-		pAnimator->Play_Anim(m_iIdleAnimation, true, 0.f);
+		pAnimator->Play_Anim(m_iIdleAnimation, true, 0.4f);
 	}
 }
 
@@ -260,7 +262,9 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		iDesiredMoveAnimation != m_iActiveMoveLoopAnimation)
 	{
 		const _float fPreviousLoopRatio =
-			std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f);
+			m_iActiveMoveLoopAnimation >= 0
+			? std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f)
+			: 0.f;
 		pAnimator->Play_Anim(iDesiredMoveAnimation, true, 0.22f);
 
 		auto* pModelInstance = player->GetModelInstance();
