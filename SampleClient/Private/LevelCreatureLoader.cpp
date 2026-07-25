@@ -212,7 +212,18 @@ std::future<bool> CLevelCreatureLoader::Load()
 				return false;
 			}
 			
-			
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_PLAYGROUND", "Static_Wand_Model_Resource",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin")))
+			{
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("PLAY_GROUND Failed Static_Wand_Model_Resource");
+					//return false;
+				}
+			}
 			
 			
 
@@ -249,7 +260,11 @@ std::future<bool> CLevelCreatureLoader::Load()
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_Component_Player_StateMachine");
 				return false;
 			}
-
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Wand", CWeapon::Create())))
+			{
+				MSG_BOX("PLAY_GROUND Failed Prototype_GameObject_Wand");
+				return false;
+			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Player", CPlayer::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");

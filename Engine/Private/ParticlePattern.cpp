@@ -148,29 +148,31 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
 			_float fSpeed = param.fSpeed * E::Randf(param.vRandSpeed.x, param.vRandSpeed.y);
 			_float fY = param.vRot.y;
 			s.position = param.vCenter;
-			if (ETOUI(CParticle::BEHAVIOR_SMOKEGW) == param.iFlag)
+			if (ETOUI(CParticle::BEHAVIOR_SMOKEGW) & param.iFlag)
 			{
 				_float iOffset = _float(j+1.f) *param.fRadius * E::Randf(param.vRandRaidus.x, param.vRandRaidus.y);
 				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
 				XMStoreFloat3(&s.velocity, radial * fSpeed );
 				fY += XMConvertToDegrees(atan2f(XMVectorGetX(radial), XMVectorGetZ(radial)));
 	
-			}else if (ETOUI(CParticle::BEHAVIOR_SMOKEJUMP) == param.iFlag)
-			{
-				s.position = param.vCenter;
-				s.velocity = _float3(0, E::Randf(param.vRandSpeed.x, param.vRandSpeed.y),0);
 			}
 			else
 			{
 				_vector radial = XMVectorSet(cosf(fAngle), 0.f, sinf(fAngle), 0.f);
 				XMStoreFloat3(&s.position, XMLoadFloat3(&param.vCenter) + radial * param.fRadius);
-				
+
 				s.velocity = _float3(
 					cosf(fAngle) * fSpeed,
 					0,
 					sinf(fAngle) * fSpeed
 				);
 			}
+
+			if (ETOUI(CParticle::BEHAVIOR_SMOKEJUMP) & param.iFlag)
+			{
+				XMStoreFloat3(&s.velocity , XMLoadFloat3(&s.velocity)+ XMVectorSet(0, E::Randf(param.vRandSpeed.x, param.vRandSpeed.y),0.f,0.f) );
+			}
+			
 
 			s.rotation = _float4(XMConvertToRadians(param.vRot.x), XMConvertToRadians(fY), XMConvertToRadians(param.vRot.z) , 0);
 			s.life = param.fLife * E::Randf(param.vRandLife.x, param.vRandLife.y);
@@ -181,6 +183,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSmoke(const SMOKE& param)
 			s.color.w = param.color.w * E::Randf(param.vRandAlpha.x, param.vRandAlpha.y);
 			s.iBehaviorType = param.iBehaviorType;
 			s.originalPosition = param.vCenter;
+			s.spawnDelay = param.fSPawnDelay * E::Randf(param.vRandSpawn.x, param.vRandSpawn.y);
 		}
 	}
 

@@ -22,6 +22,7 @@
 #include "TestSquareStepController.h"
 #include "MagicSquareStepController.h"
 #include "MyMagicSquareStep.h"
+#include "Weapon.h"
 #include "MyMagicSquareStepController.h"
 NS_USING(Client)
 
@@ -223,7 +224,18 @@ HRESULT CLevelCreatureEditor::Initialize()
 		}
 	}
 	
+	CWeapon::WEAPON_DESC WeaponDesc{};
 
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.LevelTag = "LEVEL_PLAYGROUND";
+	WeaponDesc.WeaponName = "Static_Wand_Model_Resource";
+	WeaponDesc.vScale = _float3(500, 500, 500);
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Wand", "03_Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Wand");
+
+	}
 	if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
 		return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -319,6 +331,7 @@ void CLevelCreatureEditor::UpdateGUI()
 		}
 		ImGui::TreePop();
 	}
+	
 	ImGui::End();
 
 }

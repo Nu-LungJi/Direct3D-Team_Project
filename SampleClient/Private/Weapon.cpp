@@ -75,6 +75,8 @@ HRESULT CWeapon::Initialize(void* pArg)
 	}
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
+	_vector vScale = XMLoadFloat3(&pDesc->vScale);
+	m_pComTransform->SetScale(vScale);
 	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
 	return S_OK;
 }
@@ -91,18 +93,18 @@ void CWeapon::Update(E::_float fTimeDelta)
 	//auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
 	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
 
-	//if (CGameInstance::Get().KeyPressing(DIK_HOME))
-	//	m_pComTransform->GoUp(fTimeDelta * 15);
-	//if (CGameInstance::Get().KeyPressing(DIK_END))
-	//	m_pComTransform->GoDown(fTimeDelta * 15);
-	//if (CGameInstance::Get().KeyPressing(DIK_UP))
-	//	m_pComTransform->GoStraight(fTimeDelta * 15);
-	//if (CGameInstance::Get().KeyPressing(DIK_LEFT))
-	//	m_pComTransform->GoRight(fTimeDelta * -15);
-	//if (CGameInstance::Get().KeyPressing(DIK_DOWN))
-	//	m_pComTransform->GoBackward(fTimeDelta * 15);
-	//if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
-	//	m_pComTransform->GoRight(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_HOME))
+		m_pComTransform->GoUp(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_END))
+		m_pComTransform->GoDown(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_UP))
+		m_pComTransform->GoStraight(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
+		m_pComTransform->GoRight(fTimeDelta * -15);
+	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
+		m_pComTransform->GoBackward(fTimeDelta * 15);
+	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		m_pComTransform->GoRight(fTimeDelta * 15);
 	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
 	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
 
