@@ -1531,19 +1531,13 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 HRESULT CRenderer::Render_OffScreen() {
 	ZoneScopedN("Render_OffScreen");
 	{
-		ID3D11RenderTargetView* nullRTVs[1] = { nullptr };
-		m_pContext->OMSetRenderTargets(1, nullRTVs, nullptr);
-
-		ID3D11ShaderResourceView* nullSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
-		m_pContext->PSSetShaderResources(0, 4, nullSRVs);
-
 		ID3D11RenderTargetView* pRTVs[1] = { m_pOffScreenTex2D->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+		_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
+		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const _float*>(&ClearColor));
+		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
 		const auto& vs = m_pOffScreenVertexShader;
 		const auto& ps = m_pOffScreenPixelShader;
