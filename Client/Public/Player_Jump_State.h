@@ -31,11 +31,8 @@ public:
 	static SPtr<CPlayer_Jump_State> Create();
 
 private:
-	int32_t FindAnimationIndex(
-		const CPlayer& player,
-		_string_view sAnimationName) const;
-	void PlayFall(CPlayer& player);
-	void PlayLand(CPlayer& player);
+	int32_t FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const;
+
 
 private:
 	PHASE m_ePhase{ PHASE::START };
