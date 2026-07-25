@@ -22,6 +22,9 @@ public:
 public:
 	static E::UPtr<CTriggerCRW_SpawnStep> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	_bool m_bSpawned{ false };
 };
 
 NS_END

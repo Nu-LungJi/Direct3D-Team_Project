@@ -32,6 +32,8 @@ private:
 	std::optional<CHandle> SpawnDebugPlayer();
 	HRESULT SpawnStaticCollision();
 	HRESULT SpawnBridge();
+	HRESULT SpawnMyMagicStepController();
+
 private:
 	void Free() override;
 };
