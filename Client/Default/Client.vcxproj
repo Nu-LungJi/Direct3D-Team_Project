@@ -249,6 +249,7 @@
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
+    <ClInclude Include="..\public\TmbGudian.h" />
     <ClInclude Include="..\Public\Weapon.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="TriggerCRW_SpawnStep.h" />
@@ -298,6 +299,7 @@
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
+    <ClCompile Include="..\private\TmbGudian.cpp" />
     <ClCompile Include="..\Private\Weapon.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="TriggerCRW_SpawnStep.cpp" />

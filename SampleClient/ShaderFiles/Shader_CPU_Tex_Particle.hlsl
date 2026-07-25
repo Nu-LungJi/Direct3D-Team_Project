@@ -204,22 +204,35 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 {
  
 	PS_OUT Out = (PS_OUT) 0;
-	
+	if ((In.iBehaviorType & BEHAVIOR_SMOKE) != 0)
+	{
+		float maskdel = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		
+		maskdel = smoothstep(0.35f, 0.85f, maskdel);
+		float2 maskuv = In.vTexcoord * float2(0.55549, 0.45354);
+		maskuv.y += In.life * 0.3f * In.maxLife * 0.3f;
+		float mask = g_DiffuseTexture.Sample(LinearWrap, maskuv).r;
+		
+		float t = In.life / In.maxLife;
+		float plusalpha = smoothstep(0.35f,0.85f,In.vTexcoord.y);
+		float fAlpha = mask.r * maskdel * In.vColor.a * plusalpha;
+		float3 color = lerp( float3(0.25f, 0.55f, 0.75f), float3(0.85f, 0.95f, 1.0f), mask);
+		
+
+		Out.vDiffuse = float4(In.vColor.rgb, saturate(fAlpha * 0.7f));
+		return Out;
+	}
 	if ((In.iBehaviorType & BEHAVIOR_SMOKEGV) != 0)
 	{
 		float  mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
-		
 		float2 distoionUV = In.vTexcoord;
-		//distoionUV.y += In.life * 0.13f * In.maxLife * 0.2f;
 		distoionUV.x += In.life * 0.2f * In.maxLife * 0.2f;
 		float2 distoion = g_DistortionTexture.Sample(LinearWrap, distoionUV).rg * 2.f -1.f;
 		
 		float2 wispsUV = In.vTexcoord * float2(0.549206f, 0.453968f);
 		float bendMask = 1.f - smoothstep(0.45f, 1.f, In.vTangent.y);
-		wispsUV += distoion * 0.02 * bendMask; // * In.life * 0.2f * In.maxLife * 0.2f;
-		//wispsUV.x += (distoion.x - 0.5f) * In.life * 0.2f * In.maxLife * 0.2f;
-		//wispsUV.y += In.life * 0.2f * In.maxLife * 0.2f;
+		wispsUV += distoion * 0.02 * bendMask; 
 		float4 wisps = g_DiffuseTexture.Sample(LinearWrap, wispsUV);
 		
 		
