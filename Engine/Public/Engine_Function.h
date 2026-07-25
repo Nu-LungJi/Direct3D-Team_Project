@@ -53,25 +53,26 @@ namespace Engine
 
 	inline float Randf(float min, float max)
 	{
-		static std::random_device rd;
-		static std::mt19937 gen(rd());
+		if (min > max) std::swap(min, max);
+
+		thread_local std::random_device rd;
+		thread_local std::mt19937 gen(rd());
 
 		std::uniform_real_distribution<float> dist(min, max);
 		return dist(gen);
-
-		//return min +
-		//	(max - min) *
-		//	(rand() / (float)RAND_MAX);
 	}
 
 	inline int RandInt(int min, int max)
 	{
-		static std::random_device rd;
-		static std::mt19937 gen(rd());
+		if (min > max) std::swap(min, max);
+
+		thread_local std::random_device rd;
+		thread_local std::mt19937 gen(rd());
 
 		std::uniform_int_distribution<int> dist(min, max);
 		return dist(gen);
 	}
+
 	inline float Hash01(uint32_t x)
 	{
 		x = (x ^ 61u) ^ (x >> 16u);
