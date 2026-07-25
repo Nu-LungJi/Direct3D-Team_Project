@@ -45,6 +45,8 @@ namespace Client
 		Prototype_GameObject_TriggerCRW_DeSpawnStep2,
 		Prototype_GameObject_TriggerCRW_DeSpawnStep3,
 		Prototype_GameObject_TriggerCRW_DeSpawnStep4,
+		Prototype_GameObject_TriggerCRW_BridgeBring,
+		Prototype_GameObject_TriggerCRW_BridgeFix,
 		Prototype_GameObject_MyMagicSquareStep,
 		Prototype_GameObject_MyMagicSquareStepController,
 		Prototype_GameObject_BridgeCRW,

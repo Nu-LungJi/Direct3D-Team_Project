@@ -360,6 +360,14 @@ HRESULT CLevelCharlesRookwood::SpawnBridge()
 
 	auto hBridgeCRW = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD,PROTO_GAMEOBJECT::Prototype_GameObject_BridgeCRW,"BridgeCRW", &Desc);
 
+	if (hBridgeCRW)
+	{
+		if (auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CBridgeCRW>(*hBridgeCRW))
+		{
+			pObj->GetTransform().SetPosition(_float3{ -251.f, -242.f, -382.f });
+		}
+	}
+	
 	return S_OK;
 }
 

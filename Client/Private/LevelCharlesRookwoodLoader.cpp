@@ -26,6 +26,9 @@
 
 #include "BridgeCRW.h"
 
+#include "TriggerCRW_BridgeBring.h"
+#include "TriggerCRW_BridgeFix.h"
+
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -42,9 +45,12 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Bridge/SK_Bridge.bin"))) {
 
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixIdentity();
-
-				res->Load(pDesc);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(90.f));
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed SK_Bridge.bin");
+					return false;
+				}
 			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("MODEL", "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
@@ -148,6 +154,20 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep4, CTriggerCRW_DeSpawnStep4::Create())))
 				{
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_DeSpawnStep4");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_BridgeBring, CTriggerCRW_BridgeBring::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeBring");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_BridgeFix, CTriggerCRW_BridgeFix::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
 					return false;
 				}
 			}
