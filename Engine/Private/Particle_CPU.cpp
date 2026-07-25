@@ -442,7 +442,8 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
 	_float Ratio = p.life / p.fMaxLife;
 	p.rotation.x = Ratio * 15.f;
-
+	p.rotation.y = Ratio * 15.f;
+	p.rotation.z = Ratio * 15.f;
 
 }
 
