@@ -21,6 +21,7 @@ public:
 		BEHAVIOR_SMOKEGW			= 1 << 8,
 		BEHAVIOR_LIGHTNING			= 1 << 9,
 		BEHAVIOR_SIZESTOP			= 1 << 10,
+		BEHAVIOR_EXTRALIGHTNING		= 1 << 11,
 	};
 
 protected:

@@ -103,6 +103,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokegw = false;
 	static _bool bLightning = false;
 	static _bool bSizeStop = false;
+	static _bool bExtraLightning = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -931,8 +932,11 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("SMOKEGV", &bSmokegv);
 	ImGui::SameLine();
 	ImGui::Checkbox("SMOKEGW", &bSmokegw);
-	ImGui::SameLine();
+
+	ImGui::Separator();
 	ImGui::Checkbox("LIGHTNING", &bLightning);
+	ImGui::SameLine();
+	ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
 	ImGui::Separator();
 
 	ImGui::Checkbox("None", &none);
@@ -941,15 +945,18 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
+	ImGui::SameLine();
 	ImGui::Checkbox("ALPHA_ADD", &alphaAdd);
+	ImGui::SameLine();
 	ImGui::Checkbox("NONE_BLEND", &noneBlend);
+
 	auto particle = GetParticle(selectedGroup, selectedType);
 	if (particle) {
 		if (alphaBlend)
 		{
 			alphaAdd = false;
 			noneBlend = false;
-			if(particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
+			if (particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
 				particle->Set_BlendState(BLENDTYPE::ALPHABLEND);
 		}
 		else if (alphaAdd) {
@@ -965,8 +972,9 @@ void CParticleManager::UpdateGUI()
 				particle->Set_BlendState(BLENDTYPE::NONE);
 		}
 	}
+	
 	if (none) {
-		bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
@@ -991,6 +999,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	if (bLightning)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
+	if (bExtraLightning)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1215,33 +1225,42 @@ void CParticleManager::UpdateGUI()
 
 		ImGui::Text("Common Field");
 		ImGui::Checkbox("Distortion", &distortion);
+		ImGui::SameLine();
 		ImGui::Checkbox("BILLBOARD", &billboard);
+		ImGui::SameLine();
 		ImGui::Checkbox("GRAVITY", &gravity);
-		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::SameLine();
 		ImGui::Checkbox("SIZE STOP", &bSizeStop);
 		ImGui::Separator();
 
 		ImGui::Text("Individiual Field");
 		ImGui::Checkbox("SMOKE", &bSmoke);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEGV", &bSmokegv);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEGW", &bSmokegw);
-		ImGui::Checkbox("LIGHTNING", &bLightning);
 		ImGui::Separator();
-
+		ImGui::Checkbox("LIGHTNING", &bLightning);
+		ImGui::SameLine();
+		ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+		ImGui::Separator();
+		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::Separator();
 		ImGui::Checkbox("None", &none);
 
-		if (none) {
-			bLightning =bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
-		}
-
-		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
+		if (none)
+			bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
 	
-
+		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		if (distortion)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
+
+	
 		if (billboard)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
+
 		if (gravity)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 		if (circleToWave)
@@ -1256,8 +1275,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 		if (bLightning)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
-		if (bSizeStop)
-			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
+		if (bExtraLightning)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	}
 	
 	ImGui::Separator();
@@ -3252,6 +3271,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
+			else if constexpr (std::is_same_v<T, SExtraLightning>)
+				return ParticlePattern::MakeExtraLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

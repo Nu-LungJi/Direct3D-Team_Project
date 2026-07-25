@@ -10,7 +10,8 @@
 #define BEHAVIOR_SMOKEGV (1u << 7)
 #define BEHAVIOR_SMOKEGW (1u << 8)
 #define BEHAVIOR_LIGHTNING (1u << 9)
-#define BEHAVIOR_SIZESTOP (1u << 9)
+#define BEHAVIOR_SIZESTOP (1u << 10)
+#define BEHAVIOR_EXTRALIGHTNING (1u << 11)
 
 struct SPAWN_DATA
 {
