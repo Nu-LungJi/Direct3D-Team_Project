@@ -222,6 +222,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\LightTerrain.h" />
     <ClInclude Include="..\public\MagicSquareStep.h" />
     <ClInclude Include="..\public\MagicSquareStepController.h" />
+    <ClInclude Include="..\public\MedDebris.h" />
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
@@ -343,6 +344,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LightTerrain.cpp" />
     <ClCompile Include="..\private\MagicSquareStep.cpp" />
     <ClCompile Include="..\private\MagicSquareStepController.cpp" />
+    <ClCompile Include="..\private\MedDebris.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
