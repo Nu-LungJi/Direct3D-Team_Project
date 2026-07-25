@@ -93,9 +93,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			fTimeDelta);
 	}
 
-	if (!m_bPlayingHeavy &&
-		fAnimRatio >= MOVE_CANCEL_START_RATIO &&
-		player->HasRawMoveInput()) {
+	if (!m_bPlayingHeavy &&fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -104,13 +102,11 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	const _bool bInComboInputWindow = fAnimRatio >= COMBO_INPUT_START_RATIO && fAnimRatio <= COMBO_INPUT_END_RATIO;
 
-	if (!m_bPlayingHeavy &&
-		bInComboInputWindow &&
-		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (bInComboInputWindow &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
-
+	 
 	if (m_bAttackQueued && fAnimRatio >= COMBO_LINK_RATIO)
 	{
 		m_bAttackQueued = false;

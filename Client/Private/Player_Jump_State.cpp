@@ -27,19 +27,11 @@ void CPlayer_Jump_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
-	m_iStartAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_JumpStart_anm.bin");
-	m_iFallAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fall_anm.bin");
-	m_iLandAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Land_Soft_v2_anm.bin");
+	m_iStartAnimation = FindAnimationIndex(*player,"AN_ProfessorSharp_MasterRig_Hu_BM_JumpStart_anm.bin");
+	m_iFallAnimation = FindAnimationIndex(*player,"AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fall_anm.bin");
+	m_iLandAnimation = FindAnimationIndex(*player,"AN_ProfessorSharp_MasterRig_Hu_BM_Land_Soft_v2_anm.bin");
 
-	if (m_iStartAnimation < 0 ||
-		m_iFallAnimation < 0 ||
-		m_iLandAnimation < 0)
+	if (m_iStartAnimation < 0 || m_iFallAnimation < 0 ||m_iLandAnimation < 0)
 	{
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -53,8 +45,7 @@ void CPlayer_Jump_State::Enter(CStateMachine* pStateMachine)
 
 	if (m_bWasAirborne)
 	{
-		// Preserve the current locomotion pose for a short drop. Fall starts
-		// only after downward velocity reaches the configured threshold.
+
 	}
 	else
 	{
@@ -75,11 +66,8 @@ void CPlayer_Jump_State::Exit(CStateMachine* pStateMachine)
 	m_bWasAirborne = false;
 }
 
-void CPlayer_Jump_State::Update(
-	CStateMachine* pStateMachine,
-	_float fTimeDelta)
+void CPlayer_Jump_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 {
-	(void)fTimeDelta;
 
 	auto* player = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	auto* playerStateMachine = Cast<CPlayer_StateMachine>(pStateMachine);
@@ -125,9 +113,7 @@ void CPlayer_Jump_State::Update(
 	}
 }
 
-int32_t CPlayer_Jump_State::FindAnimationIndex(
-	const CPlayer& player,
-	_string_view sAnimationName) const
+int32_t CPlayer_Jump_State::FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const
 {
 	auto* modelInstance = player.GetModelInstance();
 	if (!modelInstance || !modelInstance->GetModel())

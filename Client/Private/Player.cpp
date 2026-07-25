@@ -335,9 +335,23 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pComCharacterMotor->SetVelocity({});
 	}
 
-	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (m_pStateMachine &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
+		const _bool bCanRequestAttack =
+			m_pStateMachine->GetCurrentState() != PLAYER_STATE::ROLL ||
+			(m_pModelAnimator &&
+				m_pModelAnimator->GetPlayAnimRatio() >=
+					CPlayer_Roll_State::ATTACK_CANCEL_RATIO);
+
+		if (bCanRequestAttack)
+			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
+	}
+
+	if (m_pStateMachine &&
+		CGameInstance::Get().KeyDown(DIK_LCONTROL))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::ROLL);
 	}
 
 }
@@ -393,6 +407,51 @@ void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
 
 	GetTransform().SetPosition(
 		m_pComCharacterController->GetPosition());
+}
+
+void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta)
+{
+	if (!m_pComCharacterController ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	_vector vMoveDirection = XMVectorSetY(XMLoadFloat3(&vDirection),0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vMoveDirection)) <=std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	vMoveDirection = XMVector3Normalize(vMoveDirection);
+
+	_float3 vDisplacement{};
+	XMStoreFloat3(
+		&vDisplacement,
+		vMoveDirection * fSpeed * fTimeDelta);
+
+	m_pComCharacterController->Move(
+		vDisplacement,
+		fTimeDelta,
+		0.f);
+
+	GetTransform().SetPosition(
+		m_pComCharacterController->GetPosition());
+}
+
+void CPlayer::PrepareLocomotionResume()
+{
+	m_fCurrentMoveSpeed = m_bRawMoveInput
+		? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+		: 0.f;
+
+	if (m_bRawMoveInput)
+	{
+		const _vector vDirection = XMVector3Normalize(
+			XMLoadFloat3(&m_vRawMoveDirection));
+		XMStoreFloat3(&m_vSmoothedMoveDirection, vDirection);
+		m_vLastMoveDirection = m_vSmoothedMoveDirection;
+	}
 }
 
 void CPlayer::Update(E::_float fTimeDelta)
