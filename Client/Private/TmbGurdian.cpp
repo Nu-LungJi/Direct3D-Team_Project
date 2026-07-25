@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "BossTMB.h"
+#include "TmbGurdian.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -13,37 +13,38 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
+#include "TmbGurdianDead.h"
 NS_USING(Client)
 
-CTmbGudian::CTmbGudian()
+CTmbGurdian::CTmbGurdian()
 {
 }
 
-CTmbGudian::~CTmbGudian()
+CTmbGurdian::~CTmbGurdian()
 {
 }
 
-void CTmbGudian::UpdateGUI()
+void CTmbGurdian::UpdateGUI()
 {
 	__super::UpdateGUI();
 
 }
 
-HRESULT CTmbGudian::InitializePrototype(void* pArg)
+HRESULT CTmbGurdian::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
 	return S_OK;
 }
 
-HRESULT CTmbGudian::Initialize(void* pArg)
+HRESULT CTmbGurdian::Initialize(void* pArg)
 {
-	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
+	auto MonDesc = static_cast<TMBGURDIAN_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 100;
-
+	//피직스
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
@@ -57,7 +58,7 @@ HRESULT CTmbGudian::Initialize(void* pArg)
 			return E_FAIL;
 		}
 	}
-
+	//캐릭컨트롤러
 	{
 		CComCharacterMoveIntent::DESC Desc{};
 		if (FAILED(AddComponentFromProto(
@@ -68,7 +69,7 @@ HRESULT CTmbGudian::Initialize(void* pArg)
 			return E_FAIL;
 		}
 	}
-
+	//캐릭 모터
 	{
 		CComCharacterMotor::DESC Desc{};
 		Desc.pMoveIntent = m_pMoveIntent;
@@ -143,46 +144,71 @@ HRESULT CTmbGudian::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CTmbGudian::PriorityUpdate(E::_float fTimeDelta)
+void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
-	__super::PriorityUpdate(fTimeDelta);
+	//if (m_iHp <= 0)
+	//{
+	//	for (auto& iter : m_DeadMeshes)
+	//	{
+	//		if(nullptr != iter)
+	//			iter->PriorityUpdate(fTimeDelta);
+	//	}
+	//}else
+		__super::PriorityUpdate(fTimeDelta);
 
 }
 
-void CTmbGudian::FixedUpdate(E::_float fTimeDelta)
+void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 {
-	if (!m_bDonMove)
-		m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 
-void CTmbGudian::Update(E::_float fTimeDelta)
+void CTmbGurdian::Update(E::_float fTimeDelta)
 {
+	//if (m_iHp <= 0)
+	//{
+	//	for (auto& iter : m_DeadMeshes)
+	//	{
+	//		if (nullptr != iter)
+	//			iter->Update(fTimeDelta);
+	//	}
+	//}
+	//else
 	__super::Update(fTimeDelta);
 
 }
 
-void CTmbGudian::LateUpdate(E::_float fTimeDelta)
+void CTmbGurdian::LateUpdate(E::_float fTimeDelta)
 {
-	__super::LateUpdate(fTimeDelta);
+	//if (m_iHp <= 0)
+	//{
+	//	for (auto& iter : m_DeadMeshes)
+	//	{
+	//		if (nullptr != iter)
+	//			iter->LateUpdate(fTimeDelta);
+	//	}
+	//}
+	//else
+		__super::LateUpdate(fTimeDelta);
 }
 
-E::UPtr<CTmbGudian> CTmbGudian::Create()
+E::UPtr<CTmbGurdian> CTmbGurdian::Create()
 {
-	auto pInstance = E::ToUPtr(new CTmbGudian{});
+	auto pInstance = E::ToUPtr(new CTmbGurdian{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTmbGudian");
+		MSG_BOX("Failed to Created : CTmbGurdian");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTmbGudian::Clone(void* pArg)
+E::UPtr<E::CPrototype> CTmbGurdian::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTmbGudian{ *this });
+	auto	pInstance = E::ToUPtr(new CTmbGurdian{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTmbGudian");
+		MSG_BOX("Failed to Cloned : CTmbGurdian");
 		return nullptr;
 	}
 

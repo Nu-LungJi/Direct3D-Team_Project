@@ -96,25 +96,29 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::UnLoad()
 
 HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 {
-	//TombBos
+	
 	{
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Model_Resource_TombProtector",
-			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin")))
+		//TombBos
 		{
-			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
-			if (FAILED(res->Load(pDesc)))
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Model_Resource_TombProtector",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin")))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TombProtector");
-				//return false;
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TombProtector");
+					return E_FAIL;
+				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
+				return E_FAIL;
 			}
 		}
-
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
-		{
-			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
-			return false;
-		}
+	
 	}
 	return S_OK;
 }

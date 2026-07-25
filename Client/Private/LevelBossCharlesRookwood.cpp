@@ -235,23 +235,22 @@ HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()
 
 HRESULT CLevelBossCharlesRookwood::SpawnMonster()
 {
-	CBossTMB::TMB_DESC TmbDesc{};
-
-	TmbDesc.sObjectTag = "BossTmb";
-	TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
-	XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
-	TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
-	TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
-	XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
-	auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
-
-	if (!BossTmb)
 	{
-		MSG_BOX("Create BossTmb Failed in Rookwood");
-		return E_FAIL;
+		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.sObjectTag = "BossTmb";
+		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
+		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
+
+		if (!BossTmb)
+		{
+			MSG_BOX("Create BossTmb Failed in Rookwood");
+			return E_FAIL;
+		}
 	}
-			
-	
 	return S_OK;
 }
 

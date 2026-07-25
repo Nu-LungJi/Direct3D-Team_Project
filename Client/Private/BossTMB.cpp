@@ -135,9 +135,6 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
-	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
-	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
-
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	return S_OK;

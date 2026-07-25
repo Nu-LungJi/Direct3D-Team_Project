@@ -3,19 +3,19 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
-class CTmbGudian final : public CMonster
+class CTmbGurdian final : public CMonster
 {
 public:
-	struct TMB_DESC :public  CMonster::MONSTER_DESC
+	struct TMBGURDIAN_DESC :public  CMonster::MONSTER_DESC
 	{
 
 	};
 public:
-	DECLARE_DERIVED_TYPE(CTmbGudian, CMonster)
+	DECLARE_DERIVED_TYPE(CTmbGurdian, CMonster)
 
 private:
-	CTmbGudian();
-	~CTmbGudian() override;
+	CTmbGurdian();
+	~CTmbGurdian() override;
 
 public:
 	void UpdateGUI() override;
@@ -28,11 +28,11 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 
 private:
-	std::vector				m_DeadMeshes;
+	//std::vector<UPtr<class CTmbGurdianDead>>				m_DeadMeshes;
 
 
 public:
-	static E::UPtr<CTmbGudian> Create();
+	static E::UPtr<CTmbGurdian> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

@@ -115,6 +115,9 @@
     <Filter Include="GameObject\Monster\TombGudian">
       <UniqueIdentifier>{e0c79833-3d61-4619-8e40-fa8174e4f5b8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\TombGudian\Dead">
+      <UniqueIdentifier>{bf656eec-4774-4600-97ef-cbeeca6ac8ad}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -276,8 +279,11 @@
     <ClInclude Include="..\public\BossTMB.h">
       <Filter>GameObject\Monster\TombBoss</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\TmbGudian.h">
+    <ClInclude Include="..\public\TmbGurdian.h">
       <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TmbGurdianDead.h">
+      <Filter>GameObject\Monster\TombGudian\Dead</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -426,8 +432,11 @@
     <ClCompile Include="..\private\BossTMB.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\TmbGudian.cpp">
+    <ClCompile Include="..\private\TmbGurdian.cpp">
       <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TmbGurdianDead.cpp">
+      <Filter>GameObject\Monster\TombGudian\Dead</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

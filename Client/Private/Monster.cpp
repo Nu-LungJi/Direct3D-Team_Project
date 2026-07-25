@@ -42,34 +42,25 @@ HRESULT CMonster::InitializePrototype(void* pArg)
 {
 
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
-	//m_pResVertexShader = CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
 	if (FAILED(m_pResVertexShader->Load()))
-	{
 		return E_FAIL;
-	}
+	
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
-	//m_pResPixelShader = CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl");
-	if (FAILED(m_pResPixelShader->Load()))
-	{
+	if (FAILED(m_pResPixelShader->Load())) 
 		return E_FAIL;
-	}
+
 	m_pResVertexInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_Instanced");
 	if (!m_pResVertexInstancedShader || FAILED(m_pResVertexInstancedShader->Load()))
-	{
 		return E_FAIL;
-	}
+	
 	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
 	if (!m_pResSkinMeshCBuffer)
-	{
 		return E_FAIL;
-	}
-
-
+	
 	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
 	if (FAILED(m_pAnimComputeShader->Load()))
-	{
 		return E_FAIL;
-	}
+	
 
 	return S_OK;
 }
@@ -108,9 +99,6 @@ void CMonster::Update(E::_float fTimeDelta)
 
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
-
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
-		m_fEmissive = 0;
 
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
@@ -571,6 +559,9 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	{
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEAD), FLAGTYPE::ADD);
 	}
+
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
+		m_fEmissive = 0;
 }
 void CMonster::EmissiveFadeOut(_float fTimeDelta)
 {

@@ -96,7 +96,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 				}
 			}
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Axe_Model_Resource",
-				CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx")))
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Axe.bin")))
 			{
 				E::CResStaticModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
@@ -109,7 +109,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Mace_Model_Resource",
-				CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
 
 				E::CResStaticModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
@@ -122,7 +122,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Sword_Model_Resource",
-				CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/Tomb_Sword.bin"))) {
 
 				E::CResStaticModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);

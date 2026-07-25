@@ -114,7 +114,7 @@ protected:
 	_float ff{};
 
 	_float2						m_fSkillRatio{ };
-	uint32_t					m_iCurrentInstanceCount = 0.f;
+	uint32_t					m_iCurrentInstanceCount = 0;
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };

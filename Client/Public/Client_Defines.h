@@ -36,7 +36,12 @@ namespace Client
 		Prototype_GameObject_DebugPlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_TriggerCRW_SpawnStep,
-		Prototype_GameObject_BossTMB
+		Prototype_GameObject_BossTMB,
+		Prototype_GameObject_TMBGurdian,
+		Prototype_GameObject_Axe,
+		Prototype_GameObject_Sword,
+		Prototype_GameObject_Mace
+
 	};
 
 	enum class PROTO_COMPONENT
