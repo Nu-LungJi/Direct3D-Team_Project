@@ -180,3 +180,60 @@ PS_OUT RemoveBlack(VS_OUT In)
 	return Out;
 }
 
+PS_OUT PSFlameRing(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	
+	float3 finalRGB = texColor.rgb * In.vColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+	
+	
+	float2 centerUV = In.vTexcoord * 2.f - 1.f;
+	float radius = length(centerUV);
+	float angle = atan2(centerUV.y, centerUV.x) / 6.2831853f + 0.5f;
+
+	float outerRadius = 0.82f;
+	float ringWidth = 0.025f;
+
+	float outerRing = 1.f - smoothstep(ringWidth, ringWidth + 0.015f, abs(radius - outerRadius));
+
+	float2 noiseUV1 = float2(angle * 6.f - g_fDeltaTime * 0.35f, radius * 3.f - g_fDeltaTime * 0.8f);
+	float2 noiseUV2 = float2(angle * 13.f + g_fDeltaTime * 0.2f, radius * 5.f + g_fDeltaTime * 0.45f);
+
+	float noise1 = g_NoiseTexture.Sample(LinearWrap, noiseUV1).r;
+	float noise2 = g_NoiseTexture.Sample(LinearWrap, noiseUV2).r;
+	float noise = saturate(noise1 * 0.7f + noise2 * 0.3f);
+
+	float flameMinDepth = 0.06f;
+	float flameMaxDepth = 1.f;
+	float flameDepth = lerp(flameMinDepth, flameMaxDepth, noise);
+
+	float innerRadius = outerRadius - flameDepth;
+
+	float flameMask = smoothstep(innerRadius, innerRadius + 0.04f, radius);
+	flameMask *= 1.f - smoothstep(outerRadius, outerRadius + 0.02f, radius);
+
+	float edgeProgress = saturate((radius - innerRadius) / max(flameDepth, 0.0001f));
+	float flameDetail = pow(edgeProgress, 1.5f);
+	flameMask *= flameDetail;
+
+	float pulse = 0.85f + sin(g_fDeltaTime * 8.f + angle * 25.f) * 0.15f;
+	flameMask *= pulse;
+
+	float finalMask = saturate(max(outerRing, flameMask));
+
+	clip(finalMask - 0.01f);
+
+
+	//float3 flameColor = lerp(innerColor, outerColor, edgeProgress);
+	//flameColor += outerRing * float3(1.f, 1.f, 1.f);
+
+	Out.vDiffuse = float4(finalRGB * finalMask, finalMask * In.vColor.a);
+
+	return Out;
+}
+
