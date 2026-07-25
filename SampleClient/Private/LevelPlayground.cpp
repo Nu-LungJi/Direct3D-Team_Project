@@ -93,7 +93,7 @@ HRESULT CLevelPlayground::Initialize()
 		WeaponDesc.sObjectTag = "Weapon";
 		WeaponDesc.LevelTag = "LEVEL_PLAYGROUND";
 		WeaponDesc.WeaponName = "Static_Wand_Model_Resource";
-		WeaponDesc.vScale = _float3(500, 500, 500);
+		WeaponDesc.vScale = _float3(300, 300, 300);
 		auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Wand", "03_Weapon", &WeaponDesc);
 		if (!Weapon.has_value())
 		{
