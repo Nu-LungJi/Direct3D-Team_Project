@@ -407,8 +407,8 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	{
 		///////////////////////////////////////////// Fade Out
-		if (p.fMaxLife - 2.f <= p.life) {
-			p.vColor.w -= fTimeDelta / 2.f;
+		if (p.fMaxLife - 1.f <= p.life) {
+			p.vColor.w -= fTimeDelta;
 		}
 	}
 	{
@@ -420,7 +420,7 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	}
 	{
 		///////////////////////////////////////////// Velocity Control
-		_float DragFactor = 5.f;
+		_float DragFactor = 2.f;
 		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
 		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
 
@@ -453,7 +453,29 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	}
 
 	{
+		_float RotationSpeed = 0.5f;
 		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		if (fabsf(p.vVelocity.x) > 0.0001f || fabsf(p.vVelocity.z) > 0.0001f) {
+			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.z) + XM_PIDIV2;
+			_float CurrentAngle = p.rotation.x;
+
+			_float DeltaAngle = TargetAngle - CurrentAngle;
+
+			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
+			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
+
+			const _float AngleVelocity = XM_PI * RotationSpeed;
+			_float MaxStep = AngleVelocity * fTimeDelta;
+
+			if (fabsf(DeltaAngle) > MaxStep) {
+				DeltaAngle = DeltaAngle > 0.f ? MaxStep : -MaxStep;
+			}
+			p.rotation.x = CurrentAngle + DeltaAngle;
+
+			if (p.rotation.x > +XM_PI) p.rotation.x -= XM_2PI;
+			if (p.rotation.x < -XM_PI) p.rotation.x += XM_2PI;
+		}
+
 		if (XMVectorGetX(XMVector3LengthSq(Velocity)) > 0.1f) {
 			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.x) + XM_PIDIV2;
 			_float CurrentAngle = p.rotation.z;
@@ -463,7 +485,7 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
 			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
 
-			const _float AngleVelocity = XM_PI * 0.25f;
+			const _float AngleVelocity = XM_PI * RotationSpeed;
 			_float MaxStep = AngleVelocity * fTimeDelta;
 
 			if (fabsf(DeltaAngle) > MaxStep) {
