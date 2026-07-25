@@ -45,6 +45,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
+
+		StringID LevelTag;
 	};
 
 private:

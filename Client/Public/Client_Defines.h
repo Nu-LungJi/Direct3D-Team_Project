@@ -34,7 +34,9 @@ namespace Client
 		Prototype_GameObject_DebugPlayer,
 		Prototype_GameObject_Player,
 		Prototype_GameObject_DebugPlayerThirdPersonCamera,
-		Prototype_GameObject_PlayerThirdPersonCamera
+		Prototype_GameObject_PlayerThirdPersonCamera,
+		Prototype_GameObject_PlayerWeapon,
+		
 	};
 
 	enum class PROTO_COMPONENT

@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "Level_Defines.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Resources.h"
@@ -22,7 +23,7 @@
 #include "Player_Locomotion_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
-
+#include "Player_Weapon.h"
 NS_USING(Client)
 
 CPlayer::CPlayer()
@@ -81,7 +82,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "MODEL";
+		Desc.sGroupTag = pDesc->LevelTag;
 		Desc.sResTag =	 "PLAYER_MODEL_RESROUCE";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
@@ -177,22 +178,22 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
-	//CTestPartObject::DESC WeaponDesc{};
-	//WeaponDesc.sObjectTag = "Weapon";
-	//WeaponDesc.hOwner = GetHandle();
-	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	//WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
-	//WeaponDesc.sGroupTag = "TEST"; 
-	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
+	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
+	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	WeaponDesc.ParentHandle = GetHandle();
 
-	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
-	//if (!Weapon.has_value())
-	//{
-	//	MSG_BOX("Create Failed Weapon");
-	//	return E_FAIL;
-	//}
+	
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(pDesc->LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, "Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon");
+		return E_FAIL;
+	}
 
-	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
 
 	return S_OK;

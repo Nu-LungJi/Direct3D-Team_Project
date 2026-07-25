@@ -197,6 +197,7 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -6.f, -215.f, 156.f };
+	PlayerDesc.LevelTag = LEVEL::CHARLES_ROOKWOOD;
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
