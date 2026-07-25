@@ -15,6 +15,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 
+#include "BridgeCRW.h"
 NS_USING(Client)
 
 CLevelCharlesRookwood::CLevelCharlesRookwood()
@@ -47,6 +48,10 @@ HRESULT CLevelCharlesRookwood::Initialize()
 
 	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
 		return E_FAIL;
+
+	if (FAILED(SpawnBridge()))
+		return E_FAIL;
+
 
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
@@ -226,6 +231,16 @@ HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 
 	if (handles.empty())
 		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnBridge()
+{
+
+	CBridgeCRW::DESC Desc{};
+
+	auto hBridgeCRW = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD,PROTO_GAMEOBJECT::Prototype_GameObject_BridgeCRW,"BridgeCRW", &Desc);
 
 	return S_OK;
 }

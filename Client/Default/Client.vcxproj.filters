@@ -88,6 +88,9 @@
     <Filter Include="GameObject\Trigger\CharlesRookwood">
       <UniqueIdentifier>{9961a9a2-af7f-4c4f-ba27-7f11bb960aab}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Bridge">
+      <UniqueIdentifier>{451893ab-e6f2-4e4c-8948-178bfb126954}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -174,6 +177,9 @@
     <ClInclude Include="TriggerCRW_SpawnStep.h">
       <Filter>GameObject\Trigger\CharlesRookwood</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\BridgeCRW.h">
+      <Filter>GameObject\Bridge</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -251,6 +257,9 @@
     </ClCompile>
     <ClCompile Include="TriggerCRW_SpawnStep.cpp">
       <Filter>GameObject\Trigger\CharlesRookwood</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BridgeCRW.cpp">
+      <Filter>GameObject\Bridge</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

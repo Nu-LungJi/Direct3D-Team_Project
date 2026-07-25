@@ -31,7 +31,7 @@ private:
 	std::optional<CHandle> SpawnPlayer();
 	std::optional<CHandle> SpawnDebugPlayer();
 	HRESULT SpawnStaticCollision();
-
+	HRESULT SpawnBridge();
 private:
 	void Free() override;
 };

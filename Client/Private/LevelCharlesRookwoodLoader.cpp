@@ -10,6 +10,8 @@
 
 #include "TriggerCRW_SpawnStep.h"
 
+#include "BridgeCRW.h"
+
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -21,6 +23,16 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			{
 				return false;
 			}
+
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Bridge/SK_Bridge.bin"))) {
+
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+				res->Load(pDesc);
+			}
+
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("MODEL", "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 				E::CResModel::DESC pDesc{};
@@ -68,6 +80,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnStep");
 					return false;
 				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BridgeCRW, CBridgeCRW::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_BridgeCRW");
+				return false;
 			}
 
 			return true;

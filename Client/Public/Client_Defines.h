@@ -36,6 +36,7 @@ namespace Client
 		Prototype_GameObject_DebugPlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_TriggerCRW_SpawnStep,
+		Prototype_GameObject_BridgeCRW,
 	};
 
 	enum class PROTO_COMPONENT
