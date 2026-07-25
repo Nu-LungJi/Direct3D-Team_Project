@@ -75,6 +75,8 @@ HRESULT CWeapon::Initialize(void* pArg)
 	}
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
+	_vector vScale = XMLoadFloat3(&pDesc->vScale);
+	m_pComTransform->SetScale(vScale);
 	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
 	return S_OK;
 }

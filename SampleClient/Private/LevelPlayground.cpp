@@ -12,6 +12,7 @@
 #include "TestModel.h"
 #include "TestGob.h"
 #include "LightObject.h"
+#include "Weapon.h"
 #include "LevelPlayGroundLoader.h"
 NS_USING(Client)
 
@@ -87,7 +88,18 @@ HRESULT CLevelPlayground::Initialize()
 
 		auto testBoss = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Gobline", "02_Gobline", &MonDesc);
 		
-		
+		CWeapon::WEAPON_DESC WeaponDesc{};
+
+		WeaponDesc.sObjectTag = "Weapon";
+		WeaponDesc.LevelTag = "LEVEL_PLAYGROUND";
+		WeaponDesc.WeaponName = "Static_Wand_Model_Resource";
+		WeaponDesc.vScale = _float3(500, 500, 500);
+		auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Wand", "03_Weapon", &WeaponDesc);
+		if (!Weapon.has_value())
+		{
+			MSG_BOX("Create Failed Wand");
+			return E_FAIL;
+		}
 	}
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
