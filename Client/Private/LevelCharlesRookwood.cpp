@@ -215,7 +215,7 @@ HRESULT CLevelCharlesRookwood::SpawnMonster()
 		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(-6.f, -215.f, 156.f,1.f));
 		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/NormalDef.json";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/DeadTest.json";
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
 
