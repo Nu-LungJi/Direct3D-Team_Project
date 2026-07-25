@@ -106,8 +106,8 @@ PS_OUT PSMain(VS_OUT In)
     
     
     float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, scrolledUV) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-    if (AlbedoTex.a < 0.05f)
-        discard;
+    //if (AlbedoTex.a < 0.05f)
+    //    discard;
     float ratio = 1.0f - (In.life / In.maxLife);
     float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
     float lengthMask = In.vTexcoord.y;
