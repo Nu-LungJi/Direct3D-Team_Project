@@ -25,6 +25,11 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (pDesc == nullptr)
         return E_FAIL;
 
+	m_pParticleShaderCache = pDesc->pShaderCache;
+
+	if (!m_pParticleShaderCache)
+		return E_FAIL;
+
     m_Desc = *pDesc;
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
@@ -68,15 +73,14 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 			break;
 	}
 
-
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-
-	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
-		return E_FAIL;
-
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
-		return E_FAIL;
+	{
+		m_pResVertexShader = m_pParticleShaderCache->GetVertexShader(pDesc->VSID.first, pDesc->VSID.second, m_Desc.sVEntryPoint);
+		if (!m_pResVertexShader)
+			return E_FAIL;
+		m_pResPixelShader = m_pParticleShaderCache->GetPixelShader(pDesc->PSID.first, pDesc->PSID.second, m_Desc.sPEntryPoint);
+		if (!m_pResPixelShader)
+			return E_FAIL;
+	}
 
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {

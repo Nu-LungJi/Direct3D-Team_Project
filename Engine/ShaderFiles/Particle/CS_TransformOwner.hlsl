@@ -1,7 +1,5 @@
 #include "../Particle/Particle_Common_Struct_Func.hlsl"
 
-
-
 cbuffer CB_OWNER_OPERATION : register(b13)
 {
 	uint g_iTargetOwnerID;
@@ -12,7 +10,6 @@ cbuffer CB_OWNER_OPERATION : register(b13)
 };
 
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u0);
-AppendStructuredBuffer<uint> gDeadList : register(u1);
 
 [numthreads(256, 1, 1)]
 void CSMain(uint id : SV_DispatchThreadID)
@@ -22,18 +19,14 @@ void CSMain(uint id : SV_DispatchThreadID)
 
 	ParticleData p = g_ParticleBuffer[id];
 
-	if (p.alive == 1 && p.ownerID == g_iTargetOwnerID)
-	{
-		p.alive = 0;
-		p.color = float4(0.f, 0.f, 0.f, 0.f);
-		p.emissive = float4(0.f, 0.f, 0.f, 0.f);
-		p.life = 0.f;
-		p.size = 0.f;
-		p.ownerID = 0;
-		p.iBehaviorType = 0;
-		p.loop = 0;
+	if (p.alive == 0 || p.ownerID != g_iTargetOwnerID)
+		return;
 
-		g_ParticleBuffer[id] = p;
-		gDeadList.Append(id);
-	}
+	p.position = mul(float4(p.position, 1.f), g_matDelta).xyz;
+	p.originalPosition = mul(float4(p.originalPosition, 1.f), g_matDelta).xyz;
+
+	p.velocity = mul(float4(p.velocity, 0.f), g_matDelta).xyz;
+	p.originalVelocity = mul(float4(p.originalVelocity, 0.f), g_matDelta).xyz;
+
+	g_ParticleBuffer[id] = p;
 }

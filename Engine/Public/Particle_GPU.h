@@ -46,6 +46,9 @@ public:
 		_string sVEntryPoint = "";
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
+
+		SPtr<CParticleShaderCache> pShaderCache;
+
     };
 
 	struct PENDING_SPAWN
@@ -88,12 +91,13 @@ private:
     SPtr<class CResComputeShader>    m_pResSpawnComputeShader = nullptr;
     SPtr<CResComputeShader>          m_pResUpdateComputeShader = nullptr;
     SPtr<CResComputeShader>          m_pResInitDeadCS = nullptr;
+    SPtr<CResComputeShader>          m_pResTransformOwnerCS = nullptr;
     SPtr<class CResSamplerState>     m_pResSamplerState = nullptr;
 
     SPtr<class CResCBuffer>          m_pComCBuffer;
     SPtr<CResCBuffer>                m_pComSpawnCBuffer;
     SPtr<CResCBuffer>                m_pComInitCBuffer;
-	SPtr<CResCBuffer> m_pComClearCBuffer;
+	SPtr<CResCBuffer>				 m_pComOwnerOperationCBuffer;
 
     uint32_t                         m_iCurrentSpawnCount = 0;
     uint32_t                         m_iDeadCount = 0;

@@ -117,13 +117,14 @@ namespace Engine
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 
-	struct CB_CLEAR
+	struct CB_OWNER_OPERATION
 	{
-		uint32_t ownerID;
-		uint32_t maxParticles;
-		_float2 padding;
+		uint32_t iTargetOwnerID = 0;
+		uint32_t iMaxParticles = 0;
+		_float2 vPadding{};
+		_float4x4 matDelta{};
 	};
-	static_assert(sizeof(CB_CLEAR) % 16 == 0);
+	static_assert(sizeof(CB_OWNER_OPERATION) % 16 == 0);
 
 	typedef struct CB_SpellMeter
 	{
