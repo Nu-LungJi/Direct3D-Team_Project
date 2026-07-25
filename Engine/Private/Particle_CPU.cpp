@@ -25,6 +25,11 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (pDesc == nullptr)
         return E_FAIL;
 
+	m_pParticleShaderCache = pDesc->pShaderCache;
+
+	if (!m_pParticleShaderCache)
+		return E_FAIL;
+
     m_Desc = *pDesc;
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
@@ -68,15 +73,14 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 			break;
 	}
 
-
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-
-	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
-		return E_FAIL;
-
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
-		return E_FAIL;
+	{
+		m_pResVertexShader = m_pParticleShaderCache->GetVertexShader(pDesc->VSID.first, pDesc->VSID.second, m_Desc.sVEntryPoint);
+		if (!m_pResVertexShader)
+			return E_FAIL;
+		m_pResPixelShader = m_pParticleShaderCache->GetPixelShader(pDesc->PSID.first, pDesc->PSID.second, m_Desc.sPEntryPoint);
+		if (!m_pResPixelShader)
+			return E_FAIL;
+	}
 
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
@@ -202,9 +206,15 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		VTX_PARTICLE_INSTANCED_DATA inst{};
 		inst.iBehaviorType = p.iBehaviorType;
 		
-		p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
-		p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
-		p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP) != 0) {
+			SizeLerp(p, fTimeDelta);
+		}
+		else {
+			p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+			p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+			p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+		}
+	
 
 		
 		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
@@ -348,6 +358,8 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		GWWaveSmoke(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
 		Lightning(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
+		ExtraLightning(p, fTimeDelta);
 	}
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
@@ -380,6 +392,16 @@ void CParticle_CPU::GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 {
 	XMStoreFloat3(&p.vVelocity, XMLoadFloat3(&p.vVelocity) * expf(-4.f * fTimeDelta));
 
+}
+void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	_float stopSizeTime = p.fStopSizeTime;
+
+	float ageRatio = std::clamp(p.life / stopSizeTime, 0.f, 1.f);
+
+	p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+	p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+	p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -421,7 +443,12 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 		XMStoreFloat3(&p.vVelocity, Velocity);
 	}
 }
+void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
+	_float Ratio = p.life / p.fMaxLife;
+	p.rotation.x = Ratio * 15.f;
 
+
+}
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
@@ -455,6 +482,7 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].rotation = src.rotation;
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
+		m_Particles[i].fStopSizeTime = src.fStopSizeTime;
 
 
 	

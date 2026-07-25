@@ -32,6 +32,7 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.endSize = s.endSize;
     p.rotation = s.rotation;
     p.size = s.size;
+	p.stopSizeTime = s.stopSizeTime;
     p.alive = 1;
     p.color = s.color;
     p.originalVelocity = s.originalVelocity;
@@ -42,7 +43,6 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.iBehaviorType = s.iBehaviorType;
     p.loop = s.loop;
     p.originalPosition = s.originalPosition;
-    
     gParticles[index] = p;
 }
 

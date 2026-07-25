@@ -834,11 +834,6 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 			m_pParticleManager->ClearByOwner(ownerId);
 	}
 
-	for (uint32_t ownerId :instance.vecParticleOwnerId)
-	{
-		m_pParticleManager->ClearByOwner(ownerId);
-	}
-
 	if (m_pLightManager)
 	{
 		for (const CHandle& lightHandle :

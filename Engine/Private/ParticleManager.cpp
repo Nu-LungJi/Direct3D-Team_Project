@@ -8,6 +8,7 @@
 #include "Particle_CPU.h"
 #include "ParticleParamImGui.h"
 #include "EffectManager.h"
+#include "ParticleShaderCache.h"
 NS_USING(Engine)
 
 std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
@@ -32,6 +33,15 @@ CParticleManager::~CParticleManager()
 {
 }
 
+HRESULT CParticleManager::Initialize()
+{
+	m_pShaderCache = std::make_shared<CParticleShaderCache>();
+
+	if (!m_pShaderCache)
+		return E_FAIL;
+
+	return S_OK;
+}
 void CParticleManager::UpdateGUI()
 {
 	static TextureSlotState slotDiffuse{ "Diffuse",    "SAMPLE_CLINET_TEXTURE", "TEX_RIBBON" };
@@ -102,6 +112,8 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokegv = false;
 	static _bool bSmokegw = false;
 	static _bool bLightning = false;
+	static _bool bSizeStop = false;
+	static _bool bExtraLightning = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -871,10 +883,14 @@ void CParticleManager::UpdateGUI()
 			previewParams.originalVelocity = preset.originalVelocity;
 			previewParams.emissive = preset.Emissive;
 			previewParams.endEmissive = preset.endEmissive;
-			previewParams.rotation = _float4(XMConvertToRadians(preset.rotation.x),
-				XMConvertToRadians(preset.rotation.y),
-				XMConvertToRadians(preset.rotation.z),
-				XMConvertToRadians(preset.rotation.w));
+			previewParams.rotation =
+			{
+				preset.rotation.x,
+				preset.rotation.y,
+				preset.rotation.z,
+				0.f
+			};
+			previewParams.fStopSizeTime = preset.fStopSizeTime;
 			bNeedTypeIndexSync = true;
 			pendingSyncGroup = preset.sGroupTag;
 			pendingSyncType = preset.sTypeTag;
@@ -906,31 +922,51 @@ void CParticleManager::UpdateGUI()
 	ImGui::Text("=== Live Preview ===");
 	ImGui::PushID("LivePreview");
 
+	ImGui::Text("Common Field");
 	ImGui::Checkbox("Distortion", &distortion);
+	ImGui::SameLine();
 	ImGui::Checkbox("BILLBOARD", &billboard);
+	ImGui::SameLine();
 	ImGui::Checkbox("GRAVITY", &gravity);
+	ImGui::SameLine();
 	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
-	ImGui::Checkbox("SMOKE", &bSmoke);	
+	ImGui::SameLine();
+	ImGui::Checkbox("SIZE STOP", &bSizeStop);
+	ImGui::Separator();
+
+	ImGui::Text("Individiual Field");
+	ImGui::Checkbox("SMOKE", &bSmoke);
+	ImGui::SameLine();	
 	ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+	ImGui::SameLine();
 	ImGui::Checkbox("SMOKEGV", &bSmokegv);
+	ImGui::SameLine();
 	ImGui::Checkbox("SMOKEGW", &bSmokegw);
+
+	ImGui::Separator();
 	ImGui::Checkbox("LIGHTNING", &bLightning);
+	ImGui::SameLine();
+	ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+	ImGui::Separator();
+
 	ImGui::Checkbox("None", &none);
 
-	if (none)
-		bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+
 
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
+	ImGui::SameLine();
 	ImGui::Checkbox("ALPHA_ADD", &alphaAdd);
+	ImGui::SameLine();
 	ImGui::Checkbox("NONE_BLEND", &noneBlend);
+
 	auto particle = GetParticle(selectedGroup, selectedType);
 	if (particle) {
 		if (alphaBlend)
 		{
 			alphaAdd = false;
 			noneBlend = false;
-			if(particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
+			if (particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
 				particle->Set_BlendState(BLENDTYPE::ALPHABLEND);
 		}
 		else if (alphaAdd) {
@@ -947,6 +983,9 @@ void CParticleManager::UpdateGUI()
 		}
 	}
 	
+	if (none) {
+		bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
@@ -956,6 +995,10 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 	if(circleToWave)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
+	if (bSizeStop)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
+
+
 	if(bSmoke)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
 	if (bSmokeJump)
@@ -966,6 +1009,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	if (bLightning)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
+	if (bExtraLightning)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -985,6 +1030,12 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat3("Velocity", &previewParams.velocity.x, 0.01f);
 
 	ImGui::DragFloat("Life", &previewParams.life, 0.01f);
+
+	if (previewParams.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP)
+	{
+		ImGui::DragFloat("Stop Size Time", &previewParams.fStopSizeTime, 0.01f);
+	}
+
 
 	ImGui::Checkbox("RandomSize?", &previewParams.bRandomSize);
 	if (previewParams.bRandomSize) {
@@ -1006,7 +1057,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat3("RotMax", &previewParams.rotMax.x, 0.01f);
 	}
 	else
-		ImGui::DragFloat4("Rotation", &previewParams.rotation.x, 0.01f);
+		ImGui::DragFloat3("Rotation", &previewParams.rotation.x, 0.01f);
 
 	ImGui::ColorEdit4("Color", &previewParams.color.x);
 	ImGui::ColorEdit3("Emissive", &previewParams.emissive.x);
@@ -1050,16 +1101,16 @@ void CParticleManager::UpdateGUI()
 			data.fEndSize = p.bRandomSize
 				? _float3(Randf(p.endSizeMin.x, p.endSizeMax.x), Randf(p.endSizeMin.y, p.endSizeMax.y), Randf(p.endSizeMin.z, p.endSizeMax.z))
 				: p.fEndSize;
-
+			data.fStopSizeTime = p.fStopSizeTime;
 			data.rotation = p.bRandomRot
 				? _float4(XMConvertToRadians(Randf(p.rotMin.x, p.rotMax.x)),
 					XMConvertToRadians(Randf(p.rotMin.y, p.rotMax.y)),
 					XMConvertToRadians(Randf(p.rotMin.z, p.rotMax.z)),
-					1.f)
+					0.f)
 				: _float4(XMConvertToRadians(p.rotation.x),
 					XMConvertToRadians(p.rotation.y),
 					XMConvertToRadians(p.rotation.z),
-					XMConvertToRadians(p.rotation.w));
+					0);
 
 			data.color = p.color;
 			data.emissive = p.emissive;
@@ -1141,6 +1192,7 @@ void CParticleManager::UpdateGUI()
 			preset.maxLife = previewParams.life;
 			preset.fStartSize = previewParams.fSize;
 			preset.fEndSize = previewParams.fEndSize;
+			preset.fStopSizeTime = previewParams.fStopSizeTime;
 			preset.rotation = previewParams.rotation;
 			preset.groupTypeIndex = groupTypeIndex;
 			preset.whatKindFilterIndex = whatKindFilterIndex;
@@ -1180,26 +1232,45 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 	if (currentKind == SPAWN_COMMAND_KIND::STANDARD|| currentKind == SPAWN_COMMAND_KIND::BEAM) {
+
+		ImGui::Text("Common Field");
 		ImGui::Checkbox("Distortion", &distortion);
+		ImGui::SameLine();
 		ImGui::Checkbox("BILLBOARD", &billboard);
+		ImGui::SameLine();
 		ImGui::Checkbox("GRAVITY", &gravity);
-		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::SameLine();
+		ImGui::Checkbox("SIZE STOP", &bSizeStop);
+		ImGui::Separator();
+
+		ImGui::Text("Individiual Field");
 		ImGui::Checkbox("SMOKE", &bSmoke);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEGV", &bSmokegv);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEGW", &bSmokegw);
+		ImGui::Separator();
 		ImGui::Checkbox("LIGHTNING", &bLightning);
+		ImGui::SameLine();
+		ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+		ImGui::Separator();
+		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::Separator();
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+			bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
-
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		if (distortion)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
+
+	
 		if (billboard)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
+
 		if (gravity)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 		if (circleToWave)
@@ -1214,6 +1285,10 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 		if (bLightning)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
+		if (bSizeStop)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
+		if (bExtraLightning)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	}
 	
 	ImGui::Separator();
@@ -1257,14 +1332,19 @@ void CParticleManager::UpdateGUI()
 			ImGui::DragFloat3("EndSize", &pendingStandard.fEndSize.x, 0.01f);
 		}
 
+		if (pendingStandard.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP)
+		{
+			ImGui::DragFloat("Stop Size Time", &pendingStandard.fStopSizeTime, 0.01f);
+		}
+
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
 
 		if (pendingStandard.bRandomRot) {
-			ImGui::DragFloat4("RotMin", &pendingStandard.rotMin.x, 0.01f);
-			ImGui::DragFloat4("RotMax", &pendingStandard.rotMax.x, 0.01f);
+			ImGui::DragFloat3("RotMin", &pendingStandard.rotMin.x, 0.01f);
+			ImGui::DragFloat3("RotMax", &pendingStandard.rotMax.x, 0.01f);
 		}
 		else
-			ImGui::DragFloat4("Rotation", &pendingStandard.rotation.x, 0.01f);
+			ImGui::DragFloat3("Rotation", &pendingStandard.rotation.x, 0.01f);
 		
 
 		ImGui::ColorEdit4("BaseColor", &pendingStandard.color.x);
@@ -1492,6 +1572,7 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		req.fSpawnInterval = fSpawnInterval;
 		req.fElapsed = 0.f;
 		req.iUserId = pSpawnData->ownerID;
+		
 		m_LoopRequests.push_back(std::move(req));
 	}
 
@@ -1757,7 +1838,12 @@ void CParticleManager::ComboList(_string comboName, _string resourceName, _strin
 
 UPtr<CParticleManager> CParticleManager::Create()
 {
-	return UPtr<CParticleManager>(new CParticleManager{});
+	auto instance = UPtr<CParticleManager>(new CParticleManager{});
+
+	if (FAILED(instance->Initialize()))
+		return nullptr;
+
+	return instance;
 }
 
 uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
@@ -1799,16 +1885,16 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 					? _float3(Randf(p.endSizeMin.x, p.endSizeMax.x), Randf(p.endSizeMin.y, p.endSizeMax.y), Randf(p.endSizeMin.z, p.endSizeMax.z))
 					: p.fEndSize;
 				s.life = p.life;
-			
+				s.fStopSizeTime = p.fStopSizeTime;
 				s.rotation = p.bRandomRot
 					? _float4(XMConvertToRadians(Randf(p.rotMin.x, p.rotMax.x)),
 						XMConvertToRadians(Randf(p.rotMin.y, p.rotMax.y)),
 						XMConvertToRadians(Randf(p.rotMin.z, p.rotMax.z)),
-						1.f)
+						0)
 					: _float4(XMConvertToRadians(p.rotation.x),
 						XMConvertToRadians(p.rotation.y),
 						XMConvertToRadians(p.rotation.z),
-						XMConvertToRadians(p.rotation.w));
+						0);
 
 				s.color = p.color;
 				s.emissive = p.emissive;
@@ -2043,7 +2129,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			int RowCount = entry.value("RowCount", 1);
 			int ColCount = entry.value("ColCount", 1);
 			int selectedBlend = entry.value("BLENDSTATE", 0);
-
 			if (particleType.empty() || sGroupTag.empty() || particleName.empty())
 			{
 				hr = E_FAIL;
@@ -2084,6 +2169,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
+				desc.pShaderCache = m_pShaderCache;
 				desc.blendState = selectedBlend;
 				if (!VSGroup.empty() && !VSID.empty())
 					desc.VSID = { VSGroup, VSID };
@@ -2117,7 +2203,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2231,7 +2317,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_GPU::Create(&desc);
 			}
 			else if (particleType == "PARTICLE_CPU")
@@ -2257,7 +2343,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2279,7 +2365,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CBeam_CPU::Create(&desc);
 			}
 			else if (particleType == "TRAIL_CPU")
@@ -2298,7 +2384,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CTrail_CPU::Create(&desc);
 			}
 			else
@@ -2451,6 +2537,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["velMin"] = { p.velMin.x, p.velMin.y, p.velMin.z };
 				entry["velMax"] = { p.velMax.x, p.velMax.y, p.velMax.z };
 				entry["iBehaviorType"] = p.iBehaviorType;
+				entry["stopSizeTime"] = p.fStopSizeTime;
 				break;
 			}
 			case SPAWN_COMMAND_KIND::BEAM:
@@ -2563,13 +2650,13 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
 			p.velocity = { vel[0], vel[1], vel[2] };
 
-
 			p.life = entry.value("life", 1.f);
 
 			auto startSize = entry.value("StartSize", std::vector<float>{0, 0, 0});
 			p.fSize = { startSize[0], startSize[1], startSize[2] };
-			auto endSize = entry.value("StartSize", std::vector<float>{0, 0, 0});
+			auto endSize = entry.value("EndSize", std::vector<float>{0, 0, 0});
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
+			p.fStopSizeTime = entry.value("stopSizeTime", 0.f);
 
 			p.bRandomRot = entry.value("bRandomRot", false);
 			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
@@ -2577,8 +2664,9 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
 			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
 
-			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0,0});
-			p.rotation = { rot[0], rot[1], rot[2],rot[3]};
+
+			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
+			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
 
 
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
@@ -2681,6 +2769,8 @@ HRESULT CParticleManager::SaveEffectPreset(const std::string& strJsonPath, const
 	entry["whatKindFilterIndex"] = preset.whatKindFilterIndex;
 	entry["behaviorType"] = preset.iBehaviorType;
 	entry["rotation"] = { preset.rotation.x, preset.rotation.y, preset.rotation.z, preset.rotation.w };
+	entry["stopSizeTime"] = preset.fStopSizeTime;
+	entry["behaviorType"] = preset.iBehaviorType;
 	// 같은 이름 있으면 덮어쓰기
 	bool bReplaced = false;
 	for (auto& e : j["presets"])
@@ -2752,6 +2842,7 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 		preset.groupTypeIndex = entry.value("groupTypeIndex", 0);
 		preset.whatKindFilterIndex = entry.value("whatKindFilterIndex", 0);
 		preset.iBehaviorType = entry.value("behaviorType", 0);
+		preset.fStopSizeTime = entry.value("stopSizeTime", 0.f);
 		if (!preset.presetName.empty())
 			m_ParticlePresets[preset.presetName] = preset;
 	}
@@ -2970,6 +3061,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
 			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
 
+			
 			p.life = entry.value("life", 1.f);
 
 			auto startSize = entry.value("StartSize", std::vector<float>{0, 0, 0, 0});
@@ -2977,7 +3069,6 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 
 			auto endSize = entry.value("EndSize", std::vector<float>{0, 0, 0, 0});
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
-
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
@@ -2987,7 +3078,8 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
 			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
-
+			p.fStopSizeTime = entry.value("stopSizeTime", 0.f);
+			p.iBehaviorType = entry.value("iBehaviorType", 0u);
 			cmd.params = p;
 			break;
 		}
@@ -3135,6 +3227,7 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 	data.rotation = preset.rotation;
 	data.originalPosition = position;
 	data.originalVelocity = data.velocity;
+	data.fStopSizeTime = preset.fStopSizeTime;
 	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
 }
 // ParticleManager.cpp
@@ -3196,6 +3289,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
+			else if constexpr (std::is_same_v<T, SExtraLightning>)
+				return ParticlePattern::MakeExtraLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

@@ -208,6 +208,8 @@ namespace Engine
 		_bool    loop;
 		_float3  originalPosition;
 		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float fStopSizeTime = 0.f;
+		_float3 pad1;
 	} PARTICLE_SPAWN_DATA;
 	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
 

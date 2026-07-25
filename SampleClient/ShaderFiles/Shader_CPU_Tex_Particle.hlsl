@@ -136,6 +136,7 @@ PS_OUT PSMain(VS_OUT In)
         distortion *= distortionStrength;
         float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion);
         float3 finalRGB = lerp(distortedBackground.rgb, texColor.rgb, texColor.a);
+		
         finalRGB += lerpedEmissive.rgb * lerpedEmissive.a;
 
         Out.vDiffuse = float4(finalRGB, 1.0f);
@@ -255,3 +256,21 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 	
 	return Out;
 }
+PS_OUT RemoveBlack(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+
+	if (all(texColor.rgb < 0.2f))
+		discard;
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+
+	float3 finalRGB = texColor.rgb * In.vColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+	
+	Out.vDiffuse = float4(finalRGB, texColor.a * In.vColor.a);
+	return Out;
+}
+
