@@ -87,6 +87,52 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 
 	const _float fAnimationRatio =std::clamp(animator->GetPlayAnimRatio(), 0.f, 1.f);
 
+	if (player->HasRawMoveInput())
+	{
+		const _vector vCurrentDirection = XMVector3Normalize(
+			XMVectorSetY(
+				XMLoadFloat3(&m_vRollDirection),
+				0.f));
+		const _vector vTargetDirection = XMVector3Normalize(
+			XMVectorSetY(
+				XMLoadFloat3(&player->GetRawMoveDirection()),
+				0.f));
+		const _float fDot = std::clamp(
+			XMVectorGetX(XMVector3Dot(
+				vCurrentDirection,
+				vTargetDirection)),
+			-1.f,
+			1.f);
+		const _float fCrossY = XMVectorGetY(XMVector3Cross(
+			vCurrentDirection,
+			vTargetDirection));
+		_float fSignedAngle = std::atan2(fCrossY, fDot);
+
+		// 정반대 입력은 외적이 0이므로 회전 방향을 선택해
+		// 일반 벡터 Lerp에서 발생하는 순간 반전을 피한다.
+		if (std::abs(fCrossY) <= std::numeric_limits<_float>::epsilon() &&
+			fDot < 0.f)
+		{
+			fSignedAngle = XM_PI;
+		}
+
+		const _float fDirectionBlend = std::clamp(
+			1.f - std::exp(-m_fRollDirectionResponse * fTimeDelta),
+			0.f,
+			1.f);
+		const _vector vSteeredDirection = XMVector3Normalize(
+			XMVector3TransformNormal(
+				vCurrentDirection,
+				XMMatrixRotationY(fSignedAngle * fDirectionBlend)));
+		XMStoreFloat3(&m_vRollDirection, vSteeredDirection);
+
+		if (auto* moveIntent = player->GetMoveIntent())
+		{
+			moveIntent->SetFacingIntent(
+				m_vRollDirection,
+				360.f);
+		}
+	}
 
 	if (fAnimationRatio < m_fRollMoveEndRatio)
 	{

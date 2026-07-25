@@ -32,10 +32,11 @@ public:
 private:
 	int32_t m_iRollAnimation{ -1 };
 	_float3 m_vRollDirection{};
-	_float m_fRollSpeed{20.f };
-	_float m_fRollStopStartRatio{ 0.08f };
-	_float m_fRollMoveEndRatio{ 0.25f };
-	_float m_fLocomotionCancelRatio{ 0.35f };
+	_float m_fRollSpeed{15.f };
+	_float m_fRollStopStartRatio{ 0.175f };
+	_float m_fRollMoveEndRatio{ 0.35f };
+	_float m_fLocomotionCancelRatio{ 0.30f };
+	_float m_fRollDirectionResponse{ 3.f };
 };
 
 NS_END
