@@ -12,7 +12,19 @@ class CPlayer_Attack_State final : public CState
 public:
 	DECLARE_DERIVED_TYPE(CPlayer_Attack_State, CState)
 
-
+	enum class ATTACK_DIRECTION : uint8_t
+	{
+		FWD,
+		LFT_45,
+		LFT_90,
+		LFT_135,
+		LFT_180,
+		RHT_45,
+		RHT_90,
+		RHT_135,
+		RHT_180,
+		END
+	};
 private:
 	CPlayer_Attack_State() = default;
 	~CPlayer_Attack_State() override = default;
@@ -26,6 +38,13 @@ public:
 
 private:
 	void CacheAnimationIndices(const CPlayer& player);
+	ATTACK_DIRECTION ResolveAttackDirection(const CPlayer& player) const;
+	int32_t GetAttackAnimation(
+		ATTACK_DIRECTION eDirection,
+		_bool bHeavy) const;
+	_bool PlayDirectionalAttack(
+		CPlayer& player,
+		_bool bHeavy);
 
 	int32_t FindAnimationIndex(
 		const CPlayer& player,
@@ -42,9 +61,15 @@ private:
 	static constexpr _float LIGHT_FORWARD_MOVE_START_RATIO = 0.05f;
 	static constexpr _float LIGHT_FORWARD_MOVE_END_RATIO = 0.1f;
 	static constexpr _float LIGHT_FORWARD_MOVE_SPEED = 1.5f;
+	static constexpr size_t ATTACK_DIRECTION_COUNT =static_cast<size_t>(ATTACK_DIRECTION::END);
+
 
 	std::array<int32_t, FORWARD_LIGHT_ANIMATION_COUNT> m_ForwardLightAnimations{};
 	std::array<int32_t, FORWARD_HVY_ANIMATION_COUNT > m_ForwardHvyAnimations{};
+
+	std::array<int32_t, ATTACK_DIRECTION_COUNT> m_DirectionalLightAnimations{};
+	std::array<int32_t, ATTACK_DIRECTION_COUNT> m_DirectionalHeavyAnimations{};
+
 	size_t m_iCurrentForwardLightAnimation{};
 	size_t m_iCurrentForwardHvyAnimation{};
 	uint32_t m_iComboCount{};

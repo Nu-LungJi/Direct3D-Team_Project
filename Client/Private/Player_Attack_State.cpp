@@ -7,6 +7,7 @@
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
+#include "CameraObject.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
 
@@ -30,7 +31,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_bPlayingHeavy = false;
 
 	auto* animator = player->GetAnimator();
-	if (!animator || m_ForwardLightAnimations[m_iCurrentForwardLightAnimation] < 0)
+	if (!animator)
 	{
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -46,7 +47,8 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 		moveIntent->ClearFacingIntent();
 	}
 
-	animator->Play_Anim(m_ForwardLightAnimations[m_iCurrentForwardLightAnimation],false,ATTACK_BLEND_DURATION);
+	if (!PlayDirectionalAttack(*player, false))
+		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 }
 
 void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
@@ -77,11 +79,14 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 		return;
 	}
 
+	
+
+
+
+
 	const _float fAnimRatio = animator->GetPlayAnimRatio();
 
-	if (!m_bPlayingHeavy &&
-		fAnimRatio >= LIGHT_FORWARD_MOVE_START_RATIO &&
-		fAnimRatio <= LIGHT_FORWARD_MOVE_END_RATIO)
+	if (!m_bPlayingHeavy &&fAnimRatio >= LIGHT_FORWARD_MOVE_START_RATIO &&fAnimRatio <= LIGHT_FORWARD_MOVE_END_RATIO)
 	{
 		player->ApplyAttackForwardMovement(
 			LIGHT_FORWARD_MOVE_SPEED,
@@ -108,36 +113,128 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	if (m_bAttackQueued && fAnimRatio >= COMBO_LINK_RATIO)
 	{
-		const size_t iNextAnimation =(m_iCurrentForwardLightAnimation + 1) %m_ForwardLightAnimations.size();
+		m_bAttackQueued = false;
+		++m_iComboCount;
 
-		if (m_ForwardLightAnimations[iNextAnimation] >= 0)
+		if (m_iComboCount == 3)
 		{
-			m_bAttackQueued = false;
-			++m_iComboCount;
-			if (m_iComboCount == 3) {
-				m_bPlayingHeavy = true;
-				player->SetRootMotionTranslationActive(true);
-				player->SetRootMotionRotationActive(true);
-				animator->Play_Anim(m_ForwardHvyAnimations[0], false, ATTACK_BLEND_DURATION);
-				m_iComboCount = 0;
-				return;
-			}
-			else {
-				m_bPlayingHeavy = false;
-				player->SetRootMotionTranslationActive(true);
-				player->SetRootMotionRotationActive(false);
-				m_iCurrentForwardLightAnimation = iNextAnimation;
-				animator->Play_Anim(m_ForwardLightAnimations[m_iCurrentForwardLightAnimation], false, ATTACK_BLEND_DURATION);
-				return;
-			}
-			
+			m_iComboCount = 0;
+			if (!PlayDirectionalAttack(*player, true))
+				playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+			return;
 		}
 
-		m_bAttackQueued = false;
+		m_iCurrentForwardLightAnimation =
+			(m_iCurrentForwardLightAnimation + 1) %
+			m_ForwardLightAnimations.size();
+
+		if (!PlayDirectionalAttack(*player, false))
+			playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+		return;
 	}
 
 	if (animator->GetFinish())
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+}
+
+CPlayer_Attack_State::ATTACK_DIRECTION
+CPlayer_Attack_State::ResolveAttackDirection(const CPlayer& player) const
+{
+	auto* camera =
+		CGameInstance::Get().GetActiveCamera("PlayerCamera");
+	if (!camera)
+		return ATTACK_DIRECTION::FWD;
+
+	_vector vPlayerLook = XMVectorSetY(player.GetTransform().GetState(STATE::LOOK),0.f);
+	_vector vPlayerRight = XMVectorSetY(player.GetTransform().GetState(STATE::RIGHT),0.f);
+	_vector vAttackDirection = XMVectorSetY(camera->GetTransform().GetState(STATE::LOOK),0.f);
+
+	constexpr _float EPSILON =std::numeric_limits<_float>::epsilon();
+	if (XMVectorGetX(XMVector3LengthSq(vPlayerLook)) <= EPSILON ||
+		XMVectorGetX(XMVector3LengthSq(vPlayerRight)) <= EPSILON ||
+		XMVectorGetX(XMVector3LengthSq(vAttackDirection)) <= EPSILON)
+	{
+		return ATTACK_DIRECTION::FWD;
+	}
+
+	vPlayerLook = XMVector3Normalize(vPlayerLook);
+	vPlayerRight = XMVector3Normalize(vPlayerRight);
+	vAttackDirection = XMVector3Normalize(vAttackDirection);
+
+	const _float fForward = XMVectorGetX(XMVector3Dot(vPlayerLook, vAttackDirection));
+	const _float fRight = XMVectorGetX(XMVector3Dot(vPlayerRight, vAttackDirection));
+	const _float fSignedAngle = XMConvertToDegrees(std::atan2(fRight, fForward));
+	const _float fAbsAngle = std::abs(fSignedAngle);
+	const _bool bRight = fSignedAngle >= 0.f;
+
+	if (fAbsAngle < 22.5f)
+		return ATTACK_DIRECTION::FWD;
+	if (fAbsAngle < 67.5f)
+		return bRight
+			? ATTACK_DIRECTION::RHT_45
+			: ATTACK_DIRECTION::LFT_45;
+	if (fAbsAngle < 112.5f)
+		return bRight
+			? ATTACK_DIRECTION::RHT_90
+			: ATTACK_DIRECTION::LFT_90;
+	if (fAbsAngle < 157.5f)
+		return bRight
+			? ATTACK_DIRECTION::RHT_135
+			: ATTACK_DIRECTION::LFT_135;
+
+	return bRight
+		? ATTACK_DIRECTION::RHT_180
+		: ATTACK_DIRECTION::LFT_180;
+}
+
+int32_t CPlayer_Attack_State::GetAttackAnimation(ATTACK_DIRECTION eDirection,_bool bHeavy) const
+{
+	if (eDirection == ATTACK_DIRECTION::FWD)
+	{
+		if (bHeavy)
+			return m_ForwardHvyAnimations.front();
+
+		return m_ForwardLightAnimations[
+			m_iCurrentForwardLightAnimation];
+	}
+
+	const size_t iDirection = (size_t)(eDirection);
+	if (iDirection >= ATTACK_DIRECTION_COUNT)
+		return -1;
+
+	return bHeavy
+		? m_DirectionalHeavyAnimations[iDirection]
+		: m_DirectionalLightAnimations[iDirection];
+}
+
+_bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
+{
+	auto* animator = player.GetAnimator();
+	if (!animator)
+		return false;
+
+	ATTACK_DIRECTION eDirection =
+		ResolveAttackDirection(player);
+	int32_t iAnimation =
+		GetAttackAnimation(eDirection, bHeavy);
+
+	if (iAnimation < 0)
+	{
+		eDirection = ATTACK_DIRECTION::FWD;
+		iAnimation = bHeavy
+			? m_ForwardHvyAnimations.front()
+			: m_ForwardLightAnimations[
+				m_iCurrentForwardLightAnimation];
+	}
+
+	if (iAnimation < 0)
+		return false;
+
+	m_bPlayingHeavy = bHeavy;
+	player.SetRootMotionTranslationActive(true);
+	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
+	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);
+	return true;
 }
 
 void CPlayer_Attack_State::CacheAnimationIndices(const CPlayer& player)
@@ -165,6 +262,29 @@ void CPlayer_Attack_State::CacheAnimationIndices(const CPlayer& player)
 	m_ForwardHvyAnimations[7] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_09_anm.bin");
 	m_ForwardHvyAnimations[8] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmLft_anm.bin");
 	m_ForwardHvyAnimations[9] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmRht_anm.bin");
+
+	m_DirectionalLightAnimations.fill(-1);
+	m_DirectionalHeavyAnimations.fill(-1);
+
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] =m_ForwardLightAnimations.front();
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_45_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_90_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_135_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_180_Lht_Spin_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_45_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Lht_frmLft_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Lht_Spin_anm.bin");
+
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] = m_ForwardHvyAnimations.front();
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_45_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_90_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_135_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_180_Hvy_SpinRht_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_45_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Hvy_Spin_anm.bin");
 
 	m_bAnimationIndicesCached = true;
 }
