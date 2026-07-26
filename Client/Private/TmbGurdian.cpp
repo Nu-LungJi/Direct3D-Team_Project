@@ -166,6 +166,9 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			m_vecDeadHandles.push_back(*debris);
 		}
 	}
+
+	m_pModelAnimator->SetEvaluationMode(
+		CComAnimator::EVALUATION_MODE::CPU_GPU);
 	return S_OK;
 }
 

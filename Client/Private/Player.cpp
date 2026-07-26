@@ -40,7 +40,6 @@ CPlayer::~CPlayer()
 HRESULT CPlayer::InitializePrototype(void* pArg)
 {
 
-
 	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
 	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
 	{

@@ -9,8 +9,6 @@
 #include "UiCamera.h"
 
 
-#include "DebugPlayer.h"
-#include "DebugPlayerThirdPersonCamera.h"
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
@@ -49,15 +47,11 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(SpawnUICamera()))
 		return E_FAIL;
 
-	if (FAILED(SpawnDebugPlayerCamera(SpawnDebugPlayer())))
-		return E_FAIL;
-
 	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
 		return E_FAIL;
 
 	if (FAILED(SpawnBridge()))
 		return E_FAIL;
-
 
 	if (FAILED(SpawnMyMagicStepController()))
 		return E_FAIL;
@@ -154,33 +148,6 @@ HRESULT CLevelCharlesRookwood::SpawnUICamera()
 	return S_OK;
 }
 
-HRESULT CLevelCharlesRookwood::SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer)
-{
-	if (!hDebugPlayer) return E_FAIL;
-	CDebugPlayerThirdPersonCamera::DESC Desc{};
-	Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-	Desc.vAt = { 10.f, 50.f, 10.f };
-	Desc.vEye = { 10.f, 53.f, 5.f };
-	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-	Desc.fFovY = 75.f;
-	Desc.fNear = 0.1f;
-	Desc.fFar = 1000.f;
-	Desc.sObjectTag = "DebugPlayerCamera";
-	Desc.hTarget = hDebugPlayer.value();
-	
-	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::CHARLES_ROOKWOOD,
-		PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera,
-		"100_CAMERA",
-		&Desc);
-	if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
-		"DebugPlayerCamera", *hPlayerCamera)))
-	{
-		return E_FAIL;
-	}
-	return S_OK;
-}
-
 HRESULT CLevelCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 {
 	if (!hPlayer) return E_FAIL;
@@ -242,17 +209,7 @@ HRESULT CLevelCharlesRookwood::SpawnMonster()
 
 	return S_OK;
 }
-std::optional<CHandle> CLevelCharlesRookwood::SpawnDebugPlayer()
-{
-	CDebugPlayer::DESC PlayerDesc{};
-	PlayerDesc.sObjectTag = "DebugPlayer";
-	PlayerDesc.vInitialPosition = { -6.f, -215.f, 156.f };
-	return  E::CGameInstance::Get().AddGameObjectToLayer(
-				LEVEL::CHARLES_ROOKWOOD,
-				PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayer,
-				"02_Player",
-				&PlayerDesc);
-}
+
 
 HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 {

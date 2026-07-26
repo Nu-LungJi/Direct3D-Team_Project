@@ -94,20 +94,6 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				return false;
 			}
 
-			// 디버그 플레이어 프로토타입 등록
-			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayer, CDebugPlayer::Create())))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayer");
-				return false;
-			}
-
-			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera, CDebugPlayerThirdPersonCamera::Create())))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayerThirdPersonCamera");
-				return false;
-			}
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
 				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera, CPlayerThirdPersonCamera::Create())))
