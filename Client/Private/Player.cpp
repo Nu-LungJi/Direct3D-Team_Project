@@ -371,6 +371,72 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
 	}
+	if (m_pStateMachine && CGameInstance::Get().MousePressing	(MOUSEKEYSTATE::RB))
+	{
+		//CGameInstance::Get().GetPhysXManager()->RayCast()
+
+		if(false)
+		if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		{
+			std::vector< PX_RAYCAST_RESULT> results{};
+			const auto& [ori, dir] = pPlayerCamera->GetRay();
+
+			//CGameInstance::Get().GetDbgLineRender()->AddRay()
+
+			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+			CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+			CGameInstance::Get().GetDbgLineRender()->AddRay(
+				ori,
+				dir,
+				100.f);
+			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+			if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = dir, .fMaxDistance = 100.f,
+			.tFilter = {.hIgnoreGameObject = GetHandle() } }, results))
+			{
+				for (const auto& result : results)
+				{
+					const auto hit = result.vHitpos;
+					const auto normalEnd = _float3{
+						hit.x + result.vHitNormal.x,
+						hit.y + result.vHitNormal.y,
+						hit.z + result.vHitNormal.z
+					};
+					//CGameInstance::Get().GetDbgLineRender()->AddLine(
+					//	hit,
+					//	normalEnd,
+					//	{ 0.f, 1.f, 0.f, 1.f });
+
+
+				}
+			}
+		}
+
+
+		if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		{
+			const auto& [ori, dir] = pPlayerCamera->GetRay();
+			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+			CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+			CGameInstance::Get().GetDbgLineRender()->AddSphere(10.f, XMMatrixTranslation(ori.x, ori.y, ori.z));
+			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+			std::vector<PX_OVERLAP_RESULT> results{};
+			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 10.f}, .tPose = {.vPosition = ori} }, results))
+			{
+				for (const auto& result : results)
+				{
+				}
+			}
+		}
+	}
+
 
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
