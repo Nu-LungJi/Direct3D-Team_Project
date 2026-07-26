@@ -1,38 +1,43 @@
 #include "pch.h"
-#include "TriggerCRW_SpawnStep.h"
-
+#include "TriggerCRW_BridgeFix.h"
+#include "MyMagicSquareStepController.h"
 NS_USING(Client)
 
-HRESULT CTriggerCRW_SpawnStep::Initialize(void* pArg)
+HRESULT CTriggerCRW_BridgeFix::Initialize(void* pArg)
 {
 	return CPhysXCollisionProxyObject::Initialize(pArg);
 }
 
-void CTriggerCRW_SpawnStep::OnTriggerEnter(
+void CTriggerCRW_BridgeFix::OnTriggerEnter(
 	E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& info)
 {
 	DEBUG_LOG_STR(std::string("[PX][CTriggerCRW_SpawnStep] Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+
+	if (!m_bSpawned)
+	{
+		
+	}
 }
 
-void CTriggerCRW_SpawnStep::OnTriggerExit(
+void CTriggerCRW_BridgeFix::OnTriggerExit(
 	E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& info)
 {
-	DEBUG_LOG_STR(std::string("[PX][CTriggerCRW_SpawnStep] Exit : ") +
+	DEBUG_LOG_STR(std::string("[PX][CTriggerCRW_BridgeFix] Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
-E::UPtr<CTriggerCRW_SpawnStep> CTriggerCRW_SpawnStep::Create()
+E::UPtr<CTriggerCRW_BridgeFix> CTriggerCRW_BridgeFix::Create()
 {
-	auto instance = E::ToUPtr(new CTriggerCRW_SpawnStep{});
+	auto instance = E::ToUPtr(new CTriggerCRW_BridgeFix{});
 	if (FAILED(instance->InitializePrototype()))
 		return nullptr;
 	return instance;
 }
 
-E::UPtr<E::CPrototype> CTriggerCRW_SpawnStep::Clone(void* pArg)
+E::UPtr<E::CPrototype> CTriggerCRW_BridgeFix::Clone(void* pArg)
 {
-	auto instance = E::ToUPtr(new CTriggerCRW_SpawnStep{ *this });
+	auto instance = E::ToUPtr(new CTriggerCRW_BridgeFix{ *this });
 	if (FAILED(instance->Initialize(pArg)))
 		return nullptr;
 	return instance;

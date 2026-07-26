@@ -18,6 +18,18 @@ public:
 	DECLARE_DERIVED_TYPE(CTmbGurdianDead, CGameObject)
 
 public:
+	typedef struct tagTmbGuardianDeaddesc : public CGameObject::GAMEOBJECT_DESC
+	{
+		StringID DebrisResTag{};
+		std::string DebrisConvex{};
+		_float3 vInitialPosition{};
+		_float3 vInitialRotation{};
+		_float3 vInitialScale{ 1.f, 1.f, 1.f };
+		_float3 vConvexScale{ 1.f, 1.f, 1.f };
+		_float fMass{ 1.f };
+		PX_FILTER_DESC tFilter{};
+	}TMBGURDIAN_DEAD_DESC;
+
 	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
 	{
 		_string   WeaponName{}, LevelTag{};

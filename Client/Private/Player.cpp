@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "Level_Defines.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Resources.h"
@@ -20,8 +21,10 @@
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
+#include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
-
+#include "Player_Attack_State.h"
+#include "Player_Weapon.h"
 NS_USING(Client)
 
 CPlayer::CPlayer()
@@ -36,7 +39,6 @@ CPlayer::~CPlayer()
 
 HRESULT CPlayer::InitializePrototype(void* pArg)
 {
-
 
 	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
 	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
@@ -80,7 +82,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "MODEL";
+		Desc.sGroupTag = pDesc->LevelTag;
 		Desc.sResTag =	 "PLAYER_MODEL_RESROUCE";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
@@ -161,6 +163,18 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::JUMP,
+			CPlayer_Jump_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ATTACK,
+			CPlayer_Attack_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
@@ -170,22 +184,22 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
-	//CTestPartObject::DESC WeaponDesc{};
-	//WeaponDesc.sObjectTag = "Weapon";
-	//WeaponDesc.hOwner = GetHandle();
-	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	//WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
-	//WeaponDesc.sGroupTag = "TEST"; 
-	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
+	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
+	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	WeaponDesc.ParentHandle = GetHandle();
 
-	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
-	//if (!Weapon.has_value())
-	//{
-	//	MSG_BOX("Create Failed Weapon");
-	//	return E_FAIL;
-	//}
+	
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(pDesc->LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, "Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon");
+		return E_FAIL;
+	}
 
-	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
 
 	return S_OK;
@@ -328,6 +342,37 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pComCharacterMotor->SetVelocity({});
 	}
 
+	if (m_pStateMachine &&
+		m_pComCharacterMotor &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_pComCharacterMotor->IsGrounded() &&
+		CGameInstance::Get().KeyDown(DIK_SPACE))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
+	}
+
+	if (m_pStateMachine &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		const PLAYER_STATE eCurrentState =
+			m_pStateMachine->GetCurrentState();
+		const _bool bCanRequestAttack =
+			eCurrentState != PLAYER_STATE::JUMP &&
+			(eCurrentState != PLAYER_STATE::ROLL ||
+			(m_pModelAnimator &&
+				m_pModelAnimator->GetPlayAnimRatio() >=
+					CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
+
+		if (bCanRequestAttack)
+			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
+	}
+
+	if (m_pStateMachine &&
+		CGameInstance::Get().KeyDown(DIK_LCONTROL))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::ROLL);
+	}
+
 }
 
 
@@ -347,6 +392,87 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
 }
+
+void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
+{
+	if (!m_pComCharacterController ||
+		fSpeed <= 0.f ||
+		fTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	_vector vForward = XMVectorSetY(
+		GetTransform().GetState(STATE::LOOK),
+		0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vForward)) <=
+		std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	vForward = XMVector3Normalize(vForward);
+
+	_float3 vDisplacement{};
+	XMStoreFloat3(
+		&vDisplacement,
+		vForward * fSpeed * fTimeDelta);
+
+	m_pComCharacterController->Move(
+		vDisplacement,
+		fTimeDelta,
+		0.f);
+
+	GetTransform().SetPosition(
+		m_pComCharacterController->GetPosition());
+}
+
+void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta)
+{
+	if (!m_pComCharacterController ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	_vector vMoveDirection = XMVectorSetY(XMLoadFloat3(&vDirection),0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vMoveDirection)) <=std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	vMoveDirection = XMVector3Normalize(vMoveDirection);
+
+	_float3 vDisplacement{};
+	XMStoreFloat3(
+		&vDisplacement,
+		vMoveDirection * fSpeed * fTimeDelta);
+
+	m_pComCharacterController->Move(
+		vDisplacement,
+		fTimeDelta,
+		0.f);
+
+	GetTransform().SetPosition(
+		m_pComCharacterController->GetPosition());
+}
+
+void CPlayer::PrepareLocomotionResume()
+{
+	m_fCurrentMoveSpeed = m_bRawMoveInput
+		? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+		: 0.f;
+
+	if (m_bRawMoveInput)
+	{
+		const _vector vDirection = XMVector3Normalize(
+			XMLoadFloat3(&m_vRawMoveDirection));
+		XMStoreFloat3(&m_vSmoothedMoveDirection, vDirection);
+		m_vLastMoveDirection = m_vSmoothedMoveDirection;
+	}
+}
+
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
@@ -381,16 +507,16 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 		if (m_bRootMotionRotationActive)
 		{
-			const _float4 vRotationDelta =
+			const _float4 vRootMotionRotationDelta =
 				m_pModelAnimator->GetRootMotionRotationDelta();
 			const _vector qCurrent =
 				GetTransform().GetLoadedQuaternion();
 			const _vector qDelta =
-				XMLoadFloat4(&vRotationDelta);
+				XMLoadFloat4(&vRootMotionRotationDelta);
 
 			GetTransform().SetQuaternion(
 				XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrent, qDelta)));
+					XMQuaternionMultiply(qDelta, qCurrent)));
 		}
 	}
 

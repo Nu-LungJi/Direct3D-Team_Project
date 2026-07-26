@@ -21,6 +21,7 @@
 
 #include "MyMagicSquareStepController.h"
 #include "MyMagicSquareStep.h"
+#include "MedDebris.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -134,6 +135,33 @@ std::future<bool> CLevelCreatureLoader::Load()
 				}
 			}
 
+			// debris
+			{
+				for (uint32_t i = 0; i < 13; ++i)
+				{
+					std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
+					StringID resTag = "Static_Med_Debris_" + std::to_string(i);
+					if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", resTag,
+						CResStaticModel::Create(path))) {
+
+						E::CResStaticModel::DESC pDesc{};
+						pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+						if (FAILED(res->Load(pDesc)))
+						{
+							MSG_BOX("LEVEL_CREATURE Failed Static_Med_Debris");
+						}
+					}
+				}
+				//MedDebris
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					"LEVEL_CREATURE", "Prototype_GameObject_MedDebris", CMedDebris::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_MedDebris");
+					return false;
+				}
+			}
+
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_OilBarrel_Resource",
 				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_oil_barrel_0001.bin"))) {
 
@@ -146,6 +174,9 @@ std::future<bool> CLevelCreatureLoader::Load()
 					//return false;
 				}
 			}
+
+
+
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(
 				"LEVEL_CREATURE", "Static_SquareStep_A_Resource",
 				CResStaticModel::Create(

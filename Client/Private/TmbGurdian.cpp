@@ -153,6 +153,34 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
+
+
+	// 죽음 파편들
+	if(false)
+	{
+		for (uint32_t i = 0; i < 13; ++i)
+		{
+			CTmbGurdianDead::TMBGURDIAN_DEAD_DESC Desc{};
+			Desc.sObjectTag = "TmbGurdianDead";
+			Desc.DebrisResTag = "Static_Med_Debris_" + std::to_string(i);
+			Desc.DebrisConvex = "./Resources/PhysX/Cooked/SM_Med_" + std::to_string(i) + ".pxconvex";
+			Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+			auto debris = E::CGameInstance::Get().AddGameObjectToLayer(
+				MonDesc->LevelTag,
+				PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead,
+				"28_TmbGurdianDead",
+				&Desc);
+			if (!debris)
+			{
+				MSG_BOX("TmbGurdianDead AddLayer Failed");
+				return E_FAIL;
+			}
+			m_vecDeadHandles.push_back(*debris);
+		}
+	}
+
+	m_pModelAnimator->SetEvaluationMode(
+		CComAnimator::EVALUATION_MODE::CPU_GPU);
 	return S_OK;
 }
 
@@ -186,6 +214,11 @@ void CTmbGurdian::Update(E::_float fTimeDelta)
 	//	}
 	//}
 	//else
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
+	{
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS), FLAGTYPE::DEL);
+		volatile int x = 0;
+	}
 	__super::Update(fTimeDelta);
 
 }

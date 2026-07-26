@@ -45,6 +45,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
+
+		StringID LevelTag;
 	};
 
 private:
@@ -80,6 +82,12 @@ public:
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	void ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta);
+	void ApplyDirectionalMovement(
+		const _float3& vDirection,
+		_float fSpeed,
+		_float fTimeDelta);
+	void PrepareLocomotionResume();
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }

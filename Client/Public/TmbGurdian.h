@@ -30,7 +30,7 @@ public:
 
 private:
 	//std::vector<UPtr<class CTmbGurdianDead>>				m_DeadMeshes;
-
+	std::vector<CHandle> m_vecDeadHandles{};
 
 public:
 	static E::UPtr<CTmbGurdian> Create();

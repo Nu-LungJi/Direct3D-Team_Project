@@ -15,6 +15,12 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 
+#include "MyMagicSquareStep.h"
+#include "MyMagicSquareStepController.h"
+
+#include "MyMagicSquareStepController.h"
+
+#include "BridgeCRW.h"
 #include "TmbGurdian.h"
 NS_USING(Client)
 
@@ -47,6 +53,13 @@ HRESULT CLevelCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+		return E_FAIL;
+
+	if (FAILED(SpawnBridge()))
+		return E_FAIL;
+
+
+	if (FAILED(SpawnMyMagicStepController()))
 		return E_FAIL;
 
 	if (FAILED(SpawnMonster()))
@@ -200,6 +213,7 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -6.f, -215.f, 156.f };
+	PlayerDesc.LevelTag = LEVEL::CHARLES_ROOKWOOD;
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
@@ -253,6 +267,134 @@ HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 	if (handles.empty())
 		return E_FAIL;
 
+	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnMyMagicStepController()
+{
+	CMyMagicSquareStepController::DESC Desc{};
+	Desc.ProtoMajorTag = LEVEL::CHARLES_ROOKWOOD;
+	Desc.ProtoMinorTag = PROTO_GAMEOBJECT::Prototype_GameObject_MyMagicSquareStep;
+	Desc.SpawnLayerName = "23_MyMagicSquareStep";
+	Desc.ResMajorTag = LEVEL::CHARLES_ROOKWOOD;
+	Desc.ResMinorTag = "Static_SquareStep_A_Resource";
+
+	auto h = E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_MyMagicSquareStepController,
+		"22_MyMagicSquareStepController",
+		&Desc);
+
+	if (!h)
+	{
+		return E_FAIL;
+	}
+
+	float fRefY{230.f};
+	// test
+	{
+		auto* pController = E::CGameInstance::Get()
+			.GetGameObjectByHandleT<CMyMagicSquareStepController>(
+				*h);
+		if (!pController)
+			return E_FAIL;
+		{
+			const StringID GroupID{ "MagicSquareGrid1" };
+			CMyMagicSquareStepController::RECT_GROUP_DESC
+				RectDesc{};
+			// -212
+			RectDesc.vStartPosition = { -245.f - 10.f, -230.f , 52.f - 59.f };
+			RectDesc.iCountX = 10;
+			RectDesc.iCountZ = 59;
+			RectDesc.fSpacingX = 1.007f;
+			RectDesc.fSpacingZ = 1.007f;
+
+			if (!pController->RegistRectGroup( GroupID, RectDesc)
+				//|| !pController->SpawnGroup(GroupID)
+				)
+				return E_FAIL;
+		}
+
+		//if(false)
+		{
+			const StringID GroupID{ "MagicSquareGrid2" };
+			CMyMagicSquareStepController::RECT_GROUP_DESC
+				RectDesc{};
+			// -212
+			RectDesc.vStartPosition = { -246.f - 8.f, -250.3f , -72.f - (1.007f * 35.f) };
+			RectDesc.iCountX = 8;
+			RectDesc.iCountZ = 35;
+			RectDesc.fSpacingX = 1.007f;
+			RectDesc.fSpacingZ = 1.007f;
+
+			if (!pController->RegistRectGroup( GroupID, RectDesc)
+				//|| !pController->SpawnGroup(GroupID)
+				)
+				return E_FAIL;
+		}
+
+		
+
+		
+		{
+			const StringID CircleGroupID{
+			"CreatureMagicCircleGrid" };
+			CMyMagicSquareStepController::
+				FILLED_CIRCLE_GROUP_DESC CircleDesc{};
+			CircleDesc.vCenter = { -247.f - 3.5f, -250.3f , -72.f - (1.007f * 35.f) - (1.007f * 14.f) };
+			CircleDesc.fRadius = 14.f;
+			CircleDesc.fSpacing = 1.007f;
+			//RiseDesc.eFillMode =
+			//	CMyMagicSquareStepController::
+			//	RISE_FILL_MODE::RADIAL;
+			//RiseDesc.fStepTimingJitter = 0.08f;
+
+			if (!pController->RegistFilledCircleGroup( CircleGroupID, CircleDesc)
+				//|| !pController->SpawnGroup( CircleGroupID)
+				)
+				return E_FAIL;
+		}
+
+		
+		{
+			
+			const StringID GroupID{ "MagicSquareGrid3" };
+			CMyMagicSquareStepController::RECT_GROUP_DESC
+				RectDesc{};
+			// -212
+			RectDesc.vStartPosition = { -246.f - 8.f, -250.4f , -72.f - (1.007f * 35.f) - (1.007f * 14.f * 2.f) - (1.007f * 34.f) + (1.007f)};
+			RectDesc.iCountX = 8;
+			RectDesc.iCountZ = 34;
+			RectDesc.fSpacingX = 1.007f;
+			RectDesc.fSpacingZ = 1.007f;
+
+			if (!pController->RegistRectGroup( GroupID, RectDesc)
+				//|| !pController->SpawnGroup(GroupID)
+				)
+				return E_FAIL;
+		}
+
+		
+	}
+
+	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnBridge()
+{
+
+	CBridgeCRW::DESC Desc{};
+
+	auto hBridgeCRW = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD,PROTO_GAMEOBJECT::Prototype_GameObject_BridgeCRW,"BridgeCRW", &Desc);
+
+	if (hBridgeCRW)
+	{
+		if (auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CBridgeCRW>(*hBridgeCRW))
+		{
+			pObj->GetTransform().SetPosition(_float3{ -251.f, -242.f, -382.f });
+		}
+	}
+	
 	return S_OK;
 }
 

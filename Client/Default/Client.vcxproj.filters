@@ -82,11 +82,41 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
       <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Trigger">
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Attack_State">
+      <UniqueIdentifier>{19c50015-27fd-476c-a744-f9e9afe51770}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_Weapon">
+      <UniqueIdentifier>{74741dba-6811-472f-847e-f939b6540671}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Skill_State">
+      <UniqueIdentifier>{330acd8e-220a-49fc-bda2-22cbe84370eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood">
+      <UniqueIdentifier>{01ef8f57-61c2-45c7-a0f1-db9fb3e8d9a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger">
       <UniqueIdentifier>{83e632ef-a5bb-4406-876d-0a8b177adbdf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Trigger\CharlesRookwood">
-      <UniqueIdentifier>{9961a9a2-af7f-4c4f-ba27-7f11bb960aab}</UniqueIdentifier>
+    <Filter Include="GameObject\CharlesRookwood\MyMagicSquareStep">
+      <UniqueIdentifier>{ac16d04c-4937-40fe-a72e-ce43e2401ba5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Bridge">
+      <UniqueIdentifier>{451893ab-e6f2-4e4c-8948-178bfb126954}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step1">
+      <UniqueIdentifier>{3887515f-08e3-4aee-9787-367ff6c2b400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step2">
+      <UniqueIdentifier>{ea370966-7ab1-4b96-849e-2b7e5c04f2cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step3">
+      <UniqueIdentifier>{ddb7f984-1332-476f-8159-5f0a142db46b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step4">
+      <UniqueIdentifier>{68f98105-b08b-43a5-a54f-ff1fb4a7d32a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Bridge">
+      <UniqueIdentifier>{915cb353-6ce1-460d-88b3-a07ec24c1005}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\AI">
       <UniqueIdentifier>{7f27c2a0-0347-42cb-bd94-0642b1cd0643}</UniqueIdentifier>
@@ -201,6 +231,15 @@
     <ClInclude Include="..\Public\Player_Jump_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Attack_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Attack_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Weapon.h">
+      <Filter>GameObject\Player\Player_Weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Skill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\BTAnimation.h">
       <Filter>GameObject\AI\AnimRoot\Anim</Filter>
     </ClInclude>
@@ -275,6 +314,39 @@
     </ClInclude>
     <ClInclude Include="TriggerCRW_SpawnStep.h">
       <Filter>GameObject\Trigger\CharlesRookwood</Filter>
+	</ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStep.h">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStepController.h">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BridgeCRW.h">
+      <Filter>GameObject\Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_StairStep.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep2.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep2.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep3.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep4.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep3.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep4.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BossTMB.h">
       <Filter>GameObject\Monster\TombBoss</Filter>
@@ -284,6 +356,15 @@
     </ClInclude>
     <ClInclude Include="..\public\TmbGurdianDead.h">
       <Filter>GameObject\Monster\TombGudian\Dead</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TriggerCRW_SpawnStep.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_BridgeFix.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_BridgeBring.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -360,6 +441,15 @@
     <ClCompile Include="..\Private\Player_Jump_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_Attack_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Attack_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Weapon.cpp">
+      <Filter>GameObject\Player\Player_Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Skill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Weapon.cpp">
       <Filter>GameObject\Monster</Filter>
     </ClCompile>
@@ -428,6 +518,48 @@
     </ClCompile>
     <ClCompile Include="TriggerCRW_SpawnStep.cpp">
       <Filter>GameObject\Trigger\CharlesRookwood</Filter>
+	</ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BridgeCRW.cpp">
+      <Filter>GameObject\Bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_StairStep.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep2.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep2.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep3.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep4.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep3.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep4.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TriggerCRW_SpawnStep.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_BridgeFix.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BossTMB.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>

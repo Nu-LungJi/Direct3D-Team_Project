@@ -24,6 +24,7 @@
 #include "MyMagicSquareStep.h"
 #include "Weapon.h"
 #include "MyMagicSquareStepController.h"
+#include "MedDebris.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -246,12 +247,38 @@ HRESULT CLevelCreatureEditor::Initialize()
 	{
 		m_BeHaviorJsonList.emplace(iter.path().filename().string(), iter.path().string());
 	}
+
+	//MedDebris
+
 	return S_OK;
 }
 
 void CLevelCreatureEditor::Update(E::_float fTimeDelta)
 {
 	Picking();
+
+	if (CGameInstance::Get().KeyDown(DIK_J))
+	{
+		{
+			for (uint32_t i = 0; i < 13; ++i)
+			{
+				CMedDebris::DESC Desc{};
+				Desc.sObjectTag = "MedDebris";
+				Desc.DebrisResTag = "Static_Med_Debris_" + std::to_string(i);
+				Desc.DebrisConvex = "./Resources/PhysX/Cooked/SM_Med_" + std::to_string(i) + ".pxconvex";
+				Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+				auto debris = E::CGameInstance::Get().AddGameObjectToLayer(
+					m_strLevelName,
+					"Prototype_GameObject_MedDebris",
+					"28_MedDebris",
+					&Desc);
+				if (debris)
+					m_MedDebrisHandles.push_back(*debris);
+			}
+			//"LEVEL_CREATURE", "Prototype_GameObject_MedDebris"
+
+		}
+	}
 }
 
 HRESULT CLevelCreatureEditor::Render()
@@ -271,6 +298,18 @@ void CLevelCreatureEditor::UpdateGUI()
 	ImGui::Text("Select Behavior : %s ", m_SelectFileName.c_str());
 	m_fPos.y = 0.f;
 	ImGui::Text("X :%2.f ", m_fPos.x); ImGui::SameLine(); ImGui::Text("Y : %2.f ", m_fPos.y); ImGui::SameLine(); ImGui::Text("Z : %2.f", m_fPos.z);
+
+	if (ImGui::Button("Activate Med Debris Physics"))
+	{
+		for (const CHandle& handle : m_MedDebrisHandles)
+		{
+			if (auto* debris = CGameInstance::Get()
+				.GetGameObjectByHandleT<CMedDebris>(handle))
+			{
+				debris->RequestActivatePhysics();
+			}
+		}
+	}
 
 	if (!m_SelectResourceTag.empty() && !m_SelectObjecteTag.empty())
 	{
