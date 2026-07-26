@@ -40,27 +40,22 @@ void CMonster::UpdateGUI()
 
 HRESULT CMonster::InitializePrototype(void* pArg)
 {
-
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
-	if (FAILED(m_pResVertexShader->Load()))
+	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
+	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
+	{
 		return E_FAIL;
-	
+	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
-	if (FAILED(m_pResPixelShader->Load())) 
+	if (FAILED(m_pResPixelShader->Load()))
+	{
 		return E_FAIL;
-
-	m_pResVertexInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_Instanced");
-	if (!m_pResVertexInstancedShader || FAILED(m_pResVertexInstancedShader->Load()))
-		return E_FAIL;
-	
+	}
 	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
 	if (!m_pResSkinMeshCBuffer)
+	{
 		return E_FAIL;
-	
-	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
-	if (FAILED(m_pAnimComputeShader->Load()))
-		return E_FAIL;
-	
+	}
+
 
 	return S_OK;
 }
@@ -126,219 +121,112 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	{
-		E::CB_PER_OBJECT cbPerObject{};
-		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
-		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
-		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
-		{
-			return E_FAIL;
-		}
-		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-	}
-	const auto& vs = m_pResVertexShader;
-	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
-	//? m_pResVertexShader
-	//: m_pResVertexNonAnimShader;
-
-	const auto& ps = m_pResPixelShader;
-	//!m_pComModelInstance->GetModel()->GetAnimations().empty()
-	//? m_pResPixelShader
-	//: m_pResPixelNonAnimShader;
-
-
-	pContext->IASetInputLayout(vs->GetInputLayout().Get());
-	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-	auto pModel = m_pComModelInstance->GetModel();
-
-	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
-	for (uint32_t i = 0; i < iNumMeshes; ++i) {
-		const auto& viBuffer = pModel->GetMeshes()[i];
-
-
-		ID3D11Buffer* vertexBuffers[] = {
-				viBuffer->GetVertexBuffer().Get()
-		};
-		uint32_t strides[] = {
-			viBuffer->GetVertexStride()
-		};
-		uint32_t offsets[] = {
-			0
-		};
-		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		{
-			if (!m_pComModelInstance->GetModel()->GetAnimations().empty())
-				if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i))) {
-					return E_FAIL;
-				}
-		}
-
-		{
-			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
-		}
-
-		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-	}
+	
 	return S_OK;
 }
 HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
-	if (!pContext)
-		return E_INVALIDARG;
-
-	const uint32_t iInstanceCount = Batch.Instances.size();
-
-	if (iInstanceCount == 0)
-		return S_OK;
-
-
-
-	if (!m_pAnimComputeShader || !m_pAnimComputeShader->GetComputeShader())
-	{
+	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
-	}
 
-	// -------------------------------------------------
-	// Compute Shader
-	// -------------------------------------------------
-
-	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))
-	{
-		return E_FAIL;
-	}
-
-	// CS t0 ~ t5
-	if (FAILED(m_pComModelInstance->Bind_GPUAnimationSRVs_CS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// CS t6
-	if (FAILED(Bind_InstanceBuffer_CS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// CS u0
-	if (FAILED(Bind_FinalBoneUAV_CS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(), nullptr, 0);
-
-	/*
-	 * 한 Thread Group = 한 인스턴스라는 전제.
-	 */
-	pContext->Dispatch(iInstanceCount, 1, 1);
-
-	if (FAILED(Unbind_AnimationCompute(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// -------------------------------------------------
-	// Vertex Shader용 SRV
-	// -------------------------------------------------
-
-	// VS t6 = InstanceData
-	if (FAILED(Bind_InstanceBuffer_VS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// VS t7 = Compute 결과 FinalBoneMatrix
-	if (FAILED(Bind_FinalBoneSRV_VS(pContext)))
-	{
-		return E_FAIL;
-	}
-	if (FAILED(m_pComModelInstance->Bind_GPUSkinBones_VS(pContext)))
-	{
-		return E_FAIL;
-	}
-
-	// -------------------------------------------------
-	// Graphics Shader
-	// -------------------------------------------------
-
-	const auto& vs = m_pResVertexInstancedShader;
-
+	const auto& vs = m_pResVertexCPUSkinningInstancedShader;
 	const auto& ps = m_pResPixelShader;
-
-	if (!vs || !ps)
-		return E_FAIL;
-
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
-
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
 
+	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+	if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)
+		return E_FAIL;
+
+	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))
+		return E_FAIL;
+
 	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+	auto pCPUBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
+	if (!pModel || !pCPUBonePaletteBuffer)
+		return E_FAIL;
 
-	const uint32_t iNumMeshes = pModel->Get_NumMeshes();
-
-	for (uint32_t iMeshIndex = 0; iMeshIndex < iNumMeshes; ++iMeshIndex)
+	_float4x4 identity{};
+	XMStoreFloat4x4(&identity, XMMatrixIdentity());
+	std::vector<_float4x4> combinedPalette(iInstanceCount * 512, identity);
+	for (uint32_t instanceIndex = 0; instanceIndex < iInstanceCount; ++instanceIndex)
 	{
-		const auto& viBuffer = pModel->GetMeshes()[iMeshIndex];
+		const auto& combinedMatrices = Batch.CombinedBoneMatrices[instanceIndex];
+		if (combinedMatrices.empty() || combinedMatrices.size() > 512)
+			return E_FAIL;
 
-		if (!viBuffer)
+		// DirectXMath로 계산한 CPU Combined 행렬을 VS의 t7 행렬 규약에 맞춘다.
+		// CPU 원본은 다른 CPU 기능에서도 사용하므로 업로드 복사본만 전치한다.
+		for (uint32_t boneIndex = 0; boneIndex < static_cast<uint32_t>(combinedMatrices.size()); ++boneIndex)
+		{
+			XMStoreFloat4x4(
+				&combinedPalette[instanceIndex * 512 + boneIndex],
+				XMMatrixTranspose(
+					XMLoadFloat4x4(&combinedMatrices[boneIndex])));
+		}
+	}
+
+	// CPU가 계산한 CombinedBone palette는 batch당 한 번만 갱신한다.
+	ID3D11ShaderResourceView* nullPaletteSRV = nullptr;
+	pContext->VSSetShaderResources(7, 1, &nullPaletteSRV);
+	if (FAILED(pCPUBonePaletteBuffer->UpdateData(
+		combinedPalette.data(),
+		static_cast<uint32_t>(combinedPalette.size() * sizeof(_float4x4)))))
+		return E_FAIL;
+
+
+
+	if (FAILED(Bind_InstanceBuffer(pContext)))
+		return E_FAIL;
+	ID3D11ShaderResourceView* cpuBonePaletteSRV = pCPUBonePaletteBuffer->GetSRV().Get();
+	if (!cpuBonePaletteSRV)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* skinBonesSRV = pModel->Get_GPUSkinBoneSRV();
+	if (!skinBonesSRV)
+		return E_FAIL;
+
+	pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
+	pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
+
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	{
+		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		if (!mesh)
 			continue;
 
-		ID3D11Buffer* vertexBuffers[] =
-		{
-			viBuffer->GetVertexBuffer().Get()
-		};
-
-		UINT strides[] =
-		{
-			viBuffer->GetVertexStride()
-		};
-
-		UINT offsets[] =
-		{
-			0
-		};
-
-		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-
-		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		E::GPU_SKIN_MESH_CONSTANTS skinConstants{};
-		skinConstants.iSkinBoneOffset = pModel->Get_GPUMeshSkinRange(iMeshIndex).iSkinBoneOffset;
-		D3D11_MAPPED_SUBRESOURCE mappedResource{};
-		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
+		if (skinRange.iSkinBoneCount == 0)
 			return E_FAIL;
-		memcpy(mappedResource.pData, &skinConstants, sizeof(skinConstants));
+
+		E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
+		skinningConstants.iVertexCount = mesh->GetNumVertices();
+		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+			return E_FAIL;
+		memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
-		ID3D11Buffer* pSkinMeshCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
-		pContext->VSSetConstantBuffers(5, 1, &pSkinMeshCB);
-
-		//"R": 1.0,
-		//	"G" : 0.933333,
-		//	"B" : 0.592157,
-		//1.2f, 0.7f, 0.f
+		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+		const UINT stride = mesh->GetVertexStride();
+		const UINT offset = 0;
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, { 0.585,0.685,1 }, m_fEmissive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
-
-		pContext->DrawIndexedInstanced(viBuffer->GetNumIndices(), iInstanceCount, 0, 0, 0);
+		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	if (FAILED(Unbind_AnimationVS(pContext)))
-	{
-		return E_FAIL;
-	}
+	ID3D11ShaderResourceView* nullVSSRVs[3]{};
+	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
 
 	return S_OK;
+
 }
 HRESULT CMonster::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
@@ -387,74 +275,8 @@ HRESULT CMonster::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std
 	return S_OK;
 
 }
-HRESULT CMonster::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
+HRESULT CMonster::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 {
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
-
-	if (!pStructuredBuffer)
-		return E_FAIL;
-
-	ID3D11ShaderResourceView* pSRV = pStructuredBuffer->GetSRV().Get();
-
-	if (!pSRV)
-		return E_FAIL;
-
-	pContext->CSSetShaderResources(6, 1, &pSRV);
-
-	return S_OK;
-}
-HRESULT CMonster::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
-{
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
-
-	if (!pStructuredBuffer)
-		return E_FAIL;
-
-	ID3D11UnorderedAccessView* pUAV = pStructuredBuffer->GetUAV().Get();
-
-	if (!pUAV)
-		return E_FAIL;
-
-	// 이전 Draw에서 FinalBone 버퍼가 VS의 SRV로
-	// 연결되어 있었다면 먼저 연결 해제
-	ID3D11ShaderResourceView* pNullSRV = nullptr;
-
-	pContext->VSSetShaderResources(7, 1, &pNullSRV);
-
-	// CS의 u0 슬롯에 출력 UAV 연결
-	pContext->CSSetUnorderedAccessViews(0, 1, &pUAV, nullptr);
-
-	return S_OK;
-}
-HRESULT CMonster::Unbind_AnimationCompute(ID3D11DeviceContext* pContext)
-{
-	// CS t0 ~ t6 SRV 해제
-	ID3D11ShaderResourceView* pNullSRVs[7] =
-	{
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr
-	};
-
-	pContext->CSSetShaderResources(0, 7, pNullSRVs);
-
-	// CS u0 UAV 해제
-	ID3D11UnorderedAccessView* pNullUAV = nullptr;
-
-	pContext->CSSetUnorderedAccessViews(0, 1, &pNullUAV, nullptr);
-
-	// Compute Shader 자체도 해제
-	pContext->CSSetShader(nullptr, nullptr, 0);
-
-	return S_OK;
-}
-HRESULT CMonster::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
-{
-
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
 	if (!pStructuredBuffer)
@@ -470,35 +292,7 @@ HRESULT CMonster::Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext)
 
 	return S_OK;
 }
-HRESULT CMonster::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
-{
 
-	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
-
-	if (!pStructuredBuffer)
-		return E_FAIL;
-
-	ID3D11ShaderResourceView* pSRV = pStructuredBuffer->GetSRV().Get();
-
-	if (!pSRV)
-		return E_FAIL;
-
-	// VS의 t7 슬롯에 Compute 결과 연결
-	pContext->VSSetShaderResources(7, 1, &pSRV);
-
-	return S_OK;
-}
-HRESULT CMonster::Unbind_AnimationVS(ID3D11DeviceContext* pContext)
-{
-	if (!pContext)
-		return E_INVALIDARG;
-
-	ID3D11ShaderResourceView* pNullSRVs[3]{};
-
-	pContext->VSSetShaderResources(6, 3, pNullSRVs);
-
-	return S_OK;
-}
 void CMonster::RunningSkill(_float fTimeDelta)
 {
 	if (m_bSkill && !m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
