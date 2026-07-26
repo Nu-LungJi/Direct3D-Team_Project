@@ -75,6 +75,7 @@ private:
 		FMOD_CHANNEL* pChannel{};
 		SOUND_BUS_ID sBusID{ SOUND_MASTER_BUS_ID };
 		_bool b3D{};
+		SOUND_3D_DESC t3DDesc{};
 	};
 
 private:
@@ -108,6 +109,8 @@ public:
 	_bool IsPlaying(SOUND_ID iSoundID) const;
 	_bool IsPaused(SOUND_ID iSoundID) const;
 	_bool IsValidSound(SOUND_ID iSoundID) const;
+	void Set3DDebugRenderEnabled(_bool bEnabled) { m_b3DDebugRenderEnabled = bEnabled; }
+	_bool Is3DDebugRenderEnabled() const { return m_b3DDebugRenderEnabled; }
 
 public:
 	_bool CreateBus(const SOUND_BUS_ID& sBusID);
@@ -129,6 +132,7 @@ private:
 	void StopAllSounds();
 	void EnqueueCompletedSound(SOUND_ID iSoundID);
 	void FlushCompletedSounds();
+	void Draw3DSoundDebug();
 
 private:
 	std::mutex m_SoundResourceRegistrationMutex{};
@@ -141,6 +145,7 @@ private:
 	std::queue<SOUND_ID> m_CompletedSounds{};
 
 	FMOD_SYSTEM* m_pSystem{};
+	_bool m_b3DDebugRenderEnabled{};
 
 public:
 	static UPtr<CSoundManager> Create();
