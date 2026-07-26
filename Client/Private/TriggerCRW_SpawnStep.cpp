@@ -39,12 +39,12 @@ void CTriggerCRW_SpawnStep::OnTriggerEnter(
 		//RiseDesc.fStartTargetY = -227.f;
 		RiseDesc.fStartTargetY = -214.f;
 		RiseDesc.fEndTargetY = -214.f;
-		RiseDesc.fMoveSpeed = 15.f;
+		RiseDesc.fMoveSpeed = 10.f;
 		RiseDesc.fBounceHeight = 0.3f;
 		RiseDesc.fBounceSettleSpeed = 1.f;
-		RiseDesc.fLineInterval = 0.05f;
+		RiseDesc.fLineInterval = 0.02f;
 		RiseDesc.fStepInterval = 0.02f;
-		RiseDesc.fStepTimingCurve = 0.55f;
+		RiseDesc.fStepTimingCurve = 0.2f;
 		RiseDesc.fStepTimingJitter = 1.01f;
 		RiseDesc.eFillMode =
 			CMyMagicSquareStepController::

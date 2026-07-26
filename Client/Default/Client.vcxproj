@@ -268,6 +268,7 @@
     <ClInclude Include="..\public\TriggerCRW_StairStep.h" />
     <ClInclude Include="..\public\TmbGurdian.h" />
     <ClInclude Include="..\public\TmbGurdianDead.h" />
+    <ClInclude Include="..\public\TriggerCRW_ToBoss.h" />
     <ClInclude Include="..\Public\Weapon.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -335,6 +336,7 @@
     <ClCompile Include="..\private\TriggerCRW_StairStep.cpp" />
     <ClCompile Include="..\private\TmbGurdian.cpp" />
     <ClCompile Include="..\private\TmbGurdianDead.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
     <ClCompile Include="..\Private\Weapon.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

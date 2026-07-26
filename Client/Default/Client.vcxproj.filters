@@ -148,6 +148,9 @@
     <Filter Include="GameObject\Monster\TombGudian\Dead">
       <UniqueIdentifier>{bf656eec-4774-4600-97ef-cbeeca6ac8ad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\ToBoss">
+      <UniqueIdentifier>{de2d2dca-6570-4861-a10e-fd1190d456fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -312,9 +315,6 @@
     <ClInclude Include="..\Public\BTDecHp.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
-    <ClInclude Include="TriggerCRW_SpawnStep.h">
-      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
-	</ClInclude>
     <ClInclude Include="..\public\MyMagicSquareStep.h">
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
     </ClInclude>
@@ -365,6 +365,9 @@
     </ClInclude>
     <ClInclude Include="..\public\TriggerCRW_BridgeBring.h">
       <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_ToBoss.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\ToBoss</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -516,9 +519,6 @@
     <ClCompile Include="..\Private\BTTurnSlow.cpp">
       <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
-    <ClCompile Include="TriggerCRW_SpawnStep.cpp">
-      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
-	</ClCompile>
     <ClCompile Include="..\private\MyMagicSquareStep.cpp">
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
     </ClCompile>
@@ -569,6 +569,9 @@
     </ClCompile>
     <ClCompile Include="..\private\TmbGurdianDead.cpp">
       <Filter>GameObject\Monster\TombGudian\Dead</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\ToBoss</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

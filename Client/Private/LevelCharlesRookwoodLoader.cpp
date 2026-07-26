@@ -33,6 +33,8 @@
 #include "TmbGurdianDead.h"
 #include "Weapon.h"
 #include "Player_Weapon.h"
+
+#include "TriggerCRW_ToBoss.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -188,6 +190,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 
 				if (FAILED(E::CGameInstance::Get().AddPrototype(
 					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_BridgeFix, CTriggerCRW_BridgeFix::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_ToBoss, CTriggerCRW_ToBoss::Create())))
 				{
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
 					return false;

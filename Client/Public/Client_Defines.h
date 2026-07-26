@@ -46,6 +46,7 @@ namespace Client
 		Prototype_GameObject_TriggerCRW_DeSpawnStep4,
 		Prototype_GameObject_TriggerCRW_BridgeBring,
 		Prototype_GameObject_TriggerCRW_BridgeFix,
+		Prototype_GameObject_TriggerCRW_ToBoss,
 		Prototype_GameObject_MyMagicSquareStep,
 		Prototype_GameObject_MyMagicSquareStepController,
 		Prototype_GameObject_BridgeCRW,
@@ -57,7 +58,6 @@ namespace Client
 		Prototype_GameObject_Mace,
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerWeapon,
-		
 	};
 
 	enum class PROTO_COMPONENT
