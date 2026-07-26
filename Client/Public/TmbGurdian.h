@@ -18,6 +18,9 @@ private:
 
 public:
 	void UpdateGUI() override;
+private:
+	_bool UpdateDeadDebrisPoseFromCurrentBones();
+	_bool ActivateDeadDebrisPhysics();
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -27,8 +30,11 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 
 private:
-	//std::vector<UPtr<class CTmbGurdianDead>>				m_DeadMeshes;
 	std::vector<CHandle> m_vecDeadHandles{};
+	std::vector<int32_t> m_vecDeadBoneIndices{};
+	std::vector<_float4x4> m_vecDeadInverseBindMatrices{};
+	_bool m_bRenderDeadDebris{};
+	_bool m_bDeadDebrisPhysicsActivated{};
 
 public:
 	static E::UPtr<CTmbGurdian> Create();

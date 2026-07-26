@@ -26,6 +26,102 @@ void CTmbGurdianDead::UpdateGUI()
 	ImGui::Text(
 		"Activated: %s",
 		m_bActivated ? "TRUE" : "FALSE");
+	ImGui::Text(
+		"Socket Attached: %s",
+		m_bSocketAttached ? "TRUE" : "FALSE");
+	ImGui::Text(
+		"Render Enabled: %s",
+		m_bRenderEnabled ? "TRUE" : "FALSE");
+}
+
+_bool CTmbGurdianDead::ActivatePhysics()
+{
+	if (m_bActivated)
+		return true;
+
+	if (!m_pComPxRigidBody ||
+		!m_pComPxConvexCollider)
+	{
+		return false;
+	}
+
+	const _float3 vPosition =
+		GetTransform().GetPosition();
+	const _float4 vRotation =
+		GetTransform().GetQuaternion();
+
+	if (!m_pComPxRigidBody->SetPose(
+			vPosition,
+			vRotation) ||
+		!m_pComPxRigidBody->SetLinearVelocity({}) ||
+		!m_pComPxRigidBody->SetAngularVelocity({}) ||
+		!m_pComPxConvexCollider
+			->SetSimulationEnabled(true) ||
+		!m_pComPxConvexCollider
+			->SetQueryEnabled(true) ||
+		!m_pComPxRigidBody
+			->SetGravityEnabled(true) ||
+		!m_pComPxRigidBody->WakeUp())
+	{
+		m_pComPxConvexCollider
+			->SetSimulationEnabled(false);
+		m_pComPxConvexCollider
+			->SetQueryEnabled(false);
+		m_pComPxRigidBody
+			->SetGravityEnabled(false);
+		m_pComPxRigidBody->PutToSleep();
+		return false;
+	}
+
+	m_bSocketAttached = false;
+	m_bActivated = true;
+	return true;
+}
+
+_bool CTmbGurdianDead::ApplyBonePose(
+	_fmatrix matSocketWorld,
+	_fmatrix matInverseBind)
+{
+	if (m_bActivated)
+		return false;
+
+	if (!m_pComPxRigidBody)
+		return false;
+
+	const _matrix matWorld =
+		matInverseBind *
+		matSocketWorld;
+
+	_vector vScale{};
+	_vector vRotation{};
+	_vector vPosition{};
+	if (!XMMatrixDecompose(
+		&vScale,
+		&vRotation,
+		&vPosition,
+		matWorld))
+	{
+		return false;
+	}
+
+	_float3 vWorldScale{};
+	_float4 vWorldRotation{};
+	_float3 vWorldPosition{};
+	XMStoreFloat3(&vWorldScale, vScale);
+	XMStoreFloat4(
+		&vWorldRotation,
+		XMQuaternionNormalize(vRotation));
+	XMStoreFloat3(&vWorldPosition, vPosition);
+
+	GetTransform().SetPosition(vWorldPosition);
+	GetTransform().SetQuaternion(vWorldRotation);
+	GetTransform().SetScale(vWorldScale);
+	GetTransform().Update();
+
+	m_bSocketAttached = true;
+	return m_pComPxRigidBody->SetPose(
+		vWorldPosition,
+		vWorldRotation);
 }
 
 HRESULT CTmbGurdianDead::InitializePrototype(void* pArg)
@@ -197,10 +293,14 @@ void CTmbGurdianDead::Update(E::_float fTimeDelta)
 
 void CTmbGurdianDead::LateUpdate(E::_float fTimeDelta)
 {
-	if (!m_bActivated)
+	if (!m_bRenderEnabled)
 		return;
 
-	UpdatePhysicData();
+	if (!m_bActivated && !m_bSocketAttached)
+		return;
+
+	if (m_bActivated)
+		UpdatePhysicData();
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }

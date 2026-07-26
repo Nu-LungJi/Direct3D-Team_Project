@@ -39,6 +39,14 @@ private:
 
 public:
 	void UpdateGUI() override;
+	void SetRenderEnabled(_bool bEnabled)
+	{
+		m_bRenderEnabled = bEnabled;
+	}
+	_bool ActivatePhysics();
+	_bool ApplyBonePose(
+		_fmatrix matSocketWorld,
+		_fmatrix matInverseBind);
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -52,6 +60,8 @@ private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxConvexCollider* m_pComPxConvexCollider{};
 	_bool m_bActivated{};
+	_bool m_bSocketAttached{};
+	_bool m_bRenderEnabled{};
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
