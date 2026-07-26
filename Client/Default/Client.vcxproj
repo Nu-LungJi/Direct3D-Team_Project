@@ -225,6 +225,7 @@
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
+    <ClInclude Include="..\Public\Player_Skill_State.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\Player_Weapon.h" />
     <ClInclude Include="Client.h" />
@@ -252,6 +253,7 @@
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
+    <ClCompile Include="..\Private\Player_Skill_State.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\Player_Weapon.cpp" />
     <ClCompile Include="Client.cpp" />

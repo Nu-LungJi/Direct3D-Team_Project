@@ -88,6 +88,9 @@
     <Filter Include="GameObject\Player\Player_Weapon">
       <UniqueIdentifier>{74741dba-6811-472f-847e-f939b6540671}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Skill_State">
+      <UniqueIdentifier>{330acd8e-220a-49fc-bda2-22cbe84370eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -177,6 +180,9 @@
     <ClInclude Include="..\Public\Player_Weapon.h">
       <Filter>GameObject\Player\Player_Weapon</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Skill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -257,6 +263,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Weapon.cpp">
       <Filter>GameObject\Player\Player_Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Skill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
