@@ -6,7 +6,7 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
 #include "ComPxCharacterController.h"
@@ -132,7 +132,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	CWeapon::WEAPON_DESC WeaponDesc{};
+	CMon_Weapon::WEAPON_DESC WeaponDesc{};
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
@@ -147,6 +147,9 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
+
+	m_Effects[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
+	m_Effects[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
 
 	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
 	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
@@ -186,15 +189,8 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
-	//if (m_iHp <= 0)
-	//{
-	//	for (auto& iter : m_DeadMeshes)
-	//	{
-	//		if(nullptr != iter)
-	//			iter->PriorityUpdate(fTimeDelta);
-	//	}
-	//}else
-		__super::PriorityUpdate(fTimeDelta);
+
+	__super::PriorityUpdate(fTimeDelta);
 
 }
 
@@ -205,15 +201,6 @@ void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
 {
-	//if (m_iHp <= 0)
-	//{
-	//	for (auto& iter : m_DeadMeshes)
-	//	{
-	//		if (nullptr != iter)
-	//			iter->Update(fTimeDelta);
-	//	}
-	//}
-	//else
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 	{
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS), FLAGTYPE::DEL);
@@ -225,16 +212,7 @@ void CTmbGurdian::Update(E::_float fTimeDelta)
 
 void CTmbGurdian::LateUpdate(E::_float fTimeDelta)
 {
-	//if (m_iHp <= 0)
-	//{
-	//	for (auto& iter : m_DeadMeshes)
-	//	{
-	//		if (nullptr != iter)
-	//			iter->LateUpdate(fTimeDelta);
-	//	}
-	//}
-	//else
-		__super::LateUpdate(fTimeDelta);
+	__super::LateUpdate(fTimeDelta);
 }
 
 E::UPtr<CTmbGurdian> CTmbGurdian::Create()

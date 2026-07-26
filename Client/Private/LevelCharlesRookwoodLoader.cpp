@@ -31,7 +31,7 @@
 
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "Player_Weapon.h"
 NS_USING(Client)
 
@@ -298,14 +298,14 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			if (FAILED(res->Load(pDesc)))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TMBGurdian");
-				//return false;
+				return E_FAIL;
 			}
 		}
 
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
-			return false;
+			return E_FAIL;
 		}
 
 	}
@@ -332,7 +332,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
-			return false;
+			return E_FAIL;
 		}
 	}
 
@@ -347,7 +347,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			if (FAILED(res->Load(pDesc)))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Static_Axe_Model_Resource");
-				return false;
+				return E_FAIL;
 			}
 		}
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Sword",
@@ -359,7 +359,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			if (FAILED(res->Load(pDesc)))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
-				return false;
+				return E_FAIL;
 			}
 		}
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Mace",
@@ -371,23 +371,23 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			if (FAILED(res->Load(pDesc)))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Static_Mace_Model_Resource");
-				return false;
+				return E_FAIL;
 			}
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CWeapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CMon_Weapon::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Axe");
-			return false;
+			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CWeapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
-			return false;
+			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CWeapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
-			return false;
+			return E_FAIL;
 		}
 	}
 }

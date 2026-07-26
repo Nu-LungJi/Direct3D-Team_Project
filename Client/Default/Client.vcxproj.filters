@@ -306,15 +306,12 @@
     <ClInclude Include="..\Public\Monster.h">
       <Filter>GameObject\Monster</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Weapon.h">
+    <ClInclude Include="..\Public\Mon_Weapon.h">
       <Filter>GameObject\Monster</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\BTDecHp.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
-    <ClInclude Include="TriggerCRW_SpawnStep.h">
-      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
-	</ClInclude>
     <ClInclude Include="..\public\MyMagicSquareStep.h">
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
     </ClInclude>
@@ -450,7 +447,7 @@
     <ClCompile Include="..\Private\Player_Skill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Weapon.cpp">
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Monster.cpp">
@@ -516,9 +513,6 @@
     <ClCompile Include="..\Private\BTTurnSlow.cpp">
       <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
-    <ClCompile Include="TriggerCRW_SpawnStep.cpp">
-      <Filter>GameObject\Trigger\CharlesRookwood</Filter>
-	</ClCompile>
     <ClCompile Include="..\private\MyMagicSquareStep.cpp">
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
     </ClCompile>

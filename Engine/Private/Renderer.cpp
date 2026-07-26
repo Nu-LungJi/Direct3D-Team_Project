@@ -1282,6 +1282,9 @@ HRESULT CRenderer::Render_Lighting() {
 	};
 	m_pContext->CSSetShaderResources(0, 6, SRVList->GetAddressOf());
 
+	SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
+	m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+
 	//ComPtr<ID3D11ShaderResourceView> ExtraSRVList[3] = {
 	//	m_pIrridianceSRV.Get(),
 	//	m_pPreFilterSRV.Get(),
@@ -1369,9 +1372,7 @@ HRESULT CRenderer::Render_Lighting() {
 			m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());
 		}
 	
-		SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
-		m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
-	
+		
 		// Draw On PBRScreen
 		m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
 	}

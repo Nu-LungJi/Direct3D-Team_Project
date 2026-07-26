@@ -6,7 +6,7 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
 #include "ComCharacterMoveIntent.h"
@@ -34,7 +34,7 @@ void CMonster::UpdateGUI()
 	for (auto& [key, value] : m_ParticleData)
 	{
 		if (ImGui::Button(MagicEnumToStringView(key).data()))
-			test[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
+			m_Effects[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
 	}
 }
 
@@ -119,12 +119,6 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 		return;
 	}
-}
-
-HRESULT CMonster::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
-{
-	
-	return S_OK;
 }
 HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
@@ -303,7 +297,7 @@ void CMonster::RunningSkill(_float fTimeDelta)
 
 		if (m_MonTable.eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
 		{
-			CGameInstance::Get().Spawn(test[ETOUI(m_MonTable.eAttType)], *m_pComTransform->GetWorldMatrix());
+			CGameInstance::Get().Spawn(m_Effects[ETOUI(m_MonTable.eAttType)], *m_pComTransform->GetWorldMatrix());
 			m_MonTable.eAttType = ATTMON::END;
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
 			
@@ -358,6 +352,15 @@ void CMonster::Flag_Check(_float fTimeDelta)
 
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
 		m_fEmissive = 0;
+
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
+	{
+		if (auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CMon_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]))
+		{
+			if (pSrc->Weapon_CallBack())
+				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
+		}
+	}
 }
 void CMonster::EmissiveFadeOut(_float fTimeDelta)
 {

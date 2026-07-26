@@ -45,7 +45,6 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		{
 			if (false == HitType())
 				return EVALUATE::FAILED;
-			Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 			m_bStart = false;
 		}
 		
@@ -57,8 +56,6 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
 		{
-			
-
 			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
 				vMoveDirection = pTransform->GetState(STATE::RIGHT);
@@ -79,10 +76,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (m_bLoop || bFinished)
 		{
-			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
-
 		}
 	}
 	return m_eDebug = EVALUATE::RUN;
@@ -115,52 +110,6 @@ void CBTHitAnimMonster::Update_Gui()
 
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	uint32_t iStart = { m_iStartFlag };
-
-#define X(name)#name,
-	const _char* Flag[] = { BTFLAG_M};
-#undef X
-	if (ImGui::TreeNode("StartFlag"))
-	{
-		for (uint32_t i = 0; i < std::size(Flag); ++i)
-		{
-			uint32_t iFlag = 1u << i;
-
-			bool bChecked = (iStart & iFlag) != 0;
-
-			if (ImGui::Checkbox((std::string(Flag[i]) + "##Start").c_str(), &bChecked))
-			{
-				if (bChecked)
-					iStart |= iFlag;
-				else
-					iStart &= ~iFlag;
-			}
-		}
-		m_iStartFlag = iStart;
-		ImGui::TreePop();
-	}
-	if (ImGui::TreeNode("EndFlag"))
-	{
-
-		uint32_t iEndFlag = { m_iEndFlag };
-		for (uint32_t i = 0; i < std::size(Flag); ++i)
-		{
-			uint32_t iEnd = 1u << i;
-
-			bool bChecked = (iEndFlag & iEnd) != 0;
-
-			if (ImGui::Checkbox((std::string(Flag[i]) + "##End").c_str(), &bChecked))
-			{
-				if (bChecked)
-					iEndFlag |= iEnd;
-				else
-					iEndFlag &= ~iEnd;
-			}
-		}
-		m_iEndFlag = iEndFlag;
-
-		ImGui::TreePop();
-	}
 	
 	if (!m_bPopup)
 	{
@@ -249,9 +198,6 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 
-	SaveJsonValue(j, "StartFlag", m_iStartFlag);
-	SaveJsonValue(j, "EndFlag", m_iEndFlag);
-
 	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
@@ -271,9 +217,6 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-
-	LoadJsonValue(j, "StartFlag", m_iStartFlag);
-	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 
 	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
 	{

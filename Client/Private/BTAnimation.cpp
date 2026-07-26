@@ -40,10 +40,10 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
 	_bool bFinished = pAnimator->GetFinish();
 	Active_Skill();
+	EventFlagToRatio(pAnimator->GetPlayAnimRatio());
 	if (m_bLoop || bFinished)
 	{
-
-		Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
+		Reset_CheckFlag();
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
@@ -73,40 +73,6 @@ void CBTAnimation::Update_Gui()
 
 		ImGui::PopStyleColor();
 	}
-
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0,0,0,1 });
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	
-//NONE = 0x0000000, HIT = 0x0000001, ATTACK = 0x0000002, ABORT = 0x0000004, SUPERARMOR = 0x0000008, THROW = 0x0000010, DEAD = 0x0000020
-	
-//, EMISSIVE = 0x0000040
-#define X(name)#name,
-	const _char* Flag[] = { BTFLAG_M };
-#undef X
-	if (ImGui::TreeNode("EndFlag"))
-	{
-
-		uint32_t iEndFlag = { m_iEndFlag };
-		for (uint32_t i = 0; i < std::size(Flag); ++i)
-		{
-			uint32_t iEnd = 1u << i;
-
-			bool bChecked = (iEndFlag & iEnd) != 0;
-
-			if (ImGui::Checkbox((std::string(Flag[i]) + "##End").c_str(), &bChecked))
-			{
-				if (bChecked)
-					iEndFlag |= iEnd;
-				else
-					iEndFlag &= ~iEnd;
-			}
-		}
-		m_iEndFlag = iEndFlag;
-
-		ImGui::TreePop();
-	}
-
-	ImGui::PopStyleColor(2);
 }
 void CBTAnimation::Abort()
 {
@@ -115,14 +81,11 @@ void CBTAnimation::Abort()
 nlohmann::json CBTAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
-	
-	SaveJsonValue(j ,"EndFlag", m_iEndFlag);
 	return j;
 }
 HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	return S_OK;
 }
 E::UPtr<CBTAnimation> CBTAnimation::Create()
