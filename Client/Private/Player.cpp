@@ -21,6 +21,7 @@
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
+#include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
 #include "Player_Weapon.h"
@@ -160,6 +161,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::ROLL,
 			CPlayer_Roll_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::JUMP,
+			CPlayer_Jump_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -337,13 +344,25 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (m_pStateMachine &&
+		m_pComCharacterMotor &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_pComCharacterMotor->IsGrounded() &&
+		CGameInstance::Get().KeyDown(DIK_SPACE))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
+	}
+
+	if (m_pStateMachine &&
 		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
+		const PLAYER_STATE eCurrentState =
+			m_pStateMachine->GetCurrentState();
 		const _bool bCanRequestAttack =
-			m_pStateMachine->GetCurrentState() != PLAYER_STATE::ROLL ||
+			eCurrentState != PLAYER_STATE::JUMP &&
+			(eCurrentState != PLAYER_STATE::ROLL ||
 			(m_pModelAnimator &&
 				m_pModelAnimator->GetPlayAnimRatio() >=
-					CPlayer_Roll_State::ATTACK_CANCEL_RATIO);
+					CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
 
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);

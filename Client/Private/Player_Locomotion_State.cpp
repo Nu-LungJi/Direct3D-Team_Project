@@ -2,7 +2,9 @@
 #include "Player_Locomotion_State.h"
 
 #include "Player.h"
+#include "Player_StateMachine.h"
 #include "ComAnimator.h"
+#include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
 #include "ResModel.h"
@@ -77,8 +79,18 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 
 	auto* pMoveIntent = player->GetMoveIntent();
 	auto* pAnimator = player->GetAnimator();
-	if (!pMoveIntent || !pAnimator)
+	auto* pMotor = player->GetCharacterMotor();
+	auto* pPlayerStateMachine = Cast<CPlayer_StateMachine>(pStateMachine);
+	if (!pMoveIntent || !pAnimator || !pMotor || !pPlayerStateMachine)
 		return;
+
+	// 짧은 단차에서는 Locomotion 포즈를 유지하고, 실제 하강 속도가
+	// 기준값에 도달했을 때 Jump State의 FALL 페이즈로 진입한다.
+	if (!pMotor->IsGrounded() &&pMotor->GetVelocity().y <= m_fFallStateVerticalSpeed)
+	{
+		pPlayerStateMachine->RequestState(PLAYER_STATE::JUMP);
+		return;
+	}
 
 	if (m_bJogStarting)
 	{
