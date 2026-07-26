@@ -2,11 +2,13 @@
 #include "TmbGurdianDead.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "ComPxConvexCollider.h"
+#include "ComPxRigidBody.h"
 #include "ComStaticModelInstance.h"
 #include "Resources.h"
 #include "GameInstance.h"
-#include "ComModelInstance.h"
-#include "Trail_CPU.h"
+#include "ResPhysXConvexGeometry.h"
+#include "ResPhysXMaterial.h"
 NS_USING(Client)
 
 CTmbGurdianDead::CTmbGurdianDead()
@@ -21,7 +23,9 @@ CTmbGurdianDead::~CTmbGurdianDead()
 void CTmbGurdianDead::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
-
+	ImGui::Text(
+		"Activated: %s",
+		m_bActivated ? "TRUE" : "FALSE");
 }
 
 HRESULT CTmbGurdianDead::InitializePrototype(void* pArg)
@@ -43,15 +47,21 @@ HRESULT CTmbGurdianDead::InitializePrototype(void* pArg)
 
 HRESULT CTmbGurdianDead::Initialize(void* pArg)
 {
+	if (!pArg)
+		return E_INVALIDARG;
 
-	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
-	m_iBoneSocketIndex = pDesc->iBoneIndex;
-	m_ParentHandle = pDesc->ParentHandle;
+	const auto* pDesc =
+		static_cast<TMBGURDIAN_DEAD_DESC*>(pArg);
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
+
+	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().SetQuaternion(pDesc->vInitialQuaternion);
+	GetTransform().SetScale(pDesc->vInitialScale);
+	GetTransform().Update();
 
 	{
 		CComConstantBuffer::DESC Desc{};
@@ -64,8 +74,8 @@ HRESULT CTmbGurdianDead::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC Desc{};
-		Desc.sGroupTag = pDesc->LevelTag;
-		Desc.sResTag = pDesc->WeaponName;
+		Desc.sGroupTag = pDesc->sResourceGroup;
+		Desc.sResTag = pDesc->DebrisResTag;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -73,10 +83,79 @@ HRESULT CTmbGurdianDead::Initialize(void* pArg)
 		};
 	}
 
-	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
-	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::DYNAMIC;
+		Desc.fMass = std::max(pDesc->fMass, 0.001f);
+		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.vRotation = pDesc->vInitialQuaternion;
+		if (FAILED(AddComponentFromProto(
+			"PHYSX",
+			"Prototype_Component_ComPxRigidBody",
+			"ComPxRigidBody",
+			&Desc,
+			&m_pComPxRigidBody)))
+		{
+			return E_FAIL;
+		}
+	}
 
-	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
+	{
+		const std::string sConvexPath =
+			pDesc->DebrisConvex;
+		if (sConvexPath.empty())
+			return E_INVALIDARG;
+
+		auto pConvexResource = CGameInstance::Get()
+			.GetOrCreateResourceByPath<
+				CResPhysXConvexGeometry>(
+				sConvexPath,
+				[sConvexPath]()
+				{
+					return CResPhysXConvexGeometry::
+						CreateAndLoad(sConvexPath);
+				});
+		if (!pConvexResource)
+			return E_FAIL;
+
+		CComPxConvexCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResConvex = std::move(pConvexResource);
+		Desc.pResMaterial =
+			CResPhysXMaterial::CreateAndLoad({});
+		Desc.vScale = {
+			std::max(
+				std::abs(pDesc->vConvexScale.x),
+				0.001f),
+			std::max(
+				std::abs(pDesc->vConvexScale.y),
+				0.001f),
+			std::max(
+				std::abs(pDesc->vConvexScale.z),
+				0.001f)
+		};
+		Desc.tFilter = pDesc->tFilter;
+		if (!Desc.pResMaterial ||
+			FAILED(AddComponentFromProto(
+				"PHYSX",
+				"Prototype_Component_ComPxConvexCollider",
+				"ComPxConvexCollider",
+				&Desc,
+				&m_pComPxConvexCollider)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (!m_pComPxConvexCollider->SetSimulationEnabled(false) ||
+		!m_pComPxConvexCollider->SetQueryEnabled(false) ||
+		!m_pComPxRigidBody->SetGravityEnabled(false) ||
+		!m_pComPxRigidBody->PutToSleep())
+	{
+		return E_FAIL;
+	}
+
+	m_bActivated = false;
 	return S_OK;
 }
 
@@ -118,27 +197,10 @@ void CTmbGurdianDead::Update(E::_float fTimeDelta)
 
 void CTmbGurdianDead::LateUpdate(E::_float fTimeDelta)
 {
-	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
-	{
-		if (!m_bThrow)
-		{
-			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
-			{
-				if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneSocketIndex)
-				{
-					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
-					for (uint32_t i = 0; i < 3; ++i)
-					{
-						Par.r[i] = XMVector3Normalize(Par.r[i]);
-					}
-					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
-				}
-			}
-		}
+	if (!m_bActivated)
+		return;
 
-	}
-
-	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
+	UpdatePhysicData();
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }

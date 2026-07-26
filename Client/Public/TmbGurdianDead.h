@@ -9,6 +9,8 @@ class CResPixelShader;
 class CResSamplerState;
 class CResModel;
 class CComStaticModelInstance;
+class CComPxRigidBody;
+class CComPxConvexCollider;
 NS_END
 
 NS_BEGIN(Client)
@@ -20,22 +22,16 @@ public:
 public:
 	typedef struct tagTmbGuardianDeaddesc : public CGameObject::GAMEOBJECT_DESC
 	{
+		StringID sResourceGroup{};
 		StringID DebrisResTag{};
 		std::string DebrisConvex{};
 		_float3 vInitialPosition{};
-		_float3 vInitialRotation{};
+		_float4 vInitialQuaternion{ 0.f, 0.f, 0.f, 1.f };
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };
 		_float3 vConvexScale{ 1.f, 1.f, 1.f };
 		_float fMass{ 1.f };
 		PX_FILTER_DESC tFilter{};
 	}TMBGURDIAN_DEAD_DESC;
-
-	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
-	{
-		_string   WeaponName{}, LevelTag{};
-		CHandle ParentHandle{};
-		int32_t iBoneIndex{ -1 };
-	}WEAPON_DESC;
 
 private:
 	CTmbGurdianDead();
@@ -53,19 +49,14 @@ public:
 
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
+	CComPxRigidBody* m_pComPxRigidBody{};
+	CComPxConvexCollider* m_pComPxConvexCollider{};
+	_bool m_bActivated{};
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
-
-	_float4x4         m_ParentMatrix{};
-	_float3            m_vLook{};
-	CHandle            m_ParentHandle{};
-	int32_t            m_iBoneSocketIndex{ -1 };
-	_float            m_fAngle{ 0 };
-	_bool            m_bThrow{ false };
-
 
 public:
 	static E::UPtr<CTmbGurdianDead> Create();

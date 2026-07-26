@@ -141,18 +141,53 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
+	GetTransform().Update();
 
 
 	// 죽음 파편들
-	if(false)
 	{
+		const auto pModel = m_pComModelInstance->GetModel();
+		if (!pModel)
+		{
+			return E_FAIL;
+		}
+
+		const _matrix matDebrisInitialWorld =
+			XMLoadFloat4x4(&pModel->Get_PreTransformMatrix()) *
+			GetTransform().GetLoadedWorldMatrix();
+
+		_vector vDebrisScale{};
+		_vector vDebrisRotation{};
+		_vector vDebrisPosition{};
+		if (!XMMatrixDecompose(
+			&vDebrisScale,
+			&vDebrisRotation,
+			&vDebrisPosition,
+			matDebrisInitialWorld))
+		{
+			return E_FAIL;
+		}
+
+		_float3 vInitialPosition{};
+		_float4 vInitialQuaternion{};
+		_float3 vInitialScale{};
+		XMStoreFloat3(&vInitialPosition, vDebrisPosition);
+		XMStoreFloat4(
+			&vInitialQuaternion,
+			XMQuaternionNormalize(vDebrisRotation));
+		XMStoreFloat3(&vInitialScale, vDebrisScale);
+
 		for (uint32_t i = 0; i < 13; ++i)
 		{
 			CTmbGurdianDead::TMBGURDIAN_DEAD_DESC Desc{};
 			Desc.sObjectTag = "TmbGurdianDead";
+			Desc.sResourceGroup = MonDesc->LevelTag;
 			Desc.DebrisResTag = "Static_Med_Debris_" + std::to_string(i);
 			Desc.DebrisConvex = "./Resources/PhysX/Cooked/SM_Med_" + std::to_string(i) + ".pxconvex";
-			Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+			Desc.vInitialPosition = vInitialPosition;
+			Desc.vInitialQuaternion = vInitialQuaternion;
+			Desc.vInitialScale = vInitialScale;
+			Desc.vConvexScale = vInitialScale;
 			auto debris = E::CGameInstance::Get().AddGameObjectToLayer(
 				MonDesc->LevelTag,
 				PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead,
