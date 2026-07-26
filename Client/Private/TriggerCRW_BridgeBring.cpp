@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "TriggerCRW_BridgeBring.h"
-#include "MyMagicSquareStepController.h"
+#include "BridgeCRW.h"
 NS_USING(Client)
 
 HRESULT CTriggerCRW_BridgeBring::Initialize(void* pArg)
@@ -16,7 +16,17 @@ void CTriggerCRW_BridgeBring::OnTriggerEnter(
 
 	if (!m_bSpawned)
 	{
+		const auto* pLayer =
+			CGameInstance::Get().GetGameObjectLayer("BridgeCRW");
+		if (!pLayer || pLayer->empty())
+			return;
 
+		auto* pBridge = CGameInstance::Get()
+			.GetGameObjectByHandleT<CBridgeCRW>(pLayer->front());
+		if (!pBridge || !pBridge->RequestBring())
+			return;
+
+		m_bSpawned = true;
 	}
 }
 

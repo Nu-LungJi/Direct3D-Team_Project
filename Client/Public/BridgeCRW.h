@@ -22,6 +22,14 @@ class CBridgeCRW final : public CAnimationObject
 {
 public:
 	DECLARE_DERIVED_TYPE(CBridgeCRW, CAnimationObject)
+	enum class STATE : uint32_t
+	{
+		FLOATING = 0,
+		DESCENDING,
+		IDLE,
+		FIXING
+	};
+
 public:
 	struct DESC : public CAnimationObject::DESC
 	{
@@ -42,6 +50,10 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
+
+	_bool RequestBring();
+	_bool RequestFix();
+	STATE GetState() const { return m_eState; }
 
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 
@@ -83,7 +95,8 @@ private:
 	_float	m_fEmissiveIntensity = 0.f;
 
 	uint32_t m_iDebugSelectedBone = 0;
-	uint32_t m_iCurrentInstanceCount = 0.f;
+	uint32_t m_iCurrentInstanceCount = 0u;
+	STATE m_eState{ STATE::FLOATING };
 
 public:
 	static E::UPtr<CBridgeCRW> Create();
