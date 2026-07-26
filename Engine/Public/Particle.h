@@ -2,9 +2,12 @@
 #include "Engine_Defines.h"
 #include "GameObject.h"
 #include "ComStaticModelInstance.h"
+#include "ParticleShaderCache.h"
+
 NS_BEGIN(Engine)
 class ENGINE_DLL CParticle : public CEngineBase
 {
+	
 public:
 	DECLARE_DERIVED_TYPE(CParticle, CEngineBase)
 
@@ -20,6 +23,8 @@ public:
 		BEHAVIOR_SMOKEGV			= 1 << 7,
 		BEHAVIOR_SMOKEGW			= 1 << 8,
 		BEHAVIOR_LIGHTNING			= 1 << 9,
+		BEHAVIOR_SIZESTOP			= 1 << 10,
+		BEHAVIOR_EXTRALIGHTNING		= 1 << 11,
 	};
 
 protected:
@@ -65,7 +70,7 @@ protected:
 	SPtr<class CResTexture2D> m_pHdrNormalTexture;
 	SPtr<class CResTexture2D> m_pAnyTexture;
 	SPtr<class CResBlendState> m_pBlendState;
-
+	SPtr<class CParticleShaderCache> m_pParticleShaderCache;
 private:
 
 	struct PENDING_SPAWN

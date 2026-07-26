@@ -3,7 +3,7 @@
 
 NS_BEGIN(Engine)
 class CParticle;
-
+class CParticleShaderCache;
 
 struct PARTICLE_LOOP_REQUEST
 {
@@ -34,7 +34,7 @@ typedef struct tagParticlePreset
 	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
 	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
-
+	_float fStopSizeTime = 0;
 } PARTICLE_PRESET;
 
 
@@ -63,6 +63,7 @@ public:
     CParticleManager(const CParticleManager&) = delete;
     CParticleManager& operator=(const CParticleManager& rhs) = delete;
 public:
+	HRESULT Initialize();
     void Update(_float fTimeDelta);
     HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
     void UpdateGUI();
@@ -154,6 +155,7 @@ public:
 
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);
+    uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 public:
     static UPtr<CParticleManager> Create();
 private:
@@ -170,9 +172,10 @@ private:
 	 StringID pendingSyncGroup, pendingSyncType;
 
 private:
-    uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_TextureThumbnailCache;
 	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> m_ParsedCommandCache;
+	SPtr<CParticleShaderCache> m_pShaderCache;
+
 private:
 	uint32_t m_iNextOwnerId = 1;
 };

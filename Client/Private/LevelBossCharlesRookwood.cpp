@@ -15,6 +15,7 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player.h"
 
+#include "BossTMB.h"
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -46,6 +47,9 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+		return E_FAIL;
+
+	if (FAILED(SpawnMonster()))
 		return E_FAIL;
 
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -80,7 +84,7 @@ Engine::UPtr<CLevelBossCharlesRookwood> CLevelBossCharlesRookwood::Create()
 
 	if (FAILED(pInstance->Initialize()))
 	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
+		MSG_BOX("Failed to Created : CLevel_BossCharlesRookwood");
 	}
 
 	return pInstance;
@@ -226,6 +230,27 @@ HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()
 	if (handles.empty())
 		return E_FAIL;
 
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnMonster()
+{
+	{
+		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.sObjectTag = "BossTmb";
+		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
+		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
+
+		if (!BossTmb)
+		{
+			MSG_BOX("Create BossTmb Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }
 

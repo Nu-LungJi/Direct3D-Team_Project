@@ -205,6 +205,29 @@
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
+    <ClInclude Include="..\public\BossTMB.h" />
+    <ClInclude Include="..\Public\BTAnimation.h" />
+    <ClInclude Include="..\Public\BTAnimRoot.h" />
+    <ClInclude Include="..\Public\BTAttackAnimation.h" />
+    <ClInclude Include="..\Public\BTCreatureFlag.h" />
+    <ClInclude Include="..\Public\BTDecFlag.h" />
+    <ClInclude Include="..\Public\BTDecHitCnt.h" />
+    <ClInclude Include="..\Public\BTDecHp.h" />
+    <ClInclude Include="..\Public\BTDecInvert.h" />
+    <ClInclude Include="..\Public\BTDecLier.h" />
+    <ClInclude Include="..\Public\BTDecSearch.h" />
+    <ClInclude Include="..\Public\BTDecTimer.h" />
+    <ClInclude Include="..\Public\BTHeader_Definse.h" />
+    <ClInclude Include="..\Public\BTHitAnimMonster.h" />
+    <ClInclude Include="..\Public\BTMonAttType.h" />
+    <ClInclude Include="..\Public\BTMove.h" />
+    <ClInclude Include="..\Public\BTOnlyFalse.h" />
+    <ClInclude Include="..\Public\BTOnlyTrue.h" />
+    <ClInclude Include="..\Public\BTRandMoveAnim.h" />
+    <ClInclude Include="..\Public\BTTeleport.h" />
+    <ClInclude Include="..\Public\BTTurnAnimation.h" />
+    <ClInclude Include="..\Public\BTTurnDirect.h" />
+    <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
@@ -220,6 +243,7 @@
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
+    <ClInclude Include="..\Public\Monster.h" />
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player.h" />
@@ -239,6 +263,9 @@
     <ClInclude Include="..\public\TriggerCRW_SpawnStep3.h" />
     <ClInclude Include="..\public\TriggerCRW_SpawnStep4.h" />
     <ClInclude Include="..\public\TriggerCRW_StairStep.h" />
+    <ClInclude Include="..\public\TmbGurdian.h" />
+    <ClInclude Include="..\public\TmbGurdianDead.h" />
+    <ClInclude Include="..\Public\Weapon.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -247,6 +274,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BossTMB.cpp" />
+    <ClCompile Include="..\Private\BTAnimation.cpp" />
+    <ClCompile Include="..\Private\BTAnimRoot.cpp" />
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\Private\BTCreatureFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecHp.cpp" />
+    <ClCompile Include="..\Private\BTDecInvert.cpp" />
+    <ClCompile Include="..\Private\BTDecLier.cpp" />
+    <ClCompile Include="..\Private\BTDecSearch.cpp" />
+    <ClCompile Include="..\Private\BTDecTimer.cpp" />
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp" />
+    <ClCompile Include="..\Private\BTMonAttType.cpp" />
+    <ClCompile Include="..\Private\BTMove.cpp" />
+    <ClCompile Include="..\Private\BTOnlyFalse.cpp" />
+    <ClCompile Include="..\Private\BTOnlyTrue.cpp" />
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp" />
+    <ClCompile Include="..\Private\BTTeleport.cpp" />
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp" />
+    <ClCompile Include="..\Private\BTTurnDirect.cpp" />
+    <ClCompile Include="..\Private\BTTurnSlow.cpp" />
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
@@ -259,6 +307,7 @@
     <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\Private\Monster.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
@@ -278,6 +327,9 @@
     <ClCompile Include="..\private\TriggerCRW_SpawnStep3.cpp" />
     <ClCompile Include="..\private\TriggerCRW_SpawnStep4.cpp" />
     <ClCompile Include="..\private\TriggerCRW_StairStep.cpp" />
+    <ClCompile Include="..\private\TmbGurdian.cpp" />
+    <ClCompile Include="..\private\TmbGurdianDead.cpp" />
+    <ClCompile Include="..\Private\Weapon.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

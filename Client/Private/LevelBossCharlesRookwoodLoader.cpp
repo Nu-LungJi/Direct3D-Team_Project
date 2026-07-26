@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 
+#include "BossTMB.h"
 NS_USING(Client)
 
 std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
@@ -62,6 +63,12 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerThirdPersonCamera");
 				return false;
 			}
+			if (FAILED(MonsterLoad_InWorker()))
+			{
+				MSG_BOX("MonsterLoad Failed");
+				return false;
+			}
+
 			return  true;
 		});
 }
@@ -82,6 +89,36 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::UnLoad()
 			CGameInstance::Get().DelPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD);
 
 			CGameInstance::Get().DelResource("MODEL");
+			CGameInstance::Get().DelResource(LEVEL::BOSS_CHARLES_ROOKWOOD);
 			return true;
 		});
+}
+
+HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
+{
+	
+	{
+		//TombBos
+		{
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Model_Resource_TombProtector",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin")))
+			{
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TombProtector");
+					return E_FAIL;
+				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
+				return E_FAIL;
+			}
+		}
+	
+	}
+	return S_OK;
 }

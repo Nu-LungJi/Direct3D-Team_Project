@@ -29,6 +29,9 @@
 #include "TriggerCRW_BridgeBring.h"
 #include "TriggerCRW_BridgeFix.h"
 
+#include "TmbGurdian.h"
+#include "TmbGurdianDead.h"
+#include "Weapon.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -211,6 +214,11 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				return false;
 			}
 
+			if (FAILED(MonsterLoad_InWorker()))
+			{
+				MSG_BOX("Create Failed Monster in CharlesRookwood");
+				return false;
+			}
 			return true;
 		});
 }
@@ -248,6 +256,112 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 
 			CGameInstance::Get().DelResource("MODEL");
 
+			CGameInstance::Get().DelResource(LEVEL::CHARLES_ROOKWOOD);
 			return true;
 		});
+}
+HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
+{
+	//TombGurDian
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_TMBGurdian",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Grunt/SK_Tomb_Grunt.bin")))
+		{
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TMBGurdian");
+				//return false;
+			}
+		}
+
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
+			return false;
+		}
+
+	}
+
+	//TombGurDianDead
+	{
+		for (uint32_t i = 0; i < 13; ++i)
+		{
+			std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
+			StringID resTag = "Static_Med_Debris_" + std::to_string(i);
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, resTag,
+				CResStaticModel::Create(path))) {
+
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Static_Med_Debris");
+				}
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(
+			LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
+			return false;
+		}
+	}
+
+	//Weapon
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe,
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Axe.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Static_Axe_Model_Resource");
+				return false;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword,
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
+				return false;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace,
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Static_Mace_Model_Resource");
+				return false;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CWeapon::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Axe");
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CWeapon::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CWeapon::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
+			return false;
+		}
+	}
 }

@@ -21,6 +21,7 @@
 #include "MyMagicSquareStepController.h"
 
 #include "BridgeCRW.h"
+#include "TmbGurdian.h"
 NS_USING(Client)
 
 CLevelCharlesRookwood::CLevelCharlesRookwood()
@@ -61,6 +62,8 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(SpawnMyMagicStepController()))
 		return E_FAIL;
 
+	if (FAILED(SpawnMonster()))
+		return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
@@ -217,6 +220,27 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		&PlayerDesc);
 }
 
+HRESULT CLevelCharlesRookwood::SpawnMonster()
+{
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(-6.f, -215.f, 156.f,1.f));
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/DeadTest.json";
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+		if (!BossTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
+
+	return S_OK;
+}
 std::optional<CHandle> CLevelCharlesRookwood::SpawnDebugPlayer()
 {
 	CDebugPlayer::DESC PlayerDesc{};

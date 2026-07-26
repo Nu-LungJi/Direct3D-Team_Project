@@ -77,6 +77,7 @@ HRESULT CMonster::InitializePrototype(void* pArg)
 HRESULT CMonster::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
+	m_bDonMove = MonDesc->bDonMove;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;

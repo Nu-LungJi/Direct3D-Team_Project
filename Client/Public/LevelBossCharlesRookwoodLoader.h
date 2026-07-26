@@ -9,5 +9,8 @@ public:
 public:
 	static std::future<bool> Load();
 	static std::future<bool> UnLoad();
+
+private:
+	static HRESULT		MonsterLoad_InWorker();
 };
 NS_END
