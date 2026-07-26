@@ -131,7 +131,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 
 	//Weapon
 	{
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe,
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Axe",
 			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Axe.bin"))) {
 
 			E::CResStaticModel::DESC pDesc{};
@@ -143,7 +143,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 				return false;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword,
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Sword",
 			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
 
 			E::CResStaticModel::DESC pDesc{};
@@ -155,7 +155,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 				return false;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace,
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Mace",
 			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
 
 			E::CResStaticModel::DESC pDesc{};
