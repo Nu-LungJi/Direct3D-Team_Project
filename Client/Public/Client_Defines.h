@@ -35,7 +35,6 @@ namespace Client
 		Prototype_GameObject_DebugPlayer,
 		Prototype_GameObject_Player,
 		Prototype_GameObject_DebugPlayerThirdPersonCamera,
-		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_TriggerCRW_SpawnStep,
 		Prototype_GameObject_TriggerCRW_StairStep,
 		Prototype_GameObject_TriggerCRW_SpawnStep2,
@@ -56,6 +55,9 @@ namespace Client
 		Prototype_GameObject_Axe,
 		Prototype_GameObject_Sword,
 		Prototype_GameObject_Mace,
+		Prototype_GameObject_PlayerThirdPersonCamera,
+		Prototype_GameObject_PlayerWeapon,
+		
 	};
 
 	enum class PROTO_COMPONENT

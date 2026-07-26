@@ -32,6 +32,7 @@
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
 #include "Weapon.h"
+#include "Player_Weapon.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -56,12 +57,30 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				}
 			}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("MODEL", "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 				E::CResModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
-					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_MODEL_RESROUCE");
+					return false;
+				}
+			}
+	/*		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/Wand/SM_Wand.bin"))) {
+
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
+					return false;
+				}
+			}*/
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin"))) {
+
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
 					return false;
 				}
 			}
@@ -219,6 +238,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				MSG_BOX("Create Failed Monster in CharlesRookwood");
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerWeapon");
+				return false;
+			}
+
 			return true;
 		});
 }

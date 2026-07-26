@@ -137,13 +137,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	{
 		CPlayer_StateMachine::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			"PLAYER_STATEMACHINE",
-			"Prototype_Component_Player_StateMachine",
-			"Player_StateMachine",
-			&Desc,
-			&m_pStateMachine)) ||
-			!m_pStateMachine)
+		if (FAILED(AddComponentFromProto("PLAYER_STATEMACHINE","Prototype_Component_Player_StateMachine","Player_StateMachine",&Desc,&m_pStateMachine)))
 		{
 			return E_FAIL;
 		}
@@ -243,38 +237,25 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
-	m_bSprintRequested =
-		m_bRawMoveInput &&
-		CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+	m_bSprintRequested = m_bRawMoveInput && CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
 	
 	if (m_bRawMoveInput)
 	{
 		m_vLastMoveDirection = vMoveDirection;
 
-		const _vector vTargetDirection = XMVector3Normalize(
-			XMLoadFloat3(&m_vRawMoveDirection));
+		const _vector vTargetDirection = XMVector3Normalize(XMLoadFloat3(&m_vRawMoveDirection));
 
-		if (m_bMovementLocked ||
-			m_fCurrentMoveSpeed <= std::numeric_limits<_float>::epsilon())
+		if (m_bMovementLocked ||m_fCurrentMoveSpeed <= std::numeric_limits<_float>::epsilon())
 		{
 			XMStoreFloat3(&m_vSmoothedMoveDirection, vTargetDirection);
 		}
 		else
 		{
-			const _float fDirectionResponse = m_bSprintRequested
-				? m_fSprintDirectionResponse
-				: m_fJogDirectionResponse;
-			const _float fDirectionBlend =
-				1.f - std::exp(-fDirectionResponse * fTimeDelta);
-			const _vector vSmoothedDirection = XMVector3Normalize(
-				XMVectorLerp(
-					XMLoadFloat3(&m_vSmoothedMoveDirection),
-					vTargetDirection,
-					std::clamp(fDirectionBlend, 0.f, 1.f)));
-			XMStoreFloat3(
-				&m_vSmoothedMoveDirection,
-				vSmoothedDirection);
+			const _float fDirectionResponse = m_bSprintRequested? m_fSprintDirectionResponse: m_fJogDirectionResponse;
+			const _float fDirectionBlend = 1.f - std::exp(-fDirectionResponse * fTimeDelta);
+			const _vector vSmoothedDirection = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vSmoothedMoveDirection),vTargetDirection,std::clamp(fDirectionBlend, 0.f, 1.f)));
+			XMStoreFloat3(&m_vSmoothedMoveDirection,vSmoothedDirection);
 		}
 	}
 
@@ -285,40 +266,32 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	else
 	{
-		const _float fTargetSpeed =
-			m_bRawMoveInput
-				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
-				: 0.f;
-		const _float fSpeedChange =
-			(m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) *
-			fTimeDelta;
+		const _float fTargetSpeed =m_bRawMoveInput ? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed): 0.f;
+		const _float fSpeedChange = (m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) *fTimeDelta;
 
 		if (m_fCurrentMoveSpeed < fTargetSpeed)
 		{
-			m_fCurrentMoveSpeed = std::min(
-				m_fCurrentMoveSpeed + fSpeedChange,
-				fTargetSpeed);
+			m_fCurrentMoveSpeed = std::min( m_fCurrentMoveSpeed + fSpeedChange,fTargetSpeed);
 		}
 		else
 		{
-			m_fCurrentMoveSpeed = std::max(
-				m_fCurrentMoveSpeed - fSpeedChange,
-				fTargetSpeed);
+			m_fCurrentMoveSpeed = std::max(m_fCurrentMoveSpeed - fSpeedChange,fTargetSpeed);
 		}
 
 		if (m_fCurrentMoveSpeed > std::numeric_limits<_float>::epsilon())
 		{
-			m_pComMoveIntent->SetMoveIntent(
-				m_bRawMoveInput
-					? m_vSmoothedMoveDirection
-					: m_vLastMoveDirection,
-				m_fCurrentMoveSpeed);
+			m_pComMoveIntent->SetMoveIntent(m_bRawMoveInput? m_vSmoothedMoveDirection: m_vLastMoveDirection,m_fCurrentMoveSpeed);
 		}
 		else
 		{
 			m_fCurrentMoveSpeed = 0.f;
 			m_pComMoveIntent->ClearMoveIntent();
 		}
+	}
+
+	if (m_pStateMachine &&CGameInstance::Get().KeyDown(DIK_LCONTROL))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::ROLL);
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
@@ -380,16 +353,11 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 		if (m_bRootMotionRotationActive)
 		{
-			const _float4 vRotationDelta =
-				m_pModelAnimator->GetRootMotionRotationDelta();
-			const _vector qCurrent =
-				GetTransform().GetLoadedQuaternion();
-			const _vector qDelta =
-				XMLoadFloat4(&vRotationDelta);
+			const _float4 vRotationDelta = m_pModelAnimator->GetRootMotionRotationDelta();
+			const _vector qCurrent = GetTransform().GetLoadedQuaternion();
+			const _vector qDelta = XMLoadFloat4(&vRotationDelta);
 
-			GetTransform().SetQuaternion(
-				XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrent, qDelta)));
+			GetTransform().SetQuaternion(XMQuaternionNormalize(XMQuaternionMultiply(qCurrent, qDelta)));
 		}
 	}
 
@@ -403,19 +371,13 @@ void CPlayer::Update(E::_float fTimeDelta)
 	if (bApplyRootMotionTranslation && m_pComCharacterController)
 	{
 		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
-		const _vector vWorldDelta = XMVector3Rotate(
-			vLocalDelta,
-			GetTransform().GetLoadedQuaternion());
+		const _vector vWorldDelta = XMVector3Rotate(vLocalDelta,GetTransform().GetLoadedQuaternion());
 
 		_float3 vWorldDisplacement{};
 		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
 
-		m_pComCharacterController->Move(
-			vWorldDisplacement,
-			fTimeDelta,
-			0.f);
-		GetTransform().SetPosition(
-			m_pComCharacterController->GetPosition());
+		m_pComCharacterController->Move(vWorldDisplacement,fTimeDelta,0.f);
+		GetTransform().SetPosition(m_pComCharacterController->GetPosition());
 	}
 
 }
