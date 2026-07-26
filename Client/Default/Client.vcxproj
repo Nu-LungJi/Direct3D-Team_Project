@@ -239,6 +239,8 @@
     <ClInclude Include="..\public\LevelLogoLoader.h" />
     <ClInclude Include="..\public\LevelCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h" />
+    <ClInclude Include="..\public\LevelTerrain.h" />
+    <ClInclude Include="..\public\LevelTerrainLoader.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
@@ -255,6 +257,8 @@
     <ClInclude Include="..\Public\Player_Skill_State.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\Player_Weapon.h" />
+    <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
+    <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TriggerCRW_BridgeBring.h" />
     <ClInclude Include="..\public\TriggerCRW_BridgeFix.h" />
     <ClInclude Include="..\public\TriggerCRW_DeSpawnStep.h" />
@@ -309,6 +313,8 @@
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
     <ClCompile Include="..\private\LevelCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
+    <ClCompile Include="..\private\LevelTerrain.cpp" />
+    <ClCompile Include="..\private\LevelTerrainLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\Monster.cpp" />
@@ -323,6 +329,8 @@
     <ClCompile Include="..\Private\Player_Skill_State.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\Player_Weapon.cpp" />
+    <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
+    <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp" />
     <ClCompile Include="..\private\TriggerCRW_BridgeFix.cpp" />
     <ClCompile Include="..\private\TriggerCRW_DeSpawnStep.cpp" />

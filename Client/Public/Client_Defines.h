@@ -58,6 +58,7 @@ namespace Client
 		Prototype_GameObject_Mace,
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerWeapon,
+		Prototype_GameObject_Terrain,
 	};
 
 	enum class PROTO_COMPONENT
