@@ -9,8 +9,7 @@
 #include "UiCamera.h"
 
 #include "LevelCharlesRookwoodLoader.h"
-#include "DebugPlayerThirdPersonCamera.h"
-#include "DebugPlayer.h"
+
 
 #include "PlayerThirdPersonCamera.h"
 #include "Player.h"
@@ -41,9 +40,6 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnUICamera()))
-		return E_FAIL;
-
-	if (FAILED(SpawnDebugPlayerCamera(SpawnDebugPlayer())))
 		return E_FAIL;
 
 	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
@@ -141,44 +137,6 @@ HRESULT CLevelBossCharlesRookwood::SpawnUICamera()
 	}
 	return S_OK;
 }
-std::optional<CHandle> CLevelBossCharlesRookwood::SpawnDebugPlayer()
-{
-	CDebugPlayer::DESC PlayerDesc{};
-	PlayerDesc.sObjectTag = "DebugPlayer";
-	PlayerDesc.vInitialPosition = { -80.f, 20.f, 0.f };
-	return  E::CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::BOSS_CHARLES_ROOKWOOD,
-		PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayer,
-		"02_Player",
-		&PlayerDesc);
-}
-
-HRESULT CLevelBossCharlesRookwood::SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer)
-{
-	if (!hDebugPlayer) return E_FAIL;
-	CDebugPlayerThirdPersonCamera::DESC Desc{};
-	Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-	Desc.vAt = { 10.f, 50.f, 10.f };
-	Desc.vEye = { 10.f, 53.f, 5.f };
-	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-	Desc.fFovY = 75.f;
-	Desc.fNear = 0.1f;
-	Desc.fFar = 1000.f;
-	Desc.sObjectTag = "DebugPlayerCamera";
-	Desc.hTarget = hDebugPlayer.value();
-
-	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::BOSS_CHARLES_ROOKWOOD,
-		PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera,
-		"100_CAMERA",
-		&Desc);
-	if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
-		"DebugPlayerCamera", *hPlayerCamera)))
-	{
-		return E_FAIL;
-	}
-	return S_OK;
-}
 
 HRESULT CLevelBossCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 {
@@ -212,6 +170,7 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -80.f, 20.f, 10.f };
+	PlayerDesc.LevelTag = LEVEL::BOSS_CHARLES_ROOKWOOD;
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::BOSS_CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
