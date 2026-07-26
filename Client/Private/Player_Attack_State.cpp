@@ -93,7 +93,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			fTimeDelta);
 	}
 
-	if (!m_bPlayingHeavy &&fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
+	if (fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -230,6 +230,7 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
 	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);
+	animator->GetCurAnimState().fSpeed = 1.3f;
 	return true;
 }
 

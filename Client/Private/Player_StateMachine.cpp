@@ -105,9 +105,30 @@ _bool CPlayer_StateMachine::IsRegistered(PLAYER_STATE eState) const
 	return eState != PLAYER_STATE::NONE && eState != PLAYER_STATE::END && m_RegisteredStateIDs.contains(ETOUI(eState));
 }
 
+_bool CPlayer_StateMachine::IsInSkillState() const
+{
+	return IsSkillState(m_eCurrentState);
+}
+
+_bool CPlayer_StateMachine::IsSkillState(PLAYER_STATE eState)
+{
+	return eState > PLAYER_STATE::SKILL_BEGIN &&
+		eState < PLAYER_STATE::SKILL_END;
+}
+
 _bool CPlayer_StateMachine::CanTransition(PLAYER_STATE eCurrent, PLAYER_STATE eNext) const
 {
-	return eCurrent != eNext && eCurrent != PLAYER_STATE::DEAD;
+	if (eCurrent == eNext || eCurrent == PLAYER_STATE::DEAD)
+		return false;
+
+	if (IsSkillState(eCurrent))
+	{
+		return eNext == PLAYER_STATE::LOCOMOTION ||
+			eNext == PLAYER_STATE::HIT ||
+			eNext == PLAYER_STATE::DEAD;
+	}
+
+	return true;
 }
 
 uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
@@ -118,6 +139,7 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 	case PLAYER_STATE::HIT:    return 80;
 	case PLAYER_STATE::ROLL:   return 60;
 	case PLAYER_STATE::JUMP:   return 50;
+	case PLAYER_STATE::DASH_SKILL: return 45;
 	case PLAYER_STATE::ATTACK: return 40;
 	default:                   return 0;
 	}

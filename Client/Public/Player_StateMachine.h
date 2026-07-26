@@ -12,6 +12,9 @@ enum class PLAYER_STATE : uint32_t
 	ROLL,
 	JUMP,
 	ATTACK,
+	SKILL_BEGIN,
+	DASH_SKILL,
+	SKILL_END,
 	HIT,
 	DEAD,
 	END,
@@ -41,12 +44,14 @@ public:
 
 	PLAYER_STATE GetCurrentState() const { return m_eCurrentState; }
 	PLAYER_STATE GetRequestedState() const { return m_eRequestedState; }
+	_bool IsInSkillState() const;
 
 	static UPtr<CPlayer_StateMachine> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 private:
 	_bool IsRegistered(PLAYER_STATE eState) const;
+	static _bool IsSkillState(PLAYER_STATE eState);
 	_bool CanTransition(PLAYER_STATE eCurrent, PLAYER_STATE eNext) const;
 	uint32_t GetTransitionPriority(PLAYER_STATE eState) const;
 

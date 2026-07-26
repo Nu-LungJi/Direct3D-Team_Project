@@ -35,6 +35,8 @@ class CPlayer final : public CAnimationObject
 public:
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
 
+protected:
+	void UpdateGUI() override;
 
 public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
@@ -153,6 +155,12 @@ private:
 	_float m_fSprintDirectionResponse{ 4.5f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
+
+private:
+	static constexpr _float DASH_HOLD_TIME = 0.35f;
+
+	_float m_fControlHoldTime{};
+	_bool m_bDashTriggered{};
 
 public:
 	static E::UPtr<CPlayer> Create();
