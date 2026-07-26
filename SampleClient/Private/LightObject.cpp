@@ -86,7 +86,7 @@ void CLightObject::Update(E::_float fTimeDelta) {
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
 		CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
 HRESULT CLightObject::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -134,7 +134,7 @@ HRESULT CLightObject::RenderDefault(ID3D11DeviceContext* pContext, const E::REND
 
 		{  
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 0.f, {1.f, 1.f, 1.f}, 0.f, 1.f);
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 0.1f, 0.1f }, 1.f, {1.f, 1.f, 1.f}, 0.f, 1.f);
 			// EmissiveColor -> EmissiveIntensity -> Dissolve Color -> Dissolve Intensity -> Alpha
 		}
 
