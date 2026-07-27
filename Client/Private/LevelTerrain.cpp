@@ -55,50 +55,8 @@ HRESULT CLevelTerrain::Initialize()
 		}
 	}
 
-	/*{
-		CHandle hPlayer{};
-		CTerrain::DESC Desc{};
-		Desc.sObjectTag = "Terrain";
-		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Terrain",
-			"01_Terrain", &Desc))
-		{
-			int x = 0;
-		}
-		CTestPlayerCreatureEditor::DESC PlayerDesc{};
-		PlayerDesc.sObjectTag = "TestPlayerCreatureEditor";
-		PlayerDesc.vInitialPosition = { 10.f, 50.f, 10.f };
-		auto hSpawnedPlayer = E::CGameInstance::Get().AddGameObjectToLayer(
-			m_strLevelName,
-			"Prototype_GameObject_TestPlayerCreatureEditor",
-			"01_Player",
-			&PlayerDesc);
-		if (!hSpawnedPlayer)
-			return E_FAIL;
-		hPlayer = *hSpawnedPlayer;
-
-		{
-			CTestPlayer3CameraCreatureEditor::DESC Desc{};
-			Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-			Desc.vAt = { 10.f, 50.f, 10.f };
-			Desc.vEye = { 10.f, 53.f, 5.f };
-			Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-			Desc.fFovY = 75.f;
-			Desc.fNear = 0.1f;
-			Desc.fFar = 1000.f;
-			Desc.sObjectTag = "CREATURE_PLAYER_CAMERA";
-			Desc.hTarget = hPlayer;
-
-			auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
-				m_strLevelName,
-				"Prototype_GameObject_TestPlayer3CameraCreatureEditor",
-				"99_CAMERA",
-				&Desc);
-			if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera("CREATURE_PLAYER_CAMERA", *hPlayerCamera)))
-			{
-				return E_FAIL;
-			}
-		}
-	}*/
+	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+		return E_FAIL;
 
 
 	
@@ -343,6 +301,45 @@ void CLevelTerrain::BeHaviors()
 	}
 
 }
+
+HRESULT CLevelTerrain::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
+{
+	if (!hPlayer) return E_FAIL;
+	CPlayerThirdPersonCamera::DESC Desc{};
+	Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+	Desc.vAt = { 10.f, 50.f, 10.f };
+	Desc.vEye = { 10.f, 53.f, 5.f };
+	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+	Desc.fFovY = 75.f;
+	Desc.fNear = 0.1f;
+	Desc.fFar = 1000.f;
+	Desc.sObjectTag = "PlayerCamera";
+	Desc.hTarget = hPlayer.value();
+
+	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera,
+		"101_CAMERA",
+		&Desc);
+	if (!hPlayerCamera || FAILED(E::CGameInstance::Get().RegistCamera(
+		"PlayerCamera", *hPlayerCamera)))
+	{
+		return E_FAIL;
+	}
+	return S_OK;
+}
+std::optional<CHandle> CLevelTerrain::SpawnPlayer()
+{
+	CPlayer::DESC PlayerDesc{};
+	PlayerDesc.sObjectTag = "Player";
+	PlayerDesc.vInitialPosition = { 5.f, 100.f, 5.f };
+	PlayerDesc.LevelTag = LEVEL::TERRAIN;
+	return  E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
+		"03_Player",
+		&PlayerDesc);
+}
+
 Engine::UPtr<CLevelTerrain> CLevelTerrain::Create()
 {
 	auto	pInstance = Engine::UPtr<CLevelTerrain>(new CLevelTerrain{});
