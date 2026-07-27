@@ -58,6 +58,10 @@ public:
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
 		SPtr<CParticleShaderCache> pShaderCache;
+		uint32_t TexRows = 1;
+		uint32_t TexColumns = 1;
+		_bool bShrinkWidth = true;
+
 
     };
 
@@ -86,7 +90,7 @@ public:
 	virtual void SetVelocity(const _float3& vel) override;
 	virtual void SetSize(const _float3& size) override;
 	virtual void SetColor(const _float4& color) override;
-	void SetEmissive(const _float4& emissive) { m_vEmissive = emissive; }
+	virtual void SetEmissive(const _float4& emissive) override;
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 private:
@@ -111,6 +115,9 @@ private:
 	_float m_ScrollOffset = 0.2f;
 	_float totalLength = 0.0f;
 	_float m_fTotalDistance = 0.f;
+	_float m_fAccumulationTime = 0;
+	uint32_t diffuseFrames = 0;
+	uint32_t currentFrame = 0;
 public:
 	static UPtr<CParticle> Create(void* pArg);
 	float EaseOutQuad(float x);

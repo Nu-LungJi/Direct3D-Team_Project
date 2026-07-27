@@ -31,39 +31,39 @@ HRESULT CMainAppLoader::Load()
 	{
 		// TODO   SampleClinet  초기 이니셜라이즈
 		{
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
 
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "VS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "PS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
 		}
 
 
@@ -165,6 +165,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+
 	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_RIBBON_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Ribbon.hlsl")))
 	{
 		if (FAILED(res->Load()))
@@ -297,10 +298,10 @@ HRESULT CMainAppLoader::Load_PhysX_Resource()
 	}
 
 	{
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::CreateAndLoad(CResPhysXSphereGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::CreateAndLoad(CResPhysXCapsuleGeometry::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::CreateAndLoad(CResPhysXSphereGeometry::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::CreateAndLoad(CResPhysXCapsuleGeometry::DESC{}));
 	}
 	return S_OK;
 }
@@ -321,6 +322,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTeleport", CBTTeleport::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCreatureFlag", CBTCreatureFlag::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMonAttType", CBTMonAttType::Create())))
 		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTRandMoveAnim", CBTRandMoveAnim::Create())))

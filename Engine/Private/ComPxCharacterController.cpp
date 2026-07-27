@@ -407,6 +407,33 @@ bool CComPxCharacterController::IsCollidingSide() const
 	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES);
 }
 
+std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() const
+{
+	if (!m_pController)
+		return std::nullopt;
+
+	PxControllerState state{};
+	m_pController->getState(state);
+
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager)
+		return std::nullopt;
+
+	if (state.touchedShape)
+	{
+		if (const auto userData = pPhysXManager->FindShapeUserData(state.touchedShape))
+			return userData->hGameObject;
+	}
+
+	if (state.touchedActor)
+	{
+		if (const auto userData = pPhysXManager->FindActorUserData(state.touchedActor))
+			return userData->hGameObject;
+	}
+
+	return std::nullopt;
+}
+
 void CComPxCharacterController::SetPosition(const XMFLOAT3& vPosition)
 {
 	if (!m_pController)

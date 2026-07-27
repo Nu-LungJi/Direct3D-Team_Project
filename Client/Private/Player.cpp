@@ -24,6 +24,7 @@
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_Weapon.h"
 NS_USING(Client)
@@ -351,8 +352,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
-		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
-		m_pComCharacterMotor->SetVelocity({});
+		m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
 	}
 
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
@@ -366,7 +366,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		const _bool bCanRequestAttack =
 			eCurrentState != PLAYER_STATE::JUMP &&
 			(eCurrentState != PLAYER_STATE::ROLL ||
-			(m_pModelAnimator && m_pModelAnimator->GetPlayAnimRatio() >=CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
+			(m_pModelAnimator &&
+				PlayerAnimationRatioGuard::Sanitize(
+					m_pModelAnimator->GetPlayAnimRatio()) >=
+				CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
 
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
@@ -438,15 +441,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//}
 		}
 		
-		auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-		auto ori = m_pComTransform->GetPosition();
-		auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-		auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-		CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
-		CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-		CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
-		CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-		CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			auto ori = m_pComTransform->GetPosition();
+		if (false) {
+			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
+			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+			CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
+			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+		}
+
 
 		std::vector<PX_OVERLAP_RESULT> results{};
 		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
@@ -459,15 +465,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 
 		if (!pTarget) {
-			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-			auto ori = m_pComTransform->GetPosition();
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+				auto ori = m_pComTransform->GetPosition();
+			if (false) {
+				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+				CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+			}
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
@@ -478,15 +487,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 
 		if (pTarget) {
-			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
 			auto ori = m_pComTransform->GetPosition();
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			if (false) {
+				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+
+				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
+				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			}
+
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 
@@ -549,11 +562,53 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
+#ifdef _DEBUG
+	UpdateStandingGameObjectDebugLog();
+#endif
+
 }
+
+#ifdef _DEBUG
+void CPlayer::UpdateStandingGameObjectDebugLog()
+{
+	const std::optional<CHandle> hStandingGameObject =
+		m_pComCharacterController->GetStandingGameObjectHandle();
+
+	if (hStandingGameObject != m_hDebugStandingGameObject)
+	{
+		if (hStandingGameObject)
+		{
+			if (const auto* pStandingGameObject =
+				CGameInstance::Get().GetGameObjectByHandle(*hStandingGameObject))
+			{
+				std::string sLog = "[CPlayer][CCT] Standing On: ";
+				const std::string_view sObjectTag = pStandingGameObject->GetObjectTag();
+				sLog.append(sObjectTag.data(), sObjectTag.size());
+				sLog += " (Handle Index: ";
+				sLog += std::to_string(hStandingGameObject->GetIndex());
+				sLog += ", Generation: ";
+				sLog += std::to_string(hStandingGameObject->GetGeneration());
+				sLog += ")\n";
+				DEBUG_LOG_STR(sLog);
+			}
+			else
+			{
+				DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
+			}
+		}
+		else
+		{
+			DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
+		}
+
+		m_hDebugStandingGameObject = hStandingGameObject;
+	}
+}
+#endif
 
 void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
 {
-	if (!m_pComCharacterController ||
+	if (!m_pComMoveIntent ||
 		fSpeed <= 0.f ||
 		fTimeDelta <= 0.f)
 	{
@@ -577,18 +632,12 @@ void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
 		&vDisplacement,
 		vForward * fSpeed * fTimeDelta);
 
-	m_pComCharacterController->Move(
-		vDisplacement,
-		fTimeDelta,
-		0.f);
-
-	GetTransform().SetPosition(
-		m_pComCharacterController->GetPosition());
+	m_pComMoveIntent->AddExternalDisplacement(vDisplacement);
 }
 
 void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta)
 {
-	if (!m_pComCharacterController ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
+	if (!m_pComMoveIntent ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
 	{
 		return;
 	}
@@ -607,13 +656,7 @@ void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_
 		&vDisplacement,
 		vMoveDirection * fSpeed * fTimeDelta);
 
-	m_pComCharacterController->Move(
-		vDisplacement,
-		fTimeDelta,
-		0.f);
-
-	GetTransform().SetPosition(
-		m_pComCharacterController->GetPosition());
+	m_pComMoveIntent->AddExternalDisplacement(vDisplacement);
 }
 
 void CPlayer::PrepareLocomotionResume()
@@ -685,7 +728,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
-	if (bApplyRootMotionTranslation && m_pComCharacterController)
+	if (bApplyRootMotionTranslation && m_pComMoveIntent)
 	{
 		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
 		const _vector vWorldDelta = XMVector3Rotate(
@@ -695,12 +738,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 		_float3 vWorldDisplacement{};
 		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
 
-		m_pComCharacterController->Move(
-			vWorldDisplacement,
-			fTimeDelta,
-			0.f);
-		GetTransform().SetPosition(
-			m_pComCharacterController->GetPosition());
+		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
 
 }

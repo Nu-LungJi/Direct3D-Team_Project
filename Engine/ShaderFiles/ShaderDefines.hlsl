@@ -16,7 +16,7 @@ const static float SpecularIntensity = 1.f;
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-#define MAX_REFLECTION_LOD  4.f
+#define MAX_REFLECTION_LOD  2.f
 
 struct DirectionalLight
 {

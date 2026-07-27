@@ -1048,7 +1048,13 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
-
+	if (auto res = CGameInstance::Get().AddResourceT<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER,
+		"CS_ChangeColorByOwner",
+		"./ShaderFiles/Particle/CS_ChangeColorByOwner.hlsl"))
+	{
+		if (FAILED(res->Load()))
+			return E_FAIL;
+	}
 			
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation", "./ShaderFiles/TestModel/Shader_Animation_Compute.hlsl"))
 	{

@@ -9,6 +9,8 @@ cbuffer CB_OWNER_OPERATION : register(b13)
 	float2 g_vPadding;
 
 	row_major float4x4 g_matDelta;
+	float4 vColor;
+	float4 vEmissive;
 };
 
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u0);

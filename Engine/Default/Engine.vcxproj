@@ -727,6 +727,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\Particle\CS_TransformOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

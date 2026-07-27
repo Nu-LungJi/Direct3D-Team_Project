@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-
+#include "Level_Defines.h"
 namespace Client
 {
 	static const unsigned int	g_iWinSizeX{ 1280 };
@@ -46,6 +46,7 @@ namespace Client
 		Prototype_GameObject_TriggerCRW_DeSpawnStep4,
 		Prototype_GameObject_TriggerCRW_BridgeBring,
 		Prototype_GameObject_TriggerCRW_BridgeFix,
+		Prototype_GameObject_TriggerCRW_ToBoss,
 		Prototype_GameObject_MyMagicSquareStep,
 		Prototype_GameObject_MyMagicSquareStepController,
 		Prototype_GameObject_BridgeCRW,
@@ -57,7 +58,8 @@ namespace Client
 		Prototype_GameObject_Mace,
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerWeapon,
-		
+		Prototype_GameObject_Terrain,
+		Prototype_GameObject_OilBarrel,
 	};
 
 	enum class PROTO_COMPONENT
@@ -67,8 +69,8 @@ namespace Client
 
 	enum class TURN { LEFT_45, LEFT_90, LEFT_135, LEFT_180, RIGHT_45, RIGHT_90, RIGHT_135, RIGHT_180, END };
 	enum class ATTMON { ATT_1, ATT_2, ATT_3, ATT_4, SKILL_1, SKILL_2, SKILL_3, END };
-	enum class HITMON { HIT_1, HIT_2, HIT_3, HIT_4, END };
 	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO};
+	enum class HITMON { ACIO, DEPULSO, DESCENDO, DEF,HIT_4, END };
 	enum class PARTES { WEAPON, END };
 }
 

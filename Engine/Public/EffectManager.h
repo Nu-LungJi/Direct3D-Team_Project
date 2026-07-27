@@ -11,6 +11,7 @@ class CLightManager;
 class CSoundManager;
 
 
+
 inline bool InputText(const char* label, std::string& str, size_t maxLen = 256)
 {
 	std::vector<char> buf(maxLen);
@@ -47,12 +48,14 @@ public:
 
 	HRESULT LoadEffectPreset(const std::string& strPath);
 
-	EFFECT_INSTANCE_ID Spawn(const std::string& sEffectName,
+	EFFECT_INSTANCE_ID PlayEffect(const std::string& sEffectName,
 		const _float4x4& matWorld,
-		_fvector vEndPosition = XMVectorZero());
-
+		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
+	
 	void Stop(EFFECT_INSTANCE_ID iEffectId);
 
+	void ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId,
+		const _float4& vColor);
 	void SetPosition(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float3& vPosition);
@@ -67,15 +70,17 @@ public:
 private:
 	void DispatchReadyCommands(EFFECT_INSTANCE& instance);
 
-	void DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command);
+	_float DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command);
 
-	void DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command);
+	_float DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command);
 
-	void DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_COMMAND& command);
+	_float DispatchLight(EFFECT_INSTANCE& instance, const EFFECT_LIGHT_COMMAND& command);
 
 	void DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_COMMAND& command);
 
 	void RemoveFinishedInstances();
+
+	void Finish(EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason);
 
 	_float3 TransformPosition(const _float3& localPosition,const _float4x4& worldMatrix) const;
 

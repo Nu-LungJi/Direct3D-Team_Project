@@ -484,9 +484,6 @@
     <Filter Include="Component\Model\ComSocket">
       <UniqueIdentifier>{41fbef30-0861-4a12-87af-d96a9c20c674}</UniqueIdentifier>
     </Filter>
-    <Filter Include="CreatureManager">
-      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\LocoAndMotor">
       <UniqueIdentifier>{cf07ed9a-c696-4a46-9d9b-c31cce90f76c}</UniqueIdentifier>
     </Filter>
@@ -1833,6 +1830,9 @@
       <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
   </ItemGroup>

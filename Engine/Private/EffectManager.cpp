@@ -19,10 +19,10 @@ CEffectManager::~CEffectManager()
 
 HRESULT CEffectManager::Initialize() {
 	//복수하겠다
-	//if (FAILED(LoadEffectPreset("./Resources/json/Effect/BossRockPattern.json"))) {
-	//	MSG_BOX("Load Effect Failed");
-	//	return E_FAIL;
-	//}
+	if (FAILED(LoadEffectPreset("./Resources/json/Effect/PlayerDashSmoke.json"))) {
+		MSG_BOX("Load Effect Failed");
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -226,7 +226,7 @@ void CEffectManager::UpdateGUI()
 			&matWorld,
 			XMMatrixTranslation(5.f, 3.f, 5.f));
 
-		Spawn(playEffectName, matWorld);
+		PlayEffect(playEffectName, matWorld);
 	}
 	ImGui::End();
 }
@@ -637,8 +637,9 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 	return S_OK;
 }
 
-EFFECT_INSTANCE_ID CEffectManager::Spawn(const std::string& sEffectName,const _float4x4& matWorld, _fvector vEndPosition)
+EFFECT_INSTANCE_ID CEffectManager::PlayEffect(const std::string& sEffectName,const _float4x4& matWorld, _fvector vEndPosition, EFFECT_FINISHED_CALLBACK onFinished)
 {
+	_float totalLife = 0;
 	auto presetIter = m_Presets.find(sEffectName);
 
 	if (presetIter == m_Presets.end())
@@ -659,11 +660,11 @@ EFFECT_INSTANCE_ID CEffectManager::Spawn(const std::string& sEffectName,const _f
 	instance.matWorld = noScaleWorld;
 
 	instance.fElapsed = 0.f;
-	instance.fDuration =
-		presetIter->second.fDuration;
+	instance.fDuration = 0.f;
+		
 
 	instance.iNextCommandIndex = 0;
-
+	instance.onFinished = std::move(onFinished);
 	XMStoreFloat4(
 		&instance.vEndPosition,
 		vEndPosition);
@@ -701,31 +702,34 @@ void CEffectManager::DispatchReadyCommands(EFFECT_INSTANCE& instance)
 			break;
 		}
 
-		DispatchCommand(instance,command);
+		const _float commandLife = DispatchCommand(instance, command);
+
+		if (commandLife < 0.f)
+			instance.fDuration = -1.f;
+		else if (instance.fDuration >= 0.f)
+			instance.fDuration = std::max(instance.fDuration, instance.fElapsed + commandLife);
 
 		++instance.iNextCommandIndex;
 	}
 }
 
-void CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command)
+_float CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command)
 {
+
 	switch (command.eType)
 	{
 	case EFFECT_COMMAND_TYPE::PARTICLE:
 	{
 		const auto& particleCommand = std::get<EFFECT_PARTICLE_COMMAND>(command.data);
 
-		DispatchParticle(instance, particleCommand);
+		return DispatchParticle(instance, particleCommand);
 
-		break;
 	}
 	case EFFECT_COMMAND_TYPE::LIGHT:
 	{
 		const auto& lightCommand = std::get<EFFECT_LIGHT_COMMAND>(command.data);
 
-		DispatchLight(instance,lightCommand);
-
-		break;
+		return DispatchLight(instance,lightCommand);
 	}
 
 	case EFFECT_COMMAND_TYPE::SOUND:
@@ -740,42 +744,72 @@ void CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMM
 	default:
 		break;
 	}
+	
 }
 
-void CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance,const EFFECT_PARTICLE_COMMAND& command)
+_float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command)
 {
-	if (!m_pParticleManager)
-		return;
+	if (!m_pParticleManager || command.sParticleJson.empty())
+		return 0.f;
 
-	if (command.sParticleJson.empty())
-		return;
-
-	auto particleQueue =
-		m_pParticleManager->Parse_Command(command.sParticleJson);
+	auto particleQueue = m_pParticleManager->Parse_Command(command.sParticleJson);
 
 	if (particleQueue.empty())
-		return;
+		return 0.f;
 
-	/*
-	 * JSON 안에 파티클 명령이 여러 개 있어도
-	 * 이 큐 전체에 ownerId 하나가 발급된다.
-	 */
-	const uint32_t ownerId = m_pParticleManager->
-		Spawn(particleQueue,instance.matWorld,XMLoadFloat4(&instance.vEndPosition));
-	if (ownerId != INVALID_PARTICLE_OWNER_ID)
+	_float totalLife = 0.f;
+
+	for (const SPAWN_COMMAND& particle : particleQueue)
 	{
-		instance.vecParticleOwnerId.push_back(ownerId);
+		_float life = 0.f;
+		const auto currentKind = particle.sGroupTag_KindTag;
+
+		if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(particle.params))
+		{
+			const auto& param = std::get<STANDARD_PARAMS>(particle.params);
+
+			if (param.bLoop)
+				return -1.f;
+
+			const uint32_t intervalCount = param.count > 0 ? param.count - 1 : 0;
+			life = param.fSpawnDelay + param.fSpawnInterval * static_cast<_float>(intervalCount) + param.life;
+		}
+		else if (currentKind == SPAWN_COMMAND_KIND::BEAM && std::holds_alternative<BEAM_PARAMS>(particle.params))
+		{
+			const auto& param = std::get<BEAM_PARAMS>(particle.params);
+			life = param.fSpawnDelay + param.beamDuration;
+		}
+		else if (currentKind == SPAWN_COMMAND_KIND::PATTERN && std::holds_alternative<PatternParamVariant>(particle.params))
+		{
+			const auto& pattern = std::get<PatternParamVariant>(particle.params);
+			const auto spawnList = m_pParticleManager->BuildSpawnData(pattern);
+
+			for (const PARTICLE_SPAWN_DATA& spawnData : spawnList)
+			{
+				if (spawnData.loop)
+					return -1.f;
+
+				life = std::max(life, spawnData.spawnDelay + spawnData.life);
+			}
+		}
+
+		totalLife = std::max(totalLife, life);
 	}
+
+	const uint32_t ownerId = m_pParticleManager->Spawn(particleQueue, instance.matWorld, XMLoadFloat4(&instance.vEndPosition));
+
+	if (ownerId != INVALID_PARTICLE_OWNER_ID)
+		instance.vecParticleOwnerId.push_back(ownerId);
+
+	return totalLife;
 }
 
-void CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_COMMAND& command)
+_float CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_COMMAND& command)
 {
 	if (!m_pLightManager)
-		return;
+		return 0.f;
 
 	const _float3 worldPosition =TransformPosition(command.vLocalPosition,instance.matWorld);
-
-
 
 	auto lightHandle =
 		m_pLightManager->Allocate_EffectLight(
@@ -792,6 +826,7 @@ void CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_
 		instance.vecLightHandles.push_back(
 			*lightHandle);
 	}
+	return command.fDuration;
 }
 
 void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_COMMAND& command)
@@ -850,8 +885,13 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 			m_pSoundManager->Stop(soundId);
 		}
 	}
+	EFFECT_FINISHED_CALLBACK callback = std::move(instance.onFinished);
 
 	m_Instances.erase(iter);
+
+	if (callback)
+		callback(iEffectId, EFFECT_FINISH_REASON::STOPPED);
+
 }
 
 void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
@@ -925,9 +965,18 @@ void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4
 	//}
 }
 
-void CEffectManager::SetPosition(
-	EFFECT_INSTANCE_ID iEffectId,
-	const _float3& newPosition)
+void CEffectManager::ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor)
+{
+	auto iter = m_Instances.find(iEffectId);
+
+	if (iter == m_Instances.end() || !m_pParticleManager)
+		return;
+
+	for (uint32_t ownerId : iter->second.vecParticleOwnerId)
+		m_pParticleManager->SetColorByOwner(ownerId, vColor);
+}
+
+void CEffectManager::SetPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& newPosition)
 {
 	auto iter =
 		m_Instances.find(iEffectId);
@@ -953,42 +1002,44 @@ void CEffectManager::SetPosition(
 
 void CEffectManager::RemoveFinishedInstances()
 {
-	for (auto iter = m_Instances.begin(); iter != m_Instances.end();)
-	{
-		EFFECT_INSTANCE& instance = iter->second;
+	std::vector<EFFECT_INSTANCE_ID> finishedIds;
 
+	for (const auto& [effectId, instance] : m_Instances)
+	{
 		if (!instance.pPreset)
 		{
-			iter = m_Instances.erase(iter);
+			finishedIds.push_back(effectId);
 			continue;
 		}
 
-		const _bool allCommandsDispatched =
-			instance.iNextCommandIndex >= instance.pPreset ->vecCommands.size();
+		const bool allCommandsDispatched = instance.iNextCommandIndex >= instance.pPreset->vecCommands.size();
+		const bool hasFiniteDuration = instance.fDuration >= 0.f;
+		const bool durationFinished = instance.fElapsed >= instance.fDuration;
 
-		const _bool durationFinished =
-			instance.fDuration > 0.f &&
-			instance.fElapsed >=
-			instance.fDuration;
-
-		if (allCommandsDispatched &&
-			durationFinished)
-		{
-			/*
-			 * 자연 종료된 자식들을 Stop하지 않는다.
-			 * EffectManager의 추적 정보만 제거한다.
-			 */
-			iter = m_Instances.erase(iter);
-		}
-		else
-		{
-			++iter;
-		}
+		if (allCommandsDispatched && hasFiniteDuration && durationFinished)
+			finishedIds.push_back(effectId);
 	}
+
+	for (EFFECT_INSTANCE_ID effectId : finishedIds)
+		Finish(effectId, EFFECT_FINISH_REASON::NATURAL);
 }
 
-const EFFECT_INSTANCE*
-CEffectManager::FindInstance(EFFECT_INSTANCE_ID iEffectId) const
+void CEffectManager::Finish(EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+{
+	auto iter = m_Instances.find(effectId);
+
+	if (iter == m_Instances.end())
+		return;
+
+	EFFECT_FINISHED_CALLBACK callback = std::move(iter->second.onFinished);
+
+	m_Instances.erase(iter);
+
+	if (callback)
+		callback(effectId, reason);
+}
+
+const EFFECT_INSTANCE *CEffectManager::FindInstance(EFFECT_INSTANCE_ID iEffectId) const
 {
 	auto iter = m_Instances.find(iEffectId);
 

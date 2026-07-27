@@ -68,11 +68,6 @@ EVALUATE CBTRandMoveAnim::Evaluate(_float fTimeDelta)
 	pAnimator->Play_Anim(m_Value.iAnimIndex, true);
 	_bool bFinished = pAnimator->GetFinish();
 
-	if (m_GuiNode.bAbort)
-	{
-		//애니매이션 겹침 방지
-		//Set_Flag(ETOUI(BTFLAG::ABORT), FLAGTYPE::ADD);
-	}
 	eType = Move(fTimeDelta);
 	return m_eDebug = eType;
 }

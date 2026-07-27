@@ -3,43 +3,85 @@
 Texture2D OriginalTexture	: register(t0); // PostProcess 이전 텍스쳐
 Texture2D BlurPassTexture   : register(t1); // BrightPass  이후 텍스쳐
 
-const static float  BrightThreshold = { 0.2f };
-const static float  Weights[5]      = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
-const static float2 TexelSize       = { 1.0f / 1280.f, 1.0f / 720.f };
+static const float	CenterWeight	=	{ 0.227027f };
+static const float  BlurOffsets[2]  =	{ 1.3846154f, 3.2307692f };
+static const float	BlurWeights[2]  =	{ 0.3162162f, 0.0702703f };
 
-static const float	BloomIntensity  = { 1.f }; // 블룸 강도
-    
-float4 PSMain_BrightPass(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
-{ 
-	float4 BrightDiffuse = OriginalTexture.Sample(LinearClamp, TexCoord);
-    float  Luminance     = dot(BrightDiffuse.rgb, float3(0.2126f, 0.7152f, 0.0722f));
-    
-    return BrightDiffuse * smoothstep(BrightThreshold - 0.1f, BrightThreshold + 0.1f, Luminance);
+static const float  HalfBloomWeight		= 0.6f;
+static const float  QuarterBloomWeight  = 0.4f;
+
+static const float	BrightThreshold =	{ 0.60f };
+static const float  BloomIntensity  =	{ 0.25f };
+
+cbuffer CB_BLOOM : register(b10)
+{
+	float2 TexelSize;
+	float2 _pad;
+};
+
+float3 DownSampling(float2 _TexCoord)
+{
+	float2 SamplingOffset = TexelSize * 0.5f; // Sampling Near Pixel
+	
+	float3 Color = 0.f;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
+
+	return Color * 0.25f; // Color / 4.f
 }
 
-float4 PSMain_GaussianBlur_Vertical(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+float3 GaussianBlur(float2 _TexCoord, float2 _TexelDirection)
 {
-	float4 CenterPixel = BlurPassTexture.Sample(LinearClamp, TexCoord) * Weights[0];
-    for (int i = 1; i < 5; ++i)
+	float4 CenterPixel = BlurPassTexture.Sample(LinearClamp, _TexCoord) * CenterWeight;
+	
+	[unroll]
+	for (int i = 0; i < 2; ++i)
 	{
-		CenterPixel += BlurPassTexture.Sample(LinearWrap, TexCoord + float2(0.f, TexelSize.y) * i) * Weights[i];
-		CenterPixel += BlurPassTexture.Sample(LinearWrap, TexCoord - float2(0.f, TexelSize.y) * i) * Weights[i];
-    }
-    
-    return CenterPixel;
+		const float2 Offset = _TexelDirection * BlurOffsets[i];
+		CenterPixel += BlurPassTexture.Sample(LinearClamp, _TexCoord + Offset) * BlurWeights[i];
+		CenterPixel += BlurPassTexture.Sample(LinearClamp, _TexCoord - Offset) * BlurWeights[i];
+	}
+	
+	return CenterPixel.rgb;
+}
+
+float4 PSMain_BrightPass(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+{ 
+	float3	DownSampledColor = DownSampling(TexCoord);
+
+	float	Luminance = dot(DownSampledColor, float3(0.2126f, 0.7152f, 0.0722f));
+	float	Contribution = smoothstep(BrightThreshold - 0.2f, BrightThreshold + 0.2f, Luminance);
+
+	return float4(DownSampledColor * Contribution, 1.f);
+}
+
+float4 PSMain_VerticalBlur(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+{
+	return float4(GaussianBlur(TexCoord, float2(0.f, TexelSize.y)), 1.f);
+}
+float4 PSMain_HorizontalBlur(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+{
+	return float4(GaussianBlur(TexCoord, float2(TexelSize.x, 0.f)), 1.f);
 }
 
 float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
 {
-	float4 OriginalColor  = OriginalTexture.Sample(LinearClamp, TexCoord);
-	float4 BloomBlurColor = BlurPassTexture.Sample(LinearClamp, TexCoord) * Weights[0];
+	float3 OriginalColor  = OriginalTexture.Sample(LinearClamp, TexCoord).rgb;
+	float3 BloomBlurColor = BlurPassTexture.Sample(LinearClamp, TexCoord).rgb;
     
-    for (int i = 1; i < 5; ++i)
-    {
-		BloomBlurColor += BlurPassTexture.Sample(LinearWrap, TexCoord + float2(TexelSize.x, 0.f) * i) * Weights[i];
-		BloomBlurColor += BlurPassTexture.Sample(LinearWrap, TexCoord - float2(TexelSize.x, 0.f) * i) * Weights[i];
-	}
-	float3 FinalColor = OriginalColor.rgb + (BloomBlurColor.rgb * BloomIntensity);
-    
-    return float4(FinalColor, 1.f);
+	return float4(OriginalColor + BloomBlurColor * BloomIntensity, 1.f);
+}
+
+float4 PSMain_UpSampling(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+{
+	float3 HalfBloom = OriginalTexture.Sample(LinearClamp, TexCoord).rgb;
+	float3 QuarterBloom = BlurPassTexture.Sample(LinearClamp, TexCoord).rgb;
+	
+	return float4(HalfBloom * HalfBloomWeight + QuarterBloom * QuarterBloomWeight, 1.f);
+}
+float4 PSMain_DownSampling(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+{
+	return float4(DownSampling(TexCoord), 1.f);
 }

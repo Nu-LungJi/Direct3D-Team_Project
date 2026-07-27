@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "Player_StateMachine.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "ComAnimator.h"
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
@@ -107,7 +108,9 @@ void CPlayer_Jump_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 		m_bWasAirborne = true;
 
 	
-	const _float Ratio = animator->GetPlayAnimRatio();
+	const _float Ratio =
+		PlayerAnimationRatioGuard::Sanitize(
+			animator->GetPlayAnimRatio());
 
 	switch (m_ePhase)
 	{

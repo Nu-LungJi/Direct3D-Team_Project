@@ -47,6 +47,35 @@ void CComCharacterMoveIntent::ClearMoveIntent()
 	m_tOutput.bMoveRequested = false;
 }
 
+void CComCharacterMoveIntent::AddExternalDisplacement(const _float3& vDisplacement)
+{
+	if (!std::isfinite(vDisplacement.x) ||
+		!std::isfinite(vDisplacement.y) ||
+		!std::isfinite(vDisplacement.z))
+	{
+		return;
+	}
+
+	m_vExternalDisplacement.x += vDisplacement.x;
+	m_vExternalDisplacement.y += vDisplacement.y;
+	m_vExternalDisplacement.z += vDisplacement.z;
+}
+
+_bool CComCharacterMoveIntent::ConsumeExternalDisplacement(_float3& vOutDisplacement)
+{
+	vOutDisplacement = m_vExternalDisplacement;
+	m_vExternalDisplacement = {};
+
+	return vOutDisplacement.x != 0.f ||
+		vOutDisplacement.y != 0.f ||
+		vOutDisplacement.z != 0.f;
+}
+
+void CComCharacterMoveIntent::ClearExternalDisplacement()
+{
+	m_vExternalDisplacement = {};
+}
+
 void CComCharacterMoveIntent::SetFacingIntent(const _float3& vDirection, _float fTurnSpeed)
 {
 	const _float fLengthSq =
@@ -145,6 +174,11 @@ void CComCharacterMoveIntent::UpdateGUI()
 		m_tOutput.vMoveDirection.y,
 		m_tOutput.vMoveDirection.z);
 	ImGui::Text("Move Speed: %.3f", m_tOutput.fMoveSpeed);
+	ImGui::Text(
+		"External Displacement: %.3f, %.3f, %.3f",
+		m_vExternalDisplacement.x,
+		m_vExternalDisplacement.y,
+		m_vExternalDisplacement.z);
 	ImGui::Text("Facing Requested: %s", m_tOutput.bFacingRequested ? "true" : "false");
 	ImGui::Text("Facing Direction: %.3f, %.3f, %.3f",
 		m_tOutput.vFacingDirection.x,

@@ -25,6 +25,17 @@ public:
 	static E::UPtr<CTerrainGUI> Create(E::CHandle* selectedObject, CEditorCommandManager* commandManager);
 
 private:
+	_float NoiseFade(_float value);
+	uint32_t NoiseHash(int32_t x, int32_t z, uint32_t seed);
+	_float GradientDot(int32_t gridX, int32_t gridZ, _float x, _float z, uint32_t seed);
+	_float Perlin2D(_float x, _float z, uint32_t seed);
+	_float FractalPerlin2D(_float worldX, _float worldZ, uint32_t seed, _float noiseScale,
+		int octaves, _float persistence, _float lacunarity);
+	HRESULT GenerateTerrainNoise(E::CTerrain& terrain, uint32_t seed, _float noiseScale,
+		_float amplitude, _float baseHeight, int octaves, _float persistence,
+		_float lacunarity, _bool additive);
+
+private:
 	E::UPtr<CTerrainPickingPass> m_pPickingPass{};
 	E::UPtr<CTerrainBrushController> m_pBrushController{};
 	std::optional<E::_float3> m_PickedPosition{};
@@ -46,6 +57,17 @@ private:
 	std::optional<E::_float3> m_PreviousScatterHit{};
 	std::vector<MAPMESH_OBJECT_SNAPSHOT> m_ScatterSnapshots{};
 	std::vector<E::CHandle> m_ScatterHandles{};
+
+private:
+	int m_iNoiseSeed = 1337;
+	_float m_fNoiseScale = 60.f;
+	_float m_fNoiseAmplitude = 15.f;
+	_float m_fNoiseBaseHeight = 0.f;
+	int m_iNoiseOctaves = 5;
+	_float m_fNoisePersistence = 0.5f;
+	_float m_fNoiseLacunarity = 2.f;
+	_bool m_bNoiseAdditive = false;
+	std::string m_NoiseStatus{};
 };
 
 NS_END

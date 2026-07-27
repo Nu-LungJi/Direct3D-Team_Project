@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComStaticModelInstance.h"
@@ -10,22 +10,22 @@
 #include "Trail_CPU.h"
 NS_USING(Client)
 
-CWeapon::CWeapon()
+CMon_Weapon::CMon_Weapon()
 	: CGameObject{}
 {
 }
 
-CWeapon::~CWeapon()
+CMon_Weapon::~CMon_Weapon()
 {
 }
 
-void CWeapon::UpdateGUI()
+void CMon_Weapon::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 
 }
 
-HRESULT CWeapon::InitializePrototype(void* pArg)
+HRESULT CMon_Weapon::InitializePrototype(void* pArg)
 {
 
 	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
@@ -42,7 +42,7 @@ HRESULT CWeapon::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CWeapon::Initialize(void* pArg)
+HRESULT CMon_Weapon::Initialize(void* pArg)
 {
 	
 	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
@@ -79,55 +79,18 @@ HRESULT CWeapon::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CWeapon::PriorityUpdate(E::_float fTimeDelta)
+void CMon_Weapon::PriorityUpdate(E::_float fTimeDelta)
 {
+	m_bDissolve = false;
 }
 
-void CWeapon::Update(E::_float fTimeDelta)
+void CMon_Weapon::Update(E::_float fTimeDelta)
 {
-	//_float3 vstart, vend;
-	//vstart = m_pComTransform->GetPosition();
-	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	//auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
-	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-
-	/*if (CGameInstance::Get().KeyPressing(DIK_HOME))
-		m_pComTransform->GoUp(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_END))
-		m_pComTransform->GoDown(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_UP))
-		m_pComTransform->GoStraight(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
-		m_pComTransform->GoRight(fTimeDelta * -15);
-	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
-		m_pComTransform->GoBackward(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
-		m_pComTransform->GoRight(fTimeDelta * 15);*/
-	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
-
-	if (CGameInstance::Get().KeyPressing(DIK_7)) {
-		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	}
-
-
-
-
-	//if (CGameInstance::Get().KeyDown(DIK_K)) {
-	//	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
-	//
-	//}
-
-
-	//if (CGameInstance::Get().KeyPressing(DIK_P))
-	//	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
-
-
 	Weapon_Throw(fTimeDelta);
+	Dissolve(fTimeDelta);
 }
 
-void CWeapon::LateUpdate(E::_float fTimeDelta)
+void CMon_Weapon::LateUpdate(E::_float fTimeDelta)
 {
 	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 	{
@@ -164,7 +127,7 @@ void CWeapon::LateUpdate(E::_float fTimeDelta)
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
-HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CMon_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	{
 		E::CB_PER_OBJECT cbPerObject{};
@@ -207,7 +170,7 @@ HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, m_fDissolveintensity, m_vDissolve, m_fDissolveintensity, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -217,7 +180,7 @@ HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 	return S_OK;
 }
 
-void CWeapon::Weapon_Throw(_float fTimeDelta)
+void CMon_Weapon::Weapon_Throw(_float fTimeDelta)
 {
 	if (!m_bThrow)
 		return;
@@ -231,23 +194,45 @@ void CWeapon::Weapon_Throw(_float fTimeDelta)
 
 }
 
-E::UPtr<CWeapon> CWeapon::Create()
+void CMon_Weapon::Dissolve(_float fTimeDelta)
 {
-	auto pInstance = E::ToUPtr(new CWeapon{});
+	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+	{
+		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
+		{
+			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
+			{
+				m_fTick += fTimeDelta;
+				_float t = m_fTick / 3.f;
+				m_fDissolveintensity = 1 + (0 -1) * t;
+				if (t >= 1.f)
+				{
+					m_fDissolveintensity = 0.f;
+					m_fTick = 0.f;
+					m_bDissolve = true;
+				}
+			}
+		}
+	}
+}
+
+E::UPtr<CMon_Weapon> CMon_Weapon::Create()
+{
+	auto pInstance = E::ToUPtr(new CMon_Weapon{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CWeapon");
+		MSG_BOX("Failed to Created : CMon_Weapon");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CWeapon::Clone(void* pArg)
+E::UPtr<E::CPrototype> CMon_Weapon::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CWeapon{ *this });
+	auto	pInstance = E::ToUPtr(new CMon_Weapon{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CWeapon");
+		MSG_BOX("Failed to Cloned : CMon_Weapon");
 		return nullptr;
 	}
 

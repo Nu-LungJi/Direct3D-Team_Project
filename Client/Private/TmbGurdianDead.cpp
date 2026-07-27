@@ -2,11 +2,13 @@
 #include "TmbGurdianDead.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "ComPxConvexCollider.h"
+#include "ComPxRigidBody.h"
 #include "ComStaticModelInstance.h"
 #include "Resources.h"
 #include "GameInstance.h"
-#include "ComModelInstance.h"
-#include "Trail_CPU.h"
+#include "ResPhysXConvexGeometry.h"
+#include "ResPhysXMaterial.h"
 NS_USING(Client)
 
 CTmbGurdianDead::CTmbGurdianDead()
@@ -21,7 +23,105 @@ CTmbGurdianDead::~CTmbGurdianDead()
 void CTmbGurdianDead::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
+	ImGui::Text(
+		"Activated: %s",
+		m_bActivated ? "TRUE" : "FALSE");
+	ImGui::Text(
+		"Socket Attached: %s",
+		m_bSocketAttached ? "TRUE" : "FALSE");
+	ImGui::Text(
+		"Render Enabled: %s",
+		m_bRenderEnabled ? "TRUE" : "FALSE");
+}
 
+_bool CTmbGurdianDead::ActivatePhysics()
+{
+	if (m_bActivated)
+		return true;
+
+	if (!m_pComPxRigidBody ||
+		!m_pComPxConvexCollider)
+	{
+		return false;
+	}
+
+	const _float3 vPosition =
+		GetTransform().GetPosition();
+	const _float4 vRotation =
+		GetTransform().GetQuaternion();
+
+	if (!m_pComPxRigidBody->SetPose(
+			vPosition,
+			vRotation) ||
+		!m_pComPxRigidBody->SetLinearVelocity({}) ||
+		!m_pComPxRigidBody->SetAngularVelocity({}) ||
+		!m_pComPxConvexCollider
+			->SetSimulationEnabled(true) ||
+		!m_pComPxConvexCollider
+			->SetQueryEnabled(true) ||
+		!m_pComPxRigidBody
+			->SetGravityEnabled(true) ||
+		!m_pComPxRigidBody->WakeUp())
+	{
+		m_pComPxConvexCollider
+			->SetSimulationEnabled(false);
+		m_pComPxConvexCollider
+			->SetQueryEnabled(false);
+		m_pComPxRigidBody
+			->SetGravityEnabled(false);
+		m_pComPxRigidBody->PutToSleep();
+		return false;
+	}
+
+	m_bSocketAttached = false;
+	m_bActivated = true;
+	return true;
+}
+
+_bool CTmbGurdianDead::ApplyBonePose(
+	_fmatrix matSocketWorld,
+	_fmatrix matInverseBind)
+{
+	if (m_bActivated)
+		return false;
+
+	if (!m_pComPxRigidBody)
+		return false;
+
+	const _matrix matWorld =
+		matInverseBind *
+		matSocketWorld;
+
+	_vector vScale{};
+	_vector vRotation{};
+	_vector vPosition{};
+	if (!XMMatrixDecompose(
+		&vScale,
+		&vRotation,
+		&vPosition,
+		matWorld))
+	{
+		return false;
+	}
+
+	_float3 vWorldScale{};
+	_float4 vWorldRotation{};
+	_float3 vWorldPosition{};
+	XMStoreFloat3(&vWorldScale, vScale);
+	XMStoreFloat4(
+		&vWorldRotation,
+		XMQuaternionNormalize(vRotation));
+	XMStoreFloat3(&vWorldPosition, vPosition);
+
+	GetTransform().SetPosition(vWorldPosition);
+	GetTransform().SetQuaternion(vWorldRotation);
+	GetTransform().SetScale(vWorldScale);
+	GetTransform().Update();
+
+	m_bSocketAttached = true;
+	return m_pComPxRigidBody->SetPose(
+		vWorldPosition,
+		vWorldRotation);
 }
 
 HRESULT CTmbGurdianDead::InitializePrototype(void* pArg)
@@ -43,15 +143,21 @@ HRESULT CTmbGurdianDead::InitializePrototype(void* pArg)
 
 HRESULT CTmbGurdianDead::Initialize(void* pArg)
 {
+	if (!pArg)
+		return E_INVALIDARG;
 
-	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
-	m_iBoneSocketIndex = pDesc->iBoneIndex;
-	m_ParentHandle = pDesc->ParentHandle;
+	const auto* pDesc =
+		static_cast<TMBGURDIAN_DEAD_DESC*>(pArg);
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
+
+	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().SetQuaternion(pDesc->vInitialQuaternion);
+	GetTransform().SetScale(pDesc->vInitialScale);
+	GetTransform().Update();
 
 	{
 		CComConstantBuffer::DESC Desc{};
@@ -64,8 +170,8 @@ HRESULT CTmbGurdianDead::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC Desc{};
-		Desc.sGroupTag = pDesc->LevelTag;
-		Desc.sResTag = pDesc->WeaponName;
+		Desc.sGroupTag = pDesc->sResourceGroup;
+		Desc.sResTag = pDesc->DebrisResTag;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -73,10 +179,80 @@ HRESULT CTmbGurdianDead::Initialize(void* pArg)
 		};
 	}
 
-	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
-	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::DYNAMIC;
+		Desc.fMass = std::max(pDesc->fMass, 0.001f);
+		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.vRotation = pDesc->vInitialQuaternion;
+		if (FAILED(AddComponentFromProto(
+			"PHYSX",
+			"Prototype_Component_ComPxRigidBody",
+			"ComPxRigidBody",
+			&Desc,
+			&m_pComPxRigidBody)))
+		{
+			return E_FAIL;
+		}
+	}
 
-	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
+	{
+		const std::string sConvexPath =
+			pDesc->DebrisConvex;
+		if (sConvexPath.empty())
+			return E_INVALIDARG;
+
+		auto pConvexResource = CGameInstance::Get()
+			.GetOrCreateResourceByPath<
+				CResPhysXConvexGeometry>(
+				sConvexPath,
+				[sConvexPath]()
+				{
+					return CResPhysXConvexGeometry::
+						CreateAndLoad(sConvexPath);
+				});
+		if (!pConvexResource)
+			return E_FAIL;
+
+		CComPxConvexCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResConvex = std::move(pConvexResource);
+		Desc.pResMaterial =
+			CResPhysXMaterial::CreateAndLoad({});
+		Desc.vScale = {
+			std::max(
+				std::abs(pDesc->vConvexScale.x),
+				0.001f),
+			std::max(
+				std::abs(pDesc->vConvexScale.y),
+				0.001f),
+			std::max(
+				std::abs(pDesc->vConvexScale.z),
+				0.001f)
+		};
+		Desc.tFilter = pDesc->tFilter;
+		if (!Desc.pResMaterial ||
+			FAILED(AddComponentFromProto(
+				"PHYSX",
+				"Prototype_Component_ComPxConvexCollider",
+				"ComPxConvexCollider",
+				&Desc,
+				&m_pComPxConvexCollider)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (!m_pComPxConvexCollider->SetSimulationEnabled(false) ||
+		!m_pComPxConvexCollider->SetQueryEnabled(false) ||
+		!m_pComPxRigidBody->SetGravityEnabled(false) ||
+		!m_pComPxRigidBody->PutToSleep())
+	{
+		return E_FAIL;
+	}
+
+	m_bActivated = false;
+
 	return S_OK;
 }
 
@@ -86,59 +262,18 @@ void CTmbGurdianDead::PriorityUpdate(E::_float fTimeDelta)
 
 void CTmbGurdianDead::Update(E::_float fTimeDelta)
 {
-	//_float3 vstart, vend;
-	//vstart = m_pComTransform->GetPosition();
-	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	//auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
-	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-
-
-	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
-
-	if (CGameInstance::Get().KeyPressing(DIK_7)) {
-		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	}
-
-
-
-
-	//if (CGameInstance::Get().KeyDown(DIK_K)) {
-	//   static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	//   static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
-	//
-	//}
-
-
-	//if (CGameInstance::Get().KeyPressing(DIK_P))
-	//   m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
-
-
 }
 
 void CTmbGurdianDead::LateUpdate(E::_float fTimeDelta)
 {
-	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
-	{
-		if (!m_bThrow)
-		{
-			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
-			{
-				if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneSocketIndex)
-				{
-					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
-					for (uint32_t i = 0; i < 3; ++i)
-					{
-						Par.r[i] = XMVector3Normalize(Par.r[i]);
-					}
-					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
-				}
-			}
-		}
+	if (!m_bRenderEnabled)
+		return;
 
-	}
+	if (!m_bActivated && !m_bSocketAttached)
+		return;
 
-	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
+	if (m_bActivated)
+		UpdatePhysicData();
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }

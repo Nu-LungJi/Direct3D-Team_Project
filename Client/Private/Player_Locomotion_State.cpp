@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "Player_StateMachine.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "ComAnimator.h"
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
@@ -275,7 +276,8 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	{
 		const _float fPreviousLoopRatio =
 			m_iActiveMoveLoopAnimation >= 0
-			? std::clamp(pAnimator->GetPlayAnimRatio(), 0.f, 1.f)
+			? PlayerAnimationRatioGuard::Sanitize(
+				pAnimator->GetPlayAnimRatio())
 			: 0.f;
 		pAnimator->Play_Anim(iDesiredMoveAnimation, true, 0.22f);
 

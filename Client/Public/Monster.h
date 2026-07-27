@@ -60,7 +60,6 @@ public:
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
@@ -117,7 +116,7 @@ protected:
 	HITTABLE					m_MonTable{};
 
 	
-	std::vector<E::SPAWN_COMMAND> test[ETOUI(ATTMON::END)];
+	std::vector<E::SPAWN_COMMAND> m_Effects[ETOUI(ATTMON::END)];
 
 
 	//파티클 재설정용

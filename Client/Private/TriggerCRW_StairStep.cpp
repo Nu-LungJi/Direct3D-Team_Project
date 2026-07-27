@@ -30,16 +30,16 @@ void CTriggerCRW_StairStep::OnTriggerEnter(
 			CMyMagicSquareStepController::RISE_PATTERN_DESC RiseDesc{};
 			RiseDesc.fStartTargetY = -227.f;
 			RiseDesc.fEndTargetY = -214.f;
-			RiseDesc.fMoveSpeed = 15.f;
+			RiseDesc.fMoveSpeed = 5.f;
 			RiseDesc.fBounceHeight = 0.3f;
 			RiseDesc.fBounceSettleSpeed = 1.f;
 			RiseDesc.fLineInterval = 0.05f;
 			RiseDesc.fStepInterval = 0.02f;
 			RiseDesc.fStepTimingCurve = 0.55f;
-			RiseDesc.fStepTimingJitter = 0.01f;
+			RiseDesc.fStepTimingJitter = 0.41f;
 			RiseDesc.eFillMode =
 				CMyMagicSquareStepController::
-				RISE_FILL_MODE::Z;
+				RISE_FILL_MODE::RADIAL;
 			RiseDesc.eHeightAxis =
 				CMyMagicSquareStepController::
 				FILL_AXIS::Z;

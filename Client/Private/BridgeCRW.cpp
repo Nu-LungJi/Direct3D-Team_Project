@@ -126,7 +126,9 @@ HRESULT CBridgeCRW::Initialize(void* pArg)
 		// TestModel은 생성 직후부터 CPU pose + VS skinning 경로를 사용한다.
 		m_pModelAnimator->SetEvaluationMode(
 			CComAnimator::EVALUATION_MODE::GPU);
-		m_pModelAnimator->Play_Anim(1.f, true, 0.2f);
+		m_eState = STATE::FLOATING;
+		m_pModelAnimator->Play_Anim(
+			ETOUI(STATE::FLOATING), true, 0.f);
 	}
 
 
@@ -145,8 +147,38 @@ void CBridgeCRW::Update(E::_float fTimeDelta)
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
+
+		if (m_eState == STATE::DESCENDING &&
+			m_pModelAnimator->GetPlayAnimRatio() >= 1.f)
+		{
+			m_eState = STATE::IDLE;
+			m_pModelAnimator->Play_Anim(
+				static_cast<int32_t>(STATE::IDLE), true, 0.f);
+		}
 	}
 
+}
+
+_bool CBridgeCRW::RequestBring()
+{
+	if (!m_pModelAnimator || m_eState != STATE::FLOATING)
+		return false;
+
+	m_eState = STATE::DESCENDING;
+	m_pModelAnimator->Play_Anim(
+		static_cast<int32_t>(STATE::DESCENDING), false, 0.1f);
+	return true;
+}
+
+_bool CBridgeCRW::RequestFix()
+{
+	if (!m_pModelAnimator || m_eState != STATE::IDLE)
+		return false;
+
+	m_eState = STATE::FIXING;
+	m_pModelAnimator->Play_Anim(
+		static_cast<int32_t>(STATE::FIXING), false, 0.1f);
+	return true;
 }
 
 void CBridgeCRW::LateUpdate(E::_float fTimeDelta)

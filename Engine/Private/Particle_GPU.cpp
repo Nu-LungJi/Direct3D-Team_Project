@@ -155,6 +155,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
 	m_pResClearByOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner");
 	m_pResTransformOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_TransformOwner");
+	m_pResChangeColorByOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ChangeColorByOwner");
 	//if (FAILED(m_pResClearByOwnerCS->Load()))
 	//	return E_FAIL;
 
@@ -857,6 +858,7 @@ void CParticle_GPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrix
 
 	context->CSSetShader(nullptr, nullptr, 0);
 }
+
 uint32_t CParticle_GPU::GetDeadListCounterSync()
 {
 	auto pDevice = CGameInstance::Get().GetGraphicDevice();
@@ -880,4 +882,62 @@ uint32_t CParticle_GPU::GetDeadListCounterSync()
 		pContext->Unmap(pCounterStaging.Get(), 0);
 	}
 	return counterValue;
+}
+void CParticle_GPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
+{
+	if (ownerId == INVALID_PARTICLE_OWNER_ID)
+		return;
+
+	if (!m_pComOwnerOperationCBuffer ||
+		!m_pResChangeColorByOwnerCS ||
+		!m_pParticleStructuredBuffer)
+	{
+		return;
+	}
+
+	auto context = CGameInstance::Get().GetGraphicDeviceContext();
+
+	if (!context)
+		return;
+
+	CB_OWNER_OPERATION cb{};
+	cb.iTargetOwnerID = ownerId;
+	cb.iMaxParticles = m_iNumElements;
+	cb.vColor = color;
+
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+
+	if (FAILED(context->Map(
+		m_pComOwnerOperationCBuffer->GetCBuffer().Get(),
+		0,
+		D3D11_MAP_WRITE_DISCARD,
+		0,
+		&mapped)))
+	{
+		return;
+	}
+
+	memcpy(mapped.pData, &cb, sizeof(cb));
+	context->Unmap(m_pComOwnerOperationCBuffer->GetCBuffer().Get(), 0);
+
+	ID3D11Buffer* ownerCBuffer =
+		m_pComOwnerOperationCBuffer->GetCBuffer().Get();
+
+	context->CSSetConstantBuffers(13, 1, &ownerCBuffer);
+
+	ID3D11UnorderedAccessView* particleUAV =
+		m_pParticleStructuredBuffer->GetUAV().Get();
+
+	context->CSSetUnorderedAccessViews(0, 1, &particleUAV, nullptr);
+	context->CSSetShader(m_pResChangeColorByOwnerCS->GetComputeShader().Get(), nullptr, 0);
+
+	uint32_t groupCount = (m_iNumElements + 255) / 256;
+	context->Dispatch(groupCount, 1, 1);
+
+	ID3D11UnorderedAccessView* nullUAV = nullptr;
+	ID3D11Buffer* nullCBuffer = nullptr;
+
+	context->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
+	context->CSSetConstantBuffers(13, 1, &nullCBuffer);
+	context->CSSetShader(nullptr, nullptr, 0);
 }
