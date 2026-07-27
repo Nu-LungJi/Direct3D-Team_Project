@@ -248,6 +248,7 @@
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
+    <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_DashSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
@@ -316,6 +317,7 @@
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
+    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
