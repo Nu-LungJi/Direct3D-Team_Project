@@ -23,6 +23,10 @@ private:
 	void		Resources();
 	void		Objects();
 	void		BeHaviors();
+
+	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
+	std::optional<CHandle> SpawnPlayer();
+
 public:
 	static Engine::UPtr<CLevelTerrain> Create();
 
