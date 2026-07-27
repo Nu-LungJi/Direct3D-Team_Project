@@ -26,7 +26,13 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
     m_Desc = *pDesc;
 
-    // 예전: m_iNumElements = 1000; (하드코딩) → 이제 DESC에서 주입
+
+	m_pParticleShaderCache = pDesc->pShaderCache;
+
+	if (!m_pParticleShaderCache)
+		return E_FAIL;
+
+
     m_iNumElements = m_Desc.iMaxParticles;
 
     // 파티클을 다 죽은 상태로 초기화
@@ -50,6 +56,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 		initParticles[i].iBehaviorType = 0;
 		initParticles[i].originalPosition = _float3(0.f, 0.f, 0.f);
 		initParticles[i].originalEmissive = _float4(0.f, 0.f, 0.f,0.f);
+		initParticles[i].fStopSizeTime = 0;
 	}
 
 	std::vector<uint32_t> initDeadIndices(m_iNumElements);
@@ -147,26 +154,25 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
 
 	m_pResClearByOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_ClearByOwner");
+	m_pResTransformOwnerCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_TransformOwner");
 	//if (FAILED(m_pResClearByOwnerCS->Load()))
 	//	return E_FAIL;
 
 	if (auto res = CResCBuffer::Create())
 	{
 		CResCBuffer::CBUFFER_DESC bufDesc{};
-		bufDesc.byteWidth = sizeof(CB_CLEAR);
+		bufDesc.byteWidth = sizeof(CB_OWNER_OPERATION);
 		if (FAILED(res->Load(bufDesc)))
 			return E_FAIL;
-		m_pComClearCBuffer = res;
+		m_pComOwnerOperationCBuffer = res;
 	}
 
 	{
-		//쉐이더 로드
-		m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-		if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
+		m_pResVertexShader = m_pParticleShaderCache->GetVertexShader(pDesc->VSID.first, pDesc->VSID.second, m_Desc.sVEntryPoint);
+		if (!m_pResVertexShader)
 			return E_FAIL;
-
-		m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-		if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
+		m_pResPixelShader = m_pParticleShaderCache->GetPixelShader(pDesc->PSID.first, pDesc->PSID.second, m_Desc.sPEntryPoint);
+		if (!m_pResPixelShader)
 			return E_FAIL;
 	}
 	
@@ -752,20 +758,20 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 {
 	auto context = CGameInstance::Get().GetGraphicDeviceContext();
 
-	CB_CLEAR cb{};
-	cb.ownerID = ownerID;
-
+	CB_OWNER_OPERATION cb{};
+	cb.iTargetOwnerID = ownerID;
+	cb.iMaxParticles = m_iNumElements;
 	D3D11_MAPPED_SUBRESOURCE mapped{};
-	if (SUCCEEDED(context->Map(m_pComClearCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+	if (SUCCEEDED(context->Map(m_pComOwnerOperationCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 	{
 		memcpy(mapped.pData, &cb, sizeof(cb));
-		context->Unmap(m_pComClearCBuffer->GetCBuffer().Get(), 0);
-		context->CSSetConstantBuffers(13, 1, m_pComClearCBuffer->GetCBuffer().GetAddressOf());
+		context->Unmap(m_pComOwnerOperationCBuffer->GetCBuffer().Get(), 0);
+		context->CSSetConstantBuffers(13, 1, m_pComOwnerOperationCBuffer->GetCBuffer().GetAddressOf());
 	}
 
 	ID3D11UnorderedAccessView* clearUAVs[] = {
+		m_pParticleStructuredBuffer->GetUAV().Get(),  // u1
 		m_pDeadListBuffer->GetUAV().Get(),           // u0
-		m_pParticleStructuredBuffer->GetUAV().Get()  // u1
 	};
 	UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
 	context->CSSetUnorderedAccessViews(0, 2, clearUAVs, initialCounts);
@@ -785,11 +791,71 @@ void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 	// DeadList 카운터가 즉시 갱신되도록 재동기화
 	m_iDeadCount = GetDeadListCounterSync();
 }
-void CParticle_GPU::TranslateOwner(uint32_t ownerId, const _float3& delta)
+void CParticle_GPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 {
+	_float4x4 deltaMatrix{};
+
+	XMStoreFloat4x4(&deltaMatrix,XMMatrixTranslation(delta.x,delta.y,delta.z));
+
+	TransformOwner(ownerId, deltaMatrix);
 }
-void CParticle_GPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+void CParticle_GPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
 {
+	if (ownerId == INVALID_PARTICLE_OWNER_ID)
+		return;
+
+	auto context = CGameInstance::Get().GetGraphicDeviceContext();
+
+	if (!context ||
+		!m_pComOwnerOperationCBuffer ||
+		!m_pResTransformOwnerCS ||
+		!m_pParticleStructuredBuffer)
+	{
+		return;
+	}
+
+	CB_OWNER_OPERATION cb{};
+	cb.iTargetOwnerID = ownerId;
+	cb.iMaxParticles = m_iNumElements;
+	cb.matDelta = deltaMatrixData;
+
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+
+	if (FAILED(context->Map(
+		m_pComOwnerOperationCBuffer->GetCBuffer().Get(),
+		0,
+		D3D11_MAP_WRITE_DISCARD,
+		0,
+		&mapped)))
+	{
+		return;
+	}
+
+	memcpy(mapped.pData, &cb, sizeof(cb));
+
+	context->Unmap(m_pComOwnerOperationCBuffer->GetCBuffer().Get(),0);
+
+	context->CSSetConstantBuffers(13,1,m_pComOwnerOperationCBuffer->GetCBuffer().GetAddressOf());
+
+	ID3D11UnorderedAccessView* particleUAV =
+		m_pParticleStructuredBuffer->GetUAV().Get();
+
+	context->CSSetUnorderedAccessViews(0,1,&particleUAV,nullptr);
+
+	context->CSSetShader(m_pResTransformOwnerCS->GetComputeShader().Get(),nullptr,0);
+
+	const uint32_t groupCount =
+		(m_iNumElements + 255) / 256;
+
+	context->Dispatch(groupCount, 1, 1);
+
+	ID3D11UnorderedAccessView* nullUAV = nullptr;
+	context->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
+
+	ID3D11Buffer* nullCB = nullptr;
+	context->CSSetConstantBuffers(13, 1, &nullCB);
+
+	context->CSSetShader(nullptr, nullptr, 0);
 }
 uint32_t CParticle_GPU::GetDeadListCounterSync()
 {

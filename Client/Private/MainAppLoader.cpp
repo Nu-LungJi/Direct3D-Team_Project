@@ -12,7 +12,7 @@
 //#include "BTAnimation.h"
 //#include "Trail_Example.h"
 //#include "Particle_Fire_GPU.h"
-//#include "BTHeader_Definse.h"
+#include "BTHeader_Definse.h"
 
 //#include "UIManager.h"
 
@@ -31,39 +31,39 @@ HRESULT CMainAppLoader::Load()
 	{
 		// TODO   SampleClinet  초기 이니셜라이즈
 		{
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "VS_VTX_NOR_TEX", CResVertexShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
 
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
-			//if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
-			//{
-			//	if (FAILED(res->Load()))
-			//	{
-			//		//MSG_BOX("");
-			//		return E_FAIL;
-			//	}
-			//}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "PS_VTX_NOR_TEX", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "VS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
+			if (auto res = CGameInstance::Get().AddResource("CLIENT_SHADER", "PS_VTX_NOR_TEX_UI", CResPixelShader::Create("./ShaderFiles/Shader_VtxNorTex_UI.hlsl")))
+			{
+				if (FAILED(res->Load()))
+				{
+					//MSG_BOX("");
+					return E_FAIL;
+				}
+			}
 		}
 
 
@@ -73,17 +73,17 @@ HRESULT CMainAppLoader::Load()
 		//	return E_FAIL;
 		//}
 
-		//if (FAILED(Load_PhysX_Resource()))
-		//{
-		//	MSG_BOX("Failed Load_PhysX_Resource");
-		//	return E_FAIL;
-		//}
+		if (FAILED(Load_PhysX_Resource()))
+		{
+			MSG_BOX("Failed Load_PhysX_Resource");
+			return E_FAIL;
+		}
 
-		//if (FAILED(Create_ActionNode()))
-		//{
-		//	MSG_BOX("Failed Action Node To MainApp");
-		//	return E_FAIL;
-		//}
+		if (FAILED(Create_ActionNode()))
+		{
+			MSG_BOX("Failed BT Node To MainApp");
+			return E_FAIL;
+		}
 
 		//GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
 	}
@@ -94,23 +94,26 @@ HRESULT CMainAppLoader::Load()
 
 HRESULT CMainAppLoader::Load_Particle_Resources()
 {
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
-		if (FAILED(res->Load()))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "VS_VTX_GPU_PARTICLE_TEX", CResVertexShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 		{
-			//MSG_BOX("");
-			return E_FAIL;
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
 		}
-	}
 
-	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
-	{
-		if (FAILED(res->Load()))
+		if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 		{
-			//MSG_BOX("");
-			return E_FAIL;
+			if (FAILED(res->Load()))
+			{
+				//MSG_BOX("");
+				return E_FAIL;
+			}
 		}
 	}
+	
 	if (auto res = CGameInstance::Get().AddResource("SAMPLE_CLIENT_SHADER", "PS_VTX_GPU_PARTICLE_TEX", CResPixelShader::Create("./ShaderFiles/Shader_Structured_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load()))
@@ -294,10 +297,10 @@ HRESULT CMainAppLoader::Load_PhysX_Resource()
 	}
 
 	{
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::CreateAndLoad(CResPhysXSphereGeometry::DESC{}));
-		CGameInstance::Get().AddResource("SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::CreateAndLoad(CResPhysXCapsuleGeometry::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_MATERIAL", CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_GEO_BOX", CResPhysXBoxGeometry::CreateAndLoad(CResPhysXBoxGeometry::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_GEO_SPHERE", CResPhysXSphereGeometry::CreateAndLoad(CResPhysXSphereGeometry::DESC{}));
+		CGameInstance::Get().AddResource("CLIENT_PX", "TMP_GEO_CAPSULE", CResPhysXCapsuleGeometry::CreateAndLoad(CResPhysXCapsuleGeometry::DESC{}));
 	}
 	return S_OK;
 }
@@ -305,7 +308,7 @@ HRESULT CMainAppLoader::Load_PhysX_Resource()
 HRESULT CMainAppLoader::Create_ActionNode()
 {
 	//프로토타입 이니셜라이즈랑 이름 맞출것
-	/*if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMove", CBTMove::Create())))
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMove", CBTMove::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTurnDirect", CBTTurnDirect::Create())))
 		return E_FAIL;
@@ -316,8 +319,6 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTOnlyTrue", CBTOnlyTrue::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTTeleport", CBTTeleport::Create())))
-		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTDamage", CBTDamage::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCreatureFlag", CBTCreatureFlag::Create())))
 		return E_FAIL;
@@ -341,9 +342,9 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecInvert", CBTDecInvert::Create())))
 		return E_FAIL;
-	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHit", CBTDecHit::Create())))
-		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHp", CBTDecHp::Create())))
-		return E_FAIL;*/
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecFlag", CBTDecFlag::Create())))
+		return E_FAIL;
 	return S_OK;
 }

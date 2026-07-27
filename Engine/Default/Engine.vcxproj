@@ -289,6 +289,7 @@
     <ClInclude Include="..\public\LuaManager.h" />
     <ClInclude Include="..\public\LuaWatcher.h" />
     <ClInclude Include="..\Public\ParticleParamImGui.h" />
+    <ClInclude Include="..\public\ParticleShaderCache.h" />
     <ClInclude Include="..\Public\ShaderWatcher.h" />
     <ClInclude Include="..\Public\StateMachine.h" />
     <ClInclude Include="..\public\MyFSR2_2.h" />
@@ -602,6 +603,7 @@
     <ClCompile Include="..\private\LuaEnv.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
     <ClCompile Include="..\private\LuaWatcher.cpp" />
+    <ClCompile Include="..\private\ParticleShaderCache.cpp" />
     <ClCompile Include="..\Private\ShaderWatcher.cpp" />
     <ClCompile Include="..\Private\StateMachine.cpp" />
     <ClCompile Include="..\private\MyFSR2_2.cpp" />
@@ -725,6 +727,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_TransformOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

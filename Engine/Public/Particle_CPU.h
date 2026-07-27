@@ -26,7 +26,7 @@ struct PARTICLE_CPU_DATA
 	_float3 originalPosition = { 0.f, 0.f, 0.f };
 	_float3 originalVelocity = { 0.f, 0.f, 0.f };
 	_bool loop = false;
-
+	_float fStopSizeTime = 0.f;
 };
 
 
@@ -88,6 +88,8 @@ public:
 		_string sVEntryPoint = "";
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
+		SPtr<CParticleShaderCache> pShaderCache;
+
     };
 public:
     DECLARE_DERIVED_TYPE(CParticle_CPU, CParticle)
@@ -122,6 +124,8 @@ private:
 	void		 GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 
 	void		 Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void		 ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+    void		 SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 private:
     // m_Particles를 순회하며 수명/UpdateBehavior 처리 후 m_vecInstancedData 재구성
     void Simulate(E::_float fTimeDelta);

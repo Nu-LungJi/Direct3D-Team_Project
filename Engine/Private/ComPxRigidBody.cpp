@@ -225,6 +225,16 @@ _bool CComPxRigidBody::SetAngularDamping(_float fDamping)
 	return true;
 }
 
+_bool CComPxRigidBody::SetMaxDepenetrationVelocity(_float fVelocity)
+{
+	auto* pDynamic = GetDynamicActor(m_pActor);
+	if (!pDynamic || fVelocity < 0.f)
+		return false;
+
+	pDynamic->setMaxDepenetrationVelocity(fVelocity);
+	return true;
+}
+
 _bool CComPxRigidBody::WakeUp()
 {
 	auto* pDynamic = GetDynamicActor(m_pActor);

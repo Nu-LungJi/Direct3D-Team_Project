@@ -59,6 +59,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::BOSS_CHARLES_ROOKWOOD));
 		});
 
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_TERRAIN", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::TERRAIN));
+		});
+
 	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
 	CGameInstance::Get().UpdateTimeProvider();
 

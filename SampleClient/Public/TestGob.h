@@ -23,6 +23,7 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 
 private:
+	_bool bShow{ false };	
 public:
 	static E::UPtr<CTestGob> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -22,6 +22,69 @@ CCameraObject::~CCameraObject()
 {
 }
 
+std::pair<_float3, _float3> CCameraObject::GetRayFromScreenPixel(
+	const _float2& vScreenPixel,
+	const _float2& vViewportSize) const
+{
+	if (vViewportSize.x <= 0.f || vViewportSize.y <= 0.f)
+		return GetRay();
+
+	const _matrix matView = GetView();
+	const _matrix matProj = GetProj();
+	const _matrix matWorld = XMMatrixIdentity();
+
+	const _vector vScreenNear = XMVectorSet(
+		vScreenPixel.x,
+		vScreenPixel.y,
+		0.f,
+		1.f);
+	const _vector vScreenFar = XMVectorSet(
+		vScreenPixel.x,
+		vScreenPixel.y,
+		1.f,
+		1.f);
+
+	const _vector vWorldNear = XMVector3Unproject(
+		vScreenNear,
+		0.f,
+		0.f,
+		vViewportSize.x,
+		vViewportSize.y,
+		0.f,
+		1.f,
+		matProj,
+		matView,
+		matWorld);
+	const _vector vWorldFar = XMVector3Unproject(
+		vScreenFar,
+		0.f,
+		0.f,
+		vViewportSize.x,
+		vViewportSize.y,
+		0.f,
+		1.f,
+		matProj,
+		matView,
+		matWorld);
+
+	_vector vRayOrigin = vWorldNear;
+	if (m_cameraDesc.eProj == PROJ::PERSPECTIVE)
+	{
+		const _matrix matInverseView = XMMatrixInverse(nullptr, matView);
+		vRayOrigin = XMVector3TransformCoord(
+			XMVectorSet(0.f, 0.f, 0.f, 1.f),
+			matInverseView);
+	}
+
+	const _vector vRayDirection = XMVector3Normalize(vWorldFar - vRayOrigin);
+
+	_float3 vOrigin{};
+	_float3 vDirection{};
+	XMStoreFloat3(&vOrigin, vRayOrigin);
+	XMStoreFloat3(&vDirection, vRayDirection);
+	return { vOrigin, vDirection };
+}
+
 void CCameraObject::FSRCameraJitter()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
