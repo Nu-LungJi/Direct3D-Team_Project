@@ -197,15 +197,30 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning
 	{
 		PARTICLE_SPAWN_DATA& s = spawnList[i];
 		s.position = param.vCenter;
-		s.velocity = param.fVelocity;
 		s.life = param.fLife;
 		s.fSize = param.fSize;
-		s.fEndSize = param.fEndSize;
 		s.color = param.color;
-		s.emissive = param.emissive;
-		s.endEmissive = param.endEmissive;
+
+		if (param.bRandomVel) {
+			s.velocity = _float3(E::Randf(param.fVelMin.x, param.fVelMax.x), E::Randf(param.fVelMin.y, param.fVelMax.y), E::Randf(param.fVelMin.z, param.fVelMax.z));
+		}
+		else {
+			s.velocity = param.fVelocity;
+		}
+
+		if (param.bRandomSize) {
+			s.fSize = _float3(E::Randf(param.fSizeMin.x, param.fSizeMax.x), E::Randf(param.fSizeMin.y, param.fSizeMax.y), E::Randf(param.fSizeMin.z, param.fSizeMax.z));
+		}
+		else {
+			s.fSize = param.fSize;
+		}
+		s.fEndSize = param.fEndSize;
+
+		s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
+		s.rotation.z = atan2f(s.velocity.y, s.velocity.x) + XM_PIDIV2;
+		s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
 		s.iBehaviorType = param.iBehaviorType;
-		s.originalEmissive = param.emissive;
+		s.originalEmissive = s.emissive;
 		s.originalPosition = param.vCenter;
 		uint32_t degree = 360 / param.iCount;
 	}

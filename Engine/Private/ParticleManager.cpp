@@ -1451,7 +1451,30 @@ void CParticleManager::UpdateGUI()
 			ImGui::PopID();
 			break;
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("Upload")) {
+			currentKind = cmd.sGroupTag_KindTag;
+			selectedGroup = cmd.sGroupTag;
+			selectedType = cmd.sTypeTag;
+			
+			if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(cmd.params))
+			{
+				pendingStandard = std::get<STANDARD_PARAMS>(cmd.params);
+			}
+			else if (currentKind == SPAWN_COMMAND_KIND::BEAM && std::holds_alternative<BEAM_PARAMS>(cmd.params))
+			{
+				pendingBeam = std::get<BEAM_PARAMS>(cmd.params);
+			}
+			else if (currentKind == SPAWN_COMMAND_KIND::PATTERN && std::holds_alternative<PatternParamVariant>(cmd.params))
+			{
+				pendingPattern = std::get<PatternParamVariant>(cmd.params);
+				patternKindIndex = static_cast<int>(pendingPattern.index());
+			}
+			bNeedTypeIndexSync = true;
+			pendingSyncGroup = cmd.sGroupTag;
+			pendingSyncType = cmd.sTypeTag;
 
+		}
 		ImGui::PopID();
 	}
 
