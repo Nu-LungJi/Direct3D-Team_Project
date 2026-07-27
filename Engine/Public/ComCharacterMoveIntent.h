@@ -37,6 +37,9 @@ private:
 public:
 	void SetMoveIntent(const _float3& vDirection, _float fSpeed);
 	void ClearMoveIntent();
+	void AddExternalDisplacement(const _float3& vDisplacement);
+	_bool ConsumeExternalDisplacement(_float3& vOutDisplacement);
+	void ClearExternalDisplacement();
 	// deg/sec
 	void SetFacingIntent(const _float3& vDirection, _float fTurnSpeed);
 	void SetFacingIntentImmediate(const _float3& vDirection);
@@ -58,6 +61,7 @@ public:
 
 private:
 	OUTPUT m_tOutput{};
+	_float3 m_vExternalDisplacement{};
 	_bool m_bJumpRequested{};
 	_float3 m_vWarpPosition{};
 	_bool m_bWarpRequested{};

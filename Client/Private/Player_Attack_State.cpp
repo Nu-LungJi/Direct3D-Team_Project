@@ -29,6 +29,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_iComboCount = 1;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_fPreviousAnimRatio = 0.f;
 
 	auto* animator = player->GetAnimator();
 	if (!animator)
@@ -66,6 +67,7 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_iComboCount = 0;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_fPreviousAnimRatio = 0.f;
 }
 
 void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -89,12 +91,27 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	const _float fAnimRatio = animator->GetPlayAnimRatio();
 
-	if (!m_bPlayingHeavy &&fAnimRatio >= LIGHT_FORWARD_MOVE_START_RATIO &&fAnimRatio <= LIGHT_FORWARD_MOVE_END_RATIO)
+	if (!m_bPlayingHeavy)
 	{
-		player->ApplyAttackForwardMovement(
-			LIGHT_FORWARD_MOVE_SPEED,
-			fTimeDelta);
+		const _float fRatioDelta =
+			std::max(0.f, fAnimRatio - m_fPreviousAnimRatio);
+		const _float fOverlapStart =
+			std::max(m_fPreviousAnimRatio, LIGHT_FORWARD_MOVE_START_RATIO);
+		const _float fOverlapEnd =
+			std::min(fAnimRatio, LIGHT_FORWARD_MOVE_END_RATIO);
+
+		if (fRatioDelta > std::numeric_limits<_float>::epsilon() &&
+			fOverlapEnd > fOverlapStart)
+		{
+			const _float fMoveTime =
+				fTimeDelta *
+				((fOverlapEnd - fOverlapStart) / fRatioDelta);
+			player->ApplyAttackForwardMovement(
+				LIGHT_FORWARD_MOVE_SPEED,
+				fMoveTime);
+		}
 	}
+	m_fPreviousAnimRatio = fAnimRatio;
 
 	if (fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
@@ -247,6 +264,7 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 		return false;
 
 	m_bPlayingHeavy = bHeavy;
+	m_fPreviousAnimRatio = 0.f;
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
 	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);

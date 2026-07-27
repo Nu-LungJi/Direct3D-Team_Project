@@ -52,6 +52,8 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	m_fScaleTime = 0.f;
+	m_fDashElapsed = 0.f;
 }
 
 
@@ -134,9 +136,23 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			}
 		}
 
-		pPlayer->ApplyDirectionalMovement(m_vDashDirection,DASH_SPEED,fTimeDelta);
+		{
+			const _float fRemainingTime =
+				std::max(0.f, DASH_DURATION - m_fDashElapsed);
+			const _float fMoveTime =
+				std::min(fTimeDelta, fRemainingTime);
 
-		if (m_fAnimRatio >= DASH_END_RATIO)
+			if (fMoveTime > 0.f)
+			{
+				pPlayer->ApplyDirectionalMovement(
+					m_vDashDirection,
+					DASH_SPEED,
+					fMoveTime);
+				m_fDashElapsed += fMoveTime;
+			}
+		}
+
+		if (m_fDashElapsed >= DASH_DURATION)
 		{
 			// DASH 끝---------------------------------------------------------------------------------------------------
 			m_ePhase = PHASE::RECOVERY;   
@@ -195,6 +211,7 @@ void CPlayer_DashSkill_State::Exit(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_vDashDirection = {};
 	m_fScaleTime = 0.f;
+	m_fDashElapsed = 0.f;
 }
 
 SPtr<CPlayer_DashSkill_State> CPlayer_DashSkill_State::Create()

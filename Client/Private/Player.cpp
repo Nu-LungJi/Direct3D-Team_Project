@@ -351,8 +351,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
-		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
-		m_pComCharacterMotor->SetVelocity({});
+		m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
 	}
 
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
@@ -605,7 +604,7 @@ void CPlayer::UpdateStandingGameObjectDebugLog()
 
 void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
 {
-	if (!m_pComCharacterController ||
+	if (!m_pComMoveIntent ||
 		fSpeed <= 0.f ||
 		fTimeDelta <= 0.f)
 	{
@@ -629,18 +628,12 @@ void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
 		&vDisplacement,
 		vForward * fSpeed * fTimeDelta);
 
-	m_pComCharacterController->Move(
-		vDisplacement,
-		fTimeDelta,
-		0.f);
-
-	GetTransform().SetPosition(
-		m_pComCharacterController->GetPosition());
+	m_pComMoveIntent->AddExternalDisplacement(vDisplacement);
 }
 
 void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta)
 {
-	if (!m_pComCharacterController ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
+	if (!m_pComMoveIntent ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
 	{
 		return;
 	}
@@ -659,13 +652,7 @@ void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_
 		&vDisplacement,
 		vMoveDirection * fSpeed * fTimeDelta);
 
-	m_pComCharacterController->Move(
-		vDisplacement,
-		fTimeDelta,
-		0.f);
-
-	GetTransform().SetPosition(
-		m_pComCharacterController->GetPosition());
+	m_pComMoveIntent->AddExternalDisplacement(vDisplacement);
 }
 
 void CPlayer::PrepareLocomotionResume()
@@ -737,7 +724,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
-	if (bApplyRootMotionTranslation && m_pComCharacterController)
+	if (bApplyRootMotionTranslation && m_pComMoveIntent)
 	{
 		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
 		const _vector vWorldDelta = XMVector3Rotate(
@@ -747,12 +734,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 		_float3 vWorldDisplacement{};
 		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
 
-		m_pComCharacterController->Move(
-			vWorldDisplacement,
-			fTimeDelta,
-			0.f);
-		GetTransform().SetPosition(
-			m_pComCharacterController->GetPosition());
+		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
 
 }

@@ -52,6 +52,7 @@ void CPlayer_Roll_State::Enter(CStateMachine* pStateMachine)
 	}
 
 	animator->Play_Anim(m_iRollAnimation, false, 0.1f);
+	m_fPreviousAnimRatio = 0.f;
 }
 
 void CPlayer_Roll_State::Exit(CStateMachine* pStateMachine)
@@ -66,6 +67,8 @@ void CPlayer_Roll_State::Exit(CStateMachine* pStateMachine)
 
 	if (auto* moveIntent = player->GetMoveIntent())
 		moveIntent->ClearMoveIntent();
+
+	m_fPreviousAnimRatio = 0.f;
 }
 
 void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
@@ -134,18 +137,37 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 		}
 	}
 
-	if (fAnimationRatio < m_fRollMoveEndRatio)
+	const _float fRatioDelta =
+		std::max(0.f, fAnimationRatio - m_fPreviousAnimRatio);
+	const _float fMoveRatioEnd =
+		std::min(fAnimationRatio, m_fRollMoveEndRatio);
+
+	if (fRatioDelta > std::numeric_limits<_float>::epsilon() &&
+		fMoveRatioEnd > m_fPreviousAnimRatio)
 	{
+		const _float fSampleRatio =
+			(m_fPreviousAnimRatio + fMoveRatioEnd) * 0.5f;
 		_float fSpeedScale{ 1.f };
-		if (fAnimationRatio > m_fRollStopStartRatio)
+		if (fSampleRatio > m_fRollStopStartRatio)
 		{
-			const _float fStopRatio = std::clamp((fAnimationRatio - m_fRollStopStartRatio) /(m_fRollMoveEndRatio - m_fRollStopStartRatio),0.f,1.f);
+			const _float fStopRatio = std::clamp(
+				(fSampleRatio - m_fRollStopStartRatio) /
+				(m_fRollMoveEndRatio - m_fRollStopStartRatio),
+				0.f,
+				1.f);
 			const _float fSmoothStop =fStopRatio * fStopRatio * (3.f - 2.f * fStopRatio);
 			fSpeedScale = 1.f - fSmoothStop;
 		}
 
-		player->ApplyDirectionalMovement(m_vRollDirection,m_fRollSpeed * fSpeedScale,fTimeDelta);
+		const _float fMoveTime =
+			fTimeDelta *
+			((fMoveRatioEnd - m_fPreviousAnimRatio) / fRatioDelta);
+		player->ApplyDirectionalMovement(
+			m_vRollDirection,
+			m_fRollSpeed * fSpeedScale,
+			fMoveTime);
 	}
+	m_fPreviousAnimRatio = fAnimationRatio;
 
 	// 지정 비율 이후 이동 입력이 있으면 Roll을 취소하고 Locomotion으로 복귀한다.
 	if (fAnimationRatio >= m_fLocomotionCancelRatio &&player->HasRawMoveInput())
