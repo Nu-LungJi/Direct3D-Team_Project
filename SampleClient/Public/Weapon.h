@@ -49,7 +49,7 @@ private:
 	_bool				m_bDashing = false;
 	_bool				m_bDashEffectSpawned = false;
 	_float				m_fDeltaDistance = 0;
-	_float				m_fDistanceOffeset = 1;
+	_float				m_fDistanceOffeset = 3;
 	_float3				m_fSpwanPos{};
 //
 

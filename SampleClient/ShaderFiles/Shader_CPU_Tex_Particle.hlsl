@@ -289,3 +289,37 @@ PS_OUT RemoveBlack(VS_OUT In)
 	return Out;
 }
 
+PS_OUT RemoveBlackScrollXY(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+		    
+	float2 uv = In.vTexcoord;
+	
+	float2 packedUV = uv;
+	packedUV.x += In.life * 3.03f;
+	//packedUV.y += In.life * 1.03f;
+	//packedUV.y *= 3.f;
+	
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(packedUV.x, packedUV.y));
+	
+	
+	
+	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+
+	//float4 texColor = g_DiffuseTexture.Sample(LinearWrap, packedUV);
+
+	float intensity = max(tex.r,(max(tex.g, tex.b)));
+	float alpha = smoothstep(0.02f, 0.2f, intensity);
+
+	float3 color = tex.rgb * In.vColor.rgb;
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 finalRGB = color.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+
+	Out.vDiffuse = float4(finalRGB, alpha * In.vColor.a);
+
+	//if (all(texColor.rgb < 0.01f))
+	//	discard;
+	
+	return Out;
+}

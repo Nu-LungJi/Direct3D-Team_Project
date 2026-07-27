@@ -691,7 +691,7 @@ void CParticleManager::UpdateGUI()
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
 						iSelectedBlend);
 				}
-				else if(particleTypeStr == "PARTICLE_GPU"){
+				else if(particleTypeStr == "TRAIL_CPU"){
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
