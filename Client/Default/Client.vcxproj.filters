@@ -175,6 +175,15 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State">
       <UniqueIdentifier>{113ba92c-ee4c-4633-a05d-1bd05e0d0412}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State">
+      <UniqueIdentifier>{7fd33e7b-d892-4472-8efd-9203f175af69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State">
+      <UniqueIdentifier>{01e89d2b-fc0c-4cb6-9514-7970ddfc1929}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State">
+      <UniqueIdentifier>{57c915ba-5887-48a0-b19f-15e26e1f248e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -417,6 +426,15 @@
     <ClInclude Include="..\Public\Player_AcientAttack_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_AccioSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DepulsoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DescendoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -641,6 +659,15 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_AcientAttack_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_AccioSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

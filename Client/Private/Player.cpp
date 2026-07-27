@@ -27,6 +27,9 @@
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_AcientAttack_State.h"
+#include "Player_AccioSkill_State.h"
+#include "Player_DepulsoSkill_State.h"
+#include "Player_DescendoSkill_State.h"
 
 #include "Player_Weapon.h"
 NS_USING(Client)
@@ -211,6 +214,24 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::ACIENTATTACK_SKILL,
 			CPlayer_AcientAttack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ACCIO_SKILL,
+			CPlayer_AccioSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DEPULSO_SKILL,
+			CPlayer_DepulsoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DESCENDO_SKILL,
+			CPlayer_DescendoSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -569,6 +590,15 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyDown(DIK_X)) {
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
+
+	if (CGameInstance::Get().KeyDown(DIK_1))
+		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_2))
+		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_3))
+		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
 }
 
 

@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "Player_StateMachine.h"
+#include "GameInstance.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
 #include "ResModel.h"
@@ -48,6 +49,12 @@ _bool CPlayer_SkillStateBase::RequestLocomotion(CStateMachine* pStateMachine) co
 	auto* pPlayerStateMachine = GetPlayerStateMachine(pStateMachine);
 	return pPlayerStateMachine &&
 		pPlayerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+}
+
+_bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player) const
+{
+	return CGameInstance::Get().GetGameObjectByHandle(
+		player.GetTargetHandle()) != nullptr;
 }
 
 int32_t CPlayer_SkillStateBase::FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const

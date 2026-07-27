@@ -23,6 +23,7 @@ protected:
 	void SetSkillControl(CPlayer& player, _bool bMovementLocked, _bool bRootMotionTranslation, _bool bRootMotionRotation, _bool bClearMoveIntent = true) const;
 	void ResetSkillControl(CPlayer& player) const;
 	_bool RequestLocomotion(CStateMachine* pStateMachine) const;
+	_bool HasValidTarget(const CPlayer& player) const;
 
 	int32_t FindAnimationIndex(const CPlayer& player, _string_view sAnimationName) const;
 };
