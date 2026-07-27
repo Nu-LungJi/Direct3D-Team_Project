@@ -67,6 +67,9 @@ public:
 		XMStoreFloat3(&vecrayDir, XMVector3Normalize(XMVector3TransformNormal(rayDir, invView)));
 		return { vecrayOrigin ,vecrayDir };
 	}
+	std::pair<_float3, _float3> GetRayFromScreenPixel(
+		const _float2& vScreenPixel,
+		const _float2& vViewportSize) const;
 
 public:
 	HRESULT Initialize(void* pArg) override;

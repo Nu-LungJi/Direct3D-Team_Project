@@ -205,7 +205,9 @@ VOID CLight::Update_EffectLight(const _float& _DT){
 	if (m_fLifeTime > 0.f) {   
 		m_fLifeTime -= _DT;
 		XMVECTOR VelocityVec = XMLoadFloat3(&m_fVelocity);
-		if (!XMVectorGetX(XMVectorEqual(VelocityVec, XMVectorZero()))) {
+		
+		_float length = XMVectorGetX(XMVector3Length(VelocityVec));
+		if (length != 0) {
 			XMVECTOR CurrentPosition = m_pComTransform->GetLoadedPostion();
 			m_pComTransform->SetPosition(CurrentPosition + XMLoadFloat3(&m_fVelocity) * _DT);
 		}

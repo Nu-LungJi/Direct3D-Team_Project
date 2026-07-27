@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "Handle.h"
 #include "ResPhysXMaterial.h"
 NS_BEGIN(physx)
 class PxRigidActor;
@@ -52,6 +53,7 @@ public:
 	bool IsGrounded() const;
 	bool IsCollidingUp() const;
 	bool IsCollidingSide() const;
+	std::optional<CHandle> GetStandingGameObjectHandle() const;
 	void SetPosition(const XMFLOAT3& vPosition);
 	_float3 GetPosition() const;
 	_float3 GetFootPosition() const;

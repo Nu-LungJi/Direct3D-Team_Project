@@ -25,7 +25,7 @@ private:
 	void					Set_NodeInfo(CBTRoot* pNode);
 	void					ResetNode(CBTRoot* pNode);
 public:
-	void					Save_Data(const _string& filePath);
+	HRESULT					Save_Data(const _string& filePath);
 	HRESULT					Load_Data(const _string& filePath);
 public:
 	void					Update(_float fTimeDelta);					

@@ -78,6 +78,7 @@ private:
 	void RecalculateNextID();
 	void CreatePhysicsPreview();
 	void RemovePhysicsPreview();
+	void SetLoadedCollisionEnabled(_bool bEnabled);
 	void QueueResultPopup(std::string message, _bool success);
 
 private:
@@ -107,12 +108,14 @@ private:
 	std::vector<std::pair<uint32_t, std::string>> m_CollisionLayerNames{};
 	std::optional<SNAPSHOT> m_GizmoStartSnapshot{};
 	std::vector<CHandle> m_PhysicsPreviewHandles{};
+	std::vector<CHandle> m_LoadedCollisionHandles{};
 	std::unordered_map<std::string, COOKED_MESH_DEBUG_DATA> m_CookedMeshDebugCache{};
 	std::string m_Status{};
 	std::string m_ResultPopupMessage{};
 	_bool m_bOpenResultPopup{};
 	_bool m_bResultPopupSuccess{};
 	char m_CollisionFileName[128]{ "LevelA" };
+	char m_LoadedCollisionLayerName[128]{ "00_MapCollision" };
 };
 
 NS_END

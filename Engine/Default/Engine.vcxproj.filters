@@ -484,9 +484,6 @@
     <Filter Include="Component\Model\ComSocket">
       <UniqueIdentifier>{41fbef30-0861-4a12-87af-d96a9c20c674}</UniqueIdentifier>
     </Filter>
-    <Filter Include="CreatureManager">
-      <UniqueIdentifier>{81c5d708-60d2-4424-9656-f9a6fdd68ebd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\LocoAndMotor">
       <UniqueIdentifier>{cf07ed9a-c696-4a46-9d9b-c31cce90f76c}</UniqueIdentifier>
     </Filter>
@@ -513,6 +510,12 @@
     </Filter>
     <Filter Include="EffectManager">
       <UniqueIdentifier>{cb2813fe-4666-4ecf-94d8-96da9dd72328}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\Particle">
+      <UniqueIdentifier>{fb9f7fc2-c14c-45b3-b8ab-5b840816c6a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle\ShaderCache">
+      <UniqueIdentifier>{13e94c77-619a-46ac-a2af-64db3c788f79}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1129,6 +1132,9 @@
     <ClInclude Include="..\Public\Terrain.h">
       <Filter>Terrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ParticleShaderCache.h">
+      <Filter>Particle\ShaderCache</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1675,6 +1681,9 @@
     <ClCompile Include="..\Private\Terrain.cpp">
       <Filter>Terrain</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\ParticleShaderCache.cpp">
+      <Filter>Particle\ShaderCache</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1739,15 +1748,6 @@
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Compute.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Spawn_Compute.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
@@ -1784,12 +1784,6 @@
     <FxCompile Include="..\ShaderFiles\PostProcess\CS_PostProcess.hlsl">
       <Filter>ShaderFiles\PostProcess</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
@@ -1819,6 +1813,27 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_TransformOwner.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Spawn_Compute.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_Particle_Compute.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Shader_CS_Init.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\Particle_Common_Struct_Func.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

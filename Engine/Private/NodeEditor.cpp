@@ -679,21 +679,17 @@ void CNodeEditor::SavePopUp()
 				
 					
 				}
-				//if (iter.path().filename().stem() == m_SaveName)
-				//{
-				//	bfalse = true;
-				//	MSG_BOX("File Name Same or Blink");
-				//
-				//	
-				//}
 			}
 		
 			if (!bfalse)
 			{
-				Load_FileList();
 				m_bSaveLoad = false;
-				m_pBeHavior->Save_Data(m_AddNodeName);
-				MSG_BOX("Successed Save");
+				if (FAILED(m_pBeHavior->Save_Data(m_AddNodeName)))
+				{
+
+				}else MSG_BOX("Successed Save");
+
+				Load_FileList();
 				ImGui::CloseCurrentPopup();
 			}
 		} ImGui::SameLine(100.f);

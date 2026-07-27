@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
+#include "Level_Defines.h"
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "Resources.h"
@@ -20,9 +21,36 @@
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
+#include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
-
+#include "Player_Attack_State.h"
+#include "PlayerAnimationRatioGuard.h"
+#include "Player_DashSkill_State.h"
+#include "Player_Weapon.h"
 NS_USING(Client)
+
+void CPlayer::UpdateGUI()
+{
+
+	__super::UpdateGUI();
+
+
+	ImGui::Text(
+		"Control Hold Time: %.3f",
+		m_fControlHoldTime);
+
+	ImGui::Text(
+		"Dash Triggered: %s",
+		m_bDashTriggered ? "True" : "False");
+
+	ImGui::ProgressBar(
+		std::clamp(
+			m_fControlHoldTime / DASH_HOLD_TIME,
+			0.f,
+			1.f),
+		ImVec2(-1.f, 0.f),
+		"Dash Hold");
+}
 
 CPlayer::CPlayer()
 	: CAnimationObject{}
@@ -36,7 +64,6 @@ CPlayer::~CPlayer()
 
 HRESULT CPlayer::InitializePrototype(void* pArg)
 {
-
 
 	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
 	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
@@ -80,7 +107,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 	{
 		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = "MODEL";
+		Desc.sGroupTag = pDesc->LevelTag;
 		Desc.sResTag =	 "PLAYER_MODEL_RESROUCE";
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
@@ -161,6 +188,24 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::JUMP,
+			CPlayer_Jump_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ATTACK,
+			CPlayer_Attack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DASH_SKILL,
+			CPlayer_DashSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
@@ -170,22 +215,22 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
-	//CTestPartObject::DESC WeaponDesc{};
-	//WeaponDesc.sObjectTag = "Weapon";
-	//WeaponDesc.hOwner = GetHandle();
-	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	//WeaponDesc.vBoneOffset = {0.f,0.f,0.f};
-	//WeaponDesc.sGroupTag = "TEST"; 
-	//WeaponDesc.sResTag = "Static_Axe_Model_Resource";
+	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
+	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	WeaponDesc.ParentHandle = GetHandle();
 
-	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TEST", "Prototype_GameObject_TestPartObject", "Weapon", &WeaponDesc);
-	//if (!Weapon.has_value())
-	//{
-	//	MSG_BOX("Create Failed Weapon");
-	//	return E_FAIL;
-	//}
+	
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(pDesc->LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, "Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon");
+		return E_FAIL;
+	}
 
-	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
 
 	return S_OK;
@@ -244,20 +289,16 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
-	m_bSprintRequested =
-		m_bRawMoveInput &&
-		CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+	m_bSprintRequested =m_bRawMoveInput &&CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
 	
 	if (m_bRawMoveInput)
 	{
 		m_vLastMoveDirection = vMoveDirection;
 
-		const _vector vTargetDirection = XMVector3Normalize(
-			XMLoadFloat3(&m_vRawMoveDirection));
+		const _vector vTargetDirection = XMVector3Normalize(XMLoadFloat3(&m_vRawMoveDirection));
 
-		if (m_bMovementLocked ||
-			m_fCurrentMoveSpeed <= std::numeric_limits<_float>::epsilon())
+		if (m_bMovementLocked || m_fCurrentMoveSpeed <= std::numeric_limits<_float>::epsilon())
 		{
 			XMStoreFloat3(&m_vSmoothedMoveDirection, vTargetDirection);
 		}
@@ -266,16 +307,12 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			const _float fDirectionResponse = m_bSprintRequested
 				? m_fSprintDirectionResponse
 				: m_fJogDirectionResponse;
-			const _float fDirectionBlend =
-				1.f - std::exp(-fDirectionResponse * fTimeDelta);
-			const _vector vSmoothedDirection = XMVector3Normalize(
-				XMVectorLerp(
+			const _float fDirectionBlend = 1.f - std::exp(-fDirectionResponse * fTimeDelta);
+			const _vector vSmoothedDirection = XMVector3Normalize(XMVectorLerp(
 					XMLoadFloat3(&m_vSmoothedMoveDirection),
 					vTargetDirection,
 					std::clamp(fDirectionBlend, 0.f, 1.f)));
-			XMStoreFloat3(
-				&m_vSmoothedMoveDirection,
-				vSmoothedDirection);
+			XMStoreFloat3(&m_vSmoothedMoveDirection,vSmoothedDirection);
 		}
 	}
 
@@ -286,34 +323,25 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	else
 	{
-		const _float fTargetSpeed =
-			m_bRawMoveInput
+		const _float fTargetSpeed =m_bRawMoveInput
 				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
 				: 0.f;
-		const _float fSpeedChange =
-			(m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) *
-			fTimeDelta;
+		const _float fSpeedChange = (m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) * fTimeDelta;
 
 		if (m_fCurrentMoveSpeed < fTargetSpeed)
 		{
-			m_fCurrentMoveSpeed = std::min(
-				m_fCurrentMoveSpeed + fSpeedChange,
-				fTargetSpeed);
+			m_fCurrentMoveSpeed = std::min(m_fCurrentMoveSpeed + fSpeedChange,fTargetSpeed);
 		}
 		else
 		{
-			m_fCurrentMoveSpeed = std::max(
-				m_fCurrentMoveSpeed - fSpeedChange,
-				fTargetSpeed);
+			m_fCurrentMoveSpeed = std::max(m_fCurrentMoveSpeed - fSpeedChange,fTargetSpeed);
 		}
 
 		if (m_fCurrentMoveSpeed > std::numeric_limits<_float>::epsilon())
 		{
-			m_pComMoveIntent->SetMoveIntent(
-				m_bRawMoveInput
+			m_pComMoveIntent->SetMoveIntent(m_bRawMoveInput
 					? m_vSmoothedMoveDirection
-					: m_vLastMoveDirection,
-				m_fCurrentMoveSpeed);
+					: m_vLastMoveDirection,m_fCurrentMoveSpeed);
 		}
 		else
 		{
@@ -324,10 +352,198 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
-		m_pComCharacterController->SetPosition({ -6.f, -215.f, 156.f });
-		m_pComCharacterMotor->SetVelocity({});
+		m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
 	}
 
+	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
+	}
+
+	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		const PLAYER_STATE eCurrentState =m_pStateMachine->GetCurrentState();
+		const _bool bCanRequestAttack =
+			eCurrentState != PLAYER_STATE::JUMP &&
+			(eCurrentState != PLAYER_STATE::ROLL ||
+			(m_pModelAnimator &&
+				PlayerAnimationRatioGuard::Sanitize(
+					m_pModelAnimator->GetPlayAnimRatio()) >=
+				CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
+
+		if (bCanRequestAttack)
+			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
+	}
+	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
+	{
+		{
+			//CGameInstance::Get().GetPhysXManager()->RayCast()
+
+		//if(false)
+		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		//{
+		//	std::vector< PX_RAYCAST_RESULT> results{};
+		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
+
+		//	//CGameInstance::Get().GetDbgLineRender()->AddRay()
+
+		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+		//	CGameInstance::Get().GetDbgLineRender()->AddRay(
+		//		ori,
+		//		dir,
+		//		100.f);
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+		//	if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = dir, .fMaxDistance = 100.f,
+		//	.tFilter = {.hIgnoreGameObject = GetHandle() } }, results))
+		//	{
+		//		for (const auto& result : results)
+		//		{
+		//			const auto hit = result.vHitpos;
+		//			const auto normalEnd = _float3{
+		//				hit.x + result.vHitNormal.x,
+		//				hit.y + result.vHitNormal.y,
+		//				hit.z + result.vHitNormal.z
+		//			};
+		//			//CGameInstance::Get().GetDbgLineRender()->AddLine(
+		//			//	hit,
+		//			//	normalEnd,
+		//			//	{ 0.f, 1.f, 0.f, 1.f });
+
+
+		//		}
+		//	}
+		//}
+
+
+		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		//{
+		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
+		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+		//	CGameInstance::Get().GetDbgLineRender()->AddSphere(10.f, XMMatrixTranslation(ori.x, ori.y, ori.z));
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+		//	std::vector<PX_OVERLAP_RESULT> results{};
+		//	if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 10.f}, .tPose = {.vPosition = ori} }, results))
+		//	{
+		//		for (const auto& result : results)
+		//		{
+		//		}
+		//	}
+		//}
+		}
+		
+			auto ori = m_pComTransform->GetPosition();
+		if (false) {
+			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
+			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+			CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
+			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+		}
+
+
+		std::vector<PX_OVERLAP_RESULT> results{};
+		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+		{
+			const auto& result = results.front();
+			m_hAutoTarget = result.pGameObject->GetHandle();
+		}
+	}
+	else {
+		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+
+		if (!pTarget) {
+				auto ori = m_pComTransform->GetPosition();
+			if (false) {
+				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+				CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+			}
+
+			std::vector<PX_OVERLAP_RESULT> results{};
+			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+			{
+				const auto& result = results.front();
+				m_hAutoTarget = result.pGameObject->GetHandle();
+			}
+		}
+
+		if (pTarget) {
+			auto ori = m_pComTransform->GetPosition();
+			if (false) {
+				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+
+				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
+				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			}
+
+
+			std::vector<PX_OVERLAP_RESULT> results{};
+
+			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 30.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
+
+			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
+
+			if (!bTargetStillInRange)
+			{
+				m_hAutoTarget = CHandle{};
+			}
+		}
+	}
+
+
+	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
+	{
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+	}
+
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL))
+	{
+		m_fControlHoldTime += fTimeDelta;
+
+		if (!m_bDashTriggered &&m_fControlHoldTime >= DASH_HOLD_TIME)
+		{
+			if (m_pStateMachine->RequestState(PLAYER_STATE::DASH_SKILL))
+			{
+				m_bDashTriggered = true;
+			}
+		}
+	}
+
+	if (CGameInstance::Get().KeyUp(DIK_LCONTROL))
+	{
+		if (!m_bDashTriggered && m_fControlHoldTime < DASH_HOLD_TIME)
+		{
+			m_pStateMachine->RequestState(PLAYER_STATE::ROLL);
+		}
+
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+	}
 }
 
 
@@ -346,7 +562,118 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
+#ifdef _DEBUG
+	UpdateStandingGameObjectDebugLog();
+#endif
+
 }
+
+#ifdef _DEBUG
+void CPlayer::UpdateStandingGameObjectDebugLog()
+{
+	const std::optional<CHandle> hStandingGameObject =
+		m_pComCharacterController->GetStandingGameObjectHandle();
+
+	if (hStandingGameObject != m_hDebugStandingGameObject)
+	{
+		if (hStandingGameObject)
+		{
+			if (const auto* pStandingGameObject =
+				CGameInstance::Get().GetGameObjectByHandle(*hStandingGameObject))
+			{
+				std::string sLog = "[CPlayer][CCT] Standing On: ";
+				const std::string_view sObjectTag = pStandingGameObject->GetObjectTag();
+				sLog.append(sObjectTag.data(), sObjectTag.size());
+				sLog += " (Handle Index: ";
+				sLog += std::to_string(hStandingGameObject->GetIndex());
+				sLog += ", Generation: ";
+				sLog += std::to_string(hStandingGameObject->GetGeneration());
+				sLog += ")\n";
+				DEBUG_LOG_STR(sLog);
+			}
+			else
+			{
+				DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
+			}
+		}
+		else
+		{
+			DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
+		}
+
+		m_hDebugStandingGameObject = hStandingGameObject;
+	}
+}
+#endif
+
+void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
+{
+	if (!m_pComMoveIntent ||
+		fSpeed <= 0.f ||
+		fTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	_vector vForward = XMVectorSetY(
+		GetTransform().GetState(STATE::LOOK),
+		0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vForward)) <=
+		std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	vForward = XMVector3Normalize(vForward);
+
+	_float3 vDisplacement{};
+	XMStoreFloat3(
+		&vDisplacement,
+		vForward * fSpeed * fTimeDelta);
+
+	m_pComMoveIntent->AddExternalDisplacement(vDisplacement);
+}
+
+void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta)
+{
+	if (!m_pComMoveIntent ||fSpeed <= 0.f ||fTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	_vector vMoveDirection = XMVectorSetY(XMLoadFloat3(&vDirection),0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vMoveDirection)) <=std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	vMoveDirection = XMVector3Normalize(vMoveDirection);
+
+	_float3 vDisplacement{};
+	XMStoreFloat3(
+		&vDisplacement,
+		vMoveDirection * fSpeed * fTimeDelta);
+
+	m_pComMoveIntent->AddExternalDisplacement(vDisplacement);
+}
+
+void CPlayer::PrepareLocomotionResume()
+{
+	m_fCurrentMoveSpeed = m_bRawMoveInput
+		? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+		: 0.f;
+
+	if (m_bRawMoveInput)
+	{
+		const _vector vDirection = XMVector3Normalize(
+			XMLoadFloat3(&m_vRawMoveDirection));
+		XMStoreFloat3(&m_vSmoothedMoveDirection, vDirection);
+		m_vLastMoveDirection = m_vSmoothedMoveDirection;
+	}
+}
+
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
@@ -381,16 +708,16 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 		if (m_bRootMotionRotationActive)
 		{
-			const _float4 vRotationDelta =
+			const _float4 vRootMotionRotationDelta =
 				m_pModelAnimator->GetRootMotionRotationDelta();
 			const _vector qCurrent =
 				GetTransform().GetLoadedQuaternion();
 			const _vector qDelta =
-				XMLoadFloat4(&vRotationDelta);
+				XMLoadFloat4(&vRootMotionRotationDelta);
 
 			GetTransform().SetQuaternion(
 				XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrent, qDelta)));
+					XMQuaternionMultiply(qDelta, qCurrent)));
 		}
 	}
 
@@ -401,7 +728,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
-	if (bApplyRootMotionTranslation && m_pComCharacterController)
+	if (bApplyRootMotionTranslation && m_pComMoveIntent)
 	{
 		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
 		const _vector vWorldDelta = XMVector3Rotate(
@@ -411,12 +738,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 		_float3 vWorldDisplacement{};
 		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
 
-		m_pComCharacterController->Move(
-			vWorldDisplacement,
-			fTimeDelta,
-			0.f);
-		GetTransform().SetPosition(
-			m_pComCharacterController->GetPosition());
+		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
 
 }

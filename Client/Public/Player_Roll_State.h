@@ -16,6 +16,8 @@ private:
 	~CPlayer_Roll_State() override = default;
 
 public:
+
+
 	void Enter(CStateMachine* pStateMachine) override;
 	void Exit(CStateMachine* pStateMachine) override;
 	void Update(CStateMachine* pStateMachine, _float fTimeDelta) override;
@@ -23,12 +25,19 @@ public:
 	static SPtr<CPlayer_Roll_State> Create();
 
 private:
-	int32_t FindAnimationIndex(
-		const CPlayer& player,
-		_string_view sAnimationName) const;
+	int32_t FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const;
 
+public:
+	static constexpr _float ATTACK_CANCEL_RATIO{ 0.6f };
 private:
 	int32_t m_iRollAnimation{ -1 };
+	_float3 m_vRollDirection{};
+	_float m_fRollSpeed{15.f };
+	_float m_fRollStopStartRatio{ 0.175f };
+	_float m_fRollMoveEndRatio{ 0.35f };
+	_float m_fLocomotionCancelRatio{ 0.30f };
+	_float m_fRollDirectionResponse{ 3.f };
+	_float m_fPreviousAnimRatio{};
 };
 
 NS_END
