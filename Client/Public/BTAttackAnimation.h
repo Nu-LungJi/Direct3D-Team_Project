@@ -26,7 +26,6 @@ private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 
 	_float				m_fDis{}, m_fTime{};
-	uint32_t		    m_iStartFlag{}, m_iEndFlag{};
 	_bool				m_bRatioInvert{ false };
 public:
 	static UPtr<CBTAttackAnimation> Create();

@@ -15,7 +15,11 @@ public:
 	DECLARE_DERIVED_TYPE(CAnimationObject,CGameObject)
 
 	CAnimationObject & operator=( const CAnimationObject&) = delete;
+public:
+	struct DESC : public CGameObject::GAMEOBJECT_DESC
+	{
 
+	};
 protected:
 	explicit CAnimationObject();
 	explicit CAnimationObject(const CAnimationObject& Prototype);

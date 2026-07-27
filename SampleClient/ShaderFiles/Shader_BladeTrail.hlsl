@@ -75,7 +75,7 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 
     
     float2 uv = In.vUV;
-    float4 tex = g_TrailTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+    float4 tex = g_TrailTexture.Sample(LinearWrap, float2(uv.x, uv.y));
     float4 distortionTex = g_DistortionTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
   
     if (all(tex.rgb < 0.1f))
@@ -152,5 +152,90 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
         Out.vDiffuse = color;
     }
     return Out;
+
+}
+PS_OUT PSScrollMain(VS_OUT In) : SV_TARGET
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+    
+	float2 uv = In.vUV;
+	float4 tex = g_TrailTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+	float4 distortionTex = g_DistortionTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+  
+	if (all(tex.rgb < 0.1f))
+		discard;
+	float noise = g_NoiseTexture.Sample(LinearWrap, float2(uv.x * 2 + g_fScrollOffset, uv.y)).r;
+
+	float center = 1 - smoothstep(0, 1, abs(uv.y - 0.5) * 2);
+
+	center = pow(center, 0.8);
+
+	float glow = 1 + center * g_fGlowStrength;
+    
+	float lengthGlow = pow(1 - uv.x, 2);
+
+	glow *= 1 + lengthGlow * g_fLengthGlow;
+	if (g_fUseNoise > 0.5)
+	{
+		glow *= 1 + (noise - 0.5) * g_fNoiseStrength;
+	}
+    
+	if (g_fUseDissolve > 0.5)
+	{
+		float progress = 1 - In.vColor.a;
+
+		float alpha = smoothstep(0, 0.15, noise - progress);
+
+		tex.a *= alpha;
+	}
+    
+	float edge = 1 - smoothstep(0.5, 1, abs(uv.y - 0.5) * 2);
+	tex.a *= edge;
+    
+	float4 color = tex * In.vColor;
+
+	color.rgb *= glow;
+
+	color.rgb += In.vEmissive.rgb * In.vEmissive.a;
+	color.a *= In.vColor.a;
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+    
+    
+	if (g_fUseDistortion > 0.5)
+	{
+		clip(color.a - 0.02);
+
+    // 왜곡 텍스처에서 실제 방향 벡터를 샘플링 (스크롤도 같이 적용 가능)
+		float2 distortionUV = float2(uv.x * 2 + g_fScrollOffset, uv.y);
+		float2 distortionSample = g_DistortionTexture.Sample(LinearWrap, distortionUV).rg;
+
+    // 0~1 범위를 -1~1로 remap 해서 양방향 왜곡이 되게
+		float2 distortion = (distortionSample * 2.0f - 1.0f) * 5.f; // 0.05 = 왜곡 강도, 조절 필요
+
+    // 트레일 알파가 강한 곳일수록 더 많이 왜곡되도록
+		distortion *= color.a;
+
+		float2 distortedUV = screenUV * float2(0.5, -0.5) + 0.5 + distortion;
+
+		float4 background = g_BackgroundTex.Sample(LinearClamp, distortedUV);
+        
+
+    // 배경 굴절 위에 원본 트레일 색상을 얹어서 같이 보이게
+		background.rgb += color.rgb;
+		background.a = saturate(background.a + color.a);
+
+		Out.vDiffuse = background;
+        
+		distortion = distortionTex.rg * 2 - 1;
+
+		Out.vDiffuse = float4(abs(distortion), 0, 1);
+		return Out;
+	}
+	else
+	{
+		Out.vDiffuse = color;
+	}
+	return Out;
 
 }

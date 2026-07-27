@@ -53,6 +53,7 @@ public:
 	_bool IsGravityEnabled() const;
 	_bool SetLinearDamping(_float fDamping);
 	_bool SetAngularDamping(_float fDamping);
+	_bool SetMaxDepenetrationVelocity(_float fVelocity);
 	_bool WakeUp();
 	_bool PutToSleep();
 	_bool IsSleeping() const;

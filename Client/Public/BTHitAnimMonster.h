@@ -30,7 +30,6 @@ private:
 private:
 
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	uint32_t			m_iStartFlag{}, m_iEndFlag{};
 	_bool				m_bRatioInvert{ false };
 
 	HITTABLE			m_HitTable[ETOUI(HITMON::END)];

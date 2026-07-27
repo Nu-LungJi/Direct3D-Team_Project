@@ -28,8 +28,7 @@ private:
 	HRESULT SpawnUICamera();
 	HRESULT SpawnStaticCollision();
 	HRESULT SpawnMonster();
-	HRESULT SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer);
-	std::optional<CHandle> SpawnDebugPlayer();
+
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
 

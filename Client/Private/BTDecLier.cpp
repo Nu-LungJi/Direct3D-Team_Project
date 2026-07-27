@@ -32,7 +32,7 @@ HRESULT CBTDecLier::Initalize(void* pArg)
 EVALUATE CBTDecLier::Evaluate(_float fTimeDelta)
 {
 	if (m_bEnter)
-		return EVALUATE::SUCCESS;
+		return m_eDebug = EVALUATE::SUCCESS;
 
 	EVALUATE eType = __super::Evaluate(fTimeDelta);
 	if (eType == EVALUATE::SUCCESS)

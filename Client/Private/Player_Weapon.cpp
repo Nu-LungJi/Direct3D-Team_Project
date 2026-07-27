@@ -1,31 +1,30 @@
 #include "pch.h"
-#include "Weapon.h"
+#include "Player_Weapon.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComStaticModelInstance.h"
 #include "Resources.h"
 #include "GameInstance.h"
-#include "ComBeHavior.h"
 #include "ComModelInstance.h"
 #include "Trail_CPU.h"
 NS_USING(Client)
 
-CWeapon::CWeapon()
+CPlayer_Weapon::CPlayer_Weapon()
 	: CGameObject{}
 {
 }
 
-CWeapon::~CWeapon()
+CPlayer_Weapon::~CPlayer_Weapon()
 {
 }
 
-void CWeapon::UpdateGUI()
+void CPlayer_Weapon::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 
 }
 
-HRESULT CWeapon::InitializePrototype(void* pArg)
+HRESULT CPlayer_Weapon::InitializePrototype(void* pArg)
 {
 
 	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
@@ -42,13 +41,13 @@ HRESULT CWeapon::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CWeapon::Initialize(void* pArg)
+HRESULT CPlayer_Weapon::Initialize(void* pArg)
 {
-	
+
 	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
 	m_iBoneSocketIndex = pDesc->iBoneIndex;
-	m_ParentHandle	   = pDesc->ParentHandle;
-	
+	m_ParentHandle = pDesc->ParentHandle;
+
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -66,7 +65,7 @@ HRESULT CWeapon::Initialize(void* pArg)
 	{
 		CComStaticModelInstance::DESC Desc{};
 		Desc.sGroupTag = pDesc->LevelTag;
-		Desc.sResTag   = pDesc->WeaponName;
+		Desc.sResTag = pDesc->WeaponName;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
@@ -75,34 +74,29 @@ HRESULT CWeapon::Initialize(void* pArg)
 	}
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
+	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
+
 	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
+
 	return S_OK;
 }
 
-void CWeapon::PriorityUpdate(E::_float fTimeDelta)
+void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CWeapon::Update(E::_float fTimeDelta)
+void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
 	//_float3 vstart, vend;
 	//vstart = m_pComTransform->GetPosition();
 	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	//auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
+	/*auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
+	
+	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
+	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));*/
 	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
 
-	/*if (CGameInstance::Get().KeyPressing(DIK_HOME))
-		m_pComTransform->GoUp(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_END))
-		m_pComTransform->GoDown(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_UP))
-		m_pComTransform->GoStraight(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_LEFT))
-		m_pComTransform->GoRight(fTimeDelta * -15);
-	if (CGameInstance::Get().KeyPressing(DIK_DOWN))
-		m_pComTransform->GoBackward(fTimeDelta * 15);
-	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
-		m_pComTransform->GoRight(fTimeDelta * 15);*/
+	
 	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
 	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
 
@@ -124,10 +118,9 @@ void CWeapon::Update(E::_float fTimeDelta)
 	//	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
 
 
-	Weapon_Throw(fTimeDelta);
 }
 
-void CWeapon::LateUpdate(E::_float fTimeDelta)
+void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 {
 	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 	{
@@ -146,25 +139,15 @@ void CWeapon::LateUpdate(E::_float fTimeDelta)
 				}
 			}
 		}
-		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
-		{
-			if (!m_bThrow && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-			{
-				m_bThrow = true;
-				XMStoreFloat3(&m_vLook, pBT->GetGameObject()->GetTransform().GetState(STATE::LOOK));
-				XMStoreFloat4x4(&m_ParentMatrix, (XMLoadFloat4x4(&m_ParentMatrix)));
-			}
-			else if(m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-				m_bThrow = false;
-		}
+
 	}
-	
+
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
-HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CPlayer_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	{
 		E::CB_PER_OBJECT cbPerObject{};
@@ -217,37 +200,24 @@ HRESULT CWeapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 	return S_OK;
 }
 
-void CWeapon::Weapon_Throw(_float fTimeDelta)
-{
-	if (!m_bThrow)
-		return;
-	m_fAngle = 30.f;
-	_vector vTargetLook = XMVector3Normalize(XMLoadFloat3(&m_vLook));
-	
-	_matrix Rot = XMMatrixRotationQuaternion(XMQuaternionRotationAxis(XMVectorSet(0,0,1, 0), XMConvertToRadians(m_fAngle)));
-	_matrix matRot = Rot * XMLoadFloat4x4(&m_ParentMatrix);
-	matRot.r[3] += vTargetLook * 15.f * fTimeDelta;
-	XMStoreFloat4x4(&m_ParentMatrix, matRot);
 
-}
-
-E::UPtr<CWeapon> CWeapon::Create()
+E::UPtr<CPlayer_Weapon> CPlayer_Weapon::Create()
 {
-	auto pInstance = E::ToUPtr(new CWeapon{});
+	auto pInstance = E::ToUPtr(new CPlayer_Weapon{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CWeapon");
+		MSG_BOX("Failed to Created : CPlayer_Weapon");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CWeapon::Clone(void* pArg)
+E::UPtr<E::CPrototype> CPlayer_Weapon::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CWeapon{ *this });
+	auto	pInstance = E::ToUPtr(new CPlayer_Weapon{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CWeapon");
+		MSG_BOX("Failed to Cloned : CPlayer_Weapon");
 		return nullptr;
 	}
 

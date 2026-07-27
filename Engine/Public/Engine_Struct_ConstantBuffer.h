@@ -91,12 +91,16 @@ namespace Engine
 		_float	g_fTime;
 		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
+	static_assert(sizeof(CB_PER_PARTICLE) % 16 == 0);
 
 	typedef struct CB_SCROLL
 	{
 		_float    g_fScrollOffset;
-		_float    g_fScrollSpeed;
-		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+		_float    g_fAccumulationTime;
+		uint32_t    g_iCurrentFrame;
+		uint32_t    g_iFlipbookRows;
+		uint32_t    g_iFlipbookColumns;
+		_float3    g_fPadding;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_SCROLL;
 	static_assert(sizeof(CB_SCROLL) % 16 == 0);
 
@@ -123,6 +127,8 @@ namespace Engine
 		uint32_t iMaxParticles = 0;
 		_float2 vPadding{};
 		_float4x4 matDelta{};
+		_float4 vColor{};
+		_float4 vEmissive{};
 	};
 	static_assert(sizeof(CB_OWNER_OPERATION) % 16 == 0);
 

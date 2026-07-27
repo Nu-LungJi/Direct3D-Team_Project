@@ -186,7 +186,7 @@ void CTestGob::Update(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
 		m_pComTransform->GoRight(fTimeDelta * 15);
 
-	if (CGameInstance::Get().KeyDown(DIK_1))
+	if (CGameInstance::Get().KeyDown(DIK_2))
 		bShow = !bShow;
 
 	if(bShow)

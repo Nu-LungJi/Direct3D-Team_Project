@@ -20,6 +20,111 @@ namespace
 	struct ModelResourceDragPayload { char groupName[128]{}; char resourceName[128]{}; };
 }
 
+E::_float CTerrainGUI::NoiseFade(E::_float value)
+{
+	return value * value * value * (value * (value * 6.f - 15.f) + 10.f);
+}
+
+uint32_t CTerrainGUI::NoiseHash(int32_t x, int32_t z, uint32_t seed)
+{
+	uint32_t hash = seed;
+	hash ^= static_cast<uint32_t>(x) * 0x9E3779B9u;
+	hash ^= static_cast<uint32_t>(z) * 0x85EBCA6Bu;
+	hash ^= hash >> 16u;
+	hash *= 0x7FEB352Du;
+	hash ^= hash >> 15u;
+	hash *= 0x846CA68Bu;
+	hash ^= hash >> 16u;
+	return hash;
+}
+
+E::_float CTerrainGUI::GradientDot(
+	int32_t gridX, int32_t gridZ, E::_float x, E::_float z, uint32_t seed)
+{
+	const E::_float offsetX = x - static_cast<E::_float>(gridX);
+	const E::_float offsetZ = z - static_cast<E::_float>(gridZ);
+	constexpr E::_float diagonal = 0.70710678f;
+	E::_float gradientX = 0.f;
+	E::_float gradientZ = 0.f;
+
+	switch (NoiseHash(gridX, gridZ, seed) & 7u)
+	{
+	case 0: gradientX = 1.f; break;
+	case 1: gradientX = -1.f; break;
+	case 2: gradientZ = 1.f; break;
+	case 3: gradientZ = -1.f; break;
+	case 4: gradientX = diagonal; gradientZ = diagonal; break;
+	case 5: gradientX = -diagonal; gradientZ = diagonal; break;
+	case 6: gradientX = diagonal; gradientZ = -diagonal; break;
+	default: gradientX = -diagonal; gradientZ = -diagonal; break;
+	}
+
+	return gradientX * offsetX + gradientZ * offsetZ;
+}
+
+E::_float CTerrainGUI::Perlin2D(E::_float x, E::_float z, uint32_t seed)
+{
+	const int32_t x0 = static_cast<int32_t>(std::floor(x));
+	const int32_t z0 = static_cast<int32_t>(std::floor(z));
+	const int32_t x1 = x0 + 1;
+	const int32_t z1 = z0 + 1;
+	const E::_float u = NoiseFade(x - static_cast<E::_float>(x0));
+	const E::_float v = NoiseFade(z - static_cast<E::_float>(z0));
+	const E::_float top = std::lerp(
+		GradientDot(x0, z0, x, z, seed), GradientDot(x1, z0, x, z, seed), u);
+	const E::_float bottom = std::lerp(
+		GradientDot(x0, z1, x, z, seed), GradientDot(x1, z1, x, z, seed), u);
+	return std::lerp(top, bottom, v);
+}
+
+E::_float CTerrainGUI::FractalPerlin2D(E::_float worldX, E::_float worldZ,
+	uint32_t seed, E::_float noiseScale, int octaves, E::_float persistence, E::_float lacunarity)
+{
+	E::_float frequency = 1.f / std::max(noiseScale, 0.001f);
+	E::_float amplitude = 1.f;
+	E::_float result = 0.f;
+	E::_float totalAmplitude = 0.f;
+	for (int octave = 0; octave < octaves; ++octave)
+	{
+		result += Perlin2D(worldX * frequency, worldZ * frequency,
+			seed + static_cast<uint32_t>(octave) * 1013u) * amplitude;
+		totalAmplitude += amplitude;
+		amplitude *= persistence;
+		frequency *= lacunarity;
+	}
+	return totalAmplitude > 0.f ? result / totalAmplitude : 0.f;
+}
+
+HRESULT CTerrainGUI::GenerateTerrainNoise(E::CTerrain& terrain, uint32_t seed,
+	E::_float noiseScale, E::_float amplitude, E::_float baseHeight, int octaves,
+	E::_float persistence, E::_float lacunarity, E::_bool additive)
+{
+	const uint32_t countX = terrain.GetVertexCountX();
+	const uint32_t countZ = terrain.GetVertexCountZ();
+	const E::_float spacing = terrain.GetVertexSpacing();
+	if (countX == 0 || countZ == 0)
+		return E_FAIL;
+
+	for (uint32_t z = 0; z < countZ; ++z)
+	{
+		for (uint32_t x = 0; x < countX; ++x)
+		{
+			const E::_float noise = FractalPerlin2D(
+				static_cast<E::_float>(x) * spacing,
+				static_cast<E::_float>(z) * spacing,
+				seed, noiseScale, octaves, persistence, lacunarity);
+			const E::_float noiseHeight = noise * amplitude;
+			const E::_float nextHeight = additive
+				? terrain.GetVertexHeight(x, z) + noiseHeight
+				: baseHeight + noiseHeight;
+			if (FAILED(terrain.SetVertexHeight(x, z, nextHeight)))
+				return E_FAIL;
+		}
+	}
+
+	return terrain.CommitAllHeights();
+}
+
 void CTerrainGUI::UpdateGUI(E::_float fTimeDelta)
 {
 	auto finishEditCommand = [&]()
@@ -93,6 +198,36 @@ void CTerrainGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::SliderFloat("Brush Radius", &brush.radius, 0.5f, 50.f, "%.1f");
 	ImGui::SliderFloat("Brush Strength", &brush.strength, 0.1f, 30.f, "%.1f");
 	ImGui::SliderFloat("Brush Falloff", &brush.falloff, 0.1f, 8.f, "%.1f");
+	if (ImGui::CollapsingHeader("Terrain Noise Generator", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::InputInt("Noise Seed", &m_iNoiseSeed);
+		ImGui::DragFloat("Noise Scale", &m_fNoiseScale, 1.f, 1.f, 1000.f, "%.1f");
+		ImGui::DragFloat("Noise Amplitude", &m_fNoiseAmplitude, 0.5f, 0.f, 500.f, "%.1f");
+		ImGui::DragFloat("Base Height", &m_fNoiseBaseHeight, 0.5f, -500.f, 500.f, "%.1f");
+		ImGui::SliderInt("Noise Octaves", &m_iNoiseOctaves, 1, 8);
+		ImGui::SliderFloat("Persistence", &m_fNoisePersistence, 0.1f, 0.9f, "%.2f");
+		ImGui::SliderFloat("Lacunarity", &m_fNoiseLacunarity, 1.1f, 4.f, "%.2f");
+		ImGui::Checkbox("Add To Existing Height", &m_bNoiseAdditive);
+		if (ImGui::Button("Generate Terrain Noise"))
+		{
+			const HRESULT result = GenerateTerrainNoise(
+				*terrain,
+				static_cast<uint32_t>(m_iNoiseSeed),
+				m_fNoiseScale,
+				m_fNoiseAmplitude,
+				m_fNoiseBaseHeight,
+				m_iNoiseOctaves,
+				m_fNoisePersistence,
+				m_fNoiseLacunarity,
+				m_bNoiseAdditive);
+			m_NoiseStatus = SUCCEEDED(result) ? "Generated" : "Generation failed";
+		}
+		if (!m_NoiseStatus.empty())
+		{
+			ImGui::SameLine();
+			ImGui::TextUnformatted(m_NoiseStatus.c_str());
+		}
+	}
 	if (m_bScatterEnabled)
 	{
 		ImGui::Text("Model: %s", m_ScatterModelTag.empty() ? "Drop model here" : m_ScatterModelTag.c_str());

@@ -66,6 +66,7 @@ HRESULT CComAnimator::Initialize(void* pArg)
     }
 
 
+
     return S_OK;
 }
 
@@ -150,9 +151,8 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
 			{
 				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
-				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
 			}
 		}
 	}
@@ -231,9 +231,8 @@ HRESULT CComAnimator::Update_Action(_float fTimeDelta)
 				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
 			{
 				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
-				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
 			}
 
 
@@ -345,9 +344,9 @@ HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
 			_vector vCurrTranslation;
 			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
 			{
-				const _vector qDeltaRotation = XMQuaternionNormalize(XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
-				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+				const _vector qDeltaRotation = XMQuaternionNormalize(
+					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
 			}
 		}
 	}
@@ -447,9 +446,8 @@ HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
 				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
 			{
 				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation));
-				_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, XMQuaternionNormalize(qYawDelta));
+					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
+				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
 			}
 		}
 	}
