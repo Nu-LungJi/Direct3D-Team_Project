@@ -625,6 +625,39 @@ HRESULT CGameInstance::Load_ParticleJsonPackage(const std::vector<std::string>& 
 {
 	return m_pParticleManager->Load_ParticleJsonPackage(_FilePathPackage);
 }
+
+void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {
+	m_pParticleManager->TranslateOwner(ownerId, delta);
+}
+
+HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end) {
+	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, start, end);
+}
+#pragma endregion
+
+#pragma region EFFECT_MANAGER
+
+EFFECT_INSTANCE_ID CGameInstance::PlayEffect(const std::string& sEffectName, const _float4x4& matWorld,
+	_fvector vEndPosition, EFFECT_FINISHED_CALLBACK onFinsihed) {
+	
+	return m_pEffectManager->PlayEffect(sEffectName, matWorld, vEndPosition, onFinsihed);
+}
+
+void CGameInstance::Stop(EFFECT_INSTANCE_ID iEffectId) {
+	m_pEffectManager->Stop(iEffectId);
+}
+
+void CGameInstance::SetPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
+	m_pEffectManager->SetPosition(iEffectId, vPosition);
+
+}
+
+void CGameInstance::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _float4x4& colliderWorldMatrix) {
+	m_pEffectManager->SetWorldMatrix(iEffectId, colliderWorldMatrix);
+
+}
+
+
 #pragma endregion
 
 #pragma region LUA_MANAGER

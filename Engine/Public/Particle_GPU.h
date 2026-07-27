@@ -78,6 +78,7 @@ public:
 	virtual void ClearByOwner(uint32_t ownerID) override;
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
+	virtual void SetColorByOwner(uint32_t ownerId, const _float4& color) override;
 private:
     DESC m_Desc;
 
@@ -92,6 +93,7 @@ private:
     SPtr<CResComputeShader>          m_pResUpdateComputeShader = nullptr;
     SPtr<CResComputeShader>          m_pResInitDeadCS = nullptr;
     SPtr<CResComputeShader>          m_pResTransformOwnerCS = nullptr;
+	SPtr<CResComputeShader>			 m_pResChangeColorByOwnerCS = nullptr;
     SPtr<class CResSamplerState>     m_pResSamplerState = nullptr;
 
     SPtr<class CResCBuffer>          m_pComCBuffer;

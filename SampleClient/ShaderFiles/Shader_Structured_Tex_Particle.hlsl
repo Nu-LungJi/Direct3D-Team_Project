@@ -118,7 +118,7 @@ PS_OUT PSMain(VS_OUT In)
     float4 vTextureColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord) ;
     if (all(vTextureColor.a <= 0.03f))
         discard;
-    if (all(vTextureColor.rgb <= 0.f))
+    if (all(vTextureColor.rgb <= 0.1f))
         discard;
     float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
     float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);

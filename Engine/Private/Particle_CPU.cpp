@@ -187,6 +187,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			}
 		}
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
+
 		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 		UpdateBehavior(p, fTimeDelta);
 
@@ -796,8 +797,9 @@ void CParticle_CPU::SetPosition(const _float3& pos)
 {
 	if (m_Particles.empty())
 		return;
-
-	m_Particles[0].vPosition = pos;
+	for (auto& particle : m_Particles) {
+		particle.vPosition = pos;
+	}
 }
 
 void CParticle_CPU::SetVelocity(const _float3& vel)
@@ -805,7 +807,9 @@ void CParticle_CPU::SetVelocity(const _float3& vel)
 	if (m_Particles.empty())
 		return;
 
-	m_Particles[0].vVelocity = vel;
+	for (auto& particle : m_Particles) {
+		particle.vVelocity = vel;
+	}
 }
 
 void CParticle_CPU::SetSize(const _float3& size)
@@ -813,14 +817,39 @@ void CParticle_CPU::SetSize(const _float3& size)
 	if (m_Particles.empty())
 		return;
 
-	m_Particles[0].fSize = size;
+	for (auto& particle : m_Particles) {
+		particle.fSize = size;
+	}
 }
 void CParticle_CPU::SetColor(const _float4& color)
 {
 	if (m_Particles.empty())
 		return;
+	for (auto& particle : m_Particles) {
+		particle.vColor = color;
+	}
+}
+void CParticle_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
+{
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive)
+			continue;
 
-	m_Particles[0].vColor = color;
+		if (particle.ownerID != ownerId)
+			continue;
+
+		particle.vColor = color;
+	}
+}
+void CParticle_CPU::SetEmissive(const _float4& emissive)
+{
+	if (m_Particles.empty())
+		return;
+	for (auto& particle : m_Particles) {
+		particle.emissive = emissive;
+		particle.originalEmissive = emissive;
+	}
 }
 void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 {

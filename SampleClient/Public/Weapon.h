@@ -41,6 +41,18 @@ public:
 
 private:
 	void					Weapon_Throw(_float fTimeDelta);
+
+//성민 테스트 코드 
+private:
+	void				OnDashEffectFinished();
+	void				OnDashEffectStopped();
+	_bool				m_bDashing = false;
+	_bool				m_bDashEffectSpawned = false;
+	_float				m_fDeltaDistance = 0;
+	_float				m_fDistanceOffeset = 1;
+	_float3				m_fSpwanPos{};
+//
+
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
 	// nonAnim
@@ -56,10 +68,13 @@ private:
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{false};
 
+	uint32_t			m_iCurrentEffectID = -1;
+	uint32_t			m_iPrevEffectID = 0;
 	std::vector<E::SPAWN_COMMAND> test;
 public:
 	static E::UPtr<CWeapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+	
 };
 
 NS_END

@@ -74,6 +74,13 @@ struct EFFECT_COMMAND
 
 
 
+enum class EFFECT_FINISH_REASON {
+	NATURAL,
+	STOPPED
+};
+
+using EFFECT_FINISHED_CALLBACK = std::function<void(EFFECT_INSTANCE_ID, EFFECT_FINISH_REASON)>;
+
 
 
 struct EFFECT_PRESET
@@ -96,6 +103,8 @@ struct EFFECT_INSTANCE
 	_float fElapsed = 0.f;
 	_float fDuration = 0.f;
 	size_t iNextCommandIndex = 0;
+
+	EFFECT_FINISHED_CALLBACK onFinished;
 };
 struct EFFECT_PENDING_COMMAND
 {

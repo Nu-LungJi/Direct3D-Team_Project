@@ -1835,6 +1835,9 @@
     <FxCompile Include="..\ShaderFiles\Particle\CS_ClearByOwner.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

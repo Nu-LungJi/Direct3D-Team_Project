@@ -118,7 +118,8 @@ public:
 		const std::string& AnyTexID1 = "",  
 		const std::string& AnyTexID2 = "",
 		const std::string& AnyTexPath = "",
-		int iSelectedBlend = 0);
+		int iSelectedBlend = 0,
+		_bool bShrinkWidth = true);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -143,15 +144,17 @@ public:
 	HRESULT ClearLoopRequests();
 	HRESULT DeleteLoopRequests(uint32_t userId);
 
+
 public:
 	void ClearByOwner(uint32_t ownerId);
-
 	void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	void TransformOwner(uint32_t ownerId , const _float4x4& deltaMatrixData);
-
+	void SetColorByOwner(uint32_t ownerId, const _float4& color);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
-
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
+
+	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+public:
 
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);
@@ -167,16 +170,11 @@ private:
 	// 큐 전체를 실행
 	std::string m_sLastResultMsg;
 	bool m_bLastResultSuccess = false;
-
-	 bool bNeedTypeIndexSync = false;
-	 StringID pendingSyncGroup, pendingSyncType;
-
-private:
+	bool bNeedTypeIndexSync = false;
+	StringID pendingSyncGroup, pendingSyncType;
 	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_TextureThumbnailCache;
 	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> m_ParsedCommandCache;
 	SPtr<CParticleShaderCache> m_pShaderCache;
-
-private:
 	uint32_t m_iNextOwnerId = 1;
 };
 NS_END
