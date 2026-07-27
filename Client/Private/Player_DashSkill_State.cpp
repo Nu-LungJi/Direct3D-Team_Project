@@ -5,6 +5,7 @@
 #include "ComCharacterMoveIntent.h"
 
 #include "ComAnimator.h"
+#include "PlayerAnimationRatioGuard.h"
 NS_USING(Client)
 
 void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
@@ -89,7 +90,9 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		return;
 	}
 
-	m_fAnimRatio = pAnimator->GetPlayAnimRatio();
+	m_fAnimRatio =
+		PlayerAnimationRatioGuard::Sanitize(
+			pAnimator->GetPlayAnimRatio());
 
 	m_fScaleTime += fTimeDelta;
 

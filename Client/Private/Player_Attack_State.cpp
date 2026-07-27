@@ -8,6 +8,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
 #include "CameraObject.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
 
@@ -89,29 +90,28 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 
 
-	const _float fAnimRatio = animator->GetPlayAnimRatio();
+	const _float fPreviousAnimRatio = m_fPreviousAnimRatio;
+	const _float fAnimRatio =
+		PlayerAnimationRatioGuard::Sanitize(
+			animator->GetPlayAnimRatio());
 
 	if (!m_bPlayingHeavy)
 	{
-		const _float fRatioDelta =
-			std::max(0.f, fAnimRatio - m_fPreviousAnimRatio);
-		const _float fOverlapStart =
-			std::max(m_fPreviousAnimRatio, LIGHT_FORWARD_MOVE_START_RATIO);
-		const _float fOverlapEnd =
-			std::min(fAnimRatio, LIGHT_FORWARD_MOVE_END_RATIO);
+		const _float fMoveTime =
+			PlayerAnimationRatioGuard::CalculateActiveDeltaTime(
+				fPreviousAnimRatio,
+				fAnimRatio,
+				LIGHT_FORWARD_MOVE_START_RATIO,
+				LIGHT_FORWARD_MOVE_END_RATIO,
+				fTimeDelta);
 
-		if (fRatioDelta > std::numeric_limits<_float>::epsilon() &&
-			fOverlapEnd > fOverlapStart)
+		if (fMoveTime > 0.f)
 		{
-			const _float fMoveTime =
-				fTimeDelta *
-				((fOverlapEnd - fOverlapStart) / fRatioDelta);
 			player->ApplyAttackForwardMovement(
 				LIGHT_FORWARD_MOVE_SPEED,
 				fMoveTime);
 		}
 	}
-	m_fPreviousAnimRatio = fAnimRatio;
 
 	if (fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
@@ -120,12 +120,19 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 	}
 
 
-	const _bool bInComboInputWindow = fAnimRatio >= COMBO_INPUT_START_RATIO && fAnimRatio <= COMBO_INPUT_END_RATIO;
+	const _bool bInComboInputWindow =
+		PlayerAnimationRatioGuard::Intersects(
+			fPreviousAnimRatio,
+			fAnimRatio,
+			COMBO_INPUT_START_RATIO,
+			COMBO_INPUT_END_RATIO);
 
 	if (bInComboInputWindow &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
+
+	m_fPreviousAnimRatio = fAnimRatio;
 	 
 	if (m_bAttackQueued && fAnimRatio >= COMBO_LINK_RATIO)
 	{

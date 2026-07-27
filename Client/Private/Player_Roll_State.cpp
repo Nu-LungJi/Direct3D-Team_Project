@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "Player_StateMachine.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "ComAnimator.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
@@ -88,7 +89,9 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 		return;
 	}
 
-	const _float fAnimationRatio =std::clamp(animator->GetPlayAnimRatio(), 0.f, 1.f);
+	const _float fAnimationRatio =
+		PlayerAnimationRatioGuard::Sanitize(
+			animator->GetPlayAnimRatio());
 
 	if (player->HasRawMoveInput())
 	{
@@ -137,13 +140,17 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 		}
 	}
 
-	const _float fRatioDelta =
-		std::max(0.f, fAnimationRatio - m_fPreviousAnimRatio);
 	const _float fMoveRatioEnd =
 		std::min(fAnimationRatio, m_fRollMoveEndRatio);
+	const _float fMoveTime =
+		PlayerAnimationRatioGuard::CalculateActiveDeltaTime(
+			m_fPreviousAnimRatio,
+			fAnimationRatio,
+			0.f,
+			m_fRollMoveEndRatio,
+			fTimeDelta);
 
-	if (fRatioDelta > std::numeric_limits<_float>::epsilon() &&
-		fMoveRatioEnd > m_fPreviousAnimRatio)
+	if (fMoveTime > 0.f)
 	{
 		const _float fSampleRatio =
 			(m_fPreviousAnimRatio + fMoveRatioEnd) * 0.5f;
@@ -159,9 +166,6 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 			fSpeedScale = 1.f - fSmoothStop;
 		}
 
-		const _float fMoveTime =
-			fTimeDelta *
-			((fMoveRatioEnd - m_fPreviousAnimRatio) / fRatioDelta);
 		player->ApplyDirectionalMovement(
 			m_vRollDirection,
 			m_fRollSpeed * fSpeedScale,

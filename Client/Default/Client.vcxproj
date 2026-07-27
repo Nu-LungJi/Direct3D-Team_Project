@@ -250,6 +250,7 @@
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_DashSkill_State.h" />

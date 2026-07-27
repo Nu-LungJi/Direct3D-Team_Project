@@ -24,6 +24,7 @@
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_Weapon.h"
 NS_USING(Client)
@@ -365,7 +366,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		const _bool bCanRequestAttack =
 			eCurrentState != PLAYER_STATE::JUMP &&
 			(eCurrentState != PLAYER_STATE::ROLL ||
-			(m_pModelAnimator && m_pModelAnimator->GetPlayAnimRatio() >=CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
+			(m_pModelAnimator &&
+				PlayerAnimationRatioGuard::Sanitize(
+					m_pModelAnimator->GetPlayAnimRatio()) >=
+				CPlayer_Roll_State::ATTACK_CANCEL_RATIO));
 
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
