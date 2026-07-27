@@ -114,6 +114,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bLightning = false;
 	static _bool bSizeStop = false;
 	static _bool bExtraLightning = false;
+	static _bool bKeepRotate = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -132,6 +133,7 @@ void CParticleManager::UpdateGUI()
 	static std::vector<std::string> hdrNormalFileList;   
 	static bool bHdrNormalScanned = false;           
 	static int selectedHdrNormalIndex = -1;
+	static float fMaxDuration = 1.f;
 
 	ImGui::Begin("SaveResourcesAsJson");
 
@@ -550,6 +552,9 @@ void CParticleManager::UpdateGUI()
 	if (particleTypeStr == "TRAIL_CPU")
 	{
 		ImGui::Checkbox("Shrink Width", &bShrinkWidth);
+
+		ImGui::DragFloat("MaxDuration", &fMaxDuration, 0.01f);
+
 	}
 	
 	auto IsCombinationSupported = [](int whatKindIdx, const std::string& particleType) -> bool
@@ -930,6 +935,24 @@ void CParticleManager::UpdateGUI()
 				preset.rotation.z,
 				0.f
 			};
+
+			previewParams.bKeepRotate =
+				preset.bKeepRotate;
+			bKeepRotate =
+				(preset.iBehaviorType &
+					CParticle::BEHAVIOR_KEEPROTATE) != 0;
+
+			previewParams.bKeepRotate =
+				bKeepRotate;
+			previewParams.rotationAxis =
+				preset.rotationAxis;
+
+			previewParams.rotationSpeed =
+				preset.rotationSpeed;
+
+			previewParams.iBehaviorType =
+				preset.iBehaviorType;
+		
 			previewParams.fStopSizeTime = preset.fStopSizeTime;
 			bNeedTypeIndexSync = true;
 			pendingSyncGroup = preset.sGroupTag;
@@ -972,6 +995,8 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 	ImGui::SameLine();
 	ImGui::Checkbox("SIZE STOP", &bSizeStop);
+	ImGui::SameLine();
+	ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
 	ImGui::Separator();
 
 	ImGui::Text("Individiual Field");
@@ -1024,9 +1049,12 @@ void CParticleManager::UpdateGUI()
 	}
 	
 	if (none) {
-		bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bKeepRotate = bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
+
+	previewParams.bKeepRotate = bKeepRotate;
+
 	if (distortion)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
 	if (billboard)
@@ -1037,6 +1065,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
 	if (bSizeStop)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
+	if (bKeepRotate)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
 
 
 	if(bSmoke)
@@ -1091,6 +1121,11 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat3("EndSize", &previewParams.fEndSize.x, 0.01f);
 	}
 
+	if (bKeepRotate) {
+		ImGui::DragFloat3("Rotation Axis", &previewParams.rotationAxis.x, 0.01f);
+		ImGui::DragFloat("Rotation Speed", &previewParams.rotationSpeed, 0.01f);
+	}
+	
 	ImGui::Checkbox("RandomRotation?", &previewParams.bRandomRot);
 	if (previewParams.bRandomRot) {
 		ImGui::DragFloat3("RotMin", &previewParams.rotMin.x, 0.01f);
@@ -1160,6 +1195,8 @@ void CParticleManager::UpdateGUI()
 			data.iBehaviorType = p.iBehaviorType;
 			data.originalPosition = data.position;
 			data.loop = p.bLoop;
+			data.rotationAxis = p.rotationAxis;
+			data.fRotationSpeed = p.rotationSpeed;
 			return data;
 		};
 
@@ -1237,7 +1274,9 @@ void CParticleManager::UpdateGUI()
 			preset.groupTypeIndex = groupTypeIndex;
 			preset.whatKindFilterIndex = whatKindFilterIndex;
 			preset.iBehaviorType = previewParams.iBehaviorType;
-
+			preset.bKeepRotate = previewParams.bKeepRotate;
+			preset.rotationAxis = previewParams.rotationAxis;
+			preset.rotationSpeed = previewParams.rotationSpeed;
 			HRESULT hr = SaveEffectPreset(szPresetSavePath, preset);
 
 			if (SUCCEEDED(hr))
@@ -1282,6 +1321,8 @@ void CParticleManager::UpdateGUI()
 		ImGui::SameLine();
 		ImGui::Checkbox("SIZE STOP", &bSizeStop);
 		ImGui::Separator();
+		ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
+		ImGui::Separator();
 
 		ImGui::Text("Individiual Field");
 		ImGui::Checkbox("SMOKE", &bSmoke);
@@ -1301,9 +1342,11 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+			bKeepRotate = bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
+		pendingStandard.bKeepRotate = bKeepRotate;
+
 		if (distortion)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
 
@@ -1329,6 +1372,9 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
 		if (bExtraLightning)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
+		if (bKeepRotate) 
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+		
 	}
 	
 	ImGui::Separator();
@@ -1379,6 +1425,12 @@ void CParticleManager::UpdateGUI()
 
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
 
+
+		if (pendingStandard.bKeepRotate) {
+			ImGui::DragFloat3("Rotation Axis", &pendingStandard.rotationAxis.x, 0.01f);
+			ImGui::DragFloat("Rotation Speed", &pendingStandard.rotationSpeed, 0.01f);
+
+		}
 		if (pendingStandard.bRandomRot) {
 			ImGui::DragFloat3("RotMin", &pendingStandard.rotMin.x, 0.01f);
 			ImGui::DragFloat3("RotMax", &pendingStandard.rotMax.x, 0.01f);
@@ -1500,6 +1552,7 @@ void CParticleManager::UpdateGUI()
 			if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(cmd.params))
 			{
 				pendingStandard = std::get<STANDARD_PARAMS>(cmd.params);
+				bKeepRotate = pendingStandard.bKeepRotate;
 			}
 			else if (currentKind == SPAWN_COMMAND_KIND::BEAM && std::holds_alternative<BEAM_PARAMS>(cmd.params))
 			{
@@ -1682,7 +1735,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& AnyTexID1,
 	const std::string& AnyTexID2,
 	const std::string& AnyTexPath,
-	int iSelectedBlend, _bool bShrinkWidth)
+	int iSelectedBlend, _bool bShrinkWidth ,_float fMaxduration)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1770,6 +1823,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 
 		if (particleType == "TRAIL_CPU") {
 			newEntry["ShrinkWidth"] = bShrinkWidth;
+			newEntry["Maxduration"] = fMaxduration;
 		} 
 	}
 	else if (whatKind == "MESH")
@@ -1971,6 +2025,8 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 				s.originalPosition = s.position;
 				s.loop = p.bLoop;
 				s.spawnDelay = p.fSpawnDelay;
+				s.rotationAxis = p.rotationAxis;
+				s.fRotationSpeed = p.rotationSpeed;
 				vec.push_back(s);
 			}
 		}
@@ -2468,6 +2524,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
 				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
+				desc.fMaxDuration = entry.value("MaxDuration", 0);
 				particle = CTrail_CPU::Create(&desc);
 
 
@@ -2616,6 +2673,9 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["life"] = p.life;
 				entry["StartSize"] = { p.fSize.x, p.fSize.y, p.fSize.z }; 
 				entry["EndSize"] = { p.fEndSize.x, p.fEndSize.y, p.fEndSize.z };
+				entry["bKeepRotate"] = p.bKeepRotate;
+				entry["rotationAxis"] = { p.rotationAxis.x, p.rotationAxis.y,p.rotationAxis.z };
+				entry["rotationSpeed"] = p.rotationSpeed;
 				entry["bRandomRot"] = p.bRandomRot;
 				entry["rotMin"] = { p.rotMin.x, p.rotMin.y, p.rotMin.z };
 				entry["rotMax"] = { p.rotMax.x, p.rotMax.y, p.rotMax.z };
@@ -2634,6 +2694,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["velMax"] = { p.velMax.x, p.velMax.y, p.velMax.z };
 				entry["iBehaviorType"] = p.iBehaviorType;
 				entry["stopSizeTime"] = p.fStopSizeTime;
+		
 				break;
 			}
 			case SPAWN_COMMAND_KIND::BEAM:
@@ -2754,6 +2815,28 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
 			p.fStopSizeTime = entry.value("stopSizeTime", 0.f);
 
+			p.bKeepRotate = entry.value("bKeepRotate", false);
+
+			auto rotationAxis = entry.value("rotationAxis",std::vector<float>{ 0.f, 0.f, 0.f });
+
+			if (rotationAxis.size() >= 3)
+			{
+				p.rotationAxis =
+				{
+					rotationAxis[0],
+					rotationAxis[1],
+					rotationAxis[2]
+				};
+			}
+			else
+			{
+				p.rotationAxis = { 0.f, 1.f, 0.f };
+			}
+
+			p.rotationSpeed =
+				entry.value("rotationSpeed", 0.f);
+
+
 			p.bRandomRot = entry.value("bRandomRot", false);
 			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
 			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
@@ -2867,6 +2950,10 @@ HRESULT CParticleManager::SaveEffectPreset(const std::string& strJsonPath, const
 	entry["rotation"] = { preset.rotation.x, preset.rotation.y, preset.rotation.z, preset.rotation.w };
 	entry["stopSizeTime"] = preset.fStopSizeTime;
 	entry["behaviorType"] = preset.iBehaviorType;
+	entry["bKeepRotate"] = preset.bKeepRotate;
+	entry["rotationAxis"] = { preset.rotationAxis.x, preset.rotationAxis.y,preset.rotationAxis.z};
+
+	entry["rotationSpeed"] = preset.rotationSpeed;
 	// 같은 이름 있으면 덮어쓰기
 	bool bReplaced = false;
 	for (auto& e : j["presets"])
@@ -2939,6 +3026,20 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 		preset.whatKindFilterIndex = entry.value("whatKindFilterIndex", 0);
 		preset.iBehaviorType = entry.value("behaviorType", 0);
 		preset.fStopSizeTime = entry.value("stopSizeTime", 0.f);
+
+		preset.bKeepRotate = entry.value("bKeepRotate", false);
+
+		auto rotationAxis = entry.value( "rotationAxis",std::vector<float>{ 0.f, 1.f, 0.f });
+
+		preset.rotationAxis =
+		{
+			rotationAxis[0],
+			rotationAxis[1],
+			rotationAxis[2]
+		};
+
+		preset.rotationSpeed = entry.value("rotationSpeed", 0.f);
+
 		if (!preset.presetName.empty())
 			m_ParticlePresets[preset.presetName] = preset;
 	}
@@ -3150,6 +3251,28 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.velMax = { velMax[0], velMax[1], velMax[2] };
 			p.velocity = { vel[0], vel[1], vel[2] };
 
+
+			p.bKeepRotate = entry.value("bKeepRotate", false);
+
+			auto rotationAxis = entry.value( "rotationAxis", std::vector<float>{ 0.f, 1.f, 0.f });
+
+			if (rotationAxis.size() >= 3)
+			{
+				p.rotationAxis =
+				{
+					rotationAxis[0],
+					rotationAxis[1],
+					rotationAxis[2]
+				};
+			}
+			else
+			{
+				p.rotationAxis = { 0.f, 1.f, 0.f };
+			}
+
+			p.rotationSpeed =
+				entry.value("rotationSpeed", 0.f);
+
 			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
 			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
 			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
@@ -3300,7 +3423,7 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 }
 
 
-HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float3& position, uint32_t count)
+HRESULT CParticleManager::PlayParticle(const std::string& presetName, const _float3& position, uint32_t count)
 {
 	auto it = m_ParticlePresets.find(presetName);
 	if (it == m_ParticlePresets.end()) {
@@ -3324,6 +3447,8 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 	data.originalPosition = position;
 	data.originalVelocity = data.velocity;
 	data.fStopSizeTime = preset.fStopSizeTime;
+	data.rotationAxis = preset.rotationAxis;
+	data.fRotationSpeed = preset.rotationSpeed;
 	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
 }
 // ParticleManager.cpp

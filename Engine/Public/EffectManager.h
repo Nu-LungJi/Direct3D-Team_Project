@@ -89,6 +89,9 @@ private:
 	_bool MakeNoScaleWorldMatrix(const _float4x4& sourceMatrix,_float4x4& outMatrix) const;
 
 	HRESULT AddPreset(EFFECT_PRESET&& preset);
+
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+	HRESULT Load_EffectJsonPackage(const std::vector<std::string>& _FilePathPackage);
 private:
 	CParticleManager* m_pParticleManager = nullptr;
 	CLightManager* m_pLightManager = nullptr;

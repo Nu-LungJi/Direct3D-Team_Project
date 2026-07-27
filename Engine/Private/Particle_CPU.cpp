@@ -361,6 +361,8 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		Lightning(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
 		ExtraLightning(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
+		KeepRotate(p, fTimeDelta);
 	}
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
@@ -403,6 +405,17 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
 	p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
 	p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+}
+
+void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
+{
+	const float deltaAngle = p.fRotationSpeed * fTimeDelta;
+
+	p.rotation.x += p.roationAxis.x * deltaAngle;
+
+	p.rotation.y += p.roationAxis.y * deltaAngle;
+
+	p.rotation.z += p.roationAxis.z * deltaAngle;
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -536,9 +549,9 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
 		m_Particles[i].fStopSizeTime = src.fStopSizeTime;
+		m_Particles[i].roationAxis = src.rotationAxis;
+		m_Particles[i].fRotationSpeed = src.fRotationSpeed;
 
-
-	
 		++iSpawned;
 	}
 

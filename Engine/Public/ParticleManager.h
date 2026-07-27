@@ -35,6 +35,9 @@ typedef struct tagParticlePreset
 	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
 	_float fStopSizeTime = 0;
+	_bool bKeepRotate{};
+	_float3 rotationAxis{};
+	_float rotationSpeed{};
 } PARTICLE_PRESET;
 
 
@@ -119,7 +122,8 @@ public:
 		const std::string& AnyTexID2 = "",
 		const std::string& AnyTexPath = "",
 		int iSelectedBlend = 0,
-		_bool bShrinkWidth = true);
+		_bool bShrinkWidth = true,
+		_float fMaxduration = 0);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
@@ -132,7 +136,7 @@ public:
 
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
-	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
+	HRESULT PlayParticle(const std::string& presetName, const _float3& position, uint32_t count = 1);
 	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
 	void ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos);

@@ -1,4 +1,4 @@
-#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+#include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 float g_fNoiseStrength = 0.3f; // 0~1
 float g_fGlowStrength = 0.7f; // 0~3
@@ -8,26 +8,35 @@ float g_fDissolve = 0;
 float g_fUseNoise = 0;
 float g_fUseDistortion = 0;
 float g_fUseDissolve = 0;
-cbuffer CB_SCROLL : register(b0)
+
+
+
+
+
+cbuffer CB_SCROLL : register(b10)
 {
-    float g_fScrollOffset;
-    float3 _pad;
-};
+	float g_fScrollOffset;
+	float g_fAccumulationTime;
+	uint g_iCurrentFrame;
+	uint g_iFlipbookRows;
+	uint g_iFlipbookColumns;
+	float3 g_fPadding;
+}
+float2 ComputeFlipbookUV(float2 uv)
+{
+	uint rows = max(g_iFlipbookRows, 1u);
+	uint columns = max(g_iFlipbookColumns, 1u);
+	uint totalFrames = rows * columns;
+	uint frameIndex = min(g_iCurrentFrame, totalFrames - 1u);
 
-//cbuffer CB_TRAIL_OPTION : register(b1)
-//{
-//    float g_fNoiseStrength; // 0~1
-//    float g_fDistortion; // 0~0.1
-//    float g_fGlowStrength; // 0~3
-//    float g_fLengthGlow; // 0~2
-//
-//    float g_fDissolve;
-//    float g_fUseNoise;
-//    float g_fUseDistortion;
-//    float g_fUseDissolve;
-//};
+	uint columnIndex = frameIndex % columns;
+	uint rowIndex = frameIndex / columns;
 
+	float2 cellSize = 1.f / float2(columns, rows);
+	float2 localUV = frac(uv);
 
+	return (localUV + float2(columnIndex, rowIndex)) * cellSize;
+}
 struct VS_IN
 {
     float3 vPosition : POSITION;
@@ -62,6 +71,7 @@ Texture2D g_NormalTexture : register(t2);
 Texture2D g_DistortionTexture : register(t3);
 Texture2D g_NoiseTexture : register(t4);
 Texture2D g_BackgroundTex : register(t7);
+Texture2D g_AnyTexture : register(t8);
 
 
 
@@ -153,3 +163,52 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
     return Out;
 
 }
+PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 uv = In.vUV;
+
+	float2 packedUV = uv;
+	packedUV.x += g_fAccumulationTime * 1.03f;
+	//packedUV.y += g_fAccumulationTime * 1.03f;
+
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, packedUV);
+
+	float intensity = max(tex.r, max(tex.g, tex.b));
+	float textureAlpha = smoothstep(0.02f, 0.2f, intensity);
+	textureAlpha *= tex.a;
+
+	float center = 1.f - smoothstep(0.f, 1.f, abs(uv.y - 0.5f) * 2.f);
+	center = pow(saturate(center), 0.8f);
+
+	float glow = 1.f + center * g_fGlowStrength;
+
+	float edge = 1.f - smoothstep(0.5f, 1.f, abs(uv.y - 0.5f) * 2.f);
+	float lifeAlpha = saturate(In.vColor.a);
+	float alpha = textureAlpha * edge * lifeAlpha;
+
+	float3 color = tex.rgb * In.vColor.rgb;
+	color *= glow;
+	color += In.vEmissive.rgb * In.vEmissive.a;
+
+	Out.vDiffuse = float4(color, alpha);
+	return Out;
+}
+
+PS_OUT PSPlayerDash1(VS_OUT In) : SV_TARGET
+{
+
+	PS_OUT Out = (PS_OUT) 0;
+	float2 flipbookUV = ComputeFlipbookUV(In.vUV);
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, flipbookUV);
+
+	float3 emissive = In.vEmissive.rgb * In.vEmissive.a;
+
+	float4 vFinalColor = float4(tex.rgb + emissive, tex.a);
+	Out.vDiffuse = vFinalColor;
+
+	return Out;
+
+}
+

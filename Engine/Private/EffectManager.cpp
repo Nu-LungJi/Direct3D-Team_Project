@@ -18,11 +18,14 @@ CEffectManager::~CEffectManager()
 }
 
 HRESULT CEffectManager::Initialize() {
-	//복수하겠다
-	if (FAILED(LoadEffectPreset("./Resources/json/Effect/PlayerDashSmoke.json"))) {
-		MSG_BOX("Load Effect Failed");
+
+	auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
+	if (FAILED(Load_EffectJsonPackage(k))){
+		MSG_BOX("EFFECT LOAD FAILED");
 		return E_FAIL;
 	}
+
+
 	return S_OK;
 }
 
@@ -1145,4 +1148,51 @@ CEffectManager::Create(CParticleManager* pParticleManager,CLightManager* pLightM
 	pInstance->Initialize();
 
 	return pInstance;
+}
+std::vector<std::string> CEffectManager::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension) {
+	std::vector<std::string> FilePathStorage{};
+	FilePathStorage.reserve(32);
+
+	{
+		namespace fs = std::filesystem;
+
+		std::error_code ErrorCode{};
+
+		if (fs::exists(_FolderPath) == false || fs::is_directory(_FolderPath) == false) {
+			std::wstring MSGContent = L"Invalid FolderPath : " + _FolderPath.wstring();
+			MessageBoxW(NULL, MSGContent.c_str(), L"System Message", MB_OK);
+
+			return FilePathStorage;      // Empty vector return
+		}
+		auto Optimization = fs::directory_options::skip_permission_denied;
+
+		fs::recursive_directory_iterator iterator(_FolderPath, Optimization, ErrorCode);
+		fs::recursive_directory_iterator End;
+
+		for (; iterator != End && !ErrorCode; iterator.increment(ErrorCode)) {
+			if (iterator->is_regular_file(ErrorCode)) {
+				const auto& FilePath = iterator->path();
+
+				if (FilePath.extension() == _Extension) {
+					FilePathStorage.push_back(FilePath.string());
+				}
+			}
+		}
+		return FilePathStorage;
+	}
+}
+HRESULT CEffectManager::Load_EffectJsonPackage(
+	const std::vector<std::string>& filePaths)
+{
+	if (filePaths.empty())
+		return E_FAIL;
+
+	for (const auto& filePath : filePaths) {
+		const HRESULT hr = LoadEffectPreset(filePath.c_str());
+
+		if (FAILED(hr))
+			return hr;
+	}
+
+	return S_OK;
 }

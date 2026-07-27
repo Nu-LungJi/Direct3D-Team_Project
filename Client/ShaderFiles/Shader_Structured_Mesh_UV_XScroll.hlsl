@@ -268,3 +268,4 @@ PS_OUT PSTexScrollMain(VS_OUT In)
 	Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
 	return Out;
 }
+

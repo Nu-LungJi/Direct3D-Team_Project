@@ -48,6 +48,18 @@ void CSMain(uint id : SV_DispatchThreadID)
 	p.size = lerp(p.startSize, p.endSize, sizeRatio);
     
     
+	if ((p.iBehaviorType & BEHAVIOR_KEEPROTATE) != 0)
+	{
+		
+		const float deltaAngle = p.fRotationSpeed * g_fTimeDelta;
+
+		p.rotation.x += p.roationAxis.x * deltaAngle;
+
+		p.rotation.y += p.roationAxis.y * deltaAngle;
+
+		p.rotation.z += p.roationAxis.z * deltaAngle;
+
+	}
 	if (g_iTotalFrames > 0)
 	{
 		uint frame = (uint) (lifeRatio * g_iTotalFrames);

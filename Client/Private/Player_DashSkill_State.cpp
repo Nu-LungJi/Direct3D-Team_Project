@@ -6,6 +6,7 @@
 
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
+#include "Trail_CPU.h"
 NS_USING(Client)
 
 void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
@@ -55,6 +56,9 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_fScaleTime = 0.f;
 	m_fDashElapsed = 0.f;
+	auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+	static_cast<CTrail_CPU*>(a)->SetColor(_float4(255 / 255.f, 1.f, 1.f,0.8f));
+	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255/255.f, 1.f, 1.f, 1.5f));
 }
 
 
@@ -155,6 +159,28 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			}
 		}
 
+		{
+			// 이펙트 발동
+			_float4 fpos = _float4(pPlayer->GetTransform().GetPosition().x, pPlayer->GetTransform().GetPosition().y, pPlayer->GetTransform().GetPosition().z, 1);
+			_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
+			_vector lastSpawnPos = XMVectorSet(m_vSpwanPos.x, m_vSpwanPos.y, m_vSpwanPos.z, 1.f);
+			_float distance = XMVectorGetX(
+				XMVector3Length(pos - lastSpawnPos));
+			_float3 vstart, vend;
+			vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
+			vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
+			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
+			//_float3 deltaPos;
+			//XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
+			if (distance > m_fDistanceOffeset) {
+
+				CGameInstance::Get().PlayEffect(
+					"PlayerDashSmoke", *pPlayer->GetTransform().GetWorldMatrix(), pos);
+				m_vSpwanPos = pPlayer->GetTransform().GetPosition();	
+			}
+			///
+		}
+
 		if (m_fDashElapsed >= DASH_DURATION)
 		{
 			// DASH 끝---------------------------------------------------------------------------------------------------
@@ -191,6 +217,25 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 				}
 			}
 		}
+		{
+			_float4 fpos = _float4(pPlayer->GetTransform().GetPosition().x, pPlayer->GetTransform().GetPosition().y , pPlayer->GetTransform().GetPosition().z, 1);
+			_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
+			_vector lastSpawnPos = XMVectorSet(m_vSpwanPos.x, m_vSpwanPos.y, m_vSpwanPos.z, 1.f);
+			_float distance = XMVectorGetX(
+				XMVector3Length(pos - lastSpawnPos));
+
+			if (distance > 2) {
+
+				CGameInstance::Get().PlayEffect(
+					"PlayerDashSmoke", *pPlayer->GetTransform().GetWorldMatrix(), pos);
+				m_vSpwanPos = pPlayer->GetTransform().GetPosition();
+			}
+			_float3 vstart, vend;
+			vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
+			vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
+			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
+
+		}
 
 		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO)
 		{
@@ -199,6 +244,7 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		}
 		break;
 	}
+
 }
 
 void CPlayer_DashSkill_State::Exit(CStateMachine* pStateMachine)

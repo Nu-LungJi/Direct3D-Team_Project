@@ -42,15 +42,15 @@ private:
 	_float m_fScaleTime{};
 	_float m_fDashElapsed{};
 	_float3 m_vDashDirection{};
-
 	int32_t m_iDashAnimIndex{ -1 };
 	int32_t m_iDashEndAnimIndex{ -1 };
 
 
 	_float3 vNormalScale = { 1.f, 1.f, 1.f };
-	_float3 vSmallScale = { 0.5f, 0.2f, 0.5f };
+	_float3 vSmallScale = { 0.f, 0.f, 0.f };
 
-
+	_float	m_fDistanceOffeset = 2.f;
+	_float3	m_vSpwanPos{};
 	_bool    m_bAnimationIndicesCached = false;
 };
 

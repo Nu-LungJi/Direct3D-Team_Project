@@ -10,15 +10,19 @@ const static float BranchDensity = 3.f;
 const static float Sharpness = 6.f;
 const static float FlickeringSpeed = 25.f;
 
+const static float2 DistortionStrength = float2(0.04f, 0.008f);
+
+Texture2D g_DiffuseTexture : register(t1);
+Texture2D g_NormalTexture : register(t2);
+Texture2D g_DistortionTexture : register(t3);
+Texture2D g_NoiseTexture : register(t4);
+Texture2D g_AnyTexture : register(t5);
+Texture2D g_BackgroundTex : register(t7);
+
 struct VS_IN
 {
-    // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
 	float3 vPosition : POSITION;
 	float2 vTexcoord : TEXCOORD0;
-
-    // Per-Instance - VTX_PARTICLE_INSTANCED_DATA와 바이트 레이아웃 일치.
-    // "INSTANCE_" 접두사가 있어야 CResVertexShader::Load()의 리플렉션이
-    // 이 필드들을 슬롯 1(인스턴스 버퍼)로 인식한다.
 	float4 vWorld0 : INSTANCE_WORLD0;
 	float4 vWorld1 : INSTANCE_WORLD1;
 	float4 vWorld2 : INSTANCE_WORLD2;
@@ -29,8 +33,8 @@ struct VS_IN
 	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
 	float2 uvOffset : INSTANCE_UVOFFSET;
 	float2 uvSize : INSTANCE_UVSIZE;
-	float life : INSTANCE_LIFE; // 추가 
-	float maxLife : INSTANCE_MAXLIFE; // 추가
+	float life : INSTANCE_LIFE;
+	float maxLife : INSTANCE_MAXLIFE;
 	uint iBehaviorType : INSTANCE_BEHAVIORTYPE;
 };
 
@@ -51,12 +55,7 @@ struct VS_OUT
 	float life : TEXCOORD9;
 	float maxLife : TEXCOORD10;
 };
-Texture2D g_DiffuseTexture : register(t1);
-Texture2D g_NormalTexture : register(t2);
-Texture2D g_DistortionTexture : register(t3);
-Texture2D g_NoiseTexture : register(t4);
-Texture2D g_AnyTexture : register(t5);
-Texture2D g_BackgroundTex : register(t7);
+
 
 struct PS_OUT
 {
@@ -65,6 +64,31 @@ struct PS_OUT
 float Jitter(float _Ratio)
 {
 	return frac(sin(_Ratio * 123.45f) * 43758.5453f) * 0.02f;
+}
+
+float Get_BrightnessMask(Texture2D _Texture, float2 _TexCoord)
+{
+	float4 DiffuseTex = _Texture.Sample(LinearWrap, _TexCoord);
+	return max(DiffuseTex.r, max(DiffuseTex.g, DiffuseTex.b));
+}
+
+float Enhance_Glowness(float2 _TexCoord, float2 _TexelSize, float _Radius)
+{
+	float2 Offset = _TexelSize * _Radius;
+	
+	float EnhancedMask = Get_BrightnessMask(g_DiffuseTexture, _TexCoord);
+	
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(+Offset.x, 0.f)));
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(-Offset.x, 0.f)));
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(0.f, +Offset.y)));
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(0.f, -Offset.y)));
+
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(+Offset.x, +Offset.y)));
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(-Offset.x, +Offset.y)));
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(+Offset.x, -Offset.y)));
+	EnhancedMask = max(EnhancedMask, Get_BrightnessMask(g_DiffuseTexture, _TexCoord + float2(-Offset.x, -Offset.y)));
+	
+	return EnhancedMask;
 }
 
 VS_OUT VSMain(VS_IN In)
@@ -198,16 +222,16 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.rrr / 2.f + Emissive.rgb, vFinalColor.r * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.rrr + Emissive.rgb, vFinalColor.r * In.vColor.a);
 	}
  
 	return Out;
 }
+
 PS_OUT PSMain_GChannel(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 	
-	float4 NoiseTex = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
 	float Ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float4 Emissive = lerp(In.vEmissive, In.vEndEmissive, Ratio);
 	
@@ -236,7 +260,7 @@ PS_OUT PSMain_GChannel(VS_OUT In)
 		float FadeInDuration = 0.08f; // 시작 후, N초
 		float FadeOutDuration = In.maxLife; // 종료 전, N초
 		
-		float FadeInRatio = saturate(FadeInDuration / In.maxLife);
+		float FadeInRatio  = saturate(FadeInDuration  / In.maxLife);
 		float FadeOutRatio = saturate(FadeOutDuration / In.maxLife);
 		
 		float FadeOutStart = 1.f - FadeOutRatio;
@@ -276,6 +300,7 @@ PS_OUT PSMain_GChannel(VS_OUT In)
  
 	return Out;
 }
+
 PS_OUT PSMain_BChannel(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
@@ -299,7 +324,7 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		float4 DissolveTex = g_NoiseTexture.Sample(LinearWrap, DissolveUV * DissolveTiling);
 		
 		DissolveTex.b = pow(DissolveTex.b, 1.5f);
-		//float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
+		
 		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
 		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
 		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
@@ -351,6 +376,7 @@ PS_OUT PSMain_BChannel(VS_OUT In)
  
 	return Out;
 }
+
 PS_OUT PSMain_ExtraLightning(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0; 
@@ -376,9 +402,52 @@ PS_OUT PSMain_ExtraLightning(VS_OUT In)
 	float	CoreFactor  = pow(LightningMask, 2.0);
 	float3	FinalColor  = lerp(GlowDiffuse, CoreDiffuse, CoreFactor) * ActiveMask;
 	
-	Out.vDiffuse = float4(CoreFactor, CoreFactor, CoreFactor, 1.f);
-	return Out;
-	
 	Out.vDiffuse = float4(FinalColor, ActiveMask);
+	return Out;
+}
+
+PS_OUT PSMain_GlowLightning(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	float	Ratio = saturate(In.life / max(In.maxLife, 0.0001f)); // 0.f -> 1.f
+	
+	float	BaseMask = Get_BrightnessMask(g_DiffuseTexture, In.vTexcoord);
+	
+	float	EdgeFactor = 1.f - smoothstep(0.15f, 0.8f, BaseMask);
+	EdgeFactor = pow(saturate(EdgeFactor), 1.5f);
+	
+	float2	NoiseTexCoordA = In.vTexcoord * float2(2.f, 7.f)  + float2(0.2f, -1.5f) * In.life;
+	float2	NoiseTexCoordB = In.vTexcoord * float2(4.f, 11.f) + float2(-0.15f, 1.f) * In.life;
+	
+	float	NoiseA = g_NoiseTexture.Sample(LinearWrap, NoiseTexCoordA).r;
+	float	NoiseB = g_NoiseTexture.Sample(LinearWrap, NoiseTexCoordB).g;
+
+	float2	SignedNoise = float2(NoiseA, NoiseB) * 2.f - 1.f;
+	
+	float2	DistortedUV = In.vTexcoord + SignedNoise * DistortionStrength * EdgeFactor;
+
+	float	WhiteMask = Get_BrightnessMask(g_DiffuseTexture, DistortedUV);
+	float	TotalMask = smoothstep(0.02f, 0.45f, WhiteMask);
+	float	CoreMask  = smoothstep(0.50f, 0.95f, WhiteMask);
+	float	GlowMask  = saturate(TotalMask - CoreMask);
+	
+	float2	CombinedNoise = saturate((NoiseA + NoiseB) * 0.5f);
+	
+	float	EdgeNoiseValue = smoothstep(0.35f, 0.65f, CombinedNoise);
+	float	GradatedNoise = smoothstep(1.f, EdgeNoiseValue, EdgeFactor);
+	
+	float	EdgeAlpha = lerp(1.f, 0.95f, EdgeFactor);
+	float	Alpha = (GradatedNoise * TotalMask) * EdgeAlpha * In.vColor.a / 2.f;
+	if (Alpha < 0.01f) discard;
+	
+	float	CoreBrightness = 1.f, GlowBrightness = 5.f;
+	
+	float3	CoreDiffuse = In.vColor.rgb * CoreBrightness;
+	float3	GlowDiffuse = lerp(In.vEmissive, In.vEndEmissive, Ratio).rgb * GlowBrightness;
+
+	float3 Emissive = CoreDiffuse * CoreMask + GlowDiffuse * GlowMask;
+	
+	Out.vDiffuse = float4(Emissive, Alpha);
 	return Out;
 }
