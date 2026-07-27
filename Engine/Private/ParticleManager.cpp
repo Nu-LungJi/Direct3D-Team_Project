@@ -545,7 +545,13 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputText("VIBuffer1 if CPUTEX", szViBuffer1, IM_ARRAYSIZE(szViBuffer1));
 		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
 	}
+	static bool bShrinkWidth = true;
 
+	if (particleTypeStr == "TRAIL_CPU")
+	{
+		ImGui::Checkbox("Shrink Width", &bShrinkWidth);
+	}
+	
 	auto IsCombinationSupported = [](int whatKindIdx, const std::string& particleType) -> bool
 		{
 			if (whatKindIdx == 0) // MESH
@@ -625,7 +631,10 @@ void CParticleManager::UpdateGUI()
 					bUseHdrForMesh ? slotPositionHdr.selectedPath : "",
 					bUseHdrForMesh ? slotNormalHdr.szTextureID1 : "",
 					bUseHdrForMesh ? slotNormalHdr.szTextureID2 : "",
-					bUseHdrForMesh ? slotNormalHdr.selectedPath : "");
+					bUseHdrForMesh ? slotNormalHdr.selectedPath : "", slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+					slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+					slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+					iSelectedBlend);
 			}
 			else {
 				if (particleTypeStr == "PARTICLE_CPU") {
@@ -645,7 +654,10 @@ void CParticleManager::UpdateGUI()
 						slotNormal.selectedPath,
 						slotDistortion.selectedPath,
 						slotNoise.selectedPath   ,  "", "", "",     // hdrTexID1, hdrTexID2, hdrTexPath
-						"", "", "");    // hdrNormalTexID1, hdrNormalTexID2, hdrNormalTexPath
+						"", "", "", slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+						iSelectedBlend);    // hdrNormalTexID1, hdrNormalTexID2, hdrNormalTexPath
 				}
 				else if (particleTypeStr == "BEAM_CPU") {
 					hr = Save_Beam_Json(savePath.string(),
@@ -655,7 +667,7 @@ void CParticleManager::UpdateGUI()
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						iTexRow, iTexCol);
 				}
-				else {
+				else if(particleTypeStr == "PARTICLE_GPU"){
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
@@ -673,7 +685,35 @@ void CParticleManager::UpdateGUI()
 						slotDistortion.selectedPath,
 						slotNoise.selectedPath, 
 						"", "", "",  
-						"", "", "");    
+						"", "", "",
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+						iSelectedBlend);
+				}
+				else if(particleTypeStr == "PARTICLE_GPU"){
+					hr = Save_Binary_Json(savePath.string(),
+						targetPath, whatKindStr, particleTypeStr, particleNameStr,
+						iMaxParticles,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint,
+						szGroupTag, szResTag,
+						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
+						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID1,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID2,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID1,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID2,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID1,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID2,
+						slotNormal.selectedPath,
+						slotDistortion.selectedPath,
+						slotNoise.selectedPath, 
+						"", "", "",  
+						"", "", "",
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+						iSelectedBlend, bShrinkWidth);
 				}
 			}
 
@@ -750,7 +790,7 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 
-	const char* groupTypeNames[] = { "PARTICLE_CPU", "PARTICLE_GPU", "BEAM_CPU", "RIBBON_CPU" };
+	const char* groupTypeNames[] = { "PARTICLE_CPU", "PARTICLE_GPU", "BEAM_CPU", "TRAIL_CPU" };
 	if (ImGui::Combo("Group (ParticleType)", &groupTypeIndex, groupTypeNames, IM_ARRAYSIZE(groupTypeNames)))
 		typeIndex = 0;
 
@@ -1642,7 +1682,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& AnyTexID1,
 	const std::string& AnyTexID2,
 	const std::string& AnyTexPath,
-	int iSelectedBlend)
+	int iSelectedBlend, _bool bShrinkWidth)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1728,6 +1768,9 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 			newEntry["VIBufferID2"] = viBufferID2;
 		}
 
+		if (particleType == "TRAIL_CPU") {
+			newEntry["ShrinkWidth"] = bShrinkWidth;
+		} 
 	}
 	else if (whatKind == "MESH")
 	{
@@ -2076,24 +2119,30 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 	// LoadParticleJson 안, "textures" 배열 for문 시작 직전에 추가
 	auto LoadAuxTexture = [](const nlohmann::json& entry,
 		const char* pathKey, const char* id1Key, const char* id2Key,
-		std::pair<StringID, StringID>& outID) -> void
+		std::pair<StringID, StringID>& outID) -> _bool
 		{
-			if (!entry.contains(pathKey))
-				return;
-
-			std::string path = entry[pathKey].get<std::string>();
+			std::string path = entry.value(pathKey, "");
 			std::string id1 = entry.value(id1Key, "");
 			std::string id2 = entry.value(id2Key, "");
 
 			if (path.empty() || id1.empty() || id2.empty())
-				return;
+				return true;
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResTexture2D>(
-				id1, id2, E::CResTexture2D::Create(path)))
+			auto texture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(id1, id2);
+
+			if (!texture)
 			{
-				res->Load();
+				texture = CGameInstance::Get().AddResourceT<CResTexture2D>(
+					id1,
+					id2,
+					CResTexture2D::Create(path));
+
+				if (!texture || FAILED(texture->Load()))
+					return false;
 			}
-			outID = { id1, id2 };
+
+			outID = { id1,id2 };
+			return true;
 		};
 
 	if (!std::filesystem::exists(strJsonPath))
@@ -2260,6 +2309,10 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				continue;
 			}
 
+			char buffer[512]{};
+
+
+
 			typeMap[particleName] = std::move(particle);
 		}
 	}
@@ -2307,11 +2360,16 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				continue;
 			}
 
-			// ---- 텍스처 리소스 등록 ----
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResTexture2D>(
-				textureID1, textureID2, E::CResTexture2D::Create(texPath)))
+			auto texture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(textureID1, textureID2);
+
+			if (!texture)
 			{
-				if (FAILED(res->Load()))
+				texture = CGameInstance::Get().AddResourceT<CResTexture2D>(
+					textureID1,
+					textureID2,
+					CResTexture2D::Create(texPath));
+
+				if (!texture || FAILED(texture->Load()))
 				{
 					hr = E_FAIL;
 					continue;
@@ -2403,12 +2461,16 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
-
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
 				desc.pShaderCache = m_pShaderCache;
+				desc.TexRows = RowCount;
+				desc.TexColumns = ColCount;
+				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
 				particle = CTrail_CPU::Create(&desc);
+
+
 			}
 			else
 			{
@@ -2433,6 +2495,17 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				continue;
 			}
 
+			char buffer[512]{};
+
+			sprintf_s(buffer,
+				"Register Particle: group=%s, name=%s, texture=%s, PS=%s, object=%p\n",
+				groupKey.c_str(),
+				particleName.c_str(),
+				textureID2.c_str(),
+				PSEntryPoint.c_str(),
+				particle.get());
+
+			OutputDebugStringA(buffer);
 			typeMap[particleName] = std::move(particle);
 		}
 	}
@@ -3482,4 +3555,32 @@ HRESULT CParticleManager::Load_ParticleJsonPackage(const std::vector<std::string
 		CGameInstance::Get().LoadParticleJson(FilePath.c_str());
 	}
 	return S_OK;
+}
+
+HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end)
+{
+	CParticle* particle = GetParticle(groupTag, typeTag);
+
+	if (!particle)
+		return E_FAIL;
+
+	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+
+	if (!trail)
+		return E_FAIL;
+
+	trail->AddPoint(start, end);
+
+	return S_OK;
+}
+void CParticleManager::SetColorByOwner(uint32_t ownerId, const _float4& color)
+{
+	for (auto& [groupTag, particleGroup] : m_Particles)
+	{
+		for (auto& [typeTag, particle] : particleGroup)
+		{
+			if (particle)
+				particle->SetColorByOwner(ownerId, color);
+		}
+	}
 }

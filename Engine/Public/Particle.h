@@ -45,7 +45,8 @@ public:
 	virtual void SetVelocity(const _float3& vel) {}
 	virtual void SetSize(const _float3& size) {}
 	virtual void SetColor(const _float4& color) {}
-
+	virtual void SetEmissive(const _float4& emissvie) {}
+	virtual void SetColorByOwner(uint32_t ownerId, const _float4& color) {}
 	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
 	HRESULT Set_BlendState(BLENDTYPE blendNum);
 	uint32_t Get_BlendState() { return m_iBlendIndex; }

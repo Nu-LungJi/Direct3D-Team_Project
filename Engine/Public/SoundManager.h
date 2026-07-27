@@ -19,6 +19,7 @@ inline constexpr SOUND_ID INVALID_SOUND_ID = 0;
 using SOUND_BUS_ID = StringID;
 inline const SOUND_BUS_ID SOUND_MASTER_BUS_ID{ "MASTER" };
 
+
 enum class SOUND_LOAD_TYPE : uint8_t
 {
 	SAMPLE,
