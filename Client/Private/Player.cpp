@@ -26,6 +26,8 @@
 #include "Player_Attack_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
+#include "Player_AcientAttack_State.h"
+
 #include "Player_Weapon.h"
 NS_USING(Client)
 
@@ -206,6 +208,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ACIENTATTACK_SKILL,
+			CPlayer_AcientAttack_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
@@ -242,6 +250,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACIENTATTACK_SKILL)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_vRawMoveDirection = {};
+		m_fCurrentMoveSpeed = 0.f;
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+		m_pComMoveIntent->ClearMoveIntent();
+		return;
+	}
 
 	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
 	if (!pPlayerCamera)
@@ -543,6 +564,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 		m_fControlHoldTime = 0.f;
 		m_bDashTriggered = false;
+	}
+
+	if (CGameInstance::Get().KeyDown(DIK_X)) {
+		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 }
 
