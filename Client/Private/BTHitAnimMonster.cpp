@@ -32,19 +32,19 @@ HRESULT CBTHitAnimMonster::Initalize(void* pArg)
 
 EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 {
-
 	if (auto pBT = Get_ComBT())
 	{
-		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
-		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
+		auto pAnimator   = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
+		auto pTransform  = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+		auto pMoveIntent =  Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
 		if (m_bStart)
 		{
+			//type 없으면 그냥 넘어가기
 			if (false == HitType())
-				return EVALUATE::FAILED;
+				return m_eDebug = EVALUATE::SUCCESS;
 			m_bStart = false;
 		}
 		
@@ -73,6 +73,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				pMoveIntent->SetMoveIntent(vDirection, m_Value.fSpeed);
 			}
 		}
+		EventFlagToRatio(pAnimator->GetPlayAnimRatio());
 
 		if (m_bLoop || bFinished)
 		{
@@ -116,7 +117,7 @@ void CBTHitAnimMonster::Update_Gui()
 		for (size_t i = 0; i < ETOUI(HITMON::END); ++i)
 		{
 
-			_string Name = _string("Animation : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			_string Name = _string("Animation : ");
 			if (ImGui::Button(Name.c_str()))
 			{
 				m_Value.iAnimIndex = i;
@@ -128,7 +129,7 @@ void CBTHitAnimMonster::Update_Gui()
 			_string AttName = _string("##AttType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
 			if (ImGui::BeginCombo(AttName.c_str(), MagicEnumToStringView(m_HitTable[i].eAttType).data()))
 			{
-				for (uint32_t j = 0; j < ETOUI(ATTMON::END); ++j)
+				for (uint32_t j = 0; j < ETOUI(ATTMON::END) +1; ++j)
 				{
 					_bool	bSelect = m_HitTable[i].eAttType == static_cast<ATTMON>(j);
 					ImGui::PushID(MagicEnumToStringView(static_cast<ATTMON>(j)).data());
@@ -247,7 +248,6 @@ _bool CBTHitAnimMonster::HitType()
 				{
 					m_Value.iAnimIndex = m_iHitAnim[i];
 					return true;
-
 				}
 			}
 		}

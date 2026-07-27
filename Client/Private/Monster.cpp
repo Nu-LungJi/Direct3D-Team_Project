@@ -318,15 +318,15 @@ void CMonster::IsHit()
 	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
-		m_MonTable.eHitType = HITMON::HIT_1;
+		m_MonTable.eHitType = HITMON::ACIO;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_X))
 	{
-		m_MonTable.eHitType = HITMON::HIT_2;
+		m_MonTable.eHitType = HITMON::DEPULSO;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_C))
 	{
-		m_MonTable.eHitType = HITMON::HIT_3;
+		m_MonTable.eHitType = HITMON::DESCENDO;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))
 	{
