@@ -18,6 +18,9 @@ const static float SpecularIntensity = 1.f;
 
 #define MAX_REFLECTION_LOD  2.f
 
+#define SCREENX 1280
+#define SCREENY 720
+
 struct DirectionalLight
 {
     float4 ambient;

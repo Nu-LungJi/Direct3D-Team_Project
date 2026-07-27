@@ -178,6 +178,7 @@ HRESULT CLightObject::RenderShadow(ID3D11DeviceContext* pContext, const E::RENDE
 		uint32_t offsets[] = {
 			0
 		};
+
 		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());

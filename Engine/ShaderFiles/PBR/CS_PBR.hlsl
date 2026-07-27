@@ -22,15 +22,14 @@ TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
 
 RWTexture2D<float4>		OUTPUT : register(u0);
 
-static const float2		ScreenResolution	= { 1280.f, 720.f };
-static const float2		ShadowMapResolution = { 1280.f, 720.f };
+static const float2		ShadowMapResolution		= { 1280.f, 720.f };
 
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.2f;
 
 static const float		EnviromentIntensity		= 1.f;
-static const float		FillLightBrightness = 0.24f;
-static const float		DirectLightBrightness	= 0.55f;
+static const float		FillLightBrightness		= 0.75f;
+static const float		DirectLightBrightness	= 1.0f;
 
 static const float2		PoissonDisk[8] =
 {
@@ -122,7 +121,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
     float2x2 RotationMat = float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
    
     // 주변 ShadowSmoothness 반경까지 Sampling
-    float2 SamplingRange = 1.f / ShadowMapResolution * ShadowSmoothness;
+	float2 SamplingRange = 1.f / float2(SCREENX, SCREENY) * ShadowSmoothness;
     
 	float ShadowFactor = 0.f;
 	
@@ -134,7 +133,7 @@ float Compute_SmoothShadow(DynamicLight _Light, float4 _WorldPos, float2 _TexCoo
         float2 SampleUV = ShadowMapUV + (RotatedOffset * SamplingRange);
 		
 		ShadowFactor += MergeShadowMap(_LightIndex, SampleUV, CurrentPixelDepth);
-        // SampleCmpLevelZero : Texture2D(ShadowMap)의 깊이와 CompareValue(CurrentPixelDepth) 를 비교했을 때 
+        // SampleCmpLevelZero : Texture2D(ShadowMap)의 깊이와 CompareValue(CurrentPixelDepth) 를 비교했을 때
         // CompareValue가 크면 1, 아니면 0 반환.(x값에 결과값 저장)
 		//FinalShadowFactor += FinalShadowMap[_LightIndex].SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
 	}
@@ -230,18 +229,18 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
 	
 	[branch]
-	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return; // 스레드가 해상도 넘어가면 출력X
+	if (ID.x >= SCREENX || ID.y >= (uint) SCREENY) return; // 스레드가 해상도 넘어가면 출력X
 
-    float2	TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
+	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
     float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
-	
+
 	[branch]
     if (Depth >= 1.f)
     {
         OUTPUT[ID.xy] = float4(0.f, 0.f, 1.f, 1.f);
         return;
     }
-
+	
     float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
 
     float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
@@ -331,10 +330,9 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
 	
 	[branch]
-	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
-		return; // 스레드가 해상도 넘어가면 출력X
+	if (ID.x >= SCREENX || ID.y >= (uint) SCREENY) return;
 
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
 	
 	[branch]
@@ -433,11 +431,11 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
 	
 	[branch]
-	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
-		return; // 스레드가 해상도 넘어가면 출력X
+	if (ID.x >= SCREENX || ID.y >= (uint) SCREENY)
+		return;
 
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
-	float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
 	
 	[branch]
 	if (Depth >= 1.f)
@@ -501,10 +499,10 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 	float AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
 	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
-	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity; // Enviroment Light
+	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light
 	
-	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness; // Shadow Face
-	float3 DirectLighting = LightAccumulation * DirectLightBrightness; // Light Face
+	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness;			// Shadow Face
+	float3 DirectLighting = LightAccumulation * DirectLightBrightness;				// Light Face  
 	float3 MinAmbient = Albedo * 0.04f * (1.f - Metallic);
 	
 	float3 FinalColor = EnviromentLight + FillLighting + DirectLighting + BaseEmissive;

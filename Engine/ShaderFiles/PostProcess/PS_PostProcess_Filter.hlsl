@@ -20,8 +20,9 @@ static const float3x3 AGX_OutMatrix = float3x3(
     -0.05886190, 1.15190313, -0.09304123,
     -0.01497570, -0.08150601, 1.09648171
 );
-static const float Min_Luminance = 0.00018442211f;
-static const float Max_Luminance = 16.f;
+
+static const float Min_Luminance = -12.47393f;
+static const float Max_Luminance = 4.026069f;
 
 static const float DistortionIntensity	= 0.f; // 왜곡 강도
 static const float ChromaticIntensity	= 0.f; // 색수차 강도
@@ -112,26 +113,44 @@ float3 ToneMap_ACESFilm(float3 _Color)
 }
 float3 AGXFilmic(float3 _Color)
 {
-    float3 X1 = _Color;
-    float3 X2 = X1 * X1;
-    float3 X3 = X2 * X1;
+    //float3 X1 = _Color;
+    //float3 X2 = X1 * X1;
+    //float3 X3 = X2 * X1;
+	//
+    //return +0.155 * (1.0 - X1) * (1.0 - X1) * (1.0 - X1)
+    //       + 1.019 * 3.0 * X1 * (1.0 - X1) * (1.0 - X1)
+    //       + 1.385 * 3.0 * X2 * (1.0 - X1)
+    //       + 1.000 * X3;
+	float3 X = _Color;
+	float3 X2 = _Color * X;
+	float3 X4 = X2 * X2;
 
-    return +0.155 * (1.0 - X1) * (1.0 - X1) * (1.0 - X1)
-           + 1.019 * 3.0 * X1 * (1.0 - X1) * (1.0 - X1)
-           + 1.385 * 3.0 * X2 * (1.0 - X1)
-           + 1.000 * X3;
+	return 15.5f * X4 * X2 - 40.14f * X4 * X + 31.96f * X4
+         - 6.868f * X2 * X + 0.4298f * X2 + 0.1191f * X - 0.00232f;
 }
 
 float3 ToneMap_AGXFilm(float3 _Color)
 {
-    float3 AGXColor = mul(_Color, AGX_InMatrix);
+    //float3 AGXColor = mul(_Color, AGX_InMatrix);
+	//
+    //AGXColor = clamp(AGXColor, Min_Luminance, Max_Luminance);
+    //float3 LogColor = (log2(AGXColor) - log2(Min_Luminance)) / (log2(Max_Luminance) - log2(Min_Luminance));
+    //
+    //float3 FilmColor = AGXFilmic(LogColor);
+    //
+    //return mul(FilmColor, AGX_OutMatrix);
+	float3 AGXColor = mul(_Color, AGX_InMatrix);
 
-    AGXColor = clamp(AGXColor, Min_Luminance, Max_Luminance);
-    float3 LogColor = (log2(AGXColor) - log2(Min_Luminance)) / (log2(Max_Luminance) - log2(Min_Luminance));
+	AGXColor = clamp(log2(AGXColor), Min_Luminance, Max_Luminance);
+	
+	float MaxEV = log2(Max_Luminance);
+	float MinEV = log2(Min_Luminance);
+	
+	float3 LogColor = (AGXColor - MinEV) / (MaxEV - MinEV);
     
-    float3 FilmColor = AGXFilmic(LogColor);
+	float3 FilmColor = AGXFilmic(LogColor);
     
-    return mul(FilmColor, AGX_OutMatrix);
+	return saturate(mul(FilmColor, AGX_OutMatrix));
 }
 
 struct PS_IN
@@ -155,9 +174,9 @@ PS_OUT PSMain(PS_IN IN)
     float3 FinalColor = ChromaticAberration(DistortedCoord);
     
     // ToneMapping
-     FinalColor = ToneMap_ACESFilm(FinalColor);
+    //FinalColor = ToneMap_ACESFilm(FinalColor);
     //FinalColor = ToneMap_Reinhard(FinalColor);
-    //FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
+    FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
     
     // LUT ColorGrading
     FinalColor = LUT_Filtering(FinalColor);
