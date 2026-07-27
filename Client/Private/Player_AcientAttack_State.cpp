@@ -16,6 +16,12 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	if (!HasValidTarget(*pPlayer))
+	{
+		RequestLocomotion(pStateMachine);
+		return;
+	}
+
 	CacheAnimationIndices(*pPlayer);
 	const auto iSkillIndex = ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING);
 	if (m_AcientCast_Animations[iSkillIndex] < 0 ||
