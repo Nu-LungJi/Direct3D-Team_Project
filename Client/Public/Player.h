@@ -153,6 +153,11 @@ private:
 	_float m_fSprintDirectionResponse{ 4.5f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
+	//[LSY] 테스트 로그니 지우셔도 됩니다.
+#ifdef _DEBUG
+	void UpdateStandingGameObjectDebugLog();
+	std::optional<CHandle> m_hDebugStandingGameObject{};
+#endif
 
 public:
 	static E::UPtr<CPlayer> Create();

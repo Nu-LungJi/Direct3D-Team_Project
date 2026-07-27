@@ -391,7 +391,49 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
+#ifdef _DEBUG
+	UpdateStandingGameObjectDebugLog();
+#endif
+
 }
+
+#ifdef _DEBUG
+void CPlayer::UpdateStandingGameObjectDebugLog()
+{
+	const std::optional<CHandle> hStandingGameObject =
+		m_pComCharacterController->GetStandingGameObjectHandle();
+
+	if (hStandingGameObject != m_hDebugStandingGameObject)
+	{
+		if (hStandingGameObject)
+		{
+			if (const auto* pStandingGameObject =
+				CGameInstance::Get().GetGameObjectByHandle(*hStandingGameObject))
+			{
+				std::string sLog = "[CPlayer][CCT] Standing On: ";
+				const std::string_view sObjectTag = pStandingGameObject->GetObjectTag();
+				sLog.append(sObjectTag.data(), sObjectTag.size());
+				sLog += " (Handle Index: ";
+				sLog += std::to_string(hStandingGameObject->GetIndex());
+				sLog += ", Generation: ";
+				sLog += std::to_string(hStandingGameObject->GetGeneration());
+				sLog += ")\n";
+				DEBUG_LOG_STR(sLog);
+			}
+			else
+			{
+				DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
+			}
+		}
+		else
+		{
+			DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
+		}
+
+		m_hDebugStandingGameObject = hStandingGameObject;
+	}
+}
+#endif
 
 void CPlayer::ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta)
 {
