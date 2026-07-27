@@ -81,7 +81,9 @@ public:
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
 	CHandle GetTargetHandle() const { return m_hAutoTarget; }
+	PLAYER_SKILL_TYPE GetPlayerCurSkill() const { return m_eSkill_Type; }
 
+	void SetPlayerCurSKill(PLAYER_SKILL_TYPE _Skill_Type) { m_eSkill_Type = _Skill_Type; }
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
@@ -160,6 +162,9 @@ private:
 private:
 	CHandle m_hAutoTarget;
 
+	
+private:
+	PLAYER_SKILL_TYPE m_eSkill_Type;
 private:
 	static constexpr _float DASH_HOLD_TIME = 0.35f;
 

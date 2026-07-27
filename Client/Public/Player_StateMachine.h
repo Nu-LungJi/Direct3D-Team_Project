@@ -4,7 +4,6 @@
 #include "StateMachine.h"
 
 NS_BEGIN(Client)
-
 enum class PLAYER_STATE : uint32_t
 {
 	NONE = 0,
@@ -19,6 +18,7 @@ enum class PLAYER_STATE : uint32_t
 	DEAD,
 	END,
 };
+
 
 class CPlayer_StateMachine final : public CStateMachine
 {

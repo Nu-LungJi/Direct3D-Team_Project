@@ -51,6 +51,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 
 	pTarget = CGameInstance::Get().GetGameObjectByHandle(player->GetTargetHandle());
+
 }
 
 void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
