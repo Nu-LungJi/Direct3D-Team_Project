@@ -10,6 +10,14 @@ class CResPixelShader;
 class CResTexture2D;
 class CResVertexShader;
 
+// CTerrain
+// ├─ 전체 지형 원본 정점 / 인덱스 보관
+// ├─ 지형을 여러 CTerrainChunk로 분할
+// ├─ 높이·텍스처 편집 관리
+// ├─ 변경된 청크를 GPU에 반영
+// ├─ 보이는 청크만 선별하여 렌더링
+// └─ Terrain 저장 / 불러오기
+
 class ENGINE_DLL CTerrain final : public CGameObject
 {
 public:
@@ -20,11 +28,16 @@ public:
 		_string heightMapPath{};
 		_string textureGroup{};
 		_string textureTag{};
+		// 청크 한 개가 X/Z 방향으로 가지는 Quad 개수
+		// 150이면 일반 청크는 151 x 151개의 정점을 가진다
 		uint32_t chunkQuadCount = 150;
 		uint32_t vertexCountX = 151;
 		uint32_t vertexCountZ = 151;
+		// 인접한 Terrain 정점 사이의 로컬 공간 간격
 		_float vertexSpacing = 1.f;
+		// Height Map 픽셀값을 실제 Terrain 높이로 변환하는 배율
 		_float heightScale = 0.1f;
+		// 청크별 텍스처 Blend Mask의 가로·세로 해상도
 		uint32_t maskResolution = 256;
 	};
 
@@ -46,14 +59,17 @@ public:
 	const std::vector<uint32_t>& GetIndices() const { return m_Indices; }
 	const std::vector<UPtr<CTerrainChunk>>& GetChunks() const { return m_Chunks; }
 	const std::vector<CTerrainChunk*>& GetVisibleChunks() const { return m_VisibleChunks; }
+
 	uint32_t GetVertexCountX() const { return m_iVertexCountX; }
 	uint32_t GetVertexCountZ() const { return m_iVertexCountZ; }
 	uint32_t GetVisibleChunkCount() const { return static_cast<uint32_t>(m_VisibleChunks.size()); }
 	uint32_t GetChunkQuadCount() const { return m_iChunkQuadCount; }
 	_float GetVertexSpacing() const { return m_fVertexSpacing; }
+
 	_float GetVertexHeight(uint32_t x, uint32_t z) const;
 	bool TryGetLocalHeight(_float localX, _float localZ, _float& outHeight) const;
 	HRESULT SetVertexHeight(uint32_t x, uint32_t z, _float height);
+	HRESULT CommitAllHeights();
 	HRESULT CommitHeightRegion(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 	HRESULT SetTileTexture(uint32_t layer, SPtr<CResTexture2D> texture);
 	SPtr<CResTexture2D> GetTileTexture(uint32_t layer) const;
@@ -84,21 +100,40 @@ private:
 	HRESULT UpdateChunks(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 
 private:
+	// --------------------렌더링----------------------
 	std::array<SPtr<CResTexture2D>, 4> m_pTerrainTextures{};
 	SPtr<CResPixelShader> m_pPixelShader{};
 	SPtr<CResVertexShader> m_pVertexShader{};
 	CComConstantBuffer* m_pCBufferPerObject = nullptr;
+	// 렌더링 중인 청크의 위치 및 마스크 정보를 전달하는 청크 전용 Constant Buffer
 	ComPtr<ID3D11Buffer> m_pChunkCBuffer{};
+	// -----------------------------------------------
+
+	// 전체 Terrain의 X/Z 방향 정점 개수
 	uint32_t m_iVertexCountX = 0;
 	uint32_t m_iVertexCountZ = 0;
+
+	// 청크 한 개가 X/Z 방향으로 가지는 Quad 개수
 	uint32_t m_iChunkQuadCount = 0;
+
+	// 청크별 RGBA Blend Mask 해상도
 	uint32_t m_iMaskResolution = 256;
+
+	// 인접한 정점 사이의 로컬 공간 거리
 	_float m_fVertexSpacing = 1.f;
-	std::vector<VTX_NORMAL_TEX> m_Vertices{};
+
+	// 전체 지형의 원본
+	std::vector<VTX_NORMAL_TEX> m_Vertices{}; // 높이 편집은 이 배열을 먼저 수정한 후 해당 청크에 반영
 	std::vector<uint32_t> m_Indices{};
+
+	// 소유 TerrainChunk
 	std::vector<UPtr<CTerrainChunk>> m_Chunks{};
 	std::vector<CTerrainChunk*> m_VisibleChunks{};
+
+	// 청크 좌표로 빠르게 TerrainChunk검색
 	std::unordered_map<uint64_t, CTerrainChunk*> m_ChunkLookup{};
+
+	// 전체 터레인 감싸는 로컬공간 바운딩박스
 	BoundingBox m_LocalBounds{};
 
 public:
