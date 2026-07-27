@@ -73,8 +73,7 @@ public:
 	HRESULT CommitHeightRegion(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 	HRESULT SetTileTexture(uint32_t layer, SPtr<CResTexture2D> texture);
 	SPtr<CResTexture2D> GetTileTexture(uint32_t layer) const;
-	HRESULT PaintTileLocal(const _float2& center, const _float2& radius,
-		uint32_t layer, _float opacity, _float falloff);
+	HRESULT PaintTileLocal(const _float2& center, const _float2& radius, uint32_t layer, _float opacity, _float falloff);
 	HRESULT AddChunkPositiveX();
 	HRESULT AddChunkPositiveZ();
 	HRESULT AddChunkNegativeX();
