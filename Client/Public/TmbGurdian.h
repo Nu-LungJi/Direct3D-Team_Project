@@ -8,6 +8,8 @@ class CTmbGurdian final : public CMonster
 public:
 	struct TMBGURDIAN_DESC :public  CMonster::MONSTER_DESC
 	{
+		_string WeaponResourceName{};
+		_string WeaponProtoName{};
 	};
 public:
 	DECLARE_DERIVED_TYPE(CTmbGurdian, CMonster)

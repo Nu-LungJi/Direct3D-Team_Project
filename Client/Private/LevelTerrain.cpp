@@ -10,7 +10,7 @@
 #include "Particle.h"
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "Client_Defines.h"
 #include "OilBarrel.h"
 

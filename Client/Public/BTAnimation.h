@@ -14,8 +14,8 @@ private:
 	~CBTAnimation() override;
 	// CBTActionNode을(를) 통해 상속됨
 
-	HRESULT	InitializePrototype(void* pArg = nullptr) override;
-	HRESULT Initalize(void* pArg)override;
+	HRESULT					InitializePrototype(void* pArg = nullptr) override;
+	HRESULT					Initalize(void* pArg)override;
 public:
 	EVALUATE				Evaluate(_float fTimeDelta) override;
 	virtual void			Update_Gui() override;
@@ -23,7 +23,7 @@ public:
 	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
 private:
-	uint32_t			m_iEndFlag{}, m_iStartFlag{};
+	
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

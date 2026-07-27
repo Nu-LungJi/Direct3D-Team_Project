@@ -6,7 +6,7 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
 #include "ComPxCharacterController.h"
@@ -483,9 +483,24 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
+	CMon_Weapon::WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.ParentHandle = GetHandle();
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	WeaponDesc.WeaponName = MonDesc->WeaponResourceName; 
+	WeaponDesc.LevelTag = MonDesc->LevelTag;
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon To TmbGurDian");
+		return E_FAIL;
+	}
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
+
+	m_Effects[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
+	m_Effects[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
 
 	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
 	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
@@ -585,15 +600,8 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
-	//if (m_iHp <= 0)
-	//{
-	//	for (auto& iter : m_DeadMeshes)
-	//	{
-	//		if(nullptr != iter)
-	//			iter->PriorityUpdate(fTimeDelta);
-	//	}
-	//}else
-		__super::PriorityUpdate(fTimeDelta);
+
+	__super::PriorityUpdate(fTimeDelta);
 
 }
 
@@ -604,19 +612,7 @@ void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
 {
-	//if (m_iHp <= 0)
-	//{
-	//	for (auto& iter : m_DeadMeshes)
-	//	{
-	//		if (nullptr != iter)
-	//			iter->Update(fTimeDelta);
-	//	}
-	//}
-	//else
-	__super::Update(fTimeDelta);
-
-	if (m_pBeHavior->Check_Flag(
-		ETOUI(CBTRoot::BTFLAG::DEBRIS)))
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 	{
 		ActivateDeadDebrisPhysics();
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS), FLAGTYPE::DEL);
@@ -625,18 +621,8 @@ void CTmbGurdian::Update(E::_float fTimeDelta)
 
 void CTmbGurdian::LateUpdate(E::_float fTimeDelta)
 {
-	//if (m_iHp <= 0)
-	//{
-	//	for (auto& iter : m_DeadMeshes)
-	//	{
-	//		if (nullptr != iter)
-	//			iter->LateUpdate(fTimeDelta);
-	//	}
-	//}
-	//else
 	if (m_bDeadDebrisPhysicsActivated)
 		return;
-
 	__super::LateUpdate(fTimeDelta);
 }
 

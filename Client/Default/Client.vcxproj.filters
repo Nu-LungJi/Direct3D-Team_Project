@@ -327,7 +327,7 @@
     <ClInclude Include="..\Public\Monster.h">
       <Filter>GameObject\Monster</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Weapon.h">
+    <ClInclude Include="..\Public\Mon_Weapon.h">
       <Filter>GameObject\Monster</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\BTDecHp.h">
@@ -486,7 +486,7 @@
     <ClCompile Include="..\Private\Player_Skill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Weapon.cpp">
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Monster.cpp">
