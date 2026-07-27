@@ -88,7 +88,7 @@
     <Filter Include="GameObject\Player\Player_Weapon">
       <UniqueIdentifier>{74741dba-6811-472f-847e-f939b6540671}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Player\StateMachine\State\Player_Skill_State">
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase">
       <UniqueIdentifier>{330acd8e-220a-49fc-bda2-22cbe84370eb}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\CharlesRookwood">
@@ -168,6 +168,12 @@
     </Filter>
     <Filter Include="GameObject\Terrain\OilBarrel">
       <UniqueIdentifier>{67dea227-ae71-4a01-9d85-b263e2638e22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State">
+      <UniqueIdentifier>{11e3cf66-d2a5-4428-9b71-48aa0954b883}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_">
+      <UniqueIdentifier>{113ba92c-ee4c-4633-a05d-1bd05e0d0412}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -258,8 +264,8 @@
     <ClInclude Include="..\Public\Player_Weapon.h">
       <Filter>GameObject\Player\Player_Weapon</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Player_Skill_State.h">
-      <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
+    <ClInclude Include="..\Public\Player_SkillStateBase.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\BTAnimation.h">
       <Filter>GameObject\AI\AnimRoot\Anim</Filter>
@@ -384,6 +390,9 @@
     <ClInclude Include="..\public\TriggerCRW_BridgeBring.h">
       <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_DashSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\TriggerCRW_ToBoss.h">
       <Filter>GameObject\CharlesRookwood\Trigger\ToBoss</Filter>
     </ClInclude>
@@ -483,8 +492,8 @@
     <ClCompile Include="..\Private\Player_Weapon.cpp">
       <Filter>GameObject\Player\Player_Weapon</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Player_Skill_State.cpp">
-      <Filter>GameObject\Player\StateMachine\State\Player_Skill_State</Filter>
+    <ClCompile Include="..\Private\Player_SkillStateBase.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster</Filter>
@@ -620,6 +629,9 @@
     </ClCompile>
     <ClCompile Include="..\private\OilBarrel.cpp">
       <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

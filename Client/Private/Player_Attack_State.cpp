@@ -49,6 +49,9 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 
 	if (!PlayDirectionalAttack(*player, false))
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+
+	pTarget = CGameInstance::Get().GetGameObjectByHandle(player->GetTargetHandle());
+
 }
 
 void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
@@ -93,7 +96,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			fTimeDelta);
 	}
 
-	if (!m_bPlayingHeavy &&fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
+	if (fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -143,7 +146,24 @@ CPlayer_Attack_State::ResolveAttackDirection(const CPlayer& player) const
 
 	_vector vPlayerLook = XMVectorSetY(player.GetTransform().GetState(STATE::LOOK),0.f);
 	_vector vPlayerRight = XMVectorSetY(player.GetTransform().GetState(STATE::RIGHT),0.f);
-	_vector vAttackDirection = XMVectorSetY(camera->GetTransform().GetState(STATE::LOOK),0.f);
+	//_vector vAttackDirection = XMVectorSetY(camera->GetTransform().GetState(STATE::LOOK),0.f);
+
+	_vector vAttackDirection{};
+
+	if (pTarget)
+	{
+		const _vector vPlayerPosition = player.GetTransform().GetState(STATE::POSITION);
+
+		const _vector vTargetPosition = pTarget->GetTransform().GetState(STATE::POSITION);
+
+		// 타겟 방향
+		vAttackDirection = XMVectorSetY(vTargetPosition - vPlayerPosition, 0.f);
+	}
+	else
+	{
+		// 타겟이 없거나 제거됐으면 카메라 방향
+		vAttackDirection = XMVectorSetY(camera->GetTransform().GetState(STATE::LOOK),0.f);
+	}
 
 	constexpr _float EPSILON =std::numeric_limits<_float>::epsilon();
 	if (XMVectorGetX(XMVector3LengthSq(vPlayerLook)) <= EPSILON ||
@@ -230,6 +250,7 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
 	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);
+	animator->GetCurAnimState().fSpeed = 1.3f;
 	return true;
 }
 

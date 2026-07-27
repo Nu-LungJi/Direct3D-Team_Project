@@ -44,7 +44,7 @@ private:
 	void PlayLand(CPlayer& player);
 
 
-public:
+private:
 	static constexpr size_t JUMP_STATE_COUNT = static_cast<size_t>(JUMP_STATE::END);
 
 private:
