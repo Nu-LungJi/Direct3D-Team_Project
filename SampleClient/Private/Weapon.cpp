@@ -37,12 +37,7 @@ void CWeapon::UpdateGUI()
 	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
 	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
 	//}
-	if (ImGui::Button("SmokeColor")) {
-		auto a = CGameInstance::Get().GetParticle("PlayerDashSmoke", "PlayerDashSmoke");
-		a->SetColor(weaponColor);
-		a->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
-
-	}
+	
 	ImGui::DragFloat("Distance", &m_fDistanceOffeset);
 
 	ImGui::End();
@@ -99,12 +94,7 @@ HRESULT CWeapon::Initialize(void* pArg)
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	//test = CGameInstance::Get().Parse_Command("PlayerDash.json");
-	auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 1.f, 1.f, 1.f));
-	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(150 /255.f, 247 / 255.f, 355 / 255.f, 0.3f));
-	auto b = CGameInstance::Get().GetParticle("PlayerDashTrail2_CPU", "PlayerDashTrail2_CPU");
-	static_cast<CTrail_CPU*>(b)->SetColor(_float4(1.0f, 1.f, 1.f, 1.f));
-	static_cast<CTrail_CPU*>(b)->SetEmissive(_float4(150 / 255.f, 247 / 255.f, 355 / 255.f, 0.3f));
+	
 	return S_OK;
 }
 

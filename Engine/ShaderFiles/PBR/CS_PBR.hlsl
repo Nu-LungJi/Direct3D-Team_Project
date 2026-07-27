@@ -30,7 +30,7 @@ static const float		ShadowBrightness		= 0.2f;
 
 static const float		EnviromentIntensity		= 1.f;
 static const float		FillLightBrightness = 0.24f;
-static const float		DirectLightBrightness	= 0.55f;
+static const float		DirectLightBrightness	= 1.55f;
 
 static const float2		PoissonDisk[8] =
 {
