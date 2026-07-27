@@ -32,8 +32,8 @@ private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 	_bool				m_bRatioInvert{ false };
 
-	HITTABLE			m_HitTable[ETOUI(HITMON::END)];
-	int32_t				m_iHitAnim[ETOUI(HITMON::END)];
+	HITTABLE			m_HitTable[ETOUI(PLAYER_SKILL_TYPE::END)];
+	int32_t				m_iHitAnim[ETOUI(PLAYER_SKILL_TYPE::END)];
 public:
 	static UPtr<CBTHitAnimMonster> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

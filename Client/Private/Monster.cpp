@@ -318,19 +318,19 @@ void CMonster::IsHit()
 	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
-		m_MonTable.eHitType = HITMON::ACIO;
+		m_MonTable.eHitType = PLAYER_SKILL_TYPE::ACCIO;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_X))
 	{
-		m_MonTable.eHitType = HITMON::DEPULSO;
+		m_MonTable.eHitType = PLAYER_SKILL_TYPE::DEPULSO;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_C))
 	{
-		m_MonTable.eHitType = HITMON::DESCENDO;
+		m_MonTable.eHitType = PLAYER_SKILL_TYPE::DESCENDO;
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))
 	{
-		m_MonTable.eHitType = HITMON::END;
+		m_MonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
 	}
 
 }
@@ -343,7 +343,7 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	}
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
-		m_MonTable.eHitType = HITMON::END;
+		m_MonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
 	}
 	if (m_iHp <= 0.f)
 	{

@@ -17,7 +17,7 @@ class CComCharacterMoveIntent;
 class CComCharacterMotor;
 NS_END
 
-
+ 
 
 NS_BEGIN(Client)
 typedef struct HitTable
@@ -28,7 +28,7 @@ typedef struct HitTable
 	}
 
 	ATTMON			eAttType{ ATTMON::END };
-	HITMON			eHitType{ HITMON::END };
+	PLAYER_SKILL_TYPE			eHitType{ PLAYER_SKILL_TYPE::DEFAULT };
 }HITTABLE;
 class CMonster : public CAnimationObject
 {

@@ -114,7 +114,7 @@ void CBTHitAnimMonster::Update_Gui()
 	
 	if (!m_bPopup)
 	{
-		for (size_t i = 0; i < ETOUI(HITMON::END); ++i)
+		for (size_t i = 0; i < ETOUI((PLAYER_SKILL_TYPE::END)); ++i)
 		{
 
 			_string Name = _string("Animation : ");
@@ -126,7 +126,7 @@ void CBTHitAnimMonster::Update_Gui()
 			}
 			ImGui::SameLine();
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,0.f,0.f,1.f });
-			_string AttName = _string("##AttType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			_string AttName = _string("##AttType : ") + MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(i)).data();
 			if (ImGui::BeginCombo(AttName.c_str(), MagicEnumToStringView(m_HitTable[i].eAttType).data()))
 			{
 				for (uint32_t j = 0; j < ETOUI(ATTMON::END) +1; ++j)
@@ -147,16 +147,16 @@ void CBTHitAnimMonster::Update_Gui()
 			}
 			ImGui::SameLine();
 
-			_string HittName = _string("##HitType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
+			_string HittName = _string("##HitType : ") + MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(i)).data();
 			if (ImGui::BeginCombo(HittName.c_str(), MagicEnumToStringView(m_HitTable[i].eHitType).data()))
 			{
-				for (uint32_t j = 0; j < ETOUI(HITMON::END); ++j)
+				for (uint32_t j = 0; j < ETOUI(PLAYER_SKILL_TYPE::END); ++j)
 				{
-					_bool	bSelect = m_HitTable[i].eHitType == static_cast<HITMON>(j);
-					ImGui::PushID(MagicEnumToStringView(static_cast<HITMON>(j)).data());
-					if (ImGui::Selectable(MagicEnumToStringView(static_cast<HITMON>(j)).data(), bSelect))
+					_bool	bSelect = m_HitTable[i].eHitType == static_cast<PLAYER_SKILL_TYPE>(j);
+					ImGui::PushID(MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(j)).data());
+					if (ImGui::Selectable(MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(j)).data(), bSelect))
 					{
-						m_HitTable[i].eHitType = static_cast<HITMON>(j);
+						m_HitTable[i].eHitType = static_cast<PLAYER_SKILL_TYPE>(j);
 					}
 					if (bSelect)
 						ImGui::SetItemDefaultFocus();
@@ -172,7 +172,7 @@ void CBTHitAnimMonster::Update_Gui()
 	if (m_bPopup && m_Value.iAnimIndex != -1)
 	{
 		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
-		ImGui::Text(MagicEnumToStringView(static_cast<HITMON>(m_Value.iAnimIndex)).data());
+		ImGui::Text(MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(m_Value.iAnimIndex)).data());
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,1.f,1.f,1.f });
 		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 			m_bPopup = false;
@@ -199,7 +199,7 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 
-	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+	for (uint32_t i = 0; i < ETOUI(PLAYER_SKILL_TYPE::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
 		_string HitName = "HITType" + std::to_string(i);
@@ -219,7 +219,7 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 
-	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+	for (uint32_t i = 0; i < ETOUI(PLAYER_SKILL_TYPE::END); ++i)
 	{
 		_string Name = "AnimIndex" + std::to_string(i);
 		_string HitName = "HITType" + std::to_string(i);
@@ -242,7 +242,7 @@ _bool CBTHitAnimMonster::HitType()
 		if (auto pSrc = pBT->GetGameObject())
 		{
 			
-			for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+			for (uint32_t i = 0; i < ETOUI(PLAYER_SKILL_TYPE::END); ++i)
 			{
 				if (m_HitTable[i] == static_cast<CMonster*>(pSrc)->Get_HitTable())
 				{

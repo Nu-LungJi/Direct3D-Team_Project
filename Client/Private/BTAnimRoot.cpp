@@ -261,12 +261,9 @@ void CBTAnimRoot::Active_Skill()
 		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)))
 			return;
 
-		if (m_eSkillType != ATTMON::END)
+		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
-			{
-				pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
-			}
+			pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
 		}
 	}
 }
