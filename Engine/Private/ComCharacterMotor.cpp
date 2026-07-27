@@ -57,6 +57,7 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 	_float3 vWarpPosition{};
 	if (m_pMoveIntent->ConsumeWarpRequest(vWarpPosition))
 	{
+		m_pMoveIntent->ClearExternalDisplacement();
 		m_pCharacterController->SetPosition(vWarpPosition);
 		m_vVelocity = {};
 		m_bGrounded = false;
@@ -91,10 +92,18 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 	if (m_bUseGravity)
 		m_vVelocity.y += m_fGravity * fFixedTimeDelta;
 
-	const _float3 vDisplacement{
+	_float3 vDisplacement{
 		m_vVelocity.x * fFixedTimeDelta,
 		m_vVelocity.y * fFixedTimeDelta,
 		m_vVelocity.z * fFixedTimeDelta };
+
+	_float3 vExternalDisplacement{};
+	if (m_pMoveIntent->ConsumeExternalDisplacement(vExternalDisplacement))
+	{
+		vDisplacement.x += vExternalDisplacement.x;
+		vDisplacement.y += vExternalDisplacement.y;
+		vDisplacement.z += vExternalDisplacement.z;
+	}
 
 	m_eLastCollisionFlag = m_pCharacterController->Move(
 		vDisplacement,

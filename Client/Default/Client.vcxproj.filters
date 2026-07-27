@@ -246,6 +246,9 @@
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
       <Filter>GameObject\Player\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h">
+      <Filter>GameObject\Player\StateMachine</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_StateMachine.h">
       <Filter>GameObject\Player\StateMachine</Filter>
     </ClInclude>

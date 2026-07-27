@@ -71,6 +71,7 @@ private:
 	_bool m_bAttackQueued{};
 	_bool m_bAnimationIndicesCached{};
 	_bool m_bPlayingHeavy{};
+	_float m_fPreviousAnimRatio{};
 
 private:
 	CGameObject* pTarget = nullptr;

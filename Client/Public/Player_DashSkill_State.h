@@ -32,13 +32,15 @@ private:
 	};
 
 	static constexpr _float CAST_START_RATIO = 0.f;
-	static constexpr _float DASH_END_RATIO = 0.15f;
+	static constexpr _float DASH_END_RATIO = 0.25f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.20f;
-	static constexpr _float DASH_SPEED = 80.f;
+	static constexpr _float DASH_SPEED = 120.f;
+	static constexpr _float DASH_DURATION = 0.25f;
 
 	PHASE m_ePhase = PHASE::CAST;
 	_float m_fAnimRatio{};
 	_float m_fScaleTime{};
+	_float m_fDashElapsed{};
 	_float3 m_vDashDirection{};
 
 	int32_t m_iDashAnimIndex{ -1 };

@@ -8,6 +8,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
 #include "CameraObject.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
 
@@ -29,6 +30,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_iComboCount = 1;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_fPreviousAnimRatio = 0.f;
 
 	auto* animator = player->GetAnimator();
 	if (!animator)
@@ -66,6 +68,7 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_iComboCount = 0;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_fPreviousAnimRatio = 0.f;
 }
 
 void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -87,13 +90,27 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 
 
-	const _float fAnimRatio = animator->GetPlayAnimRatio();
+	const _float fPreviousAnimRatio = m_fPreviousAnimRatio;
+	const _float fAnimRatio =
+		PlayerAnimationRatioGuard::Sanitize(
+			animator->GetPlayAnimRatio());
 
-	if (!m_bPlayingHeavy &&fAnimRatio >= LIGHT_FORWARD_MOVE_START_RATIO &&fAnimRatio <= LIGHT_FORWARD_MOVE_END_RATIO)
+	if (!m_bPlayingHeavy)
 	{
-		player->ApplyAttackForwardMovement(
-			LIGHT_FORWARD_MOVE_SPEED,
-			fTimeDelta);
+		const _float fMoveTime =
+			PlayerAnimationRatioGuard::CalculateActiveDeltaTime(
+				fPreviousAnimRatio,
+				fAnimRatio,
+				LIGHT_FORWARD_MOVE_START_RATIO,
+				LIGHT_FORWARD_MOVE_END_RATIO,
+				fTimeDelta);
+
+		if (fMoveTime > 0.f)
+		{
+			player->ApplyAttackForwardMovement(
+				LIGHT_FORWARD_MOVE_SPEED,
+				fMoveTime);
+		}
 	}
 
 	if (fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
@@ -103,12 +120,19 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 	}
 
 
-	const _bool bInComboInputWindow = fAnimRatio >= COMBO_INPUT_START_RATIO && fAnimRatio <= COMBO_INPUT_END_RATIO;
+	const _bool bInComboInputWindow =
+		PlayerAnimationRatioGuard::Intersects(
+			fPreviousAnimRatio,
+			fAnimRatio,
+			COMBO_INPUT_START_RATIO,
+			COMBO_INPUT_END_RATIO);
 
 	if (bInComboInputWindow &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
+
+	m_fPreviousAnimRatio = fAnimRatio;
 	 
 	if (m_bAttackQueued && fAnimRatio >= COMBO_LINK_RATIO)
 	{
@@ -247,6 +271,7 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 		return false;
 
 	m_bPlayingHeavy = bHeavy;
+	m_fPreviousAnimRatio = 0.f;
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
 	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);
