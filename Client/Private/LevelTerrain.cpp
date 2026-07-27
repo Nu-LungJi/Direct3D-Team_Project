@@ -156,9 +156,7 @@ HRESULT CLevelTerrain::Initialize()
 
 void CLevelTerrain::Update(E::_float fTimeDelta)
 {
-	//Picking();
-
-	
+	Picking();
 }
 
 HRESULT CLevelTerrain::Render()
@@ -168,7 +166,7 @@ HRESULT CLevelTerrain::Render()
 
 void CLevelTerrain::UpdateGUI()
 {
-	//ImGui::Begin("Craeture Editor");
+	ImGui::Begin("Terrain");
 	//Resources();
 	//Objects();
 	//BeHaviors();
@@ -177,7 +175,7 @@ void CLevelTerrain::UpdateGUI()
 	//ImGui::Text("Select Object : %s ", m_SelectObjecteTag.c_str());
 	//ImGui::Text("Select Behavior : %s ", m_SelectFileName.c_str());
 	//m_fPos.y = 0.f;
-	//ImGui::Text("X :%2.f ", m_fPos.x); ImGui::SameLine(); ImGui::Text("Y : %2.f ", m_fPos.y); ImGui::SameLine(); ImGui::Text("Z : %2.f", m_fPos.z);
+	ImGui::Text("X :%2.f ", m_fPos.x); ImGui::SameLine(); ImGui::Text("Y : %2.f ", m_fPos.y); ImGui::SameLine(); ImGui::Text("Z : %2.f", m_fPos.z);
 
 	//if (ImGui::Button("Activate Med Debris Physics"))
 	//{
@@ -251,55 +249,75 @@ void CLevelTerrain::UpdateGUI()
 	//	ImGui::TreePop();
 	//}
 
-	//ImGui::End();
+	ImGui::End();
 
 }
 
 void CLevelTerrain::Picking()
 {
-	POINT tMouse{};
-	GetCursorPos(&tMouse);
-	ScreenToClient(g_hWnd, &tMouse);
-	_float4x4 CameProj = {};
-	_matrix   CamView = XMMatrixIdentity();
-	XMStoreFloat4x4(&CameProj, XMMatrixIdentity());
-	if (auto pCam = CGameInstance::Get().GetActiveCamera())
+	//POINT tMouse{};
+	//GetCursorPos(&tMouse);
+	//ScreenToClient(g_hWnd, &tMouse);
+	//_float4x4 CameProj = {};
+	//_matrix   CamView = XMMatrixIdentity();
+	//XMStoreFloat4x4(&CameProj, XMMatrixIdentity());
+	//if (auto pCam = CGameInstance::Get().GetActiveCamera())
+	//{
+	//	XMStoreFloat4x4(&CameProj, pCam->GetProj());
+	//	CamView = pCam->GetView();
+	//}
+
+	//_float2 ViewPort = CGameInstance::Get().GetClientScreenSize();
+	//_float rayX = (2.f * tMouse.x / ViewPort.x - 1.f) / CameProj(0, 0);
+	//_float rayY = (-2.f * tMouse.y / ViewPort.y + 1.f) / CameProj(1, 1);
+
+	////뷰포트에서의 광선 정의9
+	//_vector rayOrigin = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+	//_vector rayDir = XMVectorSet(rayX, rayY, 1.f, 0.f);
+
+	////월드 좌표로 변환
+	//_matrix InverseView = XMMatrixInverse(nullptr, CamView);
+
+	//rayOrigin = XMVector3TransformCoord(rayOrigin, InverseView);
+	//rayDir = XMVector3Normalize(XMVector3TransformNormal(rayDir, InverseView));
+
+	//_float fMax = { FLT_MAX };
+	//_float tDis = 0;
+	//_float t1Dis = 0;
+	//_vector TriFirst[3]{ XMVectorSet(0,0,0,0),
+	//					XMVectorSet(0,0,(129 * 129) * 6 ,0),
+	//					XMVectorSet((129 * 129) * 6 ,0,(129 * 129) * 6,0) };
+
+	//_vector TriSecond[3]{ XMVectorSet((129 * 129) * 6,0,(129 * 129) * 6 ,0),
+	//					  XMVectorSet((129 * 129) * 6,0,0,0),
+	//					  XMVectorSet(0,0,0,0) };
+
+	//if (TriangleTests::Intersects(rayOrigin, rayDir, TriFirst[0], TriFirst[1], TriFirst[2], tDis))
+	//	XMStoreFloat3(&m_fPos, rayOrigin + rayDir * tDis);
+
+	//if (TriangleTests::Intersects(rayOrigin, rayDir, TriSecond[0], TriSecond[1], TriSecond[2], t1Dis))
+	//	XMStoreFloat3(&m_fPos, rayOrigin + rayDir * tDis);
+
+	if (auto pObj = CGameInstance::Get().GetActiveCamera())
 	{
-		XMStoreFloat4x4(&CameProj, pCam->GetProj());
-		CamView = pCam->GetView();
+		const _float2 vMousePosition = CGameInstance::Get().GetMousePos();
+		const _float2 vViewportSize = CGameInstance::Get().GetClientScreenSize();
+		const auto [ori, dir] =
+			pObj->GetRayFromScreenPixel(vMousePosition, vViewportSize);
+		PX_RAYCAST_RESULT rayResult{};
+		if (CGameInstance::Get().GetPhysXManager()
+			->RayCast(
+				{
+					.vOrigin = ori,
+					.vDirection = dir,
+					.fMaxDistance = 1000.f,
+					.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)}
+				}
+				, rayResult))
+		{
+			m_fPos = rayResult.vHitpos;
+		}
 	}
-
-	_float2 ViewPort = CGameInstance::Get().GetClientScreenSize();
-	_float rayX = (2.f * tMouse.x / ViewPort.x - 1.f) / CameProj(0, 0);
-	_float rayY = (-2.f * tMouse.y / ViewPort.y + 1.f) / CameProj(1, 1);
-
-	//뷰포트에서의 광선 정의9
-	_vector rayOrigin = XMVectorSet(0.f, 0.f, 0.f, 1.f);
-	_vector rayDir = XMVectorSet(rayX, rayY, 1.f, 0.f);
-
-	//월드 좌표로 변환
-	_matrix InverseView = XMMatrixInverse(nullptr, CamView);
-
-	rayOrigin = XMVector3TransformCoord(rayOrigin, InverseView);
-	rayDir = XMVector3Normalize(XMVector3TransformNormal(rayDir, InverseView));
-
-	_float fMax = { FLT_MAX };
-	_float tDis = 0;
-	_float t1Dis = 0;
-	_vector TriFirst[3]{ XMVectorSet(0,0,0,0),
-						XMVectorSet(0,0,(129 * 129) * 6 ,0),
-						XMVectorSet((129 * 129) * 6 ,0,(129 * 129) * 6,0) };
-
-	_vector TriSecond[3]{ XMVectorSet((129 * 129) * 6,0,(129 * 129) * 6 ,0),
-						  XMVectorSet((129 * 129) * 6,0,0,0),
-						  XMVectorSet(0,0,0,0) };
-
-	if (TriangleTests::Intersects(rayOrigin, rayDir, TriFirst[0], TriFirst[1], TriFirst[2], tDis))
-		XMStoreFloat3(&m_fPos, rayOrigin + rayDir * tDis);
-
-	if (TriangleTests::Intersects(rayOrigin, rayDir, TriSecond[0], TriSecond[1], TriSecond[2], t1Dis))
-		XMStoreFloat3(&m_fPos, rayOrigin + rayDir * tDis);
-
 }
 void CLevelTerrain::Resources()
 {
