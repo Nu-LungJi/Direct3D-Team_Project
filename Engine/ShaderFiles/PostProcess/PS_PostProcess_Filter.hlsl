@@ -101,6 +101,7 @@ float3 ToneMap_Reinhard(float3 _Color)
 {
     return _Color.xyz / (_Color.xyz + 1.f);
 }
+
 float3 ToneMap_ACESFilm(float3 _Color)
 {
     float a = 2.51f;
@@ -111,79 +112,106 @@ float3 ToneMap_ACESFilm(float3 _Color)
     
     return saturate((_Color * (a * _Color + b)) / (_Color * (c * _Color + d) + e));
 }
+
+float3 ToneMap_Uchimura(float3 _Color)
+{
+	const float DisplayMaxBrightness = 1.f;
+	const float Contrast = 1.f;
+	const float LinearAreaStart = 0.22f;
+	const float LinearAreaLength = 0.44f;
+	const float BlackConstrast = 1.33f;
+	const float BlackLift = 0.f;
+	
+	float3 Color = max(0.f, _Color);
+	
+	float	l0 = ((DisplayMaxBrightness - LinearAreaStart) * LinearAreaLength) / Contrast;
+	float	L0 = LinearAreaStart - LinearAreaStart / Contrast;
+	float	L1 = LinearAreaStart + (1.f - LinearAreaStart) / Contrast;
+	float	S0 = LinearAreaStart + l0;
+	float	S1 = LinearAreaStart + Contrast * l0;
+	float	C2 = (Contrast * DisplayMaxBrightness) / (DisplayMaxBrightness - S1);
+	float	CP = -C2 / DisplayMaxBrightness;
+
+	float3	w0 = 1.f - smoothstep(0.f, LinearAreaStart, Color);
+	float3	w2 = step(LinearAreaStart + l0, Color);
+	float3	w1 = 1.f - w0 - w2;
+
+	float3	T = LinearAreaStart * pow(Color / LinearAreaStart, BlackConstrast) + BlackLift;
+	float3	L = LinearAreaStart + Contrast * (Color - LinearAreaStart);
+	float3	S = DisplayMaxBrightness - (DisplayMaxBrightness - S1) * exp(CP * (Color - S0));
+
+	return saturate(T * w0 + L * w1 + S * w2);
+}
+
+float3 ToneMap_UnCharted(float3 _Color)
+{	
+	float A = 0.22f;
+	float B = 0.30f;
+	float C = 0.10f;
+	float D = 0.20f;
+	float E = 0.01f;
+	float F = 0.30f;
+
+	return ((_Color * (A * _Color + C * B) + D * E) / (_Color * (A * _Color + B) + D * F)) - (E / F);
+}
+
 float3 AGXFilmic(float3 _Color)
 {
-    //float3 X1 = _Color;
-    //float3 X2 = X1 * X1;
-    //float3 X3 = X2 * X1;
-	//
-    //return +0.155 * (1.0 - X1) * (1.0 - X1) * (1.0 - X1)
-    //       + 1.019 * 3.0 * X1 * (1.0 - X1) * (1.0 - X1)
-    //       + 1.385 * 3.0 * X2 * (1.0 - X1)
-    //       + 1.000 * X3;
-	float3 X = _Color;
-	float3 X2 = _Color * X;
-	float3 X4 = X2 * X2;
+	float3 x = _Color;
+	float3 x2 = x * x;
+	float3 x4 = x2 * x2;
 
-	return 15.5f * X4 * X2 - 40.14f * X4 * X + 31.96f * X4
-         - 6.868f * X2 * X + 0.4298f * X2 + 0.1191f * X - 0.00232f;
+	float3 result = 15.5f * x4 * x2 - 40.14f * x4 * x + 31.96f * x4
+        - 6.868f * x2 * x + 0.4298f * x2 + 0.1191f * x - 0.00232f;
+
+	return saturate(result);
 }
 
 float3 ToneMap_AGXFilm(float3 _Color)
 {
-    //float3 AGXColor = mul(_Color, AGX_InMatrix);
-	//
-    //AGXColor = clamp(AGXColor, Min_Luminance, Max_Luminance);
-    //float3 LogColor = (log2(AGXColor) - log2(Min_Luminance)) / (log2(Max_Luminance) - log2(Min_Luminance));
-    //
-    //float3 FilmColor = AGXFilmic(LogColor);
-    //
-    //return mul(FilmColor, AGX_OutMatrix);
 	float3 AGXColor = mul(_Color, AGX_InMatrix);
-
-	AGXColor = clamp(log2(AGXColor), Min_Luminance, Max_Luminance);
 	
 	float MaxEV = log2(Max_Luminance);
 	float MinEV = log2(Min_Luminance);
 	
-	float3 LogColor = (AGXColor - MinEV) / (MaxEV - MinEV);
-    
+	AGXColor = clamp(AGXColor, Min_Luminance, Max_Luminance);\
+	
+	float3 LogColor = (log2(AGXColor) - MinEV) / (MaxEV - MinEV);
+	LogColor = saturate(LogColor);
+	
 	float3 FilmColor = AGXFilmic(LogColor);
-    
+	FilmColor = saturate(FilmColor);
+	
 	return saturate(mul(FilmColor, AGX_OutMatrix));
 }
 
-struct PS_IN
+float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
 {
-    float4 Position : SV_POSITION;
-    float2 TexCoord : TEXCOORD0;
-};
-struct PS_OUT
-{
-    vector Diffuse : SV_TARGET0;
-};
-
-PS_OUT PSMain(PS_IN IN)
-{
-    PS_OUT OUT;
-    
     // UV Distortion
-    float2 DistortedCoord = Distortion(IN.TexCoord);
+    float2 DistortedCoord = Distortion(TexCoord);
     
     // Chromatic Aberration
     float3 FinalColor = ChromaticAberration(DistortedCoord);
     
     // ToneMapping
-    //FinalColor = ToneMap_ACESFilm(FinalColor);
+    FinalColor = ToneMap_ACESFilm(FinalColor);
     //FinalColor = ToneMap_Reinhard(FinalColor);
-    FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
+    //FinalColor = ToneMap_Uchimura(FinalColor);
+
+    //FinalColor = ToneMap_UnCharted(FinalColor * 2.f);
+	//float		W = 11.2f;
+	//float3	WhiteScale = 1.f / ToneMap_UnCharted(float3(W, W, W));
+	//FinalColor = FinalColor * WhiteScale;
+	
+    //FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
     
     // LUT ColorGrading
     FinalColor = LUT_Filtering(FinalColor);
     
     // Vignette
-    FinalColor = Vignetting(FinalColor, IN.TexCoord);
-    OUT.Diffuse = float4(pow(FinalColor, 1.f / 2.2f), 1.f);
-    
-    return OUT;
+    FinalColor = Vignetting(FinalColor, TexCoord);
+	
+	FinalColor = saturate(FinalColor);
+	// Gamma Correction
+	return float4(pow(FinalColor, 1.f / 2.2f), 1.f);
 }
