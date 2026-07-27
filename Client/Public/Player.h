@@ -80,6 +80,7 @@ public:
 	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
+	CHandle GetTargetHandle() const { return m_hAutoTarget; }
 
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
@@ -95,6 +96,7 @@ public:
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
+	
 
 private:
 	CComModelInstance* m_pComModelInstance{};
@@ -155,6 +157,8 @@ private:
 	_float m_fSprintDirectionResponse{ 4.5f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
+private:
+	CHandle m_hAutoTarget;
 
 private:
 	static constexpr _float DASH_HOLD_TIME = 0.35f;

@@ -371,72 +371,135 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
 	}
-	if (m_pStateMachine && CGameInstance::Get().MousePressing	(MOUSEKEYSTATE::RB))
+	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
 	{
-		//CGameInstance::Get().GetPhysXManager()->RayCast()
-
-		if(false)
-		if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
 		{
-			std::vector< PX_RAYCAST_RESULT> results{};
-			const auto& [ori, dir] = pPlayerCamera->GetRay();
+			//CGameInstance::Get().GetPhysXManager()->RayCast()
 
-			//CGameInstance::Get().GetDbgLineRender()->AddRay()
+		//if(false)
+		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		//{
+		//	std::vector< PX_RAYCAST_RESULT> results{};
+		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
 
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddRay(
-				ori,
-				dir,
-				100.f);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+		//	//CGameInstance::Get().GetDbgLineRender()->AddRay()
 
-			if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = dir, .fMaxDistance = 100.f,
-			.tFilter = {.hIgnoreGameObject = GetHandle() } }, results))
-			{
-				for (const auto& result : results)
-				{
-					const auto hit = result.vHitpos;
-					const auto normalEnd = _float3{
-						hit.x + result.vHitNormal.x,
-						hit.y + result.vHitNormal.y,
-						hit.z + result.vHitNormal.z
-					};
-					//CGameInstance::Get().GetDbgLineRender()->AddLine(
-					//	hit,
-					//	normalEnd,
-					//	{ 0.f, 1.f, 0.f, 1.f });
+		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+		//	CGameInstance::Get().GetDbgLineRender()->AddRay(
+		//		ori,
+		//		dir,
+		//		100.f);
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+		//	if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = dir, .fMaxDistance = 100.f,
+		//	.tFilter = {.hIgnoreGameObject = GetHandle() } }, results))
+		//	{
+		//		for (const auto& result : results)
+		//		{
+		//			const auto hit = result.vHitpos;
+		//			const auto normalEnd = _float3{
+		//				hit.x + result.vHitNormal.x,
+		//				hit.y + result.vHitNormal.y,
+		//				hit.z + result.vHitNormal.z
+		//			};
+		//			//CGameInstance::Get().GetDbgLineRender()->AddLine(
+		//			//	hit,
+		//			//	normalEnd,
+		//			//	{ 0.f, 1.f, 0.f, 1.f });
 
 
-				}
-			}
+		//		}
+		//	}
+		//}
+
+
+		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		//{
+		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
+		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+		//	CGameInstance::Get().GetDbgLineRender()->AddSphere(10.f, XMMatrixTranslation(ori.x, ori.y, ori.z));
+		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+		//	std::vector<PX_OVERLAP_RESULT> results{};
+		//	if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 10.f}, .tPose = {.vPosition = ori} }, results))
+		//	{
+		//		for (const auto& result : results)
+		//		{
+		//		}
+		//	}
+		//}
 		}
+		
+		auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+		auto ori = m_pComTransform->GetPosition();
+		auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+		auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+		CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
+		CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+		CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
+		CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+		CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 
-
-		if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
+		std::vector<PX_OVERLAP_RESULT> results{};
+		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 		{
-			const auto& [ori, dir] = pPlayerCamera->GetRay();
+			const auto& result = results.front();
+			m_hAutoTarget = result.pGameObject->GetHandle();
+		}
+	}
+	else {
+		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+
+		if (!pTarget) {
+			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+			auto ori = m_pComTransform->GetPosition();
 			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
 			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 			CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
 			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(10.f, XMMatrixTranslation(ori.x, ori.y, ori.z));
+			CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
 			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 
 			std::vector<PX_OVERLAP_RESULT> results{};
-			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 10.f}, .tPose = {.vPosition = ori} }, results))
+			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
-				for (const auto& result : results)
-				{
-				}
+				const auto& result = results.front();
+				m_hAutoTarget = result.pGameObject->GetHandle();
+			}
+		}
+
+		if (pTarget) {
+			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+			auto ori = m_pComTransform->GetPosition();
+			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
+			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+			CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+			std::vector<PX_OVERLAP_RESULT> results{};
+
+			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 30.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
+
+			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
+
+			if (!bTargetStillInRange)
+			{
+				m_hAutoTarget = CHandle{};
 			}
 		}
 	}
-
 
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))

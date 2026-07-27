@@ -151,6 +151,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State">
       <UniqueIdentifier>{11e3cf66-d2a5-4428-9b71-48aa0954b883}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_">
+      <UniqueIdentifier>{113ba92c-ee4c-4633-a05d-1bd05e0d0412}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
