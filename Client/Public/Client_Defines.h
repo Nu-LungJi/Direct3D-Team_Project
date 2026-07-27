@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-
+#include "Level_Defines.h"
 namespace Client
 {
 	static const unsigned int	g_iWinSizeX{ 1280 };
@@ -59,6 +59,7 @@ namespace Client
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerWeapon,
 		Prototype_GameObject_Terrain,
+		Prototype_GameObject_OilBarrel,
 	};
 
 	enum class PROTO_COMPONENT

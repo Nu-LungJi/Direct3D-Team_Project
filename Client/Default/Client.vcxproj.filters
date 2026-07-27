@@ -163,6 +163,12 @@
     <Filter Include="Resources\Buffer">
       <UniqueIdentifier>{65ccac47-5a61-40df-b3b4-e36892ba3ae2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\Terrain">
+      <UniqueIdentifier>{5aba49d7-cbec-45df-b167-3f75f15ce2d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain\OilBarrel">
+      <UniqueIdentifier>{67dea227-ae71-4a01-9d85-b263e2638e22}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -387,11 +393,14 @@
     <ClInclude Include="..\public\LevelTerrainLoader.h">
       <Filter>Loader\Level\Terrain</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Terrain.h">
-      <Filter>GameObject\Terrain</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resources\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Terrain.h">
+      <Filter>GameObject\Terrain\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\OilBarrel.h">
+      <Filter>GameObject\Terrain\OilBarrel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -603,11 +612,14 @@
     <ClCompile Include="..\private\LevelTerrainLoader.cpp">
       <Filter>Loader\Level\Terrain</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\Terrain.cpp">
-      <Filter>GameObject\Terrain</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resources\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Terrain.cpp">
+      <Filter>GameObject\Terrain\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\OilBarrel.cpp">
+      <Filter>GameObject\Terrain\OilBarrel</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

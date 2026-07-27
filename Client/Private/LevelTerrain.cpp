@@ -12,6 +12,7 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Weapon.h"
 #include "Client_Defines.h"
+#include "OilBarrel.h"
 
 NS_USING(Client)
 
@@ -38,6 +39,22 @@ HRESULT CLevelTerrain::Initialize()
 			int x = 0;
 		}
 	}
+	{
+		for (uint32_t i = 0; i < 6; ++i)
+		{
+			COilBarrel::DESC desc{};
+			desc.sObjectTag = "TestDynamic";
+			desc.vInitialPosition = { 15.f, 55.f + (i * 3.f), 15.f };
+			desc.vConvexScale = { 300.f, 300.f, 300.f };
+			if (!E::CGameInstance::Get().AddGameObjectToLayer(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_OilBarrel,
+				"03_PhysXTest",
+				&desc))
+				return E_FAIL;
+		}
+	}
+
 	/*{
 		CHandle hPlayer{};
 		CTerrain::DESC Desc{};
