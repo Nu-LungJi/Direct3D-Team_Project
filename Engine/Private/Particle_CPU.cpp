@@ -408,8 +408,8 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	{
 		///////////////////////////////////////////// Fade Out
-		if (p.fMaxLife - 2.f <= p.life) {
-			p.vColor.w -= fTimeDelta / 2.f;
+		if (p.fMaxLife - 1.f <= p.life) {
+			p.vColor.w -= fTimeDelta;
 		}
 	}
 	{
@@ -419,10 +419,17 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 			return;
 		}
 	}
-	
+	{
+		///////////////////////////////////////////// Velocity Control
+		_float DragFactor = 2.f;
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
+
+		XMStoreFloat3(&p.vVelocity, Velocity);
+	} 
 	{
 		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f * 0.5f;
+		const float kGravity = -9.8f;
 
 		p.vVelocity.y += kGravity * fTimeDelta;
 
@@ -433,22 +440,67 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	}
 	{
 		///////////////////////////////////////////// Particle Spread Type
-
+		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+		//if (nullptr == ActiveCam) return;
+		//
+		//XMVECTOR CamtoParticle = XMVectorSubtract(ActiveCam->GetTransform().GetLoadedPostion(), XMLoadFloat3(&p.vPosition));
+		//
+		//_float CamX = XMVectorGetX(CamtoParticle);
+		//_float CamZ = XMVectorGetZ(CamtoParticle);
+		//
+		//if (CamX * CamX * CamZ * CamZ > 0.001f) {
+		//	p.rotation.y = atan2f(CamX, CamZ);
+		//}
 	}
-	{
-		///////////////////////////////////////////// Velocity Control
-		_float DragFactor = 3.f;
-		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
-		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
 
-		XMStoreFloat3(&p.vVelocity, Velocity);
+	{
+		_float RotationSpeed = 0.5f;
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		if (fabsf(p.vVelocity.x) > 0.0001f || fabsf(p.vVelocity.z) > 0.0001f) {
+			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.z) + XM_PIDIV2;
+			_float CurrentAngle = p.rotation.x;
+
+			_float DeltaAngle = TargetAngle - CurrentAngle;
+
+			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
+			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
+
+			const _float AngleVelocity = XM_PI * RotationSpeed;
+			_float MaxStep = AngleVelocity * fTimeDelta;
+
+			if (fabsf(DeltaAngle) > MaxStep) {
+				DeltaAngle = DeltaAngle > 0.f ? MaxStep : -MaxStep;
+			}
+			p.rotation.x = CurrentAngle + DeltaAngle;
+
+			if (p.rotation.x > +XM_PI) p.rotation.x -= XM_2PI;
+			if (p.rotation.x < -XM_PI) p.rotation.x += XM_2PI;
+		}
+
+		if (XMVectorGetX(XMVector3LengthSq(Velocity)) > 0.1f) {
+			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.x) + XM_PIDIV2;
+			_float CurrentAngle = p.rotation.z;
+
+			_float DeltaAngle = TargetAngle - CurrentAngle;
+
+			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
+			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
+
+			const _float AngleVelocity = XM_PI * RotationSpeed;
+			_float MaxStep = AngleVelocity * fTimeDelta;
+
+			if (fabsf(DeltaAngle) > MaxStep) {
+				DeltaAngle = DeltaAngle > 0.f ? MaxStep : -MaxStep;
+			}
+			p.rotation.z = CurrentAngle + DeltaAngle;
+			
+			if (p.rotation.z > +XM_PI) p.rotation.z -= XM_2PI;
+			if (p.rotation.z < -XM_PI) p.rotation.z += XM_2PI;
+		}
 	}
 }
 void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
-	_float Ratio = p.life / p.fMaxLife;
-	p.rotation.x = Ratio * 15.f;
-
-
+	
 }
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)

@@ -131,19 +131,19 @@ HRESULT CTestGob::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	CWeapon::WEAPON_DESC WeaponDesc{};
-	WeaponDesc.sObjectTag = "Weapon";
-	WeaponDesc.ParentHandle = GetHandle();
-	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
-	WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
-	WeaponDesc.LevelTag = MonDesc->LevelTag;
-	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
-	if (!Weapon.has_value())
-	{
-		MSG_BOX("Create Failed Weapon");
-		return E_FAIL;
-	}
-	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+	//CWeapon::WEAPON_DESC WeaponDesc{};
+	//WeaponDesc.sObjectTag = "Weapon";
+	//WeaponDesc.ParentHandle = GetHandle();
+	//WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	//WeaponDesc.WeaponName = "Static_Mace_Model_Resource";
+	//WeaponDesc.LevelTag = MonDesc->LevelTag;
+	//auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, "Prototype_GameObject_Weapon", "03_Weapon", &WeaponDesc);
+	//if (!Weapon.has_value())
+	//{
+	//	MSG_BOX("Create Failed Weapon");
+	//	return E_FAIL;
+	//}
+	//m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
@@ -160,6 +160,7 @@ HRESULT CTestGob::Initialize(void* pArg)
 
 void CTestGob::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (bShow)
 	__super::PriorityUpdate(fTimeDelta);
 
 }
@@ -184,12 +185,18 @@ void CTestGob::Update(E::_float fTimeDelta)
 		m_pComTransform->GoBackward(fTimeDelta * 15);
 	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
 		m_pComTransform->GoRight(fTimeDelta * 15);
+
+	if (CGameInstance::Get().KeyDown(DIK_2))
+		bShow = !bShow;
+
+	if(bShow)
 	__super::Update(fTimeDelta);
 
 }
 
 void CTestGob::LateUpdate(E::_float fTimeDelta)
 {
+	if (bShow)
 	__super::LateUpdate(fTimeDelta);
 }
 

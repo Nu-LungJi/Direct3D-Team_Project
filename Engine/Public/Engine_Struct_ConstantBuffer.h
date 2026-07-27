@@ -167,4 +167,11 @@ namespace Engine
 		float	mapScale;
 	}CB_MINIMAP;
 	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
+
+	struct CB_BLOOM
+	{
+		_float2	g_TexelSize;
+		_float2	g_padding;
+	};
+	static_assert(sizeof(CB_BLOOM) % 16 == 0);
 }

@@ -207,22 +207,31 @@ namespace Engine
 	X(_float2,vRandAngle,_float2(-0.1f,0.1f))\
 	X(_float2,vRandSize, _float2(0.8f,1.2f))\
 	X(_float2,vRandLife, _float2(0.9f,1.1f))\
+	X(_float2, vRandSpawn, _float2(1.f,1.f))\
 	X(_float3,vRot,_float3(0,0,0))\
 	X(uint32_t, iArray,1)\
+	X(_float ,fSPawnDelay,0.f)\
 COMMON_PATTERN_FIELDS(X)
 
 #define LIGHTNING_STREIGHT(X) \
     X(_float3, vCenter, _float3(0,0,0)) \
-    X(_float, fRadius, 3.f) \
+    X(_float3, vRotation, _float3(0,0,0)) \
     X(uint32_t, iCount, 12) \
+    X(_bool, bRandomSize, false) \
     X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+	X(_float3, fSizeMin, _float3(0, 0, 0))\
+	X(_float3, fSizeMax, _float3(0, 0, 0))\
     X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
     X(_float, fLife, 1.f) \
+    X(_bool, bRandomVel, false) \
 	X(_float3, fVelocity, _float3(0,0,0))\
+	X(_float3, fVelMin, _float3(0,0,0))\
+	X(_float3, fVelMax, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, startIntensity, 0.f) \
     X(_float4, endEmissive, _float4(0,0,0,0)) \
-    X(_float, fYOffset, 0.f)\
+	X(_float, endIntensity, 0.f) \
    COMMON_PATTERN_FIELDS(X)
 
 #define EXTRA_LIGHTNING(X) \

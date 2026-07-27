@@ -51,19 +51,21 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 	
 		_bool bFinished = pAnimator->GetFinish();
 
+		_float fAnimRatio = pAnimator->GetPlayAnimRatio();
+		EventFlagToRatio(fAnimRatio);
+
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
-		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
+		if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 		{
 			if (m_bStart)
 			{
 				m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
-				Set_Flag(m_iStartFlag, FLAGTYPE::ADD);
 				m_bStart = false;
 			}
 
 			m_fTime += fTimeDelta;
 
-			_float tt = (pAnimator->GetPlayAnimRatio() - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
+			_float tt = (fAnimRatio - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
 			if (tt < 0.f)
 				tt = 0.f;
 			if (tt > 1.f)
@@ -76,9 +78,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
 				}
 			}
-
 			_float fAnimRange = m_fRatio.y - m_fRatio.x;
-			_float t = (m_fDis * pAnimator->GetPlayAnimRatio()) / (m_fRatio.y - m_fRatio.x);
+			_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
 			const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
 			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
@@ -103,9 +104,9 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		{
 			//Hit 종료는 애니매이션 끝나면
 			//Attack도 애니매이션 끝나면
-			Set_Flag(m_iEndFlag, FLAGTYPE::DEL);
 			m_bStart = true;
 			m_fTime = 0.f;
+			Reset_CheckFlag();
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}
@@ -149,60 +150,9 @@ void CBTAttackAnimation::Update_Gui()
 			if (bSelect)
 				ImGui::SetItemDefaultFocus();
 		}
-
 		ImGui::EndCombo();
 	}
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	uint32_t iStart = { m_iStartFlag };
-#define X(name)#name,
-	const _char* Flag[] = { BTFLAG_M };
-#undef X
-	if (ImGui::TreeNode("StartFlag"))
-	{
-
-		for (uint32_t i = 0; i < std::size(Flag); ++i)
-		{
-			uint32_t iFlag = 1u << i;
-
-			bool bChecked = (iStart & iFlag) != 0;
-
-			if (ImGui::Checkbox((std::string(Flag[i]) + "##Start").c_str(), &bChecked))
-			{
-				if (bChecked)
-					iStart |= iFlag;
-				else
-					iStart &= ~iFlag;
-			}
-		}
-		m_iStartFlag = iStart;
-		ImGui::TreePop();
-	}
-	if (ImGui::TreeNode("EndFlag"))
-	{
-
-		uint32_t iEndFlag = { m_iEndFlag };
-		for (uint32_t i = 0; i < std::size(Flag); ++i)
-		{
-			uint32_t iEnd = 1u << i;
-
-			bool bChecked = (iEndFlag & iEnd) != 0;
-
-			if (ImGui::Checkbox((std::string(Flag[i]) + "##End").c_str(), &bChecked))
-			{
-				if (bChecked)
-					iEndFlag |= iEnd;
-				else
-					iEndFlag &= ~iEnd;
-			}
-		}
-		m_iEndFlag = iEndFlag;
-
-		ImGui::TreePop();
-	}
-
-	ImGui::PopStyleColor(2);
 }
 void CBTAttackAnimation::Abort()
 {
@@ -215,8 +165,6 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-	SaveJsonValue(j, "StartFlag", m_iStartFlag);
-	SaveJsonValue(j, "EndFlag", m_iEndFlag);
 	return j;
 }
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
@@ -224,8 +172,6 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-	LoadJsonValue(j, "StartFlag", m_iStartFlag);
-	LoadJsonValue(j, "EndFlag", m_iEndFlag);
 	return S_OK;
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()

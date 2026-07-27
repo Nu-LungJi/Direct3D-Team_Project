@@ -50,12 +50,7 @@ struct VS_OUT
 VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out = (VS_OUT) 0;
-
-	//vector vPos = In.vWorld3;
-	//float tipWeight = pow(1.f - In.vTexcoord.y, 2.f);
-	//float flutter =  0.5f + 0.5f * sin(In.life * 3.f - In.vTexcoord.y * 6.f);
-	//float bend = lerp(0.12f, 0.18f, flutter);
-	//vPos.xyz += normalize(In.vWorld0.xyz) * saturate(bend) * tipWeight;
+	
 	float4x4 matWorld = float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
 
     // matWorld엔 회전이 없다 (C++ 쪽에서 Scale * Translation만 곱함).
@@ -74,7 +69,7 @@ VS_OUT VSMain(VS_IN In)
     vCenter +
     vRight * In.vPosition.x * scaleX +
     vUp * In.vPosition.y * scaleY;
-
+	
     Out.vPosition = mul(float4(vWorldPos, 1.f), g_matViewProj);
     Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
     Out.vColor = In.vColor;
@@ -185,16 +180,22 @@ PS_OUT SMOKE(VS_OUT In)
 	float2 NoiseUV = In.vTexcoord;
 	NoiseUV += In.life * 0.2f;
 	float2 noise = g_NoiseTexture.Sample(LinearWrap, NoiseUV).rg * 2.f - 1.f;
-	float2 distrotedUV = In.vTexcoord + noise * 0.03f;
 	
-	float NoiseMask = smoothstep(0.55f, 0.85f, In.vTexcoord.y);
-
+	float topMask = smoothstep(0.55f, 1.f, In.vTexcoord.y);
+	
+	float2 distrotedUV = In.vTexcoord + float2(0.03f, 0.01f) *topMask * 0.03f;
+	distrotedUV.x += noise.x * 0.03f * topMask;
 	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, distrotedUV);
-	float ratio = 1.0f - (In.life / In.maxLife);
+	float ratio = (In.life / In.maxLife);
 	
-	float fAlpha = texColor.r * NoiseMask * In.vColor.a * ratio;
+	float fadein = smoothstep(0.f, 0.18f, ratio);
+	float fadeout = 1.0f - smoothstep(0.65f, 1.f, ratio);
+	float lifealpha = fadein * fadeout;
+	float fAlpha = texColor.r * In.vColor.a *  lifealpha;
 	
-	float3 FinalColor = lerp(In.vColor.rgb, float3(1, 1, 1), 0.8f);
+	if (any(texColor.rgb > 0.6f))
+		texColor.rgb *= 2.f;
+	float3 FinalColor = lerp(texColor.rgb * In.vColor.rgb, float3(1, 1, 1), 0.8f);
 
 	Out.vDiffuse = float4(FinalColor, saturate(fAlpha*1.4f));
 	return Out;
@@ -203,22 +204,35 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 {
  
 	PS_OUT Out = (PS_OUT) 0;
-	
+	if ((In.iBehaviorType & BEHAVIOR_SMOKE) != 0)
+	{
+		float maskdel = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		
+		maskdel = smoothstep(0.35f, 0.85f, maskdel);
+		float2 maskuv = In.vTexcoord * float2(0.55549, 0.45354);
+		maskuv.y += In.life * 0.3f * In.maxLife * 0.3f;
+		float mask = g_DiffuseTexture.Sample(LinearWrap, maskuv).r;
+		
+		float t = In.life / In.maxLife;
+		float plusalpha = smoothstep(0.35f,0.85f,In.vTexcoord.y);
+		float fAlpha = mask.r * maskdel * In.vColor.a * plusalpha;
+		float3 color = lerp( float3(0.25f, 0.55f, 0.75f), float3(0.85f, 0.95f, 1.0f), mask);
+		
+
+		Out.vDiffuse = float4(In.vColor.rgb, saturate(fAlpha * 0.7f));
+		return Out;
+	}
 	if ((In.iBehaviorType & BEHAVIOR_SMOKEGV) != 0)
 	{
 		float  mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
-		
 		float2 distoionUV = In.vTexcoord;
-		distoionUV.y += In.life * 0.13f * In.maxLife * 0.2f;
-		//noiseUV.x +=  In.life * 0.2f * In.maxLife * 0.04f;
+		distoionUV.x += In.life * 0.2f * In.maxLife * 0.2f;
 		float2 distoion = g_DistortionTexture.Sample(LinearWrap, distoionUV).rg * 2.f -1.f;
 		
 		float2 wispsUV = In.vTexcoord * float2(0.549206f, 0.453968f);
 		float bendMask = 1.f - smoothstep(0.45f, 1.f, In.vTangent.y);
-		wispsUV += distoion * 0.02 * bendMask; // * In.life * 0.2f * In.maxLife * 0.2f;
-		//wispsUV.x += (distoion.x - 0.5f) * In.life * 0.2f * In.maxLife * 0.2f;
-		//wispsUV.y += In.life * 0.2f * In.maxLife * 0.2f;
+		wispsUV += distoion * 0.02 * bendMask; 
 		float4 wisps = g_DiffuseTexture.Sample(LinearWrap, wispsUV);
 		
 		
@@ -234,36 +248,20 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 	}
 	else if ((In.iBehaviorType & BEHAVIOR_SMOKEGW) != 0)
 	{
-		float2 noiseUV = float2(In.vTexcoord.x * 0.8f, In.vTexcoord.y * 0.25f);
-		float random = frac(sin(In.maxLife * 12.9898f) * 43758.5453f);
+		float mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
-		noiseUV += float2(random, random * 0.618f);
-		noiseUV.y += In.life * 0.7f;
-		noiseUV.x += In.life * 0.4f;
-		float2 warp = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).rg * 2.f - 1.f;
-		float noise = g_NoiseTexture.Sample(LinearWrap, noiseUV + warp * 0.05f).r;
 		
-		//마스크는 픽셀을 얼마나 보여주는지에대한것
-	
-		float heightMask = smoothstep(0.f, 0.75f, In.vTexcoord.y);
-		float sideMask = smoothstep(0.f, 0.25f, In.vTexcoord.x) * (1.f - smoothstep(0.75f, 1.f, In.vTexcoord.x));
-		float noiseMask = smoothstep(0.4f, 0.65f, noise);
+		float2 normalUV = In.vTexcoord;
+		normalUV.y += In.life * 0.2f * In.maxLife * 0.2f;
+		float normal = g_NormalTexture.Sample(LinearWrap, normalUV).r;
 		
-		float t = saturate(In.life / In.maxLife);
-		float lifeFade = 1.f - smoothstep(0.5f, 1.f, t);
-		float alpha = noiseMask * sideMask * heightMask * In.vColor.a * lifeFade;
-		alpha = saturate(alpha * 2.f);
-		float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
-		screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+		float4 wisps = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
 		
-		float2 distortion = warp * 0.01f * alpha;
-		
-		float3 bg = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
-		float3 glowColor = In.vColor.rgb * (1.f + noiseMask * 2.f);
-		float3 result = lerp(bg, glowColor, alpha);
-		
-		Out.vDiffuse = float4(result, 1.f);
-		
+		float life = 1.f - (In.life * 0.02f);
+		float alpha = saturate(life) * mask;
+		if (wisps.r < 0.2f)
+			discard;
+		Out.vDiffuse = float4(wisps.rgb * 1.4f * In.vColor.rgb, alpha * 0.5f);
 		return Out;
 	}
 	

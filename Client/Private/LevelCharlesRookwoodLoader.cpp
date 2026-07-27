@@ -9,7 +9,32 @@
 #include "Level_Defines.h"
 
 #include "TriggerCRW_SpawnStep.h"
+#include "TriggerCRW_StairStep.h"
+#include "MyMagicSquareStep.h"
+#include "MyMagicSquareStepController.h"
 
+#include "TriggerCRW_SpawnStep2.h"
+
+#include "TriggerCRW_SpawnStep3.h"
+
+#include "TriggerCRW_SpawnStep4.h"
+
+#include "TriggerCRW_DeSpawnStep.h"
+#include "TriggerCRW_DeSpawnStep2.h"
+#include "TriggerCRW_DeSpawnStep3.h"
+#include "TriggerCRW_DeSpawnStep4.h"
+
+#include "BridgeCRW.h"
+
+#include "TriggerCRW_BridgeBring.h"
+#include "TriggerCRW_BridgeFix.h"
+
+#include "TmbGurdian.h"
+#include "TmbGurdianDead.h"
+#include "Mon_Weapon.h"
+#include "Player_Weapon.h"
+
+#include "TriggerCRW_ToBoss.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -21,12 +46,43 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			{
 				return false;
 			}
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("MODEL", "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Bridge/SK_Bridge.bin"))) {
+
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(90.f));
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed SK_Bridge.bin");
+					return false;
+				}
+			}
+
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 				E::CResModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
-					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_MODEL_RESROUCE");
+					return false;
+				}
+			}
+	/*		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/Wand/SM_Wand.bin"))) {
+
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
+					return false;
+				}
+			}*/
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin"))) {
+
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
 					return false;
 				}
 			}
@@ -38,20 +94,6 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				return false;
 			}
 
-			// 디버그 플레이어 프로토타입 등록
-			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayer, CDebugPlayer::Create())))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayer");
-				return false;
-			}
-
-			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_DebugPlayerThirdPersonCamera, CDebugPlayerThirdPersonCamera::Create())))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_DebugPlayerThirdPersonCamera");
-				return false;
-			}
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
 				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera, CPlayerThirdPersonCamera::Create())))
@@ -68,6 +110,134 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnStep");
 					return false;
 				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_StairStep, CTriggerCRW_StairStep::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_StairStep");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep2, CTriggerCRW_SpawnStep2::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnStep2");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep3, CTriggerCRW_SpawnStep3::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnStep3");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep4, CTriggerCRW_SpawnStep4::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnStep4");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep, CTriggerCRW_DeSpawnStep::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_DeSpawnStep");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep2, CTriggerCRW_DeSpawnStep2::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_DeSpawnStep2");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep3, CTriggerCRW_DeSpawnStep3::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_DeSpawnStep3");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep4, CTriggerCRW_DeSpawnStep4::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_DeSpawnStep4");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_BridgeBring, CTriggerCRW_BridgeBring::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeBring");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_BridgeFix, CTriggerCRW_BridgeFix::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_ToBoss, CTriggerCRW_ToBoss::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
+					return false;
+				}
+			}
+
+			// 매직스텝
+			{
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(
+					LEVEL::CHARLES_ROOKWOOD, "Static_SquareStep_A_Resource",
+					CResStaticModel::Create(
+						"./Resources/SampleClient/Models/Static/Sanctum/SM_SanctumDun_SquareStep_A.bin")))
+				{
+					E::CResStaticModel::DESC Desc{};
+					Desc.PreTransformMatrix =
+						XMMatrixRotationX(XMConvertToRadians(0.f));
+					if (FAILED(res->Load(Desc)))
+					{
+						MSG_BOX("LEVEL_CREATURE Failed Static_SquareStep_A_Resource");
+						return false;
+					}
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_MyMagicSquareStep, CMyMagicSquareStep::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_MyMagicSquareStep");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_MyMagicSquareStepController, CMyMagicSquareStepController::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_MyMagicSquareStepController");
+					return false;
+				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BridgeCRW, CBridgeCRW::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_BridgeCRW");
+				return false;
+			}
+
+			if (FAILED(MonsterLoad_InWorker()))
+			{
+				MSG_BOX("Create Failed Monster in CharlesRookwood");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerWeapon");
+				return false;
 			}
 
 			return true;
@@ -90,10 +260,129 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 			E::CGameInstance::Get().DelResource("MAPEDITOR");   E::CGameInstance::Get().DelResource(TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
 
 			CGameInstance::Get().DelPrototype(LEVEL::CHARLES_ROOKWOOD);
-			CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep);
+			
+			// 트리거 프록시 제거
+			{
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_StairStep);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep2);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep3);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnStep4);
+
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep2);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep3);
+				CGameInstance::Get().DelPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_DeSpawnStep4);
+			}
 
 			CGameInstance::Get().DelResource("MODEL");
 
+			CGameInstance::Get().DelResource(LEVEL::CHARLES_ROOKWOOD);
 			return true;
 		});
+}
+HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
+{
+	//TombGurDian
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_TMBGurdian",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Grunt/SK_Tomb_Grunt.bin")))
+		{
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TMBGurdian");
+				return E_FAIL;
+			}
+		}
+
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
+			return E_FAIL;
+		}
+
+	}
+
+	//TombGurDianDead
+	{
+		for (uint32_t i = 0; i < 13; ++i)
+		{
+			std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
+			StringID resTag = "Static_Med_Debris_" + std::to_string(i);
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, resTag,
+				CResStaticModel::Create(path))) {
+
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Static_Med_Debris");
+				}
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(
+			LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
+			return E_FAIL;
+		}
+	}
+
+	//Weapon
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Axe",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Axe.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Static_Axe_Model_Resource");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Sword",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Mace",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Static_Mace_Model_Resource");
+				return E_FAIL;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CMon_Weapon::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Axe");
+			return E_FAIL;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
+			return E_FAIL;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+		{
+			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
+			return E_FAIL;
+		}
+	}
 }

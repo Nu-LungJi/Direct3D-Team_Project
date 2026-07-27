@@ -23,6 +23,7 @@ public:
 		_string	WeaponName{}, LevelTag{};
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
+		_float3 vScale{ 1,1,1 };
 	}WEAPON_DESC;
 
 private:

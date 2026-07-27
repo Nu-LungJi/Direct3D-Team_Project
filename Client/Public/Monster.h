@@ -46,6 +46,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
+
+
 	}MONSTER_DESC;
 protected:
 	CMonster();
@@ -58,15 +60,10 @@ public:
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
-	HRESULT Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext);
-	HRESULT Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext);
-	HRESULT Unbind_AnimationCompute(ID3D11DeviceContext* pContext);
-	HRESULT Bind_InstanceBuffer_VS(ID3D11DeviceContext* pContext);
-	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
-	HRESULT Unbind_AnimationVS(ID3D11DeviceContext* pContext);
+	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
+
 public:
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t			Get_CurrentHp() const { return m_iHp; }
@@ -101,12 +98,9 @@ protected:
 
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
-	SPtr<CResVertexShader> m_pResVertexShader{};
-	SPtr<CResVertexShader> m_pResVertexInstancedShader{};
+	SPtr<CResVertexShader> m_pResVertexCPUSkinningInstancedShader{};
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 
-
-	SPtr<CResComputeShader> m_pAnimComputeShader{};
 
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
@@ -114,7 +108,7 @@ protected:
 	_float ff{};
 
 	_float2						m_fSkillRatio{ };
-	uint32_t					m_iCurrentInstanceCount = 0.f;
+	uint32_t					m_iCurrentInstanceCount = 0;
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
@@ -122,7 +116,7 @@ protected:
 	HITTABLE					m_MonTable{};
 
 	
-	std::vector<E::SPAWN_COMMAND> test[ETOUI(ATTMON::END)];
+	std::vector<E::SPAWN_COMMAND> m_Effects[ETOUI(ATTMON::END)];
 
 
 	//파티클 재설정용

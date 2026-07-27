@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SoundManager.h"
 
+#include "DbgLineRender.h"
 #include "GameInstance.h"
 #include "ResFmodSound.h"
 
@@ -80,6 +81,10 @@ void CSoundManager::UpdateGUI()
 	ImGui::SameLine();
 	if (ImGui::Button("Stop && Clear All"))
 		bClearAll = true;
+
+	ImGui::Checkbox(
+		"Draw 3D Sound Ranges",
+		&m_b3DDebugRenderEnabled);
 
 	if (ImGui::TreeNode("Buses"))
 	{
@@ -262,6 +267,7 @@ void CSoundManager::Update()
 
 	FMOD_System_Update(m_pSystem);
 	FlushCompletedSounds();
+	Draw3DSoundDebug();
 }
 
 HRESULT CSoundManager::CreateSound(const _string& sPath, FMOD_SOUND** ppSound, SOUND_LOAD_TYPE eLoadType)
@@ -424,7 +430,10 @@ SOUND_ID CSoundManager::PlayInternal(const SPtr<CResFmodSound>& pSound, const SO
 		.pSound = pSound,
 		.pChannel = pChannel,
 		.sBusID = tDesc.sBusID,
-		.b3D = p3DDesc != nullptr
+		.b3D = p3DDesc != nullptr,
+		.t3DDesc = p3DDesc != nullptr
+			? *p3DDesc
+			: SOUND_3D_DESC{}
 	});
 
 	if (FMOD_Channel_SetPaused(pChannel, tDesc.bStartPaused) != FMOD_OK)
@@ -473,7 +482,17 @@ _bool CSoundManager::Set3DAttributes(SOUND_ID iSoundID, const _float3& vPosition
 
 	const FMOD_VECTOR vFmodPosition = ToFmodVector(vPosition);
 	const FMOD_VECTOR vFmodVelocity = ToFmodVector(vVelocity);
-	return FMOD_Channel_Set3DAttributes(iter->second.pChannel, &vFmodPosition, &vFmodVelocity) == FMOD_OK;
+	if (FMOD_Channel_Set3DAttributes(
+			iter->second.pChannel,
+			&vFmodPosition,
+			&vFmodVelocity) != FMOD_OK)
+	{
+		return false;
+	}
+
+	iter->second.t3DDesc.vPosition = vPosition;
+	iter->second.t3DDesc.vVelocity = vVelocity;
+	return true;
 }
 
 _bool CSoundManager::Set3DMinMaxDistance(SOUND_ID iSoundID, _float fMinDistance, _float fMaxDistance)
@@ -482,8 +501,18 @@ _bool CSoundManager::Set3DMinMaxDistance(SOUND_ID iSoundID, _float fMinDistance,
 		return false;
 
 	const auto iter = m_mapPlayingSounds.find(iSoundID);
-	return iter != m_mapPlayingSounds.end() && iter->second.b3D &&
-		FMOD_Channel_Set3DMinMaxDistance(iter->second.pChannel, fMinDistance, fMaxDistance) == FMOD_OK;
+	if (iter == m_mapPlayingSounds.end() || !iter->second.b3D ||
+		FMOD_Channel_Set3DMinMaxDistance(
+			iter->second.pChannel,
+			fMinDistance,
+			fMaxDistance) != FMOD_OK)
+	{
+		return false;
+	}
+
+	iter->second.t3DDesc.fMinDistance = fMinDistance;
+	iter->second.t3DDesc.fMaxDistance = fMaxDistance;
+	return true;
 }
 
 _bool CSoundManager::IsPlaying(SOUND_ID iSoundID) const
@@ -688,6 +717,56 @@ void CSoundManager::FlushCompletedSounds()
 		m_mapPlayingSounds.erase(completedSounds.front());
 		completedSounds.pop();
 	}
+}
+
+void CSoundManager::Draw3DSoundDebug()
+{
+	if (!m_b3DDebugRenderEnabled)
+		return;
+
+	auto* pDbgLineRender =
+		CGameInstance::Get().GetDbgLineRender();
+	if (pDbgLineRender == nullptr)
+		return;
+
+	const _float4 vPreviousColor =
+		pDbgLineRender->GetColor();
+	const DBG_LINE_DEPTH_MODE ePreviousDepthMode =
+		pDbgLineRender->GetDepthMode();
+
+	pDbgLineRender->SetDepthTest(true);
+
+	for (const auto& [iSoundID, tSound] : m_mapPlayingSounds)
+	{
+		UNREFERENCED_PARAMETER(iSoundID);
+
+		if (!tSound.b3D || tSound.pChannel == nullptr)
+			continue;
+
+		const auto& t3DDesc = tSound.t3DDesc;
+		const _matrix matWorld = XMMatrixTranslation(
+			t3DDesc.vPosition.x,
+			t3DDesc.vPosition.y,
+			t3DDesc.vPosition.z);
+
+		if (t3DDesc.fMinDistance > 0.f)
+		{
+			pDbgLineRender->SetColor(
+				{ 1.f, 0.85f, 0.1f, 1.f });
+			pDbgLineRender->AddSphere(
+				t3DDesc.fMinDistance,
+				matWorld);
+		}
+
+		pDbgLineRender->SetColor(
+			{ 0.1f, 0.85f, 1.f, 1.f });
+		pDbgLineRender->AddSphere(
+			t3DDesc.fMaxDistance,
+			matWorld);
+	}
+
+	pDbgLineRender->SetColor(vPreviousColor);
+	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 }
 
 FMOD_RESULT F_CALL SSoundCallbackBridge::ChannelCallback(

@@ -6,7 +6,7 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
-#include "Weapon.h"
+#include "Mon_Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
 #include "ComPxCharacterController.h"
@@ -135,11 +135,10 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
-	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
-	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
-
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
+	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
+	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	return S_OK;
 }
 
