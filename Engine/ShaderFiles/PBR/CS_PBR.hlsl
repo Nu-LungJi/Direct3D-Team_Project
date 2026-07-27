@@ -25,8 +25,12 @@ RWTexture2D<float4>		OUTPUT : register(u0);
 static const float2		ScreenResolution	= { 1280.f, 720.f };
 static const float2		ShadowMapResolution = { 1280.f, 720.f };
 
-static const float		ShadowSmoothness = 1.5f;
-static const float		ShadowBrightness = 0.2f;
+static const float		ShadowSmoothness		= 1.5f;
+static const float		ShadowBrightness		= 0.2f;
+
+static const float		EnviromentIntensity		= 1.f;
+static const float		FillLightBrightness = 0.24f;
+static const float		DirectLightBrightness	= 0.55f;
 
 static const float2		PoissonDisk[8] =
 {
@@ -266,7 +270,6 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
 			float RawNDL = dot(WorldNormal, L);
-			
 			[branch]
 			if (RawNDL > 0.f)
 			{
@@ -301,20 +304,24 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 					}
 				}
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
-
 			}
 		}
 	}
 
 	float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
-    float   AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
-    
-    float3  Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-	float3	BaseAmbient = Ambient * AO;
-	float3	ExtraColor = BaseAmbient + BaseEmissive;
+	float	AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
+	float3	Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
-    OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
+	float3	EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light
+	
+	float3	FillLighting	= Albedo * (1.f - Metallic) * FillLightBrightness;		// Shadow Face
+	float3	DirectLighting	= LightAccumulation * DirectLightBrightness;			// Light Face
+	float3	MinAmbient		= Albedo * 0.04f * (1.f - Metallic);
+	
+	float3	FinalColor		= EnviromentLight + FillLighting + DirectLighting + BaseEmissive;
+	
+	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
     return;
 }
 
@@ -329,107 +336,8 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
 	float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
-
-    [branch]
-	if (Depth >= 1.f)
-	{
-		OUTPUT[ID.xy] = float4(0.f, 0.f, 1.f, 1.f);
-		return;
-	}
-
-	float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
-
-	float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
-	
-	float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
-	float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
-
-	float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
-	float Metallic	= MultipleTex.r;
-	float Roughness = MultipleTex.g;
-    //float   Ambient     = MultipleTex.b;
-
-	float3 V = normalize(g_vCamPos - DepthWorld.xyz);
-	float NDV = max(dot(WorldNormal, V), 0.0001f);
-    
-    // Metallic Material Based Reflection
-	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
-	
-	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
-	
-	[unroll]
-	for (uint i = 0; i < LightCount; ++i)
-	{
-		float3 L, Radiance;
-		[branch]
-		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
-		{
-			float RawNDL = dot(WorldNormal, L);
-			[branch]
-			if (RawNDL > 0.f)
-			{
-				float NDL = clamp(RawNDL, 0.f, 1.f);
-
-				float3 H = normalize(V + L);
-				float D = DistributionGGX(WorldNormal, H, Roughness);
-				float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
-
-				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
-
-				float3 Specular = D * F * V_Spec;
-
-				float3 kS = F;
-				float3 kD = (1.0f - kS) * (1.0f - Metallic);
-				float3 Diffuse = kD * Albedo / PI;
-				 
-				float	ShadowFactor = 1.f;
-				int		ShadowSlot = AffectedLight[i].ShadowSlot;
-				
-				[branch]
-				if (AffectedLight[i].ShadowSlot == -1)
-				{
-					[branch]
-					if (AffectedLight[i].LightType == LIGHT_POINT)
-					{
-						ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), ShadowSlot);
-					}
-					else
-					{
-						ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), ShadowSlot);
-					}
-					ShadowFactor = lerp(0.15f, 1.f, ShadowFactor);
-				}
-				
-				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
-			}
-		}
-	}
-
-	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
-    
-	float AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
-    
-	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-	float3 BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
-	float3 ExtraColor = BaseAmbient + BaseEmissive;
-
-	OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
-	return;
-}
-
-[numthreads(16, 16, 1)]
-void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
-{
-	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
 	
 	[branch]
-	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
-		return; // 스레드가 해상도 넘어가면 출력X
-
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
-	float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
-
-    [branch]
 	if (Depth >= 1.f)
 	{
 		OUTPUT[ID.xy] = float4(0.f, 0.f, 1.f, 1.f);
@@ -475,12 +383,114 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 
 				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
-				float3 Specular = D * F * V_Spec;
+				float3 Specular = D * F * V_Spec / 10.f;
 
 				float3 kS = F;
 				float3 kD = (1.0f - kS) * (1.0f - Metallic);
 				float3 Diffuse = kD * Albedo / PI;
 				 
+				float ShadowFactor = 1.f;
+				int ShadowSlot = AffectedLight[i].ShadowSlot;
+				
+				[branch]
+				if (ShadowSlot >= 0 && ShadowSlot < MAX_LIGHT_MAPCOUNT)
+				{
+					[branch]
+					if (AffectedLight[i].LightType == LIGHT_POINT)
+					{
+						ShadowFactor = Compute_PointShadow(AffectedLight[i], DepthWorld, float2(ID.xy), ShadowSlot);
+					}
+					else
+					{
+						ShadowFactor = Compute_SmoothShadow(AffectedLight[i], DepthWorld, TexCoord, float2(ID.xy), ShadowSlot);
+					}
+				}
+				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
+			}
+		}
+	}
+
+	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
+    
+	float AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
+	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
+	
+	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity; // Enviroment Light
+	
+	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness; // Shadow Face
+	float3 DirectLighting = LightAccumulation * DirectLightBrightness; // Light Face
+	float3 MinAmbient = Albedo * 0.04f * (1.f - Metallic);
+	
+	float3 FinalColor = EnviromentLight + FillLighting + DirectLighting + BaseEmissive;
+	
+	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
+	return;
+}
+
+[numthreads(16, 16, 1)]
+void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
+{
+	DynamicLight DLight = AffectedLight[CurrentShadowLightIndex];
+	
+	[branch]
+	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
+		return; // 스레드가 해상도 넘어가면 출력X
+
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / ScreenResolution;
+	float Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+	
+	[branch]
+	if (Depth >= 1.f)
+	{
+		OUTPUT[ID.xy] = float4(0.f, 0.f, 1.f, 1.f);
+		return;
+	}
+
+	float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
+
+	float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
+	
+	float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+
+	float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float Metallic = MultipleTex.r;
+	float Roughness = MultipleTex.g;
+    //float   Ambient     = MultipleTex.b;
+
+	float3 V = normalize(g_vCamPos - DepthWorld.xyz);
+	float NDV = max(dot(WorldNormal, V), 0.0001f);
+    
+    // Metallic Material Based Reflection
+	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, Metallic);
+	
+	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+	
+	[unroll]
+	for (uint i = 0; i < LightCount; ++i)
+	{
+		float3 L, Radiance;
+		[branch]
+		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
+		{
+			float RawNDL = dot(WorldNormal, L);
+			[branch]
+			if (RawNDL > 0.f)
+			{
+				float NDL = clamp(RawNDL, 0.f, 1.f);
+
+				float3 H = normalize(V + L);
+				float D = DistributionGGX(WorldNormal, H, Roughness);
+				float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+
+				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
+
+				float3 Specular = D * F * V_Spec / 10.f;
+
+				float3 kS = F;
+				float3 kD = (1.0f - kS) * (1.0f - Metallic);
+				float3 Diffuse = kD * Albedo / PI;
+				
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
 			}
 		}
@@ -488,12 +498,17 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 
 	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
     
-	float AO = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
-    
+	float AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
 	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-	float3 BaseAmbient = max(Ambient * AO, Albedo * 0.05f);
-	float3 ExtraColor = BaseAmbient + BaseEmissive;
-
-	OUTPUT[ID.xy] = float4(ExtraColor + LightAccumulation, 1.f);
+	
+	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity; // Enviroment Light
+	
+	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness; // Shadow Face
+	float3 DirectLighting = LightAccumulation * DirectLightBrightness; // Light Face
+	float3 MinAmbient = Albedo * 0.04f * (1.f - Metallic);
+	
+	float3 FinalColor = EnviromentLight + FillLighting + DirectLighting + BaseEmissive;
+	
+	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
 	return;
 }
