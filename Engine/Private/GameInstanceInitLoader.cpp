@@ -29,6 +29,10 @@
 #include "ComPxConvexCollider.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
+#include "ComPxDistanceJoint.h"
+#include "ComPxD6Joint.h"
+#include "ComPxFixedJoint.h"
+#include "ComPxRevoluteJoint.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
@@ -438,6 +442,22 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController, CComPxCharacterController::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxFixedJoint, CComPxFixedJoint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxDistanceJoint, CComPxDistanceJoint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRevoluteJoint, CComPxRevoluteJoint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxD6Joint, CComPxD6Joint::Create()))
 		{
 			return E_FAIL;
 		}

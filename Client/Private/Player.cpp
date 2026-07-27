@@ -133,6 +133,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.tFilter = pDesc->tFilter;
+		Desc.vPosition = pDesc->vInitialPosition;
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
@@ -996,7 +997,6 @@ void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
-
 
 E::UPtr<CPlayer> CPlayer::Create()
 {

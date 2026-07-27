@@ -267,6 +267,11 @@
     <ClInclude Include="..\public\ComPxCapsuleCollider.h" />
     <ClInclude Include="..\public\ComPxConvexCollider.h" />
     <ClInclude Include="..\public\ComPxCollider.h" />
+    <ClInclude Include="..\public\ComPxD6Joint.h" />
+    <ClInclude Include="..\public\ComPxDistanceJoint.h" />
+    <ClInclude Include="..\public\ComPxFixedJoint.h" />
+    <ClInclude Include="..\public\ComPxJoint.h" />
+    <ClInclude Include="..\public\ComPxRevoluteJoint.h" />
     <ClInclude Include="..\public\ComPxRigidBody.h" />
     <ClInclude Include="..\public\ComPxSphereCollider.h" />
     <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
@@ -583,6 +588,11 @@
     <ClCompile Include="..\private\ComPxCapsuleCollider.cpp" />
     <ClCompile Include="..\private\ComPxConvexCollider.cpp" />
     <ClCompile Include="..\private\ComPxCollider.cpp" />
+    <ClCompile Include="..\private\ComPxD6Joint.cpp" />
+    <ClCompile Include="..\private\ComPxDistanceJoint.cpp" />
+    <ClCompile Include="..\private\ComPxFixedJoint.cpp" />
+    <ClCompile Include="..\private\ComPxJoint.cpp" />
+    <ClCompile Include="..\private\ComPxRevoluteJoint.cpp" />
     <ClCompile Include="..\private\ComPxRigidBody.cpp" />
     <ClCompile Include="..\private\ComPxSphereCollider.cpp" />
     <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />

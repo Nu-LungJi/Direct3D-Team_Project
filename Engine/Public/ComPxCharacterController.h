@@ -11,6 +11,8 @@ NS_END
 
 NS_BEGIN(Engine)
 
+class CComPxJoint;
+
 enum class PX_CCT_COLLISION_FLAG : uint8_t
 {
 	NONE = 0,
@@ -40,6 +42,7 @@ public:
 
 public:
 	physx::PxController* GetController() const { return m_pController; }
+	physx::PxRigidActor* GetActor() const;
 private:
 	explicit CComPxCharacterController();
 	CComPxCharacterController(const CComPxCharacterController& rhs);
@@ -72,10 +75,16 @@ public:
 private:
 	physx::PxController* m_pController{};
 	PX_FILTER_DESC m_tFilter{};
+	std::unordered_set<CComPxJoint*> m_Joints{};
 
 	struct Impl;
 	std::unique_ptr<Impl> m_pImpl;
 	//uint8_t  m_CollisionFlags{}; // 이거 노출 안하려고
+
+private:
+	void RegisterJoint(CComPxJoint* pJoint);
+	void UnregisterJoint(CComPxJoint* pJoint);
+	void ReleaseConnectedJoints();
 
 public:
 	static UPtr<CComPxCharacterController> Create();
@@ -83,6 +92,8 @@ public:
 
 private:
 	void Free() override;
+
+	friend class CComPxJoint;
 };
 
 NS_END

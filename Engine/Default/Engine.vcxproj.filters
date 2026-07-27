@@ -304,6 +304,21 @@
     <Filter Include="Component\PhysX\RigidBody">
       <UniqueIdentifier>{ef069a81-7cf2-4664-904d-b30ae8d04d26}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\PhysX\Joint">
+      <UniqueIdentifier>{bd69017f-f7b8-4be5-9175-470e8cebfaba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\Fixed">
+      <UniqueIdentifier>{0776ec1d-7e90-43dd-9c64-194c0d06c593}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\Distance">
+      <UniqueIdentifier>{82892f8d-84cb-4ea0-9dd5-56394024da0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\Revolute">
+      <UniqueIdentifier>{d259a719-f158-4f4d-a535-10c79fb767c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\D6">
+      <UniqueIdentifier>{2260739b-c811-45df-b9b9-666670961195}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX\Collider\Box">
       <UniqueIdentifier>{0ec1bad3-3526-4018-b870-041113a940d2}</UniqueIdentifier>
     </Filter>
@@ -890,6 +905,21 @@
     </ClInclude>
     <ClInclude Include="..\public\ComPxRigidBody.h">
       <Filter>Component\PhysX\RigidBody</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxJoint.h">
+      <Filter>Component\PhysX\Joint</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxFixedJoint.h">
+      <Filter>Component\PhysX\Joint\Fixed</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxDistanceJoint.h">
+      <Filter>Component\PhysX\Joint\Distance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxRevoluteJoint.h">
+      <Filter>Component\PhysX\Joint\Revolute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxD6Joint.h">
+      <Filter>Component\PhysX\Joint\D6</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ComPxBoxCollider.h">
       <Filter>Component\PhysX\Collider\Box</Filter>
@@ -1505,6 +1535,21 @@
     </ClCompile>
     <ClCompile Include="..\private\ComPxRigidBody.cpp">
       <Filter>Component\PhysX\RigidBody</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxJoint.cpp">
+      <Filter>Component\PhysX\Joint</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxFixedJoint.cpp">
+      <Filter>Component\PhysX\Joint\Fixed</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxDistanceJoint.cpp">
+      <Filter>Component\PhysX\Joint\Distance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRevoluteJoint.cpp">
+      <Filter>Component\PhysX\Joint\Revolute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxD6Joint.cpp">
+      <Filter>Component\PhysX\Joint\D6</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ComPxBoxCollider.cpp">
       <Filter>Component\PhysX\Collider\Box</Filter>

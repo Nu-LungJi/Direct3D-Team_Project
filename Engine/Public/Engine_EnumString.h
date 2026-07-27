@@ -31,7 +31,11 @@ namespace Engine
 		Prototype_Component_ComPxConvexCollider,
 		Prototype_Component_ComPxTriMeshCollider,
 		Prototype_Component_ComPxRigidBody,
-		Prototype_Component_ComPxCharacterController
+		Prototype_Component_ComPxCharacterController,
+		Prototype_Component_ComPxFixedJoint,
+		Prototype_Component_ComPxDistanceJoint,
+		Prototype_Component_ComPxRevoluteJoint,
+		Prototype_Component_ComPxD6Joint
 	};
 
 	enum class ES_EngineProtoGameObject

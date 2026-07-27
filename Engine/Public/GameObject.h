@@ -168,6 +168,7 @@ public:
 	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override {}
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override {}
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override {}
+	void OnJointBreak(const PX_ON_JOINT_BREAK_DATA& tData) override {}
 
 	// CCT Hit 알림은 move 중 즉시 호출되지 않고 물리 이벤트 Dispatch 시점에 전달된다.
 	void OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override {}
