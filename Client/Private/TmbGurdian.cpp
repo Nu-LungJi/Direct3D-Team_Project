@@ -511,6 +511,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 
 	// 죽음 파편들
+
 	{
 		const auto pModel = m_pComModelInstance->GetModel();
 		if (!pModel)
@@ -593,8 +594,8 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		}
 	}
 
-	m_pModelAnimator->SetEvaluationMode(
-		CComAnimator::EVALUATION_MODE::CPU_GPU);
+	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
+
 	return S_OK;
 }
 
@@ -612,6 +613,7 @@ void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
 {
+	__super::Update(fTimeDelta);
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 	{
 		ActivateDeadDebrisPhysics();

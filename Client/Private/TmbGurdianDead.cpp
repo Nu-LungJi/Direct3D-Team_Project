@@ -252,6 +252,7 @@ HRESULT CTmbGurdianDead::Initialize(void* pArg)
 	}
 
 	m_bActivated = false;
+
 	return S_OK;
 }
 

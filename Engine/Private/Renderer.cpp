@@ -1510,7 +1510,10 @@ HRESULT CRenderer::Render_Effect()
 	}
 
 	auto pGameCam = CGameInstance::Get().GetActiveCamera();
-	if (nullptr == pGameCam)    return S_OK;
+	if (nullptr == pGameCam) {
+		Unbind_Resources();
+		return S_OK;
+	}
 
 	if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) return E_FAIL;
 

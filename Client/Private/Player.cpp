@@ -438,15 +438,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//}
 		}
 		
-		auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-		auto ori = m_pComTransform->GetPosition();
-		auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-		auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-		CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
-		CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-		CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
-		CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-		CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			auto ori = m_pComTransform->GetPosition();
+		if (false) {
+			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
+			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+			CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
+			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+		}
+
 
 		std::vector<PX_OVERLAP_RESULT> results{};
 		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
@@ -459,15 +462,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 
 		if (!pTarget) {
-			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-			auto ori = m_pComTransform->GetPosition();
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+				auto ori = m_pComTransform->GetPosition();
+			if (false) {
+				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+				CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
+				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+
+			}
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
@@ -478,15 +484,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 
 		if (pTarget) {
-			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
 			auto ori = m_pComTransform->GetPosition();
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			if (false) {
+				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+
+				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
+				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+			}
+
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 
