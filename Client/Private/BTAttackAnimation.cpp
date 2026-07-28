@@ -48,7 +48,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
 	
 		Active_Skill();
-	
+		Gravity();
 		_bool bFinished = pAnimator->GetFinish();
 
 		_float fAnimRatio = pAnimator->GetPlayAnimRatio();

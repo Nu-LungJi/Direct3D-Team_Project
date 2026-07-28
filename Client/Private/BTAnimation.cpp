@@ -39,6 +39,7 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	
 	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
 	_bool bFinished = pAnimator->GetFinish();
+	Gravity();
 	Active_Skill();
 	EventFlagToRatio(pAnimator->GetPlayAnimRatio());
 	if (m_bLoop || bFinished)

@@ -108,6 +108,7 @@ X(LEFT)			     \
 X(RIGHT)            \
 X(STRAIGHT)            \
 X(BACKWARD)               \
+X(UP)					\
 X(END)
 
 #define BTFLAG_M		\

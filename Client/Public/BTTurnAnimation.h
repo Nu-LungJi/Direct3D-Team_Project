@@ -28,7 +28,7 @@ private:
 	_bool						SelectAngle(_float fAngle);
 	void						Turn(_float fTimeDelta);
 private:
-	_bool						m_bTurn{false};
+	_bool						m_bTurn{ false };
 	_float						m_fAngle{};
 	float						m_fTick{};
 	_float3						m_vCurrentLook{}, m_vTargetLook{};

@@ -126,6 +126,7 @@ nlohmann::json CBTTurnAnimation::Save_Node()
 		_string Name = "AnimIndex" + std::to_string(i);
 		SaveJsonValue(j, Name,m_iTurnAnimIndex[i]);
 	}
+
 	return j;
 }
 HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
@@ -136,6 +137,7 @@ HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
 		_string Name = "AnimIndex" + std::to_string(i);
 		LoadJsonValue(j, Name, m_iTurnAnimIndex[i]);
 	}
+
 	return S_OK;
 }
 void CBTTurnAnimation::Abort()

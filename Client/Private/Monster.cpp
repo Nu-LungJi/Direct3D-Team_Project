@@ -93,13 +93,13 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 	__super::PriorityUpdate(fTimeDelta);
 	
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)))
-	{
 		m_pCharacterMotor->SetUseGravity(true);
-	}else m_pCharacterMotor->SetUseGravity(false);
+	else m_pCharacterMotor->SetUseGravity(false);
 		
 	if (CGameInstance::Get().KeyDown(DIK_1))
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
+	m_pCharacterMotor->SetGravity(-9.8f);
 	m_pBeHavior->Update(fTimeDelta);
 	RunningSkill(fTimeDelta);
 }
@@ -326,6 +326,11 @@ _bool CMonster::Activate_PendingHit()
 
 void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
+	
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+	{
+		return;
+	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return;
 

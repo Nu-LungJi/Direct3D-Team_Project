@@ -37,7 +37,7 @@ EVALUATE CBTMonResetTable::Evaluate(_float fTimeDelta)
 	{
 		if (auto pMonster = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			if (m_bIsActive == pMonster->Is_ActiveHit())
+			if (!pMonster->Is_ActiveHit())
 				return m_eDebug = EVALUATE::FAILED;
 
 			pMonster->Clear_PendingHit();

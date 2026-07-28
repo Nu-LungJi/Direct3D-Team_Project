@@ -2,6 +2,7 @@
 #include "BTHitAnimMonster.h"
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
+#include "ComCharacterMotor.h"
 NS_USING(Client)
 
 CBTHitAnimMonster::CBTHitAnimMonster()
@@ -56,13 +57,14 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 					return m_eDebug = EVALUATE::SUCCESS;
 			}
 		}
-		
+		Gravity();
 		pAnimator->SetPlay(true);
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
+		_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 		_bool bFinished = pAnimator->GetFinish();
 
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
-		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
+		if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 		{
 			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
@@ -73,6 +75,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
 				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+			else if (m_eMove == MOVE::UP)
+				vMoveDirection = XMVectorSet(0, 1, 0, 0);
 
 			if (m_eMove != MOVE::END)
 			{
@@ -81,8 +85,13 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				pMoveIntent->SetMoveIntent(vDirection, m_Value.fSpeed);
 			}
 		}
-		EventFlagToRatio(pAnimator->GetPlayAnimRatio());
+		EventFlagToRatio(fAnimRatio);
 
+		if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
+		{
+			m_bStart = true;
+			return m_eDebug = EVALUATE::SUCCESS;
+		}
 		if (bFinished)
 		{
 			m_bStart = true;
@@ -94,12 +103,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 void CBTHitAnimMonster::Update_Gui()
 {
 	__super::Update_Gui();
-	ImGui::Text("Move Speed");
-	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
-	if (ImGui::Button("Interrupt : "))
-		m_bInterrupt = !m_bInterrupt;
-	ImGui::SameLine();
-	ImGui::Text(m_bInterrupt == true ? "TRUE" : "FALSE");
+	DragFloat("Move Speed", m_Value.fSpeed);
+	BoolButton("Interrupt : ", m_bInterrupt);
 
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -168,7 +173,6 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	SaveJsonValue(j, "Interrupt", m_bInterrupt);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-
 	if (!m_HitTable.empty())
 	{
 		size_t iArray = m_HitTable.size();
@@ -197,7 +201,7 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "Interrupt", m_bInterrupt);
-	
+
 	size_t iArray = 0;
 
 	if(LoadJsonValue(j, "HitTableArrayCnt", iArray))
@@ -244,7 +248,9 @@ _bool CBTHitAnimMonster::HitType()
 					});
 
 			}
-			
+			if (iter == m_HitTable.end())
+				return false;
+
 			pSrc->Clear_PendingHit();
 			if (iter != m_HitTable.end())
 			{
@@ -259,6 +265,7 @@ _bool CBTHitAnimMonster::HitType()
 	}
 	return false;
 }
+
 void CBTHitAnimMonster::ComboAttMon(const _char* pName, ATTMON& eTye)
 {
 	if (ImGui::BeginCombo(pName, MagicEnumToStringView(eTye).data()))

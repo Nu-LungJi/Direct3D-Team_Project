@@ -43,7 +43,7 @@ EVALUATE CBTDecIsGround::Evaluate(_float fTimeDelta)
 			else
 			{
 				__super::Evaluate(fTimeDelta);
-				m_eDebug = EVALUATE::RUN;
+				return m_eDebug = EVALUATE::RUN;
 			}
 		}
 	}
