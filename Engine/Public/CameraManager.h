@@ -39,7 +39,7 @@ public:
 	_bool IsCinematicCameraActive() const;
 
 	HRESULT RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset);
-	HRESULT LoadCinematic(const StringID& CinematicID, const std::string& filepath);
+	HRESULT LoadCinematic(const std::string& CinematicName);
 	HRESULT PlayCinematic(const StringID& CinematicID);
 	void StopCinematic();
 	_bool IsCinematicPlaying() const;

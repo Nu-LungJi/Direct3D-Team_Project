@@ -3,8 +3,39 @@
 #include "CameraManager.h"
 #include "CinematicCamera.h"
 #include "CinematicAsset.h"
+#include "GameInstance.h"
 
 NS_USING(Engine)
+
+namespace
+{
+	constexpr const _char* CINEMATIC_LOAD_ROOT =
+		"./Resources/json/Cinematics";
+	constexpr const _char* CINEMATIC_JSON_ROOT =
+		"Cinematic";
+
+	_bool IsValidCinematicName(const std::string& CinematicName)
+	{
+		if (CinematicName.empty() ||
+			CinematicName == "." ||
+			CinematicName == ".." ||
+			CinematicName.find_first_of("<>:\"/\\|?*") !=
+				std::string::npos ||
+			static_cast<unsigned char>(CinematicName.back()) <= 0x20 ||
+			CinematicName.back() == '.')
+		{
+			return false;
+		}
+
+		return std::none_of(
+			CinematicName.begin(),
+			CinematicName.end(),
+			[](_char Character)
+			{
+				return static_cast<unsigned char>(Character) < 0x20;
+			});
+	}
+}
 
 CCinematicSystem::CCinematicSystem(CCameraManager& CameraManager)
 	: m_CameraManager{CameraManager}
@@ -117,9 +148,35 @@ HRESULT CCinematicSystem::RegistAsset(const SPtr<CCinematicAsset>& pAsset)
 	return S_OK;
 }
 
-HRESULT CCinematicSystem::Load(const StringID& CinematicID, const std::string& filepath)
+HRESULT CCinematicSystem::Load(const std::string& CinematicName)
 {
-	return E_NOTIMPL;
+	if (!IsValidCinematicName(CinematicName))
+	{
+		return E_INVALIDARG;
+	}
+
+	const std::filesystem::path FilePath = std::filesystem::path{ CINEMATIC_LOAD_ROOT } / (CinematicName + ".json");
+
+	FCinematicAssetData Data{};
+	const SERIALIZE_RESULT Result = CGameInstance::Get().JsonDeSerializeDetailed(FilePath.generic_string(), Data, CINEMATIC_JSON_ROOT);
+	if (Result.Failed())
+	{
+		return Result.hResult;
+	}
+
+	const StringID RequestedID{ CinematicName };
+	if (Data.CinematicID.hash == 0 || Data.CinematicID != RequestedID)
+	{
+		return E_FAIL;
+	}
+
+	auto pAsset = CCinematicAsset::Create(Data);
+	if (pAsset == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	return RegistAsset(pAsset);
 }
 
 HRESULT CCinematicSystem::Play(const StringID& CinematicID)

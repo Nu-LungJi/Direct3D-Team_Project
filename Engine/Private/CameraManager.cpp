@@ -242,14 +242,15 @@ HRESULT CCameraManager::RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset
 	return m_pCinematicSystem->RegistAsset(pAsset);
 }
 
-HRESULT CCameraManager::LoadCinematic(const StringID& CinematicID, const std::string& filepath)
+HRESULT CCameraManager::LoadCinematic(
+	const std::string& CinematicName)
 {
 	if (!m_pCinematicSystem)
 	{
 		return E_FAIL;
 	}
 
-	return m_pCinematicSystem->Load(CinematicID, filepath);
+	return m_pCinematicSystem->Load(CinematicName);
 }
 
 HRESULT CCameraManager::PlayCinematic(const StringID& CinematicID)

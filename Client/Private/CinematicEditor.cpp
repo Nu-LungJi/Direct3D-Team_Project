@@ -9,10 +9,8 @@ NS_USING(Client)
 
 namespace
 {
-	constexpr const _char* CINEMATIC_SAVE_ROOT =
-		"./Resources/json/Cinematics";
-	constexpr const _char* CINEMATIC_JSON_ROOT =
-		"Cinematic";
+	constexpr const _char* CINEMATIC_SAVE_ROOT = "./Resources/json/Cinematics";
+	constexpr const _char* CINEMATIC_JSON_ROOT = "Cinematic";
 
 	_bool TryBuildCinematicPath(
 		const _char* pCinematicID,

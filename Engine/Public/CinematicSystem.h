@@ -26,7 +26,7 @@ public:
 
 public:
 	HRESULT RegistAsset(const SPtr<CCinematicAsset>& pAsset);
-	HRESULT Load(const StringID& CinematicID, const std::string& filepath);
+	HRESULT Load(const std::string& CinematicName);
 	HRESULT Play(const StringID& CinematicID);
 	void Stop();
 	_bool IsPlaying() const;

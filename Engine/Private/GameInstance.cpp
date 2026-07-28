@@ -1012,6 +1012,11 @@ HRESULT CGameInstance::RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset)
 {
 	return m_pCameraManager->RegistCinematicAsset(pAsset);
 }
+HRESULT CGameInstance::LoadCinematic(
+	const std::string& CinematicName)
+{
+	return m_pCameraManager->LoadCinematic(CinematicName);
+}
 HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
 {
 	return m_pCameraManager->PlayCinematic(CinematicID);
