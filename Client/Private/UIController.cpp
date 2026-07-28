@@ -102,6 +102,27 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 			
 	}
+	//************** 몬스터hp
+	if (E::CGameInstance::Get().KeyDown(DIK_O))
+	{
+		if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
+		{
+			PlayMonsterHPDelete(*m_MonsterHP);
+		}
+		else
+		{
+			m_bMonsterHP = true;
+		}
+	}
+
+	if (m_bMonsterHP)
+	{
+		CreateMonsterHP();
+		m_bMonsterHP = false;
+	}
+
+	if (E::CGameInstance::Get().KeyDown(DIK_P))
+		AddMonsterHP(-30.f);
 }
 
 void CUIController::LateUpdate(E::_float fTimeDelta)
@@ -213,15 +234,6 @@ void CUIController::DeleteSpellType()
 	}
 }
 
-void CUIController::AppearPlayScreen()
-{
-	
-}
-
-void CUIController::DisappearPlayeSceen()
-{
-}
-
 void CUIController::SetHPMax(_float maxHP)
 {
 	if (nullptr != SafeGetOBJ(m_PlayerHP))
@@ -242,10 +254,6 @@ void CUIController::AddFinisher(_float amountFill)
 {
 	m_FinisherAmount += amountFill;
 	SetFinisher(m_FinisherAmount);
-}
-
-void CUIController::MinusFinisher(_float amountFill)
-{
 }
 
 void CUIController::SetFinisher(_float amountFill)
@@ -377,6 +385,21 @@ void CUIController::UsePotion()
 	AddHP(400.f);
 }
 
+void CUIController::TargetMonsterHP(CHandle monsterHandle)
+{
+
+}
+
+void CUIController::CreateMonsterHP()
+{
+	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
+}
+
+void CUIController::AddMonsterHP(_float fill)
+{
+	static_cast<CHPBar*>(SafeGetOBJ(*m_MonsterHP))->AddFill(fill);
+}
+
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)
 {
 	if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
@@ -424,6 +447,33 @@ void CUIController::PlayFadeOutDelete(CHandle pHandle)
 			pBtn->SetAlpha(currentValue);
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad);
+}
+
+void CUIController::PlayMonsterHPDelete(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float scaleRatio = pBtn->GetScaleRatio();
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(scaleRatio, 0.5f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetScaleRatio(currentValue);
+			pBtn->CalcUICoord();
+		}, nullptr, EEaseType::EaseOutQuad);
+
+	pTween->PlayTween(Alpah, 0.f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+			pBtn->CalcUICoord();
+		}, [pHandle, this]() {
+			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			this->SetMonsterHPBool(true);
+			this->SetMonsterHPNull();
 			}, EEaseType::EaseOutQuad);
 }
 

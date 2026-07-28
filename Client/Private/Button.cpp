@@ -21,6 +21,13 @@ CButton::CButton()
 
 CButton::~CButton()
 {
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
+	{
+		if(nullptr != SafeGetOBJ(m_SpellDesc))
+			PlayScaleAlphaDownDelete(m_SpellDesc);
+		if (nullptr != SafeGetOBJ(m_SpellPaper))
+			PlayScaleAlphaDownDelete(m_SpellPaper);
+	}
 }
 
 HRESULT CButton::InitializePrototype(void* pArg)
@@ -210,6 +217,13 @@ void CButton::PlayEffect(uint32_t uiState)
 			ClearHoveredEffect();
 			pHoverUI->OnHoverEnter(pHoverUI);
 		}
+
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
+		{
+			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab("0SpellDesc");
+			m_SpellDesc = vSpellDesc[0];
+			m_SpellPaper = vSpellDesc[1];
+		}
 	}
 
 	if (uiState & ETOUI(UI_STATE::EXIT))
@@ -225,6 +239,12 @@ void CButton::PlayEffect(uint32_t uiState)
 			CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
 			ClearHoveredEffect();
 			pHoverUI->OnHoverExit(pHoverUI);
+		}
+		
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
+		{
+			PlayScaleAlphaDownDelete(m_SpellDesc);
+			PlayScaleAlphaDownDelete(m_SpellPaper);
 		}
 	}
 
@@ -339,6 +359,39 @@ void CButton::SpellBtnSet()
 		m_colorType = 5;
 		break;
 	}
+}
+
+void CButton::PlayScaleAlphaDownDelete(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float scaleRatio = pBtn->GetScaleRatio();
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(scaleRatio, 0.f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetScaleRatio(currentValue);
+			pBtn->CalcUICoord();
+		}, [pHandle]() {
+			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad);
+
+		pTween->PlayTween(Alpah, 0.f, 0.1f,
+			[pBtn](float currentValue) {
+				pBtn->SetAlpha(currentValue);
+				pBtn->CalcUICoord();
+			}, nullptr, EEaseType::EaseOutQuad);
+}
+
+E::CUIObject* CButton::SafeGetOBJ(CHandle pHandle)
+{
+	if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
+		return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
+
+	return nullptr;
 }
 
 E::UPtr<CButton> CButton::Create()

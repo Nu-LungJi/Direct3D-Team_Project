@@ -140,6 +140,66 @@ void UIManager::InitializeActions()
 		};
 	m_vEventNames.push_back("AppearScaleUp0.1");
 
+	m_EventMap["AppearScaleUp1"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetActive(true);
+			CHandle handle = pCaller->GetHandle();
+			_float scaleRatio = pCaller->GetScaleRatio();
+
+			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.f);
+
+			pTween->PlayTween(0.f, 1.f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetAlpha(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.f);
+		};
+	m_vEventNames.push_back("AppearScaleUp1");
+
+	m_EventMap["AppearScaleUp1.1"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetActive(true);
+			CHandle handle = pCaller->GetHandle();
+			_float scaleRatio = pCaller->GetScaleRatio();
+
+			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
+
+			pTween->PlayTween(0.f, 1.f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetAlpha(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
+		};
+	m_vEventNames.push_back("AppearScaleUp1.1");
+
 	m_EventMap["TextScaleUp"] = [](CUIObject* pCaller)
 	{
 		if (!pCaller) return;

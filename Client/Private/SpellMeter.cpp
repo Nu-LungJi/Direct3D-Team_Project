@@ -273,7 +273,7 @@ void CSpellMeter::SetResTag()
 		break;
 	case ETOUI(SPELL_TYPE::B_GLACIUS):
 	case ETOUI(SPELL_TYPE::GLACIUS):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_ArrestoMomentum_Overlay";
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Glacius_Overlay";
 		m_colorType = 2;
 		m_CoolTime = 5.f;
 		break;
@@ -493,7 +493,7 @@ void CSpellMeter::SetResTag()
 		m_BGColor = { 0.62f * 1.2f, 0.12f * 1.2f, 0.94f * 1.2f, 1.0f }; // 보라색
 		break;
 	case 4:
-		m_BGColor = { 0.714f * 1.2f, 0.857f * 1.2f, 1.f * 1.2f, 1.0f }; // 하늘색
+		m_BGColor = { 0.714f * 1.5f, 0.857f * 1.5f, 1.f * 1.5f, 1.0f }; // 하늘색
 		break;
 	case 5:
 		m_BGColor = { 0.01f, 0.f, 0.f, 1.f }; // 검은색

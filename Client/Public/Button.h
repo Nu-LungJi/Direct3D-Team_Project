@@ -66,11 +66,14 @@ private:
 private:
 	std::string m_EffectTag;
 
-	/******버튼타입*****/
+	/******스펠 디스크립션*****/
+	CHandle m_SpellDesc;
+	CHandle m_SpellPaper;
 private:
 	/*******스펠버튼*****/
 	void SpellBtnSet();
-
+	void PlayScaleAlphaDownDelete(CHandle pHandle);
+	CUIObject* SafeGetOBJ(CHandle pHandle);
 private:
 	uint32_t m_SpellType{};
 	uint32_t m_colorType{};
