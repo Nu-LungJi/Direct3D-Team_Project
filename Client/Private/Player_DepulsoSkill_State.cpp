@@ -37,6 +37,8 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	// Depulso 이동은 애니메이션 Root Motion이 아니라 아래의 조절 가능한
+	// 전방 이동 구간을 사용한다.
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DEPULSO);
@@ -51,8 +53,8 @@ void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	// 고쳐야 할거 
-	m_DepulsoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
-	m_DepulsoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm");
+	m_DepulsoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Charge_Depulso_anm.bin");
+	m_DepulsoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Charge_Depulso_anm.bin");
 
 	m_bAnimationIndicesCached = m_DepulsoCast_Animation >= 0 && m_DepulsoEnd_Animation >= 0;
 }
@@ -83,10 +85,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
-			pAnimator->Play_Anim(
-				m_DepulsoCast_Animation,
-				false,
-				0.24f);
+			pAnimator->Play_Anim(m_DepulsoCast_Animation,false,0.24f);
 		}
 		break;
 
@@ -94,7 +93,6 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= ATTACK_END_RATIO)
 		{
 			m_ePhase = PHASE::RECOVERY;
-			pAnimator->Play_Anim(m_DepulsoEnd_Animation, false, 0.25f);
 			pAnimator->GetCurAnimState().fSpeed = 1.f;
 		}
 		break;

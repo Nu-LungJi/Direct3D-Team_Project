@@ -10,6 +10,79 @@ NS_USING(Engine)
 
 void CComAnimator::UpdateGUI()
 {
+	CComponent::UpdateGUI();
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Extracted Root Motion");
+	ImGui::Text("Enabled: %s", m_bRootMotion ? "true" : "false");
+	ImGui::Text("Root Bone Index: %d", m_iRootBoneIndex);
+	ImGui::Text(
+		"Translation Delta: %.5f, %.5f, %.5f",
+		m_vRootMotionDelta.x,
+		m_vRootMotionDelta.y,
+		m_vRootMotionDelta.z);
+	ImGui::Text(
+		"Rotation Delta (Quaternion): %.5f, %.5f, %.5f, %.5f",
+		m_qRootMotionRotationDelta.x,
+		m_qRootMotionRotationDelta.y,
+		m_qRootMotionRotationDelta.z,
+		m_qRootMotionRotationDelta.w);
+
+	const _vector qRotation = XMQuaternionNormalize(
+		XMLoadFloat4(&m_qRootMotionRotationDelta));
+	_vector vRotationAxis{};
+	_float fRotationAngle{};
+	XMQuaternionToAxisAngle(
+		&vRotationAxis,
+		&fRotationAngle,
+		qRotation);
+
+	_float3 vRotationAxisValue{};
+	XMStoreFloat3(&vRotationAxisValue, vRotationAxis);
+	ImGui::Text(
+		"Rotation Delta (Axis): %.5f, %.5f, %.5f",
+		vRotationAxisValue.x,
+		vRotationAxisValue.y,
+		vRotationAxisValue.z);
+	ImGui::Text(
+		"Rotation Delta (Angle): %.3f deg",
+		XMConvertToDegrees(fRotationAngle));
+
+	_float4x4 rootMotionTransform{};
+	XMStoreFloat4x4(
+		&rootMotionTransform,
+		XMMatrixRotationQuaternion(qRotation) *
+		XMMatrixTranslation(
+			m_vRootMotionDelta.x,
+			m_vRootMotionDelta.y,
+			m_vRootMotionDelta.z));
+
+	ImGui::TextUnformatted("Delta Transform");
+	ImGui::Text(
+		"[ %.5f  %.5f  %.5f  %.5f ]",
+		rootMotionTransform._11,
+		rootMotionTransform._12,
+		rootMotionTransform._13,
+		rootMotionTransform._14);
+	ImGui::Text(
+		"[ %.5f  %.5f  %.5f  %.5f ]",
+		rootMotionTransform._21,
+		rootMotionTransform._22,
+		rootMotionTransform._23,
+		rootMotionTransform._24);
+	ImGui::Text(
+		"[ %.5f  %.5f  %.5f  %.5f ]",
+		rootMotionTransform._31,
+		rootMotionTransform._32,
+		rootMotionTransform._33,
+		rootMotionTransform._34);
+	ImGui::Text(
+		"[ %.5f  %.5f  %.5f  %.5f ]",
+		rootMotionTransform._41,
+		rootMotionTransform._42,
+		rootMotionTransform._43,
+		rootMotionTransform._44);
+
 	//if (ImGui::Button("save")) {
 	//	CGameInstance::Get( ).JsonSerialize("./Test.json", m_CurAnimState);
 	//}

@@ -121,7 +121,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 			_vector destination = playerPos + playerLook * 10.f;
 
-			_vector offset = { 0.f,0.1f,0.f };
+			_vector offset = { 0.f,0.3f,0.f };
 
 			targetPos = offset + targetPos;
 

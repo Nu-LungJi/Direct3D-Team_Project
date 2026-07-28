@@ -40,8 +40,10 @@ private:
 
 	PHASE m_ePhase = PHASE::CAST;
 	static constexpr _float CAST_START_RATIO = 0.f;
-	static constexpr _float ATTACK_END_RATIO = 0.7f;
+	static constexpr _float ATTACK_END_RATIO = 0.5f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 1.f;
+
+	// Depulso 이동 조절값. Root Motion 대신 이 구간 동안 전방으로 이동한다.
 	_float	m_fAnimRatio = 0.f;
 
 };
