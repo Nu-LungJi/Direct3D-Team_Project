@@ -93,7 +93,7 @@ public:
 
 
 public:
-	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& p);
+	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& params);
 	HRESULT Save_Binary_Json(std::string outpath,
 		const std::string& FullPath, const std::string& whatKind,
 		const std::string& particleType, const std::string& particleName,
@@ -125,8 +125,9 @@ public:
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
-		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType,const std::string& textureID1 = "", const std::string& textureID2 = "",
-		int RowCount = 1,int ColCount = 1);
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, 
+		const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount, int iSelectedBlend,
+		_float beamWidth, _float scrollSpeed, uint32_t maxBeams, uint32_t maxDisplacementIterations);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
@@ -155,8 +156,9 @@ public:
 	void SetColorByOwner(uint32_t ownerId, const _float4& color);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
-
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
+	HRESULT StopBeam(const BEAM_HANDLE& handle);
 public:
 
 private:

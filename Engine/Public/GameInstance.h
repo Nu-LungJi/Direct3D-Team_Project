@@ -337,6 +337,9 @@ public:
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
 	void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& params);
+	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
+	HRESULT StopBeam(const BEAM_HANDLE& handle);
 #pragma endregion
 
 #pragma region EFFECT_MANAGER

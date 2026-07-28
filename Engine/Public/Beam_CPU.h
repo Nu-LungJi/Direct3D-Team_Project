@@ -48,6 +48,7 @@ public:
         // 이 빔만의 세그먼트 정보 (개별적으로 다를 수 있음)
         uint32_t    iSegmentCount = 0;        // = 2^iDisplacementIterations
         uint32_t    iVerticesPerPlane = 0;    // = (iSegmentCount+1) * 2
+		uint32_t	ownerId = 0;
 
         std::vector<_float3> vecJaggedPoints;
     };
@@ -67,11 +68,8 @@ public:
 	void SetBeamPositions(uint32_t beamIndex, const _float4& start, const _float4& end);
 
 public:
-    int32_t AddBeam(const _float4& vStart, const _float4& vEnd,
-        _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration = 0.f);
-	int32_t AddBeam(const _float4& vStart, const _float4& vEnd);
-    void    SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration = 0.f);
+	int32_t AddBeam(const BEAM_PARAMS& p);
+	void    SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuration = 0.f);
     void    SetStartPos(uint32_t beamIndex, const _float4& vPos);
     void    SetEndPos(uint32_t beamIndex, const _float4& vPos);
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
