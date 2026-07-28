@@ -16,15 +16,7 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
-	if (!HasValidTarget(*pPlayer))
-	{
-		RequestLocomotion(pStateMachine);
-		return;
-	}
-
-	CacheAnimationIndices(*pPlayer);
-
-	if (m_DescendoCast_Animation < 0 || m_DescendoEnd_Animation < 0)
+	if (!HasTarget(*pPlayer))
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -83,17 +75,14 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
-			pAnimator->Play_Anim(m_DescendoCast_Animation,false,0.24f);
+			if (!PlayRandomTargetAttack(*pPlayer))
+				RequestLocomotion(pStateMachine);
 		}
 		break;
 
 	case PHASE::ATTACK:
 		if (m_fAnimRatio >= ATTACK_END_RATIO)
-		{
-			m_ePhase = PHASE::RECOVERY;
-			pAnimator->Play_Anim(m_DescendoEnd_Animation, false, 0.25f);
-			pAnimator->GetCurAnimState().fSpeed = 1.f;
-		}
+			RequestLocomotion(pStateMachine);
 		break;
 
 	case PHASE::RECOVERY:
