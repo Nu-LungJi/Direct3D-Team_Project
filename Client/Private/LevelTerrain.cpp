@@ -12,8 +12,15 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Mon_Weapon.h"
 #include "Client_Defines.h"
+#include "ComPxCharacterController.h"
+#include "ComPxD6Joint.h"
+#include "ComPxDistanceJoint.h"
+#include "ComPxRevoluteJoint.h"
+#include "ComPxRigidBody.h"
 #include "OilBarrel.h"
+#include "RagdollTest.h"
 
+#include "TmbGurdian.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -28,6 +35,22 @@ CLevelTerrain::~CLevelTerrain()
 HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
+	std::array<CHandle, 6> hOilBarrels{};
+	CGameInstance::Get().Initialize_EffectLight(15);
+
+	{
+		CRagdollTest::DESC tDesc{};
+		tDesc.sObjectTag = "RagdollTest";
+		tDesc.vInitialPosition = { 10.f, 5.f, 10.f };
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_RagdollTest,
+			"03_PhysXTest",
+			&tDesc))
+		{
+			return E_FAIL;
+		}
+	}
 
 	{
 		
@@ -43,19 +66,441 @@ HRESULT CLevelTerrain::Initialize()
 		for (uint32_t i = 0; i < 6; ++i)
 		{
 			COilBarrel::DESC desc{};
-			desc.sObjectTag = "TestDynamic";
-			desc.vInitialPosition = { 15.f, 55.f + (i * 3.f), 15.f };
+			desc.sObjectTag = "OilBarrel";
+			desc.vInitialPosition = {
+				5.f + (static_cast<_float>(i) + 1.f) * 3.f,
+				96.f,
+				5.f
+			};
 			desc.vConvexScale = { 300.f, 300.f, 300.f };
-			if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			const auto hOilBarrel =
+				E::CGameInstance::Get().AddGameObjectToLayer(
 				LEVEL::TERRAIN,
 				PROTO_GAMEOBJECT::Prototype_GameObject_OilBarrel,
 				"03_PhysXTest",
-				&desc))
+				&desc);
+			if (!hOilBarrel)
 				return E_FAIL;
+
+			hOilBarrels[i] = *hOilBarrel;
 		}
 	}
 
-	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+	const auto hPlayer = SpawnPlayer();
+	if (!hPlayer)
+		return E_FAIL;
+
+	if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
+		return E_FAIL;
+
+	if (FAILED(InitializeCamerasAndLighting(hPlayer)))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::InitializeJointTests(
+	CHandle hPlayer,
+	const std::array<CHandle, 6>& hOilBarrels)
+{
+	auto& gameInstance = E::CGameInstance::Get();
+	auto* pPlayer =
+		gameInstance.GetGameObjectByHandleT<CPlayer>(hPlayer);
+	auto* pCharacterController =
+		pPlayer
+		? pPlayer->GetComponent<CComPxCharacterController>(
+			"ComPxCharacterController")
+		: nullptr;
+	if (!pPlayer || !pCharacterController)
+		return E_FAIL;
+
+	std::array<COilBarrel*, 6> pOilBarrels{};
+	for (size_t i = 0; i < hOilBarrels.size(); ++i)
+	{
+		pOilBarrels[i] =
+			gameInstance.GetGameObjectByHandleT<COilBarrel>(
+				hOilBarrels[i]);
+		if (!pOilBarrels[i] || !pOilBarrels[i]->GetRigidBody())
+			return E_FAIL;
+	}
+
+	CComPxDistanceJoint::DESC tHeadJointDesc{};
+	tHeadJointDesc.pCharacterControllerA = pCharacterController;
+	tHeadJointDesc.pRigidBodyB = pOilBarrels[0]->GetRigidBody();
+	tHeadJointDesc.fMinDistance = 0.f;
+	tHeadJointDesc.fMaxDistance = 5.f;
+	tHeadJointDesc.fTolerance = 0.025f;
+	tHeadJointDesc.bMinDistanceEnabled = false;
+	tHeadJointDesc.bMaxDistanceEnabled = true;
+	tHeadJointDesc.bSpringEnabled = false;
+	tHeadJointDesc.bCollisionEnabled = false;
+	tHeadJointDesc.bVisualizationEnabled = true;
+	tHeadJointDesc.iJointSubIndex = 100u;
+
+	CComPxDistanceJoint* pHeadJoint =
+		gameInstance.AddPxJoint<CComPxDistanceJoint>(
+			*pPlayer,
+			"ComPxDistanceJoint_OilBarrelHead",
+			tHeadJointDesc);
+	if (!pHeadJoint)
+	{
+		return E_FAIL;
+	}
+
+	for (size_t i = 0; i + 1 < pOilBarrels.size(); ++i)
+	{
+		if (!pOilBarrels[i]->CreateDistanceJoint(
+			pOilBarrels[i + 1],
+			3.f,
+			static_cast<uint32_t>(101u + i)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		COilBarrel::DESC tBarrelDesc{};
+		tBarrelDesc.sObjectTag = "OilBarrel_RevoluteTest";
+		tBarrelDesc.vInitialPosition = { 22.f, 3.f, 18.f };
+		tBarrelDesc.vConvexScale = { 300.f, 300.f, 300.f };
+
+		const auto hRevoluteBarrel =
+			gameInstance.AddGameObjectToLayer(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_OilBarrel,
+				"03_PhysXTest",
+				&tBarrelDesc);
+		if (!hRevoluteBarrel)
+			return E_FAIL;
+
+		auto* pRevoluteBarrel =
+			gameInstance.GetGameObjectByHandleT<COilBarrel>(
+				*hRevoluteBarrel);
+		if (!pRevoluteBarrel ||
+			!pRevoluteBarrel->GetRigidBody())
+		{
+			return E_FAIL;
+		}
+
+		CComPxRevoluteJoint::DESC tJointDesc{};
+		tJointDesc.pRigidBodyB =
+			pRevoluteBarrel->GetRigidBody();
+		tJointDesc.bPreserveCurrentPose = false;
+		tJointDesc.tLocalFrameA.vPosition =
+			tBarrelDesc.vInitialPosition;
+		tJointDesc.tLocalFrameA.vRotation = {
+			0.f,
+			0.f,
+			0.70710678f,
+			0.70710678f
+		};
+		tJointDesc.tLocalFrameB.vRotation =
+			tJointDesc.tLocalFrameA.vRotation;
+		tJointDesc.fLowerLimitDegrees = 0.f;
+		tJointDesc.fUpperLimitDegrees = 179.9f;
+		tJointDesc.bLimitEnabled = true;
+		tJointDesc.fDriveVelocityDegreesPerSecond = 0.f;
+		tJointDesc.fDriveForceLimit = 0.f;
+		tJointDesc.fDriveGearRatio = 1.f;
+		tJointDesc.bDriveEnabled = false;
+		tJointDesc.bDriveFreeSpin = false;
+		tJointDesc.bCollisionEnabled = false;
+		tJointDesc.bVisualizationEnabled = true;
+		tJointDesc.iJointSubIndex = 200u;
+
+		CComPxRevoluteJoint* pRevoluteJoint =
+			gameInstance.AddPxJoint<CComPxRevoluteJoint>(
+				*pRevoluteBarrel,
+				"ComPxRevoluteJoint_WorldTest",
+				tJointDesc);
+		if (!pRevoluteJoint)
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		constexpr size_t D6_TEST_COUNT = 6;
+		constexpr _float D6_TEST_START_X = 30.f;
+		constexpr _float D6_TEST_SPACING = 4.f;
+		constexpr _float D6_TEST_Y = 5.f;
+		constexpr _float D6_TEST_Z = 5.f;
+
+		std::array<COilBarrel*, D6_TEST_COUNT> pD6Barrels{};
+		std::array<_float3, D6_TEST_COUNT> vD6Positions{};
+
+		for (size_t i = 0; i < D6_TEST_COUNT; ++i)
+		{
+			vD6Positions[i] = {
+				D6_TEST_START_X +
+					static_cast<_float>(i) * D6_TEST_SPACING,
+				D6_TEST_Y,
+				D6_TEST_Z
+			};
+
+			COilBarrel::DESC tBarrelDesc{};
+			tBarrelDesc.sObjectTag =
+				"OilBarrel_D6Test_" + std::to_string(i);
+			tBarrelDesc.vInitialPosition = vD6Positions[i];
+			tBarrelDesc.vConvexScale = { 300.f, 300.f, 300.f };
+
+			const auto hD6Barrel =
+				gameInstance.AddGameObjectToLayer(
+					LEVEL::TERRAIN,
+					PROTO_GAMEOBJECT::Prototype_GameObject_OilBarrel,
+					"03_PhysXTest",
+					&tBarrelDesc);
+			if (!hD6Barrel)
+				return E_FAIL;
+
+			pD6Barrels[i] =
+				gameInstance.GetGameObjectByHandleT<COilBarrel>(
+					*hD6Barrel);
+			if (!pD6Barrels[i] ||
+				!pD6Barrels[i]->GetRigidBody())
+			{
+				return E_FAIL;
+			}
+		}
+
+		const auto AddD6WorldJoint =
+			[](
+				COilBarrel* pBarrel,
+				const char* pComponentTag,
+				CComPxD6Joint::DESC& tJointDesc)
+			-> CComPxD6Joint*
+			{
+				if (!pBarrel || !pBarrel->GetRigidBody())
+					return nullptr;
+
+				tJointDesc.pRigidBodyB =
+					pBarrel->GetRigidBody();
+				tJointDesc.bCollisionEnabled = false;
+				tJointDesc.bVisualizationEnabled = true;
+
+				return CGameInstance::Get()
+					.AddPxJoint<CComPxD6Joint>(
+						*pBarrel,
+						pComponentTag,
+						tJointDesc);
+			};
+
+		// D6 0: ��� �� ���. Fixed Joint�� ���� ���� ������ Ȯ���Ѵ�.
+		{
+			CComPxD6Joint::DESC tJointDesc{};
+			tJointDesc.bPreserveCurrentPose = true;
+			tJointDesc.iJointSubIndex = 300u;
+
+			if (!AddD6WorldJoint(
+				pD6Barrels[0],
+				"ComPxD6Joint_AllLocked",
+				tJointDesc))
+			{
+				return E_FAIL;
+			}
+		}
+
+		// D6 1: X�ุ -3~3 �̵��ϰ� �Ѱ������� �ݹ��ϴ� �����̴�.
+		{
+			CComPxD6Joint::DESC tJointDesc{};
+			tJointDesc.bPreserveCurrentPose = true;
+			tJointDesc.eMotions[
+				static_cast<size_t>(CComPxD6Joint::AXIS::X)] =
+				CComPxD6Joint::MOTION::LIMITED;
+			tJointDesc.tLinearLimits[
+				static_cast<size_t>(CComPxD6Joint::AXIS::X)] = {
+				.fLower = -3.f,
+				.fUpper = 3.f,
+				.tResponse = {
+					.fRestitution = 0.75f,
+					.fBounceThreshold = 0.1f
+				}
+			};
+			tJointDesc.iJointSubIndex = 301u;
+
+			if (!AddD6WorldJoint(
+				pD6Barrels[1],
+				"ComPxD6Joint_LinearLimit",
+				tJointDesc) ||
+				!pD6Barrels[1]->GetRigidBody()
+					->SetLinearVelocity({ 6.f, 0.f, 0.f }))
+			{
+				return E_FAIL;
+			}
+		}
+
+		// D6 2: Y�� ���� �ȿ��� ��ǥ ��ġ�� �̵��ϴ� ���� ����.
+		{
+			CComPxD6Joint::DESC tJointDesc{};
+			tJointDesc.bPreserveCurrentPose = true;
+			tJointDesc.eMotions[
+				static_cast<size_t>(CComPxD6Joint::AXIS::Y)] =
+				CComPxD6Joint::MOTION::LIMITED;
+			tJointDesc.tLinearLimits[
+				static_cast<size_t>(CComPxD6Joint::AXIS::Y)] = {
+				.fLower = -2.f,
+				.fUpper = 2.f
+			};
+			tJointDesc.tDrives[
+				static_cast<size_t>(CComPxD6Joint::DRIVE::Y)] = {
+				.fStiffness = 80.f,
+				.fDamping = 15.f,
+				.fForceLimit = 1000.f,
+				.bAcceleration = true
+			};
+			tJointDesc.tDrivePose.vPosition = {
+				0.f,
+				1.5f,
+				0.f
+			};
+			tJointDesc.iJointSubIndex = 302u;
+
+			if (!AddD6WorldJoint(
+				pD6Barrels[2],
+				"ComPxD6Joint_LinearDrive",
+				tJointDesc))
+			{
+				return E_FAIL;
+			}
+		}
+
+		// D6 3: ���� X��(Twist)�� -60~60���� ������ �ӵ� ����.
+		{
+			CComPxD6Joint::DESC tJointDesc{};
+			tJointDesc.bPreserveCurrentPose = true;
+			tJointDesc.eMotions[
+				static_cast<size_t>(
+					CComPxD6Joint::AXIS::TWIST)] =
+				CComPxD6Joint::MOTION::LIMITED;
+			tJointDesc.tTwistLimit = {
+				.fLowerDegrees = -60.f,
+				.fUpperDegrees = 60.f,
+				.tResponse = {
+					.fRestitution = 0.25f,
+					.fBounceThreshold = 5.f
+				}
+			};
+			tJointDesc.tDrives[
+				static_cast<size_t>(
+					CComPxD6Joint::DRIVE::TWIST)] = {
+				.fStiffness = 0.f,
+				.fDamping = 20.f,
+				.fForceLimit = 1000.f,
+				.bAcceleration = true
+			};
+			tJointDesc.vDriveAngularVelocityDegreesPerSecond = {
+				120.f,
+				0.f,
+				0.f
+			};
+			tJointDesc.iJointSubIndex = 303u;
+
+			if (!AddD6WorldJoint(
+				pD6Barrels[3],
+				"ComPxD6Joint_TwistDrive",
+				tJointDesc))
+			{
+				return E_FAIL;
+			}
+		}
+
+		// D6 4: ������ ���忡 �����ϰ� Swing Cone �ȿ��� ��鸮�� ����.
+		{
+			constexpr _float PENDULUM_ANCHOR_HEIGHT = 3.f;
+
+			CComPxD6Joint::DESC tJointDesc{};
+			tJointDesc.bPreserveCurrentPose = false;
+			tJointDesc.tLocalFrameA.vPosition = {
+				vD6Positions[4].x,
+				vD6Positions[4].y + PENDULUM_ANCHOR_HEIGHT,
+				vD6Positions[4].z
+			};
+			tJointDesc.tLocalFrameB.vPosition = {
+				0.f,
+				PENDULUM_ANCHOR_HEIGHT,
+				0.f
+			};
+			tJointDesc.eMotions[
+				static_cast<size_t>(
+					CComPxD6Joint::AXIS::SWING_Y)] =
+				CComPxD6Joint::MOTION::LIMITED;
+			tJointDesc.eMotions[
+				static_cast<size_t>(
+					CComPxD6Joint::AXIS::SWING_Z)] =
+				CComPxD6Joint::MOTION::LIMITED;
+			tJointDesc.tSwingLimit = {
+				.fYDegrees = 60.f,
+				.fZDegrees = 40.f,
+				.tResponse = {
+					.fRestitution = 0.1f,
+					.fBounceThreshold = 1.f
+				}
+			};
+			tJointDesc.iJointSubIndex = 304u;
+
+			if (!AddD6WorldJoint(
+				pD6Barrels[4],
+				"ComPxD6Joint_SwingCone",
+				tJointDesc) ||
+				!pD6Barrels[4]->GetRigidBody()
+					->AddImpulse({ 8.f, 0.f, 0.f }))
+			{
+				return E_FAIL;
+			}
+		}
+
+		// D6 5: �� ȸ������ SLERP�� ��ǥ �ڼ��� ���ߴ� ���� ����.
+		{
+			CComPxD6Joint::DESC tJointDesc{};
+			tJointDesc.bPreserveCurrentPose = true;
+			tJointDesc.eMotions[
+				static_cast<size_t>(
+					CComPxD6Joint::AXIS::TWIST)] =
+				CComPxD6Joint::MOTION::FREE;
+			tJointDesc.eMotions[
+				static_cast<size_t>(
+					CComPxD6Joint::AXIS::SWING_Y)] =
+				CComPxD6Joint::MOTION::FREE;
+			tJointDesc.eMotions[
+				static_cast<size_t>(
+					CComPxD6Joint::AXIS::SWING_Z)] =
+				CComPxD6Joint::MOTION::FREE;
+			tJointDesc.eAngularDriveMode =
+				CComPxD6Joint::ANGULAR_DRIVE_MODE::SLERP;
+			tJointDesc.tDrives[
+				static_cast<size_t>(
+					CComPxD6Joint::DRIVE::SLERP)] = {
+				.fStiffness = 80.f,
+				.fDamping = 15.f,
+				.fForceLimit = 1000.f,
+				.bAcceleration = true
+			};
+
+			XMStoreFloat4(
+				&tJointDesc.tDrivePose.vRotation,
+				XMQuaternionRotationRollPitchYaw(
+					XMConvertToRadians(35.f),
+					XMConvertToRadians(50.f),
+					XMConvertToRadians(20.f)));
+			tJointDesc.iJointSubIndex = 305u;
+
+			if (!AddD6WorldJoint(
+				pD6Barrels[5],
+				"ComPxD6Joint_SlerpDrive",
+				tJointDesc))
+			{
+				return E_FAIL;
+			}
+		}
+	}
+
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::InitializeCamerasAndLighting(
+	const std::optional<CHandle>& hPlayer)
+{
+	if (FAILED(SpawnPlayerCamera(hPlayer)))
 		return E_FAIL;
 
 
@@ -106,7 +551,24 @@ HRESULT CLevelTerrain::Initialize()
 			CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
 
+		if (!BossTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;

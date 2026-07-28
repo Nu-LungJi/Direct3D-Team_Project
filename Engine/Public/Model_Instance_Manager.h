@@ -9,7 +9,8 @@ class CComModelInstance;
 class CComStaticModelInstance;
 class CResModel;
 
-
+#define MAX_INSTANCE_COUNT	512
+#define MAX_BONE_COUNT		512
 
 
 
@@ -60,6 +61,18 @@ public:
 public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 	bool HasRenderPass(RENDERPASS ePass) const override { return ePass == RENDERPASS::DEFAULT; };
+
+	/*----------- 광윤 추가 -----------*/
+public:
+	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch);
+	HRESULT Render_ShadowBatch(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
+	HRESULT Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
+	HRESULT	Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
+	HRESULT Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex);
+
+private:
+	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
+	/*---------------------------------*/
 
 private:
 	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComStaticModelInstance* pModelInstance, _bool bStaticModel);

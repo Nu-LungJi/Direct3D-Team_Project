@@ -33,6 +33,7 @@ public:
 protected:
 	void				Active_Skill();
 	void				EventFlagToRatio(_float fRatio);
+	void				Gravity();
 protected:
 	void				Reset_CheckFlag();
 private:
@@ -40,10 +41,14 @@ private:
 	void				Combo(const _char* pName,uint32_t& iFlag);
 	void				Combo2(const _char* pName, FLAGTYPE& eType);
 protected:
-	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false };
+	void				DragFloat(const _char* pName, _float& fValue);
+	void				BoolButton(const _char* pName, _bool& bButton);
+protected:
+	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bEarly{ false }, m_bGravity{ false };
 
 	ATTMON						m_eSkillType{ ATTMON::END };
 	_float2						m_fSkillRatio{}, m_fRatio{};
+	_float					     m_fBlend{ 0.1f }, m_fEarlyRatio{ 1.f },m_fGravity{ -9.8f };
 	uint32_t					m_iLoopCnt{ 0 };
 	std::vector<FLAG_EVENT>		m_StartFlags{};
 	std::vector<FLAG_EVENT>		m_EndFlags{};

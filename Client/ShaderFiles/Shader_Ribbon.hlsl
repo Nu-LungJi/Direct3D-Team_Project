@@ -1,7 +1,7 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
-cbuffer CB_BEAM : register(b0)
+cbuffer CB_BEAM : register(b10)
 {
     float g_fScrollOffset;
     float3 _pad;

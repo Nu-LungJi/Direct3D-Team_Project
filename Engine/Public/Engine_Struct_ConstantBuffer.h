@@ -46,7 +46,7 @@ namespace Engine
 
 	typedef struct tagConstantBufferLight
 	{
-		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
+		DYNAMIC_LIGHT	AffectedLight[MAX_SHADOW_LIGHT_COUNT];
 		XMFLOAT4X4		g_InvViewProj{};
 		uint32_t		LightCount{};
 		uint32_t		CurrentShadowLightIndex{};

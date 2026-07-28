@@ -8,10 +8,12 @@
 #include "BackGround.h"
 #include "UiCamera.h"
 
+#include "UIManager.h"
 
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
+#include "UIController.h"
 
 #include "MyMagicSquareStep.h"
 #include "MyMagicSquareStepController.h"
@@ -20,6 +22,7 @@
 
 #include "BridgeCRW.h"
 #include "TmbGurdian.h"
+
 NS_USING(Client)
 
 CLevelCharlesRookwood::CLevelCharlesRookwood()
@@ -34,6 +37,7 @@ CLevelCharlesRookwood::~CLevelCharlesRookwood()
 HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
+	CGameInstance::Get().Initialize_EffectLight(15);
 
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
 		return E_FAIL;
@@ -65,6 +69,19 @@ HRESULT CLevelCharlesRookwood::Initialize()
 
 void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 {
+	{
+		if(!m_bCreatePlayScreenUI)
+		{
+			m_bCreatePlayScreenUI = true;
+			CGameObject::GAMEOBJECT_DESC Desc{};
+			Desc.sObjectTag = "UIController";
+
+			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController",
+				"UIController", &Desc));
+		}
+	}
+
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 }
 
 HRESULT CLevelCharlesRookwood::Render()

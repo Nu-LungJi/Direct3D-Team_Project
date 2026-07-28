@@ -31,13 +31,19 @@ namespace Engine
 		Prototype_Component_ComPxConvexCollider,
 		Prototype_Component_ComPxTriMeshCollider,
 		Prototype_Component_ComPxRigidBody,
-		Prototype_Component_ComPxCharacterController
+		Prototype_Component_ComPxCharacterController,
+		Prototype_Component_ComPxFixedJoint,
+		Prototype_Component_ComPxDistanceJoint,
+		Prototype_Component_ComPxRevoluteJoint,
+		Prototype_Component_ComPxD6Joint,
+		Prototype_Component_ComPxRagdoll
 	};
 
 	enum class ES_EngineProtoGameObject
 	{
 		Prototype_GameObject_FlyCamera,
 		Prototype_GameObject_ShadowCamera,
-		Prototype_GameObject_UICamera
+		Prototype_GameObject_UICamera,
+		Prototype_GameObject_CinematicCamera
 	};
 }

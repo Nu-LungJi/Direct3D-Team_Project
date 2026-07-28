@@ -52,6 +52,18 @@ void CPhysxManagerListener::PushTriggerEvent(
 	m_PendingEvents.push_back(tEvent);
 }
 
+void CPhysxManagerListener::PushJointBreakEvent(
+	const PX_ON_JOINT_BREAK_DATA& tData)
+{
+	PENDING_EVENT tEvent{};
+	tEvent.eType = EVENT_TYPE::JOINT_BREAK;
+	tEvent.hObjectA = tData.hJointOwner;
+	tEvent.tJointBreak = tData;
+
+	std::lock_guard lock{ m_PendingEventMutex };
+	m_PendingEvents.push_back(tEvent);
+}
+
 void CPhysxManagerListener::QueueCCTShapeHit(
 	const CHandle& hOwner, const CHandle& hOther, const PX_CCT_HIT_DATA& tHit)
 {
@@ -115,6 +127,12 @@ void CPhysxManagerListener::DispatchPendingEvents()
 		if (tEvent.eType == EVENT_TYPE::SLEEP)
 		{
 			pObjectA->OnSleep();
+			continue;
+		}
+
+		if (tEvent.eType == EVENT_TYPE::JOINT_BREAK)
+		{
+			pObjectA->OnJointBreak(tEvent.tJointBreak);
 			continue;
 		}
 
@@ -208,7 +226,36 @@ void CPhysxManagerListener::DispatchPendingEvents()
 
 void CPhysxManagerListener::onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)
 {
-    MSG_BOX("onConstraintBreak 미구현");
+	if (!constraints)
+		return;
+
+	for (physx::PxU32 i = 0; i < count; ++i)
+	{
+		const physx::PxConstraintInfo& tConstraintInfo =
+			constraints[i];
+		if (tConstraintInfo.type !=
+				physx::PxConstraintExtIDs::eJOINT ||
+			!tConstraintInfo.externalReference)
+		{
+			continue;
+		}
+
+		auto* pPxJoint = static_cast<physx::PxJoint*>(
+			tConstraintInfo.externalReference);
+		if (!pPxJoint->userData)
+			continue;
+
+		const auto* pJointData =
+			static_cast<const PX_JOINT_USER_DATA*>(
+			pPxJoint->userData);
+		PX_ON_JOINT_BREAK_DATA tBreakData{};
+		tBreakData.hJointOwner = pJointData->hJointOwner;
+		tBreakData.hActorA = pJointData->hActorA;
+		tBreakData.hActorB = pJointData->hActorB;
+		tBreakData.iJointSubIndex =
+			pJointData->iJointSubIndex;
+		PushJointBreakEvent(tBreakData);
+	}
 }
 
 void CPhysxManagerListener::onWake(physx::PxActor** actors, physx::PxU32 count)

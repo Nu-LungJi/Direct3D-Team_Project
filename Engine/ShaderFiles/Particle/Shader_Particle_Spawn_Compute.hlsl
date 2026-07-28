@@ -43,6 +43,8 @@ void CSMain(uint id : SV_DispatchThreadID)
     p.iBehaviorType = s.iBehaviorType;
     p.loop = s.loop;
     p.originalPosition = s.originalPosition;
+	p.roationAxis = s.roationAxis;
+	p.fRotationSpeed = s.fRotationSpeed;
     gParticles[index] = p;
 }
 

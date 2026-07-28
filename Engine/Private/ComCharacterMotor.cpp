@@ -73,12 +73,23 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 	if (tOutput.bMoveRequested)
 	{
 		m_vVelocity.x = tOutput.vMoveDirection.x * tOutput.fMoveSpeed;
+		
 		m_vVelocity.z = tOutput.vMoveDirection.z * tOutput.fMoveSpeed;
+		if (!m_bUseGravity)
+		{
+			m_vVelocity.y = tOutput.vMoveDirection.y * tOutput.fMoveSpeed;
+		}
 	}
 	else
 	{
 		m_vVelocity.x = 0.f;
+		//m_vVelocity.y = 0.f;
 		m_vVelocity.z = 0.f;
+
+		if (!m_bUseGravity)
+		{
+			m_vVelocity.y = 0.f;
+		}
 	}
 
 	if (m_pMoveIntent->HasJumpRequest())

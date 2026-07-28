@@ -81,6 +81,7 @@ HRESULT CResPhysXRTConvexGeometry::CookToMemory(
 	}
 
 	PxCookingParams params{ pPhysics->getTolerancesScale() };
+	params.buildGPUData = true;
 	PxDefaultMemoryOutputStream output{};
 	PxConvexMeshCookingResult::Enum result{ PxConvexMeshCookingResult::eFAILURE };
 	if (!PxCookConvexMesh(params, meshDesc, output, &result))

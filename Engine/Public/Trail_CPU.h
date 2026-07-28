@@ -118,6 +118,7 @@ private:
 	_float m_fAccumulationTime = 0;
 	uint32_t diffuseFrames = 0;
 	uint32_t currentFrame = 0;
+
 public:
 	static UPtr<CParticle> Create(void* pArg);
 	float EaseOutQuad(float x);

@@ -7,6 +7,8 @@ NS_END
 
 NS_BEGIN(Engine)
 
+class CComPxJoint;
+
 class ENGINE_DLL CComPxRigidBody : public CComponent
 {
 public:
@@ -69,7 +71,12 @@ private:
 	bool          m_bIsDynamic = true;
 	float   m_fMass{};
 	TYPE m_eType{};
+	std::unordered_set<CComPxJoint*> m_Joints{};
 
+private:
+	void RegisterJoint(CComPxJoint* pJoint);
+	void UnregisterJoint(CComPxJoint* pJoint);
+	void ReleaseConnectedJoints();
 
 public:
 	static UPtr<CComPxRigidBody> Create();
@@ -77,6 +84,8 @@ public:
 
 private:
 	void Free() override;
+
+	friend class CComPxJoint;
 };
 
 NS_END

@@ -4,7 +4,8 @@
 #include "LevelLoading.h"
 
 #include "MainAppLoader.h"
-
+#include "CinematicEditor.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -25,6 +26,9 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
 
+	GET_SINGLE(UIManager)->InitializeActions();
+	GET_SINGLE(UIManager)->InitializeFunc();
+
 	if (FAILED(CBaseApp::Initialize(EngineDesc)))
 	{
 		return E_FAIL;
@@ -32,6 +36,12 @@ HRESULT CMainApp::Initialize()
 	LOG_MEMORY("CBaseApp::Initialize End");
 
 	CGameInstance::Get().ImguiEnableDocking(true, true);
+
+	m_pCinematicEditor = CCinematicEditor::Create();
+	if (m_pCinematicEditor == nullptr)
+	{
+		return E_FAIL;
+	}
 
 	if (FAILED(CMainAppLoader::Load()))
 	{
@@ -69,6 +79,16 @@ HRESULT CMainApp::Initialize()
 
 	LOG_MEMORY("CMainApp::Initialize End");
 	return S_OK;
+}
+
+void CMainApp::FrameStart(_float fTimeDelta)
+{
+	CBaseApp::FrameStart(fTimeDelta);
+
+	if (m_pCinematicEditor && E::CGameInstance::Get().ImguiGetActive())
+	{
+		m_pCinematicEditor->UpdateGUI();
+	}
 }
 
 

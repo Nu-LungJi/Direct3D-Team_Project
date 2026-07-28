@@ -240,6 +240,10 @@
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\public\BTRandSelector.h" />
     <ClInclude Include="..\public\BTReactiveSelector.h" />
+    <ClInclude Include="..\Public\CinematicAsset.h" />
+    <ClInclude Include="..\Public\CinematicCamera.h" />
+    <ClInclude Include="..\Public\CinematicSystem.h" />
+    <ClInclude Include="..\Public\CinematicTypes.h" />
     <ClInclude Include="..\public\ComLuaScript.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
@@ -267,6 +271,14 @@
     <ClInclude Include="..\public\ComPxCapsuleCollider.h" />
     <ClInclude Include="..\public\ComPxConvexCollider.h" />
     <ClInclude Include="..\public\ComPxCollider.h" />
+    <ClInclude Include="..\public\ComPxD6Joint.h" />
+    <ClInclude Include="..\public\ComPxDistanceJoint.h" />
+    <ClInclude Include="..\public\ComPxFixedJoint.h" />
+    <ClInclude Include="..\public\ComPxJoint.h" />
+    <ClInclude Include="..\public\ComPxRagdoll.h" />
+    <ClInclude Include="..\public\PxRagdollAuthoring.h" />
+    <ClInclude Include="..\public\RagdollEditorGUI.h" />
+    <ClInclude Include="..\public\ComPxRevoluteJoint.h" />
     <ClInclude Include="..\public\ComPxRigidBody.h" />
     <ClInclude Include="..\public\ComPxSphereCollider.h" />
     <ClInclude Include="..\public\ComPxTriMeshCollider.h" />
@@ -357,6 +369,7 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysXRagdollData.h" />
     <ClInclude Include="..\public\PhysXCookingEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
@@ -555,6 +568,9 @@
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\private\BTRandSelector.cpp" />
     <ClCompile Include="..\private\BTReactiveSelector.cpp" />
+    <ClCompile Include="..\Private\CinematicAsset.cpp" />
+    <ClCompile Include="..\Private\CinematicCamera.cpp" />
+    <ClCompile Include="..\Private\CinematicSystem.cpp" />
     <ClCompile Include="..\private\ComLuaScript.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />
@@ -583,6 +599,23 @@
     <ClCompile Include="..\private\ComPxCapsuleCollider.cpp" />
     <ClCompile Include="..\private\ComPxConvexCollider.cpp" />
     <ClCompile Include="..\private\ComPxCollider.cpp" />
+    <ClCompile Include="..\private\ComPxD6Joint.cpp" />
+    <ClCompile Include="..\private\ComPxDistanceJoint.cpp" />
+    <ClCompile Include="..\private\ComPxFixedJoint.cpp" />
+    <ClCompile Include="..\private\ComPxJoint.cpp" />
+    <ClCompile Include="..\private\ComPxRagdoll.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
+    <ClCompile Include="..\private\PxRagdollAuthoring.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
+    <ClCompile Include="..\private\RagdollEditorGUI.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRevoluteJoint.cpp" />
     <ClCompile Include="..\private\ComPxRigidBody.cpp" />
     <ClCompile Include="..\private\ComPxSphereCollider.cpp" />
     <ClCompile Include="..\private\ComPxTriMeshCollider.cpp" />

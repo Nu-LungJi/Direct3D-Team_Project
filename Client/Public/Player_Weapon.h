@@ -41,6 +41,10 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	/*---------------------------------*/
+
 private:
 	void					Weapon_Throw(_float fTimeDelta);
 private:
@@ -58,7 +62,11 @@ private:
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{ false };
 
+private:
+	_float3 m_vSpawnLocalOffset{ 0.f, 0.3f, 0.f };
 
+public:
+	_float4x4 GetSpawnWorldMatrix() const;
 public:
 	static E::UPtr<CPlayer_Weapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -11,7 +11,7 @@ struct VS_IN
 struct PS_IN
 {
     float4 posH : SV_POSITION;
-    float2 uv : TEXCOORD;
+	float2 uv : TEXCOORD;
 };
 
 // 1차원 축(X 또는 Y)에 대한 9-Slice UV 계산 로직

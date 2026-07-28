@@ -394,7 +394,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 100;
+	m_iHp = m_iMaxHp = 5500;
 	//피직스
 	{
 		CComPxCharacterController::DESC Desc{};
@@ -601,9 +601,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
-
 	__super::PriorityUpdate(fTimeDelta);
-
 }
 
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)

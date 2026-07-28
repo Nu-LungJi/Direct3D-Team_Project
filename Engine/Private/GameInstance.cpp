@@ -422,6 +422,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	}
 
 	{
+		ZoneScopedN("CameraManager_Update");
+		m_pCameraManager->Update(fTimeDelta);
+	}
+
+	{
 		ZoneScopedN("GameObjectManager_LateUpdate");
 		m_pGameObjectManager->LateUpdate(fTimeDelta);
 	}
@@ -479,8 +484,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	m_pLightManager->Capture_ShadowMap();
-
+	if (FAILED(m_pLightManager->Capture_ShadowMap()))
+	{
+		MSG_BOX("ASDFASDF");
+		return E_FAIL;
+	}
 	if (FAILED(m_pRenderer->Draw()))
 	{
 		return E_FAIL;
@@ -611,12 +619,7 @@ HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& s
 {
 	return m_pParticleManager->Add_Particle(sGroupTag, sTypeTag, std::move(particle));
 }
-HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
-	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
-{
-	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
-}
+
 std::vector<std::string> CGameInstance::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension)
 {
 	return m_pParticleManager->Load_FilePath_ByExtension(_FolderPath, _Extension);
@@ -633,6 +636,19 @@ void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {
 HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end) {
 	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, start, end);
 }
+std::optional<BEAM_HANDLE> CGameInstance::SpawnBeam(const StringID& groupTag,const StringID& typeTag,const BEAM_PARAMS& params)
+{
+	return m_pParticleManager->SpawnBeam(groupTag,typeTag,params);
+}
+HRESULT CGameInstance::SetBeamPositions(const BEAM_HANDLE& handle,const _float4& start,const _float4& end)
+{
+	return m_pParticleManager->SetBeamPositions(handle,start,end);
+}
+
+HRESULT CGameInstance::StopBeam(const BEAM_HANDLE& handle)
+{
+	return m_pParticleManager->StopBeam(handle);
+}
 #pragma endregion
 
 #pragma region EFFECT_MANAGER
@@ -643,17 +659,17 @@ EFFECT_INSTANCE_ID CGameInstance::PlayEffect(const std::string& sEffectName, con
 	return m_pEffectManager->PlayEffect(sEffectName, matWorld, vEndPosition, onFinsihed);
 }
 
-void CGameInstance::Stop(EFFECT_INSTANCE_ID iEffectId) {
-	m_pEffectManager->Stop(iEffectId);
+void CGameInstance::StopEffect(EFFECT_INSTANCE_ID iEffectId) {
+	m_pEffectManager->StopEffect(iEffectId);
 }
 
-void CGameInstance::SetPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
-	m_pEffectManager->SetPosition(iEffectId, vPosition);
+void CGameInstance::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
+	m_pEffectManager->SetEffectPosition(iEffectId, vPosition);
 
 }
 
-void CGameInstance::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _float4x4& colliderWorldMatrix) {
-	m_pEffectManager->SetWorldMatrix(iEffectId, colliderWorldMatrix);
+void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _float4x4& colliderWorldMatrix) {
+	m_pEffectManager->SetEffectWorldMatrix(iEffectId, colliderWorldMatrix);
 
 }
 
@@ -1003,6 +1019,31 @@ HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& han
 {
 	return m_pCameraManager->RegistCamera(CameraID, handle);
 }
+HRESULT CGameInstance::RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset)
+{
+	return m_pCameraManager->RegistCinematicAsset(pAsset);
+}
+HRESULT CGameInstance::LoadCinematic(
+	const std::string& CinematicName)
+{
+	return m_pCameraManager->LoadCinematic(CinematicName);
+}
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
+{
+	return m_pCameraManager->PlayCinematic(CinematicID);
+}
+void CGameInstance::StopCinematic()
+{
+	m_pCameraManager->StopCinematic();
+}
+_bool CGameInstance::IsCinematicPlaying() const
+{
+	return m_pCameraManager->IsCinematicPlaying();
+}
+_float CGameInstance::GetCinematicPlayTime() const
+{
+	return m_pCameraManager->GetCinematicPlayTime();
+}
 
 #pragma endregion
 
@@ -1143,10 +1184,6 @@ void CGameInstance::ClearAllChunk()
 #pragma endregion
 
 #pragma region LIGHT_MANAGER
-VOID	CGameInstance::Bind_DynamicLight() {
-	m_pLightManager->Bind_DynamicLight();
-}
-
 VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
 	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
 }
@@ -1159,8 +1196,8 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 VOID	CGameInstance::Clear_DynamicLightList() {
 	m_pLightManager->Clear_DynamicLightList();
 }
-HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
-	return m_pLightManager->Add_ShadowRenderGroup(_ATYPE, pRenderObject);
+HRESULT	CGameInstance::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject) {
+	return m_pLightManager->AddShadowRenderGroup(_ATYPE, pRenderObject);
 }
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
@@ -1252,6 +1289,9 @@ void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, c
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
+HRESULT CGameInstance::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch) {
+	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext, bStaticBatch);
+}
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER

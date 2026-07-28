@@ -1,0 +1,69 @@
+#pragma once
+#include "Client_Defines.h"
+#include "UIObject.h"
+
+NS_BEGIN(Client)
+
+static Engine::CUIObject* GetSafeUI(CHandle handle)
+{
+	return E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(handle);
+}
+
+class UIManager
+{
+	DECLARE_SINGLE(UIManager)
+
+	~UIManager();
+
+	void	Update();
+
+private:
+	ComPtr<ID3D11Device> m_pDevice{};
+	ComPtr<ID3D11DeviceContext> m_pContext{};
+
+public:
+	void Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
+	void InitializeActions();
+	void InitializeFunc();
+	void UpdateRootUIHandles();
+
+public:
+	std::function<void(CUIObject* pCaller)> GetAction(const std::string& actionName);
+	std::function<void(std::string text)> GetFunc(const std::string& funcName);
+
+	std::vector<std::string>* GetEventNames() { return &m_vEventNames; }
+	std::vector<std::string>* GetFuncNames(){ return &m_vFuncNames; }
+
+	std::vector<CHandle> GetRootUIHandles() { return rootUIHandles; }
+	std::optional<CHandle>  GetUIController() { return m_UIController; }
+	void SetUIController(std::optional<CHandle> hController) { m_UIController = hController; }
+public:
+	std::optional<CHandle> RootUIPicking();
+
+private:
+	std::map<std::string, std::function<void(class CUIObject*)>> m_EventMap;
+	std::map<std::string, std::function<void(std::string name)>> m_FuncMap;
+	std::unordered_map<std::string, std::wstring> m_StringTable;
+	std::vector<CHandle> rootUIHandles;
+
+	// 애니메이션 함수, 실행 함수들 이름
+	std::vector<std::string> m_vEventNames;
+	std::vector<std::string> m_vFuncNames;
+
+	std::string m_CurrentLevel;
+
+	std::vector<CHandle> m_vLoadPrefabRoot{};
+	std::optional<CHandle> m_UIController = std::nullopt;
+	// 피킹용
+	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
+public:
+	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/Client/UIData/Prefabs/");
+	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
+	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
+
+private:
+	std::string g_BasePath = "./Resources/Client/UIData/Prefabs/";
+	std::optional<CHandle> m_rootHandle = std::nullopt;
+};
+
+NS_END

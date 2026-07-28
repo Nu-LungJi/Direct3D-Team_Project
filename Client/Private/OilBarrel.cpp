@@ -4,6 +4,8 @@
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComPxConvexCollider.h"
+#include "ComPxDistanceJoint.h"
+#include "ComPxFixedJoint.h"
 #include "ComPxRigidBody.h"
 #include "ComStaticModelInstance.h"
 #include "GameInstance.h"
@@ -136,6 +138,7 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
+		
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 		return;
 	}
@@ -162,6 +165,10 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 		pModel,
 		InstanceData,
 		OcclusionData);
+
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
 }
 
 HRESULT COilBarrel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -223,6 +230,88 @@ _bool COilBarrel::ApplyPushForce(const _float3& vDirection, _float fStrength)
 		vNormalizedDirection.x * fStrength,
 		vNormalizedDirection.y * fStrength,
 		vNormalizedDirection.z * fStrength });
+}
+
+_bool COilBarrel::CreateFixedJoint(
+	COilBarrel* pConnectedBarrel,
+	uint32_t iJointSubIndex)
+{
+	if (!m_pComPxRigidBody || m_pComPxFixedJoint)
+		return false;
+
+	if (pConnectedBarrel &&
+		(!pConnectedBarrel->m_pComPxRigidBody ||
+		 pConnectedBarrel == this))
+	{
+		return false;
+	}
+
+	CComPxFixedJoint::DESC tJointDesc{};
+	tJointDesc.pRigidBodyA = m_pComPxRigidBody;
+	tJointDesc.pRigidBodyB = pConnectedBarrel
+		? pConnectedBarrel->m_pComPxRigidBody
+		: nullptr;
+	tJointDesc.bPreserveCurrentPose = true;
+	tJointDesc.bCollisionEnabled = false;
+	tJointDesc.bVisualizationEnabled = true;
+	tJointDesc.iJointSubIndex = iJointSubIndex;
+	//tJointDesc.fBreakForce = 2.f;
+
+	m_pComPxFixedJoint =
+		CGameInstance::Get().AddPxJoint<CComPxFixedJoint>(
+			*this,
+			"ComPxFixedJoint",
+			tJointDesc);
+
+	return m_pComPxFixedJoint != nullptr;
+}
+
+_bool COilBarrel::CreateDistanceJoint(
+	COilBarrel* pConnectedBarrel,
+	_float fMaxDistance,
+	uint32_t iJointSubIndex)
+{
+	if (!m_pComPxRigidBody ||
+		m_pComPxDistanceJoint ||
+		!pConnectedBarrel ||
+		pConnectedBarrel == this ||
+		!pConnectedBarrel->m_pComPxRigidBody ||
+		!std::isfinite(fMaxDistance) ||
+		fMaxDistance <= 0.f)
+	{
+		return false;
+	}
+
+	CComPxDistanceJoint::DESC tJointDesc{};
+	tJointDesc.pRigidBodyA = m_pComPxRigidBody;
+	tJointDesc.pRigidBodyB =
+		pConnectedBarrel->m_pComPxRigidBody;
+	tJointDesc.fMinDistance = 0.f;
+	tJointDesc.fMaxDistance = fMaxDistance;
+	tJointDesc.fTolerance = 0.025f;
+	tJointDesc.bMinDistanceEnabled = false;
+	tJointDesc.bMaxDistanceEnabled = true;
+	tJointDesc.bSpringEnabled = false;
+	tJointDesc.bCollisionEnabled = false;
+	tJointDesc.bVisualizationEnabled = true;
+	tJointDesc.iJointSubIndex = iJointSubIndex;
+
+	m_pComPxDistanceJoint =
+		CGameInstance::Get().AddPxJoint<CComPxDistanceJoint>(
+			*this,
+			"ComPxDistanceJoint",
+			tJointDesc);
+
+	return m_pComPxDistanceJoint != nullptr;
+}
+
+void COilBarrel::OnJointBreak(
+	const PX_ON_JOINT_BREAK_DATA& tData)
+{
+	DEBUG_LOG_STR(
+		std::string{ "[PX][OilBarrel] Joint Broken. SubIndex: " } +
+		std::to_string(tData.iJointSubIndex) +
+		"\n");
 }
 
 E::UPtr<COilBarrel> COilBarrel::Create()

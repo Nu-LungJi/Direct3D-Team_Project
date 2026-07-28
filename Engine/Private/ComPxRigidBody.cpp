@@ -1,6 +1,7 @@
 
 #include "pch.h"
 #include "ComPxRigidBody.h"
+#include "ComPxJoint.h"
 #include "PhysXManager.h"
 
 #pragma push_macro("new")
@@ -25,6 +26,33 @@ namespace
 	{
 		PxQuat tQuat{ vQuaternion.x, vQuaternion.y, vQuaternion.z, vQuaternion.w };
 		return tQuat.magnitudeSquared() > 0.f ? tQuat.getNormalized() : PxQuat{ PxIdentity };
+	}
+}
+
+void CComPxRigidBody::RegisterJoint(CComPxJoint* pJoint)
+{
+	if (pJoint)
+		m_Joints.insert(pJoint);
+}
+
+void CComPxRigidBody::UnregisterJoint(CComPxJoint* pJoint)
+{
+	if (pJoint)
+		m_Joints.erase(pJoint);
+}
+
+void CComPxRigidBody::ReleaseConnectedJoints()
+{
+	while (!m_Joints.empty())
+	{
+		CComPxJoint* pJoint = *m_Joints.begin();
+		if (!pJoint)
+		{
+			m_Joints.erase(m_Joints.begin());
+			continue;
+		}
+
+		pJoint->OnRigidBodyReleased(this);
 	}
 }
 
@@ -476,6 +504,8 @@ UPtr<CPrototype> CComPxRigidBody::Clone(void* pArg)
 
 void CComPxRigidBody::Free()
 {
+	ReleaseConnectedJoints();
+
     if (m_pActor != nullptr)
     {
 		if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())

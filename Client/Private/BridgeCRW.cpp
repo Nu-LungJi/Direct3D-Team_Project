@@ -114,6 +114,8 @@ HRESULT CBridgeCRW::Initialize(void* pArg)
 		};
 	}
 
+
+
 	{
 		CComAnimator::DESC DescAnim{};
 		DescAnim.sComTag = "ComCModelIntance";

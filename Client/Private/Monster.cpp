@@ -36,6 +36,17 @@ void CMonster::UpdateGUI()
 		if (ImGui::Button(MagicEnumToStringView(key).data()))
 			m_Effects[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
 	}
+
+	
+	ImGui::Text("bPending : %s", m_bPending == true ? "TRUE" : "FALSE");
+	ImGui::Text("Pending AttType : %s", MagicEnumToStringView(m_PendingMonTable.eAttType).data());
+	ImGui::Text("Pending HitType : %s", MagicEnumToStringView(m_PendingMonTable.eHitType).data());
+
+	ImGui::Separator();
+	ImGui::Text("ActiveHit : %s", m_bActiveHit == true ? "TRUE" : "FALSE");
+	ImGui::Text("ActiveHit AttType : %s", MagicEnumToStringView(m_ActiveMonTable.eAttType).data());
+	ImGui::Text("ActiveHit HitType : %s", MagicEnumToStringView(m_ActiveMonTable.eHitType).data());
+
 }
 
 HRESULT CMonster::InitializePrototype(void* pArg)
@@ -80,9 +91,15 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
 	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
+	
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)))
+		m_pCharacterMotor->SetUseGravity(true);
+	else m_pCharacterMotor->SetUseGravity(false);
+		
 	if (CGameInstance::Get().KeyDown(DIK_1))
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
+	m_pCharacterMotor->SetGravity(-9.8f);
 	m_pBeHavior->Update(fTimeDelta);
 	RunningSkill(fTimeDelta);
 }
@@ -119,6 +136,9 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 		return;
 	}
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
 }
 HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
@@ -289,16 +309,130 @@ HRESULT CMonster::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 	return S_OK;
 }
 
+/*----------- 광윤 추가 -----------*/
+HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx){
+	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject)
+		return E_FAIL;
+
+	E::CB_PER_OBJECT cbPerObject{};
+	cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+	XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+	if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
+	pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+
+	const auto model = m_pComModelInstance->GetModel();
+	if (!model)	return E_FAIL;
+
+	for (uint32_t i = 0; i < model->Get_NumMeshes(); ++i)
+	{
+		const auto& viBuffer = model->GetMeshes()[i];
+		ID3D11Buffer* vertexBuffer = viBuffer->GetVertexBuffer().Get();
+		const uint32_t stride = viBuffer->GetVertexStride();
+		const uint32_t offset = 0;
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+	}
+
+	ID3D11ShaderResourceView* pSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	pContext->PSSetShaderResources(0, 4, pSRVs);
+
+	return S_OK;
+}
+/*---------------------------------*/
+
+_bool CMonster::Activate_PendingHit()
+{
+	if (!m_bPending)
+		return false;
+
+	if (m_bActiveHit)
+		return false;
+
+	m_ActiveMonTable = m_PendingMonTable;
+	m_bActiveHit = true;
+
+	m_PendingMonTable = {};
+	Clear_PendingHit();
+	m_bPending = false;
+
+	return true;
+}
+
+void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+	
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+	{
+		return;
+	}
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return;
+
+	MON_HIT_INFO HitInfo{};
+
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+	HitInfo.eAttType = m_eAttType;
+	HitInfo.eHitType = eType;
+	switch (eType)
+	{
+	case PLAYER_SKILL_TYPE::ATTACK:
+		HitInfo.iPriority = 5.f;
+		break;
+	case PLAYER_SKILL_TYPE::ACCIO:
+		HitInfo.iPriority = 10.f;
+		break;
+	case PLAYER_SKILL_TYPE::DEPULSO:
+		HitInfo.iPriority = 15.f;
+		break;
+	case PLAYER_SKILL_TYPE::DESCENDO:
+		HitInfo.iPriority = 20.f;
+		break;
+	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		HitInfo.iPriority = 25.f;
+		break;
+	case PLAYER_SKILL_TYPE::PROTEGO:
+		HitInfo.iPriority = 8.f;
+		break;
+	}
+
+	if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		m_PendingMonTable = HitInfo;
+		m_bPending = true;
+	}
+	//현재 pending 가중치보다 낮으면 리턴
+	if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
+		return;
+	//현재 잠금된거보다 낮아도 거부
+	if (m_bActiveHit &&HitInfo.iPriority <m_ActiveMonTable.iPriority)
+		return;
+	//새 피격상태 전달
+	m_PendingMonTable = HitInfo;
+	m_bPending = true;
+	
+	//우선순위 잠금
+	m_ActiveMonTable = HitInfo;
+	m_bActiveHit = true;
+}
+
+_bool CMonster::Is_Grounded()
+{
+	return m_pCharacterController->IsGrounded();
+}
+
 void CMonster::RunningSkill(_float fTimeDelta)
 {
 	if (m_bSkill && !m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
 	{
 		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
-		if (m_MonTable.eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
+		if (m_eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
 		{
-			CGameInstance::Get().Spawn(m_Effects[ETOUI(m_MonTable.eAttType)], *m_pComTransform->GetWorldMatrix());
-			m_MonTable.eAttType = ATTMON::END;
+			CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
+			m_eAttType = ATTMON::END;
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
 			
 		}
@@ -314,23 +448,23 @@ void CMonster::IsHit()
 {
 	if (CGameInstance::Get().KeyDown(DIK_2))
 	{
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
-		m_MonTable.eHitType = HITMON::ACIO;
+		Check_Table(PLAYER_SKILL_TYPE::ACCIO);
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_X))
 	{
-		m_MonTable.eHitType = HITMON::DEPULSO;
+		Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_C))
 	{
-		m_MonTable.eHitType = HITMON::DESCENDO;
+		Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))
 	{
-		m_MonTable.eHitType = HITMON::END;
+		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
 	}
 
 }
@@ -343,7 +477,7 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	}
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
-		m_MonTable.eHitType = HITMON::END;
+		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
 	}
 	if (m_iHp <= 0.f)
 	{

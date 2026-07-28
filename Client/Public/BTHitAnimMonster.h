@@ -26,14 +26,18 @@ private:
 	_bool							HitType();
 private:
 	//Gui
-	uint32_t			m_iTable{};
+	void				ComboAttMon(const _char* pName, ATTMON& eTye);
+	void				ComboHit(const _char* pName, PLAYER_SKILL_TYPE& eTye);
+	void				ComboAnim(const _char* pName,  int32_t& iAnimIndex, uint32_t iArrayIndex);
+	
 private:
-
+	uint32_t			m_iTable{};
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	_bool				m_bRatioInvert{ false };
+	_bool				m_bRatioInvert{ false }, m_bInterrupt{ false };
 
-	HITTABLE			m_HitTable[ETOUI(HITMON::END)];
-	int32_t				m_iHitAnim[ETOUI(HITMON::END)];
+	std::vector<HITTABLE>		m_HitTable;
+		
+	uint32_t					m_iArrayIndex{UINT_MAX};
 public:
 	static UPtr<CBTHitAnimMonster> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

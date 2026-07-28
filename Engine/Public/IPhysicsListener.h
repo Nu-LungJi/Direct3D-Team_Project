@@ -13,6 +13,7 @@ public:
     virtual void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) = 0;
     virtual void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) = 0;
     virtual void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) = 0;
+	virtual void OnJointBreak(const PX_ON_JOINT_BREAK_DATA& tData) = 0;
 
 	// CCT move 중 수집된 Hit 알림. 물리 이벤트 큐에서 안전한 시점에 호출된다.
 	virtual void OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) = 0;

@@ -87,35 +87,6 @@ void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
-	//_float3 vstart, vend;
-	//vstart = m_pComTransform->GetPosition();
-	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	/*auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
-	
-	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));*/
-	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-
-	
-	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
-
-	if (CGameInstance::Get().KeyPressing(DIK_7)) {
-		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	}
-
-
-
-
-	//if (CGameInstance::Get().KeyDown(DIK_K)) {
-	//	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
-	//
-	//}
-
-
-	//if (CGameInstance::Get().KeyPressing(DIK_P))
-	//	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
 
 
 }
@@ -145,6 +116,10 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
 }
 
 HRESULT CPlayer_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -200,6 +175,55 @@ HRESULT CPlayer_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CT
 	return S_OK;
 }
 
+/*----------- 광윤 추가 -----------*/
+HRESULT CPlayer_Weapon::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject)
+		return E_FAIL;
+
+	E::CB_PER_OBJECT cbPerObject{};
+	cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+	XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+	if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
+
+	pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+
+	const auto model = m_pComModelInstance->GetModel();
+	if (!model)	return E_FAIL;
+
+	for (uint32_t i = 0; i < model->Get_NumMeshes(); ++i)
+	{
+		const auto& viBuffer = model->GetMeshes()[i];
+		ID3D11Buffer* vertexBuffer = viBuffer->GetVertexBuffer().Get();
+		const uint32_t stride = viBuffer->GetVertexStride();
+		const uint32_t offset = 0;
+
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+	}
+
+	ID3D11ShaderResourceView* pSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	pContext->PSSetShaderResources(0, 4, pSRVs);
+
+	return S_OK;
+}
+/*---------------------------------*/
+
+_float4x4 CPlayer_Weapon::GetSpawnWorldMatrix() const
+{
+	_matrix spawnMatrix =
+		XMMatrixTranslation(
+			m_vSpawnLocalOffset.x,
+			m_vSpawnLocalOffset.y,
+			m_vSpawnLocalOffset.z)
+		* GetTransform().GetLoadedCombinedWorldMatrix();
+
+	_float4x4 result{};
+	XMStoreFloat4x4(&result, spawnMatrix);
+	return result;
+}
 
 E::UPtr<CPlayer_Weapon> CPlayer_Weapon::Create()
 {

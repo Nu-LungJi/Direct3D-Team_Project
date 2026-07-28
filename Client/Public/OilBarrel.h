@@ -6,6 +6,8 @@
 NS_BEGIN(Engine)
 class CComConstantBuffer;
 class CComPxConvexCollider;
+class CComPxDistanceJoint;
+class CComPxFixedJoint;
 class CComPxRigidBody;
 class CComStaticModelInstance;
 class CResPixelShader;
@@ -42,6 +44,15 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	_bool ApplyPushForce(const _float3& vDirection, _float fStrength);
+	_bool CreateFixedJoint(
+		COilBarrel* pConnectedBarrel = nullptr,
+		uint32_t iJointSubIndex = std::numeric_limits<uint32_t>::max());
+	_bool CreateDistanceJoint(
+		COilBarrel* pConnectedBarrel,
+		_float fMaxDistance,
+		uint32_t iJointSubIndex = std::numeric_limits<uint32_t>::max());
+	CComPxRigidBody* GetRigidBody() const { return m_pComPxRigidBody; }
+	void OnJointBreak(const PX_ON_JOINT_BREAK_DATA& tData) override;
 
 public:
 	static E::UPtr<COilBarrel> Create();
@@ -52,6 +63,8 @@ private:
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxConvexCollider* m_pComPxConvexCollider{};
+	CComPxFixedJoint* m_pComPxFixedJoint{};
+	CComPxDistanceJoint* m_pComPxDistanceJoint{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
 };

@@ -12,6 +12,14 @@ HRESULT CLightManager::Initialize_LightManager() {
 
 	if (E::CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR_NonShadow", "./ShaderFiles/PBR/CS_PBR.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_NonShadow", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
 
 	if (m_pLightConstantBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Light", E::CResCBuffer::Create()))
 	{
@@ -21,13 +29,25 @@ HRESULT CLightManager::Initialize_LightManager() {
 	m_pShadowComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR");
 	if (nullptr == m_pShadowComputeShader)		return E_FAIL;
 
+	m_pNonShadowComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR_NonShadow");
+	if (nullptr == m_pNonShadowComputeShader)		return E_FAIL;
+
 	m_pUAVComBinedOutput = CGameInstance::Get().Generate_UnorderedAccessView("ComBinedTex", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
-	
-	if (m_pDirectionalLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow_Direct", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	 
+	if (m_pInstancedDirectionalLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_InstancedShadow_Direct", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	{
+		if (FAILED(m_pInstancedDirectionalLightVS->Load(CResShader::DESC{ .sEntryPoint = "VSMain_InstancedDirectional", .sTarget = "vs_5_0" })))    return E_FAIL;
+	}
+	if (m_pInstancedPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_InstancedShadow_Point", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	{
+		if (FAILED(m_pInstancedPointLightVS->Load(CResShader::DESC{ .sEntryPoint = "VSMain_InstancedPoint", .sTarget = "vs_5_0" })))    return E_FAIL;
+	}
+
+	if (m_pDirectionalLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_NormalShadow_Direct", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
 		if (FAILED(m_pDirectionalLightVS->Load(CResShader::DESC{ .sEntryPoint = "VSMain_Final", .sTarget = "vs_5_0" })))    return E_FAIL;
 	}
-	if (m_pPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	if (m_pPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_NormalShadow_Point", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
 		if (FAILED(m_pPointLightVS->Load()))    return E_FAIL;
 	}
@@ -45,8 +65,8 @@ HRESULT CLightManager::Initialize_LightManager() {
 
 		uint32_t ScreenSizeX = ETOUI(ShadowMapResolution.x);
 		uint32_t ScreenSizeY = ETOUI(ShadowMapResolution.y);
-		uint32_t ShadowSize  = 1024;
-		uint32_t CubeMapSize = 1024;
+		uint32_t ShadowSize  = 1024;//512;
+		uint32_t CubeMapSize = 1024;//512;
 
 		m_pDirectionalShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Directional", ShadowSize, ShadowSize);
 		m_pPointShadowViewPort = CGameInstance::Get().Generate_ViewPort("VP_ShadowMap_Point", CubeMapSize, CubeMapSize);
@@ -177,7 +197,7 @@ VOID CLightManager::UpdateGUI() {
 			pSelectedLight->Set_LightColor(color);
 		}
 
-		if (ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f, "%.2f"))
+		if (ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 300.0f, "%.2f"))
 		{
 			pSelectedLight->Set_LightIntensity(intensity);
 		}
@@ -195,7 +215,7 @@ VOID CLightManager::UpdateGUI() {
 		if (lightType == LIGHT_TYPE::POINT || lightType == LIGHT_TYPE::SPOTLIGHT)
 		{
 			// 위치 조절
-			if (ImGui::DragFloat3("Position", &position.x, 0.1f, -100.0f, 100.0f, "%.2f"))
+			if (ImGui::DragFloat3("Position", &position.x, 0.1f, -5000.0f, 5000.0f, "%.2f"))
 			{
 				pSelectedLight->Set_LightPosition(position);
 			}
@@ -219,7 +239,7 @@ VOID CLightManager::UpdateGUI() {
 		ImGui::Separator();
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.f, 0.2f, 0.2f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.f, 0.4f, 0.4f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.05f, 0.05f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.05f,    0.05f, 1.0f));
 
 		if (ImGui::Button("Delete Light", ImVec2(-FLT_MIN, 20))) {
 			CHandle DeleteObjectHandle = pSelectedLight->GetHandle();
@@ -261,13 +281,13 @@ HRESULT CLightManager::Capture_ShadowMap() {
 	ID3D11Buffer* LightCB = m_pLightConstantBuffer->GetCBuffer().Get();
 
 	for (uint32_t i = 0; i < m_pActiveShadowLightList.size(); ++i) {
-		if (!m_pActiveShadowLightList[i]) continue;
+		if (!m_pActiveShadowLightList[i])	continue;
 
-		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_pActiveShadowLightList[i].value());
-		if (nullptr == LightOBJ) continue;
+		auto LightOBJ	= CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_pActiveShadowLightList[i].value());
+		if (nullptr == LightOBJ)			continue;
 
-		const auto ShadowSlot = LightOBJ->Get_ShadowSlotNumb();
-		if (ShadowSlot == -1)	 continue;
+		auto ShadowSlot = LightOBJ->Get_ShadowSlotNumb();
+		if (ShadowSlot == -1)				continue;
 
 		if (LightOBJ->Get_LightType() == LIGHT_TYPE::POINT) {
 			m_pContext->IASetInputLayout(m_pPointLightVS->GetInputLayout().Get());
@@ -286,10 +306,13 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				m_pContext->Unmap(LightCB, 0);
 			}
 			m_pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB);
-			m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB); 
+			m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB);
 			m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &LightCB);
 
 			LightOBJ->Update_ObjectConstantBuffer(m_pContext.Get());
+
+			RENDER_CTX RCTX{};
+			RCTX.pass = RENDERPASS::SHADOW;
 
 			if (LightOBJ->Is_StaticDirty()) {
 				auto StaticDIRDSV = m_pStaticPointShadowList.DSVList[ShadowSlot];
@@ -297,7 +320,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					m_pContext->ClearDepthStencilView(StaticDIRDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 					m_pContext->OMSetRenderTargets(0, nullptr, StaticDIRDSV.Get());
 
-					LightOBJ->Capture_ShadowMap(m_pContext.Get(), m_pRenderable_StaticObjectList);
+					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_StaticObjectList))) { UnBind_ShadowResource();  return E_FAIL; }
+
+					if (FAILED(Render_ShadowInstanced(m_pContext, LightOBJ->Get_LightType(), true)))			 { UnBind_ShadowResource();  return E_FAIL; }
 				}
 				LightOBJ->Set_StaticDirty(false);
 			}
@@ -307,7 +332,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				m_pContext->ClearDepthStencilView(DynamicDIRDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 				m_pContext->OMSetRenderTargets(0, nullptr, DynamicDIRDSV.Get());
 
-				LightOBJ->Capture_ShadowMap(m_pContext.Get(), m_pRenderable_DynamicObjectList);
+				if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_DynamicObjectList)))	 { UnBind_ShadowResource();  return E_FAIL; }
+																													 
+				if (FAILED(Render_ShadowInstanced(m_pContext, LightOBJ->Get_LightType(), false)))				 { UnBind_ShadowResource();  return E_FAIL; }
 			}
 
 			m_pContext->GSSetShader(nullptr, nullptr, 0);
@@ -333,13 +360,18 @@ HRESULT CLightManager::Capture_ShadowMap() {
 
 			LightOBJ->Update_ObjectConstantBuffer(m_pContext.Get());
 
+			RENDER_CTX RCTX{};
+			RCTX.pass = RENDERPASS::SHADOW;
+
 			if (LightOBJ->Is_StaticDirty()) {
 				auto StaticShadowDSV = m_pStaticDirectionalShadowList.DSVList[ShadowSlot];
 				if (StaticShadowDSV) {
 					m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 					m_pContext->OMSetRenderTargets(0, nullptr, StaticShadowDSV.Get());
 
-					LightOBJ->Capture_ShadowMap(m_pContext.Get(), m_pRenderable_StaticObjectList);
+					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_StaticObjectList))) { UnBind_ShadowResource();  return E_FAIL; }
+
+					if (FAILED(Render_ShadowInstanced(m_pContext, LightOBJ->Get_LightType(), true)))				 { UnBind_ShadowResource();  return E_FAIL; }
 				}
 				LightOBJ->Set_StaticDirty(false);
 			}
@@ -347,37 +379,41 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			auto DynamicShadowDSV = m_pDynamicDirectionalShadowList.DSVList[ShadowSlot];
 			if (DynamicShadowDSV) {
 				m_pContext->ClearDepthStencilView(DynamicShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
-				m_pContext->OMSetRenderTargets(0, nullptr, DynamicShadowDSV.Get());
+				m_pContext->OMSetRenderTargets(0, nullptr, DynamicShadowDSV.Get());  
 
-				LightOBJ->Capture_ShadowMap(m_pContext.Get(), m_pRenderable_DynamicObjectList);
+				if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_DynamicObjectList)))	{ UnBind_ShadowResource();  return E_FAIL; }
+
+				if (FAILED(Render_ShadowInstanced(m_pContext, LightOBJ->Get_LightType(), false)))					{ UnBind_ShadowResource();  return E_FAIL; }
 			}
 		}
 	}
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-	m_pContext->VSSetShader(nullptr, nullptr, 0);
-	m_pContext->GSSetShader(nullptr, nullptr, 0);
-	m_pContext->PSSetShader(nullptr, nullptr, 0);
-
-	m_pRenderable_StaticObjectList.clear();
-	m_pRenderable_DynamicObjectList.clear();
-
-	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
-	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
-
-	SPtr<CResDepthStencilState> DepthReadState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
-	m_pContext->OMSetDepthStencilState(DepthReadState->GetDepthStencilState().Get(), 0);
+	UnBind_ShadowResource();
 
 	return S_OK;
 }
+HRESULT CLightManager::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, LIGHT_TYPE _LType, _bool _bStaticBatch) {
+	const auto InstancedVertexShader = _LType == LIGHT_TYPE::POINT ? m_pInstancedPointLightVS : m_pInstancedDirectionalLightVS;
+	if (nullptr == InstancedVertexShader) return E_FAIL;
 
+	pContext->IASetInputLayout(InstancedVertexShader->GetInputLayout().Get());
+	pContext->VSSetShader(InstancedVertexShader->GetVertexShader().Get(), nullptr, 0);
+
+	if (FAILED(CGameInstance::Get().Render_ShadowInstanced(pContext.Get(), _bStaticBatch))) return E_FAIL;
+
+	const auto OriginalVertexShader = _LType == LIGHT_TYPE::POINT ? m_pPointLightVS : m_pDirectionalLightVS;
+	pContext->IASetInputLayout(OriginalVertexShader->GetInputLayout().Get());
+	pContext->VSSetShader(OriginalVertexShader->GetVertexShader().Get(), nullptr, 0);
+
+	return S_OK;
+}
 HRESULT CLightManager::Render_ObjectShadow() {
 	ZoneScopedN("Render_ObjectShadow");
 
 	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
-	if (nullptr == ActiveCamera) return E_FAIL;
+	if (nullptr == ActiveCamera)			return E_FAIL;
 
-	if (nullptr == m_pUAVComBinedOutput) return E_FAIL;
+	if (nullptr == m_pUAVComBinedOutput)	return E_FAIL;
 
 	{
 		ID3D11UnorderedAccessView* UAV[1] = { m_pUAVComBinedOutput->GetUAV().Get() };
@@ -394,14 +430,14 @@ HRESULT CLightManager::Render_ObjectShadow() {
 	CB_LIGHT LightBuffer{};
 
 	XMStoreFloat4x4(&LightBuffer.g_InvViewProj, InvViewProj);
+
 	for (auto& LightHandle : m_pEffectLightPool) {					// Effect Light Binding
 		if (LightCount >= MAX_LIGHT_COUNT) break;
 
 		if (!LightHandle) continue;
 
 		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false) continue;
-
+		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false)		continue;
 
 		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightOBJ->Get_LightType());
 
@@ -427,7 +463,7 @@ HRESULT CLightManager::Render_ObjectShadow() {
 
 		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightType);
 
-		uint32_t LightMapCount = bIsPointLight ? MAX_LIGHT_MAPCOUNT : 1;
+		uint32_t LightMapCount = bIsPointLight ? POINT_SHADOW_FACE_COUNT : 1;
 		for (int Face = 0; Face < LightMapCount; ++Face)
 			LightBuffer.AffectedLight[LightCount].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
 
@@ -461,12 +497,6 @@ HRESULT CLightManager::Render_ObjectShadow() {
 	
 	m_pContext->Dispatch((ETOUI(ShadowMapResolution.x) + 15) / 16, (ETOUI(ShadowMapResolution.y) + 15) / 16, 1);
 
-	ID3D11ShaderResourceView* NullSRV[12] = { nullptr };
-	m_pContext->CSSetShaderResources(0, 12, NullSRV);
-
-	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
-	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
-
 //#ifdef _DEBUG
 //	Render_DebugIcon();
 //#endif
@@ -476,30 +506,74 @@ HRESULT CLightManager::Render_ObjectShadow() {
 	return S_OK;
 }
 
-VOID CLightManager::Bind_DynamicLight() {
-	// 해당 함수(Bind_SceneLight)는 모델의 PBR 픽셀쉐이더를 Draw를 하기전에 CB_LIGHT_BUFFER를 채워주기 위한 용도. 그리기 연산은 수행하지 않음.
+HRESULT CLightManager::Render_ObjectNonShadow(){
+	auto ActiveCamera = CGameInstance::Get().GetActiveCamera();
+	if (nullptr == ActiveCamera)			return E_FAIL;
 
-	CB_LIGHT LightBuffer{};
+	if (nullptr == m_pUAVComBinedOutput)	return E_FAIL;
+
+	{
+		ID3D11UnorderedAccessView* UAV[1] = { m_pUAVComBinedOutput->GetUAV().Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, UAV, nullptr);
+
+		m_pContext->CSSetShader(m_pNonShadowComputeShader->GetComputeShader().Get(), nullptr, 0);
+
+		m_pContext->RSSetViewports(1, &m_pDirectionalShadowViewPort->GetViewPort());
+	}
+
+	XMMATRIX InvViewProj = XMMatrixMultiply(XMMatrixInverse(nullptr, ActiveCamera->GetView()), XMMatrixInverse(nullptr, ActiveCamera->GetProj()));
+
 	uint32_t LightCount = 0;
+	CB_LIGHT LightBuffer{};
 
-	for (auto& LightHandle : m_LightHandleList) {
+	XMStoreFloat4x4(&LightBuffer.g_InvViewProj, InvViewProj);
+
+	for (auto& LightHandle : m_pEffectLightPool) {					// Effect Light Binding
 		if (LightCount >= MAX_LIGHT_COUNT) break;
 
-		// Need Culling - Frustum & Distance
-		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ)	continue;
+		if (!LightHandle) continue;
 
-		// Distance Culling
-		// Frustum Culling
+		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false)		continue;
 
-		LightBuffer.AffectedLight[LightCount].LightType			= ETOUI(LightOBJ->Get_LightType());
-		LightBuffer.AffectedLight[LightCount].LightDirection	= LightOBJ->Get_LightDirection();
-		LightBuffer.AffectedLight[LightCount].LightColor		= LightOBJ->Get_LightColor();
-		LightBuffer.AffectedLight[LightCount].LightIntensity	= LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].LightRange		= LightOBJ->Get_LightRange();
-		LightBuffer.AffectedLight[LightCount].Position			= LightOBJ->Get_LightPosition();
-		LightBuffer.AffectedLight[LightCount].InnerAttanuation	= cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
-		LightBuffer.AffectedLight[LightCount].OuterAttanuation	= cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightOBJ->Get_LightType());
+
+		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
+		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
+		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
+		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
+		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
+
+		LightBuffer.AffectedLight[LightCount].ShadowSlot = -1;
+
+		LightCount++;
+	}
+	for (auto& LightHandle : m_pActiveShadowLightList) {				// Normal Light Binding
+		if (LightCount >= MAX_LIGHT_COUNT) break;
+		if (!LightHandle) continue;
+
+		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+		if (nullptr == LightOBJ) continue;
+
+		const LIGHT_TYPE LightType = LightOBJ->Get_LightType();
+		const bool bIsPointLight = (LightType == LIGHT_TYPE::POINT);
+
+		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightType);
+
+		uint32_t LightMapCount = bIsPointLight ? POINT_SHADOW_FACE_COUNT : 1;
+		for (int Face = 0; Face < LightMapCount; ++Face)
+			LightBuffer.AffectedLight[LightCount].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
+
+		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
+		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
+		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
+		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
+		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
+
+		LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+		LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+
+		LightBuffer.AffectedLight[LightCount].ShadowSlot = -1;
 
 		LightCount++;
 	}
@@ -511,9 +585,16 @@ VOID CLightManager::Bind_DynamicLight() {
 		memcpy(MRES.pData, &LightBuffer, sizeof(CB_LIGHT));
 		m_pContext->Unmap(m_pLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
-
+	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
 	m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pLightConstantBuffer->GetCBuffer().GetAddressOf());
+
+	_float2 ShadowMapResolution = CGameInstance::Get().GetClientScreenSize();
+
+	m_pContext->Dispatch((ETOUI(ShadowMapResolution.x) + 15) / 16, (ETOUI(ShadowMapResolution.y) + 15) / 16, 1);
+
+	UnBind_ShadowResource();
+
+	return S_OK;
 }
 
 std::optional<CHandle> CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
@@ -580,7 +661,8 @@ std::optional<CHandle> CLightManager::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3
 	m_LightHandleList.push_back(LightHandle);
 	return LightHandle;
 }
-HRESULT CLightManager::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
+
+HRESULT CLightManager::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject) {
 	if (nullptr == pRenderObject) return E_FAIL;
 
 	_ATYPE == ACTORTYPE::DYNAMIC ? m_pRenderable_DynamicObjectList.push_back(pRenderObject) : m_pRenderable_StaticObjectList.push_back(pRenderObject);
@@ -588,64 +670,52 @@ HRESULT CLightManager::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRen
 	return S_OK;
 }
 
-VOID CLightManager::Bind_ShadowResource() {
-	ID3D11ShaderResourceView* StaticDirectionalMapList[MAX_LIGHT_MAPCOUNT]  = { nullptr };
-	ID3D11ShaderResourceView* DynamicDirectionalMapList[MAX_LIGHT_MAPCOUNT] = { nullptr };
+VOID	CLightManager::Bind_ShadowResource() {
 
-	ID3D11ShaderResourceView* StaticPointLightMapList[MAX_LIGHT_MAPCOUNT]	= { nullptr };
-	ID3D11ShaderResourceView* DynamicPointLightMapList[MAX_LIGHT_MAPCOUNT]	= { nullptr };
-
-	uint32_t NormalLightCount = 0, PointLightCount = 0;
-
-	for (uint32_t i = 0; i < m_pActiveShadowLightList.size(); ++i) {
-		if (!m_pActiveShadowLightList[i]) continue;
-
-		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(m_pActiveShadowLightList[i].value());
-		if (nullptr == LightOBJ) continue;
-
-		if (LightOBJ->Get_LightType() != LIGHT_TYPE::POINT) {
-			if (NormalLightCount >= MAX_LIGHT_MAPCOUNT)	continue;
-
-			auto StaticSRV	= m_pStaticDirectionalShadowList.SRV;
-			auto DynamicSRV = m_pDynamicDirectionalShadowList.SRV;
-
-			StaticDirectionalMapList[NormalLightCount]	= StaticSRV  ? StaticSRV.Get()  : nullptr;
-			DynamicDirectionalMapList[NormalLightCount] = DynamicSRV ? DynamicSRV.Get() : nullptr;
-
-			NormalLightCount++;
-		}
-		else {
-			if (PointLightCount >= MAX_LIGHT_MAPCOUNT)	continue;
-
-			auto StaticSRV	= m_pStaticPointShadowList.SRV;
-			auto DynamicSRV = m_pDynamicPointShadowList.SRV;
-
-			StaticPointLightMapList[PointLightCount]  = StaticSRV  ? StaticSRV.Get()  : nullptr;
-			DynamicPointLightMapList[PointLightCount] = DynamicSRV ? DynamicSRV.Get() : nullptr;
-
-			PointLightCount++;
-		}
-	}
 	ID3D11ShaderResourceView* ShadowSRV[] = {
+		// Directional + Spot Static ShadowMap
 		m_pStaticDirectionalShadowList.SRV.Get(),
+		// Directional + Spot Dynamic ShadowMap
 		m_pDynamicDirectionalShadowList.SRV.Get(),
 
+		// Point Static ShadowMap
 		m_pStaticPointShadowList.SRV.Get(),
+		// Point Dynamic ShadowMap
 		m_pDynamicPointShadowList.SRV.Get()
 	};
 
 	m_pContext->CSSetShaderResources(9, 4, ShadowSRV);
 }
 
-VOID CLightManager::UnBind_ShadowResource() {
-	ID3D11ShaderResourceView* NullSRV[4] = { nullptr };
-	m_pContext->CSSetShaderResources(9, 4, NullSRV);
+VOID	CLightManager::UnBind_ShadowResource() {
+	ID3D11ShaderResourceView* NullSRV[13] = { nullptr };
+	m_pContext->CSSetShaderResources(0, 13, NullSRV);
+
+	ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
+	m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
+
+	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+	m_pContext->VSSetShader(nullptr, nullptr, 0);
+	m_pContext->GSSetShader(nullptr, nullptr, 0);
+	m_pContext->CSSetShader(nullptr, nullptr, 0);
+	m_pContext->PSSetShader(nullptr, nullptr, 0);
+
+	m_pRenderable_StaticObjectList.clear();
+	m_pRenderable_DynamicObjectList.clear();
+
+	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
+
+	SPtr<CResDepthStencilState> DepthReadState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+	m_pContext->OMSetDepthStencilState(DepthReadState->GetDepthStencilState().Get(), 0);
 }
 
-VOID CLightManager::Update_ActiveLights() {
+VOID	CLightManager::Update_ActiveLights() {
 	// 현재 프레임에 보이는 라이트 수집
 	m_pActiveShadowLightList.clear();
 	std::vector<LightData> CullingLight{};
+
 	auto Camera = CGameInstance::Get().GetActiveCamera();
 	if (nullptr == Camera) return;
 
@@ -653,7 +723,7 @@ VOID CLightManager::Update_ActiveLights() {
 
 	for (auto& LightHandle : m_LightHandleList) {
 		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ)	continue;
+		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false)	continue;
 		
 		if (LightOBJ->Get_LightType() == LIGHT_TYPE::DIRECTIONAL) {
 			CullingLight.push_back({ LightOBJ, 0.f });
@@ -662,9 +732,10 @@ VOID CLightManager::Update_ActiveLights() {
 
 		XMVECTOR CurrentPosition = LightOBJ->GetTransform().GetLoadedPostion();
 		_float	 Distance = XMVectorGetX(XMVector3Length(XMVectorSubtract(CameraPos, CurrentPosition)));
-		
-		if (Distance <= 100.f)// && IsInFrustum(LightOBJ))
-			CullingLight.push_back({ LightOBJ, Distance });
+
+		if (Distance > 100.f || !IsInFrustum(LightOBJ)) continue;
+
+		CullingLight.push_back({ LightOBJ, Distance });
 	}
 
 	// 거리 기반 컬링 + 정렬(최단거리 순)
@@ -679,22 +750,81 @@ VOID CLightManager::Update_ActiveLights() {
 	}
 }
 
-_bool CLightManager::IsInFrustum(CLight* _LightOBJ) {
+_bool	CLightManager::IsInFrustum(CLight* _LightOBJ) {
 	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
 	if (nullptr == ActiveCam)			return false;
 
-	auto ActiveCamCollider = ActiveCam->GetCollider().Get();
+	auto ActiveCamCollider = ActiveCam->GetViewVolumeCollider();
 	if (nullptr == ActiveCamCollider)	return false;
 
-	auto CameraFrustum = static_cast<CCollFrustum*>(ActiveCamCollider);
-
 	auto LightCollider = (_LightOBJ->Get_LightType() == LIGHT_TYPE::POINT ? _LightOBJ->Get_SphereCollider() : _LightOBJ->Get_FrustumCollider());
-
 	if (nullptr == LightCollider)		return false;
 
-	return CameraFrustum->Intersect(*LightCollider.get());
+	return ActiveCamCollider->Intersect(*LightCollider.get());
 }
 
+#pragma region EFFECT_LIGHT
+HRESULT CLightManager::Initialize_EffectLight(uint32_t _PoolSize) {
+	m_pEffectLightPool.reserve(_PoolSize);
+
+	for (uint32_t i = 0; i < _PoolSize; ++i) {
+		CLight::DESC LDesc{};
+		if (m_pEffectLightPool.size() < 10)	LDesc.sObjectTag = "EffectLight00" + m_pEffectLightPool.size();
+		else if (m_pEffectLightPool.size() < 100)   LDesc.sObjectTag = "EffectLight0" + m_pEffectLightPool.size();
+
+		auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
+		if (!LightHandle)			return E_FAIL;
+
+		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+		if (nullptr == LightOBJ)	return E_FAIL;
+
+		LightOBJ->Change_LightType(LIGHT_TYPE::POINT);
+
+		LightOBJ->Set_LightPosition(XMFLOAT3(0.f, 0.f, 0.f));
+		LightOBJ->Set_LightColor({ 1.f, 1.f, 1.f });
+		LightOBJ->Set_LightIntensity(10.f);
+		LightOBJ->Set_LightRange(10.f);
+		LightOBJ->Set_EffectLight(true);
+
+		m_pEffectLightPool.push_back(LightHandle);
+	}
+
+	return S_OK;
+}
+
+std::optional<CHandle> CLightManager::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity) {
+	std::optional<CHandle> FinalLightHandle = std::nullopt;
+	CLight* LightOBJ = nullptr;
+
+	for (uint32_t i = 0; i < MAX_EFFECTLIGHT_COUNT; ++i) {
+		uint32_t CircularIndex = (m_iLastAllocatedIndex + 1 + i) % MAX_EFFECTLIGHT_COUNT;
+		auto LightHandle = m_pEffectLightPool[CircularIndex];
+		if (!LightHandle)		 continue;
+
+		LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+		if (nullptr == LightOBJ) continue;
+
+		if (LightOBJ->Get_LightActivateState() == false) {
+			LightOBJ->Set_LightActivateState(true);
+			FinalLightHandle = m_pEffectLightPool[CircularIndex];
+			m_iLastAllocatedIndex = CircularIndex;
+			break;
+		}
+	}
+	if (nullptr == LightOBJ) return std::nullopt;
+
+	XMFLOAT3 WorldPosition{};
+	XMStoreFloat3(&WorldPosition, _WorldPos);
+
+	LightOBJ->Set_LightPosition(WorldPosition);
+	LightOBJ->Set_LightIntensity(_Intensity);
+	LightOBJ->Set_LightColor(_Color);
+	LightOBJ->Set_LightRange(_Range);
+	LightOBJ->Set_LightLifeTime(_LifeTime);
+	LightOBJ->Set_LightVelocity(_Velocity);
+
+	return FinalLightHandle;
+}
 HRESULT CLightManager::Reset_EffectLight(const std::optional<CHandle>& _Handle) {
 	auto iter = std::find(m_pEffectLightPool.begin(), m_pEffectLightPool.end(), _Handle);
 	if (iter == m_pEffectLightPool.end()) return E_FAIL;
@@ -743,13 +873,13 @@ HRESULT CLightManager::Transform_EffectLight(const std::optional<CHandle>& _Hand
 
 	return S_OK;
 }
-
+#pragma endregion
 HRESULT CLightManager::Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY) {
 	D3D11_TEXTURE2D_DESC TEXDesc = {};
 	TEXDesc.Width = _ResolutionX;
 	TEXDesc.Height = _ResolutionY;
 	TEXDesc.MipLevels = 1;
-	TEXDesc.ArraySize = MAX_LIGHT_MAPCOUNT;
+	TEXDesc.ArraySize = MAX_SHADOW_LIGHT_COUNT;
 	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 	TEXDesc.SampleDesc = { .Count = 1, .Quality = 0 };
 	TEXDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -763,11 +893,11 @@ HRESULT CLightManager::Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _
 	SRVDesc.Texture2DArray.MostDetailedMip = 0;
 	SRVDesc.Texture2DArray.MipLevels = 1;
 	SRVDesc.Texture2DArray.FirstArraySlice = 0;
-	SRVDesc.Texture2DArray.ArraySize = MAX_LIGHT_MAPCOUNT;
+	SRVDesc.Texture2DArray.ArraySize = MAX_SHADOW_LIGHT_COUNT;
 	
 	if (FAILED(m_pDevice->CreateShaderResourceView(_SHAR.TexBuffer.Get(), &SRVDesc, _SHAR.SRV.GetAddressOf()))) return E_FAIL;
 	
-	for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
+	for (uint32_t i = 0; i < MAX_SHADOW_LIGHT_COUNT; ++i) {
 		D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
 		DSVDesc.Format = DXGI_FORMAT_D32_FLOAT;
 		DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
@@ -781,13 +911,11 @@ HRESULT CLightManager::Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _
 	return S_OK;
 }
 HRESULT CLightManager::Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY) {
-	uint32_t SurfaceCount = 6;
-	
 	D3D11_TEXTURE2D_DESC TEXDesc = {};
 	TEXDesc.Width = _ResolutionX;
 	TEXDesc.Height = _ResolutionY;
 	TEXDesc.MipLevels = 1;
-	TEXDesc.ArraySize = MAX_LIGHT_MAPCOUNT * SurfaceCount;
+	TEXDesc.ArraySize = MAX_SHADOW_LIGHT_COUNT * POINT_SHADOW_FACE_COUNT;
 	TEXDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 	TEXDesc.SampleDesc = { .Count = 1, .Quality = 0 };
 	TEXDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -803,16 +931,16 @@ HRESULT CLightManager::Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32
 	SRVDesc.TextureCubeArray.MostDetailedMip = 0;
 	SRVDesc.TextureCubeArray.MipLevels = 1;
 	SRVDesc.TextureCubeArray.First2DArrayFace = 0;
-	SRVDesc.TextureCubeArray.NumCubes = MAX_LIGHT_MAPCOUNT;
+	SRVDesc.TextureCubeArray.NumCubes = MAX_SHADOW_LIGHT_COUNT;
 
 	if (FAILED(m_pDevice->CreateShaderResourceView(_SHAR.TexBuffer.Get(), &SRVDesc, _SHAR.SRV.GetAddressOf()))) return E_FAIL;
 
-	for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
+	for (uint32_t i = 0; i < MAX_SHADOW_LIGHT_COUNT; ++i) {
 		D3D11_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
 		DSVDesc.Format = DXGI_FORMAT_D32_FLOAT;
 		DSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-		DSVDesc.Texture2DArray.ArraySize = SurfaceCount;
-		DSVDesc.Texture2DArray.FirstArraySlice = i * SurfaceCount;
+		DSVDesc.Texture2DArray.ArraySize = POINT_SHADOW_FACE_COUNT;
+		DSVDesc.Texture2DArray.FirstArraySlice = i * POINT_SHADOW_FACE_COUNT;
 		DSVDesc.Texture2DArray.MipSlice = 0;
 
 		if (FAILED(m_pDevice->CreateDepthStencilView(_SHAR.TexBuffer.Get(), &DSVDesc, _SHAR.DSVList[i].GetAddressOf()))) return E_FAIL;
@@ -820,69 +948,7 @@ HRESULT CLightManager::Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32
 	return S_OK;
 }
 
-HRESULT CLightManager::Initialize_EffectLight(uint32_t _PoolSize){
-	m_pEffectLightPool.reserve(_PoolSize);
-
-	for (uint32_t i = 0; i < _PoolSize; ++i) {
-		CLight::DESC LDesc{};
-		if		(m_pEffectLightPool.size() < 10)	LDesc.sObjectTag = "EffectLight00" + m_pEffectLightPool.size();
-		else if (m_pEffectLightPool.size() < 100)   LDesc.sObjectTag = "EffectLight0" + m_pEffectLightPool.size();
-
-		auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
-		if (!LightHandle)			return E_FAIL;
-
-		auto LightOBJ	 = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ)	return E_FAIL;
-
-		LightOBJ->Change_LightType(LIGHT_TYPE::POINT);
-
-		LightOBJ->Set_LightPosition(XMFLOAT3(0.f, 0.f, 0.f));
-		LightOBJ->Set_LightColor({ 1.f, 1.f, 1.f });
-		LightOBJ->Set_LightIntensity(10.f);
-		LightOBJ->Set_LightRange(10.f);
-		LightOBJ->Set_EffectLight(true);
-
-		m_pEffectLightPool.push_back(LightHandle);
-	}
-
-	return S_OK;
-}
-
-std::optional<CHandle> CLightManager::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity){
-	std::optional<CHandle> FinalLightHandle = std::nullopt;
-	CLight* LightOBJ = nullptr;
-
-	for (uint32_t i = 0; i < MAX_EFFECTLIGHT_COUNT; ++i) {
-		uint32_t CircularIndex = (m_iLastAllocatedIndex + 1 + i) % MAX_EFFECTLIGHT_COUNT;
-		auto LightHandle = m_pEffectLightPool[CircularIndex];
-		if (!LightHandle)		 continue;
-
-		LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ) continue;
-
-		if (LightOBJ->Get_LightActivateState() == false) {
-			LightOBJ->Set_LightActivateState(true);
-			FinalLightHandle = m_pEffectLightPool[CircularIndex];
-			m_iLastAllocatedIndex = CircularIndex;
-			break;
-		}
-	}
-	if (nullptr == LightOBJ) return std::nullopt;
-
-	XMFLOAT3 WorldPosition{};
-	XMStoreFloat3(&WorldPosition, _WorldPos);
-
-	LightOBJ->Set_LightPosition(WorldPosition);
-	LightOBJ->Set_LightIntensity(_Intensity);
-	LightOBJ->Set_LightColor(_Color);
-	LightOBJ->Set_LightRange(_Range);
-	LightOBJ->Set_LightLifeTime(_LifeTime);
-	LightOBJ->Set_LightVelocity(_Velocity);	
-
-	return FinalLightHandle;
-}
-
-VOID CLightManager::Update_LightData() {
+VOID	CLightManager::Update_LightData() {
 	m_pLightConstantVariable.LightCount = m_pActiveShadowLightList.size();
 	uint32_t PLSlotIndex = 0, DLSlotIndex = 0;
 
@@ -901,7 +967,7 @@ VOID CLightManager::Update_LightData() {
 
 			const LIGHT_TYPE LightType = LightOBJ->Get_LightType();
 			
-			uint32_t LightMapCount = LightType == LIGHT_TYPE::POINT ? MAX_LIGHT_MAPCOUNT : 1;
+			uint32_t LightMapCount = LightType == LIGHT_TYPE::POINT ? POINT_SHADOW_FACE_COUNT : 1;
 			for (int Face = 0; Face < LightMapCount; ++Face) {
 				m_pLightConstantVariable.AffectedLight[i].g_LightViewProj[Face] = LightOBJ->Get_LightViewProj(Face);
 			}
@@ -933,7 +999,7 @@ VOID CLightManager::Update_LightData() {
 	}
 }
 
-VOID CLightManager::Allocate_ShadowSlot(){
+VOID	CLightManager::Allocate_ShadowSlot(){
 	uint32_t PLCount = 0, DLCount = 0;
 
 	for (auto& LightHandle : m_pActiveShadowLightList) {
@@ -945,10 +1011,10 @@ VOID CLightManager::Allocate_ShadowSlot(){
 		LightOBJ->Set_ShadowSlotNumb(-1);
 
 		if (LightOBJ->Get_LightType() == LIGHT_TYPE::POINT) {
-			if (PLCount < MAX_LIGHT_COUNT) LightOBJ->Set_ShadowSlotNumb(PLCount++);
+			if (PLCount < MAX_SHADOW_LIGHT_COUNT) LightOBJ->Set_ShadowSlotNumb(PLCount++);
 		}
 		else {
-			if (DLCount < MAX_LIGHT_COUNT) LightOBJ->Set_ShadowSlotNumb(DLCount++);
+			if (DLCount < MAX_SHADOW_LIGHT_COUNT) LightOBJ->Set_ShadowSlotNumb(DLCount++);
 		}
 	}
 }

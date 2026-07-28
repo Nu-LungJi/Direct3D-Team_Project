@@ -37,9 +37,8 @@ EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 		EVALUATE  eType = m_pDecorator->Evaluate(fTimeDelta);
 		return m_eDebug = eType;
 	}
-    
-	m_eDebug = EVALUATE::FAILED;
-    return EVALUATE::FAILED;
+   
+    return 	m_eDebug = EVALUATE::FAILED;
 }
 void CBTDecorator::Abort()
 {

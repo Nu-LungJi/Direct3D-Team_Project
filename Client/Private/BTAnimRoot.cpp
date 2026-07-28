@@ -32,7 +32,13 @@ void CBTAnimRoot::Update_Gui()
 {
 	if (ImGui::TreeNode("AnimRoot"))
 	{
+		BoolButton("Gravity : ", m_bGravity);
+		DragFloat("Gravity Value", m_fGravity);
+		DragFloat("Early Ratio : ", m_fEarlyRatio);
 
+		BoolButton("Enable Early : ", m_bEarly);
+
+		ImGui::DragFloat("Blend", &m_fBlend, 0.1f, 0.f, 1.f);
 		if (ImGui::Button("Enable Ratio : "))
 			m_bRatio = !m_bRatio;
 			ImGui::SameLine(110.f);
@@ -171,10 +177,17 @@ nlohmann::json CBTAnimRoot::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonValue(j, "Loop", m_bLoop);
+	SaveJsonValue(j, "Blend", m_fBlend);
+
+	SaveJsonValue(j, "Gravity Value", m_fGravity);
+	SaveJsonValue(j, "Gravity", m_bGravity);
+
+	SaveJsonValue(j, "Early", m_bEarly);
+	SaveJsonValue(j, "EarlyRatio", m_fEarlyRatio);
 	SaveJsonEnum(j, "SkillType", m_eSkillType);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
-
+	
 	size_t iMaxSize = m_StartFlags.size();
 	if (!m_StartFlags.empty())
 	{
@@ -213,10 +226,14 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 
+	LoadJsonValue(j, "Gravity Value", m_fGravity);
+	LoadJsonValue(j, "Gravity", m_bGravity);
+	LoadJsonValue(j, "Early", m_bEarly);
+	LoadJsonValue(j, "EarlyRatio", m_fEarlyRatio);
 	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonValue(j, "Loop", m_bLoop);
 	LoadJsonEnum(j, "SkillType", m_eSkillType);
-
+	LoadJsonValue(j, "Blend", m_fBlend);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	
@@ -261,12 +278,9 @@ void CBTAnimRoot::Active_Skill()
 		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)))
 			return;
 
-		if (m_eSkillType != ATTMON::END)
+		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
-			{
-				pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
-			}
+			pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
 		}
 	}
 }
@@ -297,6 +311,23 @@ void CBTAnimRoot::EventFlagToRatio(_float fRatio)
 			}
 		}
 	}
+}
+void CBTAnimRoot::Gravity()
+{
+	
+	if (!m_bGravity) return;
+
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pSrc = pBT->GetGameObject())
+		{
+			if (auto pMotor = pSrc->GetComponent<CComCharacterMotor>("ComCharacterMotor"))
+			{
+				pMotor->SetGravity(m_fGravity);
+			}
+		}
+	}
+	
 }
 void CBTAnimRoot::Reset_CheckFlag()
 {
@@ -357,6 +388,19 @@ void CBTAnimRoot::Combo2(const _char* pName, FLAGTYPE& eType)
 
 		ImGui::EndCombo();
 	}
+}
+void CBTAnimRoot::DragFloat(const _char* pName, _float& fValue)
+{
+	_string Name = "##" + _string(pName);
+	ImGui::Text(pName);
+	ImGui::DragFloat(Name.c_str(), &fValue,0.1f,0.f,1.f);
+}
+void CBTAnimRoot::BoolButton(const _char* pName, _bool& bButton)
+{
+	if (ImGui::Button(pName))
+		bButton = !bButton;
+	ImGui::SameLine();
+	ImGui::Text(bButton == true ? "TRUE" : "FALSE");
 }
 E::UPtr<CBTAnimRoot> CBTAnimRoot::Create()
 {

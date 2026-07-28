@@ -37,6 +37,14 @@ namespace Engine
 		uint32_t iSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
+	struct PX_JOINT_USER_DATA
+	{
+		CHandle hJointOwner{};
+		CHandle hActorA{};
+		CHandle hActorB{};
+		uint32_t iJointSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
 	inline constexpr uint32_t PX_DEFAULT_LAYER = 1u;
 	inline constexpr uint32_t PX_ALL_LAYERS = std::numeric_limits<uint32_t>::max();
 	inline constexpr char PX_UNIT_CYLINDER_CONVEX_PATH[] =
@@ -117,6 +125,14 @@ namespace Engine
 		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iSelfShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
+	struct PX_ON_JOINT_BREAK_DATA
+	{
+		CHandle hJointOwner{};
+		CHandle hActorA{};
+		CHandle hActorB{};
+		uint32_t iJointSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
 	struct PX_RAYCAST_RESULT

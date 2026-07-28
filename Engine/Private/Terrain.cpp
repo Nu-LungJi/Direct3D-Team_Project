@@ -892,12 +892,30 @@ UPtr<CTerrainChunk> CTerrain::CreateChunk(uint32_t chunkX, uint32_t chunkZ) cons
 	desc.vertexSpacing = m_fVertexSpacing;
 	desc.maskResolution = m_iMaskResolution;
 
+	// 청크의 한 행을 통째로 복사
+	// 전체 Terrain 한 행
+	// 
+	// 	...[299][300][301] ...[450][451] ...
+	// 
+	// 	└──── 청크 정점 151개 ────┘
+
+	// 전체 Terrain
+	//	┌──────────────────────────────────┐
+	//	│                                  │
+	//	│       ┌───────────────┐          │
+	//	│       │ 복사할 청크 영역│         │
+	//	│       │               │          │
+	//	│       └───────────────┘          │
+	//	│                                  │
+	//	└──────────────────────────────────┘
 	for (uint32_t localZ = 0; localZ < desc.vertexCountZ; ++localZ)
 	{
 		const size_t begin = static_cast<size_t>(startZ + localZ) * m_iVertexCountX + startX;
 		desc.vertices.insert(desc.vertices.end(), m_Vertices.begin() + begin, m_Vertices.begin() + begin + desc.vertexCountX);
 	}
 
+	// 청크 전용 (버텍스의 Index생성)
+	// 청크 정점 배열을 기준으로 Quad당 두 Triangle을 생성
 	for (uint32_t z = 0; z < quadCountZ; ++z)
 	{
 		for (uint32_t x = 0; x < quadCountX; ++x)

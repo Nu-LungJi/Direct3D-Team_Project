@@ -287,3 +287,146 @@ PS_OUT RemoveBlack(VS_OUT In)
 	return Out;
 }
 
+PS_OUT RemoveBlackScrollXY(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+		    
+	float2 uv = In.vTexcoord;
+	
+	float2 packedUV = uv;
+	packedUV.x += In.life * 3.03f;
+	//packedUV.y += In.life * 1.03f;
+	//packedUV.y *= 3.f;
+	
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(packedUV.x, packedUV.y));
+	
+	
+	
+	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+
+	//float4 texColor = g_DiffuseTexture.Sample(LinearWrap, packedUV);
+
+	float intensity = max(tex.r,(max(tex.g, tex.b)));
+	float alpha = smoothstep(0.02f, 0.2f, intensity);
+
+	float3 color = tex.rgb * In.vColor.rgb;
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 finalRGB = color.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+
+	Out.vDiffuse = float4(finalRGB, alpha * In.vColor.a);
+
+	//if (all(texColor.rgb < 0.01f))
+	//	discard;
+	
+	return Out;
+}
+PS_OUT PlayerDashSmoke2(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	static const float2 AtlasCount = float2(8.f, 8.f);
+
+    // 이미 계산되어 전달된 8×8 Atlas UV
+	float2 atlasUV = In.vTexcoord;
+
+    // 현재 플립북 셀과 셀 내부 0~1 UV 복원
+	float2 atlasPosition = atlasUV * AtlasCount;
+	float2 cellIndex = floor(atlasPosition);
+	float2 localUV = frac(atlasPosition);
+
+	float lifeMax = max(In.maxLife, 0.0001f);
+	float ageRatio = saturate(In.life / lifeMax);
+
+    /*
+     * Normal은 플립북 Atlas UV가 아니라
+     * 셀 내부 UV를 기준으로 별도로 스크롤한다.
+     */
+	float2 normalUV =
+        localUV * float2(1.2f, 1.2f) +
+        float2(-g_fTimeAccumulation * 0.6f, 0.f);
+
+	float2 distortion =
+        g_NormalTexture.Sample(LinearWrap, normalUV).rg * 2.f - 1.f;
+
+    // 강하게 적용하면 Smoke 형태가 망가지므로 작게 시작
+	const float distortionStrength = 0.012f;
+
+	float2 distortedLocalUV =
+        localUV + distortion * distortionStrength;
+
+    // 옆 플립북 프레임이 섞이는 것을 방지
+	distortedLocalUV = clamp(
+        distortedLocalUV,
+        float2(0.02f, 0.02f),
+        float2(0.98f, 0.98f)
+    );
+
+	
+    // 왜곡된 셀 내부 UV를 다시 Atlas UV로 변환
+	float2 distortedAtlasUV =
+        (cellIndex + distortedLocalUV) / AtlasCount;
+	//distortedAtlasUV.x =In.life * 0.03f;
+    // SmokeMedium 플립북 샘플링
+    // 가능하면 Diffuse 전용 Clamp 샘플러 권장
+
+
+	float4 smokeTex =
+        g_DiffuseTexture.Sample(LinearClamp, distortedAtlasUV);
+
+    /*
+     * WindNoise_D는 플립북 UV가 아닌 별도의 UV로 읽는다.
+     * 대시 방향이 텍스처의 X축이라면 X 방향으로 스크롤.
+     */
+	float2 noiseUV =
+        localUV * float2(1.5f, 1.f) +
+        float2(-g_fTimeAccumulation * 0.8f, 0.f);
+
+	float noise =
+        g_NoiseTexture.Sample(LinearWrap, noiseUV).r;
+
+	float noiseMask =
+        smoothstep(0.3f, 0.7f, noise);
+
+    // 노이즈를 너무 강하게 곱하면 연기가 사라지므로 25%만 적용
+	float breakup =
+        lerp(1.f, noiseMask, 0.25f);
+
+    // 알파 채널이 정상적으로 들어 있다면 이것을 사용
+	float smokeMask = smokeTex.a;
+
+    // 알파 채널이 항상 1이라면 위 라인 대신 아래 코드 사용
+    // float smokeMask = max(
+    //     smokeTex.r,
+    //     max(smokeTex.g, smokeTex.b)
+    // );
+
+    // 파티클 생성/소멸 페이드
+	float fadeIn = smoothstep(0.f, 0.08f, ageRatio);
+	float fadeOut = 1.f - smoothstep(0.65f, 1.f, ageRatio);
+	float lifeFade = fadeIn * fadeOut;
+
+	float alpha =
+        smokeMask *
+        breakup *
+        lifeFade *
+        In.vColor.a;
+
+    // Smoke 텍스처 RGB를 사용
+	float3 color =
+        smokeTex.rgb * In.vColor.rgb;
+
+	float4 lerpedEmissive =
+        lerp(In.vEmissive, In.vEndEmissive, ageRatio);
+
+	float3 finalRGB =
+        color +
+        lerpedEmissive.rgb * lerpedEmissive.a;
+
+	Out.vDiffuse = float4(finalRGB, alpha);
+
+    // 완전히 투명한 픽셀의 오버드로 감소
+	clip(alpha - 0.001f);
+
+	return Out;
+}

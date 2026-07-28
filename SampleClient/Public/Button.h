@@ -52,7 +52,7 @@ protected:
 	std::optional<CHandle> m_Effect_Hovered_Handle = std::nullopt;
 	std::optional<CHandle> m_Effect_Clicked_Handle = std::nullopt;
 
-	std::string ClickTargetName = "EventTest";
+	std::string ClickTargetName = "0SpellDesc";
 
 	float m_fHoverScale = 1.1f;
 	float m_fScaleDuration = 0.1f;

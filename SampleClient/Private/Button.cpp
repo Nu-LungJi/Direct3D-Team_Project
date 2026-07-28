@@ -257,7 +257,7 @@ void CButton::PlayEffect(uint32_t uiState)
 			ClearEffectTweens();
 			OnClicked(this);
 		}
-		if (OnClickedAction) OnClickedAction(ClickTargetName);
+		if (OnClickedAction) OnClickedAction(m_UIINFO.Restag);
 
 
 		if (m_Effect_Clicked_Handle != std::nullopt &&

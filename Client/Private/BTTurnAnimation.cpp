@@ -57,7 +57,7 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 		XMStoreFloat3(&m_vCurrentLook, vSrcLook);
 		XMStoreFloat3(&m_vTargetLook, vTargetLook);
 		pAnimator->SetPlay(true);
-		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
 
 		m_bTurn = true;
 	}
@@ -126,6 +126,7 @@ nlohmann::json CBTTurnAnimation::Save_Node()
 		_string Name = "AnimIndex" + std::to_string(i);
 		SaveJsonValue(j, Name,m_iTurnAnimIndex[i]);
 	}
+
 	return j;
 }
 HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
@@ -136,6 +137,7 @@ HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
 		_string Name = "AnimIndex" + std::to_string(i);
 		LoadJsonValue(j, Name, m_iTurnAnimIndex[i]);
 	}
+
 	return S_OK;
 }
 void CBTTurnAnimation::Abort()

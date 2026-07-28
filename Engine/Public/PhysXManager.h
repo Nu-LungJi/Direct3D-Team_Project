@@ -21,6 +21,7 @@ NS_BEGIN(Engine)
 class CPhysxManagerListener;
 class CPhysXCollisionProxyEditor;
 class CPhysXCookingEditor;
+class CRagdollEditorGUI;
 class CGameObject;
 struct PX_CCT_HIT_DATA;
 struct PX_CCT_OBSTACLE_HIT_DATA;
@@ -96,6 +97,7 @@ private:
 	UPtr<CPhysxManagerListener> m_pListener{};
 	UPtr<CPhysXCollisionProxyEditor> m_pCollisionProxyEditor{};
 	UPtr<CPhysXCookingEditor> m_pCookingEditor{};
+	UPtr<CRagdollEditorGUI> m_pRagdollEditor{};
 
 private:
 	mutable std::shared_mutex m_UserDataRegistryMutex{};
