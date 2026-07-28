@@ -1,6 +1,5 @@
 
 const static float PI = 3.14159265359f;
-const static int MAX_LIGHT_COUNT = 8;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
@@ -20,6 +19,8 @@ const static float SpecularIntensity = 1.f;
 
 #define SCREENX 1280
 #define SCREENY 720
+
+#define POINTLIGHT_RESOLUTION 1024
 
 struct DirectionalLight
 {
@@ -132,11 +133,11 @@ cbuffer CB_MATERIAL : register(b3)
 
 cbuffer CB_LIGHT_BUFFER : register(b4) 
 {
-	DynamicLight AffectedLight[MAX_LIGHT_COUNT];
-    float4x4 g_InvViewProj;
-    uint	LightCount;
-	uint	CurrentShadowLightIndex;
-    float2	LightPadding;
+	DynamicLight	AffectedLight[MAX_LIGHT_COUNT];
+    float4x4		g_InvViewProj;
+    uint			LightCount;
+	uint			CurrentShadowLightIndex;
+    float2			LightPadding;
 }
 
 

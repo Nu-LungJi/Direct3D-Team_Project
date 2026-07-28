@@ -72,7 +72,7 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		XMFLOAT4X4	g_LightViewProj[MAX_LIGHT_MAPCOUNT];
+		XMFLOAT4X4	g_LightViewProj[POINT_SHADOW_FACE_COUNT];
 
 		_float3		LightDirection;
 		_float		LightIntensity;

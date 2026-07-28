@@ -294,9 +294,9 @@ HRESULT CRenderer::InitializeTargetPBR()
 	m_pResDynTexTargetLight = Generate_RenderTarget("DynTex2D_Target_Shadow", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 	if (nullptr == m_pResDynTexTargetLight)	return E_FAIL;
 	
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_BRDFLUT.dds", nullptr, m_pBRDFLookUpMapSRV.GetAddressOf()))) 			return E_FAIL;
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_Irridiance.dds"	 , nullptr, m_pIrridianceMapSRV.GetAddressOf()))) 		return E_FAIL;
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_PreFilterMap.dds", nullptr, m_pPreFilteredMapSRV.GetAddressOf()))) 		return E_FAIL;
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_BRDFLUT.dds", nullptr, m_pSRVBRDFLookUpMap.GetAddressOf()))) 			return E_FAIL;
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_Irridiance.dds"	 , nullptr, m_pSRVIrradianceMap.GetAddressOf()))) 		return E_FAIL;
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_PreFilterMap.dds", nullptr, m_pSRVPreFilteredMap.GetAddressOf()))) 		return E_FAIL;
 
 	return S_OK;
 }
@@ -574,7 +574,7 @@ HRESULT CRenderer::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowU
 	Tex2dDesc.Width = _ResolutionX;
 	Tex2dDesc.Height = _ResolutionY;
 	Tex2dDesc.MipLevels = 1;
-	Tex2dDesc.ArraySize = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? MAX_LIGHT_MAPCOUNT : 1;
+	Tex2dDesc.ArraySize = (_LTYPE == ETOUI(LIGHT_TYPE::POINT)) ? POINT_SHADOW_FACE_COUNT : 1;
 	Tex2dDesc.Format = DXGI_FORMAT_R32_FLOAT;
 	Tex2dDesc.Usage = D3D11_USAGE_DEFAULT;
 	Tex2dDesc.SampleDesc = { .Count = 1, .Quality = 0 };
@@ -1005,7 +1005,7 @@ HRESULT CRenderer::Bind_VolumetricFog() {
 	//	CB_FOG cbFog{};
 	//	cbFog.FogIntensity = m_fFogIntensity;
 	//	cbFog.FogColor = m_fFogColor;
-	//	cbFog.FogMaxHeight = m_fFogMaxHeight;
+	//	cbFog.FogMaxHeight = m_fFogMaxHeight; 
 	//	cbFog.FogStartPos = m_fFogStartPos;
 	//	cbFog.FogEndPos = m_fFogEndPos;
 	//	cbFog.FogDensity = m_fFogDensity;
@@ -1314,109 +1314,43 @@ HRESULT CRenderer::Render_HBAO() {
 }
 
 HRESULT CRenderer::Render_Lighting() {
-	ComPtr<ID3D11ShaderResourceView> SRVList[] = {
-		m_pResDynTexTargetDiffuse->GetSRV(),
-		m_pResDynTexTargetNormal->GetSRV(),
-		m_pResDynTexTargetSMRO->GetSRV(),
-		m_pResDynTexTargetEmissive->GetSRV(),
-		m_pResDynTexTargetHBAO->GetSRV(),
-		m_pResDynTexTargetDepth->GetSRV(),
-	};
-	m_pContext->CSSetShaderResources(0, 6, SRVList->GetAddressOf());
-
-	SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
-	m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
-
-	ComPtr<ID3D11ShaderResourceView> ExtraSRVList[3] = {
-		m_pIrridianceMapSRV.Get(),
-		m_pPreFilteredMapSRV.Get(),
-		m_pBRDFLookUpMapSRV.Get()
-	};
-
-	m_pContext->CSSetShaderResources(6, 3, ExtraSRVList->GetAddressOf());
-
- 	if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
-
-	Unbind_Resources();
-	
-	m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
-	
-	return S_OK;
 
 	{
-		CGameInstance::Get().Bind_DynamicLight();
-	
-		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetLight->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-	
-		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	
-		SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
-		m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
-	
-		const auto& FullScreenBuffer = m_pFullscreenVIBuffer;
+		// Default Texture - Dissolve Noise
+		SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
+		m_pContext->CSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
 
-		m_pContext->PSSetShader(m_pPBRPixelShader->GetPixelShader().Get(), nullptr, 0);
-	
-		m_pContext->IASetInputLayout(m_pPBRVertexShader->GetInputLayout().Get());
-	
-		ID3D11Buffer* vertexBuffers[] = {
-			FullScreenBuffer->GetVertexBuffer().Get()
-		};
-		uint32_t strides[] = {
-			FullScreenBuffer->GetVertexStride()
-		};
-		uint32_t offsets[] = {
-			0
-		};
-		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		m_pContext->IASetIndexBuffer(FullScreenBuffer->GetIndexBuffer().Get(), FullScreenBuffer->GetIndexFormat(), 0);
-		m_pContext->IASetPrimitiveTopology(FullScreenBuffer->GetPrimitiveType());
-	
-		{   // Diffuse
-			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDiffuse->GetSRV().Get() };
-			m_pContext->PSSetShaderResources(0, 1, pSRVs);
-		}
-		{   // Normal
-			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetNormal->GetSRV().Get() };
-			m_pContext->PSSetShaderResources(1, 1, pSRVs);
-		}
-		{   // SMRO
-			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetSMRO->GetSRV().Get() };
-			m_pContext->PSSetShaderResources(2, 1, pSRVs);
-		}
-		{   // Emissive
-			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetEmissive->GetSRV().Get() };
-			m_pContext->PSSetShaderResources(3, 1, pSRVs);
-		}
-		{   // Depth
-			ID3D11ShaderResourceView* pSRVs[1] = { m_pResDynTexTargetDepth->GetSRV().Get() };
-			m_pContext->PSSetShaderResources(4, 1, pSRVs);
-		}
-		{   // HBAO
-			auto WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
-			//m_pResDynTexTargetHBAO
-			ID3D11ShaderResourceView* pSRVs[1] = { WhiteResource->GetSRV().Get() };
-			m_pContext->PSSetShaderResources(5, 1, pSRVs);
-		}
-		{   // Shadow
-			ComPtr<ID3D11ShaderResourceView> ShadowResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE")->GetSRV();
-			if (bApplyShadow) {
-				ShadowResource = m_pResDynTexTargetShadow->GetSRV();
-			}
-			m_pContext->PSSetShaderResources(6, 1, ShadowResource.GetAddressOf());
-		}
-	
-		// Draw On PBRScreen
-		m_pContext->DrawIndexed(FullScreenBuffer->GetNumIndices(), 0, 0);
+		// Default Texture - Dissolve HBAO
+		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
+		m_pContext->PSSetShaderResources(5, 1, WhiteResource->GetSRV().GetAddressOf());
 	}
-	
-	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetLight;
 
-	Unbind_Resources();
+	{
+		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
+			m_pResDynTexTargetDiffuse->GetSRV(),
+			m_pResDynTexTargetNormal->GetSRV(),
+			m_pResDynTexTargetSMRO->GetSRV(),
+			m_pResDynTexTargetEmissive->GetSRV(),
+			m_pResDynTexTargetHBAO->GetSRV(),
+			m_pResDynTexTargetDepth->GetSRV(),
+			m_pSRVIrradianceMap.Get(),
+			m_pSRVPreFilteredMap.Get(),
+			m_pSRVBRDFLookUpMap.Get()
+		};
+
+		m_pContext->CSSetShaderResources(0, 9, SRVList->GetAddressOf());
+
+		if (ApplyShadow) {
+			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
+		}
+		else {
+			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
+		}
+
+		Unbind_Resources();
+
+		m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
+	}
 
 	return S_OK;
 }
@@ -1543,13 +1477,6 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 		UINT GroupY = (ScreenResolutionY + 15) / 16;
 		UINT GroupZ = 1;
 		m_pContext->Dispatch(GroupX, GroupY, GroupZ);
-	}
-	{
-		ID3D11UnorderedAccessView* NullUAV[1] = { nullptr };
-		m_pContext->CSSetUnorderedAccessViews(0, 1, NullUAV, nullptr);
-
-		ID3D11ShaderResourceView* NullSRVs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
-		m_pContext->CSSetShaderResources(0, 5, NullSRVs);
 	}
 
 	Unbind_Resources();
@@ -2097,6 +2024,9 @@ VOID	CRenderer::PostProcessGUI() {
 	}
 	if (ApplyVolumetric ? ImGui::Button("Volumetric OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric ON", ImVec2(-FLT_MIN, 20))) {
 		ApplyVolumetric = !ApplyVolumetric;
+	}
+	if (ApplyShadow ? ImGui::Button("Shadow OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Shadow ON", ImVec2(-FLT_MIN, 20))) {
+		ApplyShadow = !ApplyShadow;
 	}
 
 	ImGui::End();

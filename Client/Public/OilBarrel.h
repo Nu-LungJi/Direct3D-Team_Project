@@ -43,6 +43,8 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	_bool ApplyPushForce(const _float3& vDirection, _float fStrength);
 
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+
 public:
 	static E::UPtr<COilBarrel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

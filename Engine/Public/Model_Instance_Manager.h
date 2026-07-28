@@ -61,6 +61,10 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 	bool HasRenderPass(RENDERPASS ePass) const override { return ePass == RENDERPASS::DEFAULT; };
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, _bool bStaticBatch);
+	/*---------------------------------*/
+
 private:
 	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComStaticModelInstance* pModelInstance, _bool bStaticModel);
 	MODEL_INSTANCE_BATCH* Find_Or_Create_Batch(CComModelInstance* pModelInstance, _bool bStaticModel, uint32_t iEvaluationMode = 0);

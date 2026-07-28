@@ -39,6 +39,9 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	/*---------------------------------*/
 public:
 	_bool					Weapon_CallBack() { return m_bDissolve; }
 private:

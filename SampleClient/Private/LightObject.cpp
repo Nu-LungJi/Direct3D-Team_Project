@@ -85,7 +85,7 @@ void CLightObject::Update(E::_float fTimeDelta) {
 }
 void CLightObject::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().Update();
-	CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 

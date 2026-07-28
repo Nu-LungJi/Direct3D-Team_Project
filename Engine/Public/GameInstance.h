@@ -292,7 +292,7 @@ public:
 
 	VOID	Clear_DynamicLightList();
 
-	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 
 	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
@@ -405,6 +405,10 @@ public:
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
 	void Add_Part_Instance(class CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
+
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, _bool bStaticBatch);
+	/*---------------------------------*/
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER

@@ -14,12 +14,13 @@ struct LightData {
 struct SHADOW_ARRAY_2D {
 	ComPtr<ID3D11Texture2D>			 TexBuffer{};
 	ComPtr<ID3D11ShaderResourceView> SRV{};
-	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_LIGHT_MAPCOUNT];
+	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_SHADOW_LIGHT_COUNT];
 };
+
 struct SHADOW_ARRAY_CUBE {
 	ComPtr<ID3D11Texture2D>			 TexBuffer{};
 	ComPtr<ID3D11ShaderResourceView> SRV{};
-	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_LIGHT_MAPCOUNT];
+	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_SHADOW_LIGHT_COUNT];
 };
 
 class ENGINE_DLL CLightManager final : public CEngineBase {
@@ -33,27 +34,30 @@ public:
 	VOID	Update(_float fTimeDelta);
 	VOID	UpdateGUI();
 	HRESULT	Capture_ShadowMap();
-	HRESULT	Render_ObjectShadow();	
+	HRESULT	Render_ObjectShadow();
+	HRESULT	Render_ObjectNonShadow();
 
 	VOID	Bind_DynamicLight();
 
-	std::optional<CHandle>	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
 	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
 	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 
 	VOID	Clear_DynamicLightList()							{ m_LightHandleList.clear(); }
 
-	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 
 	const	SPtr<CResDynamicTexture2D>& Get_CombinedResource()	{ return m_pUAVComBinedOutput; }
 
 	VOID	Bind_ShadowResource();
 	VOID	UnBind_ShadowResource();
+	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, const E::RENDER_CTX& ctx, LIGHT_TYPE _LType, _bool _bStaticBatch);
 
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
 	VOID	Allocate_ShadowSlot();
 
+public:
 	_bool	IsInFrustum(CLight* _LightOBJ);
 
 	HRESULT Reset_EffectLight(const std::optional<CHandle>& _Handle);
@@ -109,6 +113,10 @@ private:
 
 	SPtr<CResVertexShader>				m_pPointLightVS = { nullptr };
 	SPtr<CResVertexShader>				m_pDirectionalLightVS = { nullptr };
+
+	SPtr<CResVertexShader>				m_pInstancedPointLightVS = { nullptr };
+	SPtr<CResVertexShader>				m_pInstancedDirectionalLightVS = { nullptr };
+
 	SPtr<CResGeometryShader>			m_pPointLightGS = { nullptr };
 	SPtr<CResPixelShader>				m_pPointLightPS = { nullptr };
 

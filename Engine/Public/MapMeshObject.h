@@ -39,6 +39,10 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 	void UpdateGUI() override;
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	/*---------------------------------*/
+
 public:
 	bool IsOcclusionCullable() const override;
 	bool GetOcclusionBounds(BoundingBox& outBounds) const override;

@@ -420,10 +420,25 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 
 		if (FAILED(pObject->Render_Instanced(pContext, ctx, *pBatch)))
 			return E_FAIL;
-
-
 	}
 
+	return S_OK;
+}
+
+HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, _bool bStaticBatch){
+	
+	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
+		if (!pBatch || (pBatch->Instances.empty()))		continue;
+
+		if (pBatch->bModelStatic != bStaticBatch)
+			continue;
+
+		auto pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
+		if (nullptr == pObject) continue;
+
+		if (FAILED(pObject->Render_ShadowInstanced(pContext, ctx, *pBatch)))	return E_FAIL;
+	}
+	
 	return S_OK;
 }
 
@@ -434,7 +449,6 @@ UPtr<CModel_Instance_Manager> CModel_Instance_Manager::Create()
 	if (FAILED( pInstance->Initialize()))
 	{
 		MSG_BOX("Failed to Created : CModel_Instance_Manager");
-
 		return nullptr;
 	}
 

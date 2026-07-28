@@ -10,7 +10,8 @@ static const float	BlurWeights[2]		= { 0.3162162f, 0.0702703f };
 static const float  HalfBloomWeight		= { 0.60f };
 static const float	QuarterBloomWeight	= { 0.40f };
 
-static const float	BrightThreshold		= { 0.60f };
+static const float	BrightThreshold		= { 1.20f };
+static const float  BrightKnee			= { 0.50f };
 static const float  BloomIntensity		= { 0.25f };
 
 static const float	Min_Luminance		= { 0.00018442211f };
@@ -60,7 +61,12 @@ float4 PSMain_BrightPass(float4 Position : SV_POSITION, float2 TexCoord : TEXCOO
 	float3	DownSampledColor = DownSampling(TexCoord);
 
 	float	Luminance = dot(DownSampledColor, float3(0.2126f, 0.7152f, 0.0722f));
-	float	Contribution = smoothstep(BrightThreshold - 0.2f, BrightThreshold + 0.2f, Luminance);
+	
+	float Soft = Luminance - BrightThreshold + BrightKnee;
+	Soft = clamp(Soft, 0.f, 2.f * BrightKnee);
+	Soft = Soft * Soft / max(4.f * BrightKnee, 0.0001f);
+	
+	float Contribution = max(Soft, Luminance - BrightThreshold) / max(Luminance, 0.0001f);
 
 	return float4(DownSampledColor * Contribution, 1.f);
 }

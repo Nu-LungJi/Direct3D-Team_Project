@@ -54,7 +54,7 @@ public:
 	VOID			Set_LightIntensity(_float _Intensity) { m_pDynamicLight.LightIntensity = _Intensity; }
 	_float			Get_LightIntensity() { return m_pDynamicLight.LightIntensity; }
 
-	VOID			Set_LightRange(_float _Range) { m_pDynamicLight.LightRange = _Range; m_bDirtyFlag = true; }
+	VOID			Set_LightRange(_float _Range);
 	_float			Get_LightRange()				{ return m_pDynamicLight.LightRange; }
 
 	VOID			Set_LightPosition(XMFLOAT3 _Position) { m_pComTransform->SetPosition(_Position); m_bDirtyFlag = true;}
@@ -80,7 +80,7 @@ public:
 	VOID			Set_LightVelocity(XMFLOAT3 _Velocity)	{ m_fVelocity = _Velocity;	}
 	XMFLOAT3		Get_LightVelocity()						{ return m_fVelocity;		}
 
-	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	VOID			AddShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 	
 	HRESULT			Change_LightType(LIGHT_TYPE _LTYPE);
 
@@ -129,7 +129,7 @@ public:
 	_bool		Check_ObjectInArea();
 	VOID		Update_Collider();
 
-	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vector<CGameObject*>& _ObjectList);
+	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<CGameObject*>& _ObjectList);
 	VOID		Reset_Light();
 public:
 	static UPtr<CLight> Create();

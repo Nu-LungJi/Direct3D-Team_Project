@@ -26,7 +26,7 @@ HRESULT CLight::InitializePrototype(VOID* pArg) {
 		m_pDynamicLight.InnerAttanuation = { 20.f };
 		m_pDynamicLight.OuterAttanuation = { 30.f };
 
-		for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i)
+		for (uint32_t i = 0; i < POINT_SHADOW_FACE_COUNT; ++i)
 			XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixIdentity());
 	}
 	{
@@ -95,7 +95,7 @@ VOID CLight::Update(E::_float _DT) {
 
 		XMMATRIX ProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, 0.01f, m_pDynamicLight.LightRange);
 
-		for (uint32_t i = 0; i < MAX_LIGHT_MAPCOUNT; ++i) {
+		for (uint32_t i = 0; i < POINT_SHADOW_FACE_COUNT; ++i) {
 			XMMATRIX ViewMat = XMMatrixLookAtLH(LightPosition, XMVectorAdd(LightPosition + PositionOffset, DirectionVec[i]), BaseUpVec[i]);
 			XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ProjMat));
 		}
@@ -127,7 +127,7 @@ VOID CLight::Update(E::_float _DT) {
 		XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
 		XMStoreFloat4x4(&LightView, XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUp));
-		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(500.f, 500.f, 0.1f, 1000.f));
+		XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(150.f, 150.f, 0.1f, 1000.f));
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 	}
 
@@ -223,12 +223,11 @@ VOID CLight::Update_Collider() {
 
 	if		(m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::SPOTLIGHT)) {
 		if (nullptr == m_pColliderFrustum) return;
-		_float  fNearZ = 0.01f;
 
-		_float2	ScreenSize = CGameInstance::Get().GetClientScreenSize();
+		auto FrustumCollider = static_pointer_cast<CCollFrustum>(m_pColliderFrustum);
+		if (nullptr == FrustumCollider) return;
 
-		XMMATRIX FrustumProjMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_pDynamicLight.OuterAttanuation * 1.3f), ScreenSize.x / ScreenSize.y, fNearZ, m_pDynamicLight.LightRange);
-		static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->SetLocalFrustum(FrustumProjMatrix);
+		FrustumCollider->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
 
 		XMMATRIX InvViewMat = XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView));
 		m_pColliderFrustum->Transform(InvViewMat);
@@ -238,17 +237,21 @@ VOID CLight::Update_Collider() {
 	else if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
 		if (nullptr == m_pColliderSphere) return;
 
+		auto SphereCollider = std::static_pointer_cast<CCollSphere>(m_pColliderSphere);
+		if (nullptr == SphereCollider) return;
+
+		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.LightRange);
+
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 
 		CGameInstance::Get().AddColliderGroup("Light_Collider", m_pColliderSphere.get());
 	}
 }
 
-HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vector<CGameObject*>& _ObjectList) {
+HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& RCTX, const std::vector<CGameObject*>& _ObjectList) {
 	if (m_bActivate_State == false) return E_FAIL;
-	RENDER_CTX RCTX{};
-	RCTX.pass = RENDERPASS::SHADOW;
-	RCTX.eye  = XMLoadFloat3(&m_pComTransform->GetPosition());
+
+	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
 
 	if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
 		XMMATRIX Identity = XMMatrixIdentity();
@@ -264,7 +267,7 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vect
 
 	for (auto& GOBJ : _ObjectList) {
 		if (nullptr == GOBJ) continue;
-		GOBJ->Render(pContext, RCTX);
+		GOBJ->Render_Shadow(pContext, RCTX);
 	}
 	
 	return S_OK;
@@ -291,7 +294,16 @@ _bool	CLight::Check_ObjectInArea() {
 
 	return true;
 }
+VOID	CLight::Set_LightRange(_float _Range) {
+	m_pDynamicLight.LightRange = _Range;
+	m_bDirtyFlag = true;
 
+	if (m_pColliderSphere) {
+		std::static_pointer_cast<CCollSphere>(m_pColliderSphere)
+			->SetLocalBoundingSphere({}, _Range);
+	}
+
+}
 HRESULT CLight::Change_LightType(LIGHT_TYPE _LTYPE) {
 	if (m_pDynamicLight.LightType == ETOUI(_LTYPE)) return E_FAIL;
 	m_pDynamicLight.LightType = ETOUI(_LTYPE);
@@ -301,7 +313,7 @@ HRESULT CLight::Change_LightType(LIGHT_TYPE _LTYPE) {
 	return S_OK;
 }
 
-VOID	CLight::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
+VOID	CLight::AddShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
 	if (_ATYPE == ACTORTYPE::DYNAMIC) {
 		m_pRenderable_DynamicObjectList.push_back(pRenderObject);
 	}

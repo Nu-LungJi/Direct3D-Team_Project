@@ -285,7 +285,7 @@ float3 ToneMap_AGXFilm(float3 _Color)
 	return saturate(mul(FilmColor, AGX_OutMatrix));
 }
 
-[numthreads(8, 8, 1)]
+[numthreads(16, 16, 1)]
 void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
