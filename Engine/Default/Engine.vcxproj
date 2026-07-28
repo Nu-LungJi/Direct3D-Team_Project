@@ -603,9 +603,18 @@
     <ClCompile Include="..\private\ComPxDistanceJoint.cpp" />
     <ClCompile Include="..\private\ComPxFixedJoint.cpp" />
     <ClCompile Include="..\private\ComPxJoint.cpp" />
-    <ClCompile Include="..\private\ComPxRagdoll.cpp" />
-    <ClCompile Include="..\private\PxRagdollAuthoring.cpp" />
-    <ClCompile Include="..\private\RagdollEditorGUI.cpp" />
+    <ClCompile Include="..\private\ComPxRagdoll.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
+    <ClCompile Include="..\private\PxRagdollAuthoring.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
+    <ClCompile Include="..\private\RagdollEditorGUI.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
     <ClCompile Include="..\private\ComPxRevoluteJoint.cpp" />
     <ClCompile Include="..\private\ComPxRigidBody.cpp" />
     <ClCompile Include="..\private\ComPxSphereCollider.cpp" />
