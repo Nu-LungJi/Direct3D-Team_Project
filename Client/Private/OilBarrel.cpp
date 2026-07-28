@@ -138,6 +138,7 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
+		
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 		return;
 	}
@@ -164,6 +165,10 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 		pModel,
 		InstanceData,
 		OcclusionData);
+
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
 }
 
 HRESULT COilBarrel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

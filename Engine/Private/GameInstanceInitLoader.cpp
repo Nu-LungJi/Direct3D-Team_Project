@@ -893,10 +893,10 @@ HRESULT CGameInstanceInitLoader::LoadSamplerState()
 	{
 		D3D11_SAMPLER_DESC sampDesc{};
 		sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		
 		sampDesc.BorderColor[0] = 1.f;
 		sampDesc.BorderColor[1] = 1.f;
 		sampDesc.BorderColor[2] = 1.f;
@@ -1101,10 +1101,6 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PBR", "./ShaderFiles/PBR/CS_PBR.hlsl"))
-	{
-		if (FAILED(res->Load()))    return E_FAIL;
-	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl")) // 스펠이펙트
 	{
 		if (FAILED(res->Load()))    return E_FAIL;

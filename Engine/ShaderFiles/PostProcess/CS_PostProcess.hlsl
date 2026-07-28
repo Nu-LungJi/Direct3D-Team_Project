@@ -8,8 +8,11 @@ static const float CenterWeight		= { 0.227027f };
 static const float BlurOffsets[2]	= { 1.3846154f, 3.2307692f };
 static const float BlurWeights[2]	= { 0.3162162f, 0.0702703f };
 
-static const float BrightThreshold	= { 0.25f };
+static const float BrightThreshold	= { 0.60f };
 static const float BloomIntensity	= { 0.25f };
+
+static const float HalfBloomWeight		= { 0.60f };
+static const float QuarterBloomWeight	= { 0.40f };
 
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
@@ -26,3 +29,290 @@ static const float3x3 AGX_OutMatrix = float3x3(
     -0.05886190, 1.15190313, -0.09304123,
     -0.01497570, -0.08150601, 1.09648171
 );
+
+static const float Min_Luminance = -12.47393f;
+static const float Max_Luminance = 4.026069f;
+
+RWTexture2D<float4> OUTPUT : register(u0);
+
+cbuffer CB_POSTPROCESS : register(b10)
+{
+	float2 TexelSize;
+	float2 _pad;
+	
+	float DistortionIntensity;	// 왜곡 강도
+	float ChromaticIntensity;	// 색수차 강도
+	float VignetteIntensity;	// 비네팅 강도
+	float VignetteSmoothness;	// 비네팅 
+};
+/////////////////////////// BLOOM Main Shader Function
+
+float3 DownSampling(float2 _TexCoord, float2 _TexelSize)
+{
+	float2 SamplingOffset = _TexelSize * 0.5f; // Sampling Near Pixel
+	
+	float3 Color = 0.f;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
+	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
+
+	return Color * 0.25f; // Color / 4.f
+}
+
+float3 GaussianBlur(float2 _TexCoord, float2 _TexelDirection)
+{
+	float4 CenterPixel = BlurPassTexture.Sample(LinearClamp, _TexCoord) * CenterWeight;
+	
+	[unroll]
+	for (int i = 0; i < 2; ++i)
+	{
+		const float2 Offset = _TexelDirection * BlurOffsets[i];
+		CenterPixel += BlurPassTexture.Sample(LinearClamp, _TexCoord + Offset) * BlurWeights[i];
+		CenterPixel += BlurPassTexture.Sample(LinearClamp, _TexCoord - Offset) * BlurWeights[i];
+	}
+	
+	return CenterPixel.rgb;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)	return;
+	
+	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	
+	float3	DownSampledColor = DownSampling(TexCoord, TexelSize);
+
+	float	Luminance = dot(DownSampledColor, float3(0.2126f, 0.7152f, 0.0722f));
+	float	Contribution = smoothstep(BrightThreshold - 0.2f, BrightThreshold + 0.2f, Luminance);
+
+	OUTPUT[ID.xy] = float4(DownSampledColor * Contribution, 1.f);
+	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_VerticalBlur(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)
+		return;
+	
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	
+	OUTPUT[ID.xy] = float4(GaussianBlur(TexCoord, float2(0.f, TexelSize.y)), 1.f);
+	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_HorizontalBlur(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)
+		return;
+	
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	
+	OUTPUT[ID.xy] = float4(GaussianBlur(TexCoord, float2(TexelSize.x, 0.f)), 1.f);
+	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)
+		return;
+	
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	
+	float3 OriginalColor = OriginalTexture.Sample(LinearClamp, TexCoord).rgb;
+	float3 BloomBlurColor = BlurPassTexture.Sample(LinearClamp, TexCoord).rgb;
+    
+	OUTPUT[ID.xy] = float4(OriginalColor + BloomBlurColor * BloomIntensity, 1.f);
+	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_UpSampling(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)
+		return;
+	
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	
+	float3 HalfBloom = OriginalTexture.Sample(LinearClamp, TexCoord).rgb;
+	float3 QuarterBloom = BlurPassTexture.Sample(LinearClamp, TexCoord).rgb;
+	
+	OUTPUT[ID.xy] = float4(HalfBloom * HalfBloomWeight + QuarterBloom * QuarterBloomWeight, 1.f);
+	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_DownSampling(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)
+		return;
+	
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+    
+	OUTPUT[ID.xy] = float4(DownSampling(TexCoord, TexelSize), 1.f);
+	return;
+}
+
+//////////////////////////////////////////////////////
+
+/////////////////////////// PostProcess Filter Main Shader Function
+// Distortion
+float2 Distortion(float2 _UV)
+{
+	float2 Coord = _UV * 2.f - 1.f;
+    
+	float Coord2 = dot(Coord, Coord);
+    
+	float2 DistortedUV = Coord * (1.f + DistortionIntensity * Coord2);
+    
+	return (DistortedUV + 1.f) * 0.5f;
+}
+
+// Chromatic Aberration
+float3 ChromaticAberration(float2 _UV)
+{
+	float2 UVFromCenter = _UV - 0.5f;
+	float2 DistanceFromCenter = length(UVFromCenter);
+    
+	float2 Seperation = UVFromCenter * (DistanceFromCenter * ChromaticIntensity);
+    
+	float R = OriginalTexture.Sample(LinearClamp, _UV - Seperation).r;
+	float G = OriginalTexture.Sample(LinearClamp, _UV).g;
+	float B = OriginalTexture.Sample(LinearClamp, _UV + Seperation).b;
+
+	return float3(R, G, B);
+}
+
+// Vignetting 
+float3 Vignetting(float3 _Color, float2 _TexCoord)
+{
+	float2 UVFromCenter = _TexCoord - 0.5f;
+    
+	float DistanceFromCenter = dot(UVFromCenter, UVFromCenter);
+	float Vignette = DistanceFromCenter * VignetteIntensity;
+	Vignette = saturate(1.f - Vignette * VignetteSmoothness);
+    
+	return _Color * pow(Vignette, 2.f);
+}
+
+// LUT ColorGrading
+float3 LUT_Filtering(float3 _Color)
+{
+	float3 Color = saturate(_Color);
+    
+	float BlueValue = Color.b * (LUT_Size - 1.f);
+    
+	float AdjustTile01 = floor(BlueValue);
+	float AdjustTile02 = ceil(BlueValue);
+    
+	float2 LUT_UVOffset = Color.rg * ((LUT_Size - 1.f) / LUT_Size) + (0.5f / LUT_Size);
+    
+	float2 TexCoordA, TexCoordB;
+	TexCoordA.x = (AdjustTile01 + LUT_UVOffset.x) / LUT_Size;
+	TexCoordA.y = LUT_UVOffset.y;
+    
+	TexCoordB.x = (AdjustTile02 + LUT_UVOffset.x) / LUT_Size;
+	TexCoordB.y = LUT_UVOffset.y;
+    
+	float3 LUT_ColorA = LUT_Texture.Sample(LinearClamp, TexCoordA).rgb;
+	float3 LUT_ColorB = LUT_Texture.Sample(LinearClamp, TexCoordB).rgb;
+    
+    //float3 LUT_Mapping = _Color * ((LUT_Size - 1.f) / LUT_Size) + (0.5f / LUT_Size);
+    //return LUT_Texture.Sample(SamplerClamp, LUT_Mapping);
+    
+	return lerp(LUT_ColorA, LUT_ColorA, frac(BlueValue));
+}
+
+// ToneMapping : Reinhard / ACESFilmic / AGXFilmic
+float3 ToneMap_Reinhard(float3 _Color)
+{
+	return _Color.xyz / (_Color.xyz + 1.f);
+}
+
+float3 ToneMap_ACESFilm(float3 _Color)
+{
+	float a = 2.51f;
+	float b = 0.03f;
+	float c = 2.43f;
+	float d = 0.59f;
+	float e = 0.14f;
+    
+	return saturate((_Color * (a * _Color + b)) / (_Color * (c * _Color + d) + e));
+}
+
+float3 AGXFilmic(float3 _Color)
+{
+	//float3 X1 = _Color;
+	//float3 X2 = X1 * X1;
+	//float3 X3 = X2 * X1;
+	//
+	//return +0.155 * (1.0 - X1) * (1.0 - X1) * (1.0 - X1)
+    //       + 1.019 * 3.0 * X1 * (1.0 - X1) * (1.0 - X1)
+    //       + 1.385 * 3.0 * X2 * (1.0 - X1)
+    //       + 1.000 * X3;
+	
+	float3 X = _Color;
+	float3 X2 = _Color * X;
+	float3 X4 = X2 * X2;
+
+	return 15.5f * X4 * X2 - 40.14f * X4 * X + 31.96f * X4
+         - 6.868f * X2 * X + 0.4298f * X2 + 0.1191f * X - 0.00232f;
+}
+
+float3 ToneMap_AGXFilm(float3 _Color)
+{
+	float3 AGXColor = mul(_Color, AGX_InMatrix);
+
+	AGXColor = clamp(log2(AGXColor), Min_Luminance, Max_Luminance);
+	
+	float MaxEV = log2(Max_Luminance);
+	float MinEV = log2(Min_Luminance);
+	
+	float3 LogColor = (AGXColor - MinEV) / (MaxEV - MinEV);
+    
+	float3 FilmColor = AGXFilmic(LogColor);
+    
+	return saturate(mul(FilmColor, AGX_OutMatrix));
+}
+
+[numthreads(16, 16, 1)]
+void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= SCREENX || ID.y >= SCREENY)
+		return;
+	
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	
+    // UV Distortion
+	float2 DistortedCoord = Distortion(TexCoord);
+    
+    // Chromatic Aberration
+	float3 FinalColor = ChromaticAberration(DistortedCoord);
+    
+    // ToneMapping
+	FinalColor = ToneMap_ACESFilm(FinalColor);
+    //FinalColor = ToneMap_Reinhard(FinalColor);
+    //FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
+    
+    // LUT ColorGrading
+	FinalColor = LUT_Filtering(FinalColor);
+    
+    // Vignette
+	FinalColor = Vignetting(FinalColor, TexCoord);
+	
+	OUTPUT[ID.xy] = float4(pow(FinalColor, 1.f / 2.2f), 1.f);
+	return;
+}
+
+//////////////////////////////////////////////////////

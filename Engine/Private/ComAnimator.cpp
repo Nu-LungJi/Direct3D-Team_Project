@@ -121,6 +121,7 @@ HRESULT CComAnimator::Initialize(void* pArg)
            
         m_Comtag = pDesc->sComTag;
         m_pModelInstance = GetGameObject()->GetComponent<CComModelInstance>(m_Comtag);
+		if (nullptr == m_pModelInstance) return E_FAIL;
 
 		int32_t iIndex{-1};
 		iIndex = m_pModelInstance->GetModel()->Get_BoneIndex("Reference");

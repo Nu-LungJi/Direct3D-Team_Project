@@ -295,7 +295,6 @@ public:
 #pragma region LIGHT_MANAGER
 public:
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
-	VOID	Bind_DynamicLight();
 
 	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
 	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
@@ -303,7 +302,7 @@ public:
 
 	VOID	Clear_DynamicLightList();
 
-	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
 
 	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
@@ -422,6 +421,10 @@ public:
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
 	void Add_Part_Instance(class CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
+
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch);
+	/*---------------------------------*/
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER

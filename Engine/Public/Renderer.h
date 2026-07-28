@@ -159,9 +159,9 @@ private:
 	SPtr<CResViewPort> m_pBackBufferViewPort{};
 
 private:
-	ComPtr<ID3D11ShaderResourceView>	m_pIrridianceMapSRV{};
-	ComPtr<ID3D11ShaderResourceView>	m_pPreFilteredMapSRV{};
-	ComPtr<ID3D11ShaderResourceView>	m_pBRDFLookUpMapSRV{};
+	ComPtr<ID3D11ShaderResourceView>	m_pSRVIrradianceMap{};
+	ComPtr<ID3D11ShaderResourceView>	m_pSRVPreFilteredMap{};
+	ComPtr<ID3D11ShaderResourceView>	m_pSRVBRDFLookUpMap{};
 
 	ComPtr<ID3D11Texture2D>				m_pIrridianceTex2D{ };
 	ComPtr<ID3D11Texture2D>				m_pPreFilteredTex2D{ };
@@ -262,10 +262,11 @@ private:
 
 
 private:
-	_bool			ApplyFilter = { false };		// 필터 적용 ON-OFF
-	_bool			ApplyVolumetric = { true };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyFilter		= { false };		// 필터 적용 ON-OFF
+	_bool			ApplyVolumetric = { false };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyShadow		= { true };			// 그림자 ON-OFF
+
 	RENDER_CTX		RenderContext = {};
-	_bool bApplyShadow = { true };
 	XMMATRIX	ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
 

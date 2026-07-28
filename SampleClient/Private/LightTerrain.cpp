@@ -76,7 +76,7 @@ void CLightTerrain::Update(E::_float fTimeDelta)
 void CLightTerrain::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
-	//CGameInstance::Get().Add_ShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	//CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 

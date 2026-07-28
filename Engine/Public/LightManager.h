@@ -14,12 +14,13 @@ struct LightData {
 struct SHADOW_ARRAY_2D {
 	ComPtr<ID3D11Texture2D>			 TexBuffer{};
 	ComPtr<ID3D11ShaderResourceView> SRV{};
-	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_LIGHT_MAPCOUNT];
+	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_SHADOW_LIGHT_COUNT];
 };
+
 struct SHADOW_ARRAY_CUBE {
 	ComPtr<ID3D11Texture2D>			 TexBuffer{};
 	ComPtr<ID3D11ShaderResourceView> SRV{};
-	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_LIGHT_MAPCOUNT];
+	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_SHADOW_LIGHT_COUNT];
 };
 
 class ENGINE_DLL CLightManager final : public CEngineBase {
@@ -33,74 +34,56 @@ public:
 	VOID	Update(_float fTimeDelta);
 	VOID	UpdateGUI();
 	HRESULT	Capture_ShadowMap();
-	HRESULT	Render_ObjectShadow();	
+	HRESULT	Render_ObjectShadow();
+	HRESULT	Render_ObjectNonShadow();
 
-	VOID	Bind_DynamicLight();
-
-	std::optional<CHandle>	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
 	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
 	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 
 	VOID	Clear_DynamicLightList()							{ m_LightHandleList.clear(); }
 
-	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
 
 	const	SPtr<CResDynamicTexture2D>& Get_CombinedResource()	{ return m_pUAVComBinedOutput; }
 
 	VOID	Bind_ShadowResource();
 	VOID	UnBind_ShadowResource();
 
+	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, LIGHT_TYPE _LType, _bool _bStaticBatch);
+
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
 	VOID	Allocate_ShadowSlot();
 
-	_bool	IsInFrustum(CLight* _LightOBJ);
+public:		// Effect Light Fuction
+	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
 
 	HRESULT Reset_EffectLight(const std::optional<CHandle>& _Handle);
 	HRESULT Reset_AllEffectLight();
 
 	HRESULT Transform_EffectLight(const std::optional<CHandle>& _Handle, XMFLOAT3 _Position);
 	HRESULT Transform_EffectLight(const std::optional<CHandle>& _Handle, XMVECTOR _Position);
+
+private:	// Effect Light Variable
+	std::vector<std::optional<CHandle>>		m_pEffectLightPool{};
+	uint32_t								m_iEffectLightPoolSize{};
+	uint32_t								m_iLastAllocatedIndex{};
+
 private:
 	HRESULT	Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
 	HRESULT	Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
 
-public:
-	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
-	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+	_bool	IsInFrustum(CLight* _LightOBJ);
 
 
-private:
-	std::vector<std::optional<CHandle>>				m_pEffectLightPool{};
-	uint32_t							m_iEffectLightPoolSize{};
-	uint32_t							m_iLastAllocatedIndex{};
-#ifdef _DEBUG
-public:
-	HRESULT	Initialize_DebugRender();
-	HRESULT Render_DebugIcon();
-
-private:
-	SPtr<CResVertexShader>	m_pResDebugVertexShader			= { nullptr };
-	SPtr<CResPixelShader>	m_pResDebugPixelShader			= { nullptr };
-
-	SPtr<CResQuadTexBuffer>	m_pResLightTexBuffer			= { nullptr };
-
-	// Light 위치 나타내는 용 아이콘 텍스쳐
-	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
-	SPtr<CResTexture2D>		m_pResPointLightTexture2D		= { nullptr };
-	SPtr<CResTexture2D>		m_pResSpotLightTexture2D		= { nullptr };
-
-#endif
 
 private:
 	ComPtr<ID3D11Device>				m_pDevice = { nullptr };
 	ComPtr<ID3D11DeviceContext>			m_pContext = { nullptr };
 
 	std::vector<std::optional<CHandle>>	m_LightHandleList;
-
-	ComPtr<ID3D11ShaderResourceView>	m_pIrridianceSRV = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	m_pPreFilterSRV = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	m_pLUTSRV = { nullptr };
 
 	SPtr<CResCBuffer>					m_pLightConstantBuffer{ };
 
@@ -109,6 +92,10 @@ private:
 
 	SPtr<CResVertexShader>				m_pPointLightVS = { nullptr };
 	SPtr<CResVertexShader>				m_pDirectionalLightVS = { nullptr };
+
+	SPtr<CResVertexShader>				m_pInstancedPointLightVS = { nullptr };
+	SPtr<CResVertexShader>				m_pInstancedDirectionalLightVS = { nullptr };
+
 	SPtr<CResGeometryShader>			m_pPointLightGS = { nullptr };
 	SPtr<CResPixelShader>				m_pPointLightPS = { nullptr };
 
@@ -118,8 +105,8 @@ private:
 	SPtr<CResViewPort>					m_pDirectionalShadowViewPort{};
 	SPtr<CResViewPort>					m_pPointShadowViewPort{};
 
-	std::vector<CGameObject*>			m_pRenderable_StaticObjectList{};
-	std::vector<CGameObject*>			m_pRenderable_DynamicObjectList{};
+	std::vector<IRenderable*>			m_pRenderable_StaticObjectList{};
+	std::vector<IRenderable*>			m_pRenderable_DynamicObjectList{};
 
 	std::vector<std::optional<CHandle>>	m_pActiveShadowLightList{};
 
@@ -130,6 +117,24 @@ private:
 
 	SHADOW_ARRAY_CUBE					m_pStaticPointShadowList{};
 	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
+
+#ifdef _DEBUG
+public:
+	HRESULT	Initialize_DebugRender();
+	HRESULT Render_DebugIcon();
+
+private:
+	SPtr<CResVertexShader>	m_pResDebugVertexShader = { nullptr };
+	SPtr<CResPixelShader>	m_pResDebugPixelShader = { nullptr };
+
+	SPtr<CResQuadTexBuffer>	m_pResLightTexBuffer = { nullptr };
+
+	// Light 위치 나타내는 용 아이콘 텍스쳐
+	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
+	SPtr<CResTexture2D>		m_pResPointLightTexture2D = { nullptr };
+	SPtr<CResTexture2D>		m_pResSpotLightTexture2D = { nullptr };
+
+#endif
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

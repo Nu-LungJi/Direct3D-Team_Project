@@ -957,6 +957,7 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
+
 		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());

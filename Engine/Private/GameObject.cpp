@@ -81,6 +81,7 @@ HRESULT CGameObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx
     return S_OK;
 }
 
+
 UPtr<CPrototype> CGameObject::CloneComponentProtoType(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg) const
 {
     CComponent::DESC componentDesc{};

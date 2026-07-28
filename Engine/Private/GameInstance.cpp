@@ -484,8 +484,10 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	m_pLightManager->Capture_ShadowMap();
-
+	if (FAILED(m_pLightManager->Capture_ShadowMap()))
+	{
+		return E_FAIL;
+	}
 	if (FAILED(m_pRenderer->Draw()))
 	{
 		return E_FAIL;
@@ -1181,10 +1183,6 @@ void CGameInstance::ClearAllChunk()
 #pragma endregion
 
 #pragma region LIGHT_MANAGER
-VOID	CGameInstance::Bind_DynamicLight() {
-	m_pLightManager->Bind_DynamicLight();
-}
-
 VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
 	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
 }
@@ -1197,8 +1195,8 @@ VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _I
 VOID	CGameInstance::Clear_DynamicLightList() {
 	m_pLightManager->Clear_DynamicLightList();
 }
-HRESULT	CGameInstance::Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject) {
-	return m_pLightManager->Add_ShadowRenderGroup(_ATYPE, pRenderObject);
+HRESULT	CGameInstance::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject) {
+	return m_pLightManager->AddShadowRenderGroup(_ATYPE, pRenderObject);
 }
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
@@ -1290,6 +1288,9 @@ void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, c
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
+HRESULT CGameInstance::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch) {
+	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext, bStaticBatch);
+}
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER

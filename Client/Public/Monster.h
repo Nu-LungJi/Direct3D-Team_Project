@@ -76,6 +76,10 @@ public:
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	/*---------------------------------*/
+
 public:
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t			Get_CurrentHp() const { return m_iHp; }
