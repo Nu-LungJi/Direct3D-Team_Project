@@ -6,6 +6,7 @@
 #include "UIManager.h"
 #include "Client_Defines.h"
 #include "Level_Defines.h"
+#include "UIController.h"
 
 NS_USING(Client)
 
@@ -117,6 +118,16 @@ void CTextureUI::Update(E::_float fTimeDelta)
 		if (!E::CGameInstance::Get().MousePressing(MOUSEKEYSTATE::LB))
 		{
 			GET_SINGLE(UIManager)->DeleteUIRecursive(this->GetHandle());
+
+			std::optional<CHandle> hController = GET_SINGLE(UIManager)->GetUIController();
+
+			if (hController != std::nullopt &&
+				nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hController))
+			{
+				CUIController* pController = E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hController);
+
+				//pController->SetTargetIcon(ETOUI(SPELL_TYPE::NONE));
+			}
 		}
 	}
 }

@@ -2,6 +2,7 @@
 #include "BackGround.h"
 #include "GameInstance.h"
 #include "Resources.h"
+#include "UIObject.h"
 
 NS_USING(Client)
 
@@ -35,6 +36,7 @@ void CBackGround::PriorityUpdate(E::_float fTimeDelta)
 
 void CBackGround::Update(E::_float fTimeDelta)
 {
+	CUIObject::Update(fTimeDelta);
 }
 
 void CBackGround::LateUpdate(E::_float fTimeDelta)

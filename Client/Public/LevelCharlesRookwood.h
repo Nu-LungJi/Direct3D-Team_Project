@@ -33,6 +33,9 @@ private:
 	HRESULT SpawnStaticCollision();
 
 private:
+	_bool m_bCreatePlayScreenUI{ false };// 잠시 디버그용
+
+private:
 	void Free() override;
 };
 

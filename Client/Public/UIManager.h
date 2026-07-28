@@ -35,6 +35,8 @@ public:
 	std::vector<std::string>* GetFuncNames(){ return &m_vFuncNames; }
 
 	std::vector<CHandle> GetRootUIHandles() { return rootUIHandles; }
+	std::optional<CHandle>  GetUIController() { return m_UIController; }
+	void SetUIController(std::optional<CHandle> hController) { m_UIController = hController; }
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -49,17 +51,18 @@ private:
 	std::vector<std::string> m_vFuncNames;
 
 	std::string m_CurrentLevel;
-	
+
 	std::vector<CHandle> m_vLoadPrefabRoot{};
+	std::optional<CHandle> m_UIController = std::nullopt;
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:
-	std::optional<CHandle>   LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
+	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/Client/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
 
 private:
-	std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/";
+	std::string g_BasePath = "./Resources/Client/UIData/Prefabs/";
 	std::optional<CHandle> m_rootHandle = std::nullopt;
 };
 

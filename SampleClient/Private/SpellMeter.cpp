@@ -6,6 +6,7 @@
 #include "UIManager.h"
 #include "Client_Defines.h"
 #include "Level_Defines.h"
+
 NS_USING(Client)
 
 CSpellMeter::CSpellMeter()
@@ -101,6 +102,12 @@ void CSpellMeter::Update(E::_float fTimeDelta)
 	if (s_fAccumulatedTime > 10000.f) s_fAccumulatedTime -= 10000.f; // 오버플로우 방지
 
 	if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Diffindo_Overlay")
+		m_colorType = 0;
+	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Confringo_Overlay")
+		m_colorType = 0;
+	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Expelliarmus_Overlay")
+		m_colorType = 0;
+	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_Bombarda_Overlay")
 		m_colorType = 0;
 	else if (m_UIINFO.Restag == "TEX_UI_T_spellmeter_AvadaKedavra_Overlay")
 		m_colorType = 1;

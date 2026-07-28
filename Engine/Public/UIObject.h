@@ -165,6 +165,7 @@ public:
 	void SetScaleRatio(_float scale) { m_ScaleRatio = scale; }
 	void SetLocalRot(_float rot) { m_UIINFO.LocalRot = rot; }
 	void SetLocalScaleRatio(_float scale) { m_localScaleRatio = scale; }
+	void SetResTag(std::string restag) { m_UIINFO.Restag = restag; }
 
 	const char* GetName() { return m_UIINFO.Name.c_str(); }
 	const uint32_t* GetUIType() { return &m_UIINFO.UIType; }

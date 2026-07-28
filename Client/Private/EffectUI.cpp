@@ -1,35 +1,36 @@
 #include "pch.h"
-#include "TextureUI.h"
+#include "EffectUI.h"
 #include "GameInstance.h"
 #include "CameraObject.h"
 #include "Resources.h"
-#include "UIManager.h"
+#include "Client_Resources.h"
+#include "ComConstantBuffer.h"
+#include "Resources.h"
 #include "Client_Defines.h"
+#include "UIManager.h"
+#include "TweenComponent.h"
 #include "Level_Defines.h"
 
 NS_USING(Client)
 
-CTextureUI::CTextureUI()
-{
-
-}
-
-CTextureUI::~CTextureUI()
+CEffectUI::CEffectUI()
 {
 }
 
-HRESULT CTextureUI::InitializePrototype(void* pArg)
+CEffectUI::~CEffectUI()
 {
+}
 
-
+HRESULT CEffectUI::InitializePrototype(void* pArg)
+{
 	return S_OK;
 }
 
-HRESULT CTextureUI::Initialize(void* pArg)
+HRESULT CEffectUI::Initialize(void* pArg)
 {
-	auto		pDesc = static_cast<CUIObject::UIOBJECT_DESC*>(pArg);
+	auto		pDesc = static_cast<CFlipbookUI::FLIPBOOK_DESC*>(pArg);
 
-	if (FAILED(CUIObject::Initialize(pDesc)))
+	if (FAILED(CFlipbookUI::Initialize(pDesc)))
 		return E_FAIL;
 
 
@@ -51,77 +52,39 @@ HRESULT CTextureUI::Initialize(void* pArg)
 			return E_FAIL;
 		};
 
-
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::UI, "Prototype_Component_ButtonUI", "Com_Button", &CDesc, &m_pComCButton)))
 		{
 			return E_FAIL;
 		};
 	}
 
-	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
+	m_UIINFO.UIType = ETOUI(UI_TYPE::FLIPBOOK);
 
 	return S_OK;
 }
 
-void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
+void CEffectUI::PriorityUpdate(E::_float fTimeDelta)
 {
-
 }
 
-void CTextureUI::Update(E::_float fTimeDelta)
+void CEffectUI::Update(E::_float fTimeDelta)
 {
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
 	if (!m_isActive)
 		return;
 
-	CUIObject::Update(fTimeDelta);
+	CFlipbookUI::Update(fTimeDelta);
 
-	//m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
-	//
-	//if (m_bMouseTracking)
-	//{
-	//	m_UIINFO.fX = mousePos.x;
-	//	m_UIINFO.fY = mousePos.y;
-	//	CalcUICoord();
-	//}
+	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
 
-	m_UIINFO.Alpha;
-
-	if (m_bWorldSpace)
+	if (m_pComTween != nullptr)
 	{
-		E::_float scaleFactor = 0.01f;
-		GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * scaleFactor, m_UIINFO.SizeY * scaleFactor, 1.f });
-		// 캐릭터를 따라다녀야 한다면 여기서 SetPosition을 갱신
-	}
-	else
-	{
-		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
-		m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
-
-		if (m_bMouseTracking)
-		{
-			m_UIINFO.fX = mousePos.x;
-			m_UIINFO.fY = mousePos.y;
-			CalcUICoord();
-		}
-
-		if (m_pComTween != nullptr)
-		{
-			m_pComTween->Tick(fTimeDelta);
-		}
-	}
-
-	if (m_UIINFO.UIType == ETOUI(UI_TYPE::SHORTCUT_ICON))
-	{
-		if (!E::CGameInstance::Get().MousePressing(MOUSEKEYSTATE::LB))
-		{
-			GET_SINGLE(UIManager)->DeleteUIRecursive(this->GetHandle());
-		}
+		m_pComTween->Tick(fTimeDelta);
 	}
 }
 
-void CTextureUI::LateUpdate(E::_float fTimeDelta)
+void CEffectUI::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_isActive)
 		return;
@@ -132,12 +95,14 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 	//GetTransform().Update();
 }
 
-HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	//std::string currentLevel = "LEVEL_UIEDITOR";
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
-	//VS_QuadTe
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+
+	//VS_QuadTex
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook");
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
@@ -159,16 +124,16 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 	{
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = { 0.f, 0.f };
-		perUI.uvSize = { 0.f, 0.f };
+		perUI.texCoord = m_texcoord;
+		perUI.uvSize = m_uvSize;
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
 			return E_FAIL;
 		}
-		pContext->VSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(7, 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::UI), 1, m_pComCBufferPerUI->GetAdressOfBuffer());
 	}
 
 	{
@@ -180,41 +145,33 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			{
 
 				E::CB_PER_OBJECT cbPerObject{};
-
-				if (m_bWorldSpace)
-				{
-					_matrix world = GetTransform().GetLoadedWorldMatrix();
-					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matView * ctx.matProj;
-					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
-				}
-				else
-				{
-					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matProj;
-					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
-				}
-				//cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
-				//XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
+				cbPerObject.matWorld = *GetTransform().GetWorldMatrix();
+				XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedWorldMatrix() * ctx.matProj);
 
 				memcpy(mappedSubResource.pData, &cbPerObject, sizeof(cbPerObject));
 				pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
 			}
-			pContext->VSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
-			pContext->PSSetConstantBuffers(0, 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
+			pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, pCbPerObject->GetCBuffer().GetAddressOf());
 		}
 	}
 
 	{
-		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
+
+		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
+
+
 	return S_OK;
 }
 
-void CTextureUI::PlayEffect(uint32_t uiState)
+void CEffectUI::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
 		return;
@@ -234,49 +191,35 @@ void CTextureUI::PlayEffect(uint32_t uiState)
 	if (m_bInputLocked)
 		return;
 
-	if (uiState & ETOUI(UI_STATE::ENTER))
+	if (m_UIINFO.EffectType != ETOUI(UI_EFFECT_TYPE::NONE))
 	{
-		if (OnHoverEnter) {
-			ClearEffectTweens();
-			OnHoverEnter(this);
+		switch (uiState)
+		{
+		case ETOUI(UI_STATE::HOVERED):
+			GET_SINGLE(UIManager)->LoadPrefab("Magic");
+			break;
 		}
 	}
-	
-	if (uiState & ETOUI(UI_STATE::EXIT))
-	{
-		if (OnHoverExit) {
-			ClearEffectTweens();
-			OnHoverExit(this);
-		}
-	}
-	
-	if (uiState & ETOUI(UI_STATE::CLICK))
-	{
-	
-		if (OnClicked) {
-			ClearEffectTweens();
-			OnClicked(this);
-		}
-	}
+
 }
 
-E::UPtr<CTextureUI> CTextureUI::Create()
+E::UPtr<CEffectUI> CEffectUI::Create()
 {
-	auto pInstance = E::ToUPtr(new CTextureUI{});
+	auto pInstance = E::ToUPtr(new CEffectUI{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTexUI");
+		MSG_BOX("Failed to Created : CFlipBook");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CTextureUI::Clone(void* pArg)
+E::UPtr<E::CPrototype> CEffectUI::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CTextureUI{ *this });
+	auto	pInstance = E::ToUPtr(new CEffectUI{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CTextureUI");
+		MSG_BOX("Failed to Cloned : CFlipBook");
 		return nullptr;
 	}
 
