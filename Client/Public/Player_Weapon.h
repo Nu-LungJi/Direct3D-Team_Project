@@ -59,7 +59,7 @@ private:
 	_bool				m_bThrow{ false };
 
 private:
-	_float3 m_vSpawnLocalOffset{ 0.f, 0.f, 0.f };
+	_float3 m_vSpawnLocalOffset{ 0.f, 0.3f, 0.f };
 
 public:
 	_float4x4 GetSpawnWorldMatrix() const;

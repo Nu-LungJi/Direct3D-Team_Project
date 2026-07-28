@@ -30,6 +30,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_iComboCount = 1;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 
 	auto* animator = player->GetAnimator();
@@ -68,6 +69,7 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_iComboCount = 0;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 }
 
@@ -94,6 +96,19 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 	const _float fAnimRatio =
 		PlayerAnimationRatioGuard::Sanitize(
 			animator->GetPlayAnimRatio());
+
+	const _float fMagicBulletFireRatio =
+		m_bPlayingHeavy
+		? HEAVY_MAGIC_BULLET_FIRE_RATIO
+		: LIGHT_MAGIC_BULLET_FIRE_RATIO;
+
+	if (!m_bMagicBulletFired &&
+		fPreviousAnimRatio < fMagicBulletFireRatio &&
+		fAnimRatio >= fMagicBulletFireRatio)
+	{
+		player->Attack_Magic_Bullet();
+		m_bMagicBulletFired = true;
+	}
 
 	if (!m_bPlayingHeavy)
 	{
@@ -266,11 +281,11 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 		return false;
 
 	m_bPlayingHeavy = bHeavy;
+	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
 	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);
-	player.Attack_Magic_Bullet();
 	animator->GetCurAnimState().fSpeed = 1.3f;
 	return true;
 }
