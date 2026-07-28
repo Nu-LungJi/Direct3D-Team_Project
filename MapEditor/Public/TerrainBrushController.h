@@ -26,6 +26,11 @@ struct TERRAIN_BRUSH_SETTINGS
 	uint32_t tileLayer = 0;
 };
 
+// Picking된 Terrain 월드 좌표를 기준으로 높이 Sculpt와 Texture Paint를 처리
+//
+// 연속된 마우스 이동을 여러 Brush Stamp로 보간하며,
+// 변경된 정점 범위만 Terrain에 Commit해 Normal과 Chunk Buffer를 갱신
+
 class CTerrainBrushController final : public E::CEngineBase
 {
 public:
