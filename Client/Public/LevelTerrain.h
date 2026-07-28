@@ -26,6 +26,11 @@ private:
 
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
+	HRESULT InitializeJointTests(
+		CHandle hPlayer,
+		const std::array<CHandle, 6>& hOilBarrels);
+	HRESULT InitializeCamerasAndLighting(
+		const std::optional<CHandle>& hPlayer);
 
 public:
 	static Engine::UPtr<CLevelTerrain> Create();
