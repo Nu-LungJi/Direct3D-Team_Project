@@ -40,12 +40,21 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
+		
 		if (m_bStart)
 		{
 			//type 없으면 그냥 넘어가기
 			if (false == HitType())
 				return m_eDebug = EVALUATE::FAILED;
 			m_bStart = false;
+		}
+		else
+		{
+			if (auto pMonster = static_cast<CMonster*>(pBT->GetGameObject()))
+			{
+				if (m_bInterrupt && pMonster->Is_PendingHit())
+					return m_eDebug = EVALUATE::SUCCESS;
+			}
 		}
 		
 		pAnimator->SetPlay(true);
@@ -74,7 +83,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		}
 		EventFlagToRatio(pAnimator->GetPlayAnimRatio());
 
-		if (m_bLoop || bFinished)
+		if (bFinished)
 		{
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
@@ -87,6 +96,10 @@ void CBTHitAnimMonster::Update_Gui()
 	__super::Update_Gui();
 	ImGui::Text("Move Speed");
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
+	if (ImGui::Button("Interrupt : "))
+		m_bInterrupt = !m_bInterrupt;
+	ImGui::SameLine();
+	ImGui::Text(m_bInterrupt == true ? "TRUE" : "FALSE");
 
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -150,7 +163,9 @@ void CBTHitAnimMonster::Abort()
 nlohmann::json CBTHitAnimMonster::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
+	
 
+	SaveJsonValue(j, "Interrupt", m_bInterrupt);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 
@@ -181,7 +196,7 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-
+	LoadJsonValue(j, "Interrupt", m_bInterrupt);
 	
 	size_t iArray = 0;
 

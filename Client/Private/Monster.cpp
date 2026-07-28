@@ -91,11 +91,12 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
 	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
-	if (m_pCharacterController->IsGrounded())
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
-	else
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-
+	
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)))
+	{
+		m_pCharacterMotor->SetUseGravity(true);
+	}else m_pCharacterMotor->SetUseGravity(false);
+		
 	if (CGameInstance::Get().KeyDown(DIK_1))
 		Set_Damage(10);
 	Flag_Check(fTimeDelta);
@@ -329,6 +330,8 @@ void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		return;
 
 	MON_HIT_INFO HitInfo{};
+
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
 	switch (eType)
@@ -373,6 +376,11 @@ void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 	m_bActiveHit = true;
 }
 
+_bool CMonster::Is_Grounded()
+{
+	return m_pCharacterController->IsGrounded();
+}
+
 void CMonster::RunningSkill(_float fTimeDelta)
 {
 	if (m_bSkill && !m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
@@ -398,22 +406,18 @@ void CMonster::IsHit()
 {
 	if (CGameInstance::Get().KeyDown(DIK_2))
 	{
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 		Check_Table(PLAYER_SKILL_TYPE::ACCIO);
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_X))
 	{
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 		Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_C))
 	{
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 		Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))

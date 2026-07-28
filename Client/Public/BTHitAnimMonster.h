@@ -33,7 +33,7 @@ private:
 private:
 	uint32_t			m_iTable{};
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	_bool				m_bRatioInvert{ false };
+	_bool				m_bRatioInvert{ false }, m_bInterrupt{ false };
 
 	std::vector<HITTABLE>		m_HitTable;
 		

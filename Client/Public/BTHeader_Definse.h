@@ -15,6 +15,7 @@
 #include "BTMonAttType.h" // 몬스터 전용
 #include "BTMonResetTable.h"
 
+#include "BTDecIsGround.h"
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함
 #include "BTDecTimer.h"//타이머 // 플래그 있음

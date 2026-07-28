@@ -97,8 +97,9 @@ public:
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						Clear_PendingHit() { m_PendingMonTable = {}; m_bPending = false; }
 	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; }
-private:
 	void						Check_Table(PLAYER_SKILL_TYPE eType);
+	_bool						Is_Grounded();
+private:
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
 	void						Flag_Check(_float fTimeDelta);

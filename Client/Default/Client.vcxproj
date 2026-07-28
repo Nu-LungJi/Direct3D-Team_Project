@@ -219,6 +219,7 @@
     <ClInclude Include="..\Public\BTDecTimer.h" />
     <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\Public\BTHitAnimMonster.h" />
+    <ClInclude Include="..\public\BTDecIsGround.h" />
     <ClInclude Include="..\Public\BTMonAttType.h" />
     <ClInclude Include="..\public\BTMonResetTable.h" />
     <ClInclude Include="..\Public\BTMove.h" />
@@ -253,8 +254,12 @@
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
+    <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
+    <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_DashSkill_State.h" />
+    <ClInclude Include="..\Public\Player_DepulsoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_DescendoSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
@@ -298,6 +303,7 @@
     <ClCompile Include="..\Private\BTDecSearch.cpp" />
     <ClCompile Include="..\Private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\BTHitAnimMonster.cpp" />
+    <ClCompile Include="..\private\BTDecIsGround.cpp" />
     <ClCompile Include="..\Private\BTMonAttType.cpp" />
     <ClCompile Include="..\private\BTMonResetTable.cpp" />
     <ClCompile Include="..\Private\BTMove.cpp" />
@@ -328,8 +334,12 @@
     <ClCompile Include="..\private\OilBarrel.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
+    <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />

@@ -26,6 +26,11 @@
 #include "Player_Attack_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
+#include "Player_AcientAttack_State.h"
+#include "Player_AccioSkill_State.h"
+#include "Player_DepulsoSkill_State.h"
+#include "Player_DescendoSkill_State.h"
+
 #include "Player_Weapon.h"
 NS_USING(Client)
 
@@ -206,6 +211,30 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ACIENTATTACK_SKILL,
+			CPlayer_AcientAttack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ACCIO_SKILL,
+			CPlayer_AccioSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DEPULSO_SKILL,
+			CPlayer_DepulsoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DESCENDO_SKILL,
+			CPlayer_DescendoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
@@ -242,6 +271,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACIENTATTACK_SKILL)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_vRawMoveDirection = {};
+		m_fCurrentMoveSpeed = 0.f;
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+		m_pComMoveIntent->ClearMoveIntent();
+		return;
+	}
 
 	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
 	if (!pPlayerCamera)
@@ -441,6 +483,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//}
 		}
 		
+		//  가까이 있는거 한번 더 감지 
 			auto ori = m_pComTransform->GetPosition();
 		if (false) {
 			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
@@ -463,7 +506,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	else {
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
-
+		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
 				auto ori = m_pComTransform->GetPosition();
 			if (false) {
@@ -479,7 +522,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			}
 
 			std::vector<PX_OVERLAP_RESULT> results{};
-			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 				const auto& result = results.front();
 				m_hAutoTarget = result.pGameObject->GetHandle();
@@ -495,7 +538,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
 				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(40.f, matrix);
 				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 			}
@@ -503,7 +546,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 
-			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 30.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
+			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 40.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
 
 			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
 
@@ -544,6 +587,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_fControlHoldTime = 0.f;
 		m_bDashTriggered = false;
 	}
+
+	if (CGameInstance::Get().KeyDown(DIK_X)) {
+		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
+	}
+
+	if (CGameInstance::Get().KeyDown(DIK_1))
+		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_2))
+		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_3))
+		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
 }
 
 
