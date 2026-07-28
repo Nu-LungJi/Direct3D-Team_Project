@@ -240,6 +240,8 @@
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\public\BTRandSelector.h" />
     <ClInclude Include="..\public\BTReactiveSelector.h" />
+    <ClInclude Include="..\Public\CinematicCamera.h" />
+    <ClInclude Include="..\Public\CinematicSystem.h" />
     <ClInclude Include="..\public\ComLuaScript.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
@@ -555,6 +557,8 @@
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\private\BTRandSelector.cpp" />
     <ClCompile Include="..\private\BTReactiveSelector.cpp" />
+    <ClCompile Include="..\Private\CinematicCamera.cpp" />
+    <ClCompile Include="..\Private\CinematicSystem.cpp" />
     <ClCompile Include="..\private\ComLuaScript.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />

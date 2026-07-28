@@ -4,11 +4,15 @@
 #include "CameraObject.h"
 NS_BEGIN(Engine)
 
+class CCinematicSystem;
+
 class CCameraManager final : public CEngineBase
 {
 private:
 	CCameraManager();
 	~CCameraManager() override;
+private:
+	HRESULT Initialize();
 
 public:
 	void UpdateGUI();
@@ -24,29 +28,14 @@ public:
 private:
 	std::optional<std::pair<StringID, CHandle>> m_ActiveCamera{};
 	std::unordered_map<StringID, CHandle> m_Cameras{};
+#pragma region CINEMATIC
+public:
 
-//public:
-//	CCameraObject* GetActiveGameCamera() const;
-//	HRESULT SetActiveGameCamera(const StringID& CameraID);
-//	CCameraObject* GetActiveUICamera() const;
-//	HRESULT SetActiveUICamera(const StringID& CameraID);
-//
-//	CCameraObject* GetActiveGameCamera(const StringID& CameraID) const;
-//	CCameraObject* GetActiveUICamera(const StringID& CameraID) const;
-//
-//
-//
-//	CCameraObject* GetGameCamera(const StringID& CameraID) const;
-//	CCameraObject* GetUICamera(const StringID& CameraID) const;
-//	HRESULT RegistGameCamera(const StringID& CameraID, const CHandle& handle);
-//	HRESULT RegistUICamera(const StringID& CameraID, const CHandle& handle);
-//
-//private:
-//	std::optional<std::pair<StringID, CHandle>> m_ActiveGameCamera{};
-//	std::optional<std::pair<StringID, CHandle>> m_ActiveUICamera{};
-//
-//	std::unordered_map<StringID, CHandle> m_GameCameras{};
-//	std::unordered_map<StringID, CHandle> m_UICameras{};
+
+#pragma endregion
+
+private:
+	UPtr<CCinematicSystem> m_pCinematicSystem;
 
 public:
 	static UPtr<CCameraManager> Create();

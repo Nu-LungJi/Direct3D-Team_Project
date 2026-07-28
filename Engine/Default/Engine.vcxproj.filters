@@ -517,6 +517,9 @@
     <Filter Include="Particle\ShaderCache">
       <UniqueIdentifier>{13e94c77-619a-46ac-a2af-64db3c788f79}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Camera\CinematicCamera">
+      <UniqueIdentifier>{96a18c58-ecdf-48d1-9f04-bcd00fabb6d0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1135,6 +1138,12 @@
     <ClInclude Include="..\public\ParticleShaderCache.h">
       <Filter>Particle\ShaderCache</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\CinematicSystem.h">
+      <Filter>GameObject\Camera\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicCamera.h">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1683,6 +1692,12 @@
     </ClCompile>
     <ClCompile Include="..\private\ParticleShaderCache.cpp">
       <Filter>Particle\ShaderCache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicSystem.cpp">
+      <Filter>GameObject\Camera\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicCamera.cpp">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -157,6 +157,7 @@ public:
 	void SetPendingDestroy(_bool b = true);
 	void SetPendingDestroyCascade(_bool b = true);
 	_bool GetPendingDestroy() const { return m_bPendingDestroy; }
+	virtual _bool IsPersistent() const { return false; }
 private:
 	_bool m_bPendingDestroy{ false };
 
