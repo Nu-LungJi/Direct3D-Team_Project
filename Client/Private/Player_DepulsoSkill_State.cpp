@@ -68,8 +68,6 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		return;
 	}
 
-	pPlayer->SetCurrentMoveSpeed(0.f);
-
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
 	{
@@ -78,6 +76,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	}
 
 	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
@@ -93,6 +92,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= ATTACK_END_RATIO)
 		{
 			m_ePhase = PHASE::RECOVERY;
+			pAnimator->Play_Anim(m_DepulsoEnd_Animation, false, 0.25f);
 			pAnimator->GetCurAnimState().fSpeed = 1.f;
 		}
 		break;
@@ -102,6 +102,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 			RequestLocomotion(pStateMachine);
 		break;
 	}
+
 }
 
 void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)

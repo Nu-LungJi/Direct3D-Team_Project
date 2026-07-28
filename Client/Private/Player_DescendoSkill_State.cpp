@@ -51,8 +51,8 @@ void CPlayer_DescendoSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	// 고쳐야 할거 
-	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
-	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm");
+	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
+	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
 
 	m_bAnimationIndicesCached = m_DescendoCast_Animation >= 0 && m_DescendoEnd_Animation >= 0;
 }
