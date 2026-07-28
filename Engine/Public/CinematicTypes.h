@@ -1,0 +1,70 @@
+#pragma once
+#include "Engine_Defines.h"
+
+NS_BEGIN(Engine)
+
+// 카메라 키프레임이 움직일 기준
+enum class ECinematicCoordinateSpace
+{
+	World,
+	TargetLocal
+};
+
+// 타깃이 컷신 중 움직일 때 카메라 경로도 함께 움직일지
+enum class ECinematicBindingMode
+{
+	// 매 프레임 타깃의 현재 Transform을 사용
+	Live, // Boss 이동 -> Boss 기준 카메라 경로도 같이 이동
+
+	// 컷신 시작 순간의 타깃 Transform을 저장하고 계속 사용
+	Snapshot // 컷신 시작 위치 저장 -> Boss가 움직여도 카메라 경로는 고정
+};
+
+// 보간 방식
+enum class ECinematicInterpolation
+{
+	Linear,
+	CatmullRom
+};
+
+// 키프레임 데이터 (원본)
+struct FCinematicCameraKeyframe
+{
+	// Shot 내부 로컬 시간
+	_float fTime{};
+	_float3 vPosition{};
+	_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
+	_float fFovY{ 75.f };
+	ECinematicInterpolation ePositionInterpolation{ ECinematicInterpolation::Linear };
+};
+
+// (런타임) 특정시간의 계산결과pose
+struct FCinematicCameraPose
+{
+	_float3 vPosition{};
+	_float4 vRotation{ 0.f, 0.f,0.f,1.f };
+	_float fFovY{ 75.f };
+};
+
+struct FCinematicCameraShot
+{
+	StringID ShotID{};
+	// 트랙 내 시간 중 시작시간
+	_float fStartTime{};
+
+	ECinematicCoordinateSpace eCoordinateSpace{ ECinematicCoordinateSpace::World };
+	ECinematicBindingMode eBindingMode{ ECinematicBindingMode::Snapshot };
+
+	// 샷이 어느 오브젝트를 기준으로 하는지
+	StringID TargetSlot{}; // ECinematicCoordinateSpace::TargetLocal 일때만 사용
+
+	std::vector<FCinematicCameraKeyframe> Keyframes{};
+};
+
+struct FCinematicCameraTrack
+{
+	StringID TrackID{};
+	std::vector<FCinematicCameraShot> Shots{};
+};
+
+NS_END

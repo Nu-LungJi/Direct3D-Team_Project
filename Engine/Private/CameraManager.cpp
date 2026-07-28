@@ -45,6 +45,14 @@ HRESULT CCameraManager::Initialize()
 	return S_OK;
 }
 
+void CCameraManager::Update(_float fTimeDelta)
+{
+	if (m_pCinematicSystem)
+	{
+		m_pCinematicSystem->Update(fTimeDelta);
+	}
+}
+
 void CCameraManager::UpdateGUI()
 {
 	ImGui::Begin("CCameraManager");
@@ -121,6 +129,16 @@ CCameraObject* CCameraManager::GetActiveCamera(const StringID& CameraID) const
 	return tmp;
 }
 
+std::optional<StringID> CCameraManager::GetActiveCameraID() const
+{
+	if (!m_ActiveCamera.has_value() || GetActiveCamera() == nullptr)
+	{
+		return std::nullopt;
+	}
+
+	return m_ActiveCamera->first;
+}
+
 HRESULT CCameraManager::SetActiveCamera(const StringID& CameraID)
 {
 	auto iter = m_Cameras.find(CameraID);
@@ -187,6 +205,82 @@ HRESULT CCameraManager::RegistCamera(const StringID& CameraID, const CHandle& ha
 	return S_OK;
 }
 
+#pragma region CINEMATIC
+
+HRESULT CCameraManager::BeginCinematicCamera()
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->BeginCameraControl();
+}
+
+HRESULT CCameraManager::EndCinematicCamera()
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->EndCameraControl();
+}
+
+_bool CCameraManager::IsCinematicCameraActive() const
+{
+	return m_pCinematicSystem && m_pCinematicSystem->HasCameraControl();
+}
+
+HRESULT CCameraManager::RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset)
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->RegistAsset(pAsset);
+}
+
+HRESULT CCameraManager::LoadCinematic(const StringID& CinematicID, const std::string& filepath)
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->Load(CinematicID, filepath);
+}
+
+HRESULT CCameraManager::PlayCinematic(const StringID& CinematicID)
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->Play(CinematicID);
+}
+
+void CCameraManager::StopCinematic()
+{
+	if (m_pCinematicSystem)
+	{
+		m_pCinematicSystem->Stop();
+	}
+}
+
+_bool CCameraManager::IsCinematicPlaying() const
+{
+	return m_pCinematicSystem && m_pCinematicSystem->IsPlaying();
+}
+
+_float CCameraManager::GetCinematicPlayTime() const
+{
+	return m_pCinematicSystem ? m_pCinematicSystem->GetPlayTime() : 0.f;
+}
+
+#pragma endregion
 
 UPtr<CCameraManager> CCameraManager::Create()
 {

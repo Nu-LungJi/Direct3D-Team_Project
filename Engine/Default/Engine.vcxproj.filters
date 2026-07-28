@@ -1141,7 +1141,13 @@
     <ClInclude Include="..\Public\CinematicSystem.h">
       <Filter>GameObject\Camera\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\CinematicAsset.h">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\CinematicCamera.h">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicTypes.h">
       <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1695,6 +1701,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\CinematicSystem.cpp">
       <Filter>GameObject\Camera\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicAsset.cpp">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\CinematicCamera.cpp">
       <Filter>GameObject\Camera\CinematicCamera</Filter>

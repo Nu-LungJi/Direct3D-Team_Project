@@ -422,6 +422,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	}
 
 	{
+		ZoneScopedN("CameraManager_Update");
+		m_pCameraManager->Update(fTimeDelta);
+	}
+
+	{
 		ZoneScopedN("GameObjectManager_LateUpdate");
 		m_pGameObjectManager->LateUpdate(fTimeDelta);
 	}
@@ -1002,6 +1007,26 @@ CCameraObject* CGameInstance::GetCamera(const StringID& CameraID) const
 HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& handle)
 {
 	return m_pCameraManager->RegistCamera(CameraID, handle);
+}
+HRESULT CGameInstance::RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset)
+{
+	return m_pCameraManager->RegistCinematicAsset(pAsset);
+}
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
+{
+	return m_pCameraManager->PlayCinematic(CinematicID);
+}
+void CGameInstance::StopCinematic()
+{
+	m_pCameraManager->StopCinematic();
+}
+_bool CGameInstance::IsCinematicPlaying() const
+{
+	return m_pCameraManager->IsCinematicPlaying();
+}
+_float CGameInstance::GetCinematicPlayTime() const
+{
+	return m_pCameraManager->GetCinematicPlayTime();
 }
 
 #pragma endregion

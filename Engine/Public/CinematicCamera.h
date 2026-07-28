@@ -19,7 +19,11 @@ public:
 	void LateUpdate(_float fTimeDelta) override;
 
 public:
-	virtual _bool IsPersistent() const { return true; }
+	HRESULT ApplyPose(const _float3& vPosition, const _float4& vRotation, _float fFovY);
+
+public:
+	// Engine이 영구적으로 한개만 가지고 있도록
+	_bool IsPersistent() const override { return true; }
 public:
 	static UPtr<CCinematicCamera> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

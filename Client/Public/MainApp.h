@@ -5,6 +5,8 @@
 
 NS_BEGIN(Client)
 
+class CCinematicEditor;
+
 class CMainApp final: public E::CBaseApp
 {
 private:
@@ -13,6 +15,12 @@ private:
 
 private:
 	HRESULT Initialize();
+
+protected:
+	void FrameStart(_float fTimeDelta) override;
+
+private:
+	E::UPtr<CCinematicEditor> m_pCinematicEditor{};
 
 public:
 	static Engine::UPtr<CMainApp> Create();
