@@ -254,6 +254,13 @@ public:
 
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
+
+	HRESULT RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset);
+	HRESULT LoadCinematic(const std::string& CinematicName);
+	HRESULT PlayCinematic(const StringID& CinematicID);
+	void StopCinematic();
+	_bool IsCinematicPlaying() const;
+	_float GetCinematicPlayTime() const;
 #pragma endregion
 
 #pragma region RENDERER

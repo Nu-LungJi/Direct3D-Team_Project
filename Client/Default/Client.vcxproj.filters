@@ -213,6 +213,9 @@
     <ClInclude Include="..\Public\MainApp.h">
       <Filter>MainApp</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\CinematicEditor.h">
+      <Filter>MainApp</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\LevelLoading.h">
       <Filter>Level\Loading</Filter>
     </ClInclude>
@@ -469,6 +472,9 @@
       <Filter>98.Default</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\MainApp.cpp">
+      <Filter>MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicEditor.cpp">
       <Filter>MainApp</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelLoading.cpp">

@@ -232,6 +232,7 @@
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
+    <ClInclude Include="..\Public\CinematicEditor.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
@@ -316,6 +317,7 @@
     <ClCompile Include="..\Private\BTTurnDirect.cpp" />
     <ClCompile Include="..\Private\BTTurnSlow.cpp" />
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
+    <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />

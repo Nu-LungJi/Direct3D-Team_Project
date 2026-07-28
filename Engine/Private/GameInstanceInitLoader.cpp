@@ -13,6 +13,7 @@
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
 #include "UICamera.h"
+#include "CinematicCamera.h"
 #include "ComBeHavior.h"
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
@@ -129,6 +130,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 		return E_FAIL;
 	}
 	if (CGameInstance::Get().AddPrototype("CAMERAS", "Prototype_GameObject_UICamera", CUICamera::Create()))
+	{
+		return E_FAIL;
+	}
+	if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_CinematicCamera, CCinematicCamera::Create()))
 	{
 		return E_FAIL;
 	}

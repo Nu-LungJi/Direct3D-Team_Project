@@ -43,6 +43,7 @@ namespace Engine
 	{
 		Prototype_GameObject_FlyCamera,
 		Prototype_GameObject_ShadowCamera,
-		Prototype_GameObject_UICamera
+		Prototype_GameObject_UICamera,
+		Prototype_GameObject_CinematicCamera
 	};
 }
