@@ -28,7 +28,7 @@ protected:
 	int32_t FindAnimationIndex(const CPlayer& player, _string_view sAnimationName) const;
 
 private:
-	static constexpr _float TARGET_MAX_DISTANCE = 30.f;
+	static constexpr _float TARGET_MAX_DISTANCE = 40.f;
 	static constexpr _float TARGET_FRONT_DOT_THRESHOLD = 0.5f;
 };
 

@@ -5,6 +5,8 @@
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
 
+#include "ComCharacterMoveIntent.h"
+
 NS_USING(Client)
 
 void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
@@ -24,8 +26,7 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 
 	CacheAnimationIndices(*pPlayer);
 	
-	if (m_AccioCast_Animation < 0 ||
-		m_AccioEnd_Animation < 0)
+	if (m_AccioCast_Animation < 0 || m_AccioEnd_Animation < 0)
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -44,6 +45,7 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	m_bPulling = true;
 }
 
 void CPlayer_AccioSkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -59,7 +61,7 @@ void CPlayer_AccioSkill_State::CacheAnimationIndices(const CPlayer& player)
 	m_bAnimationIndicesCached = m_AccioCast_Animation >= 0 && m_AccioEnd_Animation >= 0;
 }
 
-void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float)
+void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float deltatime)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
@@ -85,21 +87,70 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
-			pAnimator->Play_Anim(
-				m_AccioCast_Animation,
-				false,
-				0.24f);
+			pAnimator->Play_Anim(m_AccioCast_Animation,false,0.24f);
 		}
 		break;
 
 	case PHASE::ATTACK:
+	{
+		auto* Target =CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());
+
+		if (!Target)
+		{
+			RequestLocomotion(pStateMachine);
+			return;
+		}
+
+		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling)
+		{
+			auto* pMoveIntent =Target->GetComponent<CComCharacterMoveIntent>("ComCharacterMoveIntent");
+
+			if (!pMoveIntent)
+			{
+				m_bPulling = false;
+				break;
+			}
+
+			 _vector targetPos =Target->GetTransform().GetState(STATE::POSITION);
+
+			const _vector playerPos =pPlayer->GetTransform().GetState(STATE::POSITION);
+
+			const _vector playerLook = XMVector3Normalize(XMVectorSetY(pPlayer->GetTransform().GetState(STATE::LOOK),0.f));
+
+			_vector destination = playerPos + playerLook * 10.f;
+
+			_vector offset = { 0.f,0.1f,0.f };
+
+			targetPos = offset + targetPos;
+
+			destination = XMVectorSetY(destination,XMVectorGetY(targetPos));
+
+			const _float lerpRatio = 1.f - expf(-10.f * deltatime);
+
+			const _vector nextPos = XMVectorLerp(targetPos, destination, lerpRatio);
+
+			_float3 nextPosition{};
+			XMStoreFloat3(&nextPosition, nextPos);
+
+			pMoveIntent->RequestWarp(nextPosition);
+
+			if (XMVectorGetX(XMVector3LengthSq(destination - targetPos)) <= 0.01f)
+			{
+				_float3 destinationPosition{};
+				XMStoreFloat3(&destinationPosition, destination);
+
+				pMoveIntent->RequestWarp(destinationPosition);
+				m_bPulling = false;
+			}
+		}
+
 		if (m_fAnimRatio >= ATTACK_END_RATIO)
 		{
 			m_ePhase = PHASE::RECOVERY;
 			pAnimator->Play_Anim(m_AccioEnd_Animation, false, 0.25f);
-			pAnimator->GetCurAnimState().fSpeed = 1.f;
 		}
 		break;
+	}
 
 	case PHASE::RECOVERY:
 		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO)
@@ -112,7 +163,7 @@ void CPlayer_AccioSkill_State::Exit(CStateMachine* pStateMachine)
 {
 	if (auto* pPlayer = GetPlayer(pStateMachine))
 		ResetSkillControl(*pPlayer);
-
+	m_bPulling = false;
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 }

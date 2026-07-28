@@ -483,6 +483,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//}
 		}
 		
+		//  가까이 있는거 한번 더 감지 
 			auto ori = m_pComTransform->GetPosition();
 		if (false) {
 			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
@@ -505,7 +506,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	else {
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
-
+		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
 				auto ori = m_pComTransform->GetPosition();
 			if (false) {
@@ -521,7 +522,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			}
 
 			std::vector<PX_OVERLAP_RESULT> results{};
-			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 				const auto& result = results.front();
 				m_hAutoTarget = result.pGameObject->GetHandle();
@@ -537,7 +538,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
 				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(40.f, matrix);
 				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 			}
@@ -545,7 +546,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 
-			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 30.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
+			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 40.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
 
 			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
 
