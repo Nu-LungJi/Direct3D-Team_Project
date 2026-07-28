@@ -57,7 +57,7 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 		XMStoreFloat3(&m_vCurrentLook, vSrcLook);
 		XMStoreFloat3(&m_vTargetLook, vTargetLook);
 		pAnimator->SetPlay(true);
-		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
 
 		m_bTurn = true;
 	}

@@ -32,7 +32,7 @@ void CBTAnimRoot::Update_Gui()
 {
 	if (ImGui::TreeNode("AnimRoot"))
 	{
-
+		ImGui::DragFloat("Blend", &m_fBlend, 0.1f, 0.f, 1.f);
 		if (ImGui::Button("Enable Ratio : "))
 			m_bRatio = !m_bRatio;
 			ImGui::SameLine(110.f);
@@ -171,10 +171,12 @@ nlohmann::json CBTAnimRoot::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonValue(j, "Loop", m_bLoop);
+	SaveJsonValue(j, "Blend", m_fBlend);
+
 	SaveJsonEnum(j, "SkillType", m_eSkillType);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
-
+	
 	size_t iMaxSize = m_StartFlags.size();
 	if (!m_StartFlags.empty())
 	{
@@ -216,7 +218,7 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "EnableRatio", m_bRatio);
 	LoadJsonValue(j, "Loop", m_bLoop);
 	LoadJsonEnum(j, "SkillType", m_eSkillType);
-
+	LoadJsonValue(j, "Blend", m_fBlend);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	

@@ -611,7 +611,7 @@ void CComAnimator::Update_AnimState(_float fTimeDelta, ANIMSTRUCT& AnimState)
 
 	const _float fDuration = pAnim->GetDuration();
 
-	if (fDuration <= 0.f)
+	if (fDuration < 0.f)
 		return;
 
 	if (AnimState.fTrackPosition >= fDuration)

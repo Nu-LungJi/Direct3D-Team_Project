@@ -57,22 +57,28 @@ EVALUATE CBTDecTimer::NEXT(_float fTimeDelta)
 
 EVALUATE CBTDecTimer::TimeOut(_float fTimeDelta)
 {
-	EVALUATE result{ EVALUATE::END };
-	m_fTick += fTimeDelta;
-	result = __super::Evaluate(fTimeDelta);
-	if (result != EVALUATE::SUCCESS)
+	EVALUATE result = __super::Evaluate(fTimeDelta);
+	// 다음 피격 애니메이션이 실행 중
+	if (result == EVALUATE::RUN)
+		return EVALUATE::RUN;
+
+	// 다음 피격 애니메이션까지 완료
+	if (result == EVALUATE::SUCCESS)
 	{
-		if (m_fWaitTime < m_fTick)
-		{
-			m_fTick = 0.f;
-			return EVALUATE::FAILED;
-		}
-		else
-			return EVALUATE::RUN;
+		m_fTick = 0.f;
+		return EVALUATE::SUCCESS;
 	}
-	
-	m_fTick = 0.f;
-	return result;
+
+	// HitFlag가 아직 없을 때만 대기시간 증가
+	m_fTick += fTimeDelta;
+
+	if (m_fTick >= m_fWaitTime)
+	{
+		m_fTick = 0.f;
+		return EVALUATE::FAILED;
+	}
+
+	return EVALUATE::RUN;
 }
 
 EVALUATE CBTDecTimer::TimeInSuccess(_float fTimeDelta)

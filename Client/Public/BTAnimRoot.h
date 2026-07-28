@@ -44,6 +44,7 @@ protected:
 
 	ATTMON						m_eSkillType{ ATTMON::END };
 	_float2						m_fSkillRatio{}, m_fRatio{};
+	_float					     m_fBlend{ 0.1f };
 	uint32_t					m_iLoopCnt{ 0 };
 	std::vector<FLAG_EVENT>		m_StartFlags{};
 	std::vector<FLAG_EVENT>		m_EndFlags{};

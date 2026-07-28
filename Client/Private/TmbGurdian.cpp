@@ -601,9 +601,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
-
 	__super::PriorityUpdate(fTimeDelta);
-
 }
 
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)

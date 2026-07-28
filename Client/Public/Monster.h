@@ -27,9 +27,21 @@ typedef struct HitTable
 		return (eAttType == rhs.eAttType) && (eHitType == rhs.eHitType);
 	}
 
-	ATTMON			eAttType{ ATTMON::END };
+	ATTMON						eAttType{ ATTMON::END };
 	PLAYER_SKILL_TYPE			eHitType{ PLAYER_SKILL_TYPE::DEFAULT };
+	int32_t						iAnimIndex{ -1 };
+	_float						fBlend{ 0.1f };
+	
+
 }HITTABLE;
+
+typedef struct MonsterHitInfo
+{
+	PLAYER_SKILL_TYPE eHitType{ PLAYER_SKILL_TYPE::DEFAULT};
+	ATTMON    eAttType{ ATTMON::END };
+	int32_t iPriority{ 0 };
+}MON_HIT_INFO;
+
 class CMonster : public CAnimationObject
 {
 public:
@@ -73,18 +85,25 @@ public:
 	void					Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	{
 		if (!m_bSkill) {
-			m_MonTable.eAttType = eType;
+			m_eAttType = eType;
 			m_fSkillRatio = fSkillRatio;
 			m_bSkill = true;
 		}
 	}
-	const HITTABLE			Get_HitTable()const { return m_MonTable; }
+	_bool						Activate_PendingHit();
+	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
+	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
+	_bool						Is_PendingHit() { return m_bPending; }
+	_bool						Is_ActiveHit() { return m_bActiveHit; }
+	void						Clear_PendingHit() { m_PendingMonTable = {}; m_bPending = false; }
+	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; }
 private:
-	void					RunningSkill(_float fTimeDelta);
-	void					IsHit();
-	void					Flag_Check(_float fTimeDelta);
-	void					StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
-	void					EmissiveFadeOut(_float fTimeDelta);
+	void						Check_Table(PLAYER_SKILL_TYPE eType);
+	void						RunningSkill(_float fTimeDelta);
+	void						IsHit();
+	void						Flag_Check(_float fTimeDelta);
+	void						StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
+	void						EmissiveFadeOut(_float fTimeDelta);
 protected:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -111,9 +130,15 @@ protected:
 	uint32_t					m_iCurrentInstanceCount = 0;
 	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{};
-	_bool						m_bDead{ false }, m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
+	_bool						m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
 	_string						m_SocketName{};
-	HITTABLE					m_MonTable{};
+	ATTMON						m_eAttType{};
+
+	_bool						m_bPending{ false };
+	MON_HIT_INFO				m_PendingMonTable{};
+
+	_bool						m_bActiveHit{ false };
+	MON_HIT_INFO				m_ActiveMonTable{};
 
 	
 	std::vector<E::SPAWN_COMMAND> m_Effects[ETOUI(ATTMON::END)];

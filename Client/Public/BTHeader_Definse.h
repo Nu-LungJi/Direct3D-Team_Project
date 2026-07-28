@@ -13,6 +13,7 @@
 #include "BTHitAnimMonster.h"
 #include "BTCreatureFlag.h"// 개별 플래그 세팅용
 #include "BTMonAttType.h" // 몬스터 전용
+#include "BTMonResetTable.h"
 
 #include "BTDecHp.h"
 #include "BTDecLier.h" //하위 노드 true시 다시 재진입 안함

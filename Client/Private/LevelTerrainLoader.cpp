@@ -9,6 +9,10 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
+
+#include "TmbGurdian.h"
+#include "TmbGurdianDead.h"
+#include "Mon_Weapon.h"
 NS_USING(Client)
 
 std::future<bool> CLevelTerrainLoader::Load()
@@ -102,7 +106,69 @@ std::future<bool> CLevelTerrainLoader::Load()
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerWeapon");
 				return false;
 			}
+			//TombGurDian
+			{
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_TMBGurdian",
+					CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Grunt/SK_Tomb_Grunt.bin")))
+				{
+					E::CResModel::DESC pDesc{};
+					pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+					if (FAILED(res->Load(pDesc)))
+					{
+						MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TMBGurdian");
+						return false;
+					}
+				}
 
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
+					return false;
+				}
+
+			}
+			//TombGurDianDead
+			{
+				for (uint32_t i = 0; i < 13; ++i)
+				{
+					std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
+					StringID resTag = "Static_Med_Debris_" + std::to_string(i);
+					if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, resTag,
+						CResStaticModel::Create(path))) {
+
+						E::CResStaticModel::DESC pDesc{};
+						pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+						if (FAILED(res->Load(pDesc)))
+						{
+							MSG_BOX("LEVEL_CREATURE Failed Static_Med_Debris");
+						}
+					}
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
+					return false;
+				}
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Mace",
+					CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
+
+					E::CResStaticModel::DESC pDesc{};
+					pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+					if (FAILED(res->Load(pDesc)))
+					{
+						MSG_BOX("LEVEL_CREATURE Failed Static_Mace_Model_Resource");
+						return false;
+					}
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
+					return false;
+				}
+			}
 			// 워커 스레드 종료
 			return  true;
 		});

@@ -414,6 +414,9 @@
     <ClInclude Include="..\Public\BTTurnAnimation.h">
       <Filter>GameObject\AI\AnimRoot\Anim</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTMonResetTable.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -635,6 +638,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\BTTurnAnimation.cpp">
       <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMonResetTable.cpp">
+      <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -65,7 +65,7 @@ EVALUATE CBTRandMoveAnim::Evaluate(_float fTimeDelta)
 		RandomDirSelect();
 		m_bInit = true;
 	}
-	pAnimator->Play_Anim(m_Value.iAnimIndex, true);
+	pAnimator->Play_Anim(m_Value.iAnimIndex, true, m_fBlend);
 	_bool bFinished = pAnimator->GetFinish();
 
 	eType = Move(fTimeDelta);

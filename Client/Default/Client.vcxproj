@@ -220,6 +220,7 @@
     <ClInclude Include="..\Public\BTHeader_Definse.h" />
     <ClInclude Include="..\Public\BTHitAnimMonster.h" />
     <ClInclude Include="..\Public\BTMonAttType.h" />
+    <ClInclude Include="..\public\BTMonResetTable.h" />
     <ClInclude Include="..\Public\BTMove.h" />
     <ClInclude Include="..\Public\BTOnlyFalse.h" />
     <ClInclude Include="..\Public\BTOnlyTrue.h" />
@@ -298,6 +299,7 @@
     <ClCompile Include="..\Private\BTDecTimer.cpp" />
     <ClCompile Include="..\Private\BTHitAnimMonster.cpp" />
     <ClCompile Include="..\Private\BTMonAttType.cpp" />
+    <ClCompile Include="..\private\BTMonResetTable.cpp" />
     <ClCompile Include="..\Private\BTMove.cpp" />
     <ClCompile Include="..\Private\BTOnlyFalse.cpp" />
     <ClCompile Include="..\Private\BTOnlyTrue.cpp" />

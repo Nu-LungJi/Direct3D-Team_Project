@@ -45,7 +45,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 			return m_eDebug = EVALUATE::FAILED;
 		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 		pAnimator->SetPlay(true);
-		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
 	
 		Active_Skill();
 	
