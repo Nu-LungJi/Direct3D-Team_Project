@@ -9,6 +9,65 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr const _char* CINEMATIC_SAVE_ROOT =
+		"./Resources/json/Cinematics";
+	constexpr const _char* CINEMATIC_JSON_ROOT =
+		"Cinematic";
+
+	_bool TryBuildCinematicPath(
+		const _char* pCinematicID,
+		std::filesystem::path& OutPath,
+		std::string& OutError)
+	{
+		if (pCinematicID == nullptr || pCinematicID[0] == '\0')
+		{
+			OutError = "Cinematic ID cannot be empty.";
+			return false;
+		}
+
+		const std::string CinematicID{ pCinematicID };
+		if (CinematicID == "." ||
+			CinematicID == ".." ||
+			CinematicID.find_first_of("<>:\"/\\|?*") !=
+				std::string::npos ||
+			static_cast<unsigned char>(CinematicID.back()) <= 0x20 ||
+			CinematicID.back() == '.')
+		{
+			OutError =
+				"Cinematic ID contains invalid filename characters.";
+			return false;
+		}
+
+		for (const unsigned char Character : CinematicID)
+		{
+			if (Character < 0x20)
+			{
+				OutError =
+					"Cinematic ID contains invalid filename characters.";
+				return false;
+			}
+		}
+
+		OutPath =
+			std::filesystem::path{ CINEMATIC_SAVE_ROOT } /
+			(CinematicID + ".json");
+		return true;
+	}
+
+	std::string MakeSerializeStatus(
+		const _char* pOperation,
+		const E::SERIALIZE_RESULT& Result)
+	{
+		std::string Status{ pOperation };
+		Status += " failed";
+		if (!Result.sMessage.empty())
+		{
+			Status += ": ";
+			Status += Result.sMessage;
+		}
+		return Status;
+	}
+
 	_vector LoadSafeQuaternion(const _float4& vRotation)
 	{
 		const _vector vQuaternion =
@@ -72,11 +131,23 @@ void CCinematicEditor::UpdateGUI()
 		CreateAsset();
 	}
 
+	ImGui::SameLine();
+	if (ImGui::Button("Load"))
+	{
+		LoadAsset();
+	}
+
 	if (m_pEditingAsset == nullptr)
 	{
 		ImGui::TextWrapped("%s", m_Status.c_str());
 		ImGui::End();
 		return;
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Save"))
+	{
+		SaveAsset();
 	}
 
 	ImGui::SameLine();
@@ -231,6 +302,86 @@ void CCinematicEditor::CreateAsset()
 	m_SelectedKeyframeIndex.reset();
 
 	m_Status = "New asset created.";
+}
+
+void CCinematicEditor::SaveAsset()
+{
+	if (m_pEditingAsset == nullptr)
+	{
+		m_Status = "Create or load a cinematic asset first.";
+		return;
+	}
+
+	const _char* pCinematicID =
+		m_pEditingAsset->GetCinematicID().GetDbgStr();
+	std::filesystem::path SavePath{};
+	if (!TryBuildCinematicPath(
+		pCinematicID,
+		SavePath,
+		m_Status))
+	{
+		return;
+	}
+
+	m_pEditingAsset->RecalculateDuration();
+	const E::FCinematicAssetData Data =
+		m_pEditingAsset->ExportData();
+	const E::SERIALIZE_RESULT Result =
+		E::CGameInstance::Get().JsonSerializeDetailed(
+			SavePath.generic_string(),
+			Data,
+			CINEMATIC_JSON_ROOT);
+	if (Result.Failed())
+	{
+		m_Status = MakeSerializeStatus("Save", Result);
+		return;
+	}
+
+	m_Status =
+		"Saved: " + SavePath.generic_string();
+}
+
+void CCinematicEditor::LoadAsset()
+{
+	std::filesystem::path LoadPath{};
+	if (!TryBuildCinematicPath(
+		m_szCinematicID,
+		LoadPath,
+		m_Status))
+	{
+		return;
+	}
+
+	E::FCinematicAssetData Data{};
+	const E::SERIALIZE_RESULT Result =
+		E::CGameInstance::Get().JsonDeSerializeDetailed(
+			LoadPath.generic_string(),
+			Data,
+			CINEMATIC_JSON_ROOT);
+	if (Result.Failed())
+	{
+		m_Status = MakeSerializeStatus("Load", Result);
+		return;
+	}
+
+	auto pLoadedAsset = E::CCinematicAsset::Create(Data);
+	if (pLoadedAsset == nullptr)
+	{
+		m_Status = "Load failed: Cinematic ID is empty.";
+		return;
+	}
+
+	E::CGameInstance::Get().StopCinematic();
+	m_pEditingAsset = std::move(pLoadedAsset);
+	m_SelectedShotIndex.reset();
+	m_SelectedKeyframeIndex.reset();
+
+	strncpy_s(
+		m_szCinematicID,
+		m_pEditingAsset->GetCinematicID().GetDbgStr(),
+		_TRUNCATE);
+	m_Status =
+		"Loaded: " + LoadPath.generic_string();
 }
 
 void CCinematicEditor::AddShot()

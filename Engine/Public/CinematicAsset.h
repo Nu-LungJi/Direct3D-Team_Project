@@ -25,6 +25,7 @@ public:
 		return m_CameraTrack;
 	}
 
+	FCinematicAssetData ExportData() const;
 	void RecalculateDuration();
 
 private:
@@ -34,6 +35,7 @@ private:
 
 public:
 	static SPtr<CCinematicAsset> Create(const StringID& CinematicID);
+	static SPtr<CCinematicAsset> Create(const FCinematicAssetData& Data);
 };
 
 NS_END

@@ -1,5 +1,7 @@
 #pragma once
 #include "Engine_Defines.h"
+#include "SerializerInterface.h"
+
 
 NS_BEGIN(Engine)
 
@@ -28,7 +30,7 @@ enum class ECinematicInterpolation
 };
 
 // 키프레임 데이터 (원본)
-struct FCinematicCameraKeyframe
+struct FCinematicCameraKeyframe : public ISerializable
 {
 	// Shot 내부 로컬 시간
 	_float fTime{};
@@ -36,6 +38,24 @@ struct FCinematicCameraKeyframe
 	_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
 	_float fFovY{ 75.f };
 	ECinematicInterpolation ePositionInterpolation{ ECinematicInterpolation::Linear };
+
+	void Serialize(ISerializer& serializer) const override
+	{
+		serializer.Write("Time", fTime);
+		serializer.Write("Position", vPosition);
+		serializer.Write("Rotation", vRotation);
+		serializer.Write("FovY", fFovY);
+		serializer.Write("PositionInterpolation", ePositionInterpolation);
+	}
+
+	void Deserialize(IDeserializer& deserializer) override
+	{
+		deserializer.Read("Time", fTime);
+		deserializer.Read("Position", vPosition);
+		deserializer.Read("Rotation", vRotation);
+		deserializer.Read("FovY", fFovY);
+		deserializer.Read("PositionInterpolation", ePositionInterpolation);
+	}
 };
 
 // (런타임) 특정시간의 계산결과pose
@@ -46,7 +66,7 @@ struct FCinematicCameraPose
 	_float fFovY{ 75.f };
 };
 
-struct FCinematicCameraShot
+struct FCinematicCameraShot : public ISerializable
 {
 	StringID ShotID{};
 	// 트랙 내 시간 중 시작시간
@@ -59,12 +79,78 @@ struct FCinematicCameraShot
 	StringID TargetSlot{}; // ECinematicCoordinateSpace::TargetLocal 일때만 사용
 
 	std::vector<FCinematicCameraKeyframe> Keyframes{};
+
+
+	void Serialize(ISerializer& serializer) const override
+	{
+		serializer.Write("ShotID", ShotID);
+		serializer.Write("StartTime", fStartTime);
+		serializer.Write("CoordinateSpace", eCoordinateSpace);
+		serializer.Write("BindingMode", eBindingMode);
+		if (TargetSlot.hash == 0)
+		{
+			serializer.Write("TargetSlot", std::string{});
+		}
+		else
+		{
+			serializer.Write("TargetSlot", TargetSlot);
+		}
+		serializer.Write("Keyframes", Keyframes);
+	}
+
+	void Deserialize(IDeserializer& deserializer) override
+	{
+		deserializer.Read("ShotID", ShotID);
+		deserializer.Read("StartTime", fStartTime);
+		deserializer.Read("CoordinateSpace", eCoordinateSpace);
+		deserializer.Read("BindingMode", eBindingMode);
+		deserializer.Read("TargetSlot", TargetSlot);
+		deserializer.Read("Keyframes", Keyframes);
+	}
 };
 
-struct FCinematicCameraTrack
+struct FCinematicCameraTrack : public ISerializable
 {
 	StringID TrackID{};
 	std::vector<FCinematicCameraShot> Shots{};
+
+	void Serialize(ISerializer& serializer) const override
+	{
+		serializer.Write("TrackID", TrackID);
+		serializer.Write("Shots", Shots);
+	}
+
+	void Deserialize(IDeserializer& deserializer) override
+	{
+		deserializer.Read("TrackID", TrackID);
+		deserializer.Read("Shots", Shots);
+	}
+};
+
+// 저장 전용 루트 데이터
+struct FCinematicAssetData final : public ISerializable
+{
+	int iVersion{ 1 };
+	StringID CinematicID{};
+	FCinematicCameraTrack CameraTrack{};
+
+	void Serialize(ISerializer& serializer) const override
+	{
+		serializer.Write("Version", iVersion);
+		serializer.Write("CinematicID", CinematicID);
+		serializer.Write("CameraTrack", CameraTrack);
+	}
+
+	void Deserialize(IDeserializer& deserializer) override
+	{
+		deserializer.Read("Version", iVersion);
+		deserializer.Read("CinematicID", CinematicID);
+		deserializer.Read("CameraTrack", CameraTrack);
+
+		if (iVersion != 1)
+			throw std::runtime_error(
+				"Unsupported cinematic asset version");
+	}
 };
 
 NS_END

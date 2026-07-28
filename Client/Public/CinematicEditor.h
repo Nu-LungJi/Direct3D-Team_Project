@@ -18,6 +18,8 @@ public:
 
 private:
 	void CreateAsset();
+	void SaveAsset();
+	void LoadAsset();
 	void AddShot();
 	void DrawShot(E::FCinematicCameraShot& Shot, size_t iShotIndex, _bool& bChanged);
 	void DrawKeyframe(E::FCinematicCameraKeyframe& Keyframe,size_t iShotIndex,size_t iKeyframeIndex,_bool& bChanged,_bool& bRemove);
