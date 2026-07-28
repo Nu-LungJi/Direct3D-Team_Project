@@ -486,6 +486,7 @@ HRESULT CGameInstance::Draw()
 {
 	if (FAILED(m_pLightManager->Capture_ShadowMap()))
 	{
+		MSG_BOX("ASDFASDF");
 		return E_FAIL;
 	}
 	if (FAILED(m_pRenderer->Draw()))

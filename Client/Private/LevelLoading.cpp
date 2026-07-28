@@ -134,8 +134,6 @@ HRESULT CLevelLoading::Initialize()
 	}
 
 	return S_OK;
-
-	return S_OK;
 }
 
 void CLevelLoading::Update(E::_float fTimeDelta)
