@@ -184,6 +184,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State">
       <UniqueIdentifier>{57c915ba-5887-48a0-b19f-15e26e1f248e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Magic_Bullet">
+      <UniqueIdentifier>{15e1e341-898d-42a9-b6c0-d22c4c66ba61}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">

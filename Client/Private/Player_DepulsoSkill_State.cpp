@@ -38,6 +38,7 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	m_fPreviousAnimRatio = 0.f;
 }
 
 void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -52,7 +53,7 @@ void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
 	m_bAnimationIndicesCached = m_DepulsoCast_Animation >= 0 && m_DepulsoEnd_Animation >= 0;
 }
 
-void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
+void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
@@ -77,13 +78,40 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
+			m_fPreviousAnimRatio = 0.f;
 			if (!PlayRandomTargetAttack(*pPlayer))
 				RequestLocomotion(pStateMachine);
+			m_fAnimRatio = 0.f;
 		}
 		break;
 
 	case PHASE::ATTACK:
 	{
+		const _float fMoveTime =
+			PlayerAnimationRatioGuard::CalculateActiveDeltaTime(
+				m_fPreviousAnimRatio,
+				m_fAnimRatio,
+				ATTACK_MOVE_START_RATIO,
+				ATTACK_MOVE_END_RATIO,
+				fTimeDelta);
+
+		if (fMoveTime > 0.f)
+		{
+			if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
+				pPlayer->GetTargetHandle()))
+			{
+				_float3 vTargetDirection{};
+				XMStoreFloat3(
+					&vTargetDirection,
+					pTarget->GetTransform().GetState(STATE::POSITION) -
+					pPlayer->GetTransform().GetState(STATE::POSITION));
+				pPlayer->ApplyDirectionalMovement(
+					vTargetDirection,
+					ATTACK_MOVE_SPEED,
+					fMoveTime);
+			}
+		}
+
 		if (m_fAnimRatio >= CAST_END_RATIO) {
 			// 밀기 시작
 			m_ePhase = PHASE::PUSH;
@@ -107,6 +135,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		break;
 	}
 
+	m_fPreviousAnimRatio = m_fAnimRatio;
 }
 
 void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)
@@ -116,6 +145,7 @@ void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	m_fPreviousAnimRatio = 0.f;
 }
 
 SPtr<CPlayer_DepulsoSkill_State> CPlayer_DepulsoSkill_State::Create()

@@ -29,6 +29,7 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DESCENDO);
@@ -58,8 +59,6 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		return;
 	}
 
-	pPlayer->SetCurrentMoveSpeed(0.f);
-
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
 	{
@@ -68,6 +67,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	}
 
 	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
@@ -81,8 +81,22 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		break;
 
 	case PHASE::ATTACK:
-		if (m_fAnimRatio >= ATTACK_END_RATIO)
+	{
+		if (m_fAnimRatio >= CAST_END_RATIO)
+		{
+			m_ePhase = PHASE::PUSH;
+			pAnimator->Play_Anim(m_DescendoCast_Animation, false, 0.25f);
+			pAnimator->GetCurAnimState().fSpeed = 1.f;
+		}
+		break;
+	}
+
+	case PHASE::PUSH:
+		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)
+		{
+			m_ePhase = PHASE::RECOVERY;
 			RequestLocomotion(pStateMachine);
+		}
 		break;
 
 	case PHASE::RECOVERY:
