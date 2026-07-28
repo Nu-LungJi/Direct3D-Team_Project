@@ -625,6 +625,39 @@ HRESULT CGameInstance::Load_ParticleJsonPackage(const std::vector<std::string>& 
 {
 	return m_pParticleManager->Load_ParticleJsonPackage(_FilePathPackage);
 }
+
+void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {
+	m_pParticleManager->TranslateOwner(ownerId, delta);
+}
+
+HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end) {
+	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, start, end);
+}
+#pragma endregion
+
+#pragma region EFFECT_MANAGER
+
+EFFECT_INSTANCE_ID CGameInstance::PlayEffect(const std::string& sEffectName, const _float4x4& matWorld,
+	_fvector vEndPosition, EFFECT_FINISHED_CALLBACK onFinsihed) {
+	
+	return m_pEffectManager->PlayEffect(sEffectName, matWorld, vEndPosition, onFinsihed);
+}
+
+void CGameInstance::Stop(EFFECT_INSTANCE_ID iEffectId) {
+	m_pEffectManager->Stop(iEffectId);
+}
+
+void CGameInstance::SetPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
+	m_pEffectManager->SetPosition(iEffectId, vPosition);
+
+}
+
+void CGameInstance::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _float4x4& colliderWorldMatrix) {
+	m_pEffectManager->SetWorldMatrix(iEffectId, colliderWorldMatrix);
+
+}
+
+
 #pragma endregion
 
 #pragma region LUA_MANAGER
@@ -1024,8 +1057,8 @@ SPtr<CResViewPort>			CGameInstance::Generate_ViewPort(const StringID& _sResTag, 
 HRESULT	CGameInstance::Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
 	return m_pRenderer->Generate_Texture2DArray(_ShadowDSVList, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
-HRESULT	CGameInstance::Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
-	return m_pRenderer->Generate_CubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
+HRESULT	CGameInstance::Generate_ShadowCubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount) {
+	return m_pRenderer->Generate_ShadowCubeMap(_ShadowDSV, _TextureArray, _SRV, _Resolution, _MaxLightCount);
 }
 HRESULT	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY) {
 	return m_pRenderer->Generate_ShadowTexture(_ShadowDSV, _Texture, _SRV, _ResolutionX, _ResolutionY);

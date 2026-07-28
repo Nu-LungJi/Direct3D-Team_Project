@@ -35,6 +35,8 @@ class CPlayer final : public CAnimationObject
 public:
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
 
+protected:
+	void UpdateGUI() override;
 
 public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
@@ -45,6 +47,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
+
+		StringID LevelTag;
 	};
 
 private:
@@ -76,15 +80,25 @@ public:
 	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
+	CHandle GetTargetHandle() const { return m_hAutoTarget; }
+	PLAYER_SKILL_TYPE GetPlayerCurSkill() const { return m_eSkill_Type; }
 
+	void SetPlayerCurSKill(PLAYER_SKILL_TYPE _Skill_Type) { m_eSkill_Type = _Skill_Type; }
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	void ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta);
+	void ApplyDirectionalMovement(
+		const _float3& vDirection,
+		_float fSpeed,
+		_float fTimeDelta);
+	void PrepareLocomotionResume();
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
+	
 
 private:
 	CComModelInstance* m_pComModelInstance{};
@@ -145,6 +159,23 @@ private:
 	_float m_fSprintDirectionResponse{ 4.5f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
+	//[LSY] 테스트 로그니 지우셔도 됩니다.
+#ifdef _DEBUG
+	void UpdateStandingGameObjectDebugLog();
+	std::optional<CHandle> m_hDebugStandingGameObject{};
+#endif
+
+private:
+	CHandle m_hAutoTarget;
+
+	
+private:
+	PLAYER_SKILL_TYPE m_eSkill_Type;
+private:
+	static constexpr _float DASH_HOLD_TIME = 0.35f;
+
+	_float m_fControlHoldTime{};
+	_bool m_bDashTriggered{};
 
 public:
 	static E::UPtr<CPlayer> Create();

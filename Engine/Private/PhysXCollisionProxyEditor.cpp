@@ -28,6 +28,11 @@ namespace
 	const char* SHAPE_TYPE_NAMES[] = { "Box", "Sphere", "Capsule", "Convex Mesh", "Triangle Mesh" };
 	const char* DEBUG_DRAW_MODE_NAMES[] = { "Wire", "Solid", "Solid + Wire" };
 
+	const char* EDIT_FILE_PRESETS[] = {
+		"Level_CharlesRookwood",
+		"Level_CharlesRookwood_Trigger",
+		"Level_BossCharlesRookwood",
+	};
 	_bool IsUnitCylinderConvexPath(const std::string& path)
 	{
 		if (path.empty())
@@ -284,6 +289,17 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 	{
 		ImGui::SetNextItemWidth(220.f);
 		ImGui::InputText("Collision File", m_CollisionFileName, std::size(m_CollisionFileName));
+		//ImGui::SameLine();
+		//EDIT_FILE_PRESETS
+		int presetId{};
+		if (ImGui::Combo("Preset", &presetId, EDIT_FILE_PRESETS, static_cast<int>(std::size(EDIT_FILE_PRESETS))))
+		{
+			strcpy_s(
+				m_CollisionFileName,
+				sizeof(m_CollisionFileName),
+				EDIT_FILE_PRESETS[presetId]
+			);
+		}
 	}
 	else
 	{
@@ -369,6 +385,17 @@ void CPhysXCollisionProxyEditor::DrawWindow()
 		RemovePhysicsPreview();
 	ImGui::SameLine();
 	ImGui::TextDisabled(!m_PhysicsPreviewHandles.empty() ? "Active (rebuild after edits)" : "Inactive");
+
+	ImGui::SetNextItemWidth(180.f);
+	ImGui::InputText("Loaded Collision Layer", m_LoadedCollisionLayerName,
+		std::size(m_LoadedCollisionLayerName));
+	if (ImGui::Button("Loaded Collision OFF", ImVec2(160.f, 0.f)))
+		SetLoadedCollisionEnabled(false);
+	ImGui::SameLine();
+	if (ImGui::Button("Loaded Collision ON", ImVec2(170.f, 0.f)))
+		SetLoadedCollisionEnabled(true);
+	ImGui::SameLine();
+	ImGui::TextDisabled(!m_LoadedCollisionHandles.empty() ? "Suspended" : "Active");
 
 	ImGui::Separator();
 	if (ImGui::Button("Add Actor")) CreateActor();
@@ -1677,6 +1704,51 @@ void CPhysXCollisionProxyEditor::RemovePhysicsPreview()
 			preview->SetPendingDestroyCascade();
 	}
 	m_PhysicsPreviewHandles.clear();
+}
+
+void CPhysXCollisionProxyEditor::SetLoadedCollisionEnabled(_bool bEnabled)
+{
+	if (!bEnabled)
+	{
+		if (!m_LoadedCollisionHandles.empty())
+		{
+			m_Status = "Loaded collision is already suspended.";
+			return;
+		}
+
+		const auto* layer = CGameInstance::Get().GetGameObjectLayer(
+			m_LoadedCollisionLayerName);
+		if (!layer)
+		{
+			m_Status = std::string{ "Loaded collision layer not found: " } +
+				m_LoadedCollisionLayerName;
+			return;
+		}
+
+		for (const CHandle& handle : *layer)
+		{
+			auto* proxy = CGameInstance::Get()
+				.GetGameObjectByHandleT<CPhysXCollisionProxyObject>(handle);
+			if (proxy && proxy->SetCollisionEnabled(false))
+				m_LoadedCollisionHandles.push_back(handle);
+		}
+
+		m_Status = !m_LoadedCollisionHandles.empty()
+			? "Loaded collision suspended."
+			: "No collision proxy objects found in the target layer.";
+		return;
+	}
+
+	for (const CHandle& handle : m_LoadedCollisionHandles)
+	{
+		if (auto* proxy = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPhysXCollisionProxyObject>(handle))
+		{
+			proxy->SetCollisionEnabled(true);
+		}
+	}
+	m_LoadedCollisionHandles.clear();
+	m_Status = "Loaded collision restored.";
 }
 
 void CPhysXCollisionProxyEditor::QueueResultPopup(std::string message, _bool success)

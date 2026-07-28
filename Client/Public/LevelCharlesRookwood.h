@@ -26,11 +26,14 @@ public:
 private:
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
-	HRESULT SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer);
+
+	HRESULT SpawnMonster();
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
-	std::optional<CHandle> SpawnDebugPlayer();
+
 	HRESULT SpawnStaticCollision();
+	HRESULT SpawnBridge();
+	HRESULT SpawnMyMagicStepController();
 
 private:
 	void Free() override;

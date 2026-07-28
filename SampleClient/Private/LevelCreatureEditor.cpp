@@ -22,7 +22,9 @@
 #include "TestSquareStepController.h"
 #include "MagicSquareStepController.h"
 #include "MyMagicSquareStep.h"
+#include "Weapon.h"
 #include "MyMagicSquareStepController.h"
+#include "MedDebris.h"
 NS_USING(Client)
 
 CLevelCreatureEditor::CLevelCreatureEditor()
@@ -223,7 +225,18 @@ HRESULT CLevelCreatureEditor::Initialize()
 		}
 	}
 	
+	CWeapon::WEAPON_DESC WeaponDesc{};
 
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.LevelTag = "LEVEL_PLAYGROUND";
+	WeaponDesc.WeaponName = "Static_Wand_Model_Resource";
+	WeaponDesc.vScale = _float3(500, 500, 500);
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_PLAYGROUND", "Prototype_GameObject_Wand", "03_Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Wand");
+
+	}
 	if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
 		return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -234,12 +247,38 @@ HRESULT CLevelCreatureEditor::Initialize()
 	{
 		m_BeHaviorJsonList.emplace(iter.path().filename().string(), iter.path().string());
 	}
+
+	//MedDebris
+
 	return S_OK;
 }
 
 void CLevelCreatureEditor::Update(E::_float fTimeDelta)
 {
 	Picking();
+
+	if (CGameInstance::Get().KeyDown(DIK_J))
+	{
+		{
+			for (uint32_t i = 0; i < 13; ++i)
+			{
+				CMedDebris::DESC Desc{};
+				Desc.sObjectTag = "MedDebris";
+				Desc.DebrisResTag = "Static_Med_Debris_" + std::to_string(i);
+				Desc.DebrisConvex = "./Resources/PhysX/Cooked/SM_Med_" + std::to_string(i) + ".pxconvex";
+				Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+				auto debris = E::CGameInstance::Get().AddGameObjectToLayer(
+					m_strLevelName,
+					"Prototype_GameObject_MedDebris",
+					"28_MedDebris",
+					&Desc);
+				if (debris)
+					m_MedDebrisHandles.push_back(*debris);
+			}
+			//"LEVEL_CREATURE", "Prototype_GameObject_MedDebris"
+
+		}
+	}
 }
 
 HRESULT CLevelCreatureEditor::Render()
@@ -259,6 +298,18 @@ void CLevelCreatureEditor::UpdateGUI()
 	ImGui::Text("Select Behavior : %s ", m_SelectFileName.c_str());
 	m_fPos.y = 0.f;
 	ImGui::Text("X :%2.f ", m_fPos.x); ImGui::SameLine(); ImGui::Text("Y : %2.f ", m_fPos.y); ImGui::SameLine(); ImGui::Text("Z : %2.f", m_fPos.z);
+
+	if (ImGui::Button("Activate Med Debris Physics"))
+	{
+		for (const CHandle& handle : m_MedDebrisHandles)
+		{
+			if (auto* debris = CGameInstance::Get()
+				.GetGameObjectByHandleT<CMedDebris>(handle))
+			{
+				debris->RequestActivatePhysics();
+			}
+		}
+	}
 
 	if (!m_SelectResourceTag.empty() && !m_SelectObjecteTag.empty())
 	{
@@ -284,6 +335,40 @@ void CLevelCreatureEditor::UpdateGUI()
 				auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, m_SelectObjecteTag, "02_Gobline", &Desc);
 			}
 		}
+
+		
+	}
+	
+	if (ImGui::TreeNode("Particle Test Monster"))
+	{
+
+		CTestGob::MONSTER_DESC Desc{};
+
+		Desc.bDonMove = true;
+		Desc.sObjectTag = "Gobline";
+		Desc.LevelTag = m_strLevelName;
+		XMStoreFloat3(&Desc.vPos, XMVectorSet(0, 0, 0, 1));
+		XMStoreFloat3(&Desc.vRot, XMVectorSet(0, 1, 0, 1));
+		Desc.fAngle = 180.f;
+		if (ImGui::Button("BOSS"))
+		{
+			Desc.ReSourceTag = "Model_Resource_TombProtector";
+			Desc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+			XMStoreFloat3(&Desc.vScale, XMVectorSet(5.f, 5.f, 5.f, 1));
+
+			auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
+
+		}
+		if (ImGui::Button("NORMAL"))
+		{
+			Desc.ReSourceTag = "Model_Resource_TombNormalProtector";
+			Desc.BeHaviorTag = "./Resources/json/BeHavior/NormalDef.json";
+			XMStoreFloat3(&Desc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+
+			auto Gobline = E::CGameInstance::Get().AddGameObjectToLayer(m_strLevelName, "Prototype_GameObject_Gobline", "02_Gobline", &Desc);
+
+		}
+		ImGui::TreePop();
 	}
 	
 	ImGui::End();
@@ -418,18 +503,19 @@ Engine::UPtr<CLevelCreatureEditor> CLevelCreatureEditor::Create()
 
 HRESULT CLevelCreatureEditor::InitializeMyMagicSquareStep()
 {
-	//{
-	//	CMyMagicSquareStep::DESC Desc{};
-	//	Desc.sObjectTag = "MyMagicSquareStep";
+	if (false)
+	{
+		CMyMagicSquareStep::DESC Desc{};
+		Desc.sObjectTag = "MyMagicSquareStep";
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			m_strLevelName,
+			"Prototype_GameObject_MyMagicSquareStep",
+			"03_MyMagicSquareStep",
+			&Desc))
+			return E_FAIL;
+	}
 
-	//	if (!E::CGameInstance::Get().AddGameObjectToLayer(
-	//		m_strLevelName,
-	//		"Prototype_GameObject_MyMagicSquareStep",
-	//		"03_MyMagicSquareStep",
-	//		&Desc))
-	//		return E_FAIL;
-	//}
-
+	
 	{
 		CMyMagicSquareStepController::DESC Desc{};
 		Desc.sObjectTag = "MyMagicSquareStepController";

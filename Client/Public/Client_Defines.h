@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-
+#include "Level_Defines.h"
 namespace Client
 {
 	static const unsigned int	g_iWinSizeX{ 1280 };
@@ -26,6 +26,7 @@ namespace Client
 		RAGDOLL = 1u << 13,		// 래그돌 본과 다른 물리 객체 사이의 충돌
 		CLOTH_COLLIDER = 1u << 14,	// 망토·의상 시뮬레이션에 제공할 충돌체
 		DEBRIS = 1u << 15,		// 파편과 장식용 소형 물리 오브젝트
+		MOVING_PLATFORM = 1u << 16,	// 플레이어, 몬스터와 동적 물체가 올라탈 수 있는 움직이는 발판
 	};
 
 
@@ -34,7 +35,31 @@ namespace Client
 		Prototype_GameObject_DebugPlayer,
 		Prototype_GameObject_Player,
 		Prototype_GameObject_DebugPlayerThirdPersonCamera,
-		Prototype_GameObject_PlayerThirdPersonCamera
+		Prototype_GameObject_TriggerCRW_SpawnStep,
+		Prototype_GameObject_TriggerCRW_StairStep,
+		Prototype_GameObject_TriggerCRW_SpawnStep2,
+		Prototype_GameObject_TriggerCRW_SpawnStep3,
+		Prototype_GameObject_TriggerCRW_SpawnStep4,
+		Prototype_GameObject_TriggerCRW_DeSpawnStep,
+		Prototype_GameObject_TriggerCRW_DeSpawnStep2,
+		Prototype_GameObject_TriggerCRW_DeSpawnStep3,
+		Prototype_GameObject_TriggerCRW_DeSpawnStep4,
+		Prototype_GameObject_TriggerCRW_BridgeBring,
+		Prototype_GameObject_TriggerCRW_BridgeFix,
+		Prototype_GameObject_TriggerCRW_ToBoss,
+		Prototype_GameObject_MyMagicSquareStep,
+		Prototype_GameObject_MyMagicSquareStepController,
+		Prototype_GameObject_BridgeCRW,
+		Prototype_GameObject_BossTMB,
+		Prototype_GameObject_TMBGurdian,
+		Prototype_GameObject_TmbGurdianDead,
+		Prototype_GameObject_Axe,
+		Prototype_GameObject_Sword,
+		Prototype_GameObject_Mace,
+		Prototype_GameObject_PlayerThirdPersonCamera,
+		Prototype_GameObject_PlayerWeapon,
+		Prototype_GameObject_Terrain,
+		Prototype_GameObject_OilBarrel,
 	};
 
 	enum class PROTO_COMPONENT
@@ -42,7 +67,10 @@ namespace Client
 
 	};
 
-
+	enum class TURN { LEFT_45, LEFT_90, LEFT_135, LEFT_180, RIGHT_45, RIGHT_90, RIGHT_135, RIGHT_180, END };
+	enum class ATTMON { ATT_1, ATT_2, ATT_3, ATT_4, SKILL_1, SKILL_2, SKILL_3, END };
+	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO};
+	enum class HITMON { ACIO, DEPULSO, DESCENDO, DEF,HIT_4, END };
 	enum class PARTES { WEAPON, END };
 }
 

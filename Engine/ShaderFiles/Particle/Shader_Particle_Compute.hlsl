@@ -31,22 +31,32 @@ void CSMain(uint id : SV_DispatchThreadID)
         p.velocity.y += kGravity * g_fTimeDelta; 
     }
     p.position += p.velocity * g_fTimeDelta; 
-    float ageRatio = saturate(1.0f - (p.life / max(p.maxLife, 0.0001f)));
-    p.size = lerp(p.startSize, p.endSize, ageRatio);
-    
-    
+	float elapsedTime = p.maxLife - p.life;
 
+	float lifeRatio = saturate(elapsedTime / max(p.maxLife, 0.0001f));
+
+	float sizeRatio = lifeRatio;
+
+	if ((p.iBehaviorType & BEHAVIOR_SIZESTOP) != 0)
+	{
+		if (p.stopSizeTime <= 0.f)
+			sizeRatio = 1.f;
+		else
+			sizeRatio = saturate(elapsedTime / p.stopSizeTime);
+	}
+
+	p.size = lerp(p.startSize, p.endSize, sizeRatio);
     
     
-    if (g_iTotalFrames > 0)
-    {
-        uint frame = (uint) (ageRatio * g_iTotalFrames);
-        p.frameIndex = min(frame, g_iTotalFrames - 1);
-    }
-    else
-    {
-        p.frameIndex = 0;
-    }
+	if (g_iTotalFrames > 0)
+	{
+		uint frame = (uint) (lifeRatio * g_iTotalFrames);
+		p.frameIndex = min(frame, g_iTotalFrames - 1);
+	}
+	else
+	{
+		p.frameIndex = 0;
+	}
 
     if (p.life <= 0)
     {

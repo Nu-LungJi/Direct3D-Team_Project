@@ -1,0 +1,111 @@
+#include "pch.h"
+#include "BTAnimation.h"
+#include "ComAnimator.h" 
+NS_USING(Client)
+
+CBTAnimation::CBTAnimation()
+{
+
+}
+CBTAnimation::CBTAnimation(const CBTAnimation& rhs) : CBTAnimRoot(rhs)
+{
+
+}
+
+CBTAnimation::~CBTAnimation()
+{
+}
+HRESULT CBTAnimation::InitializePrototype(void* pArg)
+{
+	__super::InitializePrototype(pArg);
+	m_MasterName = "BTAnimation";
+	return S_OK;
+}
+HRESULT CBTAnimation::Initalize(void* pArg)
+{
+	__super::Initalize(pArg);
+	
+	return S_OK;
+}
+
+EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
+{
+	auto pAnimator =(Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
+	
+	if (pAnimator == nullptr || -1 == m_Value.iAnimIndex)
+		return m_eDebug = EVALUATE::FAILED;
+	if (m_bStart)
+		pAnimator->SetPlay(true);
+	
+	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
+	_bool bFinished = pAnimator->GetFinish();
+	Active_Skill();
+	EventFlagToRatio(pAnimator->GetPlayAnimRatio());
+	if (m_bLoop || bFinished)
+	{
+		Reset_CheckFlag();
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
+
+	return m_eDebug = EVALUATE::RUN;
+}
+void CBTAnimation::Update_Gui()
+{
+	__super::Update_Gui();
+	if (ImGui::Button("Abort : ")) 
+		m_GuiNode.bAbort = !m_GuiNode.bAbort;
+	ImGui::Text("Abort : %s", m_GuiNode.bAbort ? "TRUE" : "FALSE");
+
+	if (ImGui::Button("Animation"))
+		m_bPopup = true;
+	if (m_bPopup)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
+		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
+			m_bPopup = false;
+		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
+
+		if (-1 != iIndex)
+		{
+			m_bPopup = false;
+			m_Value.iAnimIndex = iIndex;
+		}
+
+		ImGui::PopStyleColor();
+	}
+}
+void CBTAnimation::Abort()
+{
+	__super::Abort();
+}
+nlohmann::json CBTAnimation::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	return j;
+}
+HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	return S_OK;
+}
+E::UPtr<CBTAnimation> CBTAnimation::Create()
+{
+	auto pInstance = E::ToUPtr(new CBTAnimation{});
+	if (FAILED(pInstance->InitializePrototype()))
+	{
+		MSG_BOX("Failed to Created : CBTAnimation");
+		return nullptr;
+	}
+	return  pInstance;
+}
+E::UPtr<E::CPrototype> CBTAnimation::Clone(void* pArg)
+{
+	auto	pInstance = E::ToUPtr(new CBTAnimation{ *this });
+	if (FAILED(pInstance->Initalize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CBTAnimation");
+		return nullptr;
+	}
+
+	return pInstance;
+}

@@ -91,12 +91,16 @@ namespace Engine
 		_float	g_fTime;
 		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_PER_PARTICLE;
+	static_assert(sizeof(CB_PER_PARTICLE) % 16 == 0);
 
 	typedef struct CB_SCROLL
 	{
 		_float    g_fScrollOffset;
-		_float    g_fScrollSpeed;
-		_float2    g_fPadding2;   // 16바이트 정렬 맞추려고 패딩 조정 필요
+		_float    g_fAccumulationTime;
+		uint32_t    g_iCurrentFrame;
+		uint32_t    g_iFlipbookRows;
+		uint32_t    g_iFlipbookColumns;
+		_float3    g_fPadding;   // 16바이트 정렬 맞추려고 패딩 조정 필요
 	} CB_SCROLL;
 	static_assert(sizeof(CB_SCROLL) % 16 == 0);
 
@@ -117,12 +121,16 @@ namespace Engine
 	}CB_RIBBON_PARTICLE;
 	static_assert(sizeof(CB_RIBBON_PARTICLE) % 16 == 0);
 
-	struct CB_CLEAR
+	struct CB_OWNER_OPERATION
 	{
-		uint32_t ownerID;
-		_float3 pad;
+		uint32_t iTargetOwnerID = 0;
+		uint32_t iMaxParticles = 0;
+		_float2 vPadding{};
+		_float4x4 matDelta{};
+		_float4 vColor{};
+		_float4 vEmissive{};
 	};
-	static_assert(sizeof(CB_CLEAR) % 16 == 0);
+	static_assert(sizeof(CB_OWNER_OPERATION) % 16 == 0);
 
 	typedef struct CB_SpellMeter
 	{
@@ -159,4 +167,11 @@ namespace Engine
 		float	mapScale;
 	}CB_MINIMAP;
 	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
+
+	struct CB_BLOOM
+	{
+		_float2	g_TexelSize;
+		_float2	g_padding;
+	};
+	static_assert(sizeof(CB_BLOOM) % 16 == 0);
 }

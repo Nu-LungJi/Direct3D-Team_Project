@@ -34,6 +34,7 @@ private:
 	_string	m_SelectResourceTag{}, m_SelectObjecteTag{}, m_SelectFileName{}, m_SelectFilePath{};
 
 	std::map<_string, _string>		m_BeHaviorJsonList;
+	std::vector<CHandle>				m_MedDebrisHandles{};
 
 private:
 	HRESULT InitializeMyMagicSquareStep();

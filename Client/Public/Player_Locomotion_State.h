@@ -74,22 +74,11 @@ private:
 	MOVE_DIRECTION ResolveDirection(_float fSignedAngle) const;
 	void CacheAnimationIndices(const CPlayer& player);
 	int32_t FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const;
-	int32_t ResolveIdleTurnAnimation(_float fSignedAngle) const;
-	int32_t ResolveJogTurnAnimation(_float fSignedAngle) const;
-	void BeginTurnDecision(CPlayer& player, const _float3& vTargetDirection, int32_t iIdleAnimation);
-	void BeginIdleTurn(CPlayer& player, const _float3& vTargetDirection, int32_t iAnimationIndex);
-	void BeginJogTurn(CPlayer& player, const _float3& vTargetDirection, int32_t iAnimationIndex);
 	void BeginJogStart(CPlayer& player);
 	void BeginJogStop(CPlayer& player);
-	void UpdateIdleTurnRotation(CPlayer& player, _float fAnimationRatio);
-	void FinishIdleTurn(CPlayer& player);
 
 	_float m_fSignedMoveAngle{};
 	MOVE_DIRECTION m_eMoveDirection{ MOVE_DIRECTION::FRONT };
-	std::array<int32_t, 4> m_LeftIdleTurns{ -1, -1, -1, -1 };
-	std::array<int32_t, 4> m_RightIdleTurns{ -1, -1, -1, -1 };
-	std::array<int32_t, 4> m_LeftJogTurns{ -1, -1, -1, -1 };
-	std::array<int32_t, 4> m_RightJogTurns{ -1, -1, -1, -1 };
 	int32_t m_iIdleAnimation{ -1 };
 	int32_t m_iJogStartForwardAnimation{ -1 };
 	int32_t m_iJogForwardAnimation{ -1 };
@@ -99,32 +88,12 @@ private:
 	int32_t m_iSprintLeanRightAnimation{ -1 };
 	_bool m_bAnimationIndicesCached{};
 	int32_t m_iActiveMoveLoopAnimation{ -1 };
-	int32_t m_iPendingIdleTurnAnimation{ -1 };
-	_bool m_bTurnPending{};
-	_bool m_bIdleTurning{};
-	_bool m_bJogTurning{};
 	_bool m_bJogStarting{};
 	_bool m_bJogStopping{};
 	_bool m_bWasMoving{};
-	_float m_fTurnHoldTime{};
-	_float m_fJogTurnHoldThreshold{ 0.15f };
-	_float m_fRunningTurnThreshold{ 67.5f };
-	_float m_fJogTurnEntrySpeed{};
-	_float m_fJogTurnMinimumSpeed{10.f };
-	_float m_fJogTurnMinimumSpeedRatio{ 0.f };
-	_float m_fJogTurnSlowdownEndRatio{ 0.15f };
-	_float m_fJogTurnMoveRecoveryStartRatio{ 0.55f };
-	_float m_fJogTurnRecoveryDurationRatio{ 0.15f };
-	_float m_fJogTurnDriftSpeedRatio{ 0.02f };
-	_float m_fJogTurnRotationCompletionRatio{ 0.15f };
 	_float m_fSprintTurnSpeed{ 240.f };
 	_float m_fSprintMoveDirectionBlend{ 0.3f };
 	_float m_fFallStateVerticalSpeed{ -3.f };
-	_float3 m_vJogTurnEntryDirection{};
-	_float3 m_vTurnTargetDirection{};
-	_float4 m_qTurnStartRotation{ 0.f, 0.f, 0.f, 1.f };
-	_float4 m_qTurnTargetRotation{ 0.f, 0.f, 0.f, 1.f };
-	_float m_fTurnSignedAngleRadians{};
 };
 
 NS_END

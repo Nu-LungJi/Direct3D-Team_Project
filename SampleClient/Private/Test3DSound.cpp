@@ -172,15 +172,6 @@ void CTest3DSound::LateUpdate(E::_float fTimeDelta)
 
 	m_pComSound->SetSlot3DAttributes(SOUND_SLOT, GetTransform().GetPosition());
 	m_pComSound->Update();
-
-	auto& gameInstance = CGameInstance::Get();
-
-	auto dmode = gameInstance.GetDbgLineRender()->GetDepthMode();
-	gameInstance.GetDbgLineRender()->SetDepthTest(true);
-	gameInstance.GetDbgLineRender()->AddSphere(
-		SOUND_MAX_DISTANCE,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-	gameInstance.GetDbgLineRender()->SetDepthMode(dmode);
 }
 
 E::UPtr<CTest3DSound> CTest3DSound::Create()

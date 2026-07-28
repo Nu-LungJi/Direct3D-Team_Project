@@ -10,6 +10,9 @@
 #include "LevelBossCharlesRookwood.h"
 #include "LevelBossCharlesRookwoodLoader.h"
 
+#include "LevelTerrain.h"
+#include "LevelTerrainLoader.h"
+
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -95,6 +98,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::BOSS_CHARLES_ROOKWOOD:
 		pNewLevel = CLevelBossCharlesRookwood::Create();
 		break;
+	case LEVEL::TERRAIN:
+		pNewLevel = CLevelTerrain::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -125,6 +131,9 @@ void CLevelLoading::StartUnload()
 		break;
 	case LEVEL::BOSS_CHARLES_ROOKWOOD:
 		m_futUnloadFinish = CLevelBossCharlesRookwoodLoader::UnLoad();
+		break;
+	case LEVEL::TERRAIN:
+		m_futUnloadFinish = CLevelTerrainLoader::UnLoad();
 		break;
 	default:
 		StartLoad();
@@ -163,6 +172,9 @@ void CLevelLoading::StartLoad()
 		break;
 	case LEVEL::BOSS_CHARLES_ROOKWOOD:
 		m_futLoadFinish = CLevelBossCharlesRookwoodLoader::Load();
+		break;
+	case LEVEL::TERRAIN:
+		m_futLoadFinish = CLevelTerrainLoader::Load();
 		break;
 	default:
 		m_ePhase = PHASE::COMPLETE;

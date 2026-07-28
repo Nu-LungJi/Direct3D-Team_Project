@@ -8,6 +8,7 @@
 #include "Particle_CPU.h"
 #include "ParticleParamImGui.h"
 #include "EffectManager.h"
+#include "ParticleShaderCache.h"
 NS_USING(Engine)
 
 std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
@@ -32,6 +33,15 @@ CParticleManager::~CParticleManager()
 {
 }
 
+HRESULT CParticleManager::Initialize()
+{
+	m_pShaderCache = std::make_shared<CParticleShaderCache>();
+
+	if (!m_pShaderCache)
+		return E_FAIL;
+
+	return S_OK;
+}
 void CParticleManager::UpdateGUI()
 {
 	static TextureSlotState slotDiffuse{ "Diffuse",    "SAMPLE_CLINET_TEXTURE", "TEX_RIBBON" };
@@ -102,6 +112,8 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokegv = false;
 	static _bool bSmokegw = false;
 	static _bool bLightning = false;
+	static _bool bSizeStop = false;
+	static _bool bExtraLightning = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -533,7 +545,13 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputText("VIBuffer1 if CPUTEX", szViBuffer1, IM_ARRAYSIZE(szViBuffer1));
 		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
 	}
+	static bool bShrinkWidth = true;
 
+	if (particleTypeStr == "TRAIL_CPU")
+	{
+		ImGui::Checkbox("Shrink Width", &bShrinkWidth);
+	}
+	
 	auto IsCombinationSupported = [](int whatKindIdx, const std::string& particleType) -> bool
 		{
 			if (whatKindIdx == 0) // MESH
@@ -613,7 +631,10 @@ void CParticleManager::UpdateGUI()
 					bUseHdrForMesh ? slotPositionHdr.selectedPath : "",
 					bUseHdrForMesh ? slotNormalHdr.szTextureID1 : "",
 					bUseHdrForMesh ? slotNormalHdr.szTextureID2 : "",
-					bUseHdrForMesh ? slotNormalHdr.selectedPath : "");
+					bUseHdrForMesh ? slotNormalHdr.selectedPath : "", slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+					slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+					slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+					iSelectedBlend);
 			}
 			else {
 				if (particleTypeStr == "PARTICLE_CPU") {
@@ -633,7 +654,10 @@ void CParticleManager::UpdateGUI()
 						slotNormal.selectedPath,
 						slotDistortion.selectedPath,
 						slotNoise.selectedPath   ,  "", "", "",     // hdrTexID1, hdrTexID2, hdrTexPath
-						"", "", "");    // hdrNormalTexID1, hdrNormalTexID2, hdrNormalTexPath
+						"", "", "", slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+						iSelectedBlend);    // hdrNormalTexID1, hdrNormalTexID2, hdrNormalTexPath
 				}
 				else if (particleTypeStr == "BEAM_CPU") {
 					hr = Save_Beam_Json(savePath.string(),
@@ -643,7 +667,7 @@ void CParticleManager::UpdateGUI()
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						iTexRow, iTexCol);
 				}
-				else {
+				else if(particleTypeStr == "PARTICLE_GPU"){
 					hr = Save_Binary_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
@@ -661,7 +685,35 @@ void CParticleManager::UpdateGUI()
 						slotDistortion.selectedPath,
 						slotNoise.selectedPath, 
 						"", "", "",  
-						"", "", "");    
+						"", "", "",
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+						iSelectedBlend);
+				}
+				else if(particleTypeStr == "TRAIL_CPU"){
+					hr = Save_Binary_Json(savePath.string(),
+						targetPath, whatKindStr, particleTypeStr, particleNameStr,
+						iMaxParticles,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint,
+						szGroupTag, szResTag,
+						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
+						szViBuffer1, szViBuffer2, iTexRow, iTexCol,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID1,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID2,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID1,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID2,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID1,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID2,
+						slotNormal.selectedPath,
+						slotDistortion.selectedPath,
+						slotNoise.selectedPath, 
+						"", "", "",  
+						"", "", "",
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
+						iSelectedBlend, bShrinkWidth);
 				}
 			}
 
@@ -690,7 +742,8 @@ void CParticleManager::UpdateGUI()
 				slotNormalHdr.selectedPath.clear();
 				selectedHdrNormalIndex = -1;
 				m_Particles.clear();
-				CGameInstance::Get().LoadParticleJson("./Resources/json/Particle/ParticleData.json");
+				auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
+				CGameInstance::Get().Load_ParticleJsonPackage(k);
 
 			}
 		}
@@ -709,6 +762,8 @@ void CParticleManager::UpdateGUI()
 
 
 	ImGui::Begin("CParticleManager");
+
+
 
 
 	if (ImGui::Button("Erase")) {
@@ -735,7 +790,7 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 
-	const char* groupTypeNames[] = { "PARTICLE_CPU", "PARTICLE_GPU", "BEAM_CPU", "RIBBON_CPU" };
+	const char* groupTypeNames[] = { "PARTICLE_CPU", "PARTICLE_GPU", "BEAM_CPU", "TRAIL_CPU" };
 	if (ImGui::Combo("Group (ParticleType)", &groupTypeIndex, groupTypeNames, IM_ARRAYSIZE(groupTypeNames)))
 		typeIndex = 0;
 
@@ -868,10 +923,14 @@ void CParticleManager::UpdateGUI()
 			previewParams.originalVelocity = preset.originalVelocity;
 			previewParams.emissive = preset.Emissive;
 			previewParams.endEmissive = preset.endEmissive;
-			previewParams.rotation = _float4(XMConvertToRadians(preset.rotation.x),
-				XMConvertToRadians(preset.rotation.y),
-				XMConvertToRadians(preset.rotation.z),
-				XMConvertToRadians(preset.rotation.w));
+			previewParams.rotation =
+			{
+				preset.rotation.x,
+				preset.rotation.y,
+				preset.rotation.z,
+				0.f
+			};
+			previewParams.fStopSizeTime = preset.fStopSizeTime;
 			bNeedTypeIndexSync = true;
 			pendingSyncGroup = preset.sGroupTag;
 			pendingSyncType = preset.sTypeTag;
@@ -903,31 +962,51 @@ void CParticleManager::UpdateGUI()
 	ImGui::Text("=== Live Preview ===");
 	ImGui::PushID("LivePreview");
 
+	ImGui::Text("Common Field");
 	ImGui::Checkbox("Distortion", &distortion);
+	ImGui::SameLine();
 	ImGui::Checkbox("BILLBOARD", &billboard);
+	ImGui::SameLine();
 	ImGui::Checkbox("GRAVITY", &gravity);
+	ImGui::SameLine();
 	ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
-	ImGui::Checkbox("SMOKE", &bSmoke);	
+	ImGui::SameLine();
+	ImGui::Checkbox("SIZE STOP", &bSizeStop);
+	ImGui::Separator();
+
+	ImGui::Text("Individiual Field");
+	ImGui::Checkbox("SMOKE", &bSmoke);
+	ImGui::SameLine();	
 	ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+	ImGui::SameLine();
 	ImGui::Checkbox("SMOKEGV", &bSmokegv);
+	ImGui::SameLine();
 	ImGui::Checkbox("SMOKEGW", &bSmokegw);
+
+	ImGui::Separator();
 	ImGui::Checkbox("LIGHTNING", &bLightning);
+	ImGui::SameLine();
+	ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+	ImGui::Separator();
+
 	ImGui::Checkbox("None", &none);
 
-	if (none)
-		bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+
 
 	ImGui::Separator();
 	ImGui::Checkbox("ALPHA_BLEND", &alphaBlend);
+	ImGui::SameLine();
 	ImGui::Checkbox("ALPHA_ADD", &alphaAdd);
+	ImGui::SameLine();
 	ImGui::Checkbox("NONE_BLEND", &noneBlend);
+
 	auto particle = GetParticle(selectedGroup, selectedType);
 	if (particle) {
 		if (alphaBlend)
 		{
 			alphaAdd = false;
 			noneBlend = false;
-			if(particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
+			if (particle->Get_BlendState() != ETOUI(BLENDTYPE::ALPHABLEND))
 				particle->Set_BlendState(BLENDTYPE::ALPHABLEND);
 		}
 		else if (alphaAdd) {
@@ -944,6 +1023,9 @@ void CParticleManager::UpdateGUI()
 		}
 	}
 	
+	if (none) {
+		bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 	if (distortion)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
@@ -953,6 +1035,10 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 	if(circleToWave)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_CIRCLE_TO_WAVE;
+	if (bSizeStop)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
+
+
 	if(bSmoke)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKE;
 	if (bSmokeJump)
@@ -963,6 +1049,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	if (bLightning)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
+	if (bExtraLightning)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -982,6 +1070,12 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat3("Velocity", &previewParams.velocity.x, 0.01f);
 
 	ImGui::DragFloat("Life", &previewParams.life, 0.01f);
+
+	if (previewParams.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP)
+	{
+		ImGui::DragFloat("Stop Size Time", &previewParams.fStopSizeTime, 0.01f);
+	}
+
 
 	ImGui::Checkbox("RandomSize?", &previewParams.bRandomSize);
 	if (previewParams.bRandomSize) {
@@ -1003,7 +1097,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat3("RotMax", &previewParams.rotMax.x, 0.01f);
 	}
 	else
-		ImGui::DragFloat4("Rotation", &previewParams.rotation.x, 0.01f);
+		ImGui::DragFloat3("Rotation", &previewParams.rotation.x, 0.01f);
 
 	ImGui::ColorEdit4("Color", &previewParams.color.x);
 	ImGui::ColorEdit3("Emissive", &previewParams.emissive.x);
@@ -1047,16 +1141,16 @@ void CParticleManager::UpdateGUI()
 			data.fEndSize = p.bRandomSize
 				? _float3(Randf(p.endSizeMin.x, p.endSizeMax.x), Randf(p.endSizeMin.y, p.endSizeMax.y), Randf(p.endSizeMin.z, p.endSizeMax.z))
 				: p.fEndSize;
-
+			data.fStopSizeTime = p.fStopSizeTime;
 			data.rotation = p.bRandomRot
 				? _float4(XMConvertToRadians(Randf(p.rotMin.x, p.rotMax.x)),
 					XMConvertToRadians(Randf(p.rotMin.y, p.rotMax.y)),
 					XMConvertToRadians(Randf(p.rotMin.z, p.rotMax.z)),
-					1.f)
+					0.f)
 				: _float4(XMConvertToRadians(p.rotation.x),
 					XMConvertToRadians(p.rotation.y),
 					XMConvertToRadians(p.rotation.z),
-					XMConvertToRadians(p.rotation.w));
+					0);
 
 			data.color = p.color;
 			data.emissive = p.emissive;
@@ -1138,6 +1232,7 @@ void CParticleManager::UpdateGUI()
 			preset.maxLife = previewParams.life;
 			preset.fStartSize = previewParams.fSize;
 			preset.fEndSize = previewParams.fEndSize;
+			preset.fStopSizeTime = previewParams.fStopSizeTime;
 			preset.rotation = previewParams.rotation;
 			preset.groupTypeIndex = groupTypeIndex;
 			preset.whatKindFilterIndex = whatKindFilterIndex;
@@ -1177,26 +1272,45 @@ void CParticleManager::UpdateGUI()
 
 	ImGui::Separator();
 	if (currentKind == SPAWN_COMMAND_KIND::STANDARD|| currentKind == SPAWN_COMMAND_KIND::BEAM) {
+
+		ImGui::Text("Common Field");
 		ImGui::Checkbox("Distortion", &distortion);
+		ImGui::SameLine();
 		ImGui::Checkbox("BILLBOARD", &billboard);
+		ImGui::SameLine();
 		ImGui::Checkbox("GRAVITY", &gravity);
-		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::SameLine();
+		ImGui::Checkbox("SIZE STOP", &bSizeStop);
+		ImGui::Separator();
+
+		ImGui::Text("Individiual Field");
 		ImGui::Checkbox("SMOKE", &bSmoke);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEJUMP", &bSmokeJump);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEGV", &bSmokegv);
+		ImGui::SameLine();
 		ImGui::Checkbox("SMOKEGW", &bSmokegw);
+		ImGui::Separator();
 		ImGui::Checkbox("LIGHTNING", &bLightning);
+		ImGui::SameLine();
+		ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+		ImGui::Separator();
+		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
+		ImGui::Separator();
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = false;
+			bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
-
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		if (distortion)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_DISTORTION;
+
+	
 		if (billboard)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_BILLBOARD;
+
 		if (gravity)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_GRAVITY;
 		if (circleToWave)
@@ -1211,6 +1325,10 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 		if (bLightning)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
+		if (bSizeStop)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
+		if (bExtraLightning)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 	}
 	
 	ImGui::Separator();
@@ -1254,14 +1372,19 @@ void CParticleManager::UpdateGUI()
 			ImGui::DragFloat3("EndSize", &pendingStandard.fEndSize.x, 0.01f);
 		}
 
+		if (pendingStandard.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP)
+		{
+			ImGui::DragFloat("Stop Size Time", &pendingStandard.fStopSizeTime, 0.01f);
+		}
+
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
 
 		if (pendingStandard.bRandomRot) {
-			ImGui::DragFloat4("RotMin", &pendingStandard.rotMin.x, 0.01f);
-			ImGui::DragFloat4("RotMax", &pendingStandard.rotMax.x, 0.01f);
+			ImGui::DragFloat3("RotMin", &pendingStandard.rotMin.x, 0.01f);
+			ImGui::DragFloat3("RotMax", &pendingStandard.rotMax.x, 0.01f);
 		}
 		else
-			ImGui::DragFloat4("Rotation", &pendingStandard.rotation.x, 0.01f);
+			ImGui::DragFloat3("Rotation", &pendingStandard.rotation.x, 0.01f);
 		
 
 		ImGui::ColorEdit4("BaseColor", &pendingStandard.color.x);
@@ -1368,7 +1491,30 @@ void CParticleManager::UpdateGUI()
 			ImGui::PopID();
 			break;
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("Upload")) {
+			currentKind = cmd.sGroupTag_KindTag;
+			selectedGroup = cmd.sGroupTag;
+			selectedType = cmd.sTypeTag;
+			
+			if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(cmd.params))
+			{
+				pendingStandard = std::get<STANDARD_PARAMS>(cmd.params);
+			}
+			else if (currentKind == SPAWN_COMMAND_KIND::BEAM && std::holds_alternative<BEAM_PARAMS>(cmd.params))
+			{
+				pendingBeam = std::get<BEAM_PARAMS>(cmd.params);
+			}
+			else if (currentKind == SPAWN_COMMAND_KIND::PATTERN && std::holds_alternative<PatternParamVariant>(cmd.params))
+			{
+				pendingPattern = std::get<PatternParamVariant>(cmd.params);
+				patternKindIndex = static_cast<int>(pendingPattern.index());
+			}
+			bNeedTypeIndexSync = true;
+			pendingSyncGroup = cmd.sGroupTag;
+			pendingSyncType = cmd.sTypeTag;
 
+		}
 		ImGui::PopID();
 	}
 
@@ -1386,7 +1532,7 @@ void CParticleManager::UpdateGUI()
 
 	static char szQueueSavePath[MAX_PATH] = "./Resources/json/Particle/ParticleQueue/SpawnQueue.json";
 	ImGui::InputText("Queue Save Path", szQueueSavePath, IM_ARRAYSIZE(szQueueSavePath));
-
+	
 	if (ImGui::Button("Save Queue"))
 	{
 		HRESULT hr = SaveCommandQueue(szQueueSavePath);
@@ -1489,6 +1635,7 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		req.fSpawnInterval = fSpawnInterval;
 		req.fElapsed = 0.f;
 		req.iUserId = pSpawnData->ownerID;
+		
 		m_LoopRequests.push_back(std::move(req));
 	}
 
@@ -1535,7 +1682,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& AnyTexID1,
 	const std::string& AnyTexID2,
 	const std::string& AnyTexPath,
-	int iSelectedBlend)
+	int iSelectedBlend, _bool bShrinkWidth)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1621,6 +1768,9 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 			newEntry["VIBufferID2"] = viBufferID2;
 		}
 
+		if (particleType == "TRAIL_CPU") {
+			newEntry["ShrinkWidth"] = bShrinkWidth;
+		} 
 	}
 	else if (whatKind == "MESH")
 	{
@@ -1754,7 +1904,12 @@ void CParticleManager::ComboList(_string comboName, _string resourceName, _strin
 
 UPtr<CParticleManager> CParticleManager::Create()
 {
-	return UPtr<CParticleManager>(new CParticleManager{});
+	auto instance = UPtr<CParticleManager>(new CParticleManager{});
+
+	if (FAILED(instance->Initialize()))
+		return nullptr;
+
+	return instance;
 }
 
 uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue)
@@ -1796,16 +1951,16 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 					? _float3(Randf(p.endSizeMin.x, p.endSizeMax.x), Randf(p.endSizeMin.y, p.endSizeMax.y), Randf(p.endSizeMin.z, p.endSizeMax.z))
 					: p.fEndSize;
 				s.life = p.life;
-			
+				s.fStopSizeTime = p.fStopSizeTime;
 				s.rotation = p.bRandomRot
 					? _float4(XMConvertToRadians(Randf(p.rotMin.x, p.rotMax.x)),
 						XMConvertToRadians(Randf(p.rotMin.y, p.rotMax.y)),
 						XMConvertToRadians(Randf(p.rotMin.z, p.rotMax.z)),
-						1.f)
+						0)
 					: _float4(XMConvertToRadians(p.rotation.x),
 						XMConvertToRadians(p.rotation.y),
 						XMConvertToRadians(p.rotation.z),
-						XMConvertToRadians(p.rotation.w));
+						0);
 
 				s.color = p.color;
 				s.emissive = p.emissive;
@@ -1964,24 +2119,30 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 	// LoadParticleJson 안, "textures" 배열 for문 시작 직전에 추가
 	auto LoadAuxTexture = [](const nlohmann::json& entry,
 		const char* pathKey, const char* id1Key, const char* id2Key,
-		std::pair<StringID, StringID>& outID) -> void
+		std::pair<StringID, StringID>& outID) -> _bool
 		{
-			if (!entry.contains(pathKey))
-				return;
-
-			std::string path = entry[pathKey].get<std::string>();
+			std::string path = entry.value(pathKey, "");
 			std::string id1 = entry.value(id1Key, "");
 			std::string id2 = entry.value(id2Key, "");
 
 			if (path.empty() || id1.empty() || id2.empty())
-				return;
+				return true;
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResTexture2D>(
-				id1, id2, E::CResTexture2D::Create(path)))
+			auto texture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(id1, id2);
+
+			if (!texture)
 			{
-				res->Load();
+				texture = CGameInstance::Get().AddResourceT<CResTexture2D>(
+					id1,
+					id2,
+					CResTexture2D::Create(path));
+
+				if (!texture || FAILED(texture->Load()))
+					return false;
 			}
-			outID = { id1, id2 };
+
+			outID = { id1,id2 };
+			return true;
 		};
 
 	if (!std::filesystem::exists(strJsonPath))
@@ -2040,7 +2201,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			int RowCount = entry.value("RowCount", 1);
 			int ColCount = entry.value("ColCount", 1);
 			int selectedBlend = entry.value("BLENDSTATE", 0);
-
 			if (particleType.empty() || sGroupTag.empty() || particleName.empty())
 			{
 				hr = E_FAIL;
@@ -2081,6 +2241,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "HdrPositionTexturePath", "HdrPositionTextureID1", "HdrPositionTextureID2", desc.hdrPositionTextureID);
 				LoadAuxTexture(entry, "HdrNormalTexturePath", "HdrNormalTextureID1", "HdrNormalTextureID2", desc.hdrNormalTextureID);
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
+				desc.pShaderCache = m_pShaderCache;
 				desc.blendState = selectedBlend;
 				if (!VSGroup.empty() && !VSID.empty())
 					desc.VSID = { VSGroup, VSID };
@@ -2114,7 +2275,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2147,6 +2308,10 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				hr = E_FAIL;
 				continue;
 			}
+
+			char buffer[512]{};
+
+
 
 			typeMap[particleName] = std::move(particle);
 		}
@@ -2195,11 +2360,16 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				continue;
 			}
 
-			// ---- 텍스처 리소스 등록 ----
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResTexture2D>(
-				textureID1, textureID2, E::CResTexture2D::Create(texPath)))
+			auto texture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(textureID1, textureID2);
+
+			if (!texture)
 			{
-				if (FAILED(res->Load()))
+				texture = CGameInstance::Get().AddResourceT<CResTexture2D>(
+					textureID1,
+					textureID2,
+					CResTexture2D::Create(texPath));
+
+				if (!texture || FAILED(texture->Load()))
 				{
 					hr = E_FAIL;
 					continue;
@@ -2228,7 +2398,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_GPU::Create(&desc);
 			}
 			else if (particleType == "PARTICLE_CPU")
@@ -2254,7 +2424,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
 			else if (particleType == "BEAM_CPU")
@@ -2276,7 +2446,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
 				particle = CBeam_CPU::Create(&desc);
 			}
 			else if (particleType == "TRAIL_CPU")
@@ -2291,12 +2461,16 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
-
 				desc.sVEntryPoint = VSEntryPoint;
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
-
+				desc.pShaderCache = m_pShaderCache;
+				desc.TexRows = RowCount;
+				desc.TexColumns = ColCount;
+				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
 				particle = CTrail_CPU::Create(&desc);
+
+
 			}
 			else
 			{
@@ -2321,6 +2495,17 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				continue;
 			}
 
+			char buffer[512]{};
+
+			sprintf_s(buffer,
+				"Register Particle: group=%s, name=%s, texture=%s, PS=%s, object=%p\n",
+				groupKey.c_str(),
+				particleName.c_str(),
+				textureID2.c_str(),
+				PSEntryPoint.c_str(),
+				particle.get());
+
+			OutputDebugStringA(buffer);
 			typeMap[particleName] = std::move(particle);
 		}
 	}
@@ -2447,6 +2632,8 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["bRandomVel"] = p.bRandomVel;
 				entry["velMin"] = { p.velMin.x, p.velMin.y, p.velMin.z };
 				entry["velMax"] = { p.velMax.x, p.velMax.y, p.velMax.z };
+				entry["iBehaviorType"] = p.iBehaviorType;
+				entry["stopSizeTime"] = p.fStopSizeTime;
 				break;
 			}
 			case SPAWN_COMMAND_KIND::BEAM:
@@ -2464,6 +2651,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 				entry["endEmissive"] = { p.endEmissive.x, p.endEmissive.y, p.endEmissive.z, p.endEmissive.w };
 				entry["GeometryType"] = p.geometryType;
+		
 
 				break;
 			}
@@ -2558,13 +2746,13 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
 			p.velocity = { vel[0], vel[1], vel[2] };
 
-
 			p.life = entry.value("life", 1.f);
 
 			auto startSize = entry.value("StartSize", std::vector<float>{0, 0, 0});
 			p.fSize = { startSize[0], startSize[1], startSize[2] };
-			auto endSize = entry.value("StartSize", std::vector<float>{0, 0, 0});
+			auto endSize = entry.value("EndSize", std::vector<float>{0, 0, 0});
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
+			p.fStopSizeTime = entry.value("stopSizeTime", 0.f);
 
 			p.bRandomRot = entry.value("bRandomRot", false);
 			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
@@ -2572,8 +2760,9 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
 			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
 
-			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0,0});
-			p.rotation = { rot[0], rot[1], rot[2],rot[3]};
+
+			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
+			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
 
 
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
@@ -2587,7 +2776,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
 			p.bLoop = entry.value("bLoop", false);
 			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
-
+			p.iBehaviorType = entry.value("iBehaviorType", 0.f);
 			cmd.params = p;
 			break;
 		}
@@ -2676,6 +2865,8 @@ HRESULT CParticleManager::SaveEffectPreset(const std::string& strJsonPath, const
 	entry["whatKindFilterIndex"] = preset.whatKindFilterIndex;
 	entry["behaviorType"] = preset.iBehaviorType;
 	entry["rotation"] = { preset.rotation.x, preset.rotation.y, preset.rotation.z, preset.rotation.w };
+	entry["stopSizeTime"] = preset.fStopSizeTime;
+	entry["behaviorType"] = preset.iBehaviorType;
 	// 같은 이름 있으면 덮어쓰기
 	bool bReplaced = false;
 	for (auto& e : j["presets"])
@@ -2747,6 +2938,7 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 		preset.groupTypeIndex = entry.value("groupTypeIndex", 0);
 		preset.whatKindFilterIndex = entry.value("whatKindFilterIndex", 0);
 		preset.iBehaviorType = entry.value("behaviorType", 0);
+		preset.fStopSizeTime = entry.value("stopSizeTime", 0.f);
 		if (!preset.presetName.empty())
 			m_ParticlePresets[preset.presetName] = preset;
 	}
@@ -2965,6 +3157,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
 			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
 
+			
 			p.life = entry.value("life", 1.f);
 
 			auto startSize = entry.value("StartSize", std::vector<float>{0, 0, 0, 0});
@@ -2972,7 +3165,6 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 
 			auto endSize = entry.value("EndSize", std::vector<float>{0, 0, 0, 0});
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
-
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
@@ -2982,7 +3174,8 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
 			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
-
+			p.fStopSizeTime = entry.value("stopSizeTime", 0.f);
+			p.iBehaviorType = entry.value("iBehaviorType", 0u);
 			cmd.params = p;
 			break;
 		}
@@ -3130,6 +3323,7 @@ HRESULT CParticleManager::PlayEffect(const std::string& presetName, const _float
 	data.rotation = preset.rotation;
 	data.originalPosition = position;
 	data.originalVelocity = data.velocity;
+	data.fStopSizeTime = preset.fStopSizeTime;
 	return Spawn(preset.sGroupTag, preset.sTypeTag, count, &data);
 }
 // ParticleManager.cpp
@@ -3191,6 +3385,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
+			else if constexpr (std::is_same_v<T, SExtraLightning>)
+				return ParticlePattern::MakeExtraLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3359,4 +3555,32 @@ HRESULT CParticleManager::Load_ParticleJsonPackage(const std::vector<std::string
 		CGameInstance::Get().LoadParticleJson(FilePath.c_str());
 	}
 	return S_OK;
+}
+
+HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end)
+{
+	CParticle* particle = GetParticle(groupTag, typeTag);
+
+	if (!particle)
+		return E_FAIL;
+
+	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+
+	if (!trail)
+		return E_FAIL;
+
+	trail->AddPoint(start, end);
+
+	return S_OK;
+}
+void CParticleManager::SetColorByOwner(uint32_t ownerId, const _float4& color)
+{
+	for (auto& [groupTag, particleGroup] : m_Particles)
+	{
+		for (auto& [typeTag, particle] : particleGroup)
+		{
+			if (particle)
+				particle->SetColorByOwner(ownerId, color);
+		}
+	}
 }
