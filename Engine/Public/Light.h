@@ -129,7 +129,7 @@ public:
 	_bool		Check_ObjectInArea();
 	VOID		Update_Collider();
 
-	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<CGameObject*>& _ObjectList);
+	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<IRenderable*>& _ObjectList);
 	VOID		Reset_Light();
 public:
 	static UPtr<CLight> Create();

@@ -2,6 +2,8 @@
 
 #define POISSON_COUNT	4
 
+RWTexture2D<float4> OUTPUT : register(u0);
+
 // Base Texture
 Texture2D<float4>	AlbedoMap		: register(t0);
 Texture2D<float4>	NormalMap		: register(t1);
@@ -13,7 +15,7 @@ Texture2D<float>	DepthMap		: register(t5);
 // Image Based Lighting
 TextureCube			IrridianceMap	: register(t6);					// Enviroment Light
 TextureCube			PreFilterMap	: register(t7); 
-Texture2D<float4>	LookUpTableMap	: register(t8);
+Texture2D<float4>	LookUpTableMap	: register(t8);					// BRDF LUT
 
 // Shadow Texture
 Texture2DArray<float>	StaticShadowMaps	  : register(t9);		// Directional Static
@@ -22,16 +24,14 @@ Texture2DArray<float>	DynamicShadowMaps	  : register(t10);		// Directional Dynam
 TextureCubeArray<float> StaticShadowCubeMaps  : register(t11);		// Point Static
 TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
 
-RWTexture2D<float4>		OUTPUT : register(u0);
-
 static const float2		ShadowMapResolution		= { 1280.f, 720.f };
 
 static const float		ShadowSmoothness		= 1.5f;
-static const float		ShadowBrightness		= 0.05f;
+static const float		ShadowBrightness		= 1.f;
 
-static const float		EnviromentIntensity		= 1.f;
-static const float		FillLightBrightness		= 0.75f;
-static const float		DirectLightBrightness	= 1.0f;
+static const float		EnviromentIntensity		= 1.f;				// 환경광 밝기
+static const float		FillLightBrightness		= 0.75f;			// 등지는 영역의 밝기
+static const float		DirectLightBrightness	= 1.f;				// 빛받는 영역의 밝기
 
 static const float2		PoissonDisk_EightTab[8] =
 {
@@ -155,6 +155,7 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 		return NormalShadowFactor;
 	}
 	
+	NormalShadowFactor *= ShadowBrightness;
 	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
 	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
 	// FinalShadowFactor  : 감쇄O 그림자 (거리기반 밝기 감쇄 그림자)
@@ -193,6 +194,8 @@ float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowS
 		ShadowFactor += MergeShadowCubeMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
 	}
 	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, ShadowFactor * 0.125f);
+	
+	NormalShadowFactor *= ShadowBrightness;
 	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
 	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
 	// FinalShadowFactor : 감쇄O 그림자  (거리기반 밝기 감쇄 그림자)
@@ -291,7 +294,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 
 				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
-				float3 Specular = D * F * V_Spec / 10.f;
+				float3 Specular = D * F * V_Spec / 20.f;
 
 				float3 kS = F;
 				float3 kD = (1.0f - kS) * (1.0f - Metallic);

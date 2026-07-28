@@ -98,13 +98,6 @@ public:
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
-	
-	/*----------- 광윤 추가 -----------*/
-	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const MODEL_INSTANCE_BATCH& Batch) override;
-	HRESULT Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
-	//HRESULT Bind_ShadowInstancedShader(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
-	HRESULT Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex);
-	/*---------------------------------*/
 
 private:
 	CComModelInstance* m_pComModelInstance{};

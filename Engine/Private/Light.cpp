@@ -248,7 +248,7 @@ VOID CLight::Update_Collider() {
 	}
 }
 
-HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& RCTX, const std::vector<CGameObject*>& _ObjectList) {
+HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& RCTX, const std::vector<IRenderable*>& _ObjectHandleList) {
 	if (m_bActivate_State == false) return E_FAIL;
 
 	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
@@ -265,9 +265,10 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 		RCTX.matViewProj = RCTX.matView * RCTX.matProj;
 	}
 
-	for (auto& GOBJ : _ObjectList) {
+	for (auto& GOBJ : _ObjectHandleList) {
 		if (nullptr == GOBJ) continue;
-		GOBJ->Render_Shadow(pContext, RCTX);
+
+		if (FAILED(GOBJ->Render_Shadow(pContext, RCTX))) return E_FAIL;
 	}
 	
 	return S_OK;
