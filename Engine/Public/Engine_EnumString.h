@@ -36,7 +36,8 @@ namespace Engine
 		Prototype_Component_ComPxDistanceJoint,
 		Prototype_Component_ComPxRevoluteJoint,
 		Prototype_Component_ComPxD6Joint,
-		Prototype_Component_ComPxRagdoll
+		Prototype_Component_ComPxRagdoll,
+		Prototype_Component_ComNvCloth
 	};
 
 	enum class ES_EngineProtoGameObject

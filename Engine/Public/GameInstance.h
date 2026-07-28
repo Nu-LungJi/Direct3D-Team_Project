@@ -15,6 +15,7 @@
 #include "SoundManager.h"
 #include "EventManager.h"
 #include "PhysXManager.h"
+#include "Engine_NvClothDefines.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -392,6 +393,32 @@ public:
 	physx::PxScene* PxGetScene() const;
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
+	HRESULT CreateNvClothFabric(
+		const NVCLOTH_FABRIC_DESC& Desc,
+		NVCLOTH_FABRIC_HANDLE& OutHandle,
+		NVCLOTH_FABRIC_INFO* pOutInfo = nullptr);
+	_bool ReleaseNvClothFabric(NVCLOTH_FABRIC_HANDLE Handle);
+	_bool GetNvClothFabricInfo(
+		NVCLOTH_FABRIC_HANDLE Handle,
+		NVCLOTH_FABRIC_INFO& OutInfo) const;
+	HRESULT CreateNvCloth(
+		const NVCLOTH_CLOTH_DESC& Desc,
+		NVCLOTH_CLOTH_HANDLE& OutHandle);
+	_bool ReleaseNvCloth(NVCLOTH_CLOTH_HANDLE Handle);
+	_bool GetNvClothParticles(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		std::vector<_float3>& OutPositions) const;
+	_bool GetNvClothGpuParticleView(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		NVCLOTH_GPU_PARTICLE_VIEW& OutView);
+	_bool SetNvClothTransform(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const _float3& vTranslation,
+		const _float4& vRotation,
+		_bool bTeleport = false);
+	_bool SetNvClothCollisions(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const NVCLOTH_COLLISION_DESC& Desc);
 
 	template<typename TJoint>
 	TJoint* AddPxJoint(
@@ -632,6 +659,7 @@ private:
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CEngineBase> m_pNvClothManager{};
 	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
 	UPtr<CAction_Manager>	m_pActionManager{};

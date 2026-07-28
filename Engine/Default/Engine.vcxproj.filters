@@ -298,6 +298,9 @@
     <Filter Include="PhysX\Manager\Listeners">
       <UniqueIdentifier>{a0000210-3a95-4f92-a279-706ab301b8f8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NvCloth">
+      <UniqueIdentifier>{e8af893c-32c4-46f2-bfeb-2bd234530512}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX\Collider">
       <UniqueIdentifier>{060add1d-1058-4620-ac1c-9efccfc640bc}</UniqueIdentifier>
     </Filter>
@@ -801,6 +804,9 @@
     <ClInclude Include="..\Public\ResModel.h">
       <Filter>Resource\Model</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ResNvClothMesh.h">
+      <Filter>Resource\Model</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -882,6 +888,12 @@
     <ClInclude Include="..\public\PhysXManager.h">
       <Filter>PhysX\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Engine_NvClothDefines.h">
+      <Filter>NvCloth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\private\NvClothManager.h">
+      <Filter>NvCloth</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\PhysXCookingEditor.h">
       <Filter>PhysX\Manager\Cooking</Filter>
     </ClInclude>
@@ -929,6 +941,9 @@
     </ClInclude>
     <ClInclude Include="..\public\ComPxRagdoll.h">
       <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComNvCloth.h">
+      <Filter>Component\PhysX</Filter>
     </ClInclude>
     <ClInclude Include="..\public\PxRagdollAuthoring.h">
       <Filter>Component\PhysX\Ragdoll</Filter>
@@ -1425,6 +1440,9 @@
     <ClCompile Include="..\Private\ResModel.cpp">
       <Filter>Resource\Model</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\ResNvClothMesh.cpp">
+      <Filter>Resource\Model</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\ShaderManager.cpp">
       <Filter>ShaderManager</Filter>
     </ClCompile>
@@ -1545,6 +1563,9 @@
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\NvClothManager.cpp">
+      <Filter>NvCloth</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\PhysXCookingEditor.cpp">
       <Filter>PhysX\Manager\Cooking</Filter>
     </ClCompile>
@@ -1583,6 +1604,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ComPxRagdoll.cpp">
       <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComNvCloth.cpp">
+      <Filter>Component\PhysX</Filter>
     </ClCompile>
     <ClCompile Include="..\private\PxRagdollAuthoring.cpp">
       <Filter>Component\PhysX\Ragdoll</Filter>
@@ -1848,6 +1872,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_NvCloth.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_Bloom.hlsl">

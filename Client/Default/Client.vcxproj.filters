@@ -67,6 +67,9 @@
     <Filter Include="GameObject\Terrain\RagdollTest">
       <UniqueIdentifier>{575385ef-b304-4d49-8f19-86b890c8e7b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\NvClothCape">
+      <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Camera">
       <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
     </Filter>
@@ -483,6 +486,9 @@
     <ClInclude Include="..\public\RagdollTest.h">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\NvClothCape.h">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -737,6 +743,9 @@
     </ClCompile>
     <ClCompile Include="..\private\RagdollTest.cpp">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\NvClothCape.cpp">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>

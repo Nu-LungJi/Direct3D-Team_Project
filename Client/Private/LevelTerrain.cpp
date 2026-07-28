@@ -19,6 +19,7 @@
 #include "ComPxRigidBody.h"
 #include "OilBarrel.h"
 #include "RagdollTest.h"
+#include "NvClothCape.h"
 
 #include "TmbGurdian.h"
 NS_USING(Client)
@@ -90,6 +91,31 @@ HRESULT CLevelTerrain::Initialize()
 	if (!hPlayer)
 		return E_FAIL;
 
+	{
+		CNvClothCape::DESC Desc{};
+		Desc.sObjectTag = "NvClothCape";
+		Desc.hTarget = *hPlayer;
+		Desc.sResourceGroup = LEVEL::TERRAIN;
+		Desc.sModelResourceTag =
+			"PLAYER_CAPE_MODEL_RESOURCE";
+		Desc.sClothMeshResourceTag =
+			"PLAYER_CAPE_CLOTH_RESOURCE";
+		Desc.sTargetModelComponentTag =
+			"ComCModelIntance";
+		Desc.sAttachBoneName =
+			"Spine3";
+		if (!E::CGameInstance::Get().
+			AddGameObjectToLayer(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::
+					Prototype_GameObject_NvClothCape,
+				"03_Player",
+				&Desc))
+		{
+			return E_FAIL;
+		}
+	}
+
 	if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
 		return E_FAIL;
 
@@ -137,15 +163,15 @@ HRESULT CLevelTerrain::InitializeJointTests(
 	tHeadJointDesc.bVisualizationEnabled = true;
 	tHeadJointDesc.iJointSubIndex = 100u;
 
-	CComPxDistanceJoint* pHeadJoint =
-		gameInstance.AddPxJoint<CComPxDistanceJoint>(
-			*pPlayer,
-			"ComPxDistanceJoint_OilBarrelHead",
-			tHeadJointDesc);
-	if (!pHeadJoint)
-	{
-		return E_FAIL;
-	}
+	//CComPxDistanceJoint* pHeadJoint =
+	//	gameInstance.AddPxJoint<CComPxDistanceJoint>(
+	//		*pPlayer,
+	//		"ComPxDistanceJoint_OilBarrelHead",
+	//		tHeadJointDesc);
+	//if (!pHeadJoint)
+	//{
+	//	return E_FAIL;
+	//}
 
 	for (size_t i = 0; i + 1 < pOilBarrels.size(); ++i)
 	{

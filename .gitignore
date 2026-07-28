@@ -22,3 +22,5 @@ enc_temp_folder/
 /Tools/HogwartsMapImporter
 /WorldReconstruction
 /Detex.dll
+
+!ThirdParty/NvCloth_1.1.6/bin/

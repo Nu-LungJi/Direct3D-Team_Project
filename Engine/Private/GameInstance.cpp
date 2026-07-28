@@ -32,6 +32,7 @@
 #include "MapManager.h"
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
+#include "NvClothManager.h"
 #include "DbgLineRender.h"
 #include "SerializeManager.h"
 
@@ -95,6 +96,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	if (FAILED(m_pGraphicDevice->ReadyDevice(EngineDesc.hWnd, EngineDesc.eWinMode, EngineDesc.iWinSizeX, EngineDesc.iWinSizeY)))
+	{
+		return E_FAIL;
+	}
+
+	m_pNvClothManager = CNvClothManager::Create(
+		ppDevice.Get(), ppContext.Get());
+	if (!m_pNvClothManager)
 	{
 		return E_FAIL;
 	}
@@ -293,6 +301,17 @@ void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 	}
 	
 	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
+
+
+	{
+		ZoneScopedN("pNvClothManager_StepSimulation");
+		if (auto* pNvClothManager =
+			static_cast<CNvClothManager*>(m_pNvClothManager.get()))
+		{
+			pNvClothManager->StepSimulation(fFixedTimeDelta);
+		}
+	}
+
 }
 
 void CGameInstance::UpdateGUI()
@@ -338,6 +357,11 @@ void CGameInstance::UpdateGUI()
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
+	if (auto* pNvClothManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get()))
+	{
+		pNvClothManager->UpdateGUI();
+	}
 
 	m_pSerializeManager->UpdateGUI();
 
@@ -450,6 +474,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pMapManager->Update(fTimeDelta);
 	m_pMapMeshInstancingRenderer->Update();
 
+	if (auto* pNvClothManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get()))
+	{
+		pNvClothManager->RenderDebug(*m_pDbgLineRender);
+	}
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
 
@@ -537,6 +566,7 @@ void CGameInstance::Release_Engine()
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
+	m_pNvClothManager.reset();
 	m_pEventManager.reset();
 	m_pEffectManager.reset();
 	m_pGraphicDevice.reset();
@@ -1249,6 +1279,97 @@ physx::PxPhysics* CGameInstance::PxGetPhysics() const
 physx::PxControllerManager* CGameInstance::PxGetControllerManager() const
 {
 	return m_pPhysXManager->GetControllerManager();
+}
+HRESULT CGameInstance::CreateNvClothFabric(
+	const NVCLOTH_FABRIC_DESC& Desc,
+	NVCLOTH_FABRIC_HANDLE& OutHandle,
+	NVCLOTH_FABRIC_INFO* pOutInfo)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	if (!pManager)
+		return E_FAIL;
+
+	return pManager->CreateFabric(Desc, OutHandle, pOutInfo);
+}
+_bool CGameInstance::ReleaseNvClothFabric(
+	NVCLOTH_FABRIC_HANDLE Handle)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	return pManager && pManager->ReleaseFabric(Handle);
+}
+_bool CGameInstance::GetNvClothFabricInfo(
+	NVCLOTH_FABRIC_HANDLE Handle,
+	NVCLOTH_FABRIC_INFO& OutInfo) const
+{
+	const auto* pManager =
+		static_cast<const CNvClothManager*>(m_pNvClothManager.get());
+	return pManager && pManager->GetFabricInfo(Handle, OutInfo);
+}
+HRESULT CGameInstance::CreateNvCloth(
+	const NVCLOTH_CLOTH_DESC& Desc,
+	NVCLOTH_CLOTH_HANDLE& OutHandle)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	if (!pManager)
+		return E_FAIL;
+
+	return pManager->CreateCloth(Desc, OutHandle);
+}
+_bool CGameInstance::ReleaseNvCloth(
+	NVCLOTH_CLOTH_HANDLE Handle)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	return pManager && pManager->ReleaseCloth(Handle);
+}
+_bool CGameInstance::GetNvClothParticles(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	std::vector<_float3>& OutPositions) const
+{
+	const auto* pManager =
+		static_cast<const CNvClothManager*>(m_pNvClothManager.get());
+	return pManager &&
+		pManager->GetClothParticles(Handle, OutPositions);
+}
+_bool CGameInstance::GetNvClothGpuParticleView(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	NVCLOTH_GPU_PARTICLE_VIEW& OutView)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	return pManager &&
+		pManager->GetClothGpuParticleView(
+			Handle,
+			OutView);
+}
+_bool CGameInstance::SetNvClothTransform(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const _float3& vTranslation,
+	const _float4& vRotation,
+	_bool bTeleport)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	return pManager &&
+		pManager->SetClothTransform(
+			Handle,
+			vTranslation,
+			vRotation,
+			bTeleport);
+}
+_bool CGameInstance::SetNvClothCollisions(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const NVCLOTH_COLLISION_DESC& Desc)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	return pManager &&
+		pManager->SetClothCollisions(
+			Handle,
+			Desc);
 }
 //_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
 //{

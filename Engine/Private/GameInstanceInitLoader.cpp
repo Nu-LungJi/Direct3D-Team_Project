@@ -34,6 +34,7 @@
 #include "ComPxD6Joint.h"
 #include "ComPxFixedJoint.h"
 #include "ComPxRagdoll.h"
+#include "ComNvCloth.h"
 #include "ComPxRevoluteJoint.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
@@ -468,6 +469,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRagdoll, CComPxRagdoll::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComNvCloth, CComNvCloth::Create()))
 		{
 			return E_FAIL;
 		}
@@ -1130,6 +1135,23 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 
 	// model shader
 	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvCloth",
+			"./ShaderFiles/TestModel/Shader_NvCloth.hlsl"))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_NvCloth",
+			"./ShaderFiles/TestModel/Shader_NvCloth.hlsl"))
+		{
+			if (FAILED(res->Load()))
+				return E_FAIL;
+		}
+
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
