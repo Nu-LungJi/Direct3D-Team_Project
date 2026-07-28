@@ -271,6 +271,9 @@
     <ClInclude Include="..\public\ComPxDistanceJoint.h" />
     <ClInclude Include="..\public\ComPxFixedJoint.h" />
     <ClInclude Include="..\public\ComPxJoint.h" />
+    <ClInclude Include="..\public\ComPxRagdoll.h" />
+    <ClInclude Include="..\public\PxRagdollAuthoring.h" />
+    <ClInclude Include="..\public\RagdollEditorGUI.h" />
     <ClInclude Include="..\public\ComPxRevoluteJoint.h" />
     <ClInclude Include="..\public\ComPxRigidBody.h" />
     <ClInclude Include="..\public\ComPxSphereCollider.h" />
@@ -362,6 +365,7 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\PhysXRagdollData.h" />
     <ClInclude Include="..\public\PhysXCookingEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyEditor.h" />
@@ -592,6 +596,9 @@
     <ClCompile Include="..\private\ComPxDistanceJoint.cpp" />
     <ClCompile Include="..\private\ComPxFixedJoint.cpp" />
     <ClCompile Include="..\private\ComPxJoint.cpp" />
+    <ClCompile Include="..\private\ComPxRagdoll.cpp" />
+    <ClCompile Include="..\private\PxRagdollAuthoring.cpp" />
+    <ClCompile Include="..\private\RagdollEditorGUI.cpp" />
     <ClCompile Include="..\private\ComPxRevoluteJoint.cpp" />
     <ClCompile Include="..\private\ComPxRigidBody.cpp" />
     <ClCompile Include="..\private\ComPxSphereCollider.cpp" />

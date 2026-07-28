@@ -319,6 +319,9 @@
     <Filter Include="Component\PhysX\Joint\D6">
       <UniqueIdentifier>{2260739b-c811-45df-b9b9-666670961195}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\PhysX\Ragdoll">
+      <UniqueIdentifier>{ce2fe5d0-46fb-452c-98c3-c70bc2a362ec}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX\Collider\Box">
       <UniqueIdentifier>{0ec1bad3-3526-4018-b870-041113a940d2}</UniqueIdentifier>
     </Filter>
@@ -920,6 +923,18 @@
     </ClInclude>
     <ClInclude Include="..\public\ComPxD6Joint.h">
       <Filter>Component\PhysX\Joint\D6</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxRagdoll.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PxRagdollAuthoring.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\RagdollEditorGUI.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysXRagdollData.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ComPxBoxCollider.h">
       <Filter>Component\PhysX\Collider\Box</Filter>
@@ -1550,6 +1565,15 @@
     </ClCompile>
     <ClCompile Include="..\private\ComPxD6Joint.cpp">
       <Filter>Component\PhysX\Joint\D6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRagdoll.cpp">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PxRagdollAuthoring.cpp">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\RagdollEditorGUI.cpp">
+      <Filter>Component\PhysX\Ragdoll</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ComPxBoxCollider.cpp">
       <Filter>Component\PhysX\Collider\Box</Filter>

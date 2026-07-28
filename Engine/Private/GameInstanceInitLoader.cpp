@@ -32,6 +32,7 @@
 #include "ComPxDistanceJoint.h"
 #include "ComPxD6Joint.h"
 #include "ComPxFixedJoint.h"
+#include "ComPxRagdoll.h"
 #include "ComPxRevoluteJoint.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
@@ -458,6 +459,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxD6Joint, CComPxD6Joint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRagdoll, CComPxRagdoll::Create()))
 		{
 			return E_FAIL;
 		}

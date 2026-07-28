@@ -4,6 +4,7 @@
 #include "GameInstance.h"
 #include "PhysXCollisionProxyEditor.h"
 #include "PhysXCookingEditor.h"
+#include "RagdollEditorGUI.h"
 #include "PhysXCollisionProxyObject.h"
 
 #include <filesystem>
@@ -298,16 +299,25 @@ void CPhysXManager::UpdateGUI()
 		if (m_pCookingEditor)
 			m_pCookingEditor->Open();
 	}
+	if (ImGui::Button("Open Ragdoll Editor"))
+	{
+		if (m_pRagdollEditor)
+			m_pRagdollEditor->Open();
+	}
     ImGui::End();
 
 	if (m_pCollisionProxyEditor)
 		m_pCollisionProxyEditor->UpdateGUI(0.f);
 	if (m_pCookingEditor)
 		m_pCookingEditor->UpdateGUI();
+	if (m_pRagdollEditor)
+		m_pRagdollEditor->UpdateGUI();
 }
 
 void CPhysXManager::SetCollisionLayerNames(std::vector<std::pair<uint32_t, std::string>> layerNames)
 {
+	if (m_pRagdollEditor)
+		m_pRagdollEditor->SetCollisionLayerNames(layerNames);
 	if (m_pCollisionProxyEditor)
 		m_pCollisionProxyEditor->SetCollisionLayerNames(std::move(layerNames));
 }
@@ -649,6 +659,9 @@ HRESULT CPhysXManager::Initialize()
 	m_pCookingEditor = CPhysXCookingEditor::Create();
 	if (!m_pCookingEditor)
 		return E_FAIL;
+	m_pRagdollEditor = CRagdollEditorGUI::Create();
+	if (!m_pRagdollEditor)
+		return E_FAIL;
 
     m_pListener = CPhysxManagerListener::Create();
 	if (!m_pListener)
@@ -800,7 +813,7 @@ HRESULT CPhysXManager::Initialize()
             m_pScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f); // 전체 스케일
             m_pScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f); // 충돌체 그리기
             m_pScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
-            m_pScene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, 1.0f);
+            //m_pScene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, 1.0f);
             //m_pScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, 1.0f);
             //m_pScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_FORCE, 1.0f);
             //m_pScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_DYNAMIC, 1.0f);
@@ -874,6 +887,7 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 
 void CPhysXManager::Free()
 {
+	m_pRagdollEditor.reset();
 	m_pCookingEditor.reset();
 	m_pCollisionProxyEditor.reset();
 

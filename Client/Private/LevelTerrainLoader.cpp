@@ -5,6 +5,7 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "RagdollTest.h"
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
@@ -35,6 +36,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 					MSG_BOX("TERRAIN Failed Prototype_GameObject_OilBarrel");
 					return false;
 				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_RagdollTest,
+				CRagdollTest::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_RagdollTest");
+				return false;
 			}
 
 			// terrain
