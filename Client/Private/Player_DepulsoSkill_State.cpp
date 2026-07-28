@@ -29,6 +29,7 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	CacheAnimationIndices(*pPlayer);
 	// Depulso 이동은 애니메이션 Root Motion이 아니라 아래의 조절 가능한
 	// 전방 이동 구간을 사용한다.
 	SetSkillControl(*pPlayer, true, true, false);
@@ -82,8 +83,22 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		break;
 
 	case PHASE::ATTACK:
-		if (m_fAnimRatio >= ATTACK_END_RATIO)
+	{
+		if (m_fAnimRatio >= CAST_END_RATIO) {
+			// 밀기 시작
+			m_ePhase = PHASE::PUSH;
+			pAnimator->Play_Anim(m_DepulsoCast_Animation, false, 0.2f);
+		}
+
+		break;
+	}
+
+	case PHASE::PUSH:
+		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f) {
+			m_ePhase = PHASE::RECOVERY;
 			RequestLocomotion(pStateMachine);
+		}
+	
 		break;
 
 	case PHASE::RECOVERY:

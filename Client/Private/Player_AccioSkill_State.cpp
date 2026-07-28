@@ -148,6 +148,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 				pMoveIntent->RequestWarp(destinationPosition);
 				m_bPulling = false;
+				m_ePhase = PHASE::RECOVERY;
 			}
 		}
 
