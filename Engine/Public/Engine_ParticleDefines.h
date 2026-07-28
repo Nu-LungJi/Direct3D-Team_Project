@@ -65,6 +65,17 @@ namespace Engine
 
 	}BEAM_PARAMS;
 
+	struct BEAM_HANDLE
+	{
+		StringID groupTag;
+		StringID typeTag;
+		int32_t beamIndex = -1;
+
+		bool IsValid() const
+		{
+			return beamIndex >= 0;
+		}
+	};
 	constexpr uint32_t BEHAVIOR_NONE = 0;
 	constexpr uint32_t BEHAVIOR_DISTORTION = 1 << 1;
 	constexpr uint32_t BEHAVIOR_BILLBOARD = 1 << 2;

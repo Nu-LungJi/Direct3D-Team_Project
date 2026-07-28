@@ -677,5 +677,11 @@
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

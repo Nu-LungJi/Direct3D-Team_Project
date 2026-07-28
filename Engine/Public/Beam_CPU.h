@@ -14,7 +14,6 @@ public:
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
 		std::pair<StringID, StringID> anyTextureID;
-        PARTICLE_TYPE type;
         _float      fWidth = 1.f;
         _float      fScrollSpeed = 1.f;
         uint32_t    iDisplacementIterations = 6;      // 기본값 (AddBeam에서 안 넘기면 이걸 씀)
@@ -64,6 +63,8 @@ public:
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
 	virtual void ClearByOwner(uint32_t ownerID) override;
+
+	void SetBeamPositions(uint32_t beamIndex, const _float4& start, const _float4& end);
 
 public:
     int32_t AddBeam(const _float4& vStart, const _float4& vEnd,

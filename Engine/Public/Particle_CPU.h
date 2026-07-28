@@ -79,7 +79,6 @@ public:
 		std::pair<StringID, StringID> hdrPositionTextureID;
 		std::pair<StringID, StringID> hdrNormalTextureID;
 		std::pair<StringID, StringID> anyTextureID;
-        PARTICLE_TYPE                  type;
         MESHORTEXTURE                  whatKind = MESHORTEXTURE::END;
 		uint32_t TexRows = 1;
 		uint32_t TexColumns = 1;

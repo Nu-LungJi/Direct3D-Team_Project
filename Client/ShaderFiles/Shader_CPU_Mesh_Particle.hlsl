@@ -273,7 +273,7 @@ PS_OUT PSPlayerDashWindSpiral(VS_OUT In)
         pow(saturate(shapeMask), 1.5f) * 0.35f;
 
 
-	float3 finalColor = In.vColor.rgb * diffuse.rgb + instanceEmissive;
+	float3 finalColor = In.vColor.rgb  + instanceEmissive;
 
 	Out.vDiffuse = float4(finalColor, alpha);
 

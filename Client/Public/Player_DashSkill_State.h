@@ -49,9 +49,10 @@ private:
 	_float3 vNormalScale = { 1.f, 1.f, 1.f };
 	_float3 vSmallScale = { 0.f, 0.f, 0.f };
 
-	_float	m_fDistanceOffeset = 2.f;
+	_float	m_fDistanceOffeset = 1.6f;
 	_float3	m_vSpwanPos{};
 	_bool    m_bAnimationIndicesCached = false;
+	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 NS_END

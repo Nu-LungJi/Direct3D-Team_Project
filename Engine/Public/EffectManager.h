@@ -52,15 +52,15 @@ public:
 		const _float4x4& matWorld,
 		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
 	
-	void Stop(EFFECT_INSTANCE_ID iEffectId);
+	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
 
 	void ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId,
 		const _float4& vColor);
-	void SetPosition(
+	void SetEffectPosition(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float3& vPosition);
 
-	void SetWorldMatrix(
+	void SetEffectWorldMatrix(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float4x4& colliderWorldMatrix);
 

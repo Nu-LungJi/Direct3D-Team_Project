@@ -33,7 +33,6 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     m_Desc = *pDesc;
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
-    m_eType = pDesc->type;
 
     m_Particles.assign(m_iNumElements, PARTICLE_CPU_DATA{});
 
@@ -132,8 +131,8 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
-		m_waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
+		m_waveCb.g_fBurstRatio = Randf(0.2f, 0.7f);
+		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
 		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
 		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
 		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
@@ -935,48 +934,32 @@ void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 		particle.originalPosition.z += delta.z;
 	}
 }
-void CParticle_CPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
+void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
 {
-	const XMMATRIX deltaMatrix =
-		XMLoadFloat4x4(
-			&deltaMatrixData);
+    const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
 
-	for (auto& particle : m_Particles)
-	{
-		if (!particle.bAlive ||
-			particle.ownerID != ownerId)
-		{
-			continue;
-		}
+    XMVECTOR scale, deltaRotation, translation;
+    if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
+        return;
 
-		// 위치: 회전 + 이동
-		XMStoreFloat3(
-			&particle.vPosition,
-			XMVector3TransformCoord(
-				XMLoadFloat3(
-					&particle.vPosition),
-				deltaMatrix));
+    XMFLOAT4X4 rotationMatrix;
+    XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
 
-		XMStoreFloat3(
-			&particle.originalPosition,
-			XMVector3TransformCoord(
-				XMLoadFloat3(
-					&particle.originalPosition),
-				deltaMatrix));
+    const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
 
-		// 속도: 이동은 제외하고 회전만 적용
-		XMStoreFloat3(
-			&particle.vVelocity,
-			XMVector3TransformNormal(
-				XMLoadFloat3(
-					&particle.vVelocity),
-				deltaMatrix));
+    for (auto& particle : m_Particles)
+    {
+		auto  a = particle.rotation.y;
 
-		XMStoreFloat3(
-			&particle.originalVelocity,
-			XMVector3TransformNormal(
-				XMLoadFloat3(
-					&particle.originalVelocity),
-				deltaMatrix));
-	}
+        if (!particle.bAlive || particle.ownerID != ownerId)
+            continue;
+
+        XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
+        XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
+
+        XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
+        XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
+
+        particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
+    }
 }

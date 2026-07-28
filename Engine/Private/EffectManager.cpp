@@ -649,7 +649,6 @@ EFFECT_INSTANCE_ID CEffectManager::PlayEffect(const std::string& sEffectName,con
 		return INVALID_EFFECT_INSTANCE_ID;
 
 	_float4x4 noScaleWorld{};
-
 	if (!MakeNoScaleWorldMatrix(matWorld,noScaleWorld))
 	{
 		return INVALID_EFFECT_INSTANCE_ID;
@@ -857,7 +856,7 @@ void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_
 	}
 }
 
-void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
+void CEffectManager::StopEffect(EFFECT_INSTANCE_ID iEffectId)
 {
 	auto iter =m_Instances.find(iEffectId);
 
@@ -897,7 +896,7 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 
 }
 
-void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
+void CEffectManager::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
 {
 	auto iter =m_Instances.find(iEffectId);
 
@@ -946,12 +945,12 @@ void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4
 		m_pParticleManager->TransformOwner(ownerId,deltaMatrixData);
 	}
 
-	const _float3  deltaPos = _float3(deltaMatrixData._41, deltaMatrixData._42, deltaMatrixData._43);
+	const _float3  Pos = _float3(colliderWorldMatrix._41, colliderWorldMatrix._42, colliderWorldMatrix._43);
 	if (m_pLightManager)
 	{
 		for (const CHandle& lightHandle :instance.vecLightHandles)
 		{
-			//m_pLightManager->TransformLight(lightHandle, deltaPos);
+			m_pLightManager->Transform_EffectLight(lightHandle, Pos);
 		}
 	}
 
@@ -979,7 +978,7 @@ void CEffectManager::ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _flo
 		m_pParticleManager->SetColorByOwner(ownerId, vColor);
 }
 
-void CEffectManager::SetPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& newPosition)
+void CEffectManager::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& newPosition)
 {
 	auto iter =
 		m_Instances.find(iEffectId);
@@ -998,7 +997,7 @@ void CEffectManager::SetPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& new
 	newWorld._42 = newPosition.y;
 	newWorld._43 = newPosition.z;
 
-	SetWorldMatrix(
+	SetEffectWorldMatrix(
 		iEffectId,
 		newWorld);
 }

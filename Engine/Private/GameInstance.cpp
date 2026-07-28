@@ -611,12 +611,7 @@ HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& s
 {
 	return m_pParticleManager->Add_Particle(sGroupTag, sTypeTag, std::move(particle));
 }
-HRESULT CGameInstance::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
-	_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-	_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration)
-{
-	return m_pParticleManager->SpawnRibbon(quantity, start, end, fDisplacementAmplitude, iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
-}
+
 std::vector<std::string> CGameInstance::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension)
 {
 	return m_pParticleManager->Load_FilePath_ByExtension(_FolderPath, _Extension);
@@ -643,17 +638,17 @@ EFFECT_INSTANCE_ID CGameInstance::PlayEffect(const std::string& sEffectName, con
 	return m_pEffectManager->PlayEffect(sEffectName, matWorld, vEndPosition, onFinsihed);
 }
 
-void CGameInstance::Stop(EFFECT_INSTANCE_ID iEffectId) {
-	m_pEffectManager->Stop(iEffectId);
+void CGameInstance::StopEffect(EFFECT_INSTANCE_ID iEffectId) {
+	m_pEffectManager->StopEffect(iEffectId);
 }
 
-void CGameInstance::SetPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
-	m_pEffectManager->SetPosition(iEffectId, vPosition);
+void CGameInstance::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
+	m_pEffectManager->SetEffectPosition(iEffectId, vPosition);
 
 }
 
-void CGameInstance::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _float4x4& colliderWorldMatrix) {
-	m_pEffectManager->SetWorldMatrix(iEffectId, colliderWorldMatrix);
+void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _float4x4& colliderWorldMatrix) {
+	m_pEffectManager->SetEffectWorldMatrix(iEffectId, colliderWorldMatrix);
 
 }
 

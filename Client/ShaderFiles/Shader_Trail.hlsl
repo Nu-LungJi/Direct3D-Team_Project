@@ -125,7 +125,7 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 
     color.rgb +=In.vEmissive.rgb *In.vEmissive.a * In.vColor.a;
     color.a *= In.vColor.a;
-        float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+     float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
 
     
     if (g_fUseDistortion > 0.5)
@@ -163,36 +163,41 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
     return Out;
 
 }
-PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET
+PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET			
 {
 	PS_OUT Out = (PS_OUT) 0;
-
+	
 	float2 uv = In.vUV;
+	uv.x += g_fAccumulationTime * 3.33f;
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(uv.x , uv.y *3));
+	float4 distortionTex = g_DistortionTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
+        
+	if (all(tex.rgb < 0.1f))
+		discard;
+	float noise = g_NoiseTexture.Sample(LinearWrap, float2(uv.x * 2 + g_fScrollOffset, uv.y)).r;
 
-	float2 packedUV = uv;
-	packedUV.x += g_fAccumulationTime * 1.03f;
-	//packedUV.y += g_fAccumulationTime * 1.03f;
+	float center = 1 - smoothstep(0, 1, abs(uv.y - 0.5) * 2);
 
-	float4 tex = g_DiffuseTexture.Sample(LinearWrap, packedUV);
+	center = pow(center, 0.8);
 
-	float intensity = max(tex.r, max(tex.g, tex.b));
-	float textureAlpha = smoothstep(0.02f, 0.2f, intensity);
-	textureAlpha *= tex.a;
+	float glow = 1 + center * g_fGlowStrength;
+    
+	float lengthGlow = pow(In.vColor.a, 2);
+	glow *= 1 + lengthGlow * g_fLengthGlow;
 
-	float center = 1.f - smoothstep(0.f, 1.f, abs(uv.y - 0.5f) * 2.f);
-	center = pow(saturate(center), 0.8f);
+	float edge = 1 - smoothstep(0.5, 1, abs(uv.y - 0.5) * 2);
+	tex.a *= edge;
+    
+	float4 color = tex * In.vColor;
 
-	float glow = 1.f + center * g_fGlowStrength;
+	color.rgb *= glow;
+	color.rgb *= In.vColor.a;
 
-	float edge = 1.f - smoothstep(0.5f, 1.f, abs(uv.y - 0.5f) * 2.f);
-	float lifeAlpha = saturate(In.vColor.a);
-	float alpha = textureAlpha * edge * lifeAlpha;
+	color.rgb += In.vEmissive.rgb * In.vEmissive.a * In.vColor.a;
+	color.a *= In.vColor.a;
 
-	float3 color = tex.rgb * In.vColor.rgb;
-	color *= glow;
-	color += In.vEmissive.rgb * In.vEmissive.a;
-
-	Out.vDiffuse = float4(color, alpha);
+   Out.vDiffuse = color;
+	Out.vDiffuse = float4(0.3, 0.3, 0.3, 1.f);
 	return Out;
 }
 

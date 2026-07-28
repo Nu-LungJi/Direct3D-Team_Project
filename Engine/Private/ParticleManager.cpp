@@ -668,7 +668,7 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Beam_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, iGeometryType,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint, iGeometryType,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
 						iTexRow, iTexCol);
 				}
@@ -1697,19 +1697,30 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 
 
 
-HRESULT CParticleManager::SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end, _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping, _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
+std::optional<BEAM_HANDLE> CParticleManager::SpawnBeam(const StringID& groupTag,const StringID& typeTag, const BEAM_PARAMS& p)
 {
-	auto pParticle = GetParticle("BEAM", "ATTACK");
-	if (!pParticle)
-		return E_FAIL;
-	auto pBeam = static_cast<CBeam_CPU*>(pParticle);
+	CParticle* particle = GetParticle(groupTag, typeTag);
+	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
 
-	for (uint32_t i = 0; i < quantity; i++) {
-		int32_t idx1 = pBeam->AddBeam(start, end, fDisplacementAmplitude, (uint32_t)iDisplacementIterations, fDisplacementDamping, fFlickerInterval, vColor, emissive, fDuration);
-	}
-	return S_OK;
+	if (!beam)
+		return std::nullopt;
+
+	int32_t index = beam->AddBeam(
+		p.beamStart,
+		p.beamEnd,
+		p.fDisplacementAmplitude,
+		static_cast<uint32_t>(p.iDisplacementIterations),
+		p.fDisplacementDamping,
+		p.flickerTimeInverval,
+		p.color,
+		p.emissive,
+		p.beamDuration);
+
+	if (index < 0)
+		return std::nullopt;
+
+	return BEAM_HANDLE{ groupTag,typeTag,index };
 }
-
 HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& FullPath, const std::string& whatKind,
 	const std::string& particleType, const std::string& particleName,
@@ -2073,8 +2084,8 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 	return ownerId; // ---- 호출자에게 발급된 오너 ID를 돌려줌 ----
 }
 HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, 
-	const std::string& particleType, const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
-	const std::string& PSGroup, const std::string& PSID, int geometryType, const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount)
+	const std::string& particleType, const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
+	const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -2115,31 +2126,38 @@ HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string&
 	newEntry["iMaxParticles"] = iMaxParticles;
 	newEntry["VSGroup"] = VSGroup;
 	newEntry["VSID"] = VSID;
+	newEntry["VSEntryPoint"] = VSEntryPoint;
+
 	newEntry["PSGroup"] = PSGroup;
 	newEntry["PSID"] = PSID;
+	newEntry["PSEntryPoint"] = PSEntryPoint;
 
 	std::string arrayKey;
 
-	if (whatKind == "TEXTURE")
-	{
-		arrayKey = "textures";
-		newEntry["TextureID1"] = textureID1;
-		newEntry["TextureID2"] = textureID2;
-		newEntry["RowCount"] = RowCount;
-		newEntry["ColCount"] = ColCount;
-		newEntry["GeometryType"] = geometryType;
-	}
-	//else if (whatKind == "MESH")
-	//{
-	//	arrayKey = "models";
-	//	newEntry["sGroupTag"] = sGroupTag;
-	//	newEntry["sResTag"] = sResTag;
-	//}
-	else
-	{
-		return E_FAIL;
-	}
-
+//	if (whatKind == "TEXTURE")
+//	{
+//		arrayKey = "textures";
+//		newEntry["TextureID1"] = textureID1;
+//		newEntry["TextureID2"] = textureID2;
+//		newEntry["RowCount"] = RowCount;
+//		newEntry["ColCount"] = ColCount;
+//		newEntry["GeometryType"] = geometryType;
+//		newEntry["BeamWidth"] = beamWidth;
+//		newEntry["ScrollSpeed"] = scrollSpeed;
+//		newEntry["MaxBeams"] = maxBeams;
+//		newEntry["MaxDisplacementIterations"] = maxDisplacementIterations;
+//	}
+//	//else if (whatKind == "MESH")
+//	//{
+//	//	arrayKey = "models";
+//	//	newEntry["sGroupTag"] = sGroupTag;
+//	//	newEntry["sResTag"] = sResTag;
+//	//}
+//	else
+//	{
+//		return E_FAIL;
+//	}
+//
 
 	if (!j.contains(arrayKey) || !j[arrayKey].is_array())
 		j[arrayKey] = nlohmann::json::array();
@@ -2485,15 +2503,22 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			}
 			else if (particleType == "BEAM_CPU")
 			{
-				int geometryType = entry.value("GeometryType", 0);
+				CBeam_CPU::DESC desc{};
 
-				CBeam_CPU::DESC desc;
-				desc.geometryType = geometryType;
-				desc.textureID = { textureID1, textureID2 };
-				if (!VSGroup.empty() && !VSID.empty()) desc.VSID = { VSGroup, VSID };
-				if (!PSGroup.empty() && !PSID.empty()) desc.PSID = { PSGroup, PSID };
+				desc.geometryType = entry.value("GeometryType", 0);
+				desc.fWidth = entry.value("BeamWidth", 0.15f);
+				desc.fScrollSpeed = entry.value("ScrollSpeed", 1.f);
+				desc.iMaxBeams = entry.value("MaxBeams", 16u);
+				desc.iMaxDisplacementIterations = entry.value("MaxDisplacementIterations", 10u);
 
-				// ---- 추가 텍스처 로드 ----
+				desc.textureID = { textureID1,textureID2 };
+
+				if (!VSGroup.empty() && !VSID.empty())
+					desc.VSID = { VSGroup,VSID };
+
+				if (!PSGroup.empty() && !PSID.empty())
+					desc.PSID = { PSGroup,PSID };
+
 				LoadAuxTexture(entry, "NormalTexturePath", "NormalTextureID1", "NormalTextureID2", desc.normalTextureID);
 				LoadAuxTexture(entry, "DistortionTexturePath", "DistortionTextureID1", "DistortionTextureID2", desc.distortionTextureID);
 				LoadAuxTexture(entry, "NoiseTexturePath", "NoiseTextureID1", "NoiseTextureID2", desc.noiseTextureID);
@@ -2503,6 +2528,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.sPEntryPoint = PSEntryPoint;
 				desc.blendState = selectedBlend;
 				desc.pShaderCache = m_pShaderCache;
+
 				particle = CBeam_CPU::Create(&desc);
 			}
 			else if (particleType == "TRAIL_CPU")
@@ -2711,7 +2737,6 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["color"] = { p.color.x, p.color.y, p.color.z, p.color.w };
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 				entry["endEmissive"] = { p.endEmissive.x, p.endEmissive.y, p.endEmissive.z, p.endEmissive.w };
-				entry["GeometryType"] = p.geometryType;
 		
 
 				break;
@@ -2873,13 +2898,18 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			auto be = entry.value("beamEnd", std::vector<float>{0, 0, 0, 0});
 			p.beamEnd = { be[0], be[1], be[2], be[3] };
 
-			p.iDisplacementIterations = entry.value("iDisplacementIterations", 0);
-			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.f);
-			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.f);
-			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
-			p.beamDuration = entry.value("beamDuration", 0.f);
+			p.iDisplacementIterations = entry.value("iDisplacementIterations", 5);
+			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.15f);
+			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.5f);
+			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.03f);
+			p.beamDuration = entry.value("beamDuration", 1.f);
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-			p.geometryType = entry.value("GeometryType", 0.f);
+
+			p.iDisplacementIterations = std::clamp(p.iDisplacementIterations, 1, 10);
+			p.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
+			p.fDisplacementDamping = std::clamp(p.fDisplacementDamping, 0.f, 1.f);
+			p.flickerTimeInverval = std::max(p.flickerTimeInverval, 0.001f);
+			p.beamDuration = std::max(p.beamDuration, 0.f);
 
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			p.color = { col[0], col[1], col[2], col[3] };

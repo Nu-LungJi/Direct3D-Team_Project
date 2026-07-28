@@ -59,6 +59,23 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 	auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
 	static_cast<CTrail_CPU*>(a)->SetColor(_float4(255 / 255.f, 1.f, 1.f,0.8f));
 	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255/255.f, 1.f, 1.f, 1.5f));
+
+	auto k = pPlayer->GetTransform().GetWorldMatrix();
+	m_iDashBodyEffectID = CGameInstance::Get().PlayEffect("PlayerBodyDash", *pPlayer->GetTransform().GetWorldMatrix(), _vector{},
+		[this, pPlayer](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+		{
+			if (effectId != m_iDashBodyEffectID)
+				return;
+			char msg[256];
+			sprintf_s(msg, "[DashEffect Callback] effectId=%llu, memberId=%llu, reason=%d\n",
+				static_cast<unsigned long long>(effectId),
+				static_cast<unsigned long long>(m_iDashBodyEffectID),
+				static_cast<int>(reason));
+			OutputDebugStringA(msg);
+			m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
+			pPlayer->SetBodyEffectID(INVALID_EFFECT_INSTANCE_ID);
+		});
+	pPlayer->SetBodyEffectID(m_iDashBodyEffectID);
 }
 
 
@@ -113,6 +130,9 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		{
 			// DASH 시작 ---------------------------------------------------------------------------------------------------
 			m_ePhase = PHASE::DASH;    
+			pPlayer->SetRenderInfluence(true);
+
+
 
 		}
 		break;
@@ -160,6 +180,7 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		}
 
 		{
+
 			// 이펙트 발동
 			_float4 fpos = _float4(pPlayer->GetTransform().GetPosition().x, pPlayer->GetTransform().GetPosition().y, pPlayer->GetTransform().GetPosition().z, 1);
 			_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
@@ -170,13 +191,14 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
 			vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
 			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
-			//_float3 deltaPos;
-			//XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
+			_float3 deltaPos;
+			XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
 			if (distance > m_fDistanceOffeset) {
 
 				CGameInstance::Get().PlayEffect(
 					"PlayerDashSmoke", *pPlayer->GetTransform().GetWorldMatrix(), pos);
 				m_vSpwanPos = pPlayer->GetTransform().GetPosition();	
+			
 			}
 			///
 		}
@@ -188,8 +210,12 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			pPlayer->PrepareLocomotionResume();
 			ResetSkillControl(*pPlayer);
 			pAnimator->Play_Anim(m_iDashEndAnimIndex, false, 0.24f);
+			pPlayer->SetRenderInfluence(false);
 			pAnimator->GetCurAnimState().fSpeed = 2.f;
 			m_fScaleTime = 0.f;
+			CGameInstance::Get().StopEffect(m_iDashBodyEffectID);
+
+
 		}
 		break;
 
@@ -224,17 +250,20 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			_float distance = XMVectorGetX(
 				XMVector3Length(pos - lastSpawnPos));
 
-			if (distance > 2) {
-
-				CGameInstance::Get().PlayEffect(
-					"PlayerDashSmoke", *pPlayer->GetTransform().GetWorldMatrix(), pos);
-				m_vSpwanPos = pPlayer->GetTransform().GetPosition();
-			}
+			//if (distance > 2) {
+			//
+			//	CGameInstance::Get().PlayEffect(
+			//		"PlayerDashSmoke", *pPlayer->GetTransform().GetWorldMatrix(), pos);
+			//	m_vSpwanPos = pPlayer->GetTransform().GetPosition();
+			//}
 			_float3 vstart, vend;
 			vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
 			vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
-			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
+			//CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
 
+
+			//if (m_iDashBodyEffectID != INVALID_EFFECT_INSTANCE_ID)
+			//	CGameInstance::Get().SetEffectWorldMatrix(m_iDashBodyEffectID, *pPlayer->GetTransform().GetWorldMatrix());
 		}
 
 		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO)

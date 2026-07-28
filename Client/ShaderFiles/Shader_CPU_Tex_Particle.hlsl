@@ -366,7 +366,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
     // 왜곡된 셀 내부 UV를 다시 Atlas UV로 변환
 	float2 distortedAtlasUV =
         (cellIndex + distortedLocalUV) / AtlasCount;
-
+	//distortedAtlasUV.x =In.life * 0.03f;
     // SmokeMedium 플립북 샘플링
     // 가능하면 Diffuse 전용 Clamp 샘플러 권장
 
