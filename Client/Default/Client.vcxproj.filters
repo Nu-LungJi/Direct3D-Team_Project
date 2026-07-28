@@ -175,6 +175,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_">
       <UniqueIdentifier>{113ba92c-ee4c-4633-a05d-1bd05e0d0412}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Particle">
+      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -636,5 +639,49 @@
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle_UvScroll.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

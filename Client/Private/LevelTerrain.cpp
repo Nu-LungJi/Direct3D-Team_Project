@@ -28,6 +28,7 @@ CLevelTerrain::~CLevelTerrain()
 HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
+	CGameInstance::Get().Initialize_EffectLight(15);
 
 	{
 		

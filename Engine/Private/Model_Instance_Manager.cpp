@@ -443,11 +443,6 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 
 			return E_FAIL;
 		}
-
-		//auto pObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
-		//if (nullptr == pObject) continue;
-
-		//if (FAILED(pObject->Render_ShadowInstanced(pContext, ctx, *pBatch)))	return E_FAIL;
 	}
 	
 	return S_OK;

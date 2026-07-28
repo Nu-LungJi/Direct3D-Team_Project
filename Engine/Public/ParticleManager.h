@@ -35,6 +35,9 @@ typedef struct tagParticlePreset
 	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
 	_float fStopSizeTime = 0;
+	_bool bKeepRotate{};
+	_float3 rotationAxis{};
+	_float rotationSpeed{};
 } PARTICLE_PRESET;
 
 
@@ -87,12 +90,10 @@ public:
 
 
 
-    HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
-        _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration);
 
 
 public:
+	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& p);
 	HRESULT Save_Binary_Json(std::string outpath,
 		const std::string& FullPath, const std::string& whatKind,
 		const std::string& particleType, const std::string& particleName,
@@ -119,11 +120,13 @@ public:
 		const std::string& AnyTexID2 = "",
 		const std::string& AnyTexPath = "",
 		int iSelectedBlend = 0,
-		_bool bShrinkWidth = true);
+		_bool bShrinkWidth = true,
+		_float fMaxduration = 0);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
-		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
-		const std::string& PSGroup, const std::string& PSID, int geometryType,const std::string& textureID1 = "", const std::string& textureID2 = "",int RowCount = 1,int ColCount = 1);
+		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType,const std::string& textureID1 = "", const std::string& textureID2 = "",
+		int RowCount = 1,int ColCount = 1);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
@@ -132,7 +135,7 @@ public:
 
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
-	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
+	HRESULT PlayParticle(const std::string& presetName, const _float3& position, uint32_t count = 1);
 	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
 	void ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos);

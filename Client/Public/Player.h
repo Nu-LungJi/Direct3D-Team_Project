@@ -98,7 +98,13 @@ public:
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
+	
+	_bool GetRenderInfluence() { return m_bRenderInfluence; }
+	void SetRenderInfluence(_bool _RenderInfluence) { m_bRenderInfluence = _RenderInfluence; }
 
+
+	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
+	void UpdateAttachedEffects();
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -126,6 +132,10 @@ private:
 
 	uint32_t m_iDebugSelectedBone = 0;
 	uint32_t m_iCurrentInstanceCount = 0.f;
+	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
+
+private:
+	_bool	 m_bRenderInfluence{ false	 };
 
 private:
 	struct PROJECTILE_LIFETIME

@@ -28,7 +28,7 @@ static const float2		ShadowMapResolution		= { 1280.f, 720.f };
 
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.05f;
-static const float		ShadowStrength			= 5.05f;
+static const float		ShadowStrength			= 1.05f;
 
 static const float		EnviromentIntensity		= 1.f;				// 환경광 밝기
 static const float		FillLightBrightness		= 0.75f;			// 등지는 영역의 밝기

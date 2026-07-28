@@ -26,7 +26,6 @@ namespace Engine
 #undef X	
 	enum class FLAGTYPE { ADD, DEL, RESET };
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
-	enum class PARTICLE_TYPE { FIRE_CPU,FIRE_GPU,RIBBON,TRAIL,END };
 	enum class TRAIL_TYPE { POINT,PLANE,END };
 	enum class MESHORTEXTURE{ MESH, TEX, END};
 

@@ -52,15 +52,15 @@ public:
 		const _float4x4& matWorld,
 		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
 	
-	void Stop(EFFECT_INSTANCE_ID iEffectId);
+	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
 
 	void ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId,
 		const _float4& vColor);
-	void SetPosition(
+	void SetEffectPosition(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float3& vPosition);
 
-	void SetWorldMatrix(
+	void SetEffectWorldMatrix(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float4x4& colliderWorldMatrix);
 
@@ -89,6 +89,9 @@ private:
 	_bool MakeNoScaleWorldMatrix(const _float4x4& sourceMatrix,_float4x4& outMatrix) const;
 
 	HRESULT AddPreset(EFFECT_PRESET&& preset);
+
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+	HRESULT Load_EffectJsonPackage(const std::vector<std::string>& _FilePathPackage);
 private:
 	CParticleManager* m_pParticleManager = nullptr;
 	CLightManager* m_pLightManager = nullptr;

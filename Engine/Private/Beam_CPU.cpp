@@ -26,8 +26,6 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
 	if (!m_pParticleShaderCache)
 		return E_FAIL;
 
-    m_eType = pDesc->type;
-
     // 슬롯만 미리 준비 (세그먼트 정보는 AddBeam 시점에 개별로 채워짐)
     m_vecBeams.resize(m_Desc.iMaxBeams);
 
@@ -128,13 +126,10 @@ void CBeam_CPU::Update(_float fTimeDelta)
         {
             beam.fFlickerTimer = 0.f;
 
-			if (m_Desc.geometryType == 0) {
+			if (m_Desc.geometryType == 1)
+				RegenerateSinPath(beam);
+			else
 				RegenerateJaggedPath(beam);
-
-			}
-			//else if (m_Desc.geometryType == 1) {
-			//	RegenerateSinPath(beam);
-			//}
             bNeedRebuild = true;
         }
     }
@@ -203,6 +198,12 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
     _float fDisplacementAmplitude, uint32_t iDisplacementIterations, _float fDisplacementDamping,
     _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration)
 {
+	XMVECTOR start = XMLoadFloat4(&vStart);
+	XMVECTOR end = XMLoadFloat4(&vEnd);
+	if (XMVectorGetX(XMVector3LengthSq(end - start)) < 0.000001f)
+		return 0;
+
+
     // 안전장치: 버퍼 크기 산정 기준(iMaxDisplacementIterations)을 넘지 않도록 클램프
     if (iDisplacementIterations > m_Desc.iMaxDisplacementIterations)
         iDisplacementIterations = m_Desc.iMaxDisplacementIterations;
@@ -238,10 +239,10 @@ int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd,
 				RegenerateSinPath(beam);
 			}
             BuildBeamGeometry();
-            return (int32_t)i;
+            return (uint32_t)i;
         }
     }
-    return -1;
+    return 0;
 }
 int32_t CBeam_CPU::AddBeam(const _float4& vStart, const _float4& vEnd)
 {
@@ -505,4 +506,30 @@ UPtr<CParticle> CBeam_CPU::Create(void* pArg)
 void CBeam_CPU::ClearByOwner(uint32_t ownerID)
 {
 	// TODO: 필요 시 구현. 지금은 비워둬도 컴파일은 통과함
+}
+void CBeam_CPU::SetBeamPositions(uint32_t beamIndex, const _float4& start, const _float4& end)
+{
+	if (beamIndex >= m_vecBeams.size())
+		return;
+
+	auto& beam = m_vecBeams[beamIndex];
+
+	if (!beam.bActive)
+		return;
+
+	XMVECTOR startPosition = XMLoadFloat4(&start);
+	XMVECTOR endPosition = XMLoadFloat4(&end);
+
+	if (XMVectorGetX(XMVector3LengthSq(endPosition - startPosition)) < 0.000001f)
+		return;
+
+	beam.vStartPos = start;
+	beam.vEndPos = end;
+
+	if (m_Desc.geometryType == 1)
+		RegenerateSinPath(beam);
+	else
+		RegenerateJaggedPath(beam);
+
+	BuildBeamGeometry();
 }

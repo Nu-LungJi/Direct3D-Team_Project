@@ -32,12 +32,12 @@ void CWeapon::UpdateGUI()
 	ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
 	ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
 
-	//if (ImGui::Button("Apply DashTrail")) {
-	//	auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
-	//}
-	
+	if (ImGui::Button("Apply DashTrail")) {
+		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+		static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
+	}
+
 	ImGui::DragFloat("Distance", &m_fDistanceOffeset);
 
 	ImGui::End();
@@ -94,7 +94,7 @@ HRESULT CWeapon::Initialize(void* pArg)
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	//test = CGameInstance::Get().Parse_Command("PlayerDash.json");
-	
+
 	return S_OK;
 }
 
@@ -108,16 +108,14 @@ void CWeapon::Update(E::_float fTimeDelta)
 		m_fSpwanPos = m_pComTransform->GetPosition();
 		m_bDashing = !m_bDashing;
 	}
-	_float3 vstart, vend;
 	_float3 vstart1, vend1;
 	_float3 vstart2, vend2;
-	vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 2.5f, m_pComTransform->GetPosition().z +0.01f);
-	vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.f , m_pComTransform->GetPosition().z );
-	vstart1 = vend;
-	vend1 = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.f , m_pComTransform->GetPosition().z );
-	vstart2 = vend1;
-	vend2= _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.5f , m_pComTransform->GetPosition().z + 0.01f);
-	//CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU",vstart,vend);
+
+
+	//vstart1 = vend;
+	//vend1 = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.f , m_pComTransform->GetPosition().z );
+	//vstart2 = vend1;
+	//vend2= _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.5f , m_pComTransform->GetPosition().z );
 	//CGameInstance::Get().AddTrailPoint("PlayerDashSmoke_CPU", "PlayerDashSmoke_CPU", vstart1, vend1	);
 	//CGameInstance::Get().AddTrailPoint("PlayerDashTrail2_CPU", "PlayerDashTrail2_CPU", vstart2, vend2);
 
@@ -148,6 +146,10 @@ void CWeapon::Update(E::_float fTimeDelta)
 		_vector lastSpawnPos = XMVectorSet(m_fSpwanPos.x, m_fSpwanPos.y, m_fSpwanPos.z,1.f);
 		_float distance = XMVectorGetX(
 			XMVector3Length(pos - lastSpawnPos));
+		_float3 vstart, vend;
+		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 2.5f, m_pComTransform->GetPosition().z);
+		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 2.5f, m_pComTransform->GetPosition().z);
+		CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
 		//_float3 deltaPos;
 		//XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
 		if (distance > m_fDistanceOffeset) {
@@ -167,6 +169,7 @@ void CWeapon::Update(E::_float fTimeDelta)
 						OnDashEffectStopped();
 
 				});
+;
 			m_fSpwanPos = m_pComTransform->GetPosition();
 			m_bDashEffectSpawned = true;
 		}
