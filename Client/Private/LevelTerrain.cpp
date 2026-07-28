@@ -36,6 +36,7 @@ HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 	std::array<CHandle, 6> hOilBarrels{};
+	CGameInstance::Get().Initialize_EffectLight(15);
 
 	{
 		CRagdollTest::DESC tDesc{};

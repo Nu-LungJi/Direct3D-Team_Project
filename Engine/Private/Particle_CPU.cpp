@@ -33,7 +33,6 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     m_Desc = *pDesc;
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
-    m_eType = pDesc->type;
 
     m_Particles.assign(m_iNumElements, PARTICLE_CPU_DATA{});
 
@@ -132,8 +131,8 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
-		m_waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
+		m_waveCb.g_fBurstRatio = Randf(0.2f, 0.7f);
+		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
 		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
 		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
 		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
@@ -361,6 +360,8 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		Lightning(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
 		ExtraLightning(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
+		KeepRotate(p, fTimeDelta);
 	}
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
@@ -403,6 +404,17 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
 	p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
 	p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+}
+
+void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
+{
+	const float deltaAngle = p.fRotationSpeed * fTimeDelta;
+
+	p.rotation.x += p.roationAxis.x * deltaAngle;
+
+	p.rotation.y += p.roationAxis.y * deltaAngle;
+
+	p.rotation.z += p.roationAxis.z * deltaAngle;
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -536,9 +548,9 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
 		m_Particles[i].fStopSizeTime = src.fStopSizeTime;
+		m_Particles[i].roationAxis = src.rotationAxis;
+		m_Particles[i].fRotationSpeed = src.fRotationSpeed;
 
-
-	
 		++iSpawned;
 	}
 
@@ -922,48 +934,32 @@ void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 		particle.originalPosition.z += delta.z;
 	}
 }
-void CParticle_CPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
+void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
 {
-	const XMMATRIX deltaMatrix =
-		XMLoadFloat4x4(
-			&deltaMatrixData);
+    const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
 
-	for (auto& particle : m_Particles)
-	{
-		if (!particle.bAlive ||
-			particle.ownerID != ownerId)
-		{
-			continue;
-		}
+    XMVECTOR scale, deltaRotation, translation;
+    if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
+        return;
 
-		// 위치: 회전 + 이동
-		XMStoreFloat3(
-			&particle.vPosition,
-			XMVector3TransformCoord(
-				XMLoadFloat3(
-					&particle.vPosition),
-				deltaMatrix));
+    XMFLOAT4X4 rotationMatrix;
+    XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
 
-		XMStoreFloat3(
-			&particle.originalPosition,
-			XMVector3TransformCoord(
-				XMLoadFloat3(
-					&particle.originalPosition),
-				deltaMatrix));
+    const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
 
-		// 속도: 이동은 제외하고 회전만 적용
-		XMStoreFloat3(
-			&particle.vVelocity,
-			XMVector3TransformNormal(
-				XMLoadFloat3(
-					&particle.vVelocity),
-				deltaMatrix));
+    for (auto& particle : m_Particles)
+    {
+		auto  a = particle.rotation.y;
 
-		XMStoreFloat3(
-			&particle.originalVelocity,
-			XMVector3TransformNormal(
-				XMLoadFloat3(
-					&particle.originalVelocity),
-				deltaMatrix));
-	}
+        if (!particle.bAlive || particle.ownerID != ownerId)
+            continue;
+
+        XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
+        XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
+
+        XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
+        XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
+
+        particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
+    }
 }

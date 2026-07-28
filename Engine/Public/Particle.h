@@ -25,6 +25,7 @@ public:
 		BEHAVIOR_LIGHTNING			= 1 << 9,
 		BEHAVIOR_SIZESTOP			= 1 << 10,
 		BEHAVIOR_EXTRALIGHTNING		= 1 << 11,
+		BEHAVIOR_KEEPROTATE				= 1 << 12,
 	};
 
 protected:
@@ -52,14 +53,12 @@ public:
 	uint32_t Get_BlendState() { return m_iBlendIndex; }
 
 public:
-	PARTICLE_TYPE& Get_Type() { return m_eType; }
 	HRESULT LoadParticleTexture(std::pair<StringID, StringID> textureId);
 
 protected:
 	void ProcessPendingSpawns(E::_float fTimeDelta);
 
 protected:
-	PARTICLE_TYPE m_eType;
 	SPtr<class CResPixelShader> m_pResPixelShader{};
 	SPtr<class CResVertexShader> m_pResVertexShader{};
 	UPtr<class CComStaticModelInstance> m_pComModelInstance{};

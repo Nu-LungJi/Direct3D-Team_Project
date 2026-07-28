@@ -339,9 +339,7 @@ public:
 		_bool bLoop, _float fSpawnInterval);
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = XMVectorZero());
 	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
-	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
-		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-		_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration = 1.f);
+
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
@@ -350,6 +348,9 @@ public:
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
 	void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& params);
+	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
+	HRESULT StopBeam(const BEAM_HANDLE& handle);
 #pragma endregion
 
 #pragma region EFFECT_MANAGER
@@ -357,11 +358,11 @@ public:
 	EFFECT_INSTANCE_ID PlayEffect(const std::string& sEffectName,const _float4x4& matWorld,
 		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
 
-	void Stop(EFFECT_INSTANCE_ID iEffectId);
+	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
 
-	void SetPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& vPosition);
+	void SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& vPosition);
 
-	void SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix);
+	void SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix);
 
 #pragma endregion
 

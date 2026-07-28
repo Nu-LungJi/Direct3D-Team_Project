@@ -42,6 +42,9 @@ namespace Engine
 		_float	 fSpawnDelay = 0.f;
 		uint32_t	iBehaviorType;
 		_float fStopSizeTime = 0.f;
+		_bool    bKeepRotate = false;
+		_float3  rotationAxis= {};
+		_float  rotationSpeed = {};
 	}STANDARD_PARAMS;
 
 	typedef struct BEAM_PARAMS
@@ -62,6 +65,17 @@ namespace Engine
 
 	}BEAM_PARAMS;
 
+	struct BEAM_HANDLE
+	{
+		StringID groupTag;
+		StringID typeTag;
+		int32_t beamIndex = -1;
+
+		bool IsValid() const
+		{
+			return beamIndex >= 0;
+		}
+	};
 	constexpr uint32_t BEHAVIOR_NONE = 0;
 	constexpr uint32_t BEHAVIOR_DISTORTION = 1 << 1;
 	constexpr uint32_t BEHAVIOR_BILLBOARD = 1 << 2;

@@ -731,6 +731,8 @@ void CPlayer::PrepareLocomotionResume()
 	}
 }
 
+
+
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
@@ -835,6 +837,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pDbgLineRender->SetColor(vPreviousColor);
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
+	UpdateAttachedEffects();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
 
@@ -847,13 +850,26 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		return;
 	}
 
+	/// 이펙트 위치 갱신
 
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
+
+void CPlayer::UpdateAttachedEffects()
+{
+	if (m_iDashBodyEffectID == INVALID_EFFECT_INSTANCE_ID)
+		return;
+
+	auto a = GetTransform().GetWorldMatrix();
+	CGameInstance::Get().SetEffectWorldMatrix(
+		m_iDashBodyEffectID,
+		*GetTransform().GetWorldMatrix());
+}		
+
 // CPU + GPU 버전
 HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
-	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
+	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader || m_bRenderInfluence)
 		return E_FAIL;
 
 	const auto& vs = m_pResVertexCPUSkinningInstancedShader;

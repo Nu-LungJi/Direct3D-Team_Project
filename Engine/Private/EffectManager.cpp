@@ -18,11 +18,14 @@ CEffectManager::~CEffectManager()
 }
 
 HRESULT CEffectManager::Initialize() {
-	//복수하겠다
-	if (FAILED(LoadEffectPreset("./Resources/json/Effect/PlayerDashSmoke.json"))) {
-		MSG_BOX("Load Effect Failed");
+
+	auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
+	if (FAILED(Load_EffectJsonPackage(k))){
+		MSG_BOX("EFFECT LOAD FAILED");
 		return E_FAIL;
 	}
+
+
 	return S_OK;
 }
 
@@ -646,7 +649,6 @@ EFFECT_INSTANCE_ID CEffectManager::PlayEffect(const std::string& sEffectName,con
 		return INVALID_EFFECT_INSTANCE_ID;
 
 	_float4x4 noScaleWorld{};
-
 	if (!MakeNoScaleWorldMatrix(matWorld,noScaleWorld))
 	{
 		return INVALID_EFFECT_INSTANCE_ID;
@@ -854,7 +856,7 @@ void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_
 	}
 }
 
-void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
+void CEffectManager::StopEffect(EFFECT_INSTANCE_ID iEffectId)
 {
 	auto iter =m_Instances.find(iEffectId);
 
@@ -894,7 +896,7 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 
 }
 
-void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
+void CEffectManager::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
 {
 	auto iter =m_Instances.find(iEffectId);
 
@@ -943,12 +945,12 @@ void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4
 		m_pParticleManager->TransformOwner(ownerId,deltaMatrixData);
 	}
 
-	const _float3  deltaPos = _float3(deltaMatrixData._41, deltaMatrixData._42, deltaMatrixData._43);
+	const _float3  Pos = _float3(colliderWorldMatrix._41, colliderWorldMatrix._42, colliderWorldMatrix._43);
 	if (m_pLightManager)
 	{
 		for (const CHandle& lightHandle :instance.vecLightHandles)
 		{
-			//m_pLightManager->TransformLight(lightHandle, deltaPos);
+			m_pLightManager->Transform_EffectLight(lightHandle, Pos);
 		}
 	}
 
@@ -976,7 +978,7 @@ void CEffectManager::ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _flo
 		m_pParticleManager->SetColorByOwner(ownerId, vColor);
 }
 
-void CEffectManager::SetPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& newPosition)
+void CEffectManager::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& newPosition)
 {
 	auto iter =
 		m_Instances.find(iEffectId);
@@ -995,7 +997,7 @@ void CEffectManager::SetPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& new
 	newWorld._42 = newPosition.y;
 	newWorld._43 = newPosition.z;
 
-	SetWorldMatrix(
+	SetEffectWorldMatrix(
 		iEffectId,
 		newWorld);
 }
@@ -1145,4 +1147,51 @@ CEffectManager::Create(CParticleManager* pParticleManager,CLightManager* pLightM
 	pInstance->Initialize();
 
 	return pInstance;
+}
+std::vector<std::string> CEffectManager::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension) {
+	std::vector<std::string> FilePathStorage{};
+	FilePathStorage.reserve(32);
+
+	{
+		namespace fs = std::filesystem;
+
+		std::error_code ErrorCode{};
+
+		if (fs::exists(_FolderPath) == false || fs::is_directory(_FolderPath) == false) {
+			std::wstring MSGContent = L"Invalid FolderPath : " + _FolderPath.wstring();
+			MessageBoxW(NULL, MSGContent.c_str(), L"System Message", MB_OK);
+
+			return FilePathStorage;      // Empty vector return
+		}
+		auto Optimization = fs::directory_options::skip_permission_denied;
+
+		fs::recursive_directory_iterator iterator(_FolderPath, Optimization, ErrorCode);
+		fs::recursive_directory_iterator End;
+
+		for (; iterator != End && !ErrorCode; iterator.increment(ErrorCode)) {
+			if (iterator->is_regular_file(ErrorCode)) {
+				const auto& FilePath = iterator->path();
+
+				if (FilePath.extension() == _Extension) {
+					FilePathStorage.push_back(FilePath.string());
+				}
+			}
+		}
+		return FilePathStorage;
+	}
+}
+HRESULT CEffectManager::Load_EffectJsonPackage(
+	const std::vector<std::string>& filePaths)
+{
+	if (filePaths.empty())
+		return E_FAIL;
+
+	for (const auto& filePath : filePaths) {
+		const HRESULT hr = LoadEffectPreset(filePath.c_str());
+
+		if (FAILED(hr))
+			return hr;
+	}
+
+	return S_OK;
 }

@@ -35,6 +35,7 @@ CLevelCharlesRookwood::~CLevelCharlesRookwood()
 HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
+	CGameInstance::Get().Initialize_EffectLight(15);
 
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
 		return E_FAIL;

@@ -9,7 +9,7 @@ NS_USING(Client)
 std::future<bool> CLevelLogoLoader::Load()
 {
 	// 메인 스레드 시작
-	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/Client/Textures/SHM.png")))
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", "TEX_SHM", E::CResTexture2D::Create("./Resources/SampleClient/Textures/SHM.png")))
 	{
 		res->Load();
 	}

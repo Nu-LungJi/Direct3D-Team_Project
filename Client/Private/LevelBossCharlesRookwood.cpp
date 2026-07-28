@@ -29,6 +29,7 @@ CLevelBossCharlesRookwood::~CLevelBossCharlesRookwood()
 HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
+	CGameInstance::Get().Initialize_EffectLight(15);
 
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/TombBoss", true)))
 		return E_FAIL;

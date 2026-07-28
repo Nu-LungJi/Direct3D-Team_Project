@@ -380,6 +380,22 @@
     <Image Include="Client.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle_UvScroll.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
+  </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>
       <ExcludedFromBuild>true</ExcludedFromBuild>
