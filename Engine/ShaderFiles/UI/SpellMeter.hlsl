@@ -52,6 +52,13 @@ float4 baseColor = g_BaseTex.Sample(LinearWrap, input.uv);
     {
         discard;
     }
+	
+	if (g_DistStrength <= 0.0001f)
+	{
+        // 연기, 아이콘 등을 모두 생략하고 검은색 배경 출력
+        // baseColor.a를 곱해주어 UI 테두리의 부드러운 안티앨리어싱을 유지합니다.
+		return float4(0.0f, 0.0f, 0.0f, 0.5f * baseColor.a);
+	}
 
     // =========================================================
     // 1. UV 왜곡 및 마법 연기 샘플링

@@ -190,6 +190,33 @@
     <Filter Include="ShaderFiles\Particle">
       <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI">
+      <UniqueIdentifier>{f607c9fe-6680-482f-9189-0dd92dc847f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\Button">
+      <UniqueIdentifier>{5c367fde-5dc0-4626-975a-b6b15c8d512e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\Flipbook">
+      <UniqueIdentifier>{e1f1b2af-e70a-4de4-8bad-5531710ee7ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\9Slice">
+      <UniqueIdentifier>{7f21d46f-891f-4b3e-b453-edd3976ce981}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\MiniMap">
+      <UniqueIdentifier>{9cd2c8cf-17e2-4d71-9a61-d20e5353a908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\SpellMeter">
+      <UniqueIdentifier>{a44a4511-01fb-4672-abee-cd54393d2aad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\TextBox">
+      <UniqueIdentifier>{b4e8dae4-3619-472f-b4cc-0aa1b38118d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\TextureUI">
+      <UniqueIdentifier>{1e823375-f801-48f0-a1ae-bf810be571bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\UIController">
+      <UniqueIdentifier>{ad932d66-53a4-4e0e-b0b6-9443c44cbcd5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -452,6 +479,36 @@
     </ClInclude>
     <ClInclude Include="..\public\RagdollTest.h">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UI_Enums.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIManager.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Button.h">
+      <Filter>GameObject\UI\Button</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\EffectUI.h">
+      <Filter>GameObject\UI\Flipbook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\HPBar.h">
+      <Filter>GameObject\UI\9Slice</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MiniMap.h">
+      <Filter>GameObject\UI\MiniMap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\SpellMeter.h">
+      <Filter>GameObject\UI\SpellMeter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TextBox.h">
+      <Filter>GameObject\UI\TextBox</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TextureUI.h">
+      <Filter>GameObject\UI\TextureUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIController.h">
+      <Filter>GameObject\UI\UIController</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -743,5 +800,32 @@
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
+    <ClCompile Include="..\Private\UIManager.cpp">
+      <Filter>GameObject\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Button.cpp">
+      <Filter>GameObject\UI\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\EffectUI.cpp">
+      <Filter>GameObject\UI\Flipbook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\HPBar.cpp">
+      <Filter>GameObject\UI\9Slice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MiniMap.cpp">
+      <Filter>GameObject\UI\MiniMap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\SpellMeter.cpp">
+      <Filter>GameObject\UI\SpellMeter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TextBox.cpp">
+      <Filter>GameObject\UI\TextBox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TextureUI.cpp">
+      <Filter>GameObject\UI\TextureUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIController.cpp">
+      <Filter>GameObject\UI\UIController</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

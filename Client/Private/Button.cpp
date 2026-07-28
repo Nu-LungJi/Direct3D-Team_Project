@@ -10,6 +10,7 @@
 #include "TweenComponent.h"
 #include "UIObject.h"
 #include "Level_Defines.h"
+#include "UI_Enums.h"
 
 NS_USING(Client)
 
@@ -20,12 +21,17 @@ CButton::CButton()
 
 CButton::~CButton()
 {
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
+	{
+		if(nullptr != SafeGetOBJ(m_SpellDesc))
+			PlayScaleAlphaDownDelete(m_SpellDesc);
+		if (nullptr != SafeGetOBJ(m_SpellPaper))
+			PlayScaleAlphaDownDelete(m_SpellPaper);
+	}
 }
 
 HRESULT CButton::InitializePrototype(void* pArg)
 {
-
-
 	return S_OK;
 }
 
@@ -68,27 +74,6 @@ HRESULT CButton::Initialize(void* pArg)
 
 void CButton::PriorityUpdate(E::_float fTimeDelta)
 {
-	//if (!m_EffectLoad)
-	//{
-	//	this->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("ScaleUp");
-	//	this->OnHoverExit = GET_SINGLE(UIManager)->GetAction("ScaleDown");
-	//	this->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("Create");
-	//
-	//	if (m_Effect_Hovered_Handle != nullptr)
-	//	{
-	//		m_Effect_Hovered_Handle->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("FadeIn");
-	//		m_Effect_Hovered_Handle->OnHoverExit = GET_SINGLE(UIManager)->GetAction("FadeOut");
-	//	}
-	//
-	//	this->OnClicked = GET_SINGLE(UIManager)->GetAction("ScaleUpDown");
-	//
-	//	if (m_Effect_Clicked_Handle != nullptr)
-	//	{
-	//		m_Effect_Clicked_Handle->OnClicked = GET_SINGLE(UIManager)->GetAction("FadInOut");
-	//	}
-	//
-	//	m_EffectLoad = true;
-	//}
 }
 
 void CButton::Update(E::_float fTimeDelta)
@@ -128,7 +113,7 @@ void CButton::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CButton::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	std::string currentLevel = "LEVEL_UIEDITOR";
+	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
 	//VS_QuadTex
 	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
@@ -232,6 +217,13 @@ void CButton::PlayEffect(uint32_t uiState)
 			ClearHoveredEffect();
 			pHoverUI->OnHoverEnter(pHoverUI);
 		}
+
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
+		{
+			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab("0SpellDesc");
+			m_SpellDesc = vSpellDesc[0];
+			m_SpellPaper = vSpellDesc[1];
+		}
 	}
 
 	if (uiState & ETOUI(UI_STATE::EXIT))
@@ -247,6 +239,12 @@ void CButton::PlayEffect(uint32_t uiState)
 			CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
 			ClearHoveredEffect();
 			pHoverUI->OnHoverExit(pHoverUI);
+		}
+		
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
+		{
+			PlayScaleAlphaDownDelete(m_SpellDesc);
+			PlayScaleAlphaDownDelete(m_SpellPaper);
 		}
 	}
 
@@ -295,6 +293,105 @@ void CButton::ClearClickEffect()
 
 		pClickUI->GetTweenCom()->ClearTweens();
 	}
+}
+
+void CButton::SpellBtnSet()
+{
+	switch (m_SpellType)
+	{
+	case ETOUI(SPELL_TYPE::NONE):
+		m_UIINFO.Restag = "TEX_T_BlankAlpha_A";
+		break;
+	case ETOUI(SPELL_TYPE::ARRESTOMOMENTUM):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_ArrestoMomentum_Overlay";
+		m_colorType = 1;
+		break;
+	case ETOUI(SPELL_TYPE::GLACIUS):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Glacius_Overlay";
+		m_colorType = 1;
+		break;
+	case ETOUI(SPELL_TYPE::LEVIOSO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Levioso_Overlay";
+		m_colorType = 1;
+		break;
+	case ETOUI(SPELL_TYPE::TRANSFORMATION):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_TransformationOverlandOverlay";
+		m_colorType = 1;
+		break;
+	case ETOUI(SPELL_TYPE::ASSIO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Accio_Overlay";
+		m_colorType = 3;
+		break;
+	case ETOUI(SPELL_TYPE::DEPULSO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Depulso_Overlay";
+		m_colorType = 3;
+		break;
+	case ETOUI(SPELL_TYPE::DESENDO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Descendo_Overlay";
+		m_colorType = 3;
+		break;
+	case ETOUI(SPELL_TYPE::FLIPENDO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Flipendo_Overlay";
+		m_colorType = 3;
+		break;
+	case ETOUI(SPELL_TYPE::CONFRINGO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Confringo_Overlay";
+		m_colorType = 0;
+		break;
+	case ETOUI(SPELL_TYPE::DIFFINDO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Diffindo_Overlay";
+		m_colorType = 0;
+		break;
+	case ETOUI(SPELL_TYPE::EXPELLIARMUS):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Expelliarmus_Overlay";
+		m_colorType = 0;
+		break;
+	case ETOUI(SPELL_TYPE::BOMBARDA):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Bombarda_Overlay";
+		m_colorType = 0;
+		break;
+	case ETOUI(SPELL_TYPE::INCENDIO):
+		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Incendio_Overlay";
+		m_colorType = 0;
+		break;
+	default:
+		m_UIINFO.Restag = "TEX_T_BlankAlpha_A";
+		m_colorType = 5;
+		break;
+	}
+}
+
+void CButton::PlayScaleAlphaDownDelete(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float scaleRatio = pBtn->GetScaleRatio();
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(scaleRatio, 0.f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetScaleRatio(currentValue);
+			pBtn->CalcUICoord();
+		}, [pHandle]() {
+			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad);
+
+		pTween->PlayTween(Alpah, 0.f, 0.1f,
+			[pBtn](float currentValue) {
+				pBtn->SetAlpha(currentValue);
+				pBtn->CalcUICoord();
+			}, nullptr, EEaseType::EaseOutQuad);
+}
+
+E::CUIObject* CButton::SafeGetOBJ(CHandle pHandle)
+{
+	if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
+		return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
+
+	return nullptr;
 }
 
 E::UPtr<CButton> CButton::Create()

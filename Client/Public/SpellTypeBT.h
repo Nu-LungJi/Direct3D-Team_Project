@@ -10,16 +10,15 @@ class TweenComponent;
 NS_END
 
 NS_BEGIN(Client)
-class CEffectUI;
 
-class CButton final : public E::CUITex
+class CSpellTypeBT final : public E::CUITex
 {
 public:
 	DECLARE_DERIVED_TYPE(CButton, E::CUITex)
 
 private:
-	CButton();
-	~CButton() override;
+	CSpellTypeBT();
+	~CSpellTypeBT() override;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
@@ -67,7 +66,7 @@ private:
 	std::string m_EffectTag;
 
 public:
-	static E::UPtr<CButton> Create();
+	static E::UPtr<CSpellTypeBT> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 

@@ -230,11 +230,14 @@
     <ClInclude Include="..\Public\BTTurnAnimation.h" />
     <ClInclude Include="..\Public\BTTurnDirect.h" />
     <ClInclude Include="..\Public\BTTurnSlow.h" />
+    <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\Public\CinematicEditor.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
+    <ClInclude Include="..\Public\EffectUI.h" />
+    <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
@@ -253,6 +256,7 @@
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
+    <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
@@ -267,6 +271,12 @@
     <ClInclude Include="..\Public\Player_Roll_State.h" />
     <ClInclude Include="..\Public\Player_SkillStateBase.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
+    <ClInclude Include="..\Public\SpellMeter.h" />
+    <ClInclude Include="..\Public\TextBox.h" />
+    <ClInclude Include="..\Public\TextureUI.h" />
+    <ClInclude Include="..\Public\UIController.h" />
+    <ClInclude Include="..\Public\UIManager.h" />
+    <ClInclude Include="..\Public\UI_Enums.h" />
     <ClInclude Include="..\Public\Player_Weapon.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
@@ -318,8 +328,11 @@
     <ClCompile Include="..\Private\BTTurnSlow.cpp" />
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
+    <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
+    <ClCompile Include="..\Private\EffectUI.cpp" />
+    <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
@@ -331,6 +344,7 @@
     <ClCompile Include="..\private\LevelTerrainLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\Private\MiniMap.cpp" />
     <ClCompile Include="..\Private\Monster.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
@@ -349,6 +363,11 @@
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
+    <ClCompile Include="..\Private\SpellMeter.cpp" />
+    <ClCompile Include="..\Private\TextBox.cpp" />
+    <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\Private\UIController.cpp" />
+    <ClCompile Include="..\Private\UIManager.cpp" />
     <ClCompile Include="..\Private\Player_Weapon.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />

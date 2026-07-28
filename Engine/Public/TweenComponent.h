@@ -5,7 +5,7 @@
 
 NS_BEGIN(Engine)
 
-enum class EEaseType { Linear, EaseOutQuad, EaseOutBack, EaseOutElastic, EaseOutBounce, Floating };
+enum class EEaseType { Linear, EaseOutQuad, EaseOutBack, EaseOutElastic, EaseOutBounce, Floating, EaseInElastic };
 
 namespace Easing
 {
@@ -49,6 +49,13 @@ namespace Easing
 		else {
 			return n1 * (t -= 2.625f / d1) * t + 0.984375f;
 		}
+	}
+
+	inline float EaseInElastic(float t) {
+		const float c4 = (2.0f * std::numbers::pi_v<float>) / 3.0f;
+		if (t == 0.0f) return 0.0f;
+		if (t == 1.0f) return 1.0f;
+		return -std::pow(2.0f, 10.0f * t - 10.0f) * std::sin((t * 10.0f - 10.75f) * c4);
 	}
 }
 

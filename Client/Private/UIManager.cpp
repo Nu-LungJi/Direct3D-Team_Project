@@ -12,6 +12,7 @@
 #include "HPBar.h"
 #include "Level_Defines.h"
 #include "MiniMap.h"
+#include "UIController.h"
 
 NS_USING(Client)
 
@@ -138,6 +139,66 @@ void UIManager::InitializeActions()
 				}, nullptr, EEaseType::EaseOutQuad, 0.1f);
 		};
 	m_vEventNames.push_back("AppearScaleUp0.1");
+
+	m_EventMap["AppearScaleUp1"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetActive(true);
+			CHandle handle = pCaller->GetHandle();
+			_float scaleRatio = pCaller->GetScaleRatio();
+
+			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.f);
+
+			pTween->PlayTween(0.f, 1.f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetAlpha(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.f);
+		};
+	m_vEventNames.push_back("AppearScaleUp1");
+
+	m_EventMap["AppearScaleUp1.1"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetActive(true);
+			CHandle handle = pCaller->GetHandle();
+			_float scaleRatio = pCaller->GetScaleRatio();
+
+			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
+
+			pTween->PlayTween(0.f, 1.f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle))
+					{
+						pObj->SetAlpha(currentValue);
+						pObj->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
+		};
+	m_vEventNames.push_back("AppearScaleUp1.1");
 
 	m_EventMap["TextScaleUp"] = [](CUIObject* pCaller)
 	{
@@ -388,8 +449,31 @@ void UIManager::InitializeActions()
 	};
 	m_vEventNames.push_back("FadeOut_D");
 
+	m_EventMap["SpellEffect"] = [this](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			CHandle handle = pCaller->GetHandle();
+
+			pTween->PlayTween(1.f, 1.5f, 1.f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) pObj->SetScaleRatio(currentValue);
+				}, nullptr, EEaseType::EaseOutQuad);
+
+			pTween->PlayTween(1.f, 0.0f, 1.f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
+				},
+				[handle, this]() {
+					if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
+				}, EEaseType::EaseOutQuad);
+		};
+	m_vEventNames.push_back("SpellEffect");
+
 	// ==========================================
-	// 5. 페이드 인 & 아웃 (FadInOut -> FadeInOut 권장)
+	// 5. 페이드 인 & 아웃
 	// ==========================================
 	m_EventMap["FadInOut"] = [](CUIObject* pCaller)
 	{
@@ -544,32 +628,6 @@ void UIManager::InitializeActions()
 	m_vEventNames.push_back("PosRight");
 
 	// ==========================================
-	// 스펠이펙트
-	// ==========================================
-	m_EventMap["SpellEffect"] = [this](CUIObject* pCaller)
-		{
-			if (!pCaller) return;
-			auto pTween = pCaller->GetTweenCom();
-			if (!pTween) return;
-
-			CHandle handle = pCaller->GetHandle();
-
-			pTween->PlayTween(1.f, 1.5f, 1.f,
-				[handle](float currentValue) {
-					if (auto pObj = GetSafeUI(handle)) pObj->SetScaleRatio(currentValue);
-				}, nullptr, EEaseType::EaseOutQuad);
-
-			pTween->PlayTween(1.f, 0.0f, 1.f,
-				[handle](float currentValue) {
-					if (auto pObj = GetSafeUI(handle)) pObj->SetAlpha(currentValue);
-				},
-				[handle, this]() {
-					if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
-				}, EEaseType::EaseOutQuad);
-		};
-	m_vEventNames.push_back("SpellEffect");
-
-	// ==========================================
 	// 바운스
 	// ==========================================
 	m_EventMap["Bounce"] = [](CUIObject* pCaller)
@@ -627,7 +685,7 @@ void UIManager::InitializeActions()
 		pTween->PlayTween(0, 100.f, 1.f,
 			[handle, originalPos](float currentValue) {
 				if (auto pObj = GetSafeUI(handle)) {
-					pObj->SetPos({ pObj->GetPos().x, originalPos.y + currentValue - 100.f});
+					pObj->SetPos({ pObj->GetPos().x, originalPos.y + currentValue - 100.f });
 					pObj->CalcUICoord();
 				}
 			}, nullptr, EEaseType::EaseOutElastic);
@@ -788,8 +846,7 @@ void UIManager::InitializeFunc()
 		};
 	m_vFuncNames.push_back("SpellTypeDesCreate");
 
-
-	m_FuncMap["CreateSpellDragIcon"] = [](std::string name)
+	m_FuncMap["CreateSpellDragIcon"] = [this](std::string name)
 		{
 			std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
@@ -810,68 +867,96 @@ void UIManager::InitializeFunc()
 			CTextureUI* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*m_oSelectHandle);
 			selectUI->SetMouseTracking(true);
 			selectUI->SetUIType(ETOUI(UI_TYPE::SHORTCUT_ICON));
+
+
+			if (m_UIController != std::nullopt &&
+				nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*m_UIController))
+			{
+				CUIController* pController = E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*m_UIController);
+				
+				if (name == "TEX_UI_T_spellmeter_ArrestoMomentum_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_ARRESTOMOMENTUM));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Glacius_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_GLACIUS));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Levioso_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_LEVIOSO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_TransformationOverlandOverlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_TRANSFORMATION));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Accio_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_ASSIO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Depulso_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_DEPULSO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Descendo_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_DESENDO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Flipendo_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_FLIPENDO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Confringo_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_CONFRINGO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Diffindo_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_DIFFINDO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Expelliarmus_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_EXPELLIARMUS));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Bombarda_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_BOMBARDA));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Incendio_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_INCENDIO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Disillusionment_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_DISILLUSIONMENT));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Lumos_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_LUMOS));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Reparo_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_REPARO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_WingardiumLeviosa_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_WINGARDIUM));
+				}
+				else if (name == "TEX_UI_T_spellmeter_AvadaKedavra_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_AVADAKEDAVRA));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Crucio_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_CRUCIO));
+				}
+				else if (name == "TEX_UI_T_spellmeter_Imperio_Overlay")
+				{
+					pController->SetTargetIcon(ETOUI(SPELL_TYPE::B_IMPERIO));
+				}
+			}
 		};
 	m_vFuncNames.push_back("CreateSpellDragIcon");
-
-	m_EventMap["AppearScaleUp1"] = [](CUIObject* pCaller)
-		{
-			if (!pCaller) return;
-			auto pTween = pCaller->GetTweenCom();
-			if (!pTween) return;
-
-			pCaller->SetActive(true);
-			CHandle handle = pCaller->GetHandle();
-			_float scaleRatio = pCaller->GetScaleRatio();
-
-			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
-				[handle](float currentValue) {
-					if (auto pObj = GetSafeUI(handle))
-					{
-						pObj->SetScaleRatio(currentValue);
-						pObj->CalcUICoord();
-					}
-				}, nullptr, EEaseType::EaseOutQuad, 1.f);
-
-			pTween->PlayTween(0.f, 1.f, 0.1f,
-				[handle](float currentValue) {
-					if (auto pObj = GetSafeUI(handle))
-					{
-						pObj->SetAlpha(currentValue);
-						pObj->CalcUICoord();
-					}
-				}, nullptr, EEaseType::EaseOutQuad, 1.f);
-		};
-	m_vEventNames.push_back("AppearScaleUp1");
-
-	m_EventMap["AppearScaleUp1.1"] = [](CUIObject* pCaller)
-		{
-			if (!pCaller) return;
-			auto pTween = pCaller->GetTweenCom();
-			if (!pTween) return;
-
-			pCaller->SetActive(true);
-			CHandle handle = pCaller->GetHandle();
-			_float scaleRatio = pCaller->GetScaleRatio();
-
-			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
-				[handle](float currentValue) {
-					if (auto pObj = GetSafeUI(handle))
-					{
-						pObj->SetScaleRatio(currentValue);
-						pObj->CalcUICoord();
-					}
-				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
-
-			pTween->PlayTween(0.f, 1.f, 0.1f,
-				[handle](float currentValue) {
-					if (auto pObj = GetSafeUI(handle))
-					{
-						pObj->SetAlpha(currentValue);
-						pObj->CalcUICoord();
-					}
-				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
-		};
-	m_vEventNames.push_back("AppearScaleUp1.1");
 }
 
 void UIManager::UpdateRootUIHandles()
@@ -991,10 +1076,9 @@ _bool UIManager::PtInRect(const UI_INFO& selectInfo, _float scaleRatio)
 	return false;
 }
 
-std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
+std::vector<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
 {
 	m_vLoadPrefabRoot.clear();
-
 	uint32_t num = E::CGameInstance::Get().GetCurrentLevelID();
 	if (num > 100)
 		m_CurrentLevel = "LEVEL_LOADING";
@@ -1011,7 +1095,7 @@ std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_Bas
 	if (!file.is_open())
 	{
 		MSG_BOX("파일 열기 실패");
-		return std::nullopt;
+		return m_vLoadPrefabRoot;
 	}
 
 	nlohmann::ordered_json root;
@@ -1023,12 +1107,11 @@ std::optional<CHandle> UIManager::LoadPrefab(std::string name, std::string g_Bas
 		LoadUIRecursive(obj, nullptr);
 	}
 
-	return m_rootHandle;
+	return m_vLoadPrefabRoot;
 }
 
 E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
 {
-
 	int uiType = obj["UiType"];
 
 	E::CUIObject* pUI = nullptr;
@@ -1042,7 +1125,6 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 
 	switch (uiType)
 	{
-	case ETOUI(UI_TYPE::SHORTCUT_ICON):
 	case ETOUI(UI_TYPE::TEXUI):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);

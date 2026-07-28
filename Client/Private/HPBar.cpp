@@ -76,24 +76,6 @@ void CHPBar::Update(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	// 디버깅용
-	if (m_UIINFO.UIType == ETOUI(UI_TYPE::HPFILL))
-	{
-		if (CGameInstance::Get().KeyDown(DIK_8))
-		{
-			m_fcurrentFill -= 400.f;
-			UpdateFill();
-		}
-	}
-	else if (m_UIINFO.UIType == ETOUI(UI_TYPE::LEFTHPFILL))
-	{
-		if (CGameInstance::Get().KeyDown(DIK_9))
-		{
-			m_fcurrentFill -= 100.f;
-			UpdateFill();
-		}
-	}
-
 	CUIObject::Update(fTimeDelta);
 
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
@@ -160,7 +142,7 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_UIINFO.Restag);
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		const D3D11_TEXTURE2D_DESC& texDesc = srv->GetTexture2DDesc();
 
 		E::CB_PER_UI perUI{};

@@ -5,7 +5,7 @@
 
 #include "MainAppLoader.h"
 #include "CinematicEditor.h"
-
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -25,6 +25,9 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.eWinMode = Engine::WINMODE::WIN;
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
+
+	GET_SINGLE(UIManager)->InitializeActions();
+	GET_SINGLE(UIManager)->InitializeFunc();
 
 	if (FAILED(CBaseApp::Initialize(EngineDesc)))
 	{

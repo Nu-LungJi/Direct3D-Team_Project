@@ -66,6 +66,18 @@ private:
 private:
 	std::string m_EffectTag;
 
+	/******스펠 디스크립션*****/
+	CHandle m_SpellDesc;
+	CHandle m_SpellPaper;
+private:
+	/*******스펠버튼*****/
+	void SpellBtnSet();
+	void PlayScaleAlphaDownDelete(CHandle pHandle);
+	CUIObject* SafeGetOBJ(CHandle pHandle);
+private:
+	uint32_t m_SpellType{};
+	uint32_t m_colorType{};
+	_float4 m_BGColor{ 1.f, 1.f, 1.f, 1.f };
 public:
 	static E::UPtr<CButton> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
