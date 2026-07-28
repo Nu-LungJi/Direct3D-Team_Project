@@ -217,6 +217,9 @@
     <Filter Include="GameObject\UI\UIController">
       <UniqueIdentifier>{ad932d66-53a4-4e0e-b0b6-9443c44cbcd5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Magic_Bullet">
+      <UniqueIdentifier>{15e1e341-898d-42a9-b6c0-d22c4c66ba61}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -510,6 +513,9 @@
     <ClInclude Include="..\Public\UIController.h">
       <Filter>GameObject\UI\UIController</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Magic_Bullet.h">
+      <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -755,6 +761,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecIsGround.cpp">
       <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Magic_Bullet.cpp">
+      <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

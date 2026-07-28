@@ -36,6 +36,7 @@ private:
 	{
 		CAST,
 		ATTACK,
+		PULL,
 		RECOVERY
 	};
 
@@ -47,8 +48,9 @@ private:
 	PHASE m_ePhase = PHASE::CAST;
 	ACCIOSTATE m_eAccio = ACCIOSTATE::END;
 	static constexpr _float CAST_START_RATIO = 0.f;
+	static constexpr _float CAST_END_RATIO = 0.2f;
 	static constexpr _float MONSTER_PULL_TIME = 0.f;
-	static constexpr _float ATTACK_END_RATIO = 0.3f;
+	static constexpr _float ATTACK_END_RATIO = 0.7f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.3f;
 	_float	m_fAnimRatio = 0.f;
 	_bool	m_bPulling = true;

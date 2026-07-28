@@ -30,6 +30,7 @@ private:
 	{
 		CAST,
 		ATTACK,
+		PUSH,
 		RECOVERY
 	};
 
@@ -39,9 +40,12 @@ private:
 	int32_t m_DescendoEnd_Animation{};
 
 	PHASE m_ePhase = PHASE::CAST;
+
 	static constexpr _float CAST_START_RATIO = 0.f;
-	static constexpr _float ATTACK_END_RATIO = 0.7f;
-	static constexpr _float RECOVERY_EXIT_RATIO = 1.f;
+	static constexpr _float CAST_END_RATIO = 0.3f;
+	static constexpr _float MONSTER_PUSH_TIME = 0.f;
+	static constexpr _float ATTACK_END_RATIO = 0.4f;
+	static constexpr _float RECOVERY_EXIT_RATIO = 0.2f;
 	_float	m_fAnimRatio = 0.f;
 
 };

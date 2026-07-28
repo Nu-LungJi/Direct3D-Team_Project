@@ -44,7 +44,7 @@
 #include "TmbGurdianDead.h"
 #include "Mon_Weapon.h"
 #include "Player_Weapon.h"
-
+#include "Player_Magic_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
 NS_USING(Client)
 
@@ -366,6 +366,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
 			{
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerWeapon");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet, CPlayer_Magic_Bullet::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerMagicBullet");
 				return false;
 			}
 

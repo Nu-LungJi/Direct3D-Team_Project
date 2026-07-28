@@ -268,6 +268,7 @@
     <ClInclude Include="..\Public\Player_DescendoSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
+    <ClInclude Include="..\Public\Player_Magic_Bullet.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
     <ClInclude Include="..\Public\Player_SkillStateBase.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
@@ -360,6 +361,7 @@
     <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
+    <ClCompile Include="..\Private\Player_Magic_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />

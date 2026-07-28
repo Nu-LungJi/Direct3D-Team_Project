@@ -16,15 +16,7 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
-	if (!HasValidTarget(*pPlayer))
-	{
-		RequestLocomotion(pStateMachine);
-		return;
-	}
-
-	CacheAnimationIndices(*pPlayer);
-
-	if (m_DescendoCast_Animation < 0 || m_DescendoEnd_Animation < 0)
+	if (!HasTarget(*pPlayer))
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -37,6 +29,7 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DESCENDO);
@@ -51,8 +44,8 @@ void CPlayer_DescendoSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	// 고쳐야 할거 
-	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
-	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm");
+	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
+	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
 
 	m_bAnimationIndicesCached = m_DescendoCast_Animation >= 0 && m_DescendoEnd_Animation >= 0;
 }
@@ -66,8 +59,6 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		return;
 	}
 
-	pPlayer->SetCurrentMoveSpeed(0.f);
-
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
 	{
@@ -76,6 +67,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	}
 
 	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
@@ -83,16 +75,27 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
-			pAnimator->Play_Anim(m_DescendoCast_Animation,false,0.24f);
+			if (!PlayRandomTargetAttack(*pPlayer))
+				RequestLocomotion(pStateMachine);
 		}
 		break;
 
 	case PHASE::ATTACK:
-		if (m_fAnimRatio >= ATTACK_END_RATIO)
+	{
+		if (m_fAnimRatio >= CAST_END_RATIO)
+		{
+			m_ePhase = PHASE::PUSH;
+			pAnimator->Play_Anim(m_DescendoCast_Animation, false, 0.25f);
+			pAnimator->GetCurAnimState().fSpeed = 1.f;
+		}
+		break;
+	}
+
+	case PHASE::PUSH:
+		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)
 		{
 			m_ePhase = PHASE::RECOVERY;
-			pAnimator->Play_Anim(m_DescendoEnd_Animation, false, 0.25f);
-			pAnimator->GetCurAnimState().fSpeed = 1.f;
+			RequestLocomotion(pStateMachine);
 		}
 		break;
 

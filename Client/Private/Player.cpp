@@ -30,7 +30,7 @@
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
-
+#include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
 NS_USING(Client)
 
@@ -101,7 +101,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-
+	m_LevelTag = pDesc->LevelTag;
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
@@ -1037,6 +1037,44 @@ HRESULT CPlayer::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 }
 
 
+void CPlayer::Attack_Magic_Bullet()
+{
+
+
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]);
+
+	if (!pWeapon)
+		return;
+
+	// 무기 발사 위치
+	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
+	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43};
+
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+
+	if (pTarget)
+	{
+		// 타깃이 있으면 타깃을 향해 발사
+		XMStoreFloat3( &desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
+	}
+	else
+	{
+		// 타깃이 없으면 플레이어 전방 일정 거리로 발사
+		const _vector start = XMLoadFloat3(&desc.vStartPosition);
+
+		const _vector look = XMVector3Normalize(XMVectorSetY(GetTransform().GetState(STATE::LOOK),0.f));
+
+		XMStoreFloat3(&desc.vEndPosition,start + look * 20.f);
+	}
+
+	desc.fSpeed = 70.f;
+	desc.fCurveHeight = 2.f;
+	desc.iSampleCount = 10;
+
+	CGameInstance::Get().AddGameObjectToLayer(m_LevelTag,PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,"PlayerMagicBullet",&desc);
+}
 void CPlayer::OnWake()
 {
 }

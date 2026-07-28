@@ -16,15 +16,7 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
-	if (!HasValidTarget(*pPlayer))
-	{
-		RequestLocomotion(pStateMachine);
-		return;
-	}
-
-	CacheAnimationIndices(*pPlayer);
-
-	if (m_DepulsoCast_Animation < 0 || m_DepulsoEnd_Animation < 0)
+	if (!HasTarget(*pPlayer))
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -37,6 +29,7 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	CacheAnimationIndices(*pPlayer);
 	// Depulso 이동은 애니메이션 Root Motion이 아니라 아래의 조절 가능한
 	// 전방 이동 구간을 사용한다.
 	SetSkillControl(*pPlayer, true, true, false);
@@ -45,6 +38,7 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	m_fPreviousAnimRatio = 0.f;
 }
 
 void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -59,7 +53,7 @@ void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
 	m_bAnimationIndicesCached = m_DepulsoCast_Animation >= 0 && m_DepulsoEnd_Animation >= 0;
 }
 
-void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
+void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
@@ -67,8 +61,6 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		RequestLocomotion(pStateMachine);
 		return;
 	}
-
-	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
@@ -78,6 +70,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	}
 
 	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
@@ -85,16 +78,55 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
-			pAnimator->Play_Anim(m_DepulsoCast_Animation,false,0.24f);
+			m_fPreviousAnimRatio = 0.f;
+			if (!PlayRandomTargetAttack(*pPlayer))
+				RequestLocomotion(pStateMachine);
+			m_fAnimRatio = 0.f;
 		}
 		break;
 
 	case PHASE::ATTACK:
-		if (m_fAnimRatio >= ATTACK_END_RATIO)
+	{
+		const _float fMoveTime =
+			PlayerAnimationRatioGuard::CalculateActiveDeltaTime(
+				m_fPreviousAnimRatio,
+				m_fAnimRatio,
+				ATTACK_MOVE_START_RATIO,
+				ATTACK_MOVE_END_RATIO,
+				fTimeDelta);
+
+		if (fMoveTime > 0.f)
 		{
-			m_ePhase = PHASE::RECOVERY;
-			pAnimator->GetCurAnimState().fSpeed = 1.f;
+			if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
+				pPlayer->GetTargetHandle()))
+			{
+				_float3 vTargetDirection{};
+				XMStoreFloat3(
+					&vTargetDirection,
+					pTarget->GetTransform().GetState(STATE::POSITION) -
+					pPlayer->GetTransform().GetState(STATE::POSITION));
+				pPlayer->ApplyDirectionalMovement(
+					vTargetDirection,
+					ATTACK_MOVE_SPEED,
+					fMoveTime);
+			}
 		}
+
+		if (m_fAnimRatio >= CAST_END_RATIO) {
+			// 밀기 시작
+			m_ePhase = PHASE::PUSH;
+			pAnimator->Play_Anim(m_DepulsoCast_Animation, false, 0.2f);
+		}
+
+		break;
+	}
+
+	case PHASE::PUSH:
+		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f) {
+			m_ePhase = PHASE::RECOVERY;
+			RequestLocomotion(pStateMachine);
+		}
+	
 		break;
 
 	case PHASE::RECOVERY:
@@ -102,6 +134,8 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float)
 			RequestLocomotion(pStateMachine);
 		break;
 	}
+
+	m_fPreviousAnimRatio = m_fAnimRatio;
 }
 
 void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)
@@ -111,6 +145,7 @@ void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	m_fPreviousAnimRatio = 0.f;
 }
 
 SPtr<CPlayer_DepulsoSkill_State> CPlayer_DepulsoSkill_State::Create()
