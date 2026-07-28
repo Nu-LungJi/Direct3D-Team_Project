@@ -43,7 +43,7 @@ void CUIController::Update(E::_float fTimeDelta)
 	// ************** 플레이어 HP
 	if (E::CGameInstance::Get().KeyDown(DIK_9))
 	{
-		AddHP(-100.f);
+		AddHP(-200.f);
 	}
 
 	// ************** 플레이어 Finisher
@@ -90,10 +90,17 @@ void CUIController::Update(E::_float fTimeDelta)
 	if (E::CGameInstance::Get().KeyDown(DIK_B))
 	{
 		ActiveShortCutSlot ? ActiveShortCutSlot = false : ActiveShortCutSlot = true;
-		if(ActiveShortCutSlot)
+		if (ActiveShortCutSlot)
+		{
 			CreateSpellType();
+			SafeGetOBJ(m_PotionCount)->SetActive(false);
+		}
 		else
+		{
 			DeleteSpellType();
+			SafeGetOBJ(m_PotionCount)->SetActive(true);
+		}
+			
 	}
 }
 
@@ -367,7 +374,7 @@ void CUIController::UsePotion()
 		return;
 
 	AddPotionCount(-1);
-	AddHP(40.f);
+	AddHP(400.f);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)
