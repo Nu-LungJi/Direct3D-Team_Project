@@ -68,6 +68,9 @@ public:
 
 
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
+
+public:
+	void Attack_Magic_Bullet();
 public:
 	void OnWake() override;
 	void OnSleep() override;
@@ -99,7 +102,7 @@ public:
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
 	
-
+	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -167,7 +170,7 @@ private:
 
 private:
 	CHandle m_hAutoTarget;
-
+	StringID m_LevelTag;
 	
 private:
 	PLAYER_SKILL_TYPE m_eSkill_Type;

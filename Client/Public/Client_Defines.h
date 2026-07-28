@@ -60,6 +60,7 @@ namespace Client
 		Prototype_GameObject_PlayerWeapon,
 		Prototype_GameObject_Terrain,
 		Prototype_GameObject_OilBarrel,
+		Prototype_GameObject_PlayerMagicBullet,
 	};
 
 	enum class PROTO_COMPONENT

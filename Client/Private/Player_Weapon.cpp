@@ -87,35 +87,6 @@ void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
-	//_float3 vstart, vend;
-	//vstart = m_pComTransform->GetPosition();
-	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	/*auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
-	
-	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));*/
-	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
-
-	
-	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
-
-	if (CGameInstance::Get().KeyPressing(DIK_7)) {
-		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	}
-
-
-
-
-	//if (CGameInstance::Get().KeyDown(DIK_K)) {
-	//	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
-	//
-	//}
-
-
-	//if (CGameInstance::Get().KeyPressing(DIK_P))
-	//	m_pComTransform->AddRotation(XMVectorSet(0,0,1,0), fTimeDelta * 5);
 
 
 }
@@ -200,6 +171,20 @@ HRESULT CPlayer_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CT
 	return S_OK;
 }
 
+
+_float4x4 CPlayer_Weapon::GetSpawnWorldMatrix() const
+{
+	_matrix spawnMatrix =
+		XMMatrixTranslation(
+			m_vSpawnLocalOffset.x,
+			m_vSpawnLocalOffset.y,
+			m_vSpawnLocalOffset.z)
+		* GetTransform().GetLoadedCombinedWorldMatrix();
+
+	_float4x4 result{};
+	XMStoreFloat4x4(&result, spawnMatrix);
+	return result;
+}
 
 E::UPtr<CPlayer_Weapon> CPlayer_Weapon::Create()
 {

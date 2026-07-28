@@ -253,18 +253,13 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 	if (!animator)
 		return false;
 
-	ATTACK_DIRECTION eDirection =
-		ResolveAttackDirection(player);
-	int32_t iAnimation =
-		GetAttackAnimation(eDirection, bHeavy);
+	ATTACK_DIRECTION eDirection = ResolveAttackDirection(player);
+	int32_t iAnimation = GetAttackAnimation(eDirection, bHeavy);
 
 	if (iAnimation < 0)
 	{
 		eDirection = ATTACK_DIRECTION::FWD;
-		iAnimation = bHeavy
-			? m_ForwardHvyAnimations.front()
-			: m_ForwardLightAnimations[
-				m_iCurrentForwardLightAnimation];
+		iAnimation = bHeavy ? m_ForwardHvyAnimations.front() : m_ForwardLightAnimations[m_iCurrentForwardLightAnimation];
 	}
 
 	if (iAnimation < 0)
@@ -275,6 +270,7 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);
 	animator->Play_Anim(iAnimation,false,ATTACK_BLEND_DURATION);
+	player.Attack_Magic_Bullet();
 	animator->GetCurAnimState().fSpeed = 1.3f;
 	return true;
 }
