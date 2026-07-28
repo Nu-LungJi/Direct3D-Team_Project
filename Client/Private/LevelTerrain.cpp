@@ -20,6 +20,7 @@
 #include "OilBarrel.h"
 #include "RagdollTest.h"
 
+#include "TmbGurdian.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -283,7 +284,7 @@ HRESULT CLevelTerrain::InitializeJointTests(
 						tJointDesc);
 			};
 
-		// D6 0: 모든 축 잠금. Fixed Joint와 같은 기준 동작을 확인한다.
+		// D6 0: ��� �� ���. Fixed Joint�� ���� ���� ������ Ȯ���Ѵ�.
 		{
 			CComPxD6Joint::DESC tJointDesc{};
 			tJointDesc.bPreserveCurrentPose = true;
@@ -298,7 +299,7 @@ HRESULT CLevelTerrain::InitializeJointTests(
 			}
 		}
 
-		// D6 1: X축만 -3~3 이동하고 한계점에서 반발하는 슬라이더.
+		// D6 1: X�ุ -3~3 �̵��ϰ� �Ѱ������� �ݹ��ϴ� �����̴�.
 		{
 			CComPxD6Joint::DESC tJointDesc{};
 			tJointDesc.bPreserveCurrentPose = true;
@@ -327,7 +328,7 @@ HRESULT CLevelTerrain::InitializeJointTests(
 			}
 		}
 
-		// D6 2: Y축 제한 안에서 목표 위치로 이동하는 선형 서보.
+		// D6 2: Y�� ���� �ȿ��� ��ǥ ��ġ�� �̵��ϴ� ���� ����.
 		{
 			CComPxD6Joint::DESC tJointDesc{};
 			tJointDesc.bPreserveCurrentPose = true;
@@ -362,7 +363,7 @@ HRESULT CLevelTerrain::InitializeJointTests(
 			}
 		}
 
-		// D6 3: 로컬 X축(Twist)을 -60~60도로 제한한 속도 모터.
+		// D6 3: ���� X��(Twist)�� -60~60���� ������ �ӵ� ����.
 		{
 			CComPxD6Joint::DESC tJointDesc{};
 			tJointDesc.bPreserveCurrentPose = true;
@@ -402,7 +403,7 @@ HRESULT CLevelTerrain::InitializeJointTests(
 			}
 		}
 
-		// D6 4: 위쪽을 월드에 고정하고 Swing Cone 안에서 흔들리는 진자.
+		// D6 4: ������ ���忡 �����ϰ� Swing Cone �ȿ��� ��鸮�� ����.
 		{
 			constexpr _float PENDULUM_ANCHOR_HEIGHT = 3.f;
 
@@ -447,7 +448,7 @@ HRESULT CLevelTerrain::InitializeJointTests(
 			}
 		}
 
-		// D6 5: 세 회전축을 SLERP로 목표 자세에 맞추는 다축 서보.
+		// D6 5: �� ȸ������ SLERP�� ��ǥ �ڼ��� ���ߴ� ���� ����.
 		{
 			CComPxD6Joint::DESC tJointDesc{};
 			tJointDesc.bPreserveCurrentPose = true;
@@ -549,7 +550,24 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 			CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
 
+		if (!BossTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;

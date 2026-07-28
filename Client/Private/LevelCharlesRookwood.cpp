@@ -20,6 +20,7 @@
 
 #include "BridgeCRW.h"
 #include "TmbGurdian.h"
+
 NS_USING(Client)
 
 CLevelCharlesRookwood::CLevelCharlesRookwood()

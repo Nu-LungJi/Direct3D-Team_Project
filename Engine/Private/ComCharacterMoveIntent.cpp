@@ -26,7 +26,7 @@ HRESULT CComCharacterMoveIntent::Initialize(void* pArg)
 
 void CComCharacterMoveIntent::SetMoveIntent(const _float3& vDirection, _float fSpeed)
 {
-	const _float fLengthSq = vDirection.x * vDirection.x + vDirection.z * vDirection.z;
+	const _float fLengthSq = vDirection.x * vDirection.x + vDirection.y * vDirection.y + vDirection.z * vDirection.z;
 
 	if (fLengthSq <= std::numeric_limits<_float>::epsilon() || fSpeed <= 0.f)
 	{
@@ -35,7 +35,7 @@ void CComCharacterMoveIntent::SetMoveIntent(const _float3& vDirection, _float fS
 	}
 
 	const _float fInvLength = 1.f / std::sqrt(fLengthSq);
-	m_tOutput.vMoveDirection = {vDirection.x * fInvLength,0.f,vDirection.z * fInvLength };
+	m_tOutput.vMoveDirection = {vDirection.x * fInvLength, vDirection.y * fInvLength,vDirection.z * fInvLength };
 	m_tOutput.fMoveSpeed = fSpeed;
 	m_tOutput.bMoveRequested = true;
 }

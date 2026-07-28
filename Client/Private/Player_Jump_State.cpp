@@ -103,6 +103,16 @@ void CPlayer_Jump_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 	}
 
 	const _bool bGrounded = motor->IsGrounded();
+	if (!bGrounded && player->HasRawMoveInput())
+	{
+		auto* moveIntent = player->GetMoveIntent();
+		if (moveIntent)
+		{
+			moveIntent->SetFacingIntent(
+				player->GetRawMoveDirection(),
+				360.f);
+		}
+	}
 	const _float fVerticalSpeed = motor->GetVelocity().y;
 	if (!bGrounded || fVerticalSpeed > 0.f)
 		m_bWasAirborne = true;

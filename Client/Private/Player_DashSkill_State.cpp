@@ -109,7 +109,7 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		{
 			// DASH 시작 ---------------------------------------------------------------------------------------------------
 			m_ePhase = PHASE::DASH;    
-
+			
 		}
 		break;
 
@@ -140,10 +140,8 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		}
 
 		{
-			const _float fRemainingTime =
-				std::max(0.f, DASH_DURATION - m_fDashElapsed);
-			const _float fMoveTime =
-				std::min(fTimeDelta, fRemainingTime);
+			const _float fRemainingTime = std::max(0.f, DASH_DURATION - m_fDashElapsed);
+			const _float fMoveTime = std::min(fTimeDelta, fRemainingTime);
 
 			if (fMoveTime > 0.f)
 			{

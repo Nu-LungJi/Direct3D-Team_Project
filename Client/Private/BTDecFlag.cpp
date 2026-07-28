@@ -34,7 +34,7 @@ HRESULT CBTDecFlag::Initalize(void* pArg)
 EVALUATE CBTDecFlag::Evaluate(_float fTimeDelta)
 {
 	if (Check_Flag(ETOUI(m_iFlag)))
-			return __super::Evaluate(fTimeDelta);
+			return m_eDebug = __super::Evaluate(fTimeDelta);
 	
 	return m_eDebug = EVALUATE::FAILED;
 }

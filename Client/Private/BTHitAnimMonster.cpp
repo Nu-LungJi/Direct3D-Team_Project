@@ -2,6 +2,7 @@
 #include "BTHitAnimMonster.h"
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
+#include "ComCharacterMotor.h"
 NS_USING(Client)
 
 CBTHitAnimMonster::CBTHitAnimMonster()
@@ -40,21 +41,30 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
+		
 		if (m_bStart)
 		{
 			//type 없으면 그냥 넘어가기
 			if (false == HitType())
-				return m_eDebug = EVALUATE::SUCCESS;
+				return m_eDebug = EVALUATE::FAILED;
 			m_bStart = false;
 		}
-		
+		else
+		{
+			if (auto pMonster = static_cast<CMonster*>(pBT->GetGameObject()))
+			{
+				if (m_bInterrupt && pMonster->Is_PendingHit())
+					return m_eDebug = EVALUATE::SUCCESS;
+			}
+		}
+		Gravity();
 		pAnimator->SetPlay(true);
-		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop);
-		Active_Skill();
+		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
+		_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 		_bool bFinished = pAnimator->GetFinish();
 
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
-		if (m_bRatio && m_fRatio.x <= pAnimator->GetPlayAnimRatio() && m_fRatio.y >= pAnimator->GetPlayAnimRatio())
+		if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 		{
 			_vector vMoveDirection{};
 			if (m_eMove == MOVE::RIGHT)
@@ -65,6 +75,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
 				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+			else if (m_eMove == MOVE::UP)
+				vMoveDirection = XMVectorSet(0, 1, 0, 0);
 
 			if (m_eMove != MOVE::END)
 			{
@@ -73,9 +85,14 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				pMoveIntent->SetMoveIntent(vDirection, m_Value.fSpeed);
 			}
 		}
-		EventFlagToRatio(pAnimator->GetPlayAnimRatio());
+		EventFlagToRatio(fAnimRatio);
 
-		if (m_bLoop || bFinished)
+		if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
+		{
+			m_bStart = true;
+			return m_eDebug = EVALUATE::SUCCESS;
+		}
+		if (bFinished)
 		{
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
@@ -86,8 +103,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 void CBTHitAnimMonster::Update_Gui()
 {
 	__super::Update_Gui();
-	ImGui::Text("Move Speed");
-	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
+	DragFloat("Move Speed", m_Value.fSpeed);
+	BoolButton("Interrupt : ", m_bInterrupt);
 
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -109,84 +126,40 @@ void CBTHitAnimMonster::Update_Gui()
 		ImGui::EndCombo();
 	}
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.f,0.f,0.f,1.f });
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 0.f, 0.f, 1.f));
-	
-	if (!m_bPopup)
-	{
-		for (size_t i = 0; i < ETOUI(HITMON::END); ++i)
-		{
+	if (ImGui::Button("AddTable"))
+		m_HitTable.push_back(HITTABLE());
 
-			_string Name = _string("Animation : ");
-			if (ImGui::Button(Name.c_str()))
+	if (ImGui::TreeNode("HitAnimTableList"))
+	{
+		uint32_t i = 0;
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,0.f,0.f,1.f });
+		for (auto iter  = m_HitTable.begin(); iter != m_HitTable.end();++iter)
+		{
+			ImGui::PushID(i);
+			ImGui::Text("AttType : "); ImGui::SameLine();
+			ComboAttMon("##ATT",(*iter).eAttType); ImGui::SameLine();
+			
+			ImGui::Text("HitType : "); ImGui::SameLine();
+			ComboHit("##Hit", (*iter).eHitType); ImGui::SameLine();
+		
+			ComboAnim("Animation",(*iter).iAnimIndex,i); ImGui::SameLine();
+
+			ImGui::DragFloat("Blend", &(*iter).fBlend, 0.1f, 0.f, 1.f);  ImGui::SameLine();
+			
+			if (ImGui::Button("Del"))
 			{
-				m_Value.iAnimIndex = i;
-				m_bPopup = true;
+				m_HitTable.erase(iter);
+				ImGui::PopID();
 				break;
 			}
-			ImGui::SameLine();
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,0.f,0.f,1.f });
-			_string AttName = _string("##AttType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
-			if (ImGui::BeginCombo(AttName.c_str(), MagicEnumToStringView(m_HitTable[i].eAttType).data()))
-			{
-				for (uint32_t j = 0; j < ETOUI(ATTMON::END) +1; ++j)
-				{
-					_bool	bSelect = m_HitTable[i].eAttType == static_cast<ATTMON>(j);
-					ImGui::PushID(MagicEnumToStringView(static_cast<ATTMON>(j)).data());
-					if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(j)).data(), bSelect))
-					{
-						m_HitTable[i].eAttType = static_cast<ATTMON>(j);
-					}
-					if (bSelect)
-						ImGui::SetItemDefaultFocus();
-
-					ImGui::PopID();
-				}
-
-				ImGui::EndCombo();
-			}
-			ImGui::SameLine();
-
-			_string HittName = _string("##HitType : ") + MagicEnumToStringView(static_cast<HITMON>(i)).data();
-			if (ImGui::BeginCombo(HittName.c_str(), MagicEnumToStringView(m_HitTable[i].eHitType).data()))
-			{
-				for (uint32_t j = 0; j < ETOUI(HITMON::END); ++j)
-				{
-					_bool	bSelect = m_HitTable[i].eHitType == static_cast<HITMON>(j);
-					ImGui::PushID(MagicEnumToStringView(static_cast<HITMON>(j)).data());
-					if (ImGui::Selectable(MagicEnumToStringView(static_cast<HITMON>(j)).data(), bSelect))
-					{
-						m_HitTable[i].eHitType = static_cast<HITMON>(j);
-					}
-					if (bSelect)
-						ImGui::SetItemDefaultFocus();
-					ImGui::PopID();
-				}
-
-				ImGui::EndCombo();
-			}
-			ImGui::PopStyleColor();
+			ImGui::PopID();
+			++i;
 		}
-	}
 
-	if (m_bPopup && m_Value.iAnimIndex != -1)
-	{
-		ImGui::Text("Select Animation : "); ImGui::SameLine(150.f);
-		ImGui::Text(MagicEnumToStringView(static_cast<HITMON>(m_Value.iAnimIndex)).data());
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,1.f,1.f,1.f });
-		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
-			m_bPopup = false;
-		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
-
-		if (-1 != iIndex)
-		{
-			m_bPopup = false;
-			m_iHitAnim[m_Value.iAnimIndex] = iIndex;
-			m_Value.iAnimIndex = -1;
-		}
 		ImGui::PopStyleColor();
+		ImGui::TreePop();
 	}
-	ImGui::PopStyleColor(2);
+
 }
 void CBTHitAnimMonster::Abort()
 {
@@ -195,22 +168,31 @@ void CBTHitAnimMonster::Abort()
 nlohmann::json CBTHitAnimMonster::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
+	
 
+	SaveJsonValue(j, "Interrupt", m_bInterrupt);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
+	if (!m_HitTable.empty())
+	{
+		size_t iArray = m_HitTable.size();
+		SaveJsonValue(j,"HitTableArrayCnt", iArray);
 
-	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
-	{
-		_string Name = "AnimIndex" + std::to_string(i);
-		_string HitName = "HITType" + std::to_string(i);
-		SaveJsonValue(j, Name, m_iHitAnim[i]);
-		SaveJsonEnum(j, HitName, m_HitTable[i].eHitType);
+		for (size_t i=0; i < m_HitTable.size(); ++i)
+		{
+			_string AnimIndexName = "HitTableAnimIndex" + std::to_string(i);
+			_string AttTypeName = "AttType" + std::to_string(i);
+			_string HitTypeName = "HitType" + std::to_string(i);
+			_string BlendName = "FBlend" + std::to_string(i);
+
+			SaveJsonValue(j, AnimIndexName, m_HitTable[i].iAnimIndex);
+			SaveJsonValue(j, BlendName, m_HitTable[i].fBlend);
+			SaveJsonEnum(j, AttTypeName, m_HitTable[i].eAttType);
+			SaveJsonEnum(j, HitTypeName, m_HitTable[i].eHitType);
+
+		}
 	}
-	for (uint32_t i = 0; i < ETOUI(ATTMON::END); ++i)
-	{
-		_string Name = "ATTType" + std::to_string(i);
-		SaveJsonEnum(j, Name, m_HitTable[i].eAttType);
-	}
+
 	return j;
 }
 HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
@@ -218,18 +200,25 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+	LoadJsonValue(j, "Interrupt", m_bInterrupt);
 
-	for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+	size_t iArray = 0;
+
+	if(LoadJsonValue(j, "HitTableArrayCnt", iArray))
 	{
-		_string Name = "AnimIndex" + std::to_string(i);
-		_string HitName = "HITType" + std::to_string(i);
-		LoadJsonValue(j, Name, m_iHitAnim[i]);
-		LoadJsonEnum(j, HitName, m_HitTable[i].eHitType);
-	}
-	for (uint32_t i = 0; i < ETOUI(ATTMON::END); ++i)
-	{
-		_string Name = "ATTType" + std::to_string(i);
-		LoadJsonEnum(j, Name, m_HitTable[i].eAttType);
+		m_HitTable.resize(iArray);
+		for (size_t i = 0; i < iArray; ++i)
+		{
+			_string AnimIndexName = "HitTableAnimIndex" + std::to_string(i);
+			_string AttTypeName = "AttType" + std::to_string(i);
+			_string HitTypeName = "HitType" + std::to_string(i);
+			_string BlendName = "FBlend" + std::to_string(i);
+
+			LoadJsonValue(j, BlendName, m_HitTable[i].fBlend);
+			LoadJsonValue(j, AnimIndexName, m_HitTable[i].iAnimIndex);
+			LoadJsonEnum(j,  AttTypeName, m_HitTable[i].eAttType);
+			LoadJsonEnum(j,  HitTypeName, m_HitTable[i].eHitType);
+		}
 	}
 	return S_OK;
 }
@@ -239,20 +228,112 @@ _bool CBTHitAnimMonster::HitType()
 	
 	if (auto pBT = Get_ComBT())
 	{
-		if (auto pSrc = pBT->GetGameObject())
+		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			
-			for (uint32_t i = 0; i < ETOUI(HITMON::END); ++i)
+			if (!pSrc->Is_PendingHit())
+				return false;
+
+			MON_HIT_INFO info = pSrc->Get_ActiveHitInfo();
+
+			auto iter = std::find_if(m_HitTable.begin(), m_HitTable.end(), [&](const HITTABLE& table)
 			{
-				if (m_HitTable[i] == static_cast<CMonster*>(pSrc)->Get_HitTable())
-				{
-					m_Value.iAnimIndex = m_iHitAnim[i];
-					return true;
-				}
+					return table.eAttType == info.eAttType && table.eHitType == info.eHitType;
+			});
+			 
+			if (iter == m_HitTable.end())
+			{
+				iter = std::find_if(m_HitTable.begin(), m_HitTable.end(), [&](const HITTABLE& table)
+					{
+						return table.eAttType == ATTMON::SKIP && table.eHitType == info.eHitType;
+					});
+
 			}
+			if (iter == m_HitTable.end())
+				return false;
+
+			pSrc->Clear_PendingHit();
+			if (iter != m_HitTable.end())
+			{
+				m_Value.iAnimIndex = (*iter).iAnimIndex;
+				m_fBlend = (*iter).fBlend;
+				
+				return true;
+			}
+			else
+				return false;
 		}
 	}
 	return false;
+}
+
+void CBTHitAnimMonster::ComboAttMon(const _char* pName, ATTMON& eTye)
+{
+	if (ImGui::BeginCombo(pName, MagicEnumToStringView(eTye).data()))
+	{
+		for (uint32_t j = 0; j < ETOUI(ATTMON::END) + 1; ++j)
+		{
+			_bool	bSelect = eTye == static_cast<ATTMON>(j);
+			ImGui::PushID(MagicEnumToStringView(static_cast<ATTMON>(j)).data());
+			if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(j)).data(), bSelect))
+			{
+				eTye = static_cast<ATTMON>(j);
+			}
+			if (bSelect)
+				ImGui::SetItemDefaultFocus();
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndCombo();
+	}
+}
+void CBTHitAnimMonster::ComboHit(const _char* pName, PLAYER_SKILL_TYPE& eTye)
+{
+	if (ImGui::BeginCombo(pName, MagicEnumToStringView(eTye).data()))
+	{
+		for (uint32_t j = 0; j < ETOUI(PLAYER_SKILL_TYPE::END); ++j)
+		{
+			_bool	bSelect = eTye == static_cast<PLAYER_SKILL_TYPE>(j);
+			ImGui::PushID(MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(j)).data());
+			if (ImGui::Selectable(MagicEnumToStringView(static_cast<PLAYER_SKILL_TYPE>(j)).data(), bSelect))
+			{
+				eTye = static_cast<PLAYER_SKILL_TYPE>(j);
+			}
+			if (bSelect)
+				ImGui::SetItemDefaultFocus();
+			ImGui::PopID();
+		}
+
+		ImGui::EndCombo();
+	}
+}
+void CBTHitAnimMonster::ComboAnim(const _char* pName, int32_t& iAnimIndex, uint32_t iArrayIndex)
+{
+	if (!m_bPopup)
+	{
+		if (ImGui::Button(pName))
+		{
+			m_iArrayIndex= iArrayIndex;
+
+			m_bPopup = true;
+		}
+	}
+
+	if (m_bPopup && m_iArrayIndex == iArrayIndex)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f,1.f,1.f,1.f });
+		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
+			m_bPopup = false;
+		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
+
+		if (-1 != iIndex)
+		{
+			m_bPopup = false;
+			iAnimIndex = iIndex;
+			m_iArrayIndex = UINT_MAX;
+		}
+		ImGui::PopStyleColor();
+	}
 }
 E::UPtr<CBTHitAnimMonster> CBTHitAnimMonster::Create()
 {
