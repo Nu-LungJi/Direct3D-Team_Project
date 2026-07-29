@@ -48,6 +48,10 @@ private:
 	std::optional<E::CHandle> m_PreviewTargetHandle{};
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	_float m_fFrustumDisplaySize{ 1.25f };
+	E::ECinematicReturnMode m_ePreviewReturnMode{
+		E::ECinematicReturnMode::Immediate
+	};
+	_float m_fPreviewReturnBlendDuration{ 0.5f };
 
 public:
 	static E::UPtr<CCinematicEditor> Create();

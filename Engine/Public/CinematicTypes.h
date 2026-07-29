@@ -170,4 +170,18 @@ struct FCinematicAssetData final : public ISerializable
 	}
 };
 
+
+// 컷신 끝나고 복귀 옵션
+enum class ECinematicReturnMode
+{
+	Immediate,
+	Blend
+};
+
+struct FCinematicPlayOptions
+{
+	ECinematicReturnMode eReturnMode { ECinematicReturnMode::Immediate };
+	_float fReturnBlendDuration { 0.5f };
+};
+
 NS_END

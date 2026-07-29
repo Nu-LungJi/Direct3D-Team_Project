@@ -55,8 +55,23 @@ HRESULT CCinematicSystem::Initialize(const StringID& CinematicCameraID)
 
 void CCinematicSystem::Update(_float fTimeDelta)
 {
-	if (!m_bPlaying || m_pPlayingAsset == nullptr)
+	if (m_ePlayState == EPlayState::Stopped)
 	{
+		return;
+	}
+
+	if (m_ePlayState == EPlayState::BlendingOut)
+	{
+		if (FAILED(UpdateBlendOut(fTimeDelta)))
+		{
+			Stop();
+		}
+		return;
+	}
+
+	if (m_pPlayingAsset == nullptr)
+	{
+		Stop();
 		return;
 	}
 
@@ -77,7 +92,20 @@ void CCinematicSystem::Update(_float fTimeDelta)
 
 	if (m_fPlayTime >= fDuration)
 	{
-		Stop();
+		if (m_PlayOptions.eReturnMode ==
+				ECinematicReturnMode::Blend &&
+			m_PlayOptions.fReturnBlendDuration >
+				FLT_EPSILON)
+		{
+			if (FAILED(BeginBlendOut(Pose)))
+			{
+				Stop();
+			}
+		}
+		else
+		{
+			Stop();
+		}
 	}
 }
 
@@ -178,21 +206,42 @@ HRESULT CCinematicSystem::Load(const std::string& CinematicName)
 	return RegistAsset(pAsset);
 }
 
-HRESULT CCinematicSystem::Play(const StringID& CinematicID)
+HRESULT CCinematicSystem::Play(
+	const StringID& CinematicID,
+	const FCinematicPlayOptions& Options)
 {
-	return Play(CinematicID, std::nullopt);
+	return Play(CinematicID, std::nullopt, Options);
 }
 
-HRESULT CCinematicSystem::Play(const StringID& CinematicID, const CHandle& TargetHandle)
+HRESULT CCinematicSystem::Play(
+	const StringID& CinematicID,
+	const CHandle& TargetHandle,
+	const FCinematicPlayOptions& Options)
 {
-	return Play(CinematicID, std::optional<CHandle>{ TargetHandle });
+	return Play(
+		CinematicID,
+		std::optional<CHandle>{ TargetHandle },
+		Options);
 }
 
-HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle)
+HRESULT CCinematicSystem::Play(
+	const StringID& CinematicID,
+	const std::optional<CHandle>& TargetHandle,
+	const FCinematicPlayOptions& Options)
 {
-	if (m_bPlaying)
+	if (m_ePlayState != EPlayState::Stopped)
 	{
 		return S_FALSE;
+	}
+
+	if (!std::isfinite(Options.fReturnBlendDuration) ||
+		Options.fReturnBlendDuration < 0.f ||
+		(Options.eReturnMode !=
+				ECinematicReturnMode::Immediate &&
+		 Options.eReturnMode !=
+				ECinematicReturnMode::Blend))
+	{
+		return E_INVALIDARG;
 	}
 
 	auto iter = m_Assets.find(CinematicID);
@@ -230,8 +279,10 @@ HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<
 
 	m_pPlayingAsset = iter->second;
 	m_TargetHandle = TargetHandle;
-	m_bPlaying = true;
+	m_PlayOptions = Options;
+	m_ePlayState = EPlayState::Playing;
 	m_fPlayTime = 0.f;
+	m_fReturnBlendTime = 0.f;
 
 	FCinematicCameraPose Pose{};
 	if (FAILED(EvaluateCamera(0.f, Pose)) || FAILED(ApplyCameraPose(Pose)))
@@ -245,27 +296,98 @@ HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<
 
 void CCinematicSystem::Stop()
 {
-	if (!m_bPlaying)
+	if (m_ePlayState == EPlayState::Stopped &&
+		!m_PreviousCameraID.has_value())
 	{
 		return;
 	}
 
-	EndCameraControl();
+	FinishPlayback();
+}
 
-	m_bPlaying = false;
+void CCinematicSystem::FinishPlayback()
+{
+	EndCameraControl();
+	m_PreviousCameraID.reset();
+
+	m_ePlayState = EPlayState::Stopped;
 	m_fPlayTime = 0.f;
+	m_fReturnBlendTime = 0.f;
 	m_pPlayingAsset.reset();
 	m_TargetHandle.reset();
+	m_PlayOptions = {};
+	m_BlendStartPose = {};
 }
 
 _bool CCinematicSystem::IsPlaying() const
 {
-	return m_bPlaying;
+	return m_ePlayState != EPlayState::Stopped;
 }
 
 _float CCinematicSystem::GetPlayTime() const
 {
 	return m_fPlayTime;
+}
+
+HRESULT CCinematicSystem::BeginBlendOut(
+	const FCinematicCameraPose& StartPose)
+{
+	if (!m_PreviousCameraID.has_value() ||
+		m_CameraManager.GetCamera(
+			*m_PreviousCameraID) == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_BlendStartPose = StartPose;
+	m_fReturnBlendTime = 0.f;
+	m_ePlayState = EPlayState::BlendingOut;
+	return S_OK;
+}
+
+HRESULT CCinematicSystem::UpdateBlendOut(_float fTimeDelta)
+{
+	if (!m_PreviousCameraID.has_value() || m_PlayOptions.fReturnBlendDuration <= FLT_EPSILON)
+	{
+		return E_FAIL;
+	}
+
+	if (fTimeDelta > 0.f)
+	{
+		m_fReturnBlendTime += fTimeDelta;
+	}
+
+	FCinematicCameraPose ReturnPose{};
+	if (FAILED(GetCameraPose(m_CameraManager.GetCamera(*m_PreviousCameraID), ReturnPose)))
+	{
+		return E_FAIL;
+	}
+
+	_float fRatio = std::clamp(m_fReturnBlendTime / m_PlayOptions.fReturnBlendDuration, 0.f, 1.f);
+	fRatio = fRatio * fRatio * (3.f - 2.f * fRatio);
+
+	FCinematicCameraPose BlendedPose{};
+	XMStoreFloat3(&BlendedPose.vPosition, XMVectorLerp(
+			XMLoadFloat3(&m_BlendStartPose.vPosition),
+			XMLoadFloat3(&ReturnPose.vPosition),
+			fRatio));
+	XMStoreFloat4(&BlendedPose.vRotation, XMQuaternionSlerp(
+			XMQuaternionNormalize(XMLoadFloat4(&m_BlendStartPose.vRotation)),
+			XMQuaternionNormalize(XMLoadFloat4(&ReturnPose.vRotation)),
+		fRatio));
+	BlendedPose.fFovY = m_BlendStartPose.fFovY + (ReturnPose.fFovY - m_BlendStartPose.fFovY) * fRatio;
+
+	if (FAILED(ApplyCameraPose(BlendedPose)))
+	{
+		return E_FAIL;
+	}
+
+	if (m_fReturnBlendTime >= m_PlayOptions.fReturnBlendDuration)
+	{
+		FinishPlayback();
+	}
+
+	return S_OK;
 }
 
 HRESULT CCinematicSystem::EvaluateCamera(_float fPlayTime, FCinematicCameraPose& OutPose)
@@ -361,6 +483,37 @@ HRESULT CCinematicSystem::ConvertTargetLocalPose(const FCinematicCameraPose& Loc
 	XMStoreFloat4(&OutWorldPose.vRotation, XMQuaternionNormalize(vRotation));
 	OutWorldPose.fFovY = LocalPose.fFovY;
 
+	return S_OK;
+}
+
+HRESULT CCinematicSystem::GetCameraPose(const CCameraObject* pCamera, FCinematicCameraPose& OutPose) const
+{
+	if (pCamera == nullptr ||
+		!std::isfinite(pCamera->GetFovY()) ||
+		pCamera->GetFovY() <= 0.f ||
+		pCamera->GetFovY() >= 180.f)
+	{
+		return E_FAIL;
+	}
+
+	_vector vScale{};
+	_vector vRotation{};
+	_vector vTranslation{};
+	if (!XMMatrixDecompose(&vScale, &vRotation, &vTranslation, pCamera->GetTransform().GetLoadedCombinedWorldMatrix()))
+	{
+		return E_FAIL;
+	}
+
+	_float fRotationLengthSq{};
+	XMStoreFloat(&fRotationLengthSq, XMVector4LengthSq(vRotation));
+	if (fRotationLengthSq <= FLT_EPSILON)
+	{
+		return E_FAIL;
+	}
+
+	XMStoreFloat3(&OutPose.vPosition, vTranslation);
+	XMStoreFloat4(&OutPose.vRotation, XMQuaternionNormalize(vRotation));
+	OutPose.fFovY = pCamera->GetFovY();
 	return S_OK;
 }
 

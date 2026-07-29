@@ -1028,15 +1028,13 @@ HRESULT CGameInstance::LoadCinematic(
 {
 	return m_pCameraManager->LoadCinematic(CinematicName);
 }
-HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options)
 {
-	return m_pCameraManager->PlayCinematic(CinematicID);
+	return m_pCameraManager->PlayCinematic(CinematicID, Options);
 }
-HRESULT CGameInstance::PlayCinematic(
-	const StringID& CinematicID,
-	const CHandle& TargetHandle)
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options)
 {
-	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle);
+	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle, Options);
 }
 void CGameInstance::StopCinematic()
 {

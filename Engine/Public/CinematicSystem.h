@@ -6,6 +6,7 @@
 NS_BEGIN(Engine)
 
 class CCameraManager;
+class CCameraObject;
 class CCinematicAsset;
 
 
@@ -28,22 +29,34 @@ public:
 public:
 	HRESULT RegistAsset(const SPtr<CCinematicAsset>& pAsset);
 	HRESULT Load(const std::string& CinematicName);
-	HRESULT Play(const StringID& CinematicID);
-	HRESULT Play(const StringID& CinematicID, const CHandle& TargetHandle);
+	HRESULT Play(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
+	HRESULT Play(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
 	void Stop();
 	_bool IsPlaying() const;
 	_float GetPlayTime() const;
 
 private:
-	HRESULT Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle);
+	enum class EPlayState
+	{
+		Stopped,
+		Playing,
+		BlendingOut
+	};
+
+	HRESULT Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle, const FCinematicPlayOptions& Options);
+	HRESULT BeginBlendOut(const FCinematicCameraPose& StartPose);
+	HRESULT UpdateBlendOut(_float fTimeDelta);
+	void FinishPlayback();
 	HRESULT EvaluateCamera(_float fPlayTime, FCinematicCameraPose& OutPose);
 	const FCinematicCameraShot* FindActiveShot(_float fPlayTime) const;
 	HRESULT EvaluateShot(const FCinematicCameraShot& Shot, _float fShotTime, FCinematicCameraPose& OutPose) const;
 	HRESULT GetTargetWorldMatrix(_matrix& OutTargetWorld) const;
 	HRESULT ConvertTargetLocalPose(const FCinematicCameraPose& LocalPose, _fmatrix TargetWorld, FCinematicCameraPose& OutWorldPose) const;
+	HRESULT GetCameraPose(const CCameraObject* pCamera, FCinematicCameraPose& OutPose) const;
 	HRESULT ApplyCameraPose(const FCinematicCameraPose& Pose);
 
 private:
+	// 선형보간 or CatMullRom
 	HRESULT LinearInterpolate(const FCinematicCameraKeyframe* prevKeyFrame, const FCinematicCameraKeyframe* nextKeyFrame, const _float fRatio, FCinematicCameraPose& OutPose) const;
 	HRESULT CatMullRomInterpolate(const FCinematicCameraKeyframe& p0,
 		const FCinematicCameraKeyframe& p1,
@@ -62,14 +75,22 @@ private:
 
 	SPtr<CCinematicAsset> m_pPlayingAsset{};
 	std::unordered_map<StringID, SPtr<CCinematicAsset>> m_Assets{};
+
+	// 공전 할 타겟의 핸들
 	std::optional<CHandle> m_TargetHandle{};
 	const FCinematicCameraShot* m_pActiveShot{};
 	_float4x4 m_SnapshotTargetWorld{};
 	_bool m_bHasSnapshotTargetWorld{ false };
 
+	// 복귀 옵션
+	FCinematicPlayOptions m_PlayOptions{};
+	FCinematicCameraPose m_BlendStartPose{};
+
 private:
 	_float m_fPlayTime { 0.f };
-	_bool m_bPlaying { false };
+	_float m_fReturnBlendTime{ 0.f };
+	// 현재 컷신의 플레이 상태
+	EPlayState m_ePlayState{ EPlayState::Stopped };
 public:
 	static UPtr<CCinematicSystem> Create(CCameraManager& CameraManager, const StringID& CinematicCameraID);
 };

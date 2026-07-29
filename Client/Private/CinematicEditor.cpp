@@ -170,6 +170,12 @@ void CCinematicEditor::UpdateGUI()
 	ImGui::SameLine();
 	if (ImGui::Button("Play"))
 	{
+		E::FCinematicPlayOptions Options{};
+		Options.eReturnMode =
+			m_ePreviewReturnMode;
+		Options.fReturnBlendDuration =
+			m_fPreviewReturnBlendDuration;
+
 		HRESULT hr = E_INVALIDARG;
 		if (HasTargetLocalShot())
 		{
@@ -177,13 +183,15 @@ void CCinematicEditor::UpdateGUI()
 			{
 				hr = E::CGameInstance::Get().PlayCinematic(
 					m_pEditingAsset->GetCinematicID(),
-					*m_PreviewTargetHandle);
+					*m_PreviewTargetHandle,
+					Options);
 			}
 		}
 		else
 		{
 			hr = E::CGameInstance::Get().PlayCinematic(
-				m_pEditingAsset->GetCinematicID());
+				m_pEditingAsset->GetCinematicID(),
+				Options);
 		}
 
 		m_Status = hr == S_OK ?
@@ -212,6 +220,42 @@ void CCinematicEditor::UpdateGUI()
 		m_pEditingAsset->GetDuration());
 
 	DrawPreviewTargetSelector();
+
+	static const _char* ReturnModeNames[] = {
+		"Immediate",
+		"Blend"
+	};
+	int iReturnMode =
+		static_cast<int>(m_ePreviewReturnMode);
+	if (ImGui::Combo(
+		"Return Mode",
+		&iReturnMode,
+		ReturnModeNames,
+		IM_ARRAYSIZE(ReturnModeNames)))
+	{
+		m_ePreviewReturnMode =
+			static_cast<E::ECinematicReturnMode>(
+				iReturnMode);
+	}
+
+	if (m_ePreviewReturnMode ==
+		E::ECinematicReturnMode::Blend)
+	{
+		if (ImGui::DragFloat(
+			"Return Blend Duration",
+			&m_fPreviewReturnBlendDuration,
+			0.05f,
+			0.f,
+			10.f,
+			"%.2f sec"))
+		{
+			m_fPreviewReturnBlendDuration =
+				std::clamp(
+					m_fPreviewReturnBlendDuration,
+					0.f,
+					10.f);
+		}
+	}
 
 	if (m_SelectedShotIndex.has_value() &&
 		m_SelectedKeyframeIndex.has_value())
