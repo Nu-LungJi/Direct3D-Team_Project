@@ -300,6 +300,22 @@ _bool CTmbGurdian::ActivateDeadDebrisPhysics()
 	return bAllActivated;
 }
 
+_string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
+{
+	auto pValue = m_MonSkillLists.find(SkillNode);
+	
+	if (pValue == m_MonSkillLists.end())
+		return "";
+	
+	if (pValue->second >= ETOUI(TOMB_SKILL::END))
+		return "";
+	
+	if (m_Effects[pValue->second].empty())
+		return "empty";
+
+	return MagicEnumToStringView(static_cast<TOMB_SKILL>(pValue->second)).data();
+}
+
 void CTmbGurdian::UpdateGUI()
 {
 	__super::UpdateGUI();
@@ -499,11 +515,14 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
-	m_Effects[ETOUI(ATTMON::ATT_1)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
-	m_Effects[ETOUI(ATTMON::ATT_2)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
-
-	m_ParticleData.emplace(ATTMON::ATT_1, "SpawnSmokeJump.json");
-	m_ParticleData.emplace(ATTMON::ATT_2, "SpawnSmoke1-1.json");
+	m_MonSkillLists[ATTMON::NORMAL_SLOT0] = ETOUI(TOMB_SKILL::JUMP_START);
+	m_MonSkillLists[ATTMON::NORMAL_SLOT1] = ETOUI(TOMB_SKILL::JUMP_END);
+	
+	m_Effects[ETOUI(TOMB_SKILL::JUMP_START)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
+	m_Effects[ETOUI(TOMB_SKILL::JUMP_END)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
+	
+	m_ParticleData.emplace(ATTMON::NORMAL_SLOT0, "SpawnSmokeJump.json");
+	m_ParticleData.emplace(ATTMON::NORMAL_SLOT1, "SpawnSmoke1-1.json");
 
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));

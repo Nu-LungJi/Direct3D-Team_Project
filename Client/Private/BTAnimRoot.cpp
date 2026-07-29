@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTAnimRoot.h"
 #include "ComAnimator.h" 
+#include "ComCharacterMotor.h"
 NS_USING(Client)
 
 CBTAnimRoot::CBTAnimRoot()
@@ -52,22 +53,31 @@ void CBTAnimRoot::Update_Gui()
 		ImGui::DragFloat2("##SKRaito", reinterpret_cast<_float*>(&m_fSkillRatio), 0.f, 1.f);
 
 		ImGui::Text("AttMon Type");
-		if (ImGui::BeginCombo("##AttMon Typer", MagicEnumToStringView(m_eSkillType).data()))
+		if (auto pBT = Get_ComBT())
 		{
-			for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
+			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 			{
-				_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
+				if (ImGui::BeginCombo("##AttMon Typer", pSrc->Get_SkillName(m_eSkillType).c_str()))
+				{
+					for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
+					{
+						_string SkillName = pSrc->Get_SkillName(static_cast<ATTMON>(i));
+						if (SkillName == "")
+							continue;
 
-				if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(i)).data()))
-					m_eSkillType = static_cast<ATTMON>(i);
+						_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
 
-				if (bSelect)
-					ImGui::SetItemDefaultFocus();
+						if (ImGui::Selectable(SkillName.data()))
+							m_eSkillType = static_cast<ATTMON>(i);
+
+						if (bSelect)
+							ImGui::SetItemDefaultFocus();
+					
+					}
+					ImGui::EndCombo();
+				}
 			}
-
-			ImGui::EndCombo();
 		}
-
 		ImGui::TreePop();
 	}
 
@@ -257,7 +267,7 @@ void CBTAnimRoot::Active_Skill()
 	
 	if (auto pBT = Get_ComBT())
 	{
-		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)))
+		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)) || m_eSkillType == ATTMON::END)
 			return;
 
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))

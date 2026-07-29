@@ -31,7 +31,6 @@ typedef struct HitTable
 	PLAYER_SKILL_TYPE			eHitType{ PLAYER_SKILL_TYPE::DEFAULT };
 	int32_t						iAnimIndex{ -1 };
 	_float						fBlend{ 0.1f };
-	
 
 }HITTABLE;
 
@@ -41,7 +40,6 @@ typedef struct MonsterHitInfo
 	ATTMON    eAttType{ ATTMON::END };
 	int32_t iPriority{ 0 };
 }MON_HIT_INFO;
-
 class CMonster : public CAnimationObject
 {
 public:
@@ -53,6 +51,7 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
@@ -88,10 +87,10 @@ public:
 	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
 	void					Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	{
-		if (!m_bSkill) {
+		if (m_eAttType != eType) {
 			m_eAttType = eType;
 			m_fSkillRatio = fSkillRatio;
-			m_bSkill = true;
+
 		}
 	}
 	_bool						Activate_PendingHit();
@@ -104,7 +103,11 @@ public:
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
 	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
+
+	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
+	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 private:
+	void						Damaged();
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
 	void						Flag_Check(_float fTimeDelta);
@@ -146,10 +149,12 @@ protected:
 	_bool						m_bActiveHit{ false };
 	MON_HIT_INFO				m_ActiveMonTable{};
 
-	MONSTER_TYPE				m_eMonType{ MONSTER_TYPE::NORMAL };
+	MONSTER_TYPE				  m_eMonType{ MONSTER_TYPE::NORMAL };
 	std::vector<E::SPAWN_COMMAND> m_Effects[ETOUI(ATTMON::END)];
 
+	CHandle							m_TargetHandle{};
 
+	std::map<ATTMON, uint32_t>		m_MonSkillLists;
 	//파티클 재설정용
 	_bool								m_bDonMove{ false };
 	std::map<ATTMON, _string>			m_ParticleData;
