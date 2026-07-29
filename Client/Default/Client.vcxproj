@@ -255,6 +255,7 @@
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
+    <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
@@ -350,6 +351,7 @@
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
+    <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />

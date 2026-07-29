@@ -24,6 +24,7 @@
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
+#include "Player_Hit_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_AcientAttack_State.h"
@@ -203,6 +204,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::ATTACK,
 			CPlayer_Attack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::HIT,
+			CPlayer_Hit_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -601,6 +608,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_3))
 		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
+
+#ifdef _DEBUG
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+#endif
 }
 
 

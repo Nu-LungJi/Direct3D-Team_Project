@@ -6,6 +6,8 @@
 #include "PlayerAnimationRatioGuard.h"
 
 #include "ComCharacterMoveIntent.h"
+
+#include "Monster.h"
 NS_USING(Client)
 
 void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
@@ -108,15 +110,16 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 		break;
 
 	case PHASE::PULL: {
-		auto* Target = CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());
-
+		auto* Target = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
+		
 		if (!Target)
 		{
 			RequestLocomotion(pStateMachine);
 			return;
 		}
 
-		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling)
+		
+		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
 		{
 			auto* pMoveIntent = Target->GetComponent<CComCharacterMoveIntent>("ComCharacterMoveIntent");
 
@@ -159,7 +162,10 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				m_ePhase = PHASE::RECOVERY;
 			}
 		}
-
+		else {
+			m_bPulling = false;
+			m_ePhase = PHASE::RECOVERY;
+		}
 		if (m_fAnimRatio >= ATTACK_END_RATIO)
 			RequestLocomotion(pStateMachine);
 		break;

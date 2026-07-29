@@ -416,7 +416,7 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		return false;
 	//현재 잠금된거보다 낮아도 거부
 	if (m_bActiveHit &&HitInfo.iPriority < m_ActiveMonTable.iPriority)
-		return;
+		return false;
 	//새 피격상태 전달
 	m_PendingMonTable = HitInfo;
 	m_bPending = true;
@@ -455,26 +455,26 @@ void CMonster::RunningSkill(_float fTimeDelta)
 }
 void CMonster::IsHit()
 {
-	if (CGameInstance::Get().KeyDown(DIK_2))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	}
-	if (CGameInstance::Get().KeyDown(DIK_Z))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ACCIO);
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_X))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_C))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_V))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	}
+	//if (CGameInstance::Get().KeyDown(DIK_2))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+	//}
+	//if (CGameInstance::Get().KeyDown(DIK_Z))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+	//}
+	//else if (CGameInstance::Get().KeyDown(DIK_X))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
+	//}
+	//else if (CGameInstance::Get().KeyDown(DIK_C))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
+	//}
+	//else if (CGameInstance::Get().KeyDown(DIK_V))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+	//}
 
 }
 void CMonster::Flag_Check(_float fTimeDelta)
