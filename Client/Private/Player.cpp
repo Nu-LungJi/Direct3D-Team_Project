@@ -32,6 +32,7 @@
 #include "Player_DescendoSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
+#include "Trail_CPU.h"
 NS_USING(Client)
 
 void CPlayer::UpdateGUI()
@@ -55,6 +56,29 @@ void CPlayer::UpdateGUI()
 			1.f),
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
+
+
+	static _float4 weaponColor{};
+	static _float3 weaponEmissiveColor{};
+	static _float weaponEIntensity{};
+
+	ImGui::ColorEdit4("Color", &weaponColor.x);
+	ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
+	ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
+
+	//if (ImGui::Button("Apply AttackTrail")) {
+	//	auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
+	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
+	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
+	//}
+
+
+	if (ImGui::Button("Apply DashTrail")) {
+		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+		static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
+	}
+
 }
 
 CPlayer::CPlayer()
@@ -262,7 +286,13 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
-
+	{
+		{
+			auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.f, 113/255.f, 113 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.f, 44 / 255.f, 44 / 255.f, 5.f));
+		}
+	}
 	return S_OK;
 
 }

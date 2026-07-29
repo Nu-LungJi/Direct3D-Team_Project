@@ -51,6 +51,14 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
 
         m_pResVertexBuffer = res;
     }
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_BEAM);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComBeamCBuffer = res;
+	}
 
 	switch (m_Desc.blendState) {
 	case 0:
@@ -175,16 +183,29 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
 
     // 각 빔은 이제 자기만의 verticesPerPlane을 갖고 있으니, 그 값 기준으로 Draw
-    for (auto& range : m_vecDrawRanges)
-    {
-        pContext->Draw(range.verticesPerPlane, range.startVertex);
-        pContext->Draw(range.verticesPerPlane, range.startVertex + range.verticesPerPlane);
-    }
+	for (const auto& range : m_vecDrawRanges)
+	{
+		CB_BEAM cb{};
+		cb.fAgeRatio = range.fAgeRatio;
+
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (SUCCEEDED(pContext->Map(m_pComBeamCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		{
+			memcpy(mapped.pData, &cb, sizeof(cb));
+			pContext->Unmap(m_pComBeamCBuffer->GetCBuffer().Get(), 0);
+		}
+
+		pContext->PSSetConstantBuffers(11, 1, m_pComBeamCBuffer->GetCBuffer().GetAddressOf());
+
+		pContext->Draw(range.verticesPerPlane, range.startVertex);
+		pContext->Draw(range.verticesPerPlane, range.startVertex + range.verticesPerPlane);
+	}
 
     ID3D11ShaderResourceView* nullSRV[] = { nullptr };
     pContext->PSSetShaderResources(0, 1, nullSRV);
 	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
+	pContext->PSSetConstantBuffers(11, 1, nullptr);
 
     return S_OK;
 }
@@ -403,11 +424,11 @@ void CBeam_CPU::BuildBeamGeometry()
         buildPlane(right1);
         buildPlane(right2);
 
-        BEAM_DRAW_RANGE range{};
-        range.startVertex = startVertex;
-        range.verticesPerPlane = beam.iVerticesPerPlane;   // 빔 개별 값 저장
-	
-        m_vecDrawRanges.push_back(range);
+		BEAM_DRAW_RANGE range{};
+		range.startVertex = startVertex;
+		range.verticesPerPlane = beam.iVerticesPerPlane;
+		range.fAgeRatio = beam.fDuration > 0.f ? std::clamp(beam.fElapsedTime / beam.fDuration, 0.f, 1.f) : 0.f;
+		m_vecDrawRanges.push_back(range);
     }
 }
 

@@ -5,6 +5,14 @@ NS_BEGIN(Engine)
 class ENGINE_DLL CBeam_CPU final: public CParticle
 {
 public:
+
+	struct CB_BEAM
+	{
+		_float  fAgeRatio;
+		_float3		_pad;
+	};
+
+
     struct DESC
     {
         std::pair<StringID, StringID> textureID;
@@ -89,10 +97,13 @@ private:
     {
         uint32_t startVertex;
         uint32_t verticesPerPlane;   // 이 빔의 평면 하나당 버텍스 수 (Draw 시 필요)
+		_float  fAgeRatio;
+
     };
     std::vector<BEAM_DRAW_RANGE> m_vecDrawRanges;
 
     SPtr<class CResDynamicBuffer> m_pResVertexBuffer;
+    SPtr<class CResCBuffer>		 m_pComBeamCBuffer;
 
 private:
 	_float      m_fElapsedTime = 0.f;
@@ -107,6 +118,7 @@ private:
 	// 이 빔만의 세그먼트 정보 (개별적으로 다를 수 있음)
 	uint32_t    m_iSegmentCount = 0;        // = 2^iDisplacementIterations
 	uint32_t    m_iVerticesPerPlane = 0;    // = (iSegmentCount+1) * 2
+
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

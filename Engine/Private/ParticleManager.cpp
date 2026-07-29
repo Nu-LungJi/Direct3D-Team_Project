@@ -2559,7 +2559,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
 				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
-				desc.fMaxDuration = entry.value("MaxDuration", 0);
+				desc.fMaxDuration = entry.value("Maxduration", 0.f);
 				particle = CTrail_CPU::Create(&desc);
 
 

@@ -30,8 +30,7 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 
 	if (!m_Desc.bShrinkWidth)
 		m_Desc.eAlignMode = TRAIL_ALIGN_MODE::VIEW;
-	m_vColor = _float4(1,1,1,0);
-	m_vEmissive = _float4(0, 0, 0, 0);
+
 
     // 프레임 하나당 정점 2개(밑동/칼끝) - 정점 자체가 이미 폭의 양 끝
     uint32_t iMaxVertices = m_Desc.iMaxFrames * 2;
@@ -62,13 +61,12 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 			return E_FAIL;
 		m_pScrollCBuffer = res;
 	}
-	m_pBlendState =m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
-	/*switch (m_Desc.blendState) {
+	switch (m_Desc.blendState) {
 	case 0:
-		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
 		break;
 	case 1:
-		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
 		break;
 	case 2:
 		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
@@ -76,7 +74,7 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	default:
 		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
 		break;
-	}*/
+	}
 
 	if (m_Desc.normalTextureID.first != "") {
 		m_pNormalTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.normalTextureID.first, m_Desc.normalTextureID.second);
@@ -511,13 +509,13 @@ void CTrail_CPU::BuildTrailGeometry()
 		vTop.vPosition = vTip;
 		vTop.vUV = { t, 0.f };
 		vTop.vEmissive = m_vEmissive;
-		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), 1.f/*fLifeRatio*/));
+		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), 1.f * fLifeRatio));
 
 		TRAIL_VERTEX vBottom{};
 		vBottom.vPosition = vBase;
 		vBottom.vUV = { t, 1.f };
 		vBottom.vEmissive = m_vEmissive;
-		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor),1.f /*fLifeRatio*/));
+		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor),1.f *fLifeRatio));
 
 		m_vecVertices.push_back(vTop);
 		m_vecVertices.push_back(vBottom);

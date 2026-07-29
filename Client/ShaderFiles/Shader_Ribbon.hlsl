@@ -1,9 +1,9 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
-cbuffer CB_BEAM : register(b10)
+cbuffer CB_BEAM : register(b11)
 {
-    float g_fScrollOffset;
+    float g_fLifeRatio;
     float3 _pad;
 };
 
@@ -27,7 +27,7 @@ VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out = (VS_OUT) 0;
     Out.vPosition = mul(float4(In.vPosition, 1.f), g_matViewProj);
-    Out.vUV = In.vUV + float2(g_fScrollOffset, 0.f);
+    Out.vUV = In.vUV ;
     Out.vColor = In.vColor;
     Out.vEmissive = In.vInstEmissive;
     return Out;
@@ -61,4 +61,22 @@ PS_OUT PSMain(VS_OUT In)
     
     
     return Out;
+}
+PS_OUT PSAccio(VS_OUT In)
+{
+
+
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 uv = In.vUV;
+	float4 texColor = g_BeamTexture.Sample(LinearWrap, In.vUV) * In.vColor;
+    
+
+	float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
+	float3 FinalColor = texColor.rgb * instEmissive;
+
+	Out.vDiffuse = float4(FinalColor, texColor.a);
+    
+    
+	return Out;
 }
