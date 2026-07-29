@@ -595,7 +595,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	}
 
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-
+	m_pCharacterMotor->SetUseGravity(true);
 	return S_OK;
 }
 
