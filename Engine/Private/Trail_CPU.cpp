@@ -509,13 +509,18 @@ void CTrail_CPU::BuildTrailGeometry()
 		vTop.vPosition = vTip;
 		vTop.vUV = { t, 0.f };
 		vTop.vEmissive = m_vEmissive;
-		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), 1.f * fLifeRatio));
+		const float alpha = m_vColor.w * fLifeRatio;
+
+		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), alpha));
+		//XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), 1.f * fLifeRatio));
 
 		TRAIL_VERTEX vBottom{};
 		vBottom.vPosition = vBase;
 		vBottom.vUV = { t, 1.f };
 		vBottom.vEmissive = m_vEmissive;
-		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor),1.f *fLifeRatio));
+		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), alpha));
+
+		//XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor),1.f *fLifeRatio));
 
 		m_vecVertices.push_back(vTop);
 		m_vecVertices.push_back(vBottom);

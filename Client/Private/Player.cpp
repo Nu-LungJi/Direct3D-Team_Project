@@ -57,28 +57,6 @@ void CPlayer::UpdateGUI()
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
 
-
-	static _float4 weaponColor{};
-	static _float3 weaponEmissiveColor{};
-	static _float weaponEIntensity{};
-
-	ImGui::ColorEdit4("Color", &weaponColor.x);
-	ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
-	ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
-
-	//if (ImGui::Button("Apply AttackTrail")) {
-	//	auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
-	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
-	//}
-
-
-	if (ImGui::Button("Apply DashTrail")) {
-		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-		static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
-	}
-
 }
 
 CPlayer::CPlayer()
@@ -291,6 +269,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.f, 113/255.f, 113 / 255.f, 1.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.f, 44 / 255.f, 44 / 255.f, 5.f));
+		}
+
+		{
+			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
 		}
 	}
 	return S_OK;
@@ -1072,6 +1056,7 @@ void CPlayer::Attack_Magic_Bullet()
 {
 
 
+
 	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]);
 
 	if (!pWeapon)
@@ -1105,6 +1090,14 @@ void CPlayer::Attack_Magic_Bullet()
 	desc.iSampleCount = 10;
 
 	CGameInstance::Get().AddGameObjectToLayer(m_LevelTag,PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,"PlayerMagicBullet",&desc);
+
+	{
+		auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
+		if (a == nullptr) {
+			return;
+		}
+		static_cast<CTrail_CPU*>(a)->Clear();
+	}
 }
 void CPlayer::OnWake()
 {

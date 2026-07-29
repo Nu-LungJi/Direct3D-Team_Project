@@ -131,10 +131,10 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.2f, 0.7f);
+		m_waveCb.g_fBurstRatio = Randf(0.5f, 0.7f);
 		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
 		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
-		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		m_waveCb.g_fTransitionRatio = Randf(0.4f, 1.6f);
 		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);

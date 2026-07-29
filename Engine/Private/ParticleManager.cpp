@@ -140,6 +140,10 @@ void CParticleManager::UpdateGUI()
 	static int iMaxBeams = 16;
 	static int iMaxDisplacementIterations = 10;
 
+	static float fGrowEndTime		= 0.3f;
+	static float fStraightEndTime	= 0.12f;
+	static float fHoldEndTime		= 0.3f;
+	static float fFadeEndTime		= 0.15f;
 	ImGui::Begin("SaveResourcesAsJson");
 
 
@@ -1481,6 +1485,14 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat("ScrollSpeed", &fBeamScrollSpeed, 0.01f);
 		ImGui::InputInt("MaxBeams", &iMaxBeams);
 		ImGui::InputInt("MaxDisplacementIterations", &iMaxDisplacementIterations);
+
+
+		ImGui::DragFloat("GrowEndTime",		&pendingBeam.fGrowEndTime, 0.01f);
+		ImGui::DragFloat("Straight EndTime", &pendingBeam.fStraightEndTime, 0.01f);
+		ImGui::DragFloat("Hold EndTime", &pendingBeam.fHoldEndTime, 0.01f);
+		ImGui::DragFloat("Fade Out EndTime", &pendingBeam.fFadeEndTime, 0.01f);
+
+
 	}
 	else if (currentKind == SPAWN_COMMAND_KIND::PATTERN)
 	{
@@ -1626,6 +1638,16 @@ void CParticleManager::UpdateGUI()
 
 void CParticleManager::Update(_float fTimeDelta)
 {
+	for (auto& req : m_LoopRequests)
+	{
+		req.fElapsed += fTimeDelta;
+		if (req.fElapsed < req.fSpawnInterval)
+			continue;
+
+		req.fElapsed -= req.fSpawnInterval;
+		Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
+	}
+
 	for (auto& [groupTag, typeMap] : m_Particles)
 	{
 		for (auto& [typeTag, particle] : typeMap)
@@ -1636,15 +1658,7 @@ void CParticleManager::Update(_float fTimeDelta)
 		}
 	}
 
-	for (auto& req : m_LoopRequests)
-	{
-		req.fElapsed += fTimeDelta;
-		if (req.fElapsed < req.fSpawnInterval)
-			continue;
 
-		req.fElapsed -= req.fSpawnInterval;
-		Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
-	}
 }
 //BLEND에서 하고 있었던거고
 HRESULT CParticleManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
@@ -1691,7 +1705,6 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		return E_FAIL;
 
 	std::vector<PARTICLE_SPAWN_DATA> spawnList(pSpawnData, pSpawnData + count);
-	typeIt->second->RequestSpawn(spawnList);
 	HRESULT hr = S_OK;
 
 	if (bLoop)
@@ -1706,6 +1719,7 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		
 		m_LoopRequests.push_back(std::move(req));
 	}
+	typeIt->second->RequestSpawn(spawnList);
 
 	return hr;
 }
@@ -1843,7 +1857,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 
 		if (particleType == "TRAIL_CPU") {
 			newEntry["ShrinkWidth"] = bShrinkWidth;
-			newEntry["Maxduration"] = fMaxduration;
+			newEntry["MaxDuration"] = fMaxduration;
 		} 
 	}
 	else if (whatKind == "MESH")
@@ -2559,7 +2573,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
 				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
-				desc.fMaxDuration = entry.value("Maxduration", 0.f);
+				desc.fMaxDuration = entry.value("MaxDuration", 0.f);
 				particle = CTrail_CPU::Create(&desc);
 
 
@@ -2746,7 +2760,11 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["color"] = { p.color.x, p.color.y, p.color.z, p.color.w };
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 				entry["endEmissive"] = { p.endEmissive.x, p.endEmissive.y, p.endEmissive.z, p.endEmissive.w };
-		
+				entry["GrowEndTime"] = p.fGrowEndTime;
+				entry["StraightEndTime"] = p.fStraightEndTime;
+				entry["HoldEndTime"] = p.fHoldEndTime;
+				entry["FadeEndTime"] = p.fFadeEndTime;
+
 
 				break;
 			}
@@ -2927,6 +2945,13 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
 			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
+
+			p.fGrowEndTime = entry.value("GrowEndTime", 0.3f);
+			p.fStraightEndTime = entry.value("StraightEndTime", 0.5f);
+			p.fHoldEndTime = entry.value("HoldEndTime", 0.7f);
+			p.fFadeEndTime = entry.value("FadeEndTime", 1.f);
+
+
 
 			cmd.params = p;
 			break;

@@ -14,15 +14,46 @@ cbuffer CB_PER_PARTICLE : register(b11)
 };
 
 
-AppendStructuredBuffer<uint> gDeadList : register(u0);
+RWStructuredBuffer<uint> gDeadList : register(u0);
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u1);
+RWStructuredBuffer<uint> gDeadCount : register(u2);
  
+
+void PushDeadIndex(uint particleIndex)
+{
+	uint writeIndex;
+
+	InterlockedAdd(
+		gDeadCount[0],
+		1,
+		writeIndex);
+
+	if (writeIndex < g_iNumInstances)
+	{
+		gDeadList[writeIndex] = particleIndex;
+	}
+	else
+	{
+		uint ignored;
+
+		InterlockedAdd(
+			gDeadCount[0],
+			0xffffffffu,
+			ignored);
+	}
+}
+
+
 [numthreads(256, 1, 1)]
 void CSMain(uint id : SV_DispatchThreadID)
 {
-    ParticleData p = g_ParticleBuffer[id];
-    if (p.alive == 0)
-        return;
+	if (id >= g_iNumInstances)
+		return;
+
+	ParticleData p = g_ParticleBuffer[id];
+
+	if (p.alive == 0)
+		return;
 
     p.life -= g_fTimeDelta;
     if ((p.iBehaviorType & BEHAVIOR_GRAVITY) != 0)
@@ -79,7 +110,7 @@ void CSMain(uint id : SV_DispatchThreadID)
             p.velocity = p.originalVelocity;
             p.alive = 1;
             p.emissive = p.originalEmissive;
-                
+			p.color = p.color;
 
         }
         else
@@ -93,8 +124,8 @@ void CSMain(uint id : SV_DispatchThreadID)
             p.iBehaviorType = 0;
             p.velocity = 0;
             
-            gDeadList.Append(id);
-        }
+			PushDeadIndex(id);
+		}
     }
     
     g_ParticleBuffer[id] = p;

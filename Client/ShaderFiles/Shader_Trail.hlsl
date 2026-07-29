@@ -166,8 +166,6 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET			
 {
 	PS_OUT Out = (PS_OUT) 0;
-	Out.vDiffuse = float4(1, 1, 1, 1);
-	return Out;
 	float2 uv = In.vUV;
 	uv.x += g_fAccumulationTime * 3.33f;
 	float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(uv.x , uv.y *3));
@@ -205,8 +203,6 @@ PS_OUT PSPlayerDash1(VS_OUT In) : SV_TARGET
 {
 
 	PS_OUT Out = (PS_OUT) 0;
-	Out.vDiffuse = float4(1, 1, 1, 1);
-	return Out;
 	float2 flipbookUV = ComputeFlipbookUV(In.vUV);
 	float4 tex = g_DiffuseTexture.Sample(LinearWrap, flipbookUV);
 

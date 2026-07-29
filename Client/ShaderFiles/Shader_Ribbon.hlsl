@@ -4,7 +4,8 @@
 cbuffer CB_BEAM : register(b11)
 {
     float g_fLifeRatio;
-    float3 _pad;
+	float g_fAccumulationTime;
+    float2 _pad;
 };
 
 struct VS_IN
@@ -46,7 +47,6 @@ PS_OUT PSMain(VS_OUT In)
 
 
     PS_OUT Out = (PS_OUT) 0;
-
     float4 texColor = g_BeamTexture.Sample(LinearWrap, In.vUV) * In.vColor;
     
     if (texColor.a <= 0.01f)
@@ -61,21 +61,21 @@ PS_OUT PSMain(VS_OUT In)
     
     
     return Out;
-}
+} 
 PS_OUT PSAccio(VS_OUT In)
 {
 
 
 	PS_OUT Out = (PS_OUT) 0;
-
 	float2 uv = In.vUV;
-	float4 texColor = g_BeamTexture.Sample(LinearWrap, In.vUV) * In.vColor;
-    
+	//uv.x += g_fAccumulationTime * 1.63f;
+	//uv.y += g_fAccumulationTime * 0.1f;
+	float4 texColor = g_BeamTexture.Sample(LinearWrap, uv);
+	float4 color = texColor * In.vColor;
 
 	float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
-	float3 FinalColor = texColor.rgb * instEmissive;
-
-	Out.vDiffuse = float4(FinalColor, texColor.a);
+	float3 FinalColor = color.rgb * instEmissive;
+	Out.vDiffuse = float4(FinalColor, texColor.r);
     
     
 	return Out;

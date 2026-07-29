@@ -9,10 +9,17 @@ public:
 	struct CB_BEAM
 	{
 		_float  fAgeRatio;
-		_float3		_pad;
+		_float	fAccumulationTime;
+		_float2		_pad;
 	};
 
-
+	enum class BEAM_PHASE
+	{
+		GROW,
+		STRAIGHTEN,
+		HOLD,
+		FADE
+	};
     struct DESC
     {
         std::pair<StringID, StringID> textureID;
@@ -37,29 +44,54 @@ public:
 		uint32_t blendState = 0;
 		SPtr<CParticleShaderCache> pShaderCache;
 
+
     };
 
-    struct BEAM_INSTANCE
-    {
-        _bool       bActive = false;
-        _float4     vStartPos = {};
-        _float4     vEndPos = {};
-        _float      fElapsedTime = 0.f;  // 빔 수명
-        _float      fDuration = 0.f;
-        uint32_t    iDisplacementIterations = 6;		 //변위를 몇 겹으로(예: 여러 주파수의 사인파를 겹쳐서) 계산할지. 값이 클수록 더 복잡하고 디테일한 떨림 패턴이 나옴
+
+	/*
+	        uint32_t    iDisplacementIterations = 6;		 //변위를 몇 겹으로(예: 여러 주파수의 사인파를 겹쳐서) 계산할지. 값이 클수록 더 복잡하고 디테일한 떨림 패턴이 나옴
         _float      fDisplacementAmplitude = 2.5f;		 //빔이 원래 직선에서 얼마나 크게 흔들릴지(진폭). 값이 클수록 더 크게 출렁임.
         _float      fDisplacementDamping = 0.25f;		//반복(iteration)마다 진폭을 얼마나 감쇠시킬지. 1보다 작은 값이면 고주파 성분일수록 흔들림이 약해져서 자연스러운 지글거림이 됨.
         _float      fFlickerInterval = 0.1f;			//빔이 깜빡이는(flicker) 주기. 예를 들어 0.05초마다 한 번씩 랜덤하게 위치/밝기를 갱신하는 식의 전기 스파크 느낌을 낼 때 쓰는 간격.
         _float      fFlickerTimer = 0.f;				 //다음 깜빡임까지 남은 시간을 세는 카운트다운 타이머.
-        _float4     vColor = _float4(1, 1, 1, 1);
-        _float4     vEmissive = _float4(1, 1, 1, 1);
-        // 이 빔만의 세그먼트 정보 (개별적으로 다를 수 있음)
-        uint32_t    iSegmentCount = 0;        // = 2^iDisplacementIterations
-        uint32_t    iVerticesPerPlane = 0;    // = (iSegmentCount+1) * 2
-		uint32_t	ownerId = 0;
+	*/
 
-        std::vector<_float3> vecJaggedPoints;
-    };
+	struct BEAM_INSTANCE
+	{
+		_bool bActive = false;
+
+		_float4 vStartPos{};
+		_float4 vEndPos{};
+
+		_float fElapsedTime = 0.f;
+		_float fDuration = 0.f;
+
+		uint32_t iDisplacementIterations = 6;
+		_float fDisplacementAmplitude = 2.5f;
+		_float fDisplacementDamping = 0.25f;
+
+		_float fFlickerInterval = 0.1f;
+		_float fFlickerTimer = 0.f;
+
+		_float4 vColor = { 1.f,1.f,1.f,1.f };
+		_float4 vEmissive = { 1.f,1.f,1.f,1.f };
+
+		uint32_t iSegmentCount = 0;
+		uint32_t ownerId = 0;
+
+		BEAM_PHASE ePhase = BEAM_PHASE::GROW;
+
+		_float fPhaseTime = 0.f;
+		_float fGrowRatio = 0.f;
+		_float fStraightRatio = 0.f;
+		_float fFadeRatio = 0.f;
+
+		_float fGrowEndTime{};
+		_float fStraightEndTime{};
+		_float fHoldEndTime{};
+		_float fFadeEndTime{};
+		std::vector<_float3> vecJaggedPoints;
+	};
 
 private:
     CBeam_CPU();
@@ -117,8 +149,7 @@ private:
 	_float4     m_vEmissive = _float4(1, 1, 1, 1);
 	// 이 빔만의 세그먼트 정보 (개별적으로 다를 수 있음)
 	uint32_t    m_iSegmentCount = 0;        // = 2^iDisplacementIterations
-	uint32_t    m_iVerticesPerPlane = 0;    // = (iSegmentCount+1) * 2
-
+	_float      m_fAccumulationTime{};
 public:
 	static UPtr<CParticle> Create(void* pArg);
 };

@@ -44,13 +44,6 @@ HRESULT CPlayer_Magic_Bullet::Initialize(void* pArg)
 		return E_FAIL;
 
 	GetTransform().SetPosition(m_Splines.front());
-	auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
-	if (a == nullptr) {
-		return E_FAIL;
-	}
-	static_cast<CTrail_CPU*>(a)->Clear();
-
-
 
 	return S_OK;
 }
