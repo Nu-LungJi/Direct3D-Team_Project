@@ -31,6 +31,7 @@
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
+#include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
 NS_USING(Client)
@@ -103,6 +104,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_LevelTag = pDesc->LevelTag;
+	m_vInitialPosition = pDesc->vInitialPosition;
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
@@ -240,6 +242,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::DESCENDO_SKILL,
 			CPlayer_DescendoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::REVELIO_SKILL,
+			CPlayer_RevelioSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -402,7 +410,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
-		m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
+		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
+		m_pComMoveIntent->RequestWarp(m_vInitialPosition);
 	}
 
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
@@ -608,6 +617,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_3))
 		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_4))
+		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
 
 #ifdef _DEBUG
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
@@ -948,11 +960,13 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 	pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
 	pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
 
-	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes()-1; ++iMeshIndex)
 	{
 		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
 		if (!mesh)
 			continue;
+
+		
 
 		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
 		if (skinRange.iSkinBoneCount == 0)

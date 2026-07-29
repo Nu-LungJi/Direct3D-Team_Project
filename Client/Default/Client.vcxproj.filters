@@ -184,6 +184,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State">
       <UniqueIdentifier>{01e89d2b-fc0c-4cb6-9514-7970ddfc1929}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State">
+      <UniqueIdentifier>{6207f242-1cbc-4fa1-ab93-c358c2d2a589}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State">
       <UniqueIdentifier>{57c915ba-5887-48a0-b19f-15e26e1f248e}</UniqueIdentifier>
     </Filter>
@@ -471,6 +474,9 @@
     <ClInclude Include="..\Public\Player_DepulsoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_RevelioSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_DescendoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
     </ClInclude>
@@ -755,6 +761,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
