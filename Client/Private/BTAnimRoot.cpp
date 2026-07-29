@@ -33,25 +33,20 @@ void CBTAnimRoot::Update_Gui()
 	if (ImGui::TreeNode("AnimRoot"))
 	{
 		BoolButton("Gravity : ", m_bGravity);
-		DragFloat("Gravity Value", m_fGravity);
-		DragFloat("Early Ratio : ", m_fEarlyRatio);
-
+		if(m_bGravity)
+			DragFloat("Gravity Value", m_fGravity);
+		
 		BoolButton("Enable Early : ", m_bEarly);
+		if(m_bEarly)
+			DragFloat("Early Ratio : ", m_fEarlyRatio);
 
 		ImGui::DragFloat("Blend", &m_fBlend, 0.1f, 0.f, 1.f);
-		if (ImGui::Button("Enable Ratio : "))
-			m_bRatio = !m_bRatio;
-			ImGui::SameLine(110.f);
-			m_bRatio == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
 
-			if (ImGui::Button("Loop Change"))
-				m_bLoop = !m_bLoop;
-				ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
+		BoolButton("Enable Ratio : ", m_bRatio);
+		BoolButton("Loop Change : ", m_bLoop);
 
-				ImGui::Text("StartRatio");
-		ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f, 1.f);
-		ImGui::Text("EndRatio");
-		ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
+		DragFloat("StartRatio", m_fRatio.x);
+		DragFloat("EndRatio", m_fRatio.y);
 
 		ImGui::Text("SkillRatio");
 		ImGui::DragFloat2("##SKRaito", reinterpret_cast<_float*>(&m_fSkillRatio), 0.f, 1.f);
@@ -76,31 +71,18 @@ void CBTAnimRoot::Update_Gui()
 		ImGui::TreePop();
 	}
 
-	if (ImGui::TreeNode("AnimRoot_Flag"))
+	if (ImGui::Button("Add To Start Flag"))
 	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
-		Combo("Flag", m_AddFlag.iFlag);
-		ImGui::DragFloat("RatioSetting", &m_AddFlag.fRatio, 0.f, 1.f);
-		Combo2("FlagType", m_AddFlag.eType);
-
-		ImGui::PopStyleColor();
-		ImGui::TreePop();
+		m_StartFlags.push_back(m_AddFlag);
+		m_AddFlag.fRatio = 0;
+		m_AddFlag.iFlag = 0;
 	}
-	if (m_AddFlag.iFlag != 0)
+
+	if (ImGui::Button("Add To End Flag"))
 	{
-		if (ImGui::Button("Add To Start"))
-		{
-			m_StartFlags.push_back(m_AddFlag);
-			m_AddFlag.fRatio = 0;
-			m_AddFlag.iFlag = 0;
-		}
-		ImGui::SameLine(150.f);
-		if (ImGui::Button("Add To End"))
-		{
-			m_EndFlags.push_back(m_AddFlag);
-			m_AddFlag.fRatio = 0;
-			m_AddFlag.iFlag = 0;
-		}
+		m_EndFlags.push_back(m_AddFlag);
+		m_AddFlag.fRatio = 0;
+		m_AddFlag.iFlag = 0;
 	}
 
 	if (ImGui::TreeNode("Show Start Flag"))

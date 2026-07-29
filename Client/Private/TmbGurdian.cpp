@@ -595,7 +595,8 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	}
 
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	
 	return S_OK;
 }
 

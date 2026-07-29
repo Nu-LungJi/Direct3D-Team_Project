@@ -46,7 +46,12 @@ void CMonster::UpdateGUI()
 	ImGui::Text("ActiveHit : %s", m_bActiveHit == true ? "TRUE" : "FALSE");
 	ImGui::Text("ActiveHit AttType : %s", MagicEnumToStringView(m_ActiveMonTable.eAttType).data());
 	ImGui::Text("ActiveHit HitType : %s", MagicEnumToStringView(m_ActiveMonTable.eHitType).data());
+	ImGui::Separator();
+	ImGui::Text("Current Attack:"); ImGui::SameLine();
+	ImGui::Text(MagicEnumToStringView(m_eAttType).data());
 
+	if (nullptr != m_pBeHavior)
+		ImGui::Text("BeHavior Att : %s", m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) == true ? "ENABLE" : "DISABLE");
 }
 
 HRESULT CMonster::InitializePrototype(void* pArg)
@@ -86,6 +91,9 @@ HRESULT CMonster::Initialize(void* pArg)
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_0))
+		m_pMoveIntent->RequestWarp(_float3(20, 20, 20));
+	
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
 	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
@@ -398,17 +406,17 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		break;
 	}
 
-	if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
-	{
-		m_PendingMonTable = HitInfo;
-		m_bPending = true;
-	}
+	//if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
+	//{
+	//	m_PendingMonTable = HitInfo;
+	//	m_bPending = true;
+	//}
 	//현재 pending 가중치보다 낮으면 리턴
 	if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
 		return false;
 	//현재 잠금된거보다 낮아도 거부
-	if (m_bActiveHit &&HitInfo.iPriority <m_ActiveMonTable.iPriority)
-		return false;
+	if (m_bActiveHit &&HitInfo.iPriority < m_ActiveMonTable.iPriority)
+		return;
 	//새 피격상태 전달
 	m_PendingMonTable = HitInfo;
 	m_bPending = true;
@@ -465,7 +473,7 @@ void CMonster::IsHit()
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))
 	{
-		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 
 }
@@ -478,7 +486,8 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	}
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
-		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
+		Clear_ActiveHit();
+		Clear_PendingHit();
 	}
 	if (m_iHp <= 0.f)
 	{

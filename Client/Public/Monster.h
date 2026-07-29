@@ -103,6 +103,7 @@ public:
 	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; }
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
+	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
 private:
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
@@ -145,7 +146,7 @@ protected:
 	_bool						m_bActiveHit{ false };
 	MON_HIT_INFO				m_ActiveMonTable{};
 
-	
+	MONSTER_TYPE				m_eMonType{ MONSTER_TYPE::NORMAL };
 	std::vector<E::SPAWN_COMMAND> m_Effects[ETOUI(ATTMON::END)];
 
 

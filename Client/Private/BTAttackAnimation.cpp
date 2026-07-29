@@ -90,6 +90,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				vMoveDirection = pTransform->GetState(STATE::LOOK);
 			else if (m_eMove == MOVE::BACKWARD)
 				vMoveDirection = -pTransform->GetState(STATE::LOOK);
+			else if (m_eMove == MOVE::UP)
+				vMoveDirection = XMVectorSet(0, 1, 0, 0);
 
 			if (m_eMove != MOVE::END)
 			{
@@ -98,7 +100,12 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				pMoveIntent->SetMoveIntent(vDirection, fMoveSpeed);
 			}
 		}
-
+		if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
+		{
+			Reset_CheckFlag();
+			m_bStart = true;
+			return m_eDebug = EVALUATE::SUCCESS;
+		}
 
 		if (m_bLoop || bFinished)
 		{
