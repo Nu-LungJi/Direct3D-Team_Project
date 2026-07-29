@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "BTDecSearch.h" 
+#include "Monster.h"
 NS_USING(Client)
 
 CBTDecSearch::CBTDecSearch()
@@ -50,15 +51,23 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	if (pTransform == nullptr)
 		return EVALUATE::FAILED;
-	auto& vDest = CGameInstance::Get().GetActiveCamera()->GetTransform();
-	auto& vSrc = pTransform;
-	
-	_vector vSrcPos = XMLoadFloat3(&vSrc->GetPosition());
-	_vector vDestPos = XMLoadFloat3(&vDest.GetPosition());
-	_float fDistance = XMVectorGetX(XMVector3Length(vSrcPos - vDestPos));
-	if (fDistance <= m_fDis)
-		return  m_eDebug = __super::Evaluate(fTimeDelta);
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			if (auto pTarget = pOwner->Get_Target())
+			{
+				auto& vDest = pTarget->GetTransform();
+				auto& vSrc = pTransform;
 
+				_vector vSrcPos = XMLoadFloat3(&vSrc->GetPosition());
+				_vector vDestPos = XMLoadFloat3(&vDest.GetPosition());
+				_float fDistance = XMVectorGetX(XMVector3Length(vSrcPos - vDestPos));
+				if (fDistance <= m_fDis)
+					return  m_eDebug = __super::Evaluate(fTimeDelta);
+			}
+		}
+	}
 	return  m_eDebug = EVALUATE::FAILED;
 }
 

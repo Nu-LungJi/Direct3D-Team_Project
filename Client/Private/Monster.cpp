@@ -80,11 +80,11 @@ HRESULT CMonster::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	m_bDonMove = MonDesc->bDonMove;
+	m_TargetHandle = MonDesc->TargetHandle;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
-
 
 	return S_OK;
 }
@@ -378,7 +378,7 @@ void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return;
-
+	Damaged();
 	MON_HIT_INFO HitInfo{};
 
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
@@ -431,9 +431,39 @@ _bool CMonster::Is_Grounded()
 	return m_pCharacterController->IsGrounded();
 }
 
+void CMonster::Damaged()
+{
+	if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
+		return;
+
+	switch (m_ActiveMonTable.eHitType)
+	{
+	case PLAYER_SKILL_TYPE::ATTACK:
+		m_iHp -= 5.f;
+		break;
+	case PLAYER_SKILL_TYPE::ACCIO:
+		m_iHp -= 10.f;
+		break;
+	case PLAYER_SKILL_TYPE::DEPULSO:
+		m_iHp -= 15.f;
+		break;
+	case PLAYER_SKILL_TYPE::DESCENDO:
+		m_iHp -= 20.f;
+		break;
+	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		m_iHp -= 25.f;
+		break;
+	case PLAYER_SKILL_TYPE::PROTEGO:
+		m_iHp -= 8.f;
+		break;
+	}
+
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE), FLAGTYPE::DEL);
+}
+
 void CMonster::RunningSkill(_float fTimeDelta)
 {
-	if (m_bSkill && !m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
+	if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
 	{
 		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
@@ -504,6 +534,9 @@ void CMonster::Flag_Check(_float fTimeDelta)
 				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
 		}
 	}
+
+	//if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
+	//	Damaged();
 }
 void CMonster::EmissiveFadeOut(_float fTimeDelta)
 {

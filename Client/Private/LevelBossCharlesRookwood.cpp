@@ -30,7 +30,12 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 	CGameInstance::Get().Initialize_EffectLight(15);
-
+	auto hPlayer = SpawnPlayer();
+	if (!hPlayer)
+	{
+		MSG_BOX("Player Handle Failed To CLevelBossCharlesRookwood");
+		return E_FAIL;
+	}
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/TombBoss", true)))
 		return E_FAIL;
 
@@ -43,10 +48,10 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(SpawnUICamera()))
 		return E_FAIL;
 
-	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+	if (FAILED(SpawnPlayerCamera(hPlayer)))
 		return E_FAIL;
 
-	if (FAILED(SpawnMonster()))
+	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
 
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -193,10 +198,11 @@ HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()
 	return S_OK;
 }
 
-HRESULT CLevelBossCharlesRookwood::SpawnMonster()
+HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 {
 	{
 		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.TargetHandle = hPlayer.value();
 		TmbDesc.sObjectTag = "BossTmb";
 		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
