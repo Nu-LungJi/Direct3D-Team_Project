@@ -609,17 +609,68 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 
-	if (CGameInstance::Get().KeyDown(DIK_1))
+	 // 임시
+	if (m_bCoolTime_Num1 == true) {
+		if (m_fCoolTime_Num1 > 3.f) {
+			m_bCoolTime_Num1 = false;
+			m_fCoolTime_Num1 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num1 += fTimeDelta;
+		}
+	}
+	if (m_bCoolTime_Num2 == true) {
+		if (m_fCoolTime_Num2 > 3.f) {
+			m_bCoolTime_Num2 = false;
+			m_fCoolTime_Num2 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num2 += fTimeDelta;
+		}
+	}
+	if (m_bCoolTime_Num3 == true) {
+		if (m_fCoolTime_Num3 > 3.f) {
+			m_bCoolTime_Num3 = false;
+			m_fCoolTime_Num3 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num3 += fTimeDelta;
+		}
+	}
+	if (m_bCoolTime_Num4 == true) {
+		if (m_fCoolTime_Num4 > 3.f) {
+			m_bCoolTime_Num4 = false;
+			m_fCoolTime_Num4 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num4 += fTimeDelta;
+		}
+	}
+
+
+
+	if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
 		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		m_bCoolTime_Num1 = true;
 
-	if (CGameInstance::Get().KeyDown(DIK_2))
+	}
+
+	if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
+	{
 		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
-
-	if (CGameInstance::Get().KeyDown(DIK_3))
+		m_bCoolTime_Num2 = true;
+	}
+	if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
+	{
 		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
+		m_bCoolTime_Num3 = true;
+	}	
 
-	if (CGameInstance::Get().KeyDown(DIK_4))
+	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
+
 		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
+		m_bCoolTime_Num4 = true;
+	}
 
 #ifdef _DEBUG
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))

@@ -193,6 +193,16 @@ private:
 	_bool m_bDashTriggered{};
 
 private:
+	_float m_fCoolTime_Num1{ 0.f };
+	_bool m_bCoolTime_Num1{ false};
+	_float m_fCoolTime_Num2{ 0.f };
+	_bool m_bCoolTime_Num2{ false };
+	_float m_fCoolTime_Num3{ 0.f };
+	_bool m_bCoolTime_Num3{ false };
+	_float m_fCoolTime_Num4{ 0.f };
+	_bool m_bCoolTime_Num4{ false };
+
+private:
 	_bool  m_bUI = false;
 	CHandle m_hUI;
 
