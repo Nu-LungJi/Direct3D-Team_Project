@@ -129,7 +129,8 @@ void CEffectManager::UpdateGUI()
 				ImGui::ColorEdit3("Color", &light->vColor.x);
 
 				ImGui::InputFloat("Intensity", &light->fIntensity);
-				ImGui::InputFloat("Range", &light->fRange);
+				ImGui::InputFloat("InnerAtt", &light->fInnerAtt);
+				ImGui::InputFloat("OuterAtt", &light->fOuterAtt);
 				ImGui::InputFloat("Duration", &light->fDuration);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
 
@@ -206,6 +207,8 @@ void CEffectManager::UpdateGUI()
 		preset.fDuration = Duration;
 		if (FAILED(SaveEffectPreset(savePath, preset)))
 			MSG_BOX("Failed to save effect preset");
+		else
+			AddPreset(std::move(preset));
 	}
 
 	ImGui::SameLine();
@@ -219,8 +222,18 @@ void CEffectManager::UpdateGUI()
 
 	ImGui::Separator();
 
-	InputText("Load Effect Name", playEffectName);
+	if (ImGui::Button("Reload Effects")) {
 
+		m_Presets.clear();
+
+		auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
+		if (FAILED(Load_EffectJsonPackage(k))) {
+			MSG_BOX("Reload Effects Failed");
+		}	
+	}
+
+
+	InputText("Enter Effect Name", playEffectName);
 	if (ImGui::Button("Play Effect"))
 	{
 		_float4x4 matWorld{};
@@ -343,8 +356,10 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 				{ "intensity",
 					light.fIntensity },
 
-				{ "range",
-					light.fRange },
+				{ "innerAtt",
+					light.fInnerAtt },
+				{ "OuterAtt",
+					light.fOuterAtt },
 
 				{ "spawnDelay",
 					command.fSpawnDelay },
@@ -556,8 +571,11 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 				if (commandJson.contains("intensity"))
 					light.fIntensity = commandJson["intensity"].get<_float>();
 
-				if (commandJson.contains("range"))
-					light.fRange = commandJson["range"].get<_float>();
+				if (commandJson.contains("InnerAtt"))
+					light.fInnerAtt = commandJson["InnerAtt"].get<_float>();
+
+				if (commandJson.contains("OuterAtt"))
+					light.fOuterAtt = commandJson["OuterAtt"].get<_float>();
 
 				if (commandJson.contains("duration"))
 					light.fDuration = commandJson["duration"].get<_float>();
@@ -818,7 +836,8 @@ _float CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGH
 			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z,1.f),
 			command.fIntensity,
 			command.vColor,
-			command.fRange,
+			command.fInnerAtt,
+			command.fOuterAtt,
 			command.fDuration,
 			command.vVelocity);
 

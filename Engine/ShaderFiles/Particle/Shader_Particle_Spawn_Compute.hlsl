@@ -15,8 +15,9 @@ RWStructuredBuffer<ParticleData> gParticles : register(u1);
 [numthreads(256, 1, 1)]
 void CSMain(uint id : SV_DispatchThreadID)
 {
-    if (id >= g_iSpawnCount)
-        return;
+	
+	if (id >= g_iSpawnCount)
+		return;
 
     uint index = gDeadList.Consume();
     if (index >= g_iMaxParticles)   // 언더플로우로 인한 쓰레기값 방어

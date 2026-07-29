@@ -421,6 +421,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
 
 	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 	m_fTime += fTimeDelta;
+
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
     {
@@ -713,6 +714,7 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 	uint32_t availableCount = m_iDeadCount;
     if (availableCount == 0)
         return E_FAIL;
+	
 
     if (count > availableCount)
         count = availableCount;
