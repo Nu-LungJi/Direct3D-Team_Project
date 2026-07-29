@@ -36,6 +36,7 @@ private:
 	{
 		CAST,
 		ATTACK,
+		ATTACK_FAILED,
 		PULL,
 		RECOVERY
 	};

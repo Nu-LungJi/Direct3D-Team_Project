@@ -25,6 +25,7 @@ protected:
 	_bool RequestLocomotion(CStateMachine* pStateMachine) const;
 	_bool HasTarget(const CPlayer& player) const;
 	_bool HasValidTarget(const CPlayer& player) const;
+	_bool TryApplySkillToTarget(CPlayer& player, PLAYER_SKILL_TYPE eSkillType) const;
 	_bool PlayRandomTargetAttack(CPlayer& player, _float fBlendDuration = 0.24f);
 
 	int32_t FindAnimationIndex(const CPlayer& player, _string_view sAnimationName) const;

@@ -6,7 +6,6 @@
 #include "PlayerAnimationRatioGuard.h"
 
 #include "ComCharacterMoveIntent.h"
-#include "Monster.h"
 NS_USING(Client)
 
 void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
@@ -35,8 +34,6 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ACCIO);
-	if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
-		pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
 	
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
@@ -90,6 +87,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	case PHASE::ATTACK:
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO) {
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				break;
+			}
+
 			// 끌어 오기 시작
 			m_ePhase = PHASE::PULL;
 			pAnimator->Play_Anim(m_AccioCast_Animation, false, 0.2f);
@@ -98,6 +101,11 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 		break;
 	}
 
+
+	case PHASE::ATTACK_FAILED:
+		if (pAnimator->GetFinish())
+			RequestLocomotion(pStateMachine);
+		break;
 
 	case PHASE::PULL: {
 		auto* Target = CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());

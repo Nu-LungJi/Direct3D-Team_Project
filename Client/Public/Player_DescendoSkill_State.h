@@ -30,6 +30,7 @@ private:
 	{
 		CAST,
 		ATTACK,
+		ATTACK_FAILED,
 		PUSH,
 		RECOVERY
 	};

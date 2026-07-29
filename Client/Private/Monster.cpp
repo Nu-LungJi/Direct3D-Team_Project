@@ -361,15 +361,15 @@ _bool CMonster::Activate_PendingHit()
 	return true;
 }
 
-void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
+_bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 	
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
 	{
-		return;
+		return false;
 	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return;
+		return false;
 
 	MON_HIT_INFO HitInfo{};
 
@@ -405,10 +405,10 @@ void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 	}
 	//현재 pending 가중치보다 낮으면 리턴
 	if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
-		return;
+		return false;
 	//현재 잠금된거보다 낮아도 거부
 	if (m_bActiveHit &&HitInfo.iPriority <m_ActiveMonTable.iPriority)
-		return;
+		return false;
 	//새 피격상태 전달
 	m_PendingMonTable = HitInfo;
 	m_bPending = true;
@@ -416,6 +416,7 @@ void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 	//우선순위 잠금
 	m_ActiveMonTable = HitInfo;
 	m_bActiveHit = true;
+	return true;
 }
 
 _bool CMonster::Is_Grounded()
