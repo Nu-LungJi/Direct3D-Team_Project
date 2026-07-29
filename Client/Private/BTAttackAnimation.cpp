@@ -102,6 +102,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 		}
 		if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
 		{
+			Reset_CheckFlag();
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
 		}

@@ -91,6 +91,9 @@ HRESULT CMonster::Initialize(void* pArg)
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_0))
+		m_pMoveIntent->RequestWarp(_float3(20, 20, 20));
+	
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
 	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());

@@ -139,6 +139,8 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
+
+	m_eMonType = MONSTER_TYPE::BOSS;
 	return S_OK;
 }
 
