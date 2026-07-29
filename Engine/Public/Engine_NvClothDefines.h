@@ -74,6 +74,21 @@ namespace Engine
 		float fPhaseStiffnessMultiplier{ 1.f };
 		float fCompressionLimit{ 1.f };
 		float fStretchLimit{ 1.f };
+		float fMotionConstraintStiffness{ 1.f };
+	};
+
+	struct NVCLOTH_ANIMATION_CONSTRAINT_DESC
+	{
+		// Current animation targets in Cloth simulation-local space.
+		// Both arrays must contain exactly one value per Cloth particle.
+		std::vector<DirectX::XMFLOAT3> vecTargetPositions{};
+		std::vector<float> vecMaxDistances{};
+
+		// Fixed particles are moved to their animation targets before
+		// simulation. Reset previous positions only on the first frame or
+		// after a teleport so normal attachment movement keeps its inertia.
+		bool bUpdateFixedParticles{ true };
+		bool bResetPreviousParticles{};
 	};
 
 	struct NVCLOTH_COLLISION_SPHERE

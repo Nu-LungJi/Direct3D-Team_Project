@@ -1,15 +1,13 @@
 #include "pch.h"
 #include "ResNvClothMesh.h"
 
-#include "GameInstance.h"
-
 #include <cmath>
 #include <fstream>
 #include <unordered_map>
 
 NS_USING(Engine)
 
-namespace
+namespace Engine::ResNvClothMeshDetail
 {
 	struct SOURCE_BONE
 	{
@@ -360,6 +358,7 @@ namespace
 			OutMeshes.size() == Header.MeshCount;
 	}
 
+	// Rest Pose의 로컬 본 행렬을 모델 공간 Combined 행렬로 누적한다.
 	bool BuildCombinedBones(
 		const std::vector<SOURCE_BONE>& Bones,
 		_fmatrix PreTransform,
@@ -391,6 +390,7 @@ namespace
 		return true;
 	}
 
+	// 스키닝 정점을 Rest Pose Combined 행렬로 변환해 일반 메시 정점으로 굽는다.
 	bool SkinVertex(
 		const VTXANIMMESH& Source,
 		const SOURCE_MESH& Mesh,
@@ -467,6 +467,77 @@ namespace
 		return true;
 	}
 
+	bool BuildParticleSkinBinding(
+		const VTXANIMMESH& Source,
+		const SOURCE_MESH& Mesh,
+		const std::vector<_float4x4>&
+			InverseSourceBoneToSimulation,
+		const _float3& vRestSimulationPosition,
+		CResNvClothMesh::PARTICLE_SKIN_BINDING& OutBinding)
+	{
+		const uint32_t Indices[4]{
+			Source.vBlendIndices.x,
+			Source.vBlendIndices.y,
+			Source.vBlendIndices.z,
+			Source.vBlendIndices.w
+		};
+		const float Weights[4]{
+			Source.vBlendWeights.x,
+			Source.vBlendWeights.y,
+			Source.vBlendWeights.z,
+			std::max(
+				0.f,
+				1.f -
+					Source.vBlendWeights.x -
+					Source.vBlendWeights.y -
+					Source.vBlendWeights.z)
+		};
+
+		OutBinding = {};
+		float fTotalWeight{};
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (Weights[i] <= 0.f)
+				continue;
+			if (Indices[i] >= Mesh.BoneIndices.size())
+				return false;
+
+			const uint32_t iSkeletonBone =
+				Mesh.BoneIndices[Indices[i]];
+			if (iSkeletonBone >=
+				InverseSourceBoneToSimulation.size())
+			{
+				return false;
+			}
+
+			auto& Influence =
+				OutBinding.Influences[i];
+			Influence.iSourceBoneIndex =
+				iSkeletonBone;
+			Influence.fWeight = Weights[i];
+			XMStoreFloat3(
+				&Influence.vBoneLocalPosition,
+				XMVector3TransformCoord(
+					XMLoadFloat3(
+						&vRestSimulationPosition),
+					XMLoadFloat4x4(
+						&InverseSourceBoneToSimulation[
+							iSkeletonBone])));
+			fTotalWeight += Weights[i];
+		}
+
+		if (fTotalWeight <= FLT_EPSILON)
+			return false;
+
+		for (auto& Influence :
+			OutBinding.Influences)
+		{
+			Influence.fWeight /= fTotalWeight;
+		}
+		return true;
+	}
+
+	// Cloth 좌표계에는 스케일을 전달하지 않도록 회전과 이동만 추출한다.
 	bool MakeRigidMatrix(
 		_fmatrix Matrix,
 		_matrix& OutRigidMatrix)
@@ -490,6 +561,7 @@ namespace
 		return true;
 	}
 
+	// 위치와 방향 벡터를 동일 좌표계로 변환하고 방향 벡터를 정규화한다.
 	void TransformVertex(
 		VTXMESH& Vertex,
 		_fmatrix Matrix)
@@ -519,6 +591,7 @@ namespace
 					Matrix)));
 	}
 
+	// 허용 오차 단위로 위치를 양자화해 중복 파티클 검색 키를 만든다.
 	WELD_KEY MakeWeldKey(
 		const _float3& Position,
 		float fTolerance)
@@ -567,6 +640,7 @@ namespace
 		};
 	}
 
+	// 현재 삼각형에서 하이폴리 정점을 복원할 직교 로컬 프레임을 만든다.
 	bool BuildTriangleFrame(
 		const _float3& P0,
 		const _float3& P1,
@@ -618,6 +692,7 @@ namespace
 		return true;
 	}
 
+	// 점과 가장 가까운 삼각형 위의 점과 그 Barycentric 좌표를 계산한다.
 	bool ClosestPointOnTriangle(
 		const _float3& Point,
 		const _float3& P0,
@@ -745,6 +820,7 @@ namespace
 		return true;
 	}
 
+	// 모델 공간 벡터를 삼각형의 Tangent/Binormal/Normal 공간으로 투영한다.
 	_float3 ProjectToFrame(
 		const _float3& Vector,
 		const _float3& Tangent,
@@ -758,6 +834,8 @@ namespace
 		};
 	}
 
+	// 하이폴리 정점 하나를 가장 가까운 저폴리 삼각형에 Wrap한다.
+	// 런타임 VS는 이 매핑으로 현재 Cloth 파티클에서 정점을 복원한다.
 	bool BuildRenderVertexMapping(
 		const VTXMESH& RenderVertex,
 		const NVCLOTH_FABRIC_DESC& Fabric,
@@ -890,11 +968,8 @@ namespace
 	}
 }
 
-CResNvClothMesh::CResNvClothMesh(
-	const _string& sPath,
-	ComPtr<ID3D11Device> pDevice)
-	: CResource{ sPath },
-	  m_pDevice{ std::move(pDevice) }
+CResNvClothMesh::CResNvClothMesh(const _string& sPath)
+	: CResource{ sPath }
 {
 }
 
@@ -906,12 +981,13 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 {
 	const auto* pDesc = std::any_cast<DESC>(&arg);
 	if (!pDesc ||
-		!m_pDevice ||
 		!std::isfinite(pDesc->fWeldTolerance) ||
 		pDesc->fWeldTolerance <= 0.f ||
 		!std::isfinite(pDesc->fFixedTopRatio) ||
 		pDesc->fFixedTopRatio < 0.f ||
-		pDesc->fFixedTopRatio > 1.f)
+		pDesc->fFixedTopRatio > 1.f ||
+		!std::isfinite(pDesc->fMaxDistanceScale) ||
+		pDesc->fMaxDistanceScale < 0.f)
 	{
 		return E_INVALIDARG;
 	}
@@ -920,14 +996,18 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		return S_OK;
 
 	m_eState = STATE::LOADING;
-	std::vector<SOURCE_BONE> Bones{};
-	std::vector<SOURCE_MESH> Meshes{};
-	if (!LoadSourceModel(m_sPath, Bones, Meshes))
+	std::vector<ResNvClothMeshDetail::SOURCE_BONE> Bones{};
+	std::vector<ResNvClothMeshDetail::SOURCE_MESH> Meshes{};
+	if (!ResNvClothMeshDetail::LoadSourceModel(
+		m_sPath,
+		Bones,
+		Meshes))
 	{
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
 	}
 
+	// 명시적인 인덱스가 없으면 저폴리/하이폴리 메시를 크기로 구분한다.
 	uint32_t iSimulationMeshIndex =
 		pDesc->iSimulationMeshIndex;
 	uint32_t iRenderMeshIndex =
@@ -942,8 +1022,8 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 					std::min_element(
 						Meshes.begin(),
 						Meshes.end(),
-						[](const SOURCE_MESH& A,
-							const SOURCE_MESH& B)
+						[](const ResNvClothMeshDetail::SOURCE_MESH& A,
+							const ResNvClothMeshDetail::SOURCE_MESH& B)
 						{
 							return A.Indices.size() <
 								B.Indices.size();
@@ -959,8 +1039,8 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 					std::max_element(
 						Meshes.begin(),
 						Meshes.end(),
-						[](const SOURCE_MESH& A,
-							const SOURCE_MESH& B)
+						[](const ResNvClothMeshDetail::SOURCE_MESH& A,
+							const ResNvClothMeshDetail::SOURCE_MESH& B)
 						{
 							return A.Indices.size() <
 								B.Indices.size();
@@ -974,8 +1054,9 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		return E_INVALIDARG;
 	}
 
+	// 두 메시를 동일한 Rest Pose 모델 공간으로 스키닝하기 위한 본 행렬이다.
 	std::vector<_float4x4> CombinedBones{};
-	if (!BuildCombinedBones(
+	if (!ResNvClothMeshDetail::BuildCombinedBones(
 		Bones,
 		pDesc->PreTransformMatrix,
 		CombinedBones))
@@ -984,6 +1065,7 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		return E_FAIL;
 	}
 
+	// 런타임 부착 본이 원점이 되도록 모든 Cloth 데이터를 Anchor 로컬로 옮긴다.
 	_matrix SimulationAnchorInverse =
 		XMMatrixIdentity();
 	if (!pDesc->sSimulationAnchorBone.empty())
@@ -991,7 +1073,8 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		const auto BoneIter = std::find_if(
 			Bones.begin(),
 			Bones.end(),
-			[pDesc](const SOURCE_BONE& Bone)
+			[pDesc](
+				const ResNvClothMeshDetail::SOURCE_BONE& Bone)
 			{
 				return Bone.sName ==
 					pDesc->sSimulationAnchorBone;
@@ -1006,7 +1089,7 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 			static_cast<size_t>(
 				std::distance(Bones.begin(), BoneIter));
 		_matrix SimulationAnchor{};
-		if (!MakeRigidMatrix(
+		if (!ResNvClothMeshDetail::MakeRigidMatrix(
 			XMLoadFloat4x4(
 				&CombinedBones[iBoneIndex]),
 			SimulationAnchor))
@@ -1029,10 +1112,53 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		}
 	}
 
+	// Source 본의 Rest Pose를 시뮬레이션 Anchor 로컬 기준으로 만들고
+	// 역행렬을 보관한다. 입자는 이 공간의 본 로컬 위치를 저장하므로
+	// 런타임 Target Skeleton의 현재 본 자세로 다시 조립할 수 있다.
+	std::vector<_float4x4>
+		InverseSourceBoneToSimulation(
+			CombinedBones.size());
+	for (size_t i = 0;
+		i < CombinedBones.size();
+		++i)
+	{
+		_matrix SourceBoneRigid{};
+		if (!ResNvClothMeshDetail::MakeRigidMatrix(
+			XMLoadFloat4x4(&CombinedBones[i]),
+			SourceBoneRigid))
+		{
+			m_eState = STATE::LOADFAIL;
+			return E_FAIL;
+		}
+
+		_vector vDeterminant{};
+		const _matrix Inverse =
+			XMMatrixInverse(
+				&vDeterminant,
+				SourceBoneRigid *
+					SimulationAnchorInverse);
+		if (std::fabs(
+			XMVectorGetX(vDeterminant)) <=
+			FLT_EPSILON)
+		{
+			m_eState = STATE::LOADFAIL;
+			return E_FAIL;
+		}
+		XMStoreFloat4x4(
+			&InverseSourceBoneToSimulation[i],
+			Inverse);
+	}
+
+	// Load 재시도에도 이전 Fabric/Render 결과가 남지 않게 출력 데이터를 초기화한다.
 	m_tFabricDesc = {};
 	m_tFabricDesc.bUseGeodesicTether = true;
 	m_Sections.clear();
 	m_Sections.reserve(1);
+	m_SkinBoneNames.clear();
+	m_SkinBoneNames.reserve(Bones.size());
+	for (const auto& Bone : Bones)
+		m_SkinBoneNames.push_back(Bone.sName);
+	m_ParticleSkinBindings.clear();
 
 	const auto& SimulationSource =
 		Meshes[iSimulationMeshIndex];
@@ -1047,11 +1173,12 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 	float fOriginalMaxY =
 		std::numeric_limits<float>::lowest();
 
+	// 저폴리 메시를 Rest Pose로 굽고 상단 고정 영역 계산용 높이를 수집한다.
 	for (size_t i = 0;
 		i < SimulationSource.Vertices.size();
 		++i)
 	{
-		if (!SkinVertex(
+		if (!ResNvClothMeshDetail::SkinVertex(
 			SimulationSource.Vertices[i],
 			SimulationSource,
 			CombinedBones,
@@ -1069,11 +1196,12 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 			std::max(fOriginalMaxY, fY);
 	}
 
+	// 렌더 메시도 같은 Rest Pose로 굽고 이후 저폴리 메시와 Wrap한다.
 	for (size_t i = 0;
 		i < RenderSource.Vertices.size();
 		++i)
 	{
-		if (!SkinVertex(
+		if (!ResNvClothMeshDetail::SkinVertex(
 			RenderSource.Vertices[i],
 			RenderSource,
 			CombinedBones,
@@ -1086,29 +1214,76 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 
 	const float fOriginalHeight =
 		fOriginalMaxY - fOriginalMinY;
+	if (!std::isfinite(fOriginalHeight) ||
+		fOriginalHeight <= FLT_EPSILON)
+	{
+		m_eState = STATE::LOADFAIL;
+		return E_FAIL;
+	}
 	const float fFixedCutoff =
 		fOriginalMaxY -
 		fOriginalHeight *
 			pDesc->fFixedTopRatio;
 
+	// 동일 위치의 저폴리 정점을 하나의 파티클로 Weld하고 고정 질량을 적용한다.
 	std::unordered_map<
-		WELD_KEY,
+		ResNvClothMeshDetail::WELD_KEY,
 		uint32_t,
-		WELD_KEY_HASH> WeldedParticles{};
+		ResNvClothMeshDetail::WELD_KEY_HASH>
+		WeldedParticles{};
 	std::vector<uint32_t> SimulationParticleMap(
 		SimulationVertices.size());
 	for (size_t i = 0;
 		i < SimulationVertices.size();
 		++i)
 	{
+		const float fDepthRatio =
+			std::clamp(
+				(fOriginalMaxY -
+					SimulationVertices[i].vPosition.y) /
+					fOriginalHeight,
+				0.f,
+				1.f);
 		const _bool bFixed =
 			SimulationVertices[i].vPosition.y >=
 				fFixedCutoff;
-		TransformVertex(
+		ResNvClothMeshDetail::TransformVertex(
 			SimulationVertices[i],
 			SimulationAnchorInverse);
 
-		const auto Key = MakeWeldKey(
+		PARTICLE_SKIN_BINDING SkinBinding{};
+		if (!ResNvClothMeshDetail::
+			BuildParticleSkinBinding(
+				SimulationSource.Vertices[i],
+				SimulationSource,
+				InverseSourceBoneToSimulation,
+				SimulationVertices[i].vPosition,
+				SkinBinding))
+		{
+			m_eState = STATE::LOADFAIL;
+			return E_FAIL;
+		}
+
+		const float fDynamicRange =
+			std::max(
+				1.f - pDesc->fFixedTopRatio,
+				FLT_EPSILON);
+		const float fFreeRatio =
+			bFixed ?
+				0.f :
+				std::clamp(
+					(fDepthRatio -
+						pDesc->fFixedTopRatio) /
+						fDynamicRange,
+					0.f,
+					1.f);
+		SkinBinding.fMaxDistance =
+			fOriginalHeight *
+			pDesc->fMaxDistanceScale *
+			fFreeRatio;
+
+		const auto Key =
+			ResNvClothMeshDetail::MakeWeldKey(
 			SimulationVertices[i].vPosition,
 			pDesc->fWeldTolerance);
 		const auto [Iter, bInserted] =
@@ -1122,15 +1297,20 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 				SimulationVertices[i].vPosition);
 			m_tFabricDesc.vecInverseMasses.push_back(
 				bFixed ? 0.f : 1.f);
+			m_ParticleSkinBindings.push_back(
+				SkinBinding);
 		}
 		else if (bFixed)
 		{
 			m_tFabricDesc.vecInverseMasses[
 				Iter->second] = 0.f;
+			m_ParticleSkinBindings[
+				Iter->second].fMaxDistance = 0.f;
 		}
 		SimulationParticleMap[i] = Iter->second;
 	}
 
+	// Weld 후 무너진 삼각형과 면적이 없는 삼각형은 Fabric에서 제외한다.
 	for (size_t i = 0;
 		i < SimulationSource.Indices.size();
 		i += 3)
@@ -1150,7 +1330,7 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		_float3 vTangent{};
 		_float3 vBinormal{};
 		_float3 vNormal{};
-		if (!BuildTriangleFrame(
+		if (!ResNvClothMeshDetail::BuildTriangleFrame(
 			m_tFabricDesc.vecPositions[i0],
 			m_tFabricDesc.vecPositions[i1],
 			m_tFabricDesc.vecPositions[i2],
@@ -1173,14 +1353,16 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		return E_FAIL;
 	}
 
+	// 렌더 메시도 시뮬레이션과 동일한 Anchor 로컬 좌표계로 변환한다.
 	for (auto& Vertex : RenderVertices)
 	{
-		TransformVertex(
+		ResNvClothMeshDetail::TransformVertex(
 			Vertex,
-			SimulationAnchorInverse);
+		SimulationAnchorInverse);
 	}
 
-	std::vector<NVCLOTH_RENDER_VERTEX>
+	// 하이폴리 각 정점에 대응하는 저폴리 삼각형과 복원 정보를 생성한다.
+	std::vector<ResNvClothMeshDetail::NVCLOTH_RENDER_VERTEX>
 		MappedRenderVertices(RenderVertices.size());
 	double fTotalMappingDistance{};
 	float fMaxMappingDistance{};
@@ -1189,7 +1371,7 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		++i)
 	{
 		float fMappingDistance{};
-		if (!BuildRenderVertexMapping(
+		if (!ResNvClothMeshDetail::BuildRenderVertexMapping(
 			RenderVertices[i],
 			m_tFabricDesc,
 			MappedRenderVertices[i],
@@ -1212,48 +1394,50 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		iRenderMeshIndex;
 	Section.iMaterialIndex =
 		RenderSource.iMaterialIndex;
-	Section.iVertexCount =
+
+	// 매핑 정보는 Load 이후 변하지 않으므로 Immutable VI 버퍼로 업로드한다.
+	CResDynamicVIBuffer::DESC VIBufferDesc{};
+	VIBufferDesc.iNumVertices =
 		static_cast<uint32_t>(
 			MappedRenderVertices.size());
-	Section.iIndexCount =
+	VIBufferDesc.iVertexStride =
+		sizeof(
+			ResNvClothMeshDetail::
+				NVCLOTH_RENDER_VERTEX);
+	VIBufferDesc.vertexDesc.ByteWidth =
+		VIBufferDesc.iNumVertices *
+		VIBufferDesc.iVertexStride;
+	VIBufferDesc.vertexDesc.Usage =
+		D3D11_USAGE_IMMUTABLE;
+	VIBufferDesc.vertexDesc.BindFlags =
+		D3D11_BIND_VERTEX_BUFFER;
+	VIBufferDesc.vertexSubResource.pSysMem =
+		MappedRenderVertices.data();
+
+	VIBufferDesc.iNumIndices =
 		static_cast<uint32_t>(
 			RenderSource.Indices.size());
-	Section.iVertexStride =
-		sizeof(NVCLOTH_RENDER_VERTEX);
-
-	D3D11_BUFFER_DESC VertexDesc{};
-	VertexDesc.ByteWidth =
-		static_cast<UINT>(
-			MappedRenderVertices.size() *
-			sizeof(NVCLOTH_RENDER_VERTEX));
-	VertexDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	VertexDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	D3D11_SUBRESOURCE_DATA VertexData{};
-	VertexData.pSysMem =
-		MappedRenderVertices.data();
-	if (FAILED(m_pDevice->CreateBuffer(
-		&VertexDesc,
-		&VertexData,
-		Section.pVertexBuffer.GetAddressOf())))
-	{
-		m_eState = STATE::LOADFAIL;
-		return E_FAIL;
-	}
-
-	D3D11_BUFFER_DESC IndexDesc{};
-	IndexDesc.ByteWidth =
-		static_cast<UINT>(
-			RenderSource.Indices.size() *
-			sizeof(uint32_t));
-	IndexDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	IndexDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	D3D11_SUBRESOURCE_DATA IndexData{};
-	IndexData.pSysMem =
+	VIBufferDesc.iIndexStride =
+		sizeof(uint32_t);
+	VIBufferDesc.eIndexFormat =
+		DXGI_FORMAT_R32_UINT;
+	VIBufferDesc.IndexDesc.ByteWidth =
+		VIBufferDesc.iNumIndices *
+		VIBufferDesc.iIndexStride;
+	VIBufferDesc.IndexDesc.Usage =
+		D3D11_USAGE_IMMUTABLE;
+	VIBufferDesc.IndexDesc.BindFlags =
+		D3D11_BIND_INDEX_BUFFER;
+	VIBufferDesc.indexSubResource.pSysMem =
 		RenderSource.Indices.data();
-	if (FAILED(m_pDevice->CreateBuffer(
-		&IndexDesc,
-		&IndexData,
-		Section.pIndexBuffer.GetAddressOf())))
+	VIBufferDesc.ePrimitiveType =
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	Section.pVIBuffer =
+		CResDynamicVIBuffer::Create();
+	if (!Section.pVIBuffer ||
+		FAILED(Section.pVIBuffer->Load(
+			VIBufferDesc)))
 	{
 		m_eState = STATE::LOADFAIL;
 		return E_FAIL;
@@ -1287,6 +1471,8 @@ HRESULT CResNvClothMesh::Unload(const std::any&)
 {
 	m_Sections.clear();
 	m_tFabricDesc = {};
+	m_SkinBoneNames.clear();
+	m_ParticleSkinBindings.clear();
 	m_eState = STATE::UNLOAD;
 	return S_OK;
 }
@@ -1294,7 +1480,5 @@ HRESULT CResNvClothMesh::Unload(const std::any&)
 SPtr<CResNvClothMesh> CResNvClothMesh::Create(
 	const _string& sPath)
 {
-	return ToSPtr(new CResNvClothMesh{
-		sPath,
-		CGameInstance::Get().GetGraphicDevice() });
+	return ToSPtr(new CResNvClothMesh{ sPath });
 }

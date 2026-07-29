@@ -159,8 +159,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_x64d.lib;NvClothDEBUG_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;$(SolutionDir)ThirdParty\NvCloth_1.1.6\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_x64d.lib;NvCloth_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;$(SolutionDir)ThirdParty\NvCloth_1.1.6\lib\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
     <FxCompile>
@@ -694,7 +694,6 @@
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)ThirdParty\NvCloth_1.1.6\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)ThirdParty\NvCloth_1.1.6\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PX_DEBUG=1;PX_CHECKED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExcludedFromBuild Condition="'$(Platform)'!='x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\private\PhysXCookingEditor.cpp" />

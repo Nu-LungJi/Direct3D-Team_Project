@@ -135,6 +135,18 @@ _bool CComNvCloth::SetCollisions(
 		Desc);
 }
 
+_bool CComNvCloth::SetAnimationConstraints(
+	const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc)
+{
+	if (!m_hCloth)
+		return false;
+
+	return CGameInstance::Get().
+		SetNvClothAnimationConstraints(
+			m_hCloth,
+			Desc);
+}
+
 void CComNvCloth::UpdateGUI()
 {
 	CComponent::UpdateGUI();

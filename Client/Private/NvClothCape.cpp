@@ -12,7 +12,7 @@
 
 NS_USING(Client)
 
-namespace
+namespace Client::NvClothCapeDetail
 {
 	_bool MakeRigidMatrix(
 		_fmatrix Matrix,
@@ -279,6 +279,35 @@ _bool CNvClothCape::ResolveAttachment()
 	if (m_iAttachBoneIndex < 0)
 		return false;
 
+	const auto& SkinBoneNames =
+		m_pClothMesh->GetSkinBoneNames();
+	m_ResolvedSkinBoneIndices.resize(
+		SkinBoneNames.size(),
+		-1);
+	m_SkinBoneToSimulationMatrices.resize(
+		SkinBoneNames.size());
+	size_t iResolvedSkinBoneCount{};
+	for (size_t i = 0;
+		i < SkinBoneNames.size();
+		++i)
+	{
+		m_ResolvedSkinBoneIndices[i] =
+			pModelInstance->GetModel()->
+			Get_BoneIndex(
+				SkinBoneNames[i].c_str());
+		if (m_ResolvedSkinBoneIndices[i] >= 0)
+			++iResolvedSkinBoneCount;
+	}
+
+	char szLog[256]{};
+	sprintf_s(
+		szLog,
+		"[NvClothCape] Skin bones resolved: %zu / %zu. "
+		"Particles without a matching bone use their Rest Pose.\n",
+		iResolvedSkinBoneCount,
+		SkinBoneNames.size());
+	DEBUG_LOG(szLog);
+
 	for (auto& Binding : m_BodyCollisionBones)
 	{
 		Binding.iBoneIndex =
@@ -289,6 +318,148 @@ _bool CNvClothCape::ResolveAttachment()
 			return false;
 	}
 
+	return true;
+}
+
+_bool CNvClothCape::UpdateAnimationConstraints(
+	CComModelInstance& ModelInstance,
+	_fmatrix AttachmentWorld,
+	_bool bResetPreviousParticles)
+{
+	if (!m_pComNvCloth ||
+		!m_pClothMesh ||
+		!ModelInstance.GetModel())
+	{
+		return false;
+	}
+
+	const auto& Bindings =
+		m_pClothMesh->GetParticleSkinBindings();
+	const auto& RestPositions =
+		m_pClothMesh->GetFabricDesc().vecPositions;
+	if (Bindings.empty() ||
+		Bindings.size() != RestPositions.size() ||
+		m_ResolvedSkinBoneIndices.size() !=
+			m_pClothMesh->GetSkinBoneNames().size() ||
+		m_SkinBoneToSimulationMatrices.size() !=
+			m_ResolvedSkinBoneIndices.size())
+	{
+		return false;
+	}
+
+	_vector vDeterminant{};
+	const _matrix InverseAttachmentWorld =
+		XMMatrixInverse(
+			&vDeterminant,
+			AttachmentWorld);
+	if (!std::isfinite(XMVectorGetX(vDeterminant)) ||
+		std::fabs(XMVectorGetX(vDeterminant)) <=
+			FLT_EPSILON)
+	{
+		return false;
+	}
+
+	auto* pTarget =
+		CGameInstance::Get().
+		GetGameObjectByHandle(m_hTarget);
+	if (!pTarget)
+		return false;
+
+	const _matrix TargetWorld =
+		pTarget->GetTransform().
+		GetLoadedCombinedWorldMatrix();
+	for (size_t i = 0;
+		i < m_ResolvedSkinBoneIndices.size();
+		++i)
+	{
+		const int32_t iTargetBoneIndex =
+			m_ResolvedSkinBoneIndices[i];
+		if (iTargetBoneIndex < 0)
+		{
+			XMStoreFloat4x4(
+				&m_SkinBoneToSimulationMatrices[i],
+				XMMatrixIdentity());
+			continue;
+		}
+
+		_matrix BoneMatrix{};
+		if (!GetTargetBoneMatrix(
+			ModelInstance,
+			iTargetBoneIndex,
+			BoneMatrix))
+		{
+			return false;
+		}
+
+		_matrix BoneWorldRigid{};
+		if (!NvClothCapeDetail::MakeRigidMatrix(
+			BoneMatrix * TargetWorld,
+			BoneWorldRigid))
+		{
+			return false;
+		}
+
+		XMStoreFloat4x4(
+			&m_SkinBoneToSimulationMatrices[i],
+			BoneWorldRigid *
+				InverseAttachmentWorld);
+	}
+
+	auto& Desc = m_AnimationConstraintDesc;
+	Desc.vecTargetPositions.resize(Bindings.size());
+	Desc.vecMaxDistances.resize(Bindings.size());
+	for (size_t i = 0;
+		i < Bindings.size();
+		++i)
+	{
+		_vector vTarget = XMVectorZero();
+		float fTotalWeight{};
+		for (const auto& Influence :
+			Bindings[i].Influences)
+		{
+			if (Influence.fWeight <= 0.f ||
+				Influence.iSourceBoneIndex >=
+					m_SkinBoneToSimulationMatrices.size() ||
+				m_ResolvedSkinBoneIndices[
+					Influence.iSourceBoneIndex] < 0)
+			{
+				continue;
+			}
+
+			vTarget +=
+				XMVector3TransformCoord(
+					XMLoadFloat3(
+						&Influence.vBoneLocalPosition),
+					XMLoadFloat4x4(
+						&m_SkinBoneToSimulationMatrices[
+							Influence.iSourceBoneIndex])) *
+				Influence.fWeight;
+			fTotalWeight += Influence.fWeight;
+		}
+
+		if (fTotalWeight > FLT_EPSILON)
+			vTarget /= fTotalWeight;
+		else
+			vTarget = XMLoadFloat3(&RestPositions[i]);
+
+		XMStoreFloat3(
+			&Desc.vecTargetPositions[i],
+			vTarget);
+		Desc.vecMaxDistances[i] =
+			Bindings[i].fMaxDistance;
+	}
+
+	Desc.bUpdateFixedParticles = true;
+	Desc.bResetPreviousParticles =
+		bResetPreviousParticles ||
+		!m_bAnimationConstraintInitialized;
+	if (!m_pComNvCloth->
+		SetAnimationConstraints(Desc))
+	{
+		return false;
+	}
+
+	m_bAnimationConstraintInitialized = true;
 	return true;
 }
 
@@ -350,7 +521,7 @@ _bool CNvClothCape::UpdateBodyCollisions()
 	}
 
 	_matrix SimulationWorld{};
-	if (!MakeRigidMatrix(
+	if (!NvClothCapeDetail::MakeRigidMatrix(
 		GetTransform().
 			GetLoadedCombinedWorldMatrix(),
 		SimulationWorld))
@@ -476,7 +647,7 @@ _bool CNvClothCape::UpdateAttachment(
 	}
 
 	_matrix AttachmentWorld{};
-	if (!MakeRigidMatrix(
+	if (!NvClothCapeDetail::MakeRigidMatrix(
 		BoneMatrix *
 			pTarget->GetTransform().
 			GetLoadedCombinedWorldMatrix(),
@@ -500,7 +671,7 @@ _bool CNvClothCape::UpdateAttachment(
 	}
 
 	_matrix SimulationWorld{};
-	if (!MakeRigidMatrix(
+	if (!NvClothCapeDetail::MakeRigidMatrix(
 		GetTransform().
 			GetLoadedCombinedWorldMatrix(),
 		SimulationWorld))
@@ -540,6 +711,14 @@ _bool CNvClothCape::UpdateAttachment(
 	if (!m_pComNvCloth->SetSimulationTransform(
 		vCurrentPosition,
 		vCurrentRotation,
+		bTeleport))
+	{
+		return false;
+	}
+
+	if (!UpdateAnimationConstraints(
+		*pModelInstance,
+		AttachmentWorld,
 		bTeleport))
 	{
 		return false;
@@ -620,21 +799,31 @@ HRESULT CNvClothCape::Render(
 		++i)
 	{
 		const auto& Section = Sections[i];
+		if (!Section.pVIBuffer)
+			continue;
+
 		ID3D11Buffer* pVertexBuffer =
-			Section.pVertexBuffer.Get();
+			Section.pVIBuffer->
+				GetVertexBuffer().Get();
+		const uint32_t iVertexStride =
+			Section.pVIBuffer->
+				GetVertexStride();
 		const uint32_t iOffset{};
 		pContext->IASetVertexBuffers(
 			0,
 			1,
 			&pVertexBuffer,
-			&Section.iVertexStride,
+			&iVertexStride,
 			&iOffset);
 		pContext->IASetIndexBuffer(
-			Section.pIndexBuffer.Get(),
-			DXGI_FORMAT_R32_UINT,
+			Section.pVIBuffer->
+				GetIndexBuffer().Get(),
+			Section.pVIBuffer->
+				GetIndexFormat(),
 			0);
 		pContext->IASetPrimitiveTopology(
-			D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			Section.pVIBuffer->
+				GetPrimitiveType());
 
 		m_pComModelInstance->Bind_Textures(
 			pContext,
@@ -647,7 +836,8 @@ HRESULT CNvClothCape::Render(
 			0.f,
 			1.f);
 		pContext->DrawIndexed(
-			Section.iIndexCount,
+			Section.pVIBuffer->
+				GetNumIndices(),
 			0,
 			0);
 	}

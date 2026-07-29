@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Client_Defines.h"
+#include "Engine_NvClothDefines.h"
 #include "GameObject.h"
 
 #include <array>
@@ -65,6 +66,10 @@ private:
 	_bool UpdateAttachment(_bool bUpdateSimulation);
 	_bool ResolveAttachment();
 	_bool UpdateBodyCollisions();
+	_bool UpdateAnimationConstraints(
+		CComModelInstance& ModelInstance,
+		_fmatrix AttachmentWorld,
+		_bool bResetPreviousParticles);
 	_bool GetTargetBoneMatrix(
 		CComModelInstance& ModelInstance,
 		int32_t iBoneIndex,
@@ -80,6 +85,13 @@ private:
 	_float3 m_vPreviousAttachPosition{};
 	_bool m_bAttachmentInitialized{};
 	_bool m_bSimulationTransformInitialized{};
+	_bool m_bAnimationConstraintInitialized{};
+	std::vector<int32_t>
+		m_ResolvedSkinBoneIndices{};
+	std::vector<_float4x4>
+		m_SkinBoneToSimulationMatrices{};
+	NVCLOTH_ANIMATION_CONSTRAINT_DESC
+		m_AnimationConstraintDesc{};
 	std::array<BODY_COLLISION_BONE, 5>
 		m_BodyCollisionBones{ {
 			{ "Spine2", -1, 0.30f },

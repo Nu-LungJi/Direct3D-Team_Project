@@ -419,6 +419,9 @@ public:
 	_bool SetNvClothCollisions(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const NVCLOTH_COLLISION_DESC& Desc);
+	_bool SetNvClothAnimationConstraints(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc);
 
 	template<typename TJoint>
 	TJoint* AddPxJoint(

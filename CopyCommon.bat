@@ -27,7 +27,7 @@ if /I "%~1"=="Release" (
 ) else (
     xcopy /E /I /Y /D .\vcpkg_installed\x64-windows\x64-windows\debug\bin\*.dll .\%TargetFolder%\Bin\
     xcopy /E /I /Y .\ThirdParty\physx-5.6.1\bin_debug\*.dll .\%TargetFolder%\Bin\
-    xcopy /E /I /Y .\ThirdParty\NvCloth_1.1.6\bin\Debug\NvClothDEBUG_x64.dll .\%TargetFolder%\Bin\
+    xcopy /E /I /Y .\ThirdParty\NvCloth_1.1.6\bin\Release\NvCloth_x64.dll .\%TargetFolder%\Bin\
 )
 
 exit /b

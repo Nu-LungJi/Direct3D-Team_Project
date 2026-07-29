@@ -46,6 +46,9 @@ public:
 	_bool SetClothCollisions(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const NVCLOTH_COLLISION_DESC& Desc);
+	_bool SetClothAnimationConstraints(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc);
 	void StepSimulation(_float fFixedTimeDelta);
 	void RenderDebug(CDbgLineRender& DbgLineRender) const;
 	void UpdateGUI();

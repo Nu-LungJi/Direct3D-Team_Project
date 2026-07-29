@@ -39,6 +39,8 @@ public:
 		_bool bTeleport = false);
 	_bool SetCollisions(
 		const NVCLOTH_COLLISION_DESC& Desc);
+	_bool SetAnimationConstraints(
+		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc);
 
 	void UpdateGUI() override;
 

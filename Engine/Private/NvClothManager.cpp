@@ -142,7 +142,9 @@ namespace
 			!std::isfinite(Desc.fPhaseStiffness) ||
 			!std::isfinite(Desc.fPhaseStiffnessMultiplier) ||
 			!std::isfinite(Desc.fCompressionLimit) ||
-			!std::isfinite(Desc.fStretchLimit))
+			!std::isfinite(Desc.fStretchLimit) ||
+			!std::isfinite(
+				Desc.fMotionConstraintStiffness))
 		{
 			return false;
 		}
@@ -155,9 +157,36 @@ namespace
 			Desc.fPhaseStiffnessMultiplier <= 1.f &&
 			Desc.fCompressionLimit > 0.f &&
 			Desc.fStretchLimit > 0.f &&
+			Desc.fMotionConstraintStiffness >= 0.f &&
+			Desc.fMotionConstraintStiffness <= 1.f &&
 			Desc.vDamping.x >= 0.f && Desc.vDamping.x <= 1.f &&
 			Desc.vDamping.y >= 0.f && Desc.vDamping.y <= 1.f &&
 			Desc.vDamping.z >= 0.f && Desc.vDamping.z <= 1.f;
+	}
+
+	_bool ValidateAnimationConstraintDesc(
+		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc)
+	{
+		if (Desc.vecTargetPositions.empty() ||
+			Desc.vecTargetPositions.size() !=
+				Desc.vecMaxDistances.size())
+		{
+			return false;
+		}
+
+		for (size_t i = 0;
+			i < Desc.vecTargetPositions.size();
+			++i)
+		{
+			if (!IsFinite(Desc.vecTargetPositions[i]) ||
+				!std::isfinite(
+					Desc.vecMaxDistances[i]) ||
+				Desc.vecMaxDistances[i] < 0.f)
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	_bool ValidateCollisionDesc(
@@ -603,6 +632,16 @@ HRESULT CNvClothManager::Initialize(
 		return E_FAIL;
 	}
 
+	if (!ReleaseCloth(m_pImpl->hTestCloth) ||
+		!ReleaseFabric(m_pImpl->hTestFabric))
+	{
+		OutputDebugStringA(
+			"[NvCloth] Failed to release self-test resources.\n");
+		return E_FAIL;
+	}
+	m_pImpl->hTestCloth = {};
+	m_pImpl->hTestFabric = {};
+
 	DEBUG_LOG(
 		"[NvCloth] Fabric and solver self-test passed.\n");
 #endif
@@ -825,6 +864,8 @@ HRESULT CNvClothManager::CreateCloth(
 		Desc.vCentrifugalInertia.z });
 	pCloth->setSolverFrequency(Desc.fSolverFrequency);
 	pCloth->setStiffnessFrequency(Desc.fStiffnessFrequency);
+	pCloth->setMotionConstraintStiffness(
+		Desc.fMotionConstraintStiffness);
 
 	std::vector<nv::cloth::PhaseConfig> vecPhases(
 		static_cast<size_t>(
@@ -1169,6 +1210,118 @@ _bool CNvClothManager::SetClothCollisions(
 	return true;
 }
 
+_bool CNvClothManager::SetClothAnimationConstraints(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc)
+{
+	ZoneScopedN("NvCloth_SetAnimationConstraints");
+
+	if (!m_pImpl ||
+		!Handle ||
+		!ValidateAnimationConstraintDesc(Desc))
+	{
+		return false;
+	}
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	auto& Record = *Iter->second;
+	auto* pCloth = Record.pCloth;
+	const uint32_t iParticleCount =
+		pCloth->getNumParticles();
+	if (Desc.vecTargetPositions.size() !=
+			iParticleCount ||
+		Record.vecInverseMasses.size() !=
+			iParticleCount)
+	{
+		return false;
+	}
+
+	// Motion constraints keep every particle inside an animation-following
+	// sphere. Radius zero pins the upper cape; larger radii leave the lower
+	// cape progressively freer for simulation.
+	auto Constraints =
+		pCloth->getMotionConstraints();
+	if (Constraints.size() != iParticleCount)
+		return false;
+
+	for (uint32_t i = 0;
+		i < iParticleCount;
+		++i)
+	{
+		const auto& vTarget =
+			Desc.vecTargetPositions[i];
+		Constraints[i] = physx::PxVec4{
+			vTarget.x,
+			vTarget.y,
+			vTarget.z,
+			Desc.vecMaxDistances[i] };
+	}
+
+	if (!Desc.bUpdateFixedParticles)
+		return true;
+
+	// NvCloth documents writable current particles as the mechanism for
+	// moving animation attachment points. Only zero-inverse-mass particles
+	// are overwritten; dynamic particles remain solver-owned.
+	{
+		auto CurrentParticles =
+			pCloth->getCurrentParticles();
+		if (CurrentParticles.size() != iParticleCount)
+			return false;
+
+		for (uint32_t i = 0;
+			i < iParticleCount;
+			++i)
+		{
+			if (Record.vecInverseMasses[i] > 0.f)
+				continue;
+
+			const auto& vTarget =
+				Desc.vecTargetPositions[i];
+			CurrentParticles[i] = physx::PxVec4{
+				vTarget.x,
+				vTarget.y,
+				vTarget.z,
+				0.f };
+		}
+	}
+
+	if (Desc.bResetPreviousParticles)
+	{
+		auto PreviousParticles =
+			pCloth->getPreviousParticles();
+		if (PreviousParticles.size() != iParticleCount)
+			return false;
+
+		for (uint32_t i = 0;
+			i < iParticleCount;
+			++i)
+		{
+			if (Record.vecInverseMasses[i] > 0.f)
+				continue;
+
+			const auto& vTarget =
+				Desc.vecTargetPositions[i];
+			PreviousParticles[i] = physx::PxVec4{
+				vTarget.x,
+				vTarget.y,
+				vTarget.z,
+				0.f };
+		}
+		pCloth->clearInterpolation();
+	}
+
+	return true;
+}
+
 void CNvClothManager::StepSimulation(
 	_float fFixedTimeDelta)
 {
@@ -1385,17 +1538,262 @@ void CNvClothManager::RenderDebug(
 
 void CNvClothManager::UpdateGUI()
 {
-	if (!m_pImpl || !ImGui::CollapsingHeader("NvCloth"))
+	if (!ImGui::Begin("NvCloth Manager"))
+	{
+		ImGui::End();
 		return;
+	}
+
+	if (!m_pImpl)
+	{
+		ImGui::TextDisabled("NvCloth manager is not initialized.");
+		ImGui::End();
+		return;
+	}
 
 	std::scoped_lock Lock{ m_pImpl->StateMutex };
+
+	const _bool bInitialized =
+		m_pImpl->pFactory &&
+		m_pImpl->pSolver &&
+		m_pImpl->pDxContext;
+	ImGui::TextColored(
+		bInitialized ?
+			ImVec4{ 0.35f, 0.9f, 0.45f, 1.f } :
+			ImVec4{ 0.95f, 0.35f, 0.3f, 1.f },
+		bInitialized ? "Initialized" : "Not Initialized");
+	ImGui::SameLine();
+	ImGui::TextDisabled("| DX11 Backend");
+	ImGui::SameLine();
 	ImGui::Checkbox("Debug Draw Cloth", &m_pImpl->bDebugDraw);
-	ImGui::Text("Fabrics: %zu", m_pImpl->Fabrics.size());
-	ImGui::Text("Cloths: %zu", m_pImpl->Cloths.size());
-	ImGui::Text(
-		"Solver Cloths: %u",
-		m_pImpl->pSolver ?
-			m_pImpl->pSolver->getNumCloths() : 0u);
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Summary");
+	if (ImGui::BeginTable(
+		"NvClothSummary",
+		2,
+		ImGuiTableFlags_Borders |
+		ImGuiTableFlags_RowBg |
+		ImGuiTableFlags_SizingStretchProp))
+	{
+		ImGui::TableSetupColumn("Item");
+		ImGui::TableSetupColumn("Count");
+		ImGui::TableHeadersRow();
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TextUnformatted("Fabric Records");
+		ImGui::TableSetColumnIndex(1);
+		ImGui::Text("%zu", m_pImpl->Fabrics.size());
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TextUnformatted("Cloth Records");
+		ImGui::TableSetColumnIndex(1);
+		ImGui::Text("%zu", m_pImpl->Cloths.size());
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TextUnformatted("Solver Cloths");
+		ImGui::TableSetColumnIndex(1);
+		ImGui::Text(
+			"%u",
+			m_pImpl->pSolver ?
+				m_pImpl->pSolver->getNumCloths() :
+				0u);
+
+		ImGui::EndTable();
+	}
+
+	if (ImGui::CollapsingHeader(
+		"Fabrics",
+		ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (m_pImpl->Fabrics.empty())
+		{
+			ImGui::TextDisabled("No fabric records.");
+		}
+		else if (ImGui::BeginTable(
+			"NvClothFabrics",
+			7,
+			ImGuiTableFlags_Borders |
+			ImGuiTableFlags_RowBg |
+			ImGuiTableFlags_Resizable |
+			ImGuiTableFlags_SizingFixedFit))
+		{
+			ImGui::TableSetupColumn("Handle");
+			ImGui::TableSetupColumn("Particles");
+			ImGui::TableSetupColumn("Phases");
+			ImGui::TableSetupColumn("Constraints");
+			ImGui::TableSetupColumn("Tethers");
+			ImGui::TableSetupColumn("Triangles");
+			ImGui::TableSetupColumn("Cloth Refs");
+			ImGui::TableHeadersRow();
+
+			std::vector<uint64_t> FabricHandles{};
+			FabricHandles.reserve(
+				m_pImpl->Fabrics.size());
+			for (const auto& [iHandle, pRecord] :
+				m_pImpl->Fabrics)
+			{
+				FabricHandles.push_back(iHandle);
+			}
+			std::sort(
+				FabricHandles.begin(),
+				FabricHandles.end());
+
+			for (const auto iHandle : FabricHandles)
+			{
+				const auto Iter =
+					m_pImpl->Fabrics.find(iHandle);
+				if (Iter == m_pImpl->Fabrics.end() ||
+					!Iter->second)
+				{
+					continue;
+				}
+
+				const auto& Record = *Iter->second;
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text(
+					"%llu",
+					static_cast<unsigned long long>(
+						iHandle));
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Text(
+					"%u",
+					Record.Info.iParticleCount);
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text(
+					"%u",
+					Record.Info.iPhaseCount);
+				ImGui::TableSetColumnIndex(3);
+				ImGui::Text(
+					"%u",
+					Record.Info.iConstraintCount);
+				ImGui::TableSetColumnIndex(4);
+				ImGui::Text(
+					"%u",
+					Record.Info.iTetherCount);
+				ImGui::TableSetColumnIndex(5);
+				ImGui::Text(
+					"%u",
+					Record.Info.iTriangleCount);
+				ImGui::TableSetColumnIndex(6);
+				ImGui::Text(
+					"%u",
+					Record.iClothReferenceCount);
+			}
+
+			ImGui::EndTable();
+		}
+	}
+
+	if (ImGui::CollapsingHeader(
+		"Cloths",
+		ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (m_pImpl->Cloths.empty())
+		{
+			ImGui::TextDisabled("No cloth records.");
+		}
+		else if (ImGui::BeginTable(
+			"NvClothCloths",
+			8,
+			ImGuiTableFlags_Borders |
+			ImGuiTableFlags_RowBg |
+			ImGuiTableFlags_Resizable |
+			ImGuiTableFlags_SizingFixedFit))
+		{
+			ImGui::TableSetupColumn("Handle");
+			ImGui::TableSetupColumn("Fabric");
+			ImGui::TableSetupColumn("Particles");
+			ImGui::TableSetupColumn("Triangles");
+			ImGui::TableSetupColumn("Spheres");
+			ImGui::TableSetupColumn("Capsules");
+			ImGui::TableSetupColumn("GPU SRV");
+			ImGui::TableSetupColumn("GPU Offset");
+			ImGui::TableHeadersRow();
+
+			std::vector<uint64_t> ClothHandles{};
+			ClothHandles.reserve(
+				m_pImpl->Cloths.size());
+			for (const auto& [iHandle, pRecord] :
+				m_pImpl->Cloths)
+			{
+				ClothHandles.push_back(iHandle);
+			}
+			std::sort(
+				ClothHandles.begin(),
+				ClothHandles.end());
+
+			for (const auto iHandle : ClothHandles)
+			{
+				const auto Iter =
+					m_pImpl->Cloths.find(iHandle);
+				if (Iter == m_pImpl->Cloths.end() ||
+					!Iter->second)
+				{
+					continue;
+				}
+
+				const auto& Record = *Iter->second;
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text(
+					"%llu",
+					static_cast<unsigned long long>(
+						iHandle));
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Text(
+					"%llu",
+					static_cast<unsigned long long>(
+						Record.iFabricHandle));
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text(
+					"%u",
+					Record.pCloth ?
+						Record.pCloth->getNumParticles() :
+						0u);
+				ImGui::TableSetColumnIndex(3);
+				ImGui::Text(
+					"%zu",
+					Record.vecIndices.size() / 3);
+				ImGui::TableSetColumnIndex(4);
+				ImGui::Text(
+					"%zu",
+					Record.vecCollisionSpheres.size());
+				ImGui::TableSetColumnIndex(5);
+				ImGui::Text(
+					"%zu",
+					Record.vecCollisionCapsules.size() /
+						2);
+				ImGui::TableSetColumnIndex(6);
+				ImGui::TextColored(
+					Record.pGpuParticleSRV ?
+						ImVec4{
+							0.35f,
+							0.9f,
+							0.45f,
+							1.f } :
+						ImVec4{
+							0.8f,
+							0.8f,
+							0.8f,
+							1.f },
+					Record.pGpuParticleSRV ?
+						"Ready" : "Not Created");
+				ImGui::TableSetColumnIndex(7);
+				ImGui::Text(
+					"%u",
+					Record.iGpuParticleOffset);
+			}
+
+			ImGui::EndTable();
+		}
+	}
+
+	ImGui::End();
 }
 
 UPtr<CNvClothManager> CNvClothManager::Create(

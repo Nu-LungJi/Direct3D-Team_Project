@@ -1371,6 +1371,17 @@ _bool CGameInstance::SetNvClothCollisions(
 			Handle,
 			Desc);
 }
+_bool CGameInstance::SetNvClothAnimationConstraints(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc)
+{
+	auto* pManager =
+		static_cast<CNvClothManager*>(m_pNvClothManager.get());
+	return pManager &&
+		pManager->SetClothAnimationConstraints(
+			Handle,
+			Desc);
+}
 //_bool CGameInstance::PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const
 //{
 //	return m_pPhysXManager->RayCast(vOrigin, vNormalizedDir, fMaxDistance, outResult);
