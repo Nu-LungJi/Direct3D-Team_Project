@@ -996,6 +996,15 @@
     <ClInclude Include="..\Public\Particle.h">
       <Filter>Particle</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\AmbientSoundData.h">
+      <Filter>Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\AmbientSound2DObject.h">
+      <Filter>Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\AmbientSound3DObject.h">
+      <Filter>Sound</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Action_Manager.h">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClInclude>
@@ -1529,6 +1538,12 @@
     </ClCompile>
     <ClCompile Include="..\private\Beam_CPU.cpp">
       <Filter>Particle\Beam</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\AmbientSound2DObject.cpp">
+      <Filter>Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\AmbientSound3DObject.cpp">
+      <Filter>Sound</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
