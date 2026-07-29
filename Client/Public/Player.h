@@ -192,7 +192,12 @@ private:
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
 
+private:
+	_bool  m_bUI = false;
+	CHandle m_hUI;
+
 public:
+
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };

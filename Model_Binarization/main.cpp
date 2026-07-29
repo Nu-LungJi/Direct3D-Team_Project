@@ -8,6 +8,23 @@ int main(int argc, char* argv[])
 {
 	shared_ptr<CImporter> import = make_shared<CImporter>();
 
+	// Convert an arbitrary OriginData/Skeletal folder while preserving the
+	// existing Models/Skeletal/<model> output layout.
+	if (argc > 1 && std::string(argv[1]) == "--skeletal-folder")
+	{
+		if (argc != 3)
+		{
+			cerr << "Usage: Model_Binarization.exe --skeletal-folder <OriginData/Skeletal>\n";
+			return 1;
+		}
+		if (FAILED(import->ImportFBXFolder("", argv[2])))
+		{
+			cerr << "Skeletal-folder conversion failed.\n";
+			return 1;
+		}
+		return 0;
+	}
+
 	// Targeted static conversion used by the verified asset pipeline.
 	// The input directory must be named Static so the existing output layout is
 	// preserved: <root>/Models/Static/<model>.bin.
