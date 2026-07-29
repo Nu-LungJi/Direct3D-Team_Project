@@ -377,7 +377,7 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		return false;
 	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return;
+		return false;
 	Damaged();
 	MON_HIT_INFO HitInfo{};
 
