@@ -891,7 +891,13 @@
     <ClInclude Include="..\public\Engine_NvClothDefines.h">
       <Filter>NvCloth</Filter>
     </ClInclude>
-    <ClInclude Include="..\private\NvClothManager.h">
+    <ClInclude Include="..\public\NvClothCollisionRigData.h">
+      <Filter>NvCloth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\NvClothCollisionEditorGUI.h">
+      <Filter>NvCloth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\NvClothManager.h">
       <Filter>NvCloth</Filter>
     </ClInclude>
     <ClInclude Include="..\public\PhysXCookingEditor.h">
@@ -1562,6 +1568,9 @@
     </ClCompile>
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\NvClothCollisionEditorGUI.cpp">
+      <Filter>NvCloth</Filter>
     </ClCompile>
     <ClCompile Include="..\private\NvClothManager.cpp">
       <Filter>NvCloth</Filter>

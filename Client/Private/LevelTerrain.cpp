@@ -104,6 +104,14 @@ HRESULT CLevelTerrain::Initialize()
 			"ComCModelIntance";
 		Desc.sAttachBoneName =
 			"Spine3";
+		Desc.vLocalPosition =
+			{ 0.05f, 0.08f, 0.f };
+		E::CGameInstance::Get().JsonDeSerialize(
+			"./Resources/NvCloth/CollisionRigs/"
+			"ProfessorCape.nvclothcollision.json",
+			Desc.tBodyCollisionRig,
+			E::NVCLOTH_COLLISION_RIG_ROOT,
+			false);
 		if (!E::CGameInstance::Get().
 			AddGameObjectToLayer(
 				LEVEL::TERRAIN,

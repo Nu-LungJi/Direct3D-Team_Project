@@ -473,6 +473,7 @@ namespace Engine::ResNvClothMeshDetail
 		const std::vector<_float4x4>&
 			InverseSourceBoneToSimulation,
 		const _float3& vRestSimulationPosition,
+		const _float3& vRestSimulationNormal,
 		CResNvClothMesh::PARTICLE_SKIN_BINDING& OutBinding)
 	{
 		const uint32_t Indices[4]{
@@ -494,6 +495,8 @@ namespace Engine::ResNvClothMeshDetail
 		};
 
 		OutBinding = {};
+		OutBinding.vRestSimulationNormal =
+			vRestSimulationNormal;
 		float fTotalWeight{};
 		for (uint32_t i = 0; i < 4; ++i)
 		{
@@ -523,6 +526,15 @@ namespace Engine::ResNvClothMeshDetail
 					XMLoadFloat4x4(
 						&InverseSourceBoneToSimulation[
 							iSkeletonBone])));
+			XMStoreFloat3(
+				&Influence.vBoneLocalNormal,
+				XMVector3Normalize(
+					XMVector3TransformNormal(
+						XMLoadFloat3(
+							&vRestSimulationNormal),
+						XMLoadFloat4x4(
+							&InverseSourceBoneToSimulation[
+								iSkeletonBone]))));
 			fTotalWeight += Weights[i];
 		}
 
@@ -1258,6 +1270,7 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 				SimulationSource,
 				InverseSourceBoneToSimulation,
 				SimulationVertices[i].vPosition,
+				SimulationVertices[i].vNormal,
 				SkinBinding))
 		{
 			m_eState = STATE::LOADFAIL;

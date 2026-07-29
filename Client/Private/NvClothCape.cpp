@@ -4,6 +4,7 @@
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
 #include "ComNvCloth.h"
+#include "DbgLineRender.h"
 #include "GameInstance.h"
 #include "ResModel.h"
 #include "ResModelBone.h"
@@ -35,6 +36,20 @@ namespace Client::NvClothCapeDetail
 			XMMatrixRotationQuaternion(qRotation) *
 			XMMatrixTranslationFromVector(vTranslation);
 		return true;
+	}
+
+	_matrix MakePoseMatrix(
+		const _float3& vPosition,
+		const _float4& vRotation)
+	{
+		return
+			XMMatrixRotationQuaternion(
+				XMQuaternionNormalize(
+					XMLoadFloat4(&vRotation))) *
+			XMMatrixTranslation(
+				vPosition.x,
+				vPosition.y,
+				vPosition.z);
 	}
 }
 
@@ -88,6 +103,25 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->sAttachBoneName.empty() ||
 		!std::isfinite(pDesc->fTeleportDistance) ||
 		pDesc->fTeleportDistance < 0.f ||
+		!std::isfinite(pDesc->fBackstopRadius) ||
+		pDesc->fBackstopRadius <= 0.f ||
+		!std::isfinite(pDesc->fBackstopOffset) ||
+		!std::isfinite(
+			pDesc->fBackstopFullRatio) ||
+		pDesc->fBackstopFullRatio < 0.f ||
+		pDesc->fBackstopFullRatio > 1.f ||
+		!std::isfinite(
+			pDesc->fBackstopFadeEndRatio) ||
+		pDesc->fBackstopFadeEndRatio < 0.f ||
+		pDesc->fBackstopFadeEndRatio > 1.f ||
+		pDesc->fBackstopFullRatio >=
+			pDesc->fBackstopFadeEndRatio ||
+		!std::isfinite(
+			pDesc->fBackstopFadeDepth) ||
+		pDesc->fBackstopFadeDepth < 0.f ||
+		(!pDesc->tBodyCollisionRig.Shapes.empty() &&
+			pDesc->tBodyCollisionRig.iVersion !=
+				NVCLOTH_COLLISION_RIG_VERSION) ||
 		FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_INVALIDARG;
@@ -100,6 +134,24 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->sAttachBoneName;
 	m_fTeleportDistance =
 		pDesc->fTeleportDistance;
+	m_bUseBackstop =
+		pDesc->bUseBackstop;
+	m_bFlipBackstopNormal =
+		pDesc->bFlipBackstopNormal;
+	m_fBackstopRadius =
+		pDesc->fBackstopRadius;
+	m_fBackstopOffset =
+		pDesc->fBackstopOffset;
+	m_fBackstopFullRatio =
+		pDesc->fBackstopFullRatio;
+	m_fBackstopFadeEndRatio =
+		pDesc->fBackstopFadeEndRatio;
+	m_fBackstopFadeDepth =
+		pDesc->fBackstopFadeDepth;
+	m_bUseVirtualParticles =
+		pDesc->bUseVirtualParticles;
+	m_BodyCollisionRig =
+		pDesc->tBodyCollisionRig;
 	GetTransform().SetPosition(
 		pDesc->vLocalPosition);
 
@@ -158,6 +210,8 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		Desc.tCloth.fStiffnessFrequency = 60.f;
 		Desc.tCloth.fPhaseStiffness = 0.9f;
 		Desc.tCloth.fStretchLimit = 1.05f;
+		Desc.tCloth.bUseVirtualParticles =
+			m_bUseVirtualParticles;
 		Desc.tCloth.vLinearInertia =
 			{ 1.f, 1.f, 1.f };
 		Desc.tCloth.vAngularInertia =
@@ -202,15 +256,22 @@ void CNvClothCape::Update(_float)
 void CNvClothCape::LateUpdate(_float)
 {
 	UpdateAttachment(false);
-	CGameInstance::Get().AddRenderObject(
-		RENDERGROUP::NONBLEND,
-		this);
+	if (m_bRenderCape)
+	{
+		CGameInstance::Get().AddRenderObject(
+			RENDERGROUP::NONBLEND,
+			this);
+	}
 }
 
 void CNvClothCape::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 	ImGui::PushID(this);
+
+	ImGui::Checkbox(
+		"Render Cape",
+		&m_bRenderCape);
 
 	auto vLocalPosition =
 		GetTransform().GetPosition();
@@ -240,18 +301,90 @@ void CNvClothCape::UpdateGUI()
 			0.01f,
 			0.f,
 			1.f);
-
-		for (auto& Binding : m_BodyCollisionBones)
+		ImGui::Separator();
+		ImGui::Checkbox(
+			"Use Backstop",
+			&m_bUseBackstop);
+		ImGui::Checkbox(
+			"Flip Backstop Normal",
+			&m_bFlipBackstopNormal);
+		ImGui::DragFloat(
+			"Backstop Radius",
+			&m_fBackstopRadius,
+			0.005f,
+			0.001f,
+			20.f);
+		ImGui::DragFloat(
+			"Backstop Outward Offset",
+			&m_fBackstopOffset,
+			0.002f,
+			-0.2f,
+			0.2f);
+		ImGui::DragFloat(
+			"Backstop Full Ratio",
+			&m_fBackstopFullRatio,
+			0.01f,
+			0.f,
+			1.f);
+		ImGui::DragFloat(
+			"Backstop Fade End Ratio",
+			&m_fBackstopFadeEndRatio,
+			0.01f,
+			0.f,
+			1.f);
+		ImGui::DragFloat(
+			"Backstop Fade Depth",
+			&m_fBackstopFadeDepth,
+			0.01f,
+			0.f,
+			2.f);
+		_bool bUseVirtualParticles =
+			m_bUseVirtualParticles;
+		if (ImGui::Checkbox(
+				"Use Virtual Particles",
+				&bUseVirtualParticles) &&
+			m_pComNvCloth &&
+			m_pComNvCloth->SetVirtualParticles(
+				bUseVirtualParticles))
 		{
-			ImGui::DragFloat(
-				Binding.sBoneName.c_str(),
-				&Binding.fRadius,
-				0.005f,
-				0.01f,
-				1.f);
+			m_bUseVirtualParticles =
+				bUseVirtualParticles;
+		}
+		ImGui::Checkbox(
+			"Debug Body Collision",
+			&m_bDebugBodyCollisions);
+		ImGui::Text(
+			"Collision Rig Shapes: %zu",
+			m_BodyCollisionRig.Shapes.size());
+		ImGui::Text(
+			"NvCloth: %zu spheres, %zu capsules, "
+			"%zu planes, %zu convexes",
+			m_LastBodyCollisionDesc.vecSpheres.size(),
+			m_LastBodyCollisionDesc.vecCapsules.size(),
+			m_LastBodyCollisionDesc.vecPlanes.size(),
+			m_LastBodyCollisionDesc.vecConvexes.size());
+
+		if (m_BodyCollisionRig.Shapes.empty())
+		{
+			ImGui::Separator();
+			ImGui::TextUnformatted(
+				"Fallback Bone Spheres");
+			for (auto& Binding :
+				m_BodyCollisionBones)
+			{
+				ImGui::DragFloat(
+					Binding.sBoneName.c_str(),
+					&Binding.fRadius,
+					0.005f,
+					0.01f,
+					1.f);
+			}
 		}
 		ImGui::TreePop();
 	}
+
+	if (m_bDebugBodyCollisions)
+		DebugDrawBodyCollisions();
 
 	ImGui::PopID();
 }
@@ -307,6 +440,35 @@ _bool CNvClothCape::ResolveAttachment()
 		iResolvedSkinBoneCount,
 		SkinBoneNames.size());
 	DEBUG_LOG(szLog);
+
+	m_CollisionRigBoneIndices.resize(
+		m_BodyCollisionRig.Shapes.size(),
+		-1);
+	size_t iResolvedCollisionShapeCount{};
+	for (size_t i = 0;
+		i < m_BodyCollisionRig.Shapes.size();
+		++i)
+	{
+		m_CollisionRigBoneIndices[i] =
+			pModelInstance->GetModel()->
+			Get_BoneIndex(
+				m_BodyCollisionRig.
+					Shapes[i].sBoneName.c_str());
+		if (m_CollisionRigBoneIndices[i] >= 0)
+			++iResolvedCollisionShapeCount;
+	}
+
+	if (!m_BodyCollisionRig.Shapes.empty())
+	{
+		char szCollisionLog[256]{};
+		sprintf_s(
+			szCollisionLog,
+			"[NvClothCape] Collision rig shapes resolved: "
+			"%zu / %zu.\n",
+			iResolvedCollisionShapeCount,
+			m_BodyCollisionRig.Shapes.size());
+		DEBUG_LOG(szCollisionLog);
+	}
 
 	for (auto& Binding : m_BodyCollisionBones)
 	{
@@ -408,11 +570,32 @@ _bool CNvClothCape::UpdateAnimationConstraints(
 	auto& Desc = m_AnimationConstraintDesc;
 	Desc.vecTargetPositions.resize(Bindings.size());
 	Desc.vecMaxDistances.resize(Bindings.size());
+	if (m_bUseBackstop)
+	{
+		Desc.vecSeparationCenters.resize(
+			Bindings.size());
+		Desc.vecSeparationRadii.resize(
+			Bindings.size());
+	}
+	else
+	{
+		Desc.vecSeparationCenters.clear();
+		Desc.vecSeparationRadii.clear();
+	}
+	float fMaxAnimationDistance{};
+	for (const auto& Binding : Bindings)
+	{
+		fMaxAnimationDistance =
+			std::max(
+				fMaxAnimationDistance,
+				Binding.fMaxDistance);
+	}
 	for (size_t i = 0;
 		i < Bindings.size();
 		++i)
 	{
 		_vector vTarget = XMVectorZero();
+		_vector vNormal = XMVectorZero();
 		float fTotalWeight{};
 		for (const auto& Influence :
 			Bindings[i].Influences)
@@ -434,19 +617,105 @@ _bool CNvClothCape::UpdateAnimationConstraints(
 						&m_SkinBoneToSimulationMatrices[
 							Influence.iSourceBoneIndex])) *
 				Influence.fWeight;
+			vNormal +=
+				XMVector3TransformNormal(
+					XMLoadFloat3(
+						&Influence.vBoneLocalNormal),
+					XMLoadFloat4x4(
+						&m_SkinBoneToSimulationMatrices[
+							Influence.iSourceBoneIndex])) *
+				Influence.fWeight;
 			fTotalWeight += Influence.fWeight;
 		}
 
 		if (fTotalWeight > FLT_EPSILON)
+		{
 			vTarget /= fTotalWeight;
+			vNormal /= fTotalWeight;
+		}
 		else
+		{
 			vTarget = XMLoadFloat3(&RestPositions[i]);
+			vNormal = XMLoadFloat3(
+				&Bindings[i].vRestSimulationNormal);
+		}
+
+		const float fNormalLengthSq =
+			XMVectorGetX(
+				XMVector3LengthSq(vNormal));
+		if (!std::isfinite(fNormalLengthSq) ||
+			fNormalLengthSq <= FLT_EPSILON)
+		{
+			vNormal = XMLoadFloat3(
+				&Bindings[i].vRestSimulationNormal);
+		}
+		vNormal = XMVector3Normalize(vNormal);
+		if (m_bFlipBackstopNormal)
+			vNormal = -vNormal;
 
 		XMStoreFloat3(
 			&Desc.vecTargetPositions[i],
 			vTarget);
 		Desc.vecMaxDistances[i] =
 			Bindings[i].fMaxDistance;
+		if (m_bUseBackstop)
+		{
+			const float fRadius =
+				std::max(m_fBackstopRadius, 0.001f);
+			const float fDepthRatio =
+				fMaxAnimationDistance > FLT_EPSILON ?
+				std::clamp(
+					Bindings[i].fMaxDistance /
+						fMaxAnimationDistance,
+					0.f,
+					1.f) :
+				0.f;
+			const float fFullRatio =
+				std::clamp(
+					m_fBackstopFullRatio,
+					0.f,
+					1.f);
+			const float fFadeEndRatio =
+				std::clamp(
+					std::max(
+						m_fBackstopFadeEndRatio,
+						fFullRatio + 0.001f),
+					0.f,
+					1.f);
+			const float fLinearFade =
+				std::clamp(
+					(fDepthRatio - fFullRatio) /
+						std::max(
+							fFadeEndRatio -
+								fFullRatio,
+							0.001f),
+					0.f,
+					1.f);
+			const float fSmoothFade =
+				fLinearFade * fLinearFade *
+				(3.f - 2.f * fLinearFade);
+			const float fOutwardOffset =
+				std::clamp(
+					m_fBackstopOffset,
+					-fRadius,
+					fRadius * 0.95f);
+			const float fFadeDepth =
+				std::max(
+					m_fBackstopFadeDepth,
+					0.f) *
+				fSmoothFade;
+			const _vector vCenter =
+				vTarget -
+				vNormal *
+					(fRadius -
+						fOutwardOffset +
+						fFadeDepth);
+			XMStoreFloat3(
+				&Desc.vecSeparationCenters[i],
+				vCenter);
+			Desc.vecSeparationRadii[i] =
+				fRadius;
+		}
 	}
 
 	Desc.bUpdateFixedParticles = true;
@@ -498,6 +767,285 @@ _bool CNvClothCape::GetTargetBoneMatrix(
 		Bones[iIndex]->
 		Get_CombinedTransformationMatrix();
 	return true;
+}
+
+_bool CNvClothCape::BuildBodyCollisionsFromRig(
+	CComModelInstance& ModelInstance,
+	_fmatrix TargetWorld,
+	_fmatrix InverseSimulationWorld,
+	NVCLOTH_COLLISION_DESC& OutDesc)
+{
+	if (m_BodyCollisionRig.Shapes.empty() ||
+		m_CollisionRigBoneIndices.size() !=
+			m_BodyCollisionRig.Shapes.size())
+	{
+		return false;
+	}
+
+	m_DebugBodyCollisionShapes.clear();
+	for (size_t iShape = 0;
+		iShape < m_BodyCollisionRig.Shapes.size();
+		++iShape)
+	{
+		const int32_t iBoneIndex =
+			m_CollisionRigBoneIndices[iShape];
+		if (iBoneIndex < 0)
+			continue;
+
+		const auto& Shape =
+			m_BodyCollisionRig.Shapes[iShape];
+		if (!Shape.bEnabled)
+			continue;
+
+		_matrix BoneMatrix{};
+		if (!GetTargetBoneMatrix(
+			ModelInstance,
+			iBoneIndex,
+			BoneMatrix))
+		{
+			return false;
+		}
+
+		_matrix BoneWorld{};
+		if (!NvClothCapeDetail::MakeRigidMatrix(
+			BoneMatrix * TargetWorld,
+			BoneWorld))
+		{
+			return false;
+		}
+
+		_matrix ShapeWorld{};
+		if (!NvClothCapeDetail::MakeRigidMatrix(
+			NvClothCapeDetail::MakePoseMatrix(
+				Shape.vLocalPosition,
+				Shape.vLocalRotation) *
+			BoneWorld,
+			ShapeWorld))
+		{
+			return false;
+		}
+
+		const _matrix ShapeToSimulation =
+			ShapeWorld *
+			InverseSimulationWorld;
+		DEBUG_BODY_COLLISION_SHAPE DebugShape{};
+		DebugShape.eType = Shape.eType;
+		XMStoreFloat4x4(
+			&DebugShape.SimulationPose,
+			ShapeToSimulation);
+
+		switch (Shape.eType)
+		{
+		case NVCLOTH_COLLISION_SHAPE_TYPE::SPHERE:
+		{
+			if (OutDesc.vecSpheres.size() + 1 > 32)
+				return false;
+
+			NVCLOTH_COLLISION_SPHERE Sphere{};
+			XMStoreFloat3(
+				&Sphere.vCenter,
+				XMVector3TransformCoord(
+					XMVectorZero(),
+					ShapeToSimulation));
+			Sphere.fRadius =
+				std::max(
+					Shape.fRadius + Shape.fMargin,
+					0.001f);
+			OutDesc.vecSpheres.push_back(Sphere);
+			DebugShape.fRadius = Sphere.fRadius;
+			break;
+		}
+
+		case NVCLOTH_COLLISION_SHAPE_TYPE::CAPSULE:
+		{
+			if (OutDesc.vecSpheres.size() + 2 > 32)
+				return false;
+
+			const float fRadius =
+				std::max(
+					Shape.fRadius + Shape.fMargin,
+					0.001f);
+			const float fHalfHeight =
+				std::max(Shape.fHalfHeight, 0.f);
+			const uint32_t iSphere0 =
+				static_cast<uint32_t>(
+					OutDesc.vecSpheres.size());
+			NVCLOTH_COLLISION_SPHERE Sphere0{};
+			XMStoreFloat3(
+				&Sphere0.vCenter,
+				XMVector3TransformCoord(
+					XMVectorSet(
+						0.f,
+						-fHalfHeight,
+						0.f,
+						1.f),
+					ShapeToSimulation));
+			Sphere0.fRadius = fRadius;
+			OutDesc.vecSpheres.push_back(Sphere0);
+
+			const uint32_t iSphere1 =
+				static_cast<uint32_t>(
+					OutDesc.vecSpheres.size());
+			NVCLOTH_COLLISION_SPHERE Sphere1{};
+			XMStoreFloat3(
+				&Sphere1.vCenter,
+				XMVector3TransformCoord(
+					XMVectorSet(
+						0.f,
+						fHalfHeight,
+						0.f,
+						1.f),
+					ShapeToSimulation));
+			Sphere1.fRadius = fRadius;
+			OutDesc.vecSpheres.push_back(Sphere1);
+			OutDesc.vecCapsules.push_back({
+				iSphere0,
+				iSphere1
+			});
+
+			DebugShape.fRadius = fRadius;
+			DebugShape.fHalfHeight = fHalfHeight;
+			break;
+		}
+
+		case NVCLOTH_COLLISION_SHAPE_TYPE::BOX:
+		{
+			if (OutDesc.vecPlanes.size() + 6 > 32)
+				return false;
+
+			const _float3 vHalfExtents{
+				std::max(
+					Shape.vHalfExtents.x + Shape.fMargin,
+					0.001f),
+				std::max(
+					Shape.vHalfExtents.y + Shape.fMargin,
+					0.001f),
+				std::max(
+					Shape.vHalfExtents.z + Shape.fMargin,
+					0.001f)
+			};
+			const _vector vCenter =
+				XMVector3TransformCoord(
+					XMVectorZero(),
+					ShapeToSimulation);
+			const _vector Axes[3]{
+				XMVector3Normalize(
+					XMVector3TransformNormal(
+						XMVectorSet(
+							1.f, 0.f, 0.f, 0.f),
+						ShapeToSimulation)),
+				XMVector3Normalize(
+					XMVector3TransformNormal(
+						XMVectorSet(
+							0.f, 1.f, 0.f, 0.f),
+						ShapeToSimulation)),
+				XMVector3Normalize(
+					XMVector3TransformNormal(
+						XMVectorSet(
+							0.f, 0.f, 1.f, 0.f),
+						ShapeToSimulation))
+			};
+			const float Extents[3]{
+				vHalfExtents.x,
+				vHalfExtents.y,
+				vHalfExtents.z
+			};
+
+			uint32_t iPlaneMask{};
+			for (uint32_t iAxis = 0;
+				iAxis < 3;
+				++iAxis)
+			{
+				for (const float fSign :
+					{ -1.f, 1.f })
+				{
+					const _vector vNormal =
+						Axes[iAxis] * fSign;
+					const _vector vPoint =
+						vCenter +
+						vNormal * Extents[iAxis];
+
+					NVCLOTH_COLLISION_PLANE Plane{};
+					XMStoreFloat3(
+						&Plane.vNormal,
+						vNormal);
+					Plane.fDistance =
+						-XMVectorGetX(
+							XMVector3Dot(
+								vNormal,
+								vPoint));
+
+					const uint32_t iPlane =
+						static_cast<uint32_t>(
+							OutDesc.vecPlanes.size());
+					OutDesc.vecPlanes.push_back(
+						Plane);
+					iPlaneMask |= 1u << iPlane;
+				}
+			}
+			OutDesc.vecConvexes.push_back({
+				iPlaneMask
+			});
+			DebugShape.vHalfExtents = vHalfExtents;
+			break;
+		}
+		}
+
+		m_DebugBodyCollisionShapes.push_back(
+			DebugShape);
+	}
+
+	return !m_DebugBodyCollisionShapes.empty();
+}
+
+void CNvClothCape::DebugDrawBodyCollisions()
+{
+	auto* pDebug =
+		CGameInstance::Get().GetDbgLineRender();
+	if (!pDebug)
+		return;
+
+	const auto PreviousDepthMode =
+		pDebug->GetDepthMode();
+	const auto PreviousColor =
+		pDebug->GetColor();
+	pDebug->SetDepthTest(false);
+	pDebug->SetColor(
+		{ 0.1f, 0.9f, 1.f, 1.f });
+
+	const _matrix SimulationWorld =
+		GetTransform().
+		GetLoadedCombinedWorldMatrix();
+	for (const auto& Shape :
+		m_DebugBodyCollisionShapes)
+	{
+		const _matrix ShapeWorld =
+			XMLoadFloat4x4(
+				&Shape.SimulationPose) *
+			SimulationWorld;
+		switch (Shape.eType)
+		{
+		case NVCLOTH_COLLISION_SHAPE_TYPE::BOX:
+			pDebug->AddBox(
+				Shape.vHalfExtents,
+				ShapeWorld);
+			break;
+		case NVCLOTH_COLLISION_SHAPE_TYPE::SPHERE:
+			pDebug->AddSphere(
+				Shape.fRadius,
+				ShapeWorld);
+			break;
+		case NVCLOTH_COLLISION_SHAPE_TYPE::CAPSULE:
+			pDebug->AddCapsule(
+				Shape.fRadius,
+				Shape.fHalfHeight,
+				ShapeWorld);
+			break;
+		}
+	}
+
+	pDebug->SetColor(PreviousColor);
+	pDebug->SetDepthMode(PreviousDepthMode);
 }
 
 _bool CNvClothCape::UpdateBodyCollisions()
@@ -553,48 +1101,82 @@ _bool CNvClothCape::UpdateBodyCollisions()
 		m_fCollisionMassScale;
 	CollisionDesc.fFriction =
 		m_fCollisionFriction;
-	CollisionDesc.vecSpheres.reserve(
-		m_BodyCollisionBones.size());
 
-	for (const auto& Binding :
-		m_BodyCollisionBones)
+	if (!m_BodyCollisionRig.Shapes.empty())
 	{
-		_matrix BoneMatrix{};
-		if (!GetTargetBoneMatrix(
+		if (!BuildBodyCollisionsFromRig(
 			*pModelInstance,
-			Binding.iBoneIndex,
-			BoneMatrix))
+			TargetWorld,
+			InverseSimulationWorld,
+			CollisionDesc))
 		{
 			return false;
 		}
+	}
+	else
+	{
+		m_DebugBodyCollisionShapes.clear();
+		CollisionDesc.vecSpheres.reserve(
+			m_BodyCollisionBones.size());
+		for (const auto& Binding :
+			m_BodyCollisionBones)
+		{
+			_matrix BoneMatrix{};
+			if (!GetTargetBoneMatrix(
+				*pModelInstance,
+				Binding.iBoneIndex,
+				BoneMatrix))
+			{
+				return false;
+			}
 
-		const _vector vWorldPosition =
-			XMVector3TransformCoord(
-				XMVectorZero(),
-				BoneMatrix * TargetWorld);
-		const _vector vLocalPosition =
-			XMVector3TransformCoord(
-				vWorldPosition,
-				InverseSimulationWorld);
+			const _vector vWorldPosition =
+				XMVector3TransformCoord(
+					XMVectorZero(),
+					BoneMatrix * TargetWorld);
+			const _vector vLocalPosition =
+				XMVector3TransformCoord(
+					vWorldPosition,
+					InverseSimulationWorld);
 
-		NVCLOTH_COLLISION_SPHERE Sphere{};
-		XMStoreFloat3(
-			&Sphere.vCenter,
-			vLocalPosition);
-		Sphere.fRadius = Binding.fRadius;
-		CollisionDesc.vecSpheres.push_back(
-			Sphere);
+			NVCLOTH_COLLISION_SPHERE Sphere{};
+			XMStoreFloat3(
+				&Sphere.vCenter,
+				vLocalPosition);
+			Sphere.fRadius = Binding.fRadius;
+			CollisionDesc.vecSpheres.push_back(
+				Sphere);
+
+			DEBUG_BODY_COLLISION_SHAPE DebugShape{};
+			DebugShape.eType =
+				NVCLOTH_COLLISION_SHAPE_TYPE::SPHERE;
+			DebugShape.fRadius =
+				Sphere.fRadius;
+			XMStoreFloat4x4(
+				&DebugShape.SimulationPose,
+				XMMatrixTranslationFromVector(
+					vLocalPosition));
+			m_DebugBodyCollisionShapes.push_back(
+				DebugShape);
+		}
+
+		CollisionDesc.vecCapsules = {
+			{ 0, 1 },
+			{ 1, 2 },
+			{ 1, 3 },
+			{ 1, 4 }
+		};
 	}
 
-	CollisionDesc.vecCapsules = {
-		{ 0, 1 },
-		{ 1, 2 },
-		{ 1, 3 },
-		{ 1, 4 }
-	};
+	if (!m_pComNvCloth->SetCollisions(
+		CollisionDesc))
+	{
+		return false;
+	}
 
-	return m_pComNvCloth->SetCollisions(
-		CollisionDesc);
+	m_LastBodyCollisionDesc =
+		std::move(CollisionDesc);
+	return true;
 }
 
 _bool CNvClothCape::UpdateAttachment(

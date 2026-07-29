@@ -75,6 +75,11 @@ namespace Engine
 		float fCompressionLimit{ 1.f };
 		float fStretchLimit{ 1.f };
 		float fMotionConstraintStiffness{ 1.f };
+
+		// Adds one collision-only sample at the center of every dynamic
+		// triangle. This improves collision coverage without adding simulated
+		// or rendered particles.
+		bool bUseVirtualParticles{};
 	};
 
 	struct NVCLOTH_ANIMATION_CONSTRAINT_DESC
@@ -83,6 +88,13 @@ namespace Engine
 		// Both arrays must contain exactly one value per Cloth particle.
 		std::vector<DirectX::XMFLOAT3> vecTargetPositions{};
 		std::vector<float> vecMaxDistances{};
+
+		// Optional per-particle backstop spheres in Cloth simulation-local
+		// space. A particle must remain outside its separation sphere.
+		// Both arrays must be empty or contain one value per Cloth particle.
+		std::vector<DirectX::XMFLOAT3>
+			vecSeparationCenters{};
+		std::vector<float> vecSeparationRadii{};
 
 		// Fixed particles are moved to their animation targets before
 		// simulation. Reset previous positions only on the first frame or
@@ -105,10 +117,27 @@ namespace Engine
 		uint32_t iSphere1{};
 	};
 
+	struct NVCLOTH_COLLISION_PLANE
+	{
+		// Plane equation in Cloth simulation-local space:
+		// dot(vNormal, position) + fDistance = 0.
+		DirectX::XMFLOAT3 vNormal{ 0.f, 1.f, 0.f };
+		float fDistance{};
+	};
+
+	struct NVCLOTH_COLLISION_CONVEX
+	{
+		// Bit i selects vecPlanes[i]. NvCloth supports up to 32 planes
+		// because a convex is represented by a 32-bit plane mask.
+		uint32_t iPlaneMask{};
+	};
+
 	struct NVCLOTH_COLLISION_DESC
 	{
 		std::vector<NVCLOTH_COLLISION_SPHERE> vecSpheres{};
 		std::vector<NVCLOTH_COLLISION_CAPSULE> vecCapsules{};
+		std::vector<NVCLOTH_COLLISION_PLANE> vecPlanes{};
+		std::vector<NVCLOTH_COLLISION_CONVEX> vecConvexes{};
 		bool bContinuousCollision{ true };
 		float fCollisionMassScale{ 10.f };
 		float fFriction{ 0.2f };

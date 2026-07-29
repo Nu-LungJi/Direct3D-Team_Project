@@ -6,8 +6,9 @@
 NS_BEGIN(Engine)
 
 class CDbgLineRender;
+class CNvClothCollisionEditorGUI;
 
-class CNvClothManager final : public CEngineBase
+class ENGINE_DLL CNvClothManager final : public CEngineBase
 {
 private:
 	struct IMPLEMENTATION;
@@ -49,6 +50,9 @@ public:
 	_bool SetClothAnimationConstraints(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc);
+	_bool SetClothVirtualParticles(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		_bool bEnabled);
 	void StepSimulation(_float fFixedTimeDelta);
 	void RenderDebug(CDbgLineRender& DbgLineRender) const;
 	void UpdateGUI();
@@ -59,6 +63,8 @@ public:
 
 private:
 	std::unique_ptr<IMPLEMENTATION> m_pImpl{};
+	UPtr<CNvClothCollisionEditorGUI>
+		m_pCollisionEditor{};
 
 	void Free() override;
 };

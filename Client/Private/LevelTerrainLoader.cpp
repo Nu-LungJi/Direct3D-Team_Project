@@ -97,7 +97,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 					Desc.iSimulationMeshIndex = 0;
 					Desc.iRenderMeshIndex = 1;
 					Desc.fWeldTolerance = 1.e-5f;
-					Desc.fFixedTopRatio = 0.08f;
+					Desc.fFixedTopRatio = 0.1f;
 					if (FAILED(res->Load(Desc)))
 					{
 						MSG_BOX(

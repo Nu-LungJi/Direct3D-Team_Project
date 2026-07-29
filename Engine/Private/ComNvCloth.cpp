@@ -2,6 +2,7 @@
 #include "ComNvCloth.h"
 
 #include "GameInstance.h"
+#include "NvClothManager.h"
 
 NS_USING(Engine)
 
@@ -28,8 +29,13 @@ HRESULT CComNvCloth::Initialize(void* pArg)
 		return E_INVALIDARG;
 	}
 
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	if (!pManager)
+		return E_FAIL;
+
 	NVCLOTH_FABRIC_HANDLE hFabric{};
-	if (FAILED(CGameInstance::Get().CreateNvClothFabric(
+	if (FAILED(pManager->CreateFabric(
 		pDesc->tFabric,
 		hFabric)))
 	{
@@ -45,12 +51,11 @@ HRESULT CComNvCloth::Initialize(void* pArg)
 		pDesc->tFabric.vecInverseMasses;
 
 	NVCLOTH_CLOTH_HANDLE hCloth{};
-	if (FAILED(CGameInstance::Get().CreateNvCloth(
+	if (FAILED(pManager->CreateCloth(
 		tClothDesc,
 		hCloth)))
 	{
-		CGameInstance::Get().ReleaseNvClothFabric(
-			hFabric);
+		pManager->ReleaseFabric(hFabric);
 		return E_FAIL;
 	}
 
@@ -91,9 +96,12 @@ _bool CComNvCloth::GetParticles(
 	if (!m_hCloth)
 		return false;
 
-	return CGameInstance::Get().GetNvClothParticles(
-		m_hCloth,
-		OutParticles);
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->GetClothParticles(
+			m_hCloth,
+			OutParticles);
 }
 
 _bool CComNvCloth::GetGpuParticleView(
@@ -103,8 +111,10 @@ _bool CComNvCloth::GetGpuParticleView(
 	if (!m_hCloth)
 		return false;
 
-	return CGameInstance::Get().
-		GetNvClothGpuParticleView(
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->GetClothGpuParticleView(
 			m_hCloth,
 			OutView);
 }
@@ -117,11 +127,14 @@ _bool CComNvCloth::SetSimulationTransform(
 	if (!m_hCloth)
 		return false;
 
-	return CGameInstance::Get().SetNvClothTransform(
-		m_hCloth,
-		vTranslation,
-		vRotation,
-		bTeleport);
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->SetClothTransform(
+			m_hCloth,
+			vTranslation,
+			vRotation,
+			bTeleport);
 }
 
 _bool CComNvCloth::SetCollisions(
@@ -130,9 +143,12 @@ _bool CComNvCloth::SetCollisions(
 	if (!m_hCloth)
 		return false;
 
-	return CGameInstance::Get().SetNvClothCollisions(
-		m_hCloth,
-		Desc);
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->SetClothCollisions(
+			m_hCloth,
+			Desc);
 }
 
 _bool CComNvCloth::SetAnimationConstraints(
@@ -141,10 +157,26 @@ _bool CComNvCloth::SetAnimationConstraints(
 	if (!m_hCloth)
 		return false;
 
-	return CGameInstance::Get().
-		SetNvClothAnimationConstraints(
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->SetClothAnimationConstraints(
 			m_hCloth,
 			Desc);
+}
+
+_bool CComNvCloth::SetVirtualParticles(
+	_bool bEnabled)
+{
+	if (!m_hCloth)
+		return false;
+
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->SetClothVirtualParticles(
+			m_hCloth,
+			bEnabled);
 }
 
 void CComNvCloth::UpdateGUI()
@@ -170,17 +202,20 @@ void CComNvCloth::UpdateGUI()
 
 void CComNvCloth::ReleaseRuntime()
 {
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+
 	if (m_hCloth)
 	{
-		CGameInstance::Get().ReleaseNvCloth(
-			m_hCloth);
+		if (pManager)
+			pManager->ReleaseCloth(m_hCloth);
 		m_hCloth = {};
 	}
 
 	if (m_hFabric)
 	{
-		CGameInstance::Get().ReleaseNvClothFabric(
-			m_hFabric);
+		if (pManager)
+			pManager->ReleaseFabric(m_hFabric);
 		m_hFabric = {};
 	}
 

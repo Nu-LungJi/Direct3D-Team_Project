@@ -51,6 +51,7 @@ public:
 
 		// Source Rest Pose에서 해당 본의 로컬 좌표로 변환한 위치다.
 		_float3 vBoneLocalPosition{};
+		_float3 vBoneLocalNormal{};
 	};
 
 	struct PARTICLE_SKIN_BINDING
@@ -58,6 +59,8 @@ public:
 		std::array<PARTICLE_SKIN_INFLUENCE, 4>
 			Influences{};
 		_float fMaxDistance{};
+		_float3 vRestSimulationNormal{
+			0.f, 0.f, -1.f };
 	};
 
 	struct SECTION

@@ -1,5 +1,6 @@
 #include "NvClothManager.h"
 #include "DbgLineRender.h"
+#include "NvClothCollisionEditorGUI.h"
 
 #include <cmath>
 #include <malloc.h>
@@ -169,7 +170,12 @@ namespace
 	{
 		if (Desc.vecTargetPositions.empty() ||
 			Desc.vecTargetPositions.size() !=
-				Desc.vecMaxDistances.size())
+				Desc.vecMaxDistances.size() ||
+			Desc.vecSeparationCenters.size() !=
+				Desc.vecSeparationRadii.size() ||
+			(!Desc.vecSeparationCenters.empty() &&
+				Desc.vecSeparationCenters.size() !=
+					Desc.vecTargetPositions.size()))
 		{
 			return false;
 		}
@@ -186,6 +192,19 @@ namespace
 				return false;
 			}
 		}
+		for (size_t i = 0;
+			i < Desc.vecSeparationCenters.size();
+			++i)
+		{
+			if (!IsFinite(
+					Desc.vecSeparationCenters[i]) ||
+				!std::isfinite(
+					Desc.vecSeparationRadii[i]) ||
+				Desc.vecSeparationRadii[i] < 0.f)
+			{
+				return false;
+			}
+		}
 		return true;
 	}
 
@@ -194,11 +213,17 @@ namespace
 	{
 		constexpr size_t MAX_COLLISION_SPHERES = 32;
 		constexpr size_t MAX_COLLISION_CAPSULES = 32;
+		constexpr size_t MAX_COLLISION_PLANES = 32;
+		constexpr size_t MAX_COLLISION_CONVEXES = 32;
 
 		if (Desc.vecSpheres.size() >
 				MAX_COLLISION_SPHERES ||
 			Desc.vecCapsules.size() >
 				MAX_COLLISION_CAPSULES ||
+			Desc.vecPlanes.size() >
+				MAX_COLLISION_PLANES ||
+			Desc.vecConvexes.size() >
+				MAX_COLLISION_CONVEXES ||
 			!std::isfinite(Desc.fCollisionMassScale) ||
 			Desc.fCollisionMassScale < 0.f ||
 			!std::isfinite(Desc.fFriction) ||
@@ -225,6 +250,42 @@ namespace
 				Capsule.iSphere1 >=
 					Desc.vecSpheres.size() ||
 				Capsule.iSphere0 == Capsule.iSphere1)
+			{
+				return false;
+			}
+		}
+
+		for (const auto& Plane : Desc.vecPlanes)
+		{
+			if (!IsFinite(Plane.vNormal) ||
+				!std::isfinite(Plane.fDistance))
+			{
+				return false;
+			}
+
+			const float fNormalLengthSq =
+				Plane.vNormal.x * Plane.vNormal.x +
+				Plane.vNormal.y * Plane.vNormal.y +
+				Plane.vNormal.z * Plane.vNormal.z;
+			if (!std::isfinite(fNormalLengthSq) ||
+				std::abs(fNormalLengthSq - 1.f) >
+					1.e-3f)
+			{
+				return false;
+			}
+		}
+
+		const uint32_t iValidPlaneMask =
+			Desc.vecPlanes.size() >= 32 ?
+				std::numeric_limits<uint32_t>::max() :
+				((1u <<
+					static_cast<uint32_t>(
+						Desc.vecPlanes.size())) - 1u);
+		for (const auto& Convex : Desc.vecConvexes)
+		{
+			if (Convex.iPlaneMask == 0 ||
+				(Convex.iPlaneMask &
+					~iValidPlaneMask) != 0)
 			{
 				return false;
 			}
@@ -476,6 +537,8 @@ struct CNvClothManager::IMPLEMENTATION
 		std::vector<uint32_t> vecIndices{};
 		std::vector<physx::PxVec4> vecCollisionSpheres{};
 		std::vector<uint32_t> vecCollisionCapsules{};
+		std::vector<physx::PxVec4> vecCollisionPlanes{};
+		std::vector<uint32_t> vecCollisionConvexes{};
 		_float3 vTranslation{};
 		_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
 
@@ -501,7 +564,7 @@ struct CNvClothManager::IMPLEMENTATION
 		std::unique_ptr<CLOTH_RECORD>> Cloths{};
 	uint64_t iNextFabricHandle{ 1 };
 	uint64_t iNextClothHandle{ 1 };
-	_bool bDebugDraw{ true };
+	_bool bDebugDraw{};
 	_bool bSolverErrorLogged{};
 #ifdef _DEBUG
 	NVCLOTH_FABRIC_HANDLE hTestFabric{};
@@ -585,6 +648,11 @@ HRESULT CNvClothManager::Initialize(
 			"[NvCloth] Failed to create the DX11 solver.\n");
 		return E_FAIL;
 	}
+
+	m_pCollisionEditor =
+		CNvClothCollisionEditorGUI::Create();
+	if (!m_pCollisionEditor)
+		return E_FAIL;
 
 	DEBUG_LOG("[NvCloth] DX11 factory initialized.\n");
 	DEBUG_LOG("[NvCloth] DX11 solver initialized.\n");
@@ -885,6 +953,69 @@ HRESULT CNvClothManager::CreateCloth(
 			vecPhases.data(),
 			vecPhases.data() + vecPhases.size() });
 
+	if (Desc.bUseVirtualParticles)
+	{
+		const auto& vecTriangleIndices =
+			FabricIter->second->vecIndices;
+		std::vector<uint32_t>
+			vecVirtualParticleIndices{};
+		vecVirtualParticleIndices.reserve(
+			vecTriangleIndices.size() / 3 * 4);
+
+		for (size_t i = 0;
+			i + 2 < vecTriangleIndices.size();
+			i += 3)
+		{
+			const uint32_t i0 =
+				vecTriangleIndices[i];
+			const uint32_t i1 =
+				vecTriangleIndices[i + 1];
+			const uint32_t i2 =
+				vecTriangleIndices[i + 2];
+
+			// A fully fixed triangle cannot be moved by a collision response,
+			// so it does not need an additional collision sample.
+			if (Desc.vecInverseMasses[i0] <= 0.f &&
+				Desc.vecInverseMasses[i1] <= 0.f &&
+				Desc.vecInverseMasses[i2] <= 0.f)
+			{
+				continue;
+			}
+
+			vecVirtualParticleIndices.insert(
+				vecVirtualParticleIndices.end(),
+				{ i0, i1, i2, 0u });
+		}
+
+		if (!vecVirtualParticleIndices.empty())
+		{
+			using VIRTUAL_PARTICLE_INDICES =
+				const uint32_t[4];
+			const auto* pIndices =
+				reinterpret_cast<
+					const uint32_t(*)[4]>(
+						vecVirtualParticleIndices.data());
+			const size_t iVirtualParticleCount =
+				vecVirtualParticleIndices.size() / 4;
+			const physx::PxVec3 Weights[]{
+				physx::PxVec3{
+					1.f / 3.f,
+					1.f / 3.f,
+					1.f / 3.f }
+			};
+			pCloth->setVirtualParticles(
+				nv::cloth::Range<
+					VIRTUAL_PARTICLE_INDICES>{
+						pIndices,
+						pIndices +
+							iVirtualParticleCount },
+				nv::cloth::Range<
+					const physx::PxVec3>{
+						Weights,
+						Weights + 1 });
+		}
+	}
+
 	auto pRecord =
 		std::make_unique<IMPLEMENTATION::CLOTH_RECORD>();
 	pRecord->pCloth = pCloth;
@@ -1158,6 +1289,22 @@ _bool CNvClothManager::SetClothCollisions(
 		vecCapsules.push_back(Capsule.iSphere1);
 	}
 
+	std::vector<physx::PxVec4> vecPlanes{};
+	vecPlanes.reserve(Desc.vecPlanes.size());
+	for (const auto& Plane : Desc.vecPlanes)
+	{
+		vecPlanes.emplace_back(
+			Plane.vNormal.x,
+			Plane.vNormal.y,
+			Plane.vNormal.z,
+			Plane.fDistance);
+	}
+
+	std::vector<uint32_t> vecConvexes{};
+	vecConvexes.reserve(Desc.vecConvexes.size());
+	for (const auto& Convex : Desc.vecConvexes)
+		vecConvexes.push_back(Convex.iPlaneMask);
+
 	std::scoped_lock Lock{ m_pImpl->StateMutex };
 	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
 	if (Iter == m_pImpl->Cloths.end() ||
@@ -1172,10 +1319,20 @@ _bool CNvClothManager::SetClothCollisions(
 	const _bool bTopologyChanged =
 		Record.vecCollisionSpheres.size() !=
 			vecSpheres.size() ||
-		Record.vecCollisionCapsules != vecCapsules;
+		Record.vecCollisionCapsules != vecCapsules ||
+		Record.vecCollisionPlanes.size() !=
+			vecPlanes.size() ||
+		Record.vecCollisionConvexes != vecConvexes;
 
 	if (bTopologyChanged)
 	{
+		// Removing planes first also removes convex masks referencing them.
+		// NvCloth 1.1.6 can underflow its internal delta when convexes are
+		// explicitly shrunk before their planes.
+		pCloth->setPlanes(
+			{},
+			0,
+			pCloth->getNumPlanes());
 		pCloth->setCapsules(
 			{},
 			0,
@@ -1188,13 +1345,30 @@ _bool CNvClothManager::SetClothCollisions(
 			MakeRange(vecCapsules),
 			0,
 			0);
+		pCloth->setPlanes(
+			MakeRange(vecPlanes),
+			0,
+			0);
+		pCloth->setConvexes(
+			MakeRange(vecConvexes),
+			0,
+			0);
 		pCloth->clearInterpolation();
 	}
-	else if (!vecSpheres.empty())
+	else
 	{
-		pCloth->setSpheres(
-			MakeRange(Record.vecCollisionSpheres),
-			MakeRange(vecSpheres));
+		if (!vecSpheres.empty())
+		{
+			pCloth->setSpheres(
+				MakeRange(Record.vecCollisionSpheres),
+				MakeRange(vecSpheres));
+		}
+		if (!vecPlanes.empty())
+		{
+			pCloth->setPlanes(
+				MakeRange(Record.vecCollisionPlanes),
+				MakeRange(vecPlanes));
+		}
 	}
 
 	pCloth->enableContinuousCollision(
@@ -1207,6 +1381,10 @@ _bool CNvClothManager::SetClothCollisions(
 		std::move(vecSpheres);
 	Record.vecCollisionCapsules =
 		std::move(vecCapsules);
+	Record.vecCollisionPlanes =
+		std::move(vecPlanes);
+	Record.vecCollisionConvexes =
+		std::move(vecConvexes);
 	return true;
 }
 
@@ -1265,6 +1443,36 @@ _bool CNvClothManager::SetClothAnimationConstraints(
 			Desc.vecMaxDistances[i] };
 	}
 
+	if (Desc.vecSeparationCenters.empty())
+	{
+		if (pCloth->getNumSeparationConstraints() != 0)
+			pCloth->clearSeparationConstraints();
+	}
+	else
+	{
+		auto SeparationConstraints =
+			pCloth->getSeparationConstraints();
+		if (SeparationConstraints.size() !=
+			iParticleCount)
+		{
+			return false;
+		}
+
+		for (uint32_t i = 0;
+			i < iParticleCount;
+			++i)
+		{
+			const auto& vCenter =
+				Desc.vecSeparationCenters[i];
+			SeparationConstraints[i] =
+				physx::PxVec4{
+					vCenter.x,
+					vCenter.y,
+					vCenter.z,
+					Desc.vecSeparationRadii[i] };
+		}
+	}
+
 	if (!Desc.bUpdateFixedParticles)
 		return true;
 
@@ -1320,6 +1528,91 @@ _bool CNvClothManager::SetClothAnimationConstraints(
 	}
 
 	return true;
+}
+
+_bool CNvClothManager::SetClothVirtualParticles(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	_bool bEnabled)
+{
+	ZoneScopedN("NvCloth_SetVirtualParticles");
+
+	if (!m_pImpl || !Handle)
+		return false;
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	auto& Record = *Iter->second;
+	auto* pCloth = Record.pCloth;
+	if (!bEnabled)
+	{
+		pCloth->setVirtualParticles({}, {});
+		return pCloth->getNumVirtualParticles() == 0;
+	}
+
+	std::vector<uint32_t> vecVirtualParticleIndices{};
+	vecVirtualParticleIndices.reserve(
+		Record.vecIndices.size() / 3 * 4);
+	for (size_t i = 0;
+		i + 2 < Record.vecIndices.size();
+		i += 3)
+	{
+		const uint32_t i0 = Record.vecIndices[i];
+		const uint32_t i1 = Record.vecIndices[i + 1];
+		const uint32_t i2 = Record.vecIndices[i + 2];
+		if (i0 >= Record.vecInverseMasses.size() ||
+			i1 >= Record.vecInverseMasses.size() ||
+			i2 >= Record.vecInverseMasses.size())
+		{
+			return false;
+		}
+
+		if (Record.vecInverseMasses[i0] <= 0.f &&
+			Record.vecInverseMasses[i1] <= 0.f &&
+			Record.vecInverseMasses[i2] <= 0.f)
+		{
+			continue;
+		}
+
+		vecVirtualParticleIndices.insert(
+			vecVirtualParticleIndices.end(),
+			{ i0, i1, i2, 0u });
+	}
+
+	if (vecVirtualParticleIndices.empty())
+	{
+		pCloth->setVirtualParticles({}, {});
+		return true;
+	}
+
+	using VIRTUAL_PARTICLE_INDICES =
+		const uint32_t[4];
+	const auto* pIndices =
+		reinterpret_cast<const uint32_t(*)[4]>(
+			vecVirtualParticleIndices.data());
+	const size_t iVirtualParticleCount =
+		vecVirtualParticleIndices.size() / 4;
+	const physx::PxVec3 Weights[]{
+		physx::PxVec3{
+			1.f / 3.f,
+			1.f / 3.f,
+			1.f / 3.f }
+	};
+	pCloth->setVirtualParticles(
+		nv::cloth::Range<VIRTUAL_PARTICLE_INDICES>{
+			pIndices,
+			pIndices + iVirtualParticleCount },
+		nv::cloth::Range<const physx::PxVec3>{
+			Weights,
+			Weights + 1 });
+	return pCloth->getNumVirtualParticles() ==
+		iVirtualParticleCount;
 }
 
 void CNvClothManager::StepSimulation(
@@ -1538,6 +1831,9 @@ void CNvClothManager::RenderDebug(
 
 void CNvClothManager::UpdateGUI()
 {
+	if (m_pCollisionEditor)
+		m_pCollisionEditor->UpdateGUI();
+
 	if (!ImGui::Begin("NvCloth Manager"))
 	{
 		ImGui::End();
@@ -1550,6 +1846,14 @@ void CNvClothManager::UpdateGUI()
 		ImGui::End();
 		return;
 	}
+
+	if (ImGui::Button(
+		"Open Collision Rig Editor") &&
+		m_pCollisionEditor)
+	{
+		m_pCollisionEditor->Open();
+	}
+	ImGui::Separator();
 
 	std::scoped_lock Lock{ m_pImpl->StateMutex };
 
@@ -1699,7 +2003,7 @@ void CNvClothManager::UpdateGUI()
 		}
 		else if (ImGui::BeginTable(
 			"NvClothCloths",
-			8,
+			9,
 			ImGuiTableFlags_Borders |
 			ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_Resizable |
@@ -1708,6 +2012,7 @@ void CNvClothManager::UpdateGUI()
 			ImGui::TableSetupColumn("Handle");
 			ImGui::TableSetupColumn("Fabric");
 			ImGui::TableSetupColumn("Particles");
+			ImGui::TableSetupColumn("Virtual");
 			ImGui::TableSetupColumn("Triangles");
 			ImGui::TableSetupColumn("Spheres");
 			ImGui::TableSetupColumn("Capsules");
@@ -1757,18 +2062,25 @@ void CNvClothManager::UpdateGUI()
 						0u);
 				ImGui::TableSetColumnIndex(3);
 				ImGui::Text(
-					"%zu",
-					Record.vecIndices.size() / 3);
+					"%u",
+					Record.pCloth ?
+						Record.pCloth->
+							getNumVirtualParticles() :
+						0u);
 				ImGui::TableSetColumnIndex(4);
 				ImGui::Text(
 					"%zu",
-					Record.vecCollisionSpheres.size());
+					Record.vecIndices.size() / 3);
 				ImGui::TableSetColumnIndex(5);
+				ImGui::Text(
+					"%zu",
+					Record.vecCollisionSpheres.size());
+				ImGui::TableSetColumnIndex(6);
 				ImGui::Text(
 					"%zu",
 					Record.vecCollisionCapsules.size() /
 						2);
-				ImGui::TableSetColumnIndex(6);
+				ImGui::TableSetColumnIndex(7);
 				ImGui::TextColored(
 					Record.pGpuParticleSRV ?
 						ImVec4{
@@ -1783,7 +2095,7 @@ void CNvClothManager::UpdateGUI()
 							1.f },
 					Record.pGpuParticleSRV ?
 						"Ready" : "Not Created");
-				ImGui::TableSetColumnIndex(7);
+				ImGui::TableSetColumnIndex(8);
 				ImGui::Text(
 					"%u",
 					Record.iGpuParticleOffset);
@@ -1809,6 +2121,7 @@ UPtr<CNvClothManager> CNvClothManager::Create(
 
 void CNvClothManager::Free()
 {
+	m_pCollisionEditor.reset();
 	m_pImpl.reset();
 	CEngineBase::Free();
 }
