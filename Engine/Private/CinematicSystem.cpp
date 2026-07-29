@@ -340,15 +340,34 @@ HRESULT CCinematicSystem::EvaluateShot(const FCinematicCameraShot& Shot, _float 
 
 	const _float fRatio = std::clamp((fShotTime - pPreviousKeyframe->fTime) / fKeyframeDuration, 0.f, 1.f);
 
-	if (pPreviousKeyframe->ePositionInterpolation != ECinematicInterpolation::Linear)
+	switch (pPreviousKeyframe->ePositionInterpolation)
 	{
-		return E_NOTIMPL;
+		case ECinematicInterpolation::Linear:
+			return LinearInterpolate(pPreviousKeyframe, pNextKeyframe, fRatio, OutPose);
+			break;
+		case ECinematicInterpolation::CatmullRom:
+		{
+			FCinematicCameraKeyframe p0{};
+			FCinematicCameraKeyframe p1{};
+			FCinematicCameraKeyframe p2{};
+			FCinematicCameraKeyframe p3{};
+
+			return CatMullRomInterpolate(p0, p1, p2, p3, fRatio, OutPose);
+		}
+			break;
+		default:
+			break;
 	}
 
-	XMStoreFloat3(&OutPose.vPosition, XMVectorLerp(XMLoadFloat3(&pPreviousKeyframe->vPosition), XMLoadFloat3(&pNextKeyframe->vPosition), fRatio));
+	return S_OK;
+}
 
-	const _vector vPreviousRotation = XMLoadFloat4(&pPreviousKeyframe->vRotation);
-	const _vector vNextRotation = XMLoadFloat4(&pNextKeyframe->vRotation);
+HRESULT CCinematicSystem::LinearInterpolate(const FCinematicCameraKeyframe* prevKeyFrame, const FCinematicCameraKeyframe* nextKeyFrame, const _float fRatio, FCinematicCameraPose& OutPose) const
+{
+	XMStoreFloat3(&OutPose.vPosition, XMVectorLerp(XMLoadFloat3(&prevKeyFrame->vPosition), XMLoadFloat3(&nextKeyFrame->vPosition), fRatio));
+
+	const _vector vPreviousRotation = XMLoadFloat4(&prevKeyFrame->vRotation);
+	const _vector vNextRotation = XMLoadFloat4(&nextKeyFrame->vRotation);
 
 	_float fPreviousRotationLengthSq{};
 	_float fNextRotationLengthSq{};
@@ -363,10 +382,17 @@ HRESULT CCinematicSystem::EvaluateShot(const FCinematicCameraShot& Shot, _float 
 
 	XMStoreFloat4(&OutPose.vRotation, XMQuaternionSlerp(XMQuaternionNormalize(vPreviousRotation), XMQuaternionNormalize(vNextRotation), fRatio));
 
-	OutPose.fFovY = pPreviousKeyframe->fFovY + (pNextKeyframe->fFovY - pPreviousKeyframe->fFovY) * fRatio;
+	OutPose.fFovY = prevKeyFrame->fFovY + (nextKeyFrame->fFovY - prevKeyFrame->fFovY) * fRatio;
 
 	return S_OK;
 }
+
+HRESULT CCinematicSystem::CatMullRomInterpolate(const FCinematicCameraKeyframe& p0, const FCinematicCameraKeyframe& p1, const FCinematicCameraKeyframe& p2, const FCinematicCameraKeyframe& p3, const _float fRatio, FCinematicCameraPose& OutPose) const
+{
+
+	return S_OK;
+}
+
 
 HRESULT CCinematicSystem::ApplyCameraPose(const FCinematicCameraPose& Pose)
 {

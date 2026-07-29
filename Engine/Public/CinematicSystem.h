@@ -39,6 +39,14 @@ private:
 	HRESULT ApplyCameraPose(const FCinematicCameraPose& Pose);
 
 private:
+	HRESULT LinearInterpolate(const FCinematicCameraKeyframe* prevKeyFrame, const FCinematicCameraKeyframe* nextKeyFrame, const _float fRatio, FCinematicCameraPose& OutPose) const;
+	HRESULT CatMullRomInterpolate(const FCinematicCameraKeyframe& p0,
+		const FCinematicCameraKeyframe& p1,
+		const FCinematicCameraKeyframe& p2,
+		const FCinematicCameraKeyframe& p3,
+		const _float fRatio, FCinematicCameraPose& OutPose) const;
+
+private:
 	// CGameInstance 반복호출보단 그냥 가져와 씀
 	CCameraManager& m_CameraManager;
 

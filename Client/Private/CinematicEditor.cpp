@@ -225,6 +225,7 @@ void CCinematicEditor::UpdateGUI()
 
 	_bool bChanged = false;
 	std::optional<size_t> RemoveShotIndex{};
+	std::optional<size_t> StartTimeEditedShotIndex{};
 
 	for (size_t i = 0; i < Track.Shots.size(); ++i)
 	{
@@ -235,13 +236,72 @@ void CCinematicEditor::UpdateGUI()
 			RemoveShotIndex = i;
 		}
 
-		DrawShot(Track.Shots[i], i, bChanged);
+		_bool bStartTimeEditFinished = false;
+		DrawShot(
+			Track.Shots[i],
+			i,
+			bChanged,
+			bStartTimeEditFinished);
+		if (bStartTimeEditFinished)
+		{
+			StartTimeEditedShotIndex = i;
+		}
 		ImGui::PopID();
 
 		if (RemoveShotIndex.has_value())
 		{
 			break;
 		}
+	}
+
+	if (StartTimeEditedShotIndex.has_value() &&
+		!RemoveShotIndex.has_value())
+	{
+		const size_t iOldIndex =
+			*StartTimeEditedShotIndex;
+		const _float fEditedStartTime =
+			Track.Shots[iOldIndex].fStartTime;
+		size_t iNewIndex = 0;
+
+		for (size_t i = 0; i < Track.Shots.size(); ++i)
+		{
+			if (i == iOldIndex)
+			{
+				continue;
+			}
+
+			if (Track.Shots[i].fStartTime < fEditedStartTime ||
+				(Track.Shots[i].fStartTime == fEditedStartTime &&
+				 i < iOldIndex))
+			{
+				++iNewIndex;
+			}
+		}
+
+		if (m_SelectedShotIndex.has_value())
+		{
+			size_t& iSelectedIndex = *m_SelectedShotIndex;
+
+			if (iSelectedIndex == iOldIndex)
+			{
+				iSelectedIndex = iNewIndex;
+			}
+			else if (iOldIndex < iNewIndex &&
+				iSelectedIndex > iOldIndex &&
+				iSelectedIndex <= iNewIndex)
+			{
+				--iSelectedIndex;
+			}
+			else if (iNewIndex < iOldIndex &&
+				iSelectedIndex >= iNewIndex &&
+				iSelectedIndex < iOldIndex)
+			{
+				++iSelectedIndex;
+			}
+		}
+
+		Track.SortShots();
+		bChanged = true;
 	}
 
 	if (RemoveShotIndex.has_value())
@@ -260,6 +320,12 @@ void CCinematicEditor::UpdateGUI()
 		Track.Shots.erase(
 			Track.Shots.begin() +
 			static_cast<std::ptrdiff_t>(*RemoveShotIndex));
+		if (StartTimeEditedShotIndex.has_value())
+		{
+			Track.SortShots();
+			m_SelectedShotIndex.reset();
+			m_SelectedKeyframeIndex.reset();
+		}
 		bChanged = true;
 	}
 
@@ -322,8 +388,14 @@ void CCinematicEditor::SaveAsset()
 	}
 
 	m_pEditingAsset->RecalculateDuration();
-	const E::FCinematicAssetData Data =
+	E::FCinematicAssetData Data =
 		m_pEditingAsset->ExportData();
+	Data.CameraTrack.SortShots();
+	for (auto& Shot : Data.CameraTrack.Shots)
+	{
+		Shot.SortKeyFrames();
+	}
+
 	const E::SERIALIZE_RESULT Result =
 		E::CGameInstance::Get().JsonSerializeDetailed(
 			SavePath.generic_string(),
@@ -405,6 +477,7 @@ void CCinematicEditor::AddShot()
 	Shot.Keyframes.push_back(Keyframe);
 
 	Track.Shots.push_back(std::move(Shot));
+	Track.SortShots();
 	m_SelectedShotIndex = Track.Shots.size() - 1;
 	m_SelectedKeyframeIndex = 0;
 }
@@ -412,7 +485,8 @@ void CCinematicEditor::AddShot()
 void CCinematicEditor::DrawShot(
 	E::FCinematicCameraShot& Shot,
 	size_t iShotIndex,
-	_bool& bChanged)
+	_bool& bChanged,
+	_bool& bStartTimeEditFinished)
 {
 	const _bool bOpen = ImGui::TreeNodeEx(
 		"##Shot",
@@ -435,6 +509,10 @@ void CCinematicEditor::DrawShot(
 	{
 		Shot.fStartTime = std::max(0.f, Shot.fStartTime);
 		bChanged = true;
+	}
+	if (ImGui::IsItemDeactivatedAfterEdit())
+	{
+		bStartTimeEditFinished = true;
 	}
 
 	static const _char* CoordinateSpaceNames[] = {
@@ -479,20 +557,27 @@ void CCinematicEditor::DrawShot(
 	}
 
 	std::optional<size_t> RemoveKeyframeIndex{};
+	std::optional<size_t> TimeEditedKeyframeIndex{};
 	for (size_t i = 0; i < Shot.Keyframes.size(); ++i)
 	{
 		ImGui::PushID(static_cast<int>(i));
 
 		_bool bRemove = false;
+		_bool bTimeEditFinished = false;
 		DrawKeyframe(
 			Shot.Keyframes[i],
 			iShotIndex,
 			i,
 			bChanged,
-			bRemove);
+			bRemove,
+			bTimeEditFinished);
 		if (bRemove)
 		{
 			RemoveKeyframeIndex = i;
+		}
+		if (bTimeEditFinished)
+		{
+			TimeEditedKeyframeIndex = i;
 		}
 
 		ImGui::PopID();
@@ -500,6 +585,58 @@ void CCinematicEditor::DrawShot(
 		{
 			break;
 		}
+	}
+
+	if (TimeEditedKeyframeIndex.has_value() &&
+		!RemoveKeyframeIndex.has_value())
+	{
+		const size_t iOldIndex =
+			*TimeEditedKeyframeIndex;
+		const _float fEditedTime =
+			Shot.Keyframes[iOldIndex].fTime;
+		size_t iNewIndex = 0;
+
+		for (size_t i = 0; i < Shot.Keyframes.size(); ++i)
+		{
+			if (i == iOldIndex)
+			{
+				continue;
+			}
+
+			if (Shot.Keyframes[i].fTime < fEditedTime ||
+				(Shot.Keyframes[i].fTime == fEditedTime &&
+				 i < iOldIndex))
+			{
+				++iNewIndex;
+			}
+		}
+
+		if (m_SelectedShotIndex == iShotIndex &&
+			m_SelectedKeyframeIndex.has_value())
+		{
+			size_t& iSelectedIndex =
+				*m_SelectedKeyframeIndex;
+
+			if (iSelectedIndex == iOldIndex)
+			{
+				iSelectedIndex = iNewIndex;
+			}
+			else if (iOldIndex < iNewIndex &&
+				iSelectedIndex > iOldIndex &&
+				iSelectedIndex <= iNewIndex)
+			{
+				--iSelectedIndex;
+			}
+			else if (iNewIndex < iOldIndex &&
+				iSelectedIndex >= iNewIndex &&
+				iSelectedIndex < iOldIndex)
+			{
+				++iSelectedIndex;
+			}
+		}
+
+		Shot.SortKeyFrames();
+		bChanged = true;
 	}
 
 	if (RemoveKeyframeIndex.has_value())
@@ -520,6 +657,15 @@ void CCinematicEditor::DrawShot(
 		Shot.Keyframes.erase(
 			Shot.Keyframes.begin() +
 			static_cast<std::ptrdiff_t>(*RemoveKeyframeIndex));
+		if (TimeEditedKeyframeIndex.has_value())
+		{
+			Shot.SortKeyFrames();
+			if (m_SelectedShotIndex == iShotIndex)
+			{
+				m_SelectedShotIndex.reset();
+				m_SelectedKeyframeIndex.reset();
+			}
+		}
 		bChanged = true;
 	}
 
@@ -544,6 +690,7 @@ void CCinematicEditor::DrawShot(
 		}
 
 		Shot.Keyframes.push_back(NewKeyframe);
+		Shot.SortKeyFrames();
 		m_SelectedShotIndex = iShotIndex;
 		m_SelectedKeyframeIndex = Shot.Keyframes.size() - 1;
 		bChanged = true;
@@ -557,7 +704,8 @@ void CCinematicEditor::DrawKeyframe(
 	size_t iShotIndex,
 	size_t iKeyframeIndex,
 	_bool& bChanged,
-	_bool& bRemove)
+	_bool& bRemove,
+	_bool& bTimeEditFinished)
 {
 	const _bool bOpen = ImGui::TreeNodeEx(
 		"##Keyframe",
@@ -601,6 +749,10 @@ void CCinematicEditor::DrawKeyframe(
 	{
 		Keyframe.fTime = std::max(0.f, Keyframe.fTime);
 		bChanged = true;
+	}
+	if (ImGui::IsItemDeactivatedAfterEdit())
+	{
+		bTimeEditFinished = true;
 	}
 
 	if (ImGui::DragFloat3(

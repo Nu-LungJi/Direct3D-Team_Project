@@ -106,6 +106,20 @@ struct FCinematicCameraShot : public ISerializable
 		deserializer.Read("BindingMode", eBindingMode);
 		deserializer.Read("TargetSlot", TargetSlot);
 		deserializer.Read("Keyframes", Keyframes);
+
+		SortKeyFrames();
+	}
+
+	void SortKeyFrames()
+	{
+		std::stable_sort(
+			Keyframes.begin(),
+			Keyframes.end(),
+			[](const FCinematicCameraKeyframe& Left,
+				const FCinematicCameraKeyframe& Right)
+			{
+				return Left.fTime < Right.fTime;
+			});
 	}
 };
 
@@ -124,6 +138,20 @@ struct FCinematicCameraTrack : public ISerializable
 	{
 		deserializer.Read("TrackID", TrackID);
 		deserializer.Read("Shots", Shots);
+
+		SortShots();
+	}
+
+	void SortShots()
+	{
+		std::stable_sort(
+			Shots.begin(),
+			Shots.end(),
+			[](const FCinematicCameraShot& Left,
+				const FCinematicCameraShot& Right)
+			{
+				return Left.fStartTime < Right.fStartTime;
+			});
 	}
 };
 
