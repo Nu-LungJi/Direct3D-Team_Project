@@ -869,7 +869,10 @@ void CPlayer::UpdateAttachedEffects()
 // CPU + GPU 버전
 HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
-	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader || m_bRenderInfluence)
+	if (m_bRenderInfluence)
+		return S_OK;
+
+	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
 
 	const auto& vs = m_pResVertexCPUSkinningInstancedShader;
