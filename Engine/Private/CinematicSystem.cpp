@@ -344,22 +344,20 @@ HRESULT CCinematicSystem::EvaluateShot(const FCinematicCameraShot& Shot, _float 
 	{
 		case ECinematicInterpolation::Linear:
 			return LinearInterpolate(pPreviousKeyframe, pNextKeyframe, fRatio, OutPose);
-			break;
+
 		case ECinematicInterpolation::CatmullRom:
 		{
-			FCinematicCameraKeyframe p0{};
-			FCinematicCameraKeyframe p1{};
-			FCinematicCameraKeyframe p2{};
-			FCinematicCameraKeyframe p3{};
+			const size_t iPreviousIndex = static_cast<size_t>(pPreviousKeyframe - Shot.Keyframes.data());
+			const size_t iNextIndex = static_cast<size_t>(pNextKeyframe - Shot.Keyframes.data());
 
-			return CatMullRomInterpolate(p0, p1, p2, p3, fRatio, OutPose);
+			const auto& P0 = iPreviousIndex > 0 ? Shot.Keyframes[iPreviousIndex - 1] : *pPreviousKeyframe;
+			const auto& P3 = iNextIndex + 1 < Shot.Keyframes.size() ? Shot.Keyframes[iNextIndex + 1] : *pNextKeyframe;
+
+			return CatMullRomInterpolate(P0, *pPreviousKeyframe, *pNextKeyframe, P3, fRatio, OutPose);
 		}
-			break;
 		default:
-			break;
+			return E_INVALIDARG;
 	}
-
-	return S_OK;
 }
 
 HRESULT CCinematicSystem::LinearInterpolate(const FCinematicCameraKeyframe* prevKeyFrame, const FCinematicCameraKeyframe* nextKeyFrame, const _float fRatio, FCinematicCameraPose& OutPose) const
@@ -389,6 +387,18 @@ HRESULT CCinematicSystem::LinearInterpolate(const FCinematicCameraKeyframe* prev
 
 HRESULT CCinematicSystem::CatMullRomInterpolate(const FCinematicCameraKeyframe& p0, const FCinematicCameraKeyframe& p1, const FCinematicCameraKeyframe& p2, const FCinematicCameraKeyframe& p3, const _float fRatio, FCinematicCameraPose& OutPose) const
 {
+	const HRESULT hr = LinearInterpolate(&p1, &p2, fRatio, OutPose);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+
+	XMStoreFloat3(&OutPose.vPosition, XMVectorCatmullRom(
+			XMLoadFloat3(&p0.vPosition),
+			XMLoadFloat3(&p1.vPosition),
+			XMLoadFloat3(&p2.vPosition),
+			XMLoadFloat3(&p3.vPosition),
+			fRatio));
 
 	return S_OK;
 }

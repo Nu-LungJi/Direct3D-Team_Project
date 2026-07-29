@@ -814,7 +814,7 @@ void CCinematicEditor::DrawKeyframe(
 
 	static const _char* InterpolationNames[] = {
 		"Linear",
-		"CatmullRom (Not Implemented)"
+		"CatmullRom"
 	};
 	int iInterpolation =
 		static_cast<int>(Keyframe.ePositionInterpolation);
@@ -827,14 +827,6 @@ void CCinematicEditor::DrawKeyframe(
 		Keyframe.ePositionInterpolation =
 			static_cast<E::ECinematicInterpolation>(iInterpolation);
 		bChanged = true;
-	}
-
-	if (Keyframe.ePositionInterpolation ==
-		E::ECinematicInterpolation::CatmullRom)
-	{
-		ImGui::TextColored(
-			ImVec4{ 1.f, 0.75f, 0.25f, 1.f },
-			"CatmullRom playback is not implemented yet.");
 	}
 
 	ImGui::TreePop();
@@ -921,10 +913,57 @@ void CCinematicEditor::DrawWorldVisualization() const
 			i < SortedKeyframes.size();
 			++i)
 		{
-			pLineRender->AddLine(
-				SortedKeyframes[i - 1]->vPosition,
-				SortedKeyframes[i]->vPosition,
-				_float4{ 0.2f, 0.85f, 1.f, 1.f });
+			const auto* pPreviousKeyframe =
+				SortedKeyframes[i - 1];
+			const auto* pNextKeyframe =
+				SortedKeyframes[i];
+
+			if (pPreviousKeyframe->ePositionInterpolation ==
+				E::ECinematicInterpolation::Linear)
+			{
+				pLineRender->AddLine(
+					pPreviousKeyframe->vPosition,
+					pNextKeyframe->vPosition,
+					_float4{ 0.2f, 0.85f, 1.f, 1.f });
+				continue;
+			}
+
+			const auto* pP0 = i > 1 ?
+				SortedKeyframes[i - 2] :
+				pPreviousKeyframe;
+			const auto* pP3 =
+				i + 1 < SortedKeyframes.size() ?
+				SortedKeyframes[i + 1] :
+				pNextKeyframe;
+			constexpr size_t iCurveSegmentCount = 16;
+			_float3 vPreviousPosition =
+				pPreviousKeyframe->vPosition;
+
+			for (size_t iSegment = 1;
+				iSegment <= iCurveSegmentCount;
+				++iSegment)
+			{
+				const _float fRatio =
+					static_cast<_float>(iSegment) /
+					static_cast<_float>(iCurveSegmentCount);
+				_float3 vCurrentPosition{};
+				XMStoreFloat3(
+					&vCurrentPosition,
+					XMVectorCatmullRom(
+						XMLoadFloat3(&pP0->vPosition),
+						XMLoadFloat3(
+							&pPreviousKeyframe->vPosition),
+						XMLoadFloat3(
+							&pNextKeyframe->vPosition),
+						XMLoadFloat3(&pP3->vPosition),
+						fRatio));
+
+				pLineRender->AddLine(
+					vPreviousPosition,
+					vCurrentPosition,
+					_float4{ 0.2f, 0.85f, 1.f, 1.f });
+				vPreviousPosition = vCurrentPosition;
+			}
 		}
 
 		for (size_t iKeyframe = 0;
