@@ -258,6 +258,7 @@ public:
 	HRESULT RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset);
 	HRESULT LoadCinematic(const std::string& CinematicName);
 	HRESULT PlayCinematic(const StringID& CinematicID);
+	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle);
 	void StopCinematic();
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;

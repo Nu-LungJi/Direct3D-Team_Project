@@ -4,15 +4,14 @@
 #include "CinematicCamera.h"
 #include "CinematicAsset.h"
 #include "GameInstance.h"
+#include "GameObject.h"
 
 NS_USING(Engine)
 
 namespace
 {
-	constexpr const _char* CINEMATIC_LOAD_ROOT =
-		"./Resources/json/Cinematics";
-	constexpr const _char* CINEMATIC_JSON_ROOT =
-		"Cinematic";
+	constexpr const _char* CINEMATIC_LOAD_ROOT = "./Resources/json/Cinematics";
+	constexpr const _char* CINEMATIC_JSON_ROOT = "Cinematic";
 
 	_bool IsValidCinematicName(const std::string& CinematicName)
 	{
@@ -181,6 +180,16 @@ HRESULT CCinematicSystem::Load(const std::string& CinematicName)
 
 HRESULT CCinematicSystem::Play(const StringID& CinematicID)
 {
+	return Play(CinematicID, std::nullopt);
+}
+
+HRESULT CCinematicSystem::Play(const StringID& CinematicID, const CHandle& TargetHandle)
+{
+	return Play(CinematicID, std::optional<CHandle>{ TargetHandle });
+}
+
+HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle)
+{
 	if (m_bPlaying)
 	{
 		return S_FALSE;
@@ -199,6 +208,20 @@ HRESULT CCinematicSystem::Play(const StringID& CinematicID)
 		return E_FAIL;
 	}
 
+	const auto& Shots = iter->second->GetCameraTrack().Shots;
+	const _bool bRequiresTarget = std::any_of(Shots.begin(),Shots.end(),
+		[](const FCinematicCameraShot& Shot)
+		{
+			return Shot.eCoordinateSpace == ECinematicCoordinateSpace::TargetLocal;
+		});
+
+	if (bRequiresTarget &&
+		(!TargetHandle.has_value() ||
+		 CGameInstance::Get().GetGameObjectByHandle(*TargetHandle) == nullptr))
+	{
+		return E_INVALIDARG;
+	}
+
 	const HRESULT hr = BeginCameraControl();
 	if (hr != S_OK)
 	{
@@ -206,6 +229,7 @@ HRESULT CCinematicSystem::Play(const StringID& CinematicID)
 	}
 
 	m_pPlayingAsset = iter->second;
+	m_TargetHandle = TargetHandle;
 	m_bPlaying = true;
 	m_fPlayTime = 0.f;
 
@@ -231,6 +255,7 @@ void CCinematicSystem::Stop()
 	m_bPlaying = false;
 	m_fPlayTime = 0.f;
 	m_pPlayingAsset.reset();
+	m_TargetHandle.reset();
 }
 
 _bool CCinematicSystem::IsPlaying() const
@@ -243,7 +268,7 @@ _float CCinematicSystem::GetPlayTime() const
 	return m_fPlayTime;
 }
 
-HRESULT CCinematicSystem::EvaluateCamera(_float fPlayTime, FCinematicCameraPose& OutPose) const
+HRESULT CCinematicSystem::EvaluateCamera(_float fPlayTime, FCinematicCameraPose& OutPose)
 {
 	if (m_pPlayingAsset == nullptr || !std::isfinite(fPlayTime))
 	{
@@ -256,12 +281,87 @@ HRESULT CCinematicSystem::EvaluateCamera(_float fPlayTime, FCinematicCameraPose&
 		return E_FAIL;
 	}
 
-	if (pShot->eCoordinateSpace != ECinematicCoordinateSpace::World)
+	FCinematicCameraPose LocalPose{};
+	const HRESULT hr = EvaluateShot(*pShot, fPlayTime - pShot->fStartTime, LocalPose);
+	if (FAILED(hr))
 	{
-		return E_NOTIMPL;
+		return hr;
 	}
 
-	return EvaluateShot(*pShot, fPlayTime - pShot->fStartTime, OutPose);
+	if (pShot->eCoordinateSpace == ECinematicCoordinateSpace::World)
+	{
+		OutPose = LocalPose;
+		return S_OK;
+	}
+
+	if (pShot->eCoordinateSpace != ECinematicCoordinateSpace::TargetLocal)
+	{
+		return E_INVALIDARG;
+	}
+
+	_matrix TargetWorld{};
+	if (FAILED(GetTargetWorldMatrix(TargetWorld)))
+	{
+		return E_FAIL;
+	}
+
+	return ConvertTargetLocalPose(LocalPose, TargetWorld, OutPose);
+}
+
+HRESULT CCinematicSystem::GetTargetWorldMatrix(_matrix& OutTargetWorld) const
+{
+	if (!m_TargetHandle.has_value())
+	{
+		return E_FAIL;
+	}
+
+	const CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(*m_TargetHandle);
+	if (pTarget == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	_vector vScale{};
+	_vector vRotation{};
+	_vector vTranslation{};
+	if (!XMMatrixDecompose(&vScale, &vRotation, &vTranslation, pTarget->GetTransform().GetLoadedCombinedWorldMatrix()))
+	{
+		return E_FAIL;
+	}
+
+	OutTargetWorld = XMMatrixRotationQuaternion(XMQuaternionNormalize(vRotation)) * XMMatrixTranslationFromVector(vTranslation);
+
+	return S_OK;
+}
+
+HRESULT CCinematicSystem::ConvertTargetLocalPose(const FCinematicCameraPose& LocalPose, _fmatrix TargetWorld, FCinematicCameraPose& OutWorldPose) const
+{
+	const _vector vLocalRotation = XMLoadFloat4(&LocalPose.vRotation);
+
+	_float fRotationLengthSq{};
+	XMStoreFloat(&fRotationLengthSq, XMVector4LengthSq(vLocalRotation));
+	if (fRotationLengthSq <= FLT_EPSILON)
+	{
+		return E_INVALIDARG;
+	}
+
+	const _matrix LocalWorld = XMMatrixRotationQuaternion(XMQuaternionNormalize(vLocalRotation)) *
+		XMMatrixTranslationFromVector(XMLoadFloat3(&LocalPose.vPosition));
+	const _matrix CameraWorld = LocalWorld * TargetWorld;
+
+	_vector vScale{};
+	_vector vRotation{};
+	_vector vTranslation{};
+	if (!XMMatrixDecompose(&vScale, &vRotation, &vTranslation, CameraWorld))
+	{
+		return E_FAIL;
+	}
+
+	XMStoreFloat3(&OutWorldPose.vPosition, vTranslation);
+	XMStoreFloat4(&OutWorldPose.vRotation, XMQuaternionNormalize(vRotation));
+	OutWorldPose.fFovY = LocalPose.fFovY;
+
+	return S_OK;
 }
 
 const FCinematicCameraShot* CCinematicSystem::FindActiveShot(_float fPlayTime) const

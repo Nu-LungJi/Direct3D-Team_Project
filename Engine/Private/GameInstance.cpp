@@ -1032,6 +1032,12 @@ HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
 {
 	return m_pCameraManager->PlayCinematic(CinematicID);
 }
+HRESULT CGameInstance::PlayCinematic(
+	const StringID& CinematicID,
+	const CHandle& TargetHandle)
+{
+	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle);
+}
 void CGameInstance::StopCinematic()
 {
 	m_pCameraManager->StopCinematic();

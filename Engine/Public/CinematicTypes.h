@@ -18,6 +18,7 @@ enum class ECinematicBindingMode
 	// 매 프레임 타깃의 현재 Transform을 사용
 	Live, // Boss 이동 -> Boss 기준 카메라 경로도 같이 이동
 
+	// Legacy
 	// 컷신 시작 순간의 타깃 Transform을 저장하고 계속 사용
 	Snapshot // 컷신 시작 위치 저장 -> Boss가 움직여도 카메라 경로는 고정
 };
@@ -75,9 +76,6 @@ struct FCinematicCameraShot : public ISerializable
 	ECinematicCoordinateSpace eCoordinateSpace{ ECinematicCoordinateSpace::World };
 	ECinematicBindingMode eBindingMode{ ECinematicBindingMode::Snapshot };
 
-	// 샷이 어느 오브젝트를 기준으로 하는지
-	StringID TargetSlot{}; // ECinematicCoordinateSpace::TargetLocal 일때만 사용
-
 	std::vector<FCinematicCameraKeyframe> Keyframes{};
 
 
@@ -87,14 +85,6 @@ struct FCinematicCameraShot : public ISerializable
 		serializer.Write("StartTime", fStartTime);
 		serializer.Write("CoordinateSpace", eCoordinateSpace);
 		serializer.Write("BindingMode", eBindingMode);
-		if (TargetSlot.hash == 0)
-		{
-			serializer.Write("TargetSlot", std::string{});
-		}
-		else
-		{
-			serializer.Write("TargetSlot", TargetSlot);
-		}
 		serializer.Write("Keyframes", Keyframes);
 	}
 
@@ -104,7 +94,6 @@ struct FCinematicCameraShot : public ISerializable
 		deserializer.Read("StartTime", fStartTime);
 		deserializer.Read("CoordinateSpace", eCoordinateSpace);
 		deserializer.Read("BindingMode", eBindingMode);
-		deserializer.Read("TargetSlot", TargetSlot);
 		deserializer.Read("Keyframes", Keyframes);
 
 		SortKeyFrames();

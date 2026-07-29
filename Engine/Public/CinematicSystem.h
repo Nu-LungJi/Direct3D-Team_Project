@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine_Base.h"
 #include "CinematicTypes.h"
+#include "Handle.h"
 
 NS_BEGIN(Engine)
 
@@ -28,14 +29,18 @@ public:
 	HRESULT RegistAsset(const SPtr<CCinematicAsset>& pAsset);
 	HRESULT Load(const std::string& CinematicName);
 	HRESULT Play(const StringID& CinematicID);
+	HRESULT Play(const StringID& CinematicID, const CHandle& TargetHandle);
 	void Stop();
 	_bool IsPlaying() const;
 	_float GetPlayTime() const;
 
 private:
-	HRESULT EvaluateCamera(_float fPlayTime, FCinematicCameraPose& OutPose) const;
+	HRESULT Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle);
+	HRESULT EvaluateCamera(_float fPlayTime, FCinematicCameraPose& OutPose);
 	const FCinematicCameraShot* FindActiveShot(_float fPlayTime) const;
 	HRESULT EvaluateShot(const FCinematicCameraShot& Shot, _float fShotTime, FCinematicCameraPose& OutPose) const;
+	HRESULT GetTargetWorldMatrix(_matrix& OutTargetWorld) const;
+	HRESULT ConvertTargetLocalPose(const FCinematicCameraPose& LocalPose, _fmatrix TargetWorld, FCinematicCameraPose& OutWorldPose) const;
 	HRESULT ApplyCameraPose(const FCinematicCameraPose& Pose);
 
 private:
@@ -57,6 +62,10 @@ private:
 
 	SPtr<CCinematicAsset> m_pPlayingAsset{};
 	std::unordered_map<StringID, SPtr<CCinematicAsset>> m_Assets{};
+	std::optional<CHandle> m_TargetHandle{};
+	const FCinematicCameraShot* m_pActiveShot{};
+	_float4x4 m_SnapshotTargetWorld{};
+	_bool m_bHasSnapshotTargetWorld{ false };
 
 private:
 	_float m_fPlayTime { 0.f };

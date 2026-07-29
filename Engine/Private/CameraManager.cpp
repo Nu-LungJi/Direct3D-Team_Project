@@ -263,6 +263,18 @@ HRESULT CCameraManager::PlayCinematic(const StringID& CinematicID)
 	return m_pCinematicSystem->Play(CinematicID);
 }
 
+HRESULT CCameraManager::PlayCinematic(
+	const StringID& CinematicID,
+	const CHandle& TargetHandle)
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->Play(CinematicID, TargetHandle);
+}
+
 void CCameraManager::StopCinematic()
 {
 	if (m_pCinematicSystem)
