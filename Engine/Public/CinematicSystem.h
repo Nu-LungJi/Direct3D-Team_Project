@@ -68,6 +68,10 @@ private:
 		const _float fRatio, FCinematicCameraPose& OutPose) const;
 
 private:
+	// 타겟 -> 카메라 방향으로 SphereSweep
+	_bool TargetToCameraSphereSweep(const _float3& TargetPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
+
+private:
 	// CGameInstance 반복호출보단 그냥 가져와 씀
 	CCameraManager& m_CameraManager;
 
@@ -88,6 +92,8 @@ private:
 	// 복귀 옵션
 	FCinematicPlayOptions m_PlayOptions{};
 	FCinematicCameraPose m_BlendStartPose{};
+	_float3 m_vBlendInStartTargetOffset{};
+	_bool m_bUseTargetOrbitBlendIn{ false };
 
 private:
 	_float m_fPlayTime { 0.f };
@@ -95,6 +101,10 @@ private:
 	_float m_fReturnBlendTime{ 0.f };
 	// 현재 컷신의 플레이 상태
 	EPlayState m_ePlayState{ EPlayState::Stopped };
+
+private:
+	_float CINEMATIC_CAMERA_COLLISION_RADIUS = 0.3f;
+	_float CINEMATIC_CAMERA_COLLISION_PADDING = 0.05f;
 public:
 	static UPtr<CCinematicSystem> Create(CCameraManager& CameraManager, const StringID& CinematicCameraID);
 };

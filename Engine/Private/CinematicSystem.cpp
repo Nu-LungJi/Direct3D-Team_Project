@@ -5,6 +5,7 @@
 #include "CinematicAsset.h"
 #include "GameInstance.h"
 #include "GameObject.h"
+#include "PhysXManager.h"
 
 NS_USING(Engine)
 
@@ -33,6 +34,54 @@ namespace
 			{
 				return static_cast<unsigned char>(Character) < 0x20;
 			});
+	}
+
+	// 원호보간
+	_vector SlerpUnitDirection(_fvector vStartDirection, _fvector vEndDirection, _float fRatio, _fvector vCameraRight)
+	{
+		_float fDot{};
+		XMStoreFloat(&fDot,XMVector3Dot(vStartDirection,vEndDirection));
+		fDot = std::clamp(fDot, -1.f, 1.f);
+
+		if (fDot >= 0.9999f)
+		{
+			return XMVector3Normalize(XMVectorLerp(vStartDirection, vEndDirection, fRatio));
+		}
+
+		if (fDot <= -0.9999f)
+		{
+			const _vector vWorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+			_vector vAxis = vWorldUp - vStartDirection * XMVectorGetX(XMVector3Dot(vWorldUp, vStartDirection));
+
+			_float fAxisLengthSq{};
+			XMStoreFloat(&fAxisLengthSq, XMVector3LengthSq(vAxis));
+			if (fAxisLengthSq <= FLT_EPSILON)
+			{
+				const _vector vWorldRight = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+				vAxis = vWorldRight - vStartDirection * XMVectorGetX(XMVector3Dot(vWorldRight, vStartDirection));
+			}
+			vAxis = XMVector3Normalize(vAxis);
+
+			constexpr _float fDirectionProbeAngle = 0.01f;
+			const _vector vPositiveDirection = XMVector3Rotate(vStartDirection,XMQuaternionRotationAxis(vAxis, fDirectionProbeAngle));
+			const _vector vNegativeDirection =XMVector3Rotate(vStartDirection,XMQuaternionRotationAxis(vAxis, -fDirectionProbeAngle));
+
+			const _float fPositiveRightAmount = XMVectorGetX(XMVector3Dot(vPositiveDirection - vStartDirection, vCameraRight));
+			const _float fNegativeRightAmount =XMVectorGetX(XMVector3Dot(vNegativeDirection - vStartDirection, vCameraRight));
+			if (fNegativeRightAmount > fPositiveRightAmount)
+			{
+				vAxis = -vAxis;
+			}
+
+			return XMVector3Normalize(XMVector3Rotate(vStartDirection,XMQuaternionRotationAxis(vAxis, XM_PI * fRatio)));
+		}
+
+		const _float fAngle = std::acos(fDot);
+		const _float fSinAngle = std::sin(fAngle);
+		const _float fStartWeight = std::sin((1.f - fRatio) * fAngle) / fSinAngle;
+		const _float fEndWeight = std::sin(fRatio * fAngle) / fSinAngle;
+
+		return XMVector3Normalize(vStartDirection * fStartWeight + vEndDirection * fEndWeight);
 	}
 }
 
@@ -101,10 +150,8 @@ void CCinematicSystem::Update(_float fTimeDelta)
 
 	if (m_fPlayTime >= fDuration)
 	{
-		if (m_PlayOptions.eReturnMode ==
-				ECinematicReturnMode::Blend &&
-			m_PlayOptions.fReturnBlendDuration >
-				FLT_EPSILON)
+		if (m_PlayOptions.eReturnMode == ECinematicReturnMode::Blend &&
+			m_PlayOptions.fReturnBlendDuration > FLT_EPSILON)
 		{
 			if (FAILED(BeginBlendOut(Pose)))
 			{
@@ -325,8 +372,11 @@ void CCinematicSystem::FinishPlayback()
 	m_fReturnBlendTime = 0.f;
 	m_pPlayingAsset.reset();
 	m_TargetHandle.reset();
+	m_pActiveShot = nullptr;
 	m_PlayOptions = {};
 	m_BlendStartPose = {};
+	m_vBlendInStartTargetOffset = {};
+	m_bUseTargetOrbitBlendIn = false;
 }
 
 _bool CCinematicSystem::IsPlaying() const
@@ -356,6 +406,24 @@ HRESULT CCinematicSystem::BeginBlendIn()
 		return E_FAIL;
 	}
 
+	m_bUseTargetOrbitBlendIn = false;
+	const FCinematicCameraShot* pStartShot = FindActiveShot(0.f);
+	if (pStartShot != nullptr && pStartShot->eCoordinateSpace == ECinematicCoordinateSpace::TargetLocal)
+	{
+		_matrix TargetWorld{};
+		if (SUCCEEDED(GetTargetWorldMatrix(TargetWorld)))
+		{
+			const _vector vStartOffset =XMLoadFloat3(&m_BlendStartPose.vPosition) - TargetWorld.r[3];
+			_float fStartRadiusSq{};
+			XMStoreFloat(&fStartRadiusSq, XMVector3LengthSq(vStartOffset));
+			if (fStartRadiusSq > FLT_EPSILON)
+			{
+				XMStoreFloat3(&m_vBlendInStartTargetOffset, vStartOffset);
+				m_bUseTargetOrbitBlendIn = true;
+			}
+		}
+	}
+
 	m_fStartBlendTime = 0.f;
 	m_ePlayState = EPlayState::BlendingIn;
 	return S_OK;
@@ -383,7 +451,48 @@ HRESULT CCinematicSystem::UpdateBlendIn(_float fTimeDelta)
 	fRatio = fRatio * fRatio * (3.f - 2.f * fRatio);
 
 	FCinematicCameraPose BlendedPose{};
-	XMStoreFloat3(&BlendedPose.vPosition, XMVectorLerp(XMLoadFloat3(&m_BlendStartPose.vPosition), XMLoadFloat3(&CinematicStartPose.vPosition), fRatio));
+	_bool bAppliedTargetOrbit = false;
+	if (m_bUseTargetOrbitBlendIn)
+	{
+		_matrix TargetWorld{};
+		if (SUCCEEDED(GetTargetWorldMatrix(TargetWorld)))
+		{
+			const _vector vTargetPosition = TargetWorld.r[3];
+			const _vector vStartOffset = XMLoadFloat3(&m_vBlendInStartTargetOffset);
+			const _vector vEndOffset =XMLoadFloat3(&CinematicStartPose.vPosition) - vTargetPosition;
+
+			_float fStartRadius{};
+			_float fEndRadius{};
+			XMStoreFloat(&fStartRadius, XMVector3Length(vStartOffset));
+			XMStoreFloat(&fEndRadius, XMVector3Length(vEndOffset));
+
+			if (fStartRadius > FLT_EPSILON && fEndRadius > FLT_EPSILON)
+			{
+				const _vector vCameraRight = XMVector3Rotate(
+						XMVectorSet(
+							1.f,
+							0.f,
+							0.f,
+							0.f),
+						XMQuaternionNormalize(XMLoadFloat4(&m_BlendStartPose.vRotation)));
+				const _vector vDirection =
+					SlerpUnitDirection(
+						vStartOffset / fStartRadius,
+						vEndOffset / fEndRadius,
+						fRatio,
+						vCameraRight);
+				const _float fRadius =fStartRadius + (fEndRadius - fStartRadius) * fRatio;
+
+				XMStoreFloat3(&BlendedPose.vPosition, vTargetPosition + vDirection * fRadius);
+				bAppliedTargetOrbit = true;
+			}
+		}
+	}
+
+	if (!bAppliedTargetOrbit)
+	{
+		XMStoreFloat3(&BlendedPose.vPosition,XMVectorLerp(XMLoadFloat3(&m_BlendStartPose.vPosition), XMLoadFloat3(&CinematicStartPose.vPosition), fRatio));
+	}
 	XMStoreFloat4(&BlendedPose.vRotation,
 		XMQuaternionSlerp(XMQuaternionNormalize(XMLoadFloat4(&m_BlendStartPose.vRotation)),XMQuaternionNormalize(XMLoadFloat4(&CinematicStartPose.vRotation)),fRatio));
 	BlendedPose.fFovY = m_BlendStartPose.fFovY + (CinematicStartPose.fFovY - m_BlendStartPose.fFovY) * fRatio;
@@ -473,6 +582,7 @@ HRESULT CCinematicSystem::EvaluateCamera(_float fPlayTime, FCinematicCameraPose&
 	{
 		return E_FAIL;
 	}
+	m_pActiveShot = pShot;
 
 	FCinematicCameraPose LocalPose{};
 	const HRESULT hr = EvaluateShot(*pShot, fPlayTime - pShot->fStartTime, LocalPose);
@@ -727,16 +837,83 @@ HRESULT CCinematicSystem::CatMullRomInterpolate(const FCinematicCameraKeyframe& 
 	return S_OK;
 }
 
+_bool CCinematicSystem::TargetToCameraSphereSweep(const _float3& TargetPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const
+{
+	OutCameraPosition = CameraPosition;
+
+	if (!std::isfinite(fCollisionRadius) || fCollisionRadius <= 0.f)
+	{
+		return false;
+	}
+
+	const _vector vTargetPosition = XMLoadFloat3(&TargetPosition);
+	const _vector vCameraOffset = XMLoadFloat3(&CameraPosition) - vTargetPosition;
+
+	_float fCameraDistance{};
+	XMStoreFloat(&fCameraDistance, XMVector3Length(vCameraOffset));
+	if (!std::isfinite(fCameraDistance) || fCameraDistance <= FLT_EPSILON)
+	{
+		return false;
+	}
+
+	CPhysXManager* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (pPhysXManager == nullptr)
+	{
+		return false;
+	}
+
+	_float3 vDirection{};
+	XMStoreFloat3(&vDirection, vCameraOffset / fCameraDistance);
+
+	PX_SWEEP_DESC Desc{};
+	Desc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+	Desc.tGeometry.fRadius = fCollisionRadius;
+	Desc.tPose.vPosition = TargetPosition;
+	Desc.vDirection = vDirection;
+	Desc.fMaxDistance = fCameraDistance;
+	Desc.tFilter.bQueryStatic = true;
+	Desc.tFilter.bQueryDynamic = true;
+	Desc.tFilter.bIncludeTrigger = false;
+	Desc.tFilter.iQueryMask;
+	if (m_TargetHandle.has_value())
+	{
+		Desc.tFilter.hIgnoreGameObject = *m_TargetHandle;
+	}
+
+	PX_SWEEP_RESULT Hit{};
+	if (!pPhysXManager->Sweep(Desc, Hit) || !Hit.bHit || !std::isfinite(Hit.fDistance) || Hit.fDistance <= FLT_EPSILON)
+	{
+		return false;
+	}
+
+	const _float fCorrectedDistance = std::max(0.f, Hit.fDistance - CINEMATIC_CAMERA_COLLISION_PADDING);
+	XMStoreFloat3(&OutCameraPosition, vTargetPosition + XMLoadFloat3(&vDirection) * fCorrectedDistance);
+
+	return true;
+}
+
 
 HRESULT CCinematicSystem::ApplyCameraPose(const FCinematicCameraPose& Pose)
 {
-	CCinematicCamera* pCinematicCam =Cast<CCinematicCamera>(m_CameraManager.GetActiveCamera(m_CinematicCameraID));
+	CCinematicCamera* pCinematicCam = Cast<CCinematicCamera>(m_CameraManager.GetActiveCamera(m_CinematicCameraID));
 	if (pCinematicCam == nullptr)
 	{
 		return E_FAIL;
 	}
 
-	return pCinematicCam->ApplyPose(Pose.vPosition, Pose.vRotation, Pose.fFovY);
+	FCinematicCameraPose CorrectedPose = Pose;
+	if (m_pActiveShot != nullptr && m_pActiveShot->eCoordinateSpace == ECinematicCoordinateSpace::TargetLocal)
+	{
+		_matrix TargetWorld{};
+		if (SUCCEEDED(GetTargetWorldMatrix(TargetWorld)))
+		{
+			_float3 vTargetPosition{};
+			XMStoreFloat3(&vTargetPosition, TargetWorld.r[3]);
+			TargetToCameraSphereSweep(vTargetPosition,Pose.vPosition, CINEMATIC_CAMERA_COLLISION_RADIUS, CorrectedPose.vPosition);
+		}
+	}
+
+	return pCinematicCam->ApplyPose(CorrectedPose.vPosition, CorrectedPose.vRotation, CorrectedPose.fFovY);
 }
 
 
