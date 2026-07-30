@@ -96,6 +96,7 @@ public:
 		const _float3& vDirection,
 		_float fSpeed,
 		_float fTimeDelta);
+	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
@@ -175,6 +176,9 @@ private:
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
 	_float m_fSprintDirectionResponse{ 4.5f };
+	_float m_fGroundFollowProbeStartHeight{ 0.1f };
+	_float m_fGroundFollowMaxStepDown{ 0.5f };
+	_float m_fGroundFollowProbeRadius{ 0.2f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.

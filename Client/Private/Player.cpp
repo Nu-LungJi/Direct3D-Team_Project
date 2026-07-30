@@ -165,7 +165,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.pMoveIntent = m_pComMoveIntent;
 		Desc.pCharacterController = m_pComCharacterController;
 		Desc.fGravity = -9.81f;
-		Desc.fJumpVelocity = 5.f;
+		Desc.fJumpVelocity = 7.f;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PERMANENT,ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,"ComCharacterMotor", &Desc, &m_pComCharacterMotor)))
@@ -749,12 +749,149 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 		m_pComCharacterMotor->SetVelocity(vVelocity);
 	}
 
+	ApplyGroundFollow(fTimeDelta);
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
 #ifdef _DEBUG
 	UpdateStandingGameObjectDebugLog();
 #endif
 
+}
+
+void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
+{
+	if (!m_pComCharacterController ||!m_pComCharacterMotor ||!m_pComMoveIntent ||!m_pStateMachine ||fFixedTimeDelta <= 0.f)
+	{
+		return;
+	}
+
+	if (m_pStateMachine->GetCurrentState() != PLAYER_STATE::LOCOMOTION ||!m_pComCharacterMotor->IsGrounded() ||m_pComMoveIntent->HasJumpRequest())
+	{
+		return;
+	}
+
+	const CComCharacterMoveIntent::OUTPUT& tMoveOutput = m_pComMoveIntent->GetOutput();
+	if (!tMoveOutput.bMoveRequested || tMoveOutput.fMoveSpeed <= std::numeric_limits<_float>::epsilon())
+	{
+		return;
+	}
+
+	const _float3 vFootPosition = m_pComCharacterController->GetFootPosition();
+	const _float3 vPredictedFootPosition{
+		vFootPosition.x +
+			tMoveOutput.vMoveDirection.x *
+			tMoveOutput.fMoveSpeed *
+			fFixedTimeDelta * 5,
+		vFootPosition.y,
+		vFootPosition.z +
+			tMoveOutput.vMoveDirection.z *
+			tMoveOutput.fMoveSpeed *
+			fFixedTimeDelta * 5
+	};
+
+	CPhysXManager* pPhysXManager =CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager)
+		return;
+
+	PX_SWEEP_DESC tSweepDesc{};
+	tSweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+	tSweepDesc.tGeometry.fRadius = m_fGroundFollowProbeRadius;
+	tSweepDesc.tPose.vPosition = {
+		vPredictedFootPosition.x,
+		vPredictedFootPosition.y +
+			m_fGroundFollowProbeStartHeight +
+			m_fGroundFollowProbeRadius,
+		vPredictedFootPosition.z
+	};
+	tSweepDesc.vDirection = { 0.f, -1.f, 0.f };
+	tSweepDesc.fMaxDistance =
+		m_fGroundFollowProbeStartHeight +
+		m_fGroundFollowProbeRadius +
+		m_fGroundFollowMaxStepDown;
+	tSweepDesc.tFilter.iQueryMask =
+		m_pComCharacterController->GetFilter().iQueryMask;
+	tSweepDesc.tFilter.hIgnoreGameObject = GetHandle();
+	tSweepDesc.tFilter.bQueryStatic = true;
+	tSweepDesc.tFilter.bQueryDynamic = true;
+	tSweepDesc.tFilter.bIncludeTrigger = false;
+
+#ifdef _DEBUG
+	if (auto* pDebugLine = CGameInstance::Get().GetDbgLineRender())
+	{
+		const _float4 vPreviousColor = pDebugLine->GetColor();
+		const DBG_LINE_DEPTH_MODE ePreviousDepthMode =
+			pDebugLine->GetDepthMode();
+
+		const _float3 vSweepStart = tSweepDesc.tPose.vPosition;
+		const _float3 vSweepEnd{
+			vSweepStart.x,
+			vSweepStart.y - tSweepDesc.fMaxDistance,
+			vSweepStart.z
+		};
+
+		pDebugLine->SetDepthTest(false);
+
+		// 노란 구: Sweep 시작 위치
+		pDebugLine->SetColor({ 1.f, 1.f, 0.f, 1.f });
+		pDebugLine->AddSphere(
+			m_fGroundFollowProbeRadius,
+			XMMatrixTranslation(
+				vSweepStart.x,
+				vSweepStart.y,
+				vSweepStart.z));
+
+		// 하늘색 구: 충돌이 없을 때의 Sweep 종료 위치
+		pDebugLine->SetColor({ 0.f, 1.f, 1.f, 1.f });
+		pDebugLine->AddSphere(
+			m_fGroundFollowProbeRadius,
+			XMMatrixTranslation(
+				vSweepEnd.x,
+				vSweepEnd.y,
+				vSweepEnd.z));
+		pDebugLine->AddLine(vSweepStart, vSweepEnd);
+
+		pDebugLine->SetColor(vPreviousColor);
+		pDebugLine->SetDepthMode(ePreviousDepthMode);
+	}
+#endif
+
+	PX_SWEEP_RESULT tGroundHit{};
+	if (!pPhysXManager->Sweep(tSweepDesc, tGroundHit) ||
+		!tGroundHit.bHit)
+	{
+		return;
+	}
+
+#ifdef _DEBUG
+	if (auto* pDebugLine = CGameInstance::Get().GetDbgLineRender())
+	{
+		const _float4 vPreviousColor = pDebugLine->GetColor();
+		const DBG_LINE_DEPTH_MODE ePreviousDepthMode =
+			pDebugLine->GetDepthMode();
+
+		// 초록 십자: Sweep이 검출한 실제 지면 접촉점
+		pDebugLine->SetDepthTest(false);
+		pDebugLine->SetColor({ 0.f, 1.f, 0.f, 1.f });
+		pDebugLine->AddCross(tGroundHit.vHitpos, 0.08f);
+
+		pDebugLine->SetColor(vPreviousColor);
+		pDebugLine->SetDepthMode(ePreviousDepthMode);
+	}
+#endif
+
+	const _float fSlopeLimit =
+		m_pComCharacterController->GetSlopeLimit();
+	if (tGroundHit.vHitNormal.y < fSlopeLimit)
+		return;
+
+	const _float fStepDown =
+		tGroundHit.vHitpos.y - vFootPosition.y;
+	if (fStepDown < 0.f &&
+		fStepDown >= -m_fGroundFollowMaxStepDown)
+	{
+		m_pComMoveIntent->AddExternalDisplacement(
+			{ 0.f, fStepDown, 0.f });
+	}
 }
 
 #ifdef _DEBUG
