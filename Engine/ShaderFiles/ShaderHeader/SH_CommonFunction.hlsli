@@ -54,45 +54,40 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
     }
     else if (Light.LightType == LIGHT_POINT)    // Point Light PBR
     {
-        float3 LightVector = Light.Position - _WorldPosition;
-        float Distance = length(LightVector);
-    
-        [branch]
-        if (Distance > Light.LightRange)
-            return false;
-    
+        float3	LightVector = Light.Position - _WorldPosition;
+		float	Distance = length(LightVector);
+		
+		float	OuterRange = max(Light.OuterAttanuation, 0.001f);
+		float	InnerRange = clamp(Light.InnerAttanuation, 0.0001f, Light.OuterAttanuation - 0.0001f);
+		
+		float DistanceRatio = saturate((Distance - InnerRange) / max(OuterRange - InnerRange, 0.001f));
+		
+		[branch]
+		if (Distance >= OuterRange)	return false; // 빛이 안 닿는 구역
+
         // Decrease By Distance
-		float Attenuation = 1.f / max(Distance, 1.f);
-        float DistanceByRange = Distance / Light.LightRange;
-        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-    
-        L = normalize(LightVector);
-        Radiance = Light.LightColor * Light.LightIntensity * (Attenuation * Window * Window);
-    }
+		float Attenuation = 1.f - smoothstep(0.f, 1.f, DistanceRatio);
+		Attenuation *= Attenuation;
+		
+		L = LightVector / Distance;
+		Radiance = Light.LightColor * Light.LightIntensity * Attenuation;
+	}
     else if (Light.LightType == LIGHT_SPOTLIGHT)    // SpotLight Light PBR
     {
-        float3 LightVector = Light.Position - _WorldPosition;
-        float Distance = length(LightVector);
-    
+        float3	LightVector = Light.Position - _WorldPosition;
+        float	Distance = length(LightVector);
+		float	DistanceRatio = saturate(Distance / Light.LightRange);
+		
         [branch]
-        if (Distance > Light.LightRange)
-            return false;
-    
+		if (Distance > Light.LightRange)	return false; // 빛이 안 닿는 구역
+		
+		L = LightVector / Distance;
+		
         // Decrease By Distance
-        //float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-		float Attenuation = 1.f / max(Distance, 1.f);
-        float DistanceByRange = Distance / Light.LightRange;
-        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
-        float DistanceFade = Attenuation * Window * Window;
-    
-        L = normalize(LightVector);
-    
-        // Decrease By SpotLight Cone
-        float CosAngle = dot(-L, normalize(Light.LightDirection));
-        float Num = CosAngle - Light.OuterAttanuation;
-        float DeNum = Light.InnerAttanuation - Light.OuterAttanuation;
-        float ConeFade = clamp(Num / max(0.000001f, DeNum), 0.f, 1.f);
-    
+		float DistanceFade = 1.f - smoothstep(Light.InnerAttanuation, 1.f, DistanceRatio);
+		float CosAngle = dot(-L, normalize(Light.LightDirection));
+		float ConeFade = smoothstep(Light.OuterAttanuation, Light.InnerAttanuation, CosAngle);
+	
         Radiance = Light.LightColor * Light.LightIntensity * DistanceFade * ConeFade;
     }
     

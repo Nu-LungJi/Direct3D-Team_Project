@@ -280,6 +280,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		[branch]
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
+			
 			float RawNDL = dot(WorldNormal, L);
 			[branch]
 			if (RawNDL > 0.f)

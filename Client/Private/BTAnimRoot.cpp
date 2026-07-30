@@ -310,6 +310,7 @@ void CBTAnimRoot::EventFlagToRatio(_float fRatio)
 		}
 	}
 }
+
 void CBTAnimRoot::Gravity()
 {
 	
@@ -387,6 +388,7 @@ void CBTAnimRoot::Combo2(const _char* pName, FLAGTYPE& eType)
 		ImGui::EndCombo();
 	}
 }
+
 void CBTAnimRoot::DragFloat(const _char* pName, _float& fValue)
 {
 	_string Name = "##" + _string(pName);

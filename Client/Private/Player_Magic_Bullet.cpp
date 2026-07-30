@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Player_Magic_Bullet.h"
 #include "Client_Resources.h"
+#include "Trail_CPU.h"
 
 NS_USING(Client)
 
@@ -16,6 +17,8 @@ CPlayer_Magic_Bullet::~CPlayer_Magic_Bullet()
 void CPlayer_Magic_Bullet::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
+
+
 }
 
 HRESULT CPlayer_Magic_Bullet::InitializePrototype(void* pArg)
@@ -41,6 +44,7 @@ HRESULT CPlayer_Magic_Bullet::Initialize(void* pArg)
 		return E_FAIL;
 
 	GetTransform().SetPosition(m_Splines.front());
+
 	return S_OK;
 }
 
@@ -84,9 +88,12 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 			fRemainDistance = 0.f;
 		}
 	}
-
-
-
+	{
+		_float3 vstart, vend;
+		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 0.4f, m_pComTransform->GetPosition().z);
+		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
+		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
+	}
 	if (m_iSplineIndex >= m_Splines.size() - 1)
 		SetPendingDestroy();
 }
