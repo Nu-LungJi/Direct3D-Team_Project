@@ -1117,6 +1117,10 @@ VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Durati
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
 }
+_string CGameInstance::GetAnimName(uint32_t iIndex, CHandle Handle)
+{
+	return m_pAnimEdit_Manager->GetAnimName(iIndex, Handle);
+}
 #pragma endregion
 
 #pragma region MAP_MANAGER

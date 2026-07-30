@@ -246,6 +246,8 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelIns
 
 	pBatch->Key =Key;
 	pBatch->bModelStatic = bStaticModel;
+	pBatch->bGPUSkinned =
+		iEvaluationMode == static_cast<uint32_t>(CComAnimator::EVALUATION_MODE::GPU);
 
 
 	pBatch->Instances.reserve(16);
@@ -431,7 +433,11 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch){
 	
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
-		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != bStaticBatch)	continue;
+		if (!pBatch ||
+			pBatch->Instances.empty() ||
+			pBatch->bModelStatic != bStaticBatch ||
+			pBatch->bGPUSkinned)
+			continue;
 
 		if (FAILED(Render_ShadowBatch(pContext, *pBatch))) {
 			ID3D11ShaderResourceView* pNullSRVs[3]{ };

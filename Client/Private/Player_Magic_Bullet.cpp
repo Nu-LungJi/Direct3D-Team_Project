@@ -90,12 +90,10 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 	}
 	{
 		_float3 vstart, vend;
-
 		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 0.4f, m_pComTransform->GetPosition().z);
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
 		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
 	}
-
 	if (m_iSplineIndex >= m_Splines.size() - 1)
 		SetPendingDestroy();
 }
@@ -115,12 +113,12 @@ void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
 	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 }
 
-HRESULT CPlayer_Magic_Bullet::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CPlayer_Magic_Bullet::Render(ID3D11DeviceContext* pContext,const E::RENDER_CTX& ctx)
 {
 	return S_OK;
 }
 
-void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCount)
+void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight,uint32_t iSampleCount)
 {
 	m_Splines.clear();
 	m_iSplineIndex = 0;
@@ -140,7 +138,7 @@ void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCoun
 	vForward = XMVector3Normalize(vForward);
 
 	// 진행 방향과 수직인 축 생성
-	_vector vRight = XMVector3Cross(XMVectorSet(0.f, 1.f, 0.f, 0.f), vForward);
+	_vector vRight = XMVector3Cross( XMVectorSet(0.f, 1.f, 0.f, 0.f),vForward);
 
 	if (XMVectorGetX(XMVector3LengthSq(vRight)) <= 0.0001f)
 		vRight = XMVectorSet(1.f, 0.f, 0.f, 0.f);
@@ -170,11 +168,11 @@ void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCoun
 
 		const _float fWave = std::sin(XM_2PI * fFrequency * t + fPhase);
 
-		const _float fSecondWave = std::sin(XM_2PI * (fFrequency * 0.7f) * t + fPhase * 0.5f);
+		const _float fSecondWave =std::sin(XM_2PI * (fFrequency * 0.7f) * t +fPhase * 0.5f);
 
 		vPosition += vRight * fWave * fCurveHeight * fEnvelope * fRightWeight;
 
-		vPosition += vUp * fSecondWave * fCurveHeight * 0.5f * fEnvelope;
+		vPosition += vUp * fSecondWave * fCurveHeight *0.5f * fEnvelope;
 
 		_float3 vStoredPosition{};
 		XMStoreFloat3(&vStoredPosition, vPosition);

@@ -3,6 +3,7 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
+enum class TOMB_SKILL { JUMP_START, JUMP_END,SLASH,SMASH,SKIP, END };
 class CTmbGurdian final : public CMonster
 {
 public:
@@ -23,6 +24,7 @@ public:
 private:
 	_bool UpdateDeadDebrisPoseFromCurrentBones();
 	_bool ActivateDeadDebrisPhysics();
+	_string Get_SkillName(ATTMON SkillNode)override;
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -38,6 +40,7 @@ private:
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
 
+	TOMB_SKILL					m_eTombSkill{};
 public:
 	static E::UPtr<CTmbGurdian> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

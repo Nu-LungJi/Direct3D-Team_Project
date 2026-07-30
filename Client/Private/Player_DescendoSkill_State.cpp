@@ -84,12 +84,23 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO)
 		{
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				break;
+			}
+
 			m_ePhase = PHASE::PUSH;
 			pAnimator->Play_Anim(m_DescendoCast_Animation, false, 0.25f);
 			pAnimator->GetCurAnimState().fSpeed = 1.f;
 		}
 		break;
 	}
+
+	case PHASE::ATTACK_FAILED:
+		if (pAnimator->GetFinish())
+			RequestLocomotion(pStateMachine);
+		break;
 
 	case PHASE::PUSH:
 		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)

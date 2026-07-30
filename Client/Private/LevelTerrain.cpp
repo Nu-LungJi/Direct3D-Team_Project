@@ -96,6 +96,8 @@ HRESULT CLevelTerrain::Initialize()
 	if (FAILED(InitializeCamerasAndLighting(hPlayer)))
 		return E_FAIL;
 
+	if (FAILED(SpawnMonster(hPlayer)))
+		return E_FAIL;
 	return S_OK;
 }
 
@@ -137,15 +139,15 @@ HRESULT CLevelTerrain::InitializeJointTests(
 	tHeadJointDesc.bVisualizationEnabled = true;
 	tHeadJointDesc.iJointSubIndex = 100u;
 
-	CComPxDistanceJoint* pHeadJoint =
-		gameInstance.AddPxJoint<CComPxDistanceJoint>(
-			*pPlayer,
-			"ComPxDistanceJoint_OilBarrelHead",
-			tHeadJointDesc);
-	if (!pHeadJoint)
-	{
-		return E_FAIL;
-	}
+	//CComPxDistanceJoint* pHeadJoint =
+	//	gameInstance.AddPxJoint<CComPxDistanceJoint>(
+	//		*pPlayer,
+	//		"ComPxDistanceJoint_OilBarrelHead",
+	//		tHeadJointDesc);
+	//if (!pHeadJoint)
+	//{
+	//	return E_FAIL;
+	//}
 
 	for (size_t i = 0; i + 1 < pOilBarrels.size(); ++i)
 	{
@@ -566,9 +568,18 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 			CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
+{
 	{
 		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
 		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
 		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
@@ -584,8 +595,6 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 			return E_FAIL;
 		}
 	}
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
-
 	return S_OK;
 }
 

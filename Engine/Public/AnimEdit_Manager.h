@@ -38,6 +38,8 @@ public:
 
 
 public:
+	//잠깐쓸게~
+	_string	GetAnimName(uint32_t iIndex, CHandle Handle);
 	int32_t GetAnimIndex(CHandle Handle);
 public:
 	

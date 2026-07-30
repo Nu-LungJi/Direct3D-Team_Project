@@ -416,8 +416,9 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecIsGround", CBTDecIsGround::Create())))
 		return E_FAIL;
-
-	return S_OK;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecIsPending", CBTDecIsPending::Create())))
+		return E_FAIL;
+	return S_OK; 
 }
 
 HRESULT CMainAppLoader::Load_UIStaitc_Resource()

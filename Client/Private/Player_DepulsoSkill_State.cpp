@@ -113,6 +113,12 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 		}
 
 		if (m_fAnimRatio >= CAST_END_RATIO) {
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				break;
+			}
+
 			// 밀기 시작
 			m_ePhase = PHASE::PUSH;
 			pAnimator->Play_Anim(m_DepulsoCast_Animation, false, 0.2f);
@@ -120,6 +126,11 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 
 		break;
 	}
+
+	case PHASE::ATTACK_FAILED:
+		if (pAnimator->GetFinish())
+			RequestLocomotion(pStateMachine);
+		break;
 
 	case PHASE::PUSH:
 		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f) {

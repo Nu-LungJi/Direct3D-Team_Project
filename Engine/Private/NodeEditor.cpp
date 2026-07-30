@@ -421,10 +421,23 @@ void CNodeEditor::Draw_Node(int32_t& iNode_hovered_in_list, int32_t& iNode_hover
 				{	//부모기준으로 끊어도 동일하게 연결된 자식이 tmp로 빠지는걸로
 					if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SELECTOR || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::SECQUNCE || pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::RAND_SELECTOR)
 					{
-						auto& pSrc = (*(static_cast<CBTComposite*>(pCurNode))->Get_Nodes())[iSlot];
-						pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
-						pSrc->Get_GuiNodeLink().ParentNode.Reset();
-						Add_NodeToTmp(pSrc);//지워
+						auto* pNodes = static_cast<CBTComposite*>(pCurNode)->Get_Nodes();
+						if (pNodes == nullptr ||
+							iSlot < 0 ||
+							static_cast<size_t>(iSlot) >= pNodes->size())
+						{
+							assert(false && "SlotEnd and Actions size mismatch");
+							return;
+						}
+
+						auto& pSrc = (*pNodes)[iSlot];
+						if (pSrc)
+						{
+							pSrc->Get_GuiNodeLink().iStartIdx = -1;				//자식 기준 부모 끊기
+							pSrc->Get_GuiNodeLink().ParentNode.Reset();
+							Add_NodeToTmp(pSrc);//지워
+						}
+						
 					}
 					else if (pCurNode->Get_GuiNodeInfo().eMyType == BEHAVIOR::DECORATOR)
 					{

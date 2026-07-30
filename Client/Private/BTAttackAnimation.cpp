@@ -35,81 +35,95 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 {
 	if (auto pBT = Get_ComBT())
 	{
-		_vector vDestPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetState(STATE::POSITION);
-		auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
-		auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
-		auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
-
-		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
-			-1 == m_Value.iAnimIndex)
-			return m_eDebug = EVALUATE::FAILED;
-		_vector vSrcPos = pTransform->GetState(STATE::POSITION);
-		pAnimator->SetPlay(true);
-		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
-	
-		Active_Skill();
-		Gravity();
-		_bool bFinished = pAnimator->GetFinish();
-
-		_float fAnimRatio = pAnimator->GetPlayAnimRatio();
-		EventFlagToRatio(fAnimRatio);
-
-		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
-		if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			if (m_bStart)
+			if (auto pTarget = pOwner->Get_Target())
 			{
-				m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
-				m_bStart = false;
-			}
+				_vector vDestPos = pTarget->GetTransform().GetState(STATE::POSITION);
+				auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
+				auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+				auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 
-			m_fTime += fTimeDelta;
+				if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
+					-1 == m_Value.iAnimIndex)
+					return m_eDebug = EVALUATE::FAILED;
+				_vector vSrcPos = pTransform->GetState(STATE::POSITION);
+				pAnimator->SetPlay(true);
+				pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
 
-			_float tt = (fAnimRatio - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
-			if (tt < 0.f)
-				tt = 0.f;
-			if (tt > 1.f)
-				tt = 1.f;
-			if (auto pBT = Get_ComBT())
-			{
-				if (auto pSrc = pBT->GetGameObject())
+				Active_Skill();
+				Gravity();
+				_bool bFinished = pAnimator->GetFinish();
+
+				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
+				EventFlagToRatio(fAnimRatio);
+
+				//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
+				if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 				{
-					_float fEmissive = std::lerp(0.f, 0.5f, tt);
-					static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
+					if (m_bStart)
+					{
+						m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
+						m_bStart = false;
+					}
+
+					m_fTime += fTimeDelta;
+
+					_float tt = (fAnimRatio - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
+					if (tt < 0.f)
+						tt = 0.f;
+					if (tt > 1.f)
+						tt = 1.f;
+					if (auto pBT = Get_ComBT())
+					{
+						if (auto pSrc = pBT->GetGameObject())
+						{
+							_float fEmissive = std::lerp(0.f, 0.5f, tt);
+							static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
+						}
+					}
+					_float fAnimRange = m_fRatio.y - m_fRatio.x;
+					_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
+					const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					_vector vMoveDirection{};
+					if (m_eMove == MOVE::RIGHT)
+						vMoveDirection = pTransform->GetState(STATE::RIGHT);
+					else if (m_eMove == MOVE::LEFT)
+						vMoveDirection = -pTransform->GetState(STATE::RIGHT);
+					else if (m_eMove == MOVE::STRAIGHT)
+						vMoveDirection = pTransform->GetState(STATE::LOOK);
+					else if (m_eMove == MOVE::BACKWARD)
+						vMoveDirection = -pTransform->GetState(STATE::LOOK);
+					else if (m_eMove == MOVE::UP)
+						vMoveDirection = XMVectorSet(0, 1, 0, 0);
+
+					if (m_eMove != MOVE::END)
+					{
+						_float3 vDirection{};
+						XMStoreFloat3(&vDirection, vMoveDirection);
+						pMoveIntent->SetMoveIntent(vDirection, fMoveSpeed);
+					}
+				}
+				if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
+				{
+					Reset_CheckFlag();
+					m_bStart = true;
+					return m_eDebug = EVALUATE::SUCCESS;
+				}
+
+				if (m_bLoop || bFinished)
+				{
+					//Hit 종료는 애니매이션 끝나면
+					//Attack도 애니매이션 끝나면
+					m_bStart = true;
+					m_fTime = 0.f;
+					Reset_CheckFlag();
+					return m_eDebug = EVALUATE::SUCCESS;
 				}
 			}
-			_float fAnimRange = m_fRatio.y - m_fRatio.x;
-			_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
-			const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
-			_vector vMoveDirection{};
-			if (m_eMove == MOVE::RIGHT)
-				vMoveDirection = pTransform->GetState(STATE::RIGHT);
-			else if (m_eMove == MOVE::LEFT)
-				vMoveDirection = -pTransform->GetState(STATE::RIGHT);
-			else if (m_eMove == MOVE::STRAIGHT)
-				vMoveDirection = pTransform->GetState(STATE::LOOK);
-			else if (m_eMove == MOVE::BACKWARD)
-				vMoveDirection = -pTransform->GetState(STATE::LOOK);
-
-			if (m_eMove != MOVE::END)
-			{
-				_float3 vDirection{};
-				XMStoreFloat3(&vDirection, vMoveDirection);
-				pMoveIntent->SetMoveIntent(vDirection, fMoveSpeed);
-			}
-		}
-
-
-		if (m_bLoop || bFinished)
-		{
-			//Hit 종료는 애니매이션 끝나면
-			//Attack도 애니매이션 끝나면
-			m_bStart = true;
-			m_fTime = 0.f;
-			Reset_CheckFlag();
-			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}
+
 	return m_eDebug = EVALUATE::RUN;
 }
 void CBTAttackAnimation::Update_Gui()

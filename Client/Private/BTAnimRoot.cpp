@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTAnimRoot.h"
 #include "ComAnimator.h" 
+#include "ComCharacterMotor.h"
 NS_USING(Client)
 
 CBTAnimRoot::CBTAnimRoot()
@@ -30,77 +31,74 @@ HRESULT CBTAnimRoot::Initalize(void* pArg)
 
 void CBTAnimRoot::Update_Gui()
 {
+	BoolButton("ShowAnim: ", m_bShow);
+	if (m_bShow)
+	{
+		const _string& Name = CGameInstance::Get().GetAnimName(m_Value.iAnimIndex, Get_Handle());
+		ImGui::Text(Name.c_str());
+	}
 	if (ImGui::TreeNode("AnimRoot"))
 	{
 		BoolButton("Gravity : ", m_bGravity);
-		DragFloat("Gravity Value", m_fGravity);
-		DragFloat("Early Ratio : ", m_fEarlyRatio);
-
+		if(m_bGravity)
+			DragFloat("Gravity Value", m_fGravity);
+		
 		BoolButton("Enable Early : ", m_bEarly);
+		if(m_bEarly)
+			DragFloat("Early Ratio : ", m_fEarlyRatio);
 
 		ImGui::DragFloat("Blend", &m_fBlend, 0.1f, 0.f, 1.f);
-		if (ImGui::Button("Enable Ratio : "))
-			m_bRatio = !m_bRatio;
-			ImGui::SameLine(110.f);
-			m_bRatio == true ? ImGui::Text("TRUE") : ImGui::Text("FALSE");
 
-			if (ImGui::Button("Loop Change"))
-				m_bLoop = !m_bLoop;
-				ImGui::Text("Loop : %s", m_bLoop ? "TRUE" : "FALSE");
+		BoolButton("Enable Ratio : ", m_bRatio);
+		BoolButton("Loop Change : ", m_bLoop);
 
-				ImGui::Text("StartRatio");
-		ImGui::DragFloat("##SRaito", &m_fRatio.x, 0.f, 1.f);
-		ImGui::Text("EndRatio");
-		ImGui::DragFloat("##ERaito", &m_fRatio.y, 0.f, 1.f);
+		DragFloat("StartRatio", m_fRatio.x);
+		DragFloat("EndRatio", m_fRatio.y);
 
 		ImGui::Text("SkillRatio");
 		ImGui::DragFloat2("##SKRaito", reinterpret_cast<_float*>(&m_fSkillRatio), 0.f, 1.f);
 
 		ImGui::Text("AttMon Type");
-		if (ImGui::BeginCombo("##AttMon Typer", MagicEnumToStringView(m_eSkillType).data()))
+		if (auto pBT = Get_ComBT())
 		{
-			for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
+			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 			{
-				_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
+				if (ImGui::BeginCombo("##AttMon Typer", pSrc->Get_SkillName(m_eSkillType).c_str()))
+				{
+					for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
+					{
+						_string SkillName = pSrc->Get_SkillName(static_cast<ATTMON>(i));
+						if (SkillName == "")
+							continue;
 
-				if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(i)).data()))
-					m_eSkillType = static_cast<ATTMON>(i);
+						_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
 
-				if (bSelect)
-					ImGui::SetItemDefaultFocus();
+						if (ImGui::Selectable(SkillName.data()))
+							m_eSkillType = static_cast<ATTMON>(i);
+
+						if (bSelect)
+							ImGui::SetItemDefaultFocus();
+					
+					}
+					ImGui::EndCombo();
+				}
 			}
-
-			ImGui::EndCombo();
 		}
-
 		ImGui::TreePop();
 	}
 
-	if (ImGui::TreeNode("AnimRoot_Flag"))
+	if (ImGui::Button("Add To Start Flag"))
 	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
-		Combo("Flag", m_AddFlag.iFlag);
-		ImGui::DragFloat("RatioSetting", &m_AddFlag.fRatio, 0.f, 1.f);
-		Combo2("FlagType", m_AddFlag.eType);
-
-		ImGui::PopStyleColor();
-		ImGui::TreePop();
+		m_StartFlags.push_back(m_AddFlag);
+		m_AddFlag.fRatio = 0;
+		m_AddFlag.iFlag = 0;
 	}
-	if (m_AddFlag.iFlag != 0)
+
+	if (ImGui::Button("Add To End Flag"))
 	{
-		if (ImGui::Button("Add To Start"))
-		{
-			m_StartFlags.push_back(m_AddFlag);
-			m_AddFlag.fRatio = 0;
-			m_AddFlag.iFlag = 0;
-		}
-		ImGui::SameLine(150.f);
-		if (ImGui::Button("Add To End"))
-		{
-			m_EndFlags.push_back(m_AddFlag);
-			m_AddFlag.fRatio = 0;
-			m_AddFlag.iFlag = 0;
-		}
+		m_EndFlags.push_back(m_AddFlag);
+		m_AddFlag.fRatio = 0;
+		m_AddFlag.iFlag = 0;
 	}
 
 	if (ImGui::TreeNode("Show Start Flag"))
@@ -275,7 +273,7 @@ void CBTAnimRoot::Active_Skill()
 	
 	if (auto pBT = Get_ComBT())
 	{
-		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)))
+		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)) || m_eSkillType == ATTMON::END)
 			return;
 
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
@@ -312,6 +310,7 @@ void CBTAnimRoot::EventFlagToRatio(_float fRatio)
 		}
 	}
 }
+
 void CBTAnimRoot::Gravity()
 {
 	
@@ -389,6 +388,7 @@ void CBTAnimRoot::Combo2(const _char* pName, FLAGTYPE& eType)
 		ImGui::EndCombo();
 	}
 }
+
 void CBTAnimRoot::DragFloat(const _char* pName, _float& fValue)
 {
 	_string Name = "##" + _string(pName);
