@@ -7,6 +7,7 @@
 
 #include "ComCharacterMoveIntent.h"
 #include "Monster.h"
+#include "Player_Weapon.h"
 NS_USING(Client)
 
 void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
@@ -91,9 +92,15 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO) {
 			// 끌어 오기 시작
+
+			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
+
 			m_ePhase = PHASE::PULL;
 			pAnimator->Play_Anim(m_AccioCast_Animation, false, 0.2f);
 		}
+
+
+
 
 		break;
 	}

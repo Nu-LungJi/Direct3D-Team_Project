@@ -103,7 +103,7 @@ void CEffectManager::UpdateGUI()
 				InputText("Command Name", particle->sCommandName);
 				InputText("Particle JSON File Name. Include .json", particle->sParticleJson);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
-
+				ImGui::InputFloat3("Local Position", &particle->vLocalPosition.x);
 				if (ImGui::Button("Remove Particle"))
 					removeCommandIndex = i;
 			}
@@ -285,7 +285,12 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 				{ "particleJson",
 					particle.sParticleJson },
 				{ "spawnDelay",
-					command.fSpawnDelay }
+					command.fSpawnDelay },
+				{ "localPosition",
+					particle.vLocalPosition.x,
+					particle.vLocalPosition.y,
+					particle.vLocalPosition.z
+				}
 				});
 
 			break;
@@ -493,7 +498,19 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 
 				if (commandJson.contains("particleJson"))
 					particle.sParticleJson = commandJson["particleJson"].get<std::string>();
+				if (commandJson.contains("localPosition"))
+				{
+					const auto& position = commandJson["localPosition"];
 
+					if (!position.is_array() || position.size() != 3)
+						return E_FAIL;
+
+					particle.vLocalPosition = {
+						position[0].get<_float>(),
+						position[1].get<_float>(),
+						position[2].get<_float>()
+					};
+				}
 				if (particle.sParticleJson.empty())
 					return E_FAIL;
 
@@ -760,7 +777,10 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 		return 0.f;
 
 	_float totalLife = 0.f;
-
+	const _float3 worldPosition = TransformPosition(command.vLocalPosition, instance.matWorld);
+	instance.matWorld._41 = worldPosition.x;
+	instance.matWorld._42 = worldPosition.y;
+	instance.matWorld._43 = worldPosition.z;
 	for (const SPAWN_COMMAND& particle : particleQueue)
 	{
 		_float life = 0.f;
@@ -797,7 +817,6 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 
 		totalLife = std::max(totalLife, life);
 	}
-
 	const uint32_t ownerId = m_pParticleManager->Spawn(particleQueue, instance.matWorld, XMLoadFloat4(&instance.vEndPosition));
 
 	if (ownerId != INVALID_PARTICLE_OWNER_ID)

@@ -17,6 +17,7 @@ struct EFFECT_PARTICLE_COMMAND
 {
 	std::string sCommandName;
 	std::string sParticleJson;
+	_float3 vLocalPosition{};
 	_float fSpawnDelay = 0.f;
 };
 
