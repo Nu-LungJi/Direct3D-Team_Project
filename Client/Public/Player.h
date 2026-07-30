@@ -134,6 +134,8 @@ private:
 	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
+	_float3 m_vInitialPosition{};
+
 	uint32_t m_iDebugSelectedBone = 0;
 	uint32_t m_iCurrentInstanceCount = 0.f;
 	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
@@ -190,7 +192,22 @@ private:
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
 
+private:
+	_float m_fCoolTime_Num1{ 0.f };
+	_bool m_bCoolTime_Num1{ false};
+	_float m_fCoolTime_Num2{ 0.f };
+	_bool m_bCoolTime_Num2{ false };
+	_float m_fCoolTime_Num3{ 0.f };
+	_bool m_bCoolTime_Num3{ false };
+	_float m_fCoolTime_Num4{ 0.f };
+	_bool m_bCoolTime_Num4{ false };
+
+private:
+	_bool  m_bUI = false;
+	CHandle m_hUI;
+
 public:
+
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };

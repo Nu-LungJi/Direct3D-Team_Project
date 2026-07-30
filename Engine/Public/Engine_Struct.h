@@ -506,6 +506,7 @@ namespace Engine
 		std::vector<std::vector<_float4x4>> CombinedBoneMatrices;
 		
 		_bool bModelStatic = false;
+		_bool bGPUSkinned = false;
 
 		_bool bActiveThisFrame = false;
 

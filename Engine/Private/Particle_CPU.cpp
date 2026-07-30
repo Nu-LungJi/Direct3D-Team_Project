@@ -92,6 +92,9 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+		}
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
 
@@ -439,17 +442,17 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 
 		XMStoreFloat3(&p.vVelocity, Velocity);
 	} 
-	{
-		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f;
-
-		p.vVelocity.y += kGravity * fTimeDelta;
-
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-	}
+	//{
+	//	///////////////////////////////////////////// Gravity
+	//	const float kGravity = -9.8f;
+	//
+	//	p.vVelocity.y += kGravity * fTimeDelta;
+	//
+	//	XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+	//	XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+	//	vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+	//	XMStoreFloat3(&p.vPosition, vPos);
+	//}
 	{
 		///////////////////////////////////////////// Particle Spread Type
 		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();

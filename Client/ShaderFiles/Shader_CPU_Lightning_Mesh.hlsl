@@ -106,6 +106,9 @@ PS_OUT PSMain(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 	
+	Out.vDiffuse = float4(1.f, 1.f, 1.f, 1.f);
+	return Out;
+	
 	float Ratio = saturate(In.life / max(In.maxLife, 0.0001f)); // 0.f -> 1.f
 	
 	float TimeKeyValue = floor(In.life * FlickeringSpeed);

@@ -589,7 +589,7 @@ void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDurat
 		m_fBlendDuration = 0.f;
 	
 	}
-
+	m_fRatio = 0.f;
 	m_iPlayAnimationType = ANIMTYPE::ANIM;
 	m_bPlay = true;
 }

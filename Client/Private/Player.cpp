@@ -24,12 +24,14 @@
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
+#include "Player_Hit_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_AcientAttack_State.h"
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
+#include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
 #include "Trail_CPU.h"
@@ -104,6 +106,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_LevelTag = pDesc->LevelTag;
+	m_vInitialPosition = pDesc->vInitialPosition;
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
@@ -209,6 +212,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::HIT,
+			CPlayer_Hit_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::DASH_SKILL,
 			CPlayer_DashSkill_State::Create()))
 		{
@@ -235,6 +244,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::DESCENDO_SKILL,
 			CPlayer_DescendoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::REVELIO_SKILL,
+			CPlayer_RevelioSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -409,7 +424,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_R))
 	{
-		m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
+		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
+		m_pComMoveIntent->RequestWarp(m_vInitialPosition);
 	}
 
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
@@ -607,14 +623,73 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 
-	if (CGameInstance::Get().KeyDown(DIK_1))
+	 // 임시
+	if (m_bCoolTime_Num1 == true) {
+		if (m_fCoolTime_Num1 > 3.f) {
+			m_bCoolTime_Num1 = false;
+			m_fCoolTime_Num1 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num1 += fTimeDelta;
+		}
+	}
+	if (m_bCoolTime_Num2 == true) {
+		if (m_fCoolTime_Num2 > 3.f) {
+			m_bCoolTime_Num2 = false;
+			m_fCoolTime_Num2 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num2 += fTimeDelta;
+		}
+	}
+	if (m_bCoolTime_Num3 == true) {
+		if (m_fCoolTime_Num3 > 3.f) {
+			m_bCoolTime_Num3 = false;
+			m_fCoolTime_Num3 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num3 += fTimeDelta;
+		}
+	}
+	if (m_bCoolTime_Num4 == true) {
+		if (m_fCoolTime_Num4 > 3.f) {
+			m_bCoolTime_Num4 = false;
+			m_fCoolTime_Num4 = 0.f;
+		}
+		else {
+			m_fCoolTime_Num4 += fTimeDelta;
+		}
+	}
+
+
+
+	if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
 		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		m_bCoolTime_Num1 = true;
 
-	if (CGameInstance::Get().KeyDown(DIK_2))
+	}
+
+	if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
+	{
 		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
-
-	if (CGameInstance::Get().KeyDown(DIK_3))
+		m_bCoolTime_Num2 = true;
+	}
+	if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
+	{
 		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
+		m_bCoolTime_Num3 = true;
+	}	
+
+	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
+
+		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
+		m_bCoolTime_Num4 = true;
+	}
+
+#ifdef _DEBUG
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+#endif
 }
 
 
@@ -750,6 +825,17 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
+
+	//if (!m_bUI)
+	//{
+	//	m_bUI = true;
+	//	auto UI = CGameInstance::Get().GetFirstGameObjectByLayer<CGameObject>("UIController");
+	//	m_hUI = UI->GetHandle();
+	//	int a = 0;
+
+	//	
+	//}
+
 	_bool bApplyRootMotionTranslation{};
 	_float3 vRootMotionDelta{};
 
@@ -884,7 +970,10 @@ void CPlayer::UpdateAttachedEffects()
 // CPU + GPU 버전
 HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
-	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader || m_bRenderInfluence)
+	if (m_bRenderInfluence)
+		return S_OK;
+
+	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
 
 	const auto& vs = m_pResVertexCPUSkinningInstancedShader;
@@ -953,6 +1042,8 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
 		if (!mesh)
 			continue;
+
+		
 
 		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
 		if (skinRange.iSkinBoneCount == 0)
@@ -1067,23 +1158,23 @@ void CPlayer::Attack_Magic_Bullet()
 	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 
 	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
-	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43};
+	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43 };
 
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 
 	if (pTarget)
 	{
 		// 타깃이 있으면 타깃을 향해 발사
-		XMStoreFloat3( &desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
+		XMStoreFloat3(&desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
 	}
 	else
 	{
 		// 타깃이 없으면 플레이어 전방 일정 거리로 발사
 		const _vector start = XMLoadFloat3(&desc.vStartPosition);
 
-		const _vector look = XMVector3Normalize(XMVectorSetY(GetTransform().GetState(STATE::LOOK),0.f));
+		const _vector look = XMVector3Normalize(XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f));
 
-		XMStoreFloat3(&desc.vEndPosition,start + look * 20.f);
+		XMStoreFloat3(&desc.vEndPosition, start + look * 20.f);
 	}
 
 	desc.fSpeed = 70.f;

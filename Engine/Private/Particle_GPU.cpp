@@ -389,6 +389,7 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
 
 	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
 	m_fTime += fTimeDelta;
+
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
     {

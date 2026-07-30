@@ -80,6 +80,12 @@ public:
 	VOID			Set_LightVelocity(XMFLOAT3 _Velocity)	{ m_fVelocity = _Velocity;	}
 	XMFLOAT3		Get_LightVelocity()						{ return m_fVelocity;		}
 
+	VOID			Set_PointLightOuterAttenuation(_float _Attenuation) { m_fPointLightOuterAttenuation = _Attenuation;	}
+	_float			Get_PointLightOuterAttenuation()					{ return m_fPointLightOuterAttenuation;			}
+
+	VOID			Set_PointLightInnerAttenuation(_float _Attenuation) { m_fPointLightInnerAttenuation = _Attenuation; }
+	_float			Get_PointLightInnerAttenuation()					{ return m_fPointLightInnerAttenuation;			}
+
 	VOID			AddShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 	
 	HRESULT			Change_LightType(LIGHT_TYPE _LTYPE);
@@ -114,6 +120,9 @@ private:
 
 	_float								m_fLifeTime = { 0.f };
 	XMFLOAT3							m_fVelocity = { 0.f, 0.f, 0.f };
+
+	_float								m_fPointLightInnerAttenuation{};
+	_float								m_fPointLightOuterAttenuation{};
 
 	XMFLOAT4X4 LightView{}, LightProj{};
 

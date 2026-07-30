@@ -46,7 +46,12 @@ void CMonster::UpdateGUI()
 	ImGui::Text("ActiveHit : %s", m_bActiveHit == true ? "TRUE" : "FALSE");
 	ImGui::Text("ActiveHit AttType : %s", MagicEnumToStringView(m_ActiveMonTable.eAttType).data());
 	ImGui::Text("ActiveHit HitType : %s", MagicEnumToStringView(m_ActiveMonTable.eHitType).data());
+	ImGui::Separator();
+	ImGui::Text("Current Attack:"); ImGui::SameLine();
+	ImGui::Text(MagicEnumToStringView(m_eAttType).data());
 
+	if (nullptr != m_pBeHavior)
+		ImGui::Text("BeHavior Att : %s", m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) == true ? "ENABLE" : "DISABLE");
 }
 
 HRESULT CMonster::InitializePrototype(void* pArg)
@@ -75,17 +80,21 @@ HRESULT CMonster::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	m_bDonMove = MonDesc->bDonMove;
+	m_TargetHandle = MonDesc->TargetHandle;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
-
 
 	return S_OK;
 }
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
+	Activate_PendingHit();
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_0))
+		m_pMoveIntent->RequestWarp(_float3(20, 20, 20));
+	
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
 	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
@@ -348,8 +357,13 @@ _bool CMonster::Activate_PendingHit()
 	if (!m_bPending)
 		return false;
 
-	if (m_bActiveHit)
-		return false;
+	_bool bSameHit =
+		m_bActiveHit &&
+		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
+		m_ActiveMonTable.eHitType == m_PendingMonTable.eHitType;
+
+	if (!bSameHit)
+		++m_iHitCnt;
 
 	m_ActiveMonTable = m_PendingMonTable;
 	m_bActiveHit = true;
@@ -361,61 +375,63 @@ _bool CMonster::Activate_PendingHit()
 	return true;
 }
 
-void CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
+_bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 	
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
 	{
-		return;
+		return false;
 	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return;
-
+		return false;
+	Damaged();
 	MON_HIT_INFO HitInfo{};
 
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
-	switch (eType)
-	{
-	case PLAYER_SKILL_TYPE::ATTACK:
-		HitInfo.iPriority = 5.f;
-		break;
-	case PLAYER_SKILL_TYPE::ACCIO:
-		HitInfo.iPriority = 10.f;
-		break;
-	case PLAYER_SKILL_TYPE::DEPULSO:
-		HitInfo.iPriority = 15.f;
-		break;
-	case PLAYER_SKILL_TYPE::DESCENDO:
-		HitInfo.iPriority = 20.f;
-		break;
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
-		HitInfo.iPriority = 25.f;
-		break;
-	case PLAYER_SKILL_TYPE::PROTEGO:
-		HitInfo.iPriority = 8.f;
-		break;
-	}
-
-	if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
-	{
-		m_PendingMonTable = HitInfo;
-		m_bPending = true;
-	}
-	//현재 pending 가중치보다 낮으면 리턴
-	if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
-		return;
-	//현재 잠금된거보다 낮아도 거부
-	if (m_bActiveHit &&HitInfo.iPriority <m_ActiveMonTable.iPriority)
-		return;
+	
+	//switch (eType)
+	//{
+	//case PLAYER_SKILL_TYPE::ATTACK:
+	//	HitInfo.iPriority = 5.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::ACCIO:
+	//	HitInfo.iPriority = 10.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::DEPULSO:
+	//	HitInfo.iPriority = 15.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::DESCENDO:
+	//	HitInfo.iPriority = 20.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	//	HitInfo.iPriority = 25.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::PROTEGO:
+	//	HitInfo.iPriority = 8.f;
+	//	break;
+	//}
+	//
+	////if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
+	////{
+	////	m_PendingMonTable = HitInfo;
+	////	m_bPending = true;
+	////}
+	////현재 pending 가중치보다 낮으면 리턴
+	//if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
+	//	return false;
+	////현재 잠금된거보다 낮아도 거부
+	//if (m_bActiveHit &&HitInfo.iPriority < m_ActiveMonTable.iPriority)
+	//	return false;
 	//새 피격상태 전달
+
 	m_PendingMonTable = HitInfo;
 	m_bPending = true;
 	
 	//우선순위 잠금
-	m_ActiveMonTable = HitInfo;
-	m_bActiveHit = true;
+
+	return true;
 }
 
 _bool CMonster::Is_Grounded()
@@ -423,9 +439,39 @@ _bool CMonster::Is_Grounded()
 	return m_pCharacterController->IsGrounded();
 }
 
+void CMonster::Damaged()
+{
+	//if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
+	//	return;
+
+	switch (m_ActiveMonTable.eHitType)
+	{
+	case PLAYER_SKILL_TYPE::ATTACK:
+		m_iHp -= 5.f;
+		break;
+	case PLAYER_SKILL_TYPE::ACCIO:
+		m_iHp -= 10.f;
+		break;
+	case PLAYER_SKILL_TYPE::DEPULSO:
+		m_iHp -= 15.f;
+		break;
+	case PLAYER_SKILL_TYPE::DESCENDO:
+		m_iHp -= 20.f;
+		break;
+	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		m_iHp -= 25.f;
+		break;
+	case PLAYER_SKILL_TYPE::PROTEGO:
+		m_iHp -= 8.f;
+		break;
+	}
+
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE), FLAGTYPE::DEL);
+}
+
 void CMonster::RunningSkill(_float fTimeDelta)
 {
-	if (m_bSkill && !m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
+	if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
 	{
 		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
@@ -464,7 +510,7 @@ void CMonster::IsHit()
 	}
 	else if (CGameInstance::Get().KeyDown(DIK_V))
 	{
-		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 
 }
@@ -477,7 +523,8 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	}
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
-		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DEFAULT;
+		Clear_ActiveHit();
+		Clear_PendingHit();
 	}
 	if (m_iHp <= 0.f)
 	{
@@ -486,7 +533,8 @@ void CMonster::Flag_Check(_float fTimeDelta)
 
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
 		m_fEmissive = 0;
-
+	else
+		m_iHitCnt = 0;
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 	{
 		if (auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CMon_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]))
@@ -495,6 +543,9 @@ void CMonster::Flag_Check(_float fTimeDelta)
 				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
 		}
 	}
+
+	//if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
+	//	Damaged();
 }
 void CMonster::EmissiveFadeOut(_float fTimeDelta)
 {

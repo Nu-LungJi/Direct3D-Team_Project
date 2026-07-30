@@ -34,48 +34,54 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 	auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	auto pSrcTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
-	auto* pTarget = CGameInstance::Get().GetActiveCamera();
-	if (pAnimator == nullptr || pSrcTransform == nullptr ||
-		pMoveIntent == nullptr || pTarget == nullptr)
-		return m_eDebug = EVALUATE::FAILED;
-	auto& pDestTransform = pTarget->GetTransform();
-	EVALUATE Resut = EVALUATE::END;
-	//ㅋㅋ;
-	if (!m_bTurn)
+	if (auto pBT = Get_ComBT())
 	{
-		_vector vDestPos = XMLoadFloat3(&pDestTransform.GetPosition());
-		_vector vSrcPos = XMLoadFloat3(&pSrcTransform->GetPosition());
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			if (auto pTarget = pOwner->Get_Target())
+			{
+				if (pAnimator == nullptr || pSrcTransform == nullptr || pMoveIntent == nullptr || pTarget == nullptr)
+					return m_eDebug = EVALUATE::FAILED;
+				auto& pDestTransform = pTarget->GetTransform();
+				EVALUATE Resut = EVALUATE::END;
+				//ㅋㅋ;
+				if (!m_bTurn)
+				{
+					_vector vDestPos = XMLoadFloat3(&pDestTransform.GetPosition());
+					_vector vSrcPos = XMLoadFloat3(&pSrcTransform->GetPosition());
 
-		_vector vTargetLook = XMVectorSetY(XMVector3Normalize(vDestPos - vSrcPos), 0);
-		_vector vSrcLook = XMVectorSetY(XMVector3Normalize(pSrcTransform->GetState(STATE::LOOK)), 0);
+					_vector vTargetLook = XMVectorSetY(XMVector3Normalize(vDestPos - vSrcPos), 0);
+					_vector vSrcLook = XMVectorSetY(XMVector3Normalize(pSrcTransform->GetState(STATE::LOOK)), 0);
 
-		_float fDot = XMVectorGetX(XMVector3Dot(vSrcLook, vTargetLook));
-		_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
-		if (false == SelectAngle(XMConvertToDegrees(atan2f(fCrossY, fDot))))
-			return m_eDebug = EVALUATE::FAILED;
-		
-		XMStoreFloat3(&m_vCurrentLook, vSrcLook);
-		XMStoreFloat3(&m_vTargetLook, vTargetLook);
-		pAnimator->SetPlay(true);
-		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop,m_fBlend);
+					_float fDot = XMVectorGetX(XMVector3Dot(vSrcLook, vTargetLook));
+					_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
+					if (false == SelectAngle(XMConvertToDegrees(atan2f(fCrossY, fDot))))
+						return m_eDebug = EVALUATE::FAILED;
 
-		m_bTurn = true;
+					XMStoreFloat3(&m_vCurrentLook, vSrcLook);
+					XMStoreFloat3(&m_vTargetLook, vTargetLook);
+					pAnimator->SetPlay(true);
+					pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+
+					m_bTurn = true;
+				}
+				m_fTick += fTimeDelta;
+
+				const _float fTurnSpeed = std::max(std::abs(m_fAngle) / 1.6f, 1.f);
+				pMoveIntent->SetFacingIntent(m_vTargetLook, fTurnSpeed);
+
+
+				_bool bFinished = pAnimator->GetFinish();
+
+				if (bFinished)
+				{
+					m_fTick = 0.f;
+					m_bTurn = false;
+					return m_eDebug = EVALUATE::SUCCESS;
+				}
+			}
+		}
 	}
-	m_fTick += fTimeDelta;
-
-	const _float fTurnSpeed = std::max(std::abs(m_fAngle) / 1.6f, 1.f);
-	pMoveIntent->SetFacingIntent(m_vTargetLook, fTurnSpeed);
-
-
-	_bool bFinished = pAnimator->GetFinish();
-
-	if (bFinished)
-	{
-		m_fTick = 0.f;
-		m_bTurn = false;
-		return m_eDebug = EVALUATE::SUCCESS;
-	}
-
 	return m_eDebug = EVALUATE::RUN;
 }
 void CBTTurnAnimation::Update_Gui()

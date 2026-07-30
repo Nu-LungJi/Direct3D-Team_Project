@@ -6,6 +6,7 @@
 #include "PlayerAnimationRatioGuard.h"
 
 #include "ComCharacterMoveIntent.h"
+
 #include "Monster.h"
 #include "Player_Weapon.h"
 NS_USING(Client)
@@ -91,6 +92,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	case PHASE::ATTACK:
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO) {
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				break;
+			}
+
 			// 끌어 오기 시작
 
 			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
@@ -106,16 +113,22 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	}
 
 
-	case PHASE::PULL: {
-		auto* Target = CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());
+	case PHASE::ATTACK_FAILED:
+		if (pAnimator->GetFinish())
+			RequestLocomotion(pStateMachine);
+		break;
 
+	case PHASE::PULL: {
+		auto* Target = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
+		
 		if (!Target)
 		{
 			RequestLocomotion(pStateMachine);
 			return;
 		}
 
-		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling)
+		
+		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
 		{
 			auto* pMoveIntent = Target->GetComponent<CComCharacterMoveIntent>("ComCharacterMoveIntent");
 
@@ -157,6 +170,10 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				m_bPulling = false;
 				m_ePhase = PHASE::RECOVERY;
 			}
+		}
+		else {
+			m_bPulling = false;
+			m_ePhase = PHASE::RECOVERY;
 		}
 
 		if (m_fAnimRatio >= ATTACK_END_RATIO)

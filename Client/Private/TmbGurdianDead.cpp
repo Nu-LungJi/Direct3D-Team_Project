@@ -354,7 +354,7 @@ HRESULT CTmbGurdianDead::Render_Shadow(ID3D11DeviceContext* pContext, const E::R
 		const uint32_t offset = 0;
 		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType()); 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
 
