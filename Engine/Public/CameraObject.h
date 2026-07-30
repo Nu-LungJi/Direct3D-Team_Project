@@ -38,6 +38,7 @@ protected:
 public:
 	_matrix GetView() const { return XMLoadFloat4x4(&m_matView); }
 	_matrix GetProj() const { return XMLoadFloat4x4(&m_matProj); }
+	_float GetFovY() const { return m_cameraDesc.fFovY; }
 	const CCollider* GetViewVolumeCollider() const { return m_pViewVolumeCollider.get(); }
 	const CCollFrustum* GetFrustumCollider() const;
 	const CCollOrientedBox* GetOrientedBoxCollider() const;

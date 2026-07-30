@@ -2,6 +2,7 @@
 #include "PlayerThirdPersonCamera.h"
 
 #include "GameInstance.h"
+#include "Client_Defines.h"
 
 NS_USING(Client)
 
@@ -72,11 +73,70 @@ void CPlayerThirdPersonCamera::UpdateFollow()
 		vTarget.y + std::sin(fPitchRadian) * m_fDistance,
 		vTarget.z - vForward.z * fHorizontalDistance };
 
+
+	_float3 finalPosition {};
+	PlayerToCameraSphereSweep(vTargetPosition, vDesiredPosition, CAMERA_COLLISION_RADIUS, finalPosition);
+
 	auto& CameraTransform = GetTransform();
-	CameraTransform.SetPosition(vDesiredPosition);
+	CameraTransform.SetPosition(finalPosition);
 	CameraTransform.LookAt(XMLoadFloat3(&vTarget));
 	CameraTransform.Update();
 	UpdateViewMatrix();
+}
+
+_bool CPlayerThirdPersonCamera::PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const
+{
+	OutCameraPosition = CameraPosition;
+
+	if (!std::isfinite(fCollisionRadius) || fCollisionRadius <= 0.f)
+	{
+		return false;
+	}
+
+	const _vector vTargetPosition = XMLoadFloat3(&PlayerPosition);
+	const _vector vCameraOffset = XMLoadFloat3(&CameraPosition) - vTargetPosition;
+
+	_float fCameraDistance{};
+	XMStoreFloat(&fCameraDistance, XMVector3Length(vCameraOffset));
+	if (!std::isfinite(fCameraDistance) || fCameraDistance <= FLT_EPSILON)
+	{
+		return false;
+	}
+
+	CPhysXManager* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (pPhysXManager == nullptr)
+	{
+		return false;
+	}
+
+	_float3 vDirection{};
+	XMStoreFloat3(&vDirection, vCameraOffset / fCameraDistance);
+
+	PX_SWEEP_DESC Desc{};
+	Desc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+	Desc.tGeometry.fRadius = fCollisionRadius;
+	Desc.tPose.vPosition = PlayerPosition;
+	Desc.vDirection = vDirection;
+	Desc.fMaxDistance = fCameraDistance;
+	Desc.tFilter.bQueryStatic = true;
+	Desc.tFilter.bQueryDynamic = false;
+	Desc.tFilter.bIncludeTrigger = false;
+	Desc.tFilter.iQueryMask =
+		ETOUI(COLLISION_LAYER::DEFAULT)
+		| ETOUI(COLLISION_LAYER::WORLD_STATIC);
+		//| ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+
+
+	PX_SWEEP_RESULT Hit{};
+	if (!pPhysXManager->Sweep(Desc, Hit) || !Hit.bHit || !std::isfinite(Hit.fDistance) || Hit.fDistance <= FLT_EPSILON)
+	{
+		return false;
+	}
+
+	const _float fCorrectedDistance = std::max(0.f, Hit.fDistance - CAMERA_COLLISION_PADDING);
+	XMStoreFloat3(&OutCameraPosition, vTargetPosition + XMLoadFloat3(&vDirection) * fCorrectedDistance);
+
+	return true;
 }
 
 UPtr<CPlayerThirdPersonCamera> CPlayerThirdPersonCamera::Create()

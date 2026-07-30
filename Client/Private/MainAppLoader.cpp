@@ -83,6 +83,14 @@ HRESULT CMainAppLoader::Load()
 			MSG_BOX("Failed Load_PhysX_Resource");
 			return E_FAIL;
 		}
+		
+		// 시네마틱 카메라 충돌 레이어 설정 빼거나 추가하고싶으면 여기서 하세요
+		CGameInstance::Get().SetCinematicCollisionQueryMask(
+			ETOUI(COLLISION_LAYER::DEFAULT)
+			//ETOUI(COLLISION_LAYER::WORLD_STATIC) 
+			//| ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) 
+			//| ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+		);
 
 		if (FAILED(Create_ActionNode()))
 		{

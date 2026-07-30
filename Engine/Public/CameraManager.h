@@ -2,6 +2,7 @@
 #include "Engine_Defines.h"
 #include "Handle.h"
 #include "CameraObject.h"
+#include "CinematicTypes.h"
 NS_BEGIN(Engine)
 
 class CCinematicSystem;
@@ -28,6 +29,7 @@ public:
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
 
+	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
 private:
 	std::optional<std::pair<StringID, CHandle>> m_ActiveCamera{};
 	std::unordered_map<StringID, CHandle> m_Cameras{};
@@ -40,7 +42,8 @@ public:
 
 	HRESULT RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset);
 	HRESULT LoadCinematic(const std::string& CinematicName);
-	HRESULT PlayCinematic(const StringID& CinematicID);
+	HRESULT PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
+	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
 	void StopCinematic();
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;
