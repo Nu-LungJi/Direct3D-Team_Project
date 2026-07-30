@@ -920,6 +920,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	}
 
 	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
+	if(false)
 	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
 	{
 		const auto vPreviousColor = pDbgLineRender->GetColor();
@@ -1176,46 +1177,20 @@ void CPlayer::Attack_Magic_Bullet()
 		XMStoreFloat3(&desc.vEndPosition, start + look * 20.f);
 	}
 
+	desc.fSpeed = 70.f;
+	desc.fCurveHeight = 2.f;
+	desc.iSampleCount = 10;
+
+	CGameInstance::Get().AddGameObjectToLayer(m_LevelTag,PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,"PlayerMagicBullet",&desc);
+
+	{
+		auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
+		if (a == nullptr) {
+			return;
+		}
+		static_cast<CTrail_CPU*>(a)->Clear();
+	}
 }
-// 위 함수랑 동일하면 지우기
-//void CPlayer::Attack_Magic_Bullet()
-//{
-//
-//
-//	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]);
-//
-//	if (!pWeapon)
-//		return;
-//
-//	// 무기 발사 위치
-//	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
-//
-//	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
-//	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43};
-//
-//	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
-//
-//	if (pTarget)
-//	{
-//		// 타깃이 있으면 타깃을 향해 발사
-//		XMStoreFloat3( &desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
-//	}
-//	else
-//	{
-//		// 타깃이 없으면 플레이어 전방 일정 거리로 발사
-//		const _vector start = XMLoadFloat3(&desc.vStartPosition);
-//
-//		const _vector look = XMVector3Normalize(XMVectorSetY(GetTransform().GetState(STATE::LOOK),0.f));
-//
-//		XMStoreFloat3(&desc.vEndPosition,start + look * 20.f);
-//	}
-//
-//	desc.fSpeed = 70.f;
-//	desc.fCurveHeight = 2.f;
-//	desc.iSampleCount = 10;
-//
-//	CGameInstance::Get().AddGameObjectToLayer(m_LevelTag,PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,"PlayerMagicBullet",&desc);
-//}
 void CPlayer::OnWake()
 {
 }
