@@ -294,15 +294,19 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 			json["commands"].push_back({
 				{ "type", "PARTICLE" },
 				{ "commandName",
-					particle.sCommandName },
+					  particle.sCommandName },
 				{ "particleJson",
-					particle.sParticleJson },
+					  particle.sParticleJson },
 				{ "spawnDelay",
-					command.fSpawnDelay },
-				{ "localPosition",
-					particle.vLocalPosition.x,
-					particle.vLocalPosition.y,
-					particle.vLocalPosition.z
+					  command.fSpawnDelay },
+
+				{
+					"localPosition",
+					{
+						particle.vLocalPosition.x,
+						particle.vLocalPosition.y,
+						particle.vLocalPosition.z
+					}
 				}
 				});
 
