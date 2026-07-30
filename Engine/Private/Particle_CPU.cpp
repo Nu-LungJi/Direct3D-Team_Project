@@ -92,6 +92,9 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+		}
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
 
