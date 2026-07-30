@@ -41,20 +41,22 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
-
-		if (m_bStart)
+		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			//type 없으면 그냥 넘어가기
-			if (false == HitType())
-				return m_eDebug = EVALUATE::FAILED;
-			m_bStart = false;
-		}
-		else
-		{
-			if (auto pMonster = static_cast<CMonster*>(pBT->GetGameObject()))
+			if (m_bStart)
 			{
-				if (m_bInterrupt && pMonster->Is_PendingHit())
-					return m_eDebug = EVALUATE::SUCCESS;
+				m_iHitCnt = pSrc->GetHitCnt();
+				//type 없으면 그냥 넘어가기
+				if (false == HitType())
+					return m_eDebug = EVALUATE::FAILED;
+				m_bStart = false;
+			}
+
+			if (m_iHitCnt != pSrc->GetHitCnt())
+			{
+				m_bStart = true;
+				Reset_CheckFlag();
+				return m_eDebug = EVALUATE::FAILED;
 			}
 		}
 		Gravity();
@@ -91,18 +93,13 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		}
 		EventFlagToRatio(fAnimRatio);
 
-		if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
+		if (m_bEarly && m_fEarlyRatio <= fAnimRatio || bFinished)
 		{
 			Reset_CheckFlag();
 			m_bStart = true;
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
-		if (bFinished)
-		{
-			Reset_CheckFlag();
-			m_bStart = true;
-			return m_eDebug = EVALUATE::SUCCESS;
-		}
+
 	}
 	if (m_bUseCurAnim)
 	{
@@ -115,8 +112,6 @@ void CBTHitAnimMonster::Update_Gui()
 {
 	__super::Update_Gui();
 	DragFloat("Move Speed", m_Value.fSpeed);
-	BoolButton("Interrupt : ", m_bInterrupt);
-	BoolButton("Required : ", m_bRequiredPending);
 	BoolButton("UseCurAnim : ", m_bUseCurAnim);
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -181,8 +176,6 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "UseCurAnim", m_bUseCurAnim);
-	SaveJsonValue(j, "RequiredPending", m_bRequiredPending);
-	SaveJsonValue(j, "Interrupt", m_bInterrupt);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	if (!m_HitTable.empty())
@@ -214,8 +207,6 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "UseCurAnim", m_bUseCurAnim);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-	LoadJsonValue(j, "Interrupt", m_bInterrupt);
-	LoadJsonValue(j, "RequiredPending", m_bRequiredPending);
 	size_t iArray = 0;
 
 	if(LoadJsonValue(j, "HitTableArrayCnt", iArray))
@@ -244,7 +235,7 @@ _bool CBTHitAnimMonster::HitType()
 	{
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			if (m_bRequiredPending && !pSrc->Is_PendingHit())
+			if (!pSrc->Is_ActiveHit())
 				return false;
 
 			MON_HIT_INFO info = pSrc->Get_ActiveHitInfo();
@@ -265,7 +256,6 @@ _bool CBTHitAnimMonster::HitType()
 			if (iter == m_HitTable.end())
 				return false;
 
-			pSrc->Clear_PendingHit();
 			if (iter != m_HitTable.end())
 			{
 				m_Value.iAnimIndex = (*iter).iAnimIndex;
@@ -282,27 +272,32 @@ _bool CBTHitAnimMonster::HitType()
 
 void CBTHitAnimMonster::ComboAttMon(const _char* pName, ATTMON& eTye)
 {
-	
-	if (ImGui::BeginCombo(pName, MagicEnumToStringView(eTye).data()))
+	if (auto pBT = Get_ComBT())
 	{
-		for (uint32_t j = 0; j < ETOUI(ATTMON::END) + 1; ++j)
+		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
-			_bool	bSelect = eTye == static_cast<ATTMON>(j);
-			ImGui::PushID(MagicEnumToStringView(static_cast<ATTMON>(j)).data());
-			if (ImGui::Selectable(MagicEnumToStringView(static_cast<ATTMON>(j)).data(), bSelect))
+			if (ImGui::BeginCombo(pName, MagicEnumToStringView(eTye).data()))
 			{
-				eTye = static_cast<ATTMON>(j);
+				for (uint32_t j = 0; j < ETOUI(ATTMON::END) + 1; ++j)
+				{
+					_string SkillName = pSrc->Get_SkillName(static_cast<ATTMON>(j));
+					if (SkillName == "")
+						continue;
+					_bool	bSelect = eTye == static_cast<ATTMON>(j);
+					ImGui::PushID(SkillName.data());
+					if (ImGui::Selectable(SkillName.data(), bSelect))
+						eTye = static_cast<ATTMON>(j);
+
+					if (bSelect)
+						ImGui::SetItemDefaultFocus();
+
+					ImGui::PopID();
+				}
+				ImGui::EndCombo();
 			}
-			if (bSelect)
-				ImGui::SetItemDefaultFocus();
-
-			ImGui::PopID();
+			
 		}
-
-		ImGui::EndCombo();
 	}
-	
-	
 }
 void CBTHitAnimMonster::ComboHit(const _char* pName, PLAYER_SKILL_TYPE& eTye)
 {

@@ -103,7 +103,7 @@ public:
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
 	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
-
+	uint32_t					GetHitCnt() { return m_iHitCnt; }
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 private:
@@ -137,7 +137,7 @@ protected:
 
 	_float2						m_fSkillRatio{ };
 	uint32_t					m_iCurrentInstanceCount = 0;
-	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
+	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_iHitCnt{};
 	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
 	_string						m_SocketName{};

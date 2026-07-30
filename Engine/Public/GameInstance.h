@@ -312,6 +312,7 @@ public:
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER
+	_string GetAnimName(uint32_t iIndex, CHandle Handle);
 	int32_t GetAnimIndex(CHandle Handle);
 #pragma endregion
 #pragma region PARTICLE_MANAGER

@@ -310,9 +310,6 @@ _string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
 	if (pValue->second >= ETOUI(TOMB_SKILL::END))
 		return "";
 	
-	if (m_Effects[pValue->second].empty())
-		return "empty";
-
 	return MagicEnumToStringView(static_cast<TOMB_SKILL>(pValue->second)).data();
 }
 
@@ -517,7 +514,10 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 	m_MonSkillLists[ATTMON::NORMAL_SLOT0] = ETOUI(TOMB_SKILL::JUMP_START);
 	m_MonSkillLists[ATTMON::NORMAL_SLOT1] = ETOUI(TOMB_SKILL::JUMP_END);
-	
+	m_MonSkillLists[ATTMON::NORMAL_SLOT2] = ETOUI(TOMB_SKILL::SLASH);
+	m_MonSkillLists[ATTMON::HEAVY_SLOT0] = ETOUI(TOMB_SKILL::SMASH);
+	m_MonSkillLists[ATTMON::SKIP] = ETOUI(TOMB_SKILL::SKIP);
+
 	m_Effects[ETOUI(TOMB_SKILL::JUMP_START)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
 	m_Effects[ETOUI(TOMB_SKILL::JUMP_END)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
 	

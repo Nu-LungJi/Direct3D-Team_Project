@@ -214,6 +214,7 @@
     <ClInclude Include="..\Public\BTDecHitCnt.h" />
     <ClInclude Include="..\Public\BTDecHp.h" />
     <ClInclude Include="..\Public\BTDecInvert.h" />
+    <ClInclude Include="..\public\BTDecIsPending.h" />
     <ClInclude Include="..\Public\BTDecLier.h" />
     <ClInclude Include="..\Public\BTDecSearch.h" />
     <ClInclude Include="..\Public\BTDecTimer.h" />
@@ -314,6 +315,7 @@
     <ClCompile Include="..\Private\BTDecFlag.cpp" />
     <ClCompile Include="..\Private\BTDecHp.cpp" />
     <ClCompile Include="..\Private\BTDecInvert.cpp" />
+    <ClCompile Include="..\private\BTDecIsPending.cpp" />
     <ClCompile Include="..\Private\BTDecLier.cpp" />
     <ClCompile Include="..\Private\BTDecSearch.cpp" />
     <ClCompile Include="..\Private\BTDecTimer.cpp" />
