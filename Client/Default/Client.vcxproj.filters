@@ -872,5 +872,8 @@
     <ClCompile Include="..\Private\UIController.cpp">
       <Filter>GameObject\UI\UIController</Filter>
     </ClCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

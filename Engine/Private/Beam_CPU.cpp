@@ -215,7 +215,30 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+    pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+
+	if (m_pNormalTexture) {
+		pContext->PSSetShaderResources(2, 1, m_pNormalTexture->GetSRV().GetAddressOf());
+	}
+
+
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(3, 1, &pDistortionSRV);
+	}
+	if (m_pNoiseTexture)
+	{
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
+	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnySRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(5, 1, &pAnySRV);
+
+	}
+
 
     // 각 빔은 이제 자기만의 verticesPerPlane을 갖고 있으니, 그 값 기준으로 Draw
 	for (const auto& range : m_vecDrawRanges)
@@ -236,8 +259,8 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 		pContext->Draw(range.verticesPerPlane, range.startVertex + range.verticesPerPlane);
 	}
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr };
-    pContext->PSSetShaderResources(0, 1, nullSRV);
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr,nullptr };
+    pContext->PSSetShaderResources(0, 6, nullSRV);
 	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
 
@@ -278,8 +301,15 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.fDuration = std::max(p.beamDuration, 0.f);
 		beam.vColor = p.color;
 		beam.vEmissive = p.emissive;
+		beam.vEndEmissive = p.endEmissive;
 		beam.ownerId = p.ownerId;
-		beam.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
+		const float distance =
+			XMVectorGetX(
+				XMVector3Length(end - start));
+
+		beam.fDisplacementAmplitude =
+			distance * 0.02f;
+		//beam.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
 		beam.iDisplacementIterations = iterations;
 		beam.fDisplacementDamping = std::clamp(p.fDisplacementDamping, 0.f, 1.f);
 		beam.fFlickerInterval = std::max(p.flickerTimeInverval, 0.001f);
@@ -291,14 +321,16 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.fGrowRatio = 0.f;
 		beam.fStraightRatio = 0.f;
 		beam.fFadeRatio = 0.f;
-
+		beam.fbeamWidth = p.fBeamWidth;
 		beam.fGrowEndTime = p.fGrowEndTime;
 		beam.fStraightEndTime = p.fStraightEndTime;
 		beam.fHoldEndTime = p.fHoldEndTime;
 		beam.fFadeEndTime = p.fFadeEndTime;
+		beam.iGeometryType = p.geometryType;
+		beam.fspawnDelay = p.fSpawnDelay;
+		
 
-
-		if (m_Desc.geometryType == 1)
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -328,7 +360,7 @@ void CBeam_CPU::SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuratio
 		beam.fStraightRatio = 0.f;
 		beam.fFadeRatio = 0.f;
 
-		if (m_Desc.geometryType == 1)
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -373,7 +405,7 @@ void CBeam_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixDat
 				XMLoadFloat4(&beam.vEndPos),
 				deltaMatrix));
 
-		if (m_Desc.geometryType == 1)
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -549,7 +581,7 @@ void CBeam_CPU::BuildBeamGeometry()
 		auto buildPlane = [&](const XMVECTOR& right)
 			{
 				XMVECTOR halfWidth =
-					right * (m_Desc.fWidth * 0.5f);
+					right * (beam.fbeamWidth * 0.5f);
 
 				for (const auto& point : visiblePoints)
 				{
@@ -563,7 +595,7 @@ void CBeam_CPU::BuildBeamGeometry()
 					top.vColor.w *= fadeAlpha;
 					top.vEmissive = beam.vEmissive;
 					top.vEmissive.w *= fadeAlpha;
-
+					top.vEndEmissive = beam.vEndEmissive;
 					BEAM_VERTEX bottom{};
 					XMStoreFloat3(
 						&bottom.vPosition,
@@ -574,6 +606,7 @@ void CBeam_CPU::BuildBeamGeometry()
 					bottom.vColor.w *= fadeAlpha;
 					bottom.vEmissive = beam.vEmissive;
 					bottom.vEmissive.w *= fadeAlpha;
+					bottom.vEndEmissive = beam.vEndEmissive;
 
 					m_vecBeamVertices.push_back(top);
 					m_vecBeamVertices.push_back(bottom);
@@ -711,7 +744,7 @@ void CBeam_CPU::SetBeamPositions(
 	// 아직 곡선이 남아 있을 때만 경로 재계산
 	if (beam.fStraightRatio < 1.f)
 	{
-		if (m_Desc.geometryType == 1)
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);

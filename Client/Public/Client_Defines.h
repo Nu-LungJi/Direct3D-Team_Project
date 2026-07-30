@@ -7,6 +7,16 @@ namespace Client
 	static const unsigned int	g_iWinSizeX{ 1280 };
 	static const unsigned int	g_iWinSizeY{ 720 };
 
+	enum class SOUND_BUS
+	{
+		BGM,
+		SFX,
+		VOICE,
+		UI,
+		AMBIENCE,
+		END
+	};
+
 	enum class COLLISION_LAYER : uint32_t
 	{
 		NONE = 0,				// 어떤 물리 레이어에도 속하지 않음

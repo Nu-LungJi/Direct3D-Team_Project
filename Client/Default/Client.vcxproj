@@ -411,6 +411,7 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />

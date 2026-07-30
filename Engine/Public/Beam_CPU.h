@@ -29,12 +29,7 @@ public:
 		std::pair<StringID, StringID> distortionTextureID;
 		std::pair<StringID, StringID> noiseTextureID;
 		std::pair<StringID, StringID> anyTextureID;
-        _float      fWidth = 1.f;
         _float      fScrollSpeed = 1.f;
-        uint32_t    iDisplacementIterations = 6;      // 기본값 (AddBeam에서 안 넘기면 이걸 씀)
-        _float      fDisplacementAmplitude = 2.5f;
-        _float      fDisplacementDamping = 0.25f;
-        _float      fFlickerInterval = 0.01f;
         uint32_t    iMaxBeams = 16;
         uint32_t    iMaxDisplacementIterations = 10;  // 버퍼 크기 산정용 - 실제 사용 가능한 최댓값
 		uint32_t    geometryType = 0; // 0은 기본 번개 모양 1은 부드러운 곡선 모양
@@ -75,6 +70,7 @@ public:
 
 		_float4 vColor = { 1.f,1.f,1.f,1.f };
 		_float4 vEmissive = { 1.f,1.f,1.f,1.f };
+		_float4 vEndEmissive = { 1.f,1.f,1.f,1.f };
 
 		uint32_t iSegmentCount = 0;
 		uint32_t ownerId = 0;
@@ -91,6 +87,9 @@ public:
 		_float fHoldEndTime{};
 		_float fFadeEndTime{};
 		std::vector<_float3> vecJaggedPoints;
+		_float fbeamWidth{};
+		uint32_t iGeometryType = 0;
+		_float fspawnDelay{};
 	};
 
 private:
