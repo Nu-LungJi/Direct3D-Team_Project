@@ -1757,9 +1757,9 @@ void CLevelUIEditor::StateView()
 			m_UIINFO.Color.y = colorArr[1];
 			m_UIINFO.Color.z = colorArr[2];
 		}
-	
+
 		// Enums (UI Type & Effect)
-		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL", "LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON"};
+		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL", "LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE"};
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
@@ -1902,7 +1902,7 @@ void CLevelUIEditor::LocalStateView()
 		}
 
 		// Enums
-		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON"};
+		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE"};
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);

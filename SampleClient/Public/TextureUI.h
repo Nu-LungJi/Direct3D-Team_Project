@@ -47,6 +47,9 @@ private:
 private:
 	std::string m_EffectTag;
 
+private:
+	_float m_fAmount = 0.f; // 디졸브용
+
 public:
 	static E::UPtr<CTextureUI> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

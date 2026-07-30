@@ -9,5 +9,8 @@ public:
 
 	static std::future<bool> Load();
 	static std::future<bool> UnLoad();
+
+private:
+	static _bool UILoad();
 };
 NS_END
