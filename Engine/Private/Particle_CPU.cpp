@@ -439,17 +439,17 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 
 		XMStoreFloat3(&p.vVelocity, Velocity);
 	} 
-	{
-		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f;
-
-		p.vVelocity.y += kGravity * fTimeDelta;
-
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-	}
+	//{
+	//	///////////////////////////////////////////// Gravity
+	//	const float kGravity = -9.8f;
+	//
+	//	p.vVelocity.y += kGravity * fTimeDelta;
+	//
+	//	XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+	//	XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+	//	vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+	//	XMStoreFloat3(&p.vPosition, vPos);
+	//}
 	{
 		///////////////////////////////////////////// Particle Spread Type
 		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();

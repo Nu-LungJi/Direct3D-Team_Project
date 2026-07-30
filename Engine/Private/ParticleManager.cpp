@@ -3496,6 +3496,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
+			else if constexpr (std::is_same_v<T, SLightning>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
 		}, pv);
 }
 std::vector<std::string> CParticleManager::ScanBinFolder(const std::string& strBinFolder)
