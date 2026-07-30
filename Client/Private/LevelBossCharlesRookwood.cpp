@@ -15,6 +15,7 @@
 #include "Player.h"
 
 #include "BossTMB.h"
+#include "LightPlacementObject.h"
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -29,7 +30,12 @@ CLevelBossCharlesRookwood::~CLevelBossCharlesRookwood()
 HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
-	CGameInstance::Get().Initialize_EffectLight(15);
+	if (FAILED(
+		CGameInstance::Get().
+			Initialize_EffectLight(15)))
+	{
+		return E_FAIL;
+	}
 
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/TombBoss", true)))
 		return E_FAIL;
@@ -49,7 +55,10 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(SpawnMonster()))
 		return E_FAIL;
 
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	if (FAILED(SpawnLightPlacement()))
+		return E_FAIL;
+
+	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -191,6 +200,25 @@ HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()
 		return E_FAIL;
 
 	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnLightPlacement()
+{
+	CLightPlacementObject::DESC desc{};
+	desc.sObjectTag =
+		"BossCharlesRookwoodLightPlacement";
+	desc.sLightFileName =
+		"Level_BossCharlesRookwood";
+
+	return CGameInstance::Get().
+		AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+				Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc)
+		? S_OK
+		: E_FAIL;
 }
 
 HRESULT CLevelBossCharlesRookwood::SpawnMonster()

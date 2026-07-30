@@ -22,6 +22,7 @@
 
 #include "TmbGurdian.h"
 #include "AmbientSound3DObject.h"
+#include "LightPlacementObject.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -37,7 +38,12 @@ HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 	std::array<CHandle, 6> hOilBarrels{};
-	CGameInstance::Get().Initialize_EffectLight(15);
+	if (FAILED(
+		CGameInstance::Get().
+			Initialize_EffectLight(15)))
+	{
+		return E_FAIL;
+	}
 
 	{
 		CRagdollTest::DESC tDesc{};
@@ -593,7 +599,21 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 			return E_FAIL;
 		}
 	}
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	{
+		CLightPlacementObject::DESC desc{};
+		desc.sObjectTag = "TerrainLightPlacement";
+		desc.sLightFileName = "Level_Terrain";
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+				Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc))
+		{
+			return E_FAIL;
+		}
+	}
 
 	return S_OK;
 }

@@ -51,6 +51,82 @@ namespace Engine
 		return color;
 	}
 
+	// LSY 변경: Look 방향과 Up이 평행하거나 입력 벡터가 유효하지 않아
+	// View 행렬의 Right 축을 만들 수 없는 경우를 공통으로 방어한다.
+	inline _matrix MakeSafeLookToLH(
+		DirectX::FXMVECTOR vEye,
+		DirectX::FXMVECTOR vDirection,
+		DirectX::FXMVECTOR vPreferredUp)
+	{
+		constexpr _float MIN_VECTOR_LENGTH_SQ = 0.000001f;
+		constexpr _float PARALLEL_DOT_THRESHOLD = 0.999f;
+
+		DirectX::XMVECTOR vSafeDirection = vDirection;
+		if (DirectX::XMVector3IsNaN(vSafeDirection) ||
+			DirectX::XMVector3IsInfinite(vSafeDirection) ||
+			DirectX::XMVectorGetX(
+				DirectX::XMVector3LengthSq(vSafeDirection)) <=
+			MIN_VECTOR_LENGTH_SQ)
+		{
+			vSafeDirection =
+				DirectX::XMVectorSet(0.f, -1.f, 0.f, 0.f);
+		}
+
+		vSafeDirection =
+			DirectX::XMVector3Normalize(vSafeDirection);
+
+		DirectX::XMVECTOR vSafeUp = vPreferredUp;
+		if (DirectX::XMVector3IsNaN(vSafeUp) ||
+			DirectX::XMVector3IsInfinite(vSafeUp) ||
+			DirectX::XMVectorGetX(
+				DirectX::XMVector3LengthSq(vSafeUp)) <=
+			MIN_VECTOR_LENGTH_SQ)
+		{
+			vSafeUp =
+				DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		}
+
+		vSafeUp = DirectX::XMVector3Normalize(vSafeUp);
+
+		const _float fDirectionUpDot = fabsf(
+			DirectX::XMVectorGetX(
+				DirectX::XMVector3Dot(
+					vSafeDirection,
+					vSafeUp)));
+
+		if (fDirectionUpDot >= PARALLEL_DOT_THRESHOLD)
+		{
+			const DirectX::XMVECTOR vWorldUp =
+				DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f);
+			const _float fDirectionWorldUpDot = fabsf(
+				DirectX::XMVectorGetX(
+					DirectX::XMVector3Dot(
+						vSafeDirection,
+						vWorldUp)));
+
+			vSafeUp =
+				fDirectionWorldUpDot < PARALLEL_DOT_THRESHOLD
+				? vWorldUp
+				: DirectX::XMVectorSet(0.f, 0.f, 1.f, 0.f);
+		}
+
+		return DirectX::XMMatrixLookToLH(
+			vEye,
+			vSafeDirection,
+			vSafeUp);
+	}
+
+	inline _matrix MakeSafeLookAtLH(
+		DirectX::FXMVECTOR vEye,
+		DirectX::FXMVECTOR vTarget,
+		DirectX::FXMVECTOR vPreferredUp)
+	{
+		return MakeSafeLookToLH(
+			vEye,
+			DirectX::XMVectorSubtract(vTarget, vEye),
+			vPreferredUp);
+	}
+
 	inline float Randf(float min, float max)
 	{
 		if (min > max) std::swap(min, max);

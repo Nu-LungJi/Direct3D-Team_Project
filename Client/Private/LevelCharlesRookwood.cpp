@@ -22,6 +22,7 @@
 
 #include "BridgeCRW.h"
 #include "TmbGurdian.h"
+#include "LightPlacementObject.h"
 
 NS_USING(Client)
 
@@ -37,7 +38,12 @@ CLevelCharlesRookwood::~CLevelCharlesRookwood()
 HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
-	CGameInstance::Get().Initialize_EffectLight(15);
+	if (FAILED(
+		CGameInstance::Get().
+			Initialize_EffectLight(15)))
+	{
+		return E_FAIL;
+	}
 
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
 		return E_FAIL;
@@ -62,6 +68,10 @@ HRESULT CLevelCharlesRookwood::Initialize()
 
 	if (FAILED(SpawnMonster()))
 		return E_FAIL;
+
+	if (FAILED(SpawnLightPlacement()))
+		return E_FAIL;
+
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
@@ -242,6 +252,25 @@ HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 		return E_FAIL;
 
 	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnLightPlacement()
+{
+	CLightPlacementObject::DESC desc{};
+	desc.sObjectTag =
+		"CharlesRookwoodLightPlacement";
+	desc.sLightFileName =
+		"Level_CharlesRookwood";
+
+	return CGameInstance::Get().
+		AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+				Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc)
+		? S_OK
+		: E_FAIL;
 }
 
 HRESULT CLevelCharlesRookwood::SpawnMyMagicStepController()

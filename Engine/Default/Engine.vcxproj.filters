@@ -849,6 +849,15 @@
     <ClInclude Include="..\Public\LightManager.h">
       <Filter>GameObject\Light\LightManager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LightPlacementEditor.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightPlacementData.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightPlacementObject.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Light.h">
       <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
@@ -1480,6 +1489,12 @@
       <Filter>ImGui\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LightManager.cpp">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightPlacementEditor.cpp">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightPlacementObject.cpp">
       <Filter>GameObject\Light\LightManager</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Light.cpp">

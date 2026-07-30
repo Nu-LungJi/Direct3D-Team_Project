@@ -6,6 +6,8 @@
 #include "ResViewPort.h"
 NS_BEGIN(Engine)
 
+class CLightPlacementEditor;
+
 struct LightData {
 	CLight* LightOBJ;
 	_float Distance;
@@ -40,6 +42,15 @@ public:
 	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
 	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
 	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	// LSY 변경: 배치 라이트를 핸들/레벨 그룹 단위로 관리하기 위한 API다.
+	_bool	Remove_Light(const CHandle& hLight);
+	size_t	Remove_PlacementLightGroup(std::string_view sGroup);
+	void	SetActivePlacementLightGroup(std::string_view sGroup);
+	// LSY 변경: 콘텐츠 코드가 레벨 그룹과 별칭으로 배치 라이트의 안전한 핸들을 찾는다.
+	std::optional<CHandle> FindPlacementLightHandleByAlias(
+		std::string_view sGroup,
+		std::string_view sAlias) const;
+	const std::vector<std::optional<CHandle>>& GetLightHandles() const { return m_LightHandleList; }
 
 	VOID	Clear_DynamicLightList()							{ m_LightHandleList.clear(); }
 
@@ -65,11 +76,24 @@ public:		// Effect Light Fuction
 
 	HRESULT Transform_EffectLight(const std::optional<CHandle>& _Handle, XMFLOAT3 _Position);
 	HRESULT Transform_EffectLight(const std::optional<CHandle>& _Handle, XMVECTOR _Position);
+	// LSY 변경: 이펙트 라이트 풀의 영향 범위를 DbgLineRender로 확인한다.
+	void SetEffectLightDebugOptions(
+		_bool bVisible,
+		_bool bDepthTest)
+	{
+		m_bEffectLightDebugVisible = bVisible;
+		m_bEffectLightDebugDepthTest = bDepthTest;
+	}
 
 private:	// Effect Light Variable
+	void ClearEffectLightPool();
+	void DrawDebugEffectLights();
+
 	std::vector<std::optional<CHandle>>		m_pEffectLightPool{};
 	uint32_t								m_iEffectLightPoolSize{};
 	uint32_t								m_iLastAllocatedIndex{};
+	_bool									m_bEffectLightDebugVisible{};
+	_bool									m_bEffectLightDebugDepthTest{};
 
 private:
 	HRESULT	Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY);
@@ -109,6 +133,8 @@ private:
 	std::vector<IRenderable*>			m_pRenderable_DynamicObjectList{};
 
 	std::vector<std::optional<CHandle>>	m_pActiveShadowLightList{};
+	// LSY 변경: 배치 GUI의 상태와 편집 대상 그룹을 LightManager가 소유한다.
+	UPtr<CLightPlacementEditor>			m_pPlacementEditor{};
 
 	CB_LIGHT							m_pLightConstantVariable{};
 

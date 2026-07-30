@@ -153,6 +153,12 @@ public:
 	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
+#pragma region LIGHT_MANAGER
+public:
+	// LSY 변경: 콘텐츠 코드가 별칭 기반 배치 라이트 조회 및 런타임 제어 API를 사용한다.
+	CLightManager* GetLightManager() const { return m_pLightManager.get(); }
+#pragma endregion
+
 #pragma region FONT_MANAGER
 	void FontDraw(const StringID& fontName, const _tchar* pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
 	void FontAddLateDraw(RENDERGROUP eRenderGroup, const StringID& fontName, const _wstring& pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
@@ -296,9 +302,12 @@ public:
 public:
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 
-	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
-	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
-	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	_bool	Remove_Light(const CHandle& hLight);
+	size_t	Remove_PlacementLightGroup(std::string_view sGroup);
+	void	SetActivePlacementLightGroup(std::string_view sGroup);
 
 	VOID	Clear_DynamicLightList();
 

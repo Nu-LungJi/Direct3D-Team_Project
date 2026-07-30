@@ -364,6 +364,9 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h" />
     <ClInclude Include="..\Public\Light.h" />
     <ClInclude Include="..\Public\LightManager.h" />
+    <ClInclude Include="..\Public\LightPlacementData.h" />
+    <ClInclude Include="..\Public\LightPlacementEditor.h" />
+    <ClInclude Include="..\Public\LightPlacementObject.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
     <ClInclude Include="..\Public\OctreeNode.h" />
@@ -675,6 +678,8 @@
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
     <ClCompile Include="..\Private\LightManager.cpp" />
+    <ClCompile Include="..\Private\LightPlacementEditor.cpp" />
+    <ClCompile Include="..\Private\LightPlacementObject.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\Terrain.cpp" />
