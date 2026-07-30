@@ -31,11 +31,6 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 	m_fMinPitch = pDesc->fMinPitch;
 	m_fMaxPitch = pDesc->fMaxPitch;
 	m_fMouseSensitivity = pDesc->fMouseSensitivity;
-	m_fShoulderOffset = pDesc->fShoulderOffset;
-	m_fLookSideOffset = pDesc->fLookSideOffset;
-	m_fLookHeightOffset = pDesc->fLookHeightOffset;
-	m_fPositionSmoothSpeed = pDesc->fPositionSmoothSpeed;
-	m_fLookSmoothSpeed = pDesc->fLookSmoothSpeed;
 	return S_OK;
 }
 
@@ -54,7 +49,7 @@ void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 	m_fPitch = std::clamp(m_fPitch, m_fMinPitch, m_fMaxPitch);
 }
 
-void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
+void CPlayerThirdPersonCamera::UpdateFollow()
 {
 	if (CGameInstance::Get().GetActiveCamera() != this)
 		return;
@@ -64,57 +59,19 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 		return;
 
 	const _float3 vTargetPosition = pTarget->GetTransform().GetPosition();
-	const _float3 vOrbitCenter{
+	const _float3 vTarget{
 		vTargetPosition.x,
 		vTargetPosition.y + m_fTargetHeight,
 		vTargetPosition.z };
-	_float3 vLookTarget = vOrbitCenter;
 
 	const _float fYawRadian = XMConvertToRadians(m_fYaw);
 	const _float fPitchRadian = XMConvertToRadians(m_fPitch);
 	const _float fHorizontalDistance = std::cos(fPitchRadian) * m_fDistance;
 	const _float3 vForward{ std::sin(fYawRadian), 0.f, std::cos(fYawRadian) };
-	const _float3 vCameraRight{ vForward.z, 0.f, -vForward.x };
-
-
-	vLookTarget.x += vCameraRight.x * m_fLookSideOffset;
-	vLookTarget.y += m_fLookHeightOffset;
-	vLookTarget.z += vCameraRight.z * m_fLookSideOffset;
-
 	const _float3 vDesiredPosition{
-		vOrbitCenter.x - vForward.x * fHorizontalDistance +
-			vCameraRight.x * m_fShoulderOffset,
-		vOrbitCenter.y + std::sin(fPitchRadian) * m_fDistance,
-		vOrbitCenter.z - vForward.z * fHorizontalDistance +
-			vCameraRight.z * m_fShoulderOffset };
-
-	if (!m_bFollowInitialized)
-	{
-		m_vSmoothedPosition = vDesiredPosition;
-		m_vSmoothedLookTarget = vLookTarget;
-		m_bFollowInitialized = true;
-	}
-	else
-	{
-		// 지형/물리 업데이트의 계단식 위치 변화를 프레임 독립적으로 감쇠한다.
-		const _float fPositionAlpha =
-			1.f - std::exp(-m_fPositionSmoothSpeed * fTimeDelta);
-		const _float fLookAlpha =
-			1.f - std::exp(-m_fLookSmoothSpeed * fTimeDelta);
-
-		XMStoreFloat3(
-			&m_vSmoothedPosition,
-			XMVectorLerp(
-				XMLoadFloat3(&m_vSmoothedPosition),
-				XMLoadFloat3(&vDesiredPosition),
-				fPositionAlpha));
-		XMStoreFloat3(
-			&m_vSmoothedLookTarget,
-			XMVectorLerp(
-				XMLoadFloat3(&m_vSmoothedLookTarget),
-				XMLoadFloat3(&vLookTarget),
-				fLookAlpha));
-	}
+		vTarget.x - vForward.x * fHorizontalDistance,
+		vTarget.y + std::sin(fPitchRadian) * m_fDistance,
+		vTarget.z - vForward.z * fHorizontalDistance };
 
 
 	_float3 finalPosition{};

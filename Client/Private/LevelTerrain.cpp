@@ -781,7 +781,7 @@ HRESULT CLevelTerrain::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 	Desc.vAt = { 10.f, 50.f, 10.f };
 	Desc.vEye = { 10.f, 53.f, 5.f };
 	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-	Desc.fFovY = 65.f;
+	Desc.fFovY = 75.f;
 	Desc.fNear = 0.1f;
 	Desc.fFar = 1000.f;
 	Desc.sObjectTag = "PlayerCamera";
