@@ -607,7 +607,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_bDashTriggered = false;
 	}
 
-	if (CGameInstance::Get().KeyDown(DIK_X)) {
+	if (CGameInstance::Get().KeyDown(DIK_X) &&
+		CPlayer_SkillStateBase::HasValidTarget(*this))
+	{
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 

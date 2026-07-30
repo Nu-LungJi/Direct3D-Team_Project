@@ -45,6 +45,7 @@ private:
 
 	int32_t m_AccioCast_Animation{};
 	int32_t m_AccioEnd_Animation{};
+	int32_t m_AttackFail_Animation{};
 
 	PHASE m_ePhase = PHASE::CAST;
 	ACCIOSTATE m_eAccio = ACCIOSTATE::END;

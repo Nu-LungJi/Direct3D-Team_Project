@@ -67,7 +67,7 @@ _bool CPlayer_SkillStateBase::HasTarget(const CPlayer& player) const
 	return fDistanceSq > std::numeric_limits<_float>::epsilon() && fDistanceSq <= TARGET_MAX_DISTANCE * TARGET_MAX_DISTANCE;
 }
 
-_bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player) const
+_bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player)
 {
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
 		player.GetTargetHandle());
