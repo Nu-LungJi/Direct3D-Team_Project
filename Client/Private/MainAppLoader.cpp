@@ -346,6 +346,15 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
 		CGameInstance::Get().Load_ParticleJsonPackage(k);
 	}
+
+	//클라이언트 사운드 버스 초기화
+	{
+		if (FAILED(Initialize_Sound()))
+		{
+			return E_FAIL;
+		}
+
+	}
 	return S_OK;
 }
 
@@ -466,5 +475,42 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 		return false;
 	}
 
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Initialize_Sound()
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+
+	for (const auto eBus : magic_enum::enum_values<Client::SOUND_BUS>())
+	{
+		if (eBus == Client::SOUND_BUS::END)
+			continue;
+
+		if (!pSoundManager->CreateBus(eBus))
+			return E_FAIL;
+	}
+
+	// 사운드 테스트
+	if (false)
+	{
+		const _string sSoundPath = "./Resources/SampleClient/Sound/Verses_1_4_of_the_National_Anthem.mp3";
+		auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+		if (pSoundManager == nullptr ||
+			!pSoundManager->Preload(sSoundPath))
+			return E_FAIL;
+
+		const SOUND_ID iSoundID = pSoundManager->Play2D(
+			sSoundPath,
+			E::SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = true
+			});
+		if (iSoundID == INVALID_SOUND_ID)
+			return E_FAIL;
+	}
 	return S_OK;
 }

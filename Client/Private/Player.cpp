@@ -834,6 +834,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	}
 
 	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
+	if(false)
 	if (auto* pDbgLineRender = CGameInstance::Get().GetDbgLineRender())
 	{
 		const auto vPreviousColor = pDbgLineRender->GetColor();
