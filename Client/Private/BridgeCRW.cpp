@@ -103,16 +103,18 @@ HRESULT CBridgeCRW::Initialize(void* pArg)
 		};
 	}
 
-	//{
-	//	CComModelInstance::DESC Desc{};
-	//	Desc.sGroupTag = "TEST";
-	//	Desc.sResTag = "Model_Resource";
-	//
-	//	if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-	//	{
-	//		return E_FAIL;
-	//	};
-	//}
+	{
+		CComModelInstance::DESC Desc{};
+		Desc.sGroupTag = "TEST";
+		Desc.sResTag = "Model_Resource";
+
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
+		{
+			return E_FAIL;
+		};
+	}
+
+
 
 	{
 		CComAnimator::DESC DescAnim{};

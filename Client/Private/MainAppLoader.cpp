@@ -14,7 +14,12 @@
 //#include "Particle_Fire_GPU.h"
 #include "BTHeader_Definse.h"
 
-//#include "UIManager.h"
+// UI
+#include "UIManager.h"
+#include "UIController.h"
+#include "EffectUI.h"
+#include "TextureUI.h"
+#include "TextBox.h"
 
 NS_USING(Client)
 
@@ -86,6 +91,12 @@ HRESULT CMainAppLoader::Load()
 		}
 
 		//GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
+	}
+
+	if (FAILED(Load_UIStaitc_Resource()))
+	{
+		MSG_BOX("Failed Load_UIStaitc_Resource");
+		return E_FAIL;
 	}
 
 	LOG_MEMORY("CMainAppLoader::Load() end");
@@ -376,7 +387,10 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMonAttType", CBTMonAttType::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTMonResetTable", CBTMonResetTable::Create())))
+		return E_FAIL;
+	
+	
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTRandMoveAnim", CBTRandMoveAnim::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
@@ -400,5 +414,57 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecFlag", CBTDecFlag::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecIsGround", CBTDecIsGround::Create())))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Load_UIStaitc_Resource()
+{
+	{
+		namespace fs = std::filesystem;
+
+		std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI/LoadingScreen";
+
+		if (fs::exists(targetDir) && fs::is_directory(targetDir))
+		{
+			for (const auto& entry : fs::directory_iterator(targetDir))
+			{
+				if (entry.is_regular_file() && entry.path().extension() == ".png")
+				{
+					std::string fileName = entry.path().stem().string();
+
+
+					std::string resTag = "TEX_" + fileName;
+
+					std::string fullPath = entry.path().generic_string();
+
+					if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", resTag, E::CResTexture2D::Create(fullPath)))
+					{
+						res->Load();
+					}
+				}
+			}
+		}
+	}
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Houses.png")))
+	{
+		res->Load();
+	}
+
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextBox", CTextBox::Create())))
+	{
+		return false;
+	}
+
 	return S_OK;
 }

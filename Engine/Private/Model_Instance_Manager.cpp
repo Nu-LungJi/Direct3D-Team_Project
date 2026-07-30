@@ -494,7 +494,7 @@ HRESULT CModel_Instance_Manager::Update_BonePaletteBuffer(ID3D11DeviceContext* p
 	for (uint32_t iInstanceIndex = 0; iInstanceIndex < iInstanceCount; ++iInstanceIndex) {
 		const auto& CombinedMatrixList = Batch.CombinedBoneMatrices[iInstanceIndex];
 
-		if (CombinedMatrixList.empty() || CombinedMatrixList.size() > MAX_BONE_COUNT)	return E_FAIL;
+		if (CombinedMatrixList.empty() || CombinedMatrixList.size() > MAX_BONE_COUNT)	return S_OK;
 
 		const size_t iPaletteOffset = static_cast<size_t>(iInstanceIndex) * MAX_BONE_COUNT;
 

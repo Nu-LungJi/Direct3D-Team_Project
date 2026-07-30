@@ -1,10 +1,11 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
-cbuffer CB_BEAM : register(b10)
+cbuffer CB_BEAM : register(b11)
 {
-    float g_fScrollOffset;
-    float3 _pad;
+    float g_fLifeRatio;
+	float g_fAccumulationTime;
+    float2 _pad;
 };
 
 struct VS_IN
@@ -27,7 +28,7 @@ VS_OUT VSMain(VS_IN In)
 {
     VS_OUT Out = (VS_OUT) 0;
     Out.vPosition = mul(float4(In.vPosition, 1.f), g_matViewProj);
-    Out.vUV = In.vUV + float2(g_fScrollOffset, 0.f);
+    Out.vUV = In.vUV ;
     Out.vColor = In.vColor;
     Out.vEmissive = In.vInstEmissive;
     return Out;
@@ -46,7 +47,6 @@ PS_OUT PSMain(VS_OUT In)
 
 
     PS_OUT Out = (PS_OUT) 0;
-
     float4 texColor = g_BeamTexture.Sample(LinearWrap, In.vUV) * In.vColor;
     
     if (texColor.a <= 0.01f)
@@ -61,4 +61,22 @@ PS_OUT PSMain(VS_OUT In)
     
     
     return Out;
+} 
+PS_OUT PSAccio(VS_OUT In)
+{
+
+
+	PS_OUT Out = (PS_OUT) 0;
+	float2 uv = In.vUV;
+	//uv.x += g_fAccumulationTime * 1.63f;
+	//uv.y += g_fAccumulationTime * 0.1f;
+	float4 texColor = g_BeamTexture.Sample(LinearWrap, uv);
+	float4 color = texColor * In.vColor;
+
+	float3 instEmissive = In.vEmissive.rgb * In.vEmissive.w;
+	float3 FinalColor = color.rgb * instEmissive;
+	Out.vDiffuse = float4(FinalColor, texColor.r);
+    
+    
+	return Out;
 }

@@ -56,6 +56,8 @@ private:
 	static constexpr _float LIGHT_FORWARD_MOVE_START_RATIO = 0.05f;
 	static constexpr _float LIGHT_FORWARD_MOVE_END_RATIO = 0.1f;
 	static constexpr _float LIGHT_FORWARD_MOVE_SPEED = 1.5f;
+	static constexpr _float LIGHT_MAGIC_BULLET_FIRE_RATIO = 0.15f;
+	static constexpr _float HEAVY_MAGIC_BULLET_FIRE_RATIO = 0.25f;
 	static constexpr size_t ATTACK_DIRECTION_COUNT =static_cast<size_t>(ATTACK_DIRECTION::END);
 
 
@@ -71,6 +73,7 @@ private:
 	_bool m_bAttackQueued{};
 	_bool m_bAnimationIndicesCached{};
 	_bool m_bPlayingHeavy{};
+	_bool m_bMagicBulletFired{};
 	_float m_fPreviousAnimRatio{};
 
 private:

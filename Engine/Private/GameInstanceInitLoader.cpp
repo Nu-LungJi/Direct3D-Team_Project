@@ -13,6 +13,7 @@
 #include "ComConstantBuffer.h"
 #include "FlyCamera.h"
 #include "UICamera.h"
+#include "CinematicCamera.h"
 #include "ComBeHavior.h"
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
@@ -29,6 +30,11 @@
 #include "ComPxConvexCollider.h"
 #include "ComPxCollider.h"
 #include "ComPxRigidBody.h"
+#include "ComPxDistanceJoint.h"
+#include "ComPxD6Joint.h"
+#include "ComPxFixedJoint.h"
+#include "ComPxRagdoll.h"
+#include "ComPxRevoluteJoint.h"
 #include "ComPxTriMeshCollider.h"
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
@@ -124,6 +130,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 		return E_FAIL;
 	}
 	if (CGameInstance::Get().AddPrototype("CAMERAS", "Prototype_GameObject_UICamera", CUICamera::Create()))
+	{
+		return E_FAIL;
+	}
+	if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::CAMERAS, ES_EngineProtoGameObject::Prototype_GameObject_CinematicCamera, CCinematicCamera::Create()))
 	{
 		return E_FAIL;
 	}
@@ -438,6 +448,26 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 			return E_FAIL;
 		}
 		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController, CComPxCharacterController::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxFixedJoint, CComPxFixedJoint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxDistanceJoint, CComPxDistanceJoint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRevoluteJoint, CComPxRevoluteJoint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxD6Joint, CComPxD6Joint::Create()))
+		{
+			return E_FAIL;
+		}
+		if (CGameInstance::Get().AddPrototype(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRagdoll, CComPxRagdoll::Create()))
 		{
 			return E_FAIL;
 		}

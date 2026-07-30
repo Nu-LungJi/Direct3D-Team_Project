@@ -123,7 +123,6 @@ void CParticleManager::UpdateGUI()
 
 	
 	static _float4 rotaion = _float4(0, 0, 0, 0);
-	static int iGeometryType = 0;
 
 	static const std::string kFbxRealFolder = "./Resources/SampleClient/Models/ParticleMeshes";
 	static bool bUseHdrForMesh = false;
@@ -135,6 +134,16 @@ void CParticleManager::UpdateGUI()
 	static int selectedHdrNormalIndex = -1;
 	static float fMaxDuration = 1.f;
 
+	static int iGeometryType = 0;
+	static float fBeamWidth = 0.15f;
+	static float fBeamScrollSpeed = 1.f;
+	static int iMaxBeams = 16;
+	static int iMaxDisplacementIterations = 10;
+
+	static float fGrowEndTime		= 0.3f;
+	static float fStraightEndTime	= 0.12f;
+	static float fHoldEndTime		= 0.3f;
+	static float fFadeEndTime		= 0.15f;
 	ImGui::Begin("SaveResourcesAsJson");
 
 
@@ -668,9 +677,14 @@ void CParticleManager::UpdateGUI()
 					hr = Save_Beam_Json(savePath.string(),
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
-						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint, "PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint, iGeometryType,
+						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint,
+						"PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint, iGeometryType,
 						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
-						iTexRow, iTexCol);
+						iTexRow, iTexCol, iSelectedBlend,
+						fBeamWidth, fBeamScrollSpeed,
+						static_cast<uint32_t>(std::max(iMaxBeams, 1)),
+						static_cast<uint32_t>(std::clamp(iMaxDisplacementIterations, 1, 10)));
+		
 				}
 				else if(particleTypeStr == "PARTICLE_GPU"){
 					hr = Save_Binary_Json(savePath.string(),
@@ -1466,6 +1480,19 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat("Emissive Intensity", &pendingBeam.emissive.w, 0.01f);
 		ImGui::ColorEdit3("End Emissive Color", &pendingBeam.endEmissive.x);
 		ImGui::DragFloat("End Emissive Intensity", &pendingBeam.endEmissive.w, 0.01f);
+		ImGui::InputInt("GeometryType", &iGeometryType);
+		ImGui::DragFloat("BeamWidth", &fBeamWidth, 0.01f, 0.001f, 10.f);
+		ImGui::DragFloat("ScrollSpeed", &fBeamScrollSpeed, 0.01f);
+		ImGui::InputInt("MaxBeams", &iMaxBeams);
+		ImGui::InputInt("MaxDisplacementIterations", &iMaxDisplacementIterations);
+
+
+		ImGui::DragFloat("GrowEndTime",		&pendingBeam.fGrowEndTime, 0.01f);
+		ImGui::DragFloat("Straight EndTime", &pendingBeam.fStraightEndTime, 0.01f);
+		ImGui::DragFloat("Hold EndTime", &pendingBeam.fHoldEndTime, 0.01f);
+		ImGui::DragFloat("Fade Out EndTime", &pendingBeam.fFadeEndTime, 0.01f);
+
+
 	}
 	else if (currentKind == SPAWN_COMMAND_KIND::PATTERN)
 	{
@@ -1611,6 +1638,16 @@ void CParticleManager::UpdateGUI()
 
 void CParticleManager::Update(_float fTimeDelta)
 {
+	for (auto& req : m_LoopRequests)
+	{
+		req.fElapsed += fTimeDelta;
+		if (req.fElapsed < req.fSpawnInterval)
+			continue;
+
+		req.fElapsed -= req.fSpawnInterval;
+		Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
+	}
+
 	for (auto& [groupTag, typeMap] : m_Particles)
 	{
 		for (auto& [typeTag, particle] : typeMap)
@@ -1621,15 +1658,7 @@ void CParticleManager::Update(_float fTimeDelta)
 		}
 	}
 
-	for (auto& req : m_LoopRequests)
-	{
-		req.fElapsed += fTimeDelta;
-		if (req.fElapsed < req.fSpawnInterval)
-			continue;
 
-		req.fElapsed -= req.fSpawnInterval;
-		Spawn(req.sGroupTag, req.sTypeTag, (uint32_t)req.vecSpawnData.size(), req.vecSpawnData.data());
-	}
 }
 //BLEND에서 하고 있었던거고
 HRESULT CParticleManager::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
@@ -1676,7 +1705,6 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		return E_FAIL;
 
 	std::vector<PARTICLE_SPAWN_DATA> spawnList(pSpawnData, pSpawnData + count);
-	typeIt->second->RequestSpawn(spawnList);
 	HRESULT hr = S_OK;
 
 	if (bLoop)
@@ -1691,13 +1719,17 @@ HRESULT CParticleManager::Spawn(const StringID& sGroupTag, const StringID& sType
 		
 		m_LoopRequests.push_back(std::move(req));
 	}
+	typeIt->second->RequestSpawn(spawnList);
 
 	return hr;
 }
 
 
 
-std::optional<BEAM_HANDLE> CParticleManager::SpawnBeam(const StringID& groupTag,const StringID& typeTag, const BEAM_PARAMS& p)
+std::optional<BEAM_HANDLE> CParticleManager::SpawnBeam(
+	const StringID& groupTag,
+	const StringID& typeTag,
+	const BEAM_PARAMS& params)
 {
 	CParticle* particle = GetParticle(groupTag, typeTag);
 	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
@@ -1705,16 +1737,7 @@ std::optional<BEAM_HANDLE> CParticleManager::SpawnBeam(const StringID& groupTag,
 	if (!beam)
 		return std::nullopt;
 
-	int32_t index = beam->AddBeam(
-		p.beamStart,
-		p.beamEnd,
-		p.fDisplacementAmplitude,
-		static_cast<uint32_t>(p.iDisplacementIterations),
-		p.fDisplacementDamping,
-		p.flickerTimeInverval,
-		p.color,
-		p.emissive,
-		p.beamDuration);
+	int32_t index = beam->AddBeam(params);
 
 	if (index < 0)
 		return std::nullopt;
@@ -1834,7 +1857,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 
 		if (particleType == "TRAIL_CPU") {
 			newEntry["ShrinkWidth"] = bShrinkWidth;
-			newEntry["Maxduration"] = fMaxduration;
+			newEntry["MaxDuration"] = fMaxduration;
 		} 
 	}
 	else if (whatKind == "MESH")
@@ -2043,15 +2066,14 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 		}
 		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::BEAM)
 		{
-			const auto& p = std::get<BEAM_PARAMS>(cmd.params);
-			auto pParticle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
-			if (pParticle)
-			{
-				auto pBeam = static_cast<CBeam_CPU*>(pParticle);
-				pBeam->AddBeam(p.beamStart, p.beamEnd,
-					p.fDisplacementAmplitude, (uint32_t)p.iDisplacementIterations, p.fDisplacementDamping,
-					p.flickerTimeInverval, p.color, p.emissive, p.beamDuration);
-			}
+			auto& p = std::get<BEAM_PARAMS>(cmd.params);
+			p.ownerId = ownerId;
+
+			CParticle* particle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
+			CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+
+			if (beam)
+				beam->AddBeam(p);
 		}
 		else if (cmd.sGroupTag_KindTag == SPAWN_COMMAND_KIND::PATTERN)
 		{
@@ -2083,9 +2105,11 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 
 	return ownerId; // ---- 호출자에게 발급된 오너 ID를 돌려줌 ----
 }
-HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, 
-	const std::string& particleType, const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
-	const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount)
+HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
+	const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint, 
+	const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, 
+	const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount, int iSelectedBlend, 
+	_float beamWidth, _float scrollSpeed, uint32_t maxBeams, uint32_t maxDisplacementIterations)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -2127,37 +2151,36 @@ HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string&
 	newEntry["VSGroup"] = VSGroup;
 	newEntry["VSID"] = VSID;
 	newEntry["VSEntryPoint"] = VSEntryPoint;
-
 	newEntry["PSGroup"] = PSGroup;
 	newEntry["PSID"] = PSID;
 	newEntry["PSEntryPoint"] = PSEntryPoint;
-
+	newEntry["BLENDSTATE"] = iSelectedBlend;
 	std::string arrayKey;
 
-//	if (whatKind == "TEXTURE")
-//	{
-//		arrayKey = "textures";
-//		newEntry["TextureID1"] = textureID1;
-//		newEntry["TextureID2"] = textureID2;
-//		newEntry["RowCount"] = RowCount;
-//		newEntry["ColCount"] = ColCount;
-//		newEntry["GeometryType"] = geometryType;
-//		newEntry["BeamWidth"] = beamWidth;
-//		newEntry["ScrollSpeed"] = scrollSpeed;
-//		newEntry["MaxBeams"] = maxBeams;
-//		newEntry["MaxDisplacementIterations"] = maxDisplacementIterations;
-//	}
-//	//else if (whatKind == "MESH")
-//	//{
-//	//	arrayKey = "models";
-//	//	newEntry["sGroupTag"] = sGroupTag;
-//	//	newEntry["sResTag"] = sResTag;
-//	//}
-//	else
-//	{
-//		return E_FAIL;
-//	}
-//
+	if (whatKind == "TEXTURE")
+	{
+		arrayKey = "textures";
+		newEntry["TextureID1"] = textureID1;
+		newEntry["TextureID2"] = textureID2;
+		newEntry["RowCount"] = RowCount;
+		newEntry["ColCount"] = ColCount;
+		newEntry["GeometryType"] = geometryType;
+		newEntry["BeamWidth"] = beamWidth;
+		newEntry["ScrollSpeed"] = scrollSpeed;
+		newEntry["MaxBeams"] = maxBeams;
+		newEntry["MaxDisplacementIterations"] = maxDisplacementIterations;
+	}
+	//else if (whatKind == "MESH")
+	//{
+	//	arrayKey = "models";
+	//	newEntry["sGroupTag"] = sGroupTag;
+	//	newEntry["sResTag"] = sResTag;
+	//}
+	else
+	{
+		return E_FAIL;
+	}
+
 
 	if (!j.contains(arrayKey) || !j[arrayKey].is_array())
 		j[arrayKey] = nlohmann::json::array();
@@ -2550,7 +2573,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexRows = RowCount;
 				desc.TexColumns = ColCount;
 				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
-				desc.fMaxDuration = entry.value("MaxDuration", 0);
+				desc.fMaxDuration = entry.value("MaxDuration", 0.f);
 				particle = CTrail_CPU::Create(&desc);
 
 
@@ -2737,7 +2760,11 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["color"] = { p.color.x, p.color.y, p.color.z, p.color.w };
 				entry["emissive"] = { p.emissive.x, p.emissive.y, p.emissive.z, p.emissive.w };
 				entry["endEmissive"] = { p.endEmissive.x, p.endEmissive.y, p.endEmissive.z, p.endEmissive.w };
-		
+				entry["GrowEndTime"] = p.fGrowEndTime;
+				entry["StraightEndTime"] = p.fStraightEndTime;
+				entry["HoldEndTime"] = p.fHoldEndTime;
+				entry["FadeEndTime"] = p.fFadeEndTime;
+
 
 				break;
 			}
@@ -2919,6 +2946,13 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
 			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
 
+			p.fGrowEndTime = entry.value("GrowEndTime", 0.3f);
+			p.fStraightEndTime = entry.value("StraightEndTime", 0.5f);
+			p.fHoldEndTime = entry.value("HoldEndTime", 0.7f);
+			p.fFadeEndTime = entry.value("FadeEndTime", 1.f);
+
+
+
 			cmd.params = p;
 			break;
 		}
@@ -3089,150 +3123,7 @@ uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
 
 	return Spawn(found->second, worldMat, endPos);
 }
-//uint32_t CParticleManager::Spawn( const std::string& strJsonPath, const _float4x4& worldMat, _fvector endPos)
-//{
-//	std::string path = "./Resources/json/Particle/";
-//	path += strJsonPath;
-//	if (!std::filesystem::exists(path))
-//		return E_FAIL;
-//	std::ifstream file(path);
-//	if (!file.is_open())
-//		return E_FAIL;
-//	nlohmann::json j;
-//	try { file >> j; }
-//	catch (...) { return E_FAIL; }
-//	if (!j.contains("commands") || !j["commands"].is_array())
-//		return E_FAIL;
-//
-//	XMMATRIX matWorld = XMLoadFloat4x4(&worldMat);   // 여기서 한 번만 로드
-//
-//	std::vector<SPAWN_COMMAND> localQueue;
-//	for (const auto& entry : j["commands"])
-//	{
-//		SPAWN_COMMAND cmd{};
-//		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
-//		cmd.sGroupTag = entry.value("sGroupTag", "");
-//		cmd.sTypeTag = entry.value("sTypeTag", "");
-//
-//		switch (cmd.sGroupTag_KindTag)
-//		{
-//		case SPAWN_COMMAND_KIND::STANDARD:
-//		{
-//			STANDARD_PARAMS p{};
-//			p.count = entry.value("count", 1u);
-//			p.bRandomPos = entry.value("bRandomPos", false);
-//			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
-//			auto posMax = entry.value("posMax", std::vector<float>{0, 0, 0});
-//			auto pos = entry.value("position", std::vector<float>{0, 0, 0});
-//
-//			// 위치: 로컬 오프셋을s matWorld로 통째로 변환 (회전 + 이동)
-//			// 회전이 걸려있으면 min/max 두 점을 각각 변환해도 축별 대소관계가
-//			// 뒤집힐 수 있으므로, 변환 후 컴포넌트별로 다시 min/max를 재정렬한다.
-//			_float3 posMinT, posMaxT;
-//			XMStoreFloat3(&posMinT, XMVector3TransformCoord(
-//				XMVectorSet(posMin[0], posMin[1], posMin[2], 1.f), matWorld));
-//			XMStoreFloat3(&posMaxT, XMVector3TransformCoord(
-//				XMVectorSet(posMax[0], posMax[1], posMax[2], 1.f), matWorld));
-//			p.posMin = { std::min(posMinT.x, posMaxT.x), std::min(posMinT.y, posMaxT.y), std::min(posMinT.z, posMaxT.z) };
-//			p.posMax = { std::max(posMinT.x, posMaxT.x), std::max(posMinT.y, posMaxT.y), std::max(posMinT.z, posMaxT.z) };
-//
-//			XMStoreFloat3(&p.position, XMVector3TransformCoord(
-//				XMVectorSet(pos[0], pos[1], pos[2], 1.f), matWorld));
-//
-//			p.bRandomVel = entry.value("bRandomVel", false);
-//			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
-//			auto velMax = entry.value("velMax", std::vector<float>{0, 0, 0});
-//			auto vel = entry.value("velocity", std::vector<float>{0, 0, 0});
-//
-//			// 속도: 방향값이니까 회전만 적용, 이동 성분은 무시 (TransformNormal, w=0)
-//			// 위치와 마찬가지로 회전 때문에 축별 대소관계가 뒤집힐 수 있어 재정렬한다.
-//			_float3 velMinT, velMaxT;
-//			XMStoreFloat3(&velMinT, XMVector3TransformNormal(
-//				XMVectorSet(velMin[0], velMin[1], velMin[2], 0.f), matWorld));
-//			XMStoreFloat3(&velMaxT, XMVector3TransformNormal(
-//				XMVectorSet(velMax[0], velMax[1], velMax[2], 0.f), matWorld));
-//			p.velMin = { std::min(velMinT.x, velMaxT.x), std::min(velMinT.y, velMaxT.y), std::min(velMinT.z, velMaxT.z) };
-//			p.velMax = { std::max(velMinT.x, velMaxT.x), std::max(velMinT.y, velMaxT.y), std::max(velMinT.z, velMaxT.z) };
-//
-//			XMStoreFloat3(&p.velocity, XMVector3TransformNormal(
-//				XMVectorSet(vel[0], vel[1], vel[2], 0.f), matWorld));
-//
-//			p.life = entry.value("life", 1.f);
-//			p.fSize = entry.value("StartSize", 1.f);
-//			p.fEndSize = entry.value("EndSize", 1.f);
-//
-//			p.bRandomRot = entry.value("bRandomRot", false);
-//			// 회전 min/max는 좌표가 아니라 오일러 각도(도) 범위이므로 matWorld로
-//			// 변환하면 안 된다. 캐스터 회전까지 합성하려면 나중에 쿼터니언으로 별도 처리.
-//			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
-//			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
-//			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
-//			p.rotMax = { rotMax[0], rotMax[1], rotMax[2] };
-//			auto rot = entry.value("Rotation", std::vector<float>{0, 0, 0, 0});
-//			p.rotation = { rot[0], rot[1], rot[2], rot[3] };
-//			// TODO: 캐스터 회전까지 합성하려면 matWorld에서 쿼터니언 뽑아서
-//			// rotation과 XMQuaternionMultiply 필요 (지금은 위치/속도만 처리)
-//
-//			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
-//			p.color = { col[0], col[1], col[2], col[3] };
-//			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
-//			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
-//			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
-//			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
-//			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-//			p.bLoop = entry.value("bLoop", false);
-//			p.fSpawnInterval = entry.value("fSpawnInterval", 0.f);
-//			cmd.params = p;
-//			break;
-//		}
-//		case SPAWN_COMMAND_KIND::BEAM:
-//		{
-//			BEAM_PARAMS p{};
-//			auto bs = entry.value("beamStart", std::vector<float>{0, 0, 0, 0});
-//			p.beamStart = { bs[0], bs[1], bs[2], bs[3] };
-//			XMStoreFloat4(&p.beamStart, XMVector3TransformCoord(
-//				XMLoadFloat4(&p.beamStart), matWorld));          // 캐스터 기준: 회전 + 이동
-//
-//			auto be = entry.value("beamEnd", std::vector<float>{0, 0, 0, 0});
-//			p.beamEnd = { be[0], be[1], be[2], be[3] };
-//			XMStoreFloat4(&p.beamEnd, XMLoadFloat4(&p.beamEnd) + endPos);   // 타겟 기준: 순수 이동만 (원래대로)
-//
-//			p.iDisplacementIterations = entry.value("iDisplacementIterations", 0);
-//			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.f);
-//			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.f);
-//			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
-//			p.beamDuration = entry.value("beamDuration", 0.f);
-//			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-//			p.geometryType = entry.value("GeometryType", 0.f);
-//			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
-//			p.color = { col[0], col[1], col[2], col[3] };
-//			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
-//			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
-//			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
-//			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
-//			cmd.params = p;
-//			break;
-//		}
-//		case SPAWN_COMMAND_KIND::PATTERN:
-//		{
-//			int kindIdx = entry.value("patternKindIndex", 0);
-//			PatternParamVariant pv = MakeDefaultPatternParam(kindIdx);
-//			const auto& paramJson = entry["patternParams"];
-//			std::visit([&](auto& p) { LoadParam(p, paramJson); }, pv);
-//			ApplyWorldMatToPattern(pv, matWorld);
-//			auto spawnList = BuildSpawnData(pv);
-//			cmd.sGroupTag_KindTag = SPAWN_COMMAND_KIND::PATTERN;
-//			cmd.params = spawnList;
-//			break;
-//		}
-//		default:
-//			continue;
-//		}
-//		localQueue.push_back(cmd);
-//	}
-//	ExecuteCommandQueue(localQueue);
-//	return m_iNextOwnerId++;
-//}
+
 // 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
 std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& strJsonPath)
 {
@@ -3738,4 +3629,36 @@ void CParticleManager::SetColorByOwner(uint32_t ownerId, const _float4& color)
 				particle->SetColorByOwner(ownerId, color);
 		}
 	}
+}
+HRESULT CParticleManager::StopBeam(const BEAM_HANDLE& handle)
+{
+	CParticle* particle = GetParticle(handle.groupTag, handle.typeTag);
+	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+
+	if (!beam || handle.beamIndex < 0)
+		return E_FAIL;
+
+	beam->SetBeamActive(
+		static_cast<uint32_t>(handle.beamIndex),
+		false);
+
+	return S_OK;
+}
+HRESULT CParticleManager::SetBeamPositions(
+	const BEAM_HANDLE& handle,
+	const _float4& start,
+	const _float4& end)
+{
+	CParticle* particle = GetParticle(handle.groupTag, handle.typeTag);
+	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+
+	if (!beam || handle.beamIndex < 0)
+		return E_FAIL;
+
+	beam->SetBeamPositions(
+		static_cast<uint32_t>(handle.beamIndex),
+		start,
+		end);
+
+	return S_OK;
 }

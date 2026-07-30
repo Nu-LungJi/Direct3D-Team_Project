@@ -62,6 +62,10 @@ namespace Engine
 		_float	 fSpawnDelay = 0.f;
 		uint32_t ownerId = 0;
 		uint32_t geometryType = 0;
+		_float fGrowEndTime{};
+		_float fStraightEndTime{};
+		_float fHoldEndTime{};
+		_float fFadeEndTime{};
 
 	}BEAM_PARAMS;
 

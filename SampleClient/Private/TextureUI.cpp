@@ -86,11 +86,12 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	//	CalcUICoord();
 	//}
 
+	m_UIINFO.Alpha;
+
 	if (m_bWorldSpace)
 	{
 		E::_float scaleFactor = 0.01f;
 		GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * scaleFactor, m_UIINFO.SizeY * scaleFactor, 1.f });
-
 		// 캐릭터를 따라다녀야 한다면 여기서 SetPosition을 갱신
 	}
 	else
@@ -104,11 +105,19 @@ void CTextureUI::Update(E::_float fTimeDelta)
 			m_UIINFO.fY = mousePos.y;
 			CalcUICoord();
 		}
+
+		if (m_pComTween != nullptr)
+		{
+			m_pComTween->Tick(fTimeDelta);
+		}
 	}
 
-	if (m_pComTween != nullptr)
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::SHORTCUT_ICON))
 	{
-		m_pComTween->Tick(fTimeDelta);
+		if (!E::CGameInstance::Get().MousePressing(MOUSEKEYSTATE::LB))
+		{
+			GET_SINGLE(UIManager)->DeleteUIRecursive(this->GetHandle());
+		}
 	}
 }
 
@@ -174,14 +183,12 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 				if (m_bWorldSpace)
 				{
-					// 3D 월드 공간: 월드 x 뷰 x 투영
 					_matrix world = GetTransform().GetLoadedWorldMatrix();
 					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matView * ctx.matProj;
 					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
 				}
 				else
 				{
-					// 2D 스크린 공간: 월드 x 투영 (기존 로직 유지)
 					_matrix matWVP = GetTransform().GetLoadedWorldMatrix() * ctx.matProj;
 					XMStoreFloat4x4(&cbPerObject.matWVP, matWVP);
 				}
@@ -226,6 +233,31 @@ void CTextureUI::PlayEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
+
+	if (uiState & ETOUI(UI_STATE::ENTER))
+	{
+		if (OnHoverEnter) {
+			ClearEffectTweens();
+			OnHoverEnter(this);
+		}
+	}
+	
+	if (uiState & ETOUI(UI_STATE::EXIT))
+	{
+		if (OnHoverExit) {
+			ClearEffectTweens();
+			OnHoverExit(this);
+		}
+	}
+	
+	if (uiState & ETOUI(UI_STATE::CLICK))
+	{
+	
+		if (OnClicked) {
+			ClearEffectTweens();
+			OnClicked(this);
+		}
+	}
 }
 
 E::UPtr<CTextureUI> CTextureUI::Create()

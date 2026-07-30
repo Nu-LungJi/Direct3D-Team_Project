@@ -62,7 +62,11 @@ private:
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{ false };
 
+private:
+	_float3 m_vSpawnLocalOffset{ 0.f, 0.3f, 0.f };
 
+public:
+	_float4x4 GetSpawnWorldMatrix() const;
 public:
 	static E::UPtr<CPlayer_Weapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

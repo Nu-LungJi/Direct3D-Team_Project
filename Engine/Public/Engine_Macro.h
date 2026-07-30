@@ -108,6 +108,7 @@ X(LEFT)			     \
 X(RIGHT)            \
 X(STRAIGHT)            \
 X(BACKWARD)               \
+X(UP)					\
 X(END)
 
 #define BTFLAG_M		\
@@ -121,7 +122,8 @@ X(DEAD,0x0000040)\
 X(EMISSIVE,0x0000080)\
 X(DEBRIS, 0x0000100)\
 X(DISSOLVE, 0x0000200)\
-X(DROP,0x0000400)
+X(DROP,0x0000400)\
+X(ENDHIT, 0x0000800)
 
 
 

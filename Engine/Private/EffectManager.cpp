@@ -680,7 +680,7 @@ EFFECT_INSTANCE_ID CEffectManager::PlayEffect(const std::string& sEffectName,con
 	instance.matWorld = noScaleWorld;
 
 	instance.fElapsed = 0.f;
-	instance.fDuration = 0.f;
+	instance.fDuration = instance.pPreset->fDuration;
 		
 
 	instance.iNextCommandIndex = 0;
@@ -717,7 +717,7 @@ void CEffectManager::DispatchReadyCommands(EFFECT_INSTANCE& instance)
 	{
 		const EFFECT_COMMAND& command = commands[instance.iNextCommandIndex];
 
-		if (command.fSpawnDelay >instance.fElapsed)
+		if (command.fSpawnDelay >instance.fElapsed)	// 펑
 		{
 			break;
 		}

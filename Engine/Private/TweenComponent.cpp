@@ -57,6 +57,7 @@ void TweenComponent::Tick(_float fTimeDelta)
 		case EEaseType::EaseOutBack:    fEasedRatio = Easing::EaseOutBack(fRatio); break;
 		case EEaseType::EaseOutElastic: fEasedRatio = Easing::EaseOutElastic(fRatio); break;
 		case EEaseType::EaseOutBounce:  fEasedRatio = Easing::EaseOutBounce(fRatio); break;
+		case EEaseType::EaseInElastic:  fEasedRatio = Easing::EaseInElastic(fRatio); break;
 		case EEaseType::Linear: default: break;
 		}
 

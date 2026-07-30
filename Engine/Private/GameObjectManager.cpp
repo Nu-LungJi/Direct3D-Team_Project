@@ -430,7 +430,7 @@ void CGameObjectManager::AllReset()
 {
 	for (auto& pObj : m_Objects)
 	{
-		if (pObj.IsOccupied())
+		if (pObj.IsOccupied() && !pObj.Get()->IsPersistent())
 		{
 			pObj.Get()->SetPendingDestroy();
 		}
@@ -440,8 +440,19 @@ void CGameObjectManager::AllReset()
 	//FrameStart();
 	//FrameEnd();
 
-	m_Layers.clear();
-	m_LookupLayers.clear();
+	for (auto& [_, handles] : m_Layers)
+	{
+		std::erase_if(handles, [this](const CHandle& handle)
+		{
+			const auto* pObject = GetGameObjectByHandle(handle);
+			return pObject == nullptr || !pObject->IsPersistent();
+		});
+	}
+	std::erase_if(m_Layers, [](const auto& layer)
+	{
+		return layer.second.empty();
+	});
+	SortLayer();
 	m_TreePreparation.clear();
 	m_Tree.clear();
 }

@@ -46,22 +46,19 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
         {
             m_NodeValue.bCur = true;
             m_NodeValue.iPreSecquenceIndex = i;
-			m_eDebug = EVALUATE::RUN;
-            return EVALUATE::RUN;
+            return 	m_eDebug = EVALUATE::RUN;
         }
         else if (eValuate == EVALUATE::FAILED)
         {
 			m_NodeValue.bCur = false;
 			m_NodeValue.iPreSecquenceIndex = 0;
-			m_eDebug = EVALUATE::FAILED;
-			return EVALUATE::FAILED;
+			return 	m_eDebug = EVALUATE::FAILED;
         }
 
     }
 	m_NodeValue.bCur = false;
 	m_NodeValue.iPreSecquenceIndex = 0;
-	m_eDebug = EVALUATE::SUCCESS;
-    return EVALUATE::SUCCESS;
+    return 	m_eDebug = EVALUATE::SUCCESS;
 }
 
 void CBTSecqunce::Abort()

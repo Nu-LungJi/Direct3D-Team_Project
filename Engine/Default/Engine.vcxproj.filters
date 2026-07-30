@@ -304,6 +304,24 @@
     <Filter Include="Component\PhysX\RigidBody">
       <UniqueIdentifier>{ef069a81-7cf2-4664-904d-b30ae8d04d26}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\PhysX\Joint">
+      <UniqueIdentifier>{bd69017f-f7b8-4be5-9175-470e8cebfaba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\Fixed">
+      <UniqueIdentifier>{0776ec1d-7e90-43dd-9c64-194c0d06c593}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\Distance">
+      <UniqueIdentifier>{82892f8d-84cb-4ea0-9dd5-56394024da0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\Revolute">
+      <UniqueIdentifier>{d259a719-f158-4f4d-a535-10c79fb767c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Joint\D6">
+      <UniqueIdentifier>{2260739b-c811-45df-b9b9-666670961195}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Component\PhysX\Ragdoll">
+      <UniqueIdentifier>{ce2fe5d0-46fb-452c-98c3-c70bc2a362ec}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Component\PhysX\Collider\Box">
       <UniqueIdentifier>{0ec1bad3-3526-4018-b870-041113a940d2}</UniqueIdentifier>
     </Filter>
@@ -516,6 +534,9 @@
     </Filter>
     <Filter Include="Particle\ShaderCache">
       <UniqueIdentifier>{13e94c77-619a-46ac-a2af-64db3c788f79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Camera\CinematicCamera">
+      <UniqueIdentifier>{96a18c58-ecdf-48d1-9f04-bcd00fabb6d0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -891,6 +912,33 @@
     <ClInclude Include="..\public\ComPxRigidBody.h">
       <Filter>Component\PhysX\RigidBody</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ComPxJoint.h">
+      <Filter>Component\PhysX\Joint</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxFixedJoint.h">
+      <Filter>Component\PhysX\Joint\Fixed</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxDistanceJoint.h">
+      <Filter>Component\PhysX\Joint\Distance</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxRevoluteJoint.h">
+      <Filter>Component\PhysX\Joint\Revolute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxD6Joint.h">
+      <Filter>Component\PhysX\Joint\D6</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPxRagdoll.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PxRagdollAuthoring.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\RagdollEditorGUI.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysXRagdollData.h">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\ComPxBoxCollider.h">
       <Filter>Component\PhysX\Collider\Box</Filter>
     </ClInclude>
@@ -1134,6 +1182,18 @@
     </ClInclude>
     <ClInclude Include="..\public\ParticleShaderCache.h">
       <Filter>Particle\ShaderCache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicSystem.h">
+      <Filter>GameObject\Camera\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicAsset.h">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicCamera.h">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicTypes.h">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1506,6 +1566,30 @@
     <ClCompile Include="..\private\ComPxRigidBody.cpp">
       <Filter>Component\PhysX\RigidBody</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\ComPxJoint.cpp">
+      <Filter>Component\PhysX\Joint</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxFixedJoint.cpp">
+      <Filter>Component\PhysX\Joint\Fixed</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxDistanceJoint.cpp">
+      <Filter>Component\PhysX\Joint\Distance</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRevoluteJoint.cpp">
+      <Filter>Component\PhysX\Joint\Revolute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxD6Joint.cpp">
+      <Filter>Component\PhysX\Joint\D6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPxRagdoll.cpp">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PxRagdollAuthoring.cpp">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\RagdollEditorGUI.cpp">
+      <Filter>Component\PhysX\Ragdoll</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ComPxBoxCollider.cpp">
       <Filter>Component\PhysX\Collider\Box</Filter>
     </ClCompile>
@@ -1683,6 +1767,15 @@
     </ClCompile>
     <ClCompile Include="..\private\ParticleShaderCache.cpp">
       <Filter>Particle\ShaderCache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicSystem.cpp">
+      <Filter>GameObject\Camera\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicAsset.cpp">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicCamera.cpp">
+      <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

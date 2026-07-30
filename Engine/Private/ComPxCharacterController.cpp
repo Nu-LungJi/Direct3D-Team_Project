@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ComPxCharacterController.h"
+#include "ComPxJoint.h"
 #include "PhysXManager.h"
 
 #pragma push_macro("new")
@@ -276,6 +277,40 @@ CComPxCharacterController::CComPxCharacterController(const CComPxCharacterContro
 {
 }
 CComPxCharacterController::~CComPxCharacterController() { }
+
+PxRigidActor* CComPxCharacterController::GetActor() const
+{
+	return m_pController ? m_pController->getActor() : nullptr;
+}
+
+void CComPxCharacterController::RegisterJoint(
+	CComPxJoint* pJoint)
+{
+	if (pJoint)
+		m_Joints.insert(pJoint);
+}
+
+void CComPxCharacterController::UnregisterJoint(
+	CComPxJoint* pJoint)
+{
+	if (pJoint)
+		m_Joints.erase(pJoint);
+}
+
+void CComPxCharacterController::ReleaseConnectedJoints()
+{
+	while (!m_Joints.empty())
+	{
+		CComPxJoint* pJoint = *m_Joints.begin();
+		if (!pJoint)
+		{
+			m_Joints.erase(m_Joints.begin());
+			continue;
+		}
+
+		pJoint->OnCharacterControllerReleased(this);
+	}
+}
 
 HRESULT CComPxCharacterController::Initialize(void* pArg)
 {
@@ -576,6 +611,8 @@ UPtr<CPrototype> CComPxCharacterController::Clone(void* pArg)
 
 void CComPxCharacterController::Free()
 {
+	ReleaseConnectedJoints();
+
 	if (m_pController)
 	{
 		if (auto* pActor = m_pController->getActor())

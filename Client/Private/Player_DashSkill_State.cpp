@@ -56,14 +56,12 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_fScaleTime = 0.f;
 	m_fDashElapsed = 0.f;
-	auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-	static_cast<CTrail_CPU*>(a)->SetColor(_float4(255 / 255.f, 1.f, 1.f,0.8f));
-	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255/255.f, 1.f, 1.f, 1.5f));
 
 	auto k = pPlayer->GetTransform().GetWorldMatrix();
 	m_iDashBodyEffectID = CGameInstance::Get().PlayEffect("PlayerBodyDash", *pPlayer->GetTransform().GetWorldMatrix(), _vector{},
 		[this, pPlayer](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
 		{
+
 			if (effectId != m_iDashBodyEffectID)
 				return;
 			char msg[256];
@@ -76,6 +74,7 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 			pPlayer->SetBodyEffectID(INVALID_EFFECT_INSTANCE_ID);
 		});
 	pPlayer->SetBodyEffectID(m_iDashBodyEffectID);
+
 }
 
 
@@ -164,10 +163,8 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 		}
 
 		{
-			const _float fRemainingTime =
-				std::max(0.f, DASH_DURATION - m_fDashElapsed);
-			const _float fMoveTime =
-				std::min(fTimeDelta, fRemainingTime);
+			const _float fRemainingTime = std::max(0.f, DASH_DURATION - m_fDashElapsed);
+			const _float fMoveTime = std::min(fTimeDelta, fRemainingTime);
 
 			if (fMoveTime > 0.f)
 			{

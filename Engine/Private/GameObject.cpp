@@ -26,7 +26,6 @@ HRESULT CGameObject::Initialize(void* pArg)
 {
     auto pDesc = static_cast<GAMEOBJECT_DESC*>(pArg);
     m_sObjectTag = pDesc->sObjectTag;
-
     //m_ObjectHandle = CGameInstance::Get().GetFreeHandle().value();
 
     m_ObjectHandle = pDesc->__handle;

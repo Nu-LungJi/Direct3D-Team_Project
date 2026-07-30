@@ -422,6 +422,11 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	}
 
 	{
+		ZoneScopedN("CameraManager_Update");
+		m_pCameraManager->Update(fTimeDelta);
+	}
+
+	{
 		ZoneScopedN("GameObjectManager_LateUpdate");
 		m_pGameObjectManager->LateUpdate(fTimeDelta);
 	}
@@ -481,6 +486,7 @@ HRESULT CGameInstance::Draw()
 {
 	if (FAILED(m_pLightManager->Capture_ShadowMap()))
 	{
+		MSG_BOX("ASDFASDF");
 		return E_FAIL;
 	}
 	if (FAILED(m_pRenderer->Draw()))
@@ -629,6 +635,19 @@ void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {
 
 HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end) {
 	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, start, end);
+}
+std::optional<BEAM_HANDLE> CGameInstance::SpawnBeam(const StringID& groupTag,const StringID& typeTag,const BEAM_PARAMS& params)
+{
+	return m_pParticleManager->SpawnBeam(groupTag,typeTag,params);
+}
+HRESULT CGameInstance::SetBeamPositions(const BEAM_HANDLE& handle,const _float4& start,const _float4& end)
+{
+	return m_pParticleManager->SetBeamPositions(handle,start,end);
+}
+
+HRESULT CGameInstance::StopBeam(const BEAM_HANDLE& handle)
+{
+	return m_pParticleManager->StopBeam(handle);
 }
 #pragma endregion
 
@@ -999,6 +1018,31 @@ CCameraObject* CGameInstance::GetCamera(const StringID& CameraID) const
 HRESULT CGameInstance::RegistCamera(const StringID& CameraID, const CHandle& handle)
 {
 	return m_pCameraManager->RegistCamera(CameraID, handle);
+}
+HRESULT CGameInstance::RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset)
+{
+	return m_pCameraManager->RegistCinematicAsset(pAsset);
+}
+HRESULT CGameInstance::LoadCinematic(
+	const std::string& CinematicName)
+{
+	return m_pCameraManager->LoadCinematic(CinematicName);
+}
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
+{
+	return m_pCameraManager->PlayCinematic(CinematicID);
+}
+void CGameInstance::StopCinematic()
+{
+	m_pCameraManager->StopCinematic();
+}
+_bool CGameInstance::IsCinematicPlaying() const
+{
+	return m_pCameraManager->IsCinematicPlaying();
+}
+_float CGameInstance::GetCinematicPlayTime() const
+{
+	return m_pCameraManager->GetCinematicPlayTime();
 }
 
 #pragma endregion

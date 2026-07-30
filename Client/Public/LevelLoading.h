@@ -52,6 +52,7 @@ private:
 	PHASE m_ePhase{ PHASE::READY };
 	std::future<bool> m_futUnloadFinish{};
 	std::future<bool> m_futLoadFinish{};
+	bool m_bLoadUiResource{ false };
 
 public:
 	static Engine::UPtr< CLevelLoading> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex);

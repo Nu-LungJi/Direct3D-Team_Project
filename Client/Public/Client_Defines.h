@@ -60,6 +60,8 @@ namespace Client
 		Prototype_GameObject_PlayerWeapon,
 		Prototype_GameObject_Terrain,
 		Prototype_GameObject_OilBarrel,
+		Prototype_GameObject_RagdollTest,
+		Prototype_GameObject_PlayerMagicBullet,
 	};
 
 	enum class PROTO_COMPONENT
@@ -68,11 +70,23 @@ namespace Client
 	};
 
 	enum class TURN { LEFT_45, LEFT_90, LEFT_135, LEFT_180, RIGHT_45, RIGHT_90, RIGHT_135, RIGHT_180, END };
-	enum class ATTMON { ATT_1, ATT_2, ATT_3, ATT_4, SKILL_1, SKILL_2, SKILL_3, END };
-	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO};
-	enum class HITMON { ACIO, DEPULSO, DESCENDO, DEF,HIT_4, END };
-	enum class PARTES { WEAPON, END };
+	enum class ATTMON { ATT_1, ATT_2, ATT_3, ATT_4, SKILL_1, SKILL_2, SKILL_3, SKIP, END };
+	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO,END};
+enum class PARTES { WEAPON, END };
 }
 
 extern HWND g_hWnd;
 extern HINSTANCE g_hInstance;
+
+#define DECLARE_SINGLE(classname)				\
+private:										\
+	classname() { }								\
+public:											\
+	static classname* GetInstance()				\
+	{											\
+		static classname s_instance;			\
+												\
+		return &s_instance;						\
+	}
+
+#define GET_SINGLE(classname) classname::GetInstance()

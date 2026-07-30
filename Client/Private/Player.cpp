@@ -26,7 +26,13 @@
 #include "Player_Attack_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
+#include "Player_AcientAttack_State.h"
+#include "Player_AccioSkill_State.h"
+#include "Player_DepulsoSkill_State.h"
+#include "Player_DescendoSkill_State.h"
+#include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
+#include "Trail_CPU.h"
 NS_USING(Client)
 
 void CPlayer::UpdateGUI()
@@ -50,6 +56,7 @@ void CPlayer::UpdateGUI()
 			1.f),
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
+
 }
 
 CPlayer::CPlayer()
@@ -96,7 +103,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-
+	m_LevelTag = pDesc->LevelTag;
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
@@ -133,6 +140,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.tFilter = pDesc->tFilter;
+		Desc.vPosition = pDesc->vInitialPosition;
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
@@ -206,6 +214,30 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ACIENTATTACK_SKILL,
+			CPlayer_AcientAttack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::ACCIO_SKILL,
+			CPlayer_AccioSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DEPULSO_SKILL,
+			CPlayer_DepulsoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DESCENDO_SKILL,
+			CPlayer_DescendoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
@@ -232,7 +264,19 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 
+	{
+		{
+			auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.f, 113/255.f, 113 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.f, 44 / 255.f, 44 / 255.f, 5.f));
+		}
 
+		{
+			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
+		}
+	}
 	return S_OK;
 
 }
@@ -242,6 +286,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACIENTATTACK_SKILL)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_vRawMoveDirection = {};
+		m_fCurrentMoveSpeed = 0.f;
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+		m_pComMoveIntent->ClearMoveIntent();
+		return;
+	}
 
 	auto* pPlayerCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
 	if (!pPlayerCamera)
@@ -441,6 +498,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//}
 		}
 		
+		//  가까이 있는거 한번 더 감지 
 			auto ori = m_pComTransform->GetPosition();
 		if (false) {
 			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
@@ -463,7 +521,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	else {
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
-
+		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
 				auto ori = m_pComTransform->GetPosition();
 			if (false) {
@@ -479,7 +537,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			}
 
 			std::vector<PX_OVERLAP_RESULT> results{};
-			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 15.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 				const auto& result = results.front();
 				m_hAutoTarget = result.pGameObject->GetHandle();
@@ -495,7 +553,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
 				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(30.f, matrix);
+				CGameInstance::Get().GetDbgLineRender()->AddSphere(40.f, matrix);
 				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 			}
@@ -503,7 +561,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 
-			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 30.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
+			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 40.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
 
 			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
 
@@ -544,6 +602,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_fControlHoldTime = 0.f;
 		m_bDashTriggered = false;
 	}
+
+	if (CGameInstance::Get().KeyDown(DIK_X)) {
+		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
+	}
+
+	if (CGameInstance::Get().KeyDown(DIK_1))
+		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_2))
+		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
+
+	if (CGameInstance::Get().KeyDown(DIK_3))
+		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
 }
 
 
@@ -981,6 +1052,53 @@ HRESULT CPlayer::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 }
 
 
+void CPlayer::Attack_Magic_Bullet()
+{
+
+
+
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]);
+
+	if (!pWeapon)
+		return;
+
+	// 무기 발사 위치
+	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
+	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43};
+
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+
+	if (pTarget)
+	{
+		// 타깃이 있으면 타깃을 향해 발사
+		XMStoreFloat3( &desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
+	}
+	else
+	{
+		// 타깃이 없으면 플레이어 전방 일정 거리로 발사
+		const _vector start = XMLoadFloat3(&desc.vStartPosition);
+
+		const _vector look = XMVector3Normalize(XMVectorSetY(GetTransform().GetState(STATE::LOOK),0.f));
+
+		XMStoreFloat3(&desc.vEndPosition,start + look * 20.f);
+	}
+
+	desc.fSpeed = 70.f;
+	desc.fCurveHeight = 2.f;
+	desc.iSampleCount = 10;
+
+	CGameInstance::Get().AddGameObjectToLayer(m_LevelTag,PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,"PlayerMagicBullet",&desc);
+
+	{
+		auto a = CGameInstance::Get().GetParticle("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU");
+		if (a == nullptr) {
+			return;
+		}
+		static_cast<CTrail_CPU*>(a)->Clear();
+	}
+}
 void CPlayer::OnWake()
 {
 }
@@ -1013,7 +1131,6 @@ void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
-
 
 E::UPtr<CPlayer> CPlayer::Create()
 {

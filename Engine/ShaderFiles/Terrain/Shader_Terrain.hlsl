@@ -1,11 +1,13 @@
 #include "../ShaderDefines.hlsl"
 
 Texture2D g_TileTextures[4] : register(t0);
-Texture2D g_BlendMask : register(t4);
+Texture2D g_BlendMask : register(t4); // TerrainChunk의 개별 BlendMask
 
 cbuffer CB_TERRAIN_CHUNK : register(b11)
 {
+	// 전체 Terrain UV에서 청크가 시작하는 위치
     float2 g_ChunkUVOffset;
+	// 전체 Terrain UV에서 청크가 차지하는 크기
     float2 g_ChunkUVSpan;
 };
 
@@ -56,6 +58,11 @@ struct PS_OUT
 PS_OUT PSMain(PS_IN In)
 {
     PS_OUT Out;
+	
+	// 전체 Terrain UV를 현재 청크의 0~1 Blend Mask UV로 변환
+	
+	// 청크의 Blend Mask는 청크 내부를 0~1로 표현
+	// 하지만 정점 UV는 전체 Terrain 기준이므로 변환이 필요
     float2 maskUV = saturate((In.vTexcoord - g_ChunkUVOffset) / g_ChunkUVSpan);
     float4 weights = saturate(g_BlendMask.Sample(LinearClamp, maskUV));
     weights /= max(dot(weights, 1.f), 0.0001f);
