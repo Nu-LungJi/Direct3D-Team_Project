@@ -73,14 +73,7 @@ void CUIController::Update(E::_float fTimeDelta)
 	{
 		UseSpell(4);
 	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_5))
-	{
-		SetSpellType(2, ETOUI(SPELL_TYPE::ASSIO));
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_6))
-	{
-		SetSpellType(2, ETOUI(SPELL_TYPE::NONE));
-	}
+
 	// ************** 포션
 	if (E::CGameInstance::Get().KeyDown(DIK_NEXT))
 	{
@@ -103,7 +96,7 @@ void CUIController::Update(E::_float fTimeDelta)
 			
 	}
 	//************** 몬스터hp
-	if (E::CGameInstance::Get().KeyDown(DIK_O))
+	if (E::CGameInstance::Get().KeyDown(DIK_5))
 	{
 		if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
 		{
@@ -121,7 +114,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		m_bMonsterHP = false;
 	}
 
-	if (E::CGameInstance::Get().KeyDown(DIK_P))
+	if (E::CGameInstance::Get().KeyDown(DIK_6))
 		AddMonsterHP(-30.f);
 }
 

@@ -834,6 +834,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>

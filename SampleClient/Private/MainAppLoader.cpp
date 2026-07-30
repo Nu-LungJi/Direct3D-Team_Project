@@ -18,6 +18,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "TextBox.h"
+#include "HPBar.h"
 
 NS_USING(Client)
 
@@ -491,6 +492,10 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resources()
 		return false;
 	}
 	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextBox", CTextBox::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_HPBar", CHPBar::Create())))
 	{
 		return false;
 	}

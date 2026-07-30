@@ -75,7 +75,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				{
 					namespace fs = std::filesystem;
 
-					std::string targetDir = "./Resources/Client/Textures/UI/PlayScreen";
+					std::string targetDir = "./Resources/SampleClient/Textures/UI/UITexture/PlayScreen";
 
 					if (fs::exists(targetDir) && fs::is_directory(targetDir))
 					{
@@ -102,7 +102,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				{
 					namespace fs = std::filesystem;
 
-					std::string targetDir = "./Resources/Client/Textures/UI/SpellType";
+					std::string targetDir = "./Resources/SampleClient/Textures/UI/UITexture/SpellType";
 
 					if (fs::exists(targetDir) && fs::is_directory(targetDir))
 					{
@@ -129,7 +129,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				{
 					namespace fs = std::filesystem;
 
-					std::string targetDir = "./Resources/Client/Textures/UI/SpellSlot";
+					std::string targetDir = "./Resources/SampleClient/Textures/UI/UITexture/SpellSlot";
 
 					if (fs::exists(targetDir) && fs::is_directory(targetDir))
 					{
