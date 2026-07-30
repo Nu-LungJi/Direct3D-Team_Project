@@ -252,6 +252,7 @@
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
+    <ClInclude Include="..\public\MonEffect.h" />
     <ClInclude Include="..\Public\Monster.h" />
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
@@ -313,6 +314,7 @@
     <ClCompile Include="..\Private\BTAttackAnimation.cpp" />
     <ClCompile Include="..\Private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\Private\BTDecFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecHitCnt.cpp" />
     <ClCompile Include="..\Private\BTDecHp.cpp" />
     <ClCompile Include="..\Private\BTDecInvert.cpp" />
     <ClCompile Include="..\private\BTDecIsPending.cpp" />
@@ -350,6 +352,7 @@
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />
+    <ClCompile Include="..\private\MonEffect.cpp" />
     <ClCompile Include="..\Private\Monster.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />

@@ -28,7 +28,7 @@ void CMonster::UpdateGUI()
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
 	ImGui::DragFloat("EE", &ff, 0, 1);
 	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_f), 0, 100);
-
+	ImGui::Text("NoramlAtt : %d", m_iNormalHitCnt);
 	
 	ImGui::Text("ReLoad Data");
 	for (auto& [key, value] : m_ParticleData)
@@ -377,59 +377,26 @@ _bool CMonster::Activate_PendingHit()
 
 _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	
+
+	Damaged();
+	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
 	{
 		return false;
 	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return false;
-	Damaged();
 	MON_HIT_INFO HitInfo{};
+
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+		++m_iNormalHitCnt;
 
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
-	
-	//switch (eType)
-	//{
-	//case PLAYER_SKILL_TYPE::ATTACK:
-	//	HitInfo.iPriority = 5.f;
-	//	break;
-	//case PLAYER_SKILL_TYPE::ACCIO:
-	//	HitInfo.iPriority = 10.f;
-	//	break;
-	//case PLAYER_SKILL_TYPE::DEPULSO:
-	//	HitInfo.iPriority = 15.f;
-	//	break;
-	//case PLAYER_SKILL_TYPE::DESCENDO:
-	//	HitInfo.iPriority = 20.f;
-	//	break;
-	//case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
-	//	HitInfo.iPriority = 25.f;
-	//	break;
-	//case PLAYER_SKILL_TYPE::PROTEGO:
-	//	HitInfo.iPriority = 8.f;
-	//	break;
-	//}
-	//
-	////if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
-	////{
-	////	m_PendingMonTable = HitInfo;
-	////	m_bPending = true;
-	////}
-	////현재 pending 가중치보다 낮으면 리턴
-	//if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
-	//	return false;
-	////현재 잠금된거보다 낮아도 거부
-	//if (m_bActiveHit &&HitInfo.iPriority < m_ActiveMonTable.iPriority)
-	//	return false;
-	//새 피격상태 전달
-
 	m_PendingMonTable = HitInfo;
 	m_bPending = true;
-	
-	//우선순위 잠금
 
 	return true;
 }
@@ -516,7 +483,7 @@ void CMonster::IsHit()
 }
 void CMonster::Flag_Check(_float fTimeDelta)
 {
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT) | ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 	{
 		m_bEmissive = true;
 		StartEmissive();
@@ -534,7 +501,10 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
 		m_fEmissive = 0;
 	else
+	{
 		m_iHitCnt = 0;
+		m_iNormalHitCnt = 0;
+	}
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 	{
 		if (auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CMon_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]))

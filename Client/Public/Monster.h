@@ -99,11 +99,12 @@ public:
 	_bool						Is_PendingHit() { return m_bPending; }
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						Clear_PendingHit() { m_PendingMonTable = {}; m_bPending = false; }
-	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; }
+	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; m_eAttType = ATTMON::END; }
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
 	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
 	uint32_t					GetHitCnt() { return m_iHitCnt; }
+	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 private:
@@ -136,8 +137,8 @@ protected:
 	_float ff{};
 
 	_float2						m_fSkillRatio{ };
-	uint32_t					m_iCurrentInstanceCount = 0;
-	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_iHitCnt{};
+	uint32_t					m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{};
+	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t						m_iHp{}, m_iMaxHp{};
 	_bool						m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
 	_string						m_SocketName{};
