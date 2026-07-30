@@ -74,7 +74,7 @@ void CPlayerThirdPersonCamera::UpdateFollow()
 		vTarget.z - vForward.z * fHorizontalDistance };
 
 
-	_float3 finalPosition {};
+	_float3 finalPosition{};
 	PlayerToCameraSphereSweep(vTargetPosition, vDesiredPosition, CAMERA_COLLISION_RADIUS, finalPosition);
 
 	auto& CameraTransform = GetTransform();
@@ -124,7 +124,7 @@ _bool CPlayerThirdPersonCamera::PlayerToCameraSphereSweep(const _float3& PlayerP
 	Desc.tFilter.iQueryMask =
 		ETOUI(COLLISION_LAYER::DEFAULT)
 		| ETOUI(COLLISION_LAYER::WORLD_STATIC);
-		//| ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+	//| ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
 
 
 	PX_SWEEP_RESULT Hit{};

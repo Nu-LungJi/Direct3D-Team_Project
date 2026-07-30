@@ -1011,7 +1011,7 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 	pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
 	pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
 
-	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes()-1; ++iMeshIndex)
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
 	{
 		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
 		if (!mesh)
