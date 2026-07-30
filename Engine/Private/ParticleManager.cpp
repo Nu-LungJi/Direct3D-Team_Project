@@ -549,8 +549,8 @@ void CParticleManager::UpdateGUI()
 	std::string jsonNameStr = szJsonName;
 
 	if (particleTypeStr == "BEAM_CPU") {
-		ImGui::Text("Beam GeometryType");
-		ImGui::InputInt("GeometryType", &iGeometryType);
+		ImGui::InputInt("MaxBeams", &iMaxBeams);
+		ImGui::InputInt("MaxDisplacementIterations", &iMaxDisplacementIterations);
 	}
 	else {
 		ImGui::InputText("VIBuffer1 if CPUTEX", szViBuffer1, IM_ARRAYSIZE(szViBuffer1));
@@ -678,10 +678,21 @@ void CParticleManager::UpdateGUI()
 						targetPath, whatKindStr, particleTypeStr, particleNameStr,
 						iMaxParticles,
 						"PERMANENT_PARTICLE_VSSHADER", VSIDIName, VSEntryPoint,
-						"PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint, iGeometryType,
-						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2,
+						"PERMANENT_PARTICLE_PSSHADER", PSIDIName, PSEntryPoint,
+						slotDiffuse.szTextureID1, slotDiffuse.szTextureID2, 
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID1,
+						slotNormal.selectedPath.empty() ? "" : slotNormal.szTextureID2,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID1,
+						slotDistortion.selectedPath.empty() ? "" : slotDistortion.szTextureID2,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID1,
+						slotNoise.selectedPath.empty() ? "" : slotNoise.szTextureID2,
+						slotNormal.selectedPath,
+						slotDistortion.selectedPath,
+						slotNoise.selectedPath,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
+						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
 						iTexRow, iTexCol, iSelectedBlend,
-						fBeamWidth, fBeamScrollSpeed,
 						static_cast<uint32_t>(std::max(iMaxBeams, 1)),
 						static_cast<uint32_t>(std::clamp(iMaxDisplacementIterations, 1, 10)));
 		
@@ -1480,11 +1491,10 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat("Emissive Intensity", &pendingBeam.emissive.w, 0.01f);
 		ImGui::ColorEdit3("End Emissive Color", &pendingBeam.endEmissive.x);
 		ImGui::DragFloat("End Emissive Intensity", &pendingBeam.endEmissive.w, 0.01f);
-		ImGui::InputInt("GeometryType", &iGeometryType);
-		ImGui::DragFloat("BeamWidth", &fBeamWidth, 0.01f, 0.001f, 10.f);
+		ImGui::InputInt("GeometryType", &pendingBeam.geometryType);
+		ImGui::DragFloat("BeamWidth", &pendingBeam.fBeamWidth, 0.01f, 0.001f, 10.f);
 		ImGui::DragFloat("ScrollSpeed", &fBeamScrollSpeed, 0.01f);
-		ImGui::InputInt("MaxBeams", &iMaxBeams);
-		ImGui::InputInt("MaxDisplacementIterations", &iMaxDisplacementIterations);
+
 
 
 		ImGui::DragFloat("GrowEndTime",		&pendingBeam.fGrowEndTime, 0.01f);
@@ -2107,9 +2117,19 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 }
 HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 	const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint, 
-	const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, 
-	const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount, int iSelectedBlend, 
-	_float beamWidth, _float scrollSpeed, uint32_t maxBeams, uint32_t maxDisplacementIterations)
+	const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, 
+	const std::string& textureID1, const std::string& textureID2, 
+	const std::string& normalTexID1 , const std::string& normalTexID2,
+	const std::string& distortionTexID1 , const std::string& distortionTexID2 ,
+	const std::string& noiseTexID1, const std::string& noiseTexID2,
+	const std::string& normalTexPath,
+	const std::string& distortionTexPath,
+	const std::string& noiseTexPath,
+	const std::string& AnyTexID1,
+	const std::string& AnyTexID2,
+	const std::string& AnyTexPath ,
+	int RowCount, int ColCount, int iSelectedBlend,
+	 uint32_t maxBeams, uint32_t maxDisplacementIterations)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -2157,16 +2177,38 @@ HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string&
 	newEntry["BLENDSTATE"] = iSelectedBlend;
 	std::string arrayKey;
 
+
+	if (!normalTexID1.empty())
+	{
+		newEntry["NormalTextureID1"] = normalTexID1;
+		newEntry["NormalTextureID2"] = normalTexID2;
+		newEntry["NormalTexturePath"] = normalTexPath;
+	}
+	if (!distortionTexID1.empty())
+	{
+		newEntry["DistortionTextureID1"] = distortionTexID1;
+		newEntry["DistortionTextureID2"] = distortionTexID2;
+		newEntry["DistortionTexturePath"] = distortionTexPath;
+	}
+	if (!noiseTexID1.empty())
+	{
+		newEntry["NoiseTextureID1"] = noiseTexID1;
+		newEntry["NoiseTextureID2"] = noiseTexID2;
+		newEntry["NoiseTexturePath"] = noiseTexPath;        
+	}
+	if (!AnyTexID1.empty()) {
+		newEntry["AnyTextureID1"] = AnyTexID1;
+		newEntry["AnyTextureID2"] = AnyTexID2;
+		newEntry["AnyTexturePath"] = AnyTexPath;
+	}
 	if (whatKind == "TEXTURE")
 	{
 		arrayKey = "textures";
 		newEntry["TextureID1"] = textureID1;
 		newEntry["TextureID2"] = textureID2;
+
 		newEntry["RowCount"] = RowCount;
 		newEntry["ColCount"] = ColCount;
-		newEntry["GeometryType"] = geometryType;
-		newEntry["BeamWidth"] = beamWidth;
-		newEntry["ScrollSpeed"] = scrollSpeed;
 		newEntry["MaxBeams"] = maxBeams;
 		newEntry["MaxDisplacementIterations"] = maxDisplacementIterations;
 	}
@@ -2528,9 +2570,6 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			{
 				CBeam_CPU::DESC desc{};
 
-				desc.geometryType = entry.value("GeometryType", 0);
-				desc.fWidth = entry.value("BeamWidth", 0.15f);
-				desc.fScrollSpeed = entry.value("ScrollSpeed", 1.f);
 				desc.iMaxBeams = entry.value("MaxBeams", 16u);
 				desc.iMaxDisplacementIterations = entry.value("MaxDisplacementIterations", 10u);
 
@@ -2764,6 +2803,8 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["StraightEndTime"] = p.fStraightEndTime;
 				entry["HoldEndTime"] = p.fHoldEndTime;
 				entry["FadeEndTime"] = p.fFadeEndTime;
+				entry["BeamWidth"] = p.fBeamWidth;
+				entry["GeometryType"] = p.geometryType;
 
 
 				break;
@@ -2950,7 +2991,9 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.fStraightEndTime = entry.value("StraightEndTime", 0.5f);
 			p.fHoldEndTime = entry.value("HoldEndTime", 0.7f);
 			p.fFadeEndTime = entry.value("FadeEndTime", 1.f);
-
+			p.fBeamWidth = entry.value("BeamWidth", 1.f);
+			p.geometryType = entry.value("GeometryType", 0);
+	
 
 
 			cmd.params = p;
@@ -3237,8 +3280,6 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
 			p.beamDuration = entry.value("beamDuration", 0.f);
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-			p.geometryType = entry.value("GeometryType", 0.f);
-
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});

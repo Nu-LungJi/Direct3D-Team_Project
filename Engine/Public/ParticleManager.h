@@ -127,9 +127,19 @@ public:
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
-		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, 
-		const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount, int iSelectedBlend,
-		_float beamWidth, _float scrollSpeed, uint32_t maxBeams, uint32_t maxDisplacementIterations);
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, 
+		const std::string& textureID1, const std::string& textureID2,
+		const std::string& normalTexID1, const std::string& normalTexID2,
+		const std::string& distortionTexID1 , const std::string& distortionTexID2 ,
+		const std::string& noiseTexID1, const std::string& noiseTexID2,
+		const std::string& normalTexPath,
+		const std::string& distortionTexPath,
+		const std::string& noiseTexPath,
+		const std::string& AnyTexID1,
+		const std::string& AnyTexID2 ,
+		const std::string& AnyTexPath ,
+		int RowCount, int ColCount, int iSelectedBlend,
+		 uint32_t maxBeams, uint32_t maxDisplacementIterations);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
