@@ -173,6 +173,7 @@ void CBTAnimRoot::Abort()
 nlohmann::json CBTAnimRoot::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
+
 	SaveJsonValue(j, "EnableRatio", m_bRatio);
 	SaveJsonValue(j, "Loop", m_bLoop);
 	SaveJsonValue(j, "Blend", m_fBlend);

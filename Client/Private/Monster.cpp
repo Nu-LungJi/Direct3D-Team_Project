@@ -30,12 +30,12 @@ void CMonster::UpdateGUI()
 	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_f), 0, 100);
 	ImGui::Text("NoramlAtt : %d", m_iNormalHitCnt);
 	
-	ImGui::Text("ReLoad Data");
-	for (auto& [key, value] : m_ParticleData)
-	{
-		if (ImGui::Button(MagicEnumToStringView(key).data()))
-			m_Effects[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
-	}
+	//ImGui::Text("ReLoad Data");
+	//for (auto& [key, value] : m_ParticleData)
+	//{
+	//	if (ImGui::Button(MagicEnumToStringView(key).data()))
+	//		m_Effects[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
+	//}
 
 	
 	ImGui::Text("bPending : %s", m_bPending == true ? "TRUE" : "FALSE");
@@ -406,6 +406,15 @@ _bool CMonster::Is_Grounded()
 	return m_pCharacterController->IsGrounded();
 }
 
+uint32_t CMonster::Find_SkillNum(ATTMON eType)
+{
+	auto iter = m_MonSkillLists.find(eType);
+	
+	if (iter == m_MonSkillLists.end())
+		return UINT_MAX;
+	return iter->second;
+}
+
 void CMonster::Damaged()
 {
 	//if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
@@ -444,17 +453,25 @@ void CMonster::RunningSkill(_float fTimeDelta)
 
 		if (m_eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
 		{
-			CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
+			auto k = GetTransform().GetWorldMatrix();
+
+			m_iCurEffectID = CGameInstance::Get().PlayEffect(m_CurEffectName, *GetTransform().GetWorldMatrix(), _vector{},
+				[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+				{
+					if (effectId != m_iCurEffectID)
+						return;
+					m_iCurEffectID = INVALID_EFFECT_INSTANCE_ID;
+				});
+
+			//CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
+			
 			m_eAttType = ATTMON::END;
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
 			
 		}
-		if (fCurrRatio >= 1.f)
-		{
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::DEL);
-			m_bSkill = false;
-		}
-			
+		
+		//if(m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
+		//	CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
 	}
 }
 void CMonster::IsHit()
@@ -513,7 +530,11 @@ void CMonster::Flag_Check(_float fTimeDelta)
 				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
 		}
 	}
-
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+	{
+		m_eAttType = ATTMON::END;
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT), FLAGTYPE::DEL);
+	}
 	//if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
 	//	Damaged();
 }

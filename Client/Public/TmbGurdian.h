@@ -24,7 +24,6 @@ public:
 private:
 	_bool UpdateDeadDebrisPoseFromCurrentBones();
 	_bool ActivateDeadDebrisPhysics();
-	_string Get_SkillName(ATTMON SkillNode)override;
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -33,6 +32,8 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 
+	virtual void Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
+	_string Get_SkillName(ATTMON SkillNode)override;
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};
