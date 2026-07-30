@@ -11,9 +11,9 @@ public:
 	struct DESC : public CCameraObject::CAMERA_DESC
 	{
 		CHandle hTarget{};
-		_float fDistance{ 10.f };
-		_float fTargetHeight{};
-		_float fPitch{ 15.f };
+		_float fDistance{ 7.2f };
+		_float fTargetHeight{ 1.2f };
+		_float fPitch{ 3.f };
 		_float fMinPitch{ -20.f };
 		_float fMaxPitch{ 65.f };
 		_float fMouseSensitivity{ 10.f };
