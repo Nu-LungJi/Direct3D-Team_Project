@@ -170,6 +170,12 @@ struct FCinematicAssetData final : public ISerializable
 	}
 };
 
+// 컷신 시작할 때 옵션
+enum class ECinematicStartMode
+{
+	Immediate,
+	Blend
+};
 
 // 컷신 끝나고 복귀 옵션
 enum class ECinematicReturnMode
@@ -180,6 +186,9 @@ enum class ECinematicReturnMode
 
 struct FCinematicPlayOptions
 {
+	ECinematicStartMode eStartMode{ ECinematicStartMode::Immediate };
+	_float fStartBlendDuration{ 0.5f };
+
 	ECinematicReturnMode eReturnMode { ECinematicReturnMode::Immediate };
 	_float fReturnBlendDuration { 0.5f };
 };

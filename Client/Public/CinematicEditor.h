@@ -48,6 +48,10 @@ private:
 	std::optional<E::CHandle> m_PreviewTargetHandle{};
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	_float m_fFrustumDisplaySize{ 1.25f };
+	E::ECinematicStartMode m_ePreviewStartMode{
+		E::ECinematicStartMode::Immediate
+	};
+	_float m_fPreviewStartBlendDuration{ 0.5f };
 	E::ECinematicReturnMode m_ePreviewReturnMode{
 		E::ECinematicReturnMode::Immediate
 	};

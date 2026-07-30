@@ -45,6 +45,16 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_fAcientElapsed = 0.f;
+
+	// 스킬 컷신 재생
+	{
+		FCinematicPlayOptions options{};
+		options.eStartMode = ECinematicStartMode::Blend;
+		options.fStartBlendDuration = 1.f;
+		options.eReturnMode = ECinematicReturnMode::Blend;
+		options.fReturnBlendDuration = 1.f;
+		CGameInstance::Get().PlayCinematic("AcientThunderAttack", pPlayer->GetHandle(), options);
+	}
 }
 
 void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
@@ -58,7 +68,7 @@ void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
 		"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_Start_anm.bin");
 	m_AcientEnd_Animations[iSkillIndex] = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_End_anm");
+		"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_End_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_AcientCast_Animations[iSkillIndex] >= 0 &&

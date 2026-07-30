@@ -171,6 +171,10 @@ void CCinematicEditor::UpdateGUI()
 	if (ImGui::Button("Play"))
 	{
 		E::FCinematicPlayOptions Options{};
+		Options.eStartMode =
+			m_ePreviewStartMode;
+		Options.fStartBlendDuration =
+			m_fPreviewStartBlendDuration;
 		Options.eReturnMode =
 			m_ePreviewReturnMode;
 		Options.fReturnBlendDuration =
@@ -220,6 +224,42 @@ void CCinematicEditor::UpdateGUI()
 		m_pEditingAsset->GetDuration());
 
 	DrawPreviewTargetSelector();
+
+	static const _char* StartModeNames[] = {
+		"Immediate",
+		"Blend"
+	};
+	int iStartMode =
+		static_cast<int>(m_ePreviewStartMode);
+	if (ImGui::Combo(
+		"Start Mode",
+		&iStartMode,
+		StartModeNames,
+		IM_ARRAYSIZE(StartModeNames)))
+	{
+		m_ePreviewStartMode =
+			static_cast<E::ECinematicStartMode>(
+				iStartMode);
+	}
+
+	if (m_ePreviewStartMode ==
+		E::ECinematicStartMode::Blend)
+	{
+		if (ImGui::DragFloat(
+			"Start Blend Duration",
+			&m_fPreviewStartBlendDuration,
+			0.05f,
+			0.f,
+			10.f,
+			"%.2f sec"))
+		{
+			m_fPreviewStartBlendDuration =
+				std::clamp(
+					m_fPreviewStartBlendDuration,
+					0.f,
+					10.f);
+		}
+	}
 
 	static const _char* ReturnModeNames[] = {
 		"Immediate",

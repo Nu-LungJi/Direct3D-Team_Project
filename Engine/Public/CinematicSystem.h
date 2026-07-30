@@ -39,11 +39,14 @@ private:
 	enum class EPlayState
 	{
 		Stopped,
+		BlendingIn,
 		Playing,
 		BlendingOut
 	};
 
 	HRESULT Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle, const FCinematicPlayOptions& Options);
+	HRESULT BeginBlendIn();
+	HRESULT UpdateBlendIn(_float fTimeDelta);
 	HRESULT BeginBlendOut(const FCinematicCameraPose& StartPose);
 	HRESULT UpdateBlendOut(_float fTimeDelta);
 	void FinishPlayback();
@@ -88,6 +91,7 @@ private:
 
 private:
 	_float m_fPlayTime { 0.f };
+	_float m_fStartBlendTime{ 0.f };
 	_float m_fReturnBlendTime{ 0.f };
 	// 현재 컷신의 플레이 상태
 	EPlayState m_ePlayState{ EPlayState::Stopped };

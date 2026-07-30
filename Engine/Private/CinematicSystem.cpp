@@ -60,6 +60,15 @@ void CCinematicSystem::Update(_float fTimeDelta)
 		return;
 	}
 
+	if (m_ePlayState == EPlayState::BlendingIn)
+	{
+		if (FAILED(UpdateBlendIn(fTimeDelta)))
+		{
+			Stop();
+		}
+		return;
+	}
+
 	if (m_ePlayState == EPlayState::BlendingOut)
 	{
 		if (FAILED(UpdateBlendOut(fTimeDelta)))
@@ -206,40 +215,28 @@ HRESULT CCinematicSystem::Load(const std::string& CinematicName)
 	return RegistAsset(pAsset);
 }
 
-HRESULT CCinematicSystem::Play(
-	const StringID& CinematicID,
-	const FCinematicPlayOptions& Options)
+HRESULT CCinematicSystem::Play(const StringID& CinematicID, const FCinematicPlayOptions& Options)
 {
 	return Play(CinematicID, std::nullopt, Options);
 }
 
-HRESULT CCinematicSystem::Play(
-	const StringID& CinematicID,
-	const CHandle& TargetHandle,
-	const FCinematicPlayOptions& Options)
+HRESULT CCinematicSystem::Play(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options)
 {
-	return Play(
-		CinematicID,
-		std::optional<CHandle>{ TargetHandle },
-		Options);
+	return Play(CinematicID, std::optional<CHandle>{ TargetHandle }, Options);
 }
 
-HRESULT CCinematicSystem::Play(
-	const StringID& CinematicID,
-	const std::optional<CHandle>& TargetHandle,
-	const FCinematicPlayOptions& Options)
+HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<CHandle>& TargetHandle, const FCinematicPlayOptions& Options)
 {
 	if (m_ePlayState != EPlayState::Stopped)
 	{
 		return S_FALSE;
 	}
 
-	if (!std::isfinite(Options.fReturnBlendDuration) ||
-		Options.fReturnBlendDuration < 0.f ||
-		(Options.eReturnMode !=
-				ECinematicReturnMode::Immediate &&
-		 Options.eReturnMode !=
-				ECinematicReturnMode::Blend))
+	if (!std::isfinite(Options.fStartBlendDuration) || Options.fStartBlendDuration < 0.f ||
+		(Options.eStartMode != ECinematicStartMode::Immediate &&
+		 Options.eStartMode != ECinematicStartMode::Blend) ||
+		!std::isfinite(Options.fReturnBlendDuration) || Options.fReturnBlendDuration < 0.f ||
+		(Options.eReturnMode != ECinematicReturnMode::Immediate && Options.eReturnMode !=ECinematicReturnMode::Blend))
 	{
 		return E_INVALIDARG;
 	}
@@ -264,9 +261,7 @@ HRESULT CCinematicSystem::Play(
 			return Shot.eCoordinateSpace == ECinematicCoordinateSpace::TargetLocal;
 		});
 
-	if (bRequiresTarget &&
-		(!TargetHandle.has_value() ||
-		 CGameInstance::Get().GetGameObjectByHandle(*TargetHandle) == nullptr))
+	if (bRequiresTarget && (!TargetHandle.has_value() || CGameInstance::Get().GetGameObjectByHandle(*TargetHandle) == nullptr))
 	{
 		return E_INVALIDARG;
 	}
@@ -280,15 +275,29 @@ HRESULT CCinematicSystem::Play(
 	m_pPlayingAsset = iter->second;
 	m_TargetHandle = TargetHandle;
 	m_PlayOptions = Options;
-	m_ePlayState = EPlayState::Playing;
 	m_fPlayTime = 0.f;
+	m_fStartBlendTime = 0.f;
 	m_fReturnBlendTime = 0.f;
 
-	FCinematicCameraPose Pose{};
-	if (FAILED(EvaluateCamera(0.f, Pose)) || FAILED(ApplyCameraPose(Pose)))
+	if (Options.eStartMode == ECinematicStartMode::Blend &&Options.fStartBlendDuration > FLT_EPSILON)
 	{
-		Stop();
-		return E_FAIL;
+		if (FAILED(BeginBlendIn()))
+		{
+			Stop();
+			return E_FAIL;
+		}
+	}
+	else
+	{
+		m_ePlayState = EPlayState::Playing;
+
+		FCinematicCameraPose Pose{};
+		if (FAILED(EvaluateCamera(0.f, Pose)) ||
+			FAILED(ApplyCameraPose(Pose)))
+		{
+			Stop();
+			return E_FAIL;
+		}
 	}
 
 	return S_OK;
@@ -312,6 +321,7 @@ void CCinematicSystem::FinishPlayback()
 
 	m_ePlayState = EPlayState::Stopped;
 	m_fPlayTime = 0.f;
+	m_fStartBlendTime = 0.f;
 	m_fReturnBlendTime = 0.f;
 	m_pPlayingAsset.reset();
 	m_TargetHandle.reset();
@@ -329,12 +339,73 @@ _float CCinematicSystem::GetPlayTime() const
 	return m_fPlayTime;
 }
 
-HRESULT CCinematicSystem::BeginBlendOut(
-	const FCinematicCameraPose& StartPose)
+HRESULT CCinematicSystem::BeginBlendIn()
 {
-	if (!m_PreviousCameraID.has_value() ||
-		m_CameraManager.GetCamera(
-			*m_PreviousCameraID) == nullptr)
+	if (!m_PreviousCameraID.has_value())
+	{
+		return E_FAIL;
+	}
+
+	if (FAILED(GetCameraPose(m_CameraManager.GetCamera(*m_PreviousCameraID), m_BlendStartPose)))
+	{
+		return E_FAIL;
+	}
+
+	if (FAILED(ApplyCameraPose(m_BlendStartPose)))
+	{
+		return E_FAIL;
+	}
+
+	m_fStartBlendTime = 0.f;
+	m_ePlayState = EPlayState::BlendingIn;
+	return S_OK;
+}
+
+HRESULT CCinematicSystem::UpdateBlendIn(_float fTimeDelta)
+{
+	if (m_pPlayingAsset == nullptr || m_PlayOptions.fStartBlendDuration <= FLT_EPSILON)
+	{
+		return E_FAIL;
+	}
+
+	if (fTimeDelta > 0.f)
+	{
+		m_fStartBlendTime += fTimeDelta;
+	}
+
+	FCinematicCameraPose CinematicStartPose{};
+	if (FAILED(EvaluateCamera(0.f, CinematicStartPose)))
+	{
+		return E_FAIL;
+	}
+
+	_float fRatio = std::clamp(m_fStartBlendTime / m_PlayOptions.fStartBlendDuration, 0.f, 1.f);
+	fRatio = fRatio * fRatio * (3.f - 2.f * fRatio);
+
+	FCinematicCameraPose BlendedPose{};
+	XMStoreFloat3(&BlendedPose.vPosition, XMVectorLerp(XMLoadFloat3(&m_BlendStartPose.vPosition), XMLoadFloat3(&CinematicStartPose.vPosition), fRatio));
+	XMStoreFloat4(&BlendedPose.vRotation,
+		XMQuaternionSlerp(XMQuaternionNormalize(XMLoadFloat4(&m_BlendStartPose.vRotation)),XMQuaternionNormalize(XMLoadFloat4(&CinematicStartPose.vRotation)),fRatio));
+	BlendedPose.fFovY = m_BlendStartPose.fFovY + (CinematicStartPose.fFovY - m_BlendStartPose.fFovY) * fRatio;
+
+	if (FAILED(ApplyCameraPose(BlendedPose)))
+	{
+		return E_FAIL;
+	}
+
+	if (m_fStartBlendTime >= m_PlayOptions.fStartBlendDuration)
+	{
+		m_fStartBlendTime = m_PlayOptions.fStartBlendDuration;
+		m_fPlayTime = 0.f;
+		m_ePlayState = EPlayState::Playing;
+	}
+
+	return S_OK;
+}
+
+HRESULT CCinematicSystem::BeginBlendOut(const FCinematicCameraPose& StartPose)
+{
+	if (!m_PreviousCameraID.has_value() ||m_CameraManager.GetCamera(*m_PreviousCameraID) == nullptr)
 	{
 		return E_FAIL;
 	}
