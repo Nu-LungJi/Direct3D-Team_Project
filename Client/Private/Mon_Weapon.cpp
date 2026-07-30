@@ -174,7 +174,9 @@ HRESULT CMon_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, m_fDissolveintensity, m_vDissolve, m_fDissolveintensity, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			{
+				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 2.f, {1.f, 1.f, 0.f}, 0.5f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+			}
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

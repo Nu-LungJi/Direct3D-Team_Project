@@ -96,12 +96,12 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
 
 float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
 {
-    float   DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
+	float DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
     clip(DissolveFactor);
-
+	
     float   DissolveEdge = 1.f - smoothstep(0.f, _EdgeWidth, DissolveFactor);
     
-    float3  DissolveEmissive = DissolveColor.rgb * DissolveEdge;
+	float3 DissolveEmissive = DissolveColor * DissolveEdge;
     
-    return lerp(_BaseEmissive, DissolveEmissive, DissolveEdge * 0.8f);
+	return _BaseEmissive + DissolveEmissive;
 }

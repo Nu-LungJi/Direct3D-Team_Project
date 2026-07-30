@@ -320,7 +320,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		}
 	}
 
-	float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
+	float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     
 	float	AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
 	float3	Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
@@ -423,11 +423,11 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 		}
 	}
 
-	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * EmissiveColor * EmissiveIntensity;
+	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
     
 	float AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
 	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
-	
+		
 	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;	// Enviroment Light
 	
 	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness;		// Shadow Face

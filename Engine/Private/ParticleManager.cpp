@@ -1913,11 +1913,12 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 		j[arrayKey] = nlohmann::json::array();
 
 	bool bReplaced = false;
+
 	for (auto& entry : j[arrayKey])
 	{
-		if (entry.contains("path") && entry["path"].is_string() &&
+		if (entry.contains("particleName") && entry["particleName"].is_string() &&
 			entry.contains("particleType") && entry["particleType"].is_string() &&
-			entry["path"].get<std::string>() == fullPath &&
+			entry["particleName"].get<std::string>() == particleName &&
 			entry["particleType"].get<std::string>() == particleType)
 		{
 			entry = newEntry;
@@ -3472,8 +3473,6 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
-			else if constexpr (std::is_same_v<T, SExtraLightning>)
-				return ParticlePattern::MakeExtraLightning(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");

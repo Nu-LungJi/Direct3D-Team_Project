@@ -243,6 +243,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+
 		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
