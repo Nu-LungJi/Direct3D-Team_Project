@@ -91,6 +91,7 @@ HRESULT CMonster::Initialize(void* pArg)
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
+	Activate_PendingHit();
 	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_0))
 		m_pMoveIntent->RequestWarp(_float3(20, 20, 20));
 	
@@ -356,8 +357,13 @@ _bool CMonster::Activate_PendingHit()
 	if (!m_bPending)
 		return false;
 
-	if (m_bActiveHit)
-		return false;
+	_bool bSameHit =
+		m_bActiveHit &&
+		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
+		m_ActiveMonTable.eHitType == m_PendingMonTable.eHitType;
+
+	if (!bSameHit)
+		++m_iHitCnt;
 
 	m_ActiveMonTable = m_PendingMonTable;
 	m_bActiveHit = true;
@@ -384,46 +390,47 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
-	switch (eType)
-	{
-	case PLAYER_SKILL_TYPE::ATTACK:
-		HitInfo.iPriority = 5.f;
-		break;
-	case PLAYER_SKILL_TYPE::ACCIO:
-		HitInfo.iPriority = 10.f;
-		break;
-	case PLAYER_SKILL_TYPE::DEPULSO:
-		HitInfo.iPriority = 15.f;
-		break;
-	case PLAYER_SKILL_TYPE::DESCENDO:
-		HitInfo.iPriority = 20.f;
-		break;
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
-		HitInfo.iPriority = 25.f;
-		break;
-	case PLAYER_SKILL_TYPE::PROTEGO:
-		HitInfo.iPriority = 8.f;
-		break;
-	}
-
-	//if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
+	
+	//switch (eType)
 	//{
-	//	m_PendingMonTable = HitInfo;
-	//	m_bPending = true;
+	//case PLAYER_SKILL_TYPE::ATTACK:
+	//	HitInfo.iPriority = 5.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::ACCIO:
+	//	HitInfo.iPriority = 10.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::DEPULSO:
+	//	HitInfo.iPriority = 15.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::DESCENDO:
+	//	HitInfo.iPriority = 20.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	//	HitInfo.iPriority = 25.f;
+	//	break;
+	//case PLAYER_SKILL_TYPE::PROTEGO:
+	//	HitInfo.iPriority = 8.f;
+	//	break;
 	//}
-	//현재 pending 가중치보다 낮으면 리턴
-	if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
-		return false;
-	//현재 잠금된거보다 낮아도 거부
-	if (m_bActiveHit &&HitInfo.iPriority < m_ActiveMonTable.iPriority)
-		return false;
+	//
+	////if (m_bActiveHit && HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK)
+	////{
+	////	m_PendingMonTable = HitInfo;
+	////	m_bPending = true;
+	////}
+	////현재 pending 가중치보다 낮으면 리턴
+	//if (m_bPending && HitInfo.iPriority < m_PendingMonTable.iPriority)
+	//	return false;
+	////현재 잠금된거보다 낮아도 거부
+	//if (m_bActiveHit &&HitInfo.iPriority < m_ActiveMonTable.iPriority)
+	//	return false;
 	//새 피격상태 전달
+
 	m_PendingMonTable = HitInfo;
 	m_bPending = true;
 	
 	//우선순위 잠금
-	m_ActiveMonTable = HitInfo;
-	m_bActiveHit = true;
+
 	return true;
 }
 
@@ -434,8 +441,8 @@ _bool CMonster::Is_Grounded()
 
 void CMonster::Damaged()
 {
-	if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
-		return;
+	//if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
+	//	return;
 
 	switch (m_ActiveMonTable.eHitType)
 	{
@@ -485,26 +492,26 @@ void CMonster::RunningSkill(_float fTimeDelta)
 }
 void CMonster::IsHit()
 {
-	//if (CGameInstance::Get().KeyDown(DIK_2))
-	//{
-	//	Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	//}
-	//if (CGameInstance::Get().KeyDown(DIK_Z))
-	//{
-	//	Check_Table(PLAYER_SKILL_TYPE::ACCIO);
-	//}
-	//else if (CGameInstance::Get().KeyDown(DIK_X))
-	//{
-	//	Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
-	//}
-	//else if (CGameInstance::Get().KeyDown(DIK_C))
-	//{
-	//	Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
-	//}
-	//else if (CGameInstance::Get().KeyDown(DIK_V))
-	//{
-	//	Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	//}
+	if (CGameInstance::Get().KeyDown(DIK_2))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+	}
+	if (CGameInstance::Get().KeyDown(DIK_Z))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_X))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_C))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
+	}
+	else if (CGameInstance::Get().KeyDown(DIK_V))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+	}
 
 }
 void CMonster::Flag_Check(_float fTimeDelta)
@@ -526,7 +533,8 @@ void CMonster::Flag_Check(_float fTimeDelta)
 
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
 		m_fEmissive = 0;
-
+	else
+		m_iHitCnt = 0;
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 	{
 		if (auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CMon_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]))

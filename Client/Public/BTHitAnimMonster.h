@@ -31,9 +31,9 @@ private:
 	void				ComboAnim(const _char* pName,  int32_t& iAnimIndex, uint32_t iArrayIndex);
 	
 private:
-	uint32_t			m_iTable{};
+	uint32_t			m_iTable{}, m_iHitCnt{};
 	MOVE				m_eMove{ MOVE::STRAIGHT };
-	_bool				m_bRatioInvert{ false }, m_bInterrupt{ false }, m_bRequiredPending{ true }, m_bUseCurAnim{ false };
+	_bool				m_bRatioInvert{ false },  m_bUseCurAnim{ false };
 
 	std::vector<HITTABLE>		m_HitTable;
 		

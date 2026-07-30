@@ -52,6 +52,29 @@ void CAnimEdit_Manager::Update(_float fTimeDelta)
 }
 
 
+_string CAnimEdit_Manager::GetAnimName(uint32_t iIndex, CHandle Handle)
+{
+	if (iIndex < 0)
+		return "";
+	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(Handle);
+	if (pSampleObj == nullptr)
+		return "";
+
+	auto pComModelInstance =
+		pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+
+	auto pModel = pComModelInstance->GetModel();
+	
+	if (pModel)
+	{
+		auto& anim = pModel->GetAnimations();
+		if (anim.size() <= iIndex)
+			return "";
+		return anim[iIndex]->GetAnimName();
+	}
+	return "";
+}
+
 int32_t CAnimEdit_Manager::GetAnimIndex(CHandle Handle)
 {
     int m_iSelectedAnimIndex = -1;

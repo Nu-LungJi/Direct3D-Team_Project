@@ -105,7 +105,7 @@ _bool CBTRoot::Check_Flag(uint32_t iFlag)
 			return pComBt->Check_Flag(iFlag);
 		}
 	}
-	
+	return false;
 }
 
 uint32_t CBTRoot::Get_Flag()
@@ -117,4 +117,5 @@ uint32_t CBTRoot::Get_Flag()
 			return pComBt->Get_Flag();
 		}
 	}
+	return 0;
 }

@@ -31,6 +31,12 @@ HRESULT CBTAnimRoot::Initalize(void* pArg)
 
 void CBTAnimRoot::Update_Gui()
 {
+	BoolButton("ShowAnim: ", m_bShow);
+	if (m_bShow)
+	{
+		const _string& Name = CGameInstance::Get().GetAnimName(m_Value.iAnimIndex, Get_Handle());
+		ImGui::Text(Name.c_str());
+	}
 	if (ImGui::TreeNode("AnimRoot"))
 	{
 		BoolButton("Gravity : ", m_bGravity);

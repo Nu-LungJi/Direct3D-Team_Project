@@ -528,6 +528,9 @@
     <ClInclude Include="..\Public\Player_Hit_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDecIsPending.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -782,6 +785,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Hit_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecIsPending.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
