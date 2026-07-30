@@ -262,6 +262,7 @@ public:
 	void StopCinematic();
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;
+	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
 #pragma endregion
 
 #pragma region RENDERER

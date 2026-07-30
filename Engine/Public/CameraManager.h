@@ -29,6 +29,7 @@ public:
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
 
+	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
 private:
 	std::optional<std::pair<StringID, CHandle>> m_ActiveCamera{};
 	std::unordered_map<StringID, CHandle> m_Cameras{};

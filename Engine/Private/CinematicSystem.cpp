@@ -874,7 +874,7 @@ _bool CCinematicSystem::TargetToCameraSphereSweep(const _float3& TargetPosition,
 	Desc.tFilter.bQueryStatic = true;
 	Desc.tFilter.bQueryDynamic = true;
 	Desc.tFilter.bIncludeTrigger = false;
-	Desc.tFilter.iQueryMask;
+	Desc.tFilter.iQueryMask = m_iCollisionQueryMask;
 	if (m_TargetHandle.has_value())
 	{
 		Desc.tFilter.hIgnoreGameObject = *m_TargetHandle;

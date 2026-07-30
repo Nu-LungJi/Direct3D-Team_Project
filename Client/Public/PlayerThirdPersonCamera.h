@@ -31,6 +31,9 @@ public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(_float fTimeDelta) override;
 	void UpdateFollow();
+private:
+	// 타겟 -> 카메라 방향으로 SphereSweep
+	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
 
 private:
 	CHandle m_hTarget{};
@@ -42,6 +45,9 @@ private:
 	_float m_fMaxPitch{ 65.f };
 	_float m_fMouseSensitivity{ 10.f };
 
+private:
+	_float CAMERA_COLLISION_RADIUS = 0.3f;
+	_float CAMERA_COLLISION_PADDING = 0.05f;
 public:
 	static UPtr<CPlayerThirdPersonCamera> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

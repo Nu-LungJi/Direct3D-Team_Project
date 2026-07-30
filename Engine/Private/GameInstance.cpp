@@ -1048,7 +1048,15 @@ _float CGameInstance::GetCinematicPlayTime() const
 {
 	return m_pCameraManager->GetCinematicPlayTime();
 }
+void CGameInstance::SetCinematicCollisionQueryMask(uint32_t iQueryMask)
+{
+	if (m_pCameraManager == nullptr)
+	{
+		return;
+	}
 
+	m_pCameraManager->SetCinematicCollisionQueryMask(iQueryMask);
+}
 #pragma endregion
 
 

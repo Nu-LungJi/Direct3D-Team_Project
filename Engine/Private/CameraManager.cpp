@@ -205,6 +205,16 @@ HRESULT CCameraManager::RegistCamera(const StringID& CameraID, const CHandle& ha
 	return S_OK;
 }
 
+void CCameraManager::SetCinematicCollisionQueryMask(uint32_t iQueryMask)
+{
+	if (m_pCinematicSystem == nullptr)
+	{
+		return;
+	}
+
+	m_pCinematicSystem->SetCollisionQueryMask(iQueryMask);
+}
+
 #pragma region CINEMATIC
 
 HRESULT CCameraManager::BeginCinematicCamera()

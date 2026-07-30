@@ -35,6 +35,12 @@ public:
 	_bool IsPlaying() const;
 	_float GetPlayTime() const;
 
+public:
+	void SetCollisionQueryMask(uint32_t iQueryMask)
+	{
+		m_iCollisionQueryMask = iQueryMask;
+	}
+
 private:
 	enum class EPlayState
 	{
@@ -105,6 +111,7 @@ private:
 private:
 	_float CINEMATIC_CAMERA_COLLISION_RADIUS = 0.3f;
 	_float CINEMATIC_CAMERA_COLLISION_PADDING = 0.05f;
+	uint32_t m_iCollisionQueryMask{ PX_ALL_LAYERS };
 public:
 	static UPtr<CCinematicSystem> Create(CCameraManager& CameraManager, const StringID& CinematicCameraID);
 };
