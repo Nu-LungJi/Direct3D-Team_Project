@@ -207,7 +207,6 @@ private:
 	CHandle m_hUI;
 
 public:
-
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
