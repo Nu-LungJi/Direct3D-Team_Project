@@ -66,9 +66,15 @@ void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
 	m_AcientCast_Animations[iSkillIndex] = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_Start_anm.bin");
+	//m_AcientEnd_Animations[iSkillIndex] = FindAnimationIndex(
+	//	player,
+	//	"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_End_anm.bin");
+	//m_AcientCast_Animations[iSkillIndex] = FindAnimationIndex(
+	//	player,
+	//	"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
 	m_AcientEnd_Animations[iSkillIndex] = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_End_anm.bin");
+		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_AcientCast_Animations[iSkillIndex] >= 0 &&

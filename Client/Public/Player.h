@@ -47,8 +47,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
-
 		StringID LevelTag;
+		CHandle  UIHandle;
 	};
 
 private:
@@ -84,6 +84,7 @@ public:
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
 	CHandle GetTargetHandle() const { return m_hAutoTarget; }
+	CHandle GetUIControllerHandle() const { return m_UIHandle; }
 	PLAYER_SKILL_TYPE GetPlayerCurSkill() const { return m_eSkill_Type; }
 
 	void SetPlayerCurSKill(PLAYER_SKILL_TYPE _Skill_Type) { m_eSkill_Type = _Skill_Type; }
@@ -96,6 +97,8 @@ public:
 		_float fSpeed,
 		_float fTimeDelta);
 	void PrepareLocomotionResume();
+	void InitializeSkillSlotUI();
+	_bool TryUseSkillSlot(uint32_t iSlotNumber);
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
@@ -183,7 +186,10 @@ private:
 private:
 	CHandle m_hAutoTarget;
 	StringID m_LevelTag;
-	
+private:
+	CHandle m_UIHandle;
+	_bool m_bSkillSlotUIInitialized{ false };
+
 private:
 	PLAYER_SKILL_TYPE m_eSkill_Type;
 private:

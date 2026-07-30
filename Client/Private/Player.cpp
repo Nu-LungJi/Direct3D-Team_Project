@@ -34,6 +34,8 @@
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
+#include "UIController.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 void CPlayer::UpdateGUI()
@@ -650,26 +652,24 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 
 	if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
-		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
-		m_bCoolTime_Num1 = true;
-
+		if (TryUseSkillSlot(1))
+			m_bCoolTime_Num1 = true;
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
-		m_bCoolTime_Num2 = true;
+		if (TryUseSkillSlot(2))
+			m_bCoolTime_Num2 = true;
 	}
 	if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
-		m_bCoolTime_Num3 = true;
+		if (TryUseSkillSlot(3))
+			m_bCoolTime_Num3 = true;
 	}	
 
 	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-
-		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
-		m_bCoolTime_Num4 = true;
+		if (TryUseSkillSlot(4))
+			m_bCoolTime_Num4 = true;
 	}
 
 #ifdef _DEBUG
@@ -679,6 +679,61 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 }
 
 
+
+void CPlayer::InitializeSkillSlotUI()
+{
+	if (m_bSkillSlotUIInitialized)
+		return;
+
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	if (!pUIController)
+		return;
+
+	// 테스트용 코드 나중에 실제 프로토타입 시연회 때는 지워야 함 ---------------------------------------
+	pUIController->SetSpellType(1, ETOUI(SPELL_TYPE::ASSIO));
+	pUIController->SetSpellType(2, ETOUI(SPELL_TYPE::DEPULSO));
+	pUIController->SetSpellType(3, ETOUI(SPELL_TYPE::DESENDO));
+
+	// SPELL_TYPE에 REVELIO가 추가되기 전까지 4번 슬롯은 빈 슬롯으로 둔다.
+	pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::NONE));
+
+	m_bSkillSlotUIInitialized = true;
+}
+
+_bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	if (!pUIController || !m_pStateMachine)
+		return false;
+
+	PLAYER_STATE eSkillState = PLAYER_STATE::NONE;
+	switch (static_cast<SPELL_TYPE>(pUIController->GetSpellType(iSlotNumber)))
+	{
+	case SPELL_TYPE::ASSIO:
+		eSkillState = PLAYER_STATE::ACCIO_SKILL;
+		break;
+
+	case SPELL_TYPE::DEPULSO:
+		eSkillState = PLAYER_STATE::DEPULSO_SKILL;
+		break;
+
+	case SPELL_TYPE::DESENDO:
+		eSkillState = PLAYER_STATE::DESCENDO_SKILL;
+		break;
+
+	default:
+		// 플레이어에 구현되지 않았거나 비어 있는 스킬 슬롯이다.
+		return false;
+	}
+
+	if (!m_pStateMachine->RequestState(eSkillState))
+		return false;
+
+	pUIController->UseSpell(iSlotNumber);
+	return true;
+}
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
 {
@@ -811,6 +866,18 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
+
+
+	if (nullptr == CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		m_bSkillSlotUIInitialized = false;
+
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+		if (hUIController.has_value())
+			m_UIHandle = *hUIController;
+	}
+	InitializeSkillSlotUI();
+
 	_bool bApplyRootMotionTranslation{};
 	_float3 vRootMotionDelta{};
 

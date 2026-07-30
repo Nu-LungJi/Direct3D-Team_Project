@@ -57,23 +57,8 @@ void CUIController::Update(E::_float fTimeDelta)
 	}
 
 	// ************** 스펠슬롯
-	if (E::CGameInstance::Get().KeyDown(DIK_1))
-	{
-		UseSpell(1);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_2))
-	{
-		UseSpell(2);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_3))
-	{
-		UseSpell(3);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_4))
-	{
-		UseSpell(4);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_5))
+	// 슬롯 쿨타임은 플레이어의 실제 스킬 발동 시점에 갱신한다.
+	if (E::CGameInstance::Get().KeyDown(DIK_5))
 	{
 		SetSpellType(2, ETOUI(SPELL_TYPE::ASSIO));
 	}
