@@ -10,6 +10,9 @@
 
 #include "LevelCharlesRookwoodLoader.h"
 
+#include "UIManager.h"
+#include "UIController.h"
+
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -36,6 +39,19 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 
 void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 {
+	{
+		if (!m_bCreatePlayScreenUI)
+		{
+			m_bCreatePlayScreenUI = true;
+			CGameObject::GAMEOBJECT_DESC Desc{};
+			Desc.sObjectTag = "UIController";
+
+			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController",
+				"UIController", &Desc));
+		}
+	}
+
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 }
 
 HRESULT CLevelBossCharlesRookwood::Render()

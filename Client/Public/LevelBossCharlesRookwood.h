@@ -28,6 +28,9 @@ private:
 	HRESULT SpawnUICamera();
 
 private:
+	_bool m_bCreatePlayScreenUI{ false };
+
+private:
 	void Free() override;
 };
 

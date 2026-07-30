@@ -260,7 +260,7 @@ void CUIController::CreateDeathScene()
 		SafeGetOBJ(SafeGetOBJ(hUI)->GetChildren().front())->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("TxtButtonColorUp");
 		SafeGetOBJ(SafeGetOBJ(hUI)->GetChildren().front())->OnHoverExit = GET_SINGLE(UIManager)->GetAction("TxtButtonColorDown");
 	}
-	SafeGetOBJ(m_BeathButton[0])->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("ClearDeathScene");
+	SafeGetOBJ(SafeGetOBJ(m_BeathButton[0])->GetChildren().front())->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("ClearDeathScene");
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -426,7 +426,7 @@ void CUIController::CreateMonsterHP()
 
 void CUIController::AddMonsterHP(_float fill)
 {
-	if (false == m_bMonsterHP)
+	if (std::nullopt == m_MonsterHP || nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
 		return;
 	static_cast<CHPBar*>(SafeGetOBJ(*m_MonsterHP))->AddFill(fill);
 }

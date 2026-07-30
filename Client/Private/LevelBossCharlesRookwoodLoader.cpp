@@ -20,6 +20,7 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 {
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_BossCharlesRookwood", []()
 		{
+			UILoad();
 
 			return  true;
 		});
@@ -69,7 +70,7 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 							std::string resTag = "TEX_" + fileName;
 							std::string fullPath = entry.path().generic_string();
 
-							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_CHARLES_ROOKWOOD", resTag, E::CResTexture2D::Create(fullPath)))
+							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_BOSS_CHARLES_ROOKWOOD", resTag, E::CResTexture2D::Create(fullPath)))
 							{
 								res->Load();
 							}
@@ -79,35 +80,35 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 			}
 		}
 
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_TextBox", CTextBox::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_TextBox", CTextBox::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_Button", CButton::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_Button", CButton::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_HPBar", CHPBar::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_HPBar", CHPBar::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_MiniMap", CMiniMap::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_MiniMap", CMiniMap::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
 		{
 			return false;
 		}
