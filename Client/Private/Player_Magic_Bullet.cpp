@@ -141,9 +141,9 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
 	}
 
+
 	if (m_iSplineIndex >= m_Splines.size() - 1)
 		SetPendingDestroy();
-
 }
 
 void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
@@ -184,8 +184,12 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Trigger Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 
+
+	CGameInstance::Get().PlayEffect("PlayerAttackSpread", *m_pComTransform->GetWorldMatrix());
+
 	if (auto pGuridan = Cast<CTmbGurdian>(pObj))
 	{
+
 		auto id = CGameInstance::Get().GetSoundManager()->Play3D(
 			"./Resources/SampleClient/Sound/avada.wav",
 			SOUND_3D_DESC{
@@ -227,6 +231,7 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 		//{
 		//	MSG_BOX("INVALID_SOUND_ID");
 		//}
+
 	}
 
 
