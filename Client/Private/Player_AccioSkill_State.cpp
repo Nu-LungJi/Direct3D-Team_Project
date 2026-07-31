@@ -113,7 +113,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 	case PHASE::PULL: {
 		auto* Target = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
-		
+
 		if (!Target)
 		{
 			RequestLocomotion(pStateMachine);

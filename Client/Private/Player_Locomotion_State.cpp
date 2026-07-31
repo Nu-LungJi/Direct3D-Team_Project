@@ -77,7 +77,7 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	auto* player = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	if (!player)
 		return;
-
+	
 	auto* pMoveIntent = player->GetMoveIntent();
 	auto* pAnimator = player->GetAnimator();
 	auto* pMotor = player->GetCharacterMotor();
@@ -271,8 +271,7 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			iDesiredMoveAnimation = m_iSprintForwardAnimation;
 	}
 
-	if (iDesiredMoveAnimation >= 0 &&
-		iDesiredMoveAnimation != m_iActiveMoveLoopAnimation)
+	if (iDesiredMoveAnimation >= 0 && iDesiredMoveAnimation != m_iActiveMoveLoopAnimation)
 	{
 		const _float fPreviousLoopRatio =
 			m_iActiveMoveLoopAnimation >= 0

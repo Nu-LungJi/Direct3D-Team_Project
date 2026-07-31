@@ -814,46 +814,46 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	tSweepDesc.tFilter.bQueryStatic = true;
 	tSweepDesc.tFilter.bQueryDynamic = true;
 	tSweepDesc.tFilter.bIncludeTrigger = false;
-
-#ifdef _DEBUG
-	if (auto* pDebugLine = CGameInstance::Get().GetDbgLineRender())
-	{
-		const _float4 vPreviousColor = pDebugLine->GetColor();
-		const DBG_LINE_DEPTH_MODE ePreviousDepthMode =
-			pDebugLine->GetDepthMode();
-
-		const _float3 vSweepStart = tSweepDesc.tPose.vPosition;
-		const _float3 vSweepEnd{
-			vSweepStart.x,
-			vSweepStart.y - tSweepDesc.fMaxDistance,
-			vSweepStart.z
-		};
-
-		pDebugLine->SetDepthTest(false);
-
-		// 노란 구: Sweep 시작 위치
-		pDebugLine->SetColor({ 1.f, 1.f, 0.f, 1.f });
-		pDebugLine->AddSphere(
-			m_fGroundFollowProbeRadius,
-			XMMatrixTranslation(
-				vSweepStart.x,
-				vSweepStart.y,
-				vSweepStart.z));
-
-		// 하늘색 구: 충돌이 없을 때의 Sweep 종료 위치
-		pDebugLine->SetColor({ 0.f, 1.f, 1.f, 1.f });
-		pDebugLine->AddSphere(
-			m_fGroundFollowProbeRadius,
-			XMMatrixTranslation(
-				vSweepEnd.x,
-				vSweepEnd.y,
-				vSweepEnd.z));
-		pDebugLine->AddLine(vSweepStart, vSweepEnd);
-
-		pDebugLine->SetColor(vPreviousColor);
-		pDebugLine->SetDepthMode(ePreviousDepthMode);
-	}
-#endif
+//
+//#ifdef _DEBUG
+//	if (auto* pDebugLine = CGameInstance::Get().GetDbgLineRender())
+//	{
+//		const _float4 vPreviousColor = pDebugLine->GetColor();
+//		const DBG_LINE_DEPTH_MODE ePreviousDepthMode =
+//			pDebugLine->GetDepthMode();
+//
+//		const _float3 vSweepStart = tSweepDesc.tPose.vPosition;
+//		const _float3 vSweepEnd{
+//			vSweepStart.x,
+//			vSweepStart.y - tSweepDesc.fMaxDistance,
+//			vSweepStart.z
+//		};
+//
+//		pDebugLine->SetDepthTest(false);
+//
+//		// 노란 구: Sweep 시작 위치
+//		pDebugLine->SetColor({ 1.f, 1.f, 0.f, 1.f });
+//		pDebugLine->AddSphere(
+//			m_fGroundFollowProbeRadius,
+//			XMMatrixTranslation(
+//				vSweepStart.x,
+//				vSweepStart.y,
+//				vSweepStart.z));
+//
+//		// 하늘색 구: 충돌이 없을 때의 Sweep 종료 위치
+//		pDebugLine->SetColor({ 0.f, 1.f, 1.f, 1.f });
+//		pDebugLine->AddSphere(
+//			m_fGroundFollowProbeRadius,
+//			XMMatrixTranslation(
+//				vSweepEnd.x,
+//				vSweepEnd.y,
+//				vSweepEnd.z));
+//		pDebugLine->AddLine(vSweepStart, vSweepEnd);
+//
+//		pDebugLine->SetColor(vPreviousColor);
+//		pDebugLine->SetDepthMode(ePreviousDepthMode);
+//	}
+//#endif
 
 	PX_SWEEP_RESULT tGroundHit{};
 	if (!pPhysXManager->Sweep(tSweepDesc, tGroundHit) ||
