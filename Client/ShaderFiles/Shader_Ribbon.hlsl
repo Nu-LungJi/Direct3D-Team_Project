@@ -70,29 +70,17 @@ PS_OUT PSMain(VS_OUT In)
 } 
 PS_OUT PSAccio(VS_OUT In)
 {
-	PS_OUT Out = (PS_OUT) 0;
+	PS_OUT Out = (PS_OUT)0;
 
-	float2 uv = In.vUV;
-	float gradient = g_BeamTexture.Sample(LinearClamp, uv).r;
+	float gradient = g_BeamTexture.Sample(LinearClamp,In.vUV).r;
+	float gradientMask = pow(saturate(gradient),0.25f);
+	float alpha = gradientMask * In.vColor.a;
 
-	float2 noiseUV = float2(uv.y * 3.f - g_fAccumulationTime * 2.f, uv.x * 1.5f + g_fAccumulationTime * 0.15f);
-	float noise = g_NoiseTexture.Sample(LinearWrap, noiseUV).r;
-	float strand = smoothstep(0.25f, 0.75f, noise);
+	clip(alpha - 0.001f);
 
-	float widthDistance = abs(uv.x - 0.5f) * 2.f;
-	float widthMask = 1.f - smoothstep(0.15f, 1.f, widthDistance);
+	float3 baseColor = In.vColor.rgb * gradientMask;
+	float3 emissiveColor = In.vEmissive.rgb * In.vEmissive.a * gradientMask;
 
-	float mask = gradient * widthMask * lerp(0.35f, 1.f, strand);
-	float softMask = pow(saturate(mask), 0.5f);
-
-	float3 baseColor = In.vColor.rgb;
-	float3 emissiveColor = In.vEmissive.rgb * In.vEmissive.a;
-
-	float3 finalColor = (baseColor * emissiveColor) * softMask;
-	float alpha = softMask * In.vColor.a;
-
-	clip(alpha - 0.005f);
-
-	Out.vDiffuse = float4(finalColor, alpha);
+	Out.vDiffuse = float4(baseColor + emissiveColor,alpha);
 	return Out;
 }

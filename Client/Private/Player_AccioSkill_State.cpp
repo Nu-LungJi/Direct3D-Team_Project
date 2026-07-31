@@ -99,13 +99,38 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
 				break;
 			}
-
+		
 			// 끌어 오기 시작
-
 			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
 
 			m_ePhase = PHASE::PULL;
 			pAnimator->Play_Anim(m_AccioCast_Animation, false, 0.2f);
+
+			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
+				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+
+				if (flag) {
+
+					auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+					if (!pWeapon)
+						return;
+
+					// 무기 발사 위치
+					const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+					_vector monstervPos = XMVectorSetW(XMLoadFloat3(&pMonster->GetTransform().GetPosition()), 1.f);
+					m_iAccioEffectID = CGameInstance::Get().PlayEffect("Accio", spawnWorld, monstervPos,
+						[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+						{
+							if (effectId != m_iAccioEffectID)
+								return;
+
+							m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
+						});
+				}
+			
+			}
 		}
 
 
@@ -172,6 +197,26 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				m_bPulling = false;
 				m_ePhase = PHASE::RECOVERY;
 			}
+
+			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
+				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+
+				if (flag) {
+
+					auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+					if (!pWeapon)
+						return;
+
+					// 무기 발사 위치
+					const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+					_float3 spawnPos = _float3(spawnWorld._41, spawnWorld._42, spawnWorld._43);
+
+					CGameInstance::Get().SetBeamPositionsByOwner(m_iAccioEffectID, spawnPos, pMonster->GetTransform().GetPosition());
+				}
+			}
+
 		}
 		else {
 			m_bPulling = false;

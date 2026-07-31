@@ -371,6 +371,7 @@ public:
 	void SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& vPosition);
 
 	void SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix);
+	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
 
 #pragma endregion
 

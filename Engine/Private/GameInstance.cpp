@@ -672,6 +672,10 @@ void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _fl
 	m_pEffectManager->SetEffectWorldMatrix(iEffectId, colliderWorldMatrix);
 
 }
+void CGameInstance::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
+	m_pEffectManager->SetBeamPositionsByOwner(effectId, start, end);
+
+}
 
 
 #pragma endregion
