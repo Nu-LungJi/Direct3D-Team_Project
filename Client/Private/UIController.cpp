@@ -208,6 +208,8 @@ void CUIController::CreateSpellType()
 	//static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellShortCutKeySlot[0]))->SetSpellType(ETOUI(SPELL_TYPE::B_BOMBARDA));
 
 	m_SpellSlotStatic = GET_SINGLE(UIManager)->LoadPrefab("SpellSlotStatic");
+
+	E::CGameInstance::Get().SetMouseFix(false);
 }
 
 void CUIController::DeleteSpellType()
@@ -231,6 +233,8 @@ void CUIController::DeleteSpellType()
 			SetSpellType(i + 1, pSpellMeter->GetSpellType() - ETOUI(SPELL_TYPE::B_NONE));
 		PlayScaleAlphaDownDelete(m_SpellShortCutKeySlot[i]);
 	}
+
+	E::CGameInstance::Get().SetMouseFix(true);
 }
 
 void CUIController::CreateDeathScene()
@@ -261,6 +265,8 @@ void CUIController::CreateDeathScene()
 		SafeGetOBJ(SafeGetOBJ(hUI)->GetChildren().front())->OnHoverExit = GET_SINGLE(UIManager)->GetAction("TxtButtonColorDown");
 	}
 	SafeGetOBJ(SafeGetOBJ(m_BeathButton[0])->GetChildren().front())->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("ClearDeathScene");
+
+	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -443,6 +449,7 @@ void CUIController::ClearDeathScene()
 		PlayFadeOutDelete(hUI);
 	}
 	
+	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)

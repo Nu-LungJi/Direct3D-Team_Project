@@ -70,6 +70,9 @@ public:
 public:
 	void Release_Engine();
 
+public:
+	void SetMouseFix(_bool mousefix) { m_bMouseFix = mousefix; if(m_bMouseFix)ShowCursor(FALSE); else ShowCursor(TRUE); }// 유아이용
+
 #pragma region TIME_PROVIDER
 public:
 	_float UpdateTimeProvider();

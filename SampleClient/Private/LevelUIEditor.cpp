@@ -196,6 +196,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 
 	_bool bF1 = CGameInstance::Get().KeyDown(DIK_F1);
+	_bool bF2 = CGameInstance::Get().KeyDown(DIK_F2);
 	_bool bLShift = CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	_bool bDelete = CGameInstance::Get().KeyDown(DIK_DELETE);
 
@@ -226,47 +227,6 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_MiniMap", "Layer_UI", &Desc);
 		}
-
-		// hp
-		if (false)
-		{
-			CTextureUI::UIOBJECT_DESC Desc{};
-
-			count++;
-			Desc.sObjectTag = "UI_" + std::to_string(count);
-			Desc.Name = "UI_" + std::to_string(count);
-			//Desc.fSizeX = 96.f;
-			//Desc.fSizeY = 96.f;
-			Desc.fX = clientSize.x * 0.5f;
-			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 1.f;
-			Desc.ResTag = "TEX_UI_T_HUD_Enemy_Health_BG";
-			Desc.UIType = ETOUI(UI_TYPE::HPBAR);
-			Desc.ResWeight = count;
-
-			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_HPBar", "Layer_UI", &Desc);
-		}
-
-		// 스펠
-		if (false)
-		{
-			CTextureUI::UIOBJECT_DESC Desc{};
-
-			count++;
-			Desc.sObjectTag = "UI_" + std::to_string(count);
-			Desc.Name = "UI_" + std::to_string(count);
-			Desc.fSizeX = 96.f;
-			Desc.fSizeY = 96.f;
-			Desc.fX = clientSize.x * 0.5f;
-			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 1.f;
-			Desc.ResTag = "";
-			Desc.UIType = ETOUI(UI_TYPE::SPELLMETER);
-			Desc.ResWeight = count;
-
-			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
-		}
-
 		if (true)
 		{
 			count++;
@@ -285,6 +245,28 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", "Layer_UI", &desc);
 		}
 	}
+
+	if (bF2)
+	{
+		if (true)
+		{
+			count++;
+			CTextUI::TEXT_DESC desc{};
+
+			desc.sObjectTag = "UI_" + std::to_string(count);
+			desc.Name = "64px";
+			desc.fSizeX = 3.f;
+			desc.fSizeY = 3.f;
+			desc.fX = clientSize.x * 0.5f;
+			desc.fY = clientSize.y * 0.5f;
+			desc.fAlpha = 1.f;
+			desc.Text = L"Test";
+			desc.ResWeight = count;
+
+			std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", "Layer_UI", &desc);
+		}
+	}
+
 	if (bLShift)
 	{
 		if (std::nullopt != m_oSelectHandle)
