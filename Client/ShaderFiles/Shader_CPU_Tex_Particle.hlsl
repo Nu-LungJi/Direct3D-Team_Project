@@ -1,6 +1,10 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
-
+cbuffer CB_TIMEACCUMULATION : register(b11)
+{
+	float g_fAccumulationTime;
+	float3 _pad;
+};
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
@@ -15,9 +19,9 @@ struct VS_IN
     float4 vWorld2 : INSTANCE_WORLD2;
     float4 vWorld3 : INSTANCE_WORLD3;
     float4 vColor : INSTANCE_COLOR0;
-    float4 vInstEmissive : INSTANCE_EMISSIVE;
-    float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
-    float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
+	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE0;
+	float4 vInstEmissive : INSTANCE_EMISSIVE1;
+	float4 vInstEndEmissive : INSTANCE_EMISSIVE2;
     float2 uvOffset : INSTANCE_UVOFFSET;
     float2 uvSize : INSTANCE_UVSIZE;
     float life : INSTANCE_LIFE; // 추가 
@@ -344,7 +348,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
      */
 	float2 normalUV =
         localUV * float2(1.2f, 1.2f) +
-        float2(-g_fTimeAccumulation * 0.6f, 0.f);
+        float2(-g_fAccumulationTime * 0.6f, 0.f);
 
 	float2 distortion =
         g_NormalTexture.Sample(LinearWrap, normalUV).rg * 2.f - 1.f;
@@ -380,7 +384,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
      */
 	float2 noiseUV =
         localUV * float2(1.5f, 1.f) +
-        float2(-g_fTimeAccumulation * 0.8f, 0.f);
+        float2(-g_fAccumulationTime * 0.8f, 0.f);
 
 	float noise =
         g_NoiseTexture.Sample(LinearWrap, noiseUV).r;
@@ -429,4 +433,28 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
 	clip(alpha - 0.001f);
 
 	return Out;
+}
+PS_OUT PSOnlyForDistortion(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+	screenUV.x = screenUV.x * 0.5f + 0.5f;
+	screenUV.y = -screenUV.y * 0.5f + 0.5f;
+
+	float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
+	
+	if (vDistortionColor.r <0.51f)
+		discard;
+	float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
+	float distortionStrength = 0.05f * In.vColor.a ;
+
+	distortion *= distortionStrength;
+	float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion); 
+	
+
+	Out.vDiffuse = float4(distortedBackground.rgb, 1.0f);
+	return Out;
+	
 }
