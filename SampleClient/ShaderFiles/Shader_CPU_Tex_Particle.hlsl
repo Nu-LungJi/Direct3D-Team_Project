@@ -1,6 +1,12 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
+cbuffer CB_TIMEACCUMULATION : register(b11)
+{
+	float g_fAccumulationTime;
+	float3 _pad;
+};
+
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
