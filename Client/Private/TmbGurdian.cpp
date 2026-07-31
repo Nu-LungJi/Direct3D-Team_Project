@@ -632,7 +632,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-	
+	m_fEMissiveColor = { 1.f,1.f,1.f};
 	m_eMonType = MonDesc->MonType;
 	return S_OK;
 }

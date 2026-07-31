@@ -26,8 +26,8 @@ void CMonster::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
-	ImGui::DragFloat("EE", &ff, 0, 1);
-	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_f), 0, 100);
+	ImGui::DragFloat("EE", &m_fIntensive, 0.1f,0.f,100.f);
+	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_fEMissiveColor), 0.1f,0.f, 1.f);
 	ImGui::Text("NoramlAtt : %d", m_iNormalHitCnt);
 	
 	ImGui::Text("bPending : %s", m_bPending == true ? "TRUE" : "FALSE");
@@ -262,7 +262,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_f, m_fEmissive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -522,11 +522,12 @@ void CMonster::IsHit()
 void CMonster::Flag_Check(_float fTimeDelta)
 {
 	//이미시브
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
+	if (m_fIntensive <= 0.f && Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 	{
-		m_bEmissive = true;
 		StartEmissive();
+		m_bWork = true;
 	}
+
 	//초기화
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
@@ -538,7 +539,7 @@ void CMonster::Flag_Check(_float fTimeDelta)
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEAD), FLAGTYPE::ADD);
 
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
-		m_fEmissive = 0;
+		m_fIntensive = 0;
 	else
 	{
 		Clear_ActiveHit();
@@ -577,19 +578,18 @@ void CMonster::Flag_Check(_float fTimeDelta)
 }
 void CMonster::EmissiveFadeOut(_float fTimeDelta)
 {
-	if (m_bEmissive)
+	if (m_fIntensive > 0.f &&  !Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 	{
 		m_bWork = true;
 		m_fTimeTick += fTimeDelta;
 
 		_float t = m_fTimeTick / 0.5f;
 
-		m_fEmissive = std::lerp(m_fPreEmissive, 0, t);
+		m_fIntensive = std::lerp(m_fPreEmissive, 0, t);
 		if (t >= 1.f)
 		{
-			m_bWork = m_bEmissive = false;
-			m_fTimeTick = m_fEmissive = 0;
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE), FLAGTYPE::DEL);
+			m_bWork = false;
+			m_fTimeTick = m_fIntensive = 0;
 		}
 
 	}

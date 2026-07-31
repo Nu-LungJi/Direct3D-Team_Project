@@ -74,13 +74,19 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 						tt = 0.f;
 					if (tt > 1.f)
 						tt = 1.f;
+					
 					if (auto pBT = Get_ComBT())
 					{
-						if (auto pSrc = pBT->GetGameObject())
+						if (!pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 						{
-							_float fEmissive = std::lerp(0.f, 0.5f, tt);
-							static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
+							if (auto pSrc = pBT->GetGameObject())
+							{
+
+								_float fEmissive = std::lerp(0.f, 0.5f, tt);
+								static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
+							}
 						}
+						
 					}
 					_float fAnimRange = m_fRatio.y - m_fRatio.x;
 					_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);

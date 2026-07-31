@@ -160,6 +160,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 
 	m_eAttType = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	m_fEMissiveColor = { 0.6f,0.6f,1.4f };
 
 	return S_OK;
 }
