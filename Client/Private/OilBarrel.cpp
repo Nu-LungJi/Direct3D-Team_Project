@@ -168,6 +168,7 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 
 	/*----------- 광윤 추가 -----------*/
 	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	if (CGameInstance::Get().KeyDown(DIK_P)) { CGameInstance::Get().Render_ChromaticRing(GetTransform().GetLoadedPostion(), 0.5f, 10.f); }
 	/*---------------------------------*/
 }
 

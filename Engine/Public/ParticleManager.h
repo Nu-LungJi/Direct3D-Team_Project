@@ -84,6 +84,8 @@ public:
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos);
 
+	
+
 	//실제 스폰 함수
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos);
@@ -125,9 +127,19 @@ public:
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
 		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
-		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, int geometryType, 
-		const std::string& textureID1, const std::string& textureID2, int RowCount, int ColCount, int iSelectedBlend,
-		_float beamWidth, _float scrollSpeed, uint32_t maxBeams, uint32_t maxDisplacementIterations);
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, 
+		const std::string& textureID1, const std::string& textureID2,
+		const std::string& normalTexID1, const std::string& normalTexID2,
+		const std::string& distortionTexID1 , const std::string& distortionTexID2 ,
+		const std::string& noiseTexID1, const std::string& noiseTexID2,
+		const std::string& normalTexPath,
+		const std::string& distortionTexPath,
+		const std::string& noiseTexPath,
+		const std::string& AnyTexID1,
+		const std::string& AnyTexID2 ,
+		const std::string& AnyTexPath ,
+		int RowCount, int ColCount, int iSelectedBlend,
+		 uint32_t maxBeams, uint32_t maxDisplacementIterations);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
@@ -159,6 +171,7 @@ public:
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
 	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
 	HRESULT StopBeam(const BEAM_HANDLE& handle);
+	void SetBeamPositionsByOwner(uint32_t ownerId, const _float3& start, const _float3& end);
 public:
 
 private:

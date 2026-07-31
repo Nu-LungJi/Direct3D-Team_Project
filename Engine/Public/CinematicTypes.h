@@ -18,6 +18,7 @@ enum class ECinematicBindingMode
 	// 매 프레임 타깃의 현재 Transform을 사용
 	Live, // Boss 이동 -> Boss 기준 카메라 경로도 같이 이동
 
+	// Legacy
 	// 컷신 시작 순간의 타깃 Transform을 저장하고 계속 사용
 	Snapshot // 컷신 시작 위치 저장 -> Boss가 움직여도 카메라 경로는 고정
 };
@@ -75,9 +76,6 @@ struct FCinematicCameraShot : public ISerializable
 	ECinematicCoordinateSpace eCoordinateSpace{ ECinematicCoordinateSpace::World };
 	ECinematicBindingMode eBindingMode{ ECinematicBindingMode::Snapshot };
 
-	// 샷이 어느 오브젝트를 기준으로 하는지
-	StringID TargetSlot{}; // ECinematicCoordinateSpace::TargetLocal 일때만 사용
-
 	std::vector<FCinematicCameraKeyframe> Keyframes{};
 
 
@@ -87,14 +85,6 @@ struct FCinematicCameraShot : public ISerializable
 		serializer.Write("StartTime", fStartTime);
 		serializer.Write("CoordinateSpace", eCoordinateSpace);
 		serializer.Write("BindingMode", eBindingMode);
-		if (TargetSlot.hash == 0)
-		{
-			serializer.Write("TargetSlot", std::string{});
-		}
-		else
-		{
-			serializer.Write("TargetSlot", TargetSlot);
-		}
 		serializer.Write("Keyframes", Keyframes);
 	}
 
@@ -104,8 +94,21 @@ struct FCinematicCameraShot : public ISerializable
 		deserializer.Read("StartTime", fStartTime);
 		deserializer.Read("CoordinateSpace", eCoordinateSpace);
 		deserializer.Read("BindingMode", eBindingMode);
-		deserializer.Read("TargetSlot", TargetSlot);
 		deserializer.Read("Keyframes", Keyframes);
+
+		SortKeyFrames();
+	}
+
+	void SortKeyFrames()
+	{
+		std::stable_sort(
+			Keyframes.begin(),
+			Keyframes.end(),
+			[](const FCinematicCameraKeyframe& Left,
+				const FCinematicCameraKeyframe& Right)
+			{
+				return Left.fTime < Right.fTime;
+			});
 	}
 };
 
@@ -124,6 +127,20 @@ struct FCinematicCameraTrack : public ISerializable
 	{
 		deserializer.Read("TrackID", TrackID);
 		deserializer.Read("Shots", Shots);
+
+		SortShots();
+	}
+
+	void SortShots()
+	{
+		std::stable_sort(
+			Shots.begin(),
+			Shots.end(),
+			[](const FCinematicCameraShot& Left,
+				const FCinematicCameraShot& Right)
+			{
+				return Left.fStartTime < Right.fStartTime;
+			});
 	}
 };
 
@@ -151,6 +168,29 @@ struct FCinematicAssetData final : public ISerializable
 			throw std::runtime_error(
 				"Unsupported cinematic asset version");
 	}
+};
+
+// 컷신 시작할 때 옵션
+enum class ECinematicStartMode
+{
+	Immediate,
+	Blend
+};
+
+// 컷신 끝나고 복귀 옵션
+enum class ECinematicReturnMode
+{
+	Immediate,
+	Blend
+};
+
+struct FCinematicPlayOptions
+{
+	ECinematicStartMode eStartMode{ ECinematicStartMode::Immediate };
+	_float fStartBlendDuration{ 0.5f };
+
+	ECinematicReturnMode eReturnMode { ECinematicReturnMode::Immediate };
+	_float fReturnBlendDuration { 0.5f };
 };
 
 NS_END

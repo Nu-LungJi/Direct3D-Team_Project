@@ -15,6 +15,9 @@
 #include "Player.h"
 
 #include "BossTMB.h"
+#include "UIManager.h"
+#include "UIController.h"
+
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -30,7 +33,12 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 	CGameInstance::Get().Initialize_EffectLight(15);
-
+	auto hPlayer = SpawnPlayer();
+	if (!hPlayer)
+	{
+		MSG_BOX("Player Handle Failed To CLevelBossCharlesRookwood");
+		return E_FAIL;
+	}
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/TombBoss", true)))
 		return E_FAIL;
 
@@ -43,10 +51,10 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(SpawnUICamera()))
 		return E_FAIL;
 
-	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+	if (FAILED(SpawnPlayerCamera(hPlayer)))
 		return E_FAIL;
 
-	if (FAILED(SpawnMonster()))
+	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
 
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -56,6 +64,19 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 
 void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 {
+	{
+		if (!m_bCreatePlayScreenUI)
+		{
+			m_bCreatePlayScreenUI = true;
+			CGameObject::GAMEOBJECT_DESC Desc{};
+			Desc.sObjectTag = "UIController";
+
+			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController",
+				"UIController", &Desc));
+		}
+	}
+
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 }
 
 HRESULT CLevelBossCharlesRookwood::Render()
@@ -193,15 +214,16 @@ HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()
 	return S_OK;
 }
 
-HRESULT CLevelBossCharlesRookwood::SpawnMonster()
+HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 {
 	{
 		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.TargetHandle = hPlayer.value();
 		TmbDesc.sObjectTag = "BossTmb";
 		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
 		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
-		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/TombBoss.json";
 		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
 

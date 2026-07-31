@@ -73,14 +73,7 @@ void CUIController::Update(E::_float fTimeDelta)
 	{
 		UseSpell(4);
 	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_5))
-	{
-		SetSpellType(2, ETOUI(SPELL_TYPE::ASSIO));
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_6))
-	{
-		SetSpellType(2, ETOUI(SPELL_TYPE::NONE));
-	}
+
 	// ************** 포션
 	if (E::CGameInstance::Get().KeyDown(DIK_NEXT))
 	{
@@ -103,7 +96,7 @@ void CUIController::Update(E::_float fTimeDelta)
 			
 	}
 	//************** 몬스터hp
-	if (E::CGameInstance::Get().KeyDown(DIK_O))
+	if (E::CGameInstance::Get().KeyDown(DIK_5))
 	{
 		if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
 		{
@@ -115,14 +108,20 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 	}
 
+	// 몬스터 HP 생성
 	if (m_bMonsterHP)
 	{
 		CreateMonsterHP();
 		m_bMonsterHP = false;
 	}
 
-	if (E::CGameInstance::Get().KeyDown(DIK_P))
+	// 몬스터 HP 감송
+	if (E::CGameInstance::Get().KeyDown(DIK_6))
 		AddMonsterHP(-30.f);
+
+	// 죽는 화면
+	if (E::CGameInstance::Get().KeyDown(DIK_0))
+		CreateDeathScene();
 }
 
 void CUIController::LateUpdate(E::_float fTimeDelta)
@@ -209,6 +208,8 @@ void CUIController::CreateSpellType()
 	//static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellShortCutKeySlot[0]))->SetSpellType(ETOUI(SPELL_TYPE::B_BOMBARDA));
 
 	m_SpellSlotStatic = GET_SINGLE(UIManager)->LoadPrefab("SpellSlotStatic");
+
+	E::CGameInstance::Get().SetMouseFix(false);
 }
 
 void CUIController::DeleteSpellType()
@@ -232,6 +233,40 @@ void CUIController::DeleteSpellType()
 			SetSpellType(i + 1, pSpellMeter->GetSpellType() - ETOUI(SPELL_TYPE::B_NONE));
 		PlayScaleAlphaDownDelete(m_SpellShortCutKeySlot[i]);
 	}
+
+	E::CGameInstance::Get().SetMouseFix(true);
+}
+
+void CUIController::CreateDeathScene()
+{
+	m_Desolve = GET_SINGLE(UIManager)->LoadPrefab("Desolve").front();
+	m_DeathDivider = GET_SINGLE(UIManager)->LoadPrefab("DeathDivider").front();
+	m_DeathTxt = GET_SINGLE(UIManager)->LoadPrefab("DeathSceneTxt");
+
+	PlayDividerUPWidth(m_DeathDivider);
+
+	for (int i = 0; i < m_DeathTxt.size(); i++)
+	{
+		PlayAlphaUP(m_DeathTxt[i], 3.f - i * 0.5f, 1.f);
+	}
+		
+	m_BeathButton[0] = GET_SINGLE(UIManager)->LoadPrefab("ButtonText1").front();
+	m_BeathButton[1] = GET_SINGLE(UIManager)->LoadPrefab("ButtonText2").front();
+	m_BeathButton[2] = GET_SINGLE(UIManager)->LoadPrefab("ButtonText3").front();
+	PlayAlphaUP(m_BeathButton[0], 3.5f, 1.f);
+	PlayAlphaUP(m_BeathButton[1], 3.75f, 1.f);
+	PlayAlphaUP(m_BeathButton[2], 4.f, 1.f);
+
+	for (auto hUI : m_BeathButton)
+	{
+		SafeGetOBJ(hUI)->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("TxtButtonScaleUp");
+		SafeGetOBJ(hUI)->OnHoverExit = GET_SINGLE(UIManager)->GetAction("TxtButtonScaleDown");
+		SafeGetOBJ(SafeGetOBJ(hUI)->GetChildren().front())->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("TxtButtonColorUp");
+		SafeGetOBJ(SafeGetOBJ(hUI)->GetChildren().front())->OnHoverExit = GET_SINGLE(UIManager)->GetAction("TxtButtonColorDown");
+	}
+	SafeGetOBJ(SafeGetOBJ(m_BeathButton[0])->GetChildren().front())->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("ClearDeathScene");
+
+	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -397,7 +432,24 @@ void CUIController::CreateMonsterHP()
 
 void CUIController::AddMonsterHP(_float fill)
 {
+	if (std::nullopt == m_MonsterHP || nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		return;
 	static_cast<CHPBar*>(SafeGetOBJ(*m_MonsterHP))->AddFill(fill);
+}
+
+void CUIController::ClearDeathScene()
+{
+	PlayFadeOutDelete(m_Desolve);
+	PlayFadeOutDelete(m_DeathDivider);
+	PlayFadeOutDelete(m_DeathTxt[0]);
+	PlayFadeOutDelete(m_DeathTxt[1]);
+
+	for (auto hUI : m_BeathButton)
+	{
+		PlayFadeOutDelete(hUI);
+	}
+	
+	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)
@@ -475,6 +527,47 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 			this->SetMonsterHPBool(true);
 			this->SetMonsterHPNull();
 			}, EEaseType::EaseOutQuad);
+}
+
+void CUIController::PlayDividerUPWidth(CHandle pHandle)
+{
+	CUIObject* pUI = SafeGetOBJ(pHandle);
+	auto pTween = pUI->GetTweenCom();
+
+	//pUI->SetInputLcok(true);
+
+	_float width = pUI->GetSize().x;
+	_float height = pUI->GetSize().y;
+	_float Alpah = pUI->GetAlpha();
+
+	pTween->PlayTween(256.f, width + 256.f, 1.f,
+		[pUI, height](float currentValue) {
+			pUI->SetSize({ currentValue, height });
+			pUI->CalcUICoord();
+		}, nullptr, EEaseType::Linear, 3.f);
+
+	pTween->PlayTween(0.f, 1.f, 1.f,
+		[pUI](float currentValue) {
+			pUI->SetAlpha(currentValue);
+			pUI->CalcUICoord();
+		}, nullptr, EEaseType::Linear, 3.f);
+
+}
+
+void CUIController::PlayAlphaUP(CHandle pHandle, float delaytime, float playTime)
+{
+	CUIObject* pUI = SafeGetOBJ(pHandle);
+	auto pTween = pUI->GetTweenCom();
+
+	pUI->SetInputLcok(true);
+
+	_float Alpah = pUI->GetAlpha();
+
+	pTween->PlayTween(0.f, 1.f, playTime,
+		[pUI](float currentValue) {
+			pUI->SetAlpha(currentValue);
+			pUI->CalcUICoord();
+		}, nullptr, EEaseType::Linear, delaytime);
 }
 
 E::UPtr<CUIController> CUIController::Create()

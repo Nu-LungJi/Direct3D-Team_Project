@@ -23,3 +23,4 @@
 #include "BTDecInvert.h"// true false 인버터
 #include "BTDecFlag.h" //맞은판정 플래그 있음
 #include "BTDecHitCnt.h"
+#include "BTDecIsPending.h"

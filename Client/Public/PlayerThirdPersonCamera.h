@@ -11,12 +11,14 @@ public:
 	struct DESC : public CCameraObject::CAMERA_DESC
 	{
 		CHandle hTarget{};
-		_float fDistance{ 10.f };
-		_float fTargetHeight{};
+		_float fDistance{ 7.f };
 		_float fPitch{ 15.f };
 		_float fMinPitch{ -20.f };
 		_float fMaxPitch{ 65.f };
 		_float fMouseSensitivity{ 10.f };
+		_float fShoulderOffset{ 2.f };
+		_float fHorizontalDeadZoneRadius{ 1.f };
+		_float fVerticalDeadZoneHalfHeight{ 1.f };
 	};
 
 public:
@@ -31,17 +33,30 @@ public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(_float fTimeDelta) override;
 	void UpdateFollow();
+private:
+	// 타겟 -> 카메라 방향으로 SphereSweep
+	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
 
 private:
 	CHandle m_hTarget{};
 	_float m_fYaw{};
 	_float m_fPitch{ 15.f };
-	_float m_fDistance{ 10.f };
-	_float m_fTargetHeight{};
+	_float m_fDistance{ 7.f };
 	_float m_fMinPitch{ -20.f };
 	_float m_fMaxPitch{ 65.f };
 	_float m_fMouseSensitivity{ 10.f };
+	_float m_fShoulderOffset{ 2.f };
+	_float m_fHorizontalDeadZoneRadius{ 1.f };
+	_float m_fVerticalDeadZoneHalfHeight{ 1.f };
+	_float3 m_vFollowPivot{};
+	_bool m_bFollowPivotInitialized{ false };
 
+private:
+	_float CAMERA_TARGET_OFFSET_Y = 1.5f;
+
+private:
+	_float CAMERA_COLLISION_RADIUS = 0.3f;
+	_float CAMERA_COLLISION_PADDING = 0.05f;
 public:
 	static UPtr<CPlayerThirdPersonCamera> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;

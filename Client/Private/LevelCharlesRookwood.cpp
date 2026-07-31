@@ -39,6 +39,12 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	E::CGameInstance::Get().GameObjectAllReset();
 	CGameInstance::Get().Initialize_EffectLight(15);
 
+	auto hPlayer = SpawnPlayer();
+	if (!hPlayer)
+	{
+		MSG_BOX("Player Handle Failed To CLevelCharlesRookwood");
+		return E_FAIL;
+	}
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
 		return E_FAIL;
 
@@ -50,8 +56,7 @@ HRESULT CLevelCharlesRookwood::Initialize()
 
 	if (FAILED(SpawnUICamera()))
 		return E_FAIL;
-
-	if (FAILED(SpawnPlayerCamera(SpawnPlayer())))
+	if (FAILED(SpawnPlayerCamera(hPlayer)))
 		return E_FAIL;
 
 	if (FAILED(SpawnBridge()))
@@ -60,7 +65,7 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(SpawnMyMagicStepController()))
 		return E_FAIL;
 
-	if (FAILED(SpawnMonster()))
+	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
@@ -107,7 +112,7 @@ Engine::UPtr<CLevelCharlesRookwood> CLevelCharlesRookwood::Create()
 
 	if (FAILED(pInstance->Initialize()))
 	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
+		MSG_BOX("Failed to Created : CLevelCharlesRookwood");
 	}
 
 	return pInstance;
@@ -171,9 +176,9 @@ HRESULT CLevelCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 	CPlayerThirdPersonCamera::DESC Desc{};
 	Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
 	Desc.vAt = { 10.f, 50.f, 10.f };
-	Desc.vEye = { 10.f, 53.f, 5.f };
+	Desc.vEye = { 10.f, 55.f, 5.f };
 	Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
-	Desc.fFovY = 75.f;
+	Desc.fFovY = 65.f;
 	Desc.fNear = 0.1f;
 	Desc.fFar = 1000.f;
 	Desc.sObjectTag = "PlayerCamera";
@@ -205,10 +210,11 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		&PlayerDesc);
 }
 
-HRESULT CLevelCharlesRookwood::SpawnMonster()
+HRESULT CLevelCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 {
 	{
 		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";
 		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(-6.f, -215.f, 156.f,1.f));

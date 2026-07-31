@@ -31,7 +31,6 @@ typedef struct HitTable
 	PLAYER_SKILL_TYPE			eHitType{ PLAYER_SKILL_TYPE::DEFAULT };
 	int32_t						iAnimIndex{ -1 };
 	_float						fBlend{ 0.1f };
-	
 
 }HITTABLE;
 
@@ -41,7 +40,6 @@ typedef struct MonsterHitInfo
 	ATTMON    eAttType{ ATTMON::END };
 	int32_t iPriority{ 0 };
 }MON_HIT_INFO;
-
 class CMonster : public CAnimationObject
 {
 public:
@@ -53,6 +51,7 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
@@ -82,28 +81,30 @@ public:
 
 public:
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
-	const int32_t			Get_CurrentHp() const { return m_iHp; }
-	const int32_t			Get_MaxHp()		const { return m_iMaxHp; }
-	void					Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
-	void					Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
-	void					Set_AttTable(ATTMON eType, _float2 fSkillRatio)
-	{
-		if (!m_bSkill) {
-			m_eAttType = eType;
-			m_fSkillRatio = fSkillRatio;
-			m_bSkill = true;
-		}
-	}
+	const int32_t				Get_CurrentHp() const { return m_iHp; }
+	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
+	void						Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
+	void						Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
 	_bool						Activate_PendingHit();
 	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
 	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
 	_bool						Is_PendingHit() { return m_bPending; }
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						Clear_PendingHit() { m_PendingMonTable = {}; m_bPending = false; }
-	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; }
-	void						Check_Table(PLAYER_SKILL_TYPE eType);
+	void						Clear_ActiveHit() { m_ActiveMonTable = {}; m_bActiveHit = false; m_eAttType = ATTMON::END; }
+	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
+	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
+	uint32_t					GetHitCnt() { return m_iHitCnt; }
+	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
+	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
+
+	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
+	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
+protected:
+	uint32_t					Find_SkillNum(ATTMON eType);
 private:
+	void						Damaged();
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
 	void						Flag_Check(_float fTimeDelta);
@@ -131,24 +132,25 @@ protected:
 	_float3 m_f{};
 	_float ff{};
 
-	_float2						m_fSkillRatio{ };
-	uint32_t					m_iCurrentInstanceCount = 0;
-	_float						m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
-	int32_t						m_iHp{}, m_iMaxHp{};
-	_bool						m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
-	_string						m_SocketName{};
-	ATTMON						m_eAttType{};
+	_float2								m_fSkillRatio{ };
+	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{};
+	_float								m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
+	int32_t								m_iHp{}, m_iMaxHp{};
+	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
+	_string								m_SocketName{}, m_CurEffectName{};
+	ATTMON								m_eAttType{};
 
-	_bool						m_bPending{ false };
-	MON_HIT_INFO				m_PendingMonTable{};
+	_bool								m_bPending{ false };
+	MON_HIT_INFO						m_PendingMonTable{};
 
-	_bool						m_bActiveHit{ false };
-	MON_HIT_INFO				m_ActiveMonTable{};
+	_bool								m_bActiveHit{ false };
+	MON_HIT_INFO						m_ActiveMonTable{};
 
-	
-	std::vector<E::SPAWN_COMMAND> m_Effects[ETOUI(ATTMON::END)];
+	MONSTER_TYPE						m_eMonType{ MONSTER_TYPE::NORMAL };
+	std::vector<E::SPAWN_COMMAND>		m_Effects[ETOUI(ATTMON::END)];
+	CHandle								m_TargetHandle{};
 
-
+	std::map<ATTMON, uint32_t>			m_MonSkillLists;
 	//파티클 재설정용
 	_bool								m_bDonMove{ false };
 	std::map<ATTMON, _string>			m_ParticleData;

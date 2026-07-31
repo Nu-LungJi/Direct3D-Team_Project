@@ -20,6 +20,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "TextBox.h"
+#include "HPBar.h"
 
 NS_USING(Client)
 
@@ -83,6 +84,14 @@ HRESULT CMainAppLoader::Load()
 			MSG_BOX("Failed Load_PhysX_Resource");
 			return E_FAIL;
 		}
+		
+		// 시네마틱 카메라 충돌 레이어 설정 빼거나 추가하고싶으면 여기서 하세요
+		CGameInstance::Get().SetCinematicCollisionQueryMask(
+			ETOUI(COLLISION_LAYER::DEFAULT)
+			//ETOUI(COLLISION_LAYER::WORLD_STATIC) 
+			//| ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) 
+			//| ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+		);
 
 		if (FAILED(Create_ActionNode()))
 		{
@@ -316,6 +325,10 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 
 	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_LIGHTNING_MESH", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Lightning_Mesh.hlsl")))	return E_FAIL;
 	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Lightning_Mesh.hlsl")))	return E_FAIL;
+	
+	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_EXTRAEFFECT", CResPixelShader::Create("./ShaderFiles/Shader_CPU_ExtraEffect.hlsl"))) {
+		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_StarBurst"	 , .sTarget = "ps_5_0" })))	return E_FAIL;
+	}
 	/////////////////////////////////////
 
 	{
@@ -345,6 +358,15 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 	{
 		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
 		CGameInstance::Get().Load_ParticleJsonPackage(k);
+	}
+
+	//클라이언트 사운드 버스 초기화
+	{
+		if (FAILED(Initialize_Sound()))
+		{
+			return E_FAIL;
+		}
+
 	}
 	return S_OK;
 }
@@ -416,8 +438,12 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecIsGround", CBTDecIsGround::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecIsPending", CBTDecIsPending::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHitCnt", CBTDecHitCnt::Create())))
+		return E_FAIL;
 
-	return S_OK;
+	return S_OK; 
 }
 
 HRESULT CMainAppLoader::Load_UIStaitc_Resource()
@@ -425,7 +451,7 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 	{
 		namespace fs = std::filesystem;
 
-		std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI/LoadingScreen";
+		std::string targetDir = "./Resources/SampleClient/Textures/UI/UITexture/Loading";
 
 		if (fs::exists(targetDir) && fs::is_directory(targetDir))
 		{
@@ -448,7 +474,8 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 			}
 		}
 	}
-	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Houses.png")))
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", 
+		E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UITexture/Loading/UI_T_LoadingWidget_Houses.png")))
 	{
 		res->Load();
 	}
@@ -465,6 +492,47 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 	{
 		return false;
 	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_HPBar", CHPBar::Create())))
+	{
+		return false;
+	}
 
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Initialize_Sound()
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+
+	for (const auto eBus : magic_enum::enum_values<Client::SOUND_BUS>())
+	{
+		if (eBus == Client::SOUND_BUS::END)
+			continue;
+
+		if (!pSoundManager->CreateBus(eBus))
+			return E_FAIL;
+	}
+
+	// 사운드 테스트
+	if (false)
+	{
+		const _string sSoundPath = "./Resources/SampleClient/Sound/Verses_1_4_of_the_National_Anthem.mp3";
+		auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+		if (pSoundManager == nullptr ||
+			!pSoundManager->Preload(sSoundPath))
+			return E_FAIL;
+
+		const SOUND_ID iSoundID = pSoundManager->Play2D(
+			sSoundPath,
+			E::SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = true
+			});
+		if (iSoundID == INVALID_SOUND_ID)
+			return E_FAIL;
+	}
 	return S_OK;
 }

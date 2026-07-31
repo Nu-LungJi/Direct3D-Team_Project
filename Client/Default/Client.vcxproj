@@ -214,6 +214,7 @@
     <ClInclude Include="..\Public\BTDecHitCnt.h" />
     <ClInclude Include="..\Public\BTDecHp.h" />
     <ClInclude Include="..\Public\BTDecInvert.h" />
+    <ClInclude Include="..\public\BTDecIsPending.h" />
     <ClInclude Include="..\Public\BTDecLier.h" />
     <ClInclude Include="..\Public\BTDecSearch.h" />
     <ClInclude Include="..\Public\BTDecTimer.h" />
@@ -251,10 +252,12 @@
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
+    <ClInclude Include="..\public\MonEffect.h" />
     <ClInclude Include="..\Public\Monster.h" />
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
+    <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
@@ -266,6 +269,7 @@
     <ClInclude Include="..\Public\Player_DashSkill_State.h" />
     <ClInclude Include="..\Public\Player_DepulsoSkill_State.h" />
     <ClInclude Include="..\Public\Player_DescendoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_RevelioSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Magic_Bullet.h" />
@@ -310,8 +314,10 @@
     <ClCompile Include="..\Private\BTAttackAnimation.cpp" />
     <ClCompile Include="..\Private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\Private\BTDecFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecHitCnt.cpp" />
     <ClCompile Include="..\Private\BTDecHp.cpp" />
     <ClCompile Include="..\Private\BTDecInvert.cpp" />
+    <ClCompile Include="..\private\BTDecIsPending.cpp" />
     <ClCompile Include="..\Private\BTDecLier.cpp" />
     <ClCompile Include="..\Private\BTDecSearch.cpp" />
     <ClCompile Include="..\Private\BTDecTimer.cpp" />
@@ -346,10 +352,12 @@
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />
+    <ClCompile Include="..\private\MonEffect.cpp" />
     <ClCompile Include="..\Private\Monster.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
+    <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
@@ -359,6 +367,7 @@
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Magic_Bullet.cpp" />
@@ -402,6 +411,7 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />

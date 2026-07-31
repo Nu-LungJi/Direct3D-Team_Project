@@ -42,13 +42,37 @@ EVALUATE CBTDecIsGround::Evaluate(_float fTimeDelta)
 				return  m_eDebug = EVALUATE::SUCCESS;
 			else
 			{
-				__super::Evaluate(fTimeDelta);
+
+				EVALUATE result = __super::Evaluate(fTimeDelta);
+				if (result == EVALUATE::FAILED)
+					return m_eDebug = result;
+
 				return m_eDebug = EVALUATE::RUN;
 			}
 		}
 	}
 
 	return m_eDebug = EVALUATE::FAILED;
+}
+void CBTDecIsGround::Update_Gui()
+{
+	if (ImGui::Button("IsGrounded : "))
+		m_bGrounded = !m_bGrounded;
+	ImGui::SameLine();
+	ImGui::Text(m_bGrounded == false ? " FALSE" : "TRUE");
+}
+nlohmann::json CBTDecIsGround::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+
+	SaveJsonValue(j, "IsGrounded", m_bGrounded);
+	return j;
+}
+HRESULT CBTDecIsGround::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "IsGrounded", m_bGrounded);
+	return S_OK;
 }
 E::UPtr<CBTDecIsGround> CBTDecIsGround::Create()
 {

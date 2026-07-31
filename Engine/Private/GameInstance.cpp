@@ -672,6 +672,10 @@ void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _fl
 	m_pEffectManager->SetEffectWorldMatrix(iEffectId, colliderWorldMatrix);
 
 }
+void CGameInstance::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
+	m_pEffectManager->SetBeamPositionsByOwner(effectId, start, end);
+
+}
 
 
 #pragma endregion
@@ -1028,9 +1032,13 @@ HRESULT CGameInstance::LoadCinematic(
 {
 	return m_pCameraManager->LoadCinematic(CinematicName);
 }
-HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options)
 {
-	return m_pCameraManager->PlayCinematic(CinematicID);
+	return m_pCameraManager->PlayCinematic(CinematicID, Options);
+}
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options)
+{
+	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle, Options);
 }
 void CGameInstance::StopCinematic()
 {
@@ -1044,7 +1052,15 @@ _float CGameInstance::GetCinematicPlayTime() const
 {
 	return m_pCameraManager->GetCinematicPlayTime();
 }
+void CGameInstance::SetCinematicCollisionQueryMask(uint32_t iQueryMask)
+{
+	if (m_pCameraManager == nullptr)
+	{
+		return;
+	}
 
+	m_pCameraManager->SetCinematicCollisionQueryMask(iQueryMask);
+}
 #pragma endregion
 
 
@@ -1107,12 +1123,19 @@ HRESULT	CGameInstance::Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDS
 HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY) {
 	return m_pRenderer->Generate_ShadowMapOutput(_ShadowUAV, _Texture, _ShadowSRV, _LTYPE, _ResolutionX, _ResolutionY);
 }
+VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale) {
+	m_pRenderer->Render_ChromaticRing(_WorldPosition, _Duration, _Scale);
+}
 
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
+}
+_string CGameInstance::GetAnimName(uint32_t iIndex, CHandle Handle)
+{
+	return m_pAnimEdit_Manager->GetAnimName(iIndex, Handle);
 }
 #pragma endregion
 
@@ -1187,8 +1210,8 @@ void CGameInstance::ClearAllChunk()
 VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
 	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
 }
-VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range) {
-	m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _Range);
+VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
+	m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _InnerRange, _OuterRange);
 }
 VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
 	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
@@ -1205,8 +1228,8 @@ HRESULT	CGameInstance::Render_ObjectShadow() {
 HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 	return m_pLightManager->Initialize_EffectLight(_PoolSize);
 }
-std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity) {
-	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _Range, _LifeTime, _Velocity);
+std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity) {
+	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _InnerRange, _OuterRange, _LifeTime, _Velocity);
 }
 
 

@@ -67,6 +67,9 @@ public:
 	const EFFECT_INSTANCE* FindInstance(
 		EFFECT_INSTANCE_ID iEffectId) const;
 
+	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
+
+
 private:
 	void DispatchReadyCommands(EFFECT_INSTANCE& instance);
 
@@ -92,6 +95,7 @@ private:
 
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_EffectJsonPackage(const std::vector<std::string>& _FilePathPackage);
+
 private:
 	CParticleManager* m_pParticleManager = nullptr;
 	CLightManager* m_pLightManager = nullptr;

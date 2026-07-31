@@ -234,6 +234,7 @@ namespace Engine
 		_float2 vUV;
 		_float4 vColor;
 		_float4 vEmissive;
+		_float4 vEndEmissive;
 	}BEAM_VERTEX;
 
 	typedef struct ChunkHeader
@@ -505,6 +506,7 @@ namespace Engine
 		std::vector<std::vector<_float4x4>> CombinedBoneMatrices;
 		
 		_bool bModelStatic = false;
+		_bool bGPUSkinned = false;
 
 		_bool bActiveThisFrame = false;
 

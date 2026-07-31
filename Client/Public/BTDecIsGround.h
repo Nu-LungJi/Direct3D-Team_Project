@@ -17,7 +17,12 @@ private:
 	HRESULT Initalize(void* pArg) override;
 public:
 	EVALUATE					Evaluate(_float fTimeDelta) override;
-	virtual void				Update_Gui() override {};
+	virtual void				Update_Gui() override;
+	
+	virtual nlohmann::json		Save_Node()override;
+	HRESULT						Load_json(const nlohmann::json& j) override;
+private:
+	_bool						m_bGrounded{false};
 public:
 	static UPtr<CBTDecIsGround> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

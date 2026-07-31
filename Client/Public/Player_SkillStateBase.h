@@ -12,6 +12,8 @@ class CPlayer_SkillStateBase : public CState
 public:
 	DECLARE_DERIVED_TYPE(CPlayer_SkillStateBase, CState)
 
+	static _bool HasValidTarget(const CPlayer& player);
+
 protected:
 	CPlayer_SkillStateBase() = default;
 	~CPlayer_SkillStateBase() override = default;
@@ -24,7 +26,7 @@ protected:
 	void ResetSkillControl(CPlayer& player) const;
 	_bool RequestLocomotion(CStateMachine* pStateMachine) const;
 	_bool HasTarget(const CPlayer& player) const;
-	_bool HasValidTarget(const CPlayer& player) const;
+	_bool TryApplySkillToTarget(CPlayer& player, PLAYER_SKILL_TYPE eSkillType) const;
 	_bool PlayRandomTargetAttack(CPlayer& player, _float fBlendDuration = 0.24f);
 
 	int32_t FindAnimationIndex(const CPlayer& player, _string_view sAnimationName) const;

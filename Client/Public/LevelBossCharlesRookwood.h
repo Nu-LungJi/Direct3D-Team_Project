@@ -27,10 +27,13 @@ private:
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
 	HRESULT SpawnStaticCollision();
-	HRESULT SpawnMonster();
+	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
+
+private:
+	_bool m_bCreatePlayScreenUI{ false };
 
 private:
 	void Free() override;

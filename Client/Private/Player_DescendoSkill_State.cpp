@@ -44,10 +44,14 @@ void CPlayer_DescendoSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	// 고쳐야 할거 
-	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
+	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
 	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
+	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
 
-	m_bAnimationIndicesCached = m_DescendoCast_Animation >= 0 && m_DescendoEnd_Animation >= 0;
+	m_bAnimationIndicesCached =
+		m_DescendoCast_Animation >= 0 &&
+		m_DescendoEnd_Animation >= 0 &&
+		m_AttackFail_Animation >= 0;
 }
 
 void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
@@ -84,12 +88,24 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO)
 		{
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
+				break;
+			}
+
 			m_ePhase = PHASE::PUSH;
 			pAnimator->Play_Anim(m_DescendoCast_Animation, false, 0.25f);
 			pAnimator->GetCurAnimState().fSpeed = 1.f;
 		}
 		break;
 	}
+
+	case PHASE::ATTACK_FAILED:
+		if (pAnimator->GetFinish())
+			RequestLocomotion(pStateMachine);
+		break;
 
 	case PHASE::PUSH:
 		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)
