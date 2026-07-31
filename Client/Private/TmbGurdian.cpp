@@ -305,13 +305,13 @@ void CTmbGurdian::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (m_eAttType != eType) {
 
 		uint32_t iSkillNum = Find_SkillNum(eType);
-		//if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(BOSSTOMB_SKILL::END))
-		//	return;
-		//if (m_EffectNames[iSkillNum] == "")
-		//	return;
-		//
-		//m_CurEffectName = m_EffectNames[iSkillNum];
-		m_eAttType = static_cast<ATTMON>(iSkillNum);
+		if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(TOMB_SKILL::END))
+			return;
+		if (m_EffectNames[iSkillNum] == "")
+			return;
+
+		m_CurEffectName = m_EffectNames[iSkillNum];
+		m_eAttType = eType;
 		m_fSkillRatio = fSkillRatio;
 
 	}
@@ -533,18 +533,18 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(TOMB_SKILL::JUMP_END);
 	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(TOMB_SKILL::SLASH);
 	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(TOMB_SKILL::SMASH);
+
 	m_MonSkillLists[ATTMON::SKIP] = ETOUI(TOMB_SKILL::SKIP);
 
-	m_Effects[ETOUI(TOMB_SKILL::JUMP_START)] = CGameInstance::Get().Parse_Command("SpawnSmokeJump.json");
-	m_Effects[ETOUI(TOMB_SKILL::JUMP_END)] = CGameInstance::Get().Parse_Command("SpawnSmoke1-1.json");
-	
-	m_ParticleData.emplace(ATTMON::SLOT0, "SpawnSmokeJump.json");
-	m_ParticleData.emplace(ATTMON::SLOT1, "SpawnSmoke1-1.json");
+
+	m_EffectNames[ETOUI(TOMB_SKILL::JUMP_START)] = "TombJumpStart";
+	m_EffectNames[ETOUI(TOMB_SKILL::JUMP_END)] = "TombJumpEnd";
+
 
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	GetTransform().Update();
-
+	m_eAttType = ATTMON::END;
 
 	// 죽음 파편들
 

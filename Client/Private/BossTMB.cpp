@@ -27,11 +27,25 @@ void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
 
-	ImGui::Text("ReLoad Data");
+	if (ImGui::TreeNode("Flag"))
+	{
+		struct GuiView
+		{
+			uint32_t iValue{};
+			const _char* pName{};
+		};
+#define X(name, value) value, #name,
+		const GuiView Flags[] = { BTFLAG_M };
+#undef X
 
-	//EFFCT OFF WORLD
-	//MON WORLD + EFFEOFWORLD
-
+		for (uint32_t i = 0; i < std::size(Flags); ++i)
+		{
+			ImGui::Text(Flags[i].pName); ImGui::SameLine();
+			ImGui::Text(true == m_pBeHavior->Check_Flag(Flags[i].iValue) ? ": TRUE" : " FALSE");
+		}
+			
+		ImGui::TreePop();
+	}
 }
 
 HRESULT CBossTMB::InitializePrototype(void* pArg)
@@ -139,9 +153,17 @@ HRESULT CBossTMB::Initialize(void* pArg)
 
 	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(BOSSTOMB_SKILL::SPAWN);
 	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(BOSSTOMB_SKILL::STUMP);
+	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(BOSSTOMB_SKILL::BLUST_START);
+	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(BOSSTOMB_SKILL::BLUST_END);
+	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(BOSSTOMB_SKILL::BALL);
+	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(BOSSTOMB_SKILL::BALL_BREAK);
 
+
+	m_MonSkillLists[ATTMON::SKIP] = ETOUI(BOSSTOMB_SKILL::SKIP);
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SPAWN)] = "Boss_Appear";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::STUMP)] = "Boss_GroundCrash";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
@@ -153,6 +175,10 @@ HRESULT CBossTMB::Initialize(void* pArg)
 
 
 	m_eMonType = MONSTER_TYPE::BOSS;
+
+	m_eAttType = ATTMON::END;
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+
 	return S_OK;
 }
 
@@ -186,11 +212,11 @@ void CBossTMB::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 		uint32_t iSkillNum = Find_SkillNum(eType);
 		if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(BOSSTOMB_SKILL::END))
 			return;
-		if (m_EffectNames[iSkillNum] == "")
-			return;
+		//if (m_EffectNames[iSkillNum] == "")
+		//	return;
 
 		m_CurEffectName = m_EffectNames[iSkillNum];
-		m_eAttType = static_cast<ATTMON>(iSkillNum);
+		m_eAttType = eType;
 		m_fSkillRatio = fSkillRatio;
 
 	}
