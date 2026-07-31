@@ -54,21 +54,17 @@ float4 PSMain(PS_IN input) : SV_Target
 	float3 maskSample = maskTex.Sample(LinearWrap, input.uv).rgb;
 	float baseMask = pow(saturate((maskSample.r + maskSample.g + maskSample.b) * 0.7f), 1.5f);
 
-    // ---------------- [외곽선 지우개 (Edge Fade)] ----------------
+    // Edge Fade
 	float fadeX = smoothstep(0.0f, 0.15f, input.uv.x) * (1.0f - smoothstep(0.85f, 1.0f, input.uv.x));
 	float fadeY = smoothstep(0.0f, 0.25f, input.uv.y) * (1.0f - smoothstep(0.75f, 1.0f, input.uv.y));
-	float edgeFade = fadeX * fadeY;
-
-    // 연기 형태에 외곽선 지우개(edgeFade)를 곱하여 가장자리를 깔끔하게 정리합니다.
+	float edgeFade = fadeX * fadeY;.
 	float cloudMask = baseMask * smokeDetail * 2.0f * edgeFade;
 
-    // 5. 색상 적용 (어두운 와인색)
+    // 색상 적용
 	float3 cloudColor = float3(0.35f, 0.02f, 0.06f);
 	float3 finalCloud = cloudColor * cloudMask;
 
 
-    // ---------------- [6. 흩날리는 글리터(반짝이) 크기 및 범위 수정] ----------------
-    // [수정됨] 글리터 입자 크기를 원본보다 살짝 작게 조절 (숫자가 커질수록 입자가 작아짐)
 	float2 glitterUV = input.uv * 2.f;
 
 	float2 speedR = float2(-0.015f, -0.01f);
@@ -84,17 +80,16 @@ float4 PSMain(PS_IN input) : SV_Target
 	float glitterThreshold = 0.3f;
 	glitterMask = saturate(glitterMask - glitterThreshold);
 
-    // 잘려나간 만큼 남아있는 반짝이가 더 밝게 빛나도록 곱해주는 수치를 1.5f에서 3.0f로 올렸습니다.
+    // 반짝이 밝기
 	glitterMask = pow(glitterMask, 2.0f) * 3.0f;
     
-    // 글리터가 구름 마스크(baseMask) 안에서만 보이도록 가두기
+    // 글리터 사이즈
 	glitterMask *= (baseMask * edgeFade * 1.5f);
 
 	float3 glitterColor = float3(1.0f, 0.8f, 0.2f);
 	float3 finalGlitter = glitterColor * glitterMask;
 
-
-    // 7. 최종 합성
+    // 최종
 	float3 finalRGB = finalCloud + finalGlitter;
 	float finalAlpha = saturate(cloudMask + glitterMask);
 
