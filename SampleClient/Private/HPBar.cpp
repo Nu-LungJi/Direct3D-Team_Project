@@ -160,7 +160,7 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 	pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_UIINFO.Restag);
+		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		const D3D11_TEXTURE2D_DESC& texDesc = srv->GetTexture2DDesc();
 
 		E::CB_PER_UI perUI{};
@@ -173,6 +173,14 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 		if(m_UIINFO.Restag == "TEX_UI_T_TutorialMediaBorder")
 			perUI.margins = { 97.f, 57.f, 97.f, 57.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_NotificationGoldLeafWShadow_Bottom_Flip")
+			perUI.margins = { 53.f, 0.f, 0.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_ConversationDivider_4k")
+			perUI.margins = { 38.f, 0.f, 38.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_ToolTipBack")
+			perUI.margins = { 9.f, 0.f, 9.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_MenuTextButtonBorder_4K")
+			perUI.margins = { 68.f, 0.f, 68.f, 0.f };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
