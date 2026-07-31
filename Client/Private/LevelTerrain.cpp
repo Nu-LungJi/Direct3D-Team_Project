@@ -23,7 +23,6 @@
 
 #include "BossTMB.h"
 #include "TmbGurdian.h"
-#include "AmbientSound3DObject.h"
 #include "LightPlacementObject.h"
 NS_USING(Client)
 
