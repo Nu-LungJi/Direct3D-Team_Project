@@ -593,9 +593,10 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
 		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
 		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-
+	
 		if (!BossTmb)
 		{
 			MSG_BOX("Create TmbGurdian Failed in Rookwood");
@@ -626,6 +627,7 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
 		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
 		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
 		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
 		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(3.f, 3.f, 3.f, 1));
