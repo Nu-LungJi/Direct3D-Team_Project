@@ -823,6 +823,100 @@ void UIManager::InitializeActions()
 			}, nullptr, EEaseType::EaseOutQuad, 0.0f, true);
 	};
 	m_vEventNames.push_back("LockOnEffect");
+
+	/****************텍스트 버튼용*******************/
+	m_EventMap["TxtButtonScaleUp"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetInputLcok(true);
+
+			CHandle handle = pCaller->GetHandle();
+			_float originScaleRatio = pCaller->GetScaleRatio();
+			pTween->PlayTween(originScaleRatio, 1.2f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}}, [handle]() {
+						if (auto pObj = GetSafeUI(handle)) {
+							pObj->SetInputLcok(false);
+						}
+						});
+		};
+	m_vEventNames.push_back("TxtButtonScaleUp");
+
+	m_EventMap["TxtButtonScaleDown"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetInputLcok(true);
+
+			CHandle handle = pCaller->GetHandle();
+			_float originScaleRatio = pCaller->GetScaleRatio();
+			pTween->PlayTween(originScaleRatio, 1.f, 0.1f,
+				[handle](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->SetScaleRatio(currentValue);
+						pObj->CalcUICoord();
+					}}, [handle]() {
+						if (auto pObj = GetSafeUI(handle)) {
+							pObj->SetInputLcok(false);
+						}
+						});
+		};
+	m_vEventNames.push_back("TxtButtonScaleDown");
+
+	m_EventMap["TxtButtonColorUp"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetInputLcok(true);
+
+			CHandle handle = pCaller->GetHandle();
+			_float3 originColor = pCaller->GetUIInfo().Color;
+			pTween->PlayTween(1.f, 2.f, 0.1f,
+				[handle, originColor](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->GetUIInfo().Color = { originColor.x * currentValue, originColor.y * currentValue, originColor.z * currentValue };
+						//pObj->CalcUICoord();
+					}}, [handle]() {
+						if (auto pObj = GetSafeUI(handle)) {
+							pObj->SetInputLcok(false);
+						}
+						});
+		};
+	m_vEventNames.push_back("TxtButtonColorUp");
+
+	m_EventMap["TxtButtonColorDown"] = [](CUIObject* pCaller)
+		{
+			if (!pCaller) return;
+			auto pTween = pCaller->GetTweenCom();
+			if (!pTween) return;
+
+			pCaller->SetInputLcok(true);
+
+			CHandle handle = pCaller->GetHandle();
+			_float3 originColor = pCaller->GetUIInfo().Color;
+			pTween->PlayTween(1.f, 0.5f, 0.1f,
+				[handle, originColor](float currentValue) {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->GetUIInfo().Color = { originColor.x * currentValue, originColor.y * currentValue, originColor.z * currentValue };
+						//pObj->CalcUICoord();
+					}
+				}, [handle]() {
+					if (auto pObj = GetSafeUI(handle)) {
+						pObj->SetInputLcok(false);
+					}
+				});
+		};
+	m_vEventNames.push_back("TxtButtonColorDown");
 }
 
 void UIManager::InitializeFunc()
@@ -845,6 +939,13 @@ void UIManager::InitializeFunc()
 			GET_SINGLE(UIManager)->LoadPrefab(name);
 		};
 	m_vFuncNames.push_back("SpellTypeDesCreate");
+
+	m_FuncMap["ClearDeathScene"] = [](std::string name)
+		{
+			if(std::nullopt != GET_SINGLE(UIManager)->GetUIController())
+				E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*GET_SINGLE(UIManager)->GetUIController())->ClearDeathScene();
+		};
+	m_vFuncNames.push_back("ClearDeathScene");
 
 	m_FuncMap["CreateSpellDragIcon"] = [this](std::string name)
 		{
@@ -1147,6 +1248,17 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 				static_cast<CButton*>(parent)->SetEffectClicked(uiHandle);
 			}
 		}
+		pUI->SetUIType(ETOUI(UI_TYPE::TEXUI));
+		break;
+	case ETOUI(UI_TYPE::SHORTCUT_ICON):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::SHORTCUT_ICON));
+		break;
+	case ETOUI(UI_TYPE::DISOLVE):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::DISOLVE));
 		break;
 	case ETOUI(UI_TYPE::FLIPBOOK):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);

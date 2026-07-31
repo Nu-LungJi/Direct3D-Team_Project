@@ -6,6 +6,16 @@
 #include "GameInstance.h"
 #include "BackGround.h"
 
+// UI
+#include "UIController.h"
+#include "EffectUI.h"
+#include "TextureUI.h"
+#include "Button.h"
+#include "TextBox.h"
+#include "SpellMeter.h"
+#include "HPBar.h"
+#include "MiniMap.h"
+
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
 
@@ -25,7 +35,12 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 			{
 				return false;
 			}
+			UILoad();
 
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
 
 			// 디버그 플레이어 프로토타입 등록
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
@@ -93,7 +108,6 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerMagicBullet");
 				return false;
 			}
-			return true;
 
 			return  true;
 		});
@@ -147,4 +161,76 @@ HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 	
 	}
 	return S_OK;
+}
+
+_bool CLevelBossCharlesRookwoodLoader::UILoad()
+{
+	/**********************UI********************/
+	{
+		{
+			namespace fs = std::filesystem;
+
+			const char* targetDirectories[] = {
+				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
+				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene"
+			};
+
+			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
+			for (const auto& targetDir : targetDirectories)
+			{
+				if (fs::exists(targetDir) && fs::is_directory(targetDir))
+				{
+					for (const auto& entry : fs::directory_iterator(targetDir))
+					{
+						if (entry.is_regular_file() && entry.path().extension() == ".png")
+						{
+							std::string fileName = entry.path().stem().string();
+							std::string resTag = "TEX_" + fileName;
+							std::string fullPath = entry.path().generic_string();
+
+							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_BOSS_CHARLES_ROOKWOOD", resTag, E::CResTexture2D::Create(fullPath)))
+							{
+								res->Load();
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_TextBox", CTextBox::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_Button", CButton::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_HPBar", CHPBar::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_MiniMap", CMiniMap::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+	}
 }

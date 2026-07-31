@@ -81,7 +81,7 @@ PS_OUT PSMain(PS_IN IN)
     
     float4 fDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
     
-    clip(fDiffuse.a - 0.32f);
+    if (fDiffuse.a == 0.0f) discard;
     
     float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
     float3 fMRO = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
@@ -89,15 +89,16 @@ PS_OUT PSMain(PS_IN IN)
     float fFinalMetallic = fMRO.r * MetallicIntensity;
     float fFinalRoughness = fMRO.g * RoughnessIntensity;
     float fFinalAO = fMRO.b * AmbientIntensity;
-    
-    float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).rgb * EmissiveColor * EmissiveIntensity;
+	
+	float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).r * EmissiveColor * EmissiveIntensity;
+	//EmissiveColor * EmissiveIntensity;
 
     float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth);
 
-	Out.vDiffuse	= float4(fDiffuse.rgb, 1.f);;
+	Out.vDiffuse	= float4(fDiffuse.rgb, 1.f);
     Out.vNormal		= float4(fNormal * 0.5f + 0.5f, 1.f);
     Out.vSMRO		= float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
-	Out.vEmissive	= float4(fFinalEmissive, 1.f);
+	Out.vEmissive   = float4(fFinalEmissive, 1.f);
     
     return Out;
 }

@@ -33,9 +33,9 @@ HRESULT CBTMonAttType::Initalize(void* pArg)
 
 EVALUATE CBTMonAttType::Evaluate(_float fTimeDelta)
 {
-	if (auto pBT = Get_ComBT())
-		if (auto pSrc = pBT->GetGameObject())
-			//static_cast<CMonster*>(pSrc)->Set_AttTable(m_eAttType);
+	//if (auto pBT = Get_ComBT())
+	//	if (auto pSrc = pBT->GetGameObject())
+	//		static_cast<CMonster*>(pSrc)->Set_AttTable(m_eAttType);
 
 	return m_eDebug = EVALUATE::SUCCESS;
 }

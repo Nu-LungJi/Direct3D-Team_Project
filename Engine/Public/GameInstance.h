@@ -74,6 +74,9 @@ public:
 public:
 	void Release_Engine();
 
+public:
+	void SetMouseFix(_bool mousefix) { m_bMouseFix = mousefix; if(m_bMouseFix)ShowCursor(FALSE); else ShowCursor(TRUE); }// 유아이용
+
 #pragma region TIME_PROVIDER
 public:
 	_float UpdateTimeProvider();
@@ -257,10 +260,12 @@ public:
 
 	HRESULT RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset);
 	HRESULT LoadCinematic(const std::string& CinematicName);
-	HRESULT PlayCinematic(const StringID& CinematicID);
+	HRESULT PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
+	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
 	void StopCinematic();
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;
+	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
 #pragma endregion
 
 #pragma region RENDERER

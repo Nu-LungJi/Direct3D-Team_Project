@@ -226,6 +226,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Hit_State">
       <UniqueIdentifier>{d0adaf33-4a64-494f-9581-a01e2aa4035f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\Effect">
+      <UniqueIdentifier>{1d4dcef1-d0db-4ee2-99d1-8e63dd2b61d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -531,6 +534,9 @@
     <ClInclude Include="..\public\BTDecIsPending.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MonEffect.h">
+      <Filter>GameObject\Monster\Effect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -788,6 +794,12 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecIsPending.cpp">
       <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecHitCnt.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MonEffect.cpp">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

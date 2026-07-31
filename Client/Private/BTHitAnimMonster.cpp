@@ -41,6 +41,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
+
+
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
 			if (m_bStart)
@@ -50,6 +52,9 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				if (false == HitType())
 					return m_eDebug = EVALUATE::FAILED;
 				m_bStart = false;
+
+				if (m_bResetAnimTime)
+					pAnimator->GetCurAnimState().fTrackPosition = 0.f;
 			}
 
 			if (m_iHitCnt != pSrc->GetHitCnt())
@@ -58,12 +63,18 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				Reset_CheckFlag();
 				return m_eDebug = EVALUATE::FAILED;
 			}
+
 		}
 		Gravity();
 		pAnimator->SetPlay(true);
 		//현재 애니매이션 유지할건지
-		if(!m_bUseCurAnim)
+		if (!m_bUseCurAnim)
+		{
+
 			pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+
+		}
+		
 		_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 		_bool bFinished = pAnimator->GetFinish();
 
@@ -112,6 +123,7 @@ void CBTHitAnimMonster::Update_Gui()
 {
 	__super::Update_Gui();
 	DragFloat("Move Speed", m_Value.fSpeed);
+	BoolButton("ResetAnimtime : ", m_bResetAnimTime);
 	BoolButton("UseCurAnim : ", m_bUseCurAnim);
 #define X(name)#name,
 	const _char* pMoveType[] = { MOVE_M "NONE" };
@@ -177,7 +189,10 @@ nlohmann::json CBTHitAnimMonster::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "UseCurAnim", m_bUseCurAnim);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
+
+	SaveJsonValue(j, "AnimTime", m_bResetAnimTime);
 	SaveJsonEnum(j, "MOVE", m_eMove);
+	
 	if (!m_HitTable.empty())
 	{
 		size_t iArray = m_HitTable.size();
@@ -207,6 +222,7 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "UseCurAnim", m_bUseCurAnim);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+	LoadJsonValue(j, "AnimTime", m_bResetAnimTime);
 	size_t iArray = 0;
 
 	if(LoadJsonValue(j, "HitTableArrayCnt", iArray))

@@ -9,7 +9,7 @@ struct VS_IN
 	float4 vWorld1 : INSTANCE_WORLD1;
 	float4 vWorld2 : INSTANCE_WORLD2;
 	float4 vWorld3 : INSTANCE_WORLD3;
-	float4 vColor : INSTANCE_COLOR0;
+	float4 vColor  : INSTANCE_COLOR0;
 	float4 vInstEmissive : INSTANCE_EMISSIVE;
 	float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
 	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
@@ -74,24 +74,29 @@ VS_OUT VSMain(VS_IN In)
 	return Out;
 }
 
-Texture2D g_DiffuseTexture : register(t1);
-Texture2D g_NormalTexture : register(t2);
-Texture2D g_DistortionTexture : register(t3);
-Texture2D g_NoiseTexture : register(t4);
-Texture2D g_AnyTexture : register(t5);
-Texture2D g_BackgroundTex : register(t7);
+Texture2D g_DiffuseTexture		: register(t1);
+Texture2D g_NormalTexture		: register(t2);
+Texture2D g_DistortionTexture	: register(t3);
+Texture2D g_NoiseTexture		: register(t4);
+Texture2D g_AnyTexture			: register(t5);
+Texture2D g_BackgroundTex		: register(t7);
 
 struct PS_OUT
 {
 	float4 vDiffuse : SV_TARGET0;
 };
 
-PS_OUT PSMain_StarRail(VS_OUT IN)
+PS_OUT PSMain_StarBurst(VS_OUT IN)
 {
 	PS_OUT OUT;
 	
-	float3	ChromaSample = g_DiffuseTexture.Sample(LinearClamp, IN.vTexcoord).rgb;
-	float4	MaskSample = g_AnyTexture.Sample(LinearClamp, IN.vTexcoord);
+	float2 CenterTexCoord = IN.vTexcoord - 0.5f;
+	
+	float3 ChromaSample = g_DiffuseTexture.Sample(LinearClamp, IN.vTexcoord).rgb;
+	float4 MaskSample = g_AnyTexture.Sample(LinearClamp, IN.vTexcoord);
+    
+	MaskSample.rgb *= 2.f;
+	
 	//float4  MaskSampleB	 = g_AnyTexture.Sample(LinearWrap, IN.vTexcoord);
 
 	float	Ratio = saturate(1.f - (IN.life / max(IN.maxLife, 0.0001f)));
@@ -103,22 +108,17 @@ PS_OUT PSMain_StarRail(VS_OUT IN)
 	float	Mask = pow(saturate(MaskSample.a), 1.f);
 	float3	ColoredLight = ChromaSample * Mask * ColorIntensity;
 	
-	float2	CenterTexCoord = IN.vTexcoord - 0.5f;
+	OUT.vDiffuse = float4(ColoredLight.rgb + Emissive.rgb * Emissive.a, MaskSample.a);
+	return OUT;
+
 	float	DistanceFromCenter = length(CenterTexCoord);
 	
 	float	WhiteCoreSize = 180.f;
-	float	WhiteCoreIntensity = 4.f;
+	float	WhiteCoreIntensity = 1.f;
 	float	WhiteCoreMask = exp2(-DistanceFromCenter * DistanceFromCenter * max(WhiteCoreSize, 0.001f));
 	
 	float3	FinalColor = ColoredLight + WhiteCoreMask * WhiteCoreIntensity;
-	//FinalColor += Emissive.rgb * Emissive.a;
 	
-	float2 screenUV = IN.vScreenPos.xy / IN.vScreenPos.w;
-	screenUV.x = screenUV.x * 0.5f + 0.5f;
-	screenUV.y = -screenUV.y * 0.5f + 0.5f;
-	
-	float4 BackGroundTex = g_BackgroundTex.Sample(LinearClamp, screenUV);
-	
-	OUT.vDiffuse = float4(ColoredLight.rgb, MaskSample.a);
+	OUT.vDiffuse = float4(ChromaSample.rgb + Emissive.rgb * Emissive.a, MaskSample.a);
 	return OUT;
 }

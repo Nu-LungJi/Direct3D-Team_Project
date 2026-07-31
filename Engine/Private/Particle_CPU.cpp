@@ -254,6 +254,8 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
 			matBillboardRot = matBillboardRot *XMMatrixRotationAxis(camForward,  p.rotation.w);
 
+			matBillboardRot = matBillboardRot * XMMatrixRotationAxis(camForward, p.rotation.w);
+
 			matWorld = matScale * matBillboardRot * matTrans;
 		}
 		else
@@ -431,8 +433,8 @@ void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 	p.rotation.y += p.roationAxis.y * deltaAngle;
 
 	p.rotation.z += p.roationAxis.z * deltaAngle;
-	p.rotation.w += p.roationAxis.z  *  deltaAngle;
-	
+
+	p.rotation.w += p.roationAxis.z * deltaAngle;
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
