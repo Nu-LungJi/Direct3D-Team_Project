@@ -12,5 +12,8 @@ public:
 
 private:
 	static HRESULT		MonsterLoad_InWorker();
+
+private:
+	static _bool UILoad();
 };
 NS_END

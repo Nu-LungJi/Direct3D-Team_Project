@@ -155,6 +155,14 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 		if(m_UIINFO.Restag == "TEX_UI_T_TutorialMediaBorder")
 			perUI.margins = { 97.f, 57.f, 97.f, 57.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_NotificationGoldLeafWShadow_Bottom_Flip")
+			perUI.margins = { 53.f, 0.f, 0.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_ConversationDivider_4k")
+			perUI.margins = { 38.f, 0.f, 38.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_MenuTextButtonBack_4K")
+			perUI.margins = { 17.f, 0.f, 17.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_MenuTextButtonBorder_4K")
+			perUI.margins = { 68.f, 0.f, 68.f, 0.f };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -200,8 +208,12 @@ void CHPBar::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::APPEAR))
 	{
-		ClearEffectTweens();
-		if (Appear) Appear(this);
+		
+		if (Appear)
+		{
+			ClearEffectTweens();
+			Appear(this);
+		}
 	}
 
 	if (uiState & ETOUI(UI_STATE::DISAPPEAR))
@@ -212,6 +224,33 @@ void CHPBar::PlayEffect(uint32_t uiState)
 
 	if (m_bInputLocked)
 		return;
+
+
+	if (uiState & ETOUI(UI_STATE::ENTER))
+	{
+		if (OnHoverEnter) {
+			ClearEffectTweens();
+			OnHoverEnter(this);
+		}
+	}
+
+	if (uiState & ETOUI(UI_STATE::EXIT))
+	{
+		if (OnHoverExit) {
+			ClearEffectTweens();
+			OnHoverExit(this);
+		}
+	}
+
+	if (uiState & ETOUI(UI_STATE::CLICK))
+	{
+
+		if (OnClicked) {
+			ClearEffectTweens();
+			OnClicked(this);
+		}
+		if (OnClickedAction) OnClickedAction(m_UIINFO.Restag);
+	}
 }
 
 void CHPBar::UpdateFill()

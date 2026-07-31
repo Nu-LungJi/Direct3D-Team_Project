@@ -112,7 +112,7 @@ Engine::UPtr<CLevelCharlesRookwood> CLevelCharlesRookwood::Create()
 
 	if (FAILED(pInstance->Initialize()))
 	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
+		MSG_BOX("Failed to Created : CLevelCharlesRookwood");
 	}
 
 	return pInstance;

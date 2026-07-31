@@ -28,8 +28,25 @@ void CTextUI::Update(_float fTimeDelta)
 
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
 
-	//CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(), 
-	//	{ m_UIINFO.fX, m_UIINFO.fY }, m_UIINFO.SizeX, XMVectorSet(1.f, 1.f, 1.f, m_UIINFO.Alpha), 0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f } );
+	if (m_UIINFO.Name == "64px")
+	{
+		CGameInstance::Get().FontAddLateDraw(
+			RENDERGROUP::UI,
+			"Pretendard_64px",
+			m_textInfo.Text.c_str(),
+			{ m_UIINFO.fX, m_UIINFO.fY },
+			m_UIINFO.SizeX,
+			XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
+			0.f,
+			{ m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f }
+		);
+	}
+	else
+	{
+		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(),
+			{ m_UIINFO.fX, m_UIINFO.fY }, m_UIINFO.SizeX, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
+			0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f });
+	}
 }
 
 void CTextUI::PlayEffect(uint32_t uiState)

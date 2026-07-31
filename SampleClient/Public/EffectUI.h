@@ -36,6 +36,11 @@ private:
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
 	CButtonComponent* m_pComCButton = nullptr;
 
+private:
+	// shader분기용
+	std::string m_VSShaderTag = "VS_QuadTexFlipBook";
+	std::string m_PSShaderTag = "PS_QuadTexFlipBook";
+
 public:
 	static E::UPtr<CEffectUI> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

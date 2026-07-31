@@ -240,7 +240,7 @@ VOID CLight::Update_Collider() {
 		auto SphereCollider = std::static_pointer_cast<CCollSphere>(m_pColliderSphere);
 		if (nullptr == SphereCollider) return;
 
-		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.LightRange);
+		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.OuterAttanuation);
 
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 
@@ -296,7 +296,13 @@ _bool	CLight::Check_ObjectInArea() {
 	return true;
 }
 VOID	CLight::Set_LightRange(_float _Range) {
-	m_pDynamicLight.LightRange = _Range;
+	if (m_pDynamicLight.LightType == static_cast<uint32_t>(LIGHT_TYPE::POINT)) {
+		m_pDynamicLight.OuterAttanuation = _Range;
+	}
+	else {
+		m_pDynamicLight.LightRange = _Range;
+	}
+	
 	m_bDirtyFlag = true;
 
 	if (m_pColliderSphere) {

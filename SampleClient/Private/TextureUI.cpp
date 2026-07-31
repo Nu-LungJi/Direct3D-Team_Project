@@ -21,7 +21,6 @@ CTextureUI::~CTextureUI()
 HRESULT CTextureUI::InitializePrototype(void* pArg)
 {
 
-
 	return S_OK;
 }
 
@@ -58,8 +57,6 @@ HRESULT CTextureUI::Initialize(void* pArg)
 		};
 	}
 
-	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
-
 	return S_OK;
 }
 
@@ -76,17 +73,6 @@ void CTextureUI::Update(E::_float fTimeDelta)
 		return;
 
 	CUIObject::Update(fTimeDelta);
-
-	//m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
-	//
-	//if (m_bMouseTracking)
-	//{
-	//	m_UIINFO.fX = mousePos.x;
-	//	m_UIINFO.fY = mousePos.y;
-	//	CalcUICoord();
-	//}
-
-	m_UIINFO.Alpha;
 
 	if (m_bWorldSpace)
 	{
@@ -119,6 +105,13 @@ void CTextureUI::Update(E::_float fTimeDelta)
 			GET_SINGLE(UIManager)->DeleteUIRecursive(this->GetHandle());
 		}
 	}
+	else if (m_UIINFO.UIType == ETOUI(UI_TYPE::DISOLVE))
+	{
+		m_fAmount += fTimeDelta * 0.2f;
+		m_fAmount = std::min(1.f, m_fAmount);
+		m_UIINFO.Color = {0.f, 0.f, 0.f};
+		m_UIINFO.Alpha = 1.f;
+	}
 }
 
 void CTextureUI::LateUpdate(E::_float fTimeDelta)
@@ -127,18 +120,22 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 		return;
 
 	CUIObject::LateUpdate(fTimeDelta);
-
-	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	//GetTransform().Update();
 }
 
 HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 	//VS_QuadTe
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
+	auto vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
+	auto ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::DISOLVE))
+	{
+		vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_DISOLVE");
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_DISOLVE");
+	}
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
@@ -159,7 +156,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 	{
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = { 0.f, 0.f };
+		perUI.texCoord = { m_fAmount, 0.f };
 		perUI.uvSize = { 0.f, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 
@@ -207,6 +204,21 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
 		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
+	}
+
+	{
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::DISOLVE))
+		{
+			const auto& baseSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_HeaderHouseBack");
+			const auto& disolveSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+
+			ID3D11ShaderResourceView* srvs[2] = {
+				baseSrv->GetSRV().Get(),     
+				disolveSrv->GetSRV().Get(), 
+			};
+
+			pContext->PSSetShaderResources(0, 2, srvs);
+		}
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);

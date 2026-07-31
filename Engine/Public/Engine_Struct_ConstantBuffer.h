@@ -174,4 +174,21 @@ namespace Engine
 		_float2	g_padding;
 	};
 	static_assert(sizeof(CB_BLOOM) % 16 == 0);
+
+	struct CB_LENSFLARE
+	{
+		_float2	FlareCenterUV;
+		float	FlareCurrentLifeTime;
+		float	FlareMaxLifeTime;
+
+		float	RingStartScale;
+		float	RingEndScale;
+		float	AspectRatio;
+		float	RingBaseAlpha;
+
+		float	RainbowSaturation;
+		float	FlareEnabled;
+		_float2	TextureSize;
+	};
+	static_assert(sizeof(CB_LENSFLARE) % 16 == 0);
 }

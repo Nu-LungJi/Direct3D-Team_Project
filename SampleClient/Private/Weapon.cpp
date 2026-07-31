@@ -149,7 +149,7 @@ void CWeapon::Update(E::_float fTimeDelta)
 		_float3 vstart, vend;
 		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 2.5f, m_pComTransform->GetPosition().z);
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 2.5f, m_pComTransform->GetPosition().z);
-		CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("Player_Attack_Trail_CPU", "Player_Attack_Trail_CPU", vstart, vend);
 		//_float3 deltaPos;
 		//XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
 		if (distance > m_fDistanceOffeset) {
