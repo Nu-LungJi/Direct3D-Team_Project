@@ -55,6 +55,7 @@ private:
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.3f;
 	_float	m_fAnimRatio = 0.f;
 	_bool	m_bPulling = true;
+	uint32_t m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
 
 };
 
