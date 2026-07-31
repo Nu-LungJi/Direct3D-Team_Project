@@ -245,6 +245,15 @@ HRESULT CFontManager::Initialize()
 			return E_FAIL;
 		}
 	}
+
+	if (auto res = CGameInstance::Get().AddResource("FONT", "Pretendard_64px", CResFontCustom::Create("./Resources/Engine/Font/Pretendard_64px.spritefont")))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
     m_pBatch = std::make_unique<SpriteBatch>(m_pContext.Get());
 	return S_OK;
 }

@@ -24,3 +24,6 @@ enc_temp_folder/
 /Detex.dll
 
 !ThirdParty/NvCloth_1.1.6/bin/
+/ThirdParty/UEViewer-Sanctum
+/UmodelSaved/Game/Gameplay/BluePrints/Sanctum_Dungeon/Pensieve_1_RiftSections
+/notify.log

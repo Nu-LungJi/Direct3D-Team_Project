@@ -855,6 +855,15 @@
     <ClInclude Include="..\Public\LightManager.h">
       <Filter>GameObject\Light\LightManager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LightPlacementEditor.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightPlacementData.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LightPlacementObject.h">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Light.h">
       <Filter>GameObject\Light\Light</Filter>
     </ClInclude>
@@ -1497,6 +1506,12 @@
     <ClCompile Include="..\Private\LightManager.cpp">
       <Filter>GameObject\Light\LightManager</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\LightPlacementEditor.cpp">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LightPlacementObject.cpp">
+      <Filter>GameObject\Light\LightManager</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Light.cpp">
       <Filter>GameObject\Light\Light</Filter>
     </ClCompile>
@@ -1963,6 +1978,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\Disolve.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

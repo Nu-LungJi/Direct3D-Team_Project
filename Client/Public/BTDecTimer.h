@@ -29,8 +29,9 @@ public:
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
+
 	_bool							m_bRun{ true }, m_bFailed{true};
-	_float							m_fWaitTime{}, m_fTick{};
+	_float							m_fWaitTime{}, m_fTick{}, m_fAddTime{};
 	TIMER							m_eTimer{ TIMER::PAUSE };
 public:
 	static UPtr<CBTDecTimer> Create();

@@ -35,6 +35,7 @@ public:
 	void CreatePlayScreen(); // hp등 플레이 스크린 화면 생성
 	void CreateSpellType();  // b눌렀을때 스펠 슬롯 설정 생성
 	void DeleteSpellType(); // b눌렀을때 스펠 슬롯 설정 해제
+	void CreateDeathScene(); // 죽는 화면
 
 	// ******** HP
 	void SetHPMax(_float maxHP);  // 최대 hp
@@ -62,6 +63,9 @@ public:
 	void TargetMonsterHP(CHandle monsterHandle); // 나중에는 이 함수 쓸듯 handle로 hp랑 maxhp받아와서
 	void AddMonsterHP(_float fill);
 
+	// ********** Death Button
+	void ClearDeathScene();
+
 private: // ************ 계속 바뀌는 유아이 ******************* //
 	/*************플레이 화면 유아이******************/
 	CHandle m_SpellSlot[4] = {};
@@ -79,6 +83,11 @@ private: // ************ 계속 바뀌는 유아이 ******************* //
 	uint32_t m_TargetSpellType = ETOUI(SPELL_TYPE::B_NONE);
 	std::vector<CHandle> m_SpellSlotStatic{};
 
+	/********************죽는 화면**********************/
+	CHandle m_Desolve{};
+	CHandle m_DeathDivider{};
+	std::vector<CHandle> m_DeathTxt{};
+	CHandle m_BeathButton[3] = {};
 private:
 	_bool ActivePlayScreen{ false };
 	_bool ActiveShortCutSlot{ false };
@@ -106,6 +115,8 @@ private:
 	void PlayScaleAlphaDownDelete(CHandle pHandle);
 	void PlayFadeOutDelete(CHandle pHandle);
 	void PlayMonsterHPDelete(CHandle pHandle);
+	void PlayDividerUPWidth(CHandle pHandle);
+	void PlayAlphaUP(CHandle pHandle, float delaytime = 2.f, float playTime = 1.f);
 public:
 	static E::UPtr<CUIController> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

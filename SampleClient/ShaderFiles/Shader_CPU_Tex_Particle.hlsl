@@ -1,6 +1,12 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
 
+cbuffer CB_TIMEACCUMULATION : register(b11)
+{
+	float g_fAccumulationTime;
+	float3 _pad;
+};
+
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
@@ -224,44 +230,59 @@ PS_OUT PS_SMOKE_DEF(VS_OUT In)
 	}
 	if ((In.iBehaviorType & BEHAVIOR_SMOKEGV) != 0)
 	{
-		float  mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		float maskdel = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
-		float2 distoionUV = In.vTexcoord;
-		distoionUV.x += In.life * 0.2f * In.maxLife * 0.2f;
-		float2 distoion = g_DistortionTexture.Sample(LinearWrap, distoionUV).rg * 2.f -1.f;
-		
-		float2 wispsUV = In.vTexcoord * float2(0.549206f, 0.453968f);
-		float bendMask = 1.f - smoothstep(0.45f, 1.f, In.vTangent.y);
-		wispsUV += distoion * 0.02 * bendMask; 
-		float4 wisps = g_DiffuseTexture.Sample(LinearWrap, wispsUV);
-		
+		maskdel = smoothstep(0.35f, 0.85f, maskdel);
+		float2 maskuv = In.vTexcoord * float2(0.55549, 0.45354);
+		maskuv.y += In.life * 0.3f * In.maxLife * 0.3f;
+		float mask = g_DiffuseTexture.Sample(LinearWrap, maskuv).r;
 		
 		float t = In.life / In.maxLife;
+		float plusalpha = smoothstep(0.35f, 0.85f, In.vTexcoord.y);
+		float fAlpha = mask.r * maskdel * In.vColor.a * plusalpha;
+		float3 color = lerp(float3(0.25f, 0.55f, 0.75f), float3(0.85f, 0.95f, 1.0f), mask);
 		
-		float lifeFade = 1.f - smoothstep(0.65f, 0.8f, t);
-		float smokeShape = pow(saturate(wisps.r),0.4f);
-		float topFade = smoothstep(0.f, 0.3f, In.vTexcoord.y);
-		
-		float fAlpha = wisps.r * mask * In.vColor.a * lifeFade * topFade;
-		Out.vDiffuse = float4(In.vColor.rgb * 1.4f, saturate(fAlpha * 0.34f));
-		return Out;		
+
+		Out.vDiffuse = float4(In.vColor.rgb, saturate(fAlpha * 0.7f));
+		return Out;
+		//float  mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		//
+		//float2 distoionUV = In.vTexcoord;
+		//distoionUV.x += In.life * 0.2f * In.maxLife * 0.2f;
+		//float2 distoion = g_DistortionTexture.Sample(LinearWrap, distoionUV).rg * 2.f -1.f;
+		//
+		//float2 wispsUV = In.vTexcoord * float2(0.549206f, 0.453968f);
+		//float bendMask = 1.f - smoothstep(0.45f, 1.f, In.vTangent.y);
+		//wispsUV += distoion * 0.02 * bendMask; 
+		//float4 wisps = g_DiffuseTexture.Sample(LinearWrap, wispsUV);
+		//
+		//
+		//float t = In.life / In.maxLife;
+		//
+		//float lifeFade = 1.f - smoothstep(0.65f, 0.8f, t);
+		//float smokeShape = pow(saturate(wisps.r),0.4f);
+		//float topFade = smoothstep(0.f, 0.3f, In.vTexcoord.y);
+		//
+		//float fAlpha = wisps.r * mask * In.vColor.a * lifeFade * topFade;
+		//Out.vDiffuse = float4(In.vColor.rgb * 1.4f, saturate(fAlpha * 0.34f));
+		//return Out;		
 	}
 	else if ((In.iBehaviorType & BEHAVIOR_SMOKEGW) != 0)
 	{
-		float mask = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
+		float maskdel = g_NormalTexture.Sample(LinearWrap, In.vTexcoord).r;
 		
+		maskdel = smoothstep(0.35f, 0.85f, maskdel);
+		float2 maskuv = In.vTexcoord * float2(0.55549, 0.45354);
+		maskuv.y += In.life * 0.3f * In.maxLife * 0.3f;
+		float mask = g_DiffuseTexture.Sample(LinearWrap, maskuv).r;
 		
-		float2 normalUV = In.vTexcoord;
-		normalUV.y += In.life * 0.2f * In.maxLife * 0.2f;
-		float normal = g_NormalTexture.Sample(LinearWrap, normalUV).r;
+		float t = In.life / In.maxLife;
+		float plusalpha = smoothstep(0.35f, 0.85f, In.vTexcoord.y);
+		float fAlpha = mask.r * maskdel * In.vColor.a * plusalpha;
+		float3 color = lerp(float3(0.25f, 0.55f, 0.75f), float3(0.85f, 0.95f, 1.0f), mask);
 		
-		float4 wisps = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		
-		float life = 1.f - (In.life * 0.02f);
-		float alpha = saturate(life) * mask;
-		if (wisps.r < 0.2f)
-			discard;
-		Out.vDiffuse = float4(wisps.rgb * 1.4f * In.vColor.rgb, alpha * 0.5f);
+
+		Out.vDiffuse = float4(In.vColor.rgb, saturate(fAlpha * 0.7f));
 		return Out;
 	}
 	

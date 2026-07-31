@@ -51,6 +51,7 @@ HRESULT CTextBox::Initialize(void* pArg)
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXT);
 	m_UIINFO.AlphaRatio = 1.f;
+	m_UIINFO.Color = { 1.f, 1.f, 1.f };
 
 	return S_OK;
 }
@@ -143,8 +144,8 @@ HRESULT CTextBox::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	}
 	else
 	{
-		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(),
-			{ m_UIINFO.fX, m_UIINFO.fY }, m_UIINFO.SizeX, XMVectorSet(1.f, 1.f, 1.f, m_UIINFO.Alpha), 0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f });
+		//CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(),
+		//	{ m_UIINFO.fX, m_UIINFO.fY }, m_UIINFO.SizeX, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha), 0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f });
 	}
 
 	return S_OK;

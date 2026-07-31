@@ -27,16 +27,17 @@ private:
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
 
-	HRESULT SpawnMonster();
+	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
 
 	HRESULT SpawnStaticCollision();
+	HRESULT SpawnLightPlacement();
 	HRESULT SpawnBridge();
 	HRESULT SpawnMyMagicStepController();
 
 private:
-	_bool m_bCreatePlayScreenUI{ false };// 잠시 디버그용
+	_bool m_bCreatePlayScreenUI{ false };
 
 private:
 	void Free() override;

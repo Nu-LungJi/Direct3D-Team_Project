@@ -362,6 +362,9 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h" />
     <ClInclude Include="..\Public\Light.h" />
     <ClInclude Include="..\Public\LightManager.h" />
+    <ClInclude Include="..\Public\LightPlacementData.h" />
+    <ClInclude Include="..\Public\LightPlacementEditor.h" />
+    <ClInclude Include="..\Public\LightPlacementObject.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
     <ClInclude Include="..\Public\OctreeNode.h" />
@@ -677,6 +680,8 @@
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
     <ClCompile Include="..\Private\LightManager.cpp" />
+    <ClCompile Include="..\Private\LightPlacementEditor.cpp" />
+    <ClCompile Include="..\Private\LightPlacementObject.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\Terrain.cpp" />
@@ -885,6 +890,7 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\Disolve.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -893,6 +899,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>

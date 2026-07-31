@@ -27,6 +27,7 @@ void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
 
+	
 }
 
 HRESULT CBossTMB::InitializePrototype(void* pArg)
@@ -132,6 +133,20 @@ HRESULT CBossTMB::Initialize(void* pArg)
 		};
 	}
 
+	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(BOSSTOMB_SKILL::SPAWN);
+	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(BOSSTOMB_SKILL::STUMP);
+	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(BOSSTOMB_SKILL::BLUST_START);
+	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(BOSSTOMB_SKILL::BLUST_END);
+	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(BOSSTOMB_SKILL::BALL);
+	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(BOSSTOMB_SKILL::BALL_BREAK);
+
+
+	m_MonSkillLists[ATTMON::SKIP] = ETOUI(BOSSTOMB_SKILL::SKIP);
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SPAWN)] = "Boss_Appear";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::STUMP)] = "Boss_GroundCrash";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
+
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
@@ -139,6 +154,14 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
+
+
+	m_eMonType = MONSTER_TYPE::BOSS;
+
+	m_eAttType = ATTMON::END;
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	m_fEMissiveColor = { 0.6f,0.6f,1.4f };
+
 	return S_OK;
 }
 
@@ -163,6 +186,36 @@ void CBossTMB::Update(E::_float fTimeDelta)
 void CBossTMB::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
+}
+
+void CBossTMB::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
+{
+	if (m_eAttType != eType) {
+		
+		uint32_t iSkillNum = Find_SkillNum(eType);
+		if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(BOSSTOMB_SKILL::END))
+			return;
+		//if (m_EffectNames[iSkillNum] == "")
+		//	return;
+
+		m_CurEffectName = m_EffectNames[iSkillNum];
+		m_eAttType = eType;
+		m_fSkillRatio = fSkillRatio;
+
+	}
+}
+
+_string CBossTMB::Get_SkillName(ATTMON SkillNode)
+{
+	auto pValue = m_MonSkillLists.find(SkillNode);
+
+	if (pValue == m_MonSkillLists.end())
+		return "";
+
+	if (pValue->second >= ETOUI(BOSSTOMB_SKILL::END))
+		return "";
+
+	return MagicEnumToStringView(static_cast<BOSSTOMB_SKILL>(pValue->second)).data();
 }
 
 E::UPtr<CBossTMB> CBossTMB::Create()

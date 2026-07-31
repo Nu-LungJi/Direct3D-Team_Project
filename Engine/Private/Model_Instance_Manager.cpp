@@ -5,7 +5,6 @@
 #include "AnimationObject.h"
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
-#include "ComStaticModelInstance.h"
 #include "ResModel.h"
 
 NS_USING(Engine)
@@ -28,10 +27,7 @@ HRESULT CModel_Instance_Manager::Initialize()
 	m_iTotalInstanceCount = 0;
 
 	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
-	if (!m_pResSkinMeshCBuffer)
-	{
-		return E_FAIL;
-	}
+	if (!m_pResSkinMeshCBuffer)		return E_FAIL;
 
 	return S_OK;
 }
@@ -250,6 +246,8 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComModelIns
 
 	pBatch->Key =Key;
 	pBatch->bModelStatic = bStaticModel;
+	pBatch->bGPUSkinned =
+		iEvaluationMode == static_cast<uint32_t>(CComAnimator::EVALUATION_MODE::GPU);
 
 
 	pBatch->Instances.reserve(16);
@@ -435,7 +433,11 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch){
 	
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
-		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != bStaticBatch)	continue;
+		if (!pBatch ||
+			pBatch->Instances.empty() ||
+			pBatch->bModelStatic != bStaticBatch ||
+			pBatch->bGPUSkinned)
+			continue;
 
 		if (FAILED(Render_ShadowBatch(pContext, *pBatch))) {
 			ID3D11ShaderResourceView* pNullSRVs[3]{ };
@@ -482,6 +484,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContex
 
 	return S_OK;
 }
+
 HRESULT CModel_Instance_Manager::Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch) {
 	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
 	if (iInstanceCount == 0 || iInstanceCount > MAX_INSTANCE_COUNT || Batch.CombinedBoneMatrices.size() != iInstanceCount)	return E_FAIL;

@@ -116,11 +116,13 @@ HRESULT CComBeHavior::Load_Data(const _string& filePath)
 	m_NodeMap.clear();
     nlohmann::json j;
     std::ifstream file(filePath);
+
     if (!file.is_open())
     {
         MSG_BOX("Node Data Load Failed");
         return E_FAIL;
     }
+
     file >> j;
     m_Root->Load_json(j);
     file.close();
@@ -128,6 +130,7 @@ HRESULT CComBeHavior::Load_Data(const _string& filePath)
 	for(auto& iter : *m_Root->Get_Nodes())
 		 Set_NodeInfo(iter.get());
 	++m_iNodeID;
+
     return S_OK;
 }
 CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)
@@ -233,7 +236,8 @@ void CComBeHavior::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
 		m_iFlag &= ~iFlag;
 	else if (eType == FLAGTYPE::RESET)
 		m_iFlag = iFlag;
-
+	else if (eType == FLAGTYPE::INVERT)
+		m_iFlag ^= iFlag;
 }
 
 void CComBeHavior::Update(_float fTimeDelta)

@@ -100,7 +100,7 @@ HRESULT CBTCreatureFlag::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "FlagType", m_iFlag);
 	LoadJsonEnum(j, "FlagValue", m_eType);
 
-	return E_NOTIMPL;
+	return S_OK;
 }
 E::UPtr<CBTCreatureFlag> CBTCreatureFlag::Create()
 {

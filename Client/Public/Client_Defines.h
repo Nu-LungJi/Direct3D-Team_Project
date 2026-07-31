@@ -7,6 +7,16 @@ namespace Client
 	static const unsigned int	g_iWinSizeX{ 1280 };
 	static const unsigned int	g_iWinSizeY{ 720 };
 
+	enum class SOUND_BUS
+	{
+		BGM,
+		SFX,
+		VOICE,
+		UI,
+		AMBIENCE,
+		END
+	};
+
 	enum class COLLISION_LAYER : uint32_t
 	{
 		NONE = 0,				// 어떤 물리 레이어에도 속하지 않음
@@ -71,8 +81,9 @@ namespace Client
 	};
 
 	enum class TURN { LEFT_45, LEFT_90, LEFT_135, LEFT_180, RIGHT_45, RIGHT_90, RIGHT_135, RIGHT_180, END };
-	enum class ATTMON { ATT_1, ATT_2, ATT_3, ATT_4, SKILL_1, SKILL_2, SKILL_3, SKIP, END };
+	enum class ATTMON { SLOT0, SLOT1, SLOT2, SLOT3, SLOT4, SLOT5, SLOT6, SKIP, SLOT7, SLOT8, SLOT9,END };
 	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO,END};
+	enum class MONSTER_TYPE{NORMAL,ELITE, BOSS};
 enum class PARTES { WEAPON, END };
 }
 

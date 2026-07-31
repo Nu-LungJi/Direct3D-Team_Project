@@ -23,6 +23,9 @@
 #include "ComCollider.h"
 #include "MapMeshObject.h"
 #include "PhysXCollisionProxyObject.h"
+//#include "AmbientSound2DObject.h"
+//#include "AmbientSound3DObject.h"
+#include "LightPlacementObject.h"
 
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
@@ -148,6 +151,27 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 	if (CGameInstance::Get().AddPrototype(
 		"PERMANENT", "Prototype_GameObject_PhysXCollisionProxy",
 		CPhysXCollisionProxyObject::Create()))
+	{
+		return E_FAIL;
+	}
+	//if (CGameInstance::Get().AddPrototype(
+	//	ES_EngineProtoMajorType::PERMANENT,
+	//	ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
+	//	CAmbientSound2DObject::Create()))
+	//{
+	//	return E_FAIL;
+	//}
+	//if (CGameInstance::Get().AddPrototype(
+	//	ES_EngineProtoMajorType::PERMANENT,
+	//	ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound3D,
+	//	CAmbientSound3DObject::Create()))
+	//{
+	//	return E_FAIL;
+	//}
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoGameObject::Prototype_GameObject_LightPlacement,
+		CLightPlacementObject::Create()))
 	{
 		return E_FAIL;
 	}
@@ -988,6 +1012,20 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_DISOLVE", "./ShaderFiles/UI/DISOLVE.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_DISOLVE", "./ShaderFiles/UI/DISOLVE.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook", "./ShaderFiles/UI/QuadTexFlipBook.hlsl"))
 	{
 		if (FAILED(res->Load()))
@@ -996,6 +1034,20 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook", "./ShaderFiles/UI/QuadTexFlipBook.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TwoTone", "./ShaderFiles/UI/TwoTone.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TwoTone", "./ShaderFiles/UI/TwoTone.hlsl"))
 	{
 		if (FAILED(res->Load()))
 		{

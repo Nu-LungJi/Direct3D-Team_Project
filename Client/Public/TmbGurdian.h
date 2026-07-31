@@ -3,6 +3,7 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
+enum class TOMB_SKILL { JUMP_START, JUMP_END,SLASH,SMASH,SKIP,HIT_ACCIO, END };
 class CTmbGurdian final : public CMonster
 {
 public:
@@ -31,6 +32,8 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 
+	virtual void Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
+	_string Get_SkillName(ATTMON SkillNode)override;
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};
@@ -38,6 +41,8 @@ private:
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
 
+	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
+	TOMB_SKILL					m_eTombSkill{};
 public:
 	static E::UPtr<CTmbGurdian> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

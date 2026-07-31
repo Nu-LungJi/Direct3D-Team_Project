@@ -53,6 +53,16 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 
         m_pResInstancedBuffer = res;
     }
+
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_TIMEACCUMULATION);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComTimeCBuffer = res;
+	}
+
     m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
     if (!m_pResSamplerState)
         return E_FAIL;
@@ -91,6 +101,9 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		}
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
 		}
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
@@ -131,10 +144,10 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.2f, 0.7f);
+		m_waveCb.g_fBurstRatio = Randf(0.5f, 0.7f);
 		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
 		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
-		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		m_waveCb.g_fTransitionRatio = Randf(0.4f, 1.6f);
 		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
@@ -161,6 +174,7 @@ void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
+	m_fAccumulationTime += fTimeDelta;
 	m_vecInstancedData.clear();
 	uint32_t totalFrames = m_Desc.TexRows * m_Desc.TexColumns;
 
@@ -233,10 +247,14 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			XMVECTOR camForward = matInvView.r[2];
 
 			_matrix matBillboardRot = XMMatrixIdentity();
+
 			matBillboardRot.r[0] = camRight;
 			matBillboardRot.r[1] = camUp;
-			matBillboardRot.r[2] = camForward;
+			matBillboardRot.r[2] = camForward ;
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+			matBillboardRot = matBillboardRot *XMMatrixRotationAxis(camForward,  p.rotation.w);
+
+			matBillboardRot = matBillboardRot * XMMatrixRotationAxis(camForward, p.rotation.w);
 
 			matWorld = matScale * matBillboardRot * matTrans;
 		}
@@ -339,7 +357,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 
 		p.vVelocity.x = burstVelX + (waveVelX - burstVelX) * blend;
 		p.vVelocity.y = burstVelY + (waveVelY - burstVelY) * blend;
-		p.vVelocity.z = 0.0f;
+		p.vVelocity.z = Randf(-1.f,1.f);
 
 		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
 		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
@@ -415,6 +433,8 @@ void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 	p.rotation.y += p.roationAxis.y * deltaAngle;
 
 	p.rotation.z += p.roationAxis.z * deltaAngle;
+
+	p.rotation.w += p.roationAxis.z * deltaAngle;
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -439,17 +459,17 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 
 		XMStoreFloat3(&p.vVelocity, Velocity);
 	} 
-	{
-		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f;
-
-		p.vVelocity.y += kGravity * fTimeDelta;
-
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-	}
+	//{
+	//	///////////////////////////////////////////// Gravity
+	//	const float kGravity = -9.8f;
+	//
+	//	p.vVelocity.y += kGravity * fTimeDelta;
+	//
+	//	XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+	//	XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+	//	vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+	//	XMStoreFloat3(&p.vPosition, vPos);
+	//}
 	{
 		///////////////////////////////////////////// Particle Spread Type
 		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();
@@ -561,13 +581,31 @@ HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 {
 
 
+	CB_TIMEACCUMULATION cb{};
+	cb.fAccumulationTime = m_fAccumulationTime;
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (SUCCEEDED(pContext->Map(m_pComTimeCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+	{
+		memcpy(mapped.pData, &cb, sizeof(cb));
+		pContext->Unmap(m_pComTimeCBuffer->GetCBuffer().Get(), 0);
+	}
+
+
+	pContext->PSSetConstantBuffers(11, 1, m_pComTimeCBuffer->GetCBuffer().GetAddressOf());
+
+
     if (m_vecInstancedData.empty())
         return S_OK;
 
     if (m_Desc.whatKind == MESHORTEXTURE::MESH)
-        return Render_Mesh(pContext, ctx);
+        Render_Mesh(pContext, ctx);
+	else {
+		Render_Texture(pContext, ctx);
+	}
+	ID3D11Buffer* nullBuffer = nullptr;
 
-    return Render_Texture(pContext, ctx); // 기존 텍스처 파티클 렌더 코드
+	pContext->PSSetConstantBuffers(11, 1, &nullBuffer);
+	return  S_OK;// 기존 텍스처 파티클 렌더 코드
 }
 
 
