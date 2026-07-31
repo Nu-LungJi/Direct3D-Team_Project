@@ -210,24 +210,24 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	if (bF1)
 	{
 		// minimap
-		if (false)
+		if (true)
 		{
 			CTextureUI::UIOBJECT_DESC Desc{};
 
 			count++;
 			Desc.sObjectTag = "UI_" + std::to_string(count);
 			Desc.Name = "UI_" + std::to_string(count);
-			Desc.fSizeX = 200.f;
-			Desc.fSizeY = 200.f;
+			Desc.fSizeX = 512.f;
+			Desc.fSizeY = 128.f;
 			Desc.fX = clientSize.x * 0.5f;
 			Desc.fY = clientSize.y * 0.5f;
-			Desc.fAlpha = 0.4f;
-			Desc.UIType = ETOUI(UI_TYPE::MINIMAP);
+			Desc.fAlpha = 1.f;
+			Desc.UIType = ETOUI(UI_TYPE::GAMEOVERMASK);
 			Desc.ResWeight = count;
 
-			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_MiniMap", "Layer_UI", &Desc);
+			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_GameOverMask", "Layer_UI", &Desc);
 		}
-		if (true)
+		if (false)
 		{
 			count++;
 			CTextUI::TEXT_DESC desc{};
@@ -1741,7 +1741,8 @@ void CLevelUIEditor::StateView()
 		}
 
 		// Enums (UI Type & Effect)
-		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL", "LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE"};
+		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL",
+			"LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK"};
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
@@ -1884,7 +1885,8 @@ void CLevelUIEditor::LocalStateView()
 		}
 
 		// Enums
-		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE"};
+		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR"
+			, "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK" };
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);

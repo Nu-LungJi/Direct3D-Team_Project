@@ -210,6 +210,7 @@
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\EffectUI.h" />
+    <ClInclude Include="..\Public\GameOverMask.h" />
     <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
@@ -247,6 +248,7 @@
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\EffectUI.cpp" />
+    <ClCompile Include="..\Private\GameOverMask.cpp" />
     <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />

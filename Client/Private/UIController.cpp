@@ -257,6 +257,10 @@ void CUIController::CreateDeathScene()
 	PlayAlphaUP(m_BeathButton[1], 3.75f, 1.f);
 	PlayAlphaUP(m_BeathButton[2], 4.f, 1.f);
 
+	m_GameOverMask = GET_SINGLE(UIManager)->LoadPrefab("GameOverMask").front();
+	PlayAlphaUP(m_GameOverMask, 1.7f, 1.8f);
+	GetSafeUI(m_GameOverMask)->SetSize({1024.f, 700.f});
+
 	for (auto hUI : m_BeathButton)
 	{
 		SafeGetOBJ(hUI)->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("TxtButtonScaleUp");
@@ -266,7 +270,9 @@ void CUIController::CreateDeathScene()
 	}
 	SafeGetOBJ(SafeGetOBJ(m_BeathButton[0])->GetChildren().front())->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("ClearDeathScene");
 
-	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
+	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
+	PlayFadeOutOnly(m_PotionCount);
+	E::CGameInstance::Get().SetMouseFix(false);
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -449,7 +455,10 @@ void CUIController::ClearDeathScene()
 		PlayFadeOutDelete(hUI);
 	}
 	
-	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
+	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
+	PlayFadeInOnly(m_PotionCount);
+	PlayFadeOutDelete(m_GameOverMask);
+	E::CGameInstance::Get().SetMouseFix(true);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)
@@ -500,6 +509,36 @@ void CUIController::PlayFadeOutDelete(CHandle pHandle)
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
 			}, EEaseType::EaseOutQuad);
+}
+
+void CUIController::PlayFadeOutOnly(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(1.f, 0.f, 1.f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, 1.f);
+}
+
+void CUIController::PlayFadeInOnly(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(0.f, 1.f, 0.5f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, 0.2f);
 }
 
 void CUIController::PlayMonsterHPDelete(CHandle pHandle)

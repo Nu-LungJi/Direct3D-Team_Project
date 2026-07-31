@@ -12,6 +12,7 @@
 #include "HPBar.h"
 #include "Level_Defines.h"
 #include "MiniMap.h"
+#include "GameOverMask.h"
 
 NS_USING(Client)
 
@@ -1145,6 +1146,10 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	case ETOUI(UI_TYPE::SPELLBTN):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_Button", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CButton>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::GAMEOVERMASK):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_GameOverMask", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CGameOverMask>(*uiHandle);
 		break;
 	default:
 		break;

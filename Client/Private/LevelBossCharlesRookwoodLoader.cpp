@@ -13,6 +13,7 @@
 #include "SpellMeter.h"
 #include "HPBar.h"
 #include "MiniMap.h"
+#include "GameOverMask.h"
 
 NS_USING(Client)
 
@@ -109,6 +110,10 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_GameOvermask", CGameOverMask::Create())))
 		{
 			return false;
 		}

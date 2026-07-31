@@ -235,6 +235,9 @@
     <Filter Include="GameObject\MyMagicSquareStep">
       <UniqueIdentifier>{f107aa8a-9b42-4cc4-b287-79f234030638}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\GameOverMask">
+      <UniqueIdentifier>{8bb236ad-1b01-40b9-8d25-41f4bebf1dac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -570,6 +573,9 @@
     <ClInclude Include="..\public\TestSquareStepController.h">
       <Filter>GameObject\CreatureEditor</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\GameOverMask.h">
+      <Filter>GameObject\UI\GameOverMask</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -872,6 +878,9 @@
     </ClCompile>
     <ClCompile Include="..\private\TestSquareStepController.cpp">
       <Filter>GameObject\CreatureEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GameOverMask.cpp">
+      <Filter>GameObject\UI\GameOverMask</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

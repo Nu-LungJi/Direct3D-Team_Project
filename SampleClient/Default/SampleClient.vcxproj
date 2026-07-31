@@ -202,6 +202,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\public\BTCreatureFlag.h" />
     <ClInclude Include="..\public\EnderDragon.h" />
+    <ClInclude Include="..\Public\GameOverMask.h" />
     <ClInclude Include="..\public\LevelCreatureEditor.h" />
     <ClInclude Include="..\public\EffectUI.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -328,6 +329,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\private\EnderDragon.cpp" />
+    <ClCompile Include="..\Private\GameOverMask.cpp" />
     <ClCompile Include="..\private\LevelCreatureEditor.cpp" />
     <ClCompile Include="..\private\EffectUI.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

@@ -88,6 +88,7 @@ private: // ************ 계속 바뀌는 유아이 ******************* //
 	CHandle m_DeathDivider{};
 	std::vector<CHandle> m_DeathTxt{};
 	CHandle m_BeathButton[3] = {};
+	CHandle m_GameOverMask{};
 private:
 	_bool ActivePlayScreen{ false };
 	_bool ActiveShortCutSlot{ false };
@@ -114,6 +115,8 @@ private:
 	/**********모션************/
 	void PlayScaleAlphaDownDelete(CHandle pHandle);
 	void PlayFadeOutDelete(CHandle pHandle);
+	void PlayFadeOutOnly(CHandle pHandle);
+	void PlayFadeInOnly(CHandle pHandle);
 	void PlayMonsterHPDelete(CHandle pHandle);
 	void PlayDividerUPWidth(CHandle pHandle);
 	void PlayAlphaUP(CHandle pHandle, float delaytime = 2.f, float playTime = 1.f);

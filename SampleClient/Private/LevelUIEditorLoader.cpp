@@ -10,6 +10,7 @@
 #include "SpellMeter.h"
 #include "HPBar.h"
 #include "MiniMap.h"
+#include "GameOverMask.h"
 
 NS_USING(Client)
 std::future<bool> CLevelUIEditorLoader::Load()
@@ -158,6 +159,10 @@ std::future<bool> CLevelUIEditorLoader::Load()
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_MiniMap", CMiniMap::Create())))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
 			{
 				return false;
 			}

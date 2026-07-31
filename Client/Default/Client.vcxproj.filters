@@ -109,6 +109,9 @@
     <Filter Include="GameObject\UI\UIController">
       <UniqueIdentifier>{ad932d66-53a4-4e0e-b0b6-9443c44cbcd5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\GameOverMask">
+      <UniqueIdentifier>{86f6ad92-4688-42ea-863a-d4cee5d1f8a4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -222,6 +225,9 @@
     <ClInclude Include="..\Public\UIController.h">
       <Filter>GameObject\UI\UIController</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\GameOverMask.h">
+      <Filter>GameObject\UI\GameOverMask</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -323,6 +329,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\UIController.cpp">
       <Filter>GameObject\UI\UIController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GameOverMask.cpp">
+      <Filter>GameObject\UI\GameOverMask</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
