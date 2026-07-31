@@ -933,16 +933,16 @@ void CPlayer::UpdateStandingGameObjectDebugLog()
 				sLog += ", Generation: ";
 				sLog += std::to_string(hStandingGameObject->GetGeneration());
 				sLog += ")\n";
-				DEBUG_LOG_STR(sLog);
+				//DEBUG_LOG_STR(sLog);
 			}
 			else
 			{
-				DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
+				//DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
 			}
 		}
 		else
 		{
-			DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
+			//DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
 		}
 
 		m_hDebugStandingGameObject = hStandingGameObject;

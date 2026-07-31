@@ -11,6 +11,7 @@
 #include "ComCollider.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "Player_Magic_Bullet.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -371,6 +372,28 @@ HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_C
 }
 /*---------------------------------*/
 
+void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+{
+	if (nullptr == pObj)
+		return;
+
+	
+	if (auto pPlayerMagicBullet = Cast<CPlayer_Magic_Bullet>(pObj))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+		//static_cast<PX_SHAPE_TYPE>(info.eSelfShapeType);
+		//static_cast<PX_SHAPE_TYPE>(info.eOtherShapeType);
+		//MagicEnumToStringView<PX_SHAPE_TYPE>(info.eSelfShapeType);
+
+		//magic_enum::enum_name(info.eSelfShapeType);
+		//DEBUG_LOG_STR(
+		//	std::string("[Monster] Trigger Enter : ") +
+		//	(pObj ? std::string{ pObj->GetObjectTag() } : "null") + std::string{ magic_enum::enum_name(info.eSelfShapeType) } + "_" 
+		//	+ std::string{magic_enum::enum_name(info.eOtherShapeType)} + "\n");
+
+	}
+	
+}
 _bool CMonster::Activate_PendingHit()
 {
 	if (!m_bPending)
@@ -542,8 +565,8 @@ void CMonster::Flag_Check(_float fTimeDelta)
 		m_fIntensive = 0;
 	else
 	{
-		Clear_ActiveHit();
 		Clear_PendingHit();
+		m_bActiveHit = false;
 		m_iHitCnt = 0;
 		m_iNormalHitCnt = 0;
 	}
@@ -563,7 +586,6 @@ void CMonster::Flag_Check(_float fTimeDelta)
 
 	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
 	{
-		Clear_ActiveHit();
 		Clear_PendingHit();
 		m_iHitCnt = 0; 
 	}

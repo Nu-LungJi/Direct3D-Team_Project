@@ -15,9 +15,10 @@ class CComCollider;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
+class CComPxRigidBody;
+class CComPxSphereCollider;
 NS_END
 
- 
 
 NS_BEGIN(Client)
 typedef struct HitTable
@@ -79,13 +80,14 @@ public:
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	/*---------------------------------*/
-
+public:
+	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
 public:
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
 	void						Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
-	void						Set_Emissive(_float fEmissive) { m_fIntensive = fEmissive; }
+	void						Set_Emissive(_float fEmissive) { m_fPreEmissive = m_fIntensive = fEmissive; }
 	_bool						Activate_PendingHit();
 	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
 	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
@@ -110,7 +112,7 @@ private:
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
 	void						Flag_Check(_float fTimeDelta);
-	void						StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fIntensive; m_bEmissive = true; }
+	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
 protected:
 	CComModelInstance* m_pComModelInstance{};
@@ -120,9 +122,12 @@ protected:
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
+	CComPxRigidBody* m_pComRigidBody{};
+	CComPxSphereCollider* m_pComSphereCol{};
+
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
-
+	
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexCPUSkinningInstancedShader{};

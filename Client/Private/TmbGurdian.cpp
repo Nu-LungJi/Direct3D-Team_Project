@@ -14,6 +14,8 @@
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
 #include "TmbGurdianDead.h"
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 NS_USING(Client)
 
 namespace
@@ -425,6 +427,39 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 5500;
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
+		{
+			MSG_BOX("Create Failed ComPxRigidBody TombGurdian");
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComPxSphereCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComRigidBody;
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.bIsTrigger = false;
+		Desc.tFilter = PX_FILTER_DESC{
+			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HITBOX),
+			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+		};
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 5.f });
+		if (!Desc.pResMaterial ||
+			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
+				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
+		{
+			MSG_BOX("Create Failed ComPxSphereCollider TmbGurdian");
+			return E_FAIL;
+		}
+		if (!m_pComSphereCol->SetQueryEnabled(false))
+			return E_FAIL;
+	}
+	
 	//피직스
 	{
 		CComPxCharacterController::DESC Desc{};
@@ -547,7 +582,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_eAttType = ATTMON::END;
 
 	// 죽음 파편들
-
+	// 죽음은 바람과 같지.. 늘 내 곁에 있으니
 	{
 		const auto pModel = m_pComModelInstance->GetModel();
 		if (!pModel)
@@ -645,6 +680,9 @@ void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 {
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	_float3 vPos = m_pCharacterController->GetPosition();
+	_float4 vRot = m_pComTransform->GetQuaternion();
+	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
 }
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
