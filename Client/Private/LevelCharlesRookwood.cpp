@@ -112,7 +112,7 @@ Engine::UPtr<CLevelCharlesRookwood> CLevelCharlesRookwood::Create()
 
 	if (FAILED(pInstance->Initialize()))
 	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
+		MSG_BOX("Failed to Created : CLevelCharlesRookwood");
 	}
 
 	return pInstance;
@@ -241,7 +241,7 @@ HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
-			"Level_CharlesRookwood_test",
+			"Level_CharlesRookwood",
 			"00_MapCollision");
 
 	if (handles.empty())

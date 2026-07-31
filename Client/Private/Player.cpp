@@ -668,24 +668,28 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 
 	if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
-		if (TryUseSkillSlot(1))
-			m_bCoolTime_Num1 = true;
+		//if (TryUseSkillSlot(1))
+		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		m_bCoolTime_Num1 = true;
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
 	{
-		if (TryUseSkillSlot(2))
-			m_bCoolTime_Num2 = true;
+		//if (TryUseSkillSlot(2))
+		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
+		m_bCoolTime_Num2 = true;
 	}
 	if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
 	{
-		if (TryUseSkillSlot(3))
-			m_bCoolTime_Num3 = true;
+		//if (TryUseSkillSlot(3))
+		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
+		m_bCoolTime_Num3 = true;
 	}	
 
 	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-		if (TryUseSkillSlot(4))
-			m_bCoolTime_Num4 = true;
+		//if (TryUseSkillSlot(4))
+		//m_pStateMachine->RequestState(PLAYER_STATE::);
+		m_bCoolTime_Num4 = true;
 	}
 
 #ifdef _DEBUG
