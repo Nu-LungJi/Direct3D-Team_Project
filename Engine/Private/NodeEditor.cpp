@@ -275,7 +275,7 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 	{
 		if (ImGui::Button(iter.first.c_str()))
 		{
-			m_BTNodesTmp.clear();
+			//m_BTNodesTmp.clear();
 			m_pBeHavior->Load_Data(iter.second);
 
 		}

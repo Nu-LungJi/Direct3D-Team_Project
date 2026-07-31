@@ -20,6 +20,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "TextBox.h"
+#include "HPBar.h"
 
 NS_USING(Client)
 
@@ -83,6 +84,14 @@ HRESULT CMainAppLoader::Load()
 			MSG_BOX("Failed Load_PhysX_Resource");
 			return E_FAIL;
 		}
+		
+		// 시네마틱 카메라 충돌 레이어 설정 빼거나 추가하고싶으면 여기서 하세요
+		CGameInstance::Get().SetCinematicCollisionQueryMask(
+			ETOUI(COLLISION_LAYER::DEFAULT)
+			//ETOUI(COLLISION_LAYER::WORLD_STATIC) 
+			//| ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) 
+			//| ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+		);
 
 		if (FAILED(Create_ActionNode()))
 		{
@@ -431,6 +440,9 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecIsPending", CBTDecIsPending::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHitCnt", CBTDecHitCnt::Create())))
+		return E_FAIL;
+
 	return S_OK; 
 }
 
@@ -439,7 +451,7 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 	{
 		namespace fs = std::filesystem;
 
-		std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI/LoadingScreen";
+		std::string targetDir = "./Resources/SampleClient/Textures/UI/UITexture/Loading";
 
 		if (fs::exists(targetDir) && fs::is_directory(targetDir))
 		{
@@ -462,7 +474,8 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 			}
 		}
 	}
-	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UI_T_LoadingWidget_Houses.png")))
+	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", 
+		E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UITexture/Loading/UI_T_LoadingWidget_Houses.png")))
 	{
 		res->Load();
 	}
@@ -476,6 +489,10 @@ HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 		return false;
 	}
 	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_TextBox", CTextBox::Create())))
+	{
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOADING", "Prototype_GameObject_HPBar", CHPBar::Create())))
 	{
 		return false;
 	}

@@ -81,7 +81,7 @@ PS_OUT PSMain(PS_IN IN)
     
     float4 fDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
     
-    clip(fDiffuse.a - 0.32f);
+    if (fDiffuse.a == 0.0f) discard;
     
     float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
     float3 fMRO = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);

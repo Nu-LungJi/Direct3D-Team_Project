@@ -105,6 +105,7 @@ public:
 	virtual void ClearByOwner(uint32_t ownerID) override;
 
 	void SetBeamPositions(uint32_t beamIndex, const _float4& start, const _float4& end);
+	void SetBeamPositionsByOwner(uint32_t ownerId,const _float3& start,const _float3& end);
 
 public:
 	int32_t AddBeam(const BEAM_PARAMS& p);
@@ -113,7 +114,6 @@ public:
     void    SetEndPos(uint32_t beamIndex, const _float4& vPos);
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
-
 private:
     void RegenerateJaggedPath(BEAM_INSTANCE& beam);
     void BuildBeamGeometry();

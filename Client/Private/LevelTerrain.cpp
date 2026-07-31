@@ -597,6 +597,26 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 			return E_FAIL;
 		}
 	}
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(3.f, 3.f, 3.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+	
+		if (!BossTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
+	
 	return S_OK;
 }
 

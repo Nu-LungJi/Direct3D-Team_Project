@@ -69,6 +69,9 @@ public:
 
 	void ClearAllRunningEffect();
 
+	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
+
+
 private:
 	void DispatchReadyCommands(EFFECT_INSTANCE& instance);
 

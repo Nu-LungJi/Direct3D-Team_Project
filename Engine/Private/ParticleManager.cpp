@@ -3270,23 +3270,42 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 		case SPAWN_COMMAND_KIND::BEAM:
 		{
 			BEAM_PARAMS p{};
-			auto bs = entry.value("beamStart", std::vector<float>{0, 0, 0, 0});
-			auto be = entry.value("beamEnd", std::vector<float>{0, 0, 0, 0});
-			p.beamStart = { bs[0], bs[1], bs[2], bs[3] };
-			p.beamEnd = { be[0], be[1], be[2], be[3] };
 
-			p.iDisplacementIterations = entry.value("iDisplacementIterations", 0);
-			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.f);
-			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.f);
-			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.f);
-			p.beamDuration = entry.value("beamDuration", 0.f);
+			auto bs = entry.value("beamStart", std::vector<float>{ 0.f, 0.f, 0.f, 1.f });
+			auto be = entry.value("beamEnd", std::vector<float>{ 0.f, 0.f, 0.f, 1.f });
+
+			p.beamStart = { bs[0],bs[1],bs[2],bs[3] };
+			p.beamEnd = { be[0],be[1],be[2],be[3] };
+
+			p.iDisplacementIterations = entry.value("iDisplacementIterations", 5);
+			p.fDisplacementAmplitude = entry.value("fDisplacementAmplitude", 0.15f);
+			p.fDisplacementDamping = entry.value("fDisplacementDamping", 0.5f);
+			p.flickerTimeInverval = entry.value("flickerTimeInverval", 0.03f);
+
+			p.beamDuration = entry.value("beamDuration", 1.f);
 			p.fSpawnDelay = entry.value("fSpawnDelay", 0.f);
-			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
-			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
-			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
-			p.color = { col[0], col[1], col[2], col[3] };
-			p.emissive = { emi[0], emi[1], emi[2], emi[3] };
-			p.endEmissive = { endEmi[0], endEmi[1], endEmi[2], endEmi[3] };
+
+			auto col = entry.value("color", std::vector<float>{ 1.f, 1.f, 1.f, 1.f });
+			auto emi = entry.value("emissive", std::vector<float>{ 0.f, 0.f, 0.f, 0.f });
+			auto endEmi = entry.value("endEmissive", std::vector<float>{ 0.f, 0.f, 0.f, 0.f });
+
+			p.color = { col[0],col[1],col[2],col[3] };
+			p.emissive = { emi[0],emi[1],emi[2],emi[3] };
+			p.endEmissive = { endEmi[0],endEmi[1],endEmi[2],endEmi[3] };
+
+			p.fGrowEndTime = entry.value("GrowEndTime", 0.3f);
+			p.fStraightEndTime = entry.value("StraightEndTime", 0.5f);
+			p.fHoldEndTime = entry.value("HoldEndTime", 0.7f);
+			p.fFadeEndTime = entry.value("FadeEndTime", 1.f);
+			p.fBeamWidth = entry.value("BeamWidth", 0.3f);
+			p.geometryType = entry.value("GeometryType", 0);
+
+			p.iDisplacementIterations = std::clamp(p.iDisplacementIterations, 1, 10);
+			p.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
+			p.fDisplacementDamping = std::clamp(p.fDisplacementDamping, 0.f, 1.f);
+			p.flickerTimeInverval = std::max(p.flickerTimeInverval, 0.001f);
+			p.beamDuration = std::max(p.beamDuration, 0.001f);
+			p.fBeamWidth = std::max(p.fBeamWidth, 0.001f);
 
 			cmd.params = p;
 			break;
@@ -3688,10 +3707,7 @@ HRESULT CParticleManager::StopBeam(const BEAM_HANDLE& handle)
 
 	return S_OK;
 }
-HRESULT CParticleManager::SetBeamPositions(
-	const BEAM_HANDLE& handle,
-	const _float4& start,
-	const _float4& end)
+HRESULT CParticleManager::SetBeamPositions(const BEAM_HANDLE& handle,const _float4& start,const _float4& end)
 {
 	CParticle* particle = GetParticle(handle.groupTag, handle.typeTag);
 	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
@@ -3705,4 +3721,21 @@ HRESULT CParticleManager::SetBeamPositions(
 		end);
 
 	return S_OK;
+}
+void CParticleManager::SetBeamPositionsByOwner(uint32_t ownerId, const _float3& start, const _float3& end)
+{
+	for (auto& [groupTag, particleGroup] : m_Particles)
+	{
+		for (auto& [typeTag, particle] : particleGroup)
+		{
+			if (!particle)
+				continue;
+
+			CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle.get());
+			if (!beam)
+				continue;
+
+			beam->SetBeamPositionsByOwner(ownerId, start, end);
+		}
+	}
 }

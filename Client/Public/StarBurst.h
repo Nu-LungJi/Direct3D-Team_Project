@@ -20,6 +20,7 @@ public:
 		_float3 vEndPosition{};
 		_float  fSpeed{ 10.f };
 		_float fRadius{ 0.5f };
+		CHandle	pTargetHandle{};
 		PX_FILTER_DESC tFilter{
 		.iLayer = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 		.iSimulationMask = PX_ALL_LAYERS,
@@ -42,6 +43,9 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+	void	Translate_Casting(_float _Ratio);
+	void	Translate_Attacking(_float _Ratio);
+
 public:
 	void OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
 	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
@@ -52,7 +56,13 @@ private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxSphereCollider* m_pComPxShpereCollider{};
 
-	_float	m_fTimeAccumulation{};
+	_float m_fPrevEffectMovementValue{};
+	_float m_fCurrEffectMovementValue{};
+	_float	m_fEffectLifeTime{};
+	_float	m_fEffectSpawnTimer{};
+
+	CHandle	m_pTargetHandle{};
+
 	EFFECT_INSTANCE_ID	m_pLightEffectID{};
 
 public:

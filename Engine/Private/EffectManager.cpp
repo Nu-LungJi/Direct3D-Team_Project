@@ -1237,6 +1237,19 @@ HRESULT CEffectManager::Load_EffectJsonPackage(
 
 	return S_OK;
 }
+void CEffectManager::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
+
+	auto iter = m_Instances.find(effectId);
+
+	if (iter == m_Instances.end() || !m_pParticleManager)
+		return;
+
+	EFFECT_INSTANCE& instance = iter->second;
+
+	for (auto& particle : instance.vecParticleOwnerId) {
+		m_pParticleManager->SetBeamPositionsByOwner(particle, start,end);
+	}
+}
 
 void CEffectManager::ClearAllRunningEffect()
 {
