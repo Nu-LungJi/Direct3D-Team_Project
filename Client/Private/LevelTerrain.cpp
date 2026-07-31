@@ -19,8 +19,12 @@
 #include "ComPxRigidBody.h"
 #include "OilBarrel.h"
 #include "RagdollTest.h"
+#include "NvClothCape.h"
+
 #include "BossTMB.h"
 #include "TmbGurdian.h"
+#include "AmbientSound3DObject.h"
+#include "LightPlacementObject.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -36,7 +40,12 @@ HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 	std::array<CHandle, 6> hOilBarrels{};
-	CGameInstance::Get().Initialize_EffectLight(15);
+	if (FAILED(
+		CGameInstance::Get().
+			Initialize_EffectLight(15)))
+	{
+		return E_FAIL;
+	}
 
 	{
 		CRagdollTest::DESC tDesc{};
@@ -89,6 +98,39 @@ HRESULT CLevelTerrain::Initialize()
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 		return E_FAIL;
+
+	{
+		CNvClothCape::DESC Desc{};
+		Desc.sObjectTag = "NvClothCape";
+		Desc.hTarget = *hPlayer;
+		Desc.sResourceGroup = LEVEL::TERRAIN;
+		Desc.sModelResourceTag =
+			"PLAYER_CAPE_MODEL_RESOURCE";
+		Desc.sClothMeshResourceTag =
+			"PLAYER_CAPE_CLOTH_RESOURCE";
+		Desc.sTargetModelComponentTag =
+			"ComCModelIntance";
+		Desc.sAttachBoneName =
+			"Spine3";
+		Desc.vLocalPosition =
+			{ 0.05f, 0.08f, 0.f };
+		E::CGameInstance::Get().JsonDeSerialize(
+			"./Resources/NvCloth/CollisionRigs/"
+			"ProfessorCape.nvclothcollision.json",
+			Desc.tBodyCollisionRig,
+			E::NVCLOTH_COLLISION_RIG_ROOT,
+			false);
+		if (!E::CGameInstance::Get().
+			AddGameObjectToLayer(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::
+					Prototype_GameObject_NvClothCape,
+				"03_Player",
+				&Desc))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
 		return E_FAIL;
@@ -596,6 +638,22 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 			return E_FAIL;
 		}
 	}
+	{
+		CLightPlacementObject::DESC desc{};
+		desc.sObjectTag = "TerrainLightPlacement";
+		desc.sLightFileName = "Level_Terrain";
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+				Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc))
+		{
+			return E_FAIL;
+		}
+	}
+
 	{
 		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";

@@ -32,6 +32,7 @@ private:
 	std::optional<CHandle> SpawnPlayer();
 
 	HRESULT SpawnStaticCollision();
+	HRESULT SpawnLightPlacement();
 	HRESULT SpawnBridge();
 	HRESULT SpawnMyMagicStepController();
 

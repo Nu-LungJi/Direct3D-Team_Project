@@ -112,7 +112,8 @@ PS_OUT PSMain(VS_OUT In)
     float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
 	float4 noise = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
     
-	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 
 	//if (noise.r < ratio) 
 	//	discard;
@@ -190,7 +191,8 @@ PS_OUT SMOKE(VS_OUT In)
 	float2 distrotedUV = In.vTexcoord + float2(0.03f, 0.01f) *topMask * 0.03f;
 	distrotedUV.x += noise.x * 0.03f * topMask;
 	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, distrotedUV);
-	float ratio = (In.life / In.maxLife);
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	
 	float fadein = smoothstep(0.f, 0.18f, ratio);
 	float fadeout = 1.0f - smoothstep(0.65f, 1.f, ratio);
@@ -338,9 +340,9 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
 	float2 atlasPosition = atlasUV * AtlasCount;
 	float2 cellIndex = floor(atlasPosition);
 	float2 localUV = frac(atlasPosition);
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 
-	float lifeMax = max(In.maxLife, 0.0001f);
-	float ageRatio = saturate(In.life / lifeMax);
 
     /*
      * Normal은 플립북 Atlas UV가 아니라
@@ -406,8 +408,8 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
     // );
 
     // 파티클 생성/소멸 페이드
-	float fadeIn = smoothstep(0.f, 0.08f, ageRatio);
-	float fadeOut = 1.f - smoothstep(0.65f, 1.f, ageRatio);
+	float fadeIn = smoothstep(0.f, 0.08f, ratio);
+	float fadeOut = 1.f - smoothstep(0.65f, 1.f, ratio);
 	float lifeFade = fadeIn * fadeOut;
 
 	float alpha =
@@ -421,7 +423,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
         smokeTex.rgb * In.vColor.rgb;
 
 	float4 lerpedEmissive =
-        lerp(In.vEmissive, In.vEndEmissive, ageRatio);
+        lerp(In.vEmissive, In.vEndEmissive, ratio);
 
 	float3 finalRGB =
         color +

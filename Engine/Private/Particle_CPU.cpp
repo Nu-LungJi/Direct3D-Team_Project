@@ -357,7 +357,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 
 		p.vVelocity.x = burstVelX + (waveVelX - burstVelX) * blend;
 		p.vVelocity.y = burstVelY + (waveVelY - burstVelY) * blend;
-		p.vVelocity.z = 0.0f;
+		p.vVelocity.z = Randf(-1.f,1.f);
 
 		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
 		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
