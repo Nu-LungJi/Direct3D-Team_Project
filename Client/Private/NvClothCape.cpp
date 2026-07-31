@@ -255,7 +255,6 @@ void CNvClothCape::Update(_float)
 
 void CNvClothCape::LateUpdate(_float)
 {
-	UpdateAttachment(false);
 	if (m_bRenderCape)
 	{
 		CGameInstance::Get().AddRenderObject(
