@@ -18,6 +18,10 @@ void CBoss_StarBurst::UpdateGUI() {
 }
 
 HRESULT CBoss_StarBurst::InitializePrototype(void* pArg) {
+	m_pLavaFlame_SpawnInterval = 0.05f;
+	m_pLavaFlame_CastingTime = 2.0f;
+	m_pLavaFlame_StayTime = 1.0f;
+
 	return S_OK;
 }
 HRESULT CBoss_StarBurst::Initialize(void* pArg) {
@@ -51,7 +55,7 @@ HRESULT CBoss_StarBurst::Initialize(void* pArg) {
 			if (auto pOBJ = CGameInstance::Get().GetGameObjectByHandleT<CBoss_StarBurst>(h)) {
 				m_pLightEffectID = INVALID_EFFECT_INSTANCE_ID;
 			}
-		});
+		});	
 
 	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
 
@@ -63,25 +67,20 @@ void CBoss_StarBurst::PriorityUpdate(E::_float fTimeDelta)
 }
 
 void CBoss_StarBurst::Update(E::_float fTimeDelta) {
-	const _float LavaFlame_SpawnInterval = 0.4f;
-	const _float LavaFlame_CastingTime	 = 2.0f;
-	const _float LavaFlame_StayTime = 1.5f;
-	const _float LavaFlame_AttackingTime = 1.0f;
-
 	m_fEffectSpawnTimer += fTimeDelta;
 	m_fEffectLifeTime	+= fTimeDelta;
 
-	if (m_fEffectLifeTime <= LavaFlame_CastingTime) {
-		Translate_Casting(m_fEffectLifeTime / LavaFlame_CastingTime);
+	if (m_fEffectLifeTime <= m_pLavaFlame_CastingTime) {
+		Translate_Casting(m_fEffectLifeTime / m_pLavaFlame_CastingTime);
 	}
-	else if (m_fEffectLifeTime <= LavaFlame_CastingTime + LavaFlame_StayTime) {
+	else if (m_fEffectLifeTime >= m_pLavaFlame_CastingTime + m_pLavaFlame_StayTime) {
 
 	}
-	else if (m_fEffectLifeTime <= LavaFlame_CastingTime + LavaFlame_AttackingTime + LavaFlame_StayTime) {
-		Translate_Attacking((m_fEffectLifeTime - LavaFlame_CastingTime - LavaFlame_StayTime) / LavaFlame_AttackingTime);
+	else {
+		Translate_Attacking(0.f);
 	}
 
-	if (m_fEffectSpawnTimer >= LavaFlame_SpawnInterval) {
+	if (m_fEffectSpawnTimer >= m_pLavaFlame_SpawnInterval) {
 		m_fEffectSpawnTimer = 0.f;
 		CGameInstance::Get().PlayEffect("Boss_StarBurst_B", *GetTransform().GetWorldMatrix(), XMVECTOR{});
 	}
@@ -116,6 +115,7 @@ void CBoss_StarBurst::Translate_Casting(_float _Ratio){
 
 	_float3 LocalDestination = { 16.f, 10.f, 2.f };
 
+
 	m_fCurrEffectMovementValue = 1.f - pow(1.f - _Ratio, 3.f);
 	_float DeltaMovementValue = m_fCurrEffectMovementValue - m_fPrevEffectMovementValue;
 	m_fPrevEffectMovementValue = m_fCurrEffectMovementValue;
@@ -132,6 +132,19 @@ void CBoss_StarBurst::Translate_Casting(_float _Ratio){
 void CBoss_StarBurst::Translate_Attacking(_float _Ratio) {
 	auto GamePlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(m_pTargetHandle);
 	if (nullptr == GamePlayer)  return;
+
+	_float3  PxPos = m_pComPxRigidBody->GetPosition();
+	if (XMVectorGetX(XMVectorEqual(XMVectorZero(), m_vDirection))) {
+		m_vDirection = XMVector3Normalize(GamePlayer->GetTransform().GetLoadedPostion() + XMVectorSet(0.f, 1.5f, 0.f, 0.f) - XMLoadFloat3(&PxPos));
+	}
+
+	m_vCurrentPosition = XMLoadFloat3(&PxPos);
+	_float  EffectAttackSpeed = 2.5f;
+	_float3 EffectPos{};
+	XMStoreFloat3(&EffectPos, m_vCurrentPosition + m_vDirection * EffectAttackSpeed);
+
+	m_pComPxRigidBody->SetPosition(EffectPos);
+	CGameInstance::Get().SetEffectPosition(m_pLightEffectID, m_pComPxRigidBody->GetPosition());
 }
 
 void CBoss_StarBurst::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
@@ -150,6 +163,35 @@ void CBoss_StarBurst::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA
 {
 	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Trigger Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+
+	if (auto pPlayer = Cast<CPlayer>(pObj))
+	{
+		CGameInstance::Get().StopEffect(m_pLightEffectID);
+
+		_float3 EffectScale = { 1.f, 1.f, 1.f };
+		XMMATRIX ScaleMatrix = XMMatrixScaling(EffectScale.x, EffectScale.y - 0.5f, EffectScale.z);
+
+		_float3 EffectPosition = m_pComPxRigidBody->GetPosition();
+		XMMATRIX PositionMat = XMMatrixTranslation(EffectPosition.x, EffectPosition.y, EffectPosition.z);
+
+		XMVECTOR Forward = XMVector3Normalize(m_vDirection);
+		XMVECTOR WorldUP = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+		_float DDU = XMVectorGetX(XMVectorAbs(XMVector3Dot(m_vDirection, WorldUP)));
+		if (DDU > 0.999f) WorldUP = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+
+		XMVECTOR Right = XMVector3Normalize(XMVector3Cross(WorldUP, Forward));
+		XMVECTOR Up = XMVector3Cross(Forward, Right);
+
+		XMMATRIX RotationMatrix = XMMATRIX(Right, Up, Forward, XMVectorSet(0.f, 0.f, 0.f, 1.f));
+		RotationMatrix = RotationMatrix * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		XMFLOAT4X4 WorldMatrix{};
+		XMStoreFloat4x4(&WorldMatrix, ScaleMatrix * RotationMatrix * PositionMat);
+
+		auto EffectID = CGameInstance::Get().PlayEffect("Boss_HitSplash", WorldMatrix, XMVECTOR{});
+		CGameInstance::Get().SetEffectPosition(EffectID, m_pComPxRigidBody->GetPosition());
+	}
 }
 
 void CBoss_StarBurst::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)

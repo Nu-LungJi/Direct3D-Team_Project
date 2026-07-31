@@ -62,8 +62,15 @@ private:
 	_float	m_fEffectSpawnTimer{};
 
 	CHandle	m_pTargetHandle{};
+	XMVECTOR m_vDestination{};
+	XMVECTOR m_vCurrentPosition{};
+	XMVECTOR m_vDirection{};
 
 	EFFECT_INSTANCE_ID	m_pLightEffectID{};
+
+	_float m_pLavaFlame_SpawnInterval{};
+	_float m_pLavaFlame_CastingTime{};
+	_float m_pLavaFlame_StayTime{};
 
 public:
 	static E::UPtr<CBoss_StarBurst> Create();
