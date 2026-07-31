@@ -554,7 +554,7 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 		Desc.vEye = { 0.f, 0.f, -5.f };
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
+		Desc.fNear = 0.01f;
 		Desc.fFar = 100.f;
 		Desc.sObjectTag = "FlyCam";
 

@@ -288,6 +288,9 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		1u,
 		m_Desc.iMaxDisplacementIterations);
 
+	const float distance =XMVectorGetX( XMVector3Length(end - start));
+	const float growSpeed = 100.f;
+	const float growDuration = distance / growSpeed;
 	for (uint32_t i = 0; i < m_vecBeams.size(); ++i)
 	{
 		if (m_vecBeams[i].bActive)
@@ -298,14 +301,11 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.vStartPos = p.beamStart;
 		beam.vEndPos = p.beamEnd;
 		beam.fElapsedTime = 0.f;
-		beam.fDuration = std::max(p.beamDuration, 0.f);
 		beam.vColor = p.color;
 		beam.vEmissive = p.emissive;
 		beam.vEndEmissive = p.endEmissive;
 		beam.ownerId = p.ownerId;
-		const float distance =
-			XMVectorGetX(
-				XMVector3Length(end - start));
+
 
 		beam.fDisplacementAmplitude =
 			distance * 0.02f;
@@ -322,10 +322,17 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.fStraightRatio = 0.f;
 		beam.fFadeRatio = 0.f;
 		beam.fbeamWidth = p.fBeamWidth;
-		beam.fGrowEndTime = p.fGrowEndTime;
-		beam.fStraightEndTime = p.fStraightEndTime;
-		beam.fHoldEndTime = p.fHoldEndTime;
-		beam.fFadeEndTime = p.fFadeEndTime;
+		const float straightDuration = std::max(p.fStraightEndTime - p.fGrowEndTime,0.f);
+
+		const float holdDuration = std::max(p.fHoldEndTime - p.fStraightEndTime,0.f);
+
+		const float fadeDuration = std::max(p.beamDuration - p.fHoldEndTime,0.f);
+
+		beam.fGrowEndTime = growDuration;
+		beam.fStraightEndTime = beam.fGrowEndTime + straightDuration;
+		beam.fHoldEndTime = beam.fStraightEndTime + holdDuration;
+		beam.fDuration = beam.fHoldEndTime + fadeDuration;
+		beam.fFadeEndTime = beam.fDuration;
 		beam.iGeometryType = p.geometryType;
 		beam.fspawnDelay = p.fSpawnDelay;
 		
@@ -578,41 +585,58 @@ void CBeam_CPU::BuildBeamGeometry()
 			1.f
 		);
 
+		const _float headT = std::clamp(beam.fElapsedTime / beam.fGrowEndTime, 0.f, 1.f);
+		const float tailPower = 1.f;
+
+		const float tailLength = 0.8f;
+		auto SmoothStep = [](_float edge0, _float edge1, _float x)
+			{
+				if (edge0 == edge1)
+					return x < edge0 ? 0.f : 1.f;
+
+				x = std::clamp((x - edge0) / (edge1 - edge0), 0.f, 1.f);
+				return x * x * (3.f - 2.f * x);
+			};
+
 		auto buildPlane = [&](const XMVECTOR& right)
 			{
-				XMVECTOR halfWidth =
-					right * (beam.fbeamWidth * 0.5f);
+			
+
+				XMVECTOR halfWidth = right * (beam.fbeamWidth * 0.5f);
+
 
 				for (const auto& point : visiblePoints)
 				{
+					const float tailLength = 1.f;
+					const float minimumTailAlpha = 0.8f;
+
+					const float distanceBehindHead = std::max(growRatio - point.t, 0.f);
+					const float localTailRatio = std::clamp(distanceBehindHead / tailLength, 0.f, 1.f);
+
+					const float tailFade = std::pow(1.f - localTailRatio, 0.25f);
+					const float tailAlpha = std::lerp(minimumTailAlpha, 1.f, tailFade);
+					const float finalAlpha = fadeAlpha * tailAlpha;
+
 					BEAM_VERTEX top{};
-					XMStoreFloat3(
-						&top.vPosition,
-						point.position + halfWidth
-					);
-					top.vUV = { 0.f,point.t };
+					XMStoreFloat3(&top.vPosition, point.position + halfWidth);
+					top.vUV = { 0.f,localTailRatio };
 					top.vColor = beam.vColor;
-					top.vColor.w *= fadeAlpha;
+					top.vColor.w *= finalAlpha;
 					top.vEmissive = beam.vEmissive;
-					top.vEmissive.w *= fadeAlpha;
 					top.vEndEmissive = beam.vEndEmissive;
+
 					BEAM_VERTEX bottom{};
-					XMStoreFloat3(
-						&bottom.vPosition,
-						point.position - halfWidth
-					);
-					bottom.vUV = { 1.f,point.t };
+					XMStoreFloat3(&bottom.vPosition, point.position - halfWidth);
+					bottom.vUV = { 1.f,localTailRatio };
 					bottom.vColor = beam.vColor;
-					bottom.vColor.w *= fadeAlpha;
+					bottom.vColor.w *= finalAlpha;
 					bottom.vEmissive = beam.vEmissive;
-					bottom.vEmissive.w *= fadeAlpha;
 					bottom.vEndEmissive = beam.vEndEmissive;
 
 					m_vecBeamVertices.push_back(top);
 					m_vecBeamVertices.push_back(bottom);
 				}
 			};
-
 		buildPlane(right1);
 		buildPlane(right2);
 
@@ -751,4 +775,40 @@ void CBeam_CPU::SetBeamPositions(
 	}
 
 	BuildBeamGeometry();
+}
+
+void CBeam_CPU::SetBeamPositionsByOwner(uint32_t ownerId,const _float3& start,const _float3& end)
+{
+	const XMVECTOR startPosition = XMLoadFloat3(&start);
+	const XMVECTOR endPosition = XMLoadFloat3(&end);
+
+	if (XMVectorGetX(
+		XMVector3LengthSq(endPosition - startPosition)) < 0.000001f)
+	{
+		return;
+	}
+
+	bool changed = false;
+
+	for (BEAM_INSTANCE& beam : m_vecBeams)
+	{
+		if (!beam.bActive || beam.ownerId != ownerId)
+			continue;
+
+		beam.vStartPos = _float4 (start.x, start.y, start.z, 1);
+		beam.vEndPos = _float4(end.x, end.y, end.z, 1);
+
+		if (beam.fStraightRatio < 1.f)
+		{
+			if (beam.iGeometryType == 1)
+				RegenerateSinPath(beam);
+			else
+				RegenerateJaggedPath(beam);
+		}
+
+		changed = true;
+	}
+
+	if (changed)
+		BuildBeamGeometry();
 }

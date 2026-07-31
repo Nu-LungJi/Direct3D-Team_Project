@@ -33,6 +33,9 @@ private:
 	std::optional<CHandle> SpawnPlayer();
 
 private:
+	_bool m_bCreatePlayScreenUI{ false };
+
+private:
 	void Free() override;
 };
 

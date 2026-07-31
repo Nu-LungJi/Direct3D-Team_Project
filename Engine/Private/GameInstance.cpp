@@ -672,6 +672,10 @@ void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _fl
 	m_pEffectManager->SetEffectWorldMatrix(iEffectId, colliderWorldMatrix);
 
 }
+void CGameInstance::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
+	m_pEffectManager->SetBeamPositionsByOwner(effectId, start, end);
+
+}
 
 
 #pragma endregion
@@ -1028,9 +1032,13 @@ HRESULT CGameInstance::LoadCinematic(
 {
 	return m_pCameraManager->LoadCinematic(CinematicName);
 }
-HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID)
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options)
 {
-	return m_pCameraManager->PlayCinematic(CinematicID);
+	return m_pCameraManager->PlayCinematic(CinematicID, Options);
+}
+HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options)
+{
+	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle, Options);
 }
 void CGameInstance::StopCinematic()
 {
@@ -1044,7 +1052,15 @@ _float CGameInstance::GetCinematicPlayTime() const
 {
 	return m_pCameraManager->GetCinematicPlayTime();
 }
+void CGameInstance::SetCinematicCollisionQueryMask(uint32_t iQueryMask)
+{
+	if (m_pCameraManager == nullptr)
+	{
+		return;
+	}
 
+	m_pCameraManager->SetCinematicCollisionQueryMask(iQueryMask);
+}
 #pragma endregion
 
 

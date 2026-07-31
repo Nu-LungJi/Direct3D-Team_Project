@@ -1042,7 +1042,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 
 	switch (uiType)
 	{
-	case ETOUI(UI_TYPE::SHORTCUT_ICON):
+	
 	case ETOUI(UI_TYPE::TEXUI):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
@@ -1065,6 +1065,17 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 				static_cast<CButton*>(parent)->SetEffectClicked(uiHandle);
 			}
 		}
+		pUI->SetUIType(ETOUI(UI_TYPE::TEXUI));
+		break;
+	case ETOUI(UI_TYPE::SHORTCUT_ICON):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::SHORTCUT_ICON));
+	case ETOUI(UI_TYPE::DISOLVE):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::DISOLVE));
+		pUI->SetAlpha(0.f);
 		break;
 	case ETOUI(UI_TYPE::FLIPBOOK):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);

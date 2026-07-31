@@ -1231,6 +1231,10 @@ HRESULT CRenderer::Render_NonAlpha() {
 		SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
 		m_pContext->OMSetDepthStencilState(DepthState->GetDepthStencilState().Get(), 0);
 
+		// Default Texture - Dissolve Noise
+		SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
+		m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+
 		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
 		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
 		m_pContext->ClearRenderTargetView(pRTVs[1], reinterpret_cast<const float*>(&clearColor));
@@ -1336,10 +1340,6 @@ HRESULT CRenderer::Render_HBAO() {
 HRESULT CRenderer::Render_Lighting() {
 
 	{
-		// Default Texture - Dissolve Noise
-		SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
-		m_pContext->CSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
-
 		// Default Texture - Dissolve HBAO
 		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
 		m_pContext->PSSetShaderResources(5, 1, WhiteResource->GetSRV().GetAddressOf());
