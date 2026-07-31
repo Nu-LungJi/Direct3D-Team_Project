@@ -328,6 +328,7 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	}
 
 	m_tFilter = pDesc->tFilter;
+	m_iShapeSubIndex = pDesc->iShapeSubIndex;
 	
 	m_pImpl = std::make_unique<CComPxCharacterController::Impl>();
 	m_pImpl->pOwner = this;
@@ -386,6 +387,7 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	PX_SHAPE_USER_DATA shapeUserData{};
 	shapeUserData.hGameObject = GetGameObject()->GetHandle();
 	shapeUserData.eType = PX_SHAPE_TYPE::CAPSULE;
+	shapeUserData.iSubIndex = m_iShapeSubIndex;
 	if (!pPhysXManager->RegisterShape(pShape, shapeUserData))
 	{
 		pPhysXManager->UnregisterActor(pActor);
