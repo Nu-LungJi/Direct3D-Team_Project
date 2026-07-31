@@ -112,11 +112,11 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		}
 
 	}
-	if (m_bUseCurAnim)
-	{
-		Reset_CheckFlag();
-		return m_eDebug = EVALUATE::SUCCESS;
-	}
+	//if (m_bUseCurAnim)
+	//{
+	//	Reset_CheckFlag();
+	//	return m_eDebug = EVALUATE::SUCCESS;
+	//}
 	return m_eDebug = EVALUATE::RUN;
 }
 void CBTHitAnimMonster::Update_Gui()

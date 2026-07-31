@@ -588,7 +588,7 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-
+	
 		if (!BossTmb)
 		{
 			MSG_BOX("Create TmbGurdian Failed in Rookwood");

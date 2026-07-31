@@ -474,10 +474,6 @@ void CMonster::RunningSkill(_float fTimeDelta)
 }
 void CMonster::IsHit()
 {
-	if (CGameInstance::Get().KeyDown(DIK_2))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	}
 	if (CGameInstance::Get().KeyDown(DIK_Z))
 	{
 		Check_Table(PLAYER_SKILL_TYPE::ACCIO);
@@ -532,6 +528,14 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	{
 		m_eAttType = ATTMON::END;
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT), FLAGTYPE::DEL);
+	}
+
+	if (!m_pBeHavior->Check_Flag(
+		ETOUI(CBTRoot::BTFLAG::HIT)))
+	{
+		Clear_ActiveHit();
+		Clear_PendingHit();
+		m_iHitCnt = 0; 
 	}
 	//if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
 	//	Damaged();
