@@ -198,9 +198,26 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 					}
 				}
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Sword",
+					CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
+
+					E::CResStaticModel::DESC pDesc{};
+					pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+					if (FAILED(res->Load(pDesc)))
+					{
+						MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
+						return false;
+					}
+				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
 					return false;
 				}
 			}
