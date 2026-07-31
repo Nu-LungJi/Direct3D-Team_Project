@@ -51,6 +51,7 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+		MONSTER_TYPE				MonType{MONSTER_TYPE::BOSS};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
@@ -104,6 +105,7 @@ public:
 protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
 private:
+	_bool						Check_Flag(uint32_t iFlag);
 	void						Damaged();
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
@@ -136,7 +138,7 @@ protected:
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{};
 	_float								m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t								m_iHp{}, m_iMaxHp{};
-	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
+	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false }, m_bSkillLoop{false};
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{};
 
