@@ -4,7 +4,11 @@
 #define LIGHT_DIRECTIONAL   0
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
-
+cbuffer CB_TIMEACCUMULATION : register(b11)
+{
+	float g_fAccumulationTime;
+	float3 _pad;
+};
 struct VS_IN
 {
 	float3 vPosition : POSITION;
@@ -211,15 +215,15 @@ PS_OUT PSPlayerDashWindSpiral(VS_OUT In)
      */
 	float2 diffuseUV =
         uv * float2(4.f, 4.f) +
-        float2(-g_fTimeAccumulation * 1.2f, 0.f);
+        float2(-g_fAccumulationTime * 1.2f, 0.f);
 
 	float2 normalUV =
         uv * float2(2.f, 2.f) +
-        float2(-g_fTimeAccumulation * 0.55f, 0.f);
+        float2(-g_fAccumulationTime * 0.55f, 0.f);
 
 	float2 noiseUV =
         uv * float2(3.f, 2.f) +
-        float2(-g_fTimeAccumulation * 0.8f, 0.f);
+        float2(-g_fAccumulationTime * 0.8f, 0.f);
 
 	float2 distortion =
         NormalMap.Sample(LinearWrap, normalUV).rg * 2.f - 1.f;
@@ -285,10 +289,13 @@ PS_OUT PSAccio(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 	
+	float2 diffuseUV =
+        In.vTexcoord * float2(1.f, 1.f) + float2(0, g_fAccumulationTime * 0.2f);
+	
 	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 
 	
-	float4 texColor = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
+	float4 texColor = AlbedoMap.Sample(LinearWrap, diffuseUV);
 
 	if (all(texColor.rgb < 0.2f))
 		discard;

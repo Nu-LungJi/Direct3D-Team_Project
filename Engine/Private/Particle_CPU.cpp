@@ -53,6 +53,16 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 
         m_pResInstancedBuffer = res;
     }
+
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_TIMEACCUMULATION);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComTimeCBuffer = res;
+	}
+
     m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
     if (!m_pResSamplerState)
         return E_FAIL;
@@ -164,6 +174,7 @@ void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
+	m_fAccumulationTime += fTimeDelta;
 	m_vecInstancedData.clear();
 	uint32_t totalFrames = m_Desc.TexRows * m_Desc.TexColumns;
 
@@ -568,13 +579,31 @@ HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 {
 
 
+	CB_TIMEACCUMULATION cb{};
+	cb.fAccumulationTime = m_fAccumulationTime;
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (SUCCEEDED(pContext->Map(m_pComTimeCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+	{
+		memcpy(mapped.pData, &cb, sizeof(cb));
+		pContext->Unmap(m_pComTimeCBuffer->GetCBuffer().Get(), 0);
+	}
+
+
+	pContext->PSSetConstantBuffers(11, 1, m_pComTimeCBuffer->GetCBuffer().GetAddressOf());
+
+
     if (m_vecInstancedData.empty())
         return S_OK;
 
     if (m_Desc.whatKind == MESHORTEXTURE::MESH)
-        return Render_Mesh(pContext, ctx);
+        Render_Mesh(pContext, ctx);
+	else {
+		Render_Texture(pContext, ctx);
+	}
+	ID3D11Buffer* nullBuffer = nullptr;
 
-    return Render_Texture(pContext, ctx); // 기존 텍스처 파티클 렌더 코드
+	pContext->PSSetConstantBuffers(11, 1, &nullBuffer);
+	return  S_OK;// 기존 텍스처 파티클 렌더 코드
 }
 
 
