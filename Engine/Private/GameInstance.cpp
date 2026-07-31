@@ -1210,14 +1210,27 @@ void CGameInstance::ClearAllChunk()
 #pragma endregion
 
 #pragma region LIGHT_MANAGER
-VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
-	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
+std::optional<CHandle> CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
+	return m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
 }
-VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
-	m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _InnerRange, _OuterRange);
+std::optional<CHandle> CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
+	return m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _InnerRange, _OuterRange);
 }
-VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
-	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
+std::optional<CHandle> CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
+	return m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
+}
+_bool CGameInstance::Remove_Light(const CHandle& hLight) {
+	return m_pLightManager->Remove_Light(hLight);
+}
+size_t CGameInstance::Remove_PlacementLightGroup(
+	std::string_view sGroup) {
+	return m_pLightManager->
+		Remove_PlacementLightGroup(sGroup);
+}
+void CGameInstance::SetActivePlacementLightGroup(
+	std::string_view sGroup) {
+	m_pLightManager->
+		SetActivePlacementLightGroup(sGroup);
 }
 VOID	CGameInstance::Clear_DynamicLightList() {
 	m_pLightManager->Clear_DynamicLightList();

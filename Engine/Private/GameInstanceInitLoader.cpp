@@ -23,6 +23,9 @@
 #include "ComCollider.h"
 #include "MapMeshObject.h"
 #include "PhysXCollisionProxyObject.h"
+//#include "AmbientSound2DObject.h"
+//#include "AmbientSound3DObject.h"
+#include "LightPlacementObject.h"
 
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
@@ -147,6 +150,27 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 	if (CGameInstance::Get().AddPrototype(
 		"PERMANENT", "Prototype_GameObject_PhysXCollisionProxy",
 		CPhysXCollisionProxyObject::Create()))
+	{
+		return E_FAIL;
+	}
+	//if (CGameInstance::Get().AddPrototype(
+	//	ES_EngineProtoMajorType::PERMANENT,
+	//	ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
+	//	CAmbientSound2DObject::Create()))
+	//{
+	//	return E_FAIL;
+	//}
+	//if (CGameInstance::Get().AddPrototype(
+	//	ES_EngineProtoMajorType::PERMANENT,
+	//	ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound3D,
+	//	CAmbientSound3DObject::Create()))
+	//{
+	//	return E_FAIL;
+	//}
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoGameObject::Prototype_GameObject_LightPlacement,
+		CLightPlacementObject::Create()))
 	{
 		return E_FAIL;
 	}

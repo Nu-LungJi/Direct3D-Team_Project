@@ -21,6 +21,8 @@
 #include "RagdollTest.h"
 #include "BossTMB.h"
 #include "TmbGurdian.h"
+#include "AmbientSound3DObject.h"
+#include "LightPlacementObject.h"
 #include "StarBurst.h"
 NS_USING(Client)
 
@@ -37,7 +39,12 @@ HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
 	std::array<CHandle, 6> hOilBarrels{};
-	CGameInstance::Get().Initialize_EffectLight(15);
+	if (FAILED(
+		CGameInstance::Get().
+			Initialize_EffectLight(15)))
+	{
+		return E_FAIL;
+	}
 
 	{
 		CRagdollTest::DESC tDesc{};
@@ -596,6 +603,22 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 			return E_FAIL;
 		}
 	}
+	{
+		CLightPlacementObject::DESC desc{};
+		desc.sObjectTag = "TerrainLightPlacement";
+		desc.sLightFileName = "Level_Terrain";
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+				Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc))
+		{
+			return E_FAIL;
+		}
+	}
+
 	{
 		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";

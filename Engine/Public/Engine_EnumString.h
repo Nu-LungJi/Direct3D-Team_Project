@@ -44,6 +44,9 @@ namespace Engine
 		Prototype_GameObject_FlyCamera,
 		Prototype_GameObject_ShadowCamera,
 		Prototype_GameObject_UICamera,
-		Prototype_GameObject_CinematicCamera
+		Prototype_GameObject_CinematicCamera,
+		Prototype_GameObject_AmbientSound2D,
+		Prototype_GameObject_AmbientSound3D,
+		Prototype_GameObject_LightPlacement
 	};
 }
