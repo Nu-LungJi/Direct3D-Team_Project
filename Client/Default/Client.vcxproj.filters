@@ -531,6 +531,9 @@
     <ClInclude Include="..\public\BTDecIsPending.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\StarBurst.h">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -788,6 +791,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecIsPending.cpp">
       <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StarBurst.cpp">
+      <Filter>GameObject\Monster\TombBoss</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

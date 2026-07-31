@@ -318,7 +318,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_LIGHTNING_MESH", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Lightning_Mesh.hlsl")))	return E_FAIL;
 	
 	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_EXTRAEFFECT", CResPixelShader::Create("./ShaderFiles/Shader_CPU_ExtraEffect.hlsl"))) {
-		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_StarRail"	 , .sTarget = "ps_5_0" })))	return E_FAIL;
+		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_StarBurst"	 , .sTarget = "ps_5_0" })))	return E_FAIL;
 	}
 	/////////////////////////////////////
 

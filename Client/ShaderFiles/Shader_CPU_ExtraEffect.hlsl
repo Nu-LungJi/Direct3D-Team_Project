@@ -86,7 +86,7 @@ struct PS_OUT
 	float4 vDiffuse : SV_TARGET0;
 };
 
-PS_OUT PSMain_StarRail(VS_OUT IN)
+PS_OUT PSMain_StarBurst(VS_OUT IN)
 {
 	PS_OUT OUT;
 	
