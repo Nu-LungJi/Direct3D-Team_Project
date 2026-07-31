@@ -2,6 +2,7 @@
 #include "BTTurnDirect.h"
 #include "ComTransform.h" 
 #include "ComCharacterMoveIntent.h"
+#include "Monster.h"
 NS_USING(Client)
 
 CBTTurnDirect::CBTTurnDirect()
@@ -34,17 +35,25 @@ EVALUATE CBTTurnDirect::Evaluate(_float fTimeDelta)
 {
 	auto pTransform (Get_Component<CComTransform>(m_Handle, "Com_Transform"));
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
-	auto* pTarget = CGameInstance::Get().GetActiveCamera();
-	if (pTransform == nullptr || pMoveIntent == nullptr || pTarget == nullptr)
+	
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			if (auto pTarget = pOwner->Get_Target())
+			{
+				if (pTransform == nullptr || pMoveIntent == nullptr || pTarget == nullptr)
+						return m_eDebug = EVALUATE::FAILED;
 
-		return m_eDebug = EVALUATE::FAILED;
+				_float3 vFacingDirection{};
+				XMStoreFloat3(&vFacingDirection,
+					pTarget->GetTransform().GetState(STATE::POSITION) -
+					pTransform->GetState(STATE::POSITION));
+				pMoveIntent->SetFacingIntentImmediate(vFacingDirection);
+			}
 
-	_float3 vFacingDirection{};
-	XMStoreFloat3(&vFacingDirection,
-		pTarget->GetTransform().GetState(STATE::POSITION) -
-		pTransform->GetState(STATE::POSITION));
-	pMoveIntent->SetFacingIntentImmediate(vFacingDirection);
-
+		}
+	}
 	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTTurnDirect::Update_Gui()

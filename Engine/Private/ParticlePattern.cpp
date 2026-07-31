@@ -73,8 +73,8 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCir
 		s.fSize = param.fSize;
 		s.fEndSize = param.fEndSize;
 		s.color = param.color;
-		s.emissive = param.emissive;
-		s.endEmissive = param.endEmissive;
+		s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z,param.startIntensity);
+		s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z,param.endIntensity);
 		s.iBehaviorType = param.iBehaviorType;
 		s.originalEmissive = param.emissive;
 		s.originalPosition = param.vCenter;
@@ -226,28 +226,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning
 	}
 	return spawnList;
 }
-std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeExtraLightning(const SExtraLightning& param){
 
-	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
-
-	for (uint32_t i = 0; i < param.iCount; ++i)
-	{
-		PARTICLE_SPAWN_DATA& s = spawnList[i];
-		s.position = param.vCenter;
-		s.velocity = param.fVelocity;
-		s.life = param.fLife;
-		s.fSize = param.fSize;
-		s.fEndSize = param.fEndSize;
-		s.color = param.color;
-		s.emissive = param.emissive;
-		s.endEmissive = param.endEmissive;
-		s.iBehaviorType = param.iBehaviorType;
-		s.originalEmissive = param.emissive;
-		s.originalPosition = param.vCenter;
-		uint32_t degree = 360 / param.iCount;
-	}
-	return spawnList;
-}
 //std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStairs(
 //    const _float3& vStartPos,
 //    uint32_t iStepCount,

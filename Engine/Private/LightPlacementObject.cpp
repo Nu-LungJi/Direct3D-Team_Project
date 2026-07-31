@@ -135,14 +135,27 @@ HRESULT CLightPlacementObject::SpawnLights(
 		entry.fRange = std::max(
 			entry.fRange,
 			LightPlacementObjectDetail::MIN_LIGHT_RANGE);
-		entry.fOuterAttenuation = std::clamp(
-			entry.fOuterAttenuation,
-			0.1f,
-			75.f);
-		entry.fInnerAttenuation = std::clamp(
-			entry.fInnerAttenuation,
-			0.f,
-			entry.fOuterAttenuation);
+		if (entry.eType == LIGHT_TYPE::POINT)
+		{
+			entry.fOuterAttenuation = std::max(
+				entry.fOuterAttenuation,
+				LightPlacementObjectDetail::MIN_LIGHT_RANGE);
+			entry.fInnerAttenuation = std::clamp(
+				entry.fInnerAttenuation,
+				0.f,
+				entry.fOuterAttenuation);
+		}
+		else if (entry.eType == LIGHT_TYPE::SPOTLIGHT)
+		{
+			entry.fOuterAttenuation = std::clamp(
+				entry.fOuterAttenuation,
+				0.1f,
+				75.f);
+			entry.fInnerAttenuation = std::clamp(
+				entry.fInnerAttenuation,
+				0.f,
+				entry.fOuterAttenuation);
+		}
 
 		std::optional<CHandle> handle{};
 		switch (entry.eType)
@@ -163,7 +176,8 @@ HRESULT CLightPlacementObject::SpawnLights(
 					entry.vPosition,
 					entry.vColor,
 					entry.fIntensity,
-					entry.fRange);
+					entry.fInnerAttenuation,
+					entry.fOuterAttenuation);
 			break;
 
 		case LIGHT_TYPE::SPOTLIGHT:

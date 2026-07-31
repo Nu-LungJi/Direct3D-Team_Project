@@ -108,7 +108,7 @@ VOID CLightManager::UpdateGUI() {
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(180.f / 255.f / 2.f, 135.f / 255.f / 2.f, 255.f / 255.f / 2.f, 1.0f));
 
 		if (ImGui::Button("Generate Light", ImVec2(-FLT_MIN, 20))) {
-			Add_PointLight({ 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }, 10.f, 10.f);
+			Add_PointLight({ 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f }, 10.f, 10.f, 20.f);
 		}
 
 		ImGui::PopStyleColor(3);
@@ -196,8 +196,17 @@ VOID CLightManager::UpdateGUI() {
 		float intensity = pSelectedLight->Get_LightIntensity();
 		float range = pSelectedLight->Get_LightRange();
 		XMFLOAT3 position = pSelectedLight->Get_LightPosition();
-		float innerAttn = pSelectedLight->Get_LightInnerAttenuation();
-		float outerAttn = pSelectedLight->Get_LightOuterAttenuation();
+
+		float innerAttn = 0.f, outerAttn = 0.f;
+
+		if		(lightType == LIGHT_TYPE::SPOTLIGHT) {
+			innerAttn = pSelectedLight->Get_LightInnerAttenuation();
+			outerAttn = pSelectedLight->Get_LightOuterAttenuation();
+		}
+		else if (lightType == LIGHT_TYPE::POINT) {
+			innerAttn = pSelectedLight->Get_PointLightInnerAttenuation();
+			outerAttn = pSelectedLight->Get_PointLightOuterAttenuation();
+		}
 
 		const char* lightTypeNames[] = { "Directional", "Point", "Spot" };
 		int currentTypeIdx = static_cast<int>(lightType);
@@ -234,18 +243,22 @@ VOID CLightManager::UpdateGUI() {
 				pSelectedLight->Set_LightPosition(position);
 			}
 			// 범위 조절
-			if (ImGui::DragFloat("Range", &range, 0.1f, 0.0f, 1000.0f, "%.2f"))
+			if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 100.0f, "%.1f") && innerAttn < outerAttn)
 			{
-				pSelectedLight->Set_LightRange(range);
+				pSelectedLight->Set_PointLightInnerAttenuation(innerAttn);
+			}
+			if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 100.0f, "%.1f"))
+			{
+				pSelectedLight->Set_PointLightOuterAttenuation(outerAttn);
 			}
 		}
 
 		if (lightType == LIGHT_TYPE::SPOTLIGHT) {
-			if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 75.0f, "%.1f도") && innerAttn < outerAttn)
+			if (ImGui::SliderFloat("Inner Attenuation", &innerAttn, 0.0f, 75.0f, "%.1f") && innerAttn < outerAttn)
 			{
 				pSelectedLight->Set_LightInnerAttenuation(innerAttn);
 			}
-			if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 75.0f, "%.1f도"))
+			if (ImGui::SliderFloat("Outer Attenuation", &outerAttn, 0.0f, 75.0f, "%.1f"))
 			{
 				pSelectedLight->Set_LightOuterAttenuation(outerAttn);
 			}
@@ -501,7 +514,8 @@ HRESULT CLightManager::Render_ObjectShadow() {
 		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
 		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
 		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
+		LightBuffer.AffectedLight[LightCount].InnerAttanuation = LightOBJ->Get_PointLightInnerAttenuation();
+		LightBuffer.AffectedLight[LightCount].OuterAttanuation = LightOBJ->Get_PointLightOuterAttenuation();
 		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
 
 		LightBuffer.AffectedLight[LightCount].ShadowSlot = -1;
@@ -530,9 +544,15 @@ HRESULT CLightManager::Render_ObjectShadow() {
 		LightBuffer.AffectedLight[LightCount].LightRange		= LightOBJ->Get_LightRange();
 		LightBuffer.AffectedLight[LightCount].Position			= LightOBJ->Get_LightPosition();
 
-		LightBuffer.AffectedLight[LightCount].InnerAttanuation	= cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
-		LightBuffer.AffectedLight[LightCount].OuterAttanuation	= cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
-
+		if (bIsPointLight) {
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = LightOBJ->Get_PointLightInnerAttenuation();
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = LightOBJ->Get_PointLightOuterAttenuation();
+		}
+		else {
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+		}
+		
 		LightBuffer.AffectedLight[LightCount].ShadowSlot		= LightOBJ->Get_ShadowSlotNumb();
 
 		LightCount++;
@@ -598,7 +618,8 @@ HRESULT CLightManager::Render_ObjectNonShadow(){
 		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
 		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
 		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
+		LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightInnerAttenuation()));
+		LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightOuterAttenuation()));
 		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
 
 		LightBuffer.AffectedLight[LightCount].ShadowSlot = -1;
@@ -627,9 +648,14 @@ HRESULT CLightManager::Render_ObjectNonShadow(){
 		LightBuffer.AffectedLight[LightCount].LightRange = LightOBJ->Get_LightRange();
 		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
 
-		LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
-		LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
-
+		if (bIsPointLight) {
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightInnerAttenuation()));
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightOuterAttenuation()));
+		}
+		else {
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+		}
 		LightBuffer.AffectedLight[LightCount].ShadowSlot = -1;
 
 		LightCount++;
@@ -673,7 +699,7 @@ std::optional<CHandle> CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, 
 	m_LightHandleList.push_back(LightHandle.value());
 	return LightHandle;
 }
-std::optional<CHandle> CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range) {
+std::optional<CHandle> CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
 	CLight::DESC LDesc{};
 	// LSY 변경: 문자열 리터럴 포인터 연산을 제거하고 실제 인덱스 문자열로 태그를 만든다.
 	LDesc.sObjectTag =
@@ -690,7 +716,8 @@ std::optional<CHandle> CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT
 	LightOBJ->Set_LightPosition(_Position);
 	LightOBJ->Set_LightColor(_Color);
 	LightOBJ->Set_LightIntensity(_Intensity);
-	LightOBJ->Set_LightRange(_Range);
+	LightOBJ->Set_PointLightInnerAttenuation(_InnerRange);
+	LightOBJ->Set_PointLightOuterAttenuation(_OuterRange);
 
 	m_LightHandleList.push_back(LightHandle.value());
 	return LightHandle;
@@ -972,89 +999,55 @@ HRESULT CLightManager::Initialize_EffectLight(
 	return S_OK;
 }
 
-std::optional<CHandle>
-CLightManager::Allocate_EffectLight(
-	XMVECTOR _WorldPos,
-	_float _Intensity,
-	_float3 _Color,
-	_float _Range,
-	_float _LifeTime,
-	_float3 _Velocity)
-{
+std::optional<CHandle> CLightManager::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color,  _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity) {
 	// LSY 변경: 고정 상수가 아니라 현재 레벨에서 실제 생성된 풀 크기를 사용한다.
-	const size_t poolSize =
-		m_pEffectLightPool.size();
-	if (poolSize == 0)
-	{
-		DEBUG_LOG(
-			"[EffectLight] Allocation failed: "
-			"pool is empty.\n");
+	const size_t poolSize = m_pEffectLightPool.size();
+
+	if (poolSize == 0) {
+		DEBUG_LOG("[EffectLight] Allocation failed: pool is empty.\n");
 		return std::nullopt;
 	}
 
 	std::optional<CHandle> selectedHandle{};
-	CLight* selectedLight{};
+	CLight* selectedLight = nullptr;
 
-	for (size_t i = 0; i < poolSize; ++i)
-	{
+	for (size_t i = 0; i < poolSize; ++i) {
 		const size_t circularIndex =
-			(static_cast<size_t>(
-				m_iLastAllocatedIndex) +
-				1 + i) %
-			poolSize;
-		const auto& lightHandle =
-			m_pEffectLightPool[circularIndex];
+			(static_cast<size_t>(m_iLastAllocatedIndex) + 1 + i) % poolSize;
+
+		const auto& lightHandle = m_pEffectLightPool[circularIndex];
 		if (!lightHandle)
 			continue;
 
-		CLight* light = CGameInstance::Get().
-			GetGameObjectByHandleT<CLight>(
-				*lightHandle);
-		if (!light ||
-			light->Get_LightActivateState())
-		{
+		auto* light = CGameInstance::Get()
+			.GetGameObjectByHandleT<CLight>(*lightHandle);
+
+		if (!light || light->Get_LightActivateState())
 			continue;
-		}
 
 		selectedHandle = *lightHandle;
 		selectedLight = light;
-		m_iLastAllocatedIndex =
-			static_cast<uint32_t>(
-				circularIndex);
+		m_iLastAllocatedIndex = static_cast<uint32_t>(circularIndex);
 		break;
 	}
 
-	// LSY 변경: 사용 가능한 슬롯이 없을 때 기존 활성 라이트의 데이터를
-	// 덮어쓰지 않고 명확하게 할당 실패를 반환한다.
-	if (!selectedHandle || !selectedLight)
-	{
-		DEBUG_LOG(
-			"[EffectLight] Allocation failed: "
-			"no inactive light is available.\n");
+	if (!selectedHandle || !selectedLight) {
+		DEBUG_LOG("[EffectLight] Allocation failed: no inactive light is available.\n");
 		return std::nullopt;
 	}
 
 	XMFLOAT3 worldPosition{};
-	XMStoreFloat3(
-		&worldPosition,
-		_WorldPos);
+	XMStoreFloat3(&worldPosition, _WorldPos);
 
-	selectedLight->Set_LightPosition(
-		worldPosition);
-	selectedLight->Set_LightIntensity(
-		_Intensity);
-	selectedLight->Set_LightColor(
-		_Color);
-	selectedLight->Set_LightRange(
-		_Range);
-	selectedLight->Set_LightLifeTime(
-		_LifeTime);
-	selectedLight->Set_LightVelocity(
-		_Velocity);
+	selectedLight->Set_LightPosition(worldPosition);
+	selectedLight->Set_LightIntensity(_Intensity);
+	selectedLight->Set_LightColor(_Color);
+	selectedLight->Set_PointLightInnerAttenuation(_InnerRange);
+	selectedLight->Set_PointLightOuterAttenuation(_OuterRange);
+	selectedLight->Set_LightLifeTime(_LifeTime);
+	selectedLight->Set_LightVelocity(_Velocity);
 
-	// 모든 런타임 데이터를 적용한 후 렌더 대상으로 활성화한다.
-	selectedLight->Set_LightActivateState(
-		true);
+	selectedLight->Set_LightActivateState(true);
 
 	return selectedHandle;
 }

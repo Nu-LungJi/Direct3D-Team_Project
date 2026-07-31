@@ -60,7 +60,7 @@ private:
 	_bool m_bEditMode{};
 	_bool m_bVisible{ true };
 	_bool m_bDepthTest{ true };
-	_bool m_bShowAllLights{ true };
+	_bool m_bShowAllLights{};
 	_bool m_bShowInfluenceRange{ true };
 	_bool m_bShowDirection{ true };
 	_bool m_bShowEffectLights{ true };

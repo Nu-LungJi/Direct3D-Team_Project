@@ -43,8 +43,9 @@ private:
 protected:
 	void				DragFloat(const _char* pName, _float& fValue);
 	void				BoolButton(const _char* pName, _bool& bButton);
+	
 protected:
-	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bEarly{ false }, m_bGravity{ false };
+	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bEarly{ false }, m_bGravity{ false }, m_bShow{ false };
 
 	ATTMON						m_eSkillType{ ATTMON::END };
 	_float2						m_fSkillRatio{}, m_fRatio{};
@@ -52,6 +53,7 @@ protected:
 	uint32_t					m_iLoopCnt{ 0 };
 	std::vector<FLAG_EVENT>		m_StartFlags{};
 	std::vector<FLAG_EVENT>		m_EndFlags{};
+	_string						m_strAnimName{};
 private:
 	uint32_t					m_iStartFlagCheck{};
 	FLAG_EVENT					m_AddFlag{};

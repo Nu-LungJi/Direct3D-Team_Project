@@ -205,6 +205,16 @@ HRESULT CCameraManager::RegistCamera(const StringID& CameraID, const CHandle& ha
 	return S_OK;
 }
 
+void CCameraManager::SetCinematicCollisionQueryMask(uint32_t iQueryMask)
+{
+	if (m_pCinematicSystem == nullptr)
+	{
+		return;
+	}
+
+	m_pCinematicSystem->SetCollisionQueryMask(iQueryMask);
+}
+
 #pragma region CINEMATIC
 
 HRESULT CCameraManager::BeginCinematicCamera()
@@ -253,14 +263,34 @@ HRESULT CCameraManager::LoadCinematic(
 	return m_pCinematicSystem->Load(CinematicName);
 }
 
-HRESULT CCameraManager::PlayCinematic(const StringID& CinematicID)
+HRESULT CCameraManager::PlayCinematic(
+	const StringID& CinematicID,
+	const FCinematicPlayOptions& Options)
 {
 	if (!m_pCinematicSystem)
 	{
 		return E_FAIL;
 	}
 
-	return m_pCinematicSystem->Play(CinematicID);
+	return m_pCinematicSystem->Play(
+		CinematicID,
+		Options);
+}
+
+HRESULT CCameraManager::PlayCinematic(
+	const StringID& CinematicID,
+	const CHandle& TargetHandle,
+	const FCinematicPlayOptions& Options)
+{
+	if (!m_pCinematicSystem)
+	{
+		return E_FAIL;
+	}
+
+	return m_pCinematicSystem->Play(
+		CinematicID,
+		TargetHandle,
+		Options);
 }
 
 void CCameraManager::StopCinematic()

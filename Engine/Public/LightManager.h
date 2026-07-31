@@ -40,7 +40,7 @@ public:
 	HRESULT	Render_ObjectNonShadow();
 
 	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
-	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
+	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange);
 	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
 	// LSY 변경: 배치 라이트를 핸들/레벨 그룹 단위로 관리하기 위한 API다.
 	_bool	Remove_Light(const CHandle& hLight);
@@ -69,7 +69,7 @@ public:
 
 public:		// Effect Light Fuction
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
-	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
 
 	HRESULT Reset_EffectLight(const std::optional<CHandle>& _Handle);
 	HRESULT Reset_AllEffectLight();

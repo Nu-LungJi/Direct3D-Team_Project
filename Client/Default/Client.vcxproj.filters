@@ -67,6 +67,9 @@
     <Filter Include="GameObject\Terrain\RagdollTest">
       <UniqueIdentifier>{575385ef-b304-4d49-8f19-86b890c8e7b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\NvClothCape">
+      <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Camera">
       <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
     </Filter>
@@ -184,6 +187,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State">
       <UniqueIdentifier>{01e89d2b-fc0c-4cb6-9514-7970ddfc1929}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State">
+      <UniqueIdentifier>{6207f242-1cbc-4fa1-ab93-c358c2d2a589}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State">
       <UniqueIdentifier>{57c915ba-5887-48a0-b19f-15e26e1f248e}</UniqueIdentifier>
     </Filter>
@@ -219,6 +225,12 @@
     </Filter>
     <Filter Include="GameObject\Player\Player_Magic_Bullet">
       <UniqueIdentifier>{15e1e341-898d-42a9-b6c0-d22c4c66ba61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Hit_State">
+      <UniqueIdentifier>{d0adaf33-4a64-494f-9581-a01e2aa4035f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Effect">
+      <UniqueIdentifier>{1d4dcef1-d0db-4ee2-99d1-8e63dd2b61d9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -468,6 +480,9 @@
     <ClInclude Include="..\Public\Player_DepulsoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_RevelioSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_DescendoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
     </ClInclude>
@@ -482,6 +497,9 @@
     </ClInclude>
     <ClInclude Include="..\public\RagdollTest.h">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\NvClothCape.h">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
@@ -515,6 +533,15 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Magic_Bullet.h">
       <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Hit_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecIsPending.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MonEffect.h">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -738,6 +765,9 @@
     <ClCompile Include="..\private\RagdollTest.cpp">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\NvClothCape.cpp">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
     </ClCompile>
@@ -749,6 +779,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
@@ -764,6 +797,18 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Magic_Bullet.cpp">
       <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Hit_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecIsPending.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecHitCnt.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MonEffect.cpp">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -836,5 +881,8 @@
     <ClCompile Include="..\Private\UIController.cpp">
       <Filter>GameObject\UI\UIController</Filter>
     </ClCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

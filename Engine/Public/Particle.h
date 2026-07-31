@@ -25,7 +25,7 @@ public:
 		BEHAVIOR_LIGHTNING			= 1 << 9,
 		BEHAVIOR_SIZESTOP			= 1 << 10,
 		BEHAVIOR_EXTRALIGHTNING		= 1 << 11,
-		BEHAVIOR_KEEPROTATE				= 1 << 12,
+		BEHAVIOR_KEEPROTATE			= 1 << 12,
 	};
 
 protected:

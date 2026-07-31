@@ -60,87 +60,89 @@ HRESULT CBTComposite::Add_Node(uint32_t iIndex, UPtr<CBTRoot> pNode)
 
 nlohmann::json CBTComposite::Save_Node()
 {
-	size_t iCnt(0);
+	std::vector<UPtr<CBTRoot>> compactActions;
+	std::vector<DEST_NODE> compactSlots;
+
+	compactActions.reserve(m_Actions.size());
+	compactSlots.reserve(m_Actions.size());
+
+	for (auto& pAction : m_Actions)
+	{
+		if (pAction == nullptr)
+			continue;
+
+		const size_t iNewIndex = compactActions.size();
+
+		pAction->Get_GuiNodeLink().ParentNode = m_GuiNode.Get_DestInfo();
+		pAction->Get_GuiNodeLink().iStartIdx = static_cast<int32_t>(iNewIndex);
+
+		compactSlots.push_back(pAction->Get_GuiNodeInfo().Get_DestInfo());
+		compactActions.push_back(std::move(pAction));
+	}
+
+	m_Actions = std::move(compactActions);
+	m_GuiLink.SlotEnd = std::move(compactSlots);
+
 	nlohmann::json j = __super::Save_Node();
-	for (auto iter = m_Actions.begin(); iter != m_Actions.end();)
-	{
-		if ((*iter) == nullptr)
-		{
-			iter = m_Actions.erase(iter);
-			continue;
-		}
-		++iter;
-	}
-	for (auto iter = m_GuiLink.SlotEnd.begin(); iter != m_GuiLink.SlotEnd.end();)
-	{
-		if ((*iter).iDestNode == -1)
-		{
-			iter = m_GuiLink.SlotEnd.erase(iter);
-			continue;
-		}
-		++iter;
-	}
-	for (size_t i = 0; i < m_Actions.size(); ++i)
-	{
-		m_Actions[i]->Get_GuiNodeLink().ParentNode = m_GuiNode.Get_DestInfo();
-		m_Actions[i]->Get_GuiNodeLink().iStartIdx = i;
-	}
 
 	for (size_t i = 0; i < m_GuiLink.SlotEnd.size(); ++i)
 	{
-		_string DestSlotName = "LinkEndSlotName" + std::to_string(iCnt);
-		_string DestID = "LinkEndSlotID" + std::to_string(iCnt);
-		_string SlotNameEnum = "LinkEndSlotType" + std::to_string(iCnt);
-		JsonSaveLoadManager::SaveJsonTypeString(j, DestSlotName, m_GuiLink.SlotEnd[i].DestName);
-		SaveJsonValue(j, DestID, m_GuiLink.SlotEnd[i].iDestNode);
-		SaveJsonEnum(j, SlotNameEnum, m_GuiLink.SlotEnd[i].eType);
-		++iCnt;
-	
+		const _string destSlotName = "LinkEndSlotName" + std::to_string(i);
+		const _string destID = "LinkEndSlotID" + std::to_string(i);
+		const _string slotType = "LinkEndSlotType" + std::to_string(i);
+
+		JsonSaveLoadManager::SaveJsonTypeString(
+			j, destSlotName, m_GuiLink.SlotEnd[i].DestName);
+		SaveJsonValue(j, destID, m_GuiLink.SlotEnd[i].iDestNode);
+		SaveJsonEnum(j, slotType, m_GuiLink.SlotEnd[i].eType);
 	}
-	j["GuiLink_SlotSize"] = iCnt;
-	iCnt = 0;
-	for (auto& iter : m_Actions)
-	{
-		if (iter != nullptr)
-		{
-			j["Child"].push_back(iter->Save_Node());
-			++iCnt;
-		}
-	}
-	j["Size"] = iCnt;
+
+	j["GuiLink_SlotSize"] = m_GuiLink.SlotEnd.size();
+	j["Child"] = nlohmann::json::array();
+
+	for (auto& pAction : m_Actions)
+		j["Child"].push_back(pAction->Save_Node());
+
+	j["Size"] = m_Actions.size();
 	return j;
 }
 HRESULT		CBTComposite::Load_json(const nlohmann::json& j)
 {
-	__super::Load_json(j);
-	size_t iSlotSize = j["GuiLink_SlotSize"];
-	m_GuiLink.SlotEnd.resize(iSlotSize);
-	for (size_t i = 0; i < iSlotSize; ++i)
-	{
-		_string DestSlotName = "LinkEndSlotName" + std::to_string(i);
-		_string DestID = "LinkEndSlotID" + std::to_string(i);
-		_string SlotNameEnum = "LinkEndSlotType" + std::to_string(i);
-		JsonSaveLoadManager::LoadJsonTypeString(j, DestSlotName, m_GuiLink.SlotEnd[i].DestName);
-		LoadJsonValue(j, DestID, m_GuiLink.SlotEnd[i].iDestNode);
-		LoadJsonEnum(j, SlotNameEnum, m_GuiLink.SlotEnd[i].eType);
-	}
-	size_t iArraySize = j["Size"];
+	if (FAILED(__super::Load_json(j)))
+		return E_FAIL;
+
+	const size_t iArraySize = j["Size"];
+
+	m_Actions.clear();
+	m_GuiLink.SlotEnd.clear();
 	m_Actions.resize(iArraySize);
+	m_GuiLink.SlotEnd.resize(iArraySize);
 
-	for (size_t i =0; i < iArraySize; ++i)
+	for (size_t i = 0; i < iArraySize; ++i)
 	{
-		_string MasterName{}; 
-		NODEGROUP eGroup{}; 
-		if (JsonSaveLoadManager::LoadJsonTypeString(j["Child"][i], "MasterName", MasterName))
-		{
-			if (LoadJsonEnum(j["Child"][i], "Group", eGroup))
-			{
-				auto pSrc = engine_uptr_cast<CBTRoot>(CGameInstance::Get().ClonePrototype(eGroup, MasterName, nullptr));
-				pSrc->Load_json(j["Child"][i]);
-				m_Actions[i] = std::move(pSrc);
-			}
+		_string masterName{};
+		NODEGROUP eGroup{};
 
-		}
+		if (!JsonSaveLoadManager::LoadJsonTypeString(
+				j["Child"][i], "MasterName", masterName))
+			continue;
+
+		if (!LoadJsonEnum(j["Child"][i], "Group", eGroup))
+			continue;
+
+		auto pChild = engine_uptr_cast<CBTRoot>(
+			CGameInstance::Get().ClonePrototype(eGroup, masterName, nullptr));
+
+		if (pChild == nullptr)
+			continue;
+
+		if (FAILED(pChild->Load_json(j["Child"][i])))
+			continue;
+
+		pChild->Get_GuiNodeLink().ParentNode = m_GuiNode.Get_DestInfo();
+		pChild->Get_GuiNodeLink().iStartIdx = static_cast<int32_t>(i);
+		m_GuiLink.SlotEnd[i] = pChild->Get_GuiNodeInfo().Get_DestInfo();
+		m_Actions[i] = std::move(pChild);
 	}
 	return S_OK;
 }

@@ -19,7 +19,9 @@
 #include "ComPxRigidBody.h"
 #include "OilBarrel.h"
 #include "RagdollTest.h"
+#include "NvClothCape.h"
 
+#include "BossTMB.h"
 #include "TmbGurdian.h"
 #include "AmbientSound3DObject.h"
 #include "LightPlacementObject.h"
@@ -97,6 +99,39 @@ HRESULT CLevelTerrain::Initialize()
 	if (!hPlayer)
 		return E_FAIL;
 
+	{
+		CNvClothCape::DESC Desc{};
+		Desc.sObjectTag = "NvClothCape";
+		Desc.hTarget = *hPlayer;
+		Desc.sResourceGroup = LEVEL::TERRAIN;
+		Desc.sModelResourceTag =
+			"PLAYER_CAPE_MODEL_RESOURCE";
+		Desc.sClothMeshResourceTag =
+			"PLAYER_CAPE_CLOTH_RESOURCE";
+		Desc.sTargetModelComponentTag =
+			"ComCModelIntance";
+		Desc.sAttachBoneName =
+			"Spine3";
+		Desc.vLocalPosition =
+			{ 0.05f, 0.08f, 0.f };
+		E::CGameInstance::Get().JsonDeSerialize(
+			"./Resources/NvCloth/CollisionRigs/"
+			"ProfessorCape.nvclothcollision.json",
+			Desc.tBodyCollisionRig,
+			E::NVCLOTH_COLLISION_RIG_ROOT,
+			false);
+		if (!E::CGameInstance::Get().
+			AddGameObjectToLayer(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::
+					Prototype_GameObject_NvClothCape,
+				"03_Player",
+				&Desc))
+		{
+			return E_FAIL;
+		}
+	}
+
 	if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
 		return E_FAIL;
 
@@ -126,6 +161,8 @@ HRESULT CLevelTerrain::Initialize()
 			&desc);
 	}
 
+	if (FAILED(SpawnMonster(hPlayer)))
+		return E_FAIL;
 	return S_OK;
 }
 
@@ -167,15 +204,15 @@ HRESULT CLevelTerrain::InitializeJointTests(
 	tHeadJointDesc.bVisualizationEnabled = true;
 	tHeadJointDesc.iJointSubIndex = 100u;
 
-	CComPxDistanceJoint* pHeadJoint =
-		gameInstance.AddPxJoint<CComPxDistanceJoint>(
-			*pPlayer,
-			"ComPxDistanceJoint_OilBarrelHead",
-			tHeadJointDesc);
-	if (!pHeadJoint)
-	{
-		return E_FAIL;
-	}
+	//CComPxDistanceJoint* pHeadJoint =
+	//	gameInstance.AddPxJoint<CComPxDistanceJoint>(
+	//		*pPlayer,
+	//		"ComPxDistanceJoint_OilBarrelHead",
+	//		tHeadJointDesc);
+	//if (!pHeadJoint)
+	//{
+	//	return E_FAIL;
+	//}
 
 	for (size_t i = 0; i + 1 < pOilBarrels.size(); ++i)
 	{
@@ -535,7 +572,22 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 
 
 	
+	{
+		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.sObjectTag = "BossTmb";
+		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(5, 5, 5, 1));
+		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
 
+		if (!BossTmb)
+		{
+			MSG_BOX("Create BossTmb Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	
 
 	
@@ -567,7 +619,7 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 		Desc.vEye = { 0.f, 0.f, -5.f };
 		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
 		Desc.fFovY = 75.f;
-		Desc.fNear = 0.1f;
+		Desc.fNear = 0.01f;
 		Desc.fFar = 100.f;
 		Desc.sObjectTag = "FlyCam";
 
@@ -581,18 +633,28 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 			CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
+	
+	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
+{
 	{
 		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
 		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
 		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
 		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
 		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
 		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-
+	
 		if (!BossTmb)
 		{
 			MSG_BOX("Create TmbGurdian Failed in Rookwood");
@@ -615,6 +677,27 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 		}
 	}
 
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(3.f, 3.f, 3.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+	
+		if (!BossTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
+	
 	return S_OK;
 }
 

@@ -20,6 +20,8 @@ public:
 	HRESULT					 Load_json(const nlohmann::json& j) override;
 	EVALUATE				 Evaluate(_float fTimeDelta) override;
 	virtual void			 Update_Gui() override;
+private:
+	
 public:
 	static UPtr<CBTDamage> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

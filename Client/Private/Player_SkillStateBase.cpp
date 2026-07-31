@@ -7,6 +7,7 @@
 #include "ComAnimator.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
+#include "Monster.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
 
@@ -66,7 +67,7 @@ _bool CPlayer_SkillStateBase::HasTarget(const CPlayer& player) const
 	return fDistanceSq > std::numeric_limits<_float>::epsilon() && fDistanceSq <= TARGET_MAX_DISTANCE * TARGET_MAX_DISTANCE;
 }
 
-_bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player) const
+_bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player)
 {
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
 		player.GetTargetHandle());
@@ -105,6 +106,15 @@ _bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player) const
 	const _float fCameraDot =XMVectorGetX(XMVector3Dot(vCameraLook, vToTarget));
 
 	return fPlayerDot >= TARGET_FRONT_DOT_THRESHOLD && fCameraDot >= TARGET_FRONT_DOT_THRESHOLD;
+}
+
+_bool CPlayer_SkillStateBase::TryApplySkillToTarget(
+	CPlayer& player,
+	PLAYER_SKILL_TYPE eSkillType) const
+{
+	auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(
+		player.GetTargetHandle());
+	return pMonster && pMonster->Check_Table(eSkillType);
 }
 
 void CPlayer_SkillStateBase::CacheDirectionalAttackAnimations(const CPlayer& player)

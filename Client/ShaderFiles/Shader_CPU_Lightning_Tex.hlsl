@@ -158,33 +158,32 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 	
-	float4 NoiseTex		 = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
-	float  Ratio		 = saturate(In.life / max(In.maxLife, 0.0001f));
-	float4 Emissive		 = lerp(In.vEmissive, In.vEndEmissive, Ratio);
+	float Ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4 Emissive = lerp(In.vEmissive, In.vEndEmissive, Ratio);
 	
 	[branch]
 	if ((In.iBehaviorType & BEHAVIOR_DISTORTION) != 0)
 	{
-		float2 ScrollUV		= In.vTexcoord + float2(Ratio * 0.002f, Ratio * -0.025f);
-		float4 DistortTex	= g_DistortionTexture.Sample(LinearWrap, ScrollUV);
+		float2 ScrollUV = In.vTexcoord + float2(Ratio * 0.002f, Ratio * -0.025f);
+		float4 DistortTex = g_DistortionTexture.Sample(LinearWrap, ScrollUV);
 
-		float2 Offset		= (DistortTex.rg - 0.5f) * 2.f * DistortionSTR;
+		float2 Offset = (DistortTex.rg - 0.5f) * 2.f * DistortionSTR;
 			
-		float  Jittering  = Jitter(Ratio);
+		float Jittering = Jitter(Ratio);
 		float2 DissolveTiling = float2(8.f, 15.f);
 		float2 DissolveUV = ScrollUV + Offset * 0.3f * float2(Jittering, Jittering);
 		
 		float4 DissolveTex = g_NoiseTexture.Sample(LinearWrap, DissolveUV * DissolveTiling);
 		
-		DissolveTex.r = pow(DissolveTex.r, 1.5f); 
-		
+		DissolveTex.r = pow(DissolveTex.r, 1.5f);
+		//float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
 		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
 		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
 		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
 		
 		float DissolveMask = FinalColor.a;
 
-		float FadeInDuration = 0.08f;		// 시작 후, N초
+		float FadeInDuration = 0.08f; // 시작 후, N초
 		float FadeOutDuration = In.maxLife; // 종료 전, N초
 		
 		float FadeInRatio = saturate(FadeInDuration / In.maxLife);
@@ -193,6 +192,7 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 		float FadeOutStart = 1.f - FadeOutRatio;
 
 		float DissolveProgress = 0.f;
+
 		
 		[branch]
 		if (Ratio < FadeInRatio)
@@ -207,7 +207,7 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 		{
 			DissolveProgress = 0.f;
 		}
-		DissolveProgress *= 2.f;
+		DissolveProgress *= 2.2f;
 		clip(DissolveMask - 0.3f);
 		clip(FinalColor.r - DissolveProgress);
 		
@@ -222,9 +222,9 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.rrr + Emissive.rgb, vFinalColor.r * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.rrr / 2.f + Emissive.rgb, vFinalColor.r * In.vColor.a);
 	}
- 
+	
 	return Out;
 }
 
@@ -250,7 +250,6 @@ PS_OUT PSMain_GChannel(VS_OUT In)
 		float4 DissolveTex = g_NoiseTexture.Sample(LinearWrap, DissolveUV * DissolveTiling);
 		
 		DissolveTex.r = pow(DissolveTex.r, 1.5f);
-		//float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
 		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
 		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
 		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
@@ -290,12 +289,12 @@ PS_OUT PSMain_GChannel(VS_OUT In)
 			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
 		}
 
-		Out.vDiffuse = float4(FinalColor.ggg / 2.f + Emissive.rgb, FinalColor.g * In.vColor.a);
+		Out.vDiffuse = float4(FinalColor.ggg / 2.f + Emissive.rgb * EmissiveIntensity, FinalColor.g * In.vColor.a);
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.ggg / 2.f + Emissive.rgb, vFinalColor.g * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.ggg / 2.f + Emissive.rgb * EmissiveIntensity, vFinalColor.g * In.vColor.a);
 	}
  
 	return Out;
@@ -305,7 +304,6 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 	
-	float4 NoiseTex = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
 	float Ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float4 Emissive = lerp(In.vEmissive, In.vEndEmissive, Ratio);
 	
@@ -316,20 +314,19 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		float4 DistortTex = g_DistortionTexture.Sample(LinearWrap, ScrollUV);
 
 		float2 Offset = (DistortTex.rg - 0.5f) * 2.f * DistortionSTR;
-		
+			
 		float Jittering = Jitter(Ratio);
 		float2 DissolveTiling = float2(8.f, 15.f);
 		float2 DissolveUV = ScrollUV + Offset * 0.3f * float2(Jittering, Jittering);
 		
 		float4 DissolveTex = g_NoiseTexture.Sample(LinearWrap, DissolveUV * DissolveTiling);
 		
-		DissolveTex.b = pow(DissolveTex.b, 1.5f);
-		
+		DissolveTex.r = pow(DissolveTex.r, 1.5f);
+		//float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord * float2(1.f, smoothstep(0.0, 0.2, In.vTexcoord.y) * (1 - smoothstep(0.8, 1.f, In.vTexcoord.y)) + In.life * 0.5f));
 		float DiffuseMask = (1.f - (In.vTexcoord.y - Ratio * 0.05f)) * smoothstep(0.0f, 0.5f, Ratio);
 		float DiffuseUVY = In.vTexcoord.y - DiffuseMask * PressingValue;
 		float4 FinalColor = g_DiffuseTexture.Sample(LinearClamp, float2(In.vTexcoord.x, DiffuseUVY + Offset.y));
 		
-		float CleanB = smoothstep(0.05f, 0.95f, FinalColor.b);
 		float DissolveMask = FinalColor.a;
 
 		float FadeInDuration = 0.08f; // 시작 후, N초
@@ -345,7 +342,7 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		[branch]
 		if (Ratio < FadeInRatio)
 		{
-			DissolveProgress = 1.f - (Ratio / Ratio);
+			DissolveProgress = 1.f - (Ratio / FadeInRatio);
 		}
 		else if (Ratio > FadeOutStart)
 		{
@@ -355,23 +352,22 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 		{
 			DissolveProgress = 0.f;
 		}
-		
-		DissolveProgress *= 2.5f;
+		DissolveProgress *= 2.2f;
 		clip(DissolveMask - 0.3f);
-		clip(CleanB - DissolveProgress);
+		clip(FinalColor.b - DissolveProgress);
 		
-		if (DissolveProgress > 0.001f && (CleanB - DissolveProgress < EdgeWidth))
+		if (DissolveProgress > 0.001f && (FinalColor.b - DissolveProgress < EdgeWidth))
 		{
-			float EdgeGlow = 1.0f - saturate((CleanB - DissolveProgress) / EdgeWidth);
+			float EdgeGlow = 1.0f - saturate((FinalColor.b - DissolveProgress) / EdgeWidth);
 			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
 		}
-		 
-		Out.vDiffuse = float4(CleanB.rrr / 2.f + Emissive.rgb, CleanB * In.vColor.a);
+
+		Out.vDiffuse = float4(FinalColor.bbb / 2.f + Emissive.rgb * EmissiveIntensity, FinalColor.b * In.vColor.a);
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.bbb + Emissive.rgb, vFinalColor.b * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.bbb / 2.f + Emissive.rgb * EmissiveIntensity, vFinalColor.b * In.vColor.a);
 	}
  
 	return Out;
@@ -379,7 +375,7 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 
 PS_OUT PSMain_ExtraLightning(VS_OUT In)
 {
-	PS_OUT Out = (PS_OUT) 0; 
+	PS_OUT Out = (PS_OUT) 0;
 
 	float2	ScrollUVA  = In.vTexcoord * float2(1.f, BranchDensity) + float2(+In.life * 2.f, In.life * 12.f);
 	float2	ScrollUVB  = In.vTexcoord * float2(1.f, BranchDensity) + float2(-In.life * 3.f, In.life * 18.f);

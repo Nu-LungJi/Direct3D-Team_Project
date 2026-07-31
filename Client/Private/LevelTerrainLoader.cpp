@@ -6,6 +6,8 @@
 #include "Client_Resources.h"
 #include "OilBarrel.h"
 #include "RagdollTest.h"
+#include "NvClothCape.h"
+#include "ResNvClothMesh.h"
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
@@ -14,12 +16,18 @@
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
 #include "Mon_Weapon.h"
+#include "BossTMB.h"
 NS_USING(Client)
 
 std::future<bool> CLevelTerrainLoader::Load()
 {
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_TERRAIN", []()
 		{
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
+
 			// oilbarrel
 			{
 				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::TERRAIN, "Static_OilBarrel_Resource",
@@ -51,6 +59,73 @@ std::future<bool> CLevelTerrainLoader::Load()
 				return false;
 			}
 
+			{
+				constexpr char CAPE_MODEL_PATH[] =
+					"./Resources/SampleClient/Models/Skeleton/clothes/SK_clothes.bin";
+				const _matrix CapePreTransform =
+					XMMatrixScaling(3.f, 3.f, 3.f) *
+					XMMatrixRotationY(
+						XMConvertToRadians(180.f)) *
+					XMMatrixTranslation(0.f, -1.5f, 0.f);
+
+				if (auto res =
+					CGameInstance::Get().
+					AddResourceT<CResModel>(
+						LEVEL::TERRAIN,
+						"PLAYER_CAPE_MODEL_RESOURCE",
+						CResModel::Create(
+							CAPE_MODEL_PATH)))
+				{
+					CResModel::DESC Desc{};
+					Desc.PreTransformMatrix =
+						CapePreTransform;
+					if (FAILED(res->Load(Desc)))
+					{
+						MSG_BOX(
+							"TERRAIN Failed PLAYER_CAPE_MODEL_RESOURCE");
+						return false;
+					}
+				}
+
+				if (auto res =
+					CGameInstance::Get().
+					AddResourceT<CResNvClothMesh>(
+						LEVEL::TERRAIN,
+						"PLAYER_CAPE_CLOTH_RESOURCE",
+						CResNvClothMesh::Create(
+							CAPE_MODEL_PATH)))
+				{
+					CResNvClothMesh::DESC Desc{};
+					Desc.PreTransformMatrix =
+						CapePreTransform;
+					Desc.sSimulationAnchorBone =
+						"Spine3";
+					Desc.iSimulationMeshIndex = 0;
+					Desc.iRenderMeshIndex = 1;
+					Desc.fWeldTolerance = 1.e-5f;
+					Desc.fFixedTopRatio = 0.1f;
+					if (FAILED(res->Load(Desc)))
+					{
+						MSG_BOX(
+							"TERRAIN Failed PLAYER_CAPE_CLOTH_RESOURCE");
+						return false;
+					}
+				}
+
+				if (FAILED(
+					E::CGameInstance::Get().
+					AddPrototype(
+						LEVEL::TERRAIN,
+						PROTO_GAMEOBJECT::
+							Prototype_GameObject_NvClothCape,
+						CNvClothCape::Create())))
+				{
+					MSG_BOX(
+						"TERRAIN Failed Prototype_GameObject_NvClothCape");
+					return false;
+				}
+			}
+
 			// terrain
 			{
 				if (auto res = CGameInstance::Get().AddResource(LEVEL::TERRAIN, "TEX2D_Terrain_Tile0", CResTexture2D::Create("./Resources/SampleClient/Textures/Terrain/Tile0.dds")))
@@ -70,15 +145,33 @@ std::future<bool> CLevelTerrainLoader::Load()
 					}
 				}
 
-				if (FAILED(E::CGameInstance::Get().AddPrototype(
-					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Terrain, CTerrain::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Terrain, CTerrain::Create())))
 				{
 					MSG_BOX("TERRAIN Failed Prototype_GameObject_Terrain");
 					return false;
 				}
 			}
 
+			//TombBos
+			{
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Model_Resource_TombProtector",
+					CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin")))
+				{
+					E::CResModel::DESC pDesc{};
+					pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+					if (FAILED(res->Load(pDesc)))
+					{
+						MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TombProtector");
+						return false;
+					}
+				}
 
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
+					return false;
+				}
+			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
@@ -179,9 +272,26 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 					}
 				}
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Sword",
+					CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
+
+					E::CResStaticModel::DESC pDesc{};
+					pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+					if (FAILED(res->Load(pDesc)))
+					{
+						MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
+						return false;
+					}
+				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
+					return false;
+				}
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
 					return false;
 				}
 			}

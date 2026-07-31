@@ -47,8 +47,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			.iQueryMask = PX_ALL_LAYERS
 		};
-
 		StringID LevelTag;
+		CHandle  UIHandle;
 	};
 
 private:
@@ -84,6 +84,7 @@ public:
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
 	CHandle GetTargetHandle() const { return m_hAutoTarget; }
+	CHandle GetUIControllerHandle() const { return m_UIHandle; }
 	PLAYER_SKILL_TYPE GetPlayerCurSkill() const { return m_eSkill_Type; }
 
 	void SetPlayerCurSKill(PLAYER_SKILL_TYPE _Skill_Type) { m_eSkill_Type = _Skill_Type; }
@@ -95,7 +96,10 @@ public:
 		const _float3& vDirection,
 		_float fSpeed,
 		_float fTimeDelta);
+	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
+	void InitializeSkillSlotUI();
+	_bool TryUseSkillSlot(uint32_t iSlotNumber);
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
@@ -134,8 +138,10 @@ private:
 	_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };
 	_float	m_fEmissiveIntensity = 0.f;
 
+	_float3 m_vInitialPosition{};
+
 	uint32_t m_iDebugSelectedBone = 0;
-	uint32_t m_iCurrentInstanceCount = 0.f;
+	uint32_t m_iCurrentInstanceCount = 0;
 	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
 
 private:
@@ -170,6 +176,9 @@ private:
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
 	_float m_fSprintDirectionResponse{ 4.5f };
+	_float m_fGroundFollowProbeStartHeight{ 0.1f };
+	_float m_fGroundFollowMaxStepDown{ 0.5f };
+	_float m_fGroundFollowProbeRadius{ 0.2f };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.
@@ -181,7 +190,10 @@ private:
 private:
 	CHandle m_hAutoTarget;
 	StringID m_LevelTag;
-	
+private:
+	CHandle m_UIHandle;
+	_bool m_bSkillSlotUIInitialized{ false };
+
 private:
 	PLAYER_SKILL_TYPE m_eSkill_Type;
 private:
@@ -189,6 +201,20 @@ private:
 
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
+
+private:
+	_float m_fCoolTime_Num1{ 0.f };
+	_bool m_bCoolTime_Num1{ false};
+	_float m_fCoolTime_Num2{ 0.f };
+	_bool m_bCoolTime_Num2{ false };
+	_float m_fCoolTime_Num3{ 0.f };
+	_bool m_bCoolTime_Num3{ false };
+	_float m_fCoolTime_Num4{ 0.f };
+	_bool m_bCoolTime_Num4{ false };
+
+private:
+	_bool  m_bUI = false;
+	CHandle m_hUI;
 
 public:
 	static E::UPtr<CPlayer> Create();

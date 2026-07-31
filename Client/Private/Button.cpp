@@ -220,7 +220,7 @@ void CButton::PlayEffect(uint32_t uiState)
 
 		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
 		{
-			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab("0SpellDesc");
+			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab("SpellDesc");
 			m_SpellDesc = vSpellDesc[0];
 			m_SpellPaper = vSpellDesc[1];
 		}

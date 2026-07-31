@@ -91,18 +91,27 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 
 	CUIObject::LateUpdate(fTimeDelta);
 
-	//E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
-	//GetTransform().Update();
+	// 쉐이더 분기
+	if (m_UIINFO.Restag == "TEX_VFX_T_TMB_SmokeWispy_D")
+	{
+		m_VSShaderTag = "VS_TwoTone";
+		m_PSShaderTag = "PS_TwoTone";
+	}
+	else
+	{
+		m_VSShaderTag = "VS_QuadTexFlipBook";
+		m_PSShaderTag = "PS_QuadTexFlipBook";
+	}
+		
 }
 
 HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
-	//std::string currentLevel = "LEVEL_UIEDITOR";
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
 	//VS_QuadTex
-	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexFlipBook");
-	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexFlipBook");
+	const auto& vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, m_VSShaderTag);
+	const auto& ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, m_PSShaderTag);
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());

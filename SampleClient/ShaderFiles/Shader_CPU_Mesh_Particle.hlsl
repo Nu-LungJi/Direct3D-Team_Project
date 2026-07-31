@@ -5,6 +5,12 @@
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
+cbuffer CB_TIMEACCUMULATION : register(b11)
+{
+	float g_fAccumulationTime;
+	float3 _pad;
+};
+
 struct VS_IN
 {
 	float3 vPosition : POSITION;

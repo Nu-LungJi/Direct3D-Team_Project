@@ -4,6 +4,7 @@
 #include "CinematicAsset.h"
 #include "CinematicTypes.h"
 #include "GameInstance.h"
+#include "GameObject.h"
 
 NS_USING(Client)
 
@@ -142,6 +143,13 @@ void CCinematicEditor::UpdateGUI()
 		return;
 	}
 
+	if (m_PreviewTargetHandle.has_value() &&
+		E::CGameInstance::Get().GetGameObjectByHandle(
+			*m_PreviewTargetHandle) == nullptr)
+	{
+		m_PreviewTargetHandle.reset();
+	}
+
 	ImGui::SameLine();
 	if (ImGui::Button("Save"))
 	{
@@ -162,11 +170,37 @@ void CCinematicEditor::UpdateGUI()
 	ImGui::SameLine();
 	if (ImGui::Button("Play"))
 	{
-		const HRESULT hr = E::CGameInstance::Get().PlayCinematic(
-			m_pEditingAsset->GetCinematicID());
+		E::FCinematicPlayOptions Options{};
+		Options.eStartMode =
+			m_ePreviewStartMode;
+		Options.fStartBlendDuration =
+			m_fPreviewStartBlendDuration;
+		Options.eReturnMode =
+			m_ePreviewReturnMode;
+		Options.fReturnBlendDuration =
+			m_fPreviewReturnBlendDuration;
+
+		HRESULT hr = E_INVALIDARG;
+		if (HasTargetLocalShot())
+		{
+			if (m_PreviewTargetHandle.has_value())
+			{
+				hr = E::CGameInstance::Get().PlayCinematic(
+					m_pEditingAsset->GetCinematicID(),
+					*m_PreviewTargetHandle,
+					Options);
+			}
+		}
+		else
+		{
+			hr = E::CGameInstance::Get().PlayCinematic(
+				m_pEditingAsset->GetCinematicID(),
+				Options);
+		}
+
 		m_Status = hr == S_OK ?
 			"Playback started." :
-			"Playback failed. Register the asset and check its data.";
+			"Playback failed. Register the asset and select a valid preview target.";
 	}
 
 	ImGui::SameLine();
@@ -188,6 +222,80 @@ void CCinematicEditor::UpdateGUI()
 		"Asset: %s | Duration: %.3f",
 		m_pEditingAsset->GetCinematicID().GetDbgStr(),
 		m_pEditingAsset->GetDuration());
+
+	DrawPreviewTargetSelector();
+
+	static const _char* StartModeNames[] = {
+		"Immediate",
+		"Blend"
+	};
+	int iStartMode =
+		static_cast<int>(m_ePreviewStartMode);
+	if (ImGui::Combo(
+		"Start Mode",
+		&iStartMode,
+		StartModeNames,
+		IM_ARRAYSIZE(StartModeNames)))
+	{
+		m_ePreviewStartMode =
+			static_cast<E::ECinematicStartMode>(
+				iStartMode);
+	}
+
+	if (m_ePreviewStartMode ==
+		E::ECinematicStartMode::Blend)
+	{
+		if (ImGui::DragFloat(
+			"Start Blend Duration",
+			&m_fPreviewStartBlendDuration,
+			0.05f,
+			0.f,
+			10.f,
+			"%.2f sec"))
+		{
+			m_fPreviewStartBlendDuration =
+				std::clamp(
+					m_fPreviewStartBlendDuration,
+					0.f,
+					10.f);
+		}
+	}
+
+	static const _char* ReturnModeNames[] = {
+		"Immediate",
+		"Blend"
+	};
+	int iReturnMode =
+		static_cast<int>(m_ePreviewReturnMode);
+	if (ImGui::Combo(
+		"Return Mode",
+		&iReturnMode,
+		ReturnModeNames,
+		IM_ARRAYSIZE(ReturnModeNames)))
+	{
+		m_ePreviewReturnMode =
+			static_cast<E::ECinematicReturnMode>(
+				iReturnMode);
+	}
+
+	if (m_ePreviewReturnMode ==
+		E::ECinematicReturnMode::Blend)
+	{
+		if (ImGui::DragFloat(
+			"Return Blend Duration",
+			&m_fPreviewReturnBlendDuration,
+			0.05f,
+			0.f,
+			10.f,
+			"%.2f sec"))
+		{
+			m_fPreviewReturnBlendDuration =
+				std::clamp(
+					m_fPreviewReturnBlendDuration,
+					0.f,
+					10.f);
+		}
+	}
 
 	if (m_SelectedShotIndex.has_value() &&
 		m_SelectedKeyframeIndex.has_value())
@@ -225,6 +333,7 @@ void CCinematicEditor::UpdateGUI()
 
 	_bool bChanged = false;
 	std::optional<size_t> RemoveShotIndex{};
+	std::optional<size_t> StartTimeEditedShotIndex{};
 
 	for (size_t i = 0; i < Track.Shots.size(); ++i)
 	{
@@ -235,13 +344,72 @@ void CCinematicEditor::UpdateGUI()
 			RemoveShotIndex = i;
 		}
 
-		DrawShot(Track.Shots[i], i, bChanged);
+		_bool bStartTimeEditFinished = false;
+		DrawShot(
+			Track.Shots[i],
+			i,
+			bChanged,
+			bStartTimeEditFinished);
+		if (bStartTimeEditFinished)
+		{
+			StartTimeEditedShotIndex = i;
+		}
 		ImGui::PopID();
 
 		if (RemoveShotIndex.has_value())
 		{
 			break;
 		}
+	}
+
+	if (StartTimeEditedShotIndex.has_value() &&
+		!RemoveShotIndex.has_value())
+	{
+		const size_t iOldIndex =
+			*StartTimeEditedShotIndex;
+		const _float fEditedStartTime =
+			Track.Shots[iOldIndex].fStartTime;
+		size_t iNewIndex = 0;
+
+		for (size_t i = 0; i < Track.Shots.size(); ++i)
+		{
+			if (i == iOldIndex)
+			{
+				continue;
+			}
+
+			if (Track.Shots[i].fStartTime < fEditedStartTime ||
+				(Track.Shots[i].fStartTime == fEditedStartTime &&
+				 i < iOldIndex))
+			{
+				++iNewIndex;
+			}
+		}
+
+		if (m_SelectedShotIndex.has_value())
+		{
+			size_t& iSelectedIndex = *m_SelectedShotIndex;
+
+			if (iSelectedIndex == iOldIndex)
+			{
+				iSelectedIndex = iNewIndex;
+			}
+			else if (iOldIndex < iNewIndex &&
+				iSelectedIndex > iOldIndex &&
+				iSelectedIndex <= iNewIndex)
+			{
+				--iSelectedIndex;
+			}
+			else if (iNewIndex < iOldIndex &&
+				iSelectedIndex >= iNewIndex &&
+				iSelectedIndex < iOldIndex)
+			{
+				++iSelectedIndex;
+			}
+		}
+
+		Track.SortShots();
+		bChanged = true;
 	}
 
 	if (RemoveShotIndex.has_value())
@@ -260,6 +428,12 @@ void CCinematicEditor::UpdateGUI()
 		Track.Shots.erase(
 			Track.Shots.begin() +
 			static_cast<std::ptrdiff_t>(*RemoveShotIndex));
+		if (StartTimeEditedShotIndex.has_value())
+		{
+			Track.SortShots();
+			m_SelectedShotIndex.reset();
+			m_SelectedKeyframeIndex.reset();
+		}
 		bChanged = true;
 	}
 
@@ -298,6 +472,7 @@ void CCinematicEditor::CreateAsset()
 		E::StringID{ std::string{ "CameraTrack" } };
 	m_SelectedShotIndex.reset();
 	m_SelectedKeyframeIndex.reset();
+	m_PreviewTargetHandle.reset();
 
 	m_Status = "New asset created.";
 }
@@ -322,8 +497,14 @@ void CCinematicEditor::SaveAsset()
 	}
 
 	m_pEditingAsset->RecalculateDuration();
-	const E::FCinematicAssetData Data =
+	E::FCinematicAssetData Data =
 		m_pEditingAsset->ExportData();
+	Data.CameraTrack.SortShots();
+	for (auto& Shot : Data.CameraTrack.Shots)
+	{
+		Shot.SortKeyFrames();
+	}
+
 	const E::SERIALIZE_RESULT Result =
 		E::CGameInstance::Get().JsonSerializeDetailed(
 			SavePath.generic_string(),
@@ -373,6 +554,7 @@ void CCinematicEditor::LoadAsset()
 	m_pEditingAsset = std::move(pLoadedAsset);
 	m_SelectedShotIndex.reset();
 	m_SelectedKeyframeIndex.reset();
+	m_PreviewTargetHandle.reset();
 
 	strncpy_s(
 		m_szCinematicID,
@@ -380,6 +562,90 @@ void CCinematicEditor::LoadAsset()
 		_TRUNCATE);
 	m_Status =
 		"Loaded: " + LoadPath.generic_string();
+}
+
+void CCinematicEditor::DrawPreviewTargetSelector()
+{
+	if (!HasTargetLocalShot())
+	{
+		return;
+	}
+
+	auto& GameInstance = E::CGameInstance::Get();
+	const E::CGameObject* pSelectedObject = nullptr;
+	if (m_PreviewTargetHandle.has_value())
+	{
+		pSelectedObject = GameInstance.GetGameObjectByHandle(
+			*m_PreviewTargetHandle);
+	}
+
+	std::string PreviewLabel{ "None" };
+	if (pSelectedObject != nullptr)
+	{
+		PreviewLabel =
+			std::string{ pSelectedObject->GetObjectTag() } +
+			" [" +
+			std::to_string(m_PreviewTargetHandle->GetIndex()) +
+			":" +
+			std::to_string(m_PreviewTargetHandle->GetGeneration()) +
+			"]";
+	}
+
+	if (!ImGui::BeginCombo(
+		"Preview Target",
+		PreviewLabel.c_str()))
+	{
+		return;
+	}
+
+	if (ImGui::Selectable(
+		"None",
+		!m_PreviewTargetHandle.has_value()))
+	{
+		m_PreviewTargetHandle.reset();
+	}
+
+	for (const auto& [LayerName, Handles] :
+		GameInstance.GetGameObjectLayers())
+	{
+		for (const E::CHandle& Handle : Handles)
+		{
+			const E::CGameObject* pObject =
+				GameInstance.GetGameObjectByHandle(Handle);
+			if (pObject == nullptr ||
+				pObject->GetPendingDestroy())
+			{
+				continue;
+			}
+
+			const std::string Label =
+				LayerName +
+				" / " +
+				std::string{ pObject->GetObjectTag() } +
+				" [" +
+				std::to_string(Handle.GetIndex()) +
+				":" +
+				std::to_string(Handle.GetGeneration()) +
+				"]";
+			const _bool bSelected =
+				m_PreviewTargetHandle.has_value() &&
+				*m_PreviewTargetHandle == Handle;
+
+			if (ImGui::Selectable(
+				Label.c_str(),
+				bSelected))
+			{
+				m_PreviewTargetHandle = Handle;
+			}
+
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+	}
+
+	ImGui::EndCombo();
 }
 
 void CCinematicEditor::AddShot()
@@ -398,13 +664,13 @@ void CCinematicEditor::AddShot()
 	Shot.fStartTime =
 		Track.Shots.empty() ? 0.f : m_pEditingAsset->GetDuration();
 	Shot.eCoordinateSpace = E::ECinematicCoordinateSpace::World;
-	Shot.eBindingMode = E::ECinematicBindingMode::Snapshot;
 
 	E::FCinematicCameraKeyframe Keyframe{};
 	Keyframe.fTime = 0.f;
 	Shot.Keyframes.push_back(Keyframe);
 
 	Track.Shots.push_back(std::move(Shot));
+	Track.SortShots();
 	m_SelectedShotIndex = Track.Shots.size() - 1;
 	m_SelectedKeyframeIndex = 0;
 }
@@ -412,7 +678,8 @@ void CCinematicEditor::AddShot()
 void CCinematicEditor::DrawShot(
 	E::FCinematicCameraShot& Shot,
 	size_t iShotIndex,
-	_bool& bChanged)
+	_bool& bChanged,
+	_bool& bStartTimeEditFinished)
 {
 	const _bool bOpen = ImGui::TreeNodeEx(
 		"##Shot",
@@ -436,10 +703,14 @@ void CCinematicEditor::DrawShot(
 		Shot.fStartTime = std::max(0.f, Shot.fStartTime);
 		bChanged = true;
 	}
+	if (ImGui::IsItemDeactivatedAfterEdit())
+	{
+		bStartTimeEditFinished = true;
+	}
 
 	static const _char* CoordinateSpaceNames[] = {
 		"World",
-		"TargetLocal (Not Implemented)"
+		"TargetLocal"
 	};
 	int iCoordinateSpace =
 		static_cast<int>(Shot.eCoordinateSpace);
@@ -454,45 +725,45 @@ void CCinematicEditor::DrawShot(
 		bChanged = true;
 	}
 
-	static const _char* BindingModeNames[] = {
-		"Live",
-		"Snapshot"
-	};
-	int iBindingMode = static_cast<int>(Shot.eBindingMode);
-	if (ImGui::Combo(
-		"Binding Mode",
-		&iBindingMode,
-		BindingModeNames,
-		IM_ARRAYSIZE(BindingModeNames)))
-	{
-		Shot.eBindingMode =
-			static_cast<E::ECinematicBindingMode>(iBindingMode);
-		bChanged = true;
-	}
-
 	if (Shot.eCoordinateSpace ==
 		E::ECinematicCoordinateSpace::TargetLocal)
 	{
-		ImGui::TextColored(
-			ImVec4{ 1.f, 0.75f, 0.25f, 1.f },
-			"TargetLocal playback is not implemented yet.");
+		if (m_PreviewTargetHandle.has_value())
+		{
+			ImGui::TextColored(
+				ImVec4{ 0.4f, 0.9f, 0.5f, 1.f },
+				"Editing relative to the preview target.");
+		}
+		else
+		{
+			ImGui::TextColored(
+				ImVec4{ 1.f, 0.75f, 0.25f, 1.f },
+				"Select a Preview Target above.");
+		}
 	}
 
 	std::optional<size_t> RemoveKeyframeIndex{};
+	std::optional<size_t> TimeEditedKeyframeIndex{};
 	for (size_t i = 0; i < Shot.Keyframes.size(); ++i)
 	{
 		ImGui::PushID(static_cast<int>(i));
 
 		_bool bRemove = false;
+		_bool bTimeEditFinished = false;
 		DrawKeyframe(
 			Shot.Keyframes[i],
 			iShotIndex,
 			i,
 			bChanged,
-			bRemove);
+			bRemove,
+			bTimeEditFinished);
 		if (bRemove)
 		{
 			RemoveKeyframeIndex = i;
+		}
+		if (bTimeEditFinished)
+		{
+			TimeEditedKeyframeIndex = i;
 		}
 
 		ImGui::PopID();
@@ -500,6 +771,58 @@ void CCinematicEditor::DrawShot(
 		{
 			break;
 		}
+	}
+
+	if (TimeEditedKeyframeIndex.has_value() &&
+		!RemoveKeyframeIndex.has_value())
+	{
+		const size_t iOldIndex =
+			*TimeEditedKeyframeIndex;
+		const _float fEditedTime =
+			Shot.Keyframes[iOldIndex].fTime;
+		size_t iNewIndex = 0;
+
+		for (size_t i = 0; i < Shot.Keyframes.size(); ++i)
+		{
+			if (i == iOldIndex)
+			{
+				continue;
+			}
+
+			if (Shot.Keyframes[i].fTime < fEditedTime ||
+				(Shot.Keyframes[i].fTime == fEditedTime &&
+				 i < iOldIndex))
+			{
+				++iNewIndex;
+			}
+		}
+
+		if (m_SelectedShotIndex == iShotIndex &&
+			m_SelectedKeyframeIndex.has_value())
+		{
+			size_t& iSelectedIndex =
+				*m_SelectedKeyframeIndex;
+
+			if (iSelectedIndex == iOldIndex)
+			{
+				iSelectedIndex = iNewIndex;
+			}
+			else if (iOldIndex < iNewIndex &&
+				iSelectedIndex > iOldIndex &&
+				iSelectedIndex <= iNewIndex)
+			{
+				--iSelectedIndex;
+			}
+			else if (iNewIndex < iOldIndex &&
+				iSelectedIndex >= iNewIndex &&
+				iSelectedIndex < iOldIndex)
+			{
+				++iSelectedIndex;
+			}
+		}
+
+		Shot.SortKeyFrames();
+		bChanged = true;
 	}
 
 	if (RemoveKeyframeIndex.has_value())
@@ -520,6 +843,15 @@ void CCinematicEditor::DrawShot(
 		Shot.Keyframes.erase(
 			Shot.Keyframes.begin() +
 			static_cast<std::ptrdiff_t>(*RemoveKeyframeIndex));
+		if (TimeEditedKeyframeIndex.has_value())
+		{
+			Shot.SortKeyFrames();
+			if (m_SelectedShotIndex == iShotIndex)
+			{
+				m_SelectedShotIndex.reset();
+				m_SelectedKeyframeIndex.reset();
+			}
+		}
 		bChanged = true;
 	}
 
@@ -544,6 +876,7 @@ void CCinematicEditor::DrawShot(
 		}
 
 		Shot.Keyframes.push_back(NewKeyframe);
+		Shot.SortKeyFrames();
 		m_SelectedShotIndex = iShotIndex;
 		m_SelectedKeyframeIndex = Shot.Keyframes.size() - 1;
 		bChanged = true;
@@ -557,7 +890,8 @@ void CCinematicEditor::DrawKeyframe(
 	size_t iShotIndex,
 	size_t iKeyframeIndex,
 	_bool& bChanged,
-	_bool& bRemove)
+	_bool& bRemove,
+	_bool& bTimeEditFinished)
 {
 	const _bool bOpen = ImGui::TreeNodeEx(
 		"##Keyframe",
@@ -601,6 +935,10 @@ void CCinematicEditor::DrawKeyframe(
 	{
 		Keyframe.fTime = std::max(0.f, Keyframe.fTime);
 		bChanged = true;
+	}
+	if (ImGui::IsItemDeactivatedAfterEdit())
+	{
+		bTimeEditFinished = true;
 	}
 
 	if (ImGui::DragFloat3(
@@ -662,7 +1000,7 @@ void CCinematicEditor::DrawKeyframe(
 
 	static const _char* InterpolationNames[] = {
 		"Linear",
-		"CatmullRom (Not Implemented)"
+		"CatmullRom"
 	};
 	int iInterpolation =
 		static_cast<int>(Keyframe.ePositionInterpolation);
@@ -675,14 +1013,6 @@ void CCinematicEditor::DrawKeyframe(
 		Keyframe.ePositionInterpolation =
 			static_cast<E::ECinematicInterpolation>(iInterpolation);
 		bChanged = true;
-	}
-
-	if (Keyframe.ePositionInterpolation ==
-		E::ECinematicInterpolation::CatmullRom)
-	{
-		ImGui::TextColored(
-			ImVec4{ 1.f, 0.75f, 0.25f, 1.f },
-			"CatmullRom playback is not implemented yet.");
 	}
 
 	ImGui::TreePop();
@@ -744,11 +1074,32 @@ void CCinematicEditor::DrawWorldVisualization() const
 		++iShot)
 	{
 		const auto& Shot = Track.Shots[iShot];
-		if (Shot.eCoordinateSpace !=
+		_matrix matCoordinateWorld = XMMatrixIdentity();
+		if (Shot.eCoordinateSpace ==
+			E::ECinematicCoordinateSpace::TargetLocal)
+		{
+			if (!TryGetPreviewTargetWorld(matCoordinateWorld))
+			{
+				continue;
+			}
+		}
+		else if (Shot.eCoordinateSpace !=
 			E::ECinematicCoordinateSpace::World)
 		{
 			continue;
 		}
+
+		const auto ToWorldPosition =
+			[&matCoordinateWorld](const _float3& vLocalPosition)
+			{
+				_float3 vWorldPosition{};
+				XMStoreFloat3(
+					&vWorldPosition,
+					XMVector3TransformCoord(
+						XMLoadFloat3(&vLocalPosition),
+						matCoordinateWorld));
+				return vWorldPosition;
+			};
 
 		std::vector<const E::FCinematicCameraKeyframe*>
 			SortedKeyframes{};
@@ -769,10 +1120,62 @@ void CCinematicEditor::DrawWorldVisualization() const
 			i < SortedKeyframes.size();
 			++i)
 		{
-			pLineRender->AddLine(
-				SortedKeyframes[i - 1]->vPosition,
-				SortedKeyframes[i]->vPosition,
-				_float4{ 0.2f, 0.85f, 1.f, 1.f });
+			const auto* pPreviousKeyframe =
+				SortedKeyframes[i - 1];
+			const auto* pNextKeyframe =
+				SortedKeyframes[i];
+
+			if (pPreviousKeyframe->ePositionInterpolation ==
+				E::ECinematicInterpolation::Linear)
+			{
+				pLineRender->AddLine(
+					ToWorldPosition(
+						pPreviousKeyframe->vPosition),
+					ToWorldPosition(
+						pNextKeyframe->vPosition),
+					_float4{ 0.2f, 0.85f, 1.f, 1.f });
+				continue;
+			}
+
+			const auto* pP0 = i > 1 ?
+				SortedKeyframes[i - 2] :
+				pPreviousKeyframe;
+			const auto* pP3 =
+				i + 1 < SortedKeyframes.size() ?
+				SortedKeyframes[i + 1] :
+				pNextKeyframe;
+			constexpr size_t iCurveSegmentCount = 16;
+			_float3 vPreviousPosition =
+				ToWorldPosition(
+					pPreviousKeyframe->vPosition);
+
+			for (size_t iSegment = 1;
+				iSegment <= iCurveSegmentCount;
+				++iSegment)
+			{
+				const _float fRatio =
+					static_cast<_float>(iSegment) /
+					static_cast<_float>(iCurveSegmentCount);
+				_float3 vCurrentPosition{};
+				XMStoreFloat3(
+					&vCurrentPosition,
+					XMVectorCatmullRom(
+						XMLoadFloat3(&pP0->vPosition),
+						XMLoadFloat3(
+							&pPreviousKeyframe->vPosition),
+						XMLoadFloat3(
+							&pNextKeyframe->vPosition),
+						XMLoadFloat3(&pP3->vPosition),
+						fRatio));
+				vCurrentPosition =
+					ToWorldPosition(vCurrentPosition);
+
+				pLineRender->AddLine(
+					vPreviousPosition,
+					vCurrentPosition,
+					_float4{ 0.2f, 0.85f, 1.f, 1.f });
+				vPreviousPosition = vCurrentPosition;
+			}
 		}
 
 		for (size_t iKeyframe = 0;
@@ -789,8 +1192,8 @@ void CCinematicEditor::DrawWorldVisualization() const
 				_float4{ 0.15f, 0.9f, 1.f, 1.f };
 			const _float fCrossSize =
 				bSelected ? 0.3f : 0.18f;
-			const _float3& vPosition =
-				Keyframe.vPosition;
+			const _float3 vPosition =
+				ToWorldPosition(Keyframe.vPosition);
 
 			pLineRender->AddLine(
 				_float3{
@@ -833,12 +1236,11 @@ void CCinematicEditor::DrawWorldVisualization() const
 				1.f,
 				150.f);
 			const _matrix matCameraWorld =
-				XMMatrixRotationQuaternion(
+				(XMMatrixRotationQuaternion(
 					LoadSafeQuaternion(Keyframe.vRotation)) *
-				XMMatrixTranslation(
-					vPosition.x,
-					vPosition.y,
-					vPosition.z);
+				 XMMatrixTranslationFromVector(
+					XMLoadFloat3(&Keyframe.vPosition))) *
+				matCoordinateWorld;
 
 			pLineRender->SetColor(vColor);
 			pLineRender->AddFrustum(
@@ -904,19 +1306,28 @@ void CCinematicEditor::HandleViewportSelection()
 		++iShot)
 	{
 		const auto& Shot = Track.Shots[iShot];
-		if (Shot.eCoordinateSpace !=
-			E::ECinematicCoordinateSpace::World)
-		{
-			continue;
-		}
 
 		for (size_t iKeyframe = 0;
 			iKeyframe < Shot.Keyframes.size();
 			++iKeyframe)
 		{
+			_matrix matKeyframeWorld{};
+			if (!TryGetKeyframeWorld(
+				Shot,
+				Shot.Keyframes[iKeyframe],
+				matKeyframeWorld))
+			{
+				continue;
+			}
+
+			_float3 vWorldPosition{};
+			XMStoreFloat3(
+				&vWorldPosition,
+				matKeyframeWorld.r[3]);
+
 			ImVec2 vScreenPosition{};
 			if (!TryProjectToViewport(
-				Shot.Keyframes[iKeyframe].vPosition,
+				vWorldPosition,
 				matViewProjection,
 				*pViewport,
 				vScreenPosition))
@@ -963,6 +1374,18 @@ void CCinematicEditor::DrawSelectedKeyframeGizmo()
 		return;
 	}
 
+	const auto& Shot =
+		m_pEditingAsset->GetCameraTrack().Shots[
+			*m_SelectedShotIndex];
+	_matrix matKeyframeWorld{};
+	if (!TryGetKeyframeWorld(
+		Shot,
+		*pKeyframe,
+		matKeyframeWorld))
+	{
+		return;
+	}
+
 	_float4x4 matView{};
 	_float4x4 matProjection{};
 	_float4x4 matWorld{};
@@ -974,11 +1397,7 @@ void CCinematicEditor::DrawSelectedKeyframeGizmo()
 		pCamera->GetProj());
 	XMStoreFloat4x4(
 		&matWorld,
-		XMMatrixAffineTransformation(
-			XMVectorSet(1.f, 1.f, 1.f, 0.f),
-			XMVectorZero(),
-			LoadSafeQuaternion(pKeyframe->vRotation),
-			XMLoadFloat3(&pKeyframe->vPosition)));
+		matKeyframeWorld);
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist(
@@ -1005,11 +1424,36 @@ void CCinematicEditor::DrawSelectedKeyframeGizmo()
 	_vector vScale{};
 	_vector vRotation{};
 	_vector vTranslation{};
+	_matrix matStoredKeyframe =
+		XMLoadFloat4x4(&matWorld);
+	if (Shot.eCoordinateSpace ==
+		E::ECinematicCoordinateSpace::TargetLocal)
+	{
+		_matrix matTargetWorld{};
+		if (!TryGetPreviewTargetWorld(matTargetWorld))
+		{
+			return;
+		}
+
+		_vector vDeterminant{};
+		const _matrix matTargetInverse =
+			XMMatrixInverse(
+				&vDeterminant,
+				matTargetWorld);
+		if (std::abs(XMVectorGetX(vDeterminant)) <=
+			FLT_EPSILON)
+		{
+			return;
+		}
+
+		matStoredKeyframe *= matTargetInverse;
+	}
+
 	if (XMMatrixDecompose(
 		&vScale,
 		&vRotation,
 		&vTranslation,
-		XMLoadFloat4x4(&matWorld)))
+		matStoredKeyframe))
 	{
 		XMStoreFloat3(
 			&pKeyframe->vPosition,
@@ -1046,9 +1490,7 @@ const E::FCinematicCameraKeyframe* CCinematicEditor::GetSelectedKeyframe() const
 
 	const auto& Shot =
 		Track.Shots[*m_SelectedShotIndex];
-	if (Shot.eCoordinateSpace !=
-			E::ECinematicCoordinateSpace::World ||
-		*m_SelectedKeyframeIndex >=
+	if (*m_SelectedKeyframeIndex >=
 			Shot.Keyframes.size())
 	{
 		return nullptr;
@@ -1056,6 +1498,95 @@ const E::FCinematicCameraKeyframe* CCinematicEditor::GetSelectedKeyframe() const
 
 	return &Shot.Keyframes[
 		*m_SelectedKeyframeIndex];
+}
+
+_bool CCinematicEditor::HasTargetLocalShot() const
+{
+	if (m_pEditingAsset == nullptr)
+	{
+		return false;
+	}
+
+	const auto& Shots =
+		m_pEditingAsset->GetCameraTrack().Shots;
+	return std::any_of(
+		Shots.begin(),
+		Shots.end(),
+		[](const E::FCinematicCameraShot& Shot)
+		{
+			return Shot.eCoordinateSpace ==
+				E::ECinematicCoordinateSpace::TargetLocal;
+		});
+}
+
+_bool CCinematicEditor::TryGetPreviewTargetWorld(
+	_matrix& OutTargetWorld) const
+{
+	if (!m_PreviewTargetHandle.has_value())
+	{
+		return false;
+	}
+
+	const E::CGameObject* pTarget =
+		E::CGameInstance::Get().GetGameObjectByHandle(
+			*m_PreviewTargetHandle);
+	if (pTarget == nullptr ||
+		pTarget->GetPendingDestroy())
+	{
+		return false;
+	}
+
+	_vector vScale{};
+	_vector vRotation{};
+	_vector vTranslation{};
+	if (!XMMatrixDecompose(
+		&vScale,
+		&vRotation,
+		&vTranslation,
+		pTarget->GetTransform()
+			.GetLoadedCombinedWorldMatrix()))
+	{
+		return false;
+	}
+
+	OutTargetWorld =
+		XMMatrixRotationQuaternion(
+			XMQuaternionNormalize(vRotation)) *
+		XMMatrixTranslationFromVector(vTranslation);
+	return true;
+}
+
+_bool CCinematicEditor::TryGetKeyframeWorld(
+	const E::FCinematicCameraShot& Shot,
+	const E::FCinematicCameraKeyframe& Keyframe,
+	_matrix& OutKeyframeWorld) const
+{
+	OutKeyframeWorld =
+		XMMatrixRotationQuaternion(
+			LoadSafeQuaternion(Keyframe.vRotation)) *
+		XMMatrixTranslationFromVector(
+			XMLoadFloat3(&Keyframe.vPosition));
+
+	if (Shot.eCoordinateSpace ==
+		E::ECinematicCoordinateSpace::World)
+	{
+		return true;
+	}
+
+	if (Shot.eCoordinateSpace !=
+		E::ECinematicCoordinateSpace::TargetLocal)
+	{
+		return false;
+	}
+
+	_matrix matTargetWorld{};
+	if (!TryGetPreviewTargetWorld(matTargetWorld))
+	{
+		return false;
+	}
+
+	OutKeyframeWorld *= matTargetWorld;
+	return true;
 }
 
 E::UPtr<CCinematicEditor> CCinematicEditor::Create()

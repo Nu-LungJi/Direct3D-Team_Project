@@ -116,6 +116,17 @@ void CLightPlacementEditor::UpdateGUI()
 
 	if (m_bEditMode)
 		RenderGizmo();
+
+	if (m_SelectedLight &&
+		ImGui::IsMouseClicked(0) &&
+		!ImGui::IsAnyItemHovered() &&
+		!ImGuizmo::IsOver() &&
+		!ImGuizmo::IsUsing())
+	{
+		m_SelectedLight.reset();
+	}
+
+	DrawDebugLights();
 }
 
 void CLightPlacementEditor::SetActivePlacementGroup(
@@ -469,7 +480,14 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 		static_cast<int32_t>(std::size(lightTypeNames))))
 	{
 		lightType = static_cast<LIGHT_TYPE>(lightTypeIndex);
-		light->Change_LightType(lightType);
+		if (SUCCEEDED(light->Change_LightType(lightType)) &&
+			lightType == LIGHT_TYPE::POINT &&
+			light->Get_PointLightOuterAttenuation() <
+				LightPlacementEditorDetail::MIN_RANGE)
+		{
+			light->Set_PointLightInnerAttenuation(10.f);
+			light->Set_PointLightOuterAttenuation(20.f);
+		}
 	}
 
 	_bool active = light->Get_LightActivateState();
@@ -519,7 +537,55 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 		light->Set_LightIntensity(intensity);
 	}
 
-	if (lightType != LIGHT_TYPE::DIRECTIONAL)
+	if (lightType == LIGHT_TYPE::POINT)
+	{
+		_float innerRange =
+			std::max(
+				light->Get_PointLightInnerAttenuation(),
+				0.f);
+		_float outerRange =
+			std::max(
+				light->Get_PointLightOuterAttenuation(),
+				LightPlacementEditorDetail::MIN_RANGE);
+
+		if (ImGui::DragFloat(
+			"Inner Range",
+			&innerRange,
+			0.1f,
+			0.f,
+			5000.f,
+			"%.2f"))
+		{
+			innerRange = std::clamp(
+				innerRange,
+				0.f,
+				outerRange);
+			light->Set_PointLightInnerAttenuation(
+				innerRange);
+		}
+
+		if (ImGui::DragFloat(
+			"Outer Range",
+			&outerRange,
+			0.1f,
+			LightPlacementEditorDetail::MIN_RANGE,
+			5000.f,
+			"%.2f"))
+		{
+			outerRange = std::max(
+				outerRange,
+				LightPlacementEditorDetail::MIN_RANGE);
+			if (innerRange > outerRange)
+			{
+				innerRange = outerRange;
+				light->Set_PointLightInnerAttenuation(
+					innerRange);
+			}
+			light->Set_PointLightOuterAttenuation(
+				outerRange);
+		}
+	}
+	else if (lightType == LIGHT_TYPE::SPOTLIGHT)
 	{
 		_float range = light->Get_LightRange();
 		if (ImGui::DragFloat(
@@ -692,10 +758,33 @@ void CLightPlacementEditor::DrawDebugLight(
 	{
 		if (m_bShowInfluenceRange)
 		{
+			const _float innerRange = std::max(
+				light.Get_PointLightInnerAttenuation(),
+				0.f);
+			const _float outerRange = std::max(
+				light.Get_PointLightOuterAttenuation(),
+				LightPlacementEditorDetail::MIN_RANGE);
+
+			if (innerRange > 0.f)
+			{
+				debug.SetColor(
+					bSelected
+					? _float4{ 1.f, 1.f, 1.f, 1.f }
+					: _float4{ 1.f, 0.9f, 0.1f, 1.f });
+				debug.AddSphere(
+					std::min(innerRange, outerRange),
+					XMMatrixTranslation(
+						position.x,
+						position.y,
+						position.z));
+			}
+
+			debug.SetColor(
+				bSelected
+				? _float4{ 1.f, 0.9f, 0.1f, 1.f }
+				: _float4{ 1.f, 0.4f, 0.05f, 1.f });
 			debug.AddSphere(
-				std::max(
-					light.Get_LightRange(),
-					LightPlacementEditorDetail::MIN_RANGE),
+				outerRange,
 				XMMatrixTranslation(
 					position.x,
 					position.y,
@@ -870,7 +959,8 @@ CLightPlacementEditor::CreateLightAtCamera(LIGHT_TYPE eType)
 			position,
 			{ 1.f, 1.f, 1.f },
 			10.f,
-			10.f);
+			10.f,
+			20.f);
 		break;
 	case LIGHT_TYPE::SPOTLIGHT:
 		handle = m_pLightManager->Add_SpotLight(
@@ -923,14 +1013,22 @@ std::optional<CHandle> CLightPlacementEditor::CreateLight(
 			data.fIntensity);
 		break;
 	case LIGHT_TYPE::POINT:
+	{
+		const _float outerRange = std::max(
+			data.fOuterAttenuation,
+			LightPlacementEditorDetail::MIN_RANGE);
+		const _float innerRange = std::clamp(
+			data.fInnerAttenuation,
+			0.f,
+			outerRange);
 		handle = m_pLightManager->Add_PointLight(
 			data.vPosition,
 			data.vColor,
 			data.fIntensity,
-			std::max(
-				data.fRange,
-				LightPlacementEditorDetail::MIN_RANGE));
+			innerRange,
+			outerRange);
 		break;
+	}
 	case LIGHT_TYPE::SPOTLIGHT:
 		handle = m_pLightManager->Add_SpotLight(
 			data.vPosition,
@@ -999,11 +1097,23 @@ CLightPlacementEditor::BuildFileData() const
 		entry.vDirection = light->Get_LightDirection();
 		entry.vColor = light->Get_LightColor();
 		entry.fIntensity = light->Get_LightIntensity();
-		entry.fRange = light->Get_LightRange();
-		entry.fInnerAttenuation =
-			light->Get_LightInnerAttenuation();
-		entry.fOuterAttenuation =
-			light->Get_LightOuterAttenuation();
+		if (entry.eType == LIGHT_TYPE::POINT)
+		{
+			entry.fInnerAttenuation =
+				light->Get_PointLightInnerAttenuation();
+			entry.fOuterAttenuation =
+				light->Get_PointLightOuterAttenuation();
+			entry.fRange =
+				entry.fOuterAttenuation;
+		}
+		else
+		{
+			entry.fRange = light->Get_LightRange();
+			entry.fInnerAttenuation =
+				light->Get_LightInnerAttenuation();
+			entry.fOuterAttenuation =
+				light->Get_LightOuterAttenuation();
+		}
 		entry.bActive =
 			light->Get_LightActivateState();
 		file.lights.push_back(std::move(entry));

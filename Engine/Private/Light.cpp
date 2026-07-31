@@ -254,7 +254,7 @@ VOID CLight::Update_Collider() {
 		auto SphereCollider = std::static_pointer_cast<CCollSphere>(m_pColliderSphere);
 		if (nullptr == SphereCollider) return;
 
-		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.LightRange);
+		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.OuterAttanuation);
 
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 
@@ -312,7 +312,16 @@ VOID	CLight::Set_LightRange(_float _Range) {
 	// LSY 변경: 0 이하 Range로 투영행렬의 Near/Far가 무효가 되거나
 	// 디버그 바운드가 깨지는 것을 막기 위해 안전한 최소값을 보장한다.
 	constexpr _float MIN_LIGHT_RANGE = 0.02f;
-	m_pDynamicLight.LightRange = std::max(_Range, MIN_LIGHT_RANGE);
+	const _float safeRange = std::max(_Range, MIN_LIGHT_RANGE);
+
+	if (m_pDynamicLight.LightType == static_cast<uint32_t>(LIGHT_TYPE::POINT))
+	{
+		m_pDynamicLight.OuterAttanuation = safeRange;
+	}
+	else
+	{
+		m_pDynamicLight.LightRange = safeRange;
+	}
 	m_bDirtyFlag = true;
 
 	if (m_pColliderSphere) {

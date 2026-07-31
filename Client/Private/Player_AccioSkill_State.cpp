@@ -6,7 +6,9 @@
 #include "PlayerAnimationRatioGuard.h"
 
 #include "ComCharacterMoveIntent.h"
+
 #include "Monster.h"
+#include "Player_Weapon.h"
 NS_USING(Client)
 
 void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
@@ -52,8 +54,9 @@ void CPlayer_AccioSkill_State::CacheAnimationIndices(const CPlayer& player)
 	//m_AccioCast_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
 	m_AccioCast_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
 	m_AccioEnd_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
+	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
 
-	m_bAnimationIndicesCached = m_AccioCast_Animation >= 0 && m_AccioEnd_Animation >= 0;
+	m_bAnimationIndicesCached =m_AccioCast_Animation >= 0 &&m_AccioEnd_Animation >= 0 &&m_AttackFail_Animation >= 0;
 }
 
 void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float deltatime)
@@ -90,17 +93,60 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	case PHASE::ATTACK:
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO) {
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
+				break;
+			}
+		
 			// 끌어 오기 시작
+			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
+
 			m_ePhase = PHASE::PULL;
 			pAnimator->Play_Anim(m_AccioCast_Animation, false, 0.2f);
+
+			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
+				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+
+				if (flag) {
+
+					auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+					if (!pWeapon)
+						return;
+
+					// 무기 발사 위치
+					const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+					_vector monstervPos = XMVectorSetW(XMLoadFloat3(&pMonster->GetTransform().GetPosition()), 1.f);
+					m_iAccioEffectID = CGameInstance::Get().PlayEffect("Accio", spawnWorld, monstervPos,
+						[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+						{
+							if (effectId != m_iAccioEffectID)
+								return;
+
+							m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
+						});
+				}
+			
+			}
 		}
+
+
+
 
 		break;
 	}
 
 
+	case PHASE::ATTACK_FAILED:
+		if (pAnimator->GetFinish())
+			RequestLocomotion(pStateMachine);
+		break;
+
 	case PHASE::PULL: {
-		auto* Target = CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());
+		auto* Target = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
 
 		if (!Target)
 		{
@@ -108,7 +154,8 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			return;
 		}
 
-		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling)
+		
+		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
 		{
 			auto* pMoveIntent = Target->GetComponent<CComCharacterMoveIntent>("ComCharacterMoveIntent");
 
@@ -150,6 +197,30 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				m_bPulling = false;
 				m_ePhase = PHASE::RECOVERY;
 			}
+
+			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
+				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+
+				if (flag) {
+
+					auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+					if (!pWeapon)
+						return;
+
+					// 무기 발사 위치
+					const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+					_float3 spawnPos = _float3(spawnWorld._41, spawnWorld._42, spawnWorld._43);
+
+					CGameInstance::Get().SetBeamPositionsByOwner(m_iAccioEffectID, spawnPos, pMonster->GetTransform().GetPosition());
+				}
+			}
+
+		}
+		else {
+			m_bPulling = false;
+			m_ePhase = PHASE::RECOVERY;
 		}
 
 		if (m_fAnimRatio >= ATTACK_END_RATIO)

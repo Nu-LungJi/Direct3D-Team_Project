@@ -141,8 +141,21 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 	// UI LOADING SCENE CREATE
 	if (!m_bLoadUiResource)
 	{
-		GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
-		m_bLoadUiResource = true;
+		switch (m_eNextLevelIndex)
+		{
+		case LEVEL::LOGO :
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			m_bLoadUiResource = true;
+			break;
+		case LEVEL::CHARLES_ROOKWOOD:
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			m_bLoadUiResource = true;
+			break;
+		case LEVEL::BOSS_CHARLES_ROOKWOOD:
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon2");
+			m_bLoadUiResource = true;
+			break;
+		}
 	}
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 

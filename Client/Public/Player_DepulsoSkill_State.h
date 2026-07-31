@@ -30,6 +30,7 @@ private:
 	{
 		CAST,
 		ATTACK,
+		ATTACK_FAILED,
 		PUSH,
 		RECOVERY
 	};
@@ -38,6 +39,7 @@ private:
 
 	int32_t m_DepulsoCast_Animation{};
 	int32_t m_DepulsoEnd_Animation {};
+	int32_t m_AttackFail_Animation{};
 
 	PHASE m_ePhase = PHASE::CAST;
 

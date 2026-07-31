@@ -2,6 +2,7 @@
 #include "BTTeleport.h"
 #include "ComTransform.h" 
 #include "ComCharacterMoveIntent.h"
+#include "Monster.h"
 NS_USING(Client)
 
 CBTTeleport::CBTTeleport()
@@ -35,13 +36,20 @@ HRESULT CBTTeleport::Initalize(void* pArg)
 
 EVALUATE CBTTeleport::Evaluate(_float fTimeDelta)
 {
-	auto* pTarget = CGameInstance::Get().GetActiveCamera();
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
-	if (!pTarget || !pMoveIntent)
-		return m_eDebug = EVALUATE::FAILED;
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			if (auto pTarget = pOwner->Get_Target())
+			{
+				if (!pTarget || !pMoveIntent)
+					return m_eDebug = EVALUATE::FAILED;
 
-	pMoveIntent->RequestWarp(pTarget->GetTransform().GetPosition());
-	
+				pMoveIntent->RequestWarp(pTarget->GetTransform().GetPosition());
+			}
+		}
+	}
 	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTTeleport::Update_Gui()

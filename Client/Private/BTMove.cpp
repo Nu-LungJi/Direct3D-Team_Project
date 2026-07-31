@@ -2,6 +2,7 @@
 #include "BTMove.h"
 #include "ComTransform.h" 
 #include "ComCharacterMoveIntent.h"
+#include "Monster.h"
 NS_USING(Client)
 
 CBTMove::CBTMove()
@@ -54,22 +55,31 @@ EVALUATE CBTMove::Evaluate(_float fTimeDelta)
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 	if (pTransform == nullptr || pMoveIntent == nullptr)
 		return m_eDebug = EVALUATE::FAILED;
-	
-	_vector vDirection{};
-	if (m_eMove == MOVE::RIGHT)
-		vDirection = pTransform->GetState(STATE::RIGHT);
-	else if (m_eMove == MOVE::LEFT)
-		vDirection = -pTransform->GetState(STATE::RIGHT);
-	else if (m_eMove == MOVE::STRAIGHT)
-		vDirection = pTransform->GetState(STATE::LOOK);
-	else if (m_eMove == MOVE::BACKWARD)
-		vDirection = -pTransform->GetState(STATE::LOOK);
-	else
-		return m_eDebug = EVALUATE::FAILED;
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			if (auto pTarget = pOwner->Get_Target())
+			{
+				_vector vDirection{};
+				if (m_eMove == MOVE::RIGHT)
+					vDirection = pTransform->GetState(STATE::RIGHT);
+				else if (m_eMove == MOVE::LEFT)
+					vDirection = -pTransform->GetState(STATE::RIGHT);
+				else if (m_eMove == MOVE::STRAIGHT)
+					vDirection = pTransform->GetState(STATE::LOOK);
+				else if (m_eMove == MOVE::BACKWARD)
+					vDirection = -pTransform->GetState(STATE::LOOK);
+				else
+					return m_eDebug = EVALUATE::FAILED;
 
-	_float3 vMoveDirection{};
-	XMStoreFloat3(&vMoveDirection, vDirection);
-	pMoveIntent->SetMoveIntent(vMoveDirection, 2.f);
+				_float3 vMoveDirection{};
+				XMStoreFloat3(&vMoveDirection, vDirection);
+				pMoveIntent->SetMoveIntent(vMoveDirection, 2.f);
+			}
+		}
+	}
+
 	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTMove::Update_Gui()

@@ -164,7 +164,7 @@ PS_OUT PSMain(VS_OUT In)
     // 인스턴스(파티클)별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
     float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
     texEmissive = pow(texEmissive, 2.2f);
-    float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, saturate(ratio * 1.5f));
     float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
 
     float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
