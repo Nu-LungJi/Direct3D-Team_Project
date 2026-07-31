@@ -23,7 +23,7 @@ void CRenderer::UpdateGUI()
 	VolumetricFogGUI();
 }
 VOID	CRenderer::Update(_float fTimeDelta) {
-	TimeAccumulation += fTimeDelta;
+	m_fCurrentLifeTime += fTimeDelta;
 }
 HRESULT CRenderer::Initialize()
 {
@@ -147,6 +147,12 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load()))			return E_FAIL;
 	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_LensFlare", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -334,14 +340,28 @@ HRESULT CRenderer::InitializePostProcess() {
 	}
 
 	m_pPostProcessPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter");
-	{
-		if (nullptr == m_pPostProcessPS)		return E_FAIL;
-	}
+	if (nullptr == m_pPostProcessPS)		return E_FAIL;
+	
 
 	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
 
 	m_pHalfViewPort		= Generate_ViewPort("VP_HalfScreenScale", ScreenSize.x / 2.f, ScreenSize.y / 2.f);
 	m_pQuarterViewPort	= Generate_ViewPort("VP_QuarterScreenScale", ScreenSize.x / 4.f, ScreenSize.y / 4.f);
+
+	{
+		m_pLensFlareComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare");
+
+		m_pResDynTexTargetLensFlare = Generate_UnorderedAccessView("UAV_LensFlare", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+
+		m_pLensFlareCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_LENSFLARE", E::CResCBuffer::Create());
+		if (nullptr == m_pLensFlareCBuffer) return E_FAIL;
+
+		if (FAILED(m_pLensFlareCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LENSFLARE) })))    return E_FAIL;
+
+		m_fScreenPosition = { 0.5f, 0.5f };
+		m_fExpandDuration = 10.f;
+		m_fCurrentLifeTime = 0.f;
+	}
 
 	return S_OK;
 }
@@ -1549,9 +1569,60 @@ HRESULT CRenderer::Render_PostProcess() {
 	_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
 	m_pContext->ClearRenderTargetView(m_pBackBufferRTV.Get(), reinterpret_cast<float*>(&clearColor));
 
-	if (FAILED(Render_PostProcess_Bloom()))  { Unbind_Resources(); return S_OK; }
+	if (FAILED(Render_PostProcess_LensFlare())) { Unbind_Resources(); return S_OK; }
 
-	if (FAILED(Render_PostProcess_Filter())) { Unbind_Resources(); return S_OK; }
+	if (FAILED(Render_PostProcess_Bloom()))		{ Unbind_Resources(); return S_OK; }
+	
+	if (FAILED(Render_PostProcess_Filter()))	{ Unbind_Resources(); return S_OK; }
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_PostProcess_LensFlare(){
+	ZoneScopedN("Render_PostProcess_LensFlare");
+	{
+		ID3D11RenderTargetView* NullRTV[1] = { nullptr };
+		m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
+
+		m_pContext->CSSetShader(m_pLensFlareComputeShader->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexTargetLensFlare->GetUAV().Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+
+		ID3D11ShaderResourceView* pSRVsOrigin[1] = { m_pResDynTexTargetPreviousRenderView->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pSRVsOrigin);
+	}
+	{
+		_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+		D3D11_MAPPED_SUBRESOURCE MRES{};
+		if (SUCCEEDED(m_pContext->Map(m_pLensFlareCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+		{
+			CB_LENSFLARE cbLensFlare{};
+
+			cbLensFlare.FlareCenterUV			= { m_fScreenPosition.x / ScreenSize.x, m_fScreenPosition.y / ScreenSize.y };
+			cbLensFlare.FlareCurrentLifeTime	= m_fCurrentLifeTime;
+			cbLensFlare.FlareMaxLifeTime		= m_fExpandDuration;
+			cbLensFlare.RingStartScale			= 0.3f;
+			cbLensFlare.RingEndScale			= m_fScale;
+			cbLensFlare.AspectRatio				= ScreenSize.x / ScreenSize.y;
+			cbLensFlare.RingBaseAlpha			= 1.f;
+			cbLensFlare.RainbowSaturation		= 0.5f;
+			cbLensFlare.FlareEnabled			= 1.f;
+			cbLensFlare.TextureSize				= { ScreenSize.x, ScreenSize.y };
+
+			memcpy(MRES.pData, &cbLensFlare, sizeof(cbLensFlare));
+			m_pContext->Unmap(m_pLensFlareCBuffer->GetCBuffer().Get(), 0);
+		}
+		ID3D11Buffer* LensFlareBuffer = m_pLensFlareCBuffer->GetCBuffer().Get();
+		m_pContext->CSSetConstantBuffers(11, 1, &LensFlareBuffer);
+
+		m_pContext->Dispatch((ScreenSize.x + 15) / 16, (ScreenSize.y + 15) / 16, 1);
+	}
+
+	Unbind_Resources();
+
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetLensFlare;
 
 	return S_OK;
 }
@@ -1578,7 +1649,7 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 
 	D3D11_VIEWPORT VP_FullScale		= { 0.f, 0.f, ScreenSize.x, ScreenSize.y, 0.f, 1.f };
 	D3D11_VIEWPORT VP_HalfScale		= { 0.f, 0.f, ScreenSize.x / 2.f, ScreenSize.y / 2.f, 0.f, 1.f };
-	D3D11_VIEWPORT VP_QuarterScale	= { 0.f, 0.f, ScreenSize.x / 4.f, ScreenSize.y / 4.f, 0.f, 1.f }; 
+	D3D11_VIEWPORT VP_QuarterScale	= { 0.f, 0.f, ScreenSize.x / 4.f, ScreenSize.y / 4.f, 0.f, 1.f };
 
 	{	// FullScale -> HalfScale
 		m_pContext->RSSetViewports(1, &VP_HalfScale);
@@ -2165,6 +2236,34 @@ HRESULT CRenderer::Render_Debugging() {
         m_pContext->DrawIndexed(m_pDebugBuffer->GetNumIndices(), 0, 0);
     }
     return S_OK;
+}
+
+VOID CRenderer::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale){
+	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+	if (nullptr == ActiveCam) return;
+
+	XMMATRIX ViewMat = ActiveCam->GetView();
+	XMMATRIX ProjMat = ActiveCam->GetProj();
+
+	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+	XMVECTOR CurrentPos = XMVectorSetW(_WorldPosition, 1.f);
+
+	XMMATRIX ViewProj = ViewMat * ProjMat;
+	XMVECTOR ClipPos = XMVector3TransformCoord(CurrentPos, ViewProj);
+
+	_float NDC_X = XMVectorGetX(ClipPos);
+	_float NDC_Y = XMVectorGetY(ClipPos);
+	_float NDC_Z = XMVectorGetZ(ClipPos);
+
+	if (NDC_Z > 1.f || NDC_Z < 0.f) return;
+
+	m_fScreenPosition.x = ((NDC_X + 1.f) / 2.f) * ScreenSize.x;
+	m_fScreenPosition.y = ((1.f - NDC_Y) / 2.f) * ScreenSize.y;
+
+	m_fExpandDuration = _Duration;
+	m_fCurrentLifeTime = 0.f;
+	m_fScale = _Scale;
 }
 
 #pragma region BLOOMHELPER

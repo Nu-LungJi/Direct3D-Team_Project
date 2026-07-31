@@ -103,7 +103,7 @@ void CEffectManager::UpdateGUI()
 				InputText("Command Name", particle->sCommandName);
 				InputText("Particle JSON File Name. Include .json", particle->sParticleJson);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
-
+				ImGui::InputFloat3("Local Position", &particle->vLocalPosition.x);
 				if (ImGui::Button("Remove Particle"))
 					removeCommandIndex = i;
 			}
@@ -129,7 +129,8 @@ void CEffectManager::UpdateGUI()
 				ImGui::ColorEdit3("Color", &light->vColor.x);
 
 				ImGui::InputFloat("Intensity", &light->fIntensity);
-				ImGui::InputFloat("Range", &light->fRange);
+				ImGui::InputFloat("InnerAtt", &light->fInnerAtt);
+				ImGui::InputFloat("OuterAtt", &light->fOuterAtt);
 				ImGui::InputFloat("Duration", &light->fDuration);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
 
@@ -206,6 +207,8 @@ void CEffectManager::UpdateGUI()
 		preset.fDuration = Duration;
 		if (FAILED(SaveEffectPreset(savePath, preset)))
 			MSG_BOX("Failed to save effect preset");
+		else
+			AddPreset(std::move(preset));
 	}
 
 	ImGui::SameLine();
@@ -219,8 +222,18 @@ void CEffectManager::UpdateGUI()
 
 	ImGui::Separator();
 
-	InputText("Load Effect Name", playEffectName);
+	if (ImGui::Button("Reload Effects")) {
 
+		m_Presets.clear();
+
+		auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
+		if (FAILED(Load_EffectJsonPackage(k))) {
+			MSG_BOX("Reload Effects Failed");
+		}	
+	}
+
+
+	InputText("Enter Effect Name", playEffectName);
 	if (ImGui::Button("Play Effect"))
 	{
 		_float4x4 matWorld{};
@@ -281,11 +294,20 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 			json["commands"].push_back({
 				{ "type", "PARTICLE" },
 				{ "commandName",
-					particle.sCommandName },
+					  particle.sCommandName },
 				{ "particleJson",
-					particle.sParticleJson },
+					  particle.sParticleJson },
 				{ "spawnDelay",
-					command.fSpawnDelay }
+					  command.fSpawnDelay },
+
+				{
+					"localPosition",
+					{
+						particle.vLocalPosition.x,
+						particle.vLocalPosition.y,
+						particle.vLocalPosition.z
+					}
+				}
 				});
 
 			break;
@@ -343,8 +365,10 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 				{ "intensity",
 					light.fIntensity },
 
-				{ "range",
-					light.fRange },
+				{ "innerAtt",
+					light.fInnerAtt },
+				{ "OuterAtt",
+					light.fOuterAtt },
 
 				{ "spawnDelay",
 					command.fSpawnDelay },
@@ -493,7 +517,19 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 
 				if (commandJson.contains("particleJson"))
 					particle.sParticleJson = commandJson["particleJson"].get<std::string>();
+				if (commandJson.contains("localPosition"))
+				{
+					const auto& position = commandJson["localPosition"];
 
+					if (!position.is_array() || position.size() != 3)
+						return E_FAIL;
+
+					particle.vLocalPosition = {
+						position[0].get<_float>(),
+						position[1].get<_float>(),
+						position[2].get<_float>()
+					};
+				}
 				if (particle.sParticleJson.empty())
 					return E_FAIL;
 
@@ -556,8 +592,11 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 				if (commandJson.contains("intensity"))
 					light.fIntensity = commandJson["intensity"].get<_float>();
 
-				if (commandJson.contains("range"))
-					light.fRange = commandJson["range"].get<_float>();
+				if (commandJson.contains("InnerAtt"))
+					light.fInnerAtt = commandJson["InnerAtt"].get<_float>();
+
+				if (commandJson.contains("OuterAtt"))
+					light.fOuterAtt = commandJson["OuterAtt"].get<_float>();
 
 				if (commandJson.contains("duration"))
 					light.fDuration = commandJson["duration"].get<_float>();
@@ -662,7 +701,7 @@ EFFECT_INSTANCE_ID CEffectManager::PlayEffect(const std::string& sEffectName,con
 	instance.matWorld = noScaleWorld;
 
 	instance.fElapsed = 0.f;
-	instance.fDuration = 0.f;
+	instance.fDuration = instance.pPreset->fDuration;
 		
 
 	instance.iNextCommandIndex = 0;
@@ -699,7 +738,7 @@ void CEffectManager::DispatchReadyCommands(EFFECT_INSTANCE& instance)
 	{
 		const EFFECT_COMMAND& command = commands[instance.iNextCommandIndex];
 
-		if (command.fSpawnDelay >instance.fElapsed)
+		if (command.fSpawnDelay >instance.fElapsed)	// 펑
 		{
 			break;
 		}
@@ -760,7 +799,10 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 		return 0.f;
 
 	_float totalLife = 0.f;
-
+	const _float3 worldPosition = TransformPosition(command.vLocalPosition, instance.matWorld);
+	instance.matWorld._41 = worldPosition.x;
+	instance.matWorld._42 = worldPosition.y;
+	instance.matWorld._43 = worldPosition.z;
 	for (const SPAWN_COMMAND& particle : particleQueue)
 	{
 		_float life = 0.f;
@@ -797,7 +839,6 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 
 		totalLife = std::max(totalLife, life);
 	}
-
 	const uint32_t ownerId = m_pParticleManager->Spawn(particleQueue, instance.matWorld, XMLoadFloat4(&instance.vEndPosition));
 
 	if (ownerId != INVALID_PARTICLE_OWNER_ID)
@@ -818,7 +859,8 @@ _float CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGH
 			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z,1.f),
 			command.fIntensity,
 			command.vColor,
-			command.fRange,
+			command.fInnerAtt,
+			command.fOuterAtt,
 			command.fDuration,
 			command.vVelocity);
 

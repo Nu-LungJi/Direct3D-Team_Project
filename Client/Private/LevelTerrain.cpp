@@ -19,7 +19,7 @@
 #include "ComPxRigidBody.h"
 #include "OilBarrel.h"
 #include "RagdollTest.h"
-
+#include "BossTMB.h"
 #include "TmbGurdian.h"
 NS_USING(Client)
 
@@ -507,7 +507,22 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 
 
 	
+	{
+		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.sObjectTag = "BossTmb";
+		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
+		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(5, 5, 5, 1));
+		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
 
+		if (!BossTmb)
+		{
+			MSG_BOX("Create BossTmb Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	
 
 	
@@ -568,7 +583,7 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
 		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/Test.json";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
 		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
 		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));

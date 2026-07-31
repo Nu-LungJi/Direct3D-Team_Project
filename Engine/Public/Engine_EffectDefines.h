@@ -17,6 +17,7 @@ struct EFFECT_PARTICLE_COMMAND
 {
 	std::string sCommandName;
 	std::string sParticleJson;
+	_float3 vLocalPosition{};
 	_float fSpawnDelay = 0.f;
 };
 
@@ -31,7 +32,8 @@ struct EFFECT_LIGHT_COMMAND
 	_float3 vVelocity{ 0.f, -1.f, 0.f };
 	_float3 vColor{ 1.f, 1.f, 1.f };
 	_float fIntensity = 1.f;
-	_float fRange = 10.f;
+	_float fInnerAtt = 10.f;
+	_float fOuterAtt = 20.f;
 	_float fSpawnDelay = 0.f;
 	_float fDuration = 1.f;
 };

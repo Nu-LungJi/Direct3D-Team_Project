@@ -141,7 +141,7 @@ private:
 	_float3 m_vInitialPosition{};
 
 	uint32_t m_iDebugSelectedBone = 0;
-	uint32_t m_iCurrentInstanceCount = 0.f;
+	uint32_t m_iCurrentInstanceCount = 0;
 	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
 
 private:

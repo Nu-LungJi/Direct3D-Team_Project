@@ -92,6 +92,9 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
+		}
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
 
@@ -131,10 +134,10 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.2f, 0.7f);
+		m_waveCb.g_fBurstRatio = Randf(0.5f, 0.7f);
 		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
 		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
-		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		m_waveCb.g_fTransitionRatio = Randf(0.4f, 1.6f);
 		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
@@ -439,17 +442,17 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 
 		XMStoreFloat3(&p.vVelocity, Velocity);
 	} 
-	{
-		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f;
-
-		p.vVelocity.y += kGravity * fTimeDelta;
-
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-	}
+	//{
+	//	///////////////////////////////////////////// Gravity
+	//	const float kGravity = -9.8f;
+	//
+	//	p.vVelocity.y += kGravity * fTimeDelta;
+	//
+	//	XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+	//	XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+	//	vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+	//	XMStoreFloat3(&p.vPosition, vPos);
+	//}
 	{
 		///////////////////////////////////////////// Particle Spread Type
 		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();

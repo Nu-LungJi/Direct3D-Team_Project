@@ -2,17 +2,22 @@
 
 Texture2D<float4> OriginalTexture	: register(t0);
 Texture2D<float4> BlurPassTexture	: register(t1);
+
 Texture2D<float4> LUT_Texture		: register(t2);
 
-static const float CenterWeight		= { 0.227027f };
-static const float BlurOffsets[2]	= { 1.3846154f, 3.2307692f };
-static const float BlurWeights[2]	= { 0.3162162f, 0.0702703f };
+static const float	CenterWeight		= { 0.227027f };
+static const float	BlurOffsets[2]		= { 1.3846154f, 3.2307692f };
+static const float	BlurWeights[2]		= { 0.3162162f, 0.0702703f };
 
-static const float BrightThreshold	= { 0.60f };
-static const float BloomIntensity	= { 0.25f };
+static const float	BrightThreshold		= { 0.60f };
+static const float	BloomIntensity		= { 0.25f };
 
-static const float HalfBloomWeight		= { 0.60f };
-static const float QuarterBloomWeight	= { 0.40f };
+static const float	HalfBloomWeight		= { 0.60f };
+static const float	QuarterBloomWeight	= { 0.40f };
+
+static const float	ChromaticRing_Radius	 = { 0.32f };
+static const float	ChromaticRing_Width		 = { 0.05f };
+static const float	ChromaticRing_Smoothness = { 0.06f };
 
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
@@ -45,6 +50,104 @@ cbuffer CB_POSTPROCESS : register(b10)
 	float VignetteIntensity;	// 비네팅 강도
 	float VignetteSmoothness;	// 비네팅 
 };
+
+cbuffer CB_LENSFLARE : register(b11)
+{
+	float2	FlareCenterUV;
+	float	FlareCurrentLifeTime;
+	float	FlareMaxLifeTime;
+	
+	float	RingStartScale;
+	float	RingEndScale;
+	float	AspectRatio;
+	float	RingBaseAlpha;
+	
+	float	RainbowSaturation;
+	float	FlareEnabled;
+	float2	TextureSize;
+}
+
+/////////////////////////// LensFlare Main Shader Function
+float2 GetRingUV(float2 _TexCoord, float _Scale)
+{
+	float2 Delta = _TexCoord - FlareCenterUV;
+	
+	Delta.x *= AspectRatio;
+	Delta /= max(_Scale, 0.001f);
+	
+	return Delta + 0.5f;
+}
+
+float IsInsideTexture(float2 _TexCoord)
+{
+	return step(0.0f, _TexCoord.x) * step(_TexCoord.x, 1.0f) * step(0.0f, _TexCoord.y) * step(_TexCoord.y, 1.0f);
+}
+
+float3 HSVToRGB(float3 _HSV)
+{
+	float3 P = abs(frac(_HSV.xxx + float3(0.f, 2.f / 3.f, 1.f / 3.f)) * 6.f - 3.f);
+
+	return _HSV.z * lerp( float3(1.f, 1.f, 1.f), saturate(P - 1.f), _HSV.y);
+}
+
+float3 Make_ChromaticRing(float2 _TexCoord, out float _RingMask)
+{
+	float Radius = length(_TexCoord - 0.5f) * 2.f;
+	
+	float InnerRadius = ChromaticRing_Radius - ChromaticRing_Width;
+	float OuterRadius = ChromaticRing_Radius + ChromaticRing_Width;
+
+	float InnerMask = smoothstep(InnerRadius - ChromaticRing_Smoothness, InnerRadius + ChromaticRing_Smoothness, Radius);
+	float OuterMask = 1.f - smoothstep(OuterRadius - ChromaticRing_Smoothness, OuterRadius + ChromaticRing_Smoothness, Radius);
+	
+	_RingMask = InnerMask * OuterMask;
+
+	float RainbowRatio = saturate((Radius - InnerRadius) / max(OuterRadius - InnerRadius, 0.0001f));
+
+	float Hue = lerp(2.f / 3.f, 0.f, RainbowRatio);
+
+	return HSVToRGB(float3(Hue, saturate(RainbowSaturation), 1.f));
+}
+
+[numthreads(16, 16, 1)]
+void CSMain_LensFlare(uint3 ID : SV_DispatchThreadID)
+{
+	[branch]
+	if (ID.x >= TextureSize.x || ID.y >= TextureSize.y)	return;
+	
+	float2	ScreenUV = (float2(ID.xy) + 0.5f) / TextureSize;
+	float4  BackGroundColor = OriginalTexture.SampleLevel(LinearClamp, ScreenUV, 0);
+	
+	float	TimeRatio = saturate(FlareCurrentLifeTime / max(FlareMaxLifeTime, 0.0001f));
+
+	if (FlareEnabled < 0.5f)
+	{
+		OUTPUT[ID.xy] = BackGroundColor;
+		return;
+	}
+	
+	float	EaseInValue = pow(TimeRatio, 2.f);
+
+	float	RingScale = lerp(RingStartScale, RingEndScale, EaseInValue);
+	
+	float2	RingTexCoord = GetRingUV(ScreenUV, RingScale);
+	
+	float	ValidPixel = IsInsideTexture(RingTexCoord);
+
+	float	ProceduralMask;
+	float3	ChromaticMask	= Make_ChromaticRing(RingTexCoord, ProceduralMask) * ValidPixel;
+	
+	float	BaseWhiteValue	= min(ChromaticMask.r, min(ChromaticMask.g, ChromaticMask.b));
+	float3	ChromaticOnly	= max(ChromaticMask - BaseWhiteValue.xxx, 0.f);
+	
+	float	Opacity			= (1.f - TimeRatio) * (1.f - TimeRatio) * RingBaseAlpha * 3.f;
+	
+	float3	FinalColor		= ChromaticOnly * ProceduralMask * Opacity;
+	
+	OUTPUT[ID.xy] = float4(BackGroundColor.rgb + FinalColor, BackGroundColor.a);
+	return;
+}
+
 /////////////////////////// BLOOM Main Shader Function
 
 float3 DownSampling(float2 _TexCoord, float2 _TexelSize)
@@ -81,7 +184,7 @@ void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 	[branch]
 	if (ID.x >= SCREENX || ID.y >= SCREENY)	return;
 	
-	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY); 
 	
 	float3	DownSampledColor = DownSampling(TexCoord, TexelSize);
 

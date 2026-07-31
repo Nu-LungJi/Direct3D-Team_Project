@@ -51,6 +51,15 @@ HRESULT CBeam_CPU::Initialize(void* pArg)
 
         m_pResVertexBuffer = res;
     }
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_BEAM);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComBeamCBuffer = res;
+	}
+
 
 	switch (m_Desc.blendState) {
 	case 0:
@@ -103,41 +112,75 @@ void CBeam_CPU::PriorityUpdate(_float fTimeDelta)
 
 void CBeam_CPU::Update(_float fTimeDelta)
 {
-    _bool bAnyActive = false;
-    _bool bNeedRebuild = false;
+	m_fAccumulationTime += fTimeDelta;
+	_bool bNeedRebuild = false;
 
-    for (auto& beam : m_vecBeams)
-    {
-        if (!beam.bActive)
-            continue;
 
-        bAnyActive = true;
-        beam.fElapsedTime += fTimeDelta;
+	for (auto& beam : m_vecBeams)
+	{
+		if (!beam.bActive)
+			continue;
+		 
+		beam.fElapsedTime += fTimeDelta;
+		float lifeRatio = std::clamp(beam.fElapsedTime / std::max(beam.fDuration, 0.001f), 0.f, 1.f);
 
-        if (beam.fDuration > 0.f && beam.fElapsedTime >= beam.fDuration)
-        {
-            beam.bActive = false;
-            bNeedRebuild = true;
-            continue;
-        }
+		if (beam.fElapsedTime < beam.fGrowEndTime)
+		{
+			beam.ePhase = BEAM_PHASE::GROW;
 
-        beam.fFlickerTimer += fTimeDelta;
-        if (beam.fFlickerTimer >= beam.fFlickerInterval)
-        {
-            beam.fFlickerTimer = 0.f;
+			float ratio = std::clamp(
+				beam.fElapsedTime / std::max(beam.fGrowEndTime, 0.001f),
+				0.f, 1.f
+			);
 
-			if (m_Desc.geometryType == 1)
-				RegenerateSinPath(beam);
-			else
-				RegenerateJaggedPath(beam);
-            bNeedRebuild = true;
-        }
-    }
+			beam.fGrowRatio = 1.f - (1.f - ratio) * (1.f - ratio);
+			beam.fStraightRatio = 0.f;
+			beam.fFadeRatio = 0.f;
+		}
+		else if (beam.fElapsedTime < beam.fStraightEndTime)
+		{
+			beam.ePhase = BEAM_PHASE::STRAIGHTEN;
+			beam.fGrowRatio = 1.f;
 
-    if (bNeedRebuild || bAnyActive)
-        BuildBeamGeometry();
+			float ratio = std::clamp(
+				(beam.fElapsedTime - beam.fGrowEndTime) /
+				std::max(beam.fStraightEndTime - beam.fGrowEndTime, 0.001f),
+				0.f, 1.f
+			);
+
+			beam.fStraightRatio = 1.f - (1.f - ratio) * (1.f - ratio) * (1.f - ratio);
+			beam.fFadeRatio = 0.f;
+		}
+		else if (beam.fElapsedTime < beam.fHoldEndTime)
+		{
+			beam.ePhase = BEAM_PHASE::HOLD;
+			beam.fGrowRatio = 1.f;
+			beam.fStraightRatio = 1.f;
+			beam.fFadeRatio = 0.f;
+		}
+		else
+		{
+			beam.ePhase = BEAM_PHASE::FADE;
+			beam.fGrowRatio = 1.f;
+			beam.fStraightRatio = 1.f;
+
+			float ratio = std::clamp(
+				(beam.fElapsedTime - beam.fHoldEndTime) /
+				std::max(beam.fDuration - beam.fHoldEndTime, 0.001f),
+				0.f, 1.f
+			);
+
+			beam.fFadeRatio = ratio;
+		}
+		if (lifeRatio >= 1.f)
+			beam.bActive = false;
+
+		bNeedRebuild = true;
+	}
+
+	if (bNeedRebuild)
+		BuildBeamGeometry();
 }
-
 void CBeam_CPU::LateUpdate(_float fTimeDelta)
 {
 }
@@ -172,19 +215,57 @@ HRESULT CBeam_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    pContext->PSSetShaderResources(0, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+    pContext->PSSetShaderResources(1, 1, m_pParticleTexture->GetSRV().GetAddressOf());
+
+	if (m_pNormalTexture) {
+		pContext->PSSetShaderResources(2, 1, m_pNormalTexture->GetSRV().GetAddressOf());
+	}
+
+
+	if (m_pDistortionTexture)
+	{
+		ID3D11ShaderResourceView* pDistortionSRV = m_pDistortionTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(3, 1, &pDistortionSRV);
+	}
+	if (m_pNoiseTexture)
+	{
+		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
+	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnySRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(5, 1, &pAnySRV);
+
+	}
+
 
     // 각 빔은 이제 자기만의 verticesPerPlane을 갖고 있으니, 그 값 기준으로 Draw
-    for (auto& range : m_vecDrawRanges)
-    {
-        pContext->Draw(range.verticesPerPlane, range.startVertex);
-        pContext->Draw(range.verticesPerPlane, range.startVertex + range.verticesPerPlane);
-    }
+	for (const auto& range : m_vecDrawRanges)
+	{
+		CB_BEAM cb{};
+		cb.fAgeRatio = range.fAgeRatio;
+		cb.fAccumulationTime = m_fAccumulationTime;
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (SUCCEEDED(pContext->Map(m_pComBeamCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		{
+			memcpy(mapped.pData, &cb, sizeof(cb));
+			pContext->Unmap(m_pComBeamCBuffer->GetCBuffer().Get(), 0);
+		}
 
-    ID3D11ShaderResourceView* nullSRV[] = { nullptr };
-    pContext->PSSetShaderResources(0, 1, nullSRV);
+		pContext->PSSetConstantBuffers(11, 1, m_pComBeamCBuffer->GetCBuffer().GetAddressOf());
+
+		pContext->Draw(range.verticesPerPlane, range.startVertex);
+		pContext->Draw(range.verticesPerPlane, range.startVertex + range.verticesPerPlane);
+	}
+
+    ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr,nullptr,nullptr,nullptr,nullptr };
+    pContext->PSSetShaderResources(0, 6, nullSRV);
 	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
+
+	ID3D11Buffer* nullBuffer = nullptr;
+	pContext->PSSetConstantBuffers(11, 1, &nullBuffer);
 
     return S_OK;
 }
@@ -220,17 +301,36 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.fDuration = std::max(p.beamDuration, 0.f);
 		beam.vColor = p.color;
 		beam.vEmissive = p.emissive;
+		beam.vEndEmissive = p.endEmissive;
 		beam.ownerId = p.ownerId;
-		beam.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
+		const float distance =
+			XMVectorGetX(
+				XMVector3Length(end - start));
+
+		beam.fDisplacementAmplitude =
+			distance * 0.02f;
+		//beam.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
 		beam.iDisplacementIterations = iterations;
 		beam.fDisplacementDamping = std::clamp(p.fDisplacementDamping, 0.f, 1.f);
 		beam.fFlickerInterval = std::max(p.flickerTimeInverval, 0.001f);
 		beam.fFlickerTimer = beam.fFlickerInterval;
 		beam.iSegmentCount = 1u << iterations;
-		beam.iVerticesPerPlane = (beam.iSegmentCount + 1) * 2;
 		beam.vecJaggedPoints.assign(beam.iSegmentCount + 1, _float3{});
+		beam.ePhase = BEAM_PHASE::GROW;
+		beam.fPhaseTime = 0.f;
+		beam.fGrowRatio = 0.f;
+		beam.fStraightRatio = 0.f;
+		beam.fFadeRatio = 0.f;
+		beam.fbeamWidth = p.fBeamWidth;
+		beam.fGrowEndTime = p.fGrowEndTime;
+		beam.fStraightEndTime = p.fStraightEndTime;
+		beam.fHoldEndTime = p.fHoldEndTime;
+		beam.fFadeEndTime = p.fFadeEndTime;
+		beam.iGeometryType = p.geometryType;
+		beam.fspawnDelay = p.fSpawnDelay;
+		
 
-		if (m_Desc.geometryType == 1)
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -252,9 +352,15 @@ void CBeam_CPU::SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuratio
 	{
 		beam.fElapsedTime = 0.f;
 		beam.fDuration = fDuration;
-		beam.fFlickerTimer = beam.fFlickerInterval;
+		beam.fFlickerTimer = 0.f;
 
-		if (m_Desc.geometryType == 1)
+		beam.ePhase = BEAM_PHASE::GROW;
+		beam.fPhaseTime = 0.f;
+		beam.fGrowRatio = 0.f;
+		beam.fStraightRatio = 0.f;
+		beam.fFadeRatio = 0.f;
+
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -299,7 +405,7 @@ void CBeam_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixDat
 				XMLoadFloat4(&beam.vEndPos),
 				deltaMatrix));
 
-		if (m_Desc.geometryType == 1)
+		if (beam.iGeometryType == 1)
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -354,61 +460,170 @@ void CBeam_CPU::RegenerateJaggedPath(BEAM_INSTANCE& beam)
 
 void CBeam_CPU::BuildBeamGeometry()
 {
-    m_vecBeamVertices.clear();
-    m_vecDrawRanges.clear();
+	m_vecBeamVertices.clear();
+	m_vecDrawRanges.clear();
 
-    for (auto& beam : m_vecBeams)
-    {
-        if (!beam.bActive)
-            continue;
+	struct VISIBLE_POINT
+	{
+		XMVECTOR position;
+		_float t;
+	};
 
-        uint32_t startVertex = (uint32_t)m_vecBeamVertices.size();
+	for (auto& beam : m_vecBeams)
+	{
+		if (!beam.bActive || beam.iSegmentCount == 0)
+			continue;
 
-        XMVECTOR segDir = XMVector3Normalize(XMLoadFloat4(&beam.vEndPos) - XMLoadFloat4(&beam.vStartPos));
+		float growRatio = std::clamp(beam.fGrowRatio, 0.f, 1.f);
+		if (growRatio <= 0.f)
+			continue;
 
-        XMVECTOR worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
-        if (fabsf(XMVectorGetX(XMVector3Dot(segDir, worldUp))) > 0.99f)
-            worldUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+		XMVECTOR start = XMLoadFloat4(&beam.vStartPos);
+		XMVECTOR end = XMLoadFloat4(&beam.vEndPos);
+		XMVECTOR direction = end - start;
 
-        XMVECTOR right1 = XMVector3Normalize(XMVector3Cross(segDir, worldUp));
-        XMVECTOR right2 = XMVector3Normalize(XMVector3Cross(segDir, right1));
+		if (XMVectorGetX(XMVector3LengthSq(direction)) < 0.000001f)
+			continue;
 
-        auto buildPlane = [&](const XMVECTOR& vRight)
-            {
-                for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)   // 빔 개별 세그먼트 수 사용
-                {
-                    _float t = (_float)i / (_float)beam.iSegmentCount;
-                    XMVECTOR pos = XMLoadFloat3(&beam.vecJaggedPoints[i]);
+		XMVECTOR segDir = XMVector3Normalize(direction);
 
-                    XMVECTOR halfWidth = vRight * (m_Desc.fWidth * 0.5f);
-                    XMVECTOR top = pos + halfWidth;
-                    XMVECTOR bottom = pos - halfWidth;
+		XMVECTOR worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		if (fabsf(XMVectorGetX(XMVector3Dot(segDir, worldUp))) > 0.99f)
+			worldUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
 
-                    BEAM_VERTEX vTop{};
-                    XMStoreFloat3(&vTop.vPosition, top);
-                    vTop.vUV = { 0.f, t };
-					vTop.vColor = beam.vColor;
-					vTop.vEmissive = beam.vEmissive;
+		XMVECTOR right1 = XMVector3Normalize(
+			XMVector3Cross(segDir, worldUp)
+		);
 
-                    BEAM_VERTEX vBottom{};
-                    XMStoreFloat3(&vBottom.vPosition, bottom);
-                    vBottom.vUV = { 1.f, t };
-					vBottom.vColor = beam.vColor;
-					vBottom.vEmissive = beam.vEmissive;
-                    m_vecBeamVertices.push_back(vTop);
-                    m_vecBeamVertices.push_back(vBottom);
-                }
-            };
+		XMVECTOR right2 = XMVector3Normalize(
+			XMVector3Cross(segDir, right1)
+		);
 
-        buildPlane(right1);
-        buildPlane(right2);
+		float scaledSegment =
+			growRatio * static_cast<float>(beam.iSegmentCount);
 
-        BEAM_DRAW_RANGE range{};
-        range.startVertex = startVertex;
-        range.verticesPerPlane = beam.iVerticesPerPlane;   // 빔 개별 값 저장
-	
-        m_vecDrawRanges.push_back(range);
-    }
+		uint32_t fullSegmentCount =
+			static_cast<uint32_t>(scaledSegment);
+
+		fullSegmentCount = std::min(
+			fullSegmentCount,
+			beam.iSegmentCount
+		);
+
+		float partialRatio =
+			scaledSegment - static_cast<float>(fullSegmentCount);
+
+		std::vector<VISIBLE_POINT> visiblePoints;
+		visiblePoints.reserve(fullSegmentCount + 2);
+
+		for (uint32_t i = 0; i <= fullSegmentCount; ++i)
+		{
+			float t =
+				static_cast<float>(i) /
+				static_cast<float>(beam.iSegmentCount);
+
+			XMVECTOR jaggedPos =
+				XMLoadFloat3(&beam.vecJaggedPoints[i]);
+
+			XMVECTOR straightPos =
+				XMVectorLerp(start, end, t);
+
+			XMVECTOR finalPos = XMVectorLerp(
+				jaggedPos,
+				straightPos,
+				beam.fStraightRatio
+			);
+
+			visiblePoints.push_back({ finalPos,t });
+		}
+
+		if (partialRatio > 0.0001f &&
+			fullSegmentCount < beam.iSegmentCount)
+		{
+			uint32_t nextIndex = fullSegmentCount + 1;
+
+			XMVECTOR jaggedA =
+				XMLoadFloat3(&beam.vecJaggedPoints[fullSegmentCount]);
+
+			XMVECTOR jaggedB =
+				XMLoadFloat3(&beam.vecJaggedPoints[nextIndex]);
+
+			XMVECTOR jaggedPos = XMVectorLerp(
+				jaggedA,
+				jaggedB,
+				partialRatio
+			);
+
+			float t = growRatio;
+			XMVECTOR straightPos = XMVectorLerp(start, end, t);
+
+			XMVECTOR finalPos = XMVectorLerp(
+				jaggedPos,
+				straightPos,
+				beam.fStraightRatio
+			);
+
+			visiblePoints.push_back({ finalPos,t });
+		}
+
+		if (visiblePoints.size() < 2)
+			continue;
+
+		uint32_t startVertex =
+			static_cast<uint32_t>(m_vecBeamVertices.size());
+
+		float fadeAlpha = 1.f - std::clamp(
+			beam.fFadeRatio,
+			0.f,
+			1.f
+		);
+
+		auto buildPlane = [&](const XMVECTOR& right)
+			{
+				XMVECTOR halfWidth =
+					right * (beam.fbeamWidth * 0.5f);
+
+				for (const auto& point : visiblePoints)
+				{
+					BEAM_VERTEX top{};
+					XMStoreFloat3(
+						&top.vPosition,
+						point.position + halfWidth
+					);
+					top.vUV = { 0.f,point.t };
+					top.vColor = beam.vColor;
+					top.vColor.w *= fadeAlpha;
+					top.vEmissive = beam.vEmissive;
+					top.vEmissive.w *= fadeAlpha;
+					top.vEndEmissive = beam.vEndEmissive;
+					BEAM_VERTEX bottom{};
+					XMStoreFloat3(
+						&bottom.vPosition,
+						point.position - halfWidth
+					);
+					bottom.vUV = { 1.f,point.t };
+					bottom.vColor = beam.vColor;
+					bottom.vColor.w *= fadeAlpha;
+					bottom.vEmissive = beam.vEmissive;
+					bottom.vEmissive.w *= fadeAlpha;
+					bottom.vEndEmissive = beam.vEndEmissive;
+
+					m_vecBeamVertices.push_back(top);
+					m_vecBeamVertices.push_back(bottom);
+				}
+			};
+
+		buildPlane(right1);
+		buildPlane(right2);
+
+		BEAM_DRAW_RANGE range{};
+		range.startVertex = startVertex;
+		range.verticesPerPlane =
+			static_cast<uint32_t>(visiblePoints.size()) * 2;
+		range.fAgeRatio = beam.fFadeRatio;
+
+		m_vecDrawRanges.push_back(range);
+	}
 }
 
 void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
@@ -428,6 +643,7 @@ void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
 	// 빔마다 한 번만 랜덤으로 정하면 더 좋음
 	float phase1 = Randf(0.f, XM_2PI);
 	float phase2 = Randf(0.f, XM_2PI);
+	uint32_t randomCurveNumber = RandInt(2, 5);
 
 	for (uint32_t i = 0; i <= beam.iSegmentCount; ++i)
 	{
@@ -437,8 +653,8 @@ void CBeam_CPU::RegenerateSinPath(BEAM_INSTANCE& beam)
 
 		float envelope = sinf(t * XM_PI);
 
-		float wave1 = sinf(t * XM_2PI + phase1);
-		float wave2 = cosf(t * XM_2PI + phase2);
+		float wave1 = sinf(t * randomCurveNumber *XM_2PI + phase1);
+		float wave2 = cosf(t * randomCurveNumber *XM_2PI + phase2);
 
 		XMVECTOR offset =
 			right1 * (wave1 * beam.fDisplacementAmplitude * envelope) +
@@ -501,7 +717,10 @@ void CBeam_CPU::ClearByOwner(uint32_t ownerId)
 
 	BuildBeamGeometry();
 }
-void CBeam_CPU::SetBeamPositions(uint32_t beamIndex, const _float4& start, const _float4& end)
+void CBeam_CPU::SetBeamPositions(
+	uint32_t beamIndex,
+	const _float4& start,
+	const _float4& end)
 {
 	if (beamIndex >= m_vecBeams.size())
 		return;
@@ -514,16 +733,22 @@ void CBeam_CPU::SetBeamPositions(uint32_t beamIndex, const _float4& start, const
 	XMVECTOR startPosition = XMLoadFloat4(&start);
 	XMVECTOR endPosition = XMLoadFloat4(&end);
 
-	if (XMVectorGetX(XMVector3LengthSq(endPosition - startPosition)) < 0.000001f)
+	if (XMVectorGetX(
+		XMVector3LengthSq(endPosition - startPosition)
+	) < 0.000001f)
 		return;
 
 	beam.vStartPos = start;
 	beam.vEndPos = end;
 
-	if (m_Desc.geometryType == 1)
-		RegenerateSinPath(beam);
-	else
-		RegenerateJaggedPath(beam);
+	// 아직 곡선이 남아 있을 때만 경로 재계산
+	if (beam.fStraightRatio < 1.f)
+	{
+		if (beam.iGeometryType == 1)
+			RegenerateSinPath(beam);
+		else
+			RegenerateJaggedPath(beam);
+	}
 
 	BuildBeamGeometry();
 }
