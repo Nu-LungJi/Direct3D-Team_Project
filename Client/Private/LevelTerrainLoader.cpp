@@ -154,7 +154,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 
 			//TombBos
 			{
-				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Model_Resource_TombProtector",
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_TombProtector",
 					CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Protector/SK_Tomb_Protector.bin")))
 				{
 					E::CResModel::DESC pDesc{};
@@ -166,7 +166,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 					}
 				}
 
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
 					return false;
@@ -217,7 +217,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 			}
 			//TombGurDian
 			{
-				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_TMBGurdian",
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_TMBGurdian",
 					CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Grunt/SK_Tomb_Grunt.bin")))
 				{
 					E::CResModel::DESC pDesc{};
@@ -229,7 +229,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 					}
 				}
 
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
 					return false;
@@ -242,7 +242,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 				{
 					std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
 					StringID resTag = "Static_Med_Debris_" + std::to_string(i);
-					if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, resTag,
+					if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::TERRAIN, resTag,
 						CResStaticModel::Create(path))) {
 
 						E::CResStaticModel::DESC pDesc{};
@@ -255,12 +255,12 @@ std::future<bool> CLevelTerrainLoader::Load()
 					}
 				}
 				if (FAILED(E::CGameInstance::Get().AddPrototype(
-					LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
+					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
 					return false;
 				}
-				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Mace",
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::TERRAIN, "Model_Resource_Mace",
 					CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
 
 					E::CResStaticModel::DESC pDesc{};
@@ -272,7 +272,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 					}
 				}
-				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_Sword",
+				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::TERRAIN, "Model_Resource_Sword",
 					CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
 
 					E::CResStaticModel::DESC pDesc{};
@@ -284,12 +284,12 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 					}
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
 					return false;
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
 					return false;
