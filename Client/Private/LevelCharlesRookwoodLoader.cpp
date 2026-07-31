@@ -59,6 +59,11 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			}
 			UILoad();
 
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
+
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Bridge/SK_Bridge.bin"))) {
 

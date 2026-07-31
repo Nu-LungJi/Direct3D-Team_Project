@@ -20,6 +20,11 @@ std::future<bool> CLevelTerrainLoader::Load()
 {
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_TERRAIN", []()
 		{
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
+
 			// oilbarrel
 			{
 				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::TERRAIN, "Static_OilBarrel_Resource",

@@ -51,8 +51,9 @@ void CPlayer_AccioSkill_State::CacheAnimationIndices(const CPlayer& player)
 	//m_AccioCast_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
 	m_AccioCast_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
 	m_AccioEnd_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
+	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
 
-	m_bAnimationIndicesCached = m_AccioCast_Animation >= 0 && m_AccioEnd_Animation >= 0;
+	m_bAnimationIndicesCached =m_AccioCast_Animation >= 0 &&m_AccioEnd_Animation >= 0 &&m_AttackFail_Animation >= 0;
 }
 
 void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float deltatime)
@@ -92,6 +93,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
 			{
 				m_ePhase = PHASE::ATTACK_FAILED;
+				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
 				break;
 			}
 
@@ -111,7 +113,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 	case PHASE::PULL: {
 		auto* Target = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
-		
+
 		if (!Target)
 		{
 			RequestLocomotion(pStateMachine);

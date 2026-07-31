@@ -39,6 +39,7 @@ private:
 
 	int32_t m_DescendoCast_Animation{};
 	int32_t m_DescendoEnd_Animation{};
+	int32_t m_AttackFail_Animation{};
 
 	PHASE m_ePhase = PHASE::CAST;
 
