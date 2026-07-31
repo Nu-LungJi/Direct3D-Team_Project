@@ -73,8 +73,8 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCir
 		s.fSize = param.fSize;
 		s.fEndSize = param.fEndSize;
 		s.color = param.color;
-		s.emissive = param.emissive;
-		s.endEmissive = param.endEmissive;
+		s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z,param.startIntensity);
+		s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z,param.endIntensity);
 		s.iBehaviorType = param.iBehaviorType;
 		s.originalEmissive = param.emissive;
 		s.originalPosition = param.vCenter;
