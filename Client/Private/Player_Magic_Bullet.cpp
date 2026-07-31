@@ -187,16 +187,14 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 
 
-	CGameInstance::Get().PlayEffect("PlayerAttackSpread", *m_pComTransform->GetWorldMatrix());
+	CGameInstance::Get().PlayEffect("Boss_Appear", *m_pComTransform->GetWorldMatrix());
 
 	if (auto pGuridan = Cast<CTmbGurdian>(pObj))
 	{
 		static constexpr const char* HIT_SOUND_PATHS[] =
 		{
-			"./Resources/SampleClient/Sound/boss_hit_01.wav",
-			"./Resources/SampleClient/Sound/boss_hit_02.wav",
-			"./Resources/SampleClient/Sound/boss_hit_03.wav",
-			"./Resources/SampleClient/Sound/boss_hit_04.wav"
+			"./Resources/SampleClient/Sound/avada.wav",
+	
 		};
 		constexpr int HIT_SOUND_COUNT = static_cast<int>(sizeof(HIT_SOUND_PATHS) / sizeof(HIT_SOUND_PATHS[0]));
 		const int iSoundIndex = Engine::RandInt(0, HIT_SOUND_COUNT - 1);
