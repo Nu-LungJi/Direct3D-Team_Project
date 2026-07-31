@@ -367,6 +367,7 @@ public:
 
 	void SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix);
 
+	void ClearAllRunningEffect();
 #pragma endregion
 
 #pragma region MAP_MANAGER

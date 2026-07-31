@@ -102,6 +102,7 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 std::future<bool> CLevelBossCharlesRookwoodLoader::UnLoad()
 {
 	LOG_MEMORY("start");
+	E::CGameInstance::Get().ClearAllRunningEffect();
 
 	E::CGameInstance::Get().ClearAllChunk();
 	E::CGameInstance::Get().GetNavMeshManager()->Clear();

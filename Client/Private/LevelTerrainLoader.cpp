@@ -15,6 +15,7 @@
 #include "TmbGurdianDead.h"
 #include "Mon_Weapon.h"
 #include "BossTMB.h"
+#include "StarBurst.h"
 NS_USING(Client)
 
 std::future<bool> CLevelTerrainLoader::Load()
@@ -141,6 +142,12 @@ std::future<bool> CLevelTerrainLoader::Load()
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerMagicBullet");
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, CBoss_StarBurst::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_BossStarBurst");
+				return false;
+			}
 			//TombGurDian
 			{
 				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "Model_Resource_TMBGurdian",
@@ -212,6 +219,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 std::future<bool> CLevelTerrainLoader::UnLoad()
 {
 	LOG_MEMORY("start");
+	E::CGameInstance::Get().ClearAllRunningEffect();
 	LOG_MEMORY("end");
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("UNLOADING_TERRAIN", []()
 		{

@@ -1237,3 +1237,10 @@ HRESULT CEffectManager::Load_EffectJsonPackage(
 
 	return S_OK;
 }
+
+void CEffectManager::ClearAllRunningEffect()
+{
+	for (auto& effects : m_Instances) {
+		StopEffect(effects.first);
+	}
+}

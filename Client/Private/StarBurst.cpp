@@ -9,17 +9,17 @@
 
 NS_USING(Client)
 
-CStarBurst::CStarBurst()	: CGameObject{}	{}
-CStarBurst::~CStarBurst()					{}
+CBoss_StarBurst::CBoss_StarBurst()	: CGameObject{}	{}
+CBoss_StarBurst::~CBoss_StarBurst()					{}
 
-void CStarBurst::UpdateGUI() {
+void CBoss_StarBurst::UpdateGUI() {
 	CGameObject::UpdateGUI();
 }
 
-HRESULT CStarBurst::InitializePrototype(void* pArg) {
+HRESULT CBoss_StarBurst::InitializePrototype(void* pArg) {
 	return S_OK;
 }
-HRESULT CStarBurst::Initialize(void* pArg) {
+HRESULT CBoss_StarBurst::Initialize(void* pArg) {
 	if (nullptr == pArg)	return E_FAIL;
 
 	if (FAILED(CGameObject::Initialize(pArg)))	return E_FAIL;
@@ -44,18 +44,38 @@ HRESULT CStarBurst::Initialize(void* pArg) {
 	}
 
 	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
+
+	m_pLightEffectID = CGameInstance::Get().PlayEffect("Boss_StarBurst_A", *GetTransform().GetWorldMatrix(), _vector{},
+		[h = GetHandle(), this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+		{
+			
+			if (auto pOBJ = CGameInstance::Get().GetGameObjectByHandleT<CBoss_StarBurst>(h)) {
+				m_pLightEffectID = INVALID_EFFECT_INSTANCE_ID;
+			}
+		});
 	return S_OK;
 }
 
-void CStarBurst::PriorityUpdate(E::_float fTimeDelta)
+void CBoss_StarBurst::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CStarBurst::Update(E::_float fTimeDelta)
+void CBoss_StarBurst::Update(E::_float fTimeDelta)
 {
+
+	m_fTimeAccumulation += fTimeDelta;
+	_float LavaFlame_SpawnInterval = 0.2f;
+	if (m_fTimeAccumulation >= LavaFlame_SpawnInterval) {
+		m_fTimeAccumulation = 0.f;
+	
+		CGameInstance::Get().PlayEffect("Boss_StarBurst_B", *GetTransform().GetWorldMatrix(), XMVECTOR{});
+	}
+	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID) {
+	// Dead
+	}
 }
 
-void CStarBurst::LateUpdate(E::_float fTimeDelta) {
+void CBoss_StarBurst::LateUpdate(E::_float fTimeDelta) {
 	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
 	GetTransform().Update();
 
@@ -69,52 +89,52 @@ void CStarBurst::LateUpdate(E::_float fTimeDelta) {
 	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 }
-HRESULT CStarBurst::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
+HRESULT CBoss_StarBurst::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	return S_OK;
 }
 
-void CStarBurst::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+void CBoss_StarBurst::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	DEBUG_LOG_STR(std::string("[PX][CStarBurst] Collision Enter : ") +
+	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Collision Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
-void CStarBurst::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+void CBoss_StarBurst::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
 {
-	DEBUG_LOG_STR(std::string("[PX][CStarBurst] Collision Exit : ") +
+	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Collision Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
-void CStarBurst::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+void CBoss_StarBurst::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
-	DEBUG_LOG_STR(std::string("[PX][CStarBurst] Trigger Enter : ") +
+	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Trigger Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
-void CStarBurst::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+void CBoss_StarBurst::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
-	DEBUG_LOG_STR(std::string("[PX][CStarBurst] Trigger Exit : ") +
+	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Trigger Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
 
-E::UPtr<CStarBurst>		CStarBurst::Create()
+E::UPtr<CBoss_StarBurst>		CBoss_StarBurst::Create()
 {
-	auto pInstance = E::ToUPtr(new CStarBurst{});
+	auto pInstance = E::ToUPtr(new CBoss_StarBurst{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CStarBurst");
+		MSG_BOX("Failed to Created : CBoss_StarBurst");
 		return nullptr;
 	}
 	return pInstance;
 }
 
-E::UPtr<E::CPrototype> CStarBurst::Clone(void* pArg)
+E::UPtr<E::CPrototype> CBoss_StarBurst::Clone(void* pArg)
 {
-	auto pInstance = E::ToUPtr(new CStarBurst{ *this });
+	auto pInstance = E::ToUPtr(new CBoss_StarBurst{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CStarBurst");
+		MSG_BOX("Failed to Cloned : CBoss_StarBurst");
 		return nullptr;
 	}
 

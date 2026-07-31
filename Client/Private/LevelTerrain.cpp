@@ -21,6 +21,7 @@
 #include "RagdollTest.h"
 #include "BossTMB.h"
 #include "TmbGurdian.h"
+#include "StarBurst.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -85,6 +86,7 @@ HRESULT CLevelTerrain::Initialize()
 			hOilBarrels[i] = *hOilBarrel;
 		}
 	}
+
 
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)

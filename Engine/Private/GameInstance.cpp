@@ -672,6 +672,9 @@ void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _fl
 	m_pEffectManager->SetEffectWorldMatrix(iEffectId, colliderWorldMatrix);
 
 }
+void CGameInstance::ClearAllRunningEffect() {
+	m_pEffectManager->ClearAllRunningEffect();
+}
 
 
 #pragma endregion

@@ -8,10 +8,10 @@ class CComPxRigidBody;
 NS_END
 
 NS_BEGIN(Client)
-class CStarBurst : public CGameObject
+class CBoss_StarBurst : public CGameObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CStarBurst, CGameObject)
+	DECLARE_DERIVED_TYPE(CBoss_StarBurst, CGameObject)
 
 public:
 	typedef struct tag_StarBurst_desc : public CGameObject::GAMEOBJECT_DESC
@@ -28,8 +28,8 @@ public:
 	}STARBURST_DESC;
 
 private:
-	CStarBurst();
-	~CStarBurst() override;
+	CBoss_StarBurst();
+	~CBoss_StarBurst() override;
 
 public:
 	void UpdateGUI() override;
@@ -52,8 +52,11 @@ private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxSphereCollider* m_pComPxShpereCollider{};
 
+	_float	m_fTimeAccumulation{};
+	EFFECT_INSTANCE_ID	m_pLightEffectID{};
+
 public:
-	static E::UPtr<CStarBurst> Create();
+	static E::UPtr<CBoss_StarBurst> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };
 
