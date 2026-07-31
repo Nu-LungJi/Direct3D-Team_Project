@@ -32,7 +32,7 @@ HRESULT CBTDecLier::Initalize(void* pArg)
 EVALUATE CBTDecLier::Evaluate(_float fTimeDelta)
 {
 	if (m_bEnter)
-		return m_eDebug = EVALUATE::SUCCESS;
+		return m_eDebug = m_bLierInverter == true ? EVALUATE::SUCCESS : EVALUATE::FAILED;
 
 	EVALUATE eType = __super::Evaluate(fTimeDelta);
 	if (eType == EVALUATE::SUCCESS)
@@ -43,6 +43,22 @@ EVALUATE CBTDecLier::Evaluate(_float fTimeDelta)
 
 void		CBTDecLier::Update_Gui()
 {
+	if (ImGui::Button("Inverter : "))
+		m_bLierInverter = !m_bLierInverter;
+	ImGui::SameLine();
+	ImGui::Text(m_bLierInverter == true ? "TRUE" : "FALSE");
+}
+nlohmann::json CBTDecLier::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	SaveJsonValue(j, "Inverter", m_bLierInverter);
+	return j;
+}
+HRESULT CBTDecLier::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "Inverter", m_bLierInverter);
+	return S_OK;
 }
 E::UPtr<CBTDecLier> CBTDecLier::Create()
 {

@@ -15,6 +15,7 @@
 #include "SoundManager.h"
 #include "EventManager.h"
 #include "PhysXManager.h"
+#include "NvClothManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -154,6 +155,12 @@ public:
 #pragma region SOUND_MANAGER
 public:
 	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
+#pragma endregion
+
+#pragma region LIGHT_MANAGER
+public:
+	// LSY 변경: 콘텐츠 코드가 별칭 기반 배치 라이트 조회 및 런타임 제어 API를 사용한다.
+	CLightManager* GetLightManager() const { return m_pLightManager.get(); }
 #pragma endregion
 
 #pragma region FONT_MANAGER
@@ -303,9 +310,12 @@ public:
 public:
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 
-	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
-	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange);
-	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange);
+	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	_bool	Remove_Light(const CHandle& hLight);
+	size_t	Remove_PlacementLightGroup(std::string_view sGroup);
+	void	SetActivePlacementLightGroup(std::string_view sGroup);
 
 	VOID	Clear_DynamicLightList();
 
@@ -409,6 +419,14 @@ public:
 		const StringID& ComponentTag,
 		typename TJoint::DESC Desc);
 
+#pragma endregion
+
+#pragma region NVCLOTH_MANAGER
+public:
+	CNvClothManager* GetNvClothManager() const
+	{
+		return m_pNvClothManager.get();
+	}
 #pragma endregion
 
 
@@ -642,6 +660,7 @@ private:
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CNvClothManager> m_pNvClothManager{};
 	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
 	UPtr<CAction_Manager>	m_pActionManager{};
