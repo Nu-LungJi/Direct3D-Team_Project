@@ -55,6 +55,7 @@ private:
 	_float3 m_vStartPosition{};
 	_float3 m_vEndPosition{};
 	_float  m_fSpeed{};
+	_float  m_fRadius{};
 	_float  m_fDistanceOnSegment{};
 	size_t  m_iSplineIndex{};
 

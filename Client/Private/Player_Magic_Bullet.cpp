@@ -4,8 +4,10 @@
 #include "Trail_CPU.h"
 #include "ComPxSphereCollider.h"
 #include "ComPxRigidBody.h"
+#include "DbgLineRender.h"
 
 #include "TmbGurdian.h"
+#include "BossTMB.h"
 NS_USING(Client)
 
 CPlayer_Magic_Bullet::CPlayer_Magic_Bullet()
@@ -41,6 +43,7 @@ HRESULT CPlayer_Magic_Bullet::Initialize(void* pArg)
 	m_vStartPosition = pDesc->vStartPosition;
 	m_vEndPosition = pDesc->vEndPosition;
 	m_fSpeed = pDesc->fSpeed;
+	m_fRadius = pDesc->fRadius;
 	BuildSpline(pDesc->fCurveHeight, pDesc->iSampleCount);
 	if (m_Splines.empty())
 		return E_FAIL;
@@ -91,7 +94,7 @@ void CPlayer_Magic_Bullet::PriorityUpdate(E::_float fTimeDelta)
 
 void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 {
-	if (m_Splines.size() < 2 || m_iSplineIndex >= m_Splines.size() - 1)
+	if (m_Splines.size() < 2)
 		return;
 
 	_float fRemainDistance = m_fSpeed * fTimeDelta;
@@ -141,9 +144,17 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
 	}
 
+	const _float3 vCurrentPosition = m_pComPxRigidBody->GetPosition();
+	const _vector vCurrent = XMLoadFloat3(&vCurrentPosition);
+	const _vector vEnd = XMLoadFloat3(&m_vEndPosition);
 
-	if (m_iSplineIndex >= m_Splines.size() - 1)
+	const _float fDistanceToEnd = XMVectorGetX(XMVector3Length(vEnd - vCurrent));
+
+	if (m_iSplineIndex >= m_Splines.size() - 1 &&
+		fDistanceToEnd <= 0.001f)
+	{
 		SetPendingDestroy();
+	}
 }
 
 void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
@@ -151,15 +162,6 @@ void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
 	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
 	GetTransform().Update();
 
-	auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-
-	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-	CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
-	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-	CGameInstance::Get().GetDbgLineRender()->AddSphere(0.1f, matrix);
-	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 }
 
 HRESULT CPlayer_Magic_Bullet::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -189,9 +191,18 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 
 	if (auto pGuridan = Cast<CTmbGurdian>(pObj))
 	{
+		static constexpr const char* HIT_SOUND_PATHS[] =
+		{
+			"./Resources/SampleClient/Sound/boss_hit_01.wav",
+			"./Resources/SampleClient/Sound/boss_hit_02.wav",
+			"./Resources/SampleClient/Sound/boss_hit_03.wav",
+			"./Resources/SampleClient/Sound/boss_hit_04.wav"
+		};
+		constexpr int HIT_SOUND_COUNT = static_cast<int>(sizeof(HIT_SOUND_PATHS) / sizeof(HIT_SOUND_PATHS[0]));
+		const int iSoundIndex = Engine::RandInt(0, HIT_SOUND_COUNT - 1);
 
 		auto id = CGameInstance::Get().GetSoundManager()->Play3D(
-			"./Resources/SampleClient/Sound/avada.wav",
+			HIT_SOUND_PATHS[iSoundIndex],
 			SOUND_3D_DESC{
 				.vPosition = GetTransform().GetPosition(),
 				.fMinDistance = 10.f,
@@ -234,6 +245,61 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 
 	}
 
+	if (auto pBoss = Cast<CBossTMB>(pObj))
+	{
+		static constexpr const char* HIT_SOUND_PATHS[] =
+		{
+			"./Resources/SampleClient/Sound/boss_hit_01.wav",
+			"./Resources/SampleClient/Sound/boss_hit_02.wav",
+			"./Resources/SampleClient/Sound/boss_hit_03.wav",
+			"./Resources/SampleClient/Sound/boss_hit_04.wav"
+		};
+		constexpr int HIT_SOUND_COUNT = static_cast<int>(sizeof(HIT_SOUND_PATHS) / sizeof(HIT_SOUND_PATHS[0]));
+		const int iSoundIndex = Engine::RandInt(0, HIT_SOUND_COUNT - 1);
+
+		auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+			HIT_SOUND_PATHS[iSoundIndex],
+			SOUND_3D_DESC{
+				.vPosition = GetTransform().GetPosition(),
+				.fMinDistance = 10.f,
+				.fMaxDistance = 30.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			}
+		);
+		if (id == INVALID_SOUND_ID)
+		{
+			MSG_BOX("INVALID_SOUND_ID");
+		}
+		//auto id = m_pComSound->PlaySlot3D(
+		//	TEST_SLOT,
+		//	"./Resources/SampleClient/Sound/avada.wav",
+		//	SOUND_3D_DESC{
+		//		.vPosition = GetTransform().GetPosition(),
+		//		.fMinDistance = SOUND_MIN_DISTANCE,
+		//		.fMaxDistance = 30.f,
+		//		.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		//	},
+		//	SOUND_PLAY_DESC{
+		//		.sBusID = SOUND_BUS::VOICE,
+		//		.fVolume = 1.f,
+		//		.fPitch = 1.f,
+		//		.iPriority = 64,
+		//		.bLoop = false
+		//	});
+
+		//if (id == INVALID_SOUND_ID)
+		//{
+		//	MSG_BOX("INVALID_SOUND_ID");
+		//}
+
+	}
 
 }
 
