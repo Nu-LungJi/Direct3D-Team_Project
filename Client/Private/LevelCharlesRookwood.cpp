@@ -13,6 +13,7 @@
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
+#include "NvClothCape.h"
 #include "UIController.h"
 
 #include "MyMagicSquareStep.h"
@@ -51,6 +52,9 @@ HRESULT CLevelCharlesRookwood::Initialize()
 		MSG_BOX("Player Handle Failed To CLevelCharlesRookwood");
 		return E_FAIL;
 	}
+	if (FAILED(SpawnPlayerCape(*hPlayer)))
+		return E_FAIL;
+
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
 		return E_FAIL;
 
@@ -216,6 +220,36 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
 		"03_Player",
 		&PlayerDesc);
+}
+
+HRESULT CLevelCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
+{
+	CNvClothCape::DESC Desc{};
+	Desc.sObjectTag = "NvClothCape";
+	Desc.hTarget = hPlayer;
+	Desc.sResourceGroup = LEVEL::CHARLES_ROOKWOOD;
+	Desc.sModelResourceTag = "PLAYER_CAPE_MODEL_RESOURCE";
+	Desc.sClothMeshResourceTag = "PLAYER_CAPE_CLOTH_RESOURCE";
+	Desc.sTargetModelComponentTag = "ComCModelIntance";
+	Desc.sAttachBoneName = "Spine3";
+	Desc.vLocalPosition = { 0.05f, 0.08f, 0.f };
+
+	E::CGameInstance::Get().JsonDeSerialize(
+		"./Resources/NvCloth/CollisionRigs/ProfessorCape.nvclothcollision.json",
+		Desc.tBodyCollisionRig,
+		E::NVCLOTH_COLLISION_RIG_ROOT,
+		false);
+
+	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
+		"03_Player",
+		&Desc))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
 }
 
 HRESULT CLevelCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
