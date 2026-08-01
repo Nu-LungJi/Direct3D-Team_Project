@@ -321,6 +321,7 @@ public:
 	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
 
 	HRESULT	Render_ObjectShadow();
+	HRESULT	Render_ObjectNonShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
 
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);

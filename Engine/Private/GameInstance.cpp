@@ -1241,6 +1241,9 @@ HRESULT	CGameInstance::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRend
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
 }
+HRESULT	CGameInstance::Render_ObjectNonShadow() {
+	return m_pLightManager->Render_ObjectNonShadow();
+}
 HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 	return m_pLightManager->Initialize_EffectLight(_PoolSize);
 }
