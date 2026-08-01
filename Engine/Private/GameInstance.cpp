@@ -1146,8 +1146,8 @@ HRESULT CGameInstance::SaveMap(const std::string& path)
 }
 HRESULT CGameInstance::LoadMapResources(const std::string& path)
 {
-	const auto modelLoad = LoadStaticModelsRequiredByMap(
-		path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	auto modelLoad = IndexStaticModelsRequiredByMap(path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	m_pMapManager->SetMapModelResourceIndex(PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, std::move(modelLoad.modelPaths));
 	return modelLoad.Succeeded() ? S_OK : E_FAIL;
 }
 HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
@@ -1348,6 +1348,13 @@ void CGameInstance::ClearMapMeshTextureCache()
 	if (m_pMapMeshInstancingRenderer)
 	{
 		m_pMapMeshInstancingRenderer->ClearTextureCache();
+	}
+}
+void CGameInstance::EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model)
+{
+	if (m_pMapMeshInstancingRenderer)
+	{
+		m_pMapMeshInstancingRenderer->EraseTextureCache(model);
 	}
 }
 #pragma endregion

@@ -15,12 +15,12 @@ namespace Engine
 		size_t cached{};
 		std::vector<std::string> missing{};
 		std::vector<std::string> failed{};
+		std::unordered_map<std::string, std::filesystem::path> modelPaths{};
 
 		bool Succeeded() const { return missing.empty() && failed.empty(); }
 	};
 
-	inline std::string MakeMapStaticModelTag(
-		const std::filesystem::path& rootPath, const std::filesystem::path& binPath)
+	inline std::string MakeMapStaticModelTag(const std::filesystem::path& rootPath, const std::filesystem::path& binPath)
 	{
 		std::filesystem::path relativePath = binPath.lexically_relative(rootPath);
 		if (relativePath.empty() || (!relativePath.empty() && *relativePath.begin() == ".."))
@@ -32,40 +32,32 @@ namespace Engine
 		return tag;
 	}
 
-	inline bool LoadMapStaticModelFile(const std::filesystem::path& binPath,
-		const std::filesystem::path& staticRoot, const std::string& resourceGroup,
+	inline bool LoadMapStaticModelFile(const std::filesystem::path& binPath,const std::filesystem::path& staticRoot, const std::string& resourceGroup,
 		std::string* outTag = nullptr, const std::string& requestedTag = {})
 	{
-		const std::string tag = requestedTag.empty()
-			? MakeMapStaticModelTag(staticRoot, binPath)
-			: requestedTag;
+		const std::string tag = requestedTag.empty() ? MakeMapStaticModelTag(staticRoot, binPath) : requestedTag;
 		if (outTag) *outTag = tag;
 		if (auto cached = CGameInstance::Get().GetResourceFirst<CResStaticModel>(resourceGroup, tag))
 		{
 			if (cached->GetState() == CResource::STATE::LOADED)
 				return true;
-			if (cached->GetState() == CResource::STATE::LOADFAIL ||
-				cached->GetState() == CResource::STATE::UNLOAD)
+			if (cached->GetState() == CResource::STATE::LOADFAIL || cached->GetState() == CResource::STATE::UNLOAD)
 				CGameInstance::Get().DelResource(resourceGroup, tag);
 			else
 				return false;
 		}
 
-		auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
-			resourceGroup, tag, CResStaticModel::Create(binPath.string()));
+		auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(resourceGroup, tag, CResStaticModel::Create(binPath.string()));
 		if (!resource) return false;
 		CResStaticModel::DESC desc{};
-		desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f); //*
-			//XMMatrixRotationAxis({ 1.f, 0.f, 0.f }, XMConvertToRadians(90.f));
+		desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f); // * XMMatrixRotationAxis({ 1.f, 0.f, 0.f }, XMConvertToRadians(90.f));
 		if (SUCCEEDED(resource->Load(desc)))
 			return true;
 		CGameInstance::Get().DelResource(resourceGroup, tag);
 		return false;
 	}
 
-	inline MAP_STATIC_MODEL_LOAD_RESULT LoadStaticModelsRequiredByMap(
-		const std::filesystem::path& mapDirectory,
-		const std::filesystem::path& staticRoot,
+	inline MAP_STATIC_MODEL_LOAD_RESULT IndexStaticModelsRequiredByMap(const std::filesystem::path& mapDirectory, const std::filesystem::path& staticRoot,
 		const std::string& resourceGroup)
 	{
 		MAP_STATIC_MODEL_LOAD_RESULT result{};
@@ -127,12 +119,6 @@ namespace Engine
 		result.requested = requiredTags.size();
 		for (const auto& tag : requiredTags)
 		{
-			if (auto cached = CGameInstance::Get().GetResourceFirst<CResStaticModel>(resourceGroup, tag);
-				cached && cached->GetState() == CResource::STATE::LOADED)
-			{
-				++result.cached;
-				continue;
-			}
 			auto found = byTag.find(tag);
 			if (found == byTag.end())
 			{
@@ -144,9 +130,8 @@ namespace Engine
 				}
 				found = byTag.emplace(tag, stemFound->second).first;
 			}
-			if (LoadMapStaticModelFile(found->second, staticRoot, resourceGroup, nullptr, tag))
-				++result.loaded;
-			else result.failed.push_back(tag);
+			result.modelPaths.emplace(tag, found->second);
+			++result.loaded;
 		}
 		return result;
 	}

@@ -27,6 +27,7 @@ public:
 	void Update();
 	void FrameEnd();
 	void ClearTextureCache();
+	void EraseTextureCache(const SPtr<CResStaticModel>& model);
 
 public:
 	// 인스턴싱 On/Off , 드로우 콜 GUI
