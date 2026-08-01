@@ -51,7 +51,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				pAnimator->SetPlay(true);
 				pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
 
-				Active_Skill();
+				if (!m_bActiveSkill)
+				{
+					Active_Skill();
+					m_bActiveSkill = true;
+				}
 				Gravity();
 				_bool bFinished = pAnimator->GetFinish();
 
@@ -113,6 +117,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				{
 					Reset_CheckFlag();
 					m_bStart = true;
+					m_bActiveSkill = false;
 					return m_eDebug = EVALUATE::SUCCESS;
 				}
 
@@ -120,6 +125,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				{
 					//Hit 종료는 애니매이션 끝나면
 					//Attack도 애니매이션 끝나면
+
+					m_bActiveSkill = false;
 					m_bStart = true;
 					m_fTime = 0.f;
 					Reset_CheckFlag();
@@ -179,6 +186,7 @@ void CBTAttackAnimation::Update_Gui()
 void CBTAttackAnimation::Abort()
 {
 	__super::Abort();
+	m_bActiveSkill = false;
 	m_fTime = 0.f;
 }
 nlohmann::json CBTAttackAnimation::Save_Node()

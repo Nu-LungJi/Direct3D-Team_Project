@@ -30,6 +30,7 @@
 #include "ResNvClothMesh.h"
 #include "BossTMB.h"
 #include "BossMace.h"
+#include "StarBurst.h"
 NS_USING(Client)
 
 std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
@@ -220,6 +221,13 @@ HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
 				return E_FAIL;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, CBoss_StarBurst::Create())))
+			{
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_BossStarBurst");
+				return false;
 			}
 		}
 

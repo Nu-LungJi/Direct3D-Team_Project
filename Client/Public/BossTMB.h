@@ -2,7 +2,7 @@
 #include "Monster.h"
 #include "Client_Defines.h"
 
-enum class BOSSTOMB_SKILL{SPAWN, STUMP, BLUST_END, BLUST_START, BALL, BALL_BREAK, READY_STAR, THROW_STAR, SKIP,END};
+enum class BOSSTOMB_SKILL{SPAWN, STUMP, BLUST_END, BLUST_START, BALL, BALL_BREAK, READY_STAR, THROW_STAR, SKIP,SMESH,END};
 NS_BEGIN(Client)
 class CBossTMB final : public CMonster
 {
@@ -31,7 +31,10 @@ public:
 	void				Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
 	_string				Get_SkillName(ATTMON SkillNode)override;
 private:
+	void				Active_Dynamic_Effect();
+private:
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
+	_bool			m_bStar{ true };
 public:
 	static E::UPtr<CBossTMB> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

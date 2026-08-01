@@ -30,7 +30,7 @@ private:
 	_float3				m_vEmissiveColor{};
 	_float2				m_vRatio{}, m_vRotRatio{};
 	_float				m_fDis{}, m_fTime{}, m_fIntensive{0.5f};
-	_bool				m_bRatioInvert{ false };
+	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false };
 public:
 	static UPtr<CBTAttackAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

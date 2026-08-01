@@ -29,8 +29,6 @@ CBossTMB::~CBossTMB()
 void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
-
-	
 }
 
 HRESULT CBossTMB::InitializePrototype(void* pArg)
@@ -123,6 +121,8 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
 	Desc.LoadPath = MonDesc->BeHaviorTag;
+	Desc.resBeHaviorMajor = MonDesc->resBeHaviorMajor;
+	Desc.resBeHaviorMinor = MonDesc->resBeHaviorMinor;
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
 	{
 		return E_FAIL;
@@ -190,6 +190,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(BOSSTOMB_SKILL::BLUST_END);
 	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(BOSSTOMB_SKILL::BALL);
 	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(BOSSTOMB_SKILL::BALL_BREAK);
+	m_MonSkillLists[ATTMON::SLOT6] = ETOUI(BOSSTOMB_SKILL::SMESH);
 
 
 	m_MonSkillLists[ATTMON::SKIP] = ETOUI(BOSSTOMB_SKILL::SKIP);
@@ -197,7 +198,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::STUMP)] = "Boss_GroundCrash";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
-
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "BossMorningStarAfter";
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
@@ -219,7 +220,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
-
+	Active_Dynamic_Effect();
 }
 
 void CBossTMB::FixedUpdate(E::_float fTimeDelta)
@@ -235,12 +236,10 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 void CBossTMB::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-	if (CGameInstance::Get().KeyDown(DIK_0)) {
-		CBoss_StarBurst::STARBURST_DESC desc{};
-		desc.pTargetHandle = m_TargetHandle;
-		desc.vStartPosition = { GetTransform().GetPosition() };
-		CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, "BossStarBurst", &desc);
-	}
+	
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+		m_bStar = true;
 }
 
 void CBossTMB::LateUpdate(E::_float fTimeDelta)
@@ -276,6 +275,18 @@ _string CBossTMB::Get_SkillName(ATTMON SkillNode)
 		return "";
 
 	return MagicEnumToStringView(static_cast<BOSSTOMB_SKILL>(pValue->second)).data();
+}
+
+void CBossTMB::Active_Dynamic_Effect()
+{
+	if (m_CurEffectName == "Boss_GroundCrash" && m_bStar) {
+		CBoss_StarBurst::STARBURST_DESC desc{};
+		desc.fSpeed = 140.f;
+		desc.pTargetHandle = m_TargetHandle;
+		desc.vStartPosition = { GetTransform().GetPosition() };
+		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, "BossStarBurst", &desc);
+		m_bStar = false;
+	}
 }
 
 E::UPtr<CBossTMB> CBossTMB::Create()

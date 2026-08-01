@@ -504,6 +504,8 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 	CComBeHavior::BEHAVIOR_DESC Desc{};
 	Desc.OwnerName = "Com_BT";
+	Desc.resBeHaviorMajor = MonDesc->resBeHaviorMajor;
+	Desc.resBeHaviorMinor = MonDesc->resBeHaviorMinor;
 	Desc.LoadPath = MonDesc->BeHaviorTag;
 	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
 	{
