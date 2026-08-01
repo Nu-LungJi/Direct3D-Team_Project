@@ -25,7 +25,7 @@
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
-
+#include "AmbientSound3DObject.h"
 // UI
 #include "UIController.h"
 #include "UIManager.h"
