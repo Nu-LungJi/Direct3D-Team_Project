@@ -76,7 +76,7 @@ public:
 	void Release_Engine();
 
 public:
-	void SetMouseFix(_bool mousefix) { m_bMouseFix = mousefix; if(m_bMouseFix)ShowCursor(FALSE); else ShowCursor(TRUE); }// 유아이용
+	void SetMouseFix(_bool mousefix);// 유아이용
 
 #pragma region TIME_PROVIDER
 public:
@@ -322,6 +322,7 @@ public:
 	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
 
 	HRESULT	Render_ObjectShadow();
+	HRESULT	Render_ObjectNonShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
 
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
@@ -383,6 +384,7 @@ public:
 	void SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix);
 	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
 
+	void ClearAllRunningEffect();
 #pragma endregion
 
 #pragma region MAP_MANAGER

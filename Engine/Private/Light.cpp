@@ -242,7 +242,11 @@ VOID CLight::Update_Collider() {
 		auto FrustumCollider = static_pointer_cast<CCollFrustum>(m_pColliderFrustum);
 		if (nullptr == FrustumCollider) return;
 
-		FrustumCollider->SetLocalFrustum(XMLoadFloat4x4(&LightProj));
+		_float		FOVAngle = m_pDynamicLight.OuterAttanuation * 2.f * 1.2f;
+		if (FOVAngle > 150.f) FOVAngle = 150.f;
+		XMMATRIX CullProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), 1.f, 0.01f, m_pDynamicLight.OuterAttanuation * 1.2f);
+
+		FrustumCollider->SetLocalFrustum(CullProj);
 
 		XMMATRIX InvViewMat = XMMatrixInverse(nullptr, XMLoadFloat4x4(&LightView));
 		m_pColliderFrustum->Transform(InvViewMat);
@@ -254,7 +258,7 @@ VOID CLight::Update_Collider() {
 		auto SphereCollider = std::static_pointer_cast<CCollSphere>(m_pColliderSphere);
 		if (nullptr == SphereCollider) return;
 
-		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.OuterAttanuation);
+		SphereCollider->SetLocalBoundingSphere({}, m_pDynamicLight.OuterAttanuation * 1.2f);
 
 		m_pColliderSphere->Transform(XMMatrixTranslationFromVector(PosVec));
 
@@ -304,10 +308,7 @@ VOID CLight::Reset_Light(){
 	m_bActivate_State = false;
 }
 
-_bool	CLight::Check_ObjectInArea() {
 
-	return true;
-}
 VOID	CLight::Set_LightRange(_float _Range) {
 	// LSY 변경: 0 이하 Range로 투영행렬의 Near/Far가 무효가 되거나
 	// 디버그 바운드가 깨지는 것을 막기 위해 안전한 최소값을 보장한다.

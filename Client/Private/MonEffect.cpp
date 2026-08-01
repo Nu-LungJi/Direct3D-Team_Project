@@ -164,7 +164,7 @@ E::UPtr<CMonEffect> CMonEffect::Create()
 	auto pInstance = E::ToUPtr(new CMonEffect{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CTestPhysX");
+		MSG_BOX("Failed to Created : CMonEffect");
 		return nullptr;
 	}
 	return  pInstance;

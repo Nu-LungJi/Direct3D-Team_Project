@@ -143,9 +143,19 @@ namespace Engine
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
     X(uint32_t, iCount, 12) \
+	X(_bool, bRandomSize, false) \
+	X(_float3, fSizeMin, _float3(0, 0, 0))\
+	X(_float3, fSizeMax, _float3(0, 0, 0))\
     X(_float3, fSize,  _float3(1,1,1)) \
     X(_float3, fEndSize, _float3(1,1,1)) \
     X(_float, fLife, 1.f) \
+	X(_bool, bRandomRot, false) \
+    X(_float3, vMinRot, _float3(0,0,0)) \
+    X(_float3, vMaxRot, _float3(0,0,0)) \
+    X(_float3, vRotation, _float3(0,0,0)) \
+	X(_bool, bRandomVel, false) \
+	X(_float3, fVelMin, _float3(0,0,0))\
+	X(_float3, fVelMax, _float3(0,0,0))\
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0)) \

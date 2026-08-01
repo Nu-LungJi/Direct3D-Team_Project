@@ -227,6 +227,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Public\AmbientSoundData.h" />
+    <ClInclude Include="..\Public\AmbientSound2DObject.h" />
+    <ClInclude Include="..\Public\AmbientSound3DObject.h" />
     <ClInclude Include="..\public\Action_Manager.h" />
     <ClInclude Include="..\Public\AnimationObject.h" />
     <ClInclude Include="..\Public\AnimEdit_Manager.h" />
@@ -565,6 +568,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\Private\AmbientSound2DObject.cpp" />
+    <ClCompile Include="..\Private\AmbientSound3DObject.cpp" />
     <ClCompile Include="..\private\Action_Manager.cpp" />
     <ClCompile Include="..\Private\AnimationObject.cpp" />
     <ClCompile Include="..\Private\AnimEdit_Manager.cpp" />
@@ -890,7 +895,9 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\Cursor.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\Disolve.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\GameOverMask.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -903,6 +910,7 @@
     <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\VideoObject.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LuaFiles\SomeFolder\Hi.lua" />
