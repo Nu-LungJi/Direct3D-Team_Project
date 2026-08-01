@@ -25,6 +25,10 @@
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
+
+// UI
+#include "UIController.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -693,6 +697,20 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 
 void CLevelTerrain::Update(E::_float fTimeDelta)
 {
+	{
+		if (!m_bCreatePlayScreenUI)
+		{
+			m_bCreatePlayScreenUI = true;
+			CGameObject::GAMEOBJECT_DESC Desc{};
+			Desc.sObjectTag = "UIController";
+
+			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_TERRAIN", "Prototype_GameObject_UIController",
+				"UIController", &Desc));
+		}
+	}
+
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+
 	Picking();
 }
 

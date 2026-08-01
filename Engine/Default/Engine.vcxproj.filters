@@ -1985,6 +1985,15 @@
     <FxCompile Include="..\ShaderFiles\UI\Disolve.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\GameOverMask.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\VideoObject.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\Cursor.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
