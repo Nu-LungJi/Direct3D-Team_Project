@@ -1361,10 +1361,10 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pContext->CSSetShaderResources(0, 9, SRVList->GetAddressOf());
 
 		if (ApplyShadow) {
-			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
+			if (FAILED(CGameInstance::Get().Render_ObjectShadow()))		{ Unbind_Resources(); return S_OK; }
 		}
 		else {
-			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
+			if (FAILED(CGameInstance::Get().Render_ObjectNonShadow()))	{ Unbind_Resources(); return S_OK; }
 		}
 
 		Unbind_Resources();

@@ -101,11 +101,14 @@ private:
 	_float3 GetChunkCenter(const MAPCHUNK_COORD& coord);
 	BoundingBox MakeChunkBoundingBox(const MAPCHUNK_COORD& coord);
 	MAPCHUNK_COORD WorldToChunkCoord(const _float3& pos) const;
-	std::vector<MAPCHUNK_COORD> GetNeededChunksAroundCamera(const CCameraObject* pCamera) const;
+	std::vector<MAPCHUNK_COORD> GetChunksAroundCamera(
+		const CCameraObject* pCamera, int64_t radius) const;
 	void UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 private:
+	static constexpr int64_t STREAM_LOAD_RADIUS = 2;   // 5 x 5 x 5
+	static constexpr int64_t STREAM_UNLOAD_RADIUS = 3; // 7 x 7 x 7
 	_float3 m_vChunkSize = DEFAULT_MAP_CHUNK_SIZE;
 	std::string m_sMapRootPath;
 

@@ -76,6 +76,7 @@ namespace Client
 		Prototype_GameObject_RagdollTest,
 		Prototype_GameObject_NvClothCape,
 		Prototype_GameObject_PlayerMagicBullet,
+		Prototype_GameObject_BossStarBurst,
 	};
 
 	enum class PROTO_COMPONENT

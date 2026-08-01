@@ -23,6 +23,7 @@ Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
+Texture2D g_BackgroundTex : register(t7);
 
 
 
