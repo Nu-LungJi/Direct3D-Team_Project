@@ -23,7 +23,7 @@ public:
 	virtual nlohmann::json			Save_Node()override;
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
-	void							Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget,_float fTimeDelta);
+	void							Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget,_float fTimeDelta, _float fRotRatio);
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 

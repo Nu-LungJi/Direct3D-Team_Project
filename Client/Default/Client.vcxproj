@@ -204,6 +204,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BossMace.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
     <ClInclude Include="..\public\BossTMB.h" />
     <ClInclude Include="..\Public\BTAnimation.h" />
@@ -238,6 +239,7 @@
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\EffectUI.h" />
+    <ClInclude Include="..\public\GurdianWeapon.h" />
     <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
@@ -311,6 +313,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />
     <ClCompile Include="..\Private\BTAnimation.cpp" />
     <ClCompile Include="..\Private\BTAnimRoot.cpp" />
@@ -342,6 +345,7 @@
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\EffectUI.cpp" />
+    <ClCompile Include="..\private\GurdianWeapon.cpp" />
     <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />

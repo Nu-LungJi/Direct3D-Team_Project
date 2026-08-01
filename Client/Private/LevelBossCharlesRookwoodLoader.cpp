@@ -26,6 +26,7 @@
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 #include "BossTMB.h"
+#include "BossMace.h"
 NS_USING(Client)
 
 std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
@@ -217,7 +218,27 @@ HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
-	
+
+		//Weapon
+		{
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Model_Resource_BossWeapon",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_BossWeapon.bin"))) 
+			{
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Static_Model_Resource_BossWeapon");
+					return E_FAIL;
+				}
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossWeapon, CBossMace::Create())))
+			{
+				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossWeapon");
+				return E_FAIL;
+			}
+		}
 	}
 	return S_OK;
 }

@@ -44,7 +44,7 @@
 
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
-#include "Mon_Weapon.h"
+#include "GurdianWeapon.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
@@ -516,17 +516,17 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CMon_Weapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CGurdianWeapon::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Axe");
 			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CGurdianWeapon::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
 			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CGurdianWeapon::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
 			return E_FAIL;

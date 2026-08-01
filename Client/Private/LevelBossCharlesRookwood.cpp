@@ -290,7 +290,10 @@ HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
 		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
 		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/TombBoss.json";
-		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+		TmbDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_BossWeapon);
+		TmbDesc.WeaponResourceName = "Model_Resource_BossWeapon";
+		TmbDesc.vWeaponScale = _float3(1.f, 1.f, 1.f);
+		TmbDesc.vScale = _float3(6.f, 6.f, 6.f);
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
 
 		if (!BossTmb)

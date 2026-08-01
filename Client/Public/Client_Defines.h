@@ -66,6 +66,7 @@ namespace Client
 		Prototype_GameObject_BossTMB,
 		Prototype_GameObject_TMBGurdian,
 		Prototype_GameObject_TmbGurdianDead,
+		Prototype_GameObject_BossWeapon,
 		Prototype_GameObject_Axe,
 		Prototype_GameObject_Sword,
 		Prototype_GameObject_Mace,

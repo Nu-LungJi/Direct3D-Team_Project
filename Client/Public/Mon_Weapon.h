@@ -12,7 +12,7 @@ class CComStaticModelInstance;
 NS_END
 
 NS_BEGIN(Client)
-class CMon_Weapon final : public CGameObject
+class CMon_Weapon : public CGameObject
 {
 public:
 	DECLARE_DERIVED_TYPE(CMon_Weapon, CGameObject)
@@ -26,7 +26,7 @@ public:
 		int32_t iBoneIndex{ -1 };
 	}WEAPON_DESC;
 
-private:
+protected:
 	CMon_Weapon();
 	~CMon_Weapon() override;
 
@@ -46,12 +46,10 @@ public:
 	/*---------------------------------*/
 public:
 	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
-public:
-	_bool					Weapon_CallBack() { return m_bDissolve; }
-private:
-	void					Weapon_Throw(_float fTimeDelta);
+
+protected:
 	void					Dissolve(_float fTimeDelta);
-private:
+protected:
 	CComStaticModelInstance* m_pComModelInstance{};
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
@@ -60,14 +58,12 @@ private:
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
 	_float4x4			m_ParentMatrix{};
-	_float3				m_vLook{}, m_vDissolve{1,1,1};
+	_float3				m_vLook{}, m_vDissolve{ 1,1,1 }, m_vEmissive{1.f,1.f,1.f};
 	CHandle				m_ParentHandle{};
 	int32_t				m_iBoneSocketIndex{ -1 };
-	_float				m_fAngle{ 0 }, m_fTick{}, m_fDissolveintensity{ 0 };
-	_bool				m_bThrow{ false }, m_bDissolve{ false };
+	_float				m_fAngle{ 0 }, m_fTick{}, m_fDissolveintensity{ 0 }, m_fEmissiveIntensity{ 0 }, m_fMaxEmissiveIntensity{ 0 };
+	_bool				m_bThrow{ false }, m_bDissolve{ false }, m_bEmissive{ false };
 
-
-	std::vector<E::SPAWN_COMMAND> test;
 public:
 	static E::UPtr<CMon_Weapon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

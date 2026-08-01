@@ -52,6 +52,10 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+
+		_float3 vWeaponScale{ 1.f,1.f,1.f };
+		_string WeaponResourceName{};
+		_string WeaponProtoName{};
 		MONSTER_TYPE				MonType{MONSTER_TYPE::BOSS};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{

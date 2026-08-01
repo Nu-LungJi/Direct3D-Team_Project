@@ -435,7 +435,6 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 			return false;
 		}
 		m_bSkipAtt = true;
-		m_eAttType = ATTMON::END;
 		
 		return false;
 	}
@@ -510,7 +509,16 @@ void CMonster::Damaged()
 
 void CMonster::RunningSkill(_float fTimeDelta)
 {
-	
+	if (m_eAttType == ATTMON::END)
+		return;
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
+	{
+		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
+		m_bSkillLoop = true;
+	}
+
 	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
 	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
@@ -531,12 +539,6 @@ void CMonster::RunningSkill(_float fTimeDelta)
 		
 	}
 	
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
-	{
-		if(m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
-		m_bSkillLoop = true;
-	}
 }
 void CMonster::IsHit()
 {
@@ -585,14 +587,7 @@ void CMonster::Flag_Check(_float fTimeDelta)
 		m_bActiveHit = false;
 		m_iHitCnt = 0;
 	}
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
-	{
-		if (auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CMon_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]))
-		{
-			if (pSrc->Weapon_CallBack())
-				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
-		}
-	}
+
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
 	{
 		m_eAttType = ATTMON::END;

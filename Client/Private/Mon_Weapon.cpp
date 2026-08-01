@@ -23,7 +23,10 @@ CMon_Weapon::~CMon_Weapon()
 void CMon_Weapon::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
-
+	ImGui::Text("hmm");
+	ImGui::DragFloat3("##hmm", reinterpret_cast<_float*>(&m_vEmissive), 0.1f, 0.f, 1.f);
+	ImGui::Text("hmm2");
+	ImGui::DragFloat("##hmm2", &m_fMaxEmissiveIntensity, 0.1f, 0.f,100.f);
 }
 
 HRESULT CMon_Weapon::InitializePrototype(void* pArg)
@@ -42,7 +45,7 @@ HRESULT CMon_Weapon::InitializePrototype(void* pArg)
 
 HRESULT CMon_Weapon::Initialize(void* pArg)
 {
-	
+	//SM_BossWeapon.bin
 	auto pWeaponDesc = static_cast<WEAPON_DESC*>(pArg);
 	m_iBoneSocketIndex = pWeaponDesc->iBoneIndex;
 	m_ParentHandle	   = pWeaponDesc->ParentHandle;
@@ -81,49 +84,11 @@ void CMon_Weapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CMon_Weapon::Update(E::_float fTimeDelta)
 {
-	Weapon_Throw(fTimeDelta);
 	Dissolve(fTimeDelta);
 }
 
 void CMon_Weapon::LateUpdate(E::_float fTimeDelta)
 {
-	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
-	{
-		if (!m_bThrow)
-		{
-			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
-			{
-				if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneSocketIndex)
-				{
-					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
-					for (uint32_t i = 0; i < 3; ++i)
-					{
-						Par.r[i] = XMVector3Normalize(Par.r[i]);
-					}
-					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
-				}
-			}
-		}
-		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
-		{
-			if (!m_bThrow && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-			{
-				m_bThrow = true;
-				XMStoreFloat3(&m_vLook, pBT->GetGameObject()->GetTransform().GetState(STATE::LOOK));
-				XMStoreFloat4x4(&m_ParentMatrix, (XMLoadFloat4x4(&m_ParentMatrix)));
-			}
-			else if(m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-				m_bThrow = false;
-		}
-	}
-	
-	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
-	GetTransform().Update();	
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
-
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	/*---------------------------------*/
 }
 
 HRESULT CMon_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -170,7 +135,7 @@ HRESULT CMon_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
 			{
-				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, {1.f, 1.f, 1.f}, m_fDissolveintensity, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순 대
+				m_pComModelInstance->Bind_Materials(pContext, m_vEmissive, m_fEmissiveIntensity, {1.f, 1.f, 1.f}, m_fDissolveintensity, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순 대
 			}
 		}
 
@@ -213,23 +178,11 @@ HRESULT CMon_Weapon::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDE
 
 	return S_OK;
 }
+/*---------------------------------*/
 void CMon_Weapon::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
-/*---------------------------------*/
-void CMon_Weapon::Weapon_Throw(_float fTimeDelta)
-{
-	if (!m_bThrow)
-		return;
-	m_fAngle = 30.f;
-	_vector vTargetLook = XMVector3Normalize(XMLoadFloat3(&m_vLook));
-	
-	_matrix Rot = XMMatrixRotationQuaternion(XMQuaternionRotationAxis(XMVectorSet(0,0,1, 0), XMConvertToRadians(m_fAngle)));
-	_matrix matRot = Rot * XMLoadFloat4x4(&m_ParentMatrix);
-	matRot.r[3] += vTargetLook * 15.f * fTimeDelta;
-	XMStoreFloat4x4(&m_ParentMatrix, matRot);
 
-}
 
 void CMon_Weapon::Dissolve(_float fTimeDelta)
 {

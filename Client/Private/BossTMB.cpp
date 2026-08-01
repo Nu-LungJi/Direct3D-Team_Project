@@ -165,6 +165,19 @@ HRESULT CBossTMB::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
+	CMon_Weapon::WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.ParentHandle = GetHandle();
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_FX_Reference1Socket");
+	WeaponDesc.WeaponName = MonDesc->WeaponResourceName;
+	WeaponDesc.LevelTag = MonDesc->LevelTag;
+	WeaponDesc.vScale = MonDesc->vWeaponScale;
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon To TmbGurDian");
+		return E_FAIL;
+	}
 
 	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(BOSSTOMB_SKILL::SPAWN);
 	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(BOSSTOMB_SKILL::STUMP);

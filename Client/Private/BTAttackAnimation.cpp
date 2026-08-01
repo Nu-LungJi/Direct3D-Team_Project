@@ -57,7 +57,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 
 				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 				EventFlagToRatio(fAnimRatio);
-				Rotation(pTransform, pMoveIntent, pTarget, fTimeDelta);
+				Rotation(pTransform, pMoveIntent, pTarget, fTimeDelta, fAnimRatio);
 				//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 				if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 				{
@@ -199,9 +199,9 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	return S_OK;
 }
-void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta)
+void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta, _float fRotRatio)
 {
-	if (m_vRotRatio.x > 0.f && m_vRotRatio.x <= 1.f)
+	if (m_vRotRatio.x < fRotRatio && m_vRotRatio.y >= fRotRatio)
 	{
 		_float3 vFacingDirection{};
 		XMStoreFloat3(&vFacingDirection, pTarget->GetTransform().GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION));

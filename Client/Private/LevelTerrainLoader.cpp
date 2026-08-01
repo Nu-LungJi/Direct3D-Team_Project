@@ -15,7 +15,7 @@
 #include "Player_Magic_Bullet.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
-#include "Mon_Weapon.h"
+#include "GurdianWeapon.h"
 #include "BossTMB.h"
 NS_USING(Client)
 
@@ -284,12 +284,12 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 					}
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CGurdianWeapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
 					return false;
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CGurdianWeapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
 					return false;
