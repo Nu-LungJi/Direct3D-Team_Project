@@ -89,6 +89,12 @@ namespace Client
 enum class PARTES { WEAPON, END };
 }
 
+template <>
+struct magic_enum::customize::enum_range<Client::COLLISION_LAYER>
+{
+	static constexpr bool is_flags = true;
+};
+
 extern HWND g_hWnd;
 extern HINSTANCE g_hInstance;
 
