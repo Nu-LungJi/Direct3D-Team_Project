@@ -143,6 +143,29 @@ HRESULT CLevelTerrain::Initialize()
 	if (FAILED(InitializeCamerasAndLighting(hPlayer)))
 		return E_FAIL;
 
+
+	{
+		CAmbientSound3DObject::DESC desc{};
+		desc.sObjectTag = "Ambient_Wind";
+
+		desc.tSoundData.sName = "Wind";
+		desc.tSoundData.sSoundPath =
+			"./Resources/SampleClient/Sound/PowerSong.mp3";
+		desc.tSoundData.vPosition = { 10.f, 2.f, 5.f };
+		desc.tSoundData.fMinDistance = 3.f;
+		desc.tSoundData.fMaxDistance = 30.f;
+		desc.tSoundData.fVolume = 0.8f;
+		desc.tSoundData.bLoop = true;
+		desc.tSoundData.bAutoPlay = true;
+		desc.tSoundData.eRolloff = SOUND_3D_ROLLOFF::LINEAR;
+
+		CGameInstance::Get().AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound3D,
+			"Layer_AmbientSound",
+			&desc);
+	}
+
 	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
 	return S_OK;
