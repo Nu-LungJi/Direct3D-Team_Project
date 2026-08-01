@@ -30,6 +30,23 @@ namespace Engine
 			return tResult;
 		}
 
+		void FillOtherShapeData(
+			const CPhysXManager& manager,
+			const physx::PxShape* pShape,
+			CHandle& hOther,
+			PX_CCT_HIT_DATA& tHit)
+		{
+			if (!pShape)
+				return;
+
+			if (const auto tShapeData = manager.FindShapeUserData(pShape))
+			{
+				hOther = tShapeData->hGameObject;
+				tHit.eOtherShapeType = tShapeData->eType;
+				tHit.iOtherShapeSubIndex = tShapeData->iSubIndex;
+			}
+		}
+
 		physx::PxControllerBehaviorFlags ConvertBehavior(PX_CCT_BEHAVIOR eBehavior)
 		{
 			const uint8_t iBehavior = static_cast<uint8_t>(eBehavior);
@@ -71,9 +88,11 @@ namespace Engine
 			CHandle hOther{};
 			if (const auto userData = pManager->FindActorUserData(hit.actor))
 				hOther = userData->hGameObject;
+			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
+			FillOtherShapeData(*pManager, hit.shape, hOther, tHit);
 
 			pManager->QueueCCTShapeHit(
-				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+				pOwner->GetGameObject()->GetHandle(), hOther, tHit);
 		}
 
 		void onControllerHit(const physx::PxControllersHit& hit) override
@@ -89,9 +108,13 @@ namespace Engine
 			CHandle hOther{};
 			if (const auto userData = pManager->FindActorUserData(pActor))
 				hOther = userData->hGameObject;
+			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
+			physx::PxShape* pOtherShape{};
+			if (pActor && pActor->getShapes(&pOtherShape, 1) == 1)
+				FillOtherShapeData(*pManager, pOtherShape, hOther, tHit);
 
 			pManager->QueueCCTControllerHit(
-				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+				pOwner->GetGameObject()->GetHandle(), hOther, tHit);
 		}
 
 		void onObstacleHit(const physx::PxControllerObstacleHit& hit) override

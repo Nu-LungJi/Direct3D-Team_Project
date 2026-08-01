@@ -77,6 +77,8 @@ namespace Engine
 	struct PX_CCT_HIT_DATA
 	{
 		CGameObject* pGameObject{};
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 		_float3 vWorldPosition{};
 		_float3 vWorldNormal{};
 		_float3 vMoveDirection{};
