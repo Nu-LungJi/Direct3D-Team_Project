@@ -142,10 +142,35 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComHitboxRigidbody", &Desc, &m_pComPxRigidBody)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
+		CComPxBoxCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = {0.5f, 0.5f, 0.5f} });
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.iShapeSubIndex = ETOUI(PLAYER_SHAPE::PLAYER_SHAPE_HURTBOX);
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
+		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::NONE);
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.tFilter = pDesc->tFilter;
 		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.iShapeSubIndex = ETOUI(PLAYER_SHAPE::CCT_CAPSULE);
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
@@ -770,6 +795,8 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 	ApplyGroundFollow(fTimeDelta);
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
+	m_pComPxRigidBody->SetKinematicTarget(m_pComCharacterController->GetPosition(), GetTransform().GetQuaternion());
+
 #ifdef _DEBUG
 	UpdateStandingGameObjectDebugLog();
 #endif
@@ -1358,7 +1385,7 @@ void CPlayer::Attack_Magic_Bullet()
 
 	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
 	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43 };
-
+	
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 
 	if (pTarget)
