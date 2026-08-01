@@ -225,7 +225,7 @@ HRESULT CLevelCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 		TmbGurdianDesc.TargetHandle = hPlayer.value();
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";
 		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
-		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(-6.f, -215.f, 156.f,1.f));
+		TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
 		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
 		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/DeadTest.json";
 		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
@@ -239,7 +239,70 @@ HRESULT CLevelCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 			return E_FAIL;
 		}
 	}
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
 
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+		auto NormalTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+		if (!NormalTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Terrain");
+			return E_FAIL;
+		}
+	}
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Axe);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Axe";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
+
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+		auto NormalTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+		if (!NormalTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Terrain");
+			return E_FAIL;
+		}
+	}
+	{
+		//리트리트리트리트엘리트리트리트리트리
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+		TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
+		TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
+		TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
+		auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+		if (!EliteTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }
 

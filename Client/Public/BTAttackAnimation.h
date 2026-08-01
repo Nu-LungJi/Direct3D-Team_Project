@@ -27,7 +27,7 @@ private:
 
 	_float3				m_vEmissiveColor{};
 	_float2				m_vRatio{};
-	_float				m_fDis{}, m_fTime{}, m_fIntensive{};
+	_float				m_fDis{}, m_fTime{}, m_fIntensive{0.5f};
 	_bool				m_bRatioInvert{ false };
 public:
 	static UPtr<CBTAttackAnimation> Create();

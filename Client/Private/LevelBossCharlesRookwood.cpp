@@ -258,6 +258,7 @@ HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 			return E_FAIL;
 		}
 	}
+
 	return S_OK;
 }
 
