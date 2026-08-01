@@ -67,6 +67,8 @@ CNvClothCape::CNvClothCape(
 	  m_pVertexShader{ Prototype.m_pVertexShader },
 	  m_pShadowVertexShader{
 		  Prototype.m_pShadowVertexShader },
+	  m_pPointShadowVertexShader{
+		  Prototype.m_pPointShadowVertexShader },
 	  m_pPixelShader{ Prototype.m_pPixelShader }
 {
 	XMStoreFloat4x4(
@@ -95,8 +97,14 @@ HRESULT CNvClothCape::InitializePrototype(void*)
 		GetResourceFirst<CResVertexShader>(
 			TAG_RES_GRP_PERMANENT_SHADER,
 			"VS_NvClothShadow");
+	m_pPointShadowVertexShader =
+		CGameInstance::Get().
+		GetResourceFirst<CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvClothPointShadow");
 	return m_pVertexShader &&
 		m_pShadowVertexShader &&
+		m_pPointShadowVertexShader &&
 		m_pPixelShader ?
 		S_OK : E_FAIL;
 }
@@ -1451,7 +1459,8 @@ HRESULT CNvClothCape::Render_Shadow(
 		!m_pComCBufferPerObject ||
 		!m_pComNvCloth ||
 		!m_pClothMesh ||
-		!m_pShadowVertexShader)
+		!m_pShadowVertexShader ||
+		!m_pPointShadowVertexShader)
 	{
 		return E_FAIL;
 	}
@@ -1482,12 +1491,17 @@ HRESULT CNvClothCape::Render_Shadow(
 
 	ComPtr<ID3D11InputLayout> pPreviousInputLayout{};
 	ComPtr<ID3D11VertexShader> pPreviousVertexShader{};
+	ComPtr<ID3D11GeometryShader> pPreviousGeometryShader{};
 	ComPtr<ID3D11ShaderResourceView>
 		pPreviousParticleSRV{};
 	pContext->IAGetInputLayout(
 		pPreviousInputLayout.GetAddressOf());
 	pContext->VSGetShader(
 		pPreviousVertexShader.GetAddressOf(),
+		nullptr,
+		nullptr);
+	pContext->GSGetShader(
+		pPreviousGeometryShader.GetAddressOf(),
 		nullptr,
 		nullptr);
 	pContext->VSGetShaderResources(
@@ -1499,10 +1513,16 @@ HRESULT CNvClothCape::Render_Shadow(
 		ETOUI(B_SLOTNUMBER::PER_OBJECT),
 		1,
 		m_pComCBufferPerObject->GetAdressOfBuffer());
+	// Point Shadow는 LightManager의 GS가 월드 좌표를 큐브맵 6면으로 확장한다.
+	// GS가 없는 Directional/Spot Shadow는 기존 SV_POSITION 출력 VS를 사용한다.
+	const auto& pShadowVertexShader =
+		pPreviousGeometryShader ?
+		m_pPointShadowVertexShader :
+		m_pShadowVertexShader;
 	pContext->IASetInputLayout(
-		m_pShadowVertexShader->GetInputLayout().Get());
+		pShadowVertexShader->GetInputLayout().Get());
 	pContext->VSSetShader(
-		m_pShadowVertexShader->GetVertexShader().Get(),
+		pShadowVertexShader->GetVertexShader().Get(),
 		nullptr,
 		0);
 	pContext->VSSetShaderResources(
