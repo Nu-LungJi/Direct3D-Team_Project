@@ -37,6 +37,8 @@ namespace Client
 		CLOTH_COLLIDER = 1u << 14,	// 망토·의상 시뮬레이션에 제공할 충돌체
 		DEBRIS = 1u << 15,		// 파편과 장식용 소형 물리 오브젝트
 		MOVING_PLATFORM = 1u << 16,	// 플레이어, 몬스터와 동적 물체가 올라탈 수 있는 움직이는 발판
+		PLAYER_HURTBOX = 1u << 17,	// 적 공격에 피격되는 플레이어의 부위별 판정
+		ENEMY_HURTBOX = 1u << 18,	// 플레이어 공격에 피격되는 적의 부위별 판정
 	};
 
 
@@ -57,6 +59,7 @@ namespace Client
 		Prototype_GameObject_TriggerCRW_BridgeBring,
 		Prototype_GameObject_TriggerCRW_BridgeFix,
 		Prototype_GameObject_TriggerCRW_ToBoss,
+		Prototype_GameObject_TriggerCRW_SpawnMonster1,
 		Prototype_GameObject_MyMagicSquareStep,
 		Prototype_GameObject_MyMagicSquareStepController,
 		Prototype_GameObject_BridgeCRW,
@@ -86,6 +89,12 @@ namespace Client
 	enum class MONSTER_TYPE{NORMAL,ELITE, BOSS};
 enum class PARTES { WEAPON, END };
 }
+
+template <>
+struct magic_enum::customize::enum_range<Client::COLLISION_LAYER>
+{
+	static constexpr bool is_flags = true;
+};
 
 extern HWND g_hWnd;
 extern HINSTANCE g_hInstance;

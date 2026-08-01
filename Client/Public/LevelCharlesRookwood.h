@@ -30,6 +30,7 @@ private:
 	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
+	HRESULT SpawnPlayerCape(CHandle hPlayer);
 
 	HRESULT SpawnStaticCollision();
 	HRESULT SpawnLightPlacement();

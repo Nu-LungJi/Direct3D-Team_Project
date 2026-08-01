@@ -108,12 +108,9 @@ _bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player)
 	return fPlayerDot >= TARGET_FRONT_DOT_THRESHOLD && fCameraDot >= TARGET_FRONT_DOT_THRESHOLD;
 }
 
-_bool CPlayer_SkillStateBase::TryApplySkillToTarget(
-	CPlayer& player,
-	PLAYER_SKILL_TYPE eSkillType) const
+_bool CPlayer_SkillStateBase::TryApplySkillToTarget(CPlayer& player,PLAYER_SKILL_TYPE eSkillType) const
 {
-	auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(
-		player.GetTargetHandle());
+	auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(player.GetTargetHandle());
 	return pMonster && pMonster->Check_Table(eSkillType);
 }
 

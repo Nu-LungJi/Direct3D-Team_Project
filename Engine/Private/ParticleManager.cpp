@@ -3382,8 +3382,22 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 		case SPAWN_COMMAND_KIND::BEAM:
 		{
 			auto& p = std::get<BEAM_PARAMS>(cmd.params);
-			XMStoreFloat4(&p.beamStart, XMVector3TransformCoord(XMLoadFloat4(&p.beamStart), matWorld));
-			XMStoreFloat4(&p.beamEnd, XMLoadFloat4(&p.beamEnd) + endPos);
+
+			// 시작점: 이펙트 로컬 좌표 → 지팡이 월드 좌표
+			XMStoreFloat4(
+				&p.beamStart,
+				XMVector3TransformCoord(
+					XMLoadFloat4(&p.beamStart),
+					matWorld
+				)
+			);
+
+			// 끝점: 전달받은 몬스터 월드 좌표를 그대로 사용
+			XMStoreFloat4(
+				&p.beamEnd,
+				XMVectorSetW(endPos, 1.f)
+			);
+
 			break;
 		}
 		case SPAWN_COMMAND_KIND::PATTERN:
@@ -3552,6 +3566,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vStartPos, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SMOKE>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SCircleSpreadParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}

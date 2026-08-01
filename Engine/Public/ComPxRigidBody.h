@@ -49,6 +49,8 @@ public:
 	_bool AddForce(const _float3& vForce);
 	_bool AddImpulse(const _float3& vImpulse);
 	_bool AddTorque(const _float3& vTorque);
+	// 위치만 변경하고 현재 Actor 회전은 유지한다.
+	_bool SetKinematicTarget(const _float3& vPosition);
 	_bool SetKinematicTarget(const _float3& vPosition, const _float4& vQuaternion);
 
 	_bool SetGravityEnabled(_bool bEnabled);
