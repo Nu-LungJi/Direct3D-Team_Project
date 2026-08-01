@@ -1253,7 +1253,12 @@ void CEffectManager::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const 
 
 void CEffectManager::ClearAllRunningEffect()
 {
-	for (auto& effects : m_Instances) {
-		StopEffect(effects.first);
-	}
+	std::vector<EFFECT_INSTANCE_ID> effectIds;
+	effectIds.reserve(m_Instances.size());
+
+	for (const auto& effect : m_Instances)
+		effectIds.push_back(effect.first);
+
+	for (EFFECT_INSTANCE_ID effectId : effectIds)
+		StopEffect(effectId);
 }
