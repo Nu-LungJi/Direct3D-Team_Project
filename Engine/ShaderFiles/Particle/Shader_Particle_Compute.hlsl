@@ -14,15 +14,46 @@ cbuffer CB_PER_PARTICLE : register(b11)
 };
 
 
-AppendStructuredBuffer<uint> gDeadList : register(u0);
+RWStructuredBuffer<uint> gDeadList : register(u0);
 RWStructuredBuffer<ParticleData> g_ParticleBuffer : register(u1);
+RWStructuredBuffer<uint> gDeadCount : register(u2);
  
+
+void PushDeadIndex(uint particleIndex)
+{
+	uint writeIndex;
+
+	InterlockedAdd(
+		gDeadCount[0],
+		1,
+		writeIndex);
+
+	if (writeIndex < g_iNumInstances)
+	{
+		gDeadList[writeIndex] = particleIndex;
+	}
+	else
+	{
+		uint ignored;
+
+		InterlockedAdd(
+			gDeadCount[0],
+			0xffffffffu,
+			ignored);
+	}
+}
+
+
 [numthreads(256, 1, 1)]
 void CSMain(uint id : SV_DispatchThreadID)
 {
-    ParticleData p = g_ParticleBuffer[id];
-    if (p.alive == 0)
-        return;
+	if (id >= g_iNumInstances)
+		return;
+
+	ParticleData p = g_ParticleBuffer[id];
+
+	if (p.alive == 0)
+		return;
 
     p.life -= g_fTimeDelta;
     if ((p.iBehaviorType & BEHAVIOR_GRAVITY) != 0)
@@ -31,22 +62,44 @@ void CSMain(uint id : SV_DispatchThreadID)
         p.velocity.y += kGravity * g_fTimeDelta; 
     }
     p.position += p.velocity * g_fTimeDelta; 
-    float ageRatio = saturate(1.0f - (p.life / max(p.maxLife, 0.0001f)));
-    p.size = lerp(p.startSize, p.endSize, ageRatio);
-    
-    
+	float elapsedTime = p.maxLife - p.life;
 
+	float lifeRatio = saturate(elapsedTime / max(p.maxLife, 0.0001f));
+
+	float sizeRatio = lifeRatio;
+
+	if ((p.iBehaviorType & BEHAVIOR_SIZESTOP) != 0)
+	{
+		if (p.stopSizeTime <= 0.f)
+			sizeRatio = 1.f;
+		else
+			sizeRatio = saturate(elapsedTime / p.stopSizeTime);
+	}
+
+	p.size = lerp(p.startSize, p.endSize, sizeRatio);
     
     
-    if (g_iTotalFrames > 0)
-    {
-        uint frame = (uint) (ageRatio * g_iTotalFrames);
-        p.frameIndex = min(frame, g_iTotalFrames - 1);
-    }
-    else
-    {
-        p.frameIndex = 0;
-    }
+	if ((p.iBehaviorType & BEHAVIOR_KEEPROTATE) != 0)
+	{
+		
+		const float deltaAngle = p.fRotationSpeed * g_fTimeDelta;
+
+		p.rotation.x += p.roationAxis.x * deltaAngle;
+
+		p.rotation.y += p.roationAxis.y * deltaAngle;
+
+		p.rotation.z += p.roationAxis.z * deltaAngle;
+
+	}
+	if (g_iTotalFrames > 0)
+	{
+		uint frame = (uint) (lifeRatio * g_iTotalFrames);
+		p.frameIndex = min(frame, g_iTotalFrames - 1);
+	}
+	else
+	{
+		p.frameIndex = 0;
+	}
 
     if (p.life <= 0)
     {
@@ -57,7 +110,7 @@ void CSMain(uint id : SV_DispatchThreadID)
             p.velocity = p.originalVelocity;
             p.alive = 1;
             p.emissive = p.originalEmissive;
-                
+			p.color = p.color;
 
         }
         else
@@ -71,8 +124,8 @@ void CSMain(uint id : SV_DispatchThreadID)
             p.iBehaviorType = 0;
             p.velocity = 0;
             
-            gDeadList.Append(id);
-        }
+			PushDeadIndex(id);
+		}
     }
     
     g_ParticleBuffer[id] = p;

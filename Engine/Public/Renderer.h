@@ -26,12 +26,8 @@ public:
 
 	HRESULT AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 
-
-
 public:
 	HRESULT	Reset_DefaultShader(RENDERGROUP _Group);
-
-
 
 private:
 	HRESULT InitializeShaderResource();
@@ -69,10 +65,14 @@ public:
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
 	HRESULT	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	HRESULT	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_ShadowCubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	HRESULT Generate_CubeMapList(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, uint32_t _Resolution, uint32_t _MaxLightCount);
 	HRESULT	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY);
 	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY);
+
+	HRESULT Generate_CubeMapFace(ID3D11RenderTargetView** _RTV, ID3D11Texture2D* _Texture, uint32_t _FaceIndex, uint32_t _MipLevel);
+
+	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
@@ -93,15 +93,19 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
-	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBrightPass{};		// Bloom SwapRTV
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetLight{};
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3D{};			// 3DUI
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
 
-	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBlurPass{};		// BlurPass
-	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomPass{};		// BloomPass
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetLensFlare{};
+
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_HalfScaleA{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_HalfScaleB{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_QuarterScaleA{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_QuarterScaleB{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomResult{};	
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric{};
@@ -124,11 +128,18 @@ private:
 	SPtr<CResVertexShader>		m_pUI3DVertexShader{};
 	SPtr<CResPixelShader>		m_pUI3DPixelShader{};
 
-	SPtr<CResPixelShader>		m_pBrightPassPixelShader{};
-	SPtr<CResPixelShader>		m_pVerticalBlurPixelShader{};
-	SPtr<CResPixelShader>		m_pBloomPassPixelShader{};
+	SPtr<CResPixelShader>		m_pBrightPassPS{};
+	SPtr<CResPixelShader>		m_pVerticalBlurPS{};
+	SPtr<CResPixelShader>		m_pHorizontalBlurPS{};
+	SPtr<CResPixelShader>		m_pBloomPassPS{};
+	SPtr<CResPixelShader>		m_pUpSamplePS{};
+	SPtr<CResPixelShader>		m_pDownSamplePS{};
+
+	SPtr<CResCBuffer>			m_pBloomCBuffer{};
+	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
 	SPtr<CResComputeShader>		m_pVolumetricComputeShader{};
+	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
 
 private:
 	ComPtr<ID3D11Texture2D>				m_pBackBufferTexture{};
@@ -149,17 +160,27 @@ private:
 	SPtr<CResViewPort> m_pBackBufferViewPort{};
 
 private:
+	ComPtr<ID3D11ShaderResourceView>	m_pSRVIrradianceMap{};
+	ComPtr<ID3D11ShaderResourceView>	m_pSRVPreFilteredMap{};
+	ComPtr<ID3D11ShaderResourceView>	m_pSRVBRDFLookUpMap{};
+
+	ComPtr<ID3D11Texture2D>				m_pIrridianceTex2D{ };
+	ComPtr<ID3D11Texture2D>				m_pPreFilteredTex2D{ };
+
+private:
 	SPtr<CResVertexShader> m_pFullscreenVS{};
 	SPtr<CResPixelShader> m_pFullscreenPS{};
 	SPtr<CResVIBuffer> m_pFullscreenVIBuffer{};
 
 	SPtr<CResPixelShader>	m_pPostProcessPS{};
 
-
-
 	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
-
 	ComPtr<ID3D11UnorderedAccessView>	m_pUAVVolumetric = { nullptr };
+
+	ComPtr<ID3D11UnorderedAccessView>	m_pUAVLensFlare = { nullptr };
+private:
+	SPtr<CResViewPort>		m_pHalfViewPort{};
+	SPtr<CResViewPort>		m_pQuarterViewPort{};
 
 private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
@@ -179,6 +200,7 @@ private:
 	HRESULT Render_UI3D();
 
 	HRESULT Render_PostProcess();
+	HRESULT Render_PostProcess_LensFlare();
 	HRESULT Render_PostProcess_Bloom();
 	HRESULT	Render_PostProcess_Filter();
 
@@ -202,6 +224,16 @@ private:
 
 	HRESULT Initialize_Debugging();
 	HRESULT	Render_Debugging();
+
+	// Bloom Helper Function
+	HRESULT	Update_TexelSize(_float _Width, _float _Height);
+	HRESULT Render_BrightPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture);
+	HRESULT	Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture);
+	HRESULT	Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture);
+
+	HRESULT Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _HalfBloomTex, const SPtr<CResDynamicTexture2D>& _QuarterBloomTex);
+	HRESULT Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex);
+	HRESULT Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture);
 
 private:
 	XMFLOAT4X4					m_fDebugWorldMatrix[9];
@@ -230,17 +262,20 @@ private:
 	HRESULT RenderUI3D();
 	HRESULT RenderUI();
 
-
 private:
-	_bool			ApplyFilter = { true };		// 필터 적용 ON-OFF
-	_bool			ApplyVolumetric = { true };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyFilter		= { false };		// 필터 적용 ON-OFF
+	_bool			ApplyVolumetric = { false };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyShadow		= { true };			// 그림자 ON-OFF
+
 	RENDER_CTX		RenderContext = {};
-	_bool bApplyShadow = { true };
-	XMMATRIX	ShadowLightVP{};
+	XMMATRIX		ShadowLightVP{};
 	SPtr<CResRasterizerState>	Rasterizer{};
 
-
-
+	_float2			m_fScreenPosition{};
+	_float			m_fExpandDuration{};
+	_float			m_fCurrentLifeTime{};
+	_float			m_fScale{};
+	
 // Hi-Z buffer ownership
 private:
 	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료

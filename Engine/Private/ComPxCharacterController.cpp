@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ComPxCharacterController.h"
+#include "ComPxJoint.h"
 #include "PhysXManager.h"
 
 #pragma push_macro("new")
@@ -27,6 +28,23 @@ namespace Engine
 			tResult.vMoveDirection = { hit.dir.x, hit.dir.y, hit.dir.z };
 			tResult.fMoveLength = hit.length;
 			return tResult;
+		}
+
+		void FillOtherShapeData(
+			const CPhysXManager& manager,
+			const physx::PxShape* pShape,
+			CHandle& hOther,
+			PX_CCT_HIT_DATA& tHit)
+		{
+			if (!pShape)
+				return;
+
+			if (const auto tShapeData = manager.FindShapeUserData(pShape))
+			{
+				hOther = tShapeData->hGameObject;
+				tHit.eOtherShapeType = tShapeData->eType;
+				tHit.iOtherShapeSubIndex = tShapeData->iSubIndex;
+			}
 		}
 
 		physx::PxControllerBehaviorFlags ConvertBehavior(PX_CCT_BEHAVIOR eBehavior)
@@ -70,9 +88,11 @@ namespace Engine
 			CHandle hOther{};
 			if (const auto userData = pManager->FindActorUserData(hit.actor))
 				hOther = userData->hGameObject;
+			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
+			FillOtherShapeData(*pManager, hit.shape, hOther, tHit);
 
 			pManager->QueueCCTShapeHit(
-				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+				pOwner->GetGameObject()->GetHandle(), hOther, tHit);
 		}
 
 		void onControllerHit(const physx::PxControllersHit& hit) override
@@ -88,9 +108,13 @@ namespace Engine
 			CHandle hOther{};
 			if (const auto userData = pManager->FindActorUserData(pActor))
 				hOther = userData->hGameObject;
+			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
+			physx::PxShape* pOtherShape{};
+			if (pActor && pActor->getShapes(&pOtherShape, 1) == 1)
+				FillOtherShapeData(*pManager, pOtherShape, hOther, tHit);
 
 			pManager->QueueCCTControllerHit(
-				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+				pOwner->GetGameObject()->GetHandle(), hOther, tHit);
 		}
 
 		void onObstacleHit(const physx::PxControllerObstacleHit& hit) override
@@ -243,15 +267,15 @@ void CComPxCharacterController::UpdateGUI()
 
 	PX_FILTER_DESC tFilter = GetFilter();
 	bool bFilterChanged{};
-	bFilterChanged |= ImGui::InputScalar(
-		"Layer", ImGuiDataType_U32, &tFilter.iLayer, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Simulation Mask", ImGuiDataType_U32, &tFilter.iSimulationMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Query Mask", ImGuiDataType_U32, &tFilter.iQueryMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
+	if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+	{
+		bFilterChanged |= pPhysXManager->EditCollisionLayerGUI(
+			"Layer", tFilter.iLayer);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Simulation Mask", tFilter.iSimulationMask);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Query Mask", tFilter.iQueryMask);
+	}
 	if (bFilterChanged)
 		SetFilter(tFilter);
 
@@ -277,6 +301,40 @@ CComPxCharacterController::CComPxCharacterController(const CComPxCharacterContro
 }
 CComPxCharacterController::~CComPxCharacterController() { }
 
+PxRigidActor* CComPxCharacterController::GetActor() const
+{
+	return m_pController ? m_pController->getActor() : nullptr;
+}
+
+void CComPxCharacterController::RegisterJoint(
+	CComPxJoint* pJoint)
+{
+	if (pJoint)
+		m_Joints.insert(pJoint);
+}
+
+void CComPxCharacterController::UnregisterJoint(
+	CComPxJoint* pJoint)
+{
+	if (pJoint)
+		m_Joints.erase(pJoint);
+}
+
+void CComPxCharacterController::ReleaseConnectedJoints()
+{
+	while (!m_Joints.empty())
+	{
+		CComPxJoint* pJoint = *m_Joints.begin();
+		if (!pJoint)
+		{
+			m_Joints.erase(m_Joints.begin());
+			continue;
+		}
+
+		pJoint->OnCharacterControllerReleased(this);
+	}
+}
+
 HRESULT CComPxCharacterController::Initialize(void* pArg)
 {
 	auto* pDesc = static_cast<DESC*>(pArg);
@@ -293,6 +351,7 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	}
 
 	m_tFilter = pDesc->tFilter;
+	m_iShapeSubIndex = pDesc->iShapeSubIndex;
 	
 	m_pImpl = std::make_unique<CComPxCharacterController::Impl>();
 	m_pImpl->pOwner = this;
@@ -351,6 +410,7 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	PX_SHAPE_USER_DATA shapeUserData{};
 	shapeUserData.hGameObject = GetGameObject()->GetHandle();
 	shapeUserData.eType = PX_SHAPE_TYPE::CAPSULE;
+	shapeUserData.iSubIndex = m_iShapeSubIndex;
 	if (!pPhysXManager->RegisterShape(pShape, shapeUserData))
 	{
 		pPhysXManager->UnregisterActor(pActor);
@@ -405,6 +465,33 @@ bool CComPxCharacterController::IsCollidingUp() const
 bool CComPxCharacterController::IsCollidingSide() const
 {
 	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES);
+}
+
+std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() const
+{
+	if (!m_pController)
+		return std::nullopt;
+
+	PxControllerState state{};
+	m_pController->getState(state);
+
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	if (!pPhysXManager)
+		return std::nullopt;
+
+	if (state.touchedShape)
+	{
+		if (const auto userData = pPhysXManager->FindShapeUserData(state.touchedShape))
+			return userData->hGameObject;
+	}
+
+	if (state.touchedActor)
+	{
+		if (const auto userData = pPhysXManager->FindActorUserData(state.touchedActor))
+			return userData->hGameObject;
+	}
+
+	return std::nullopt;
 }
 
 void CComPxCharacterController::SetPosition(const XMFLOAT3& vPosition)
@@ -549,6 +636,8 @@ UPtr<CPrototype> CComPxCharacterController::Clone(void* pArg)
 
 void CComPxCharacterController::Free()
 {
+	ReleaseConnectedJoints();
+
 	if (m_pController)
 	{
 		if (auto* pActor = m_pController->getActor())

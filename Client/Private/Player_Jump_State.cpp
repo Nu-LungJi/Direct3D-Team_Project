@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "Player_StateMachine.h"
+#include "PlayerAnimationRatioGuard.h"
 #include "ComAnimator.h"
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
@@ -21,46 +22,56 @@ void CPlayer_Jump_State::Enter(CStateMachine* pStateMachine)
 
 	auto* animator = player->GetAnimator();
 	auto* moveIntent = player->GetMoveIntent();
-	if (!animator || !moveIntent || !player->GetCharacterMotor())
+	auto* motor = player->GetCharacterMotor();
+	if (!animator || !moveIntent || !motor)
 	{
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
 	}
+	m_StartAnimations[(size_t)JUMP_STATE::IDLE] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_JumpStart_anm.bin");
+	m_StartAnimations[(size_t)JUMP_STATE::JOG] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Jump_LF_anm.bin");
+	m_StartAnimations[(size_t)JUMP_STATE::SPRINT] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fwd_LU_anm.bin");
 
-	m_iStartAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_JumpStart_anm.bin");
-	m_iFallAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fall_anm.bin");
-	m_iLandAnimation = FindAnimationIndex(
-		*player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Land_Soft_v2_anm.bin");
+	m_iFallAnimation = FindAnimationIndex(*player,"AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fall_anm.bin");
 
-	if (m_iStartAnimation < 0 ||
-		m_iFallAnimation < 0 ||
-		m_iLandAnimation < 0)
-	{
-		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
-		return;
-	}
-
-	m_ePhase = PHASE::START;
-	m_bWasAirborne = !player->GetCharacterMotor()->IsGrounded();
+	m_LandAnimations[(size_t)JUMP_STATE::IDLE] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Land_Soft_v2_anm.bin");
+	m_LandAnimations[(size_t)JUMP_STATE::JOG] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Sneak_Land_2Jog_v4_anm.bin");
+	m_LandAnimations[(size_t)JUMP_STATE::SPRINT] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Land_2Sprint_v2_anm.bin");
 	player->SetMovementLocked(false);
 	player->SetRootMotionRotationActive(false);
 	player->SetRootMotionTranslationActive(false);
 
+	m_bWasAirborne = !motor->IsGrounded();
 	if (m_bWasAirborne)
 	{
-		// Preserve the current locomotion pose for a short drop. Fall starts
-		// only after downward velocity reaches the configured threshold.
+		// Locomotion에서 절벽 낙하로 들어온 경우에는 점프 힘을 주지 않는다.
+		PlayFall(*player);
+		return;
 	}
-	else
+
+	m_ePhase = PHASE::START;
+	moveIntent->RequestJump();
+	if (m_StartAnimations[(size_t)JUMP_STATE::IDLE] >= 0)
 	{
-		moveIntent->RequestJump();
-		animator->Play_Anim(m_iStartAnimation, false, 0.08f);
+
+		const _float Move = player->GetCurrentMoveSpeed();
+
+		if (Move >= 7.5f && Move <= 10.f) {
+
+			animator->Play_Anim(m_StartAnimations[(size_t)JUMP_STATE::JOG], false, 0.08f);
+		}
+		else if (Move > 10.f) {
+
+			animator->Play_Anim(m_StartAnimations[(size_t)JUMP_STATE::SPRINT], false, 0.08f);
+		}
+		else {
+			animator->Play_Anim(m_StartAnimations[(size_t)JUMP_STATE::IDLE], false, 0.08f);
+
+		}
 	}
+	
+	else
+		PlayFall(*player);
 }
 
 void CPlayer_Jump_State::Exit(CStateMachine* pStateMachine)
@@ -75,11 +86,8 @@ void CPlayer_Jump_State::Exit(CStateMachine* pStateMachine)
 	m_bWasAirborne = false;
 }
 
-void CPlayer_Jump_State::Update(
-	CStateMachine* pStateMachine,
-	_float fTimeDelta)
+void CPlayer_Jump_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 {
-	(void)fTimeDelta;
 
 	auto* player = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	auto* playerStateMachine = Cast<CPlayer_StateMachine>(pStateMachine);
@@ -95,19 +103,33 @@ void CPlayer_Jump_State::Update(
 	}
 
 	const _bool bGrounded = motor->IsGrounded();
+	if (!bGrounded && player->HasRawMoveInput())
+	{
+		auto* moveIntent = player->GetMoveIntent();
+		if (moveIntent)
+		{
+			moveIntent->SetFacingIntent(
+				player->GetRawMoveDirection(),
+				360.f);
+		}
+	}
 	const _float fVerticalSpeed = motor->GetVelocity().y;
 	if (!bGrounded || fVerticalSpeed > 0.f)
 		m_bWasAirborne = true;
 
+	
+	const _float Ratio =
+		PlayerAnimationRatioGuard::Sanitize(
+			animator->GetPlayAnimRatio());
+
 	switch (m_ePhase)
 	{
 	case PHASE::START:
-		if (m_bWasAirborne && bGrounded)
+		if (m_bWasAirborne && bGrounded && fVerticalSpeed <= 0.f)
 		{
-			playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+			PlayLand(*player);
 		}
-		else if (m_bWasAirborne &&
-			fVerticalSpeed <= m_fFallStartVerticalSpeed)
+		else if ((m_bWasAirborne && fVerticalSpeed <= m_fFallStartVerticalSpeed) || Ratio >= m_fJumpStartEnd)
 		{
 			PlayFall(*player);
 		}
@@ -119,15 +141,26 @@ void CPlayer_Jump_State::Update(
 		break;
 
 	case PHASE::LAND:
+		if (player->HasRawMoveInput())
+		{
+			auto* moveIntent = player->GetMoveIntent();
+			if (moveIntent)
+			{
+				const _float fTurnSpeed =
+					player->IsSprintRequested() ? 240.f : 360.f;
+				moveIntent->SetFacingIntent(
+					player->GetRawMoveDirection(),
+					fTurnSpeed);
+			}
+		}
+
 		if (animator->GetFinish())
 			playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		break;
 	}
 }
 
-int32_t CPlayer_Jump_State::FindAnimationIndex(
-	const CPlayer& player,
-	_string_view sAnimationName) const
+int32_t CPlayer_Jump_State::FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const
 {
 	auto* modelInstance = player.GetModelInstance();
 	if (!modelInstance || !modelInstance->GetModel())
@@ -145,22 +178,41 @@ int32_t CPlayer_Jump_State::FindAnimationIndex(
 
 void CPlayer_Jump_State::PlayFall(CPlayer& player)
 {
-	auto* animator = player.GetAnimator();
-	if (!animator || m_iFallAnimation < 0)
-		return;
-
 	m_ePhase = PHASE::FALL;
-	animator->Play_Anim(m_iFallAnimation, true, 0.1f);
+
+	auto* animator = player.GetAnimator();
+	if (animator && m_iFallAnimation >= 0)
+		animator->Play_Anim(m_iFallAnimation, true, 0.6f);
 }
 
 void CPlayer_Jump_State::PlayLand(CPlayer& player)
 {
-	auto* animator = player.GetAnimator();
-	if (!animator || m_iLandAnimation < 0)
-		return;
-
 	m_ePhase = PHASE::LAND;
-	animator->Play_Anim(m_iLandAnimation, false, 0.08f);
+
+	auto* animator = player.GetAnimator();
+
+	
+
+	if (animator)
+	{
+		//Jog 목표 속도 : 7.5f
+		//Sprint 목표 속도 : 15.f
+		
+		const _float Move = player.GetCurrentMoveSpeed();
+
+		if (Move > std::numeric_limits<_float>::epsilon() &&  Move<=10.f) {
+			animator->Play_Anim(m_LandAnimations[(size_t)JUMP_STATE::JOG], false, 0.08f);
+
+		}
+		else if (Move > 10.f) {
+
+			animator->Play_Anim(m_LandAnimations[(size_t)JUMP_STATE::SPRINT], false, 0.08f);
+		}
+		else if(Move <= std::numeric_limits<_float>::epsilon()) {
+			animator->Play_Anim(m_LandAnimations[(size_t)JUMP_STATE::IDLE], false, 0.08f);
+
+		}
+	}
 }
 
 SPtr<CPlayer_Jump_State> CPlayer_Jump_State::Create()

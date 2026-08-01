@@ -21,6 +21,7 @@
 
 #include "MyMagicSquareStepController.h"
 #include "MyMagicSquareStep.h"
+#include "MedDebris.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCreatureLoader::Load()
@@ -96,7 +97,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 				}
 			}
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Axe_Model_Resource",
-				CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Axe.fbx")))
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin")))
 			{
 				E::CResStaticModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
@@ -109,7 +110,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Mace_Model_Resource",
-				CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Mace.fbx"))) {
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
 
 				E::CResStaticModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
@@ -122,7 +123,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			}
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", "Static_Sword_Model_Resource",
-				CResStaticModel::Create("./Resources/SampleClient/Models/OriginData/Static/Tomb_Sword.fbx"))) {
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
 
 				E::CResStaticModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
@@ -131,6 +132,33 @@ std::future<bool> CLevelCreatureLoader::Load()
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
 					//return false;
+				}
+			}
+
+			// debris
+			{
+				for (uint32_t i = 0; i < 13; ++i)
+				{
+					std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
+					StringID resTag = "Static_Med_Debris_" + std::to_string(i);
+					if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_CREATURE", resTag,
+						CResStaticModel::Create(path))) {
+
+						E::CResStaticModel::DESC pDesc{};
+						pDesc.PreTransformMatrix = XMMatrixIdentity();
+
+						if (FAILED(res->Load(pDesc)))
+						{
+							MSG_BOX("LEVEL_CREATURE Failed Static_Med_Debris");
+						}
+					}
+				}
+				//MedDebris
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					"LEVEL_CREATURE", "Prototype_GameObject_MedDebris", CMedDebris::Create())))
+				{
+					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_MedDebris");
+					return false;
 				}
 			}
 
@@ -146,6 +174,9 @@ std::future<bool> CLevelCreatureLoader::Load()
 					//return false;
 				}
 			}
+
+
+
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(
 				"LEVEL_CREATURE", "Static_SquareStep_A_Resource",
 				CResStaticModel::Create(
@@ -153,7 +184,7 @@ std::future<bool> CLevelCreatureLoader::Load()
 			{
 				E::CResStaticModel::DESC Desc{};
 				Desc.PreTransformMatrix =
-					XMMatrixRotationX(XMConvertToRadians(90.f));
+					XMMatrixRotationX(XMConvertToRadians(0.f));
 				if (FAILED(res->Load(Desc)))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Static_SquareStep_A_Resource");
@@ -212,7 +243,18 @@ std::future<bool> CLevelCreatureLoader::Load()
 				return false;
 			}
 			
-			
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>("LEVEL_PLAYGROUND", "Static_Wand_Model_Resource",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin")))
+			{
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("PLAY_GROUND Failed Static_Wand_Model_Resource");
+					//return false;
+				}
+			}
 			
 			
 
@@ -249,7 +291,11 @@ std::future<bool> CLevelCreatureLoader::Load()
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_Component_Player_StateMachine");
 				return false;
 			}
-
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_PLAYGROUND", "Prototype_GameObject_Wand", CWeapon::Create())))
+			{
+				MSG_BOX("PLAY_GROUND Failed Prototype_GameObject_Wand");
+				return false;
+			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CREATURE", "Prototype_GameObject_Player", CPlayer::Create())))
 			{
 				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Player");

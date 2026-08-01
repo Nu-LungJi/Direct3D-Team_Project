@@ -26,11 +26,15 @@ public:
 private:
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
-	HRESULT SpawnDebugPlayerCamera(std::optional<CHandle> hDebugPlayer);
+
+	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
-	std::optional<CHandle> SpawnDebugPlayer();
+
 	HRESULT SpawnStaticCollision();
+	HRESULT SpawnLightPlacement();
+	HRESULT SpawnBridge();
+	HRESULT SpawnMyMagicStepController();
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };

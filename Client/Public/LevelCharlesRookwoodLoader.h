@@ -9,6 +9,8 @@ public:
 
 	static std::future<bool> Load();
 	static std::future<bool> UnLoad();
+private:
+	static HRESULT MonsterLoad_InWorker();
 
 private:
 	static _bool UILoad();

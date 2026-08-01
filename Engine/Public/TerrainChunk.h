@@ -35,6 +35,13 @@ struct TERRAIN_MASK_DIRTY_RECT
 	bool valid = false;
 };
 
+//CTerrainChunk
+//├─ 담당 구역의 정점 / 인덱스 복사본
+//├─ Vertex / Index Buffer
+//├─ 텍스처 Blend Mask
+//├─ Blend Mask Texture와 SRV
+//└─ 해당 구역의 Bounds
+
 class ENGINE_DLL CTerrainChunk final : public CEngineBase
 {
 public:
@@ -83,8 +90,12 @@ private:
 	uint32_t m_iVertexCountZ = 0;
 	_float m_fVertexSpacing = 1.f;
 	uint32_t m_iMaskResolution = 0;
+
+	// 청크별 CPU Blend Mask와 Terrain 로컬 공간 Bounds
 	std::vector<uint8_t> m_BlendMask{};
 	BoundingBox m_LocalBounds{};
+
+	// 전체 Terrain에서 복사한 청크 범위의 CPU Mesh 데이터
 	std::vector<VTX_NORMAL_TEX> m_Vertices{};
 	std::vector<uint32_t> m_Indices{};
 

@@ -72,7 +72,7 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		XMFLOAT4X4	g_LightViewProj[MAX_LIGHT_MAPCOUNT];
+		XMFLOAT4X4	g_LightViewProj[POINT_SHADOW_FACE_COUNT];
 
 		_float3		LightDirection;
 		_float		LightIntensity;
@@ -206,8 +206,12 @@ namespace Engine
 		uint32_t ownerID = 0;
 		uint32_t iBehaviorType = 0;
 		_bool    loop;
-		_float3  originalPosition;
-		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float3  originalPosition{};
+		_float3 originalVelocity{}; // 원래 스폰 속도+ 방향
+		_float fStopSizeTime = 0.f;
+		_float3 pad1;
+		_float3 rotationAxis {};
+		_float fRotationSpeed{};
 	} PARTICLE_SPAWN_DATA;
 	static_assert(sizeof(PARTICLE_SPAWN_DATA) % 16 == 0);
 
@@ -230,6 +234,7 @@ namespace Engine
 		_float2 vUV;
 		_float4 vColor;
 		_float4 vEmissive;
+		_float4 vEndEmissive;
 	}BEAM_VERTEX;
 
 	typedef struct ChunkHeader
@@ -501,6 +506,7 @@ namespace Engine
 		std::vector<std::vector<_float4x4>> CombinedBoneMatrices;
 		
 		_bool bModelStatic = false;
+		_bool bGPUSkinned = false;
 
 		_bool bActiveThisFrame = false;
 

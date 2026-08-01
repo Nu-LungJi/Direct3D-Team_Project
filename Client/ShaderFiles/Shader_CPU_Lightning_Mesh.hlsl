@@ -1,0 +1,140 @@
+#include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
+
+#define MAX_LIGHT_COUNT     8
+#define LIGHT_DIRECTIONAL   0
+#define LIGHT_POINT         1
+#define LIGHT_SPOTLIGHT     2
+
+const static float FlickeringSpeed = 20.f;
+const static float CoreThickness = 2.f;
+
+struct VS_IN
+{
+	float3 vPosition : POSITION;
+	float3 vNormal : NORMAL;
+	float3 vTangent : TANGENT;
+	float3 vBinormal : BINORMAL;
+	float2 vTexcoord : TEXCOORD0;
+
+	float4 vWorld0 : INSTANCE_WORLD0;
+	float4 vWorld1 : INSTANCE_WORLD1;
+	float4 vWorld2 : INSTANCE_WORLD2;
+	float4 vWorld3 : INSTANCE_WORLD3;
+
+	float4 vColor : INSTANCE_COLOR0;
+
+	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE0;
+	float4 vInstEmissive : INSTANCE_EMISSIVE1;
+	float4 vInstEndEmissive : INSTANCE_EMISSIVE2;
+
+	float2 uvOffset : INSTANCE_UVOFFSET;
+	float2 uvSize : INSTANCE_UVSIZE;
+
+	float life : INSTANCE_LIFE;
+	float maxLife : INSTANCE_MAXLIFE;
+
+	uint iBehaviorType : INSTANCE_BEHAVIORTYPE;
+};
+
+struct VS_OUT
+{
+	float4 vPosition : SV_POSITION;
+	float2 vTexcoord : TEXCOORD0;
+	float3 vWorldPos : TEXCOORD1;
+
+	float life : TEXCOORD2;
+	float maxLife : TEXCOORD3;
+
+	nointerpolation uint iBehaviorType : TEXCOORD4;
+
+	float4 vScreenPos : TEXCOORD5;
+	float4 vColor : COLOR0;
+
+	float3 vNormal : NORMAL0;
+	float3 vTangent : TANGENT0;
+	float3 vBinormal : BINORMAL0;
+
+	float4 vEmissive : EMISSIVE0;
+	float4 vEndEmissive : EMISSIVE1;
+};
+
+VS_OUT VSMain(VS_IN In)
+{
+	VS_OUT Out = (VS_OUT) 0;
+
+	float4x4 matWorld = float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
+	float4 worldPosition = mul(float4(In.vPosition, 1.f), matWorld);
+
+	Out.vPosition = mul(worldPosition, g_matViewProj);
+	Out.vWorldPos = worldPosition.xyz;
+	Out.vScreenPos = Out.vPosition;
+
+	Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
+
+	float3x3 world3x3 = (float3x3) matWorld;
+
+	Out.vNormal = normalize(mul(In.vNormal, world3x3));
+	Out.vTangent = normalize(mul(In.vTangent, world3x3));
+	Out.vBinormal = normalize(mul(In.vBinormal, world3x3));
+
+	Out.vColor = In.vColor;
+	Out.vEmissive = In.vInstEmissive;
+	Out.vEndEmissive = In.vInstEndEmissive;
+
+	Out.life = In.life;
+	Out.maxLife = In.maxLife;
+	Out.iBehaviorType = In.iBehaviorType;
+
+	return Out;
+}
+
+Texture2D AlbedoMap : register(t0);
+Texture2D NormalMap : register(t1);
+Texture2D SMROMap : register(t2);
+Texture2D EmissiveMap : register(t3);
+Texture2D NoiseMap : register(t5);
+Texture2D DistortionMap : register(t6);
+Texture2D g_BackgroundTex : register(t7);
+Texture2D AnyTextureMap : register(t8);
+
+struct PS_OUT
+{
+	float4 vDiffuse : SV_TARGET0;
+};
+
+PS_OUT PSMain(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	Out.vDiffuse = float4(1.f, 1.f, 1.f, 1.f);
+	return Out;
+	
+	float Ratio = saturate(In.life / max(In.maxLife, 0.0001f)); // 0.f -> 1.f
+	
+	float TimeKeyValue = floor(In.life * FlickeringSpeed);
+	float FlickeringNoise = frac(sin(TimeKeyValue * 12.9898f) * 43758.5453f);
+	
+	float FlickerinfFactor = 0.6f + FlickeringNoise * 0.6f;
+
+	float DistanceFromCenter = abs(In.vTexcoord.x - 0.5f) * 2.f;
+	float CurrentWidth = saturate(1.f - Ratio);
+	
+	float EdgeWidth = 0.05f;
+	float AlphaMask = smoothstep(CurrentWidth, CurrentWidth - EdgeWidth, DistanceFromCenter);
+	
+	if (AlphaMask < 0.01f)
+		clip(-1);
+	
+	float3 CurrentEmissive = lerp(In.vEmissive, In.vEndEmissive, Ratio).rgb;
+	
+	float  CoreFactor = pow(saturate(1.f - DistanceFromCenter / max(CurrentWidth, 0.001f)), CoreThickness);
+	
+	float3 CoreDiffuse = float3(15.0f, 15.0f, 15.0f) / 5.f;
+	float3 GlowDiffuse = float3(1.0f, 5.0f, 15.0f);
+
+	float3 FinalColor = lerp(GlowDiffuse, CoreDiffuse, CoreFactor);
+	FinalColor *= FlickerinfFactor * AlphaMask;
+	
+	Out.vDiffuse = float4(FinalColor, AlphaMask);
+	return Out;
+}

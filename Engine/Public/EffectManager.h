@@ -11,6 +11,7 @@ class CLightManager;
 class CSoundManager;
 
 
+
 inline bool InputText(const char* label, std::string& str, size_t maxLen = 256)
 {
 	std::vector<char> buf(maxLen);
@@ -38,6 +39,7 @@ private:
 	~CEffectManager()override;
 
 public:
+	HRESULT Initialize();
 	void UpdateGUI();
 	void Update(_float fTimeDelta);
 
@@ -46,35 +48,42 @@ public:
 
 	HRESULT LoadEffectPreset(const std::string& strPath);
 
-	EFFECT_INSTANCE_ID Spawn(const std::string& sEffectName,
+	EFFECT_INSTANCE_ID PlayEffect(const std::string& sEffectName,
 		const _float4x4& matWorld,
-		_fvector vEndPosition);
+		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
+	
+	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
 
-	void Stop(EFFECT_INSTANCE_ID iEffectId);
-
-	void SetPosition(
+	void ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId,
+		const _float4& vColor);
+	void SetEffectPosition(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float3& vPosition);
 
-	void SetWorldMatrix(
+	void SetEffectWorldMatrix(
 		EFFECT_INSTANCE_ID iEffectId,
 		const _float4x4& colliderWorldMatrix);
 
 	const EFFECT_INSTANCE* FindInstance(
 		EFFECT_INSTANCE_ID iEffectId) const;
 
+	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
+
+
 private:
 	void DispatchReadyCommands(EFFECT_INSTANCE& instance);
 
-	void DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command);
+	_float DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command);
 
-	void DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command);
+	_float DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command);
 
-	void DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_COMMAND& command);
+	_float DispatchLight(EFFECT_INSTANCE& instance, const EFFECT_LIGHT_COMMAND& command);
 
 	void DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_COMMAND& command);
 
 	void RemoveFinishedInstances();
+
+	void Finish(EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason);
 
 	_float3 TransformPosition(const _float3& localPosition,const _float4x4& worldMatrix) const;
 
@@ -83,6 +92,10 @@ private:
 	_bool MakeNoScaleWorldMatrix(const _float4x4& sourceMatrix,_float4x4& outMatrix) const;
 
 	HRESULT AddPreset(EFFECT_PRESET&& preset);
+
+	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
+	HRESULT Load_EffectJsonPackage(const std::vector<std::string>& _FilePathPackage);
+
 private:
 	CParticleManager* m_pParticleManager = nullptr;
 	CLightManager* m_pLightManager = nullptr;

@@ -1,0 +1,99 @@
+#include "pch.h"
+#include "BTDecSearch.h" 
+#include "Monster.h"
+NS_USING(Client)
+
+CBTDecSearch::CBTDecSearch()
+{
+
+}
+
+CBTDecSearch::CBTDecSearch(const CBTDecSearch& rhs) : CBTDecorator(rhs)
+{
+
+}
+CBTDecSearch::~CBTDecSearch()
+{
+}
+HRESULT CBTDecSearch::InitializePrototype(void* pArg)
+{
+	__super::InitializePrototype(pArg);
+	m_eGroup = NODEGROUP::DECORATOR;
+	m_MasterName = "BTDecSearch";
+	return S_OK;
+}
+HRESULT CBTDecSearch::Initalize(void* pArg)
+{
+	
+	__super::Initalize(pArg);
+
+	return S_OK;
+}
+
+nlohmann::json CBTDecSearch::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	SaveJsonValue(j, "Distance", m_fDis);
+	return j;
+}
+
+HRESULT CBTDecSearch::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	LoadJsonValue(j, "Distance", m_fDis);
+	return S_OK;
+}
+
+EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
+{
+	if (m_bTrue)
+		return EVALUATE::SUCCESS;
+	auto pTransform = Cast<CComTransform>(Get_Component<CComTransform>(m_Handle, "Com_Transform"));
+	if (pTransform == nullptr)
+		return EVALUATE::FAILED;
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			if (auto pTarget = pOwner->Get_Target())
+			{
+				auto& vDest = pTarget->GetTransform();
+				auto& vSrc = pTransform;
+
+				_vector vSrcPos = XMLoadFloat3(&vSrc->GetPosition());
+				_vector vDestPos = XMLoadFloat3(&vDest.GetPosition());
+				_float fDistance = XMVectorGetX(XMVector3Length(vSrcPos - vDestPos));
+				if (fDistance <= m_fDis)
+					return  m_eDebug = __super::Evaluate(fTimeDelta);
+			}
+		}
+	}
+	return  m_eDebug = EVALUATE::FAILED;
+}
+
+void		CBTDecSearch::Update_Gui()
+{
+	ImGui::Text("Distance : %2.f");
+	ImGui::DragFloat("##Dist", &m_fDis, 0, 100);
+}
+E::UPtr<CBTDecSearch> CBTDecSearch::Create()
+{
+	auto pInstance = E::ToUPtr(new CBTDecSearch{});
+	if (FAILED(pInstance->InitializePrototype()))
+	{
+		MSG_BOX("Failed to Created : CBTDecSearch");
+		return nullptr;
+	}
+	return  pInstance;
+}
+E::UPtr<E::CPrototype> CBTDecSearch::Clone(void* pArg)
+{
+	auto	pInstance = E::ToUPtr(new CBTDecSearch{ *this });
+	if (FAILED(pInstance->Initalize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CBTDecSearch");
+		return nullptr;
+	}
+
+	return pInstance;
+}

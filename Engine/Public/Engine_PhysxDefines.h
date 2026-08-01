@@ -37,6 +37,14 @@ namespace Engine
 		uint32_t iSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
+	struct PX_JOINT_USER_DATA
+	{
+		CHandle hJointOwner{};
+		CHandle hActorA{};
+		CHandle hActorB{};
+		uint32_t iJointSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
 	inline constexpr uint32_t PX_DEFAULT_LAYER = 1u;
 	inline constexpr uint32_t PX_ALL_LAYERS = std::numeric_limits<uint32_t>::max();
 	inline constexpr char PX_UNIT_CYLINDER_CONVEX_PATH[] =
@@ -69,6 +77,8 @@ namespace Engine
 	struct PX_CCT_HIT_DATA
 	{
 		CGameObject* pGameObject{};
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 		_float3 vWorldPosition{};
 		_float3 vWorldNormal{};
 		_float3 vMoveDirection{};
@@ -119,12 +129,21 @@ namespace Engine
 		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
+	struct PX_ON_JOINT_BREAK_DATA
+	{
+		CHandle hJointOwner{};
+		CHandle hActorA{};
+		CHandle hActorB{};
+		uint32_t iJointSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
 	struct PX_RAYCAST_RESULT
 	{
 		_bool bHit{ false };
 		_float3 vHitpos{}; // 충돌 지점
 		_float3 vHitNormal{}; // 충돌 표면의 법선 벡터
 		_float fDistance{}; // 시작점으로부터의 거리
+		CHandle hGameObject{};
 		CGameObject* pGameObject{};
 		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
@@ -190,9 +209,15 @@ namespace Engine
 	struct PX_OVERLAP_RESULT
 	{
 		_bool bHit{ false };
+		CHandle hGameObject{};
 		CGameObject* pGameObject{};
 		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
+	struct PX_QUERY_MULTIPLE_STATUS
+	{
+		_bool bTruncated{};
 	};
 
 }

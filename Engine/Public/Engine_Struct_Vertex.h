@@ -71,6 +71,10 @@ namespace Engine
 		_float pad3;
 		_float3 originalPosition; // 원래 스폰 위치
 		_float3 originalVelocity; // 원래 스폰 속도+ 방향
+		_float fStopSizeTime = 0.f;
+		_float3 pad4;
+		_float3 roationAxis = { 0.f, 0.f, 0.f };
+		_float fRotationSpeed = 0.f;
 	}PARTICLE;
 	static_assert(sizeof(PARTICLE) % 16 == 0);
 

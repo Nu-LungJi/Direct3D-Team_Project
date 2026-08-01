@@ -7,6 +7,8 @@ NS_END
 
 NS_BEGIN(Engine)
 
+class CComPxJoint;
+
 class ENGINE_DLL CComPxRigidBody : public CComponent
 {
 public:
@@ -47,12 +49,15 @@ public:
 	_bool AddForce(const _float3& vForce);
 	_bool AddImpulse(const _float3& vImpulse);
 	_bool AddTorque(const _float3& vTorque);
+	// 위치만 변경하고 현재 Actor 회전은 유지한다.
+	_bool SetKinematicTarget(const _float3& vPosition);
 	_bool SetKinematicTarget(const _float3& vPosition, const _float4& vQuaternion);
 
 	_bool SetGravityEnabled(_bool bEnabled);
 	_bool IsGravityEnabled() const;
 	_bool SetLinearDamping(_float fDamping);
 	_bool SetAngularDamping(_float fDamping);
+	_bool SetMaxDepenetrationVelocity(_float fVelocity);
 	_bool WakeUp();
 	_bool PutToSleep();
 	_bool IsSleeping() const;
@@ -68,7 +73,12 @@ private:
 	bool          m_bIsDynamic = true;
 	float   m_fMass{};
 	TYPE m_eType{};
+	std::unordered_set<CComPxJoint*> m_Joints{};
 
+private:
+	void RegisterJoint(CComPxJoint* pJoint);
+	void UnregisterJoint(CComPxJoint* pJoint);
+	void ReleaseConnectedJoints();
 
 public:
 	static UPtr<CComPxRigidBody> Create();
@@ -76,6 +86,8 @@ public:
 
 private:
 	void Free() override;
+
+	friend class CComPxJoint;
 };
 
 NS_END

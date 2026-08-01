@@ -19,6 +19,9 @@ public:
 		CComPxRigidBody* pComPxRigidBody{};
 		SPtr<CResPhysXMaterial> pResMaterial{};
 		PX_FILTER_DESC tFilter{};
+		// 클라이언트가 Shape의 용도나 부위를 식별하기 위한 범용 값.
+		uint32_t iShapeSubIndex{
+			std::numeric_limits<uint32_t>::max() };
 
 		//float    fStaticFriction = 0.5f;
 		//float    fDynamicFriction = 0.5f;
@@ -49,6 +52,7 @@ public:
 
 	_bool SetFilter(const PX_FILTER_DESC& tFilter);
 	const PX_FILTER_DESC& GetFilter() const { return m_tFilter; }
+	uint32_t GetShapeSubIndex() const { return m_iShapeSubIndex; }
 
 protected:
 	explicit CComPxCollider();
@@ -56,7 +60,7 @@ protected:
 
 protected:
 	HRESULT Initialize(void* pArg) override;
-	_bool RegisterShape(PX_SHAPE_TYPE eType, uint32_t iSubIndex = std::numeric_limits<uint32_t>::max());
+	_bool RegisterShape(PX_SHAPE_TYPE eType);
 
 protected:
 	CComPxRigidBody* m_pComRigidBody{};
@@ -65,6 +69,8 @@ protected:
 	physx::PxShape* m_pShape = nullptr;
 	SPtr<CResPhysXMaterial> m_pResMaterial{};
 	PX_FILTER_DESC m_tFilter{};
+	uint32_t m_iShapeSubIndex{
+		std::numeric_limits<uint32_t>::max() };
 	_bool m_bIsTrigger{};
 	_bool m_bSimulationEnabled{ true };
 	//physx::PxMaterial* m_pMaterial = nullptr;

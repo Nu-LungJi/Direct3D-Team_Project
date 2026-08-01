@@ -17,7 +17,8 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bSmokeJump = (flags & BEHAVIOR_SMOKEJUMP) != 0;
 	bool bSmokegv = (flags & BEHAVIOR_SMOKEGV) != 0;
 	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
-	bool bLightning = (flags & BEHAVIOR_SMOKEGW) != 0;
+	bool bLightning = (flags & BEHAVIOR_LIGHTNING) != 0;
+	bool bSizeStop = (flags & BEHAVIOR_SIZESTOP) != 0;
 
 	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
@@ -25,9 +26,12 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("Billboard", &bBillboard))
 		flags = bBillboard ? (flags | BEHAVIOR_BILLBOARD) : (flags & ~BEHAVIOR_BILLBOARD);
-	ImGui::SameLine();
+
 	if (ImGui::Checkbox("Gravity", &bGravity))
 		flags = bGravity ? (flags | BEHAVIOR_GRAVITY) : (flags & ~BEHAVIOR_GRAVITY);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("SizeStop", &bSizeStop))
+		flags = bSizeStop ? (flags | BEHAVIOR_SIZESTOP) : (flags & ~BEHAVIOR_SIZESTOP);
 	ImGui::Separator();
 
 
@@ -102,8 +106,6 @@ inline void LoadField(const nlohmann::json& in, const char* name, _bool& v)
 #define LOAD_PARAM_FIELD(type, name, defaultVal) LoadField(in, #name, p.name);
 #define DRAW_PARAM_FIELD(type, name, defaultVal) DrawField(#name, p.name);
 
-
-
 // 7.  draw imgui struct이름에 맞춰서 추가
 inline void DrawImGui(SStairsParam& p) {
 	STAIRS_FIELDS(DRAW_PARAM_FIELD)   DrawBehaviorTypeFlags(p.iBehaviorType);
@@ -130,12 +132,12 @@ inline void DrawImGui(SLightning& p) {
 
 //8. save 추가
 inline void SaveParam(const SStairsParam& p, nlohmann::json& out) { STAIRS_FIELDS(SAVE_PARAM_FIELD) }
-inline void SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
+inline void   SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleSpreadParam& p, nlohmann::json& out) { CIRCLE_SPREAD_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SMOKE& p, nlohmann::json& out) { SMOKE_FIELDS(SAVE_PARAM_FIELD) }
-inline void SaveParam(const SLightning& p, nlohmann::json& out) { SPAWN_S_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SLightning& p, nlohmann::json& out) { LIGHTNING_STREIGHT(SAVE_PARAM_FIELD) }
 
 //9. 로드 추가
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }

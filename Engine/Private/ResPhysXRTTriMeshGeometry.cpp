@@ -92,6 +92,7 @@ HRESULT CResPhysXRTTriMeshGeometry::CookToMemory(
 	}
 
 	PxCookingParams params{ pPhysics->getTolerancesScale() };
+	params.buildGPUData = true;
 #ifdef _DEBUG
 	if (!PxValidateTriangleMesh(params, meshDesc))
 		DEBUG_LOG("[PX][TriMesh] Mesh validation warning. Cooking will still be attempted.\n");

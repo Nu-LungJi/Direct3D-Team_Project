@@ -3,7 +3,7 @@
 
 NS_BEGIN(Engine)
 class CParticle;
-
+class CParticleShaderCache;
 
 struct PARTICLE_LOOP_REQUEST
 {
@@ -34,7 +34,10 @@ typedef struct tagParticlePreset
 	_float4 Emissive = { 1.f, 1.f, 1.f, 0.f };
 	_float4 endEmissive = { 1.f, 1.f, 1.f, 0.f };
 	uint32_t iBehaviorType = 0;
-
+	_float fStopSizeTime = 0;
+	_bool bKeepRotate{};
+	_float3 rotationAxis{};
+	_float rotationSpeed{};
 } PARTICLE_PRESET;
 
 
@@ -63,6 +66,7 @@ public:
     CParticleManager(const CParticleManager&) = delete;
     CParticleManager& operator=(const CParticleManager& rhs) = delete;
 public:
+	HRESULT Initialize();
     void Update(_float fTimeDelta);
     HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
     void UpdateGUI();
@@ -80,18 +84,18 @@ public:
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos);
 
+	
+
 	//실제 스폰 함수
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos);
 
 
 
-    HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
-        _float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-        _float fFlickerInterval, const _float4& vColor, _float4 emissive, _float fDuration);
 
 
 public:
+	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& params);
 	HRESULT Save_Binary_Json(std::string outpath,
 		const std::string& FullPath, const std::string& whatKind,
 		const std::string& particleType, const std::string& particleName,
@@ -117,11 +121,25 @@ public:
 		const std::string& AnyTexID1 = "",  
 		const std::string& AnyTexID2 = "",
 		const std::string& AnyTexPath = "",
-		int iSelectedBlend = 0);
+		int iSelectedBlend = 0,
+		_bool bShrinkWidth = true,
+		_float fMaxduration = 0);
 
 	HRESULT Save_Beam_Json(std::string outpath, const std::string& FullPath, const std::string& whatKind, const std::string& particleType,
-		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID,
-		const std::string& PSGroup, const std::string& PSID, int geometryType,const std::string& textureID1 = "", const std::string& textureID2 = "",int RowCount = 1,int ColCount = 1);
+		const std::string& particleName, int iMaxParticles, const std::string& VSGroup, const std::string& VSID, const std::string& VSEntryPoint,
+		const std::string& PSGroup, const std::string& PSID, const std::string& PSEntryPoint, 
+		const std::string& textureID1, const std::string& textureID2,
+		const std::string& normalTexID1, const std::string& normalTexID2,
+		const std::string& distortionTexID1 , const std::string& distortionTexID2 ,
+		const std::string& noiseTexID1, const std::string& noiseTexID2,
+		const std::string& normalTexPath,
+		const std::string& distortionTexPath,
+		const std::string& noiseTexPath,
+		const std::string& AnyTexID1,
+		const std::string& AnyTexID2 ,
+		const std::string& AnyTexPath ,
+		int RowCount, int ColCount, int iSelectedBlend,
+		 uint32_t maxBeams, uint32_t maxDisplacementIterations);
 	HRESULT LoadParticleJson(const std::string& strJsonPath);
 	ID3D11ShaderResourceView* GetOrLoadTextureThumbnail(const std::string& fullPath);
 	HRESULT SaveCommandQueue(const std::string& strJsonPath);
@@ -130,7 +148,7 @@ public:
 
 
 	HRESULT SaveEffectPreset(const std::string& strJsonPath, const PARTICLE_PRESET& preset);
-	HRESULT PlayEffect(const std::string& presetName, const _float3& position, uint32_t count = 1);
+	HRESULT PlayParticle(const std::string& presetName, const _float3& position, uint32_t count = 1);
 	HRESULT DeleteEffectPreset(const std::string& strJsonPath, const std::string& presetName);
 	std::vector<PARTICLE_SPAWN_DATA> BuildSpawnData(const PatternParamVariant& v);
 	void ApplyStartEndToPattern(PatternParamVariant& pv, _fvector startPos, _fvector endPos);
@@ -142,18 +160,23 @@ public:
 	HRESULT ClearLoopRequests();
 	HRESULT DeleteLoopRequests(uint32_t userId);
 
+
 public:
 	void ClearByOwner(uint32_t ownerId);
-
 	void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	void TransformOwner(uint32_t ownerId , const _float4x4& deltaMatrixData);
-
+	void SetColorByOwner(uint32_t ownerId, const _float4& color);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
-
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
+	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
+	HRESULT StopBeam(const BEAM_HANDLE& handle);
+	void SetBeamPositionsByOwner(uint32_t ownerId, const _float3& start, const _float3& end);
+public:
 
 private:
 	void ComboList(_string comboName, _string resourceName, _string& previewName);
+    uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
 public:
     static UPtr<CParticleManager> Create();
 private:
@@ -165,15 +188,11 @@ private:
 	// 큐 전체를 실행
 	std::string m_sLastResultMsg;
 	bool m_bLastResultSuccess = false;
-
-	 bool bNeedTypeIndexSync = false;
-	 StringID pendingSyncGroup, pendingSyncType;
-
-private:
-    uint32_t ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue);
+	bool bNeedTypeIndexSync = false;
+	StringID pendingSyncGroup, pendingSyncType;
 	std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_TextureThumbnailCache;
 	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> m_ParsedCommandCache;
-private:
+	SPtr<CParticleShaderCache> m_pShaderCache;
 	uint32_t m_iNextOwnerId = 1;
 };
 NS_END

@@ -46,6 +46,9 @@ public:
 		_string sVEntryPoint = "";
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
+
+		SPtr<CParticleShaderCache> pShaderCache;
+
     };
 
 	struct PENDING_SPAWN
@@ -61,7 +64,6 @@ private:
 
 public:
     virtual HRESULT Initialize(void* pArg) override;
-    void DebugPrintDeadListCount();
     virtual void PriorityUpdate(E::_float fTimeDelta) override;
     virtual void Update(E::_float fTimeDelta) override;
     virtual void LateUpdate(E::_float fTimeDelta) override;
@@ -70,11 +72,11 @@ public:
     HRESULT Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
 
-    uint32_t GetDeadListCounterSync();
 	MESHORTEXTURE GetWhatKind() const { return m_Desc.whatKind; }
 	virtual void ClearByOwner(uint32_t ownerID) override;
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
+	virtual void SetColorByOwner(uint32_t ownerId, const _float4& color) override;
 private:
     DESC m_Desc;
 
@@ -87,24 +89,22 @@ private:
 
     SPtr<class CResComputeShader>    m_pResSpawnComputeShader = nullptr;
     SPtr<CResComputeShader>          m_pResUpdateComputeShader = nullptr;
-    SPtr<CResComputeShader>          m_pResInitDeadCS = nullptr;
+    SPtr<CResComputeShader>          m_pResTransformOwnerCS = nullptr;
+	SPtr<CResComputeShader>			 m_pResChangeColorByOwnerCS = nullptr;
+	SPtr<CResStructuredBuffer>		 m_pDeadCountBuffer = nullptr;
     SPtr<class CResSamplerState>     m_pResSamplerState = nullptr;
 
     SPtr<class CResCBuffer>          m_pComCBuffer;
     SPtr<CResCBuffer>                m_pComSpawnCBuffer;
     SPtr<CResCBuffer>                m_pComInitCBuffer;
-	SPtr<CResCBuffer> m_pComClearCBuffer;
+	SPtr<CResCBuffer>				 m_pComOwnerOperationCBuffer;
 
     uint32_t                         m_iCurrentSpawnCount = 0;
-    uint32_t                         m_iDeadCount = 0;
 	SPtr<CResComputeShader> m_pResClearByOwnerCS;
 	_float				m_fTime{};
 	
-	ComPtr<ID3D11Buffer> m_pDeadCountStaging[2];
-	ComPtr<ID3D11Buffer> pCounterStaging;
 
 	uint32_t m_iDeadCountReadIdx = 0;
-
 private:
 
 public:

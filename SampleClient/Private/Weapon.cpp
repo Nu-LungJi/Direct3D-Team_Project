@@ -21,8 +21,26 @@ CWeapon::~CWeapon()
 
 void CWeapon::UpdateGUI()
 {
+	static _float4 weaponColor{};
+	static _float3 weaponEmissiveColor{};
+	static _float weaponEIntensity{};
 	CGameObject::UpdateGUI();
 
+	ImGui::Begin("WEAPON Trail");
+
+	ImGui::ColorEdit4("Color", &weaponColor.x);
+	ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
+	ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
+
+	if (ImGui::Button("Apply DashTrail")) {
+		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+		static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
+	}
+
+	ImGui::DragFloat("Distance", &m_fDistanceOffeset);
+
+	ImGui::End();
 }
 
 HRESULT CWeapon::InitializePrototype(void* pArg)
@@ -58,7 +76,7 @@ HRESULT CWeapon::Initialize(void* pArg)
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-		{
+		{ 
 			return E_FAIL;
 		};
 	}
@@ -75,7 +93,8 @@ HRESULT CWeapon::Initialize(void* pArg)
 	}
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
-	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
+	//test = CGameInstance::Get().Parse_Command("PlayerDash.json");
+
 	return S_OK;
 }
 
@@ -85,11 +104,20 @@ void CWeapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CWeapon::Update(E::_float fTimeDelta)
 {
-	//_float3 vstart, vend;
-	//vstart = m_pComTransform->GetPosition();
-	//vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y +0.3f, m_pComTransform->GetPosition().z);
-	//auto a = CGameInstance::Get().GetParticle("PLAYER_TRAIL_CPU", "PLAYER_TRAIL_CPU");
-	//static_cast<CTrail_CPU*>(a)->AddPoint(vstart, vend);
+	if (CGameInstance::Get().KeyDown(DIK_SPACE)) {
+		m_fSpwanPos = m_pComTransform->GetPosition();
+		m_bDashing = !m_bDashing;
+	}
+	_float3 vstart1, vend1;
+	_float3 vstart2, vend2;
+
+
+	//vstart1 = vend;
+	//vend1 = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.f , m_pComTransform->GetPosition().z );
+	//vstart2 = vend1;
+	//vend2= _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y-1.5f , m_pComTransform->GetPosition().z );
+	//CGameInstance::Get().AddTrailPoint("PlayerDashSmoke_CPU", "PlayerDashSmoke_CPU", vstart1, vend1	);
+	//CGameInstance::Get().AddTrailPoint("PlayerDashTrail2_CPU", "PlayerDashTrail2_CPU", vstart2, vend2);
 
 	if (CGameInstance::Get().KeyPressing(DIK_HOME))
 		m_pComTransform->GoUp(fTimeDelta * 15);
@@ -103,21 +131,49 @@ void CWeapon::Update(E::_float fTimeDelta)
 		m_pComTransform->GoBackward(fTimeDelta * 15);
 	if (CGameInstance::Get().KeyPressing(DIK_RIGHT))
 		m_pComTransform->GoRight(fTimeDelta * 15);
-	//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
-	//CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
+	if (CGameInstance::Get().KeyUp(DIK_RSHIFT))
+		m_iCurrentEffectID = CGameInstance::Get().Spawn(test, *m_pComTransform->GetWorldMatrix());
+
 
 	if (CGameInstance::Get().KeyPressing(DIK_7)) {
 		//auto b = CGameInstance::Get().GetParticle("PLAYERFLARE_CPU", "PLAYERFLARE_CPU");
 	}
 
+	
+	_float4 fpos = _float4(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 2.5f, m_pComTransform->GetPosition().z ,1);
+	_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
+	if (m_bDashing) {
+		_vector lastSpawnPos = XMVectorSet(m_fSpwanPos.x, m_fSpwanPos.y, m_fSpwanPos.z,1.f);
+		_float distance = XMVectorGetX(
+			XMVector3Length(pos - lastSpawnPos));
+		_float3 vstart, vend;
+		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 2.5f, m_pComTransform->GetPosition().z);
+		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 2.5f, m_pComTransform->GetPosition().z);
+		CGameInstance::Get().AddTrailPoint("Player_Attack_Trail_CPU", "Player_Attack_Trail_CPU", vstart, vend);
+		//_float3 deltaPos;
+		//XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
+		if (distance > m_fDistanceOffeset) {
+			m_iCurrentEffectID = CGameInstance::Get().PlayEffect(
+				"PlayerDashSmoke",
+				*m_pComTransform->GetWorldMatrix(), pos,
+				[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+				{
+					if (effectId != m_iCurrentEffectID)
+						return;
 
+					m_iCurrentEffectID = INVALID_EFFECT_INSTANCE_ID;
 
+					if (reason == EFFECT_FINISH_REASON::NATURAL)
+						OnDashEffectFinished();
+					else if (reason == EFFECT_FINISH_REASON::STOPPED)
+						OnDashEffectStopped();
 
-	//if (CGameInstance::Get().KeyDown(DIK_K)) {
-	//	static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f, 0.f, 0.f, 1.f));
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.9f, 0.3f, 0.23f, 0.5f));
-	//
-	//}
+				});
+;
+			m_fSpwanPos = m_pComTransform->GetPosition();
+			m_bDashEffectSpawned = true;
+		}
+	}
 
 
 	//if (CGameInstance::Get().KeyPressing(DIK_P))
@@ -229,6 +285,15 @@ void CWeapon::Weapon_Throw(_float fTimeDelta)
 	matRot.r[3] += vTargetLook * 15.f * fTimeDelta;
 	XMStoreFloat4x4(&m_ParentMatrix, matRot);
 
+}
+
+void CWeapon::OnDashEffectFinished()
+{
+	m_bDashEffectSpawned = false;
+}
+
+void CWeapon::OnDashEffectStopped()
+{
 }
 
 E::UPtr<CWeapon> CWeapon::Create()

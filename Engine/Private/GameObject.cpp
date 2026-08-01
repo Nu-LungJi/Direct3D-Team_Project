@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "GameObject.h"
 #include "Component.h"
@@ -26,7 +26,6 @@ HRESULT CGameObject::Initialize(void* pArg)
 {
     auto pDesc = static_cast<GAMEOBJECT_DESC*>(pArg);
     m_sObjectTag = pDesc->sObjectTag;
-
     //m_ObjectHandle = CGameInstance::Get().GetFreeHandle().value();
 
     m_ObjectHandle = pDesc->__handle;
@@ -81,6 +80,7 @@ HRESULT CGameObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx
 {
     return S_OK;
 }
+
 
 UPtr<CPrototype> CGameObject::CloneComponentProtoType(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg) const
 {

@@ -17,17 +17,32 @@ CEffectManager::~CEffectManager()
 {
 }
 
+HRESULT CEffectManager::Initialize() {
+
+	auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
+	if (FAILED(Load_EffectJsonPackage(k))){
+		MSG_BOX("EFFECT LOAD FAILED");
+		return E_FAIL;
+	}
+
+
+	return S_OK;
+}
+
 void CEffectManager::UpdateGUI()
 {
 	static EFFECT_PRESET preset{};
-	static std::string savePath = "../../Resources/json/Effect/NewEffect.json";
+	static std::string savePath = "./Resources/json/Effect/NewEffect.json";
 	static int removeCommandIndex = -1;
+	static std::string effectName = "";
+	static std::string playEffectName = "";
 
+	static float Duration = 0;
 	ImGui::Begin("Effect Manager");
 
-	InputText("Effect Name", preset.sEffectName);
+	InputText("Effect Name", effectName);
 	InputText("Save Path", savePath);
-	ImGui::InputFloat("Effect Duration", &preset.fDuration);
+	ImGui::InputFloat("Effect Duration", &Duration);
 
 	ImGui::Separator();
 
@@ -86,9 +101,9 @@ void CEffectManager::UpdateGUI()
 			if (ImGui::CollapsingHeader("Particle Command", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				InputText("Command Name", particle->sCommandName);
-				InputText("Particle JSON", particle->sParticleJson);
+				InputText("Particle JSON File Name. Include .json", particle->sParticleJson);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
-
+				ImGui::InputFloat3("Local Position", &particle->vLocalPosition.x);
 				if (ImGui::Button("Remove Particle"))
 					removeCommandIndex = i;
 			}
@@ -114,7 +129,8 @@ void CEffectManager::UpdateGUI()
 				ImGui::ColorEdit3("Color", &light->vColor.x);
 
 				ImGui::InputFloat("Intensity", &light->fIntensity);
-				ImGui::InputFloat("Range", &light->fRange);
+				ImGui::InputFloat("InnerAtt", &light->fInnerAtt);
+				ImGui::InputFloat("OuterAtt", &light->fOuterAtt);
 				ImGui::InputFloat("Duration", &light->fDuration);
 				ImGui::InputFloat("Spawn Delay", &command.fSpawnDelay);
 
@@ -187,8 +203,12 @@ void CEffectManager::UpdateGUI()
 
 	if (ImGui::Button("Save Effect Preset"))
 	{
+		preset.sEffectName = effectName;
+		preset.fDuration = Duration;
 		if (FAILED(SaveEffectPreset(savePath, preset)))
 			MSG_BOX("Failed to save effect preset");
+		else
+			AddPreset(std::move(preset));
 	}
 
 	ImGui::SameLine();
@@ -199,6 +219,31 @@ void CEffectManager::UpdateGUI()
 	ImGui::Text("Command Count: %zu", preset.vecCommands.size());
 	ImGui::Text("Active Effects: %zu", m_Instances.size());
 
+
+	ImGui::Separator();
+
+	if (ImGui::Button("Reload Effects")) {
+
+		m_Presets.clear();
+
+		auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
+		if (FAILED(Load_EffectJsonPackage(k))) {
+			MSG_BOX("Reload Effects Failed");
+		}	
+	}
+
+
+	InputText("Enter Effect Name", playEffectName);
+	if (ImGui::Button("Play Effect"))
+	{
+		_float4x4 matWorld{};
+
+		XMStoreFloat4x4(
+			&matWorld,
+			XMMatrixTranslation(5.f, 3.f, 5.f));
+
+		PlayEffect(playEffectName, matWorld);
+	}
 	ImGui::End();
 }
 
@@ -249,11 +294,20 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 			json["commands"].push_back({
 				{ "type", "PARTICLE" },
 				{ "commandName",
-					particle.sCommandName },
+					  particle.sCommandName },
 				{ "particleJson",
-					particle.sParticleJson },
+					  particle.sParticleJson },
 				{ "spawnDelay",
-					command.fSpawnDelay }
+					  command.fSpawnDelay },
+
+				{
+					"localPosition",
+					{
+						particle.vLocalPosition.x,
+						particle.vLocalPosition.y,
+						particle.vLocalPosition.z
+					}
+				}
 				});
 
 			break;
@@ -311,8 +365,10 @@ HRESULT CEffectManager::SaveEffectPreset(const std::string& strPath,const EFFECT
 				{ "intensity",
 					light.fIntensity },
 
-				{ "range",
-					light.fRange },
+				{ "innerAtt",
+					light.fInnerAtt },
+				{ "OuterAtt",
+					light.fOuterAtt },
 
 				{ "spawnDelay",
 					command.fSpawnDelay },
@@ -461,7 +517,19 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 
 				if (commandJson.contains("particleJson"))
 					particle.sParticleJson = commandJson["particleJson"].get<std::string>();
+				if (commandJson.contains("localPosition"))
+				{
+					const auto& position = commandJson["localPosition"];
 
+					if (!position.is_array() || position.size() != 3)
+						return E_FAIL;
+
+					particle.vLocalPosition = {
+						position[0].get<_float>(),
+						position[1].get<_float>(),
+						position[2].get<_float>()
+					};
+				}
 				if (particle.sParticleJson.empty())
 					return E_FAIL;
 
@@ -524,8 +592,11 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 				if (commandJson.contains("intensity"))
 					light.fIntensity = commandJson["intensity"].get<_float>();
 
-				if (commandJson.contains("range"))
-					light.fRange = commandJson["range"].get<_float>();
+				if (commandJson.contains("InnerAtt"))
+					light.fInnerAtt = commandJson["InnerAtt"].get<_float>();
+
+				if (commandJson.contains("OuterAtt"))
+					light.fOuterAtt = commandJson["OuterAtt"].get<_float>();
 
 				if (commandJson.contains("duration"))
 					light.fDuration = commandJson["duration"].get<_float>();
@@ -608,15 +679,15 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 	return S_OK;
 }
 
-EFFECT_INSTANCE_ID CEffectManager::Spawn(const std::string& sEffectName,const _float4x4& matWorld, _fvector vEndPosition)
+EFFECT_INSTANCE_ID CEffectManager::PlayEffect(const std::string& sEffectName,const _float4x4& matWorld, _fvector vEndPosition, EFFECT_FINISHED_CALLBACK onFinished)
 {
+	_float totalLife = 0;
 	auto presetIter = m_Presets.find(sEffectName);
 
 	if (presetIter == m_Presets.end())
 		return INVALID_EFFECT_INSTANCE_ID;
 
 	_float4x4 noScaleWorld{};
-
 	if (!MakeNoScaleWorldMatrix(matWorld,noScaleWorld))
 	{
 		return INVALID_EFFECT_INSTANCE_ID;
@@ -630,11 +701,11 @@ EFFECT_INSTANCE_ID CEffectManager::Spawn(const std::string& sEffectName,const _f
 	instance.matWorld = noScaleWorld;
 
 	instance.fElapsed = 0.f;
-	instance.fDuration =
-		presetIter->second.fDuration;
+	instance.fDuration = instance.pPreset->fDuration;
+		
 
 	instance.iNextCommandIndex = 0;
-
+	instance.onFinished = std::move(onFinished);
 	XMStoreFloat4(
 		&instance.vEndPosition,
 		vEndPosition);
@@ -667,36 +738,39 @@ void CEffectManager::DispatchReadyCommands(EFFECT_INSTANCE& instance)
 	{
 		const EFFECT_COMMAND& command = commands[instance.iNextCommandIndex];
 
-		if (command.fSpawnDelay >instance.fElapsed)
+		if (command.fSpawnDelay >instance.fElapsed)	// 펑
 		{
 			break;
 		}
 
-		DispatchCommand(instance,command);
+		const _float commandLife = DispatchCommand(instance, command);
+
+		if (commandLife < 0.f)
+			instance.fDuration = -1.f;
+		else if (instance.fDuration >= 0.f)
+			instance.fDuration = std::max(instance.fDuration, instance.fElapsed + commandLife);
 
 		++instance.iNextCommandIndex;
 	}
 }
 
-void CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command)
+_float CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMMAND& command)
 {
+
 	switch (command.eType)
 	{
 	case EFFECT_COMMAND_TYPE::PARTICLE:
 	{
 		const auto& particleCommand = std::get<EFFECT_PARTICLE_COMMAND>(command.data);
 
-		DispatchParticle(instance, particleCommand);
+		return DispatchParticle(instance, particleCommand);
 
-		break;
 	}
 	case EFFECT_COMMAND_TYPE::LIGHT:
 	{
 		const auto& lightCommand = std::get<EFFECT_LIGHT_COMMAND>(command.data);
 
-		DispatchLight(instance,lightCommand);
-
-		break;
+		return DispatchLight(instance,lightCommand);
 	}
 
 	case EFFECT_COMMAND_TYPE::SOUND:
@@ -711,49 +785,82 @@ void CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_COMM
 	default:
 		break;
 	}
+	
 }
 
-void CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance,const EFFECT_PARTICLE_COMMAND& command)
+_float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command)
 {
-	if (!m_pParticleManager)
-		return;
+	if (!m_pParticleManager || command.sParticleJson.empty())
+		return 0.f;
 
-	if (command.sParticleJson.empty())
-		return;
-
-	auto particleQueue =
-		m_pParticleManager->Parse_Command(command.sParticleJson);
+	auto particleQueue = m_pParticleManager->Parse_Command(command.sParticleJson);
 
 	if (particleQueue.empty())
-		return;
+		return 0.f;
 
-	/*
-	 * JSON 안에 파티클 명령이 여러 개 있어도
-	 * 이 큐 전체에 ownerId 하나가 발급된다.
-	 */
-	const uint32_t ownerId = m_pParticleManager->
-		Spawn(particleQueue,instance.matWorld,XMLoadFloat4(&instance.vEndPosition));
-	if (ownerId != INVALID_PARTICLE_OWNER_ID)
+	_float totalLife = 0.f;
+	const _float3 worldPosition = TransformPosition(command.vLocalPosition, instance.matWorld);
+	instance.matWorld._41 = worldPosition.x;
+	instance.matWorld._42 = worldPosition.y;
+	instance.matWorld._43 = worldPosition.z;
+	for (const SPAWN_COMMAND& particle : particleQueue)
 	{
-		instance.vecParticleOwnerId.push_back(ownerId);
+		_float life = 0.f;
+		const auto currentKind = particle.sGroupTag_KindTag;
+
+		if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(particle.params))
+		{
+			const auto& param = std::get<STANDARD_PARAMS>(particle.params);
+
+			if (param.bLoop)
+				return -1.f;
+
+			const uint32_t intervalCount = param.count > 0 ? param.count - 1 : 0;
+			life = param.fSpawnDelay + param.fSpawnInterval * static_cast<_float>(intervalCount) + param.life;
+		}
+		else if (currentKind == SPAWN_COMMAND_KIND::BEAM && std::holds_alternative<BEAM_PARAMS>(particle.params))
+		{
+			const auto& param = std::get<BEAM_PARAMS>(particle.params);
+			life = param.fSpawnDelay + param.beamDuration;
+		}
+		else if (currentKind == SPAWN_COMMAND_KIND::PATTERN && std::holds_alternative<PatternParamVariant>(particle.params))
+		{
+			const auto& pattern = std::get<PatternParamVariant>(particle.params);
+			const auto spawnList = m_pParticleManager->BuildSpawnData(pattern);
+
+			for (const PARTICLE_SPAWN_DATA& spawnData : spawnList)
+			{
+				if (spawnData.loop)
+					return -1.f;
+
+				life = std::max(life, spawnData.spawnDelay + spawnData.life);
+			}
+		}
+
+		totalLife = std::max(totalLife, life);
 	}
+	const uint32_t ownerId = m_pParticleManager->Spawn(particleQueue, instance.matWorld, XMLoadFloat4(&instance.vEndPosition));
+
+	if (ownerId != INVALID_PARTICLE_OWNER_ID)
+		instance.vecParticleOwnerId.push_back(ownerId);
+
+	return totalLife;
 }
 
-void CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_COMMAND& command)
+_float CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_COMMAND& command)
 {
 	if (!m_pLightManager)
-		return;
+		return 0.f;
 
 	const _float3 worldPosition =TransformPosition(command.vLocalPosition,instance.matWorld);
-
-
 
 	auto lightHandle =
 		m_pLightManager->Allocate_EffectLight(
 			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z,1.f),
 			command.fIntensity,
 			command.vColor,
-			command.fRange,
+			command.fInnerAtt,
+			command.fOuterAtt,
 			command.fDuration,
 			command.vVelocity);
 
@@ -763,6 +870,7 @@ void CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGHT_
 		instance.vecLightHandles.push_back(
 			*lightHandle);
 	}
+	return command.fDuration;
 }
 
 void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_COMMAND& command)
@@ -772,41 +880,37 @@ void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_
 
 	const _float3 worldPosition =TransformPosition(command.vLocalPosition,instance.matWorld);
 
-	/*
-	 * 이 부분은 실제 SoundManager의 재생 함수
-	 * 시그니처에 맞춰 이름과 인자를 변경해야 한다.
-	 */
-	/*const SOUND_ID soundId =
-		m_pSoundManager->PlayEffectSound(
-			command.sSoundPath,
-			worldPosition,
-			command.fVolume,
-			command.fPitch,
-			command.fMinDistance,
-			command.fMaxDistance,
-			command.bLoop,
-			command.b3D);
+	SOUND_PLAY_DESC playDesc{};
+	playDesc.fVolume = command.fVolume;
+	playDesc.bLoop = command.bLoop;
+	playDesc.sBusID = "SFX";
+	SOUND_3D_DESC desc3D{};
+	desc3D.fMinDistance = command.fMinDistance;
+	desc3D.fMaxDistance = command.fMaxDistance;
+	desc3D.vPosition = worldPosition;
+	
+	const SOUND_ID soundId = m_pSoundManager->Play3D(command.sSoundPath, desc3D,playDesc);
 
 	if (soundId != INVALID_SOUND_ID)
 	{
 		instance.vecSoundIds.push_back(
 			soundId);
-	}*/
+	}
 }
 
-void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
+void CEffectManager::StopEffect(EFFECT_INSTANCE_ID iEffectId)
 {
 	auto iter =m_Instances.find(iEffectId);
 
 	if (iter == m_Instances.end())
 		return;
 
-	EFFECT_INSTANCE& instance =
-		iter->second;
+	EFFECT_INSTANCE& instance = iter->second;
 
-	for (uint32_t ownerId :instance.vecParticleOwnerId)
+	if (m_pParticleManager)
 	{
-		m_pParticleManager->ClearByOwner(ownerId);
+		for (uint32_t ownerId : instance.vecParticleOwnerId)
+			m_pParticleManager->ClearByOwner(ownerId);
 	}
 
 	if (m_pLightManager)
@@ -814,7 +918,7 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 		for (const CHandle& lightHandle :
 			instance.vecLightHandles)
 		{
-		//	m_pLightManager->StopEffectLight(lightHandle);
+			m_pLightManager->Reset_EffectLight(lightHandle);
 		}
 	}
 
@@ -825,11 +929,16 @@ void CEffectManager::Stop(EFFECT_INSTANCE_ID iEffectId)
 			m_pSoundManager->Stop(soundId);
 		}
 	}
+	EFFECT_FINISHED_CALLBACK callback = std::move(instance.onFinished);
 
 	m_Instances.erase(iter);
+
+	if (callback)
+		callback(iEffectId, EFFECT_FINISH_REASON::STOPPED);
+
 }
 
-void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
+void CEffectManager::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix)
 {
 	auto iter =m_Instances.find(iEffectId);
 
@@ -878,12 +987,12 @@ void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4
 		m_pParticleManager->TransformOwner(ownerId,deltaMatrixData);
 	}
 
-	const _float3  deltaPos = _float3(deltaMatrixData._41, deltaMatrixData._42, deltaMatrixData._43);
+	const _float3  Pos = _float3(colliderWorldMatrix._41, colliderWorldMatrix._42, colliderWorldMatrix._43);
 	if (m_pLightManager)
 	{
 		for (const CHandle& lightHandle :instance.vecLightHandles)
 		{
-			//m_pLightManager->TransformLight(lightHandle, deltaPos);
+			m_pLightManager->Transform_EffectLight(lightHandle, Pos);
 		}
 	}
 
@@ -900,9 +1009,18 @@ void CEffectManager::SetWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4
 	//}
 }
 
-void CEffectManager::SetPosition(
-	EFFECT_INSTANCE_ID iEffectId,
-	const _float3& newPosition)
+void CEffectManager::ChangeColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor)
+{
+	auto iter = m_Instances.find(iEffectId);
+
+	if (iter == m_Instances.end() || !m_pParticleManager)
+		return;
+
+	for (uint32_t ownerId : iter->second.vecParticleOwnerId)
+		m_pParticleManager->SetColorByOwner(ownerId, vColor);
+}
+
+void CEffectManager::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& newPosition)
 {
 	auto iter =
 		m_Instances.find(iEffectId);
@@ -921,49 +1039,51 @@ void CEffectManager::SetPosition(
 	newWorld._42 = newPosition.y;
 	newWorld._43 = newPosition.z;
 
-	SetWorldMatrix(
+	SetEffectWorldMatrix(
 		iEffectId,
 		newWorld);
 }
 
 void CEffectManager::RemoveFinishedInstances()
 {
-	for (auto iter = m_Instances.begin(); iter != m_Instances.end();)
-	{
-		EFFECT_INSTANCE& instance = iter->second;
+	std::vector<EFFECT_INSTANCE_ID> finishedIds;
 
+	for (const auto& [effectId, instance] : m_Instances)
+	{
 		if (!instance.pPreset)
 		{
-			iter = m_Instances.erase(iter);
+			finishedIds.push_back(effectId);
 			continue;
 		}
 
-		const _bool allCommandsDispatched =
-			instance.iNextCommandIndex >= instance.pPreset ->vecCommands.size();
+		const bool allCommandsDispatched = instance.iNextCommandIndex >= instance.pPreset->vecCommands.size();
+		const bool hasFiniteDuration = instance.fDuration >= 0.f;
+		const bool durationFinished = instance.fElapsed >= instance.fDuration;
 
-		const _bool durationFinished =
-			instance.fDuration > 0.f &&
-			instance.fElapsed >=
-			instance.fDuration;
-
-		if (allCommandsDispatched &&
-			durationFinished)
-		{
-			/*
-			 * 자연 종료된 자식들을 Stop하지 않는다.
-			 * EffectManager의 추적 정보만 제거한다.
-			 */
-			iter = m_Instances.erase(iter);
-		}
-		else
-		{
-			++iter;
-		}
+		if (allCommandsDispatched && hasFiniteDuration && durationFinished)
+			finishedIds.push_back(effectId);
 	}
+
+	for (EFFECT_INSTANCE_ID effectId : finishedIds)
+		Finish(effectId, EFFECT_FINISH_REASON::NATURAL);
 }
 
-const EFFECT_INSTANCE*
-CEffectManager::FindInstance(EFFECT_INSTANCE_ID iEffectId) const
+void CEffectManager::Finish(EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+{
+	auto iter = m_Instances.find(effectId);
+
+	if (iter == m_Instances.end())
+		return;
+
+	EFFECT_FINISHED_CALLBACK callback = std::move(iter->second.onFinished);
+
+	m_Instances.erase(iter);
+
+	if (callback)
+		callback(effectId, reason);
+}
+
+const EFFECT_INSTANCE *CEffectManager::FindInstance(EFFECT_INSTANCE_ID iEffectId) const
 {
 	auto iter = m_Instances.find(iEffectId);
 
@@ -1060,5 +1180,73 @@ HRESULT CEffectManager::AddPreset(EFFECT_PRESET&& preset)
 UPtr<CEffectManager>
 CEffectManager::Create(CParticleManager* pParticleManager,CLightManager* pLightManager,CSoundManager* pSoundManager)
 {
-	return UPtr<CEffectManager>(new CEffectManager{pParticleManager,pLightManager,pSoundManager});
+	auto pInstance = UPtr<CEffectManager>(new CEffectManager{ pParticleManager,pLightManager,pSoundManager });
+
+	if (!pInstance) {
+		MSG_BOX("Failed to create Effect Manager");
+		return nullptr;
+	}
+	pInstance->Initialize();
+
+	return pInstance;
+}
+std::vector<std::string> CEffectManager::Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension) {
+	std::vector<std::string> FilePathStorage{};
+	FilePathStorage.reserve(32);
+
+	{
+		namespace fs = std::filesystem;
+
+		std::error_code ErrorCode{};
+
+		if (fs::exists(_FolderPath) == false || fs::is_directory(_FolderPath) == false) {
+			std::wstring MSGContent = L"Invalid FolderPath : " + _FolderPath.wstring();
+			MessageBoxW(NULL, MSGContent.c_str(), L"System Message", MB_OK);
+
+			return FilePathStorage;      // Empty vector return
+		}
+		auto Optimization = fs::directory_options::skip_permission_denied;
+
+		fs::recursive_directory_iterator iterator(_FolderPath, Optimization, ErrorCode);
+		fs::recursive_directory_iterator End;
+
+		for (; iterator != End && !ErrorCode; iterator.increment(ErrorCode)) {
+			if (iterator->is_regular_file(ErrorCode)) {
+				const auto& FilePath = iterator->path();
+
+				if (FilePath.extension() == _Extension) {
+					FilePathStorage.push_back(FilePath.string());
+				}
+			}
+		}
+		return FilePathStorage;
+	}
+}
+HRESULT CEffectManager::Load_EffectJsonPackage(
+	const std::vector<std::string>& filePaths)
+{
+	if (filePaths.empty())
+		return E_FAIL;
+
+	for (const auto& filePath : filePaths) {
+		const HRESULT hr = LoadEffectPreset(filePath.c_str());
+
+		if (FAILED(hr))
+			return hr;
+	}
+
+	return S_OK;
+}
+void CEffectManager::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
+
+	auto iter = m_Instances.find(effectId);
+
+	if (iter == m_Instances.end() || !m_pParticleManager)
+		return;
+
+	EFFECT_INSTANCE& instance = iter->second;
+
+	for (auto& particle : instance.vecParticleOwnerId) {
+		m_pParticleManager->SetBeamPositionsByOwner(particle, start,end);
+	}
 }

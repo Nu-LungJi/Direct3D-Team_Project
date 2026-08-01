@@ -223,6 +223,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\LightTerrain.h" />
     <ClInclude Include="..\public\MagicSquareStep.h" />
     <ClInclude Include="..\public\MagicSquareStepController.h" />
+    <ClInclude Include="..\public\MedDebris.h" />
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
@@ -346,6 +347,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\LightTerrain.cpp" />
     <ClCompile Include="..\private\MagicSquareStep.cpp" />
     <ClCompile Include="..\private\MagicSquareStepController.cpp" />
+    <ClCompile Include="..\private\MedDebris.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
@@ -435,11 +437,17 @@ call CopySampleClient.bat "$(Configuration)"</Command>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_BladeTrail.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
-    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning.hlsl">
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

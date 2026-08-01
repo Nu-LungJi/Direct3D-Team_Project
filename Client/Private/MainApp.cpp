@@ -4,6 +4,7 @@
 #include "LevelLoading.h"
 
 #include "MainAppLoader.h"
+#include "CinematicEditor.h"
 #include "UIManager.h"
 
 NS_USING(Client)
@@ -36,6 +37,12 @@ HRESULT CMainApp::Initialize()
 
 	CGameInstance::Get().ImguiEnableDocking(true, true);
 
+	m_pCinematicEditor = CCinematicEditor::Create();
+	if (m_pCinematicEditor == nullptr)
+	{
+		return E_FAIL;
+	}
+
 	if (FAILED(CMainAppLoader::Load()))
 	{
 		MSG_BOX("MainLoader Failed");
@@ -62,11 +69,26 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::BOSS_CHARLES_ROOKWOOD));
 		});
 
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_TERRAIN", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::TERRAIN));
+		});
+
 	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
 	CGameInstance::Get().UpdateTimeProvider();
 
 	LOG_MEMORY("CMainApp::Initialize End");
 	return S_OK;
+}
+
+void CMainApp::FrameStart(_float fTimeDelta)
+{
+	CBaseApp::FrameStart(fTimeDelta);
+
+	if (m_pCinematicEditor && E::CGameInstance::Get().ImguiGetActive())
+	{
+		m_pCinematicEditor->UpdateGUI();
+	}
 }
 
 

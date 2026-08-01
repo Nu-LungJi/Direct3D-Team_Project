@@ -38,6 +38,7 @@ protected:
 public:
 	_matrix GetView() const { return XMLoadFloat4x4(&m_matView); }
 	_matrix GetProj() const { return XMLoadFloat4x4(&m_matProj); }
+	_float GetFovY() const { return m_cameraDesc.fFovY; }
 	const CCollider* GetViewVolumeCollider() const { return m_pViewVolumeCollider.get(); }
 	const CCollFrustum* GetFrustumCollider() const;
 	const CCollOrientedBox* GetOrientedBoxCollider() const;
@@ -67,6 +68,9 @@ public:
 		XMStoreFloat3(&vecrayDir, XMVector3Normalize(XMVector3TransformNormal(rayDir, invView)));
 		return { vecrayOrigin ,vecrayDir };
 	}
+	std::pair<_float3, _float3> GetRayFromScreenPixel(
+		const _float2& vScreenPixel,
+		const _float2& vViewportSize) const;
 
 public:
 	HRESULT Initialize(void* pArg) override;

@@ -45,7 +45,8 @@ public:
 	VOID			Set_LightType(LIGHT_TYPE _LTYPE) { m_pDynamicLight.LightType = ETOUI(_LTYPE); m_bDirtyFlag = true; }
 	LIGHT_TYPE		Get_LightType() { return static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType); }
 
-	VOID			Set_LightDirection(XMFLOAT3 _Direction) { m_pDynamicLight.LightDirection = _Direction; }
+	// LSY 변경: 에디터에서 방향을 수정하면 그림자/컬링 데이터가 다시 계산되도록 Dirty 처리한다.
+	VOID			Set_LightDirection(XMFLOAT3 _Direction) { m_pDynamicLight.LightDirection = _Direction; m_bDirtyFlag = true; }
 	XMFLOAT3		Get_LightDirection()					{ return m_pDynamicLight.LightDirection; }
 
 	VOID			Set_LightColor(XMFLOAT3 _Color) { m_pDynamicLight.LightColor = _Color;}
@@ -54,21 +55,30 @@ public:
 	VOID			Set_LightIntensity(_float _Intensity) { m_pDynamicLight.LightIntensity = _Intensity; }
 	_float			Get_LightIntensity() { return m_pDynamicLight.LightIntensity; }
 
-	VOID			Set_LightRange(_float _Range) { m_pDynamicLight.LightRange = _Range; m_bDirtyFlag = true; }
+	VOID			Set_LightRange(_float _Range);
 	_float			Get_LightRange()				{ return m_pDynamicLight.LightRange; }
 
 	VOID			Set_LightPosition(XMFLOAT3 _Position) { m_pComTransform->SetPosition(_Position); m_bDirtyFlag = true;}
 	VOID			Set_LightPosition(XMVECTOR _Position) { m_pComTransform->SetPosition(_Position); m_bDirtyFlag = true;}
 	XMFLOAT3		Get_LightPosition() { return m_pComTransform->GetPosition(); }
 
-	VOID			Set_LightInnerAttenuation(_float _Attenuation) { m_pDynamicLight.InnerAttanuation = _Attenuation; }
+	// LSY 변경: Spot Light 감쇠각의 런타임 편집 결과를 즉시 반영하기 위해 Dirty 처리한다.
+	VOID			Set_LightInnerAttenuation(_float _Attenuation) { m_pDynamicLight.InnerAttanuation = _Attenuation; m_bDirtyFlag = true; }
 	_float			Get_LightInnerAttenuation() { return m_pDynamicLight.InnerAttanuation; }
 
-	VOID			Set_LightOuterAttenuation(_float _Attenuation) { m_pDynamicLight.OuterAttanuation= _Attenuation; }
+	VOID			Set_LightOuterAttenuation(_float _Attenuation) { m_pDynamicLight.OuterAttanuation= _Attenuation; m_bDirtyFlag = true; }
 	_float			Get_LightOuterAttenuation() { return m_pDynamicLight.OuterAttanuation; }
 
 	VOID			Set_LightActivateState(_bool _State)	{ m_bActivate_State = _State;	}
 	_bool			Get_LightActivateState()				{ return m_bActivate_State;	}
+
+	// LSY 변경: 에디터 표시용 별칭과 레벨별 저장/삭제 범위를 구분하는 배치 그룹 정보다.
+	VOID			Set_LightAlias(std::string sAlias) { m_sAlias = std::move(sAlias); }
+	const std::string& Get_LightAlias() const { return m_sAlias; }
+
+	VOID			Set_LightPlacementGroup(std::string sGroup) { m_sPlacementGroup = std::move(sGroup); }
+	const std::string& Get_LightPlacementGroup() const { return m_sPlacementGroup; }
+	_bool			Is_PlacementLight() const { return !m_sPlacementGroup.empty(); }
 
 	VOID			Set_LightViewProj(uint32_t _Index, XMMATRIX _LightViewProj) { XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[_Index], _LightViewProj);	}
 	XMFLOAT4X4		Get_LightViewProj(uint32_t _Index)							{ return m_pDynamicLight.g_LightViewProj[_Index];								}
@@ -80,7 +90,13 @@ public:
 	VOID			Set_LightVelocity(XMFLOAT3 _Velocity)	{ m_fVelocity = _Velocity;	}
 	XMFLOAT3		Get_LightVelocity()						{ return m_fVelocity;		}
 
-	VOID			Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	VOID			Set_PointLightOuterAttenuation(_float _Attenuation) { m_fPointLightOuterAttenuation = _Attenuation;	}
+	_float			Get_PointLightOuterAttenuation()					{ return m_fPointLightOuterAttenuation;			}
+
+	VOID			Set_PointLightInnerAttenuation(_float _Attenuation) { m_fPointLightInnerAttenuation = _Attenuation; }
+	_float			Get_PointLightInnerAttenuation()					{ return m_fPointLightInnerAttenuation;			}
+
+	VOID			AddShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
 	
 	HRESULT			Change_LightType(LIGHT_TYPE _LTYPE);
 
@@ -111,9 +127,15 @@ private:
 	_bool								m_bDirtyFlag = { true };
 	_bool								m_bActivate_State = { true };
 	_bool								m_bEffectLightFlag = { false };
+	// LSY 변경: 별칭은 식별 편의용이며, 배치 그룹은 런타임 로더 단위 정리에 사용한다.
+	std::string							m_sAlias{};
+	std::string							m_sPlacementGroup{};
 
 	_float								m_fLifeTime = { 0.f };
 	XMFLOAT3							m_fVelocity = { 0.f, 0.f, 0.f };
+
+	_float								m_fPointLightInnerAttenuation{};
+	_float								m_fPointLightOuterAttenuation{};
 
 	XMFLOAT4X4 LightView{}, LightProj{};
 
@@ -129,7 +151,7 @@ public:
 	_bool		Check_ObjectInArea();
 	VOID		Update_Collider();
 
-	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, const std::vector<CGameObject*>& _ObjectList);
+	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<IRenderable*>& _ObjectList);
 	VOID		Reset_Light();
 public:
 	static UPtr<CLight> Create();

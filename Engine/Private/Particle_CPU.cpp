@@ -25,10 +25,14 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     if (pDesc == nullptr)
         return E_FAIL;
 
+	m_pParticleShaderCache = pDesc->pShaderCache;
+
+	if (!m_pParticleShaderCache)
+		return E_FAIL;
+
     m_Desc = *pDesc;
     m_iNumElements = m_Desc.iMaxParticles;
     m_viBufferID = m_Desc.viBufferID;
-    m_eType = pDesc->type;
 
     m_Particles.assign(m_iNumElements, PARTICLE_CPU_DATA{});
 
@@ -49,6 +53,16 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 
         m_pResInstancedBuffer = res;
     }
+
+	if (auto res = CResCBuffer::Create())
+	{
+		CResCBuffer::CBUFFER_DESC bufDesc{};
+		bufDesc.byteWidth = sizeof(CB_TIMEACCUMULATION);
+		if (FAILED(res->Load(bufDesc)))
+			return E_FAIL;
+		m_pComTimeCBuffer = res;
+	}
+
     m_pResSamplerState = CGameInstance::Get().GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
     if (!m_pResSamplerState)
         return E_FAIL;
@@ -68,15 +82,14 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 			break;
 	}
 
-
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-
-	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
-		return E_FAIL;
-
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
-		return E_FAIL;
+	{
+		m_pResVertexShader = m_pParticleShaderCache->GetVertexShader(pDesc->VSID.first, pDesc->VSID.second, m_Desc.sVEntryPoint);
+		if (!m_pResVertexShader)
+			return E_FAIL;
+		m_pResPixelShader = m_pParticleShaderCache->GetPixelShader(pDesc->PSID.first, pDesc->PSID.second, m_Desc.sPEntryPoint);
+		if (!m_pResPixelShader)
+			return E_FAIL;
+	}
 
 
     if (m_Desc.whatKind == MESHORTEXTURE::TEX) {
@@ -88,6 +101,9 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
 		}
 		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
+		}
+		if (m_Desc.anyTextureID.second != "") {
+			m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
 		}
         if (FAILED(LoadParticleTexture(m_Desc.textureID)))
             return E_FAIL;
@@ -128,10 +144,10 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.3f, 0.6f);
-		m_waveCb.g_fBurstSpeed = Randf(1.f, 1.f);
+		m_waveCb.g_fBurstRatio = Randf(0.5f, 0.7f);
+		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
 		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
-		m_waveCb.g_fTransitionRatio = Randf(0.2f, 0.6f);
+		m_waveCb.g_fTransitionRatio = Randf(0.4f, 1.6f);
 		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
 		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
@@ -158,6 +174,7 @@ void CParticle_CPU::LateUpdate(E::_float fTimeDelta)
 
 void CParticle_CPU::Simulate(E::_float fTimeDelta)
 {
+	m_fAccumulationTime += fTimeDelta;
 	m_vecInstancedData.clear();
 	uint32_t totalFrames = m_Desc.TexRows * m_Desc.TexColumns;
 
@@ -183,6 +200,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			}
 		}
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
+
 		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 		UpdateBehavior(p, fTimeDelta);
 
@@ -202,9 +220,15 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		VTX_PARTICLE_INSTANCED_DATA inst{};
 		inst.iBehaviorType = p.iBehaviorType;
 		
-		p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
-		p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
-		p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_SIZESTOP) != 0) {
+			SizeLerp(p, fTimeDelta);
+		}
+		else {
+			p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+			p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+			p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+		}
+	
 
 		
 		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
@@ -223,10 +247,14 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			XMVECTOR camForward = matInvView.r[2];
 
 			_matrix matBillboardRot = XMMatrixIdentity();
+
 			matBillboardRot.r[0] = camRight;
 			matBillboardRot.r[1] = camUp;
-			matBillboardRot.r[2] = camForward;
+			matBillboardRot.r[2] = camForward ;
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+			matBillboardRot = matBillboardRot *XMMatrixRotationAxis(camForward,  p.rotation.w);
+
+			matBillboardRot = matBillboardRot * XMMatrixRotationAxis(camForward, p.rotation.w);
 
 			matWorld = matScale * matBillboardRot * matTrans;
 		}
@@ -329,7 +357,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 
 		p.vVelocity.x = burstVelX + (waveVelX - burstVelX) * blend;
 		p.vVelocity.y = burstVelY + (waveVelY - burstVelY) * blend;
-		p.vVelocity.z = 0.0f;
+		p.vVelocity.z = Randf(-1.f,1.f);
 
 		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
 		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
@@ -348,6 +376,10 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		GWWaveSmoke(p, fTimeDelta);
 	}if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
 		Lightning(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
+		ExtraLightning(p, fTimeDelta);
+	}if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
+		KeepRotate(p, fTimeDelta);
 	}
 }
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
@@ -381,12 +413,35 @@ void CParticle_CPU::GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	XMStoreFloat3(&p.vVelocity, XMLoadFloat3(&p.vVelocity) * expf(-4.f * fTimeDelta));
 
 }
+void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	_float stopSizeTime = p.fStopSizeTime;
+
+	float ageRatio = std::clamp(p.life / stopSizeTime, 0.f, 1.f);
+
+	p.fSize.x = std::lerp(p.fStartSize.x, p.fEndSize.x, ageRatio);
+	p.fSize.y = std::lerp(p.fStartSize.y, p.fEndSize.y, ageRatio);
+	p.fSize.z = std::lerp(p.fStartSize.z, p.fEndSize.z, ageRatio);
+}
+
+void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
+{
+	const float deltaAngle = p.fRotationSpeed * fTimeDelta;
+
+	p.rotation.x += p.roationAxis.x * deltaAngle;
+
+	p.rotation.y += p.roationAxis.y * deltaAngle;
+
+	p.rotation.z += p.roationAxis.z * deltaAngle;
+
+	p.rotation.w += p.roationAxis.z * deltaAngle;
+}
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 	{
 		///////////////////////////////////////////// Fade Out
-		if (p.fMaxLife - 2.f <= p.life) {
-			p.vColor.w -= fTimeDelta / 2.f;
+		if (p.fMaxLife - 1.f <= p.life) {
+			p.vColor.w -= fTimeDelta;
 		}
 	}
 	{
@@ -396,32 +451,89 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 			return;
 		}
 	}
-	
-	{
-		///////////////////////////////////////////// Gravity
-		const float kGravity = -9.8f * 0.5f;
-
-		p.vVelocity.y += kGravity * fTimeDelta;
-
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-	}
-	{
-		///////////////////////////////////////////// Particle Spread Type
-
-	}
 	{
 		///////////////////////////////////////////// Velocity Control
-		_float DragFactor = 3.f;
+		_float DragFactor = 2.f;
 		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
 		Velocity = XMVectorScale(Velocity, expf(-DragFactor * fTimeDelta));
 
 		XMStoreFloat3(&p.vVelocity, Velocity);
+	} 
+	//{
+	//	///////////////////////////////////////////// Gravity
+	//	const float kGravity = -9.8f;
+	//
+	//	p.vVelocity.y += kGravity * fTimeDelta;
+	//
+	//	XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
+	//	XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
+	//	vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
+	//	XMStoreFloat3(&p.vPosition, vPos);
+	//}
+	{
+		///////////////////////////////////////////// Particle Spread Type
+		//auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+		//if (nullptr == ActiveCam) return;
+		//
+		//XMVECTOR CamtoParticle = XMVectorSubtract(ActiveCam->GetTransform().GetLoadedPostion(), XMLoadFloat3(&p.vPosition));
+		//
+		//_float CamX = XMVectorGetX(CamtoParticle);
+		//_float CamZ = XMVectorGetZ(CamtoParticle);
+		//
+		//if (CamX * CamX * CamZ * CamZ > 0.001f) {
+		//	p.rotation.y = atan2f(CamX, CamZ);
+		//}
+	}
+
+	{
+		_float RotationSpeed = 0.5f;
+		XMVECTOR Velocity = XMLoadFloat3(&p.vVelocity);
+		if (fabsf(p.vVelocity.x) > 0.0001f || fabsf(p.vVelocity.z) > 0.0001f) {
+			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.z) + XM_PIDIV2;
+			_float CurrentAngle = p.rotation.x;
+
+			_float DeltaAngle = TargetAngle - CurrentAngle;
+
+			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
+			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
+
+			const _float AngleVelocity = XM_PI * RotationSpeed;
+			_float MaxStep = AngleVelocity * fTimeDelta;
+
+			if (fabsf(DeltaAngle) > MaxStep) {
+				DeltaAngle = DeltaAngle > 0.f ? MaxStep : -MaxStep;
+			}
+			p.rotation.x = CurrentAngle + DeltaAngle;
+
+			if (p.rotation.x > +XM_PI) p.rotation.x -= XM_2PI;
+			if (p.rotation.x < -XM_PI) p.rotation.x += XM_2PI;
+		}
+
+		if (XMVectorGetX(XMVector3LengthSq(Velocity)) > 0.1f) {
+			_float TargetAngle = atan2f(p.vVelocity.y, p.vVelocity.x) + XM_PIDIV2;
+			_float CurrentAngle = p.rotation.z;
+
+			_float DeltaAngle = TargetAngle - CurrentAngle;
+
+			while (DeltaAngle > XM_PI)  DeltaAngle -= XM_2PI;
+			while (DeltaAngle < -XM_PI) DeltaAngle += XM_2PI;
+
+			const _float AngleVelocity = XM_PI * RotationSpeed;
+			_float MaxStep = AngleVelocity * fTimeDelta;
+
+			if (fabsf(DeltaAngle) > MaxStep) {
+				DeltaAngle = DeltaAngle > 0.f ? MaxStep : -MaxStep;
+			}
+			p.rotation.z = CurrentAngle + DeltaAngle;
+			
+			if (p.rotation.z > +XM_PI) p.rotation.z -= XM_2PI;
+			if (p.rotation.z < -XM_PI) p.rotation.z += XM_2PI;
+		}
 	}
 }
-
+void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
+	
+}
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
 {
@@ -455,9 +567,10 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].rotation = src.rotation;
 		m_Particles[i].iBehaviorType = src.iBehaviorType;
 		m_Particles[i].loop = src.loop;
+		m_Particles[i].fStopSizeTime = src.fStopSizeTime;
+		m_Particles[i].roationAxis = src.rotationAxis;
+		m_Particles[i].fRotationSpeed = src.fRotationSpeed;
 
-
-	
 		++iSpawned;
 	}
 
@@ -468,13 +581,31 @@ HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 {
 
 
+	CB_TIMEACCUMULATION cb{};
+	cb.fAccumulationTime = m_fAccumulationTime;
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (SUCCEEDED(pContext->Map(m_pComTimeCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+	{
+		memcpy(mapped.pData, &cb, sizeof(cb));
+		pContext->Unmap(m_pComTimeCBuffer->GetCBuffer().Get(), 0);
+	}
+
+
+	pContext->PSSetConstantBuffers(11, 1, m_pComTimeCBuffer->GetCBuffer().GetAddressOf());
+
+
     if (m_vecInstancedData.empty())
         return S_OK;
 
     if (m_Desc.whatKind == MESHORTEXTURE::MESH)
-        return Render_Mesh(pContext, ctx);
+        Render_Mesh(pContext, ctx);
+	else {
+		Render_Texture(pContext, ctx);
+	}
+	ID3D11Buffer* nullBuffer = nullptr;
 
-    return Render_Texture(pContext, ctx); // 기존 텍스처 파티클 렌더 코드
+	pContext->PSSetConstantBuffers(11, 1, &nullBuffer);
+	return  S_OK;// 기존 텍스처 파티클 렌더 코드
 }
 
 
@@ -768,8 +899,9 @@ void CParticle_CPU::SetPosition(const _float3& pos)
 {
 	if (m_Particles.empty())
 		return;
-
-	m_Particles[0].vPosition = pos;
+	for (auto& particle : m_Particles) {
+		particle.vPosition = pos;
+	}
 }
 
 void CParticle_CPU::SetVelocity(const _float3& vel)
@@ -777,7 +909,9 @@ void CParticle_CPU::SetVelocity(const _float3& vel)
 	if (m_Particles.empty())
 		return;
 
-	m_Particles[0].vVelocity = vel;
+	for (auto& particle : m_Particles) {
+		particle.vVelocity = vel;
+	}
 }
 
 void CParticle_CPU::SetSize(const _float3& size)
@@ -785,14 +919,39 @@ void CParticle_CPU::SetSize(const _float3& size)
 	if (m_Particles.empty())
 		return;
 
-	m_Particles[0].fSize = size;
+	for (auto& particle : m_Particles) {
+		particle.fSize = size;
+	}
 }
 void CParticle_CPU::SetColor(const _float4& color)
 {
 	if (m_Particles.empty())
 		return;
+	for (auto& particle : m_Particles) {
+		particle.vColor = color;
+	}
+}
+void CParticle_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
+{
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive)
+			continue;
 
-	m_Particles[0].vColor = color;
+		if (particle.ownerID != ownerId)
+			continue;
+
+		particle.vColor = color;
+	}
+}
+void CParticle_CPU::SetEmissive(const _float4& emissive)
+{
+	if (m_Particles.empty())
+		return;
+	for (auto& particle : m_Particles) {
+		particle.emissive = emissive;
+		particle.originalEmissive = emissive;
+	}
 }
 void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 {
@@ -813,48 +972,32 @@ void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 		particle.originalPosition.z += delta.z;
 	}
 }
-void CParticle_CPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
+void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
 {
-	const XMMATRIX deltaMatrix =
-		XMLoadFloat4x4(
-			&deltaMatrixData);
+    const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
 
-	for (auto& particle : m_Particles)
-	{
-		if (!particle.bAlive ||
-			particle.ownerID != ownerId)
-		{
-			continue;
-		}
+    XMVECTOR scale, deltaRotation, translation;
+    if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
+        return;
 
-		// 위치: 회전 + 이동
-		XMStoreFloat3(
-			&particle.vPosition,
-			XMVector3TransformCoord(
-				XMLoadFloat3(
-					&particle.vPosition),
-				deltaMatrix));
+    XMFLOAT4X4 rotationMatrix;
+    XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
 
-		XMStoreFloat3(
-			&particle.originalPosition,
-			XMVector3TransformCoord(
-				XMLoadFloat3(
-					&particle.originalPosition),
-				deltaMatrix));
+    const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
 
-		// 속도: 이동은 제외하고 회전만 적용
-		XMStoreFloat3(
-			&particle.vVelocity,
-			XMVector3TransformNormal(
-				XMLoadFloat3(
-					&particle.vVelocity),
-				deltaMatrix));
+    for (auto& particle : m_Particles)
+    {
+		auto  a = particle.rotation.y;
 
-		XMStoreFloat3(
-			&particle.originalVelocity,
-			XMVector3TransformNormal(
-				XMLoadFloat3(
-					&particle.originalVelocity),
-				deltaMatrix));
-	}
+        if (!particle.bAlive || particle.ownerID != ownerId)
+            continue;
+
+        XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
+        XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
+
+        XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
+        XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
+
+        particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
+    }
 }

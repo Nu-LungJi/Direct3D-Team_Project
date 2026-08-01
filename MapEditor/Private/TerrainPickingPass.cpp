@@ -65,11 +65,12 @@ HRESULT CTerrainPickingPass::Initialize()
 	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
 	rasterizerDesc.DepthClipEnable = TRUE;
+	// Scissor Rect 적용
 	rasterizerDesc.ScissorEnable = TRUE;
-	if (FAILED(m_pDevice->CreateRasterizerState(
-		&rasterizerDesc, m_pScissorRasterizerState.GetAddressOf())))
+	if (FAILED(m_pDevice->CreateRasterizerState(&rasterizerDesc, m_pScissorRasterizerState.GetAddressOf())))
 		return E_FAIL;
 
+	// 1 * 1 스테이징 텍스쳐 3개 생성
 	D3D11_TEXTURE2D_DESC readbackDesc{};
 	readbackDesc.Width = 1;
 	readbackDesc.Height = 1;
@@ -93,12 +94,10 @@ HRESULT CTerrainPickingPass::Initialize()
 	if (FAILED(m_pDevice->CreateBuffer(&cbufferDesc, nullptr, m_pPickingCBuffer.GetAddressOf())))
 		return E_FAIL;
 
-	m_pPickingVS = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(
-		TERRAIN_PICKING_SHADER_GROUP, TERRAIN_PICKING_VS_TAG);
-	m_pPickingPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
-		TERRAIN_PICKING_SHADER_GROUP, TERRAIN_PICKING_PS_TAG);
-	if (!m_pPickingVS || !m_pPickingPS ||
-		FAILED(m_pPickingVS->Load()) || FAILED(m_pPickingPS->Load()))
+	m_pPickingVS = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TERRAIN_PICKING_SHADER_GROUP, TERRAIN_PICKING_VS_TAG);
+	m_pPickingPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TERRAIN_PICKING_SHADER_GROUP, TERRAIN_PICKING_PS_TAG);
+
+	if (!m_pPickingVS || !m_pPickingPS || FAILED(m_pPickingVS->Load()) || FAILED(m_pPickingPS->Load()))
 		return E_FAIL;
 
 	return S_OK;
@@ -112,28 +111,31 @@ std::optional<E::_float3> CTerrainPickingPass::Pick(
 
 	for (auto& slot : m_ReadbackSlots)
 	{
-		if (!slot.pending) continue;
+		if (!slot.pending) 
+			continue;
+
+		// DO_NOT_WAIT : GPU 작업이 끝나지 않았다면 CPU를 기다리게 하지 않고 즉시 다음 값을 반환
 		D3D11_MAPPED_SUBRESOURCE mapped{};
-		const HRESULT mapResult = m_pContext->Map(
-			slot.texture.Get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
-		if (mapResult == DXGI_ERROR_WAS_STILL_DRAWING) continue;
+		const HRESULT mapResult = m_pContext->Map(slot.texture.Get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+
+		if (mapResult == DXGI_ERROR_WAS_STILL_DRAWING) 
+			continue;
+
 		if (FAILED(mapResult))
 		{
 			slot.pending = false;
 			continue;
 		}
+
 		const E::_float4 value = *static_cast<const E::_float4*>(mapped.pData);
 		m_pContext->Unmap(slot.texture.Get(), 0);
-		m_LastReadbackResult = value.w >= 0.5f
-			? std::optional<E::_float3>{ E::_float3{ value.x, value.y, value.z } }
-			: std::nullopt;
+		m_LastReadbackResult = value.w >= 0.5f ? std::optional<E::_float3>{ E::_float3{ value.x, value.y, value.z } } : std::nullopt;
 		m_bHasReadbackResult = true;
 		slot.pending = false;
 	}
 
 	auto& writeSlot = m_ReadbackSlots[m_iNextReadbackSlot];
-	if (!writeSlot.pending && SUCCEEDED(RenderTerrainPosition(
-		terrain, m_pPickingContext.Get(), mouseX, mouseY)))
+	if (!writeSlot.pending && SUCCEEDED(RenderTerrainPosition(terrain, m_pPickingContext.Get(), mouseX, mouseY)))
 	{
 		D3D11_BOX sourceBox{};
 		sourceBox.left = mouseX;
@@ -142,8 +144,7 @@ std::optional<E::_float3> CTerrainPickingPass::Pick(
 		sourceBox.bottom = mouseY + 1;
 		sourceBox.front = 0;
 		sourceBox.back = 1;
-		m_pPickingContext->CopySubresourceRegion(
-			writeSlot.texture.Get(), 0, 0, 0, 0, m_pPositionTexture.Get(), 0, &sourceBox);
+		m_pPickingContext->CopySubresourceRegion(writeSlot.texture.Get(), 0, 0, 0, 0, m_pPositionTexture.Get(), 0, &sourceBox);
 		ComPtr<ID3D11CommandList> commandList{};
 		if (SUCCEEDED(m_pPickingContext->FinishCommandList(FALSE, commandList.GetAddressOf())))
 		{
@@ -156,9 +157,7 @@ std::optional<E::_float3> CTerrainPickingPass::Pick(
 	return m_bHasReadbackResult ? m_LastReadbackResult : std::nullopt;
 }
 
-HRESULT CTerrainPickingPass::RenderTerrainPosition(
-	const E::CTerrain& terrain, ID3D11DeviceContext* context,
-	uint32_t mouseX, uint32_t mouseY)
+HRESULT CTerrainPickingPass::RenderTerrainPosition(const E::CTerrain& terrain, ID3D11DeviceContext* context, uint32_t mouseX, uint32_t mouseY)
 {
 	auto* camera = E::CGameInstance::Get().GetActiveCamera();
 	if (!camera || !context)
@@ -176,6 +175,7 @@ HRESULT CTerrainPickingPass::RenderTerrainPosition(
 	viewport.MinDepth = 0.f;
 	viewport.MaxDepth = 1.f;
 	context->RSSetViewports(1, &viewport);
+	// -----------------------------마우스 주변만 Rasterize-----------------------------
 	context->RSSetState(m_pScissorRasterizerState.Get());
 	constexpr LONG pickingRadius = 1;
 	const D3D11_RECT scissorRect
@@ -186,6 +186,7 @@ HRESULT CTerrainPickingPass::RenderTerrainPosition(
 		std::min<LONG>(static_cast<LONG>(m_iTargetHeight), static_cast<LONG>(mouseY) + pickingRadius + 1)
 	};
 	context->RSSetScissorRects(1, &scissorRect);
+	// --------------------------------------------------------------------------------
 	context->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 	context->OMSetDepthStencilState(nullptr, 0);
 	context->GSSetShader(nullptr, nullptr, 0);
@@ -197,13 +198,14 @@ HRESULT CTerrainPickingPass::RenderTerrainPosition(
 
 	CB_TERRAIN_PICKING cbuffer{};
 	cbuffer.matWorld = *terrain.GetTransform().GetCombinedWorldMatrix();
-	XMStoreFloat4x4(&cbuffer.matWVP,
-		terrain.GetTransform().GetLoadedCombinedWorldMatrix() * camera->GetView() * camera->GetProj());
+	XMStoreFloat4x4(&cbuffer.matWVP,terrain.GetTransform().GetLoadedCombinedWorldMatrix() * camera->GetView() * camera->GetProj());
+
 	D3D11_MAPPED_SUBRESOURCE mapped{};
 	if (FAILED(context->Map(m_pPickingCBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 		return E_FAIL;
 	memcpy(mapped.pData, &cbuffer, sizeof(cbuffer));
 	context->Unmap(m_pPickingCBuffer.Get(), 0);
+
 	ID3D11Buffer* constantBuffer = m_pPickingCBuffer.Get();
 	context->VSSetConstantBuffers(0, 1, &constantBuffer);
 

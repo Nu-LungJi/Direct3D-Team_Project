@@ -38,8 +38,13 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
 private:
-	HRESULT RenderDefault(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) ;
-	HRESULT RenderShadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) ;
+	HRESULT RenderDefault(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+
+	/*----------- 광윤 추가 -----------*/ 
+	//그림자 받는 오브젝트들 LateUpdate에는 CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);, Render에는 RenderShadow 함수 호출 필수
+	HRESULT RenderShadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+	/*---------------------------------*/
+
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};

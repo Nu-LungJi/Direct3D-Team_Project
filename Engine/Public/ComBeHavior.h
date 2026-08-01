@@ -25,12 +25,11 @@ private:
 	void					Set_NodeInfo(CBTRoot* pNode);
 	void					ResetNode(CBTRoot* pNode);
 public:
-	void					Save_Data(const _string& filePath);
+	HRESULT					Save_Data(const _string& filePath);
 	HRESULT					Load_Data(const _string& filePath);
 public:
 	void					Update(_float fTimeDelta);					
 	void					UpdateGUI()	override;
-	
 public:
 	uint32_t&				Get_NodeID() { return m_iNodeID; }
 	class CBTComposite*		Get_Selector();
@@ -48,11 +47,9 @@ private:
 	_string									m_ComponentName{};
 	UPtr<class CBTComposite>				m_Root{};
 	std::map<uint32_t,CBTRoot*>				m_NodeMap;
-	uint32_t								m_iNodeID{ 0 };
+	uint32_t								m_iNodeID{ 0 }, m_iFlag{ 0 };
 	_string									m_FileName{};
-
 	
-	uint32_t								m_iFlag{ 0 };
 public:
 	static UPtr<CComBeHavior>Create();
 	virtual UPtr<CPrototype> Clone(void* pArg) override;

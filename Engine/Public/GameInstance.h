@@ -15,6 +15,7 @@
 #include "SoundManager.h"
 #include "EventManager.h"
 #include "PhysXManager.h"
+#include "NvClothManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -49,6 +50,10 @@ class CModel_Instance_Manager;
 class CMapMeshInstancingRenderer;
 class CResStaticModel;
 class CEffectManager;
+class CComPxFixedJoint;
+class CComPxDistanceJoint;
+class CComPxRevoluteJoint;
+class CComPxD6Joint;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -152,6 +157,12 @@ public:
 	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
+#pragma region LIGHT_MANAGER
+public:
+	// LSY 변경: 콘텐츠 코드가 별칭 기반 배치 라이트 조회 및 런타임 제어 API를 사용한다.
+	CLightManager* GetLightManager() const { return m_pLightManager.get(); }
+#pragma endregion
+
 #pragma region FONT_MANAGER
 	void FontDraw(const StringID& fontName, const _tchar* pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
 	void FontAddLateDraw(RENDERGROUP eRenderGroup, const StringID& fontName, const _wstring& pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
@@ -253,6 +264,15 @@ public:
 
 	CCameraObject* GetCamera(const StringID& CameraID) const;
 	HRESULT RegistCamera(const StringID& CameraID, const CHandle& handle);
+
+	HRESULT RegistCinematicAsset(const SPtr<CCinematicAsset>& pAsset);
+	HRESULT LoadCinematic(const std::string& CinematicName);
+	HRESULT PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
+	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
+	void StopCinematic();
+	_bool IsCinematicPlaying() const;
+	_float GetCinematicPlayTime() const;
+	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
 #pragma endregion
 
 #pragma region RENDERER
@@ -268,9 +288,11 @@ public:
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
 	HRESULT	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
-	HRESULT	Generate_CubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_ShadowCubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	HRESULT	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY);
 	HRESULT Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _ShadowUAV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _ShadowSRV, uint32_t _LTYPE, uint32_t _ResolutionX, uint32_t _ResolutionY);
+
+	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 
 #pragma endregion
 
@@ -287,24 +309,28 @@ public:
 #pragma region LIGHT_MANAGER
 public:
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
-	VOID	Bind_DynamicLight();
 
-	VOID	Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
-	VOID	Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range);
-	VOID	Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	std::optional<CHandle> Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity);
+	std::optional<CHandle> Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange);
+	std::optional<CHandle> Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt);
+	_bool	Remove_Light(const CHandle& hLight);
+	size_t	Remove_PlacementLightGroup(std::string_view sGroup);
+	void	SetActivePlacementLightGroup(std::string_view sGroup);
 
 	VOID	Clear_DynamicLightList();
 
-	HRESULT	Add_ShadowRenderGroup(ACTORTYPE _ATYPE, CGameObject* pRenderObject);
+	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
 
 	HRESULT	Render_ObjectShadow();
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
-	
-	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _Range, _float _LifeTime, _float3 _Velocity);
+
+	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
+
 
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER
+	_string GetAnimName(uint32_t iIndex, CHandle Handle);
 	int32_t GetAnimIndex(CHandle Handle);
 #pragma endregion
 #pragma region PARTICLE_MANAGER
@@ -332,17 +358,31 @@ public:
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = XMVectorZero());
 	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
-	HRESULT SpawnRibbon(uint32_t quantity, const _float4& start, const _float4& end,
-		_float fDisplacementAmplitude, _float iDisplacementIterations, _float fDisplacementDamping,
-		_float fFlickerInterval, _float4 vColor, _float4 emissive, _float fDuration = 1.f);
-
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
-
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
+	void TranslateOwner(uint32_t ownerId, const _float3& delta);
+	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& params);
+	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
+	HRESULT StopBeam(const BEAM_HANDLE& handle);
+#pragma endregion
+
+#pragma region EFFECT_MANAGER
+public:
+	EFFECT_INSTANCE_ID PlayEffect(const std::string& sEffectName,const _float4x4& matWorld,
+		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
+
+	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
+
+	void SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& vPosition);
+
+	void SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId,const _float4x4& colliderWorldMatrix);
+	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
+
 #pragma endregion
 
 #pragma region MAP_MANAGER
@@ -366,14 +406,27 @@ public:
 	void ClearAllChunk();
 #pragma endregion
 
+#pragma region PHYSX_MANAGER
 public:
 	CPhysXManager* GetPhysXManager() const { return m_pPhysXManager.get(); };
 	physx::PxScene* PxGetScene() const;
 	physx::PxPhysics* PxGetPhysics() const;
 	physx::PxControllerManager* PxGetControllerManager() const;
 
-	//_bool PxRayCast(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, PX_RAYCAST_RESULT& outResult) const;
-	//_bool PxRayCastMultiple(const _float3& vOrigin, const _float3& vNormalizedDir, _float fMaxDistance, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit = 10) const;
+	template<typename TJoint>
+	TJoint* AddPxJoint(
+		CGameObject& JointOwner,
+		const StringID& ComponentTag,
+		typename TJoint::DESC Desc);
+
+#pragma endregion
+
+#pragma region NVCLOTH_MANAGER
+public:
+	CNvClothManager* GetNvClothManager() const
+	{
+		return m_pNvClothManager.get();
+	}
 #pragma endregion
 
 
@@ -396,6 +449,10 @@ public:
 	void Add_Instance(class CComModelInstance* pModelInstance, const GPU_ANIM_INSTANCE_DATA& InstanceData);
 	void Add_Part_Instance(class CComStaticModelInstance* pModelInstance, const GPU_PART_INSTANCE_DATA& InstanceData);
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
+
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch);
+	/*---------------------------------*/
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
@@ -603,6 +660,7 @@ private:
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CNvClothManager> m_pNvClothManager{};
 	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
 	UPtr<CAction_Manager>	m_pActionManager{};
@@ -616,5 +674,62 @@ private:
 	UPtr<CEventManager> m_pEventManager{};
 	UPtr<CEffectManager> m_pEffectManager{};
 };
+
+template<typename TJoint>
+TJoint* CGameInstance::AddPxJoint(
+	CGameObject& JointOwner,
+	const StringID& ComponentTag,
+	typename TJoint::DESC Desc)
+{
+	static_assert(
+		std::is_same_v<TJoint, CComPxFixedJoint> ||
+		std::is_same_v<TJoint, CComPxDistanceJoint> ||
+		std::is_same_v<TJoint, CComPxRevoluteJoint> ||
+		std::is_same_v<TJoint, CComPxD6Joint>,
+		"AddPxJoint supports PhysX Joint components only.");
+
+	ES_EngineProtoPhysXComponent ePrototype{};
+	if constexpr (std::is_same_v<TJoint, CComPxFixedJoint>)
+	{
+		ePrototype =
+			ES_EngineProtoPhysXComponent::
+				Prototype_Component_ComPxFixedJoint;
+	}
+	else if constexpr (
+		std::is_same_v<TJoint, CComPxDistanceJoint>)
+	{
+		ePrototype =
+			ES_EngineProtoPhysXComponent::
+				Prototype_Component_ComPxDistanceJoint;
+	}
+	else if constexpr (
+		std::is_same_v<TJoint, CComPxRevoluteJoint>)
+	{
+		ePrototype =
+			ES_EngineProtoPhysXComponent::
+				Prototype_Component_ComPxRevoluteJoint;
+	}
+	else if constexpr (
+		std::is_same_v<TJoint, CComPxD6Joint>)
+	{
+		ePrototype =
+			ES_EngineProtoPhysXComponent::
+				Prototype_Component_ComPxD6Joint;
+	}
+
+	TJoint* pJoint{};
+	if (FAILED(JointOwner.AddComponentFromProto(
+		ES_EngineProtoMajorType::PHYSX,
+		ePrototype,
+		ComponentTag,
+		&Desc,
+		&pJoint)) ||
+		!pJoint)
+	{
+		return nullptr;
+	}
+
+	return pJoint;
+}
 
 NS_END

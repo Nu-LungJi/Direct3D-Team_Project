@@ -34,7 +34,6 @@ HRESULT CResModelMesh::Load(const std::any& arg)
     auto& PreTransformMatrix = descArg->PreTransformMatrix;
 
     {
-     
         if (FAILED(Ready_AnimMesh(pModel, ptr)))
             return E_FAIL;
     }

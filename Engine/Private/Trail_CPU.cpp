@@ -21,9 +21,16 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
     if (pDesc == nullptr)
         return E_FAIL;
 
+	m_pParticleShaderCache = pDesc->pShaderCache;
+
+	if (!m_pParticleShaderCache)
+		return E_FAIL;
+
     m_Desc = *pDesc;
-	m_vColor = _float4(1,1,1,0);
-	m_vEmissive = _float4(0, 0, 0, 0);
+
+	if (!m_Desc.bShrinkWidth)
+		m_Desc.eAlignMode = TRAIL_ALIGN_MODE::VIEW;
+
 
     // 프레임 하나당 정점 2개(밑동/칼끝) - 정점 자체가 이미 폭의 양 끝
     uint32_t iMaxVertices = m_Desc.iMaxFrames * 2;
@@ -56,10 +63,10 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	}
 	switch (m_Desc.blendState) {
 	case 0:
-		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
 		break;
 	case 1:
-		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE");
+		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT");
 		break;
 	case 2:
 		m_pBlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
@@ -81,19 +88,22 @@ HRESULT CTrail_CPU::Initialize(void* pArg)
 	if (m_Desc.anyTextureID.second != "") {
 		m_pAnyTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.anyTextureID.first, m_Desc.anyTextureID.second);
 	}
-	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(pDesc->VSID.first, pDesc->VSID.second);
-	if (FAILED(m_pResVertexShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sVEntryPoint,  .sTarget = "vs_5_0" })))
-		return E_FAIL;
 
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(pDesc->PSID.first, pDesc->PSID.second);
-	if (FAILED(m_pResPixelShader->Load(CResShader::DESC{ .sEntryPoint = m_Desc.sPEntryPoint,  .sTarget = "ps_5_0" })))
-		return E_FAIL;
+	{
+		m_pResVertexShader = m_pParticleShaderCache->GetVertexShader(pDesc->VSID.first, pDesc->VSID.second, m_Desc.sVEntryPoint);
+		if (!m_pResVertexShader)
+			return E_FAIL;
+		m_pResPixelShader = m_pParticleShaderCache->GetPixelShader(pDesc->PSID.first, pDesc->PSID.second, m_Desc.sPEntryPoint);
+		if (!m_pResPixelShader)
+			return E_FAIL;
+	}
+
 
     if (FAILED(LoadParticleTexture(m_Desc.textureID)))
         return E_FAIL;
 
     m_vecVertices.reserve(iMaxVertices);
-
+	diffuseFrames = m_Desc.TexRows * m_Desc.TexColumns;
     return S_OK;
 }
 
@@ -103,28 +113,41 @@ void CTrail_CPU::PriorityUpdate(_float fTimeDelta)
 
 void CTrail_CPU::Update(_float fTimeDelta)
 {
-	for (auto& frame : m_dequeFrames)
-		frame.fAge += fTimeDelta;
+	m_fAccumulationTime += fTimeDelta;
+
+	if (diffuseFrames > 1)
+	{
+		const _float fFlipbookFPS = 24.f;
+		uint32_t frameIndex = static_cast<uint32_t>(m_fAccumulationTime * fFlipbookFPS);
+		currentFrame = frameIndex % diffuseFrames;
+	}
+	else
+	{
+		currentFrame = 0;
+	}
+
+	for (auto& trailFrame : m_dequeFrames)
+		trailFrame.fAge += fTimeDelta;
 
 	while (!m_dequeFrames.empty() && m_dequeFrames.back().fAge >= m_Desc.fMaxDuration)
 		m_dequeFrames.pop_back();
 
 	m_fTimeSinceLastAdd += fTimeDelta;
-	m_fIdleTime += fTimeDelta; // AddPoint에서 0으로 리셋됨 (아래 참고)
+	m_fIdleTime += fTimeDelta;
 
-	// 멈춘 상태면: 시간 기반 fAge와 무관하게, 꼬리를 강제로 순차 제거
 	if (m_fIdleTime >= m_fIdleThreshold && !m_dequeFrames.empty())
 	{
 		m_fTimeSinceLastRetract += fTimeDelta;
+
 		while (m_fTimeSinceLastRetract >= m_fRetractInterval && !m_dequeFrames.empty())
 		{
-			m_dequeFrames.pop_back(); // 꼬리(가장 오래된 것)부터 하나씩
+			m_dequeFrames.pop_back();
 			m_fTimeSinceLastRetract -= m_fRetractInterval;
 		}
 	}
+
 	BuildTrailGeometry();
 }
-
 void CTrail_CPU::LateUpdate(_float fTimeDelta)
 {
 }
@@ -169,7 +192,6 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 	frame.vEnd = vEnd;
 	frame.fAge = 0.f;
 	frame.fDistance = m_fTotalDistance;
-
 	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
 	{
 		XMMATRIX view = CGameInstance::Get().GetActiveCamera()->GetView();
@@ -206,7 +228,7 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 				pathDir = XMVector3Normalize(delta);
 
 				XMVECTOR widthDir = XMVector3Cross(viewDir, pathDir);
-
+				
 				if (XMVectorGetX(XMVector3LengthSq(widthDir)) < 1e-6f)
 				{
 					widthDir = camRight;
@@ -214,11 +236,11 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 				else
 				{
 					widthDir = XMVector3Normalize(widthDir);
-
+				
 					if (XMVectorGetX(XMVector3Dot(camRight, widthDir)) < 0.f)
 						widthDir = -widthDir;
 				}
-
+				
 				XMStoreFloat3(&frame.vWidthDir, widthDir);
 			}
 		}
@@ -263,7 +285,14 @@ void CTrail_CPU::SetColor(const _float4& color)
 	m_vColor.x = color.x;
 	m_vColor.y = color.y;
 	m_vColor.z = color.z;
+	m_vColor.w = color.w;
 }
+void CTrail_CPU::SetEmissive(const _float4& emissive)
+{
+	m_vEmissive = emissive;
+}
+
+
 
 void CTrail_CPU::TranslateOwner(uint32_t ownerId, const _float3& delta)
 {
@@ -279,21 +308,32 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
     if (m_vecVertices.size() < 4) // 최소 프레임 2개(=4정점)는 있어야 스윕 면이 성립
         return S_OK;
 
-
 	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
 	pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	auto depthState =
+		CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE,"DS_NO_DEPTHWRITE");
+	if (!depthState)
+		return E_FAIL;
+
+	pContext->OMSetDepthStencilState(depthState->GetDepthStencilState().Get(),0);
+
+
 	//초기화 버퍼 초기화
 	{
 		CB_SCROLL cb{};
 		cb.g_fScrollOffset = m_ScrollOffset;
-
+		cb.g_fAccumulationTime = m_fAccumulationTime;
+		cb.g_iCurrentFrame = currentFrame;
+		cb.g_iFlipbookRows = m_Desc.TexRows;
+		cb.g_iFlipbookColumns = m_Desc.TexColumns;
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (SUCCEEDED(pContext->Map(m_pScrollCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 		{
 			memcpy(mapped.pData, &cb, sizeof(cb));
 			pContext->Unmap(m_pScrollCBuffer->GetCBuffer().Get(), 0);
-			pContext->PSSetConstantBuffers(0, 1, m_pScrollCBuffer->GetCBuffer().GetAddressOf());
+			pContext->PSSetConstantBuffers(10, 1, m_pScrollCBuffer->GetCBuffer().GetAddressOf());
 		}
 	}
 
@@ -339,18 +379,25 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 		ID3D11ShaderResourceView* pNoiseSRV = m_pNoiseTexture ? m_pNoiseTexture->GetSRV().Get() : nullptr;
 		pContext->PSSetShaderResources(4, 1, &pNoiseSRV);
 	}
+	if (m_pAnyTexture)
+	{
+		ID3D11ShaderResourceView* pAnyTextureSRV = m_pAnyTexture->GetSRV().Get();
+		pContext->PSSetShaderResources(8, 1, &pAnyTextureSRV);
+	}
 
     pContext->Draw((UINT)m_vecVertices.size(), 0);
 
     ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr,nullptr,nullptr ,nullptr };
+    ID3D11ShaderResourceView* nullSRV2[] = { nullptr};
     pContext->PSSetShaderResources(0, 6, nullSRV);
+    pContext->PSSetShaderResources(8, 1, nullSRV2);
 
 	ID3D11Buffer* nullCBuffer[] = { nullptr };
-	pContext->PSSetConstantBuffers(0, 1, nullCBuffer);
+	pContext->PSSetConstantBuffers(10, 1, nullCBuffer);
 
 	pContext->RSSetState(nullptr);
 	pContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
-
+	pContext->OMSetDepthStencilState(nullptr, 0);
     return S_OK;
 }
 
@@ -372,13 +419,18 @@ void CTrail_CPU::BuildTrailGeometry()
 	if (iCount < 2)
 		return;
 
+	const _bool bBillboard =
+		!m_Desc.bShrinkWidth ||
+		m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW;
+
+
 	float fUVTileScale = 0.5f;
 
 	// 카메라 월드 위치 + 역행렬을 루프 밖에서 한 번만 계산 (재사용)
 	//_float3 vCamPos = { 0.f, 0.f, 0.f };
 	//XMVECTOR camRight = XMVectorSet(1.f, 0.f, 0.f, 0.f); // 기본값 (LOCAL 모드에선 안 쓰임)
 
-	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
+	if (bBillboard)
 	{
 		auto pCam = CGameInstance::Get().GetActiveCamera();
 		if (pCam == nullptr)
@@ -400,11 +452,10 @@ void CTrail_CPU::BuildTrailGeometry()
 		//float fDeath = fAgeRatio;
 		float fLifeRatio = 1.f - fDeath;
 		float t = frame.fDistance * fUVTileScale;
-		float fWidthScale = fLifeRatio;
-
+		float fWidthScale = m_Desc.bShrinkWidth ? fLifeRatio : 1.f;
 		_float3 vTip, vBase;
 
-		if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::LOCAL)
+		if (!bBillboard)
 		{
 			_float3 vMid =
 			{
@@ -458,13 +509,18 @@ void CTrail_CPU::BuildTrailGeometry()
 		vTop.vPosition = vTip;
 		vTop.vUV = { t, 0.f };
 		vTop.vEmissive = m_vEmissive;
-		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), fLifeRatio));
+		const float alpha = m_vColor.w * fLifeRatio;
+
+		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), alpha));
+		//XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), 1.f * fLifeRatio));
 
 		TRAIL_VERTEX vBottom{};
 		vBottom.vPosition = vBase;
 		vBottom.vUV = { t, 1.f };
 		vBottom.vEmissive = m_vEmissive;
-		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), fLifeRatio));
+		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), alpha));
+
+		//XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor),1.f *fLifeRatio));
 
 		m_vecVertices.push_back(vTop);
 		m_vecVertices.push_back(vBottom);

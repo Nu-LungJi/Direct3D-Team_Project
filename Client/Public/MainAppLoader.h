@@ -14,6 +14,7 @@ private:
 	static HRESULT Load_PhysX_Resource();
 	static HRESULT Create_ActionNode();
 	static HRESULT Load_UIStaitc_Resource();
+	static HRESULT Initialize_Sound();
 };
 
 NS_END

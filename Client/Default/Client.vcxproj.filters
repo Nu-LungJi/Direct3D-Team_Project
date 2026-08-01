@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="99.Defines">
@@ -64,6 +64,12 @@
     <Filter Include="GameObject\Player">
       <UniqueIdentifier>{0da9ac46-8ea4-464b-b315-14e07602156b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\RagdollTest">
+      <UniqueIdentifier>{575385ef-b304-4d49-8f19-86b890c8e7b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain\NvClothCape">
+      <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Camera">
       <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
     </Filter>
@@ -81,6 +87,114 @@
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Jump_State">
       <UniqueIdentifier>{b59d7a74-342c-40ce-9e58-85ae8e0d40cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Attack_State">
+      <UniqueIdentifier>{19c50015-27fd-476c-a744-f9e9afe51770}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_Weapon">
+      <UniqueIdentifier>{74741dba-6811-472f-847e-f939b6540671}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase">
+      <UniqueIdentifier>{330acd8e-220a-49fc-bda2-22cbe84370eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood">
+      <UniqueIdentifier>{01ef8f57-61c2-45c7-a0f1-db9fb3e8d9a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger">
+      <UniqueIdentifier>{83e632ef-a5bb-4406-876d-0a8b177adbdf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\MyMagicSquareStep">
+      <UniqueIdentifier>{ac16d04c-4937-40fe-a72e-ce43e2401ba5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Bridge">
+      <UniqueIdentifier>{451893ab-e6f2-4e4c-8948-178bfb126954}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step1">
+      <UniqueIdentifier>{3887515f-08e3-4aee-9787-367ff6c2b400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step2">
+      <UniqueIdentifier>{ea370966-7ab1-4b96-849e-2b7e5c04f2cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step3">
+      <UniqueIdentifier>{ddb7f984-1332-476f-8159-5f0a142db46b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Step4">
+      <UniqueIdentifier>{68f98105-b08b-43a5-a54f-ff1fb4a7d32a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\Bridge">
+      <UniqueIdentifier>{915cb353-6ce1-460d-88b3-a07ec24c1005}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI">
+      <UniqueIdentifier>{7f27c2a0-0347-42cb-bd94-0642b1cd0643}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster">
+      <UniqueIdentifier>{168fd55f-37d9-4a25-ac51-3ed41d6e6e92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action">
+      <UniqueIdentifier>{80c3829e-8c2f-4612-a5b6-0233a52f27d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Decorator">
+      <UniqueIdentifier>{ba0122b0-64db-491b-836f-a56b3b9bfe22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot">
+      <UniqueIdentifier>{ab746481-684a-4a1e-9656-3918f260c268}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim">
+      <UniqueIdentifier>{beb0d131-70a6-43c7-ba82-70ca1fb45d49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Flow">
+      <UniqueIdentifier>{b26f59e3-d32a-4155-b0a6-67acaff44883}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\TombBoss">
+      <UniqueIdentifier>{8c471caf-2621-4d93-aded-6f6b54375710}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\TombGudian">
+      <UniqueIdentifier>{e0c79833-3d61-4619-8e40-fa8174e4f5b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\TombGudian\Dead">
+      <UniqueIdentifier>{bf656eec-4774-4600-97ef-cbeeca6ac8ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\ToBoss">
+      <UniqueIdentifier>{de2d2dca-6570-4861-a10e-fd1190d456fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\Terrain">
+      <UniqueIdentifier>{3fdb6a6f-4a3b-4dcd-a427-23d997396184}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\Terrain">
+      <UniqueIdentifier>{92f95264-506b-47ea-a584-f48e1d691bb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain">
+      <UniqueIdentifier>{84ffd718-2e24-44f4-bdb5-089cd24097d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\Buffer">
+      <UniqueIdentifier>{65ccac47-5a61-40df-b3b4-e36892ba3ae2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain\Terrain">
+      <UniqueIdentifier>{5aba49d7-cbec-45df-b167-3f75f15ce2d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain\OilBarrel">
+      <UniqueIdentifier>{67dea227-ae71-4a01-9d85-b263e2638e22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State">
+      <UniqueIdentifier>{11e3cf66-d2a5-4428-9b71-48aa0954b883}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State">
+      <UniqueIdentifier>{113ba92c-ee4c-4633-a05d-1bd05e0d0412}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State">
+      <UniqueIdentifier>{7fd33e7b-d892-4472-8efd-9203f175af69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State">
+      <UniqueIdentifier>{01e89d2b-fc0c-4cb6-9514-7970ddfc1929}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State">
+      <UniqueIdentifier>{6207f242-1cbc-4fa1-ab93-c358c2d2a589}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State">
+      <UniqueIdentifier>{57c915ba-5887-48a0-b19f-15e26e1f248e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\Particle">
+      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{f607c9fe-6680-482f-9189-0dd92dc847f0}</UniqueIdentifier>
@@ -108,6 +222,15 @@
     </Filter>
     <Filter Include="GameObject\UI\UIController">
       <UniqueIdentifier>{ad932d66-53a4-4e0e-b0b6-9443c44cbcd5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_Magic_Bullet">
+      <UniqueIdentifier>{15e1e341-898d-42a9-b6c0-d22c4c66ba61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Hit_State">
+      <UniqueIdentifier>{d0adaf33-4a64-494f-9581-a01e2aa4035f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Effect">
+      <UniqueIdentifier>{1d4dcef1-d0db-4ee2-99d1-8e63dd2b61d9}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\UI\GameOverMask">
       <UniqueIdentifier>{86f6ad92-4688-42ea-863a-d4cee5d1f8a4}</UniqueIdentifier>
@@ -139,6 +262,9 @@
       <Filter>99.Defines</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\MainApp.h">
+      <Filter>MainApp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\CinematicEditor.h">
       <Filter>MainApp</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\LevelLoading.h">
@@ -186,6 +312,9 @@
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h">
       <Filter>GameObject\Player\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h">
+      <Filter>GameObject\Player\StateMachine</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_StateMachine.h">
       <Filter>GameObject\Player\StateMachine</Filter>
     </ClInclude>
@@ -197,6 +326,186 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Jump_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Attack_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Attack_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Weapon.h">
+      <Filter>GameObject\Player\Player_Weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_SkillStateBase.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimRoot.h">
+      <Filter>GameObject\AI\AnimRoot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecFlag.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecHitCnt.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecInvert.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecLier.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecSearch.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecTimer.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnSlow.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTeleport.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnDirect.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMove.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMonAttType.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHeader_Definse.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTOnlyTrue.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTCreatureFlag.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTOnlyFalse.h">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Monster.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Mon_Weapon.h">
+      <Filter>GameObject\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTDecHp.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStep.h">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MyMagicSquareStepController.h">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BridgeCRW.h">
+      <Filter>GameObject\Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_StairStep.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep2.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep2.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep3.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep4.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep3.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep4.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BossTMB.h">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TmbGurdian.h">
+      <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TmbGurdianDead.h">
+      <Filter>GameObject\Monster\TombGudian\Dead</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TriggerCRW_SpawnStep.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_BridgeFix.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_BridgeBring.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DashSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_ToBoss.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\ToBoss</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelTerrain.h">
+      <Filter>Level\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelTerrainLoader.h">
+      <Filter>Loader\Level\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResTerrainVIBuffer.h">
+      <Filter>Resources\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Terrain.h">
+      <Filter>GameObject\Terrain\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\OilBarrel.h">
+      <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_AcientAttack_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_AccioSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DepulsoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_RevelioSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DescendoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTMonResetTable.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecIsGround.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\RagdollTest.h">
+      <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\NvClothCape.h">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
@@ -228,6 +537,18 @@
     <ClInclude Include="..\Public\UIController.h">
       <Filter>GameObject\UI\UIController</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Magic_Bullet.h">
+      <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Hit_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecIsPending.h">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MonEffect.h">
+      <Filter>GameObject\Monster\Effect</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\GameOverMask.h">
       <Filter>GameObject\UI\GameOverMask</Filter>
     </ClInclude>
@@ -256,6 +577,9 @@
       <Filter>98.Default</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\MainApp.cpp">
+      <Filter>MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\CinematicEditor.cpp">
       <Filter>MainApp</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\LevelLoading.cpp">
@@ -309,6 +633,239 @@
     <ClCompile Include="..\Private\Player_Jump_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Jump_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_Attack_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Attack_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Weapon.cpp">
+      <Filter>GameObject\Player\Player_Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_SkillStateBase.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Monster.cpp">
+      <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTCreatureFlag.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecFlag.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecHp.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecInvert.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecLier.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecSearch.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecTimer.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTOnlyTrue.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTOnlyFalse.cpp">
+      <Filter>GameObject\AI\Flow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMonAttType.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMove.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTeleport.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimRoot.cpp">
+      <Filter>GameObject\AI\AnimRoot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnSlow.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp">
+      <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BridgeCRW.cpp">
+      <Filter>GameObject\Bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_StairStep.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep2.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep2.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep3.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep4.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep3.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep4.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TriggerCRW_SpawnStep.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_BridgeFix.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\Bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossTMB.cpp">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TmbGurdian.cpp">
+      <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TmbGurdianDead.cpp">
+      <Filter>GameObject\Monster\TombGudian\Dead</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\ToBoss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelTerrain.cpp">
+      <Filter>Level\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelTerrainLoader.cpp">
+      <Filter>Loader\Level\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
+      <Filter>Resources\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Terrain.cpp">
+      <Filter>GameObject\Terrain\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\OilBarrel.cpp">
+      <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\RagdollTest.cpp">
+      <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\NvClothCape.cpp">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_AccioSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RevelioSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMonResetTable.cpp">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecIsGround.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Magic_Bullet.cpp">
+      <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Hit_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecIsPending.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTDecHitCnt.cpp">
+      <Filter>GameObject\AI\Decorator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MonEffect.cpp">
+      <Filter>GameObject\Monster\Effect</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle_UvScroll.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
     <ClCompile Include="..\Private\UIManager.cpp">
       <Filter>GameObject\UI</Filter>
     </ClCompile>
@@ -336,6 +893,9 @@
     <ClCompile Include="..\Private\UIController.cpp">
       <Filter>GameObject\UI\UIController</Filter>
     </ClCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
     <ClCompile Include="..\Private\GameOverMask.cpp">
       <Filter>GameObject\UI\GameOverMask</Filter>
     </ClCompile>

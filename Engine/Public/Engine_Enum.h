@@ -24,15 +24,14 @@ namespace Engine
 	enum class NODEGROUP { NODE_ACTION_M };
 	enum class MOVE { MOVE_M };
 #undef X	
-	enum class FLAGTYPE { ADD, DEL, RESET };
+	enum class FLAGTYPE { ADD, DEL, RESET, INVERT };
 	enum class LIGHT_TYPE { DIRECTIONAL, POINT, SPOTLIGHT };
-	enum class PARTICLE_TYPE { FIRE_CPU,FIRE_GPU,RIBBON,TRAIL,END };
 	enum class TRAIL_TYPE { POINT,PLANE,END };
 	enum class MESHORTEXTURE{ MESH, TEX, END};
 
 	enum class ACTORTYPE { STATIC, DYNAMIC, END };
 	enum class BLENDTYPE { ALPHABLEND, ALPHAADD, NONE, END};
-	//나중에 이 성 민 씨 가 옮길거임 접근 금지
+	//나중에 이 성 민 씨 가 옮길거임 접근 금지 언제?
 	static const uint32_t MAX_SPAWN_PER_CALL = 1000;
 
 	enum class UI_TYPE{ CONTAINER, TEXUI, FLIPBOOK, TEXT, BUTTON, SPELLMETER, HPBAR, HPFILL, LEFTHPFILL, MINIMAP, SPELLBTN, SHORTCUT_ICON, DISOLVE, GAMEOVERMASK, VIDEOOBJ, END };

@@ -138,7 +138,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -160,7 +160,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;_TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;IMGUI_API=__declspec(dllimport);_STRID_NODBG;TRACY_ENABLE;TRACY_IMPORTS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -204,9 +204,37 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\Public\BridgeCRW.h" />
+    <ClInclude Include="..\public\BossTMB.h" />
+    <ClInclude Include="..\Public\BTAnimation.h" />
+    <ClInclude Include="..\Public\BTAnimRoot.h" />
+    <ClInclude Include="..\Public\BTAttackAnimation.h" />
+    <ClInclude Include="..\Public\BTCreatureFlag.h" />
+    <ClInclude Include="..\Public\BTDecFlag.h" />
+    <ClInclude Include="..\Public\BTDecHitCnt.h" />
+    <ClInclude Include="..\Public\BTDecHp.h" />
+    <ClInclude Include="..\Public\BTDecInvert.h" />
+    <ClInclude Include="..\public\BTDecIsPending.h" />
+    <ClInclude Include="..\Public\BTDecLier.h" />
+    <ClInclude Include="..\Public\BTDecSearch.h" />
+    <ClInclude Include="..\Public\BTDecTimer.h" />
+    <ClInclude Include="..\Public\BTHeader_Definse.h" />
+    <ClInclude Include="..\Public\BTHitAnimMonster.h" />
+    <ClInclude Include="..\public\BTDecIsGround.h" />
+    <ClInclude Include="..\Public\BTMonAttType.h" />
+    <ClInclude Include="..\public\BTMonResetTable.h" />
+    <ClInclude Include="..\Public\BTMove.h" />
+    <ClInclude Include="..\Public\BTOnlyFalse.h" />
+    <ClInclude Include="..\Public\BTOnlyTrue.h" />
+    <ClInclude Include="..\Public\BTRandMoveAnim.h" />
+    <ClInclude Include="..\Public\BTTeleport.h" />
+    <ClInclude Include="..\Public\BTTurnAnimation.h" />
+    <ClInclude Include="..\Public\BTTurnDirect.h" />
+    <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
+    <ClInclude Include="..\Public\CinematicEditor.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\EffectUI.h" />
@@ -219,16 +247,36 @@
     <ClInclude Include="..\public\LevelLogoLoader.h" />
     <ClInclude Include="..\public\LevelCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h" />
+    <ClInclude Include="..\public\LevelTerrain.h" />
+    <ClInclude Include="..\public\LevelTerrainLoader.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
+    <ClInclude Include="..\public\MonEffect.h" />
+    <ClInclude Include="..\Public\Monster.h" />
+    <ClInclude Include="..\public\MyMagicSquareStep.h" />
+    <ClInclude Include="..\public\MyMagicSquareStepController.h" />
+    <ClInclude Include="..\public\NvClothCape.h" />
+    <ClInclude Include="..\public\OilBarrel.h" />
+    <ClInclude Include="..\Public\Player_Hit_State.h" />
+    <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
+    <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
+    <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
+    <ClInclude Include="..\Public\Player_Attack_State.h" />
+    <ClInclude Include="..\Public\Player_DashSkill_State.h" />
+    <ClInclude Include="..\Public\Player_DepulsoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_DescendoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_RevelioSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
+    <ClInclude Include="..\Public\Player_Magic_Bullet.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
+    <ClInclude Include="..\Public\Player_SkillStateBase.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\Public\TextBox.h" />
@@ -236,6 +284,24 @@
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
+    <ClInclude Include="..\Public\Player_Weapon.h" />
+    <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
+    <ClInclude Include="..\public\Terrain.h" />
+    <ClInclude Include="..\public\TriggerCRW_BridgeBring.h" />
+    <ClInclude Include="..\public\TriggerCRW_BridgeFix.h" />
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep.h" />
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep2.h" />
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep3.h" />
+    <ClInclude Include="..\public\TriggerCRW_DeSpawnStep4.h" />
+    <ClInclude Include="..\Public\TriggerCRW_SpawnStep.h" />
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep2.h" />
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep3.h" />
+    <ClInclude Include="..\public\TriggerCRW_SpawnStep4.h" />
+    <ClInclude Include="..\public\TriggerCRW_StairStep.h" />
+    <ClInclude Include="..\public\TmbGurdian.h" />
+    <ClInclude Include="..\public\TmbGurdianDead.h" />
+    <ClInclude Include="..\public\TriggerCRW_ToBoss.h" />
+    <ClInclude Include="..\Public\Mon_Weapon.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -245,6 +311,33 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BossTMB.cpp" />
+    <ClCompile Include="..\Private\BTAnimation.cpp" />
+    <ClCompile Include="..\Private\BTAnimRoot.cpp" />
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\Private\BTCreatureFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecFlag.cpp" />
+    <ClCompile Include="..\Private\BTDecHitCnt.cpp" />
+    <ClCompile Include="..\Private\BTDecHp.cpp" />
+    <ClCompile Include="..\Private\BTDecInvert.cpp" />
+    <ClCompile Include="..\private\BTDecIsPending.cpp" />
+    <ClCompile Include="..\Private\BTDecLier.cpp" />
+    <ClCompile Include="..\Private\BTDecSearch.cpp" />
+    <ClCompile Include="..\Private\BTDecTimer.cpp" />
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp" />
+    <ClCompile Include="..\private\BTDecIsGround.cpp" />
+    <ClCompile Include="..\Private\BTMonAttType.cpp" />
+    <ClCompile Include="..\private\BTMonResetTable.cpp" />
+    <ClCompile Include="..\Private\BTMove.cpp" />
+    <ClCompile Include="..\Private\BTOnlyFalse.cpp" />
+    <ClCompile Include="..\Private\BTOnlyTrue.cpp" />
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp" />
+    <ClCompile Include="..\Private\BTTeleport.cpp" />
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp" />
+    <ClCompile Include="..\Private\BTTurnDirect.cpp" />
+    <ClCompile Include="..\Private\BTTurnSlow.cpp" />
+    <ClCompile Include="..\Private\BridgeCRW.cpp" />
+    <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
@@ -258,20 +351,57 @@
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
     <ClCompile Include="..\private\LevelCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
+    <ClCompile Include="..\private\LevelTerrain.cpp" />
+    <ClCompile Include="..\private\LevelTerrainLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />
+    <ClCompile Include="..\private\MonEffect.cpp" />
+    <ClCompile Include="..\Private\Monster.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
+    <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
+    <ClCompile Include="..\private\NvClothCape.cpp" />
+    <ClCompile Include="..\private\OilBarrel.cpp" />
+    <ClCompile Include="..\Private\Player_Hit_State.cpp" />
+    <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
+    <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
+    <ClCompile Include="..\Private\Player_Attack_State.cpp" />
+    <ClCompile Include="..\Private\Player_DashSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
+    <ClCompile Include="..\Private\Player_Magic_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
+    <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
+    <ClCompile Include="..\Private\Player_Weapon.cpp" />
+    <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
+    <ClCompile Include="..\private\Terrain.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_BridgeFix.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep2.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep3.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_DeSpawnStep4.cpp" />
+    <ClCompile Include="..\Private\TriggerCRW_SpawnStep.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep2.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep3.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_SpawnStep4.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_StairStep.cpp" />
+    <ClCompile Include="..\private\TmbGurdian.cpp" />
+    <ClCompile Include="..\private\TmbGurdianDead.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
+    <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
@@ -285,6 +415,23 @@
   <ItemGroup>
     <Image Include="Client.ico" />
     <Image Include="small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle_UvScroll.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>

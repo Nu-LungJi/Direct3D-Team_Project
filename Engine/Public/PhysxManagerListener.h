@@ -48,6 +48,7 @@ private:
 		COLLISION_EXIT,
 		TRIGGER_ENTER,
 		TRIGGER_EXIT,
+		JOINT_BREAK,
 		CCT_SHAPE_HIT,
 		CCT_CONTROLLER_HIT,
 		CCT_OBSTACLE_HIT
@@ -60,6 +61,7 @@ private:
 		CHandle hObjectB{};
 		PX_ON_COLLISION_DATA tCollision{};
 		PX_ON_TRIGGER_DATA tTrigger{};
+		PX_ON_JOINT_BREAK_DATA tJointBreak{};
 		PX_CCT_HIT_DATA tCCTHit{};
 		PX_CCT_OBSTACLE_HIT_DATA tCCTObstacleHit{};
 	};
@@ -67,6 +69,7 @@ private:
 	void PushEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB = {});
 	void PushCollisionEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_COLLISION_DATA& tData);
 	void PushTriggerEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_TRIGGER_DATA& tData);
+	void PushJointBreakEvent(const PX_ON_JOINT_BREAK_DATA& tData);
 
 private:
 	std::mutex m_PendingEventMutex{};
