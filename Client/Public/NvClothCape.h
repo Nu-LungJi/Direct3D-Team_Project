@@ -159,6 +159,7 @@ private:
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	SPtr<CResVertexShader> m_pVertexShader{};
 	SPtr<CResVertexShader> m_pShadowVertexShader{};
+	SPtr<CResVertexShader> m_pPointShadowVertexShader{};
 	SPtr<CResPixelShader> m_pPixelShader{};
 };
 

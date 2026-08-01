@@ -949,6 +949,7 @@ VOID	CRenderer::Unbind_Resources()
 	m_pContext->CSSetShaderResources(0, 12, pNullSRVs);
 
 	m_pContext->IASetInputLayout(nullptr);
+	m_pContext->GSSetShader(nullptr, nullptr, 0);
 	m_pContext->PSSetShader(nullptr, nullptr, 0);
 	m_pContext->CSSetShader(nullptr, nullptr, 0);
 }
