@@ -24,6 +24,8 @@ Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
 Texture2D DistortionMap : register(t6);
+Texture2D g_BackgroundTex : register(t7);
+
 Texture2D AnyTextureMap : register(t8);
 
 
@@ -51,6 +53,7 @@ struct VS_OUT
     float3 vWorldPos : TEXCOORD1; // 추가: 라이팅 계산에 필요
     float life : TEXCOORD2;
     float maxLife : TEXCOORD3;
+	float4 vScreenPos : TEXCOORD4;
 };
 
 VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
@@ -90,7 +93,7 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
     Out.vEndEmissive = p.endEmissive;
     Out.life = p.life;
     Out.maxLife = p.maxLife;
-    
+	Out.vScreenPos = Out.vPosition;
     return Out;
 }
 
@@ -172,4 +175,45 @@ PS_OUT PSMain(VS_OUT In)
 	
     Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
     return Out;
+}
+
+PS_OUT PSMaceSphere(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ratio = saturate(1.0f - In.life / max(In.maxLife, 0.0001f));
+	float fade = saturate(1.0f - ratio);
+
+	float2 noiseUV1 = In.vTexcoord + float2(g_fTime * 0.05f, -g_fTime * 0.08f);
+	float2 noiseUV2 = In.vTexcoord * 1.7f + float2(-g_fTime * 0.07f, g_fTime * 0.04f);
+
+	float noise1 = NoiseMap.Sample(LinearWrap, noiseUV1).r;
+	float noise2 = NoiseMap.Sample(LinearWrap, noiseUV2).g;
+	float surfaceNoise = saturate(noise1 * 0.7f + noise2 * 0.5f);
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+	screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+
+	float2 distortion = DistortionMap.Sample(LinearWrap, noiseUV1).rg * 2.0f - 1.0f;
+	float distortionStrength = 0.08f * fade;
+	distortion *= distortionStrength * lerp(0.4f, 1.0f, surfaceNoise);
+
+	float3 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
+
+	float4 albedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
+	albedoTex *= float4(AlbedoColor, ObjectAlpha) * In.vColor;
+
+	float alphaMask = albedoTex.a * smoothstep(0.15f, 0.65f, surfaceNoise);
+	clip(alphaMask - 0.01f);
+
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 albedo = pow(max(albedoTex.rgb, 0.0f), 2.2f);
+
+	float3 surfaceColor = albedo + instEmissive * surfaceNoise;
+	float surfaceOpacity = saturate(alphaMask * 0.7f * fade);
+	float3 finalColor = lerp(distortedBackground, surfaceColor, surfaceOpacity);
+
+	Out.vDiffuse = float4(finalColor, 1.0f);
+	return Out;
 }
