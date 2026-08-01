@@ -59,6 +59,7 @@ namespace Client
 		Prototype_GameObject_TriggerCRW_BridgeBring,
 		Prototype_GameObject_TriggerCRW_BridgeFix,
 		Prototype_GameObject_TriggerCRW_ToBoss,
+		Prototype_GameObject_TriggerCRW_SpawnMonster1,
 		Prototype_GameObject_MyMagicSquareStep,
 		Prototype_GameObject_MyMagicSquareStepController,
 		Prototype_GameObject_BridgeCRW,

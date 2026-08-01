@@ -460,3 +460,39 @@ PS_OUT PSOnlyForDistortion(VS_OUT In)
 	return Out;
 	
 }
+PS_OUT PSSphereShield(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float3 normalSample = g_NormalTexture.Sample( LinearClamp,In.vTexcoord ).rgb;
+
+	float3 sphereNormal =
+        normalize(normalSample * 2.0f - 1.0f);
+
+	float circleMask = g_DiffuseTexture.Sample(LinearClamp,In.vTexcoord).r;
+
+	float3 viewDir =
+        float3(0.f, 0.f, 1.f);
+
+	float fresnel = 1.0f - saturate(dot(sphereNormal, viewDir));
+
+	float rim = pow(fresnel, 5.0f);
+
+	float3 rimColor =  float3(0.2f, 0.65f, 1.0f);
+
+	float3 centerColor = float3(0.1f, 0.25f, 0.7f);
+
+	float3 finalRGB =
+        centerColor * circleMask * 0.3f +
+        rimColor * rim * circleMask * 6.0f;
+
+	float alpha =  saturate(circleMask * 0.25f + rim * circleMask);
+
+	clip(circleMask - 0.01f);
+	float3 color = In.vColor.rgb + In.vEmissive.rgb * In.vEmissive.a;	
+	float finalAlpha = saturate(alpha - ratio);
+	Out.vDiffuse = float4(finalRGB + color, finalAlpha);
+
+	return Out;
+}

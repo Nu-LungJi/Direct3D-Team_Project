@@ -35,6 +35,14 @@ class CPlayer final : public CAnimationObject
 public:
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
 
+public:
+	enum class PLAYER_COLLISIONS : uint32_t
+	{
+		CCT_CAPSULE = 0,
+		PLAYER_SHAPE_HURTBOX,
+		END
+	};
+
 protected:
 	void UpdateGUI() override;
 
@@ -68,7 +76,8 @@ public:
 
 
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
-
+public:
+	HRESULT Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISION_DATA& info);
 public:
 	void Attack_Magic_Bullet();
 public:
@@ -156,6 +165,7 @@ private:
 
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
+	int32_t m_iHurtBoxBoneIndex{ -1 };
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
@@ -201,6 +211,7 @@ private:
 
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
+
 
 private:
 	_float m_fCoolTime_Num1{ 0.f };

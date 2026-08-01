@@ -63,6 +63,9 @@ public:
 	HRESULT Render(
 		ID3D11DeviceContext* pContext,
 		const RENDER_CTX& Context) override;
+	HRESULT Render_Shadow(
+		ID3D11DeviceContext* pContext,
+		const RENDER_CTX& Context) override;
 
 	static UPtr<CNvClothCape> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
@@ -155,6 +158,7 @@ private:
 	CComNvCloth* m_pComNvCloth{};
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	SPtr<CResVertexShader> m_pVertexShader{};
+	SPtr<CResVertexShader> m_pShadowVertexShader{};
 	SPtr<CResPixelShader> m_pPixelShader{};
 };
 

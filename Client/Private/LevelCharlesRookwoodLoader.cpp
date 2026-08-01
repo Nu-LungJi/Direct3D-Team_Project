@@ -6,6 +6,8 @@
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
 #include "PlayerThirdPersonCamera.h"
+#include "NvClothCape.h"
+#include "ResNvClothMesh.h"
 #include "Level_Defines.h"
 
 // UI
@@ -46,6 +48,7 @@
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
+#include "TriggerCRW_SpawnMonster1.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -85,6 +88,9 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 					return false;
 				}
 			}
+			if (FAILED(LoadPlayerCape()))
+				return false;
+
 	/*		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/Wand/SM_Wand.bin"))) {
 
 				E::CResModel::DESC pDesc{};
@@ -204,6 +210,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
 					return false;
 				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnMonster1, CTriggerCRW_SpawnMonster1::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnMonster1");
+					return false;
+				}
 			}
 
 			// 매직스텝
@@ -267,6 +280,60 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 
 			return true;
 		});
+}
+
+HRESULT CLevelCharlesRookwoodLoader::LoadPlayerCape()
+{
+	constexpr char CAPE_MODEL_PATH[] =
+		"./Resources/SampleClient/Models/Skeleton/clothes/SK_clothes.bin";
+	const _matrix CapePreTransform =
+		XMMatrixScaling(3.f, 3.f, 3.f) *
+		XMMatrixRotationY(XMConvertToRadians(180.f)) *
+		XMMatrixTranslation(0.f, -1.5f, 0.f);
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResModel>(
+		LEVEL::CHARLES_ROOKWOOD,
+		"PLAYER_CAPE_MODEL_RESOURCE",
+		CResModel::Create(CAPE_MODEL_PATH)))
+	{
+		CResModel::DESC Desc{};
+		Desc.PreTransformMatrix = CapePreTransform;
+		if (FAILED(res->Load(Desc)))
+		{
+			MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_CAPE_MODEL_RESOURCE");
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResNvClothMesh>(
+		LEVEL::CHARLES_ROOKWOOD,
+		"PLAYER_CAPE_CLOTH_RESOURCE",
+		CResNvClothMesh::Create(CAPE_MODEL_PATH)))
+	{
+		CResNvClothMesh::DESC Desc{};
+		Desc.PreTransformMatrix = CapePreTransform;
+		Desc.sSimulationAnchorBone = "Spine3";
+		Desc.iSimulationMeshIndex = 0;
+		Desc.iRenderMeshIndex = 1;
+		Desc.fWeldTolerance = 1.e-5f;
+		Desc.fFixedTopRatio = 0.1f;
+		if (FAILED(res->Load(Desc)))
+		{
+			MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_CAPE_CLOTH_RESOURCE");
+			return E_FAIL;
+		}
+	}
+
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
+		CNvClothCape::Create())))
+	{
+		MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_NvClothCape");
+		return E_FAIL;
+	}
+
+	return S_OK;
 }
 
 std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()

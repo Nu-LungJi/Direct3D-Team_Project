@@ -58,6 +58,7 @@ public:
 	bool IsGrounded() const;
 	bool IsCollidingUp() const;
 	bool IsCollidingSide() const;
+	std::optional<PX_CCT_STANDING_DATA> GetStandingShapeData() const;
 	std::optional<CHandle> GetStandingGameObjectHandle() const;
 	void SetPosition(const XMFLOAT3& vPosition);
 	_float3 GetPosition() const;
