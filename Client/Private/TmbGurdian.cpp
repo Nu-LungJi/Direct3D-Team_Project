@@ -444,7 +444,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		Desc.bIsTrigger = false;
 		Desc.tFilter = PX_FILTER_DESC{
-			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HITBOX),
+			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
 			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 		};
@@ -459,7 +459,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		if (!m_pComSphereCol->SetQueryEnabled(false))
 			return E_FAIL;
 	}
-	
+
 	//피직스
 	{
 		CComPxCharacterController::DESC Desc{};

@@ -143,7 +143,7 @@ protected:
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{};
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t								m_iHp{}, m_iMaxHp{};
-	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false }, m_bSkillLoop{false};
+	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false }, m_bSkillLoop{ false }, m_bSkipAtt{false};
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{};
 

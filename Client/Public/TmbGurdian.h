@@ -42,6 +42,7 @@ private:
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
 
+	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
 public:

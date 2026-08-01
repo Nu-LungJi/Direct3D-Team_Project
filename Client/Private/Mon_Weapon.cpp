@@ -31,14 +31,11 @@ HRESULT CMon_Weapon::InitializePrototype(void* pArg)
 
 	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	if (FAILED(m_pResVertexNonAnimShader->Load()))
-	{
 		return E_FAIL;
-	}
+	
 	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
-	{
 		return E_FAIL;
-	}
 
 	return S_OK;
 }
@@ -51,17 +48,14 @@ HRESULT CMon_Weapon::Initialize(void* pArg)
 	m_ParentHandle	   = pWeaponDesc->ParentHandle;
 	
 	if (FAILED(CGameObject::Initialize(pArg)))
-	{
 		return E_FAIL;
-	}
 
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-		{
 			return E_FAIL;
-		};
+
 	}
 
 	{
@@ -70,9 +64,7 @@ HRESULT CMon_Weapon::Initialize(void* pArg)
 		Desc.sResTag   = pWeaponDesc->WeaponName;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-		{
 			return E_FAIL;
-		};
 	}
 	
 	_vector vScale = XMLoadFloat3(&pWeaponDesc->vScale);

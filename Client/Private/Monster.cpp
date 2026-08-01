@@ -421,8 +421,24 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 
 	Damaged();
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+		++m_iNormalHitCnt;
+	if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		if (m_iNormalHitCnt >= 6)
+		{
+			m_iNormalHitCnt = 0;
+			m_bSkipAtt = false;
+			return false;
+		}
+		m_bSkipAtt = true;
+		m_eAttType = ATTMON::END;
+		
+		return false;
+	}
 	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
+	
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
 	{
 		return false;
@@ -431,8 +447,7 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		return false;
 	MON_HIT_INFO HitInfo{};
 
-	if (eType == PLAYER_SKILL_TYPE::ATTACK)
-		++m_iNormalHitCnt;
+
 
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
@@ -568,7 +583,6 @@ void CMonster::Flag_Check(_float fTimeDelta)
 		Clear_PendingHit();
 		m_bActiveHit = false;
 		m_iHitCnt = 0;
-		m_iNormalHitCnt = 0;
 	}
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 	{
