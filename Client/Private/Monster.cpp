@@ -510,29 +510,27 @@ void CMonster::Damaged()
 
 void CMonster::RunningSkill(_float fTimeDelta)
 {
-	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
+	
+	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
+
+	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
 	{
-		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
+		auto k = GetTransform().GetWorldMatrix();
 
-		if (m_eAttType != ATTMON::END && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
-		{
-			auto k = GetTransform().GetWorldMatrix();
+		m_iCurEffectID = CGameInstance::Get().PlayEffect(m_CurEffectName, *GetTransform().GetWorldMatrix(), _vector{},
+			[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+			{
+				if (effectId != m_iCurEffectID)
+					return;
+				m_iCurEffectID = INVALID_EFFECT_INSTANCE_ID;
+			});
 
-			m_iCurEffectID = CGameInstance::Get().PlayEffect(m_CurEffectName, *GetTransform().GetWorldMatrix(), _vector{},
-				[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
-				{
-					if (effectId != m_iCurEffectID)
-						return;
-					m_iCurEffectID = INVALID_EFFECT_INSTANCE_ID;
-				});
-
-			//CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
-			if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
-				m_eAttType = ATTMON::END;
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
-			
-		}
+		//CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
+		
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
+		
 	}
+	
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
 	{
 		if(m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
