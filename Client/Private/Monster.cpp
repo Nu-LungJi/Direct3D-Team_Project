@@ -421,6 +421,9 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 
 	Damaged();
+	if (eType == PLAYER_SKILL_TYPE::ATTACK && m_ActiveMonTable.eHitType == PLAYER_SKILL_TYPE::DESCENDO)
+		return false;
+
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
 		++m_iNormalHitCnt;
 	if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
@@ -436,19 +439,17 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		
 		return false;
 	}
+
 	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
 	
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
-	{
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
 		return false;
-	}
+
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return false;
+
 	MON_HIT_INFO HitInfo{};
-
-
-
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
@@ -526,6 +527,8 @@ void CMonster::RunningSkill(_float fTimeDelta)
 				});
 
 			//CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
+			if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
+				m_eAttType = ATTMON::END;
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
 			
 		}

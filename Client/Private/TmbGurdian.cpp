@@ -670,6 +670,8 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_fEMissiveColor = { 1.f,1.f,1.f};
 	m_eMonType = MonDesc->MonType;
+
+	m_pModelAnimator->Play_Anim(0, false);
 	return S_OK;
 }
 
