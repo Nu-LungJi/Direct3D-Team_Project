@@ -99,6 +99,11 @@ void CButton::Update(E::_float fTimeDelta)
 	{
 		m_pComTween->Tick(fTimeDelta);
 	}
+
+	if (m_IsHover)
+	{
+		m_HoverTimer += fTimeDelta;
+	}
 }
 
 void CButton::LateUpdate(E::_float fTimeDelta)
@@ -221,6 +226,7 @@ void CButton::PlayEffect(uint32_t uiState)
 
 		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
 		{
+			m_IsHover = true;
 			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab(m_DescJsonName);
 			m_SpellDesc = vSpellDesc[0];
 			m_SpellPaper = vSpellDesc[1];

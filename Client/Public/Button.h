@@ -74,6 +74,9 @@ private:
 	void PlayScaleAlphaDownDelete(CHandle pHandle, _float delay = 0.f);
 	CUIObject* SafeGetOBJ(CHandle pHandle);
 	/********디스크립션*********/
+	_bool m_CreateDesc{ false };
+	_bool m_IsHover{ false };
+	_float m_HoverTimer = 0.f;
 	std::string m_DescJsonName = "AssioDesc";
 	std::wstring m_VideoPath = L"./Resources/SampleClient/Textures/UI/Video/FMV_Accio.avi";
 private:
