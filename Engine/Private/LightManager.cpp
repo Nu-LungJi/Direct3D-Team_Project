@@ -1,9 +1,12 @@
 #include "pch.h"
 #include "LightManager.h"
 #include "GameInstance.h"
+// LSY 변경: 기존 LightManager GUI를 대체하는 배치 전용 에디터를 연결한다.
+#include "LightPlacementEditor.h"
 #include "ComCollider.h"
 #include "CollSphere.h"
 #include "CollFrustum.h"
+#include "DbgLineRender.h"
 
 CLightManager::CLightManager(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice(pDevice), m_pContext(pContext) {}
 CLightManager::~CLightManager() { }
@@ -82,10 +85,21 @@ HRESULT CLightManager::Initialize_LightManager() {
 	if (FAILED(Initialize_DebugRender()))	return E_FAIL;
 #endif
 
+	// LSY 변경: 라이트 생성/편집/저장/로드 책임을 배치 에디터에 위임한다.
+	m_pPlacementEditor = CLightPlacementEditor::Create(this);
+	if (!m_pPlacementEditor) return E_FAIL;
+
 	return S_OK;
 }
 
 VOID CLightManager::UpdateGUI() {
+	// LSY 변경: 배치 에디터가 준비된 경우 기존 단순 LightManager GUI 대신 사용한다.
+	if (m_pPlacementEditor)
+	{
+		m_pPlacementEditor->UpdateGUI();
+		return;
+	}
+
 	{
 		ImGui::Begin("Light Manager");
 
@@ -271,8 +285,51 @@ VOID CLightManager::UpdateGUI() {
 	}
 }
 
-VOID CLightManager::Update(_float fTimeDelta) {
+void CLightManager::SetActivePlacementLightGroup(
+	std::string_view sGroup)
+{
+	// LSY 변경: 런타임 로더가 현재 레벨의 배치 그룹을 에디터에 알려
+	// 저장/로드/삭제가 다른 레벨의 라이트에 영향을 주지 않게 한다.
+	if (m_pPlacementEditor)
+		m_pPlacementEditor->
+			SetActivePlacementGroup(sGroup);
+}
 
+std::optional<CHandle>
+CLightManager::FindPlacementLightHandleByAlias(
+	std::string_view sGroup,
+	std::string_view sAlias) const
+{
+	// LSY 변경: 별칭은 레벨별로 중복될 수 있으므로 배치 그룹까지 함께 비교한다.
+	// 수명이 끝날 수 있는 CLight 포인터 대신 세대 검증이 가능한 핸들을 반환한다.
+	if (sGroup.empty() || sAlias.empty())
+		return std::nullopt;
+
+	for (const auto& optionalHandle :
+		m_LightHandleList)
+	{
+		if (!optionalHandle)
+			continue;
+
+		const CLight* light = CGameInstance::Get().
+			GetGameObjectByHandleT<CLight>(
+				*optionalHandle);
+		if (!light)
+			continue;
+
+		if (light->Get_LightPlacementGroup() ==
+				sGroup &&
+			light->Get_LightAlias() == sAlias)
+		{
+			return *optionalHandle;
+		}
+	}
+
+	return std::nullopt;
+}
+
+VOID CLightManager::Update(_float fTimeDelta) {
+	DrawDebugEffectLights();
 }
 
 HRESULT CLightManager::Capture_ShadowMap() {
@@ -625,9 +682,9 @@ HRESULT CLightManager::Render_ObjectNonShadow(){
 
 std::optional<CHandle> CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
 	CLight::DESC LDesc{};
-	if		(m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00"	+ m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 100)    LDesc.sObjectTag = "Light_Clone0"	+ m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 1000)   LDesc.sObjectTag = "Light_Clone"	+ m_LightHandleList.size();
+	// LSY 변경: 문자열 리터럴 포인터 연산을 제거하고 실제 인덱스 문자열로 태그를 만든다.
+	LDesc.sObjectTag =
+		"Light_Clone" + std::to_string(m_LightHandleList.size());
 
 	auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
 	if (!(LightHandle))	return std::nullopt;
@@ -644,9 +701,9 @@ std::optional<CHandle> CLightManager::Add_DirectionalLight(XMFLOAT3 _Direction, 
 }
 std::optional<CHandle> CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
 	CLight::DESC LDesc{};
-	if		(m_LightHandleList.size() < 10)     LDesc.sObjectTag = "Light_Clone00"	+ m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 100)    LDesc.sObjectTag = "Light_Clone0"	+ m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 1000)   LDesc.sObjectTag = "Light_Clone"	+ m_LightHandleList.size();
+	// LSY 변경: 문자열 리터럴 포인터 연산을 제거하고 실제 인덱스 문자열로 태그를 만든다.
+	LDesc.sObjectTag =
+		"Light_Clone" + std::to_string(m_LightHandleList.size());
 
 	auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
 	if (!LightHandle)			return std::nullopt;
@@ -667,9 +724,9 @@ std::optional<CHandle> CLightManager::Add_PointLight(XMFLOAT3 _Position, XMFLOAT
 }
 std::optional<CHandle> CLightManager::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
 	CLight::DESC LDesc{};
-	if (m_LightHandleList.size() < 10)      LDesc.sObjectTag = "Light_Clone00" + m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 100)    LDesc.sObjectTag = "Light_Clone0" + m_LightHandleList.size();
-	else if (m_LightHandleList.size() < 1000)   LDesc.sObjectTag = "Light_Clone" + m_LightHandleList.size();
+	// LSY 변경: 문자열 리터럴 포인터 연산을 제거하고 실제 인덱스 문자열로 태그를 만든다.
+	LDesc.sObjectTag =
+		"Light_Clone" + std::to_string(m_LightHandleList.size());
 
 	auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
 	if (!LightHandle)	return std::nullopt;
@@ -687,6 +744,72 @@ std::optional<CHandle> CLightManager::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3
 
 	m_LightHandleList.push_back(LightHandle);
 	return LightHandle;
+}
+
+_bool CLightManager::Remove_Light(const CHandle& hLight)
+{
+	// LSY 변경: 에디터/로더가 지정한 라이트만 안전하게 제거할 수 있도록
+	// 관리자 목록과 활성 그림자 목록을 함께 정리한다.
+	const size_t previousSize = m_LightHandleList.size();
+	std::erase_if(
+		m_LightHandleList,
+		[&hLight](const std::optional<CHandle>& handle)
+		{
+			return handle && *handle == hLight;
+		});
+
+	if (previousSize == m_LightHandleList.size())
+		return false;
+
+	std::erase_if(
+		m_pActiveShadowLightList,
+		[&hLight](const std::optional<CHandle>& handle)
+		{
+			return handle && *handle == hLight;
+		});
+
+	if (CLight* light = CGameInstance::Get().
+		GetGameObjectByHandleT<CLight>(hLight))
+	{
+		light->SetPendingDestroyCascade();
+	}
+
+	return true;
+}
+
+size_t CLightManager::Remove_PlacementLightGroup(
+	std::string_view sGroup)
+{
+	// LSY 변경: 레벨별 배치 그룹만 제거하여 하드코딩 또는 다른 레벨의
+	// 라이트가 함께 삭제되는 문제를 방지한다.
+	if (sGroup.empty())
+		return 0;
+
+	std::vector<CHandle> handles{};
+	handles.reserve(m_LightHandleList.size());
+	for (const auto& optionalHandle : m_LightHandleList)
+	{
+		if (!optionalHandle)
+			continue;
+
+		CLight* light = CGameInstance::Get().
+			GetGameObjectByHandleT<CLight>(*optionalHandle);
+		if (light &&
+			std::string_view{
+				light->Get_LightPlacementGroup() } ==
+				sGroup)
+		{
+			handles.push_back(*optionalHandle);
+		}
+	}
+
+	size_t removedCount{};
+	for (const CHandle& handle : handles)
+	{
+		if (Remove_Light(handle))
+			++removedCount;
+	}
+	return removedCount;
 }
 
 HRESULT CLightManager::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject) {
@@ -791,68 +914,142 @@ _bool	CLightManager::IsInFrustum(CLight* _LightOBJ) {
 }
 
 #pragma region EFFECT_LIGHT
-HRESULT CLightManager::Initialize_EffectLight(uint32_t _PoolSize) {
+void CLightManager::ClearEffectLightPool()
+{
+	// LSY 변경: 레벨 전환 시 이전 레벨의 핸들이 풀 앞부분에 남아
+	// 새로 생성한 라이트가 할당되지 않는 문제를 방지한다.
+	for (const auto& optionalHandle :
+		m_pEffectLightPool)
+	{
+		if (!optionalHandle)
+			continue;
+
+		// LSY 변경: 일반 라이트 목록에 함께 등록된 경우에는 목록과 객체를
+		// 같이 정리하고, 이펙트 전용 풀에만 있는 객체도 반드시 파괴 예약한다.
+		if (!Remove_Light(*optionalHandle))
+		{
+			if (CGameObject* object =
+				CGameInstance::Get().
+					GetGameObjectByHandle(
+						*optionalHandle))
+			{
+				object->
+					SetPendingDestroyCascade();
+			}
+		}
+	}
+
+	m_pEffectLightPool.clear();
+	m_iEffectLightPoolSize = 0;
+	m_iLastAllocatedIndex = 0;
+}
+
+HRESULT CLightManager::Initialize_EffectLight(
+	uint32_t _PoolSize)
+{
+	// LSY 변경: 이펙트 풀은 레벨 수명에 맞춰 완전히 재구축한다.
+	ClearEffectLightPool();
+
+	if (_PoolSize == 0)
+		return E_INVALIDARG;
+
 	m_pEffectLightPool.reserve(_PoolSize);
+	m_iEffectLightPoolSize = _PoolSize;
+	m_iLastAllocatedIndex = _PoolSize - 1;
 
-	for (uint32_t i = 0; i < _PoolSize; ++i) {
-		CLight::DESC LDesc{};
-		if (m_pEffectLightPool.size() < 10)	LDesc.sObjectTag = "EffectLight00" + m_pEffectLightPool.size();
-		else if (m_pEffectLightPool.size() < 100)   LDesc.sObjectTag = "EffectLight0" + m_pEffectLightPool.size();
+	for (uint32_t i = 0; i < _PoolSize; ++i)
+	{
+		CLight::DESC desc{};
+		desc.sObjectTag =
+			"EffectLight_" + std::to_string(i);
 
-		auto LightHandle = E::CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_Light", "LightLayer", &LDesc);
-		if (!LightHandle)			return E_FAIL;
+		auto lightHandle =
+			CGameInstance::Get().
+				AddGameObjectToLayer(
+					"PERMANENT",
+					"Prototype_GameObject_Light",
+					"LightLayer",
+					&desc);
+		if (!lightHandle)
+		{
+			ClearEffectLightPool();
+			return E_FAIL;
+		}
 
-		auto LightOBJ = E::CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ)	return E_FAIL;
+		m_pEffectLightPool.push_back(
+			*lightHandle);
 
-		LightOBJ->Change_LightType(LIGHT_TYPE::POINT);
+		CLight* light = CGameInstance::Get().
+			GetGameObjectByHandleT<CLight>(
+				*lightHandle);
+		if (!light)
+		{
+			ClearEffectLightPool();
+			return E_FAIL;
+		}
 
-		LightOBJ->Set_LightPosition(XMFLOAT3(0.f, 0.f, 0.f));
-		LightOBJ->Set_LightColor({ 1.f, 1.f, 1.f });
-		LightOBJ->Set_LightIntensity(10.f);
-		LightOBJ->Set_PointLightInnerAttenuation(10.f);
-		LightOBJ->Set_PointLightOuterAttenuation(20.f);
-		LightOBJ->Set_EffectLight(true);
+		light->Change_LightType(
+			LIGHT_TYPE::POINT);
+		light->Set_EffectLight(true);
 
-		m_pEffectLightPool.push_back(LightHandle);
+		// LSY 변경: 생성 직후 첫 프레임에 풀 라이트가 모두 활성화되는 것을 막는다.
+		light->Reset_Light();
 	}
 
 	return S_OK;
 }
 
-std::optional<CHandle> CLightManager::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity) {
-	std::optional<CHandle> FinalLightHandle = std::nullopt;
-	CLight* LightOBJ = nullptr;
+std::optional<CHandle> CLightManager::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color,  _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity) {
+	// LSY 변경: 고정 상수가 아니라 현재 레벨에서 실제 생성된 풀 크기를 사용한다.
+	const size_t poolSize = m_pEffectLightPool.size();
 
-	for (uint32_t i = 0; i < MAX_EFFECTLIGHT_COUNT; ++i) {
-		uint32_t CircularIndex = (m_iLastAllocatedIndex + 1 + i) % MAX_EFFECTLIGHT_COUNT;
-		auto LightHandle = m_pEffectLightPool[CircularIndex];
-		if (!LightHandle)		 continue;
-
-		LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
-		if (nullptr == LightOBJ) continue;
-
-		if (LightOBJ->Get_LightActivateState() == false) {
-			LightOBJ->Set_LightActivateState(true);
-			FinalLightHandle = m_pEffectLightPool[CircularIndex];
-			m_iLastAllocatedIndex = CircularIndex;
-			break;
-		}
+	if (poolSize == 0) {
+		DEBUG_LOG("[EffectLight] Allocation failed: pool is empty.\n");
+		return std::nullopt;
 	}
-	if (nullptr == LightOBJ) return std::nullopt;
 
-	XMFLOAT3 WorldPosition{};
-	XMStoreFloat3(&WorldPosition, _WorldPos);
+	std::optional<CHandle> selectedHandle{};
+	CLight* selectedLight = nullptr;
 
-	LightOBJ->Set_LightPosition(WorldPosition);
-	LightOBJ->Set_LightIntensity(_Intensity);
-	LightOBJ->Set_LightColor(_Color);
-	LightOBJ->Set_PointLightInnerAttenuation(_InnerRange);
-	LightOBJ->Set_PointLightOuterAttenuation(_OuterRange);
-	LightOBJ->Set_LightLifeTime(_LifeTime);
-	LightOBJ->Set_LightVelocity(_Velocity);
+	for (size_t i = 0; i < poolSize; ++i) {
+		const size_t circularIndex =
+			(static_cast<size_t>(m_iLastAllocatedIndex) + 1 + i) % poolSize;
 
-	return FinalLightHandle;
+		const auto& lightHandle = m_pEffectLightPool[circularIndex];
+		if (!lightHandle)
+			continue;
+
+		auto* light = CGameInstance::Get()
+			.GetGameObjectByHandleT<CLight>(*lightHandle);
+
+		if (!light || light->Get_LightActivateState())
+			continue;
+
+		selectedHandle = *lightHandle;
+		selectedLight = light;
+		m_iLastAllocatedIndex = static_cast<uint32_t>(circularIndex);
+		break;
+	}
+
+	if (!selectedHandle || !selectedLight) {
+		DEBUG_LOG("[EffectLight] Allocation failed: no inactive light is available.\n");
+		return std::nullopt;
+	}
+
+	XMFLOAT3 worldPosition{};
+	XMStoreFloat3(&worldPosition, _WorldPos);
+
+	selectedLight->Set_LightPosition(worldPosition);
+	selectedLight->Set_LightIntensity(_Intensity);
+	selectedLight->Set_LightColor(_Color);
+	selectedLight->Set_PointLightInnerAttenuation(_InnerRange);
+	selectedLight->Set_PointLightOuterAttenuation(_OuterRange);
+	selectedLight->Set_LightLifeTime(_LifeTime);
+	selectedLight->Set_LightVelocity(_Velocity);
+
+	selectedLight->Set_LightActivateState(true);
+
+	return selectedHandle;
 }
 HRESULT CLightManager::Reset_EffectLight(const std::optional<CHandle>& _Handle) {
 	auto iter = std::find(m_pEffectLightPool.begin(), m_pEffectLightPool.end(), _Handle);
@@ -901,6 +1098,61 @@ HRESULT CLightManager::Transform_EffectLight(const std::optional<CHandle>& _Hand
 	LightOBJ->Set_LightPosition(_Position);
 
 	return S_OK;
+}
+
+void CLightManager::DrawDebugEffectLights()
+{
+	// LSY 변경: ColliderManager에 다시 등록하지 않고 활성 이펙트 라이트만
+	// 전용 풀에서 직접 읽어 영향 범위를 시각화한다.
+	if (!m_bEffectLightDebugVisible)
+		return;
+
+	CDbgLineRender* debug =
+		CGameInstance::Get().GetDbgLineRender();
+	if (!debug)
+		return;
+
+	const _float4 previousColor =
+		debug->GetColor();
+	const DBG_LINE_DEPTH_MODE previousDepth =
+		debug->GetDepthMode();
+
+	debug->SetDepthTest(
+		m_bEffectLightDebugDepthTest);
+	debug->SetColor(
+		{ 1.f, 0.f, 1.f, 1.f });
+
+	for (const auto& optionalHandle :
+		m_pEffectLightPool)
+	{
+		if (!optionalHandle)
+			continue;
+
+		CLight* light = CGameInstance::Get().
+			GetGameObjectByHandleT<CLight>(
+				*optionalHandle);
+		if (!light ||
+			!light->Get_LightActivateState())
+		{
+			continue;
+		}
+
+		const _float3 position =
+			light->Get_LightPosition();
+
+		debug->AddCross(position, 0.2f);
+		debug->AddSphere(
+			std::max(
+				light->Get_LightRange(),
+				0.02f),
+			XMMatrixTranslation(
+				position.x,
+				position.y,
+				position.z));
+	}
+
+	debug->SetColor(previousColor);
+	debug->SetDepthMode(previousDepth);
 }
 #pragma endregion
 HRESULT CLightManager::Generate_ShadowArray2D(SHADOW_ARRAY_2D& _SHAR, uint32_t _ResolutionX, uint32_t _ResolutionY) {

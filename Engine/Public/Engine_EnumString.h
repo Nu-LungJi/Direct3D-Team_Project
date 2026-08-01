@@ -36,7 +36,8 @@ namespace Engine
 		Prototype_Component_ComPxDistanceJoint,
 		Prototype_Component_ComPxRevoluteJoint,
 		Prototype_Component_ComPxD6Joint,
-		Prototype_Component_ComPxRagdoll
+		Prototype_Component_ComPxRagdoll,
+		Prototype_Component_ComNvCloth
 	};
 
 	enum class ES_EngineProtoGameObject
@@ -44,6 +45,9 @@ namespace Engine
 		Prototype_GameObject_FlyCamera,
 		Prototype_GameObject_ShadowCamera,
 		Prototype_GameObject_UICamera,
-		Prototype_GameObject_CinematicCamera
+		Prototype_GameObject_CinematicCamera,
+		Prototype_GameObject_AmbientSound2D,
+		Prototype_GameObject_AmbientSound3D,
+		Prototype_GameObject_LightPlacement
 	};
 }

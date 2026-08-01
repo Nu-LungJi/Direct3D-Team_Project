@@ -6,6 +6,8 @@
 #include "Client_Resources.h"
 #include "OilBarrel.h"
 #include "RagdollTest.h"
+#include "NvClothCape.h"
+#include "ResNvClothMesh.h"
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
@@ -55,6 +57,73 @@ std::future<bool> CLevelTerrainLoader::Load()
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_RagdollTest");
 				return false;
+			}
+
+			{
+				constexpr char CAPE_MODEL_PATH[] =
+					"./Resources/SampleClient/Models/Skeleton/clothes/SK_clothes.bin";
+				const _matrix CapePreTransform =
+					XMMatrixScaling(3.f, 3.f, 3.f) *
+					XMMatrixRotationY(
+						XMConvertToRadians(180.f)) *
+					XMMatrixTranslation(0.f, -1.5f, 0.f);
+
+				if (auto res =
+					CGameInstance::Get().
+					AddResourceT<CResModel>(
+						LEVEL::TERRAIN,
+						"PLAYER_CAPE_MODEL_RESOURCE",
+						CResModel::Create(
+							CAPE_MODEL_PATH)))
+				{
+					CResModel::DESC Desc{};
+					Desc.PreTransformMatrix =
+						CapePreTransform;
+					if (FAILED(res->Load(Desc)))
+					{
+						MSG_BOX(
+							"TERRAIN Failed PLAYER_CAPE_MODEL_RESOURCE");
+						return false;
+					}
+				}
+
+				if (auto res =
+					CGameInstance::Get().
+					AddResourceT<CResNvClothMesh>(
+						LEVEL::TERRAIN,
+						"PLAYER_CAPE_CLOTH_RESOURCE",
+						CResNvClothMesh::Create(
+							CAPE_MODEL_PATH)))
+				{
+					CResNvClothMesh::DESC Desc{};
+					Desc.PreTransformMatrix =
+						CapePreTransform;
+					Desc.sSimulationAnchorBone =
+						"Spine3";
+					Desc.iSimulationMeshIndex = 0;
+					Desc.iRenderMeshIndex = 1;
+					Desc.fWeldTolerance = 1.e-5f;
+					Desc.fFixedTopRatio = 0.1f;
+					if (FAILED(res->Load(Desc)))
+					{
+						MSG_BOX(
+							"TERRAIN Failed PLAYER_CAPE_CLOTH_RESOURCE");
+						return false;
+					}
+				}
+
+				if (FAILED(
+					E::CGameInstance::Get().
+					AddPrototype(
+						LEVEL::TERRAIN,
+						PROTO_GAMEOBJECT::
+							Prototype_GameObject_NvClothCape,
+						CNvClothCape::Create())))
+				{
+					MSG_BOX(
+						"TERRAIN Failed Prototype_GameObject_NvClothCape");
+					return false;
+				}
 			}
 
 			// terrain

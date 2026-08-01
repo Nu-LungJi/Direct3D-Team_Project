@@ -27,25 +27,7 @@ void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
 
-	if (ImGui::TreeNode("Flag"))
-	{
-		struct GuiView
-		{
-			uint32_t iValue{};
-			const _char* pName{};
-		};
-#define X(name, value) value, #name,
-		const GuiView Flags[] = { BTFLAG_M };
-#undef X
-
-		for (uint32_t i = 0; i < std::size(Flags); ++i)
-		{
-			ImGui::Text(Flags[i].pName); ImGui::SameLine();
-			ImGui::Text(true == m_pBeHavior->Check_Flag(Flags[i].iValue) ? ": TRUE" : " FALSE");
-		}
-			
-		ImGui::TreePop();
-	}
+	
 }
 
 HRESULT CBossTMB::InitializePrototype(void* pArg)
@@ -178,6 +160,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 
 	m_eAttType = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	m_fEMissiveColor = { 0.6f,0.6f,1.4f };
 
 	return S_OK;
 }

@@ -236,7 +236,8 @@ void CComBeHavior::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
 		m_iFlag &= ~iFlag;
 	else if (eType == FLAGTYPE::RESET)
 		m_iFlag = iFlag;
-
+	else if (eType == FLAGTYPE::INVERT)
+		m_iFlag ^= iFlag;
 }
 
 void CComBeHavior::Update(_float fTimeDelta)

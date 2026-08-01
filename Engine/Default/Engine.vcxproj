@@ -146,7 +146,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -159,8 +159,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_x64d.lib;NvCloth_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_debug\;$(SolutionDir)ThirdParty\NvCloth_1.1.6\lib\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
     <FxCompile>
@@ -173,7 +173,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;_TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DIRECTX_TOOLKIT_IMPORT;ENGINE_EXPORTS;NOMINMAX;IMGUI_API=__declspec(dllexport);_STRID_NODBG;TRACY_ENABLE;TRACY_EXPORTS;IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -186,8 +186,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;fmod_vc.lib;dinput8.lib;dxcompiler.lib;DirectXTex.lib;GFSDK_SSAO_D3D11.win64.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXCharacterKinematic_static_64.lib;PhysXVehicle2_static_64.lib;PhysXPvdSDK_static_64.lib;LowLevel_static_64.lib;LowLevelAABB_static_64.lib;LowLevelDynamics_static_64.lib;SceneQuery_static_64.lib;SimulationController_static_64.lib;PhysXTask_static_64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_x64.lib;NvCloth_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ThirdParty\fmod_2_03_12\lib\x64\;$(SolutionDir)ThirdParty\HBAOPlus-3.1.0\lib\;$(SolutionDir)ThirdParty\fsr2_2\libs\;$(SolutionDir)ThirdParty\physx-5.6.1\bin_release\;$(SolutionDir)ThirdParty\NvCloth_1.1.6\lib\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
     <FxCompile>
@@ -267,6 +267,7 @@
     <ClInclude Include="..\Public\ComCollider.h" />
     <ClInclude Include="..\Public\ComConstantBuffer.h" />
     <ClInclude Include="..\Public\Component.h" />
+    <ClInclude Include="..\public\ComNvCloth.h" />
     <ClInclude Include="..\public\ComPxBoxCollider.h" />
     <ClInclude Include="..\public\ComPxCapsuleCollider.h" />
     <ClInclude Include="..\public\ComPxConvexCollider.h" />
@@ -361,6 +362,9 @@
     <ClInclude Include="..\public\MyGFSDK_SSAO.h" />
     <ClInclude Include="..\Public\Light.h" />
     <ClInclude Include="..\Public\LightManager.h" />
+    <ClInclude Include="..\Public\LightPlacementData.h" />
+    <ClInclude Include="..\Public\LightPlacementEditor.h" />
+    <ClInclude Include="..\Public\LightPlacementObject.h" />
     <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
     <ClInclude Include="..\Public\OctreeNode.h" />
@@ -369,6 +373,10 @@
     <ClInclude Include="..\public\Particle_CPU.h" />
     <ClInclude Include="..\public\Particle_GPU.h" />
     <ClInclude Include="..\public\PhysXManager.h" />
+    <ClInclude Include="..\public\Engine_NvClothDefines.h" />
+    <ClInclude Include="..\public\NvClothCollisionRigData.h" />
+    <ClInclude Include="..\public\NvClothCollisionEditorGUI.h" />
+    <ClInclude Include="..\public\NvClothManager.h" />
     <ClInclude Include="..\public\PhysXRagdollData.h" />
     <ClInclude Include="..\public\PhysXCookingEditor.h" />
     <ClInclude Include="..\public\PhysXCollisionProxyData.h" />
@@ -407,6 +415,7 @@
     <ClInclude Include="..\Public\ResModelMaterial.h" />
     <ClInclude Include="..\Public\ResModelMesh.h" />
     <ClInclude Include="..\Public\ResModel.h" />
+    <ClInclude Include="..\Public\ResNvClothMesh.h" />
     <ClInclude Include="..\Public\ResOffscreenTexture.h" />
     <ClInclude Include="..\Public\Resource.h" />
     <ClInclude Include="..\Public\ResourceManager.h" />
@@ -595,6 +604,7 @@
     <ClCompile Include="..\Private\ComConstantBuffer.cpp" />
     <ClCompile Include="..\Private\ComModelInstance.cpp" />
     <ClCompile Include="..\Private\Component.cpp" />
+    <ClCompile Include="..\private\ComNvCloth.cpp" />
     <ClCompile Include="..\private\ComPxBoxCollider.cpp" />
     <ClCompile Include="..\private\ComPxCapsuleCollider.cpp" />
     <ClCompile Include="..\private\ComPxConvexCollider.cpp" />
@@ -670,6 +680,8 @@
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
     <ClCompile Include="..\Private\LightManager.cpp" />
+    <ClCompile Include="..\Private\LightPlacementEditor.cpp" />
+    <ClCompile Include="..\Private\LightPlacementObject.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\Terrain.cpp" />
@@ -682,6 +694,19 @@
     <ClCompile Include="..\private\Particle_CPU.cpp" />
     <ClCompile Include="..\private\Particle_GPU.cpp" />
     <ClCompile Include="..\private\PhysXManager.cpp" />
+    <ClCompile Include="..\private\NvClothCollisionEditorGUI.cpp">
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+    </ClCompile>
+    <ClCompile Include="..\private\NvClothManager.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
+      <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)ThirdParty\NvCloth_1.1.6\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)ThirdParty\NvCloth_1.1.6\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Platform)'!='x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\private\PhysXCookingEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyEditor.cpp" />
     <ClCompile Include="..\private\PhysXCollisionProxyObject.cpp" />
@@ -710,6 +735,7 @@
     <ClCompile Include="..\Private\ResModelMaterial.cpp" />
     <ClCompile Include="..\Private\ResModelMesh.cpp" />
     <ClCompile Include="..\Private\ResModel.cpp" />
+    <ClCompile Include="..\Private\ResNvClothMesh.cpp" />
     <ClCompile Include="..\Private\ResOffscreenTexture.cpp" />
     <ClCompile Include="..\Private\Resource.cpp" />
     <ClCompile Include="..\Private\ResourceManager.cpp" />
@@ -856,6 +882,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_Animation_Compute.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_NvCloth.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />

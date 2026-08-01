@@ -51,6 +51,7 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+		MONSTER_TYPE				MonType{MONSTER_TYPE::BOSS};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
@@ -84,7 +85,7 @@ public:
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
 	void						Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
-	void						Set_Emissive(_float fEmissive) { m_fEmissive = fEmissive; }
+	void						Set_Emissive(_float fEmissive) { m_fIntensive = fEmissive; }
 	_bool						Activate_PendingHit();
 	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
 	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
@@ -104,11 +105,12 @@ public:
 protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
 private:
+	_bool						Check_Flag(uint32_t iFlag);
 	void						Damaged();
 	void						RunningSkill(_float fTimeDelta);
 	void						IsHit();
 	void						Flag_Check(_float fTimeDelta);
-	void						StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fEmissive; m_bEmissive = true; }
+	void						StartEmissive() { if (m_bWork) return;  m_fPreEmissive = m_fIntensive; m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
 protected:
 	CComModelInstance* m_pComModelInstance{};
@@ -129,14 +131,14 @@ protected:
 
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
-	_float3 m_f{};
+	_float3 m_fEMissiveColor{};
 	_float ff{};
 
 	_float2								m_fSkillRatio{ };
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{};
-	_float								m_fEmissive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
+	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
 	int32_t								m_iHp{}, m_iMaxHp{};
-	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false };
+	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkill{ false }, m_bSkillLoop{false};
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{};
 
