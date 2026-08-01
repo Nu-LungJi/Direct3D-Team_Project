@@ -321,6 +321,7 @@ void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCoun
 		XMStoreFloat3(&vStoredPosition, vPosition);
 		m_Splines.push_back(vStoredPosition);
 	}
+
 }
 
 E::UPtr<CPlayer_Magic_Bullet> CPlayer_Magic_Bullet::Create()

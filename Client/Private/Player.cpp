@@ -83,7 +83,9 @@ NS_USING(Client)
 
 void CPlayer::UpdateGUI()
 {
-
+	//static _float4 weaponColor;
+	//static _float3 weaponEmissiveColor;
+	//static _float weaponEIntensity;
 	__super::UpdateGUI();
 
 
@@ -102,6 +104,17 @@ void CPlayer::UpdateGUI()
 			1.f),
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
+
+
+	//ImGui::ColorEdit4("Color", &weaponColor.x);
+	//ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
+	//ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
+
+	//if (ImGui::Button("Apply DashTrail")) {
+	//	auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
+	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
+	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
+	//}
 
 }
 
@@ -362,6 +375,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
+		}
+		{
+			auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(67/255.f, 97 / 255.f, 174 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51/255.f, 77 / 255.f, 126 / 255.f, 4.f));
 		}
 	}
 	return S_OK;

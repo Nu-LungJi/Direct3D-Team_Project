@@ -308,7 +308,7 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 
 
 		beam.fDisplacementAmplitude =
-			distance * 0.02f;
+			distance * 0.08f;
 		//beam.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
 		beam.iDisplacementIterations = iterations;
 		beam.fDisplacementDamping = std::clamp(p.fDisplacementDamping, 0.f, 1.f);
