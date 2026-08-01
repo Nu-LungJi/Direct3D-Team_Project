@@ -529,7 +529,7 @@ void CUIController::PlayScaleAlphaDownDelete(CHandle pHandle)
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
 			}, EEaseType::EaseOutQuad);
 
-		pTween->PlayTween(Alpah, 0.f, 0.1f,
+		pTween->PlayTween(Alpah, 0.f, 0.2f,
 			[pBtn](float currentValue) {
 				pBtn->SetAlpha(currentValue);
 				pBtn->CalcUICoord();
