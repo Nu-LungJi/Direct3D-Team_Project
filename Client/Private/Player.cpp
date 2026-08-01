@@ -126,6 +126,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+		m_iHurtBoxBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
 	}
 
 	{
@@ -153,12 +156,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		CComPxBoxCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = {0.5f, 0.5f, 0.5f} });
+		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = {2.f, 1.f, 1.f} });
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.iShapeSubIndex = ETOUI(PLAYER_SHAPE::PLAYER_SHAPE_HURTBOX);
+		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX);
 		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
 		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
-		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::NONE);
+		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;
@@ -170,7 +173,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.tFilter = pDesc->tFilter;
 		Desc.vPosition = pDesc->vInitialPosition;
-		Desc.iShapeSubIndex = ETOUI(PLAYER_SHAPE::CCT_CAPSULE);
+		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
@@ -285,7 +288,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
-	}
+	}//Spine1
 
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
@@ -795,7 +798,50 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 	ApplyGroundFollow(fTimeDelta);
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
 
-	m_pComPxRigidBody->SetKinematicTarget(m_pComCharacterController->GetPosition(), GetTransform().GetQuaternion());
+	_bool bHurtBoxUpdated = false;
+	if (m_iHurtBoxBoneIndex >= 0 && m_pComModelInstance)
+	{
+		const auto& CombinedBones =
+			m_pComModelInstance->Get_CombinedBoneMatrices();
+		const size_t iBoneIndex =
+			static_cast<size_t>(m_iHurtBoxBoneIndex);
+
+		if (iBoneIndex < CombinedBones.size())
+		{
+			const _matrix HurtBoxWorld =
+				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
+
+			_vector vScale{};
+			_vector vRotation{};
+			_vector vTranslation{};
+			if (XMMatrixDecompose(
+				&vScale,
+				&vRotation,
+				&vTranslation,
+				HurtBoxWorld))
+			{
+				_float3 vHurtBoxPosition{};
+				_float4 vHurtBoxRotation{};
+				XMStoreFloat3(&vHurtBoxPosition, vTranslation);
+				XMStoreFloat4(
+					&vHurtBoxRotation,
+					XMQuaternionNormalize(vRotation));
+
+				bHurtBoxUpdated =
+					m_pComPxRigidBody->SetKinematicTarget(
+						vHurtBoxPosition,
+						vHurtBoxRotation);
+			}
+		}
+	}
+
+	if (!bHurtBoxUpdated)
+	{
+		m_pComPxRigidBody->SetKinematicTarget(
+			m_pComCharacterController->GetPosition(),
+			GetTransform().GetQuaternion());
+	}
 
 #ifdef _DEBUG
 	UpdateStandingGameObjectDebugLog();
@@ -1369,6 +1415,57 @@ HRESULT CPlayer::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 	return S_OK;
 }
 
+HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISION_DATA& info)
+{
+	if (!pAttacker)
+		return E_INVALIDARG;
+
+	if (info.iSelfShapeSubIndex == std::numeric_limits<uint32_t>::max())
+	{
+		return S_FALSE;
+	}
+
+	const auto ePlayerCollision =static_cast<PLAYER_COLLISIONS>(info.iSelfShapeSubIndex);
+
+	switch (ePlayerCollision)
+	{
+	case PLAYER_COLLISIONS::CCT_CAPSULE:
+		// 이동을 담당하는 CCT 충돌이므로 피격으로 처리하지 않는다.
+		return S_FALSE;
+
+	case PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX:
+	{
+		_float3 vHitPosition{};
+		_float3 vHitNormal{};
+		if (info.iContactCount > 0)
+		{
+			vHitPosition = info.Contacts[0].vWorldPosition;
+			vHitNormal = info.Contacts[0].vWorldNormal;
+		}
+
+		DEBUG_LOG_STR(
+			std::string("[PX][Player] HurtBox Hit : ") +
+			std::string{ pAttacker->GetObjectTag() } +
+			", ContactCount=" +
+			std::to_string(info.iContactCount) + "\n");
+
+		// TODO: 공격자의 데미지, 넉백, 속성 정보를 받아 HP에 반영한다.
+		// vHitPosition과 vHitNormal은 피격 이펙트/넉백 방향에 사용할 수 있다.
+		(void)vHitPosition;
+		(void)vHitNormal;
+
+		if (m_pStateMachine)
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+
+		return S_OK;
+	}
+
+	case PLAYER_COLLISIONS::END:
+	default:
+		return S_FALSE;
+	}
+}
+
 
 void CPlayer::Attack_Magic_Bullet()
 {
@@ -1430,6 +1527,8 @@ void CPlayer::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& in
 {
 	DEBUG_LOG_STR(std::string("[PX][Character] Collision Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+
+	Hit_Player_HurtBox(pObj, info);
 }
 
 void CPlayer::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
