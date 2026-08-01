@@ -238,6 +238,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
       <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\TombBoss\TombBossBullet">
+      <UniqueIdentifier>{892b8ca5-2abf-46df-8ece-4f0e6b29d275}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -555,6 +558,9 @@
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TombBossBullet.h">
+      <Filter>GameObject\Monster\TombBoss\TombBossBullet</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -641,9 +647,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Mon_Weapon.cpp">
-      <Filter>GameObject\Monster</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Monster.cpp">
       <Filter>GameObject\Monster</Filter>
@@ -827,6 +830,12 @@
     </ClCompile>
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp">
       <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TombBossBullet.cpp">
+      <Filter>GameObject\Monster\TombBoss\TombBossBullet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
+      <Filter>GameObject\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
