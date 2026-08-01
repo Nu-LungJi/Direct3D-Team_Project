@@ -244,15 +244,15 @@ void CComPxCharacterController::UpdateGUI()
 
 	PX_FILTER_DESC tFilter = GetFilter();
 	bool bFilterChanged{};
-	bFilterChanged |= ImGui::InputScalar(
-		"Layer", ImGuiDataType_U32, &tFilter.iLayer, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Simulation Mask", ImGuiDataType_U32, &tFilter.iSimulationMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Query Mask", ImGuiDataType_U32, &tFilter.iQueryMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
+	if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+	{
+		bFilterChanged |= pPhysXManager->EditCollisionLayerGUI(
+			"Layer", tFilter.iLayer);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Simulation Mask", tFilter.iSimulationMask);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Query Mask", tFilter.iQueryMask);
+	}
 	if (bFilterChanged)
 		SetFilter(tFilter);
 

@@ -38,6 +38,12 @@ public:
 	void Update(_float fTimeDelta);
 	void UpdateGUI();
 	void SetCollisionLayerNames(std::vector<std::pair<uint32_t, std::string>> layerNames);
+	_bool EditCollisionLayerGUI(const char* pLabel, uint32_t& iLayer) const;
+	_bool EditCollisionLayerMaskGUI(const char* pLabel, uint32_t& iMask) const;
+	const std::vector<std::pair<uint32_t, std::string>>& GetCollisionLayerNames() const
+	{
+		return m_CollisionLayerNames;
+	}
 	std::vector<CHandle> CreateCollisionProxyObjects(
 		const PX_COLLISION_PROXY_FILE& data, std::string_view layerName);
 	std::vector<CHandle> CreateCollisionProxyObjectsFromFile(
@@ -103,6 +109,7 @@ private:
 	mutable std::shared_mutex m_UserDataRegistryMutex{};
 	std::unordered_map<const physx::PxActor*, PX_ACTOR_USER_DATA> m_ActorUserDataRegistry{};
 	std::unordered_map<const physx::PxShape*, PX_SHAPE_USER_DATA> m_ShapeUserDataRegistry{};
+	std::vector<std::pair<uint32_t, std::string>> m_CollisionLayerNames{};
 
 private:
 	_bool m_bDbgRender{ false };

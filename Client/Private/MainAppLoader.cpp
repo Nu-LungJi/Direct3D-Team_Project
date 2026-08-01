@@ -376,6 +376,7 @@ HRESULT CMainAppLoader::Load_PhysX_Resource()
 	// 피직스 디버그 충돌 정보 전달
 	{
 		std::vector<std::pair<uint32_t, std::string>> layerNames{};
+		layerNames.emplace_back(ETOUI(COLLISION_LAYER::NONE), "NONE");
 		for (const auto& [layer, name] : magic_enum::enum_entries<COLLISION_LAYER>())
 			layerNames.emplace_back(ETOUI(layer), std::string{ name });
 		CGameInstance::Get().GetPhysXManager()->SetCollisionLayerNames(std::move(layerNames));
