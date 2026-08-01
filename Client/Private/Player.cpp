@@ -1258,7 +1258,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	if (auto* pCamera = Cast<CPlayerThirdPersonCamera>(CGameInstance::Get().GetActiveCamera("PlayerCamera")))
 	{
-		pCamera->UpdateFollow();
+		pCamera->UpdateFollow(fTimeDelta);
 	}
 
 #ifdef _DEBUG
