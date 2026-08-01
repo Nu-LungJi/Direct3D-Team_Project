@@ -1203,6 +1203,18 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			if (FAILED(res->Load()))
 				return E_FAIL;
 		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvClothShadow",
+			"./ShaderFiles/TestModel/Shader_NvCloth.hlsl"))
+		{
+			if (FAILED(res->Load(CResShader::DESC{
+				.sEntryPoint = "VSShadow",
+				.sTarget = "vs_5_0" })))
+			{
+				return E_FAIL;
+			}
+		}
 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))
 		{
