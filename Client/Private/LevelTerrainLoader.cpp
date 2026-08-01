@@ -27,6 +27,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 			{
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
 
 			// oilbarrel
 			{
