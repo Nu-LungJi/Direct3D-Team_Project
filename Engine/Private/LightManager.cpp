@@ -613,13 +613,23 @@ HRESULT CLightManager::Render_ObjectNonShadow(){
 		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
 		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false)		continue;
 
+		const LIGHT_TYPE LightType = LightOBJ->Get_LightType();
+		const bool bIsPointLight = (LightType == LIGHT_TYPE::POINT);
+
 		LightBuffer.AffectedLight[LightCount].LightType = ETOUI(LightOBJ->Get_LightType());
 
 		LightBuffer.AffectedLight[LightCount].LightDirection = LightOBJ->Get_LightDirection();
 		LightBuffer.AffectedLight[LightCount].LightColor = LightOBJ->Get_LightColor();
 		LightBuffer.AffectedLight[LightCount].LightIntensity = LightOBJ->Get_LightIntensity();
-		LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightInnerAttenuation()));
-		LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightOuterAttenuation()));
+
+		if (bIsPointLight) {
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = LightOBJ->Get_PointLightInnerAttenuation();
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = LightOBJ->Get_PointLightOuterAttenuation();
+		}
+		else {
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+		}
 		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
 
 		LightBuffer.AffectedLight[LightCount].ShadowSlot = -1;
@@ -649,8 +659,8 @@ HRESULT CLightManager::Render_ObjectNonShadow(){
 		LightBuffer.AffectedLight[LightCount].Position = LightOBJ->Get_LightPosition();
 
 		if (bIsPointLight) {
-			LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightInnerAttenuation()));
-			LightBuffer.AffectedLight[LightCount].OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_PointLightOuterAttenuation()));
+			LightBuffer.AffectedLight[LightCount].InnerAttanuation = LightOBJ->Get_PointLightInnerAttenuation();
+			LightBuffer.AffectedLight[LightCount].OuterAttanuation = LightOBJ->Get_PointLightOuterAttenuation();
 		}
 		else {
 			LightBuffer.AffectedLight[LightCount].InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
@@ -876,16 +886,17 @@ VOID	CLightManager::Update_ActiveLights() {
 		if (nullptr == LightOBJ || LightOBJ->Get_LightActivateState() == false)	continue;
 		
 		if (LightOBJ->Get_LightType() == LIGHT_TYPE::DIRECTIONAL) {
-			CullingLight.push_back({ LightOBJ, 0.f });
+			CullingLight.push_back({ LightHandle, 0.f });
 			continue;
 		}
 
 		XMVECTOR CurrentPosition = LightOBJ->GetTransform().GetLoadedPostion();
 		_float	 Distance = XMVectorGetX(XMVector3Length(XMVectorSubtract(CameraPos, CurrentPosition)));
 
-		if (Distance > 100.f || !IsInFrustum(LightOBJ)) continue;
+		static int alpha = 0;
+		if (!IsInFrustum(LightOBJ)) { alpha++;  continue; }
 
-		CullingLight.push_back({ LightOBJ, Distance });
+		CullingLight.push_back({ LightHandle, 0.f });
 	}
 
 	// 거리 기반 컬링 + 정렬(최단거리 순)
@@ -896,7 +907,7 @@ VOID	CLightManager::Update_ActiveLights() {
 	// 최대 MAX_LIGHT_COUNT 수만큼의 조명만 렌더링
 	_float FinalActiveLightCount = std::min(MAX_LIGHT_COUNT, static_cast<int>(CullingLight.size()));
 	for (uint32_t i = 0; i < FinalActiveLightCount; ++i) {
-		m_pActiveShadowLightList.push_back(CullingLight[i].LightOBJ->GetHandle());
+		m_pActiveShadowLightList.push_back(CullingLight[i].LightHandle);
 	}
 }
 

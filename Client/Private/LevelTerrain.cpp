@@ -24,6 +24,7 @@
 #include "BossTMB.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
+#include "StarBurst.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -93,6 +94,7 @@ HRESULT CLevelTerrain::Initialize()
 			hOilBarrels[i] = *hOilBarrel;
 		}
 	}
+
 
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
@@ -595,6 +597,23 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 
 HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 {
+	{
+		CBossTMB::TMB_DESC TmbDesc{};
+		TmbDesc.sObjectTag = "BossTmb";
+		TmbDesc.TargetHandle = hPlayer.value();
+		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(5, 5, 5, 1));
+		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
+		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
+
+		if (!BossTmb)
+		{
+			MSG_BOX("Create BossTmb Failed in Rookwood");
+			return E_FAIL;
+		}
+	}
 	{
 		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 		TmbGurdianDesc.sObjectTag = "TmbGurdian";

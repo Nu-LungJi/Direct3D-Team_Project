@@ -341,6 +341,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 	LOG_MEMORY("start");
 
 	// 메인스레드 MAP해제
+	E::CGameInstance::Get().ClearAllRunningEffect();
 	E::CGameInstance::Get().ClearAllChunk();
 	E::CGameInstance::Get().GetNavMeshManager()->Clear();
 	
