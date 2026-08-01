@@ -46,6 +46,7 @@
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
+#include "TriggerCRW_SpawnMonster1.h"
 NS_USING(Client)
 
 std::future<bool> CLevelCharlesRookwoodLoader::Load()
@@ -202,6 +203,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_ToBoss, CTriggerCRW_ToBoss::Create())))
 				{
 					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_BridgeFix");
+					return false;
+				}
+
+				if (FAILED(E::CGameInstance::Get().AddPrototype(
+					PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_TriggerCRW_SpawnMonster1, CTriggerCRW_SpawnMonster1::Create())))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TriggerCRW_SpawnMonster1");
 					return false;
 				}
 			}

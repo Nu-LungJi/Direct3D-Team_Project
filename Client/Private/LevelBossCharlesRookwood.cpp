@@ -135,7 +135,6 @@ HRESULT CLevelBossCharlesRookwood::SpawnFlyCamera()
 				MSG_BOX("FailedToRegistCamera");
 				return E_FAIL;
 			}
-			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
 	return S_OK;
@@ -190,6 +189,7 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPla
 	{
 		return E_FAIL;
 	}
+	E::CGameInstance::Get().SetActiveCamera("PlayerCamera");
 	return S_OK;
 }
 
@@ -199,6 +199,13 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -80.f, 20.f, 10.f };
 	PlayerDesc.LevelTag = LEVEL::BOSS_CHARLES_ROOKWOOD;
+	PlayerDesc.tFilter = PX_FILTER_DESC{
+	 .iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+	.iSimulationMask = PX_ALL_LAYERS,
+	.iQueryMask =
+		ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+		ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::BOSS_CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,

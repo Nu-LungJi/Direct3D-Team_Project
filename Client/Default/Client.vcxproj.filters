@@ -232,6 +232,9 @@
     <Filter Include="GameObject\Monster\Effect">
       <UniqueIdentifier>{1d4dcef1-d0db-4ee2-99d1-8e63dd2b61d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\SpawnMonster1">
+      <UniqueIdentifier>{9bc9d2c2-c9d6-4247-b19b-95a2be7623bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -543,6 +546,9 @@
     <ClInclude Include="..\public\MonEffect.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -809,6 +815,9 @@
     </ClCompile>
     <ClCompile Include="..\private\MonEffect.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -280,6 +280,7 @@
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
+    <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h" />
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
@@ -379,6 +380,7 @@
     <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
     <ClCompile Include="..\Private\Player_Weapon.cpp" />
