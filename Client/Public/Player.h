@@ -212,6 +212,7 @@ private:
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
 
+
 private:
 	_float m_fCoolTime_Num1{ 0.f };
 	_bool m_bCoolTime_Num1{ false};

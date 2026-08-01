@@ -31,6 +31,7 @@
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
+#include "Player_RepairoSkill_State.h"
 
 #ifdef _DEBUG
 namespace
@@ -322,6 +323,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::REVELIO_SKILL,
 			CPlayer_RevelioSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::REPAIRO_SKILL,
+			CPlayer_RepairoSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -757,9 +764,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}	
 
 	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-		//if (TryUseSkillSlot(4))
-		//m_pStateMachine->RequestState(PLAYER_STATE::);
-		m_bCoolTime_Num4 = true;
+		if(m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
+			m_bCoolTime_Num4 = true;
 	}
 
 #ifdef _DEBUG
@@ -786,7 +792,7 @@ void CPlayer::InitializeSkillSlotUI()
 	pUIController->SetSpellType(3, ETOUI(SPELL_TYPE::DESENDO));
 
 	// SPELL_TYPE에 REVELIO가 추가되기 전까지 4번 슬롯은 빈 슬롯으로 둔다.
-	pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::NONE));
+	pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::REPARO));
 
 	m_bSkillSlotUIInitialized = true;
 }
@@ -811,6 +817,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 	case SPELL_TYPE::DESENDO:
 		eSkillState = PLAYER_STATE::DESCENDO_SKILL;
+		break;
+
+	case SPELL_TYPE::REPARO:
+		eSkillState = PLAYER_STATE::REPAIRO_SKILL;
 		break;
 
 	default:

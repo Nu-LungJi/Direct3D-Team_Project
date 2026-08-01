@@ -93,12 +93,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	case PHASE::ATTACK:
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO) {
-			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
+		/*	if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
 			{
 				m_ePhase = PHASE::ATTACK_FAILED;
 				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
 				break;
-			}
+			}*/
 		
 			// 끌어 오기 시작
 			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
