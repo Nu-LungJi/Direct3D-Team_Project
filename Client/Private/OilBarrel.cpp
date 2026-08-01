@@ -136,6 +136,10 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
+
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		
@@ -161,15 +165,7 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 	OcclusionData.worldCenter = WorldBounds.Center;
 	OcclusionData.worldExtents = WorldBounds.Extents;
 
-	CGameInstance::Get().PushMapObjectInstance(
-		pModel,
-		InstanceData,
-		OcclusionData);
-
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	if (CGameInstance::Get().KeyDown(DIK_P)) { CGameInstance::Get().Render_ChromaticRing(GetTransform().GetLoadedPostion(), 0.5f, 10.f); }
-	/*---------------------------------*/
+	CGameInstance::Get().PushMapObjectInstance(pModel, InstanceData, OcclusionData);
 }
 
 HRESULT COilBarrel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -314,6 +310,19 @@ void COilBarrel::OnJointBreak(
 		std::to_string(tData.iJointSubIndex) +
 		"\n");
 }
+
+/*----------- 광윤 추가 -----------*/
+bool COilBarrel::GetShadowBounds(BoundingBox& OutBounds) const{
+	if (m_pComModelInstance == nullptr)	return false;
+
+	const auto& Model =m_pComModelInstance->GetModel();
+	if (Model == nullptr || !Model->HasLocalBounds())		return false;
+
+	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
+/*---------------------------------*/
 
 E::UPtr<COilBarrel> COilBarrel::Create()
 {

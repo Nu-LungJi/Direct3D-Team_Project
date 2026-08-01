@@ -1066,8 +1066,8 @@ HRESULT CRenderer::Draw() {
 	// Rasterizer Setting - BackCull
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
-	//if (bApplyShadow)
-	//	if (FAILED(Render_Shadow()))	return E_FAIL;
+
+	if (FAILED(Render_Shadow()))	return E_FAIL;
 
 	// DepthMap
 	if (FAILED(Render_DepthMap()))       return E_FAIL;
@@ -1127,52 +1127,58 @@ void CRenderer::FrameEnd()
 }
 
 HRESULT CRenderer::Render_Shadow() {
+	//{
+	//	ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
+	//	m_pContext->PSSetShaderResources(6, 1, pNullSRV); // 6번 슬롯을 NULL로 청소
+	//}
+	//{
+	//	ID3D11DepthStencilState* pDSS = nullptr;
+	//	m_pContext->OMSetDepthStencilState(pDSS, 0);
+
+	//	SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+	//	m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
+
+	//	m_pContext->ClearDepthStencilView(m_pResDynTexTargetShadow->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+	//}
+
+	//// RenderTarget/DepthStencil Setting + ViewPort Setting
+	//{
+	//	ID3D11RenderTargetView* pRTVs[1] = { nullptr };
+	//	m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetShadow->GetDSV().Get());
+	//	m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
+
+	//	m_pContext->IASetInputLayout(m_pDebugVertexShader->GetInputLayout().Get());
+	//	m_pContext->VSSetShader(m_pDebugVertexShader->GetVertexShader().Get(), nullptr, 0);
+	//	m_pContext->PSSetShader(nullptr, nullptr, 0);
+
+	//	ID3D11Buffer* vertexBuffers[] = { m_pDebugBuffer->GetVertexBuffer().Get() };
+	//	uint32_t strides[] = { m_pDebugBuffer->GetVertexStride() };
+	//	uint32_t offsets[] = { 0 };
+
+	//	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+	//	m_pContext->IASetIndexBuffer(m_pDebugBuffer->GetIndexBuffer().Get(), m_pDebugBuffer->GetIndexFormat(), 0);
+	//	m_pContext->IASetPrimitiveTopology(m_pDebugBuffer->GetPrimitiveType());
+	//}
+	//{
+	//	auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
+	//	if (nullptr == pShadowCamera)										{ Unbind_Resources(); return S_OK; }
+
+	//	if (FAILED(Reset_RenderContext(RENDERPASS::SHADOW, pShadowCamera))) { Unbind_Resources(); return S_OK; }
+
+	//	if (FAILED(Bind_CameraAttribute(pShadowCamera)))					{ Unbind_Resources(); return S_OK; }
+
+	//	if (FAILED(RenderNonBlend()))										{ Unbind_Resources(); return S_OK; }
+	//}
+	//// UnBind RenderTargets / ShaderResource / Shader
+	//{
+	//	ID3D11RenderTargetView* pRTVs[1] = { nullptr };
+	//	m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+	//}
+	if (!ApplyShadow)	return S_OK;
+	if (FAILED(CGameInstance::Get().Capture_ShadowMap()))
 	{
-		ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
-		m_pContext->PSSetShaderResources(6, 1, pNullSRV); // 6번 슬롯을 NULL로 청소
-	}
-	{
-		ID3D11DepthStencilState* pDSS = nullptr;
-		m_pContext->OMSetDepthStencilState(pDSS, 0);
-
-		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
-		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
-
-		m_pContext->ClearDepthStencilView(m_pResDynTexTargetShadow->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	}
-
-	// RenderTarget/DepthStencil Setting + ViewPort Setting
-	{
-		ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetShadow->GetDSV().Get());
-		m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
-
-		m_pContext->IASetInputLayout(m_pDebugVertexShader->GetInputLayout().Get());
-		m_pContext->VSSetShader(m_pDebugVertexShader->GetVertexShader().Get(), nullptr, 0);
-		m_pContext->PSSetShader(nullptr, nullptr, 0);
-
-		ID3D11Buffer* vertexBuffers[] = { m_pDebugBuffer->GetVertexBuffer().Get() };
-		uint32_t strides[] = { m_pDebugBuffer->GetVertexStride() };
-		uint32_t offsets[] = { 0 };
-
-		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		m_pContext->IASetIndexBuffer(m_pDebugBuffer->GetIndexBuffer().Get(), m_pDebugBuffer->GetIndexFormat(), 0);
-		m_pContext->IASetPrimitiveTopology(m_pDebugBuffer->GetPrimitiveType());
-	}
-	{
-		auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
-		if (nullptr == pShadowCamera)										{ Unbind_Resources(); return S_OK; }
-
-		if (FAILED(Reset_RenderContext(RENDERPASS::SHADOW, pShadowCamera))) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(Bind_CameraAttribute(pShadowCamera)))					{ Unbind_Resources(); return S_OK; }
-
-		if (FAILED(RenderNonBlend()))										{ Unbind_Resources(); return S_OK; }
-	}
-	// UnBind RenderTargets / ShaderResource / Shader
-	{
-		ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
+		MSG_BOX("Cannot Generate Shadow");
+		return E_FAIL;
 	}
 
 	return S_OK;
@@ -1663,7 +1669,6 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 
 		if (FAILED(Update_TexelSize(1.f / VP_HalfScale.Width, 1.f / VP_HalfScale.Height)))										return E_FAIL;
 		if (FAILED(Render_DownSamplePass(m_pResDynTexTargetBloom_QuarterScaleA, m_pResDynTexTargetBloom_HalfScaleA)))			return E_FAIL;
-
 	}
 
 	{	// QuarterScale Blur
@@ -1709,7 +1714,7 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 	m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	
 	ID3D11Buffer* vertexBuffers[] = {
-			viBuffer->GetVertexBuffer().Get()
+		viBuffer->GetVertexBuffer().Get()
 	};
 	uint32_t strides[] = {
 		viBuffer->GetVertexStride()

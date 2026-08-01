@@ -89,6 +89,18 @@ namespace Engine
 		_float		LightPadding;
 	} DYNAMIC_LIGHT;
 
+	typedef struct tagEffectLight {
+		_float3		Position;
+		_float		LightIntensity;
+
+		_float3		LightColor;
+
+		_float		InnerAttanuation;
+		_float		OuterAttanuation;
+
+		_float3		LightPadding;
+	} EFFECT_LIGHT;
+
 	typedef struct tagPostProcess
 	{
 		_float BloomIntensity;		 // 블룸 강도
@@ -509,6 +521,10 @@ namespace Engine
 		_bool bGPUSkinned = false;
 
 		_bool bActiveThisFrame = false;
+
+		/*----------- 광윤 추가 -----------*/
+		std::vector<std::optional<BoundingBox>>	ShadowBounds;
+		/*---------------------------------*/
 
 	}MODEL_INSTANCE_BATCH;
 

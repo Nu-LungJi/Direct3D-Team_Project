@@ -15,12 +15,12 @@ const static float SpecularIntensity = 1.f;
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
 
-#define MAX_REFLECTION_LOD  2.f
+#define MAX_REFLECTION_LOD  6.f
 
 #define SCREENX 1280
 #define SCREENY 720
 
-#define POINTLIGHT_RESOLUTION 1024
+#define POINTLIGHT_RESOLUTION 512
 
 struct DirectionalLight
 {
@@ -76,6 +76,19 @@ struct DynamicLight
 	
 	int		ShadowSlot;
     float LightPadding;
+};
+
+struct EffectLight
+{
+	float3 Position;
+	float LightIntensity;
+
+	float3 LightColor;
+
+	float InnerAttanuation;
+	float OuterAttanuation;
+
+	float3 LightPadding;
 };
 
 const static float alpha = 0;
@@ -136,8 +149,7 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
 	DynamicLight	AffectedLight[MAX_LIGHT_COUNT];
     float4x4		g_InvViewProj;
     uint			LightCount;
-	uint			CurrentShadowLightIndex;
-    float2			LightPadding;
+    float3			LightPadding;
 }
 
 

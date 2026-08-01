@@ -51,6 +51,12 @@ cbuffer CB_CPU_SKINNING_MESH : register(b5)
 	uint gSkinPadding;
 };
 
+cbuffer CB_SHADOW : register(b11)
+{
+	uint CurrentShadowLightIndex;
+}
+
+
 float4 Compute_AnimModel_SkinnedPosition(VS_SHADOW_INSTANCED_IN IN, uint _InstancedID)
 {
 	const uint InstanceBoneOffset =
@@ -197,7 +203,9 @@ float PSMain(GS_OUT OUT) : SV_DEPTH
 {
 	float3	LightToPixel = OUT.WorldPos.xyz - AffectedLight[CurrentShadowLightIndex].Position;
     float	Distance = length(LightToPixel);
-	float	Depth = Distance / AffectedLight[CurrentShadowLightIndex].LightRange;
+	
+	float	OuterRange = max(0.02f, AffectedLight[CurrentShadowLightIndex].OuterAttanuation);
+	float	Depth = Distance / OuterRange;
 	
 	return saturate(Depth);
 }

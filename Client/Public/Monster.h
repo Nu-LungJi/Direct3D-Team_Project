@@ -77,6 +77,7 @@ public:
 
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	bool	GetShadowBounds(BoundingBox& OutBounds) const override;
 	/*---------------------------------*/
 
 public:

@@ -54,6 +54,9 @@ public:
 	CComPxRigidBody* GetRigidBody() const { return m_pComPxRigidBody; }
 	void OnJointBreak(const PX_ON_JOINT_BREAK_DATA& tData) override;
 
+	/*----------- 광윤 추가 -----------*/
+	bool GetShadowBounds(BoundingBox& OutBounds) const override;
+	/*---------------------------------*/
 public:
 	static E::UPtr<COilBarrel> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -91,6 +91,20 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 
 	pBatch->Instances.push_back(InstanceData);
 	pBatch->CombinedBoneMatrices.push_back(pModelInstance->Get_CombinedBoneMatrices());
+
+	/*----------- 광윤 추가 -----------*/
+	std::optional<BoundingBox>	ShadowBounds;
+
+	if (CGameObject* pObject = pModelInstance->GetGameObject()) {
+		BoundingBox Bounds{};
+
+		if (pObject->GetShadowBounds(Bounds))
+			ShadowBounds = Bounds;
+	}
+
+	pBatch->ShadowBounds.push_back(ShadowBounds);
+	/*---------------------------------*/
+
 	++m_iTotalInstanceCount;
 	if (!pBatch->bActiveThisFrame)
 	{
@@ -315,7 +329,9 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComStaticMo
 	// ?몄뒪??�뒪 媛쒖???????�?�?
 	pBatch->Instances.reserve(16);
 	pBatch->CombinedBoneMatrices.reserve(16);
-
+	/*----------- 광윤 추가 -----------*/
+	pBatch->ShadowBounds.reserve(16);
+	/*---------------------------------*/
 	MODEL_INSTANCE_BATCH* pBatchRaw = pBatch.get();
 
 	m_InstanceBatches.emplace(Key, std::move(pBatch));
@@ -332,7 +348,9 @@ void CModel_Instance_Manager::Clear_Frame()
 		pBatch->Instances.clear();
 		pBatch->PartInstances.clear();
 		pBatch->CombinedBoneMatrices.clear();
-
+		/*----------- 광윤 추가 -----------*/
+		pBatch->ShadowBounds.clear();
+		/*---------------------------------*/
 		pBatch->bActiveThisFrame = false;
 	}
 
@@ -430,18 +448,57 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 }
 
 /*----------- 광윤 추가 -----------*/
-HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch){
+HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch){
 	
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
-		if (!pBatch ||
-			pBatch->Instances.empty() ||
-			pBatch->bModelStatic != bStaticBatch ||
-			pBatch->bGPUSkinned)
+		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != _bStaticBatch || pBatch->bGPUSkinned)
 			continue;
 
-		if (FAILED(Render_ShadowBatch(pContext, *pBatch))) {
-			ID3D11ShaderResourceView* pNullSRVs[3]{ };
-			pContext->VSSetShaderResources(6, 3, pNullSRVs);
+		MODEL_INSTANCE_BATCH FilteredBatch{};
+		FilteredBatch.Key = pBatch->Key;
+		FilteredBatch.ObjectHandle = pBatch->ObjectHandle;
+		FilteredBatch.bModelStatic = pBatch->bModelStatic;
+		FilteredBatch.bGPUSkinned = pBatch->bGPUSkinned;
+		FilteredBatch.Instances.reserve(pBatch->Instances.size());
+		FilteredBatch.CombinedBoneMatrices.reserve(pBatch->CombinedBoneMatrices.size());
+
+		const size_t InstanceCount = pBatch->Instances.size();
+		auto pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(_LightHandle.value());
+		for (size_t i = 0;i < InstanceCount; ++i)	{
+			bool bVisibleToLight = true;
+
+			if (i < pBatch->ShadowBounds.size())
+			{
+				const auto& Bounds = pBatch->ShadowBounds[i];
+
+
+
+				if (Bounds.has_value())
+				{
+					bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
+				}
+			}
+
+			if (!bVisibleToLight)
+				continue;
+
+			FilteredBatch.Instances.push_back(pBatch->Instances[i]);
+
+
+			if (i < pBatch->CombinedBoneMatrices.size())
+			{
+				FilteredBatch.CombinedBoneMatrices.push_back(pBatch->CombinedBoneMatrices[i]);
+			}
+		}
+
+		if (FilteredBatch.Instances.empty())
+			continue;
+
+		if (FAILED(Render_ShadowBatch(pContext, FilteredBatch)))
+		{
+			ID3D11ShaderResourceView*NullSRVs[3]{};
+
+			pContext->VSSetShaderResources(6, 3, NullSRVs);
 
 			return E_FAIL;
 		}
@@ -576,6 +633,17 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 	pContext->VSSetShaderResources(8, 1, &pSkinBonesSRV);
 
 	return S_OK;
+}
+_bool CModel_Instance_Manager::Has_ActiveDynamicShadowBatch() {
+	for (const MODEL_INSTANCE_BATCH* Batch : m_ActiveBatches)
+	{
+		if (nullptr == Batch || Batch->Instances.empty() || Batch->bModelStatic || Batch->bGPUSkinned)
+			continue;
+
+		return true;
+	}
+
+	return false;
 }
 /*---------------------------------*/
 

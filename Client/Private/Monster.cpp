@@ -11,6 +11,8 @@
 #include "ComCollider.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+
+#include "CollBox.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -145,9 +147,6 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 		return;
 	}
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	/*---------------------------------*/
 }
 HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
@@ -350,20 +349,36 @@ HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_C
 
 	return S_OK;
 }
+bool CMonster::GetShadowBounds(BoundingBox& OutBounds) const
+{
+	if (!m_pComCollider || !m_pComCollider->Get())	return false;
+
+	CCollider* pCollider = m_pComCollider->Get();
+
+	if (pCollider->GetCollType() != CollType::Box)	return false;
+
+	const auto* pBox = static_cast<const CCollBox*>(pCollider);
+
+	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	// 애니메이션으로 팔·무기가 Bounds 밖으로
+	// 나가는 것을 막기 위한 보수적 확장
+	OutBounds.Extents.x *= 1.25f;
+	OutBounds.Extents.y *= 1.25f;
+	OutBounds.Extents.z *= 1.25f;
+
+	return true;
+}
 /*---------------------------------*/
 
 _bool CMonster::Activate_PendingHit()
 {
-	if (!m_bPending)
-		return false;
+	if (!m_bPending)return false;
 
-	_bool bSameHit =
-		m_bActiveHit &&
-		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
+	_bool bSameHit =m_bActiveHit &&m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
 		m_ActiveMonTable.eHitType == m_PendingMonTable.eHitType;
 
-	if (!bSameHit)
-		++m_iHitCnt;
+	if (!bSameHit)++m_iHitCnt;
 
 	m_ActiveMonTable = m_PendingMonTable;
 	m_bActiveHit = true;
