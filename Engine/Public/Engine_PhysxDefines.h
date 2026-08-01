@@ -77,10 +77,20 @@ namespace Engine
 	struct PX_CCT_HIT_DATA
 	{
 		CGameObject* pGameObject{};
+		PX_SHAPE_TYPE eOtherShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iOtherShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 		_float3 vWorldPosition{};
 		_float3 vWorldNormal{};
 		_float3 vMoveDirection{};
 		_float fMoveLength{};
+	};
+
+	struct PX_CCT_STANDING_DATA
+	{
+		CHandle hGameObject{};
+		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+		_bool bHasShapeData{};
 	};
 
 	struct PX_CCT_OBSTACLE_HIT_DATA
@@ -141,6 +151,7 @@ namespace Engine
 		_float3 vHitpos{}; // 충돌 지점
 		_float3 vHitNormal{}; // 충돌 표면의 법선 벡터
 		_float fDistance{}; // 시작점으로부터의 거리
+		CHandle hGameObject{};
 		CGameObject* pGameObject{};
 		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
@@ -206,9 +217,15 @@ namespace Engine
 	struct PX_OVERLAP_RESULT
 	{
 		_bool bHit{ false };
+		CHandle hGameObject{};
 		CGameObject* pGameObject{};
 		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+	};
+
+	struct PX_QUERY_MULTIPLE_STATUS
+	{
+		_bool bTruncated{};
 	};
 
 }

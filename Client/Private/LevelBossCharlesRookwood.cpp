@@ -13,6 +13,7 @@
 
 #include "PlayerThirdPersonCamera.h"
 #include "Player.h"
+#include "NvClothCape.h"
 
 #include "BossTMB.h"
 #include "UIManager.h"
@@ -44,6 +45,9 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		MSG_BOX("Player Handle Failed To CLevelBossCharlesRookwood");
 		return E_FAIL;
 	}
+	if (FAILED(SpawnPlayerCape(*hPlayer)))
+		return E_FAIL;
+
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/TombBoss", true)))
 		return E_FAIL;
 
@@ -135,7 +139,6 @@ HRESULT CLevelBossCharlesRookwood::SpawnFlyCamera()
 				MSG_BOX("FailedToRegistCamera");
 				return E_FAIL;
 			}
-			E::CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
 	return S_OK;
@@ -190,6 +193,7 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPla
 	{
 		return E_FAIL;
 	}
+	E::CGameInstance::Get().SetActiveCamera("PlayerCamera");
 	return S_OK;
 }
 
@@ -199,11 +203,48 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -80.f, 20.f, 10.f };
 	PlayerDesc.LevelTag = LEVEL::BOSS_CHARLES_ROOKWOOD;
+	PlayerDesc.tFilter = PX_FILTER_DESC{
+	 .iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+	.iSimulationMask = PX_ALL_LAYERS,
+	.iQueryMask =
+		ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+		ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::BOSS_CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
 		"03_Player",
 		&PlayerDesc);
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
+{
+	CNvClothCape::DESC Desc{};
+	Desc.sObjectTag = "NvClothCape";
+	Desc.hTarget = hPlayer;
+	Desc.sResourceGroup = LEVEL::BOSS_CHARLES_ROOKWOOD;
+	Desc.sModelResourceTag = "PLAYER_CAPE_MODEL_RESOURCE";
+	Desc.sClothMeshResourceTag = "PLAYER_CAPE_CLOTH_RESOURCE";
+	Desc.sTargetModelComponentTag = "ComCModelIntance";
+	Desc.sAttachBoneName = "Spine3";
+	Desc.vLocalPosition = { 0.05f, 0.08f, 0.f };
+
+	E::CGameInstance::Get().JsonDeSerialize(
+		"./Resources/NvCloth/CollisionRigs/ProfessorCape.nvclothcollision.json",
+		Desc.tBodyCollisionRig,
+		E::NVCLOTH_COLLISION_RIG_ROOT,
+		false);
+
+	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
+		"03_Player",
+		&Desc))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
 }
 
 HRESULT CLevelBossCharlesRookwood::SpawnStaticCollision()

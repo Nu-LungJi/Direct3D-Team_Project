@@ -30,6 +30,23 @@ namespace Engine
 			return tResult;
 		}
 
+		void FillOtherShapeData(
+			const CPhysXManager& manager,
+			const physx::PxShape* pShape,
+			CHandle& hOther,
+			PX_CCT_HIT_DATA& tHit)
+		{
+			if (!pShape)
+				return;
+
+			if (const auto tShapeData = manager.FindShapeUserData(pShape))
+			{
+				hOther = tShapeData->hGameObject;
+				tHit.eOtherShapeType = tShapeData->eType;
+				tHit.iOtherShapeSubIndex = tShapeData->iSubIndex;
+			}
+		}
+
 		physx::PxControllerBehaviorFlags ConvertBehavior(PX_CCT_BEHAVIOR eBehavior)
 		{
 			const uint8_t iBehavior = static_cast<uint8_t>(eBehavior);
@@ -71,9 +88,11 @@ namespace Engine
 			CHandle hOther{};
 			if (const auto userData = pManager->FindActorUserData(hit.actor))
 				hOther = userData->hGameObject;
+			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
+			FillOtherShapeData(*pManager, hit.shape, hOther, tHit);
 
 			pManager->QueueCCTShapeHit(
-				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+				pOwner->GetGameObject()->GetHandle(), hOther, tHit);
 		}
 
 		void onControllerHit(const physx::PxControllersHit& hit) override
@@ -89,9 +108,13 @@ namespace Engine
 			CHandle hOther{};
 			if (const auto userData = pManager->FindActorUserData(pActor))
 				hOther = userData->hGameObject;
+			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
+			physx::PxShape* pOtherShape{};
+			if (pActor && pActor->getShapes(&pOtherShape, 1) == 1)
+				FillOtherShapeData(*pManager, pOtherShape, hOther, tHit);
 
 			pManager->QueueCCTControllerHit(
-				pOwner->GetGameObject()->GetHandle(), hOther, ConvertHitData(hit, nullptr));
+				pOwner->GetGameObject()->GetHandle(), hOther, tHit);
 		}
 
 		void onObstacleHit(const physx::PxControllerObstacleHit& hit) override
@@ -244,15 +267,15 @@ void CComPxCharacterController::UpdateGUI()
 
 	PX_FILTER_DESC tFilter = GetFilter();
 	bool bFilterChanged{};
-	bFilterChanged |= ImGui::InputScalar(
-		"Layer", ImGuiDataType_U32, &tFilter.iLayer, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Simulation Mask", ImGuiDataType_U32, &tFilter.iSimulationMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Query Mask", ImGuiDataType_U32, &tFilter.iQueryMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
+	if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+	{
+		bFilterChanged |= pPhysXManager->EditCollisionLayerGUI(
+			"Layer", tFilter.iLayer);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Simulation Mask", tFilter.iSimulationMask);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Query Mask", tFilter.iQueryMask);
+	}
 	if (bFilterChanged)
 		SetFilter(tFilter);
 
@@ -444,7 +467,7 @@ bool CComPxCharacterController::IsCollidingSide() const
 	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES);
 }
 
-std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() const
+std::optional<PX_CCT_STANDING_DATA> CComPxCharacterController::GetStandingShapeData() const
 {
 	if (!m_pController)
 		return std::nullopt;
@@ -459,16 +482,36 @@ std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() 
 	if (state.touchedShape)
 	{
 		if (const auto userData = pPhysXManager->FindShapeUserData(state.touchedShape))
-			return userData->hGameObject;
+		{
+			PX_CCT_STANDING_DATA tResult{};
+			tResult.hGameObject = userData->hGameObject;
+			tResult.eShapeType = userData->eType;
+			tResult.iShapeSubIndex = userData->iSubIndex;
+			tResult.bHasShapeData = true;
+			return tResult;
+		}
 	}
 
 	if (state.touchedActor)
 	{
 		if (const auto userData = pPhysXManager->FindActorUserData(state.touchedActor))
-			return userData->hGameObject;
+		{
+			PX_CCT_STANDING_DATA tResult{};
+			tResult.hGameObject = userData->hGameObject;
+			return tResult;
+		}
 	}
 
 	return std::nullopt;
+}
+
+std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() const
+{
+	const auto tStandingData = GetStandingShapeData();
+	if (!tStandingData)
+		return std::nullopt;
+
+	return tStandingData->hGameObject;
 }
 
 void CComPxCharacterController::SetPosition(const XMFLOAT3& vPosition)

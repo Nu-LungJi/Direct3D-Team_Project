@@ -893,6 +893,9 @@ std::optional<CHandle> CLevelTerrain::SpawnPlayer()
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { 5.f, 100.f, 5.f };
 	PlayerDesc.LevelTag = LEVEL::TERRAIN;
+	PlayerDesc.tFilter = PX_FILTER_DESC{
+		.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)
+	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::TERRAIN,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
