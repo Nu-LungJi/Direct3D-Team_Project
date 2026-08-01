@@ -554,6 +554,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = MonDesc->WeaponResourceName; 
 	WeaponDesc.LevelTag = MonDesc->LevelTag;
+	WeaponDesc.vScale = MonDesc->vWeaponScale;
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{

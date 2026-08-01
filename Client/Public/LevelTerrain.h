@@ -32,8 +32,7 @@ private:
 	HRESULT InitializeCamerasAndLighting(
 		const std::optional<CHandle>& hPlayer);
 
-	HRESULT SpawnMonster(
-		const std::optional<CHandle>& hPlayer);
+	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
 public:
 	static Engine::UPtr<CLevelTerrain> Create();
 

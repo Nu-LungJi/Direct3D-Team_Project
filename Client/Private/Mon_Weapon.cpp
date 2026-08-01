@@ -46,9 +46,9 @@ HRESULT CMon_Weapon::InitializePrototype(void* pArg)
 HRESULT CMon_Weapon::Initialize(void* pArg)
 {
 	
-	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
-	m_iBoneSocketIndex = pDesc->iBoneIndex;
-	m_ParentHandle	   = pDesc->ParentHandle;
+	auto pWeaponDesc = static_cast<WEAPON_DESC*>(pArg);
+	m_iBoneSocketIndex = pWeaponDesc->iBoneIndex;
+	m_ParentHandle	   = pWeaponDesc->ParentHandle;
 	
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
@@ -66,15 +66,18 @@ HRESULT CMon_Weapon::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC Desc{};
-		Desc.sGroupTag = pDesc->LevelTag;
-		Desc.sResTag   = pDesc->WeaponName;
+		Desc.sGroupTag = pWeaponDesc->LevelTag;
+		Desc.sResTag   = pWeaponDesc->WeaponName;
 
 		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
 			return E_FAIL;
 		};
 	}
+	
+	_vector vScale = XMLoadFloat3(&pWeaponDesc->vScale);
 
+	m_pComTransform->SetScale(vScale);
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	return S_OK;
 }
@@ -175,7 +178,7 @@ HRESULT CMon_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
 			{
-				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 2.f, {1.f, 1.f, 1.f}, m_fDissolveintensity, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+				m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, {1.f, 1.f, 1.f}, m_fDissolveintensity, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순 대
 			}
 		}
 

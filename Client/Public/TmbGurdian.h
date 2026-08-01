@@ -9,6 +9,7 @@ class CTmbGurdian final : public CMonster
 public:
 	struct TMBGURDIAN_DESC :public  CMonster::MONSTER_DESC
 	{
+		_float3 vWeaponScale{1.f,1.f,1.f};
 		_string WeaponResourceName{};
 		_string WeaponProtoName{};
 	};
