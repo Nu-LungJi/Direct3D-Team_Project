@@ -31,6 +31,8 @@ private:
 		const std::array<CHandle, 6>& hOilBarrels);
 	HRESULT InitializeCamerasAndLighting(
 		const std::optional<CHandle>& hPlayer);
+	HRESULT InitializePathPlaybackTests();
+	HRESULT InitializeTombBossBulletTest(CHandle hPlayer);
 
 	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
 public:
@@ -48,6 +50,7 @@ private:
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };
+	CHandle m_hPlayer{};
 
 private:
 	HRESULT InitializeMyMagicSquareStep();

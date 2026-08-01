@@ -74,9 +74,11 @@ namespace Client
 		Prototype_GameObject_Terrain,
 		Prototype_GameObject_OilBarrel,
 		Prototype_GameObject_RagdollTest,
+		Prototype_GameObject_TestPathPlayback,
 		Prototype_GameObject_NvClothCape,
 		Prototype_GameObject_PlayerMagicBullet,
 		Prototype_GameObject_BossStarBurst,
+		Prototype_GameObject_TombBossBullet,
 	};
 
 	enum class PROTO_COMPONENT

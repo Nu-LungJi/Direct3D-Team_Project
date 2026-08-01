@@ -18,6 +18,8 @@
 #include "ComPxRevoluteJoint.h"
 #include "ComPxRigidBody.h"
 #include "OilBarrel.h"
+#include "TestPathPlaybackObject.h"
+#include "TombBossBullet.h"
 #include "RagdollTest.h"
 #include "NvClothCape.h"
 
@@ -75,6 +77,11 @@ HRESULT CLevelTerrain::Initialize()
 			int x = 0;
 		}
 	}
+
+	if (FAILED(InitializePathPlaybackTests()))
+		return E_FAIL;
+
+	if(false)
 	{
 		for (uint32_t i = 0; i < 6; ++i)
 		{
@@ -103,6 +110,7 @@ HRESULT CLevelTerrain::Initialize()
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 		return E_FAIL;
+	m_hPlayer = *hPlayer;
 
 	{
 		CNvClothCape::DESC Desc{};
@@ -137,8 +145,8 @@ HRESULT CLevelTerrain::Initialize()
 		}
 	}
 
-	if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
-		return E_FAIL;
+	//if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
+	//	return E_FAIL;
 
 	if (FAILED(InitializeCamerasAndLighting(hPlayer)))
 		return E_FAIL;
@@ -169,6 +177,95 @@ HRESULT CLevelTerrain::Initialize()
 	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
 	return S_OK;
+}
+
+HRESULT CLevelTerrain::InitializePathPlaybackTests()
+{
+	using TEST_CASE = CTestPathPlaybackObject::TEST_CASE;
+
+	struct TEST_PLACEMENT
+	{
+		const char* pObjectTag{};
+		TEST_CASE eTestCase{};
+		_float3 vPosition{};
+		_float3 vRotation{};
+		_float fPlaybackRate{ 1.f };
+	};
+
+	const std::array<TEST_PLACEMENT, 7> Placements{
+		TEST_PLACEMENT{
+			"PathTest_StartLocal",
+			TEST_CASE::START_LOCAL_LINEAR,
+			{ 13.f, 0.f, 5.f },
+			{ 0.f, 45.f, 0.f } },
+		TEST_PLACEMENT{
+			"PathTest_World",
+			TEST_CASE::WORLD_LINEAR,
+			{ 20.f, 0.f, 5.f } },
+		TEST_PLACEMENT{
+			"PathTest_Catmull",
+			TEST_CASE::CATMULL_FACE_DIRECTION,
+			{ 34.f, 0.f, 5.f } },
+		TEST_PLACEMENT{
+			"PathTest_Loop",
+			TEST_CASE::LOOP_RECTANGLE,
+			{ 44.f, 0.f, 5.f } },
+		TEST_PLACEMENT{
+			"PathTest_PingPong",
+			TEST_CASE::PING_PONG_ROTATION,
+			{ 54.f, 0.f, 5.f } },
+		TEST_PLACEMENT{
+			"PathTest_EventCustom",
+			TEST_CASE::EVENT_TO_CUSTOM,
+			{ 64.f, 0.f, 5.f } },
+		TEST_PLACEMENT{
+			"PathTest_EasingSegments",
+			TEST_CASE::EASING_SEGMENTS,
+			{ 74.f, 0.f, 5.f } }
+	};
+
+	for (const TEST_PLACEMENT& Placement : Placements)
+	{
+		CTestPathPlaybackObject::DESC Desc{};
+		Desc.sObjectTag = Placement.pObjectTag;
+		Desc.eTestCase = Placement.eTestCase;
+		Desc.vInitialPosition = Placement.vPosition;
+		Desc.vInitialRotation = Placement.vRotation;
+		Desc.fPlaybackRate = Placement.fPlaybackRate;
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_TestPathPlayback,
+			"03_PathPlaybackTest",
+			&Desc))
+		{
+			return E_FAIL;
+		}
+	}
+
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::InitializeTombBossBulletTest(CHandle hPlayer)
+{
+	CTombBossBullet::DESC Desc{};
+	Desc.sObjectTag = "TombBossBullet_PathTest";
+	Desc.vInitialPosition = { 5.f, 10.f, 10.f };
+	Desc.hTarget = hPlayer;
+	Desc.fArcMoveSpeed = 68.f;
+	Desc.fArcHeight = 2.f;
+	Desc.fArcLifeTime = 6.f;
+	Desc.fRadius = 0.5f;
+	Desc.fPlaybackRate = 1.f;
+	// 실제 보스 구체 이펙트가 확정되면 이 이름만 교체하면 된다.
+	Desc.sEffectName = "Boss_StarBurst_A";
+
+	return CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_TombBossBullet,
+		"03_PathPlaybackTest",
+		&Desc)
+		? S_OK
+		: E_FAIL;
 }
 
 HRESULT CLevelTerrain::InitializeJointTests(
@@ -745,6 +842,15 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	if (ImGui::Button("Spawn Tomb Boss Bullet"))
+	{
+		if (!CGameInstance::Get().GetGameObjectByHandle(m_hPlayer) ||
+			FAILED(InitializeTombBossBulletTest(m_hPlayer)))
+		{
+			DEBUG_LOG("[Terrain] Failed to spawn TombBossBullet.\n");
+		}
+	}
+	ImGui::Separator();
 	//Resources();
 	//Objects();
 	//BeHaviors();

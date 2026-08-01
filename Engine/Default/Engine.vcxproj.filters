@@ -541,6 +541,9 @@
     <Filter Include="GameObject\Camera\CinematicCamera">
       <UniqueIdentifier>{96a18c58-ecdf-48d1-9f04-bcd00fabb6d0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PathPlayback">
+      <UniqueIdentifier>{44a6a1ce-f910-4698-8430-5c345434c774}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1234,6 +1237,15 @@
     <ClInclude Include="..\Public\CinematicTypes.h">
       <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\PathPlaybackDefines.h">
+      <Filter>PathPlayback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ResPathPlayback.h">
+      <Filter>PathPlayback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ComPathPlayback.h">
+      <Filter>PathPlayback</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1839,6 +1851,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\CinematicCamera.cpp">
       <Filter>GameObject\Camera\CinematicCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ResPathPlayback.cpp">
+      <Filter>PathPlayback</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComPathPlayback.cpp">
+      <Filter>PathPlayback</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
