@@ -258,64 +258,6 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 
 	}
 
-	if (auto pBoss = Cast<CBossTMB>(pObj))
-	{
-		static constexpr const char* HIT_SOUND_PATHS[] =
-		{
-			"./Resources/SampleClient/Sound/boss_hit_01.wav",
-			"./Resources/SampleClient/Sound/boss_hit_02.wav",
-			"./Resources/SampleClient/Sound/boss_hit_03.wav",
-			"./Resources/SampleClient/Sound/boss_hit_04.wav"
-		};
-		constexpr int HIT_SOUND_COUNT = static_cast<int>(sizeof(HIT_SOUND_PATHS) / sizeof(HIT_SOUND_PATHS[0]));
-		const int iSoundIndex = Engine::RandInt(0, HIT_SOUND_COUNT - 1);
-
-		auto id = CGameInstance::Get().GetSoundManager()->Play3D(
-			HIT_SOUND_PATHS[iSoundIndex],
-			SOUND_3D_DESC{
-				.vPosition = GetTransform().GetPosition(),
-				.fMinDistance = 10.f,
-				.fMaxDistance = 30.f,
-				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
-			},
-			SOUND_PLAY_DESC{
-				.sBusID = SOUND_BUS::SFX,
-				.fVolume = 1.f,
-				.fPitch = 1.f,
-				.iPriority = 64,
-				.bLoop = false
-			}
-		);
-		if (id == INVALID_SOUND_ID)
-		{
-			MSG_BOX("INVALID_SOUND_ID");
-		}
-		//auto id = m_pComSound->PlaySlot3D(
-		//	TEST_SLOT,
-		//	"./Resources/SampleClient/Sound/avada.wav",
-		//	SOUND_3D_DESC{
-		//		.vPosition = GetTransform().GetPosition(),
-		//		.fMinDistance = SOUND_MIN_DISTANCE,
-		//		.fMaxDistance = 30.f,
-		//		.eRolloff = SOUND_3D_ROLLOFF::LINEAR
-		//	},
-		//	SOUND_PLAY_DESC{
-		//		.sBusID = SOUND_BUS::VOICE,
-		//		.fVolume = 1.f,
-		//		.fPitch = 1.f,
-		//		.iPriority = 64,
-		//		.bLoop = false
-		//	});
-
-		//if (id == INVALID_SOUND_ID)
-		//{
-		//	MSG_BOX("INVALID_SOUND_ID");
-		//}
-
-	}
-
-}
-
 	SetPendingDestroy();
 }
 
