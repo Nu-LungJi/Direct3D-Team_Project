@@ -235,6 +235,7 @@
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\Public\CinematicEditor.h" />
+    <ClInclude Include="..\Public\Cursor.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\EffectUI.h" />
@@ -339,6 +340,7 @@
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
+    <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\EffectUI.cpp" />

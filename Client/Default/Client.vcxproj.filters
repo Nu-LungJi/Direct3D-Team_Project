@@ -238,6 +238,9 @@
     <Filter Include="GameObject\UI\VideoObject">
       <UniqueIdentifier>{9be42490-276b-4619-ba51-b6f8a15dd4a1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\Cursor">
+      <UniqueIdentifier>{b2f47277-f943-4e7b-819d-1514d88bd25c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -555,6 +558,9 @@
     <ClInclude Include="..\Public\VideoObject.h">
       <Filter>GameObject\UI\VideoObject</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Cursor.h">
+      <Filter>GameObject\UI\Cursor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -821,6 +827,9 @@
     </ClCompile>
     <ClCompile Include="..\private\MonEffect.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Cursor.cpp">
+      <Filter>GameObject\UI\Cursor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

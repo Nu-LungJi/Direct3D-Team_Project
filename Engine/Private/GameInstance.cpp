@@ -563,6 +563,12 @@ void CGameInstance::Release_Engine()
 	m_pGraphicDevice.reset();
 }
 
+void CGameInstance::SetMouseFix(_bool mousefix)
+{
+	m_bMouseFix = mousefix;
+	ShowCursor(FALSE);
+}
+
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {

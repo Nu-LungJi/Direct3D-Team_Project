@@ -48,6 +48,9 @@ private:
 	std::vector<CHandle>				m_MedDebrisHandles{};
 
 private:
+	_bool m_bCreatePlayScreenUI{ false };
+
+private:
 	HRESULT InitializeMyMagicSquareStep();
 private:
 	void Free() override;

@@ -6,6 +6,7 @@
 #include "UIManager.h"
 #include "Client_Defines.h"
 #include "Level_Defines.h"
+#include "PlayerThirdPersonCamera.h"
 
 NS_USING(Client)
 
@@ -85,6 +86,9 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	{
 		m_pComTween->Tick(fTimeDelta);
 	}
+
+	E::CCameraObject* pCamera = E::CGameInstance::Get().GetCamera("PlayerCamera");
+	pCamera->GetProj();
 
 	_bool bA = CGameInstance::Get().KeyPressing(DIK_A);
 	_bool bD = CGameInstance::Get().KeyPressing(DIK_D);
