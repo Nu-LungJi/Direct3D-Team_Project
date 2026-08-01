@@ -143,6 +143,7 @@ namespace Engine
 		_float3 vHitpos{}; // 충돌 지점
 		_float3 vHitNormal{}; // 충돌 표면의 법선 벡터
 		_float fDistance{}; // 시작점으로부터의 거리
+		CHandle hGameObject{};
 		CGameObject* pGameObject{};
 		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
@@ -208,6 +209,7 @@ namespace Engine
 	struct PX_OVERLAP_RESULT
 	{
 		_bool bHit{ false };
+		CHandle hGameObject{};
 		CGameObject* pGameObject{};
 		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };

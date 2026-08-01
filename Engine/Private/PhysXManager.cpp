@@ -136,27 +136,33 @@ namespace
 		return true;
 	}
 
-	void FillShapeResult(const CPhysXManager& manager, const PxShape* pShape, PX_RAYCAST_RESULT& outResult)
+	template<typename TResult>
+	void FillQueryObjectResult(
+		const CPhysXManager& manager,
+		const PxRigidActor* pActor,
+		const PxShape* pShape,
+		TResult& outResult)
 	{
-		if (!pShape)
-			return;
-
-		if (const auto tShapeData = manager.FindShapeUserData(pShape))
+		if (pShape)
 		{
-			outResult.eShapeType = tShapeData->eType;
-			outResult.iShapeSubIndex = tShapeData->iSubIndex;
+			if (const auto tShapeData = manager.FindShapeUserData(pShape))
+			{
+				outResult.hGameObject = tShapeData->hGameObject;
+				outResult.eShapeType = tShapeData->eType;
+				outResult.iShapeSubIndex = tShapeData->iSubIndex;
+			}
 		}
-	}
 
-	void FillShapeResult(const CPhysXManager& manager, const PxShape* pShape, PX_OVERLAP_RESULT& outResult)
-	{
-		if (!pShape)
-			return;
-
-		if (const auto tShapeData = manager.FindShapeUserData(pShape))
+		if (outResult.hGameObject == CHandle{} && pActor)
 		{
-			outResult.eShapeType = tShapeData->eType;
-			outResult.iShapeSubIndex = tShapeData->iSubIndex;
+			if (const auto tActorData = manager.FindActorUserData(pActor))
+				outResult.hGameObject = tActorData->hGameObject;
+		}
+
+		if (!(outResult.hGameObject == CHandle{}))
+		{
+			outResult.pGameObject = CGameInstance::Get().
+				GetGameObjectByHandle(outResult.hGameObject);
 		}
 	}
 
@@ -168,8 +174,7 @@ namespace
 		tResult.vHitpos = { tHit.position.x, tHit.position.y, tHit.position.z };
 		tResult.vHitNormal = { tHit.normal.x, tHit.normal.y, tHit.normal.z };
 		tResult.fDistance = tHit.distance;
-		tResult.pGameObject = manager.FindGameObject(tHit.actor);
-		FillShapeResult(manager, tHit.shape, tResult);
+		FillQueryObjectResult(manager, tHit.actor, tHit.shape, tResult);
 		return tResult;
 	}
 
@@ -177,8 +182,7 @@ namespace
 	{
 		PX_OVERLAP_RESULT tResult{};
 		tResult.bHit = true;
-		tResult.pGameObject = manager.FindGameObject(tHit.actor);
-		FillShapeResult(manager, tHit.shape, tResult);
+		FillQueryObjectResult(manager, tHit.actor, tHit.shape, tResult);
 		return tResult;
 	}
 }
