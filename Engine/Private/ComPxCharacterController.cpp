@@ -467,7 +467,7 @@ bool CComPxCharacterController::IsCollidingSide() const
 	return m_pImpl && m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES);
 }
 
-std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() const
+std::optional<PX_CCT_STANDING_DATA> CComPxCharacterController::GetStandingShapeData() const
 {
 	if (!m_pController)
 		return std::nullopt;
@@ -482,16 +482,36 @@ std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() 
 	if (state.touchedShape)
 	{
 		if (const auto userData = pPhysXManager->FindShapeUserData(state.touchedShape))
-			return userData->hGameObject;
+		{
+			PX_CCT_STANDING_DATA tResult{};
+			tResult.hGameObject = userData->hGameObject;
+			tResult.eShapeType = userData->eType;
+			tResult.iShapeSubIndex = userData->iSubIndex;
+			tResult.bHasShapeData = true;
+			return tResult;
+		}
 	}
 
 	if (state.touchedActor)
 	{
 		if (const auto userData = pPhysXManager->FindActorUserData(state.touchedActor))
-			return userData->hGameObject;
+		{
+			PX_CCT_STANDING_DATA tResult{};
+			tResult.hGameObject = userData->hGameObject;
+			return tResult;
+		}
 	}
 
 	return std::nullopt;
+}
+
+std::optional<CHandle> CComPxCharacterController::GetStandingGameObjectHandle() const
+{
+	const auto tStandingData = GetStandingShapeData();
+	if (!tStandingData)
+		return std::nullopt;
+
+	return tStandingData->hGameObject;
 }
 
 void CComPxCharacterController::SetPosition(const XMFLOAT3& vPosition)
