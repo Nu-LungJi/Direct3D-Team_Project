@@ -14,12 +14,13 @@
 #include "MiniMap.h"
 #include "UIController.h"
 #include "GameOverMask.h"
+#include "VideoObject.h"
 
 NS_USING(Client)
 
 UIManager::~UIManager()
 {
-
+	MFShutdown();
 }
 
 void UIManager::Update()
@@ -30,6 +31,8 @@ void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceCont
 {
 	m_pDevice = pDevice;
 	m_pContext = pContext;
+
+	MFStartup(MF_VERSION);
 }
 
 void UIManager::InitializeActions()
@@ -160,7 +163,7 @@ void UIManager::InitializeActions()
 					}
 				}, nullptr, EEaseType::EaseOutQuad, 1.f);
 
-			pTween->PlayTween(0.f, 1.f, 0.1f,
+			pTween->PlayTween(0.f, 1.f, 0.2f,
 				[handle](float currentValue) {
 					if (auto pObj = GetSafeUI(handle))
 					{
@@ -188,16 +191,16 @@ void UIManager::InitializeActions()
 						pObj->SetScaleRatio(currentValue);
 						pObj->CalcUICoord();
 					}
-				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
+				}, nullptr, EEaseType::EaseOutQuad, 1.2f);
 
-			pTween->PlayTween(0.f, 1.f, 0.1f,
+			pTween->PlayTween(0.f, 1.f, 0.2f,
 				[handle](float currentValue) {
 					if (auto pObj = GetSafeUI(handle))
 					{
 						pObj->SetAlpha(currentValue);
 						pObj->CalcUICoord();
 					}
-				}, nullptr, EEaseType::EaseOutQuad, 1.1f);
+				}, nullptr, EEaseType::EaseOutQuad, 1.2f);
 		};
 	m_vEventNames.push_back("AppearScaleUp1.1");
 
@@ -1333,6 +1336,10 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	case ETOUI(UI_TYPE::GAMEOVERMASK):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_GameOverMask", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CGameOverMask>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::VIDEOOBJ):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_VideoObject", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CVideoObject>(*uiHandle);
 		break;
 	default:
 		break;

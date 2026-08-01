@@ -13,12 +13,21 @@
 #include "Level_Defines.h"
 #include "MiniMap.h"
 #include "GameOverMask.h"
+#include "VideoObject.h"
+
+#include <mfapi.h>
+#include <mfidl.h>
+#include <mfreadwrite.h>
+
+#pragma comment(lib, "mfreadwrite.lib")
+#pragma comment(lib, "mfplat.lib")
+#pragma comment(lib, "mfuuid.lib")
 
 NS_USING(Client)
 
 UIManager::~UIManager()
 {
-
+	MFShutdown();
 }
 
 void UIManager::Update()
@@ -29,6 +38,8 @@ void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceCont
 {
 	m_pDevice = pDevice;
 	m_pContext = pContext;
+
+	MFStartup(MF_VERSION);
 }
 
 void UIManager::InitializeActions()
@@ -1150,6 +1161,10 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	case ETOUI(UI_TYPE::GAMEOVERMASK):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_GameOverMask", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CGameOverMask>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::VIDEOOBJ):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_VideoObject", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CVideoObject>(*uiHandle);
 		break;
 	default:
 		break;

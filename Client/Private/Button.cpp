@@ -11,6 +11,7 @@
 #include "UIObject.h"
 #include "Level_Defines.h"
 #include "UI_Enums.h"
+#include "VideoObject.h"
 
 NS_USING(Client)
 
@@ -220,9 +221,11 @@ void CButton::PlayEffect(uint32_t uiState)
 
 		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
 		{
-			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab("SpellDesc");
+			std::vector<CHandle> vSpellDesc = GET_SINGLE(UIManager)->LoadPrefab(m_DescJsonName);
 			m_SpellDesc = vSpellDesc[0];
 			m_SpellPaper = vSpellDesc[1];
+
+			static_cast<CVideoObject*>(SafeGetOBJ(SafeGetOBJ(m_SpellPaper)->GetChildren()[0]))->SetPath(m_VideoPath);
 		}
 	}
 
@@ -243,7 +246,7 @@ void CButton::PlayEffect(uint32_t uiState)
 		
 		if (m_UIINFO.UIType == ETOUI(UI_TYPE::BUTTON))
 		{
-			PlayScaleAlphaDownDelete(m_SpellDesc);
+			PlayScaleAlphaDownDelete(m_SpellDesc, 0.1f);
 			PlayScaleAlphaDownDelete(m_SpellPaper);
 		}
 	}
@@ -295,73 +298,7 @@ void CButton::ClearClickEffect()
 	}
 }
 
-void CButton::SpellBtnSet()
-{
-	switch (m_SpellType)
-	{
-	case ETOUI(SPELL_TYPE::NONE):
-		m_UIINFO.Restag = "TEX_T_BlankAlpha_A";
-		break;
-	case ETOUI(SPELL_TYPE::ARRESTOMOMENTUM):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_ArrestoMomentum_Overlay";
-		m_colorType = 1;
-		break;
-	case ETOUI(SPELL_TYPE::GLACIUS):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Glacius_Overlay";
-		m_colorType = 1;
-		break;
-	case ETOUI(SPELL_TYPE::LEVIOSO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Levioso_Overlay";
-		m_colorType = 1;
-		break;
-	case ETOUI(SPELL_TYPE::TRANSFORMATION):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_TransformationOverlandOverlay";
-		m_colorType = 1;
-		break;
-	case ETOUI(SPELL_TYPE::ASSIO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Accio_Overlay";
-		m_colorType = 3;
-		break;
-	case ETOUI(SPELL_TYPE::DEPULSO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Depulso_Overlay";
-		m_colorType = 3;
-		break;
-	case ETOUI(SPELL_TYPE::DESENDO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Descendo_Overlay";
-		m_colorType = 3;
-		break;
-	case ETOUI(SPELL_TYPE::FLIPENDO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Flipendo_Overlay";
-		m_colorType = 3;
-		break;
-	case ETOUI(SPELL_TYPE::CONFRINGO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Confringo_Overlay";
-		m_colorType = 0;
-		break;
-	case ETOUI(SPELL_TYPE::DIFFINDO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Diffindo_Overlay";
-		m_colorType = 0;
-		break;
-	case ETOUI(SPELL_TYPE::EXPELLIARMUS):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Expelliarmus_Overlay";
-		m_colorType = 0;
-		break;
-	case ETOUI(SPELL_TYPE::BOMBARDA):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Bombarda_Overlay";
-		m_colorType = 0;
-		break;
-	case ETOUI(SPELL_TYPE::INCENDIO):
-		m_UIINFO.Restag = "TEX_UI_T_spellmeter_Incendio_Overlay";
-		m_colorType = 0;
-		break;
-	default:
-		m_UIINFO.Restag = "TEX_T_BlankAlpha_A";
-		m_colorType = 5;
-		break;
-	}
-}
-
-void CButton::PlayScaleAlphaDownDelete(CHandle pHandle)
+void CButton::PlayScaleAlphaDownDelete(CHandle pHandle, _float delay)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();
@@ -377,13 +314,13 @@ void CButton::PlayScaleAlphaDownDelete(CHandle pHandle)
 			pBtn->CalcUICoord();
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			}, EEaseType::EaseOutQuad);
+			}, EEaseType::EaseOutQuad, delay);
 
 		pTween->PlayTween(Alpah, 0.f, 0.1f,
 			[pBtn](float currentValue) {
 				pBtn->SetAlpha(currentValue);
 				pBtn->CalcUICoord();
-			}, nullptr, EEaseType::EaseOutQuad);
+			}, nullptr, EEaseType::EaseOutQuad, delay);
 }
 
 E::CUIObject* CButton::SafeGetOBJ(CHandle pHandle)

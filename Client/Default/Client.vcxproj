@@ -236,6 +236,7 @@
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
+    <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -271,6 +272,7 @@
     <ClCompile Include="..\Private\TextureUI.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
+    <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -238,6 +238,9 @@
     <Filter Include="GameObject\UI\GameOverMask">
       <UniqueIdentifier>{8bb236ad-1b01-40b9-8d25-41f4bebf1dac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\VideoObject">
+      <UniqueIdentifier>{127df919-1d6d-4c81-aedc-352b64ad5cb7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -576,6 +579,9 @@
     <ClInclude Include="..\Public\GameOverMask.h">
       <Filter>GameObject\UI\GameOverMask</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\VideoObject.h">
+      <Filter>GameObject\UI\VideoObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="SampleClient.ico">
@@ -881,6 +887,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\GameOverMask.cpp">
       <Filter>GameObject\UI\GameOverMask</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\VideoObject.cpp">
+      <Filter>GameObject\UI\VideoObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -11,6 +11,7 @@
 #include "HPBar.h"
 #include "MiniMap.h"
 #include "GameOverMask.h"
+#include "VideoObject.h"
 
 NS_USING(Client)
 std::future<bool> CLevelUIEditorLoader::Load()
@@ -166,6 +167,12 @@ std::future<bool> CLevelUIEditorLoader::Load()
 			{
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_UIEDITOR", "Prototype_GameObject_VideoObject", CVideoObject::Create())))
+			{
+				return false;
+			}
+
+			
 			// 워커 스레드 종료
 			return  true;
 		});

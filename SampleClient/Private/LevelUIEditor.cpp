@@ -209,8 +209,25 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 	if (bF1)
 	{
-		// minimap
 		if (true)
+		{
+			CTextureUI::UIOBJECT_DESC Desc{};
+
+			count++;
+			Desc.sObjectTag = "UI_" + std::to_string(count);
+			Desc.Name = "UI_" + std::to_string(count);
+			Desc.fSizeX = 1280.f;
+			Desc.fSizeY = 720.f;
+			Desc.fX = clientSize.x * 0.5f;
+			Desc.fY = clientSize.y * 0.5f;
+			Desc.fAlpha = 1.f;
+			Desc.UIType = ETOUI(UI_TYPE::VIDEOOBJ);
+			Desc.ResWeight = count;
+
+			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_VideoObject", "Layer_UI", &Desc);
+		}
+		// 붉은 구름
+		if (false)
 		{
 			CTextureUI::UIOBJECT_DESC Desc{};
 
@@ -254,7 +271,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 			CTextUI::TEXT_DESC desc{};
 
 			desc.sObjectTag = "UI_" + std::to_string(count);
-			desc.Name = "64px";
+			desc.Name = "";
 			desc.fSizeX = 3.f;
 			desc.fSizeY = 3.f;
 			desc.fX = clientSize.x * 0.5f;
@@ -1742,7 +1759,7 @@ void CLevelUIEditor::StateView()
 
 		// Enums (UI Type & Effect)
 		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL",
-			"LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK"};
+			"LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK", "VIDEOOBJ"};
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
@@ -1886,7 +1903,7 @@ void CLevelUIEditor::LocalStateView()
 
 		// Enums
 		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR"
-			, "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK" };
+			, "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK", "VIDEOOBJ" };
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
@@ -1897,6 +1914,26 @@ void CLevelUIEditor::LocalStateView()
 		ImGui::Text("Effect Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
 		ImGui::Combo("##LEffectType", reinterpret_cast<int*>(&m_UIINFO.EffectType), EffectTypeNames, IM_ARRAYSIZE(EffectTypeNames));
+
+		if (m_UIINFO.UIType == ETOUI(UI_TYPE::TEXT))
+		{
+			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+			ImGui::Text("Text String"); ImGui::TableNextColumn();
+
+			// 입력 칸이 셀 너비 전체를 차지하도록 설정
+			ImGui::SetNextItemWidth(-FLT_MIN);
+
+			ImGui::InputText("##TextData", m_cTextBuf, sizeof(m_cTextBuf));
+
+			m_sText = m_cTextBuf;
+
+			if (Target_UI != std::nullopt &&
+				nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*Target_UI))
+			{
+				CTextBox* pTextBox = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*Target_UI);
+				pTextBox->SetwText(StringToWUTF8(m_sText));
+			}
+		}
 
 		ImGui::EndTable();
 	}

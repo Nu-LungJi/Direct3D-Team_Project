@@ -14,6 +14,7 @@
 #include "HPBar.h"
 #include "MiniMap.h"
 #include "GameOverMask.h"
+#include "VideoObject.h"
 
 NS_USING(Client)
 
@@ -113,7 +114,11 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_GameOvermask", CGameOverMask::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_VideoObject", CVideoObject::Create())))
 		{
 			return false;
 		}

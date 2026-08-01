@@ -71,13 +71,17 @@ private:
 	CHandle m_SpellPaper;
 private:
 	/*******스펠버튼*****/
-	void SpellBtnSet();
-	void PlayScaleAlphaDownDelete(CHandle pHandle);
+	void PlayScaleAlphaDownDelete(CHandle pHandle, _float delay = 0.f);
 	CUIObject* SafeGetOBJ(CHandle pHandle);
+	/********디스크립션*********/
+	std::string m_DescJsonName = "AssioDesc";
+	std::wstring m_VideoPath = L"./Resources/SampleClient/Textures/UI/Video/FMV_Accio.avi";
 private:
-	uint32_t m_SpellType{};
 	uint32_t m_colorType{};
 	_float4 m_BGColor{ 1.f, 1.f, 1.f, 1.f };
+public:
+	void SetVideoPath(std::wstring videoPath) { m_VideoPath = videoPath; }
+	void SetDescJsonname(std::string jsonName) { m_DescJsonName = jsonName; }
 public:
 	static E::UPtr<CButton> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -57,7 +57,7 @@ float4 PSMain(PS_IN input) : SV_Target
     // Edge Fade
 	float fadeX = smoothstep(0.0f, 0.15f, input.uv.x) * (1.0f - smoothstep(0.85f, 1.0f, input.uv.x));
 	float fadeY = smoothstep(0.0f, 0.25f, input.uv.y) * (1.0f - smoothstep(0.75f, 1.0f, input.uv.y));
-	float edgeFade = fadeX * fadeY;.
+	float edgeFade = fadeX * fadeY;
 	float cloudMask = baseMask * smokeDetail * 2.0f * edgeFade;
 
     // 색상 적용

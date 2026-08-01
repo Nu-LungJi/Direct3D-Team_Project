@@ -195,6 +195,19 @@ void CUIController::CreateSpellType()
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetResTag("TEX_UI_T_spellmeter_Crucio_Overlay");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetResTag("TEX_UI_T_spellmeter_Imperio_Overlay");
 
+	/*********비디오 패스**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[1]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Glacius.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Depulso.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Descendo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Reparo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Bombarda.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_AvadaKedavra.avi");
+
+	/*********디스크립션 json 이름**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetDescJsonname("DepulsoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetDescJsonname("DescendoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetDescJsonname("BombardaDesc");
+
 	/********단축키슬롯**********/
 	m_SpellShortCutKeySlot[0] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut1").front();
 	m_SpellShortCutKeySlot[1] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut2").front();

@@ -100,6 +100,8 @@ HRESULT CMainAppLoader::Load()
 		return E_FAIL;
 	}
 
+	GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
+
 	LOG_MEMORY("CMainAppLoader::Load() end");
 	return S_OK;
 }

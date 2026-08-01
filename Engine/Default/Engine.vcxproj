@@ -840,6 +840,7 @@
     <FxCompile Include="..\ShaderFiles\UI\UI3D.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\VideoObject.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LuaFiles\SomeFolder\Hi.lua" />
