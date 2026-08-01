@@ -35,6 +35,13 @@ class CPlayer final : public CAnimationObject
 public:
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
 
+public:
+	enum class PLAYER_SHAPE : uint32_t
+	{
+		CCT_CAPSULE = 0,
+		TEST_BOX = 1,
+	};
+
 protected:
 	void UpdateGUI() override;
 
