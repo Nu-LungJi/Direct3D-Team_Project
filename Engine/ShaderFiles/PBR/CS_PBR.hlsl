@@ -193,7 +193,7 @@ float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowS
 			
 		ShadowFactor += MergeShadowCubeMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
 	}
-	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, ShadowFactor * 0.125f) * ShadowStrength;
+	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, ShadowFactor / POISSON_COUNT) * ShadowStrength;
 	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
 	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
 	// FinalShadowFactor : 감쇄O 그림자  (거리기반 밝기 감쇄 그림자)
@@ -211,7 +211,6 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughn
 	
 	float ReverseRoughness = 1.f - Roughness;
 	float3 Fresnel = max(float3(ReverseRoughness, ReverseRoughness, ReverseRoughness), MBR);
-	
 	
 	float NDV = saturate(dot(N, V));
 	float3 F = MBR + (Fresnel - MBR) * pow(1.f - NDV, 5.f);
@@ -238,9 +237,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
 	if (ID.x >= SCREENX || ID.y >= SCREENY) return; // 스레드가 해상도 넘어가면 출력X
+	int3 PixelCoord = int3(ID.xy, 0);
 	
 	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-    float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+    //float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+	float Depth = DepthMap.Load(PixelCoord); // 해당 픽셀 깊이 계산
 
 	[branch]
     if (Depth >= 1.f)
@@ -251,14 +252,17 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	
     float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
 
-    float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
+    //float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
+	float3 WorldNormal = normalize(NormalMap.Load(PixelCoord).rgb * 2.f - 1.f);
 	
-    float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+    //float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3 AlbedoTex = AlbedoMap.Load(PixelCoord).rgb;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
-    float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+    //float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3 MultipleTex = SMROMap.Load(PixelCoord).rgb;
     float Metallic = MultipleTex.r;
-    float Roughness = MultipleTex.g;
+	float Roughness = clamp(MultipleTex.g, 0.15f, 1.f);
     //float   Ambient     = MultipleTex.b;
 
     float3 V = normalize(g_vCamPos - DepthWorld.xyz);
@@ -293,7 +297,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 
 				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
-				float3 Specular = D * F * V_Spec / 20.f;
+				float3 Specular = D * F * V_Spec / 10.f;
 
 				float3 kS = F;
 				float3 kD = (1.0f - kS) * (1.0f - Metallic);
@@ -320,9 +324,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		}
 	}
 
-	float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	//float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3	BaseEmissive = EmissiveMap.Load(PixelCoord).rgb;
     
-	float	AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
+	//float	AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
+	float	AmbientOcclusion = AmbientMap.Load(PixelCoord).r;
 	float3	Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
 	float3	EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light
@@ -445,9 +451,10 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 	[branch]
 	if (ID.x >= SCREENX || ID.y >= (uint) SCREENY)
 		return;
-
+	int3	PixelCoord = int3(ID.xy, 0);
 	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-	float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+	//float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+	float	Depth = DepthMap.Load(PixelCoord).r; // 해당 픽셀 깊이 계산
 	
 	[branch]
 	if (Depth >= 1.f)
@@ -458,12 +465,15 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 
 	float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
 
-	float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
+	//float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
+	float3 WorldNormal = normalize(NormalMap.Load(PixelCoord).rgb * 2.f - 1.f);
 	
-	float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	//float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3 AlbedoTex = AlbedoMap.Load(PixelCoord).rgb;
 	float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
-	float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	//float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3 MultipleTex = SMROMap.Load(PixelCoord).rgb;
 	float Metallic = MultipleTex.r;
 	float Roughness = clamp(MultipleTex.g, 0.15f, 1.f);
     //float   Ambient     = MultipleTex.b;
@@ -506,9 +516,9 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 		}
 	}
 
-	float3 BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	float3 BaseEmissive = EmissiveMap.Load(PixelCoord).rgb;
     
-	float AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
+	float  AmbientOcclusion = AmbientMap.Load(PixelCoord).r;
 	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
 	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light

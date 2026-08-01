@@ -202,6 +202,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\public\BTCreatureFlag.h" />
     <ClInclude Include="..\public\EnderDragon.h" />
+    <ClInclude Include="..\Public\GameOverMask.h" />
     <ClInclude Include="..\public\LevelCreatureEditor.h" />
     <ClInclude Include="..\public\EffectUI.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -293,6 +294,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClInclude Include="..\Public\TextureUI.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
+    <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="..\public\Weapon.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -329,6 +331,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\private\EnderDragon.cpp" />
+    <ClCompile Include="..\Private\GameOverMask.cpp" />
     <ClCompile Include="..\private\LevelCreatureEditor.cpp" />
     <ClCompile Include="..\private\EffectUI.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -416,6 +419,7 @@ call CopySampleClient.bat "$(Configuration)"</Command>
     <ClCompile Include="..\private\TestPhysXTerrain.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
+    <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="..\private\Weapon.cpp" />
     <ClCompile Include="..\public\BTDead.cpp" />
     <ClCompile Include="pch.cpp">

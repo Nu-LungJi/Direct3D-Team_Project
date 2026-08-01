@@ -67,6 +67,8 @@ public:
 	const EFFECT_INSTANCE* FindInstance(
 		EFFECT_INSTANCE_ID iEffectId) const;
 
+	void ClearAllRunningEffect();
+
 	void SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end);
 
 

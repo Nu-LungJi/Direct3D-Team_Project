@@ -236,9 +236,11 @@
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\Public\CinematicEditor.h" />
+    <ClInclude Include="..\Public\Cursor.h" />
     <ClInclude Include="..\public\DebugPlayer.h" />
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\EffectUI.h" />
+    <ClInclude Include="..\Public\GameOverMask.h" />
     <ClInclude Include="..\public\GurdianWeapon.h" />
     <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
@@ -281,6 +283,7 @@
     <ClInclude Include="..\Public\Player_SkillStateBase.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
+    <ClInclude Include="..\Public\StarBurst.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h" />
@@ -305,6 +308,7 @@
     <ClInclude Include="..\public\TmbGurdianDead.h" />
     <ClInclude Include="..\public\TriggerCRW_ToBoss.h" />
     <ClInclude Include="..\Public\Mon_Weapon.h" />
+    <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -342,9 +346,11 @@
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
+    <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\EffectUI.cpp" />
+    <ClCompile Include="..\Private\GameOverMask.cpp" />
     <ClCompile Include="..\private\GurdianWeapon.cpp" />
     <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
@@ -384,6 +390,7 @@
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
+    <ClCompile Include="..\Private\StarBurst.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
@@ -407,6 +414,7 @@
     <ClCompile Include="..\private\TmbGurdianDead.cpp" />
     <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
+    <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

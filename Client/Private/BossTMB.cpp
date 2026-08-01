@@ -15,6 +15,7 @@
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 #include "DbgLineRender.h"
+#include "StarBurst.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -230,7 +231,12 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 void CBossTMB::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-
+	if (CGameInstance::Get().KeyDown(DIK_0)) {
+		CBoss_StarBurst::STARBURST_DESC desc{};
+		desc.pTargetHandle = m_TargetHandle;
+		desc.vStartPosition = { GetTransform().GetPosition() };
+		CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, "BossStarBurst", &desc);
+	}
 }
 
 void CBossTMB::LateUpdate(E::_float fTimeDelta)

@@ -19,7 +19,9 @@
 #include "SpellMeter.h"
 #include "HPBar.h"
 #include "MiniMap.h"
-
+#include "GameOverMask.h"
+#include "VideoObject.h"
+#include "Cursor.h"
 
 #include "TriggerCRW_SpawnStep.h"
 #include "TriggerCRW_StairStep.h"
@@ -341,6 +343,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::UnLoad()
 	LOG_MEMORY("start");
 
 	// 메인스레드 MAP해제
+	E::CGameInstance::Get().ClearAllRunningEffect();
 	E::CGameInstance::Get().ClearAllChunk();
 	E::CGameInstance::Get().GetNavMeshManager()->Clear();
 	
@@ -368,7 +371,8 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
-				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene"
+				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
 			};
 
 			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
@@ -423,6 +427,18 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_VideoObject", CVideoObject::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_Cursor", CCursor::Create())))
 		{
 			return false;
 		}
