@@ -87,25 +87,6 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			m_ePhase = PHASE::ATTACK;
 			if (!PlayRandomTargetAttack(*pPlayer))
 				RequestLocomotion(pStateMachine);
-		}
-		break;
-
-	case PHASE::ATTACK:
-	{
-		if (m_fAnimRatio >= CAST_END_RATIO) {
-			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
-			{
-				m_ePhase = PHASE::ATTACK_FAILED;
-				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
-				break;
-			}
-		
-			// 끌어 오기 시작
-			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
-
-			m_ePhase = PHASE::PULL;
-			pAnimator->Play_Anim(m_AccioCast_Animation, false, 0.2f);
-
 			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
 				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
 
@@ -129,8 +110,28 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 							m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
 						});
 				}
-			
+
 			}
+		}
+		break;
+
+	case PHASE::ATTACK:
+	{
+		if (m_fAnimRatio >= CAST_END_RATIO) {
+			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
+			{
+				m_ePhase = PHASE::ATTACK_FAILED;
+				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
+				break;
+			}
+		
+			// 끌어 오기 시작
+			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
+
+			m_ePhase = PHASE::PULL;
+			pAnimator->Play_Anim(m_AccioCast_Animation, false, 0.2f);
+
+			
 		}
 
 
@@ -231,8 +232,10 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	}
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO)
+		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO) {
+			CGameInstance::Get().StopEffect(m_iAccioEffectID);
 			RequestLocomotion(pStateMachine);
+		}
 		break;
 	}
 }

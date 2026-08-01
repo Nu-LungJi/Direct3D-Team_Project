@@ -187,7 +187,7 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 
 
-	CGameInstance::Get().PlayEffect("Boss_Appear", *m_pComTransform->GetWorldMatrix());
+	CGameInstance::Get().PlayEffect("PlayerAttackSpread", *m_pComTransform->GetWorldMatrix());
 
 	if (auto pGuridan = Cast<CTmbGurdian>(pObj))
 	{
@@ -367,6 +367,7 @@ void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCoun
 		XMStoreFloat3(&vStoredPosition, vPosition);
 		m_Splines.push_back(vStoredPosition);
 	}
+
 }
 
 E::UPtr<CPlayer_Magic_Bullet> CPlayer_Magic_Bullet::Create()
