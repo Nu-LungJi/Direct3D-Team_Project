@@ -213,4 +213,9 @@ namespace Engine
 		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
 	};
 
+	struct PX_QUERY_MULTIPLE_STATUS
+	{
+		_bool bTruncated{};
+	};
+
 }

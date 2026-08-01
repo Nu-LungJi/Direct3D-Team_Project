@@ -640,10 +640,17 @@ _bool CPhysXManager::RayCast(const PX_RAYCAST_DESC& tDesc, PX_RAYCAST_RESULT& ou
 	return true;
 }
 
-_bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::RayCastMultiple(
+	const PX_RAYCAST_DESC& tDesc,
+	std::vector<PX_RAYCAST_RESULT>& outVecResult,
+	uint32_t iMaxHit,
+	PX_QUERY_MULTIPLE_STATUS* pOutStatus) const
 {
 	outVecResult.clear();
-	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0)
+	if (pOutStatus)
+		*pOutStatus = {};
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0 ||
+		iMaxHit == std::numeric_limits<uint32_t>::max())
 		return false;
 
 	PxVec3 vDirection{};
@@ -651,8 +658,9 @@ _bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<P
 	if (!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
 		return false;
 
-	std::vector<PxRaycastHit> Hits(iMaxHit);
-	PxRaycastBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
+	std::vector<PxRaycastHit> Hits(iBufferCapacity);
+	PxRaycastBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	PxHitFlags tHitFlags{ PxHitFlag::eDEFAULT };
 	if (tDesc.bHitMeshBothSides)
@@ -667,9 +675,15 @@ _bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<P
 		tFilterData,
 		&tFilter);
 
-	outVecResult.reserve(tHitBuffer.getNbTouches());
-	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+	const uint32_t iReturnedHitCount =
+		std::min<uint32_t>(tHitBuffer.getNbTouches(), iMaxHit);
+	outVecResult.reserve(iReturnedHitCount);
+	for (uint32_t i = 0; i < iReturnedHitCount; ++i)
 		outVecResult.push_back(MakeLocationHitResult(*this, tHitBuffer.getTouch(i)));
+	if (pOutStatus)
+	{
+		pOutStatus->bTruncated = tHitBuffer.getNbTouches() > iMaxHit;
+	}
 
 	std::sort(outVecResult.begin(), outVecResult.end(), [](const PX_RAYCAST_RESULT& a, const PX_RAYCAST_RESULT& b)
 	{
@@ -703,10 +717,17 @@ _bool CPhysXManager::Sweep(const PX_SWEEP_DESC& tDesc, PX_SWEEP_RESULT& outResul
 	return true;
 }
 
-_bool CPhysXManager::SweepMultiple(const PX_SWEEP_DESC& tDesc, std::vector<PX_SWEEP_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::SweepMultiple(
+	const PX_SWEEP_DESC& tDesc,
+	std::vector<PX_SWEEP_RESULT>& outVecResult,
+	uint32_t iMaxHit,
+	PX_QUERY_MULTIPLE_STATUS* pOutStatus) const
 {
 	outVecResult.clear();
-	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0)
+	if (pOutStatus)
+		*pOutStatus = {};
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0 ||
+		iMaxHit == std::numeric_limits<uint32_t>::max())
 		return false;
 
 	PxGeometryHolder tGeometry{};
@@ -717,16 +738,23 @@ _bool CPhysXManager::SweepMultiple(const PX_SWEEP_DESC& tDesc, std::vector<PX_SW
 		!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
 		return false;
 
-	std::vector<PxSweepHit> Hits(iMaxHit);
-	PxSweepBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
+	std::vector<PxSweepHit> Hits(iBufferCapacity);
+	PxSweepBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	m_pScene->sweep(
 		tGeometry.any(), tPose, vDirection, tDesc.fMaxDistance, tHitBuffer,
 		PxHitFlag::eDEFAULT, tFilterData, &tFilter);
 
-	outVecResult.reserve(tHitBuffer.getNbTouches());
-	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+	const uint32_t iReturnedHitCount =
+		std::min<uint32_t>(tHitBuffer.getNbTouches(), iMaxHit);
+	outVecResult.reserve(iReturnedHitCount);
+	for (uint32_t i = 0; i < iReturnedHitCount; ++i)
 		outVecResult.push_back(MakeLocationHitResult(*this, tHitBuffer.getTouch(i)));
+	if (pOutStatus)
+	{
+		pOutStatus->bTruncated = tHitBuffer.getNbTouches() > iMaxHit;
+	}
 
 	std::sort(outVecResult.begin(), outVecResult.end(), [](const PX_SWEEP_RESULT& a, const PX_SWEEP_RESULT& b)
 	{
@@ -746,10 +774,17 @@ _bool CPhysXManager::Overlap(const PX_OVERLAP_DESC& tDesc, PX_OVERLAP_RESULT& ou
 	return true;
 }
 
-_bool CPhysXManager::OverlapMultiple(const PX_OVERLAP_DESC& tDesc, std::vector<PX_OVERLAP_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::OverlapMultiple(
+	const PX_OVERLAP_DESC& tDesc,
+	std::vector<PX_OVERLAP_RESULT>& outVecResult,
+	uint32_t iMaxHit,
+	PX_QUERY_MULTIPLE_STATUS* pOutStatus) const
 {
 	outVecResult.clear();
-	if (!m_pScene || iMaxHit == 0)
+	if (pOutStatus)
+		*pOutStatus = {};
+	if (!m_pScene || iMaxHit == 0 ||
+		iMaxHit == std::numeric_limits<uint32_t>::max())
 		return false;
 
 	PxGeometryHolder tGeometry{};
@@ -759,14 +794,21 @@ _bool CPhysXManager::OverlapMultiple(const PX_OVERLAP_DESC& tDesc, std::vector<P
 		!BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
 		return false;
 
-	std::vector<PxOverlapHit> Hits(iMaxHit);
-	PxOverlapBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
+	std::vector<PxOverlapHit> Hits(iBufferCapacity);
+	PxOverlapBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	m_pScene->overlap(tGeometry.any(), tPose, tHitBuffer, tFilterData, &tFilter);
 
-	outVecResult.reserve(tHitBuffer.getNbTouches());
-	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+	const uint32_t iReturnedHitCount =
+		std::min<uint32_t>(tHitBuffer.getNbTouches(), iMaxHit);
+	outVecResult.reserve(iReturnedHitCount);
+	for (uint32_t i = 0; i < iReturnedHitCount; ++i)
 		outVecResult.push_back(MakeOverlapResult(*this, tHitBuffer.getTouch(i)));
+	if (pOutStatus)
+	{
+		pOutStatus->bTruncated = tHitBuffer.getNbTouches() > iMaxHit;
+	}
 
 	return !outVecResult.empty();
 }
