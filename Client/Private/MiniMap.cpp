@@ -112,58 +112,6 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	XMStoreFloat3(&m_cameraLook, cameraLook);
 	XMStoreFloat3(&m_playerLook, playerLook);
 
-#if 0 // Disabled: old A/D rotation and W/S scrolling debug controls.
-
-	_bool bA = CGameInstance::Get().KeyPressing(DIK_A);
-	_bool bD = CGameInstance::Get().KeyPressing(DIK_D);
-	_bool bW = CGameInstance::Get().KeyPressing(DIK_W);
-	_bool bS = CGameInstance::Get().KeyPressing(DIK_S);
-	if (bA) {
-		//m_UIINFO.Rot -= 1.f;
-		//CalcUICoord();
-		_float rotationSpeed = XMConvertToRadians(-45.f);
-		_float angle = rotationSpeed * fTimeDelta; // 프레임 속도 보정
-	
-		// 3. 현재 m_cameraLook의 X, Z 평면 성분 추출
-		_float oldX = m_cameraLook.x;
-		_float oldZ = m_cameraLook.z;
-
-		m_cameraLook.x = oldX * cosf(angle) + oldZ * sinf(angle);
-		m_cameraLook.z = -oldX * sinf(angle) + oldZ * cosf(angle);
-	
-		// 5. 방향 벡터의 크기를 항상 1로 유지하기 위해 정규화(Normalize)
-		XMVECTOR vLook = XMLoadFloat3(&m_cameraLook);
-		vLook = XMVector3Normalize(vLook);
-		XMStoreFloat3(&m_cameraLook, vLook);
-	}
-	else if (bD)
-	{
-		//m_UIINFO.Rot += 1.f;
-		//CalcUICoord();
-		_float rotationSpeed = XMConvertToRadians(45.f);
-		_float angle = rotationSpeed * fTimeDelta; // 프레임 속도 보정
-	
-		// 3. 현재 m_cameraLook의 X, Z 평면 성분 추출
-		_float oldX = m_cameraLook.x;
-		_float oldZ = m_cameraLook.z;
-	
-		// 4. 2D 회전 변환 행렬 공식 적용
-		// 회전 방향이 반대라면 sin의 부호를 (+angle, -angle)로 서로 바꾸어 매칭하면 됩니다.
-		m_cameraLook.x = oldX * cosf(angle) + oldZ * sinf(angle);
-		m_cameraLook.z = -oldX * sinf(angle) + oldZ * cosf(angle);
-	
-		// 5. 방향 벡터의 크기를 항상 1로 유지하기 위해 정규화(Normalize)
-		XMVECTOR vLook = XMLoadFloat3(&m_cameraLook);
-		vLook = XMVector3Normalize(vLook);
-		XMStoreFloat3(&m_cameraLook, vLook);
-	}
-	else if (bW)
-		tMapOffset.y += 0.01f;
-	else if (bS)
-		tMapOffset.y -= 0.01f;
-
-#endif
-
 	CalcDir();
 }
 
