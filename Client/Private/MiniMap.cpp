@@ -87,8 +87,32 @@ void CMiniMap::Update(E::_float fTimeDelta)
 		m_pComTween->Tick(fTimeDelta);
 	}
 
-	E::CCameraObject* pCamera = E::CGameInstance::Get().GetCamera("PlayerCamera");
-	pCamera->GetProj();
+	auto* pCamera = Cast<CPlayerThirdPersonCamera>(
+		E::CGameInstance::Get().GetActiveCamera("PlayerCamera"));
+	if (!pCamera)
+		return;
+
+	auto* pPlayer = E::CGameInstance::Get().GetGameObjectByHandle(
+		pCamera->GetTargetHandle());
+	if (!pPlayer)
+		return;
+
+	XMVECTOR cameraLook = XMVectorSetY(
+		pCamera->GetTransform().GetState(STATE::LOOK), 0.f);
+	XMVECTOR playerLook = XMVectorSetY(
+		pPlayer->GetTransform().GetState(STATE::LOOK), 0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(cameraLook)) < 0.000001f ||
+		XMVectorGetX(XMVector3LengthSq(playerLook)) < 0.000001f)
+		return;
+
+	cameraLook = XMVector3Normalize(cameraLook);
+	playerLook = XMVector3Normalize(playerLook);
+
+	XMStoreFloat3(&m_cameraLook, cameraLook);
+	XMStoreFloat3(&m_playerLook, playerLook);
+
+#if 0 // Disabled: old A/D rotation and W/S scrolling debug controls.
 
 	_bool bA = CGameInstance::Get().KeyPressing(DIK_A);
 	_bool bD = CGameInstance::Get().KeyPressing(DIK_D);
@@ -137,6 +161,8 @@ void CMiniMap::Update(E::_float fTimeDelta)
 		tMapOffset.y += 0.01f;
 	else if (bS)
 		tMapOffset.y -= 0.01f;
+
+#endif
 
 	CalcDir();
 }
@@ -268,48 +294,50 @@ void CMiniMap::PlayEffect(uint32_t uiState)
 
 void CMiniMap::SearchPlayerIcon()
 {
-	if (!m_SearchPlayerIcon)
-	{
-		m_SearchPlayerIcon = true;
-		for (auto pHandle : m_vChildren)
-		{
-			if (nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(pHandle))
-				return;
+	if (m_SearchPlayerIcon)
+		return;
 
-			Engine::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(pHandle);
-			UI_INFO& pInfo = pUI->GetUIInfo();
-			if (pInfo.Restag == "TEX_UI_T_HUD_MiniMap_PlayerBlip")
-				m_hPlayerIcon = pHandle;
+	for (auto pHandle : m_vChildren)
+	{
+		Engine::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(pHandle);
+		if (!pUI)
+			continue;
+
+		const UI_INFO& pInfo = pUI->GetUIInfo();
+		if (pInfo.Restag == "TEX_UI_T_HUD_MiniMap_PlayerBlip")
+		{
+			m_hPlayerIcon = pHandle;
+			m_SearchPlayerIcon = true;
+			return;
 		}
 	}
 }
 
 void CMiniMap::SetPlayerIconRot(_float rot)
 {
-	if (nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(m_hPlayerIcon))
-		return;
-
 	Engine::CUIObject* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(m_hPlayerIcon);
+	if (!pUI)
+	{
+		m_SearchPlayerIcon = false;
+		return;
+	}
+
 	pUI->SetLocalRot(rot);
+	pUI->GetUIInfo().Rot = m_UIINFO.Rot + rot;
 	pUI->CalcUICoord();
 }
 
 void CMiniMap::CalcDir()
 {
-	_float2 camLook2D = _float2(m_cameraLook.x, m_cameraLook.z);
-	_float2 playerLook2D = _float2(m_playerLook.x, m_playerLook.z);
+	const _float cameraYaw = atan2f(m_cameraLook.x, m_cameraLook.z);
+	const _float playerYaw = atan2f(m_playerLook.x, m_playerLook.z);
 
-	XMVECTOR vCam = XMVector3Normalize(XMVectorSet(camLook2D.x, 0.f, camLook2D.y, 0.f));
-	XMVECTOR vPlayer = XMVector3Normalize(XMVectorSet(playerLook2D.x, 0.f, playerLook2D.y, 0.f));
-
-	_float camRadian = atan2f(XMVectorGetZ(vCam), XMVectorGetX(vCam)) - XM_PI / 2;
-	_float playerRadian = atan2f(XMVectorGetZ(vPlayer), XMVectorGetX(vPlayer)) - XM_PI / 2;
-
-	m_UIINFO.Rot = XMConvertToDegrees(camRadian);
+	// +Z is north. Rotate the minimap opposite to the camera heading.
+	m_UIINFO.Rot = XMConvertToDegrees(-cameraYaw);
 	CalcUICoord();
 
-	_float playerIconRotDegree = XMConvertToDegrees(playerRadian);
-	SetPlayerIconRot(playerIconRotDegree);
+	// CUIObject combines child rotation as parent Rot + child LocalRot.
+	SetPlayerIconRot(XMConvertToDegrees(playerYaw));
 }
 
 E::UPtr<CMiniMap> CMiniMap::Create()
