@@ -32,6 +32,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_RepairoSkill_State.h"
+#include "Monster.h"
 
 #ifdef _DEBUG
 namespace
@@ -631,6 +632,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			const auto& result = results.front();
 			m_hAutoTarget = result.pGameObject->GetHandle();
 		}
+		else
+		{
+			m_hAutoTarget = CHandle{};
+		}
 	}
 	else {
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
@@ -685,6 +690,44 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 
+
+	// 타겟 유무 판단은 Player가 담당하고, UI 생성/삭제는 UIController의
+	// 몬스터 HP 전용 함수를 사용한다.
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		auto* pTargetMonster =
+			CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+
+		if (nullptr != pTargetMonster)
+		{
+			const CHandle hCurrentTarget = pTargetMonster->GetHandle();
+			const _bool bTargetChanged =
+				!m_bMonsterHPVisible || !(m_hMonsterHPTarget == hCurrentTarget);
+
+			if (bTargetChanged)
+			{
+				if (m_bMonsterHPVisible)
+					pUIController->DeleteMonsterHP();
+
+				pUIController->CreateMonsterHP();
+				m_hMonsterHPTarget = hCurrentTarget;
+				m_bMonsterHPVisible = true;
+			}
+
+			// 공격으로 변한 현재 HP를 활성 타겟 UI에 계속 동기화한다.
+			pUIController->TargetMonsterHP(hCurrentTarget);
+		}
+		else
+		{
+			if (m_bMonsterHPVisible)
+			{
+				pUIController->DeleteMonsterHP();
+				m_hMonsterHPTarget = CHandle{};
+				m_bMonsterHPVisible = false;
+			}
+		}
+	}
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
 	{

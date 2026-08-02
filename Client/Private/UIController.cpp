@@ -6,6 +6,7 @@
 #include "TextBox.h"
 #include "Button.h"
 #include "Cursor.h"
+#include "Monster.h"
 
 NS_USING(Client)
 
@@ -471,12 +472,35 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
+	if (!m_MonsterHP.has_value())
+		return;
 
+	auto* pMonster =
+		E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(monsterHandle);
+	auto* pHPBar =
+		E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*m_MonsterHP);
+
+	if (nullptr == pMonster || nullptr == pHPBar)
+		return;
+
+	pHPBar->SetMaxFill(static_cast<_float>(pMonster->Get_MaxHp()));
+	pHPBar->SetCurrentFill(static_cast<_float>(pMonster->Get_CurrentHp()));
 }
 
 void CUIController::CreateMonsterHP()
 {
 	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
+}
+
+void CUIController::DeleteMonsterHP()
+{
+	if(m_MonsterHP != std::nullopt && E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	{
+		const CHandle hMonsterHP = *m_MonsterHP;
+		m_bMonsterHP = false;
+		m_MonsterHP = std::nullopt;
+		PlayMonsterHPDelete(hMonsterHP);
+	}
 }
 
 void CUIController::AddMonsterHP(_float fill)
@@ -604,10 +628,8 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 			pBtn->CalcUICoord();
-		}, [pHandle, this]() {
+		}, [pHandle]() {
 			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			this->SetMonsterHPBool(true);
-			this->SetMonsterHPNull();
 			}, EEaseType::EaseOutQuad);
 }
 

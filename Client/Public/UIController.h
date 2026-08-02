@@ -114,11 +114,14 @@ private:
 	CUIObject* SafeGetOBJ(CHandle pHandle);
 
 	/******몬스터 hp********/
+	public:
 	void CreateMonsterHP();
+	void DeleteMonsterHP();
 	void SetMonsterHPBool(_bool isHP) { m_bMonsterHP = isHP; }
 	void SetMonsterHPNull() { m_MonsterHP = std::nullopt; }
 
 	/**********모션************/
+	private:
 	void PlayScaleAlphaDownDelete(CHandle pHandle);
 	void PlayFadeOutDelete(CHandle pHandle);
 	void PlayFadeOutOnly(CHandle pHandle);

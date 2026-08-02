@@ -208,6 +208,8 @@ private:
 
 private:
 	CHandle m_hAutoTarget;
+	CHandle m_hMonsterHPTarget;
+	_bool m_bMonsterHPVisible{ false };
 	StringID m_LevelTag;
 private:
 	CHandle m_UIHandle;
