@@ -42,8 +42,9 @@ HRESULT CComBeHavior::Initialize(void* pArg)
 	m_Root = std::move(ToUPtr(proot));
     m_NodeMap[m_iNodeID++] = m_Root.get();
 	
-	if (!pDesc->LoadPath.empty())
-		Load_Data(pDesc->LoadPath);
+	if (!pDesc->resBeHaviorMajor.empty() && !pDesc->resBeHaviorMinor.empty())
+		Load_DataByResource(pDesc->resBeHaviorMajor, pDesc->resBeHaviorMinor);
+
     return S_OK;
 }
 void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
@@ -132,6 +133,24 @@ HRESULT CComBeHavior::Load_Data(const _string& filePath)
 	++m_iNodeID;
 
     return S_OK;
+}
+HRESULT CComBeHavior::Load_DataByResource(const _string& restagMajor, const _string& restagMinor)
+{
+
+
+	auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>(restagMajor, restagMinor);
+	if (nullptr == pRes)
+	{ 
+		MSG_BOX("Load Failed Json To BeHavior");
+		return E_FAIL;
+	}
+	m_Root->Load_json(pRes->Get_Json());
+
+	for (auto& iter : *m_Root->Get_Nodes())
+		Set_NodeInfo(iter.get());
+	++m_iNodeID;
+
+	return S_OK;
 }
 CBTRoot* CComBeHavior::Find_Node(const uint32_t& iNode)
 {

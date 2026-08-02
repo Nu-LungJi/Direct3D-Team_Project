@@ -144,15 +144,20 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstRatio = Randf(0.5f, 0.7f);
-		m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
-		m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
-		m_waveCb.g_fTransitionRatio = Randf(0.4f, 1.6f);
-		m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
-		m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
-		m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
-		m_waveCb.g_vFlowDirection = _float3(Randf(-1, 1), Randf(-1, 1), Randf(-1, 1));
-	}
+		m_waveCb.g_fBurstSpeed = 1.f;
+		m_waveCb.g_fFlowSpeed = 2.5f;
+		m_waveCb.g_fWaveAmplitude = 2.f;
+		m_waveCb.g_fWaveFrequency = 0.5f;
+		m_waveCb.g_fWaveSpeed = 1.5f;
+		//m_waveCb.g_fBurstRatio = Randf(0.5f, 0.7f);
+		//m_waveCb.g_fBurstSpeed = Randf(0.7f, 1.f);
+		//m_waveCb.g_fFlowSpeed = Randf(1.f, 3.f);
+		//m_waveCb.g_fTransitionRatio = Randf(0.4f, 1.6f);
+		//m_waveCb.g_fWaveAmplitude = Randf(0.f, 3.f);
+		//m_waveCb.g_fWaveFrequency = Randf(0.f, 3.f);
+		//m_waveCb.g_fWaveSpeed = Randf(0.5f, 1.f);
+		//m_waveCb.g_vFlowDirection = _float3(Randf(-1, 1), Randf(-1, 1), Randf(-1, 1));
+	}		
     return S_OK;
 
 }
@@ -189,9 +194,11 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		{
 			if (p.loop)
 			{
-				p.life = 0.f;                       // 지난 시간 리셋
-				p.vPosition = p.originalPosition;    // 원래 위치로 복귀
-				continue;                            // 리셋된 프레임은 렌더링 스킵
+				p.life = 0.f;
+				p.vPosition = p.originalPosition;
+				p.vVelocity = p.originalVelocity;
+				p.fGravityVelocity = 0.f;
+				continue;
 			}
 			else
 			{
@@ -201,8 +208,8 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		}
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
 
-		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 		UpdateBehavior(p, fTimeDelta);
+		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 
 		if (m_vecInstancedData.size() >= m_iNumElements)
 			continue;
@@ -254,7 +261,6 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
 			matBillboardRot = matBillboardRot *XMMatrixRotationAxis(camForward,  p.rotation.w);
 
-			matBillboardRot = matBillboardRot * XMMatrixRotationAxis(camForward, p.rotation.w);
 
 			matWorld = matScale * matBillboardRot * matTrans;
 		}
@@ -291,94 +297,126 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 }
 void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 {
-
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_DISTORTION) != 0) {
 		int a = 0;
 	}
-	if ((p.iBehaviorType & CParticle::BEHAVIOR_GRAVITY) != 0) {
-		const float kGravity = -9.8f;
-
-		p.vVelocity.y += kGravity * fTimeDelta;
-
-		// 기존 위치에 이동량을 더해야 함
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-	}
-
-	// UpdateBehavior - waveCb / waveParticleIndex(클래스 멤버) 대신 p의 값을 사용, 증가 로직 제거
-	if ((p.iBehaviorType & BEHAVIOR_CIRCLE_TO_WAVE) != 0)
+	const bool hasCircleToWave = (p.iBehaviorType & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
+	const bool hasGravity = (p.iBehaviorType & BEHAVIOR_GRAVITY) != 0;
+	if (hasCircleToWave)
 	{
-		uint32_t particleIndex = (uint32_t)(&p - m_Particles.data());
-
-		float rnd1 = Hash01(particleIndex);
-		float rnd2 = Hash01(particleIndex ^ 0x9E3779B9u);
-		float angle = rnd1 * XM_2PI;
-		float phaseOffset = rnd2 * XM_2PI;
-
-		const auto& waveCb = m_waveCb; // 파티클 고유값, 매 프레임 그대로 유지
-
-		auto Saturate = [](float v) { return std::max(0.0f, std::min(1.0f, v)); };
-		auto SmoothStep = [](float edge0, float edge1, float x) -> float
-			{
-				float denom = edge1 - edge0;
-				float t = (denom > 1e-6f) ? (x - edge0) / denom : 0.0f;
-				t = std::max(0.0f, std::min(1.0f, t));
-				return t * t * (3.0f - 2.0f * t);
+		const uint32_t particleIndex = static_cast<uint32_t>(&p - m_Particles.data());
+		const uint32_t seed = p.iSpawnSeed ^ (particleIndex * 0x9E3779B9u);
+		const float randomAngle = Hash01(seed ^ 0xA511E9B3u) * XM_2PI;
+		const float random1 = Hash01(seed ^ 0x63D83595u);
+		const float random2 = Hash01(seed ^ 0xB5297A4Du);
+		const float random3 = Hash01(seed ^ 0x68E31DA4u);
+		const float ageRatio = std::clamp(p.life / std::max(p.fMaxLife, 0.0001f), 0.f, 1.f);
+		auto SmoothStep = [](float edge0, float edge1, float value) {
+			float t = std::clamp((value - edge0) / std::max(edge1 - edge0, 0.0001f), 0.f, 1.f);
+			return t * t * (3.f - 2.f * t);
 			};
-
-		float ageRatio = Saturate(p.life / p.fMaxLife);
-
-		float burstT = Saturate(ageRatio / std::max(waveCb.g_fBurstRatio, 0.0001f));
-		float burstProfile = sinf(XM_PI * burstT);
-
-		float radialX = cosf(angle);
-		float radialY = sinf(angle);
-		float burstVelX = radialX * waveCb.g_fBurstSpeed * burstProfile;
-		float burstVelY = radialY * waveCb.g_fBurstSpeed * burstProfile;
-
-		float flowDirX = radialX;
-		float flowDirY = radialY;
-		float perpX = -flowDirY;
-		float perpY = flowDirX;
-
-		float elapsed = p.life;
-		float wavePhase = waveCb.g_fWaveSpeed * elapsed + phaseOffset
-			+ (p.vPosition.x * flowDirX + p.vPosition.y * flowDirY) * waveCb.g_fWaveFrequency;
-		float waveBob = sinf(wavePhase);
-
-		float waveVelX = flowDirX * waveCb.g_fFlowSpeed + perpX * (waveBob * waveCb.g_fWaveAmplitude);
-		float waveVelY = flowDirY * waveCb.g_fFlowSpeed + perpY * (waveBob * waveCb.g_fWaveAmplitude);
-
-		float blend = SmoothStep(waveCb.g_fBurstRatio - waveCb.g_fTransitionRatio * 0.5f,
-			waveCb.g_fBurstRatio + waveCb.g_fTransitionRatio * 0.5f,
-			ageRatio);
-
-		p.vVelocity.x = burstVelX + (waveVelX - burstVelX) * blend;
-		p.vVelocity.y = burstVelY + (waveVelY - burstVelY) * blend;
-		p.vVelocity.z = Randf(-1.f,1.f);
-
-		XMVECTOR vPos = XMLoadFloat3(&p.vPosition);
-		XMVECTOR vVel = XMLoadFloat3(&p.vVelocity);
-		vPos = XMVectorAdd(vPos, XMVectorScale(vVel, fTimeDelta));
-		XMStoreFloat3(&p.vPosition, vPos);
-		// waveParticleIndex++;  <- 제거: 더 이상 필요 없음, p.iParticleID로 대체
+		const float ringHoldRatio = 0.45f;
+		const float chaosStartRatio = 0.40f;
+		const float chaosEndRatio = 0.8f;
+		const float chaosT = SmoothStep(chaosStartRatio, chaosEndRatio, ageRatio);
+		XMVECTOR planeRight = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+		XMVECTOR planeUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		XMVECTOR planeNormal = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+		if (auto camera = CGameInstance::Get().GetActiveCamera())
+		{
+			const XMMATRIX cameraWorld = XMMatrixInverse(nullptr, camera->GetView());
+			planeRight = XMVector3Normalize(cameraWorld.r[0]);
+			planeUp = XMVector3Normalize(cameraWorld.r[1]);
+			planeNormal = XMVector3Normalize(cameraWorld.r[2]);
+		}
+		const float radialX = cosf(randomAngle);
+		const float radialY = sinf(randomAngle);
+		const XMVECTOR radialDirection = XMVector3Normalize(planeRight * radialX + planeUp * radialY);
+		const XMVECTOR tangentDirection = XMVector3Normalize(planeRight * -radialY + planeUp * radialX);
+		const float ringSpeed = m_waveCb.g_fBurstSpeed;
+		const float ringFade = 1.f - SmoothStep(ringHoldRatio, 0.75f, ageRatio);
+		const float radialSpeed = ringSpeed * std::lerp(1.f, 0.25f, chaosT);
+		const float phase = random1 * XM_2PI + p.life * m_waveCb.g_fWaveSpeed;
+		const XMVECTOR position = XMLoadFloat3(&p.vPosition);
+		const float planePositionX = XMVectorGetX(XMVector3Dot(position, planeRight));
+		const float planePositionY = XMVectorGetX(XMVector3Dot(position, planeUp));
+		const float turbulence1 = sinf(phase + planePositionX * m_waveCb.g_fWaveFrequency);
+		const float turbulence2 = cosf(phase * 1.37f + planePositionY * m_waveCb.g_fWaveFrequency);
+		const float noiseSpeed = m_waveCb.g_fWaveAmplitude;
+		const XMVECTOR turbulenceVelocity = planeRight * (turbulence1 * noiseSpeed) + planeUp * (turbulence2 * noiseSpeed);
+		const XMVECTOR ringVelocity = radialDirection * (radialSpeed * ringFade);
+		XMVECTOR chaosVelocity = XMVectorZero();
+		float depthVelocity = 0.f;
+		switch (p.iPatternType)
+		{
+		case 0:
+		{
+			const float windStrength = m_waveCb.g_fFlowSpeed * (0.7f + random2 * 0.6f);
+			chaosVelocity = planeRight * windStrength + planeUp * (windStrength * 0.2f) + turbulenceVelocity * 0.4f;
+			depthVelocity = (random3 * 2.f - 1.f) * noiseSpeed * 0.3f;
+			break;
+		}
+		case 1:
+		{
+			const float windStrength = m_waveCb.g_fFlowSpeed * (0.6f + random2 * 0.8f);
+			chaosVelocity = planeRight * (-windStrength * 0.8f) + planeUp * (-windStrength * 0.35f) + turbulenceVelocity * 0.6f;
+			depthVelocity = (random3 * 2.f - 1.f) * noiseSpeed * 0.5f;
+			break;
+		}
+		case 2:
+		{
+			const float vortexSpeed = m_waveCb.g_fFlowSpeed * (0.7f + random2 * 0.6f);
+			chaosVelocity = tangentDirection * vortexSpeed + turbulenceVelocity * 0.4f;
+			depthVelocity = (random3 * 2.f - 1.f) * noiseSpeed * 0.4f;
+			break;
+		}
+		case 3:
+		default:
+		{
+			const float scatterAngle = random2 * XM_2PI;
+			const XMVECTOR scatterDirection = planeRight * cosf(scatterAngle) + planeUp * sinf(scatterAngle);
+			const float scatterSpeed = m_waveCb.g_fFlowSpeed * (0.5f + random3);
+			chaosVelocity = scatterDirection * scatterSpeed + turbulenceVelocity;
+			depthVelocity = (random1 * 2.f - 1.f) * noiseSpeed;
+			break;
+		}
+		}
+		const XMVECTOR finalVelocity = ringVelocity + chaosVelocity * chaosT + planeNormal * (depthVelocity * chaosT);
+		XMStoreFloat3(&p.vVelocity, finalVelocity);
 	}
-
+	if (hasGravity)
+	{
+		constexpr float gravity = -9.8f;
+		if (hasCircleToWave)
+		{
+			p.fGravityVelocity += gravity * fTimeDelta;
+			p.vVelocity.y += p.fGravityVelocity;
+		}
+		else
+		{
+			p.vVelocity.y += gravity * fTimeDelta;
+		}
+	}
+	
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKE) != 0) {
 		MakeSmoke(p, fTimeDelta);
-	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEJUMP) != 0) {
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEJUMP) != 0) {
 		JumpSmoke(p, fTimeDelta);
-	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGV) != 0) {
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGV) != 0) {
 		GVBurstSmoke(p, fTimeDelta);
-	}if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGW) != 0) {
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_SMOKEGW) != 0) {
 		GWWaveSmoke(p, fTimeDelta);
-	}if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
 		Lightning(p, fTimeDelta);
-	}if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
 		ExtraLightning(p, fTimeDelta);
-	}if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
 		KeepRotate(p, fTimeDelta);
 	}
 }
@@ -539,21 +577,20 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 {
 	if (pSpawnData == nullptr || count == 0)
 		return E_FAIL;
-
 	uint32_t iSpawned = 0;
-
-
+	const uint32_t spawnSeed = m_iSpawnSeed++;
+	const uint32_t spawnPattern = spawnSeed % 4;
 	for (uint32_t i = 0; i < m_Particles.size() && iSpawned < count; ++i)
 	{
 		if (m_Particles[i].bAlive)
 			continue;
-
 		const auto& src = pSpawnData[iSpawned];
 		m_Particles[i].vPosition = src.position;
 		m_Particles[i].vVelocity = src.velocity;
 		m_Particles[i].originalPosition = src.originalPosition;
+		m_Particles[i].originalVelocity = src.originalVelocity;
 		m_Particles[i].life = 0.f;
-		m_Particles[i].fMaxLife = src.life; 
+		m_Particles[i].fMaxLife = src.life;
 		m_Particles[i].bAlive = true;
 		m_Particles[i].fSize = src.fSize;
 		m_Particles[i].fStartSize = src.fSize;
@@ -570,11 +607,12 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].fStopSizeTime = src.fStopSizeTime;
 		m_Particles[i].roationAxis = src.rotationAxis;
 		m_Particles[i].fRotationSpeed = src.fRotationSpeed;
-
+		m_Particles[i].fGravityVelocity = 0.f;
+		m_Particles[i].iPatternType = spawnPattern;
+		m_Particles[i].iSpawnSeed = spawnSeed;
 		++iSpawned;
 	}
-
-	return (iSpawned == count) ? S_OK : E_FAIL;
+	return iSpawned == count ? S_OK : E_FAIL;
 }
 
 HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

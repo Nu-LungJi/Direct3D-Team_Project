@@ -151,29 +151,8 @@ PS_OUT PSMain(VS_OUT In)
     float4 vFinalColor = texColor * In.vColor;
     clip(vFinalColor.a - 0.02f);
 
-    float3 WorldNormal = Compute_WorldNormal(
-    g_NormalTexture,
-    In.vTexcoord,
-    In.vNormal,
-    In.vTangent);
-    float3 Albedo = pow(vFinalColor.rgb, 2.2f);
 
-    float3 LightAccumulation = 0;
-
-[unroll(MAX_LIGHT_COUNT)]
-    for (int i = 0; i < LightCount; ++i)
-    {
-        float3 L, Radiance;
-
-        if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
-            continue;
-
-        float NDL = saturate(dot(WorldNormal, L));
-
-        LightAccumulation += Albedo * Radiance * NDL;
-    }
-
-    float3 FinalColor =Albedo +LightAccumulation +lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 FinalColor = vFinalColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
 
     Out.vDiffuse = float4(FinalColor, vFinalColor.a);
     return Out;

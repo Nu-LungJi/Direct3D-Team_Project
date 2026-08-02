@@ -3,6 +3,7 @@
 #include "Engine_Defines.h"
 #include "BinSerializeFormat.h"
 #include "ISerializable.h"
+#include "ResPathPlayback.h"
 #include "SerializeManager.h"
 
 #include <algorithm>
@@ -356,6 +357,128 @@ namespace Detail
 		return data;
 	}
 
+	inline PATH_PLAYBACK_DATA MakePathPlaybackData()
+	{
+		PATH_PLAYBACK_DATA data{};
+
+		PATH_PLAYBACK_CLIP localClip{};
+		localClip.sClipID = "LocalLaunch";
+		localClip.eCoordinateSpace =
+			PATH_PLAYBACK_COORDINATE_SPACE::START_LOCAL;
+		localClip.eRotationMode =
+			PATH_PLAYBACK_ROTATION_MODE::RECORDED;
+		localClip.ePlayMode = PATH_PLAYBACK_MODE::ONCE;
+		localClip.eFinishBehavior =
+			PATH_PLAYBACK_FINISH_BEHAVIOR::HOLD_LAST;
+
+		PATH_PLAYBACK_KEYFRAME localStart{};
+		localStart.fTime = 0.f;
+		localStart.vPosition = { 0.f, 0.f, 0.f };
+		localStart.sEventTag = "LaunchStart";
+
+		PATH_PLAYBACK_KEYFRAME localMiddle{};
+		localMiddle.fTime = 0.5f;
+		localMiddle.vPosition = { 0.f, 1.5f, 2.f };
+		localMiddle.vRotation = { 0.f, 1.f, 0.f, 0.f };
+		localMiddle.ePositionInterpolation =
+			PATH_PLAYBACK_INTERPOLATION::CATMULL_ROM;
+		localMiddle.eEasing = PATH_PLAYBACK_EASING::EASE_IN_OUT;
+		localMiddle.sEventTag = "LaunchMiddle";
+
+		PATH_PLAYBACK_KEYFRAME localEnd{};
+		localEnd.fTime = 1.25f;
+		localEnd.vPosition = { 0.f, 0.25f, 5.f };
+		localEnd.eEasing = PATH_PLAYBACK_EASING::EASE_OUT;
+		localEnd.sEventTag = "LaunchEnd";
+
+		localClip.Keyframes = {
+			localStart,
+			localMiddle,
+			localEnd
+		};
+
+		PATH_PLAYBACK_CLIP worldClip{};
+		worldClip.sClipID = "WorldLoop";
+		worldClip.eCoordinateSpace =
+			PATH_PLAYBACK_COORDINATE_SPACE::WORLD;
+		worldClip.eRotationMode =
+			PATH_PLAYBACK_ROTATION_MODE::FACE_DIRECTION;
+		worldClip.ePlayMode = PATH_PLAYBACK_MODE::LOOP;
+		worldClip.eFinishBehavior =
+			PATH_PLAYBACK_FINISH_BEHAVIOR::RESET_TO_START;
+
+		PATH_PLAYBACK_KEYFRAME worldStart{};
+		worldStart.fTime = 0.f;
+		worldStart.vPosition = { -3.f, 2.f, 7.f };
+		worldStart.eEasing = PATH_PLAYBACK_EASING::EASE_IN;
+
+		PATH_PLAYBACK_KEYFRAME worldEnd{};
+		worldEnd.fTime = 2.f;
+		worldEnd.vPosition = { 4.f, 3.f, -2.f };
+		worldEnd.sEventTag = "WorldLoopEnd";
+
+		worldClip.Keyframes = { worldStart, worldEnd };
+		data.Clips = { localClip, worldClip };
+		return data;
+	}
+
+	inline bool IsSamePathPlaybackData(
+		const PATH_PLAYBACK_DATA& left,
+		const PATH_PLAYBACK_DATA& right)
+	{
+		if (left.iVersion != right.iVersion ||
+			left.Clips.size() != right.Clips.size())
+		{
+			return false;
+		}
+
+		for (size_t iClip = 0; iClip < left.Clips.size(); ++iClip)
+		{
+			const auto& leftClip = left.Clips[iClip];
+			const auto& rightClip = right.Clips[iClip];
+			if (leftClip.sClipID != rightClip.sClipID ||
+				leftClip.eCoordinateSpace != rightClip.eCoordinateSpace ||
+				leftClip.eRotationMode != rightClip.eRotationMode ||
+				leftClip.ePlayMode != rightClip.ePlayMode ||
+				leftClip.eFinishBehavior != rightClip.eFinishBehavior ||
+				leftClip.Keyframes.size() != rightClip.Keyframes.size())
+			{
+				return false;
+			}
+
+			for (size_t iKeyframe = 0;
+				iKeyframe < leftClip.Keyframes.size(); ++iKeyframe)
+			{
+				const auto& leftKeyframe = leftClip.Keyframes[iKeyframe];
+				const auto& rightKeyframe = rightClip.Keyframes[iKeyframe];
+				if (leftKeyframe.fTime != rightKeyframe.fTime ||
+					leftKeyframe.vPosition.x != rightKeyframe.vPosition.x ||
+					leftKeyframe.vPosition.y != rightKeyframe.vPosition.y ||
+					leftKeyframe.vPosition.z != rightKeyframe.vPosition.z ||
+					leftKeyframe.vRotation.x != rightKeyframe.vRotation.x ||
+					leftKeyframe.vRotation.y != rightKeyframe.vRotation.y ||
+					leftKeyframe.vRotation.z != rightKeyframe.vRotation.z ||
+					leftKeyframe.vRotation.w != rightKeyframe.vRotation.w ||
+					leftKeyframe.ePositionInterpolation !=
+						rightKeyframe.ePositionInterpolation ||
+					leftKeyframe.eEasing != rightKeyframe.eEasing ||
+					leftKeyframe.sEventTag != rightKeyframe.sEventTag)
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	inline bool ValidatePathPlaybackData(PATH_PLAYBACK_DATA data)
+	{
+		std::vector<std::string> errors{};
+		return CResPathPlayback::ValidateAndNormalizeData(data, &errors) &&
+			errors.empty();
+	}
+
 	inline bool WriteTextFile(const std::filesystem::path& path, const std::string& text)
 	{
 		std::ofstream output{ path, std::ios::binary | std::ios::trunc };
@@ -525,6 +648,7 @@ inline REGRESSION_REPORT RunSerializationRegressionTests(CSerializeManager& mana
 
 	const std::filesystem::path root = tempDirectory.GetPath();
 	const REGRESSION_DATA populated = MakePopulatedData();
+	const PATH_PLAYBACK_DATA pathPlaybackData = MakePathPlaybackData();
 
 	runner.Run("JSON round trip with nested containers", [&]
 	{
@@ -542,6 +666,101 @@ inline REGRESSION_REPORT RunSerializationRegressionTests(CSerializeManager& mana
 		return SUCCEEDED(manager.BinSerialize(path.string(), populated, ROOT_NAME, false)) &&
 			SUCCEEDED(manager.BinDeSerialize(path.string(), restored, ROOT_NAME, false)) &&
 			restored == populated;
+	});
+
+	runner.Run("PathPlayback JSON round trip and resource validation", [&]
+	{
+		const auto path = root / "path_playback_round_trip.json";
+		PATH_PLAYBACK_DATA restored{};
+		if (FAILED(manager.JsonSerialize(
+				path.string(), pathPlaybackData, "PathPlayback", false)) ||
+			FAILED(manager.JsonDeSerialize(
+				path.string(), restored, "PathPlayback", false)))
+		{
+			return false;
+		}
+
+		auto resource = CResPathPlayback::CreateFromData(restored);
+		return resource &&
+			IsSamePathPlaybackData(resource->GetData(), pathPlaybackData) &&
+			resource->FindClip("LocalLaunch") != nullptr &&
+			resource->FindClip("WorldLoop") != nullptr;
+	});
+
+	runner.Run("PathPlayback Binary round trip and resource validation", [&]
+	{
+		const auto path = root / "path_playback_round_trip.bin";
+		PATH_PLAYBACK_DATA restored{};
+		if (FAILED(manager.BinSerialize(
+				path.string(), pathPlaybackData, "PathPlayback", false)) ||
+			FAILED(manager.BinDeSerialize(
+				path.string(), restored, "PathPlayback", false)))
+		{
+			return false;
+		}
+
+		auto resource = CResPathPlayback::CreateFromData(restored);
+		return resource &&
+			IsSamePathPlaybackData(resource->GetData(), pathPlaybackData) &&
+			resource->FindClip("LocalLaunch") != nullptr &&
+			resource->FindClip("WorldLoop") != nullptr;
+	});
+
+	runner.Run("PathPlayback validation sorts and normalizes data", [&]
+	{
+		PATH_PLAYBACK_DATA data = pathPlaybackData;
+		auto& keyframes = data.Clips.front().Keyframes;
+		std::reverse(keyframes.begin(), keyframes.end());
+		keyframes.back().vRotation = { 0.f, 0.f, 0.f, 2.f };
+
+		std::vector<std::string> errors{};
+		if (!CResPathPlayback::ValidateAndNormalizeData(data, &errors) ||
+			!errors.empty())
+		{
+			return false;
+		}
+
+		const auto& normalized = data.Clips.front().Keyframes;
+		return normalized[0].fTime < normalized[1].fTime &&
+			normalized[1].fTime < normalized[2].fTime &&
+			std::abs(normalized[0].vRotation.w - 1.f) <= 0.0001f;
+	});
+
+	runner.Run("PathPlayback rejects an unsupported data version", [&]
+	{
+		PATH_PLAYBACK_DATA data = pathPlaybackData;
+		data.iVersion = PATH_PLAYBACK_DATA_VERSION + 1;
+		return !ValidatePathPlaybackData(std::move(data));
+	});
+
+	runner.Run("PathPlayback rejects duplicated clip IDs", [&]
+	{
+		PATH_PLAYBACK_DATA data = pathPlaybackData;
+		data.Clips.push_back(data.Clips.front());
+		return !ValidatePathPlaybackData(std::move(data));
+	});
+
+	runner.Run("PathPlayback rejects overlapping keyframe times", [&]
+	{
+		PATH_PLAYBACK_DATA data = pathPlaybackData;
+		data.Clips.front().Keyframes[1].fTime =
+			data.Clips.front().Keyframes[0].fTime;
+		return !ValidatePathPlaybackData(std::move(data));
+	});
+
+	runner.Run("PathPlayback rejects a zero-length quaternion", [&]
+	{
+		PATH_PLAYBACK_DATA data = pathPlaybackData;
+		data.Clips.front().Keyframes.front().vRotation = {};
+		return !ValidatePathPlaybackData(std::move(data));
+	});
+
+	runner.Run("PathPlayback rejects invalid enum values", [&]
+	{
+		PATH_PLAYBACK_DATA data = pathPlaybackData;
+		data.Clips.front().ePlayMode =
+			static_cast<PATH_PLAYBACK_MODE>(0xff);
+		return !ValidatePathPlaybackData(std::move(data));
 	});
 
 	runner.Run("JSON migrates V1 data into the current schema", [&]

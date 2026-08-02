@@ -4,13 +4,11 @@
 #define LIGHT_DIRECTIONAL   0
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
-
 cbuffer CB_TIMEACCUMULATION : register(b11)
 {
 	float g_fAccumulationTime;
 	float3 _pad;
 };
-
 struct VS_IN
 {
 	float3 vPosition : POSITION;
@@ -114,7 +112,7 @@ PS_OUT PSMain(VS_OUT In)
 
 	clip(AlbedoTex.a - 0.05f);
 
-	float ratio = 1.f - saturate(In.life / max(In.maxLife, 0.0001f));
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float3 Albedo = pow(max(AlbedoTex.rgb, 0.f), 2.2f);
 
 	float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
@@ -176,7 +174,7 @@ PS_OUT PSMain(VS_OUT In)
 PS_OUT PS_SMOKE_MAIN(VS_OUT In)
 {
 	PS_OUT Out;
-	float2 noiseUV = float2(In.vTexcoord.x * 5.f , In.vTexcoord.y * 0.12f);
+	float2 noiseUV = float2(In.vTexcoord.x * 5.f, In.vTexcoord.y * 0.12f);
 	noiseUV.y += In.life * 0.05f;
 		
 	float2 warpUV = float2(In.vTexcoord.x * 3.f, In.vTexcoord.y * 0.35f);
@@ -186,22 +184,125 @@ PS_OUT PS_SMOKE_MAIN(VS_OUT In)
 	float noise = NoiseMap.Sample(LinearWrap, noiseUV + warp * 0.015f).r;
 
 	
-		//留덉뒪?щ뒗 ?쎌????쇰쭏??蹂댁뿬二쇰뒗吏?먮??쒓쾬	
+
 	float heightMask = smoothstep(0.35f, 1.f, In.vTexcoord.y + (noise - 0.5f) * 0.45f);
 	float softnoise = smoothstep(0.15f, 0.85f, noise);
 	heightMask *= 1.f - smoothstep(0.85f, 1.f, In.vTexcoord.y);
 	
 	float t = saturate(In.life / In.maxLife);
-	float lifeFade = smoothstep(0.f, 0.1f, t)*
+	float lifeFade = smoothstep(0.f, 0.1f, t) *
 	(1.f - smoothstep(0.5f, 1.f, t));
 	float alpha = heightMask * In.vColor.a * lifeFade * lerp(0.08f, 1.f, softnoise);
 	
 	alpha = saturate(alpha);
 	
 	float2 distortion = warp * 0.01f * alpha;
-	float3 glowColor = In.vColor.rgb * lerp(0.3f ,1.f, softnoise);
+	float3 glowColor = In.vColor.rgb * lerp(0.3f, 1.f, softnoise);
 
 	Out.vDiffuse = float4(glowColor, alpha);
 	
+	return Out;
+}
+PS_OUT PSPlayerDashWindSpiral(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 uv = In.vTexcoord;
+
+    /*
+     * 메쉬 UV의 U축을 따라 바람이 흐르게 한다.
+     * 반대로 흐르면 부호를 바꾼다.
+     */
+	float2 diffuseUV =
+        uv * float2(4.f, 4.f) +
+        float2(-g_fAccumulationTime * 1.2f, 0.f);
+
+	float2 normalUV =
+        uv * float2(2.f, 2.f) +
+        float2(-g_fAccumulationTime * 0.55f, 0.f);
+
+	float2 noiseUV =
+        uv * float2(3.f, 2.f) +
+        float2(-g_fAccumulationTime * 0.8f, 0.f);
+
+	float2 distortion =
+        NormalMap.Sample(LinearWrap, normalUV).rg * 2.f - 1.f;
+
+	diffuseUV += distortion * 0.03f;
+	noiseUV += distortion * 0.02f;
+
+	float4 diffuse =
+        AlbedoMap.Sample(LinearWrap, diffuseUV);
+
+	float noise =
+        NoiseMap.Sample(LinearWrap, noiseUV).r;
+
+    // 텍스처가 흑백일 경우 밝기를 형태 마스크로 사용
+	float shapeMask =
+        max(diffuse.r, max(diffuse.g, diffuse.b));
+
+    // 흐르면서 윤곽이 생성되고 사라지는 부분
+	float erosion =
+        smoothstep(0.25f, 0.7f, noise);
+
+    // 메쉬 띠의 양쪽 가장자리 페이드
+    // Fat 메쉬의 V축이 띠의 너비 방향이라는 전제
+	float edgeFade =
+        1.f - abs(uv.y * 2.f - 1.f);
+
+	edgeFade = smoothstep(0.f, 0.35f, edgeFade);
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float fadeIn =
+        smoothstep(0.f, 0.08f, ratio);
+
+	float fadeOut =
+        1.f - smoothstep(0.65f, 1.f, ratio);
+
+	float alpha =
+        shapeMask *
+        lerp(1.f, erosion, 0.65f) *
+        edgeFade *
+        fadeIn *
+        fadeOut *
+        In.vColor.a;
+
+	float3 windColor =
+        float3(0.72f, 0.88f, 1.f);
+
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+    // 밝은 중심부
+	float emissive =
+        pow(saturate(shapeMask), 1.5f) * 0.35f;
+
+
+	float3 finalColor = In.vColor.rgb + instanceEmissive;
+
+	Out.vDiffuse = float4(finalColor, alpha);
+
+	clip(alpha - 0.002f);
+
+	return Out;
+}
+PS_OUT PSAccio(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	float2 diffuseUV =
+        In.vTexcoord * float2(1.f, 1.f) + float2(0, g_fAccumulationTime * 0.2f);
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+
+	
+	float4 texColor = AlbedoMap.Sample(LinearWrap, diffuseUV);
+
+	if (all(texColor.rgb < 0.2f))
+		discard;
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+
+	float3 finalRGB = texColor.rgb * In.vColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+	
+	Out.vDiffuse = float4(finalRGB, texColor.a * In.vColor.a);
 	return Out;
 }

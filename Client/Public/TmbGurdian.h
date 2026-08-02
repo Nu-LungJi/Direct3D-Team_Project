@@ -9,9 +9,6 @@ class CTmbGurdian final : public CMonster
 public:
 	struct TMBGURDIAN_DESC :public  CMonster::MONSTER_DESC
 	{
-		_float3 vWeaponScale{1.f,1.f,1.f};
-		_string WeaponResourceName{};
-		_string WeaponProtoName{};
 	};
 public:
 	DECLARE_DERIVED_TYPE(CTmbGurdian, CMonster)
@@ -35,6 +32,9 @@ public:
 
 	virtual void Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
 	_string Get_SkillName(ATTMON SkillNode)override;
+	const _float				Get_Damage() override;
+private:
+	void						Active_Skill();
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};
@@ -45,6 +45,7 @@ private:
 	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
+	ATTMON						m_eLastSkillTable{};
 public:
 	static E::UPtr<CTmbGurdian> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

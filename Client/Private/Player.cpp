@@ -10,6 +10,7 @@
 #include "ComSocket.h"
 #include "DebugPlayer.h"
 #include "Collider.h"
+#include "CollBox.h"
 #include "ComPxRigidBody.h"
 #include "ComPxBoxCollider.h"
 #include "ComPxSphereCollider.h"
@@ -788,7 +789,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 #ifdef _DEBUG
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+		OnQueryHit(20);
 #endif
 }
 
@@ -1399,6 +1400,7 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 			return E_FAIL;
@@ -1540,6 +1542,65 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 	}
 }
 
+_bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)
+{
+	if (!tHit.bHit ||
+		tHit.pGameObject != this ||
+		tHit.iShapeSubIndex != ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX) ||
+		iDamage <= 0 ||
+		m_iHp <= 0)
+	{
+		return false;
+	}
+
+	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
+	m_iHp -= iAppliedDamage;
+	m_vLastHitPosition = vHitPosition;
+
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
+	}
+
+
+
+	return true;
+}
+
+_bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
+{
+
+	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
+	m_iHp -= iAppliedDamage;
+	m_vLastHitPosition = vHitPosition;
+
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
+	}
+	if (m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	return true;
+}
+
+_bool CPlayer::OnQueryHit(int32_t iDamage)
+{
+	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
+	m_iHp -= iAppliedDamage;
+	
+
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
+	}
+	if (m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	return true;
+}
+
 
 void CPlayer::Attack_Magic_Bullet()
 {
@@ -1622,6 +1683,27 @@ void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
+
+/*----------- 광윤 추가 -----------*/
+bool CPlayer::GetShadowBounds(BoundingBox& OutBounds) const
+{
+	if (!m_pComCollider || !m_pComCollider->Get())	return false;
+
+	CCollider* pCollider = m_pComCollider->Get();
+
+	if (pCollider->GetCollType() != CollType::Box)	return false;
+
+	const auto* pBox = static_cast<const CCollBox*>(pCollider);
+
+	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	OutBounds.Extents.x *= 1.25f;
+	OutBounds.Extents.y *= 1.25f;
+	OutBounds.Extents.z *= 1.25f;
+
+	return true;
+}
+/*---------------------------------*/
 
 E::UPtr<CPlayer> CPlayer::Create()
 {

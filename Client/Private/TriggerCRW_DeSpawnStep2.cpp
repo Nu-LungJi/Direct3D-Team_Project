@@ -67,7 +67,8 @@ void CTriggerCRW_DeSpawnStep2::OnTriggerEnter(
 				TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 				TmbGurdianDesc.vPos = _float3(-244.f, -230.3f, -121.f);
 				TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-				TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+				TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
+				TmbGurdianDesc.resBeHaviorMinor = "TOMB_BT_GURDIAN3";
 				TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
 				TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
 				TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
@@ -88,7 +89,8 @@ void CTriggerCRW_DeSpawnStep2::OnTriggerEnter(
 				TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
 				TmbGurdianDesc.vPos = _float3(-258.f, -230.3f, -121.f);
 				TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-				TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+				TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
+				TmbGurdianDesc.resBeHaviorMinor = "TOMB_BT_GURDIAN3";
 				TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Axe);
 				TmbGurdianDesc.WeaponResourceName = "Model_Resource_Axe";
 				TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;

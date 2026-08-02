@@ -477,7 +477,30 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHitCnt", CBTDecHitCnt::Create())))
 		return E_FAIL;
-
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_GURDIAN3", CResJson::Create("./Resources/json/BeHavior/GurDian3.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_GURDIANKNIGHT", CResJson::Create("./Resources/json/BeHavior/GurDianKnight.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_TOMBBOSS", CResJson::Create("./Resources/json/BeHavior/TombBoss.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 	return S_OK; 
 }
 

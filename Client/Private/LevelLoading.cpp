@@ -19,6 +19,9 @@
 #include "LevelTerrain.h"
 #include "LevelTerrainLoader.h"
 
+#include "LevelUIEditor.h"
+#include "LevelUIEditorLoader.h"
+
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -27,6 +30,11 @@ CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceCo
 	, m_pContext{ pContext }
 	, m_eNextLevelIndex(eNextLevelIndex)
 {
+	const uint32_t iCurrentLevelID = Engine::CGameInstance::Get().GetCurrentLevelID();
+	if (iCurrentLevelID != Engine::CLevel::INVALID_LEVEL_ID)
+	{
+		m_ePreviousLevelIndex = static_cast<LEVEL>(iCurrentLevelID);
+	}
 }
 
 CLevelLoading::~CLevelLoading()
@@ -42,11 +50,9 @@ HRESULT CLevelLoading::Initialize()
 {
 	LOG_MEMORY("CLevelLoading::Initialize");
 
-	const uint32_t iCurrentLevelID = Engine::CGameInstance::Get().GetCurrentLevelID();
-	if (iCurrentLevelID != Engine::CLevel::INVALID_LEVEL_ID)
-		m_ePreviousLevelIndex = static_cast<LEVEL>(iCurrentLevelID);
-
 	Engine::CGameInstance::Get().GameObjectAllReset();
+
+	//GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -221,6 +227,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::HOGWART_WORLD:
 		pNewLevel = CLevelHogwartWorld::Create();
 		break;
+	case LEVEL::UIEDITOR:
+		pNewLevel = CLevelUIEditor::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -257,6 +266,9 @@ void CLevelLoading::StartUnload()
 		break;
 	case LEVEL::HOGWART_WORLD:
 		m_futUnloadFinish = CLevelHogwartWorldLoader::UnLoad();
+		break;
+	case LEVEL::UIEDITOR:
+		m_futUnloadFinish = CLevelUIEditorLoader::UnLoad();
 		break;
 	default:
 		StartLoad();
@@ -302,6 +314,9 @@ void CLevelLoading::StartLoad()
 	case LEVEL::HOGWART_WORLD:
 		m_futLoadFinish = CLevelHogwartWorldLoader::Load();
 		break;
+	case LEVEL::UIEDITOR:
+		m_futLoadFinish = CLevelUIEditorLoader::Load();
+		break;
 	default:
 		m_ePhase = PHASE::COMPLETE;
 		m_bLoadEnd = true;
@@ -333,14 +348,8 @@ void CLevelLoading::CheckLoad()
 
 Engine::UPtr<CLevelLoading> CLevelLoading::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex)
 {
-	auto	pInstance = Engine::UPtr<CLevelLoading>(new CLevelLoading(pDevice, pContext, eNextLevelIndex));
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevelLoading");
-		return nullptr;
-	}
-
+	auto pInstance = Engine::UPtr<CLevelLoading>(new CLevelLoading(pDevice, pContext, eNextLevelIndex));
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 
