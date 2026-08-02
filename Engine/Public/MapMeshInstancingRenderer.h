@@ -66,9 +66,12 @@ private:
 	std::unordered_map<SPtr<CResStaticModel>, MAPMESH_INSTANCE_BATCH> s_InstanceBatches;
 	MAPMESH_TEXTURE_CACHE m_MapMeshTextureCache;
 	UPtr<CMapMeshGpuCuller> s_pGpuCuller;
+
+	// 하이브리드 SoA
 	std::vector<MAPMESH_INSTANCE_DATA> m_Instances;
 	std::vector<MAPMESH_OCCLUSION_DATA> m_OcclusionData;
 	std::vector<MAPMESH_CULL_META> m_CullMeta;
+
 	std::vector<uint32_t> m_DrawBatchIndices;
 	std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS> m_IndirectArgs;
 	std::vector<DRAW_ITEM> m_DrawItems;

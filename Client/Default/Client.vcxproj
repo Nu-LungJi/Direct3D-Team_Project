@@ -232,6 +232,7 @@
     <ClInclude Include="..\Public\BTTurnDirect.h" />
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
+    <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\Public\CinematicEditor.h" />
