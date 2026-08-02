@@ -6,7 +6,6 @@
 #include "TextBox.h"
 #include "Button.h"
 #include "Cursor.h"
-#include "Monster.h"
 
 NS_USING(Client)
 
@@ -472,19 +471,34 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
-	if (!m_MonsterHP.has_value())
-		return;
+	//if (!m_MonsterHP.has_value())
+	//	return;
 
-	auto* pMonster =
-		E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(monsterHandle);
-	auto* pHPBar =
-		E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(*m_MonsterHP);
+	//auto* pMonster =
+	//	E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(
+	//		monsterHandle);
 
-	if (nullptr == pMonster || nullptr == pHPBar)
-		return;
+	//auto* pHPBar =
+	//	E::CGameInstance::Get().GetGameObjectByHandleT<CHPBar>(
+	//		*m_MonsterHP);
 
-	pHPBar->SetMaxFill(static_cast<_float>(pMonster->Get_MaxHp()));
-	pHPBar->SetCurrentFill(static_cast<_float>(pMonster->Get_CurrentHp()));
+	//if (!pMonster || !pHPBar)
+	//	return;
+
+	//pHPBar->SetMaxFill(
+	//	static_cast<_float>(pMonster->Get_MaxHp()));
+
+	//pHPBar->SetCurrentFill(
+	//	static_cast<_float>(pMonster->Get_CurrentHp()));
+
+	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
+	{
+		PlayMonsterHPDelete(*m_MonsterHP);
+	}
+	else
+	{
+		m_bMonsterHP = true;
+	}
 }
 
 void CUIController::CreateMonsterHP()
