@@ -965,13 +965,8 @@ std::optional<CHandle> CLevelTerrain::SpawnPlayer()
 
 Engine::UPtr<CLevelTerrain> CLevelTerrain::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelTerrain>(new CLevelTerrain{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevelTerrain");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelTerrain>(new CLevelTerrain{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 
