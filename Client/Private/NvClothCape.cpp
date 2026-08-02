@@ -6,6 +6,7 @@
 #include "ComNvCloth.h"
 #include "DbgLineRender.h"
 #include "GameInstance.h"
+#include "Player.h"
 #include "ResModel.h"
 #include "ResModelBone.h"
 #include "ResNvClothMesh.h"
@@ -272,15 +273,19 @@ void CNvClothCape::Update(_float)
 
 void CNvClothCape::LateUpdate(_float)
 {
-	if (m_bRenderCape)
+	if (!m_bRenderCape)
+		return;
+
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hTarget);
+	if (auto* pPlayer = Cast<CPlayer>(pTarget))
 	{
-		CGameInstance::Get().AddRenderObject(
-			RENDERGROUP::NONBLEND,
-			this);
-		CGameInstance::Get().AddShadowRenderGroup(
-			ACTORTYPE::DYNAMIC,
-			this);
+		// [LSY] 플레이어가 대시 연출로 숨겨질 때 망토와 망토 그림자도 함께 숨긴다.
+		if (pPlayer->GetRenderInfluence())
+			return;
 	}
+
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 }
 
 void CNvClothCape::UpdateGUI()
