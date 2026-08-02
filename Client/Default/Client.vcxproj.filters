@@ -247,6 +247,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
       <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\00.Parents">
+      <UniqueIdentifier>{abad3cbf-f984-44ce-8798-0e9150fa9f2b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -405,12 +408,6 @@
     <ClInclude Include="..\Public\BTOnlyFalse.h">
       <Filter>GameObject\AI\Flow</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Monster.h">
-      <Filter>GameObject\Monster</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Mon_Weapon.h">
-      <Filter>GameObject\Monster</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\BTDecHp.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
@@ -555,7 +552,7 @@
     <ClInclude Include="..\public\BTDecIsPending.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\MonEffect.h">
+    <ClInclude Include="..\public\MonEffectBall.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h">
@@ -563,9 +560,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\StarBurst.h">
-      <Filter>GameObject\Monster\TombBoss</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\GameOverMask.h">
       <Filter>GameObject\UI\GameOverMask</Filter>
@@ -578,6 +572,21 @@
     </ClInclude>
     <ClInclude Include="..\Public\ClientEvents.h">
       <Filter>99.Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Monster.h">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Mon_Weapon.h">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BossMace.h">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\GurdianWeapon.h">
+      <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StarBurst.h">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -665,12 +674,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Mon_Weapon.cpp">
-      <Filter>GameObject\Monster</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Monster.cpp">
-      <Filter>GameObject\Monster</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\BTAnimation.cpp">
       <Filter>GameObject\AI\AnimRoot\Anim</Filter>
@@ -843,7 +846,7 @@
     <ClCompile Include="..\Private\BTDecHitCnt.cpp">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\MonEffect.cpp">
+    <ClCompile Include="..\private\MonEffectBall.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp">
@@ -852,11 +855,23 @@
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp">
       <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\StarBurst.cpp">
-      <Filter>GameObject\Monster\TombBoss</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\Cursor.cpp">
       <Filter>GameObject\UI\Cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Monster.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossMace.cpp">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\GurdianWeapon.cpp">
+      <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StarBurst.cpp">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

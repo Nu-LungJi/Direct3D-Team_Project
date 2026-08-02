@@ -204,6 +204,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BossMace.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
     <ClInclude Include="..\public\BossTMB.h" />
     <ClInclude Include="..\Public\BTAnimation.h" />
@@ -241,6 +242,7 @@
     <ClInclude Include="..\public\DebugPlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\EffectUI.h" />
     <ClInclude Include="..\Public\GameOverMask.h" />
+    <ClInclude Include="..\public\GurdianWeapon.h" />
     <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
@@ -255,7 +257,7 @@
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
-    <ClInclude Include="..\public\MonEffect.h" />
+    <ClInclude Include="..\public\MonEffectBall.h" />
     <ClInclude Include="..\Public\Monster.h" />
     <ClInclude Include="..\public\MyMagicSquareStep.h" />
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
@@ -316,6 +318,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />
     <ClCompile Include="..\Private\BTAnimation.cpp" />
     <ClCompile Include="..\Private\BTAnimRoot.cpp" />
@@ -349,6 +352,7 @@
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\EffectUI.cpp" />
     <ClCompile Include="..\Private\GameOverMask.cpp" />
+    <ClCompile Include="..\private\GurdianWeapon.cpp" />
     <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />
@@ -362,7 +366,7 @@
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />
-    <ClCompile Include="..\private\MonEffect.cpp" />
+    <ClCompile Include="..\private\MonEffectBall.cpp" />
     <ClCompile Include="..\Private\Monster.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStep.cpp" />
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />

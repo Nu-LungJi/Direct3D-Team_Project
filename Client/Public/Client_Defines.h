@@ -66,6 +66,7 @@ namespace Client
 		Prototype_GameObject_BossTMB,
 		Prototype_GameObject_TMBGurdian,
 		Prototype_GameObject_TmbGurdianDead,
+		Prototype_GameObject_BossWeapon,
 		Prototype_GameObject_Axe,
 		Prototype_GameObject_Sword,
 		Prototype_GameObject_Mace,
@@ -77,6 +78,7 @@ namespace Client
 		Prototype_GameObject_NvClothCape,
 		Prototype_GameObject_PlayerMagicBullet,
 		Prototype_GameObject_BossStarBurst,
+		Prototype_GameObject_BossBall,
 	};
 
 	enum class PROTO_COMPONENT
@@ -88,6 +90,7 @@ namespace Client
 	enum class ATTMON { SLOT0, SLOT1, SLOT2, SLOT3, SLOT4, SLOT5, SLOT6, SKIP, SLOT7, SLOT8, SLOT9,END };
 	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO,END};
 	enum class MONSTER_TYPE{NORMAL,ELITE, BOSS};
+
 enum class PARTES { WEAPON, END };
 }
 
