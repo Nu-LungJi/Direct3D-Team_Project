@@ -9,6 +9,7 @@
 #include "ResTessDomainShader.h"
 #include "ResGeometryShader.h"
 #include "ResGeoShaderStreamOut.h"
+#include "ResPathPlayback.h"
 #include "ResShader.h"
 #include "ShaderWatcher.h"
 
@@ -732,6 +733,8 @@ SPtr<CResource> CResourceManager::CreateResource(_string_id eAssetType, const _s
 		return CResComputeShader::Create(sPath);
 	case CResGeoShaderStreamOut::StaticType:
 		return CResGeoShaderStreamOut::Create(sPath);
+	case CResPathPlayback::StaticType:
+		return CResPathPlayback::Create(sPath);
 	//case Engine::CAsset::TYPE::FMOD_SOUND:
 	//	return CResFmodSound::Create(sPath);
 	//case Engine::CAsset::TYPE::JSON:

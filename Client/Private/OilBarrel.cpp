@@ -136,6 +136,10 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
+
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		
@@ -161,15 +165,7 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 	OcclusionData.worldCenter = WorldBounds.Center;
 	OcclusionData.worldExtents = WorldBounds.Extents;
 
-	CGameInstance::Get().PushMapObjectInstance(
-		pModel,
-		InstanceData,
-		OcclusionData);
-
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	if (CGameInstance::Get().KeyDown(DIK_P)) { CGameInstance::Get().Render_ChromaticRing(GetTransform().GetLoadedPostion(), 0.5f, 10.f); }
-	/*---------------------------------*/
+	CGameInstance::Get().PushMapObjectInstance(pModel, InstanceData, OcclusionData);
 }
 
 HRESULT COilBarrel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -314,6 +310,52 @@ void COilBarrel::OnJointBreak(
 		std::to_string(tData.iJointSubIndex) +
 		"\n");
 }
+
+/*----------- 광윤 추가 -----------*/
+HRESULT COilBarrel::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject)
+		return E_FAIL;
+
+	E::CB_PER_OBJECT cbPerObject{};
+	cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+	XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+	if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
+
+	pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+
+	const auto model = m_pComModelInstance->GetModel();
+	if (!model)	return E_FAIL;
+
+	for (uint32_t i = 0; i < model->Get_NumMeshes(); ++i)
+	{
+		const auto& viBuffer = model->GetMeshes()[i];
+		ID3D11Buffer* vertexBuffer = viBuffer->GetVertexBuffer().Get();
+		const uint32_t stride = viBuffer->GetVertexStride();
+		const uint32_t offset = 0;
+
+		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+	}
+
+	ID3D11ShaderResourceView* pSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	pContext->PSSetShaderResources(0, 4, pSRVs);
+
+	return S_OK;
+}
+bool COilBarrel::GetShadowBounds(BoundingBox& OutBounds) const{
+	if (m_pComModelInstance == nullptr)	return false;
+
+	const auto& Model =m_pComModelInstance->GetModel();
+	if (Model == nullptr || !Model->HasLocalBounds())		return false;
+
+	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
+/*---------------------------------*/
 
 E::UPtr<COilBarrel> COilBarrel::Create()
 {

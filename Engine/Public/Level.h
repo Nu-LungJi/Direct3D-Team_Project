@@ -16,6 +16,8 @@ protected:
 
 public:
 	uint32_t GetLevelID() const { return m_iLevelID; }
+	void SetDeferredInitialization(_bool bDeferred = true) { m_bDeferredInitialization = bDeferred; }
+	_bool UsesDeferredInitialization() const { return m_bDeferredInitialization; }
 	virtual bool IsLevelChangeLocked() const { return false; }
 
 	virtual HRESULT Initialize();
@@ -27,6 +29,7 @@ public:
 
 private:
 	const uint32_t m_iLevelID{ INVALID_LEVEL_ID };
+	_bool m_bDeferredInitialization{ false };
 };
 
 NS_END

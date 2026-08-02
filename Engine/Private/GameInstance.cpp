@@ -35,6 +35,7 @@
 #include "NvClothManager.h"
 #include "DbgLineRender.h"
 #include "SerializeManager.h"
+#include "PathPlaybackEditor.h"
 
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
@@ -266,6 +267,10 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 	LOG_MEMORY("End m_pSerializeManager");
 
+	m_pPathPlaybackEditor = CPathPlaybackEditor::Create();
+	if (m_pPathPlaybackEditor == nullptr)
+		return E_FAIL;
+
 	m_pModel_Instance_Manager = CModel_Instance_Manager::Create();
 	if (m_pModel_Instance_Manager == nullptr) {
 		return E_FAIL;
@@ -358,6 +363,8 @@ void CGameInstance::UpdateGUI()
 		m_pNvClothManager->UpdateGUI();
 
 	m_pSerializeManager->UpdateGUI();
+	if (m_pPathPlaybackEditor)
+		m_pPathPlaybackEditor->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
 	m_pEffectManager->UpdateGUI();
@@ -504,11 +511,6 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	if (FAILED(m_pLightManager->Capture_ShadowMap()))
-	{
-		MSG_BOX("ASDFASDF");
-		return E_FAIL;
-	}
 	if (FAILED(m_pRenderer->Draw()))
 	{
 		return E_FAIL;
@@ -522,6 +524,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+	m_pPathPlaybackEditor.reset();
 	m_pMapMeshInstancingRenderer.reset();
 	m_pNodeEditor.reset();
 	m_pImguiManager.reset();
@@ -567,8 +570,8 @@ void CGameInstance::SetMouseFix(_bool mousefix)
 {
 	m_bMouseFix = mousefix;
 
-	if(m_bMouseFix)
-		ShowCursor(FALSE);
+	//if(m_bMouseFix)
+	//	ShowCursor(FALSE);
 }
 
 
@@ -1178,8 +1181,8 @@ HRESULT CGameInstance::SaveMap(const std::string& path)
 }
 HRESULT CGameInstance::LoadMapResources(const std::string& path)
 {
-	const auto modelLoad = LoadStaticModelsRequiredByMap(
-		path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	auto modelLoad = IndexStaticModelsRequiredByMap(path, PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL);
+	m_pMapManager->SetMapModelResourceIndex(PATH_MAPEDITOR_STATIC_MODEL_DIR, TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, std::move(modelLoad.modelPaths));
 	return modelLoad.Succeeded() ? S_OK : E_FAIL;
 }
 HRESULT CGameInstance::LoadMap(const std::string& path, _bool clearBeforeLoad)
@@ -1279,8 +1282,9 @@ HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity) {
 	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _InnerRange, _OuterRange, _LifeTime, _Velocity);
 }
-
-
+HRESULT	CGameInstance::Capture_ShadowMap() {
+	return m_pLightManager->Capture_ShadowMap();
+}
 #pragma endregion
 #pragma endregion
 
@@ -1360,8 +1364,11 @@ void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, c
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
-HRESULT CGameInstance::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch) {
-	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext, bStaticBatch);
+HRESULT CGameInstance::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch) {
+	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext.Get(), _LightHandle, _bStaticBatch);
+}
+_bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
+	return m_pModel_Instance_Manager->Has_ActiveDynamicShadowBatch();
 }
 #pragma endregion
 
@@ -1396,6 +1403,13 @@ void CGameInstance::ClearMapMeshTextureCache()
 	if (m_pMapMeshInstancingRenderer)
 	{
 		m_pMapMeshInstancingRenderer->ClearTextureCache();
+	}
+}
+void CGameInstance::EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model)
+{
+	if (m_pMapMeshInstancingRenderer)
+	{
+		m_pMapMeshInstancingRenderer->EraseTextureCache(model);
 	}
 }
 #pragma endregion

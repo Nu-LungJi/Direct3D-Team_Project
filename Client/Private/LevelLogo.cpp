@@ -253,21 +253,21 @@ void CLevelLogo::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
 	pTween->PlayTween(0.f, 1.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
-		}, [pHandle]() {
-			Engine::CGameInstance::Get().ChangeLevel(
-				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::BOSS_CHARLES_ROOKWOOD));
-			}, EEaseType::EaseOutQuad, delay);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+
+	//pTween->PlayTween(0.f, 1.f, playtime,
+	//	[pBtn](float currentValue) {
+	//		pBtn->SetAlpha(currentValue);
+	//	}, [pHandle]() {
+	//		Engine::CGameInstance::Get().ChangeLevel(
+	//			CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::BOSS_CHARLES_ROOKWOOD));
+	//		}, EEaseType::EaseOutQuad, delay);
 }
 
 Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelLogo>(new CLevelLogo{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelLogo>(new CLevelLogo{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 

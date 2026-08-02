@@ -16,6 +16,7 @@
 #include "NvClothCape.h"
 
 #include "BossTMB.h"
+
 #include "UIManager.h"
 #include "UIController.h"
 
@@ -38,6 +39,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	{
 		return E_FAIL;
 	}
+
+	//GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
 
 	auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
@@ -110,13 +113,8 @@ void CLevelBossCharlesRookwood::FrameStart(E::_float fTimeDelta)
 
 Engine::UPtr<CLevelBossCharlesRookwood> CLevelBossCharlesRookwood::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelBossCharlesRookwood>(new CLevelBossCharlesRookwood{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevel_BossCharlesRookwood");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelBossCharlesRookwood>(new CLevelBossCharlesRookwood{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 
@@ -291,8 +289,13 @@ HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::BOSS_CHARLES_ROOKWOOD);
 		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(-28, 15, 7, 1));
 		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
-		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/TombBoss.json";
-		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
+
+		TmbDesc.resBeHaviorMajor = "BTJSON";
+		TmbDesc.resBeHaviorMinor = "TOMB_BT_TOMBBOSS";
+		TmbDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_BossWeapon);
+		TmbDesc.WeaponResourceName = "Model_Resource_BossWeapon";
+		TmbDesc.vWeaponScale = _float3(1.f, 1.f, 1.f);
+		TmbDesc.vScale = _float3(6.f, 6.f, 6.f);
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
 
 		if (!BossTmb)
