@@ -190,6 +190,16 @@ void CMapMeshInstancingRenderer::ClearTextureCache()
 	m_MapMeshTextureCache.clear();
 }
 
+void CMapMeshInstancingRenderer::EraseTextureCache(const SPtr<CResStaticModel>& model)
+{
+	//auto iter = m_MapMeshTextureCache.find(model);
+	//if (iter == m_MapMeshTextureCache.end())
+	//{
+	//	return;
+	//}
+	m_MapMeshTextureCache.erase(model);
+}
+
 HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
 	ZoneScopedN("MapMeshInstancingRender");

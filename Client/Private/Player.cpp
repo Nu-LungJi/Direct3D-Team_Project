@@ -789,7 +789,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 #ifdef _DEBUG
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+		OnQueryHit(20);
 #endif
 }
 
@@ -1540,6 +1540,65 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 	default:
 		return S_FALSE;
 	}
+}
+
+_bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)
+{
+	if (!tHit.bHit ||
+		tHit.pGameObject != this ||
+		tHit.iShapeSubIndex != ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX) ||
+		iDamage <= 0 ||
+		m_iHp <= 0)
+	{
+		return false;
+	}
+
+	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
+	m_iHp -= iAppliedDamage;
+	m_vLastHitPosition = vHitPosition;
+
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
+	}
+
+
+
+	return true;
+}
+
+_bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
+{
+
+	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
+	m_iHp -= iAppliedDamage;
+	m_vLastHitPosition = vHitPosition;
+
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
+	}
+	if (m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	return true;
+}
+
+_bool CPlayer::OnQueryHit(int32_t iDamage)
+{
+	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
+	m_iHp -= iAppliedDamage;
+	
+
+	if (auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
+	}
+	if (m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	return true;
 }
 
 

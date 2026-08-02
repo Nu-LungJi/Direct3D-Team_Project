@@ -337,6 +337,8 @@ void CBTAnimRoot::Reset_CheckFlag()
 		endFlag.bFlag = false;
 
 }
+
+
 void CBTAnimRoot::Combo(const _char* pName,uint32_t& iFlag)
 {
 	struct GuiView
@@ -385,7 +387,6 @@ void CBTAnimRoot::Combo2(const _char* pName, FLAGTYPE& eType)
 			if (bSelect)
 				ImGui::SetItemDefaultFocus();
 		}
-
 		ImGui::EndCombo();
 	}
 }

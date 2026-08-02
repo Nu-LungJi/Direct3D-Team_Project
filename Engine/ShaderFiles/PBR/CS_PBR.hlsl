@@ -27,9 +27,13 @@ TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.f;
 
-static const float		EnviromentIntensity		= 0.50f;			// 환경광 밝기
-static const float		FillLightBrightness		= 0.00f;			// 등지는 영역의 밝기
+static const float		EnviromentIntensity		= 1.00f;			// 환경광 밝기
+static const float		FillLightBrightness		= 0.20f;			// 등지는 영역의 밝기
 static const float		DirectLightBrightness	= 0.60f;			// 빛받는 영역의 밝기
+
+static const float		NormalBiasWorld			= 0.01f;
+static const float		MinDepthBiasWorld		= 0.002f;
+static const float		SlopeDepthBiasWorld		= 0.02f;
 
 static const float2		PoissonDisk_EightTab[8] =		
 {
@@ -59,6 +63,7 @@ cbuffer CB_EFFECT_LIGHT : register(b11)
 	uint	ELightCount;
 	float3	ELightPadding;
 };
+
 
 float Get_GradientNoise(float2 _PixelPos)
 {
@@ -134,28 +139,35 @@ float Attenuate_ShadowStrength(float _ShadowFactor, float _Distance, uint _Light
 	// 그림자가 젤 어둡게 지는 값(1.f)과 그림자 인수와 lerp -> 빛과 가까우면 어둡고, 멀면 옅음.
 	return lerp(1.f, _ShadowFactor, Strength * Attenuation);
 }
-float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _SamplingRange, int _ShadowSlot, uint _LightIndex)
+float Compute_SmoothShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _RandomRotMat, float2 _SamplingRange, int _ShadowSlot, uint _LightIndex)
 {
-	float4 LightPos = mul(float4(_WorldPos.xyz, 1.f), AffectedLight[_LightIndex].g_LightViewProj[0]);
+	float4	LightPos = mul(float4(_WorldPos.xyz, 1.f), AffectedLight[_LightIndex].g_LightViewProj[0]);
+	float3	LightNDC = LightPos.xyz * rcp(LightPos.w);
 	
     float2 ShadowMapUV;
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
-    ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
-
-	float3 LightNDC = LightPos.xyz / LightPos.w;
+	ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
 	
 	[branch]
 	if (LightNDC.x < -1.f || LightNDC.x > 1.f ||
 	 	LightNDC.y < -1.f || LightNDC.y > 1.f ||
-		LightNDC.z <  0.f || LightNDC.z > 1.f)
-	{
-		//return (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL) ? ShadowBrightness : 1.f;
-		return 1.f;
+		LightNDC.z < 0.f || LightNDC.z > 1.f)		return 1.f;
+
+	float3 N = normalize(_WorldNormal);
+	float3 L;
+	
+	if (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL)	{
+		L = normalize(-AffectedLight[_LightIndex].LightDirection);
 	}
-    
-	float CurrentPixelDepth = LightNDC.z;
-    CurrentPixelDepth -= 0.001f; // Depth Bias
-    
+	else {
+		L = normalize(AffectedLight[_LightIndex].Position - _WorldPos.xyz);
+	}
+	
+	float NdotL = saturate(dot(N, L));
+	float DepthBias = max(0.0002f, 0.0020f * (1.f - NdotL));
+	
+	//float CurrentPixelDepth = saturate(LightNDC.z - DepthBias);
+	float CurrentPixelDepth = saturate(LightNDC.z - 0.0001f);
 	float ShadowFactor = 0.f;
 	
     [unroll]
@@ -174,27 +186,29 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 		return NormalShadowFactor;
 	}
 	
-	return Attenuate_ShadowStrength(NormalShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
+	//float Distance = length(_WorldPos.xyz - AffectedLight[_LightIndex].Position);
+	//return Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
+	return NormalShadowFactor;
 }
 
-float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowSlot, uint _LightIndex)
+float Compute_PointShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _RandomRotMat, int _ShadowSlot, uint _LightIndex)
 {
 	float3 LightToPixel = _WorldPos.xyz - AffectedLight[_LightIndex].Position;
-    float  Distance = length(LightToPixel);
+	float Distance = length(LightToPixel);
 	
 	float CurrentPixelDepth = Distance / max(0.02f, AffectedLight[_LightIndex].OuterAttanuation);
 	CurrentPixelDepth -= 0.001f; // Depth Bias
 	
-    float  InvDistance  = 1.0f / max(Distance, 0.0001f);
-    float3 Direction    = LightToPixel * InvDistance;
-    float3 BaseUP       = abs(Direction.z) < 0.999f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
+	float InvDistance = 1.0f / max(Distance, 0.0001f);
+	float3 Direction = LightToPixel * InvDistance;
+	float3 BaseUP = abs(Direction.z) < 0.999f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
 	
-	float3 TangentX		= normalize(cross(Direction, BaseUP));
-	float3 TangentY		= normalize(cross(Direction, TangentX));
+	float3 TangentX = normalize(cross(Direction, BaseUP));
+	float3 TangentY = normalize(cross(Direction, TangentX));
     
 	float FilterRadius = (ShadowSmoothness / POINTLIGHT_RESOLUTION);
 	
-    float ShadowFactor = { 0.f };
+	float ShadowFactor = { 0.f };
 
     [unroll]
 	for (int i = 0; i < POISSON_COUNT; ++i)
@@ -203,15 +217,16 @@ float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowS
         
         float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
         
-		float3 SampleUV = Direction + Offset3D;
+		float3 SampleDirection = normalize(Direction + Offset3D);
 		
-		ShadowFactor += MergeShadowCubeMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
+		ShadowFactor += MergeShadowCubeMap(_ShadowSlot, SampleDirection, CurrentPixelDepth);
 	}
 	
-	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
-	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
+	float	NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
 	
-	return FinalShadowFactor;
+	//return	Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
+	return NormalShadowFactor;
+
 }
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughness, float _Metallic, float3 MBR)
@@ -325,11 +340,11 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 					[branch]
 					if (AffectedLight[i].LightType == LIGHT_POINT)
 					{
-						ShadowFactor = Compute_PointShadow(DepthWorld, RandomNoiseMatrix, ShadowSlot, i);
+						ShadowFactor = Compute_PointShadow(DepthWorld, WorldNormal, RandomNoiseMatrix, ShadowSlot, i);
 					}
 					else
 					{
-						ShadowFactor = Compute_SmoothShadow(DepthWorld, RandomNoiseMatrix, SamplingRange, ShadowSlot, i);
+						ShadowFactor = Compute_SmoothShadow(DepthWorld, WorldNormal, RandomNoiseMatrix, SamplingRange, ShadowSlot, i);
 					}
 				}
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
@@ -461,11 +476,11 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 					[branch]
 					if (AffectedLight[i].LightType == LIGHT_POINT)
 					{
-						ShadowFactor = Compute_PointShadow(DepthWorld, RandomNoiseMatrix, ShadowSlot, i);
+						ShadowFactor = Compute_PointShadow(DepthWorld, WorldNormal, RandomNoiseMatrix, ShadowSlot, i);
 					}
 					else
 					{
-						ShadowFactor = Compute_SmoothShadow(DepthWorld, RandomNoiseMatrix, SamplingRange, ShadowSlot, i);
+						ShadowFactor = Compute_SmoothShadow(DepthWorld, WorldNormal, RandomNoiseMatrix, SamplingRange, ShadowSlot, i);
 					}
 				}
 				LightAccumulation += (Diffuse + Specular) * Radiance * NDL * ShadowFactor;
@@ -599,7 +614,7 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 	
 	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness;			// Shadow Face
 	float3 DirectLighting = LightAccumulation * DirectLightBrightness;				// Light Face  
-	float3 EffectLighting = EffectAccumulation * DirectLightBrightness; // Light Face
+	float3 EffectLighting = EffectAccumulation * DirectLightBrightness;				// Light Face
 	
 	float3 FinalColor = EnviromentLight + FillLighting + DirectLighting + EffectLighting + BaseEmissive;
 	

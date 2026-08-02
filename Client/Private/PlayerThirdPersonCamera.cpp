@@ -3,6 +3,7 @@
 
 #include "GameInstance.h"
 #include "Client_Defines.h"
+#include "ClientEvents.h"
 
 NS_USING(Client)
 
@@ -13,7 +14,12 @@ CPlayerThirdPersonCamera::CPlayerThirdPersonCamera(const CPlayerThirdPersonCamer
 {
 }
 
-CPlayerThirdPersonCamera::~CPlayerThirdPersonCamera() = default;
+CPlayerThirdPersonCamera::~CPlayerThirdPersonCamera()
+{
+	// 이벤트 구독 해제
+	//CGameInstance::Get().EventUnsubscribe<FRequestPlayerCameraShake>(m_iShakeListenerID);
+	CGameInstance::Get().EventUnsubscribeAll(GetHandle());
+}
 
 HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 {
@@ -48,6 +54,19 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 	m_fVerticalFollowSpeed = pDesc->fVerticalFollowSpeed;
 	m_vFollowPivot = {};
 	m_bFollowPivotInitialized = false;
+
+
+	// 이벤트 등록
+	m_iShakeListenerID = CGameInstance::Get().EventSubscribe<FRequestPlayerCameraShake>(GetHandle(), [this](const FRequestPlayerCameraShake& Event)
+		{
+			if (CGameInstance::Get().GetActiveCamera() != this)
+			{
+				return;
+			}
+			BeginShake(Event);
+		}
+	);
+
 	return S_OK;
 }
 
@@ -128,6 +147,33 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 	auto& CameraTransform = GetTransform();
 	CameraTransform.SetPosition(finalPosition);
 	CameraTransform.LookAt(XMLoadFloat3(&vCompositionPivot));
+
+	// 셰이킹 상태 합성
+	// LookAt이 만든 기본 상태 보관
+	const _vector vBasePosition = CameraTransform.GetLoadedPostion();
+	const _vector qBaseRotation = CameraTransform.GetLoadedQuaternion();
+
+	const _vector vCameraRight = CameraTransform.GetState(STATE::RIGHT);
+	const _vector vCameraUp = CameraTransform.GetState(STATE::UP);
+
+	_float3 vLocalPositionShake{};
+	_float3 vRotationShake{};
+
+	EvaluateShake(fTimeDelta, vLocalPositionShake, vRotationShake);
+
+	// 로컬 위치 흔들림을 월드 공간으로 변환
+	const _vector vWorldPositionShake = vCameraRight * vLocalPositionShake.x + vCameraUp * vLocalPositionShake.y;
+
+	CameraTransform.SetPosition(vBasePosition + vWorldPositionShake);
+
+	// LookAt이 만든 기본 회전에 로컬 회전 흔들림 합성
+	const _vector qShake = XMQuaternionRotationRollPitchYaw(
+		XMConvertToRadians(vRotationShake.x),
+		XMConvertToRadians(vRotationShake.y),
+		XMConvertToRadians(vRotationShake.z));
+
+	CameraTransform.SetQuaternion(XMQuaternionMultiply(qBaseRotation, qShake));
+
 	CameraTransform.Update();
 	UpdateViewMatrix();
 }
@@ -185,6 +231,67 @@ _bool CPlayerThirdPersonCamera::PlayerToCameraSphereSweep(const _float3& PlayerP
 	XMStoreFloat3(&OutCameraPosition, vTargetPosition + XMLoadFloat3(&vDirection) * fCorrectedDistance);
 
 	return true;
+}
+
+void CPlayerThirdPersonCamera::BeginShake(const FRequestPlayerCameraShake& Event)
+{
+	if (!std::isfinite(Event.fIntensity) ||
+		!std::isfinite(Event.fDuration) ||
+		!std::isfinite(Event.fFrequency) ||
+		Event.fIntensity <= 0.f ||
+		Event.fDuration <= 0.f ||
+		Event.fFrequency <= 0.f)
+	{
+		return;
+	}
+
+	m_ShakeState.bActive = true;
+	m_ShakeState.fElapsed = 0.f;
+	m_ShakeState.fDuration = Event.fDuration;
+	m_ShakeState.fIntensity =std::clamp(Event.fIntensity, 0.f, 1.f);
+	m_ShakeState.fFrequency = Event.fFrequency;
+}
+
+void CPlayerThirdPersonCamera::EvaluateShake(_float fTimeDelta, _float3& OutLocalPositionOffset, _float3& OutRotationOffset)
+{
+	OutLocalPositionOffset = {};
+	OutRotationOffset = {};
+
+	if (!m_ShakeState.bActive)
+	{
+		return;
+	}
+
+	m_ShakeState.fElapsed += std::max(fTimeDelta, 0.f);
+
+	const _float fRatio = std::clamp(m_ShakeState.fElapsed / m_ShakeState.fDuration, 0.f, 1.f);
+
+	// 끝으로 갈수록 부드럽게 감소
+	const _float fEnvelope = (1.f - fRatio) * (1.f - fRatio);
+	const _float fAmplitude = m_ShakeState.fIntensity * fEnvelope;
+	const _float fPhase = m_ShakeState.fElapsed * m_ShakeState.fFrequency * XM_2PI;
+
+	const _float fNoiseX = std::sin(fPhase);
+	const _float fNoiseY =std::sin(fPhase * 1.37f + 1.3f);
+	const _float fNoiseRoll =std::sin(fPhase * 1.79f + 2.1f);
+
+	// 월드 단위
+	constexpr _float MAX_POSITION_SHAKE = 0.12f;
+
+	// Degree 단위
+	constexpr _float MAX_ROTATION_SHAKE = 1.5f;
+
+	OutLocalPositionOffset.x = fNoiseX * MAX_POSITION_SHAKE * fAmplitude;
+	OutLocalPositionOffset.y = fNoiseY * MAX_POSITION_SHAKE * fAmplitude;
+
+	OutRotationOffset.x = fNoiseY * MAX_ROTATION_SHAKE * fAmplitude;
+	OutRotationOffset.y = fNoiseX * MAX_ROTATION_SHAKE * fAmplitude;
+	OutRotationOffset.z = fNoiseRoll * MAX_ROTATION_SHAKE * 0.5f * fAmplitude;
+
+	if (m_ShakeState.fElapsed >= m_ShakeState.fDuration)
+	{
+		m_ShakeState = {};
+	}
 }
 
 UPtr<CPlayerThirdPersonCamera> CPlayerThirdPersonCamera::Create()

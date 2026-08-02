@@ -5,6 +5,8 @@
 
 NS_BEGIN(Client)
 
+struct FRequestPlayerCameraShake;
+
 class CPlayerThirdPersonCamera final : public CCameraObject
 {
 public:
@@ -39,6 +41,22 @@ private:
 	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
 
 private:
+	struct FSHAKE_STATE
+	{
+		_bool bActive{ false };
+
+		_float fElapsed{};
+		_float fDuration{};
+		_float fIntensity{};
+		_float fFrequency{};
+		_float fSeed{};
+	};
+	void BeginShake(const FRequestPlayerCameraShake& Event);
+	void EvaluateShake(_float fTimeDelta, _float3& OutLocalPositionOffset, _float3& OutRotationOffset);
+private:
+	EVENT_LISTENER_ID m_iShakeListenerID{};
+	FSHAKE_STATE m_ShakeState{};
+private:
 	CHandle m_hTarget{};
 	_float m_fYaw{};
 	_float m_fPitch{ 15.f };
@@ -55,6 +73,9 @@ private:
 
 private:
 	_float CAMERA_TARGET_OFFSET_Y = 1.5f;
+
+public:
+	CHandle GetTargetHandle() const { return m_hTarget; }
 
 private:
 	_float CAMERA_COLLISION_RADIUS = 0.3f;

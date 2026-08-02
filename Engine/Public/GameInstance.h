@@ -54,6 +54,7 @@ class CComPxFixedJoint;
 class CComPxDistanceJoint;
 class CComPxRevoluteJoint;
 class CComPxD6Joint;
+class CPathPlaybackEditor;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -469,6 +470,7 @@ public:
 	_bool IsDebugBoundsEnabled();
 	void SetDebugBoundsEnabled(_bool bEnabled);
 	void ClearMapMeshTextureCache();
+	void EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model);
 #pragma endregion
 
 #pragma region EVENT_MANAGER
@@ -678,6 +680,7 @@ private:
 	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
 	UPtr<CEventManager> m_pEventManager{};
 	UPtr<CEffectManager> m_pEffectManager{};
+	UPtr<CPathPlaybackEditor> m_pPathPlaybackEditor{};
 };
 
 template<typename TJoint>
