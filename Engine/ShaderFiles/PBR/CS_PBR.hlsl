@@ -1,6 +1,6 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
 
-#define POISSON_COUNT	4
+#define POISSON_COUNT	8
 #define MAX_EFFECTLIGHT_COUNT 15		
 RWTexture2D<float4> OUTPUT : register(u0);
 
@@ -26,19 +26,18 @@ TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
 
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.f;
-static const float		ShadowStrength			= 1.05f;
 
-static const float		EnviromentIntensity		= 1.0f;			// 환경광 밝기
-static const float		FillLightBrightness		= 0.5f;			// 등지는 영역의 밝기
-static const float		DirectLightBrightness	= 1.f;			// 빛받는 영역의 밝기
+static const float		EnviromentIntensity		= 0.50f;			// 환경광 밝기
+static const float		FillLightBrightness		= 0.00f;			// 등지는 영역의 밝기
+static const float		DirectLightBrightness	= 0.60f;			// 빛받는 영역의 밝기
 
-static const float2		PoissonDisk_EightTab[8] =
+static const float2		PoissonDisk_EightTab[8] =		
 {
     float2(0.000000, 0.000000), float2(0.527837, -0.085868), float2(-0.040062, 0.536087), float2(-0.670445, -0.179949),
     float2(-0.419418, -0.616039), float2(0.440453, 0.639399), float2(-0.757088, 0.349334), float2(0.574619, -0.715851)
 };
 static const float2		PoissonDisk_FourTab[4] =
-{
+{	
 	float2(-0.326, -0.406), float2(-0.840, 0.074), float2(-0.696, 0.457), float2(-0.203, 0.621)
 };
 static const float2 RandomRotationCS[8] =
@@ -49,7 +48,7 @@ static const float2 RandomRotationCS[8] =
     float2(-0.70710678f, 0.70710678f),
     float2(-1.00000000f, 0.00000000f),
     float2(-0.70710678f, -0.70710678f),
-    float2(0.00000000f, -1.00000000f),
+    float2(0.00000000f, -1.0000000f),
     float2(0.70710678f, -0.70710678f)
 };
 
@@ -155,14 +154,14 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 	}
     
 	float CurrentPixelDepth = LightNDC.z;
-    CurrentPixelDepth -= 0.0001f; // Depth Bias
+    CurrentPixelDepth -= 0.001f; // Depth Bias
     
 	float ShadowFactor = 0.f;
 	
     [unroll]
 	for (int i = 0; i < POISSON_COUNT; ++i)
 	{
-		float2 RotatedOffset = mul(PoissonDisk_FourTab[i], _RandomRotMat);
+		float2 RotatedOffset = mul(PoissonDisk_EightTab[i], _RandomRotMat);
         
 		float2 SampleUV = ShadowMapUV + (RotatedOffset * _SamplingRange);
 		
@@ -200,7 +199,7 @@ float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowS
     [unroll]
 	for (int i = 0; i < POISSON_COUNT; ++i)
     {
-		float2 RotatedOffset = mul(PoissonDisk_FourTab[i], _RandomRotMat);
+		float2 RotatedOffset = mul(PoissonDisk_EightTab[i], _RandomRotMat);
         
         float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
         

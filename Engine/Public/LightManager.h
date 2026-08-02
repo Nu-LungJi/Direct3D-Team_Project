@@ -76,6 +76,9 @@ public:
 	//VOID	ReleaseInvalidPointShadowSlots();
 	//VOID	ReleaseInvalid2DShadowSlots();
 
+	VOID	Build_StaticShadowCasterList(std::optional<CHandle> _LightHandle);	
+	VOID	Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds);
+
 public:		// Effect Light Fuction
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
@@ -173,6 +176,24 @@ private:
 	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
 
 	uint64_t m_iShadowFrameIndex{};
+
+	std::vector<IRenderable*> m_pStaticShadowCasterScratch{};
+
+#ifdef _DEBUG
+	public:
+		uint32_t Get_StaticShadowPassCount() const {
+			return m_iStaticShadowPassCount;
+		}
+
+		uint32_t Get_DynamicShadowPassCount() const {
+			return m_iDynamicShadowPassCount;
+		}
+
+private:
+	uint32_t m_iStaticShadowPassCount{};
+	uint32_t m_iDynamicShadowPassCount{};
+#endif
+
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

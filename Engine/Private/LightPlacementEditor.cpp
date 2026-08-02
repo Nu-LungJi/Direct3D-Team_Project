@@ -199,6 +199,17 @@ void CLightPlacementEditor::DrawWindow()
 			SetEffectLightDebugOptions(
 				m_bShowEffectLights,
 				m_bEffectLightDepthTest);
+
+		ImGui::Text(
+			"Shadow Pass - Static: %u, Dynamic: %u, Total: %u",
+			m_pLightManager->Get_StaticShadowPassCount(),
+			m_pLightManager->Get_DynamicShadowPassCount(),
+			m_pLightManager->Get_StaticShadowPassCount() +
+			m_pLightManager->Get_DynamicShadowPassCount());
+
+		m_pLightManager->SetEffectLightDebugOptions(
+			m_bShowEffectLights,
+			m_bEffectLightDepthTest);
 	}
 
 	ImGui::DragFloat(
@@ -682,6 +693,11 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 	{
 		DeleteSelected();
 	}
+
+	ImGui::Text(
+		"Dirty - Static: %s, Dynamic: %s",
+		light->Is_StaticDirty() ? "ON" : "OFF",
+		light->Is_DynamicDirty() ? "ON" : "OFF");
 }
 
 void CLightPlacementEditor::DrawDebugLights()

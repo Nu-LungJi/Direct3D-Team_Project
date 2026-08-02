@@ -1275,6 +1275,9 @@ std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _
 HRESULT	CGameInstance::Capture_ShadowMap() {
 	return m_pLightManager->Capture_ShadowMap();
 }
+VOID	CGameInstance::Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds) {
+	m_pLightManager->Notify_StaticShadowSceneChanged(ChangedBounds);
+}
 #pragma endregion
 #pragma endregion
 

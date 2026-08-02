@@ -302,12 +302,17 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
 
 	if (LightType == LIGHT_TYPE::POINT) {
+
+		RCTX.PointShadowFaceIndex = _PointFaceIndex;
 		XMMATRIX Identity = XMMatrixIdentity();
 		RCTX.matView = Identity;
 		RCTX.matProj = Identity;
-		RCTX.matViewProj = Identity;
+		RCTX.matViewProj = XMLoadFloat4x4(
+			&m_pDynamicLight.g_LightViewProj[_PointFaceIndex]);
 	}
 	else {
+		RCTX.PointShadowFaceIndex = -1;
+
 		RCTX.matView = XMLoadFloat4x4(&LightView);
 		RCTX.matProj = XMLoadFloat4x4(&LightProj);
 		RCTX.matViewProj = RCTX.matView * RCTX.matProj;
