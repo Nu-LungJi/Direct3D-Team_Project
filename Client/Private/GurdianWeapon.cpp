@@ -50,24 +50,39 @@ HRESULT CGurdianWeapon::Initialize(void* pArg)
 
 void CGurdianWeapon::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_bDead)
+	{
+		Dead_Parent(fTimeDelta);
+		return;
+	}
+
 	__super::PriorityUpdate(fTimeDelta);
+
 }
 
 void CGurdianWeapon::Update(E::_float fTimeDelta)
 {
+	if (m_bDead)
+		return;
+
+	
 	__super::Update(fTimeDelta);
+
 	Weapon_Throw(fTimeDelta);
+
 }
 
 void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 {
+	if (m_bDead)
+		return;
 	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 	{
 		if (!m_bThrow)
 		{
 			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
 			{
-				if (pModel->Get_CombinedBoneMatrices().size() < m_iBoneSocketIndex)
+				if (pModel->Get_CombinedBoneMatrices().size() > m_iBoneSocketIndex)
 				{
 					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
 					for (uint32_t i = 0; i < 3; ++i)
@@ -89,6 +104,11 @@ void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 			else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
 				m_bThrow = false;
 
+			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+			{
+				m_bDead = true;
+				
+			}
 			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 			{
 				Weapon_CallBack();
@@ -108,6 +128,19 @@ void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 
 void CGurdianWeapon::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
+}
+void CGurdianWeapon::Dead_Parent(_float fTimeDelta)
+{
+	m_fTick += fTimeDelta;
+	_float t = m_fTick / 3.f;
+	m_fDissolveintensity = 1 + (0 - 1) * t;
+	if (t >= 1.f)
+	{
+		m_fDissolveintensity = 0.f;
+		m_fTick = 0.f;
+		SetPendingDestroy();
+	
+	}
 }
 /*---------------------------------*/
 void CGurdianWeapon::Weapon_Throw(_float fTimeDelta)

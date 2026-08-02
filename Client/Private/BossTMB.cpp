@@ -17,6 +17,7 @@
 #include "StarBurst.h"
 #include "MonEffectBall.h"
 #include "BossMace.h"
+#include "UIController.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -204,7 +205,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "MorningStarAfterEffect";
-	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttackAfterEffect";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttack";
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
@@ -337,11 +338,21 @@ void CBossTMB::Skill_Finished()
 
 _bool CBossTMB::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-		return false;
-
+	
 	Damaged(eType);
-
+	//if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	//{
+	//	++m_iNormalHitCnt;
+	//	const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+	//
+	//	if (hUIController.has_value())
+	//	{
+	//		if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+	//		{
+	//			pUIController->AddFinisher(2.f);
+	//		}
+	//	}
+	//}
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
 
@@ -391,13 +402,13 @@ void CBossTMB::Active_Dynamic_Effect()
 		}
 
 	}
-	else if (m_CurEffectName == "BossRingAttackAfterEffect" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
+	if (m_CurEffectName == m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
 		CMonEffectBall::MON_BALL desc{};
 		desc.fDamage = 50.f;
 		desc.hTarget = m_TargetHandle;
 		desc.hOwner = GetHandle();
 		desc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHand");
-		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, "BossRingAttackAfterEffect", &desc);
+		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)], &desc);
 
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);
 	}

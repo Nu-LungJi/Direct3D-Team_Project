@@ -44,15 +44,15 @@ private:
 	void		Chase(_float fTimeDelta);
 private:
 	_float		m_fDamage{}, m_fDeadTime{};
-	_float3		m_vStartLook{}, m_vEndLook{}, m_vPos{};
+	_float3		m_vDir{}, m_vEndLook{}, m_vPos{};
 
-
+	_float		m_fSpeed{100.f}, m_fPower{8.f};
 	_float4x4 m_CurWorldmat{}, m_Offsetmat{};
 	uint32_t m_iBoneIndex{}, m_iEffectID{};
 	CHandle m_hParent{}, m_hTarget{};
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
 
-	_bool		m_bHit{ false };
+	_bool		m_bHit{ false }, m_bThrow{ false };
 public:
 	static E::UPtr<CMonEffectBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

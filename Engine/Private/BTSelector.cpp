@@ -29,6 +29,14 @@ HRESULT CBTSelector::Initalize(void* pArg)
 	return S_OK;
 }
 
+void CBTSelector::OnEnter()
+{
+}
+
+void CBTSelector::OnExit(EVALUATE eResult)
+{
+}
+
 EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
 	int32_t iIndex = 0;
@@ -41,7 +49,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         if (nullptr == m_Actions[i])
             continue;
 
-        EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
+        EVALUATE eValuate = m_Actions[i]->Execute(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
 			m_NodeValue.bCur = false;

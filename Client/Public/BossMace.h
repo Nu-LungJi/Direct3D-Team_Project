@@ -41,7 +41,7 @@ private:
 
 	_float		m_fTime{ 3.f };
 	uint32_t	m_iEffectID{};
-	_bool		m_bActive{ false };
+	_bool		m_bActive{ false }, m_bDead{ false }, m_bStop{false};
 public:
 	static E::UPtr<CBossMace> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -9,6 +9,7 @@ CBTRoot::CBTRoot(const CBTRoot& rhs) : CPrototype(rhs)
 {
 	m_eGroup = rhs.m_eGroup;
 	m_MasterName = rhs.m_MasterName;
+	m_bEntered = false;
 }
 
 CBTRoot::~CBTRoot()
@@ -83,6 +84,35 @@ void CBTRoot::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
 	{
 		iter->Set_Flag(iFlag, eType);
 	}
+}
+void CBTRoot::AbortExecute()
+{
+	Abort(); // 기존 각 노드의 Abort 로직 유지
+
+	if (m_bEntered)
+	{
+		OnExit(EVALUATE::FAILED);
+		m_bEntered = false;
+	}
+}
+EVALUATE CBTRoot::Execute(_float fTimeDelta)
+{
+	if (!m_bEntered)
+	{
+		OnEnter();
+		m_bEntered = true;
+	}
+	const EVALUATE eResult = Evaluate(fTimeDelta);
+
+	m_eDebug = eResult;
+
+	if (eResult != EVALUATE::RUN)
+	{
+		OnExit(eResult);
+		m_bEntered = false;
+	}
+
+	return eResult;
 }
 CComBeHavior* CBTRoot::Get_ComBT()
 {

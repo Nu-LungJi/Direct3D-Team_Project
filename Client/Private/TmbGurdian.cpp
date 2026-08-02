@@ -16,6 +16,7 @@
 #include "TmbGurdianDead.h"
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
+#include "UIController.h"
 NS_USING(Client)
 
 namespace
@@ -341,15 +342,29 @@ const _float CTmbGurdian::Get_Damage()
 
 _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-		return false;
 
 	Damaged(eType);
+	//if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	//{
+	//	++m_iNormalHitCnt;
+	//	const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+	//
+	//	if (hUIController.has_value())
+	//	{
+	//		if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+	//		{
+	//			pUIController->AddFinisher(2.f);
+	//		}
+	//	}
+	//}
 	if (eType == PLAYER_SKILL_TYPE::ATTACK && Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)))
 		return false;
 
 	if (ETOUI(m_eMonType) == ETOUI(MONSTER_TYPE::ELITE) && eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
+	
+	if(eType != PLAYER_SKILL_TYPE::ATTACK)
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN), FLAGTYPE::DEL);
 
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
 		return false;
@@ -359,6 +374,7 @@ _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 
 	MON_HIT_INFO HitInfo{};
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
 	m_PendingMonTable = HitInfo;
@@ -467,7 +483,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
 			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
 		{
-			MSG_BOX("Create Failed ComPxRigidBody TombGurdian");
+			MSG_BOX("Create Failed ComPxRigidBody TmbBoss");
 			return E_FAIL;
 		}
 	}
@@ -487,7 +503,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
 				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
 		{
-			MSG_BOX("Create Failed ComPxSphereCollider TmbGurdian");
+			MSG_BOX("Create Failed ComPxSphereCollider TmbBoss");
 			return E_FAIL;
 		}
 		if (!m_pComSphereCol->SetQueryEnabled(false))
@@ -773,6 +789,8 @@ void CTmbGurdian::Update(E::_float fTimeDelta)
 	{
 		ActivateDeadDebrisPhysics();
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS), FLAGTYPE::DEL);
+
+		SetPendingDestroy();
 	}
 }
 

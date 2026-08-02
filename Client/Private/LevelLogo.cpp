@@ -17,7 +17,6 @@
 #include "UIController.h"
 #include "VideoObject.h"
 
-#include "UIObject.h"
 NS_USING(Client)
 
 CLevelLogo::CLevelLogo()

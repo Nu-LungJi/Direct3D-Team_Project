@@ -4,6 +4,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "Monster.h"
 #include "Player.h"
+#include "ClientEvents.h" 
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -51,6 +52,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 				pAnimator->SetPlay(true);
 				pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+				if (m_bStart)
+				{
+					m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
+					m_bStart = false;
+				}
 
 				if (!m_bActiveSkill)
 				{
@@ -65,13 +71,10 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				ShakeCam(fAnimRatio);
 				Rotation(pTransform, pMoveIntent, pTarget, fTimeDelta, fAnimRatio);
 				//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
+			
 				if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 				{
-					if (m_bStart)
-					{
-						m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
-						m_bStart = false;
-					}
+					
 
 					m_fTime += fTimeDelta;
 
@@ -116,22 +119,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					}
 				}
 				if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
-				{
-					Reset_CheckFlag();
-					Reset_Value();
-					m_bActiveSkill = false;
 					return m_eDebug = EVALUATE::SUCCESS;
-				}
 
 				if (m_bLoop || bFinished)
-				{
-					//Hit 종료는 애니매이션 끝나면
-					//Attack도 애니매이션 끝나면
-					m_bActiveSkill = false;
-					Reset_Value();
-					Reset_CheckFlag();
 					return m_eDebug = EVALUATE::SUCCESS;
-				}
+			
 			}
 		}
 	}
@@ -147,7 +139,7 @@ void CBTAttackAnimation::Update_Gui()
 	ImGui::Text("RotRatio");
 	ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
 	DragFloat("RotTime", m_Value.fTime);
-
+	BoolButton("CamShake", m_bCamEnable);
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)
@@ -218,17 +210,23 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 }
 void CBTAttackAnimation::ShakeCam(_float fRotRatio)
 {
+	if (!m_bCamEnable)
+		return;
 	if (m_bCamShake && fRotRatio > m_fCamShakeRatio)
 	{
 		//카메라 쉐킷
+		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+			{
+			   1.f, // 강도 0 ~ 1
+			   1.f, // 지속시간
+			   15.f, // 초당 진동횟수
+			});
 		m_bCamShake = false;
 	}
 }
 void CBTAttackAnimation::Abort()
 {
-	__super::Abort();
-	Reset_Value();
-
+	Reset_CheckFlag();
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {
@@ -238,6 +236,7 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	SaveJsonValue(j, "CamEnable", m_bCamEnable);
 	return j;
 }
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
@@ -248,6 +247,7 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	LoadJsonValue(j, "CamEnable", m_bCamEnable);
 	return S_OK;
 }
 
@@ -263,11 +263,18 @@ void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIn
 	
 
 }
-void CBTAttackAnimation::Reset_Value()
+
+void CBTAttackAnimation::OnEnter()
 {
+	m_bActiveSkill = false;
 	m_bCamShake = true;
-	m_bStart = true;
 	m_fTime = 0.f;
+	m_bStart = true;
+	m_iLoopCnt = 0;
+	Reset_CheckFlag();
+}
+void CBTAttackAnimation::OnExit(EVALUATE eResult)
+{
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()
 {

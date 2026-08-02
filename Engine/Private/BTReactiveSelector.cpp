@@ -32,6 +32,14 @@ HRESULT CBTReactiveSelector::Initalize(void* pArg)
 	return S_OK;
 }
 
+void CBTReactiveSelector::OnEnter()
+{
+}
+
+void CBTReactiveSelector::OnExit(EVALUATE eResult)
+{
+}
+
 EVALUATE CBTReactiveSelector::Evaluate(_float fTimeDelta)
 {
 	int32_t iIndex = 0;
@@ -41,7 +49,7 @@ EVALUATE CBTReactiveSelector::Evaluate(_float fTimeDelta)
 		if (nullptr == m_Actions[i])
 			continue;
 
-		EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
+		EVALUATE eValuate = m_Actions[i]->Execute(fTimeDelta);
 		if (eValuate == EVALUATE::SUCCESS)
 		{
 			return m_eDebug = EVALUATE::SUCCESS;

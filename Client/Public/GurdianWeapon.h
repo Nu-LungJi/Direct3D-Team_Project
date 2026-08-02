@@ -25,6 +25,7 @@ public:
 public:
 	_bool					Weapon_CallBack() { return m_bDissolve; }
 private:
+	void					Dead_Parent(_float fTimeDelta);
 	void					Weapon_Throw(_float fTimeDelta);
 public:
 	static E::UPtr<CGurdianWeapon> Create();

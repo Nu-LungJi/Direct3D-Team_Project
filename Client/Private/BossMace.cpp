@@ -55,11 +55,18 @@ HRESULT CBossMace::Initialize(void* pArg)
 
 void CBossMace::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_bDead)
+		return;
 	__super::PriorityUpdate(fTimeDelta);
 }
 
 void CBossMace::Update(E::_float fTimeDelta)
 {
+	if (m_bDead)
+	{
+		SetPendingDestroy();
+		return;
+	}
 	__super::Update(fTimeDelta);
 	Enable_Emissive(fTimeDelta);
 	Disable_Emissive(fTimeDelta);
@@ -67,32 +74,48 @@ void CBossMace::Update(E::_float fTimeDelta)
 
 void CBossMace::LateUpdate(E::_float fTimeDelta)
 {
+	if (m_bDead)
+		return;
 	if (auto iter = CGameInstance::Get().GetGameObjectByHandleT<CBossTMB>(m_ParentHandle))
 	{
 		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
-			
+		{	
+			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+			{
+				m_bDead = true;
+				return;
+			}
+				
+			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::GROGY)))
+			{
+				m_bEmissive = false;
+				m_fEmissiveIntensity = 0.f;
+				return;
+			}
 			if (!pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW))|| iter->Get_CurSkillName() != "MorningStarAfterEffect")
 			{
 				m_bEmissive = false;
 				return;
 			}
-		m_bEmissive = true;
-		if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
-		{
-			if (pModel->Get_CombinedBoneMatrices().size() < m_iBoneSocketIndex)
-			{
-				_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
-				for (uint32_t i = 0; i < 3; ++i)
-				{
-					Par.r[i] = XMVector3Normalize(Par.r[i]);
-				}
-				XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
-	
-				GetTransform().SetParentWorldMatrix(m_ParentMatrix);
-				GetTransform().Update();
 
-				CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
-				CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+			m_bEmissive = true;
+			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
+			{
+				if (pModel->Get_CombinedBoneMatrices().size() > m_iBoneSocketIndex)
+				{
+					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
+					for (uint32_t i = 0; i < 3; ++i)
+					{
+						Par.r[i] = XMVector3Normalize(Par.r[i]);
+					}
+					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+
+					GetTransform().SetParentWorldMatrix(m_ParentMatrix);
+					GetTransform().Update();
+
+					CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+					CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+				}
 			}
 		}
 	}
@@ -134,7 +157,6 @@ void CBossMace::Active_Effect(const _string& EffectName)
 {
 	if (!m_bActive)
 	{
-
 		const _matrix effectWorld =
 			XMMatrixTranslation(
 				m_ParentMatrix._41,

@@ -37,6 +37,9 @@ protected:
 	
 protected:
 	void				Reset_CheckFlag();
+
+	virtual void		OnEnter() {};
+	virtual void		OnExit(EVALUATE eResult) {};
 private:
 	//GUi
 	void				Combo(const _char* pName,uint32_t& iFlag);

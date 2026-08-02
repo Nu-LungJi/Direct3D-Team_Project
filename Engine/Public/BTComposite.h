@@ -15,6 +15,9 @@ protected:
 
 	 HRESULT InitializePrototype(void* pArg = nullptr) override { m_MasterName = "Root"; return S_OK; }
 	 virtual HRESULT Initalize(void* pArg) override;
+
+	 virtual						void OnEnter() {};
+	 virtual						void OnExit(EVALUATE eResult) {};
 protected:
 	typedef struct strnodevalue
 	{

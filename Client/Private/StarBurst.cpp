@@ -6,6 +6,7 @@
 #include "BossTMB.h"
 #include "Player.h"
 
+#include "ComBeHavior.h"
 NS_USING(Client)
 
 CBoss_StarBurst::CBoss_StarBurst()	: CGameObject{}	{}
@@ -35,7 +36,7 @@ HRESULT CBoss_StarBurst::Initialize(void* pArg) {
 	m_fSpeed = pDesc->fSpeed;
 	m_fRadius = pDesc->fRadius;
 	m_tQueryFilter = pDesc->tQueryFilter;
-
+	m_hOwner = pDesc->hOwner;
 	GetTransform().SetPosition(pDesc->vStartPosition);
 	GetTransform().Update();
 
@@ -82,7 +83,7 @@ void CBoss_StarBurst::FixedUpdate(E::_float fTimeDelta)
 }
 
 void CBoss_StarBurst::Update(E::_float fTimeDelta) {
-	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID) {
+	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID || m_bDead)  {
 		SetPendingDestroy();
 		return;
 	}
@@ -250,6 +251,23 @@ _bool CBoss_StarBurst::HandleSweepHit(
 	}
 
 	return false;
+}
+
+void CBoss_StarBurst::Dead_Check()
+{
+	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_hOwner))
+	{
+		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
+		{
+			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN) | ETOUI(CBTRoot::BTFLAG::GROGY) | ETOUI(CBTRoot::BTFLAG::DEAD)))
+			{
+				CGameInstance::Get().StopEffect(m_pLightEffectID);
+				m_bDead = true;
+				return;
+			}
+
+		}
+	}
 }
 
 E::UPtr<CBoss_StarBurst>		CBoss_StarBurst::Create()

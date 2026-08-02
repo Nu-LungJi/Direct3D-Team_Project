@@ -29,6 +29,14 @@ HRESULT CBTRandSelector::Initalize(void* pArg)
 	return S_OK;
 }
 
+void CBTRandSelector::OnEnter()
+{
+}
+
+void CBTRandSelector::OnExit(EVALUATE eResult)
+{
+}
+
 EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
 {
 	uint32_t iRand = rand() % m_Actions.size();
@@ -42,7 +50,7 @@ EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
 	if (m_Actions.empty() || nullptr == m_Actions[iRand])
 		return 	m_eDebug = EVALUATE::FAILED;
 
-	EVALUATE eValuate = m_Actions[iRand]->Evaluate(fTimeDelta);
+	EVALUATE eValuate = m_Actions[iRand]->Execute(fTimeDelta);
 	if (eValuate == EVALUATE::SUCCESS)
 	{
 		m_NodeValue.bCur = false;

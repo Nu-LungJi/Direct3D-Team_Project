@@ -777,7 +777,7 @@ void CParticle_GPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 
 	TransformOwner(ownerId, deltaMatrix);
 }
-void CParticle_GPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrixData)
+void CParticle_GPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
 {
 	if (ownerId == INVALID_PARTICLE_OWNER_ID)
 		return;
@@ -811,20 +811,17 @@ void CParticle_GPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrix
 
 	memcpy(mapped.pData, &cb, sizeof(cb));
 
-	context->Unmap(m_pComOwnerOperationCBuffer->GetCBuffer().Get(),0);
+	context->Unmap(m_pComOwnerOperationCBuffer->GetCBuffer().Get(), 0);
 
-	context->CSSetConstantBuffers(13,1,m_pComOwnerOperationCBuffer->GetCBuffer().GetAddressOf());
+	context->CSSetConstantBuffers(13,1,
+		m_pComOwnerOperationCBuffer->GetCBuffer().GetAddressOf());
 
-	ID3D11UnorderedAccessView* particleUAV =
-		m_pParticleStructuredBuffer->GetUAV().Get();
+	ID3D11UnorderedAccessView* particleUAV = m_pParticleStructuredBuffer->GetUAV().Get();
 
-	context->CSSetUnorderedAccessViews(0,1,&particleUAV,nullptr);
+	context->CSSetUnorderedAccessViews(0, 1, &particleUAV, nullptr);
+	context->CSSetShader(m_pResTransformOwnerCS->GetComputeShader().Get(), nullptr, 0);
 
-	context->CSSetShader(m_pResTransformOwnerCS->GetComputeShader().Get(),nullptr,0);
-
-	const uint32_t groupCount =
-		(m_iNumElements + 255) / 256;
-
+	const uint32_t groupCount = (m_iNumElements + 255) / 256;
 	context->Dispatch(groupCount, 1, 1);
 
 	ID3D11UnorderedAccessView* nullUAV = nullptr;
@@ -834,6 +831,8 @@ void CParticle_GPU::TransformOwner(uint32_t ownerId,const _float4x4& deltaMatrix
 	context->CSSetConstantBuffers(13, 1, &nullCB);
 
 	context->CSSetShader(nullptr, nullptr, 0);
+
+	TransformPendingOwner(ownerId, deltaMatrixData);
 }
 
 void CParticle_GPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
