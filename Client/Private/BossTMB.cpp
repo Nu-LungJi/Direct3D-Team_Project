@@ -204,7 +204,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "MorningStarAfterEffect";
-	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttackAfterEffect";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttack";
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
