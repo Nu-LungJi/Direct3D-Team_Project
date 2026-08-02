@@ -163,6 +163,8 @@ HRESULT CHPBar::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 			perUI.margins = { 17.f, 0.f, 17.f, 0.f };
 		else if (m_UIINFO.Restag == "TEX_UI_T_MenuTextButtonBorder_4K")
 			perUI.margins = { 68.f, 0.f, 68.f, 0.f };
+		else if (m_UIINFO.Restag == "TEX_UI_T_TalentNonVideoBack")
+			perUI.margins = { 103.f, 0.f, 103.f, 0.f };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{

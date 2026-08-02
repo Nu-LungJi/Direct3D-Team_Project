@@ -36,6 +36,17 @@ namespace Engine
 	template<class T>
 	constexpr std::string_view MagicEnumToStringView(T&& t)
 	{
+		using ValueType = std::remove_cvref_t<T>;
+
+		if constexpr (std::is_enum_v<ValueType>)
+			return magic_enum::enum_name(static_cast<ValueType>(t));
+		else
+			return std::string_view(t);
+	}
+
+	template<class T>
+	constexpr std::string_view MagicEnumToStringView(const T&& t)
+	{
 		if constexpr (std::is_enum_v<std::remove_cvref_t<T>>)
 			return magic_enum::enum_name(t);
 		else

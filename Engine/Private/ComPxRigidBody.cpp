@@ -207,6 +207,11 @@ _bool CComPxRigidBody::AddTorque(const _float3& vTorque)
 	return true;
 }
 
+_bool CComPxRigidBody::SetKinematicTarget(const _float3& vPosition)
+{
+	return SetKinematicTarget(vPosition, GetRotation());
+}
+
 _bool CComPxRigidBody::SetKinematicTarget(const _float3& vPosition, const _float4& vQuaternion)
 {
 	auto* pDynamic = GetDynamicActor(m_pActor);

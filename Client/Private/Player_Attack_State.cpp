@@ -54,6 +54,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 
 	pTarget = CGameInstance::Get().GetGameObjectByHandle(player->GetTargetHandle());
+	
 	player->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ATTACK);
 }
 
@@ -189,15 +190,18 @@ CPlayer_Attack_State::ResolveAttackDirection(const CPlayer& player) const
 
 	_vector vAttackDirection{};
 
-	if (pTarget)
-	{
-		const _vector vPlayerPosition = player.GetTransform().GetState(STATE::POSITION);
+	if (pTarget) {
+		if (!pTarget->GetPendingDestroy())
+		{
+			const _vector vPlayerPosition = player.GetTransform().GetState(STATE::POSITION);
 
-		const _vector vTargetPosition = pTarget->GetTransform().GetState(STATE::POSITION);
+			const _vector vTargetPosition = pTarget->GetTransform().GetState(STATE::POSITION);
 
-		// 타겟 방향
-		vAttackDirection = XMVectorSetY(vTargetPosition - vPlayerPosition, 0.f);
+			// 타겟 방향
+			vAttackDirection = XMVectorSetY(vTargetPosition - vPlayerPosition, 0.f);
+		}
 	}
+	
 	else
 	{
 		// 타겟이 없거나 제거됐으면 카메라 방향

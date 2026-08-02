@@ -136,27 +136,33 @@ namespace
 		return true;
 	}
 
-	void FillShapeResult(const CPhysXManager& manager, const PxShape* pShape, PX_RAYCAST_RESULT& outResult)
+	template<typename TResult>
+	void FillQueryObjectResult(
+		const CPhysXManager& manager,
+		const PxRigidActor* pActor,
+		const PxShape* pShape,
+		TResult& outResult)
 	{
-		if (!pShape)
-			return;
-
-		if (const auto tShapeData = manager.FindShapeUserData(pShape))
+		if (pShape)
 		{
-			outResult.eShapeType = tShapeData->eType;
-			outResult.iShapeSubIndex = tShapeData->iSubIndex;
+			if (const auto tShapeData = manager.FindShapeUserData(pShape))
+			{
+				outResult.hGameObject = tShapeData->hGameObject;
+				outResult.eShapeType = tShapeData->eType;
+				outResult.iShapeSubIndex = tShapeData->iSubIndex;
+			}
 		}
-	}
 
-	void FillShapeResult(const CPhysXManager& manager, const PxShape* pShape, PX_OVERLAP_RESULT& outResult)
-	{
-		if (!pShape)
-			return;
-
-		if (const auto tShapeData = manager.FindShapeUserData(pShape))
+		if (outResult.hGameObject == CHandle{} && pActor)
 		{
-			outResult.eShapeType = tShapeData->eType;
-			outResult.iShapeSubIndex = tShapeData->iSubIndex;
+			if (const auto tActorData = manager.FindActorUserData(pActor))
+				outResult.hGameObject = tActorData->hGameObject;
+		}
+
+		if (!(outResult.hGameObject == CHandle{}))
+		{
+			outResult.pGameObject = CGameInstance::Get().
+				GetGameObjectByHandle(outResult.hGameObject);
 		}
 	}
 
@@ -168,8 +174,7 @@ namespace
 		tResult.vHitpos = { tHit.position.x, tHit.position.y, tHit.position.z };
 		tResult.vHitNormal = { tHit.normal.x, tHit.normal.y, tHit.normal.z };
 		tResult.fDistance = tHit.distance;
-		tResult.pGameObject = manager.FindGameObject(tHit.actor);
-		FillShapeResult(manager, tHit.shape, tResult);
+		FillQueryObjectResult(manager, tHit.actor, tHit.shape, tResult);
 		return tResult;
 	}
 
@@ -177,8 +182,7 @@ namespace
 	{
 		PX_OVERLAP_RESULT tResult{};
 		tResult.bHit = true;
-		tResult.pGameObject = manager.FindGameObject(tHit.actor);
-		FillShapeResult(manager, tHit.shape, tResult);
+		FillQueryObjectResult(manager, tHit.actor, tHit.shape, tResult);
 		return tResult;
 	}
 }
@@ -304,6 +308,43 @@ void CPhysXManager::UpdateGUI()
 		if (m_pRagdollEditor)
 			m_pRagdollEditor->Open();
 	}
+	if (ImGui::CollapsingHeader("Collision Layers"))
+	{
+		ImGui::Text("Registered: %zu", m_CollisionLayerNames.size());
+		if (ImGui::BeginTable(
+			"CollisionLayerTable",
+			3,
+			ImGuiTableFlags_Borders |
+			ImGuiTableFlags_RowBg |
+			ImGuiTableFlags_SizingStretchProp))
+		{
+			ImGui::TableSetupColumn("Bit", ImGuiTableColumnFlags_WidthFixed, 42.f);
+			ImGui::TableSetupColumn("Name");
+			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 96.f);
+			ImGui::TableHeadersRow();
+
+			for (const auto& [iValue, sName] : m_CollisionLayerNames)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				if (iValue == 0)
+					ImGui::TextUnformatted("-");
+				else
+				{
+					uint32_t iBit{};
+					for (uint32_t i = iValue; i > 1; i >>= 1)
+						++iBit;
+					ImGui::Text("%u", iBit);
+				}
+
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextUnformatted(sName.c_str());
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text("0x%08X", iValue);
+			}
+			ImGui::EndTable();
+		}
+	}
     ImGui::End();
 
 	if (m_pCollisionProxyEditor)
@@ -316,10 +357,176 @@ void CPhysXManager::UpdateGUI()
 
 void CPhysXManager::SetCollisionLayerNames(std::vector<std::pair<uint32_t, std::string>> layerNames)
 {
+	layerNames.erase(
+		std::remove_if(
+			layerNames.begin(),
+			layerNames.end(),
+			[](const auto& entry)
+			{
+				const uint32_t iValue = entry.first;
+				return entry.second.empty() ||
+					(iValue != 0 && (iValue & (iValue - 1)) != 0);
+			}),
+		layerNames.end());
+	std::sort(
+		layerNames.begin(),
+		layerNames.end(),
+		[](const auto& lhs, const auto& rhs)
+		{
+			return lhs.first < rhs.first;
+		});
+	layerNames.erase(
+		std::unique(
+			layerNames.begin(),
+			layerNames.end(),
+			[](const auto& lhs, const auto& rhs)
+			{
+				return lhs.first == rhs.first;
+			}),
+		layerNames.end());
+
+	m_CollisionLayerNames = std::move(layerNames);
+
 	if (m_pRagdollEditor)
-		m_pRagdollEditor->SetCollisionLayerNames(layerNames);
+		m_pRagdollEditor->SetCollisionLayerNames(m_CollisionLayerNames);
 	if (m_pCollisionProxyEditor)
-		m_pCollisionProxyEditor->SetCollisionLayerNames(std::move(layerNames));
+		m_pCollisionProxyEditor->SetCollisionLayerNames(m_CollisionLayerNames);
+}
+
+_bool CPhysXManager::EditCollisionLayerGUI(
+	const char* pLabel,
+	uint32_t& iLayer) const
+{
+	if (!pLabel)
+		return false;
+
+	if (m_CollisionLayerNames.empty())
+	{
+		return ImGui::InputScalar(
+			pLabel,
+			ImGuiDataType_U32,
+			&iLayer,
+			nullptr,
+			nullptr,
+			"%08X",
+			ImGuiInputTextFlags_CharsHexadecimal);
+	}
+
+	std::string sPreview = "Unregistered";
+	for (const auto& [iValue, sName] : m_CollisionLayerNames)
+	{
+		if (iValue == iLayer)
+		{
+			sPreview = sName;
+			break;
+		}
+	}
+
+	_bool bChanged{};
+	if (ImGui::BeginCombo(pLabel, sPreview.c_str()))
+	{
+		for (const auto& [iValue, sName] : m_CollisionLayerNames)
+		{
+			const _bool bSelected = iLayer == iValue;
+			if (ImGui::Selectable(sName.c_str(), bSelected))
+			{
+				iLayer = iValue;
+				bChanged = true;
+			}
+			if (bSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("0x%08X", iLayer);
+	return bChanged;
+}
+
+_bool CPhysXManager::EditCollisionLayerMaskGUI(
+	const char* pLabel,
+	uint32_t& iMask) const
+{
+	if (!pLabel)
+		return false;
+
+	if (m_CollisionLayerNames.empty())
+	{
+		return ImGui::InputScalar(
+			pLabel,
+			ImGuiDataType_U32,
+			&iMask,
+			nullptr,
+			nullptr,
+			"%08X",
+			ImGuiInputTextFlags_CharsHexadecimal);
+	}
+
+	uint32_t iRegisteredMask{};
+	uint32_t iSelectedCount{};
+	for (const auto& [iValue, sName] : m_CollisionLayerNames)
+	{
+		if (iValue == 0)
+			continue;
+		iRegisteredMask |= iValue;
+		if ((iMask & iValue) != 0)
+			++iSelectedCount;
+	}
+
+	std::string sPreview{};
+	if (iMask == 0)
+		sPreview = "None";
+	else if (iMask == PX_ALL_LAYERS)
+		sPreview = "All";
+	else
+	{
+		sPreview = std::to_string(iSelectedCount) + " selected";
+		if ((iMask & ~iRegisteredMask) != 0)
+			sPreview += " + custom";
+	}
+
+	_bool bChanged{};
+	if (ImGui::BeginCombo(pLabel, sPreview.c_str()))
+	{
+		if (ImGui::Button("None"))
+		{
+			iMask = 0;
+			bChanged = true;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("All Registered"))
+		{
+			iMask = iRegisteredMask;
+			bChanged = true;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("All Bits"))
+		{
+			iMask = PX_ALL_LAYERS;
+			bChanged = true;
+		}
+		ImGui::Separator();
+
+		for (const auto& [iValue, sName] : m_CollisionLayerNames)
+		{
+			if (iValue == 0)
+				continue;
+
+			_bool bSelected = (iMask & iValue) != 0;
+			if (ImGui::Checkbox(sName.c_str(), &bSelected))
+			{
+				if (bSelected)
+					iMask |= iValue;
+				else
+					iMask &= ~iValue;
+				bChanged = true;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("0x%08X", iMask);
+	return bChanged;
 }
 
 std::vector<CHandle> CPhysXManager::CreateCollisionProxyObjects(
@@ -437,10 +644,17 @@ _bool CPhysXManager::RayCast(const PX_RAYCAST_DESC& tDesc, PX_RAYCAST_RESULT& ou
 	return true;
 }
 
-_bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<PX_RAYCAST_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::RayCastMultiple(
+	const PX_RAYCAST_DESC& tDesc,
+	std::vector<PX_RAYCAST_RESULT>& outVecResult,
+	uint32_t iMaxHit,
+	PX_QUERY_MULTIPLE_STATUS* pOutStatus) const
 {
 	outVecResult.clear();
-	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0)
+	if (pOutStatus)
+		*pOutStatus = {};
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0 ||
+		iMaxHit == std::numeric_limits<uint32_t>::max())
 		return false;
 
 	PxVec3 vDirection{};
@@ -448,8 +662,9 @@ _bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<P
 	if (!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
 		return false;
 
-	std::vector<PxRaycastHit> Hits(iMaxHit);
-	PxRaycastBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
+	std::vector<PxRaycastHit> Hits(iBufferCapacity);
+	PxRaycastBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	PxHitFlags tHitFlags{ PxHitFlag::eDEFAULT };
 	if (tDesc.bHitMeshBothSides)
@@ -464,9 +679,15 @@ _bool CPhysXManager::RayCastMultiple(const PX_RAYCAST_DESC& tDesc, std::vector<P
 		tFilterData,
 		&tFilter);
 
-	outVecResult.reserve(tHitBuffer.getNbTouches());
-	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+	const uint32_t iReturnedHitCount =
+		std::min<uint32_t>(tHitBuffer.getNbTouches(), iMaxHit);
+	outVecResult.reserve(iReturnedHitCount);
+	for (uint32_t i = 0; i < iReturnedHitCount; ++i)
 		outVecResult.push_back(MakeLocationHitResult(*this, tHitBuffer.getTouch(i)));
+	if (pOutStatus)
+	{
+		pOutStatus->bTruncated = tHitBuffer.getNbTouches() > iMaxHit;
+	}
 
 	std::sort(outVecResult.begin(), outVecResult.end(), [](const PX_RAYCAST_RESULT& a, const PX_RAYCAST_RESULT& b)
 	{
@@ -500,10 +721,17 @@ _bool CPhysXManager::Sweep(const PX_SWEEP_DESC& tDesc, PX_SWEEP_RESULT& outResul
 	return true;
 }
 
-_bool CPhysXManager::SweepMultiple(const PX_SWEEP_DESC& tDesc, std::vector<PX_SWEEP_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::SweepMultiple(
+	const PX_SWEEP_DESC& tDesc,
+	std::vector<PX_SWEEP_RESULT>& outVecResult,
+	uint32_t iMaxHit,
+	PX_QUERY_MULTIPLE_STATUS* pOutStatus) const
 {
 	outVecResult.clear();
-	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0)
+	if (pOutStatus)
+		*pOutStatus = {};
+	if (!m_pScene || tDesc.fMaxDistance <= 0.f || iMaxHit == 0 ||
+		iMaxHit == std::numeric_limits<uint32_t>::max())
 		return false;
 
 	PxGeometryHolder tGeometry{};
@@ -514,16 +742,23 @@ _bool CPhysXManager::SweepMultiple(const PX_SWEEP_DESC& tDesc, std::vector<PX_SW
 		!BuildDirection(tDesc.vDirection, vDirection) || !BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
 		return false;
 
-	std::vector<PxSweepHit> Hits(iMaxHit);
-	PxSweepBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
+	std::vector<PxSweepHit> Hits(iBufferCapacity);
+	PxSweepBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	m_pScene->sweep(
 		tGeometry.any(), tPose, vDirection, tDesc.fMaxDistance, tHitBuffer,
 		PxHitFlag::eDEFAULT, tFilterData, &tFilter);
 
-	outVecResult.reserve(tHitBuffer.getNbTouches());
-	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+	const uint32_t iReturnedHitCount =
+		std::min<uint32_t>(tHitBuffer.getNbTouches(), iMaxHit);
+	outVecResult.reserve(iReturnedHitCount);
+	for (uint32_t i = 0; i < iReturnedHitCount; ++i)
 		outVecResult.push_back(MakeLocationHitResult(*this, tHitBuffer.getTouch(i)));
+	if (pOutStatus)
+	{
+		pOutStatus->bTruncated = tHitBuffer.getNbTouches() > iMaxHit;
+	}
 
 	std::sort(outVecResult.begin(), outVecResult.end(), [](const PX_SWEEP_RESULT& a, const PX_SWEEP_RESULT& b)
 	{
@@ -543,10 +778,17 @@ _bool CPhysXManager::Overlap(const PX_OVERLAP_DESC& tDesc, PX_OVERLAP_RESULT& ou
 	return true;
 }
 
-_bool CPhysXManager::OverlapMultiple(const PX_OVERLAP_DESC& tDesc, std::vector<PX_OVERLAP_RESULT>& outVecResult, uint32_t iMaxHit) const
+_bool CPhysXManager::OverlapMultiple(
+	const PX_OVERLAP_DESC& tDesc,
+	std::vector<PX_OVERLAP_RESULT>& outVecResult,
+	uint32_t iMaxHit,
+	PX_QUERY_MULTIPLE_STATUS* pOutStatus) const
 {
 	outVecResult.clear();
-	if (!m_pScene || iMaxHit == 0)
+	if (pOutStatus)
+		*pOutStatus = {};
+	if (!m_pScene || iMaxHit == 0 ||
+		iMaxHit == std::numeric_limits<uint32_t>::max())
 		return false;
 
 	PxGeometryHolder tGeometry{};
@@ -556,14 +798,21 @@ _bool CPhysXManager::OverlapMultiple(const PX_OVERLAP_DESC& tDesc, std::vector<P
 		!BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
 		return false;
 
-	std::vector<PxOverlapHit> Hits(iMaxHit);
-	PxOverlapBuffer tHitBuffer{ Hits.data(), iMaxHit };
+	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
+	std::vector<PxOverlapHit> Hits(iBufferCapacity);
+	PxOverlapBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	m_pScene->overlap(tGeometry.any(), tPose, tHitBuffer, tFilterData, &tFilter);
 
-	outVecResult.reserve(tHitBuffer.getNbTouches());
-	for (PxU32 i = 0; i < tHitBuffer.getNbTouches(); ++i)
+	const uint32_t iReturnedHitCount =
+		std::min<uint32_t>(tHitBuffer.getNbTouches(), iMaxHit);
+	outVecResult.reserve(iReturnedHitCount);
+	for (uint32_t i = 0; i < iReturnedHitCount; ++i)
 		outVecResult.push_back(MakeOverlapResult(*this, tHitBuffer.getTouch(i)));
+	if (pOutStatus)
+	{
+		pOutStatus->bTruncated = tHitBuffer.getNbTouches() > iMaxHit;
+	}
 
 	return !outVecResult.empty();
 }

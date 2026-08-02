@@ -2,10 +2,10 @@
 #include "Player_Magic_Bullet.h"
 #include "Client_Resources.h"
 #include "Trail_CPU.h"
-#include "ComPxSphereCollider.h"
-#include "ComPxRigidBody.h"
+#include "PhysXManager.h"
 
 #include "TmbGurdian.h"
+#include "BossTMB.h"
 NS_USING(Client)
 
 CPlayer_Magic_Bullet::CPlayer_Magic_Bullet()
@@ -41,47 +41,20 @@ HRESULT CPlayer_Magic_Bullet::Initialize(void* pArg)
 	m_vStartPosition = pDesc->vStartPosition;
 	m_vEndPosition = pDesc->vEndPosition;
 	m_fSpeed = pDesc->fSpeed;
+	m_fRadius = pDesc->fRadius;
+	m_hOwner = pDesc->hOwner;
+	m_tQueryFilter = pDesc->tQueryFilter;
+	m_tQueryFilter.hIgnoreGameObject = m_hOwner;
+
+	if (m_fSpeed <= 0.f || m_fRadius <= 0.f)
+		return E_FAIL;
+
 	BuildSpline(pDesc->fCurveHeight, pDesc->iSampleCount);
 	if (m_Splines.empty())
 		return E_FAIL;
 
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-
-		Desc.vPosition = pDesc->vStartPosition;
-
-		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxRigidBody", "ComPxRigidBody", &Desc, &m_pComPxRigidBody)))
-		{
-			return E_FAIL;
-		};
-	}
-	//m_pComPxRigidBody->SetKinematicTarget()
-
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		//이거 나중에 하나 미리 만들어놓고 가져오는 걸로 (캐싱해서)
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = pDesc->fRadius });
-		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("CLIENT_PX", "TMP_MATERIAL");
-		Desc.bIsTrigger = true;
-		Desc.tFilter = pDesc->tFilter;
-		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxSphereCollider", "ComPxShpereCollider", &Desc, &m_pComPxShpereCollider)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	//if (!m_pComPxRigidBody->SetLinearVelocity(_float3(pDesc->fSpeed, pDesc->fSpeed, pDesc->fSpeed)))
-		//return E_FAIL;
-	//if (!m_pComPxRigidBody->SetGravityEnabled(false))
-	//	return E_FAIL;
-
-
-	//GetTransform().SetPosition(m_Splines.front());
-	m_pComPxRigidBody->SetKinematicTarget(m_Splines.front(), GetTransform().GetQuaternion());
-
-	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
+	GetTransform().SetPosition(m_Splines.front());
+	GetTransform().Update();
 	return S_OK;
 }
 
@@ -89,16 +62,13 @@ void CPlayer_Magic_Bullet::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
+void CPlayer_Magic_Bullet::FixedUpdate(E::_float fTimeDelta)
 {
-	if (m_Splines.size() < 2 || m_iSplineIndex >= m_Splines.size() - 1)
+	if (fTimeDelta <= 0.f || m_Splines.size() < 2 ||
+		m_iSplineIndex >= m_Splines.size() - 1)
 		return;
 
 	_float fRemainDistance = m_fSpeed * fTimeDelta;
-
-
-	
-
 	while (fRemainDistance > 0.f && m_iSplineIndex < m_Splines.size() - 1)
 	{
 		const _vector vCurrent = XMLoadFloat3(&m_Splines[m_iSplineIndex]);
@@ -113,26 +83,48 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 			continue;
 		}
 
-		if (fRemainDistance >= fSegmentRemain)
+		const _float fMoveDistance = std::min(fRemainDistance, fSegmentRemain);
+		const _float fStartRatio = m_fDistanceOnSegment / fSegmentLength;
+		const _float fEndRatio =
+			(m_fDistanceOnSegment + fMoveDistance) / fSegmentLength;
+
+		_float3 vMoveStart{};
+		_float3 vMoveEnd{};
+		XMStoreFloat3(&vMoveStart, XMVectorLerp(vCurrent, vNext, fStartRatio));
+		XMStoreFloat3(&vMoveEnd, XMVectorLerp(vCurrent, vNext, fEndRatio));
+
+		PX_SWEEP_RESULT tHit{};
+		if (SweepSegment(vMoveStart, vMoveEnd, tHit))
 		{
-			fRemainDistance -= fSegmentRemain;
+			const _vector vDirection = XMVector3Normalize(
+				XMLoadFloat3(&vMoveEnd) - XMLoadFloat3(&vMoveStart));
+			_float3 vHitCenter{};
+			XMStoreFloat3(
+				&vHitCenter,
+				XMLoadFloat3(&vMoveStart) + vDirection * tHit.fDistance);
+			GetTransform().SetPosition(vHitCenter);
+			GetTransform().Update();
+			HandleSweepHit(tHit);
+			return;
+		}
+
+		GetTransform().SetPosition(vMoveEnd);
+		m_fDistanceOnSegment += fMoveDistance;
+		fRemainDistance -= fMoveDistance;
+
+		if (m_fDistanceOnSegment >= fSegmentLength - 0.0001f)
+		{
 			++m_iSplineIndex;
 			m_fDistanceOnSegment = 0.f;
-			//GetTransform().SetPosition(m_Splines[m_iSplineIndex]);
-			m_pComPxRigidBody->SetKinematicTarget(m_Splines[m_iSplineIndex], GetTransform().GetQuaternion());
-		}
-		else
-		{
-			m_fDistanceOnSegment += fRemainDistance;
-			const _float fRatio = m_fDistanceOnSegment / fSegmentLength;
-			//GetTransform().SetPosition(XMVectorLerp(vCurrent, vNext, fRatio));
-
-			_float3 tmpPos{};
-			XMStoreFloat3(&tmpPos, XMVectorLerp(vCurrent, vNext, fRatio));
-			m_pComPxRigidBody->SetKinematicTarget(tmpPos, GetTransform().GetQuaternion());
-			fRemainDistance = 0.f;
 		}
 	}
+
+	if (m_iSplineIndex >= m_Splines.size() - 1)
+		SetPendingDestroy();
+}
+
+void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
+{
 	{
 		_float3 vstart, vend;
 
@@ -140,15 +132,10 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
 		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
 	}
-
-	if (m_iSplineIndex >= m_Splines.size() - 1)
-		SetPendingDestroy();
-
 }
 
 void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
 {
-	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
 	GetTransform().Update();
 
 	auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
@@ -157,7 +144,7 @@ void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
 	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 	CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
 	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-	CGameInstance::Get().GetDbgLineRender()->AddSphere(0.1f, matrix);
+	CGameInstance::Get().GetDbgLineRender()->AddSphere(m_fRadius, matrix);
 	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 }
@@ -167,29 +154,70 @@ HRESULT CPlayer_Magic_Bullet::Render(ID3D11DeviceContext* pContext, const E::REN
 	return S_OK;
 }
 
-void CPlayer_Magic_Bullet::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+_bool CPlayer_Magic_Bullet::SweepSegment(
+	const _float3& vStart,
+	const _float3& vEnd,
+	PX_SWEEP_RESULT& tHit) const
 {
-	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Collision Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+	const _vector vDisplacement =
+		XMLoadFloat3(&vEnd) - XMLoadFloat3(&vStart);
+	const _float fDistance =
+		XMVectorGetX(XMVector3Length(vDisplacement));
+	if (fDistance <= 0.0001f)
+		return false;
+
+	_float3 vDirection{};
+	XMStoreFloat3(
+		&vDirection,
+		XMVector3Normalize(vDisplacement));
+
+	PX_SWEEP_DESC tSweep{};
+	tSweep.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+	tSweep.tGeometry.fRadius = m_fRadius;
+	tSweep.tPose.vPosition = vStart;
+	tSweep.vDirection = vDirection;
+	tSweep.fMaxDistance = fDistance;
+	tSweep.tFilter = m_tQueryFilter;
+
+	auto* pPhysXManager =
+		CGameInstance::Get().GetPhysXManager();
+	return pPhysXManager &&
+		pPhysXManager->Sweep(tSweep, tHit) &&
+		tHit.bHit;
 }
 
-void CPlayer_Magic_Bullet::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+void CPlayer_Magic_Bullet::HandleSweepHit(
+	const PX_SWEEP_RESULT& tHit)
 {
-	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Collision Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
-}
+	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Sweep Hit : ") +
+		(tHit.pGameObject ?
+			std::string{ tHit.pGameObject->GetObjectTag() } :
+			"null") + "\n");
 
-void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
-{
-	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Trigger Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+	_float4x4 tImpactWorld{};
+	XMStoreFloat4x4(
+		&tImpactWorld,
+		XMMatrixTranslation(
+			tHit.vHitpos.x,
+			tHit.vHitpos.y,
+			tHit.vHitpos.z));
+	CGameInstance::Get().PlayEffect(
+		"PlayerAttackSpread", tImpactWorld);
 
-	if (auto pGuridan = Cast<CTmbGurdian>(pObj))
+	if (Cast<CTmbGurdian>(tHit.pGameObject))
 	{
-		auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+		static constexpr const char* HIT_SOUND_PATHS[] =
+		{
 			"./Resources/SampleClient/Sound/avada.wav",
+	
+		};
+		constexpr int HIT_SOUND_COUNT = static_cast<int>(sizeof(HIT_SOUND_PATHS) / sizeof(HIT_SOUND_PATHS[0]));
+		const int iSoundIndex = Engine::RandInt(0, HIT_SOUND_COUNT - 1);
+
+		auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+			HIT_SOUND_PATHS[iSoundIndex],
 			SOUND_3D_DESC{
-				.vPosition = GetTransform().GetPosition(),
+				.vPosition = tHit.vHitpos,
 				.fMinDistance = 10.f,
 				.fMaxDistance = 30.f,
 				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
@@ -227,15 +255,10 @@ void CPlayer_Magic_Bullet::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER
 		//{
 		//	MSG_BOX("INVALID_SOUND_ID");
 		//}
+
 	}
 
-
-}
-
-void CPlayer_Magic_Bullet::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
-{
-	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Trigger Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+	SetPendingDestroy();
 }
 
 void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCount)
@@ -298,6 +321,7 @@ void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCoun
 		XMStoreFloat3(&vStoredPosition, vPosition);
 		m_Splines.push_back(vStoredPosition);
 	}
+
 }
 
 E::UPtr<CPlayer_Magic_Bullet> CPlayer_Magic_Bullet::Create()

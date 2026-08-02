@@ -2,8 +2,6 @@
 #include "StarBurst.h"
 #include "Client_Resources.h"
 #include "Trail_CPU.h"
-#include "ComPxSphereCollider.h"
-#include "ComPxRigidBody.h"
 
 #include "BossTMB.h"
 #include "Player.h"
@@ -30,34 +28,24 @@ HRESULT CBoss_StarBurst::Initialize(void* pArg) {
 	if (FAILED(CGameObject::Initialize(pArg)))	return E_FAIL;
 
 	const auto pDesc = static_cast<const STARBURST_DESC*>(pArg);
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		Desc.vPosition = pDesc->vStartPosition;
+	if (pDesc->fSpeed <= 0.f || pDesc->fRadius <= 0.f)
+		return E_INVALIDARG;
 
-		m_pTargetHandle = pDesc->pTargetHandle;
-		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxRigidBody", "ComPxRigidBody", &Desc, &m_pComPxRigidBody)))	return E_FAIL;
-	}
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = pDesc->fRadius });
-		Desc.pResMaterial = CGameInstance::Get().GetResourceFirst<CResPhysXMaterial>("CLIENT_PX", "TMP_MATERIAL");
-		Desc.bIsTrigger = true;
-		Desc.tFilter = pDesc->tFilter;
+	m_pTargetHandle = pDesc->pTargetHandle;
+	m_fSpeed = pDesc->fSpeed;
+	m_fRadius = pDesc->fRadius;
+	m_tQueryFilter = pDesc->tQueryFilter;
 
-		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxSphereCollider", "ComPxShpereCollider", &Desc, &m_pComPxShpereCollider)))	return E_FAIL;
-	}
+	GetTransform().SetPosition(pDesc->vStartPosition);
+	GetTransform().Update();
 
 	m_pLightEffectID = CGameInstance::Get().PlayEffect("Boss_StarBurst_A", *GetTransform().GetWorldMatrix(), _vector{},
-		[h = GetHandle(), this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+		[h = GetHandle()](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
 		{
 			if (auto pOBJ = CGameInstance::Get().GetGameObjectByHandleT<CBoss_StarBurst>(h)) {
-				m_pLightEffectID = INVALID_EFFECT_INSTANCE_ID;
+				pOBJ->m_pLightEffectID = INVALID_EFFECT_INSTANCE_ID;
 			}
 		});	
-
-	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
 
 	return S_OK;
 }
@@ -66,32 +54,49 @@ void CBoss_StarBurst::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
-void CBoss_StarBurst::Update(E::_float fTimeDelta) {
-	m_fEffectSpawnTimer += fTimeDelta;
-	m_fEffectLifeTime	+= fTimeDelta;
-
-	if (m_fEffectLifeTime <= m_pLavaFlame_CastingTime) {
-		Translate_Casting(m_fEffectLifeTime / m_pLavaFlame_CastingTime);
+void CBoss_StarBurst::FixedUpdate(E::_float fTimeDelta)
+{
+	if (fTimeDelta <= 0.f ||
+		m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID)
+	{
+		return;
 	}
-	else if (m_fEffectLifeTime >= m_pLavaFlame_CastingTime + m_pLavaFlame_StayTime) {
 
+	m_fEffectLifeTime += fTimeDelta;
+
+	if (m_fEffectLifeTime <= m_pLavaFlame_CastingTime)
+	{
+		Translate_Casting(
+			m_fEffectLifeTime /
+			m_pLavaFlame_CastingTime);
+	}
+	else if (m_fEffectLifeTime <
+		m_pLavaFlame_CastingTime +
+		m_pLavaFlame_StayTime)
+	{
+		
 	}
 	else {
-		Translate_Attacking(0.f);
+		Translate_Attacking(fTimeDelta);
 	}
+}
+
+void CBoss_StarBurst::Update(E::_float fTimeDelta) {
+	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID) {
+		SetPendingDestroy();
+		return;
+	}
+
+	m_fEffectSpawnTimer += fTimeDelta;
 
 	if (m_fEffectSpawnTimer >= m_pLavaFlame_SpawnInterval) {
 		m_fEffectSpawnTimer = 0.f;
 		CGameInstance::Get().PlayEffect("Boss_StarBurst_B", *GetTransform().GetWorldMatrix(), XMVECTOR{});
 	}
 
-	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID) {
-		SetPendingDestroy();
-	}
 }
 
 void CBoss_StarBurst::LateUpdate(E::_float fTimeDelta) {
-	GetTransform().SetPosition(m_pComPxRigidBody->GetPosition());
 	GetTransform().Update();
 
 	auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
@@ -100,7 +105,7 @@ void CBoss_StarBurst::LateUpdate(E::_float fTimeDelta) {
 	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 	CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
 	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-	CGameInstance::Get().GetDbgLineRender()->AddSphere(0.1f, matrix);
+	CGameInstance::Get().GetDbgLineRender()->AddSphere(m_fRadius, matrix);
 	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 
@@ -111,73 +116,122 @@ HRESULT CBoss_StarBurst::Render(ID3D11DeviceContext* pContext, const E::RENDER_C
 	return S_OK;
 }
 
-void CBoss_StarBurst::Translate_Casting(_float _Ratio){
+void CBoss_StarBurst::Translate_Casting(_float fRatio){
 
 	_float3 LocalDestination = { 16.f, 10.f, 2.f };
 
 
-	m_fCurrEffectMovementValue = 1.f - pow(1.f - _Ratio, 3.f);
+	m_fCurrEffectMovementValue = 1.f - pow(1.f - fRatio, 3.f);
 	_float DeltaMovementValue = m_fCurrEffectMovementValue - m_fPrevEffectMovementValue;
 	m_fPrevEffectMovementValue = m_fCurrEffectMovementValue;
 
-	_float3 CurrentPosition = m_pComPxRigidBody->GetPosition();
-
-	m_pComPxRigidBody->SetPosition(XMFLOAT3(
+	const _float3 CurrentPosition = GetTransform().GetPosition();
+	MoveWithSweep(XMFLOAT3(
 		CurrentPosition.x + DeltaMovementValue * LocalDestination.x, 
 		CurrentPosition.y + DeltaMovementValue * LocalDestination.y,
 		CurrentPosition.z + DeltaMovementValue * LocalDestination.z));
-	CGameInstance::Get().SetEffectPosition(m_pLightEffectID, m_pComPxRigidBody->GetPosition());
 }
 
-void CBoss_StarBurst::Translate_Attacking(_float _Ratio) {
+void CBoss_StarBurst::Translate_Attacking(_float fTimeDelta) {
 	auto GamePlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(m_pTargetHandle);
 	if (nullptr == GamePlayer)  return;
 
-	_float3  PxPos = m_pComPxRigidBody->GetPosition();
+	const _float3 CurrentPosition = GetTransform().GetPosition();
 	if (XMVectorGetX(XMVectorEqual(XMVectorZero(), m_vDirection))) {
-		m_vDirection = XMVector3Normalize(GamePlayer->GetTransform().GetLoadedPostion() + XMVectorSet(0.f, 1.5f, 0.f, 0.f) - XMLoadFloat3(&PxPos));
+		m_vDirection = XMVector3Normalize(GamePlayer->GetTransform().GetLoadedPostion() + XMVectorSet(0.f, 1.5f, 0.f, 0.f) - XMLoadFloat3(&CurrentPosition));
 	}
 
-	m_vCurrentPosition = XMLoadFloat3(&PxPos);
-	_float  EffectAttackSpeed = 2.5f;
 	_float3 EffectPos{};
-	XMStoreFloat3(&EffectPos, m_vCurrentPosition + m_vDirection * EffectAttackSpeed);
+	XMStoreFloat3(
+		&EffectPos,
+		XMLoadFloat3(&CurrentPosition) +
+		m_vDirection * m_fSpeed * fTimeDelta);
 
-	m_pComPxRigidBody->SetPosition(EffectPos);
-	CGameInstance::Get().SetEffectPosition(m_pLightEffectID, m_pComPxRigidBody->GetPosition());
+	MoveWithSweep(EffectPos);
 }
 
-void CBoss_StarBurst::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+_bool CBoss_StarBurst::MoveWithSweep(
+	const _float3& vNextPosition)
 {
-	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Collision Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+	const _float3 vCurrentPosition =
+		GetTransform().GetPosition();
+	const _vector vDisplacement =
+		XMLoadFloat3(&vNextPosition) -
+		XMLoadFloat3(&vCurrentPosition);
+	const _float fDistance =
+		XMVectorGetX(XMVector3Length(vDisplacement));
+
+	if (fDistance <= FLT_EPSILON)
+		return true;
+
+	_float3 vDirection{};
+	XMStoreFloat3(
+		&vDirection,
+		XMVector3Normalize(vDisplacement));
+
+	PX_SWEEP_DESC tSweep{};
+	tSweep.tGeometry.eType =
+		PX_QUERY_GEOMETRY_TYPE::SPHERE;
+	tSweep.tGeometry.fRadius = m_fRadius;
+	tSweep.tPose.vPosition = vCurrentPosition;
+	tSweep.vDirection = vDirection;
+	tSweep.fMaxDistance = fDistance;
+	tSweep.tFilter = m_tQueryFilter;
+
+	PX_SWEEP_RESULT tHit{};
+	auto* pPhysXManager =
+		CGameInstance::Get().GetPhysXManager();
+	if (pPhysXManager &&
+		pPhysXManager->Sweep(tSweep, tHit) &&
+		tHit.bHit &&
+		HandleSweepHit(tHit))
+	{
+		_float3 vHitCenter{};
+		XMStoreFloat3(
+			&vHitCenter,
+			XMLoadFloat3(&vCurrentPosition) +
+			XMLoadFloat3(&vDirection) *
+			tHit.fDistance);
+		GetTransform().SetPosition(vHitCenter);
+		GetTransform().Update();
+		return false;
+	}
+
+	GetTransform().SetPosition(vNextPosition);
+	GetTransform().Update();
+	CGameInstance::Get().SetEffectPosition(
+		m_pLightEffectID,
+		vNextPosition);
+	return true;
 }
 
-void CBoss_StarBurst::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
+_bool CBoss_StarBurst::HandleSweepHit(
+	const PX_SWEEP_RESULT& tHit)
 {
-	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Collision Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
-}
+	DEBUG_LOG_STR(std::string(
+		"[PX][CBoss_StarBurst] Sweep Hit : ") +
+		(tHit.pGameObject ?
+			std::string{ tHit.pGameObject->GetObjectTag() } :
+			"null") + "\n");
 
-void CBoss_StarBurst::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
-{
-	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Trigger Enter : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
-
-	if (auto pPlayer = Cast<CPlayer>(pObj))
+	if (auto pPlayer = Cast<CPlayer>(tHit.pGameObject))
 	{
 		CGameInstance::Get().StopEffect(m_pLightEffectID);
 
 		_float3 EffectScale = { 1.f, 1.f, 1.f };
 		XMMATRIX ScaleMatrix = XMMatrixScaling(EffectScale.x, EffectScale.y - 0.5f, EffectScale.z);
 
-		_float3 EffectPosition = m_pComPxRigidBody->GetPosition();
+		const _float3 EffectPosition = tHit.vHitpos;
 		XMMATRIX PositionMat = XMMatrixTranslation(EffectPosition.x, EffectPosition.y, EffectPosition.z);
 
-		XMVECTOR Forward = XMVector3Normalize(m_vDirection);
+		XMVECTOR Forward = m_vDirection;
+		if (XMVectorGetX(XMVector3LengthSq(Forward)) <= FLT_EPSILON)
+			Forward = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+		else
+			Forward = XMVector3Normalize(Forward);
 		XMVECTOR WorldUP = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-		_float DDU = XMVectorGetX(XMVectorAbs(XMVector3Dot(m_vDirection, WorldUP)));
+		_float DDU = XMVectorGetX(XMVectorAbs(XMVector3Dot(Forward, WorldUP)));
 		if (DDU > 0.999f) WorldUP = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 
 		XMVECTOR Right = XMVector3Normalize(XMVector3Cross(WorldUP, Forward));
@@ -190,14 +244,12 @@ void CBoss_StarBurst::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA
 		XMStoreFloat4x4(&WorldMatrix, ScaleMatrix * RotationMatrix * PositionMat);
 
 		auto EffectID = CGameInstance::Get().PlayEffect("Boss_HitSplash", WorldMatrix, XMVECTOR{});
-		CGameInstance::Get().SetEffectPosition(EffectID, m_pComPxRigidBody->GetPosition());
+		CGameInstance::Get().SetEffectPosition(EffectID, EffectPosition);
+		SetPendingDestroy();
+		return true;
 	}
-}
 
-void CBoss_StarBurst::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
-{
-	DEBUG_LOG_STR(std::string("[PX][CBoss_StarBurst] Trigger Exit : ") +
-		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+	return false;
 }
 
 E::UPtr<CBoss_StarBurst>		CBoss_StarBurst::Create()

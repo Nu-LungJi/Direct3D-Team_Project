@@ -32,8 +32,7 @@ private:
 	HRESULT InitializeCamerasAndLighting(
 		const std::optional<CHandle>& hPlayer);
 
-	HRESULT SpawnMonster(
-		const std::optional<CHandle>& hPlayer);
+	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
 public:
 	static Engine::UPtr<CLevelTerrain> Create();
 
@@ -46,6 +45,9 @@ private:
 
 	std::map<_string, _string>		m_BeHaviorJsonList;
 	std::vector<CHandle>				m_MedDebrisHandles{};
+
+private:
+	_bool m_bCreatePlayScreenUI{ false };
 
 private:
 	HRESULT InitializeMyMagicSquareStep();

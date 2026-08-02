@@ -15,6 +15,7 @@
 #include "SoundManager.h"
 #include "EventManager.h"
 #include "PhysXManager.h"
+#include "NvClothManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -75,7 +76,7 @@ public:
 	void Release_Engine();
 
 public:
-	void SetMouseFix(_bool mousefix) { m_bMouseFix = mousefix; if(m_bMouseFix)ShowCursor(FALSE); else ShowCursor(TRUE); }// 유아이용
+	void SetMouseFix(_bool mousefix);// 유아이용
 
 #pragma region TIME_PROVIDER
 public:
@@ -422,6 +423,14 @@ public:
 
 #pragma endregion
 
+#pragma region NVCLOTH_MANAGER
+public:
+	CNvClothManager* GetNvClothManager() const
+	{
+		return m_pNvClothManager.get();
+	}
+#pragma endregion
+
 
 #pragma region DBG_LINE_RENDER
 public:
@@ -654,6 +663,7 @@ private:
 	UPtr<CFontManager> m_pFontManager{};
 	UPtr<CAnimEdit_Manager> m_pAnimEdit_Manager{};
 	UPtr<CPhysXManager> m_pPhysXManager{};
+	UPtr<CNvClothManager> m_pNvClothManager{};
 	UPtr<CDbgLineRender> m_pDbgLineRender{};
 	UPtr<CNodeEditor>		m_pNodeEditor{};
 	UPtr<CAction_Manager>	m_pActionManager{};

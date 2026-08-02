@@ -4,6 +4,12 @@
 
 NS_BEGIN(Engine)
 
+struct CB_TIMEACCUMULATION
+{
+	_float	fAccumulationTime;
+	_float3		_pad;
+};
+
 struct PARTICLE_CPU_DATA
 {
     _float3 vPosition;
@@ -143,7 +149,10 @@ protected:
     std::pair<StringID, StringID>  m_viBufferID;
     SPtr<CResCBuffer>       m_pCBuffer;
     SPtr<class CResCBuffer> m_pComCBuffer;
+    SPtr<class CResCBuffer> m_pComTimeCBuffer;
     SPtr<CResSamplerState> m_pResSamplerState{};
+
+	_float m_fAccumulationTime = 0;
 
     // m_pParticleTexture는 부모 CParticle이 CResTexture2D로 공통 소유
 public:

@@ -32,6 +32,7 @@
 #include "MapManager.h"
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
+#include "NvClothManager.h"
 #include "DbgLineRender.h"
 #include "SerializeManager.h"
 
@@ -95,6 +96,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	if (FAILED(m_pGraphicDevice->ReadyDevice(EngineDesc.hWnd, EngineDesc.eWinMode, EngineDesc.iWinSizeX, EngineDesc.iWinSizeY)))
+	{
+		return E_FAIL;
+	}
+
+	m_pNvClothManager = CNvClothManager::Create(
+		ppDevice.Get(), ppContext.Get());
+	if (!m_pNvClothManager)
 	{
 		return E_FAIL;
 	}
@@ -293,6 +301,14 @@ void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 	}
 	
 	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
+
+
+	{
+		ZoneScopedN("pNvClothManager_StepSimulation");
+		if (m_pNvClothManager)
+			m_pNvClothManager->StepSimulation(fFixedTimeDelta);
+	}
+
 }
 
 void CGameInstance::UpdateGUI()
@@ -338,6 +354,8 @@ void CGameInstance::UpdateGUI()
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
+	if (m_pNvClothManager)
+		m_pNvClothManager->UpdateGUI();
 
 	m_pSerializeManager->UpdateGUI();
 
@@ -450,6 +468,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pMapManager->Update(fTimeDelta);
 	m_pMapMeshInstancingRenderer->Update();
 
+	if (m_pNvClothManager)
+		m_pNvClothManager->RenderDebug(*m_pDbgLineRender);
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
 
@@ -532,9 +552,16 @@ void CGameInstance::Release_Engine()
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
+	m_pNvClothManager.reset();
 	m_pEventManager.reset();
 	m_pEffectManager.reset();
 	m_pGraphicDevice.reset();
+}
+
+void CGameInstance::SetMouseFix(_bool mousefix)
+{
+	m_bMouseFix = mousefix;
+	ShowCursor(FALSE);
 }
 
 

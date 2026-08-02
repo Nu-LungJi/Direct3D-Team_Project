@@ -95,7 +95,7 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 
 	float center = 1 - smoothstep(0, 1, abs(uv.y - 0.5) * 2);
 
-	center = pow(center, 0.8);
+	center = pow(center, 0.8);		
 
 	float glow = 1 + center * g_fGlowStrength;
     
@@ -215,3 +215,40 @@ PS_OUT PSPlayerDash1(VS_OUT In) : SV_TARGET
 
 }
 
+PS_OUT PSRemoveBlack(VS_OUT In)
+{
+    PS_OUT Out = (PS_OUT)0;
+
+    float2 uv = In.vUV;
+
+    // 트레일을 따라 서로 다른 위치가 좌우로 흔들림
+    float wave1 = sin(uv.x * 8.0f + g_fAccumulationTime * 6.0f);
+    float wave2 = sin(uv.x * 17.0f - g_fAccumulationTime * 9.0f);
+
+    // V가 트레일 폭 방향
+    uv.y += wave1 * 0.135f;
+    uv.y += wave2 * 0.112f;
+
+    float4 texColor =
+        g_DiffuseTexture.Sample(LinearClamp, uv);
+
+    float mask =
+        max(texColor.r, max(texColor.g, texColor.b));
+
+    clip(mask - 0.2f);
+
+    float3 baseColor =
+        texColor.rgb * In.vColor.rgb;
+
+    float3 emissive =
+        In.vEmissive.rgb *
+        In.vEmissive.a *
+        mask;
+
+    Out.vDiffuse = float4(
+        baseColor + emissive,
+        mask * texColor.a * In.vColor.a
+    );
+
+    return Out;
+}

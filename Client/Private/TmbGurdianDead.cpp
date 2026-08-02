@@ -32,6 +32,9 @@ void CTmbGurdianDead::UpdateGUI()
 	ImGui::Text(
 		"Render Enabled: %s",
 		m_bRenderEnabled ? "TRUE" : "FALSE");
+
+	ImGui::DragFloat3("hm", reinterpret_cast<_float*>(&m_fTestEmissive), 0.1f, 0.f, 100.f);
+	ImGui::DragFloat("hmmmm", &m_EmissiveIntensive, 0.1f, 0.f, 100.f);
 }
 
 _bool CTmbGurdianDead::ActivatePhysics()
@@ -273,7 +276,10 @@ void CTmbGurdianDead::LateUpdate(E::_float fTimeDelta)
 		return;
 
 	if (m_bActivated)
+	{
 		UpdatePhysicData();
+		Boom(fTimeDelta);
+	}
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
@@ -325,7 +331,7 @@ HRESULT CTmbGurdianDead::Render(ID3D11DeviceContext* pContext, const E::RENDER_C
 
 		{
 			m_pComModelInstance->Bind_Textures(pContext, i);
-			m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);   // EmissiveColor -> EmissiveIntensity -> Alpha 순
+			m_pComModelInstance->Bind_Materials(pContext, {1.f,1.f,1.f}, m_EmissiveIntensive, {1.f, 1.f, 1.f}, m_DissolveIntensive, 1.f);   // EmissiveColor -> EmissiveIntensity -> Alpha 순
 		}
 
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -376,6 +382,16 @@ bool CTmbGurdianDead::GetShadowBounds(BoundingBox& OutBounds) const {
 	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
 
 	return true;
+}
+void CTmbGurdianDead::Boom(_float fTimeDelta)
+{
+	m_fTick += fTimeDelta;
+	_float t = m_fTick / 2.f;
+	
+	
+	m_DissolveIntensive = 0.f + (1.f - 0.f) * t *0.3f;
+	m_EmissiveIntensive = 0.f + (10.f - 0.f) * t;
+
 }
 /*---------------------------------*/
 

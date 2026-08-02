@@ -3,12 +3,13 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
-enum class TOMB_SKILL { JUMP_START, JUMP_END,SLASH,SMASH,SKIP, END };
+enum class TOMB_SKILL { JUMP_START, JUMP_END,SLASH,SMASH,SKIP,HIT_ACCIO, END };
 class CTmbGurdian final : public CMonster
 {
 public:
 	struct TMBGURDIAN_DESC :public  CMonster::MONSTER_DESC
 	{
+		_float3 vWeaponScale{1.f,1.f,1.f};
 		_string WeaponResourceName{};
 		_string WeaponProtoName{};
 	};
@@ -41,6 +42,7 @@ private:
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
 
+	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
 public:

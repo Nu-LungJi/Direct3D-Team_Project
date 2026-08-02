@@ -1,7 +1,7 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
 
 #define POISSON_COUNT	4
-#define MAX_EFFECTLIGHT_COUNT 15
+#define MAX_EFFECTLIGHT_COUNT 15		
 RWTexture2D<float4> OUTPUT : register(u0);
 
 // Base Texture
@@ -24,13 +24,13 @@ Texture2DArray<float>	DynamicShadowMaps	  : register(t10);		// Directional Dynam
 TextureCubeArray<float> StaticShadowCubeMaps  : register(t11);		// Point Static
 TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
 
-static const float		ShadowSmoothness		= 2.5f;
-static const float		ShadowBrightness		= 0.00f;
+static const float		ShadowSmoothness		= 1.5f;
+static const float		ShadowBrightness		= 0.f;
 static const float		ShadowStrength			= 1.05f;
 
-static const float		EnviromentIntensity		= 0.8f;				// 환경광 밝기
+static const float		EnviromentIntensity		= 1.0f;			// 환경광 밝기
 static const float		FillLightBrightness		= 0.5f;			// 등지는 영역의 밝기
-static const float		DirectLightBrightness	= 1.f;				// 빛받는 영역의 밝기
+static const float		DirectLightBrightness	= 1.f;			// 빛받는 영역의 밝기
 
 static const float2		PoissonDisk_EightTab[8] =
 {
@@ -169,20 +169,9 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 		ShadowFactor += MergeShadowMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
 	}
 	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
+	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
 	
-	float BlockerDepth = DynamicShadowMaps.SampleLevel(PointClamp, float3(ShadowMapUV, _ShadowSlot), 0.f).r;
-	
-	float DepthGap = max(0.f, CurrentPixelDepth - BlockerDepth);
-	
-	float ContactFactor = 1.f - smoothstep(0.001f, 0.03f, DepthGap);
-	
-	float ShadowOpacity = lerp(0.25f, 1.f, ContactFactor);
-	
-	float ContactShadowFactor = lerp(1.f, NormalShadowFactor, ShadowOpacity);
-	
-	if (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL) return ContactShadowFactor;
-
-	return Attenuate_ShadowStrength(ContactShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
+	return FinalShadowFactor;
 }
 
 float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowSlot, uint _LightIndex)

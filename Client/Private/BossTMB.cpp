@@ -12,6 +12,8 @@
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 #include "DbgLineRender.h"
 #include "StarBurst.h"
 NS_USING(Client)
@@ -28,25 +30,7 @@ void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
 
-	if (ImGui::TreeNode("Flag"))
-	{
-		struct GuiView
-		{
-			uint32_t iValue{};
-			const _char* pName{};
-		};
-#define X(name, value) value, #name,
-		const GuiView Flags[] = { BTFLAG_M };
-#undef X
-
-		for (uint32_t i = 0; i < std::size(Flags); ++i)
-		{
-			ImGui::Text(Flags[i].pName); ImGui::SameLine();
-			ImGui::Text(true == m_pBeHavior->Check_Flag(Flags[i].iValue) ? ": TRUE" : " FALSE");
-		}
-			
-		ImGui::TreePop();
-	}
+	
 }
 
 HRESULT CBossTMB::InitializePrototype(void* pArg)
@@ -77,7 +61,38 @@ HRESULT CBossTMB::Initialize(void* pArg)
 			return E_FAIL;
 		}
 	}
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
+		{
+			MSG_BOX("Create Failed ComPxRigidBody TombGurdian");
+			return E_FAIL;
+		}
+	}
 
+	{
+		CComPxSphereCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComRigidBody;
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.bIsTrigger = false;
+		Desc.tFilter = PX_FILTER_DESC{
+			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
+			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+		};
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 5.f });
+		if (!Desc.pResMaterial ||
+			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
+				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
+		{
+			MSG_BOX("Create Failed ComPxSphereCollider TmbGurdian");
+			return E_FAIL;
+		}
+		if (!m_pComSphereCol->SetQueryEnabled(false))
+			return E_FAIL;
+	}
 	{
 		CComCharacterMoveIntent::DESC Desc{};
 		if (FAILED(AddComponentFromProto(
@@ -179,6 +194,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 
 	m_eAttType = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	m_fEMissiveColor = { 0.015f,0.026f,0.33f };
 
 	return S_OK;
 }
@@ -193,6 +209,10 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bDonMove)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
+
+	_float3 vPos = m_pCharacterController->GetPosition();
+	_float4 vRot = m_pComTransform->GetQuaternion();
+	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
 }
 
 void CBossTMB::Update(E::_float fTimeDelta)

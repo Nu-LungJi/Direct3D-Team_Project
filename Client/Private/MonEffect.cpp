@@ -26,12 +26,6 @@ HRESULT CMonEffect::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
-	//"SAMPLE_CLIENT_PX", "TMP_MATERIAL",
-	//	"SAMPLE_CLIENT_PX", "TMP_GEO_BOX",
-	//	"SAMPLE_CLIENT_PX", "TMP_GEO_SPHERE",
-	//	"SAMPLE_CLIENT_PX", "TMP_GEO_CAPSULE"
-
-
 	{
 		CComPxRigidBody::DESC Desc{};
 		Desc.eType = CComPxRigidBody::TYPE::DYNAMIC;

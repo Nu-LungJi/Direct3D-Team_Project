@@ -112,6 +112,7 @@ CLightPlacementEditor::CLightPlacementEditor(
 void CLightPlacementEditor::UpdateGUI()
 {
 	DrawWindow();
+	DrawDebugLights();
 
 	if (m_bEditMode)
 		RenderGizmo();
@@ -599,7 +600,10 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 				range,
 				LightPlacementEditorDetail::MIN_RANGE));
 		}
+	}
 
+	if (lightType == LIGHT_TYPE::SPOTLIGHT)
+	{
 		_float inner = light->Get_LightInnerAttenuation();
 		_float outer = light->Get_LightOuterAttenuation();
 		if (ImGui::DragFloat(

@@ -233,15 +233,15 @@ void CComPxCollider::UpdateGUI()
 
 	PX_FILTER_DESC tFilter = GetFilter();
 	bool bFilterChanged{};
-	bFilterChanged |= ImGui::InputScalar(
-		"Layer", ImGuiDataType_U32, &tFilter.iLayer, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Simulation Mask", ImGuiDataType_U32, &tFilter.iSimulationMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
-	bFilterChanged |= ImGui::InputScalar(
-		"Query Mask", ImGuiDataType_U32, &tFilter.iQueryMask, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
+	if (auto* pPhysXManager = CGameInstance::Get().GetPhysXManager())
+	{
+		bFilterChanged |= pPhysXManager->EditCollisionLayerGUI(
+			"Layer", tFilter.iLayer);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Simulation Mask", tFilter.iSimulationMask);
+		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
+			"Query Mask", tFilter.iQueryMask);
+	}
 	if (bFilterChanged)
 		SetFilter(tFilter);
 
@@ -275,12 +275,13 @@ HRESULT CComPxCollider::Initialize(void* pArg)
     if (m_pResMaterial == nullptr)
         return E_FAIL;
 	m_tFilter = pDesc->tFilter;
+	m_iShapeSubIndex = pDesc->iShapeSubIndex;
 	m_bIsTrigger = pDesc->bIsTrigger;
 
     return S_OK;
 }
 
-_bool CComPxCollider::RegisterShape(PX_SHAPE_TYPE eType, uint32_t iSubIndex)
+_bool CComPxCollider::RegisterShape(PX_SHAPE_TYPE eType)
 {
 	if (!m_pShape || !GetGameObject())
 		return false;
@@ -302,7 +303,7 @@ _bool CComPxCollider::RegisterShape(PX_SHAPE_TYPE eType, uint32_t iSubIndex)
 	PX_SHAPE_USER_DATA userData{};
 	userData.hGameObject = GetGameObject()->GetHandle();
 	userData.eType = eType;
-	userData.iSubIndex = iSubIndex;
+	userData.iSubIndex = m_iShapeSubIndex;
 
 	m_pShape->userData = nullptr;
 	return pPhysXManager->RegisterShape(m_pShape, userData);

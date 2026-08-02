@@ -199,14 +199,17 @@ VS_POINT_OUT VSMain_PointFace(VS_IN IN)
 	return OUT;
 }
 
-VS_POINT_OUT VSMain_InstancedPointFace(VS_IN IN)
+VS_POINT_OUT VSMain_InstancedPointFace(VS_SHADOW_INSTANCED_IN IN, uint _InstancedID : SV_INSTANCEID)
 {
 	VS_POINT_OUT OUT;
 	
-	float4 WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
-	OUT.WorldPos = WorldPos.xyz;
-	OUT.Position = mul(WorldPos, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[CurrentPointFaceIndex]);
-
+	const float4 SkinnedPosition = Compute_AnimModel_SkinnedPosition(IN, _InstancedID);
+	
+	float4 WorldPosition = mul(SkinnedPosition, gInstances[_InstancedID].WorldMatrix);
+	
+	OUT.WorldPos = WorldPosition.xyz;
+	OUT.Position = mul(WorldPosition, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[CurrentPointFaceIndex]);
+	
 	return OUT;
 }
 
@@ -241,4 +244,13 @@ float PSMain(GS_OUT OUT) : SV_DEPTH
 	float	Depth = Distance / OuterRange;
 	
 	return saturate(Depth);
+}
+float PSMain_PointFace(VS_POINT_OUT OUT) : SV_DEPTH
+{
+	float3 LightToPixel = OUT.WorldPos - AffectedLight[CurrentShadowLightIndex].Position;
+	float  Distance = length(LightToPixel);
+	
+	float  OuterRange = max(0.02f, AffectedLight[CurrentShadowLightIndex].OuterAttanuation);
+
+	return saturate(Distance / OuterRange);
 }

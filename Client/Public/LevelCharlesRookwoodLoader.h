@@ -10,6 +10,7 @@ public:
 	static std::future<bool> Load();
 	static std::future<bool> UnLoad();
 private:
+	static HRESULT LoadPlayerCape();
 	static HRESULT MonsterLoad_InWorker();
 
 private:

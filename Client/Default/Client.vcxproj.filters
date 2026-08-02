@@ -67,6 +67,9 @@
     <Filter Include="GameObject\Terrain\RagdollTest">
       <UniqueIdentifier>{575385ef-b304-4d49-8f19-86b890c8e7b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\NvClothCape">
+      <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Camera">
       <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
     </Filter>
@@ -228,6 +231,21 @@
     </Filter>
     <Filter Include="GameObject\Monster\Effect">
       <UniqueIdentifier>{1d4dcef1-d0db-4ee2-99d1-8e63dd2b61d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\GameOverMask">
+      <UniqueIdentifier>{86f6ad92-4688-42ea-863a-d4cee5d1f8a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\VideoObject">
+      <UniqueIdentifier>{9be42490-276b-4619-ba51-b6f8a15dd4a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\Cursor">
+      <UniqueIdentifier>{b2f47277-f943-4e7b-819d-1514d88bd25c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\SpawnMonster1">
+      <UniqueIdentifier>{9bc9d2c2-c9d6-4247-b19b-95a2be7623bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
+      <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -495,6 +513,9 @@
     <ClInclude Include="..\public\RagdollTest.h">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\NvClothCape.h">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
@@ -537,8 +558,23 @@
     <ClInclude Include="..\public\MonEffect.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\StarBurst.h">
       <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\GameOverMask.h">
+      <Filter>GameObject\UI\GameOverMask</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\VideoObject.h">
+      <Filter>GameObject\UI\VideoObject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Cursor.h">
+      <Filter>GameObject\UI\Cursor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -762,6 +798,9 @@
     <ClCompile Include="..\private\RagdollTest.cpp">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\NvClothCape.cpp">
+      <Filter>GameObject\Terrain\NvClothCape</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
     </ClCompile>
@@ -804,8 +843,17 @@
     <ClCompile Include="..\private\MonEffect.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\StarBurst.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Cursor.cpp">
+      <Filter>GameObject\UI\Cursor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -881,5 +929,11 @@
     <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
     </FxCompile>
+    <ClCompile Include="..\Private\GameOverMask.cpp">
+      <Filter>GameObject\UI\GameOverMask</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\VideoObject.cpp">
+      <Filter>GameObject\UI\VideoObject</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
