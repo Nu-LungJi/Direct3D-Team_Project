@@ -5,7 +5,9 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "TestPathPlaybackObject.h"
 #include "RagdollTest.h"
+#include "TombBossBullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 
@@ -42,6 +44,11 @@ std::future<bool> CLevelTerrainLoader::Load()
 			{
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
+
 			UILoad();
 			// oilbarrel
 			{
@@ -71,6 +78,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 				CRagdollTest::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_RagdollTest");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_TestPathPlayback,
+				CTestPathPlaybackObject::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_TestPathPlayback");
 				return false;
 			}
 
@@ -234,6 +250,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 				LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, CBoss_StarBurst::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_BossStarBurst");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_TombBossBullet,
+				CTombBossBullet::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_TombBossBullet");
 				return false;
 			}
 			//TombGurDian

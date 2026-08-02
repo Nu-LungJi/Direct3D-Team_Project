@@ -67,6 +67,9 @@
     <Filter Include="GameObject\Terrain\RagdollTest">
       <UniqueIdentifier>{575385ef-b304-4d49-8f19-86b890c8e7b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\PathPlaybackTest">
+      <UniqueIdentifier>{706c2a62-aaf1-4b39-99c1-91cd9a965278}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Terrain\NvClothCape">
       <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
     </Filter>
@@ -163,6 +166,12 @@
     <Filter Include="Loader\Level\Terrain">
       <UniqueIdentifier>{92f95264-506b-47ea-a584-f48e1d691bb5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\UIEditor">
+      <UniqueIdentifier>{b377960a-c4f6-48a8-83fd-a3fdb9bb8213}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\UIEditor">
+      <UniqueIdentifier>{b94e8845-2a15-4b9d-869d-7866fb4f5a41}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Terrain">
       <UniqueIdentifier>{84ffd718-2e24-44f4-bdb5-089cd24097d1}</UniqueIdentifier>
     </Filter>
@@ -249,6 +258,9 @@
     </Filter>
     <Filter Include="GameObject\Monster\00.Parents">
       <UniqueIdentifier>{abad3cbf-f984-44ce-8798-0e9150fa9f2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\TombBoss\TombBossBullet">
+      <UniqueIdentifier>{892b8ca5-2abf-46df-8ece-4f0e6b29d275}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -474,6 +486,12 @@
     <ClInclude Include="..\public\LevelTerrainLoader.h">
       <Filter>Loader\Level\Terrain</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditor.h">
+      <Filter>Level\UIEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditorLoader.h">
+      <Filter>Loader\Level\UIEditor</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resources\Buffer</Filter>
     </ClInclude>
@@ -509,6 +527,9 @@
     </ClInclude>
     <ClInclude Include="..\public\RagdollTest.h">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TestPathPlaybackObject.h">
+      <Filter>GameObject\Terrain\PathPlaybackTest</Filter>
     </ClInclude>
     <ClInclude Include="..\public\NvClothCape.h">
       <Filter>GameObject\Terrain\NvClothCape</Filter>
@@ -561,6 +582,12 @@
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TombBossBullet.h">
+      <Filter>GameObject\Monster\TombBoss\TombBossBullet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StarBurst.h">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\GameOverMask.h">
       <Filter>GameObject\UI\GameOverMask</Filter>
     </ClInclude>
@@ -569,6 +596,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Cursor.h">
       <Filter>GameObject\UI\Cursor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ClientEvents.h">
+      <Filter>99.Defines</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Monster.h">
       <Filter>GameObject\Monster\00.Parents</Filter>
@@ -671,6 +701,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Monster.cpp">
+      <Filter>GameObject\Monster</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\BTAnimation.cpp">
       <Filter>GameObject\AI\AnimRoot\Anim</Filter>
@@ -789,6 +822,12 @@
     <ClCompile Include="..\private\LevelTerrainLoader.cpp">
       <Filter>Loader\Level\Terrain</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\LevelUIEditor.cpp">
+      <Filter>Level\UIEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelUIEditorLoader.cpp">
+      <Filter>Loader\Level\UIEditor</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resources\Buffer</Filter>
     </ClCompile>
@@ -800,6 +839,9 @@
     </ClCompile>
     <ClCompile Include="..\private\RagdollTest.cpp">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TestPathPlaybackObject.cpp">
+      <Filter>GameObject\Terrain\PathPlaybackTest</Filter>
     </ClCompile>
     <ClCompile Include="..\private\NvClothCape.cpp">
       <Filter>GameObject\Terrain\NvClothCape</Filter>
@@ -861,7 +903,10 @@
     <ClCompile Include="..\Private\Monster.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\BossMace.cpp">
+    <ClCompile Include="..\private\TombBossBullet.cpp">
+      <Filter>GameObject\Monster\TombBoss\TombBossBullet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StarBurst.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>
     </ClCompile>
     <ClCompile Include="..\private\GurdianWeapon.cpp">
@@ -869,6 +914,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\StarBurst.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
+      <Filter>GameObject\Monster</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

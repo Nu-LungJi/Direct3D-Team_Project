@@ -40,6 +40,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 	}
 
+	//GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
+
 	auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 	{
@@ -111,13 +113,8 @@ void CLevelBossCharlesRookwood::FrameStart(E::_float fTimeDelta)
 
 Engine::UPtr<CLevelBossCharlesRookwood> CLevelBossCharlesRookwood::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelBossCharlesRookwood>(new CLevelBossCharlesRookwood{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevel_BossCharlesRookwood");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelBossCharlesRookwood>(new CLevelBossCharlesRookwood{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 

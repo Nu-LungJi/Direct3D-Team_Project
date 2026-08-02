@@ -480,7 +480,7 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 		static_cast<int32_t>(std::size(lightTypeNames))))
 	{
 		lightType = static_cast<LIGHT_TYPE>(lightTypeIndex);
-		if (SUCCEEDED(light->Change_LightType(lightType)) &&
+		if (SUCCEEDED(light->Set_LightType(lightType)) &&
 			lightType == LIGHT_TYPE::POINT &&
 			light->Get_PointLightOuterAttenuation() <
 				LightPlacementEditorDetail::MIN_RANGE)

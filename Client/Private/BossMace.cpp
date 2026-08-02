@@ -134,7 +134,15 @@ void CBossMace::Active_Effect(const _string& EffectName)
 {
 	if (!m_bActive)
 	{
-		m_iEffectID = CGameInstance::Get().PlayEffect(EffectName, m_ParentMatrix, _vector{},
+
+		const _matrix effectWorld =
+			XMMatrixTranslation(
+				m_ParentMatrix._41,
+				m_ParentMatrix._42,
+				m_ParentMatrix._43);	
+		_float4x4 effectMat;
+		XMStoreFloat4x4(&effectMat, effectWorld);
+		m_iEffectID = CGameInstance::Get().PlayEffect(EffectName, effectMat, _vector{},
 			[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
 			{
 				if (effectId != m_iEffectID)

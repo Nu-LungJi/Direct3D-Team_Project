@@ -221,6 +221,10 @@ HRESULT CResTexture2D::Load(const std::any& arg)
 
 HRESULT CResTexture2D::Unload(const std::any& arg)
 {
+	m_pSRV.Reset();
+	m_pTexture.Reset();
+	m_Texture2DDesc = {};
+	m_eState = STATE::UNLOAD;
     return S_OK;
 }
 

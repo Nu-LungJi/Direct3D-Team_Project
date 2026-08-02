@@ -280,6 +280,11 @@
     <ClInclude Include="..\public\ComPxFixedJoint.h" />
     <ClInclude Include="..\public\ComPxJoint.h" />
     <ClInclude Include="..\public\ComPxRagdoll.h" />
+    <ClInclude Include="..\public\PathPlaybackDefines.h" />
+    <ClInclude Include="..\public\PathPlaybackEditor.h" />
+    <ClInclude Include="..\public\PathPlaybackEvaluator.h" />
+    <ClInclude Include="..\public\ResPathPlayback.h" />
+    <ClInclude Include="..\public\ComPathPlayback.h" />
     <ClInclude Include="..\public\PxRagdollAuthoring.h" />
     <ClInclude Include="..\public\RagdollEditorGUI.h" />
     <ClInclude Include="..\public\ComPxRevoluteJoint.h" />
@@ -622,6 +627,10 @@
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
     </ClCompile>
+    <ClCompile Include="..\private\ResPathPlayback.cpp" />
+    <ClCompile Include="..\private\PathPlaybackEditor.cpp" />
+    <ClCompile Include="..\private\PathPlaybackEvaluator.cpp" />
+    <ClCompile Include="..\private\ComPathPlayback.cpp" />
     <ClCompile Include="..\private\PxRagdollAuthoring.cpp">
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>

@@ -233,6 +233,7 @@
     <ClInclude Include="..\Public\BTTurnDirect.h" />
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
+    <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
     <ClInclude Include="..\Public\CinematicEditor.h" />
@@ -252,6 +253,8 @@
     <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h" />
     <ClInclude Include="..\public\LevelTerrain.h" />
     <ClInclude Include="..\public\LevelTerrainLoader.h" />
+    <ClInclude Include="..\Public\LevelUIEditor.h" />
+    <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
@@ -265,6 +268,7 @@
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
+	<ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
@@ -286,6 +290,7 @@
     <ClInclude Include="..\Public\StarBurst.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
+    <ClInclude Include="..\public\TombBossBullet.h" />
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h" />
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
@@ -362,6 +367,8 @@
     <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\private\LevelTerrain.cpp" />
     <ClCompile Include="..\private\LevelTerrainLoader.cpp" />
+    <ClCompile Include="..\Private\LevelUIEditor.cpp" />
+    <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />
@@ -374,6 +381,7 @@
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
+	<ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
@@ -393,6 +401,7 @@
     <ClCompile Include="..\Private\StarBurst.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
+    <ClCompile Include="..\private\TombBossBullet.cpp" />
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />

@@ -29,6 +29,8 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	
+
 
 	// ******************** 외부 호출용 함수 ***************************//
 public:
@@ -118,7 +120,7 @@ private:
 
 	/**********모션************/
 	void PlayScaleAlphaDownDelete(CHandle pHandle);
-	void PlayFadeOutDelete(CHandle pHandle);
+	void PlayFadeOutDelete(CHandle pHandle, float delaytime = 0.f, float playtime = 0.3f);
 	void PlayFadeOutOnly(CHandle pHandle);
 	void PlayFadeInOnly(CHandle pHandle);
 	void PlayMonsterHPDelete(CHandle pHandle);

@@ -12,6 +12,10 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "Player_Magic_Bullet.h"
+
+#include "CollBox.h"
+#include "UIManager.h"
+#include "UIController.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -159,9 +163,6 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 		return;
 	}
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	/*---------------------------------*/
 }
 HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
@@ -364,6 +365,24 @@ HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_C
 
 	return S_OK;
 }
+bool CMonster::GetShadowBounds(BoundingBox& OutBounds) const
+{
+	if (!m_pComCollider || !m_pComCollider->Get())	return false;
+
+	CCollider* pCollider = m_pComCollider->Get();
+
+	if (pCollider->GetCollType() != CollType::Box)	return false;
+
+	const auto* pBox = static_cast<const CCollBox*>(pCollider);
+
+	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	OutBounds.Extents.x *= 1.25f;
+	OutBounds.Extents.y *= 1.25f;
+	OutBounds.Extents.z *= 1.25f;
+
+	return true;
+}
 /*---------------------------------*/
 
 void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
@@ -380,8 +399,7 @@ void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 }
 _bool CMonster::Activate_PendingHit()
 {
-	if (!m_bPending)
-		return false;
+	if (!m_bPending)return false;
 
 	_bool bSameHit = m_bActiveHit &&
 		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
@@ -424,8 +442,8 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 	if (eType == PLAYER_SKILL_TYPE::ATTACK && Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)))
 		return false;
 
-	if (eType == PLAYER_SKILL_TYPE::ATTACK)
-		++m_iNormalHitCnt;
+	//if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	//	++m_iNormalHitCnt;
 	//if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
 	//{
 	//	if (m_iNormalHitCnt >= 6)

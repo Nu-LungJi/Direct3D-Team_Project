@@ -35,6 +35,9 @@ struct PARTICLE_CPU_DATA
 	_float fStopSizeTime = 0.f;
 	_float3 roationAxis = { 0.f, 0.f, 0.f };
 	_float fRotationSpeed = 0.f;
+	_float fGravityVelocity = 0.f;
+	uint32_t iPatternType = 0;
+	uint32_t iSpawnSeed = 0;
 };
 
 
@@ -160,5 +163,6 @@ public:
 
 private:
 	CIRCLE_TO_WAVE m_waveCb{};
+	uint32_t m_iSpawnSeed = 0;
 };
 NS_END

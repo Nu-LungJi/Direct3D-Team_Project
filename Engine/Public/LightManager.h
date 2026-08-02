@@ -11,7 +11,7 @@ class CLightPlacementEditor;
 struct LightData {
 	std::optional<CHandle> LightHandle;
 
-	_float Distance;
+	_float DistanceSQ;
 
 };
 
@@ -25,6 +25,8 @@ struct SHADOW_ARRAY_CUBE {
 	ComPtr<ID3D11Texture2D>			 TexBuffer{};
 	ComPtr<ID3D11ShaderResourceView> SRV{};
 	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_SHADOW_LIGHT_COUNT];
+
+	ComPtr<ID3D11DepthStencilView>	 FaceDSVList[MAX_SHADOW_LIGHT_COUNT][POINT_SHADOW_FACE_COUNT];
 };
 
 class ENGINE_DLL CLightManager final : public CEngineBase {
@@ -54,7 +56,7 @@ public:
 		std::string_view sAlias) const;
 	const std::vector<std::optional<CHandle>>& GetLightHandles() const { return m_LightHandleList; }
 
-	VOID	Clear_DynamicLightList()							{ m_LightHandleList.clear(); }
+	VOID	Clear_DynamicLightList();
 
 	HRESULT	AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRenderObject);
 
@@ -63,15 +65,22 @@ public:
 	VOID	Bind_ShadowResource();
 	VOID	UnBind_ShadowResource();
 
-	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, LIGHT_TYPE _LType, _bool _bStaticBatch);
+	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch);
 
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
 	VOID	Allocate_ShadowSlot();
 
+	VOID	Invalidate_DynamicShadowMaps();
+	
+	//VOID	ReleaseInvalidPointShadowSlots();
+	//VOID	ReleaseInvalid2DShadowSlots();
+
 public:		// Effect Light Fuction
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
+
+	_bool	IsActiveShadowLight(std::optional<CHandle>& _Handle);
 
 	HRESULT Reset_EffectLight(const std::optional<CHandle>& _Handle);
 	HRESULT Reset_AllEffectLight();
@@ -88,6 +97,8 @@ public:		// Effect Light Fuction
 	}
 
 private:	// Effect Light Variable
+	VOID	Update_EffectLightData();
+
 	void ClearEffectLightPool();
 	void DrawDebugEffectLights();
 
@@ -103,6 +114,7 @@ private:
 
 	_bool	IsInFrustum(CLight* _LightOBJ);
 
+	HRESULT Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t _ShadowSlot);
 
 
 private:
@@ -112,6 +124,8 @@ private:
 	std::vector<std::optional<CHandle>>	m_LightHandleList;
 
 	SPtr<CResCBuffer>					m_pLightConstantBuffer{ };
+	SPtr<CResCBuffer>					m_pEffectLightConstantBuffer{ };
+	SPtr<CResCBuffer>					m_pShadowConstantBuffer{ };
 
 	SPtr<CResVertexShader>				m_pResVertexShader = { nullptr };
 	SPtr<CResPixelShader>				m_pResPixelShader = { nullptr };
@@ -127,6 +141,8 @@ private:
 
 	SPtr<CResComputeShader>				m_pShadowComputeShader = { nullptr };
 	SPtr<CResComputeShader>				m_pNonShadowComputeShader = { nullptr };
+	SPtr<CResComputeShader>				m_pEffectLightComputeShader = { nullptr };
+
 	SPtr<CResDynamicTexture2D>			m_pUAVComBinedOutput = { nullptr };
 	SPtr<CResViewPort>					m_pDirectionalShadowViewPort{};
 	SPtr<CResViewPort>					m_pPointShadowViewPort{};
@@ -134,11 +150,17 @@ private:
 	std::vector<IRenderable*>			m_pRenderable_StaticObjectList{};
 	std::vector<IRenderable*>			m_pRenderable_DynamicObjectList{};
 
+	std::vector<std::optional<CHandle>>	m_pActiveLightList{};
 	std::vector<std::optional<CHandle>>	m_pActiveShadowLightList{};
+
+	std::array<std::optional<CHandle>, MAX_SHADOW_LIGHT_COUNT>	m_PointShadowSlotOwners{};
+	std::array<std::optional<CHandle>, MAX_SHADOW_LIGHT_COUNT>	m_2DShadowSlotOwners{};
+
 	// LSY 변경: 배치 GUI의 상태와 편집 대상 그룹을 LightManager가 소유한다.
 	UPtr<CLightPlacementEditor>			m_pPlacementEditor{};
 
 	CB_LIGHT							m_pLightConstantVariable{};
+	CB_SHADOW							m_pShadowConstantVariable{};
 
 	SHADOW_ARRAY_2D						m_pStaticDirectionalShadowList{};
 	SHADOW_ARRAY_2D						m_pDynamicDirectionalShadowList{};
@@ -146,23 +168,7 @@ private:
 	SHADOW_ARRAY_CUBE					m_pStaticPointShadowList{};
 	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
 
-#ifdef _DEBUG
-public:
-	HRESULT	Initialize_DebugRender();
-	HRESULT Render_DebugIcon();
-
-private:
-	SPtr<CResVertexShader>	m_pResDebugVertexShader = { nullptr };
-	SPtr<CResPixelShader>	m_pResDebugPixelShader = { nullptr };
-
-	SPtr<CResQuadTexBuffer>	m_pResLightTexBuffer = { nullptr };
-
-	// Light 위치 나타내는 용 아이콘 텍스쳐
-	SPtr<CResTexture2D>		m_pResDirectionalLightTexture2D = { nullptr };
-	SPtr<CResTexture2D>		m_pResPointLightTexture2D = { nullptr };
-	SPtr<CResTexture2D>		m_pResSpotLightTexture2D = { nullptr };
-
-#endif
+	uint64_t m_iShadowFrameIndex{};
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

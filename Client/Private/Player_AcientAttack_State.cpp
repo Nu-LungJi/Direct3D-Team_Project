@@ -105,15 +105,15 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			0.24f);
 
 	
-		//// 스킬 컷신 재생
-		//{
-		//	FCinematicPlayOptions options{};
-		//	options.eStartMode = ECinematicStartMode::Blend;
-		//	options.fStartBlendDuration = 1.f;
-		//	options.eReturnMode = ECinematicReturnMode::Blend;
-		//	options.fReturnBlendDuration = 1.f;
-		//	CGameInstance::Get().PlayCinematic("AcientThunderAttack", pPlayer->GetHandle(), options);
-		//}
+		// 스킬 컷신 재생
+		{
+			FCinematicPlayOptions options{};
+			options.eStartMode = ECinematicStartMode::Blend;
+			options.fStartBlendDuration = 1.f;
+			options.eReturnMode = ECinematicReturnMode::Blend;
+			options.fReturnBlendDuration = 1.f;
+			CGameInstance::Get().PlayCinematic("Lightning", pPlayer->GetHandle(), options);
+		}
 		break;
 
 	case PHASE::ATTACK:
