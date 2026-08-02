@@ -5,6 +5,7 @@
 #include "SpellMeter.h"
 #include "TextBox.h"
 #include "Button.h"
+#include "Cursor.h"
 
 NS_USING(Client)
 
@@ -30,6 +31,10 @@ HRESULT CUIController::Initialize(void* pArg)
 
 	CreatePlayScreen();
 	ActivePlayScreen = true;
+	
+	{
+
+	}
 
 	return S_OK;
 }
@@ -40,6 +45,28 @@ void CUIController::PriorityUpdate(E::_float fTimeDelta)
 
 void CUIController::Update(E::_float fTimeDelta)
 {
+	if (!CursorCreate)
+	{
+		auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+		CCursor::UIOBJECT_DESC Desc{};
+
+		Desc.sObjectTag = "Cursor";
+		Desc.Name = "Cursor";
+		Desc.fSizeX = 64.f;
+		Desc.fSizeY = 64.f;
+		Desc.fX = clientSize.x * 0.5f;
+		Desc.fY = clientSize.y * 0.5f;
+		Desc.fAlpha = 1.f;
+		Desc.UIType = ETOUI(UI_TYPE::CURSOR);
+		Desc.ResWeight = 1000;
+
+		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
+
+		CursorCreate = true;
+	}
+
 	// ************** 플레이어 HP
 	if (E::CGameInstance::Get().KeyDown(DIK_9))
 	{
@@ -195,6 +222,19 @@ void CUIController::CreateSpellType()
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetResTag("TEX_UI_T_spellmeter_Crucio_Overlay");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetResTag("TEX_UI_T_spellmeter_Imperio_Overlay");
 
+	/*********비디오 패스**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[1]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Glacius.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Depulso.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Descendo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Reparo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Bombarda.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_AvadaKedavra.avi");
+
+	/*********디스크립션 json 이름**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetDescJsonname("DepulsoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetDescJsonname("DescendoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetDescJsonname("BombardaDesc");
+
 	/********단축키슬롯**********/
 	m_SpellShortCutKeySlot[0] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut1").front();
 	m_SpellShortCutKeySlot[1] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut2").front();
@@ -210,6 +250,7 @@ void CUIController::CreateSpellType()
 	m_SpellSlotStatic = GET_SINGLE(UIManager)->LoadPrefab("SpellSlotStatic");
 
 	E::CGameInstance::Get().SetMouseFix(false);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 }
 
 void CUIController::DeleteSpellType()
@@ -235,6 +276,7 @@ void CUIController::DeleteSpellType()
 	}
 
 	E::CGameInstance::Get().SetMouseFix(true);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 }
 
 void CUIController::CreateDeathScene()
@@ -257,6 +299,10 @@ void CUIController::CreateDeathScene()
 	PlayAlphaUP(m_BeathButton[1], 3.75f, 1.f);
 	PlayAlphaUP(m_BeathButton[2], 4.f, 1.f);
 
+	m_GameOverMask = GET_SINGLE(UIManager)->LoadPrefab("GameOverMask").front();
+	PlayAlphaUP(m_GameOverMask, 1.7f, 1.8f);
+	GetSafeUI(m_GameOverMask)->SetSize({1024.f, 700.f});
+
 	for (auto hUI : m_BeathButton)
 	{
 		SafeGetOBJ(hUI)->OnHoverEnter = GET_SINGLE(UIManager)->GetAction("TxtButtonScaleUp");
@@ -266,7 +312,9 @@ void CUIController::CreateDeathScene()
 	}
 	SafeGetOBJ(SafeGetOBJ(m_BeathButton[0])->GetChildren().front())->OnClickedAction = GET_SINGLE(UIManager)->GetFunc("ClearDeathScene");
 
-	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
+	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
+	PlayFadeOutOnly(m_PotionCount);
+	E::CGameInstance::Get().SetMouseFix(false);
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -449,7 +497,10 @@ void CUIController::ClearDeathScene()
 		PlayFadeOutDelete(hUI);
 	}
 	
-	SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
+	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
+	PlayFadeInOnly(m_PotionCount);
+	PlayFadeOutDelete(m_GameOverMask);
+	E::CGameInstance::Get().SetMouseFix(true);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)
@@ -478,7 +529,7 @@ void CUIController::PlayScaleAlphaDownDelete(CHandle pHandle)
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
 			}, EEaseType::EaseOutQuad);
 
-		pTween->PlayTween(Alpah, 0.f, 0.1f,
+		pTween->PlayTween(Alpah, 0.f, 0.2f,
 			[pBtn](float currentValue) {
 				pBtn->SetAlpha(currentValue);
 				pBtn->CalcUICoord();
@@ -500,6 +551,36 @@ void CUIController::PlayFadeOutDelete(CHandle pHandle)
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
 			}, EEaseType::EaseOutQuad);
+}
+
+void CUIController::PlayFadeOutOnly(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(1.f, 0.f, 1.f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, 1.f);
+}
+
+void CUIController::PlayFadeInOnly(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(0.f, 1.f, 0.5f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, 0.2f);
 }
 
 void CUIController::PlayMonsterHPDelete(CHandle pHandle)

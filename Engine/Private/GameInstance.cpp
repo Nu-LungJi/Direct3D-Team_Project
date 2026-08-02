@@ -563,6 +563,12 @@ void CGameInstance::Release_Engine()
 	m_pGraphicDevice.reset();
 }
 
+void CGameInstance::SetMouseFix(_bool mousefix)
+{
+	m_bMouseFix = mousefix;
+	ShowCursor(FALSE);
+}
+
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
@@ -695,8 +701,11 @@ void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _fl
 }
 void CGameInstance::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
 	m_pEffectManager->SetBeamPositionsByOwner(effectId, start, end);
-
 }
+void CGameInstance::ClearAllRunningEffect() {
+	m_pEffectManager->ClearAllRunningEffect();
+}
+
 
 
 #pragma endregion
@@ -1258,6 +1267,9 @@ HRESULT	CGameInstance::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRend
 }
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
+}
+HRESULT	CGameInstance::Render_ObjectNonShadow() {
+	return m_pLightManager->Render_ObjectNonShadow();
 }
 HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 	return m_pLightManager->Initialize_EffectLight(_PoolSize);

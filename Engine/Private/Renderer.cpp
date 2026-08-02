@@ -949,6 +949,7 @@ VOID	CRenderer::Unbind_Resources()
 	m_pContext->CSSetShaderResources(0, 12, pNullSRVs);
 
 	m_pContext->IASetInputLayout(nullptr);
+	m_pContext->GSSetShader(nullptr, nullptr, 0);
 	m_pContext->PSSetShader(nullptr, nullptr, 0);
 	m_pContext->CSSetShader(nullptr, nullptr, 0);
 }
@@ -1361,10 +1362,10 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pContext->CSSetShaderResources(0, 9, SRVList->GetAddressOf());
 
 		if (ApplyShadow) {
-			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
+			if (FAILED(CGameInstance::Get().Render_ObjectShadow()))		{ Unbind_Resources(); return S_OK; }
 		}
 		else {
-			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
+			if (FAILED(CGameInstance::Get().Render_ObjectNonShadow()))	{ Unbind_Resources(); return S_OK; }
 		}
 
 		Unbind_Resources();

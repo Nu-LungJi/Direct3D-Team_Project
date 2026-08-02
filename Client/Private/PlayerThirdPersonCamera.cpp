@@ -25,7 +25,9 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 		!std::isfinite(pDesc->fHorizontalDeadZoneRadius) ||
 		pDesc->fHorizontalDeadZoneRadius < 0.f ||
 		!std::isfinite(pDesc->fVerticalDeadZoneHalfHeight) ||
-		pDesc->fVerticalDeadZoneHalfHeight < 0.f)
+		pDesc->fVerticalDeadZoneHalfHeight < 0.f ||
+		!std::isfinite(pDesc->fVerticalFollowSpeed) ||
+		pDesc->fVerticalFollowSpeed <= 0.f)
 		return E_FAIL;
 
 	if (FAILED(CCameraObject::Initialize(pArg)))
@@ -43,6 +45,7 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 	m_fShoulderOffset = pDesc->fShoulderOffset;
 	m_fHorizontalDeadZoneRadius = pDesc->fHorizontalDeadZoneRadius;
 	m_fVerticalDeadZoneHalfHeight = pDesc->fVerticalDeadZoneHalfHeight;
+	m_fVerticalFollowSpeed = pDesc->fVerticalFollowSpeed;
 	m_vFollowPivot = {};
 	m_bFollowPivotInitialized = false;
 	return S_OK;
@@ -58,13 +61,10 @@ void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 
 	m_fYaw += CGameInstance::Get().MouseMove(MOUSEMOVESTATE::X) * m_fMouseSensitivity * fTimeDelta;
 	m_fPitch += CGameInstance::Get().MouseMove(MOUSEMOVESTATE::Y) * m_fMouseSensitivity * fTimeDelta;
-	m_fPitch = std::clamp(
-		m_fPitch,
-		m_fMinPitch,
-		m_fMaxPitch);
+	m_fPitch = std::clamp(m_fPitch, m_fMinPitch, m_fMaxPitch);
 }
 
-void CPlayerThirdPersonCamera::UpdateFollow()
+void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 {
 	if (CGameInstance::Get().GetActiveCamera() != this)
 		return;
@@ -85,69 +85,41 @@ void CPlayerThirdPersonCamera::UpdateFollow()
 		m_bFollowPivotInitialized = true;
 	}
 
-	const _vector vHorizontalDelta =
-		XMVectorSet(
-			vPlayerFocus.x - m_vFollowPivot.x,
-			0.f,
-			vPlayerFocus.z - m_vFollowPivot.z,
-			0.f);
+	const _vector vHorizontalDelta = XMVectorSet(vPlayerFocus.x - m_vFollowPivot.x, 0.f, vPlayerFocus.z - m_vFollowPivot.z, 0.f);
 	_float fDeadZoneDistance{};
-	XMStoreFloat(
-		&fDeadZoneDistance,
-		XMVector3Length(vHorizontalDelta));
+	XMStoreFloat(&fDeadZoneDistance, XMVector3Length(vHorizontalDelta));
 
-	if (fDeadZoneDistance >
-		m_fHorizontalDeadZoneRadius)
+	if (fDeadZoneDistance > m_fHorizontalDeadZoneRadius)
 	{
-		const _float fExcessDistance =
-			fDeadZoneDistance -
-			m_fHorizontalDeadZoneRadius;
-		const _vector vPivotDisplacement =
-			vHorizontalDelta /
-			fDeadZoneDistance *
-			fExcessDistance;
+		const _float fExcessDistance = fDeadZoneDistance - m_fHorizontalDeadZoneRadius;
+		const _vector vPivotDisplacement = vHorizontalDelta / fDeadZoneDistance * fExcessDistance;
 
 		_float3 vPivotMove{};
-		XMStoreFloat3(
-			&vPivotMove,
-			vPivotDisplacement);
+		XMStoreFloat3(&vPivotMove, vPivotDisplacement);
 		m_vFollowPivot.x += vPivotMove.x;
 		m_vFollowPivot.z += vPivotMove.z;
 	}
 
-	const _float fVerticalDelta =
-		vPlayerFocus.y -
-		m_vFollowPivot.y;
-	const _float fClampedVerticalDelta =
-		std::clamp(
-			fVerticalDelta,
-			-m_fVerticalDeadZoneHalfHeight,
-			m_fVerticalDeadZoneHalfHeight);
-	m_vFollowPivot.y +=
-		fVerticalDelta -
-		fClampedVerticalDelta;
+	_float fDesiredPivotY = m_vFollowPivot.y;
+	if (vPlayerFocus.y > m_vFollowPivot.y + m_fVerticalDeadZoneHalfHeight)
+	{
+		fDesiredPivotY = vPlayerFocus.y - m_fVerticalDeadZoneHalfHeight;
+	}
+	else if (vPlayerFocus.y < m_vFollowPivot.y - m_fVerticalDeadZoneHalfHeight)
+	{
+		fDesiredPivotY = vPlayerFocus.y + m_fVerticalDeadZoneHalfHeight;
+	}
+
+	const _float fVerticalFollowRatio = 1.f - std::exp(-m_fVerticalFollowSpeed * std::max(fTimeDelta, 0.f));
+	m_vFollowPivot.y = std::lerp(m_vFollowPivot.y, fDesiredPivotY, fVerticalFollowRatio);
 
 	const _float fYawRadian = XMConvertToRadians(m_fYaw);
 	const _float fPitchRadian = XMConvertToRadians(m_fPitch);
 	const _float fHorizontalDistance = std::cos(fPitchRadian) * m_fDistance;
 	const _float3 vForward{ std::sin(fYawRadian), 0.f, std::cos(fYawRadian) };
-	const _float3 vRight{
-		std::cos(fYawRadian),
-		0.f,
-		-std::sin(fYawRadian) };
-	const _float3 vCompositionPivot{
-		m_vFollowPivot.x +
-			vRight.x * m_fShoulderOffset,
-		m_vFollowPivot.y,
-		m_vFollowPivot.z +
-			vRight.z * m_fShoulderOffset };
-	const _float3 vDesiredPosition{
-		vCompositionPivot.x -
-			vForward.x * fHorizontalDistance,
-		vCompositionPivot.y +
-			std::sin(fPitchRadian) * m_fDistance,
-		vCompositionPivot.z -
-			vForward.z * fHorizontalDistance };
+	const _float3 vRight{std::cos(fYawRadian), 0.f, -std::sin(fYawRadian) };
+	const _float3 vCompositionPivot{m_vFollowPivot.x + vRight.x * m_fShoulderOffset, m_vFollowPivot.y, m_vFollowPivot.z + vRight.z * m_fShoulderOffset };
+	const _float3 vDesiredPosition{vCompositionPivot.x - vForward.x * fHorizontalDistance, vCompositionPivot.y + std::sin(fPitchRadian) * m_fDistance, vCompositionPivot.z - vForward.z * fHorizontalDistance };
 
 
 	_float3 finalPosition{};
@@ -155,8 +127,7 @@ void CPlayerThirdPersonCamera::UpdateFollow()
 
 	auto& CameraTransform = GetTransform();
 	CameraTransform.SetPosition(finalPosition);
-	CameraTransform.LookAt(
-		XMLoadFloat3(&vCompositionPivot));
+	CameraTransform.LookAt(XMLoadFloat3(&vCompositionPivot));
 	CameraTransform.Update();
 	UpdateViewMatrix();
 }
