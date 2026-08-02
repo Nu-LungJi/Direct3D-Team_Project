@@ -213,10 +213,20 @@ HRESULT CMon_Weapon::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDE
 
 	return S_OK;
 }
+bool CMon_Weapon::GetShadowBounds(BoundingBox& OutBounds) const {
+	if (m_pComModelInstance == nullptr)	return false;
+
+	const auto& Model = m_pComModelInstance->GetModel();
+	if (Model == nullptr || !Model->HasLocalBounds())		return false;
+
+	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
+/*---------------------------------*/
 void CMon_Weapon::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 }
-/*---------------------------------*/
 void CMon_Weapon::Weapon_Throw(_float fTimeDelta)
 {
 	if (!m_bThrow)

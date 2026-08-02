@@ -64,14 +64,20 @@ public:
 
 	/*----------- 광윤 추가 -----------*/
 public:
-	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch);
+	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch);
 	HRESULT Render_ShadowBatch(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
-	HRESULT Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
-	HRESULT	Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
-	HRESULT Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex);
+	HRESULT Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch, uint32_t BoneStride);
+	HRESULT	Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext);
+	HRESULT Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex, uint32_t BoneStride);
+
+	_bool	Has_ActiveDynamicShadowBatch();
 
 private:
-	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
+	SPtr<CResCBuffer>						m_pResSkinMeshCBuffer{};
+
+	std::vector<GPU_ANIM_INSTANCE_DATA>		m_ShadowFilteredInstances{};
+	std::vector<uint32_t>					m_ShadowVisibleSourceIndices{};
+	std::vector<_float4x4>					m_ShadowBonePaletteScratch{};
 	/*---------------------------------*/
 
 private:

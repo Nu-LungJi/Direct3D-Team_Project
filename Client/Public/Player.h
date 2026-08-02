@@ -74,6 +74,9 @@ public:
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 
+	/*----------- 광윤 추가 -----------*/
+	bool	GetShadowBounds(BoundingBox& OutBounds) const override;
+	/*---------------------------------*/
 
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
 public:

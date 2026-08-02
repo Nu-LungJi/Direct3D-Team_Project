@@ -504,11 +504,6 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 HRESULT CGameInstance::Draw()
 {
-	if (FAILED(m_pLightManager->Capture_ShadowMap()))
-	{
-		MSG_BOX("ASDFASDF");
-		return E_FAIL;
-	}
 	if (FAILED(m_pRenderer->Draw()))
 	{
 		return E_FAIL;
@@ -1277,8 +1272,9 @@ HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity) {
 	return m_pLightManager->Allocate_EffectLight(_WorldPos, _Intensity, _Color, _InnerRange, _OuterRange, _LifeTime, _Velocity);
 }
-
-
+HRESULT	CGameInstance::Capture_ShadowMap() {
+	return m_pLightManager->Capture_ShadowMap();
+}
 #pragma endregion
 #pragma endregion
 
@@ -1358,8 +1354,11 @@ void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, c
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
-HRESULT CGameInstance::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch) {
-	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext, bStaticBatch);
+HRESULT CGameInstance::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch) {
+	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext.Get(), _LightHandle, _bStaticBatch);
+}
+_bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
+	return m_pModel_Instance_Manager->Has_ActiveDynamicShadowBatch();
 }
 #pragma endregion
 

@@ -84,6 +84,10 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
 
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::STATIC, this);
+	/*---------------------------------*/
+
 	// 컬링된 애면 렌더러 등록x
 	if (m_bRenderEnable == false)
 		return;
@@ -110,10 +114,6 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 			}
 		}
 	}
-
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
-	/*---------------------------------*/
 
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{

@@ -326,7 +326,7 @@ public:
 	const SPtr<CResDynamicTexture2D>& Get_CombinedResource() { return m_pLightManager->Get_CombinedResource(); }
 
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
-
+	HRESULT	Capture_ShadowMap();
 
 #pragma endregion
 
@@ -453,7 +453,8 @@ public:
 	const std::vector<MODEL_INSTANCE_BATCH*>& Get_ActiveBatches() const;
 
 	/*----------- 광윤 추가 -----------*/
-	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch);
+	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch);
+	_bool	Has_ActiveDynamicShadowBatch();
 	/*---------------------------------*/
 #pragma endregion
 

@@ -51,6 +51,7 @@ public:
 	virtual void SetInstanceModelNum(uint32_t iInstanceNum) {}
 	bool HasRenderPass(RENDERPASS ePass) const override { return (m_RenderPassFlags & static_cast<uint32_t>(ePass)) != 0; };
 
+	virtual _bool GetShadowBounds(BoundingBox& OutBounds) const override { return false; }
 protected:
 	uint32_t m_RenderPassFlags = ETOUI(RENDERPASS::DEFAULT);
 
