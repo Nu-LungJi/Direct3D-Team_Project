@@ -24,14 +24,16 @@ public:
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
 	void							Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio);
+	void							ShakeCam(_float fRotRatio);
 	void							Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget,_float fTimeDelta, _float fRotRatio);
+	void							Reset_Value();
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 
 	_float3				m_vEmissiveColor{};
 	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{};
-	_float				m_fDis{}, m_fTime{}, m_fIntensive{0.5f};
-	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false };
+	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fCamShakeRatio{};
+	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bCamShake{ true };
 public:
 	static UPtr<CBTAttackAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

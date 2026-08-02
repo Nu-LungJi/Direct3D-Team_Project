@@ -552,7 +552,7 @@
     <ClInclude Include="..\public\BTDecIsPending.h">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\MonEffect.h">
+    <ClInclude Include="..\public\MonEffectBall.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h">
@@ -560,9 +560,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\StarBurst.h">
-      <Filter>GameObject\Monster\TombBoss</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\GameOverMask.h">
       <Filter>GameObject\UI\GameOverMask</Filter>
@@ -584,6 +581,9 @@
     </ClInclude>
     <ClInclude Include="..\public\GurdianWeapon.h">
       <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StarBurst.h">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -843,7 +843,7 @@
     <ClCompile Include="..\Private\BTDecHitCnt.cpp">
       <Filter>GameObject\AI\Decorator</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\MonEffect.cpp">
+    <ClCompile Include="..\private\MonEffectBall.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp">
@@ -851,9 +851,6 @@
     </ClCompile>
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp">
       <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\StarBurst.cpp">
-      <Filter>GameObject\Monster\TombBoss</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Cursor.cpp">
       <Filter>GameObject\UI\Cursor</Filter>
@@ -869,6 +866,9 @@
     </ClCompile>
     <ClCompile Include="..\private\GurdianWeapon.cpp">
       <Filter>GameObject\Monster\TombGudian</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StarBurst.cpp">
+      <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

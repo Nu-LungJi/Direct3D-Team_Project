@@ -304,19 +304,20 @@ _bool CTmbGurdian::ActivateDeadDebrisPhysics()
 
 void CTmbGurdian::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 {
-	if (m_eAttType != eType) {
+	if (eType == ATTMON::END)
+		return;
 
-		uint32_t iSkillNum = Find_SkillNum(eType);
-		if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(TOMB_SKILL::END))
-			return;
-		if (m_EffectNames[iSkillNum] == "")
-			return;
+	if (m_eLastSkillTable == eType)
+		return;
 
-		m_CurEffectName = m_EffectNames[iSkillNum];
-		m_eAttType = eType;
-		m_fSkillRatio = fSkillRatio;
+	uint32_t iSkillNum = Find_SkillNum(eType);
+	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(TOMB_SKILL::END))
+		return;
 
-	}
+	m_CurEffectName = m_EffectNames[iSkillNum];
+	m_eLastSkillTable = m_eAttType = eType;
+	m_fSkillRatio = fSkillRatio;
+	++m_iCurSkill;
 }
 
 _string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
@@ -432,7 +433,6 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 5500;
 	{
 		CComPxRigidBody::DESC Desc{};
 		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
@@ -678,11 +678,51 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_fEMissiveColor = { 1.f,1.f,1.f};
 	m_eMonType = MonDesc->MonType;
+	if (m_eMonType == MONSTER_TYPE::NORMAL)
+		m_iHp = m_iMaxHp = 100;
+	else if (m_eMonType == MONSTER_TYPE::ELITE)
+		m_iHp = m_iMaxHp = 300;
 
 	m_pModelAnimator->Play_Anim(0, false);
 	return S_OK;
 }
+void CTmbGurdian::Active_Skill()
+{
+	if (m_eAttType == ATTMON::END)
+		return;
 
+	if (m_iCurSkill == m_iPreSkill)
+		return;
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
+	{
+		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
+		m_bSkillLoop = true;
+	}
+
+	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
+
+	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
+	{
+
+		auto k = GetTransform().GetWorldMatrix();
+
+		m_iCurEffectID = CGameInstance::Get().PlayEffect(m_CurEffectName, *GetTransform().GetWorldMatrix(), _vector{},
+			[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+			{
+				if (effectId != m_iCurEffectID)
+					return;
+				m_iCurEffectID = INVALID_EFFECT_INSTANCE_ID;
+			});
+
+		m_iPreSkill = m_iCurSkill;
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
+
+	}
+
+
+}
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
@@ -698,7 +738,9 @@ void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
 {
+	Active_Skill();
 	__super::Update(fTimeDelta);
+
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 	{
 		ActivateDeadDebrisPhysics();

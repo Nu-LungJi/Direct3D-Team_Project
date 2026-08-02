@@ -29,17 +29,19 @@ public:
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
-
-	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
-	/*---------------------------------*/
+
+	void	Active_Effect(const _string& EffectName);
+	void	Reset_Active();
 public:
-	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
+	void	OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 private:
 	void	Enable_Emissive( _float fTimeDelta);
 	void	Disable_Emissive(_float fTimeDelta);
 
 	_float		m_fTime{ 3.f };
+	uint32_t	m_iEffectID{};
+	_bool		m_bActive{ false };
 public:
 	static E::UPtr<CBossMace> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

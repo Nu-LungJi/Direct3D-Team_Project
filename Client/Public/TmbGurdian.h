@@ -34,6 +34,8 @@ public:
 	_string Get_SkillName(ATTMON SkillNode)override;
 	const _float				Get_Damage() override;
 private:
+	void						Active_Skill();
+private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};
 	std::vector<_float4x4> m_vecDeadInverseBindMatrices{};
@@ -43,6 +45,7 @@ private:
 	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
+	ATTMON						m_eLastSkillTable{};
 public:
 	static E::UPtr<CTmbGurdian> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

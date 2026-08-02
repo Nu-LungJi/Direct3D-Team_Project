@@ -31,6 +31,7 @@
 #include "BossTMB.h"
 #include "BossMace.h"
 #include "StarBurst.h"
+#include "MonEffectBall.h"
 NS_USING(Client)
 
 std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
@@ -212,14 +213,14 @@ HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 				if (FAILED(res->Load(pDesc)))
 				{
-					MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TombProtector");
+					MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Model_Resource_TombProtector");
 					return E_FAIL;
 				}
 			}
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, CBossTMB::Create())))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossTMB");
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_BossTMB");
 				return E_FAIL;
 			}
 
@@ -227,7 +228,13 @@ HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 				LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, CBoss_StarBurst::Create())))
 			{
 				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_BossStarBurst");
-				return false;
+				return E_FAIL;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, CMonEffectBall::Create())))
+			{
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_CMonEffectBall");
+				return E_FAIL;
 			}
 		}
 
@@ -241,13 +248,13 @@ HRESULT CLevelBossCharlesRookwoodLoader::MonsterLoad_InWorker()
 
 				if (FAILED(res->Load(pDesc)))
 				{
-					MSG_BOX("LEVEL_CREATURE Failed Static_Model_Resource_BossWeapon");
+					MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Static_Model_Resource_BossWeapon");
 					return E_FAIL;
 				}
 			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossWeapon, CBossMace::Create())))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_BossWeapon");
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_BossWeapon");
 				return E_FAIL;
 			}
 		}

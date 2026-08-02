@@ -113,7 +113,6 @@ protected:
 	_bool						Check_Flag(uint32_t iFlag);
 private:
 	void						Damaged(PLAYER_SKILL_TYPE eType);
-	void						RunningSkill(_float fTimeDelta);
 	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
@@ -143,7 +142,7 @@ protected:
 	_float ff{};
 
 	_float2								m_fSkillRatio{ };
-	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{};
+	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{}, m_iPreSkill{}, m_iCurSkill{};
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{};
 	int32_t								m_iHp{}, m_iMaxHp{};
 	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};

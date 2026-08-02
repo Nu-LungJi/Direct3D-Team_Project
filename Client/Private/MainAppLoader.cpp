@@ -461,7 +461,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_TOMBBOSS", CResJson::Create("./Resources/json/BeHavior/GurDianKnight.json")))
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_TOMBBOSS", CResJson::Create("./Resources/json/BeHavior/TombBoss.json")))
 	{
 		if (FAILED(res->Load()))
 		{

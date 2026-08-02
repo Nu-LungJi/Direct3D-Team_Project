@@ -46,6 +46,9 @@ HRESULT CBossMace::Initialize(void* pArg)
 	if (FAILED(__super::Initialize(pArg)))
 		return E_FAIL;
 
+	m_vEmissive = _float3(0.213f, 0.243f, 0.5f);
+	m_fEmissiveIntensity = 50.f;
+	m_fTime = 15.f;
 	return S_OK;
 }
 
@@ -125,6 +128,32 @@ HRESULT CBossMace::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_
 	}
 
 	return S_OK;
+}
+void CBossMace::Active_Effect(const _string& EffectName)
+{
+	if (!m_bActive)
+	{
+		m_iEffectID = CGameInstance::Get().PlayEffect(EffectName, m_ParentMatrix, _vector{},
+			[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+			{
+				if (effectId != m_iEffectID)
+					return;
+				m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+			});
+		m_bActive = true;
+	}
+}
+void CBossMace::Reset_Active()
+{
+	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		const EFFECT_INSTANCE_ID iOldEffect = m_iEffectID;
+		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+
+		CGameInstance::Get().StopEffect(iOldEffect);
+	}
+	m_bActive = false;
+
 }
 void CBossMace::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {

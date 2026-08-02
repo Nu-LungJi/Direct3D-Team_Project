@@ -59,9 +59,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				}
 				Gravity();
 				_bool bFinished = pAnimator->GetFinish();
-
 				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
+				//살려주세요 살려주세요!!!
+				Att(pOwner, pTransform, pTarget, fAnimRatio);
 				EventFlagToRatio(fAnimRatio);
+				ShakeCam(fAnimRatio);
 				Rotation(pTransform, pMoveIntent, pTarget, fTimeDelta, fAnimRatio);
 				//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 				if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
@@ -117,7 +119,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
 				{
 					Reset_CheckFlag();
-					m_bStart = true;
+					Reset_Value();
 					m_bActiveSkill = false;
 					return m_eDebug = EVALUATE::SUCCESS;
 				}
@@ -126,10 +128,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				{
 					//Hit 종료는 애니매이션 끝나면
 					//Attack도 애니매이션 끝나면
-
 					m_bActiveSkill = false;
-					m_bStart = true;
-					m_fTime = 0.f;
+					Reset_Value();
 					Reset_CheckFlag();
 					return m_eDebug = EVALUATE::SUCCESS;
 				}
@@ -144,6 +144,7 @@ void CBTAttackAnimation::Update_Gui()
 	__super::Update_Gui();
 	DragFloat("Move Speed", m_Value.fSpeed);
 	DragFloat("Intensive", m_fIntensive);
+	DragFloat("ShakeCamRatio", m_fCamShakeRatio);
 	ImGui::Text("RotRatio");
 	ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
 	DragFloat("RotTime", m_Value.fTime);
@@ -184,37 +185,13 @@ void CBTAttackAnimation::Update_Gui()
 	}
 
 }
-void CBTAttackAnimation::Abort()
-{
-	__super::Abort();
-	m_bActiveSkill = false;
-	m_fTime = 0.f;
-}
-nlohmann::json CBTAttackAnimation::Save_Node()
-{
-	nlohmann::json j = __super::Save_Node();
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
-	SaveJsonValue(j, "Intensive", m_fIntensive);
-	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	SaveJsonEnum(j, "MOVE", m_eMove);
-	return j;
-}
-HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
-{
-	__super::Load_json(j);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
-	LoadJsonValue(j, "Intensive", m_fIntensive);
-	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
-	LoadJsonEnum(j, "MOVE", m_eMove);
-	return S_OK;
-}
 void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio)
 {
 	PX_OVERLAP_DESC   pxOverLabDesc{};
 	PX_OVERLAP_RESULT pxOverLapResult{};
 
-	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX)};
-	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius=5.f };
+	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
+	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 5.f };
 	pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = pSrcTransform->GetPosition() };
 
 	_float3 vPos = pxOverLabDesc.tPose.vPosition;
@@ -227,7 +204,7 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 	pDbgLineRender->AddSphere(5.f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
-	
+
 	if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabDesc, pxOverLapResult))
 	{
 		if (pxOverLapResult.bHit)
@@ -235,11 +212,46 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 			//m_fDamage
 			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
 			_float MonDamange = pMon->Get_Damage();
-			
+
 		}
 	}
-	
+
 }
+void CBTAttackAnimation::ShakeCam(_float fRotRatio)
+{
+	if (m_bCamShake && fRotRatio > m_fCamShakeRatio)
+	{
+		//카메라 쉐킷
+		m_bCamShake = false;
+	}
+}
+void CBTAttackAnimation::Abort()
+{
+	__super::Abort();
+	Reset_Value();
+
+}
+nlohmann::json CBTAttackAnimation::Save_Node()
+{
+	nlohmann::json j = __super::Save_Node();
+	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
+	SaveJsonValue(j, "Intensive", m_fIntensive);
+	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
+	SaveJsonEnum(j, "MOVE", m_eMove);
+	SaveJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	return j;
+}
+HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
+{
+	__super::Load_json(j);
+	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
+	LoadJsonValue(j, "Intensive", m_fIntensive);
+	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
+	LoadJsonEnum(j, "MOVE", m_eMove);
+	LoadJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	return S_OK;
+}
+
 void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta, _float fRotRatio)
 {
 	if (m_vRotRatio.x < fRotRatio && m_vRotRatio.y >= fRotRatio)
@@ -251,6 +263,12 @@ void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIn
 	}
 	
 
+}
+void CBTAttackAnimation::Reset_Value()
+{
+	m_bCamShake = true;
+	m_bStart = true;
+	m_fTime = 0.f;
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()
 {

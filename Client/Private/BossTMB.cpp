@@ -6,7 +6,6 @@
 #include "ComAnimator.h"
 #include "Resources.h"
 #include "ComBeHavior.h"
-#include "Mon_Weapon.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
 #include "ComPxCharacterController.h"
@@ -16,6 +15,8 @@
 #include "ComPxSphereCollider.h"
 #include "DbgLineRender.h"
 #include "StarBurst.h"
+#include "MonEffectBall.h"
+#include "BossMace.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -29,6 +30,9 @@ CBossTMB::~CBossTMB()
 void CBossTMB::UpdateGUI()
 {
 	__super::UpdateGUI();
+	
+	ImGui::Separator();
+	ImGui::Text(true == m_bStar ? "TRUE" : "FALSE");
 }
 
 HRESULT CBossTMB::InitializePrototype(void* pArg)
@@ -182,6 +186,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 			MSG_BOX("Create Failed Weapon To BossTmb");
 			return E_FAIL;
 		}
+		m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
 	}
 
 	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(BOSSTOMB_SKILL::SPAWN);
@@ -198,7 +203,9 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::STUMP)] = "Boss_GroundCrash";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
-	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "BossMorningStarAfter";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "MorningStarAfterEffect";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttackAfterEffect";
+
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 
@@ -209,17 +216,56 @@ HRESULT CBossTMB::Initialize(void* pArg)
 
 
 	m_eMonType = MONSTER_TYPE::BOSS;
-
 	m_eAttType = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-	m_fEMissiveColor = { 0.015f,0.026f,0.33f };
+	m_fEMissiveColor = { 0.75f,0.9f,1.f};
 
 	return S_OK;
 }
 
+void CBossTMB::Active_Skill()
+{
+	
+	if (m_eAttType == ATTMON::END)
+		return;
+	if (Find_SkillNum(m_eAttType) == ETOUI(BOSSTOMB_SKILL::BALL) || Find_SkillNum(m_eAttType) == ETOUI(BOSSTOMB_SKILL::SMESH))
+		return;
+
+	if (m_iCurSkill == m_iPreSkill)
+		return;
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
+	{
+		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
+		m_bSkillLoop = true;
+	}
+
+	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
+	
+	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
+	{
+
+		auto k = GetTransform().GetWorldMatrix();
+		
+			m_iCurEffectID = CGameInstance::Get().PlayEffect(m_CurEffectName, *GetTransform().GetWorldMatrix(), _vector{},
+				[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+				{
+					if (effectId != m_iCurEffectID)
+						return;
+					m_iCurEffectID = INVALID_EFFECT_INSTANCE_ID;
+				});
+		
+		m_iPreSkill = m_iCurSkill;
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
+
+	}
+	
+}
 void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
+	Active_Skill();
 	Active_Dynamic_Effect();
 }
 
@@ -235,11 +281,16 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 
 void CBossTMB::Update(E::_float fTimeDelta)
 {
+	
 	__super::Update(fTimeDelta);
 	
-
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-		m_bStar = true;
+	{
+		if (auto pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CBossMace>(m_Partes[ETOUI(PARTES::WEAPON)]))
+			pWeapon->Reset_Active();
+	}
+
+		
 }
 
 void CBossTMB::LateUpdate(E::_float fTimeDelta)
@@ -249,19 +300,22 @@ void CBossTMB::LateUpdate(E::_float fTimeDelta)
 
 void CBossTMB::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 {
-	if (m_eAttType != eType) {
-		
-		uint32_t iSkillNum = Find_SkillNum(eType);
-		if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(BOSSTOMB_SKILL::END))
-			return;
-		//if (m_EffectNames[iSkillNum] == "")
-		//	return;
+	if (eType == ATTMON::END)
+		return;
 
-		m_CurEffectName = m_EffectNames[iSkillNum];
-		m_eAttType = eType;
-		m_fSkillRatio = fSkillRatio;
+	if (m_eLastSkillTable == eType)
+		return;
 
-	}
+	uint32_t iSkillNum = Find_SkillNum(eType);
+	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(BOSSTOMB_SKILL::END))
+		return;
+	
+	m_CurEffectName = m_EffectNames[iSkillNum];
+	m_eLastSkillTable = m_eAttType = eType;
+	m_fSkillRatio = fSkillRatio;
+	++m_iCurSkill;
+	m_bStar = true;
+	
 }
 
 _string CBossTMB::Get_SkillName(ATTMON SkillNode)
@@ -280,11 +334,34 @@ _string CBossTMB::Get_SkillName(ATTMON SkillNode)
 void CBossTMB::Active_Dynamic_Effect()
 {
 	if (m_CurEffectName == "Boss_GroundCrash" && m_bStar) {
+		
 		CBoss_StarBurst::STARBURST_DESC desc{};
 		desc.fSpeed = 140.f;
 		desc.pTargetHandle = m_TargetHandle;
 		desc.vStartPosition = { GetTransform().GetPosition() };
 		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, "BossStarBurst", &desc);
+		m_bStar = false;
+	}
+	if (m_CurEffectName == "MorningStarAfterEffect" && m_bStar) {
+		
+		_float fRatio = m_pModelAnimator->GetPlayAnimRatio();
+		if (m_fSkillRatio.x <= fRatio)
+		{
+			if (auto pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CBossMace>(m_Partes[ETOUI(PARTES::WEAPON)]))
+			{
+				pWeapon->Active_Effect(m_CurEffectName);
+				m_bStar = false;
+			}
+		}
+
+	}
+	if (m_CurEffectName == "BossRingAttackAfterEffect" && m_bStar) {
+		CMonEffectBall::MON_BALL desc{};
+		desc.fDamage = 50.f;
+		desc.hTarget = m_TargetHandle;
+		desc.hOwner = GetHandle();
+		desc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHand");
+		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, "BossRingAttackAfterEffect", &desc);
 		m_bStar = false;
 	}
 }

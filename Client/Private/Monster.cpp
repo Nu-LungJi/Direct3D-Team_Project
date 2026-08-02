@@ -129,7 +129,7 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 	Flag_Check(fTimeDelta);
 	m_pCharacterMotor->SetGravity(-9.8f);
 	m_pBeHavior->Update(fTimeDelta);
-	RunningSkill(fTimeDelta);
+	
 }
 
 void CMonster::Update(E::_float fTimeDelta)
@@ -375,16 +375,6 @@ void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 	if (auto pPlayerMagicBullet = Cast<CPlayer_Magic_Bullet>(pObj))
 	{
 		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-		//static_cast<PX_SHAPE_TYPE>(info.eSelfShapeType);
-		//static_cast<PX_SHAPE_TYPE>(info.eOtherShapeType);
-		//MagicEnumToStringView<PX_SHAPE_TYPE>(info.eSelfShapeType);
-
-		//magic_enum::enum_name(info.eSelfShapeType);
-		//DEBUG_LOG_STR(
-		//	std::string("[Monster] Trigger Enter : ") +
-		//	(pObj ? std::string{ pObj->GetObjectTag() } : "null") + std::string{ magic_enum::enum_name(info.eSelfShapeType) } + "_" 
-		//	+ std::string{magic_enum::enum_name(info.eOtherShapeType)} + "\n");
-
 	}
 	
 }
@@ -477,6 +467,7 @@ uint32_t CMonster::Find_SkillNum(ATTMON eType)
 	if (iter == m_MonSkillLists.end())
 		return UINT_MAX;
 	return iter->second;
+
 }
 
 _bool CMonster::Check_Flag(uint32_t iFlag)
@@ -510,41 +501,6 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	}
 }
 
-void CMonster::RunningSkill(_float fTimeDelta)
-{
-	if (m_eAttType == ATTMON::END)
-		return;
-
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
-	{
-		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
-		m_bSkillLoop = true;
-	}
-
-	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
-
-	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
-	{
-
-		auto k = GetTransform().GetWorldMatrix();
-
-		m_iCurEffectID = CGameInstance::Get().PlayEffect(m_CurEffectName, *GetTransform().GetWorldMatrix(), _vector{},
-			[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
-			{
-				if (effectId != m_iCurEffectID)
-					return;
-				m_iCurEffectID = INVALID_EFFECT_INSTANCE_ID;
-			});
-
-		//CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
-		
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
-		
-	}
-	
-}
-
 void CMonster::Flag_Check(_float fTimeDelta)
 {
 	//이미시브
@@ -565,7 +521,7 @@ void CMonster::Flag_Check(_float fTimeDelta)
 	{
 		m_eAttType = ATTMON::END;
 		m_CurEffectName.clear();
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK) |ETOUI(CBTRoot::BTFLAG::ENDHIT),FLAGTYPE::DEL);
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) | ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
 	}
 
 	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)) && m_bSkillLoop)
