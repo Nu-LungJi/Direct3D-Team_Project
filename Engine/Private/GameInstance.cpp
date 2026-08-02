@@ -35,6 +35,7 @@
 #include "NvClothManager.h"
 #include "DbgLineRender.h"
 #include "SerializeManager.h"
+#include "PathPlaybackEditor.h"
 
 #include "ComPxBoxCollider.h"
 #include "ComPxCapsuleCollider.h"
@@ -266,6 +267,10 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 	LOG_MEMORY("End m_pSerializeManager");
 
+	m_pPathPlaybackEditor = CPathPlaybackEditor::Create();
+	if (m_pPathPlaybackEditor == nullptr)
+		return E_FAIL;
+
 	m_pModel_Instance_Manager = CModel_Instance_Manager::Create();
 	if (m_pModel_Instance_Manager == nullptr) {
 		return E_FAIL;
@@ -358,6 +363,8 @@ void CGameInstance::UpdateGUI()
 		m_pNvClothManager->UpdateGUI();
 
 	m_pSerializeManager->UpdateGUI();
+	if (m_pPathPlaybackEditor)
+		m_pPathPlaybackEditor->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
 	m_pEffectManager->UpdateGUI();
@@ -517,6 +524,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+	m_pPathPlaybackEditor.reset();
 	m_pMapMeshInstancingRenderer.reset();
 	m_pNodeEditor.reset();
 	m_pImguiManager.reset();
