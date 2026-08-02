@@ -33,20 +33,6 @@ HRESULT CUIController::Initialize(void* pArg)
 	ActivePlayScreen = true;
 	
 	{
-
-	}
-
-	return S_OK;
-}
-
-void CUIController::PriorityUpdate(E::_float fTimeDelta)
-{	
-}
-
-void CUIController::Update(E::_float fTimeDelta)
-{
-	if (!CursorCreate)
-	{
 		auto clientSize = CGameInstance::Get().GetClientScreenSize();
 		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
@@ -66,6 +52,38 @@ void CUIController::Update(E::_float fTimeDelta)
 
 		/****페이드인*****/
 		PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
+	}
+
+	return S_OK;
+}
+
+void CUIController::PriorityUpdate(E::_float fTimeDelta)
+{	
+}
+
+void CUIController::Update(E::_float fTimeDelta)
+{
+	if (!CursorCreate)
+	{
+		//auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		//std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+		//
+		//CCursor::UIOBJECT_DESC Desc{};
+		//
+		//Desc.sObjectTag = "Cursor";
+		//Desc.Name = "Cursor";
+		//Desc.fSizeX = 64.f;
+		//Desc.fSizeY = 64.f;
+		//Desc.fX = clientSize.x * 0.5f;
+		//Desc.fY = clientSize.y * 0.5f;
+		//Desc.fAlpha = 1.f;
+		//Desc.UIType = ETOUI(UI_TYPE::CURSOR);
+		//Desc.ResWeight = 1000;
+		//
+		//m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
+		//
+		///****페이드인*****/
+		//PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
 
 		CursorCreate = true;
 	}
@@ -110,7 +128,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		UsePotion();
 	}
 	// ************** 스펠슬롯
-	if (E::CGameInstance::Get().KeyDown(DIK_B))
+	if (E::CGameInstance::Get().KeyDown(DIK_B) && E::CGameInstance::Get().KeyPressing(DIK_LCONTROL))
 	{
 		ActiveShortCutSlot ? ActiveShortCutSlot = false : ActiveShortCutSlot = true;
 		if (ActiveShortCutSlot)

@@ -156,7 +156,7 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 	if(!m_ChangeScene)
 		m_SceneChangeTimer += fTimeDelta;
 
-	if (!m_isLogoDelete && m_SceneChangeTimer > 15.f)
+	if (!m_isLogoDelete && m_SceneChangeTimer > 12.f)
 	{
 		PlayFadeOutDelete(m_Logo, 0.f, 3.f);
 		m_isLogoDelete = true;
@@ -170,7 +170,7 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 		PlayFadeInChange(hBG);
 		m_ChangeScene = true;
 	}
-	else if (!m_ChangeScene && m_SceneChangeTimer > 20.f)
+	else if (!m_ChangeScene && m_SceneChangeTimer > 12.f)
 	{
 		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
 		GetSafeUI(hBG)->SetAlpha(0.f);

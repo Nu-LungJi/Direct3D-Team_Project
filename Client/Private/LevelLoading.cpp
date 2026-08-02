@@ -49,9 +49,7 @@ HRESULT CLevelLoading::Initialize()
 
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
-	GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
-
-
+	//GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
