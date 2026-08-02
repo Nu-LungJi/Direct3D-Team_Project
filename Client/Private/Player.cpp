@@ -391,6 +391,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51/255.f, 77 / 255.f, 126 / 255.f, 4.f));
 		}
 	}
+
+	m_hAutoTarget = CHandle{};
 	return S_OK;
 
 }
@@ -548,28 +550,29 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
 	{
-		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		//  가까이 있는거 한번 더 감지 
-			auto ori = m_pComTransform->GetPosition();
+		auto ori = m_pComTransform->GetPosition();
 
 
 		std::vector<PX_OVERLAP_RESULT> results{};
 		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 		{
 			const auto& result = results.front();
-			m_hPrevAutoTarget = m_hAutoTarget;
-			m_hAutoTarget = result.pGameObject->GetHandle();
+			const CHandle hDetectedTarget = result.pGameObject->GetHandle();
+			if (!(hDetectedTarget == m_hAutoTarget)) {
+				m_hPrevAutoTarget = m_hAutoTarget;
+				m_hAutoTarget = hDetectedTarget;
+			}
+			
 		}
 		else
 		{
 			m_hPrevAutoTarget = m_hAutoTarget;
 			m_hAutoTarget = CHandle{};
-			pUIController->DeleteMonsterHP();
 			
 		}
 	}
 	else {
-		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
@@ -579,9 +582,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			std::vector<PX_OVERLAP_RESULT> results{};
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
+
 				const auto& result = results.front();
-				m_hPrevAutoTarget = m_hAutoTarget;
-				m_hAutoTarget = result.pGameObject->GetHandle();
+				const CHandle hDetectedTarget = result.pGameObject->GetHandle();
+
+				if (!(hDetectedTarget == m_hAutoTarget)) {
+					m_hPrevAutoTarget = m_hAutoTarget;
+					m_hAutoTarget = hDetectedTarget;
+				}
 			}
 		}
 
@@ -599,7 +607,6 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			{
 				m_hPrevAutoTarget = m_hAutoTarget;
 				m_hAutoTarget = CHandle{};
-				pUIController->DeleteMonsterHP();
 			}
 		}
 	}
@@ -609,10 +616,13 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		const _bool bMonsterDetected = nullptr != CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
 
-		if ((bMonsterDetected != m_bMonsterHPDetected && m_hAutoTarget != CHandle{}) )
+		if (bMonsterDetected != m_bMonsterHPDetected)
 		{
-			pUIController->TargetMonsterHP(m_hAutoTarget);
-	
+			if (bMonsterDetected)
+				pUIController->TargetMonsterHP(m_hAutoTarget);
+			else
+				pUIController->DeleteMonsterHP();
+
 			m_bMonsterHPDetected = bMonsterDetected;
 		}
 	}
