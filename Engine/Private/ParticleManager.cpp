@@ -3402,9 +3402,16 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 		}
 		case SPAWN_COMMAND_KIND::PATTERN:
 		{
-			PatternParamVariant pv = std::get<PatternParamVariant>(cmd.params);
-			ApplyWorldMatToPattern(pv, matWorld);
-			cmd.params = BuildSpawnData(pv);
+			const PatternParamVariant& pattern = std::get<PatternParamVariant>(cmd.params);
+			auto spawnList = BuildSpawnData(pattern);
+			for (PARTICLE_SPAWN_DATA& spawnData : spawnList)
+			{
+				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
+				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
+				spawnData.originalPosition = spawnData.position;
+				spawnData.originalVelocity = spawnData.velocity;
+			}
+			cmd.params = std::move(spawnList);
 			break;
 		}
 		default:
