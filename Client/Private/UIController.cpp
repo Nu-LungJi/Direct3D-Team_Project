@@ -64,6 +64,9 @@ void CUIController::Update(E::_float fTimeDelta)
 
 		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
 
+		/****페이드인*****/
+		PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
+
 		CursorCreate = true;
 	}
 
@@ -536,7 +539,7 @@ void CUIController::PlayScaleAlphaDownDelete(CHandle pHandle)
 			}, nullptr, EEaseType::EaseOutQuad);
 }
 
-void CUIController::PlayFadeOutDelete(CHandle pHandle)
+void CUIController::PlayFadeOutDelete(CHandle pHandle, float delaytime, float playtime)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();
@@ -545,12 +548,12 @@ void CUIController::PlayFadeOutDelete(CHandle pHandle)
 
 	_float Alpah = pBtn->GetAlpha();
 
-	pTween->PlayTween(1.f, 0.f, 0.3f,
+	pTween->PlayTween(1.f, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			}, EEaseType::EaseOutQuad);
+			}, EEaseType::EaseOutQuad, delaytime);
 }
 
 void CUIController::PlayFadeOutOnly(CHandle pHandle)

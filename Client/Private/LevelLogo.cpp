@@ -12,6 +12,11 @@
 
 #include "LevelLogoLoader.h"
 
+// UI
+#include "UIManager.h"
+#include "UIController.h"
+#include "VideoObject.h"
+
 NS_USING(Client)
 
 CLevelLogo::CLevelLogo()
@@ -28,15 +33,15 @@ HRESULT CLevelLogo::Initialize()
 	E::CGameInstance::Get().GameObjectAllReset();
 	//Engine::CGameInstance::Get().GameObjectLayerInitialize(E::ETOUI(LEVEL_LOADING_LAYERS::END), LevelLoadingLayersToString);
 
-	{
-		CBackGround::UIOBJECT_DESC Desc{};
-		Desc.sObjectTag = "BackGround";
-		if (!(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_LOGO", "Prototype_GameObject_BackGround",
-			"00_OBJECTS", &Desc)))
-		{
-			return E_FAIL;
-		}
-	}
+	//{
+	//	CBackGround::UIOBJECT_DESC Desc{};
+	//	Desc.sObjectTag = "BackGround";
+	//	if (!(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_LOGO", "Prototype_GameObject_BackGround",
+	//		"00_OBJECTS", &Desc)))
+	//	{
+	//		return E_FAIL;
+	//	}
+	//}
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -133,6 +138,49 @@ HRESULT CLevelLogo::Initialize()
 
 void CLevelLogo::Update(E::_float fTimeDelta)
 {
+	if (!m_VideoQue)
+	{
+		m_Video = GET_SINGLE(UIManager)->LoadPrefab("LogoVideo").front();
+		static_cast<CVideoObject*>(SafeGetOBJ(m_Video))->SetPath(L"./Resources/SampleClient/Textures/UI/Video/CIN_HL.avi");
+
+		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+		PlayFadeOutDelete(hBG);
+
+		m_Logo = GET_SINGLE(UIManager)->LoadPrefab("Logo").front();
+		SafeGetOBJ(m_Logo)->SetAlpha(0.f);
+		PlayFadeIn(m_Logo, 5.f, 5.f);
+
+		m_VideoQue = true;
+	}
+
+	if(!m_ChangeScene)
+		m_SceneChangeTimer += fTimeDelta;
+
+	if (!m_isLogoDelete && m_SceneChangeTimer > 15.f)
+	{
+		PlayFadeOutDelete(m_Logo, 0.f, 3.f);
+		m_isLogoDelete = true;
+	}
+		
+
+	if (!m_ChangeScene && E::CGameInstance::Get().KeyDown(DIK_SPACE))
+	{
+		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+		GetSafeUI(hBG)->SetAlpha(0.f);
+		PlayFadeInChange(hBG);
+		m_ChangeScene = true;
+	}
+	else if (!m_ChangeScene && m_SceneChangeTimer > 20.f)
+	{
+		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+		GetSafeUI(hBG)->SetAlpha(0.f);
+		PlayFadeInChange(hBG);
+		
+		m_SceneChangeTimer = 0.f;
+		m_ChangeScene = true;
+	}
+		
+
 }
 
 HRESULT CLevelLogo::Render()
@@ -149,6 +197,56 @@ void CLevelLogo::UpdateGUI()
 void CLevelLogo::FrameStart(E::_float fTimeDelta)
 {
 
+}
+
+void CLevelLogo::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(1.f, 0.f, 5.f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, [pHandle]() {
+			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad, 1.f);
+}
+
+void CLevelLogo::PlayFadeIn(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void CLevelLogo::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, [pHandle]() {
+			Engine::CGameInstance::Get().ChangeLevel(
+				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::BOSS_CHARLES_ROOKWOOD));
+			}, EEaseType::EaseOutQuad, delay);
 }
 
 Engine::UPtr<CLevelLogo> CLevelLogo::Create()
