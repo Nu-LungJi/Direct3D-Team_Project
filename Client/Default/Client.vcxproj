@@ -271,6 +271,7 @@
 	<ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\PlayerRagdollController.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
@@ -383,6 +384,7 @@
     <ClCompile Include="..\private\RagdollTest.cpp" />
 	<ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
