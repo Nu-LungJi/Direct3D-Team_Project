@@ -120,13 +120,8 @@ void CLevelCharlesRookwood::FrameStart(E::_float fTimeDelta)
 
 Engine::UPtr<CLevelCharlesRookwood> CLevelCharlesRookwood::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelCharlesRookwood>(new CLevelCharlesRookwood{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevelCharlesRookwood");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelCharlesRookwood>(new CLevelCharlesRookwood{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 

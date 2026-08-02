@@ -266,13 +266,8 @@ void CLevelLogo::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
 
 Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelLogo>(new CLevelLogo{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevel_Logo");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelLogo>(new CLevelLogo{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 

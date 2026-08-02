@@ -32,6 +32,7 @@ private:
 	UPtr<CLevel> m_pCurrentLevel{};
 
 	UPtr<CLevel> m_pLevelBeforeLevelChange{};
+	CLevel* m_pLevelBeingInitialized{ nullptr };
 
 	std::map<_string, _Func> m_LevelChangeFuncs{};
 
