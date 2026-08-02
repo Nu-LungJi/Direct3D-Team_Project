@@ -1,6 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "Level.h"
+#include "UIObject.h"
 
 NS_BEGIN(Client)
 
