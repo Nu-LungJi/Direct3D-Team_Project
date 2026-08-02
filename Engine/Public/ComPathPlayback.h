@@ -52,6 +52,7 @@ public:
 	void Resume();
 	void Stop();
 	void Interrupt();
+	_bool Seek(_float fElapsedTime);
 
 	// 상태를 변경하지 않고 이번 Fixed Tick의 목표 Pose만 계산한다.
 	PATH_PLAYBACK_STEP_RESULT EvaluateNext(_float fFixedTimeDelta);
@@ -86,6 +87,12 @@ public:
 	void UpdateGUI() override;
 
 private:
+	const PATH_PLAYBACK_CLIP* GetDebugViewerClip() const;
+	PATH_PLAYBACK_POSE GetDebugViewerAnchor(
+		const PATH_PLAYBACK_CLIP& Clip) const;
+	void DrawDebugPathViewer(
+		const PATH_PLAYBACK_CLIP& Clip,
+		const PATH_PLAYBACK_POSE& AnchorPose) const;
 	_bool EvaluatePose(
 		const PATH_PLAYBACK_CLIP& Clip,
 		_float fElapsedTime,
@@ -120,6 +127,14 @@ private:
 	_float m_fPendingAdvanceTime{};
 	_bool m_bHasPendingEvaluation{};
 	std::vector<size_t> m_ReachedKeyframeIndicesThisCommit{};
+
+	int32_t m_iDebugViewerClipIndex{ -1 };
+	int32_t m_iDebugLinesPerKeySpan{ 8 };
+	_bool m_bDebugShowPath{};
+	_bool m_bDebugShowKeyframes{ true };
+	_bool m_bDebugShowCurrentPose{ true };
+	_bool m_bDebugShowPendingPose{ true };
+	_bool m_bDebugDepthTest{ true };
 
 public:
 	static UPtr<CComPathPlayback> Create();

@@ -118,7 +118,7 @@ void CTestPathPlaybackObject::FixedUpdate(_float fTimeDelta)
 void CTestPathPlaybackObject::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
-	DrawDebugObjectAndPath();
+	DrawDebugObject();
 }
 
 void CTestPathPlaybackObject::UpdateGUI()
@@ -415,10 +415,10 @@ void CTestPathPlaybackObject::HandleCommittedEvents()
 	}
 }
 
-void CTestPathPlaybackObject::DrawDebugObjectAndPath()
+void CTestPathPlaybackObject::DrawDebugObject()
 {
 	auto* pDebug = CGameInstance::Get().GetDbgLineRender();
-	if (!pDebug || !m_pComPathPlayback)
+	if (!pDebug)
 		return;
 
 	const _float4 PreviousColor = pDebug->GetColor();
@@ -442,93 +442,8 @@ void CTestPathPlaybackObject::DrawDebugObjectAndPath()
 		{ 0.45f, 0.45f, 0.45f },
 		GetTransform().GetLoadedWorldMatrix());
 
-	const PATH_PLAYBACK_CLIP* pClip =
-		m_pComPathPlayback->GetCurrentClip();
-	if (pClip && pClip->Keyframes.size() >= 2)
-	{
-		for (const PATH_PLAYBACK_KEYFRAME& Keyframe : pClip->Keyframes)
-		{
-			const _float3 Point =
-				TransformPathPositionForDebug(Keyframe.vPosition);
-			pDebug->AddSphere(
-				0.15f,
-				XMMatrixTranslation(Point.x, Point.y, Point.z));
-		}
-
-		for (size_t i = 0; i + 1 < pClip->Keyframes.size(); ++i)
-		{
-			const auto& Left = pClip->Keyframes[i];
-			const auto& Right = pClip->Keyframes[i + 1];
-			const uint32_t iSampleCount =
-				Left.ePositionInterpolation ==
-					PATH_PLAYBACK_INTERPOLATION::CATMULL_ROM
-				? 16u
-				: 1u;
-
-			_float3 Previous = TransformPathPositionForDebug(Left.vPosition);
-			for (uint32_t iSample = 1;
-				iSample <= iSampleCount;
-				++iSample)
-			{
-				const _float fRatio =
-					static_cast<_float>(iSample) /
-					static_cast<_float>(iSampleCount);
-				_vector Position{};
-				if (Left.ePositionInterpolation ==
-					PATH_PLAYBACK_INTERPOLATION::CATMULL_ROM)
-				{
-					const size_t iPrevious = i > 0 ? i - 1 : i;
-					const size_t iNext =
-						std::min(i + 2, pClip->Keyframes.size() - 1);
-					Position = XMVectorCatmullRom(
-						XMLoadFloat3(&pClip->Keyframes[iPrevious].vPosition),
-						XMLoadFloat3(&Left.vPosition),
-						XMLoadFloat3(&Right.vPosition),
-						XMLoadFloat3(&pClip->Keyframes[iNext].vPosition),
-						fRatio);
-				}
-				else
-				{
-					Position = XMVectorLerp(
-						XMLoadFloat3(&Left.vPosition),
-						XMLoadFloat3(&Right.vPosition),
-						fRatio);
-				}
-
-				_float3 LocalPoint{};
-				XMStoreFloat3(&LocalPoint, Position);
-				const _float3 Current =
-					TransformPathPositionForDebug(LocalPoint);
-				pDebug->AddLine(Previous, Current);
-				Previous = Current;
-			}
-		}
-	}
-
 	pDebug->SetColor(PreviousColor);
 	pDebug->SetDepthMode(PreviousDepth);
-}
-
-_float3 CTestPathPlaybackObject::TransformPathPositionForDebug(
-	const _float3& vPosition) const
-{
-	const PATH_PLAYBACK_CLIP* pClip = m_pComPathPlayback
-		? m_pComPathPlayback->GetCurrentClip()
-		: nullptr;
-	if (!pClip || pClip->eCoordinateSpace ==
-		PATH_PLAYBACK_COORDINATE_SPACE::WORLD)
-	{
-		return vPosition;
-	}
-
-	const _matrix AnchorWorld =
-		XMMatrixRotationQuaternion(XMLoadFloat4(&m_vInitialRotation)) *
-		XMMatrixTranslationFromVector(XMLoadFloat3(&m_vInitialPosition));
-	_float3 Result{};
-	XMStoreFloat3(
-		&Result,
-		XMVector3TransformCoord(XMLoadFloat3(&vPosition), AnchorWorld));
-	return Result;
 }
 
 UPtr<CTestPathPlaybackObject> CTestPathPlaybackObject::Create()

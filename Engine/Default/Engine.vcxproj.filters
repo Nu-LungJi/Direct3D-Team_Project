@@ -1240,6 +1240,12 @@
     <ClInclude Include="..\public\PathPlaybackDefines.h">
       <Filter>PathPlayback</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\PathPlaybackEditor.h">
+      <Filter>PathPlayback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PathPlaybackEvaluator.h">
+      <Filter>PathPlayback</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\ResPathPlayback.h">
       <Filter>PathPlayback</Filter>
     </ClInclude>
@@ -1853,6 +1859,12 @@
       <Filter>GameObject\Camera\CinematicCamera</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ResPathPlayback.cpp">
+      <Filter>PathPlayback</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PathPlaybackEditor.cpp">
+      <Filter>PathPlayback</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PathPlaybackEvaluator.cpp">
       <Filter>PathPlayback</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ComPathPlayback.cpp">

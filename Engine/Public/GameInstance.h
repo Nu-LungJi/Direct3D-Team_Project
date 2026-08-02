@@ -54,6 +54,7 @@ class CComPxFixedJoint;
 class CComPxDistanceJoint;
 class CComPxRevoluteJoint;
 class CComPxD6Joint;
+class CPathPlaybackEditor;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -675,6 +676,7 @@ private:
 	UPtr<CMapMeshInstancingRenderer> m_pMapMeshInstancingRenderer{};
 	UPtr<CEventManager> m_pEventManager{};
 	UPtr<CEffectManager> m_pEffectManager{};
+	UPtr<CPathPlaybackEditor> m_pPathPlaybackEditor{};
 };
 
 template<typename TJoint>

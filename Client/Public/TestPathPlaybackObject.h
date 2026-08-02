@@ -55,8 +55,7 @@ private:
 		PATH_PLAYBACK_DIRECTION eDirection =
 			PATH_PLAYBACK_DIRECTION::FORWARD);
 	void HandleCommittedEvents();
-	void DrawDebugObjectAndPath();
-	_float3 TransformPathPositionForDebug(const _float3& vPosition) const;
+	void DrawDebugObject();
 
 private:
 	SPtr<CResPathPlayback> m_pPathResource{};
