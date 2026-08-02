@@ -169,9 +169,13 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 		ShadowFactor += MergeShadowMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
 	}
 	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
-	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
 	
-	return FinalShadowFactor;
+	if (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL)
+	{
+		return NormalShadowFactor;
+	}
+	
+	return Attenuate_ShadowStrength(NormalShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
 }
 
 float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowSlot, uint _LightIndex)

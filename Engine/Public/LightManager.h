@@ -65,7 +65,7 @@ public:
 	VOID	Bind_ShadowResource();
 	VOID	UnBind_ShadowResource();
 
-	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch);
+	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex = -1);
 
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
@@ -116,6 +116,10 @@ private:
 
 	HRESULT Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t _ShadowSlot);
 
+private:
+	SPtr<CResVertexShader>				m_pPointFaceVS{};
+	SPtr<CResVertexShader>				m_pInstancedPointFaceVS{};
+	SPtr<CResPixelShader>				m_pPointFacePS{};
 
 private:
 	ComPtr<ID3D11Device>				m_pDevice = { nullptr };

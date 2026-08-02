@@ -174,7 +174,7 @@ public:
 
 	_bool	Intersects_ShadowBounds(const BoundingBox& _Bounds) const;
 
-	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<IRenderable*>& _ObjectList);
+	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<IRenderable*>& _ObjectLis, int32_t _PointFaceIndex = -1);
 	VOID		Reset_Light();
 
 	_bool		Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const;
