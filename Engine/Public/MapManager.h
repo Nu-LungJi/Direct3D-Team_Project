@@ -6,6 +6,8 @@
 #endif
 
 #include <functional>
+#include <chrono>
+#include <deque>
 #include "Engine_Base.h"
 
 NS_BEGIN(Engine)
@@ -26,10 +28,32 @@ enum class EChunkSaveState
 	Saved,      // 저장 파일 있음
 };
 
+struct MAP_MODEL_RESOURCE_KEY
+{
+	std::string group;
+	std::string tag;
+
+	bool operator==(const MAP_MODEL_RESOURCE_KEY& rhs) const
+	{
+		return group == rhs.group && tag == rhs.tag;
+	}
+};
+
+struct MAP_MODEL_RESOURCE_KEY_HASH
+{
+	size_t operator()(const MAP_MODEL_RESOURCE_KEY& key) const
+	{
+		const size_t groupHash = std::hash<std::string>{}(key.group);
+		const size_t tagHash = std::hash<std::string>{}(key.tag);
+		return groupHash ^ (tagHash << 1);
+	}
+};
+
 typedef struct tagMapChunk
 {
 	MAPCHUNK_COORD coord{};
 	std::vector<CHandle> hObjects{};
+	std::vector<MAP_MODEL_RESOURCE_KEY> modelResources{};
 	BoundingBox bounds{};
 	UPtr<COctreeNode> octreeNode;
 
@@ -54,6 +78,7 @@ struct tagMapChunkCoordHash
 // 전방선언
 struct MAP_MESH_OBJECT_LOAD_DESC;
 struct PENDING_CHUNK_LOAD_RESULT;
+struct PENDING_CHUNK_APPLY_STATE;
 
 constexpr _float3 DEFAULT_MAP_CHUNK_SIZE{ 150.f, 150.f, 150.f };
 
@@ -87,6 +112,9 @@ public:
 	HRESULT LoadChunk(const MAPCHUNK_COORD& coord); // 메인스레드 동기 로드, 저장/툴용
 	HRESULT UnLoadChunk(const MAPCHUNK_COORD& coord);
 
+	// 모델 태그 → 모델 .bin 파일 경로
+	void SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, std::unordered_map<std::string, std::filesystem::path> modelPaths);
+
 // ---------------------------------MapChunk-----------------------------------
 public:
 	void RebuildChunks();
@@ -106,6 +134,19 @@ private:
 	void UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
+
+
+	HRESULT AcquireChunkModelResources(MAPCHUNK& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects);
+	HRESULT PreloadChunkModelResources(PENDING_CHUNK_LOAD_RESULT& result);
+	HRESULT AcquirePreloadedChunkModelResources(MAPCHUNK& chunk, const PENDING_CHUNK_LOAD_RESULT& result);
+	void ReleasePendingModelResources(const PENDING_CHUNK_LOAD_RESULT& result);
+
+	// 청크가 런타임에 로드될 때 m_MapModelPaths에서 파일 경로를 찾고 해당 모델만 로드
+	HRESULT EnsureModelResourceLoaded(const MAP_MODEL_RESOURCE_KEY& key);
+
+	void QueueChunkModelRelease(MAPCHUNK& chunk);
+	void QueueAllChunkModelReleases();
+	void ProcessDeferredModelReleases();
 private:
 	static constexpr int64_t STREAM_LOAD_RADIUS = 2;   // 5 x 5 x 5
 	static constexpr int64_t STREAM_UNLOAD_RADIUS = 3; // 7 x 7 x 7
@@ -115,6 +156,27 @@ private:
 private:
 	std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash> m_Chunks;
 	_bool m_bChunkStreaming = true;
+
+	std::atomic_uint64_t m_MapGeneration{};
+	std::atomic_uint32_t m_AsyncChunkLoadsInFlight{};
+
+	// 모델 태그 → 모델 .bin 파일 경로
+	std::filesystem::path m_MapModelStaticRoot;
+	std::string m_MapModelResourceGroup;
+	std::unordered_map<std::string, std::filesystem::path> m_MapModelPaths;
+
+	std::mutex m_MapModelResourceIndexMutex;
+	std::mutex m_ModelResourceLoadMutex;
+	std::mutex m_PendingModelRefMutex;
+
+	// 완전히 생성된 청크들이 모델을 사용 중
+	std::unordered_map<MAP_MODEL_RESOURCE_KEY, size_t, MAP_MODEL_RESOURCE_KEY_HASH> m_ModelChunkRefCounts;
+	// 워커 로드는 끝났지만 청크 생성은 아직 안 끝남
+	std::unordered_map<MAP_MODEL_RESOURCE_KEY, size_t, MAP_MODEL_RESOURCE_KEY_HASH> m_PendingModelRefCounts;
+
+
+	std::vector<std::vector<MAP_MODEL_RESOURCE_KEY>> m_DeferredModelReleases;
+	std::vector<MAP_MODEL_RESOURCE_KEY> m_DeferredUnusedModelReleases;
 
 
 // ---------------------------------MapChunk-----------------------------------
@@ -146,7 +208,9 @@ private:
 	_bool IsChunkInStreamingRange(const MAPCHUNK_COORD& coord); // 나중에 도착한 Chunk로딩 결과가 유효한지 확인하기 위한 함수
 
 private:
+	HRESULT ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& state, const std::chrono::steady_clock::time_point& deadline, _bool& completed);
 	std::mutex m_LoadResultMutex{};
+	std::deque<std::unique_ptr<PENDING_CHUNK_APPLY_STATE>> m_ChunkApplyQueue{};
 	std::vector<PENDING_CHUNK_LOAD_RESULT> m_LoadResults{}; //워커가 로딩한 결과모음
 // -------------------------------Worker---------------------------------------
 
@@ -177,8 +241,10 @@ struct MAP_MESH_OBJECT_LOAD_DESC
 struct PENDING_CHUNK_LOAD_RESULT
 {
 	MAPCHUNK_COORD coord{};
+	uint64_t mapGeneration{};
 	HRESULT hr = E_FAIL;
 	std::vector<MAP_MESH_OBJECT_LOAD_DESC> objects{};
+	std::vector<MAP_MODEL_RESOURCE_KEY> modelResources{};
 };
 NS_END
 

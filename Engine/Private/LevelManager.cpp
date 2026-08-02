@@ -39,6 +39,11 @@ HRESULT CLevelManager::ChangeLevel(UPtr<CLevel> pNewLevel)
 
 uint32_t CLevelManager::GetCurrentLevelID() const
 {
+	if (m_pLevelBeingInitialized)
+	{
+		return m_pLevelBeingInitialized->GetLevelID();
+	}
+
 	return m_pCurrentLevel ? m_pCurrentLevel->GetLevelID() : CLevel::INVALID_LEVEL_ID;
 }
 
@@ -75,7 +80,10 @@ void CLevelManager::UpdateGUI()
 	ImGui::End();
 
 
-	m_pCurrentLevel->UpdateGUI();
+	if (m_pCurrentLevel)
+	{
+		m_pCurrentLevel->UpdateGUI();
+	}
 }
 
 void CLevelManager::FrameStart(_float fTimeDelta)
@@ -90,17 +98,31 @@ void CLevelManager::FrameStart(_float fTimeDelta)
 		m_sChangeLevel = ""; // 예약 초기화
 	}
 
-	if (m_pLevelBeforeLevelChange.get())
+	if (m_pLevelBeforeLevelChange)
 	{
 		CGameInstance::Get().ClearMapMeshTextureCache();
 
-		if (m_pCurrentLevel.get())
+		if (m_pCurrentLevel)
 		{
 			//m_pCurrentLevel->BeforeLevelChange();
-			m_pCurrentLevel.reset(); 
+			m_pCurrentLevel.reset();
 		}
 
-		m_pCurrentLevel = std::move(m_pLevelBeforeLevelChange); 
+		if (m_pLevelBeforeLevelChange->UsesDeferredInitialization())
+		{
+			m_pLevelBeingInitialized = m_pLevelBeforeLevelChange.get();
+			const HRESULT hr = m_pLevelBeforeLevelChange->Initialize();
+			m_pLevelBeingInitialized = nullptr;
+
+			if (FAILED(hr))
+			{
+				m_pLevelBeforeLevelChange.reset();
+				MSG_BOX("Failed to Initialize Pending Level");
+				return;
+			}
+		}
+
+		m_pCurrentLevel = std::move(m_pLevelBeforeLevelChange);
 		//m_pCurrentLevel->AfterLevelChange();
 	}
 
@@ -112,7 +134,10 @@ void CLevelManager::FrameStart(_float fTimeDelta)
 
 void CLevelManager::FrameEnd(_float fTimeDelta)
 {
-	m_pCurrentLevel->FrameEnd(fTimeDelta);
+	if (m_pCurrentLevel)
+	{
+		m_pCurrentLevel->FrameEnd(fTimeDelta);
+	}
 }
 
 UPtr<CLevelManager> CLevelManager::Create()

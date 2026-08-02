@@ -113,7 +113,10 @@ HRESULT CResStaticModel::Load(const std::any& arg)
 
 HRESULT CResStaticModel::Unload(const std::any& arg)
 {
-
+	m_Meshes.clear();
+	m_Materials.clear();
+	m_iNumMeshes = 0;
+	m_iNumMaterials = 0;
 	m_LocalBounds = {};
 	m_bHasLocalBounds = false;
 	m_eState = STATE::UNLOAD;

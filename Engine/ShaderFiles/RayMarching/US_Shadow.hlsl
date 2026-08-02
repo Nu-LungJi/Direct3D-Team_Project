@@ -48,14 +48,26 @@ cbuffer CB_CPU_SKINNING_MESH : register(b5)
 	uint gSkinBoneOffset;
 	uint gVertexCount;
 	uint gSkinBoneCount;
-	uint gSkinPadding;
+	/*----------- 광윤 추가 -----------*/
+	uint iBonePaletteStride;
+	/*---------------------------------*/
 };
+
+cbuffer CB_SHADOW : register(b11)
+{
+	uint CurrentShadowLightIndex;
+	uint CurrentPointFaceIndex;
+	float2 ShadowPadding;
+}
+
 
 float4 Compute_AnimModel_SkinnedPosition(VS_SHADOW_INSTANCED_IN IN, uint _InstancedID)
 {
-	const uint InstanceBoneOffset =
-        _InstancedID * MAX_BONE_COUNT;
-
+	//const uint InstanceBoneOffset = _InstancedID * 512;
+	/*----------- 광윤 추가 -----------*/
+	const uint InstanceBoneOffset = _InstancedID * iBonePaletteStride;
+	/*---------------------------------*/
+	
 	float4 Weights = IN.BlendWeights;
 	
 	Weights.w = 1.0f -
@@ -120,7 +132,11 @@ struct VS_OUT
 {
 	float4 WorldPos : POSITION;
 };
-
+struct VS_POINT_OUT
+{
+	float4 Position : SV_POSITION;
+	float3 WorldPos : TEXCOORD0;
+};
 struct VS_FINAL_OUT
 {
 	float4 Position : SV_POSITION;
@@ -171,6 +187,32 @@ VS_FINAL_OUT VSMain_Final(VS_IN IN)
 	
 	return OUT;
 }
+
+VS_POINT_OUT VSMain_PointFace(VS_IN IN)
+{
+	VS_POINT_OUT OUT;
+	
+	float4 WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
+	OUT.WorldPos = WorldPos.xyz;
+	OUT.Position = mul(WorldPos, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[CurrentPointFaceIndex]);
+
+	return OUT;
+}
+
+VS_POINT_OUT VSMain_InstancedPointFace(VS_SHADOW_INSTANCED_IN IN, uint _InstancedID : SV_INSTANCEID)
+{
+	VS_POINT_OUT OUT;
+	
+	const float4 SkinnedPosition = Compute_AnimModel_SkinnedPosition(IN, _InstancedID);
+	
+	float4 WorldPosition = mul(SkinnedPosition, gInstances[_InstancedID].WorldMatrix);
+	
+	OUT.WorldPos = WorldPosition.xyz;
+	OUT.Position = mul(WorldPosition, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[CurrentPointFaceIndex]);
+	
+	return OUT;
+}
+
 struct GS_OUT
 {
 	float4	Position	: SV_POSITION;
@@ -197,7 +239,18 @@ float PSMain(GS_OUT OUT) : SV_DEPTH
 {
 	float3	LightToPixel = OUT.WorldPos.xyz - AffectedLight[CurrentShadowLightIndex].Position;
     float	Distance = length(LightToPixel);
-	float	Depth = Distance / AffectedLight[CurrentShadowLightIndex].LightRange;
+	
+	float	OuterRange = max(0.02f, AffectedLight[CurrentShadowLightIndex].OuterAttanuation);
+	float	Depth = Distance / OuterRange;
 	
 	return saturate(Depth);
+}
+float PSMain_PointFace(VS_POINT_OUT OUT) : SV_DEPTH
+{
+	float3 LightToPixel = OUT.WorldPos - AffectedLight[CurrentShadowLightIndex].Position;
+	float  Distance = length(LightToPixel);
+	
+	float  OuterRange = max(0.02f, AffectedLight[CurrentShadowLightIndex].OuterAttanuation);
+
+	return saturate(Distance / OuterRange);
 }
