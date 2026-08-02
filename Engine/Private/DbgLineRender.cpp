@@ -141,8 +141,8 @@ void CDbgLineRender::AddSphere(float radius, FXMMATRIX world)
 {
     if (!CanAddVertices(2)) return;
 
-    constexpr uint32_t SliceCount = 24;
-    constexpr uint32_t StackCount = 12;
+    constexpr uint32_t SliceCount = 8;
+    constexpr uint32_t StackCount = 4;
 
     constexpr float PI = XM_PI;
     constexpr float TWO_PI = XM_2PI;
@@ -219,8 +219,8 @@ void CDbgLineRender::AddCapsule(
 {
     if (!CanAddVertices(2)) return;
 
-    constexpr uint32_t SliceCount = 24;
-    constexpr uint32_t ArcCount = 12;
+    constexpr uint32_t SliceCount = 8;
+    constexpr uint32_t ArcCount = 4;
 
     constexpr float PI = XM_PI;
     constexpr float HALF_PI = XM_PIDIV2;
