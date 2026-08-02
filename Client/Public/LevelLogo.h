@@ -1,7 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "Level.h"
-
+#include "UIObject.h"
 NS_BEGIN(Client)
 
 class CLevelLogo final : public Engine::CLevel

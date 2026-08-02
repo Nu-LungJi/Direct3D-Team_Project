@@ -89,6 +89,8 @@ public:
 public:
 	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
 public:
+	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
+
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
@@ -100,7 +102,6 @@ public:
 	_bool						Is_PendingHit() { return m_bPending; }
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						ReActiveTable();
-	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
 	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
 	uint32_t					GetHitCnt() { return m_iHitCnt; }
@@ -108,14 +109,14 @@ public:
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 
 
-	virtual void						Skill_Finished();
+	virtual void				Skill_Finished();
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
 	_bool						Check_Flag(uint32_t iFlag);
-private:
 	void						Damaged(PLAYER_SKILL_TYPE eType);
+private:
 	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);

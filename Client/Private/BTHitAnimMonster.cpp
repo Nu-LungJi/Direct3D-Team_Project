@@ -42,19 +42,22 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
 
-
+		
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
 			if (m_bStart)
 			{
 				m_iHitCnt = pSrc->GetHitCnt();
 				//type 없으면 그냥 넘어가기
-				if (false == HitType())
+				if (m_bResetAnimTime)
+				{
+					pAnimator->GetCurAnimState().fTrackPosition = 0.f;
+				}
+				else if (false == HitType())
 					return m_eDebug = EVALUATE::FAILED;
 				m_bStart = false;
 
-				if (m_bResetAnimTime)
-					pAnimator->GetCurAnimState().fTrackPosition = 0.f;
+				
 			}
 
 			if (m_iHitCnt != pSrc->GetHitCnt())

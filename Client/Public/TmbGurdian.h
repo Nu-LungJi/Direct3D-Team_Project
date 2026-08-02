@@ -33,6 +33,8 @@ public:
 	virtual void Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
 	_string Get_SkillName(ATTMON SkillNode)override;
 	const _float				Get_Damage() override;
+	_bool					Check_Table(PLAYER_SKILL_TYPE eType) override;
+
 private:
 	void						Active_Skill();
 private:

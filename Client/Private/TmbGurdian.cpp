@@ -339,6 +339,34 @@ const _float CTmbGurdian::Get_Damage()
 	return m_fDamage;
 }
 
+_bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+		return false;
+
+	Damaged(eType);
+	if (eType == PLAYER_SKILL_TYPE::ATTACK && Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)))
+		return false;
+
+	if (ETOUI(m_eMonType) == ETOUI(MONSTER_TYPE::ELITE) && eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+		return false;
+
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
+
+	MON_HIT_INFO HitInfo{};
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+	HitInfo.eAttType = m_eAttType;
+	HitInfo.eHitType = eType;
+	m_PendingMonTable = HitInfo;
+	m_bPending = true;
+
+	return true;
+}
+
 void CTmbGurdian::UpdateGUI()
 {
 	__super::UpdateGUI();

@@ -32,6 +32,7 @@ public:
 	_string				Get_SkillName(ATTMON SkillNode)override;
 	const _string		Get_CurSkillName() { return m_CurEffectName; }
 	void				Skill_Finished() override;
+	_bool				Check_Table(PLAYER_SKILL_TYPE eType)override;
 
 private:
 	void				Active_Skill();

@@ -265,7 +265,6 @@ void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
 
-
 	Active_Skill();
 	Active_Dynamic_Effect();
 }
@@ -336,8 +335,36 @@ void CBossTMB::Skill_Finished()
 	}
 }
 
+_bool CBossTMB::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+		return false;
+
+	Damaged(eType);
+
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+		return false;
+
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
+
+	MON_HIT_INFO HitInfo{};
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+	HitInfo.eAttType = m_eAttType;
+	HitInfo.eHitType = eType;
+	m_PendingMonTable = HitInfo;
+	m_bPending = true;
+
+	return true;
+}
+
 void CBossTMB::Active_Dynamic_Effect()
 {
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+		return;
 
 	_float fRatio = m_pModelAnimator->GetPlayAnimRatio();
 	if (m_CurEffectName == "Boss_GroundCrash" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
@@ -352,7 +379,7 @@ void CBossTMB::Active_Dynamic_Effect()
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);	
 		}
 	}
-	if (m_CurEffectName == "MorningStarAfterEffect" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
+	else if (m_CurEffectName == "MorningStarAfterEffect" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
 		
 		if (m_fSkillRatio.x <= fRatio)
 		{
@@ -364,7 +391,7 @@ void CBossTMB::Active_Dynamic_Effect()
 		}
 
 	}
-	if (m_CurEffectName == "BossRingAttackAfterEffect" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
+	else if (m_CurEffectName == "BossRingAttackAfterEffect" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
 		CMonEffectBall::MON_BALL desc{};
 		desc.fDamage = 50.f;
 		desc.hTarget = m_TargetHandle;

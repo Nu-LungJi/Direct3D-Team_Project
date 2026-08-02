@@ -429,53 +429,6 @@ void CMonster::ReActiveTable()
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::DEL);
 }
 
-
-_bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
-{
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-		return false;
-
-	if (m_eAttType == ATTMON::END || m_CurEffectName.empty())
-		return false;
-
-	Damaged(eType);
-	if (eType == PLAYER_SKILL_TYPE::ATTACK && Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)))
-		return false;
-
-	//if (eType == PLAYER_SKILL_TYPE::ATTACK)
-	//	++m_iNormalHitCnt;
-	//if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
-	//{
-	//	if (m_iNormalHitCnt >= 6)
-	//	{
-	//		m_iNormalHitCnt = 0;
-	//		m_bSkipAtt = false;
-	//		return false;
-	//	}
-	//	m_bSkipAtt = true;
-	//	
-	//	return false;
-	//}
-
-	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
-		return false;
-	
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
-		return false;
-
-	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return false;
-
-	MON_HIT_INFO HitInfo{};
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
-	HitInfo.eAttType = m_eAttType;
-	HitInfo.eHitType = eType;
-	m_PendingMonTable = HitInfo;
-	m_bPending = true;
-
-	return true;
-}
-
 _bool CMonster::Is_Grounded()
 {
 	return m_pCharacterController->IsGrounded();

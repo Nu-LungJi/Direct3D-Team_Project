@@ -79,7 +79,7 @@ void CBossMace::LateUpdate(E::_float fTimeDelta)
 		m_bEmissive = true;
 		if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
 		{
-			if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneSocketIndex)
+			if (pModel->Get_CombinedBoneMatrices().size() < m_iBoneSocketIndex)
 			{
 				_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
 				for (uint32_t i = 0; i < 3; ++i)
