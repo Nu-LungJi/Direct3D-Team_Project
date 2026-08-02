@@ -204,6 +204,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
     <ClInclude Include="..\public\BossTMB.h" />
     <ClInclude Include="..\Public\BTAnimation.h" />
@@ -318,6 +319,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />
     <ClCompile Include="..\Private\BTAnimation.cpp" />
     <ClCompile Include="..\Private\BTAnimRoot.cpp" />
@@ -430,6 +432,7 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl" />

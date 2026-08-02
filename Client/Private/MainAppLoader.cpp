@@ -21,6 +21,7 @@
 #include "TextureUI.h"
 #include "TextBox.h"
 #include "HPBar.h"
+#include "SkyCloudyCube.h"
 
 NS_USING(Client)
 
@@ -31,6 +32,37 @@ HRESULT CMainAppLoader::Load()
 	// 전체 레벨에서 사용할 라이트 오브젝트 프로토타입 등록
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
 	if (E::CGameInstance::Get().AddPrototype("PLAYER_STATEMACHINE","Prototype_Component_Player_StateMachine",CPlayer_StateMachine::Create())) return E_FAIL;
+
+
+	// 전체 레벨에서 사용할 스카이 박스
+	if (auto res = E::CGameInstance::Get().AddResource("SKYBOX", "VS_SkyCloudy",E::CResVertexShader::Create("./ShaderFiles/Shader_SkyCloudy.hlsl")))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	else return E_FAIL;
+
+	if (auto res = E::CGameInstance::Get().AddResource("SKYBOX", "PS_SkyCloudy",E::CResPixelShader::Create("./ShaderFiles/Shader_SkyCloudy.hlsl")))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	else return E_FAIL;
+
+	if (auto res = E::CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_SkyCube", E::CResCubeColBuffer::Create()))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	else return E_FAIL;
+
+	if (auto res = E::CGameInstance::Get().AddResource("SKYBOX", "TEX_SkyCloudyCube", E::CResTextureCubeMap::Create("./Resources/SampleClient/Textures/Skybox/T_SNY_SkyCloudy_Cube.dds")))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	else return E_FAIL;
+
+	if (E::CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_GameObject_SkyCloudyCube", CSkyCloudyCube::Create()))
+	{
+		return E_FAIL;
+	}
 
 
 

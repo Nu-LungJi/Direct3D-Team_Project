@@ -253,6 +253,12 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
       <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\SkyBox">
+      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\SkyBox">
+      <UniqueIdentifier>{dcc79b65-c72c-402f-b79c-9a171f399c82}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -591,6 +597,9 @@
     <ClInclude Include="..\Public\ClientEvents.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\SkyCloudyCube.h">
+      <Filter>GameObject\SkyBox</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -876,6 +885,9 @@
     <ClCompile Include="..\Private\Cursor.cpp">
       <Filter>GameObject\UI\Cursor</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\SkyCloudyCube.cpp">
+      <Filter>GameObject\SkyBox</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
@@ -956,5 +968,8 @@
     <ClCompile Include="..\Private\VideoObject.cpp">
       <Filter>GameObject\UI\VideoObject</Filter>
     </ClCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl">
+      <Filter>ShaderFiles\SkyBox</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
