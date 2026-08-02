@@ -244,6 +244,8 @@
     <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
+    <ClInclude Include="..\public\LevelHogwartWorld.h" />
+    <ClInclude Include="..\public\LevelHogwartWorldLoader.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
@@ -352,6 +354,8 @@
     <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />
+    <ClCompile Include="..\private\LevelHogwartWorld.cpp" />
+    <ClCompile Include="..\private\LevelHogwartWorldLoader.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
     <ClCompile Include="..\Private\LevelLogo.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
