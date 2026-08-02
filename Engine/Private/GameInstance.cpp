@@ -32,6 +32,7 @@
 #include "MapManager.h"
 #include "NavMeshManager.h"
 #include "PhysXManager.h"
+#include "NvClothManager.h"
 #include "DbgLineRender.h"
 #include "SerializeManager.h"
 
@@ -95,6 +96,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	if (FAILED(m_pGraphicDevice->ReadyDevice(EngineDesc.hWnd, EngineDesc.eWinMode, EngineDesc.iWinSizeX, EngineDesc.iWinSizeY)))
+	{
+		return E_FAIL;
+	}
+
+	m_pNvClothManager = CNvClothManager::Create(
+		ppDevice.Get(), ppContext.Get());
+	if (!m_pNvClothManager)
 	{
 		return E_FAIL;
 	}
@@ -293,6 +301,14 @@ void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 	}
 	
 	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
+
+
+	{
+		ZoneScopedN("pNvClothManager_StepSimulation");
+		if (m_pNvClothManager)
+			m_pNvClothManager->StepSimulation(fFixedTimeDelta);
+	}
+
 }
 
 void CGameInstance::UpdateGUI()
@@ -338,6 +354,8 @@ void CGameInstance::UpdateGUI()
 
 	m_pNodeEditor->NodeEditorUpdate();
 	m_pPhysXManager->UpdateGUI();
+	if (m_pNvClothManager)
+		m_pNvClothManager->UpdateGUI();
 
 	m_pSerializeManager->UpdateGUI();
 
@@ -450,6 +468,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	m_pMapManager->Update(fTimeDelta);
 	m_pMapMeshInstancingRenderer->Update();
 
+	if (m_pNvClothManager)
+		m_pNvClothManager->RenderDebug(*m_pDbgLineRender);
 	m_pDbgLineRender->AddAxis(1.f, XMMatrixTranslation(1.3f, 1.2f, 0.f));
 	m_pNavMeshManager->DrawDebug();
 
@@ -537,9 +557,16 @@ void CGameInstance::Release_Engine()
 	m_pNavMeshManager.reset();
 	m_pMapManager.reset();
 	m_pPhysXManager.reset();
+	m_pNvClothManager.reset();
 	m_pEventManager.reset();
 	m_pEffectManager.reset();
 	m_pGraphicDevice.reset();
+}
+
+void CGameInstance::SetMouseFix(_bool mousefix)
+{
+	m_bMouseFix = mousefix;
+	ShowCursor(FALSE);
 }
 
 
@@ -674,8 +701,11 @@ void CGameInstance::SetEffectWorldMatrix(EFFECT_INSTANCE_ID iEffectId, const _fl
 }
 void CGameInstance::SetBeamPositionsByOwner(EFFECT_INSTANCE_ID effectId, const _float3& start, const _float3& end) {
 	m_pEffectManager->SetBeamPositionsByOwner(effectId, start, end);
-
 }
+void CGameInstance::ClearAllRunningEffect() {
+	m_pEffectManager->ClearAllRunningEffect();
+}
+
 
 
 #pragma endregion
@@ -1207,14 +1237,27 @@ void CGameInstance::ClearAllChunk()
 #pragma endregion
 
 #pragma region LIGHT_MANAGER
-VOID	CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
-	m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
+std::optional<CHandle> CGameInstance::Add_DirectionalLight(XMFLOAT3 _Direction, XMFLOAT3 _Color, _float _Intensity) {
+	return m_pLightManager->Add_DirectionalLight(_Direction, _Color, _Intensity);
 }
-VOID	CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
-	m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _InnerRange, _OuterRange);
+std::optional<CHandle> CGameInstance::Add_PointLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _InnerRange, _float _OuterRange) {
+	return m_pLightManager->Add_PointLight(_Position, _Color, _Intensity, _InnerRange, _OuterRange);
 }
-VOID	CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
-	m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
+std::optional<CHandle> CGameInstance::Add_SpotLight(XMFLOAT3 _Position, XMFLOAT3 _Color, _float _Intensity, _float _Range, _float _InnerAtt, _float _OuterAtt) {
+	return m_pLightManager->Add_SpotLight(_Position, _Color, _Intensity, _Range, _InnerAtt, _OuterAtt);
+}
+_bool CGameInstance::Remove_Light(const CHandle& hLight) {
+	return m_pLightManager->Remove_Light(hLight);
+}
+size_t CGameInstance::Remove_PlacementLightGroup(
+	std::string_view sGroup) {
+	return m_pLightManager->
+		Remove_PlacementLightGroup(sGroup);
+}
+void CGameInstance::SetActivePlacementLightGroup(
+	std::string_view sGroup) {
+	m_pLightManager->
+		SetActivePlacementLightGroup(sGroup);
 }
 VOID	CGameInstance::Clear_DynamicLightList() {
 	m_pLightManager->Clear_DynamicLightList();
@@ -1224,6 +1267,9 @@ HRESULT	CGameInstance::AddShadowRenderGroup(ACTORTYPE _ATYPE, IRenderable* pRend
 }
 HRESULT	CGameInstance::Render_ObjectShadow() {
 	return m_pLightManager->Render_ObjectShadow();
+}
+HRESULT	CGameInstance::Render_ObjectNonShadow() {
+	return m_pLightManager->Render_ObjectNonShadow();
 }
 HRESULT	CGameInstance::Initialize_EffectLight(uint32_t _PoolSize) {
 	return m_pLightManager->Initialize_EffectLight(_PoolSize);

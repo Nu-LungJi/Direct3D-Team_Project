@@ -1,6 +1,10 @@
 #include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
 
-
+cbuffer CB_TIMEACCUMULATION : register(b11)
+{
+	float g_fAccumulationTime;
+	float3 _pad;
+};
 struct VS_IN
 {
     // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
@@ -15,9 +19,9 @@ struct VS_IN
     float4 vWorld2 : INSTANCE_WORLD2;
     float4 vWorld3 : INSTANCE_WORLD3;
     float4 vColor : INSTANCE_COLOR0;
-    float4 vInstEmissive : INSTANCE_EMISSIVE;
-    float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
-    float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
+	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE0;
+	float4 vInstEmissive : INSTANCE_EMISSIVE1;
+	float4 vInstEndEmissive : INSTANCE_EMISSIVE2;
     float2 uvOffset : INSTANCE_UVOFFSET;
     float2 uvSize : INSTANCE_UVSIZE;
     float life : INSTANCE_LIFE; // 추가 
@@ -108,7 +112,8 @@ PS_OUT PSMain(VS_OUT In)
     float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
 	float4 noise = g_NoiseTexture.Sample(LinearWrap, In.vTexcoord);
     
-	float ratio = saturate(1.0f - (In.life / max(In.maxLife, 0.0001f)));
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 
 	//if (noise.r < ratio) 
 	//	discard;
@@ -186,7 +191,8 @@ PS_OUT SMOKE(VS_OUT In)
 	float2 distrotedUV = In.vTexcoord + float2(0.03f, 0.01f) *topMask * 0.03f;
 	distrotedUV.x += noise.x * 0.03f * topMask;
 	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, distrotedUV);
-	float ratio = (In.life / In.maxLife);
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	
 	float fadein = smoothstep(0.f, 0.18f, ratio);
 	float fadeout = 1.0f - smoothstep(0.65f, 1.f, ratio);
@@ -334,9 +340,9 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
 	float2 atlasPosition = atlasUV * AtlasCount;
 	float2 cellIndex = floor(atlasPosition);
 	float2 localUV = frac(atlasPosition);
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 
-	float lifeMax = max(In.maxLife, 0.0001f);
-	float ageRatio = saturate(In.life / lifeMax);
 
     /*
      * Normal은 플립북 Atlas UV가 아니라
@@ -344,7 +350,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
      */
 	float2 normalUV =
         localUV * float2(1.2f, 1.2f) +
-        float2(-g_fTimeAccumulation * 0.6f, 0.f);
+        float2(-g_fAccumulationTime * 0.6f, 0.f);
 
 	float2 distortion =
         g_NormalTexture.Sample(LinearWrap, normalUV).rg * 2.f - 1.f;
@@ -380,7 +386,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
      */
 	float2 noiseUV =
         localUV * float2(1.5f, 1.f) +
-        float2(-g_fTimeAccumulation * 0.8f, 0.f);
+        float2(-g_fAccumulationTime * 0.8f, 0.f);
 
 	float noise =
         g_NoiseTexture.Sample(LinearWrap, noiseUV).r;
@@ -402,8 +408,8 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
     // );
 
     // 파티클 생성/소멸 페이드
-	float fadeIn = smoothstep(0.f, 0.08f, ageRatio);
-	float fadeOut = 1.f - smoothstep(0.65f, 1.f, ageRatio);
+	float fadeIn = smoothstep(0.f, 0.08f, ratio);
+	float fadeOut = 1.f - smoothstep(0.65f, 1.f, ratio);
 	float lifeFade = fadeIn * fadeOut;
 
 	float alpha =
@@ -417,7 +423,7 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
         smokeTex.rgb * In.vColor.rgb;
 
 	float4 lerpedEmissive =
-        lerp(In.vEmissive, In.vEndEmissive, ageRatio);
+        lerp(In.vEmissive, In.vEndEmissive, ratio);
 
 	float3 finalRGB =
         color +
@@ -427,6 +433,66 @@ PS_OUT PlayerDashSmoke2(VS_OUT In)
 
     // 완전히 투명한 픽셀의 오버드로 감소
 	clip(alpha - 0.001f);
+
+	return Out;
+}
+PS_OUT PSOnlyForDistortion(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+	screenUV.x = screenUV.x * 0.5f + 0.5f;
+	screenUV.y = -screenUV.y * 0.5f + 0.5f;
+
+	float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
+	
+	if (vDistortionColor.r <0.51f)
+		discard;
+	float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
+	float distortionStrength = 0.05f * In.vColor.a ;
+
+	distortion *= distortionStrength;
+	float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion); 
+	
+
+	Out.vDiffuse = float4(distortedBackground.rgb, 1.0f);
+	return Out;
+	
+}
+PS_OUT PSSphereShield(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float3 normalSample = g_NormalTexture.Sample( LinearClamp,In.vTexcoord ).rgb;
+
+	float3 sphereNormal =
+        normalize(normalSample * 2.0f - 1.0f);
+
+	float circleMask = g_DiffuseTexture.Sample(LinearClamp,In.vTexcoord).r;
+
+	float3 viewDir =
+        float3(0.f, 0.f, 1.f);
+
+	float fresnel = 1.0f - saturate(dot(sphereNormal, viewDir));
+
+	float rim = pow(fresnel, 5.0f);
+
+	float3 rimColor =  float3(0.2f, 0.65f, 1.0f);
+
+	float3 centerColor = float3(0.1f, 0.25f, 0.7f);
+
+	float3 finalRGB =
+        centerColor * circleMask * 0.3f +
+        rimColor * rim * circleMask * 6.0f;
+
+	float alpha =  saturate(circleMask * 0.25f + rim * circleMask);
+
+	clip(circleMask - 0.01f);
+	float3 color = In.vColor.rgb + In.vEmissive.rgb * In.vEmissive.a;	
+	float finalAlpha = saturate(alpha - ratio);
+	Out.vDiffuse = float4(finalRGB + color, finalAlpha);
 
 	return Out;
 }

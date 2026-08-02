@@ -74,13 +74,18 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 						tt = 0.f;
 					if (tt > 1.f)
 						tt = 1.f;
+					
 					if (auto pBT = Get_ComBT())
 					{
-						if (auto pSrc = pBT->GetGameObject())
+						if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 						{
-							_float fEmissive = std::lerp(0.f, 0.5f, tt);
-							static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
+							if (auto pSrc = pBT->GetGameObject())
+							{
+								_float fEmissive = std::lerp(0.f, m_fIntensive, tt);
+								static_cast<CMonster*>(pSrc)->Set_Emissive(fEmissive);
+							}
 						}
+						
 					}
 					_float fAnimRange = m_fRatio.y - m_fRatio.x;
 					_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
@@ -131,7 +136,7 @@ void CBTAttackAnimation::Update_Gui()
 	__super::Update_Gui();
 	ImGui::Text("Move Speed");
 	ImGui::DragFloat("##Move Speed", &m_Value.fSpeed);
-
+	DragFloat("Intensive", m_fIntensive);
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)
@@ -177,6 +182,7 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 
+	SaveJsonValue(j, "Intensive", m_fIntensive);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	return j;
@@ -184,6 +190,7 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
+	LoadJsonValue(j, "Intensive", m_fIntensive);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	return S_OK;

@@ -33,6 +33,8 @@ public:
 		float fSlopeLimit = 0.707f;    // 오를 수 있는 최대 경사 (cos각도, 0.707은 약 45도)
 		XMFLOAT3 vPosition = { 0.f, 0.f, 0.f };
 		PX_FILTER_DESC tFilter{};
+		uint32_t iShapeSubIndex{
+			std::numeric_limits<uint32_t>::max() };
 	};
 public:
 	DECLARE_DERIVED_TYPE(CComPxCharacterController, CComponent)
@@ -56,6 +58,7 @@ public:
 	bool IsGrounded() const;
 	bool IsCollidingUp() const;
 	bool IsCollidingSide() const;
+	std::optional<PX_CCT_STANDING_DATA> GetStandingShapeData() const;
 	std::optional<CHandle> GetStandingGameObjectHandle() const;
 	void SetPosition(const XMFLOAT3& vPosition);
 	_float3 GetPosition() const;
@@ -72,9 +75,12 @@ public:
 
 	_bool SetFilter(const PX_FILTER_DESC& tFilter);
 	const PX_FILTER_DESC& GetFilter() const { return m_tFilter; }
+	uint32_t GetShapeSubIndex() const { return m_iShapeSubIndex; }
 private:
 	physx::PxController* m_pController{};
 	PX_FILTER_DESC m_tFilter{};
+	uint32_t m_iShapeSubIndex{
+		std::numeric_limits<uint32_t>::max() };
 	std::unordered_set<CComPxJoint*> m_Joints{};
 
 	struct Impl;

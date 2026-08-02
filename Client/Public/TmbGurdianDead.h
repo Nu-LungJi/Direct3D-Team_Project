@@ -58,7 +58,8 @@ public:
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	/*---------------------------------*/
-
+private:
+	void				Boom(_float fTimeDelta);
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
 	CComPxRigidBody* m_pComPxRigidBody{};
@@ -72,6 +73,9 @@ private:
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
 
+	_float3				m_fTestEmissive{1.f,1.f,1.f};
+	_float				m_fTick{};
+	_float				m_DissolveIntensive{}, m_EmissiveIntensive{};
 public:
 	static E::UPtr<CTmbGurdianDead> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -4,7 +4,7 @@
 #include "Player.h"
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
-
+#include "Monster.h"
 NS_USING(Client)
 
 void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
@@ -35,6 +35,8 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DEPULSO);
+	if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
+		pMonster->Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
@@ -117,12 +119,12 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 		}
 
 		if (m_fAnimRatio >= CAST_END_RATIO) {
-			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO))
+	/*		if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO))
 			{
 				m_ePhase = PHASE::ATTACK_FAILED;
 				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
 				break;
-			}
+			}*/
 
 			// 밀기 시작
 			m_ePhase = PHASE::PUSH;

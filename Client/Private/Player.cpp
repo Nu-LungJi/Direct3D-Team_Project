@@ -31,6 +31,49 @@
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
+#include "Player_RepairoSkill_State.h"
+
+#ifdef _DEBUG
+namespace
+{
+	// Targeting debug UI is intentionally isolated here.
+	// Remove this function and the single call in CPlayer::LateUpdate to delete it.
+	void DrawTargetingDebugUI(const E::CHandle& hTarget, const E::_float3& vPlayerPosition)
+	{
+		auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandle(hTarget);
+		auto* pDebugLine = E::CGameInstance::Get().GetDbgLineRender();
+		if (!pTarget || !pDebugLine)
+			return;
+
+		const E::_float3 vTargetPosition = pTarget->GetTransform().GetPosition();
+		const E::_float3 vMarkerPosition{
+			vTargetPosition.x,
+			vTargetPosition.y + 1.5f,
+			vTargetPosition.z
+		};
+
+		const E::_float4 vPreviousColor = pDebugLine->GetColor();
+		const E::DBG_LINE_DEPTH_MODE ePreviousDepthMode = pDebugLine->GetDepthMode();
+
+		// Draw through geometry so the current target remains easy to identify.
+		pDebugLine->SetDepthTest(false);
+		pDebugLine->SetColor({ 1.f, 0.2f, 0.05f, 1.f });
+		pDebugLine->AddCircle(
+			0.65f,
+			XMMatrixRotationX(XM_PIDIV2) *
+			XMMatrixTranslation(vMarkerPosition.x, vMarkerPosition.y, vMarkerPosition.z));
+		pDebugLine->AddCircle(
+			0.65f,
+			XMMatrixRotationY(XM_PIDIV2) *
+			XMMatrixTranslation(vMarkerPosition.x, vMarkerPosition.y, vMarkerPosition.z));
+		pDebugLine->AddCross(vMarkerPosition, 0.85f);
+		pDebugLine->AddLine(vPlayerPosition, vTargetPosition);
+
+		pDebugLine->SetColor(vPreviousColor);
+		pDebugLine->SetDepthMode(ePreviousDepthMode);
+	}
+}
+#endif
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
@@ -41,7 +84,9 @@ NS_USING(Client)
 
 void CPlayer::UpdateGUI()
 {
-
+	//static _float4 weaponColor;
+	//static _float3 weaponEmissiveColor;
+	//static _float weaponEIntensity;
 	__super::UpdateGUI();
 
 
@@ -60,6 +105,17 @@ void CPlayer::UpdateGUI()
 			1.f),
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
+
+
+	//ImGui::ColorEdit4("Color", &weaponColor.x);
+	//ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
+	//ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
+
+	//if (ImGui::Button("Apply DashTrail")) {
+	//	auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
+	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
+	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
+	//}
 
 }
 
@@ -126,6 +182,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		};
+
+		m_iHurtBoxBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
 	}
 
 	{
@@ -142,10 +201,35 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComHitboxRigidbody", &Desc, &m_pComPxRigidBody)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
+		CComPxBoxCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({ .vHalfExtents = {2.f, 1.f, 1.f} });
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX);
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
+		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
+		{
+			return E_FAIL;
+		};
+	}
+
+	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
 		Desc.tFilter = pDesc->tFilter;
 		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
@@ -255,12 +339,18 @@ HRESULT CPlayer::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::REPAIRO_SKILL,
+			CPlayer_RepairoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
 
 		if (!m_pStateMachine->SetInitialState(PLAYER_STATE::LOCOMOTION))
 		{
 			return E_FAIL;
 		}
-	}
+	}//Spine1
 
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
@@ -292,6 +382,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
+		}
+		{
+			auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(67/255.f, 97 / 255.f, 174 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51/255.f, 77 / 255.f, 126 / 255.f, 4.f));
 		}
 	}
 	return S_OK;
@@ -669,27 +764,26 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
 		//if (TryUseSkillSlot(1))
-		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
-		m_bCoolTime_Num1 = true;
+		if(m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL))
+			m_bCoolTime_Num1 = true;
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
 	{
 		//if (TryUseSkillSlot(2))
-		m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL);
-		m_bCoolTime_Num2 = true;
+		if(m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL))
+			m_bCoolTime_Num2 = true;
 	}
 	if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
 	{
 		//if (TryUseSkillSlot(3))
-		m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL);
-		m_bCoolTime_Num3 = true;
+		if(m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL))
+			m_bCoolTime_Num3 = true;
 	}	
 
 	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-		//if (TryUseSkillSlot(4))
-		//m_pStateMachine->RequestState(PLAYER_STATE::);
-		m_bCoolTime_Num4 = true;
+		if(m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
+			m_bCoolTime_Num4 = true;
 	}
 
 #ifdef _DEBUG
@@ -716,7 +810,7 @@ void CPlayer::InitializeSkillSlotUI()
 	pUIController->SetSpellType(3, ETOUI(SPELL_TYPE::DESENDO));
 
 	// SPELL_TYPE에 REVELIO가 추가되기 전까지 4번 슬롯은 빈 슬롯으로 둔다.
-	pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::NONE));
+	pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::REPARO));
 
 	m_bSkillSlotUIInitialized = true;
 }
@@ -741,6 +835,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 	case SPELL_TYPE::DESENDO:
 		eSkillState = PLAYER_STATE::DESCENDO_SKILL;
+		break;
+
+	case SPELL_TYPE::REPARO:
+		eSkillState = PLAYER_STATE::REPAIRO_SKILL;
 		break;
 
 	default:
@@ -769,6 +867,51 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 	ApplyGroundFollow(fTimeDelta);
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
+
+	_bool bHurtBoxUpdated = false;
+	if (m_iHurtBoxBoneIndex >= 0 && m_pComModelInstance)
+	{
+		const auto& CombinedBones =
+			m_pComModelInstance->Get_CombinedBoneMatrices();
+		const size_t iBoneIndex =
+			static_cast<size_t>(m_iHurtBoxBoneIndex);
+
+		if (iBoneIndex < CombinedBones.size())
+		{
+			const _matrix HurtBoxWorld =
+				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
+
+			_vector vScale{};
+			_vector vRotation{};
+			_vector vTranslation{};
+			if (XMMatrixDecompose(
+				&vScale,
+				&vRotation,
+				&vTranslation,
+				HurtBoxWorld))
+			{
+				_float3 vHurtBoxPosition{};
+				_float4 vHurtBoxRotation{};
+				XMStoreFloat3(&vHurtBoxPosition, vTranslation);
+				XMStoreFloat4(
+					&vHurtBoxRotation,
+					XMQuaternionNormalize(vRotation));
+
+				bHurtBoxUpdated =
+					m_pComPxRigidBody->SetKinematicTarget(
+						vHurtBoxPosition,
+						vHurtBoxRotation);
+			}
+		}
+	}
+
+	if (!bHurtBoxUpdated)
+	{
+		m_pComPxRigidBody->SetKinematicTarget(
+			m_pComCharacterController->GetPosition(),
+			GetTransform().GetQuaternion());
+	}
 
 #ifdef _DEBUG
 	UpdateStandingGameObjectDebugLog();
@@ -933,16 +1076,16 @@ void CPlayer::UpdateStandingGameObjectDebugLog()
 				sLog += ", Generation: ";
 				sLog += std::to_string(hStandingGameObject->GetGeneration());
 				sLog += ")\n";
-				DEBUG_LOG_STR(sLog);
+				//DEBUG_LOG_STR(sLog);
 			}
 			else
 			{
-				DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
+				//DEBUG_LOG("[CPlayer][CCT] Standing handle is no longer valid.\n");
 			}
 		}
 		else
 		{
-			DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
+			//DEBUG_LOG("[CPlayer][CCT] Standing On: None\n");
 		}
 
 		m_hDebugStandingGameObject = hStandingGameObject;
@@ -1117,6 +1260,10 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	{
 		pCamera->UpdateFollow(fTimeDelta);
 	}
+
+#ifdef _DEBUG
+	DrawTargetingDebugUI(m_hAutoTarget, GetTransform().GetPosition());
+#endif
 
 	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
 	if(false)
@@ -1342,6 +1489,57 @@ HRESULT CPlayer::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 	return S_OK;
 }
 
+HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISION_DATA& info)
+{
+	if (!pAttacker)
+		return E_INVALIDARG;
+
+	if (info.iSelfShapeSubIndex == std::numeric_limits<uint32_t>::max())
+	{
+		return S_FALSE;
+	}
+
+	const auto ePlayerCollision =static_cast<PLAYER_COLLISIONS>(info.iSelfShapeSubIndex);
+
+	switch (ePlayerCollision)
+	{
+	case PLAYER_COLLISIONS::CCT_CAPSULE:
+		// 이동을 담당하는 CCT 충돌이므로 피격으로 처리하지 않는다.
+		return S_FALSE;
+
+	case PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX:
+	{
+		_float3 vHitPosition{};
+		_float3 vHitNormal{};
+		if (info.iContactCount > 0)
+		{
+			vHitPosition = info.Contacts[0].vWorldPosition;
+			vHitNormal = info.Contacts[0].vWorldNormal;
+		}
+
+		DEBUG_LOG_STR(
+			std::string("[PX][Player] HurtBox Hit : ") +
+			std::string{ pAttacker->GetObjectTag() } +
+			", ContactCount=" +
+			std::to_string(info.iContactCount) + "\n");
+
+		// TODO: 공격자의 데미지, 넉백, 속성 정보를 받아 HP에 반영한다.
+		// vHitPosition과 vHitNormal은 피격 이펙트/넉백 방향에 사용할 수 있다.
+		(void)vHitPosition;
+		(void)vHitNormal;
+
+		if (m_pStateMachine)
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+
+		return S_OK;
+	}
+
+	case PLAYER_COLLISIONS::END:
+	default:
+		return S_FALSE;
+	}
+}
+
 
 void CPlayer::Attack_Magic_Bullet()
 {
@@ -1358,7 +1556,7 @@ void CPlayer::Attack_Magic_Bullet()
 
 	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
 	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43 };
-
+	
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 
 	if (pTarget)
@@ -1403,6 +1601,8 @@ void CPlayer::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& in
 {
 	DEBUG_LOG_STR(std::string("[PX][Character] Collision Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+
+	Hit_Player_HurtBox(pObj, info);
 }
 
 void CPlayer::OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)

@@ -20,6 +20,7 @@ public:
 public:
 	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
 	{
+		_float3 vScale{1.f,1.f,1.f};
 		_string	WeaponName{}, LevelTag{};
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
@@ -31,6 +32,7 @@ private:
 
 public:
 	void UpdateGUI() override;
+
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
@@ -42,6 +44,8 @@ public:
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	/*---------------------------------*/
+public:
+	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
 public:
 	_bool					Weapon_CallBack() { return m_bDissolve; }
 private:

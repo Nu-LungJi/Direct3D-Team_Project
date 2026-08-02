@@ -14,6 +14,8 @@
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
 #include "TmbGurdianDead.h"
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 NS_USING(Client)
 
 namespace
@@ -425,6 +427,39 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 5500;
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
+		{
+			MSG_BOX("Create Failed ComPxRigidBody TombGurdian");
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComPxSphereCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComRigidBody;
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.bIsTrigger = false;
+		Desc.tFilter = PX_FILTER_DESC{
+			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
+			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+		};
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 5.f });
+		if (!Desc.pResMaterial ||
+			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
+				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
+		{
+			MSG_BOX("Create Failed ComPxSphereCollider TmbGurdian");
+			return E_FAIL;
+		}
+		if (!m_pComSphereCol->SetQueryEnabled(false))
+			return E_FAIL;
+	}
+
 	//피직스
 	{
 		CComPxCharacterController::DESC Desc{};
@@ -519,6 +554,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = MonDesc->WeaponResourceName; 
 	WeaponDesc.LevelTag = MonDesc->LevelTag;
+	WeaponDesc.vScale = MonDesc->vWeaponScale;
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
@@ -533,21 +569,21 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(TOMB_SKILL::JUMP_END);
 	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(TOMB_SKILL::SLASH);
 	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(TOMB_SKILL::SMASH);
+	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(TOMB_SKILL::HIT_ACCIO);
 
 	m_MonSkillLists[ATTMON::SKIP] = ETOUI(TOMB_SKILL::SKIP);
 
 
 	m_EffectNames[ETOUI(TOMB_SKILL::JUMP_START)] = "TombJumpStart";
 	m_EffectNames[ETOUI(TOMB_SKILL::JUMP_END)] = "TombJumpEnd";
-
-
+	m_EffectNames[ETOUI(TOMB_SKILL::HIT_ACCIO)] = "AccioGrab";
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	GetTransform().Update();
 	m_eAttType = ATTMON::END;
 
 	// 죽음 파편들
-
+	// 죽음은 바람과 같지.. 늘 내 곁에 있으니
 	{
 		const auto pModel = m_pComModelInstance->GetModel();
 		if (!pModel)
@@ -632,7 +668,10 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-	
+	m_fEMissiveColor = { 1.f,1.f,1.f};
+	m_eMonType = MonDesc->MonType;
+
+	m_pModelAnimator->Play_Anim(0, false);
 	return S_OK;
 }
 
@@ -644,6 +683,9 @@ void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 {
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	_float3 vPos = m_pCharacterController->GetPosition();
+	_float4 vRot = m_pComTransform->GetQuaternion();
+	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
 }
 
 void CTmbGurdian::Update(E::_float fTimeDelta)

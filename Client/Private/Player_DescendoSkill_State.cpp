@@ -4,7 +4,7 @@
 #include "Player.h"
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
-
+#include "Monster.h"
 NS_USING(Client)
 
 void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
@@ -88,13 +88,14 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	{
 		if (m_fAnimRatio >= CAST_END_RATIO)
 		{
-			if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO))
+		/*	if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO))
 			{
 				m_ePhase = PHASE::ATTACK_FAILED;
 				pAnimator->Play_Anim(m_AttackFail_Animation, false, 0.2f);
 				break;
-			}
-
+			}*/
+			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
+				pMonster->Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
 			m_ePhase = PHASE::PUSH;
 			pAnimator->Play_Anim(m_DescendoCast_Animation, false, 0.25f);
 			pAnimator->GetCurAnimState().fSpeed = 1.f;

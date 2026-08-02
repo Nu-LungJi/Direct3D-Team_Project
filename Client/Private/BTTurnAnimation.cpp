@@ -56,7 +56,7 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 					_float fDot = XMVectorGetX(XMVector3Dot(vSrcLook, vTargetLook));
 					_float fCrossY = XMVectorGetY(XMVector3Cross(vSrcLook, vTargetLook));
 					if (false == SelectAngle(XMConvertToDegrees(atan2f(fCrossY, fDot))))
-						return m_eDebug = EVALUATE::FAILED;
+						return m_eDebug = EVALUATE::SUCCESS;
 
 					XMStoreFloat3(&m_vCurrentLook, vSrcLook);
 					XMStoreFloat3(&m_vTargetLook, vTargetLook);

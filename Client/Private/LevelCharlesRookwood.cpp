@@ -13,6 +13,7 @@
 
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
+#include "NvClothCape.h"
 #include "UIController.h"
 
 #include "MyMagicSquareStep.h"
@@ -22,6 +23,7 @@
 
 #include "BridgeCRW.h"
 #include "TmbGurdian.h"
+#include "LightPlacementObject.h"
 
 NS_USING(Client)
 
@@ -37,7 +39,12 @@ CLevelCharlesRookwood::~CLevelCharlesRookwood()
 HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
-	CGameInstance::Get().Initialize_EffectLight(15);
+	if (FAILED(
+		CGameInstance::Get().
+			Initialize_EffectLight(15)))
+	{
+		return E_FAIL;
+	}
 
 	auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
@@ -45,6 +52,9 @@ HRESULT CLevelCharlesRookwood::Initialize()
 		MSG_BOX("Player Handle Failed To CLevelCharlesRookwood");
 		return E_FAIL;
 	}
+	if (FAILED(SpawnPlayerCape(*hPlayer)))
+		return E_FAIL;
+
 	if (FAILED(CGameInstance::Get().LoadMap("./Resources/json/MapSaved/Tomb12345", true)))
 		return E_FAIL;
 
@@ -67,7 +77,9 @@ HRESULT CLevelCharlesRookwood::Initialize()
 
 	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
+	if (FAILED(SpawnLightPlacement()))
+		return E_FAIL;
 
 	return S_OK;
 }
@@ -139,7 +151,7 @@ HRESULT CLevelCharlesRookwood::SpawnFlyCamera()
 				MSG_BOX("FailedToRegistCamera");
 				return E_FAIL;
 			}
-			E::CGameInstance::Get().SetActiveCamera("FLY");
+			
 		}
 	}
 	return S_OK;
@@ -194,6 +206,7 @@ HRESULT CLevelCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 	{
 		return E_FAIL;
 	}
+	E::CGameInstance::Get().SetActiveCamera("PlayerCamera");
 	return S_OK;
 }
 
@@ -203,6 +216,13 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -6.f, -215.f, 156.f };
 	PlayerDesc.LevelTag = LEVEL::CHARLES_ROOKWOOD;
+	PlayerDesc.tFilter = PX_FILTER_DESC{
+		 .iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
+		.iSimulationMask = PX_ALL_LAYERS,
+		.iQueryMask =
+			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
@@ -210,28 +230,175 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		&PlayerDesc);
 }
 
+HRESULT CLevelCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
+{
+	CNvClothCape::DESC Desc{};
+	Desc.sObjectTag = "NvClothCape";
+	Desc.hTarget = hPlayer;
+	Desc.sResourceGroup = LEVEL::CHARLES_ROOKWOOD;
+	Desc.sModelResourceTag = "PLAYER_CAPE_MODEL_RESOURCE";
+	Desc.sClothMeshResourceTag = "PLAYER_CAPE_CLOTH_RESOURCE";
+	Desc.sTargetModelComponentTag = "ComCModelIntance";
+	Desc.sAttachBoneName = "Spine3";
+	Desc.vLocalPosition = { 0.05f, 0.08f, 0.f };
+
+	E::CGameInstance::Get().JsonDeSerialize(
+		"./Resources/NvCloth/CollisionRigs/ProfessorCape.nvclothcollision.json",
+		Desc.tBodyCollisionRig,
+		E::NVCLOTH_COLLISION_RIG_ROOT,
+		false);
+
+	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
+		"03_Player",
+		&Desc))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
 HRESULT CLevelCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 {
+	if(false)
 	{
-		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
-		TmbGurdianDesc.TargetHandle = hPlayer.value();
-		TmbGurdianDesc.sObjectTag = "TmbGurdian";
-		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
-		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(-6.f, -215.f, 156.f,1.f));
-		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-		TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/DeadTest.json";
-		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
-		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
-		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
-		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-
-		if (!BossTmb)
 		{
-			MSG_BOX("Create TmbGurdian Failed in Rookwood");
-			return E_FAIL;
+			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+			TmbGurdianDesc.TargetHandle = hPlayer.value();
+			TmbGurdianDesc.sObjectTag = "TmbGurdian";
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+			TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/DeadTest.json";
+			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+			XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+			auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+			if (!BossTmb)
+			{
+				MSG_BOX("Create TmbGurdian Failed in Rookwood");
+				return E_FAIL;
+			}
+		}
+		{
+			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+			TmbGurdianDesc.sObjectTag = "TmbGurdian";
+			TmbGurdianDesc.TargetHandle = hPlayer.value();
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+			TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+			TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
+
+			XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+			auto NormalTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+			if (!NormalTmb)
+			{
+				MSG_BOX("Create TmbGurdian Failed in Terrain");
+				return E_FAIL;
+			}
+		}
+		{
+			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+			TmbGurdianDesc.sObjectTag = "TmbGurdian";
+			TmbGurdianDesc.TargetHandle = hPlayer.value();
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+			TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Axe);
+			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Axe";
+			TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
+
+			XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+			auto NormalTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+			if (!NormalTmb)
+			{
+				MSG_BOX("Create TmbGurdian Failed in Terrain");
+				return E_FAIL;
+			}
+		}
+
+		{
+			//리트리트리트리트엘리트리트리트리트리
+			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+			TmbGurdianDesc.sObjectTag = "TmbGurdian";
+			TmbGurdianDesc.TargetHandle = hPlayer.value();
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.vPos = _float3(-6.f, -215.f, 156.f);
+			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+			TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+			TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
+			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
+			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
+			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
+			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
+			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+			if (!EliteTmb)
+			{
+				MSG_BOX("Create TmbGurdian Failed in Rookwood");
+				return E_FAIL;
+			}
 		}
 	}
 
+
+	// 레벨배치 엘리트몹 by SY
+	{
+		{
+			//리트리트리트리트엘리트리트리트리트리
+			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+			TmbGurdianDesc.sObjectTag = "TmbGurdian";
+			TmbGurdianDesc.TargetHandle = hPlayer.value();
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.vPos = _float3(-232.f, -227.f, -219.f);
+			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+			TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+			TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
+			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
+			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
+			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
+			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
+			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+			if (!EliteTmb)
+			{
+				MSG_BOX("Create TmbGurdian Failed in Rookwood");
+				return E_FAIL;
+			}
+		}
+
+		{
+			//리트리트리트리트엘리트리트리트리트리
+			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+			TmbGurdianDesc.sObjectTag = "TmbGurdian";
+			TmbGurdianDesc.TargetHandle = hPlayer.value();
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.vPos = _float3(-270.f, -227.f, -219.f);
+			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+			TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
+			TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
+			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
+			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
+			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
+			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
+			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+			if (!EliteTmb)
+			{
+				MSG_BOX("Create TmbGurdian Failed in Rookwood");
+				return E_FAIL;
+			}
+		}
+	}
 	return S_OK;
 }
 
@@ -248,6 +415,25 @@ HRESULT CLevelCharlesRookwood::SpawnStaticCollision()
 		return E_FAIL;
 
 	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::SpawnLightPlacement()
+{
+	CLightPlacementObject::DESC desc{};
+	desc.sObjectTag =
+		"CharlesRookwoodLightPlacement";
+	desc.sLightFileName =
+		"Level_CharlesRookwood";
+
+	return CGameInstance::Get().
+		AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+				Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc)
+		? S_OK
+		: E_FAIL;
 }
 
 HRESULT CLevelCharlesRookwood::SpawnMyMagicStepController()

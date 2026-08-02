@@ -11,6 +11,7 @@
 #include "ComCollider.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "Player_Magic_Bullet.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -26,17 +27,9 @@ void CMonster::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
-	ImGui::DragFloat("EE", &ff, 0, 1);
-	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_f), 0, 100);
+	ImGui::DragFloat("EE", &m_fIntensive, 0.1f,0.f,100.f);
+	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_fEMissiveColor), 0.1f,0.f, 1.f);
 	ImGui::Text("NoramlAtt : %d", m_iNormalHitCnt);
-	
-	//ImGui::Text("ReLoad Data");
-	//for (auto& [key, value] : m_ParticleData)
-	//{
-	//	if (ImGui::Button(MagicEnumToStringView(key).data()))
-	//		m_Effects[ETOUI(key)] = CGameInstance::Get().Parse_Command(value);
-	//}
-
 	
 	ImGui::Text("bPending : %s", m_bPending == true ? "TRUE" : "FALSE");
 	ImGui::Text("Pending AttType : %s", MagicEnumToStringView(m_PendingMonTable.eAttType).data());
@@ -51,7 +44,34 @@ void CMonster::UpdateGUI()
 	ImGui::Text(MagicEnumToStringView(m_eAttType).data());
 
 	if (nullptr != m_pBeHavior)
-		ImGui::Text("BeHavior Att : %s", m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) == true ? "ENABLE" : "DISABLE");
+		ImGui::Text("BeHavior Att : %s", Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) == true ? "ENABLE" : "DISABLE");
+
+	if (ImGui::TreeNode("Flag"))
+	{
+		struct GuiView
+		{
+			uint32_t iValue{};
+			const _char* pName{};
+		};
+#define X(name, value) value, #name,
+		const GuiView Flags[] = { BTFLAG_M };
+#undef X
+
+		for (uint32_t i = 0; i < std::size(Flags); ++i)
+		{
+			ImGui::PushID(i);
+			ImGui::Text(Flags[i].pName); ImGui::SameLine();
+			ImGui::Text(true == m_pBeHavior->Check_Flag(Flags[i].iValue) ? ": TRUE" : " FALSE");
+			ImGui::SameLine();
+			if (ImGui::Button("Invert"))
+			{
+				m_pBeHavior->Set_Flag(Flags[i].iValue, FLAGTYPE::INVERT);
+			}
+			ImGui::PopID();
+		}
+
+		ImGui::TreePop();
+	}
 }
 
 HRESULT CMonster::InitializePrototype(void* pArg)
@@ -243,7 +263,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_f, m_fEmissive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -352,6 +372,28 @@ HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_C
 }
 /*---------------------------------*/
 
+void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+{
+	if (nullptr == pObj)
+		return;
+
+	
+	if (auto pPlayerMagicBullet = Cast<CPlayer_Magic_Bullet>(pObj))
+	{
+		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+		//static_cast<PX_SHAPE_TYPE>(info.eSelfShapeType);
+		//static_cast<PX_SHAPE_TYPE>(info.eOtherShapeType);
+		//MagicEnumToStringView<PX_SHAPE_TYPE>(info.eSelfShapeType);
+
+		//magic_enum::enum_name(info.eSelfShapeType);
+		//DEBUG_LOG_STR(
+		//	std::string("[Monster] Trigger Enter : ") +
+		//	(pObj ? std::string{ pObj->GetObjectTag() } : "null") + std::string{ magic_enum::enum_name(info.eSelfShapeType) } + "_" 
+		//	+ std::string{magic_enum::enum_name(info.eOtherShapeType)} + "\n");
+
+	}
+	
+}
 _bool CMonster::Activate_PendingHit()
 {
 	if (!m_bPending)
@@ -379,19 +421,35 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 
 	Damaged();
-	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
+	if (eType == PLAYER_SKILL_TYPE::ATTACK && m_ActiveMonTable.eHitType == PLAYER_SKILL_TYPE::DESCENDO)
 		return false;
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
-	{
-		return false;
-	}
-	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return false;
-	MON_HIT_INFO HitInfo{};
 
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
 		++m_iNormalHitCnt;
+	if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		if (m_iNormalHitCnt >= 6)
+		{
+			m_iNormalHitCnt = 0;
+			m_bSkipAtt = false;
+			return false;
+		}
+		m_bSkipAtt = true;
+		m_eAttType = ATTMON::END;
+		
+		return false;
+	}
 
+	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
+	
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+		return false;
+
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
+
+	MON_HIT_INFO HitInfo{};
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
 	HitInfo.eAttType = m_eAttType;
 	HitInfo.eHitType = eType;
@@ -413,6 +471,11 @@ uint32_t CMonster::Find_SkillNum(ATTMON eType)
 	if (iter == m_MonSkillLists.end())
 		return UINT_MAX;
 	return iter->second;
+}
+
+_bool CMonster::Check_Flag(uint32_t iFlag)
+{
+	return m_pBeHavior->Check_Flag(iFlag);
 }
 
 void CMonster::Damaged()
@@ -447,7 +510,7 @@ void CMonster::Damaged()
 
 void CMonster::RunningSkill(_float fTimeDelta)
 {
-	if (!m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
+	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)))
 	{
 		_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
@@ -464,33 +527,34 @@ void CMonster::RunningSkill(_float fTimeDelta)
 				});
 
 			//CGameInstance::Get().Spawn(m_Effects[ETOUI(m_eAttType)], *m_pComTransform->GetWorldMatrix());
+			if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
+				m_eAttType = ATTMON::END;
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
 			
 		}
-		
-		//if(m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
-		//	CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
+	}
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
+	{
+		if(m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
+		m_bSkillLoop = true;
 	}
 }
 void CMonster::IsHit()
 {
-	if (CGameInstance::Get().KeyDown(DIK_2))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	}
-	if (CGameInstance::Get().KeyDown(DIK_Z))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ACCIO);
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_X))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_C))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
-	}
-	else if (CGameInstance::Get().KeyDown(DIK_V))
+	//if (CGameInstance::Get().KeyDown(DIK_Z))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+	//}
+	//else if (CGameInstance::Get().KeyDown(DIK_X))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
+	//}
+	//else if (CGameInstance::Get().KeyDown(DIK_C))
+	//{
+	//	Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
+	//}
+	if (CGameInstance::Get().KeyDown(DIK_V))
 	{
 		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
@@ -498,29 +562,32 @@ void CMonster::IsHit()
 }
 void CMonster::Flag_Check(_float fTimeDelta)
 {
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
+	//이미시브
+	if (m_fIntensive <= 0.f && Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 	{
-		m_bEmissive = true;
 		StartEmissive();
+		m_bWork = true;
 	}
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
+
+	//초기화
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ABORT)))
 	{
 		Clear_ActiveHit();
 		Clear_PendingHit();
 	}
+	//뭔말알?
 	if (m_iHp <= 0.f)
-	{
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEAD), FLAGTYPE::ADD);
-	}
 
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
-		m_fEmissive = 0;
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
+		m_fIntensive = 0;
 	else
 	{
+		Clear_PendingHit();
+		m_bActiveHit = false;
 		m_iHitCnt = 0;
-		m_iNormalHitCnt = 0;
 	}
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 	{
 		if (auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CMon_Weapon>(m_Partes[ETOUI(PARTES::WEAPON)]))
 		{
@@ -528,29 +595,40 @@ void CMonster::Flag_Check(_float fTimeDelta)
 				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
 		}
 	}
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
 	{
 		m_eAttType = ATTMON::END;
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT), FLAGTYPE::DEL);
 	}
-	//if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DAMAGE)))
-	//	Damaged();
+
+	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
+	{
+		Clear_PendingHit();
+		m_iHitCnt = 0; 
+	}
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && !Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)) && m_bSkillLoop)
+	{
+
+		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().StopEffect(m_iCurEffectID);
+		m_bSkillLoop = false;
+	}
+	
 }
 void CMonster::EmissiveFadeOut(_float fTimeDelta)
 {
-	if (m_bEmissive)
+	if (m_fIntensive > 0.f &&  !Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
 	{
 		m_bWork = true;
 		m_fTimeTick += fTimeDelta;
 
 		_float t = m_fTimeTick / 0.5f;
 
-		m_fEmissive = std::lerp(m_fPreEmissive, 0, t);
+		m_fIntensive = std::lerp(m_fPreEmissive, 0, t);
 		if (t >= 1.f)
 		{
-			m_bWork = m_bEmissive = false;
-			m_fTimeTick = m_fEmissive = 0;
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE), FLAGTYPE::DEL);
+			m_bWork = false;
+			m_fTimeTick = m_fIntensive = 0;
 		}
 
 	}

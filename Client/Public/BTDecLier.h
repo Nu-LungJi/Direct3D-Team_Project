@@ -16,10 +16,13 @@ private:
 	HRESULT InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
 public:
-	EVALUATE			 Evaluate(_float fTimeDelta) override;
-	virtual void		 Update_Gui() override;
+	EVALUATE				    Evaluate(_float fTimeDelta) override;
+	virtual void				Update_Gui() override;
+
+	virtual nlohmann::json		Save_Node()override;
+	HRESULT						Load_json(const nlohmann::json& j) override;
 private:
-	_bool				m_bEnter{ false };
+	_bool				m_bEnter{ false }, m_bLierInverter{true};
 public:
 	static UPtr<CBTDecLier> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

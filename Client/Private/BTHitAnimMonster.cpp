@@ -66,6 +66,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 
 		}
 		Gravity();
+		Active_Skill();
 		pAnimator->SetPlay(true);
 		//현재 애니매이션 유지할건지
 		if (!m_bUseCurAnim)
