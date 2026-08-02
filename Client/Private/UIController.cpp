@@ -6,6 +6,7 @@
 #include "TextBox.h"
 #include "Button.h"
 #include "Cursor.h"
+#include "Monster.h"
 
 NS_USING(Client)
 
@@ -493,10 +494,10 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
+	m_ReserveTargetHandle = monsterHandle;
 	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
 	{
 		PlayMonsterHPDelete(*m_MonsterHP);
-		m_MonsterHP = monsterHandle;
 	}
 	else
 	{
@@ -506,14 +507,21 @@ void CUIController::TargetMonsterHP(CHandle monsterHandle)
 
 void CUIController::CreateMonsterHP()
 {
+	m_TargetHandle = m_ReserveTargetHandle;
 	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
 }
 
 void CUIController::UpdateMonsterHP()
 {
-	if (m_MonsterHP != std::nullopt && nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	if (m_TargetHandle != std::nullopt && nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_TargetHandle))
 	{
-
+		auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
+		
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(pMonster->Get_MaxHp()));
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(pMonster->Get_CurrentHp()));
+	}
+	else {
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(0.f));
 	}
 }
 

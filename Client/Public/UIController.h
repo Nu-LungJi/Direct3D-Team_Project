@@ -77,7 +77,9 @@ private: // ************ 계속 바뀌는 유아이 ******************* //
 	CHandle m_PotionCount{};
 	std::vector<CHandle> m_PlaySceneStatic{};
 
-	std::optional<CHandle> m_MonsterHP{std::nullopt};
+	std::optional<CHandle> m_MonsterHP{ std::nullopt };
+	std::optional<CHandle> m_TargetHandle{ std::nullopt };
+	std::optional<CHandle> m_ReserveTargetHandle{std::nullopt};
 
 	/*****************스펠 슬롯 유아이********************/
 	CHandle m_SpellShortCutKeySlot[4] = {};

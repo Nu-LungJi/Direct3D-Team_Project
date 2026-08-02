@@ -90,7 +90,7 @@ void UIManager::InitializeActions()
 		auto pTween = pCaller->GetTweenCom();
 		if (!pTween) return;
 
-		pCaller->SetInputLcok(true);
+		//pCaller->SetInputLcok(true);
 
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
@@ -103,11 +103,7 @@ void UIManager::InitializeActions()
 					pObj->SetScaleRatio(currentValue);
 					pObj->CalcUICoord();
 				}
-			},  [handle]() {
-				if (auto pObj = GetSafeUI(handle)) {
-					pObj->SetInputLcok(false);
-				}
-				}, EEaseType::EaseOutQuad);
+			}, nullptr, EEaseType::EaseOutQuad);
 
 		pTween->PlayTween(0.f, 1.f, 0.1f,
 			[handle](float currentValue) {
