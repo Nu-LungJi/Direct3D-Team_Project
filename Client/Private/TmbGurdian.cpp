@@ -332,6 +332,12 @@ _string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
 	return MagicEnumToStringView(static_cast<TOMB_SKILL>(pValue->second)).data();
 }
 
+const _float CTmbGurdian::Get_Damage()
+{
+	m_fDamage = 5.f;
+	return m_fDamage;
+}
+
 void CTmbGurdian::UpdateGUI()
 {
 	__super::UpdateGUI();

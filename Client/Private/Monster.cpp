@@ -126,8 +126,6 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 		m_pCharacterMotor->SetUseGravity(true);
 	else m_pCharacterMotor->SetUseGravity(false);
 		
-	if (CGameInstance::Get().KeyDown(DIK_1))
-		Set_Damage(10);
 	Flag_Check(fTimeDelta);
 	m_pCharacterMotor->SetGravity(-9.8f);
 	m_pBeHavior->Update(fTimeDelta);

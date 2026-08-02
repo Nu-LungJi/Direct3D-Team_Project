@@ -3,6 +3,7 @@
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
 #include "Monster.h"
+#include "Player.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -206,6 +207,38 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	return S_OK;
+}
+void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio)
+{
+	PX_OVERLAP_DESC   pxOverLabDesc{};
+	PX_OVERLAP_RESULT pxOverLapResult{};
+
+	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX)};
+	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius=5.f };
+	pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = pSrcTransform->GetPosition() };
+
+	_float3 vPos = pxOverLabDesc.tPose.vPosition;
+	auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
+
+	const auto vPreviousColor = pDbgLineRender->GetColor();
+	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
+	pDbgLineRender->SetDepthTest(true);
+	pDbgLineRender->AddSphere(5.f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+	pDbgLineRender->SetColor(vPreviousColor);
+	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+	
+	if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabDesc, pxOverLapResult))
+	{
+		if (pxOverLapResult.bHit)
+		{
+			//m_fDamage
+			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
+			_float MonDamange = pMon->Get_Damage();
+			
+		}
+	}
+	
 }
 void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta, _float fRotRatio)
 {

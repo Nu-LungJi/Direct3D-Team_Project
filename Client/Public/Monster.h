@@ -91,7 +91,7 @@ public:
 	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
-	void						Set_Damage(int32_t iDamage) { m_iHp -= iDamage; }
+	virtual const _float		Get_Damage() { return 0.f; }
 	void						Set_Emissive(_float fEmissive) { m_fPreEmissive = m_fIntensive = fEmissive; }
 	_bool						Activate_PendingHit();
 	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
@@ -144,7 +144,7 @@ protected:
 
 	_float2								m_fSkillRatio{ };
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{};
-	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{};
+	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{};
 	int32_t								m_iHp{}, m_iMaxHp{};
 	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};
 	_string								m_SocketName{}, m_CurEffectName{};

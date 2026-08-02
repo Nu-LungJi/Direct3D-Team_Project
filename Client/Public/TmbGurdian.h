@@ -32,6 +32,7 @@ public:
 
 	virtual void Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
 	_string Get_SkillName(ATTMON SkillNode)override;
+	const _float				Get_Damage() override;
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};
