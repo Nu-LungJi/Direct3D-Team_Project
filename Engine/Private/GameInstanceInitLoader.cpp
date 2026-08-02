@@ -23,8 +23,8 @@
 #include "ComCollider.h"
 #include "MapMeshObject.h"
 #include "PhysXCollisionProxyObject.h"
-//#include "AmbientSound2DObject.h"
-//#include "AmbientSound3DObject.h"
+#include "AmbientSound2DObject.h"
+#include "AmbientSound3DObject.h"
 #include "LightPlacementObject.h"
 
 #include "ComPxBoxCollider.h"
@@ -154,20 +154,20 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 	{
 		return E_FAIL;
 	}
-	//if (CGameInstance::Get().AddPrototype(
-	//	ES_EngineProtoMajorType::PERMANENT,
-	//	ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
-	//	CAmbientSound2DObject::Create()))
-	//{
-	//	return E_FAIL;
-	//}
-	//if (CGameInstance::Get().AddPrototype(
-	//	ES_EngineProtoMajorType::PERMANENT,
-	//	ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound3D,
-	//	CAmbientSound3DObject::Create()))
-	//{
-	//	return E_FAIL;
-	//}
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
+		CAmbientSound2DObject::Create()))
+	{
+		return E_FAIL;
+	}
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound3D,
+		CAmbientSound3DObject::Create()))
+	{
+		return E_FAIL;
+	}
 	if (CGameInstance::Get().AddPrototype(
 		ES_EngineProtoMajorType::PERMANENT,
 		ES_EngineProtoGameObject::Prototype_GameObject_LightPlacement,
@@ -1244,6 +1244,30 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		{
 			if (FAILED(res->Load()))
 				return E_FAIL;
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvClothShadow",
+			"./ShaderFiles/TestModel/Shader_NvCloth.hlsl"))
+		{
+			if (FAILED(res->Load(CResShader::DESC{
+				.sEntryPoint = "VSShadow",
+				.sTarget = "vs_5_0" })))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvClothPointShadow",
+			"./ShaderFiles/TestModel/Shader_NvCloth.hlsl"))
+		{
+			if (FAILED(res->Load(CResShader::DESC{
+				.sEntryPoint = "VSPointShadow",
+				.sTarget = "vs_5_0" })))
+			{
+				return E_FAIL;
+			}
 		}
 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_NonInstanced.hlsl"))

@@ -39,6 +39,7 @@ std::future<bool> CLevelLogoLoader::Load()
 std::future<bool> CLevelLogoLoader::UnLoad()
 {
 	LOG_MEMORY("start");
+	E::CGameInstance::Get().ClearAllRunningEffect();
 	E::CGameInstance::Get().DelPrototype("LEVEL_LOGO");
 	E::CGameInstance::Get().DelResource("LEVEL_LOGO");
 

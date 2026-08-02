@@ -85,6 +85,14 @@ namespace Engine
 		_float fMoveLength{};
 	};
 
+	struct PX_CCT_STANDING_DATA
+	{
+		CHandle hGameObject{};
+		PX_SHAPE_TYPE eShapeType{ PX_SHAPE_TYPE::BOX };
+		uint32_t iShapeSubIndex{ std::numeric_limits<uint32_t>::max() };
+		_bool bHasShapeData{};
+	};
+
 	struct PX_CCT_OBSTACLE_HIT_DATA
 	{
 		const void* pUserData{};

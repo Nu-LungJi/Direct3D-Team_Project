@@ -19,6 +19,7 @@ public:
 		_float fShoulderOffset{ 2.f };
 		_float fHorizontalDeadZoneRadius{ 1.f };
 		_float fVerticalDeadZoneHalfHeight{ 1.f };
+		_float fVerticalFollowSpeed{ 8.f };
 	};
 
 public:
@@ -32,7 +33,7 @@ private:
 public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(_float fTimeDelta) override;
-	void UpdateFollow();
+	void UpdateFollow(_float fTimeDelta);
 private:
 	// 타겟 -> 카메라 방향으로 SphereSweep
 	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
@@ -48,6 +49,7 @@ private:
 	_float m_fShoulderOffset{ 2.f };
 	_float m_fHorizontalDeadZoneRadius{ 1.f };
 	_float m_fVerticalDeadZoneHalfHeight{ 1.f };
+	_float m_fVerticalFollowSpeed{ 8.f };
 	_float3 m_vFollowPivot{};
 	_bool m_bFollowPivotInitialized{ false };
 

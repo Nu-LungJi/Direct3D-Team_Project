@@ -241,6 +241,12 @@
     <Filter Include="GameObject\UI\Cursor">
       <UniqueIdentifier>{b2f47277-f943-4e7b-819d-1514d88bd25c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Trigger\SpawnMonster1">
+      <UniqueIdentifier>{9bc9d2c2-c9d6-4247-b19b-95a2be7623bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
+      <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -552,6 +558,15 @@
     <ClInclude Include="..\public\MonEffect.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h">
+      <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\StarBurst.h">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\GameOverMask.h">
       <Filter>GameObject\UI\GameOverMask</Filter>
     </ClInclude>
@@ -827,6 +842,15 @@
     </ClCompile>
     <ClCompile Include="..\private\MonEffect.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp">
+      <Filter>GameObject\CharlesRookwood\Trigger\SpawnMonster1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\StarBurst.cpp">
+      <Filter>GameObject\Monster\TombBoss</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Cursor.cpp">
       <Filter>GameObject\UI\Cursor</Filter>

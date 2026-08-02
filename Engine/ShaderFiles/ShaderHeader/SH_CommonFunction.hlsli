@@ -55,33 +55,47 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
     else if (Light.LightType == LIGHT_POINT)    // Point Light PBR
     {
         float3	LightVector = Light.Position - _WorldPosition;
-		float	Distance = length(LightVector);
+		float	DistanceSQ = dot(LightVector, LightVector);
 		
 		float	OuterRange = max(Light.OuterAttanuation, 0.001f);
+		float	OuterRangeSQ = OuterRange * OuterRange;
+		
+		[branch]
+		if (DistanceSQ >= OuterRangeSQ)	return false; // 빛이 안 닿는 구역
+		
+		float	InvDistance = rsqrt(max(DistanceSQ, 0.00001f));
+		float	Distance = DistanceSQ * InvDistance;
+		
 		float	InnerRange = clamp(Light.InnerAttanuation, 0.0001f, Light.OuterAttanuation - 0.0001f);
 		
 		float DistanceRatio = saturate((Distance - InnerRange) / max(OuterRange - InnerRange, 0.001f));
 		
-		[branch]
-		if (Distance >= OuterRange)	return false; // 빛이 안 닿는 구역
+		L = LightVector * InvDistance;
 
         // Decrease By Distance
 		float Attenuation = 1.f - smoothstep(0.f, 1.f, DistanceRatio);
 		Attenuation *= Attenuation;
 		
-		L = LightVector / Distance;
 		Radiance = Light.LightColor * Light.LightIntensity * Attenuation;
 	}
     else if (Light.LightType == LIGHT_SPOTLIGHT)    // SpotLight Light PBR
     {
         float3	LightVector = Light.Position - _WorldPosition;
-        float	Distance = length(LightVector);
+		float	LightRange = max(Light.LightRange, 0.001f);
+		float	DistanceSQ = dot(LightVector, LightVector);
+		float	RangeSQ = LightRange * LightRange;
+
+
+		  [branch]
+		if (DistanceSQ > RangeSQ)
+			return false; // 빛이 안 닿는 구역
+		
+		float	InvDistance =	rsqrt(max(DistanceSQ, 0.00001f));
+		float	Distance = DistanceSQ * InvDistance;
+		
 		float	DistanceRatio = saturate(Distance / Light.LightRange);
 		
-        [branch]
-		if (Distance > Light.LightRange)	return false; // 빛이 안 닿는 구역
-		
-		L = LightVector / Distance;
+		L = LightVector * InvDistance;
 		
         // Decrease By Distance
 		float DistanceFade = 1.f - smoothstep(Light.InnerAttanuation, 1.f, DistanceRatio);

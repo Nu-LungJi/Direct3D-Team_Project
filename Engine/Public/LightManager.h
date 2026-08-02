@@ -9,8 +9,10 @@ NS_BEGIN(Engine)
 class CLightPlacementEditor;
 
 struct LightData {
-	CLight* LightOBJ;
+	std::optional<CHandle> LightHandle;
+
 	_float Distance;
+
 };
 
 struct SHADOW_ARRAY_2D {

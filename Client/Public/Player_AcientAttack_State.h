@@ -43,11 +43,15 @@ private:
 	std::array<int32_t, (size_t)ETOUI(ACIENT_SKILL::END)> m_AcientEnd_Animations{};
 
 	PHASE m_ePhase = PHASE::CAST;
-	static constexpr _float ACIENT_LIGHTENING_CAST_START_RATIO = 0.f;
-	static constexpr _float ACIENT_LIGHTENING_ATTACK_DURATION = 1.f;
+	static constexpr _float ACIENT_LIGHTENING_CAST_START_RATIO = 0.55f;
+	
+	static constexpr _float ACIENT_LIGHTENING_ATTACK_DURATION = 1.1f;
+	static constexpr _float ACIENT_LIGHTENING_ATTACK_STOP_DURATION = 1.5f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 1.f;
+	_bool   m_bOnceLighting = false;
 	_float	m_fAnimRatio = 0.f;
 	_float	m_fAcientElapsed = 0.f;
+	_float	m_fSpawnDelay = 0.f;
 };
 
 
