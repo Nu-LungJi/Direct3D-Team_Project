@@ -202,9 +202,13 @@ VOID CLight::Update_PointShadowMatrices() {
 	const _float OuterRange = std::max(m_fPointLightOuterAttenuation, 0.02f);
 	XMMATRIX	 ProjMat = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, 0.01f, OuterRange);
 
+	BoundingFrustum LocalFrustum{};
+	BoundingFrustum::CreateFromMatrix(LocalFrustum, ProjMat);
+
 	for (uint32_t i = 0; i < POINT_SHADOW_FACE_COUNT; ++i) {
 		XMMATRIX ViewMat = XMMatrixLookAtLH(LightPosition, XMVectorAdd(LightPosition, DirectionVec[i]), BaseUpVec[i]);
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ProjMat));
+		LocalFrustum.Transform(m_PointShadowFrustums[i], XMMatrixInverse(nullptr, ViewMat));
 	}
 }
 
@@ -256,10 +260,10 @@ HRESULT CLight::Update_Collider() {
 		m_pColliderFrustum->Transform(XMMatrixInverse(nullptr, CullView));
 	}
 	else if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT)) {
-		if (nullptr == m_pColliderSphere) return E_FAIL;
+		if (nullptr == m_pColliderSphere)	return E_FAIL;
 
 		auto SphereCollider = std::static_pointer_cast<CCollSphere>(m_pColliderSphere);
-		if (nullptr == SphereCollider) return E_FAIL;
+		if (nullptr == SphereCollider)		return E_FAIL;
 
 		// 컬링용 확장
 		SphereCollider->SetLocalBoundingSphere({}, m_fPointLightOuterAttenuation * 1.1f);
@@ -334,8 +338,14 @@ VOID CLight::Reset_Light(){
 	m_fLifeTime = 0.f;
 	m_fVelocity = { 0.f, 0.f, 0.f };
 	m_bActivate_State = false;
+	m_bHadDynamicShadowCaster = false;
 
 	InvalidateAllShadow();
+}
+_bool CLight::Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const {
+	if (_FaceIndex >= POINT_SHADOW_FACE_COUNT)	return false;
+
+	return m_PointShadowFrustums[_FaceIndex].Intersects(_Bounds);
 }
 HRESULT	CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
 	if (m_pDynamicLight.LightType == ETOUI(_LTYPE))

@@ -66,9 +66,9 @@ public:
 public:
 	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch);
 	HRESULT Render_ShadowBatch(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
-	HRESULT Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);
+	HRESULT Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch, uint32_t BoneStride);
 	HRESULT	Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext);
-	HRESULT Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex);
+	HRESULT Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex, uint32_t BoneStride);
 
 	_bool	Has_ActiveDynamicShadowBatch();
 

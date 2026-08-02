@@ -357,8 +357,8 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	}
 
-
 	Allocate_ShadowSlot();
+
 	Update_LightData();
 
 	Invalidate_DynamicShadowMaps();
@@ -401,11 +401,11 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RENDER_CTX RCTX{};
 			RCTX.pass = RENDERPASS::SHADOW;
 
-			const _bool bForceDynamicUpdate = LightOBJ->Is_StaticDirty();
-			const _bool bUpdateDynamicThisFrame = bForceDynamicUpdate ||
+			const _bool bStaticWasDirty = LightOBJ->Is_StaticDirty();
+			const _bool bUpdateFinalThisFrame = bStaticWasDirty ||
 				((m_iShadowFrameIndex + static_cast<uint64_t>(ShadowSlot)) % 2ull == 0ull);
 
-			if (LightOBJ->Is_StaticDirty()) {
+			if (bStaticWasDirty) {
 				auto StaticDIRDSV = m_pStaticPointShadowList.DSVList[ShadowSlot];
 				if (StaticDIRDSV) {
 					m_pContext->ClearDepthStencilView(StaticDIRDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
@@ -419,10 +419,12 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				}
 			}
 
-			if (LightOBJ->Is_DynamicDirty() && bUpdateDynamicThisFrame) {
+			const _bool bFinalShadowDirty = bStaticWasDirty || LightOBJ->Is_DynamicDirty();
+
+			if (bFinalShadowDirty && bUpdateFinalThisFrame) {
+				if (FAILED(Copy_StaticShadowToFinal(LIGHT_TYPE::POINT, static_cast<uint32_t>(ShadowSlot)))) { UnBind_ShadowResource();  return E_FAIL; }
 				auto DynamicDIRDSV = m_pDynamicPointShadowList.DSVList[ShadowSlot];
 				if (DynamicDIRDSV) {
-					m_pContext->ClearDepthStencilView(DynamicDIRDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 					m_pContext->OMSetRenderTargets(0, nullptr, DynamicDIRDSV.Get());
 
 					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_DynamicObjectList)))	{ UnBind_ShadowResource();  return E_FAIL; }
@@ -460,7 +462,9 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RENDER_CTX RCTX{};
 			RCTX.pass = RENDERPASS::SHADOW;
 
-			if (LightOBJ->Is_StaticDirty()) {
+			const _bool bStaticWasDirty = LightOBJ->Is_StaticDirty();
+
+			if (bStaticWasDirty) {
 				auto StaticShadowDSV = m_pStaticDirectionalShadowList.DSVList[ShadowSlot];
 				if (StaticShadowDSV) {
 					m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
@@ -473,10 +477,12 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					LightOBJ->Set_StaticDirty(false);
 				}
 			}
-			if (LightOBJ->Is_DynamicDirty()) {
+
+			const _bool bFinalShadowDirty = bStaticWasDirty || LightOBJ->Is_DynamicDirty();
+			if (bFinalShadowDirty){
+				if (FAILED(Copy_StaticShadowToFinal(LightOBJ->Get_LightType(), static_cast<uint32_t>(ShadowSlot)))) { UnBind_ShadowResource();  return E_FAIL; }
 				auto DynamicShadowDSV = m_pDynamicDirectionalShadowList.DSVList[ShadowSlot];
 				if (DynamicShadowDSV) {
-					m_pContext->ClearDepthStencilView(DynamicShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 					m_pContext->OMSetRenderTargets(0, nullptr, DynamicShadowDSV.Get());
 
 					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_DynamicObjectList))) { UnBind_ShadowResource();  return E_FAIL; }
@@ -961,6 +967,45 @@ _bool	CLightManager::IsInFrustum(CLight* _LightOBJ) {
 	return ActiveCamCollider->Intersect(*LightCollider.get());
 }
 
+HRESULT CLightManager::Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t _ShadowSlot) {
+	if (_ShadowSlot >= MAX_SHADOW_LIGHT_COUNT) return E_FAIL;
+
+	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+	ID3D11ShaderResourceView* NullShadowSRVs[4]{};
+	m_pContext->CSSetShaderResources(9, 4, NullShadowSRVs);
+
+	constexpr uint32_t MipLevels = 1;
+
+	if (_LightType == LIGHT_TYPE::POINT)
+	{
+		ID3D11Texture2D* SourceTexture = m_pStaticPointShadowList.TexBuffer.Get();
+		ID3D11Texture2D* DestinationTexture = m_pDynamicPointShadowList.TexBuffer.Get();
+
+		if (!SourceTexture || !DestinationTexture) return E_FAIL;
+
+		for (uint32_t Face = 0; Face < POINT_SHADOW_FACE_COUNT; ++Face) {
+			const uint32_t ArraySlice = _ShadowSlot * POINT_SHADOW_FACE_COUNT + Face;
+			const uint32_t Subresource =D3D11CalcSubresource(0, ArraySlice, MipLevels);
+
+			m_pContext->CopySubresourceRegion(DestinationTexture, Subresource, 0, 0, 0, SourceTexture, Subresource, nullptr);
+		}
+	}
+	else
+	{
+		ID3D11Texture2D* SourceTexture = m_pStaticDirectionalShadowList.TexBuffer.Get();
+		ID3D11Texture2D* DestinationTexture = m_pDynamicDirectionalShadowList.TexBuffer.Get();
+
+		if (!SourceTexture || !DestinationTexture) return E_FAIL;
+
+		const uint32_t Subresource =D3D11CalcSubresource(0, _ShadowSlot, MipLevels);
+
+		m_pContext->CopySubresourceRegion(DestinationTexture, Subresource, 0, 0, 0, SourceTexture, Subresource, nullptr);
+	}
+
+	return S_OK;
+}
+
 #pragma region EFFECT_LIGHT
 VOID CLightManager::Update_EffectLightData() {
 	if (!m_pEffectLightConstantBuffer)	return;
@@ -1304,7 +1349,7 @@ HRESULT CLightManager::Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32
 	if (FAILED(m_pDevice->CreateTexture2D(&TEXDesc, nullptr, _SHAR.TexBuffer.GetAddressOf()))) return E_FAIL;
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
-	SRVDesc.Format = DXGI_FORMAT_R16_FLOAT;//DXGI_FORMAT_R32_FLOAT;
+	SRVDesc.Format = DXGI_FORMAT_R16_UNORM;//DXGI_FORMAT_R32_FLOAT;
 	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
 	SRVDesc.TextureCubeArray.MostDetailedMip = 0;
 	SRVDesc.TextureCubeArray.MipLevels = 1;
@@ -1322,6 +1367,17 @@ HRESULT CLightManager::Generate_ShadowArrayCube(SHADOW_ARRAY_CUBE& _SHAR, uint32
 		DSVDesc.Texture2DArray.MipSlice = 0;
 
 		if (FAILED(m_pDevice->CreateDepthStencilView(_SHAR.TexBuffer.Get(), &DSVDesc, _SHAR.DSVList[i].GetAddressOf()))) return E_FAIL;
+	
+		for (uint32_t Face = 0; Face < POINT_SHADOW_FACE_COUNT; ++Face) {
+			D3D11_DEPTH_STENCIL_VIEW_DESC FaceDSVDesc{};
+			FaceDSVDesc.Format = DXGI_FORMAT_D16_UNORM;
+			FaceDSVDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+			FaceDSVDesc.Texture2DArray.ArraySize = 1;
+			FaceDSVDesc.Texture2DArray.FirstArraySlice = i * POINT_SHADOW_FACE_COUNT + Face;
+			FaceDSVDesc.Texture2DArray.MipSlice = 0;
+
+			if (FAILED(m_pDevice->CreateDepthStencilView(_SHAR.TexBuffer.Get(), &FaceDSVDesc, _SHAR.FaceDSVList[i][Face].GetAddressOf()))) return E_FAIL;
+		}
 	}
 	return S_OK;
 }
@@ -1477,16 +1533,57 @@ VOID	CLightManager::Allocate_ShadowSlot(){
 }
 
 VOID CLightManager::Invalidate_DynamicShadowMaps(){
-	const _bool bHasDynamicCaster = !m_pRenderable_DynamicObjectList.empty() || CGameInstance::Get().Has_ActiveDynamicShadowBatch();
-	if (bHasDynamicCaster == false) return;
+	const auto& ActiveBatchList = CGameInstance::Get().Get_ActiveBatches();
 
-	for (const auto& LightHandle : m_pActiveShadowLightList) {
+	for (auto LightHandle : m_pActiveShadowLightList) {
 		if (!LightHandle) continue;
 
 		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
 		if (nullptr == LightOBJ) continue;
 
-		LightOBJ->Set_DynamicDirty(true);
+		_bool bHasCasterNow = false;
+
+		for (auto Renderable : m_pRenderable_DynamicObjectList)
+		{
+			if (!Renderable) continue;
+
+			BoundingBox Bounds{};
+
+			if (!Renderable->GetShadowBounds(Bounds)) {
+				bHasCasterNow = true;
+				break;
+			}
+
+			if (LightOBJ->Intersects_ShadowBounds(Bounds)) {
+				bHasCasterNow = true;
+				break;
+			}
+		}
+
+		if (!bHasCasterNow) {
+			for (const MODEL_INSTANCE_BATCH* Batch : ActiveBatchList) {
+				if (!Batch || Batch->Instances.empty() || Batch->bModelStatic || Batch->bGPUSkinned)	continue;
+
+				const size_t InstanceCount = Batch->Instances.size();
+
+				for (size_t i = 0; i < InstanceCount; ++i) {
+					if (i >= Batch->ShadowBounds.size() || !Batch->ShadowBounds[i].has_value()) {
+						bHasCasterNow = true;
+						break;
+					}
+
+					if (LightOBJ->Intersects_ShadowBounds(Batch->ShadowBounds[i].value())) {
+						bHasCasterNow = true;
+						break;
+					}
+				}
+
+				if (bHasCasterNow)	break;
+			}
+		}
+		if (bHasCasterNow || LightOBJ->Had_DynamicShadowCaster())	LightOBJ->Set_DynamicDirty(true);
+
+		LightOBJ->Set_HadDynamicShadowCaster(bHasCasterNow);
 	}
 }
 

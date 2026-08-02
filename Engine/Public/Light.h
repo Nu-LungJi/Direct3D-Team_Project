@@ -113,6 +113,9 @@ public:
 	_bool			Is_DynamicDirty()				{ return m_bDynamicShadowDirty; }
 	VOID			Set_DynamicDirty(_bool _Flag)	{ m_bDynamicShadowDirty = _Flag; }
 
+	_bool			Had_DynamicShadowCaster() const { return m_bHadDynamicShadowCaster; }
+	VOID			Set_HadDynamicShadowCaster(_bool _Flag) { m_bHadDynamicShadowCaster = _Flag; }
+
 	_bool			Is_EffectLight()				{ return m_bEffectLightFlag; }
 	VOID			Set_EffectLight(_bool _Flag = true)	{ m_bEffectLightFlag = _Flag; }
 
@@ -143,10 +146,11 @@ private:
 	_bool								m_bStaticShadowDirty  = { true };		// Static쉐도우맵 변화 플래그
 	_bool								m_bDynamicShadowDirty = { true };		// Dynamic쉐도우맵 변화 플래그
 
-	_bool								m_bActivate_State = { true };
-	_bool								m_bCastShadow = { true };
+	_bool								m_bActivate_State			= { true };
+	_bool								m_bCastShadow				= { true };
+	_bool								m_bHadDynamicShadowCaster	= { false };
 
-	_bool								m_bEffectLightFlag = { false };
+	_bool								m_bEffectLightFlag			= { false };
 	// LSY 변경: 별칭은 식별 편의용이며, 배치 그룹은 런타임 로더 단위 정리에 사용한다.
 	std::string							m_sAlias{};
 	std::string							m_sPlacementGroup{};
@@ -172,6 +176,12 @@ public:
 
 	HRESULT		Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& ctx, const std::vector<IRenderable*>& _ObjectList);
 	VOID		Reset_Light();
+
+	_bool		Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const;
+
+private:
+	std::array<BoundingFrustum, POINT_SHADOW_FACE_COUNT> m_PointShadowFrustums{};
+
 public:
 	static UPtr<CLight> Create();
 	UPtr<CPrototype>	Clone(void* pArg) override;

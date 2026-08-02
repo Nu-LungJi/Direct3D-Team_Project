@@ -48,20 +48,26 @@ cbuffer CB_CPU_SKINNING_MESH : register(b5)
 	uint gSkinBoneOffset;
 	uint gVertexCount;
 	uint gSkinBoneCount;
-	uint gSkinPadding;
+	/*----------- 광윤 추가 -----------*/
+	uint iBonePaletteStride;
+	/*---------------------------------*/
 };
 
 cbuffer CB_SHADOW : register(b11)
 {
 	uint CurrentShadowLightIndex;
+	uint CurrentPointFaceIndex;
+	float2 ShadowPadding;
 }
 
 
 float4 Compute_AnimModel_SkinnedPosition(VS_SHADOW_INSTANCED_IN IN, uint _InstancedID)
 {
-	const uint InstanceBoneOffset =
-        _InstancedID * MAX_BONE_COUNT;
-
+	//const uint InstanceBoneOffset = _InstancedID * 512;
+	/*----------- 광윤 추가 -----------*/
+	const uint InstanceBoneOffset = _InstancedID * iBonePaletteStride;
+	/*---------------------------------*/
+	
 	float4 Weights = IN.BlendWeights;
 	
 	Weights.w = 1.0f -
@@ -126,7 +132,11 @@ struct VS_OUT
 {
 	float4 WorldPos : POSITION;
 };
-
+struct VS_POINT_OUT
+{
+	float4 Position : SV_POSITION;
+	float3 WorldPos : TEXCOORD0;
+};
 struct VS_FINAL_OUT
 {
 	float4 Position : SV_POSITION;
@@ -177,6 +187,29 @@ VS_FINAL_OUT VSMain_Final(VS_IN IN)
 	
 	return OUT;
 }
+
+VS_POINT_OUT VSMain_PointFace(VS_IN IN)
+{
+	VS_POINT_OUT OUT;
+	
+	float4 WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
+	OUT.WorldPos = WorldPos.xyz;
+	OUT.Position = mul(WorldPos, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[CurrentPointFaceIndex]);
+
+	return OUT;
+}
+
+VS_POINT_OUT VSMain_InstancedPointFace(VS_IN IN)
+{
+	VS_POINT_OUT OUT;
+	
+	float4 WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
+	OUT.WorldPos = WorldPos.xyz;
+	OUT.Position = mul(WorldPos, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[CurrentPointFaceIndex]);
+
+	return OUT;
+}
+
 struct GS_OUT
 {
 	float4	Position	: SV_POSITION;

@@ -65,17 +65,20 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
 		if (DistanceSQ >= OuterRangeSQ)	return false; // 빛이 안 닿는 구역
 		
 		float InvDistance = rsqrt(max(DistanceSQ, 0.00001f));
+		float Distance = DistanceSQ * InvDistance;
 		
 		L = LightVector * InvDistance;
 		
+		float InnerRange = clamp(Light.InnerAttanuation, 0.f, OuterRange);
+		float FadeRatio =saturate((Distance - InnerRange) / max(OuterRange - InnerRange, 0.001f));
+		
 		float DistanceRatio = DistanceSQ / OuterRangeSQ;
 		
-		float RangeFade = saturate(1.f - DistanceRatio * DistanceRatio);
+		float RangeFade = 1.f - smoothstep(0.f, 1.f, FadeRatio);
 		RangeFade *= RangeFade;
 		
-		float Attenuation = RangeFade / max(DistanceSQ + 1.f, 1.f);
-		
-		Radiance = Light.LightColor * Light.LightIntensity * Attenuation;
+		//float Attenuation = RangeFade / max(DistanceSQ + 1.f, 1.f);
+		Radiance = Light.LightColor * Light.LightIntensity * RangeFade;
 	}
     else if (Light.LightType == LIGHT_SPOTLIGHT)    // SpotLight Light PBR
     {

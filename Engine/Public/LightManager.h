@@ -25,6 +25,8 @@ struct SHADOW_ARRAY_CUBE {
 	ComPtr<ID3D11Texture2D>			 TexBuffer{};
 	ComPtr<ID3D11ShaderResourceView> SRV{};
 	ComPtr<ID3D11DepthStencilView>	 DSVList[MAX_SHADOW_LIGHT_COUNT];
+
+	ComPtr<ID3D11DepthStencilView>	 FaceDSVList[MAX_SHADOW_LIGHT_COUNT][POINT_SHADOW_FACE_COUNT];
 };
 
 class ENGINE_DLL CLightManager final : public CEngineBase {
@@ -112,6 +114,7 @@ private:
 
 	_bool	IsInFrustum(CLight* _LightOBJ);
 
+	HRESULT Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t _ShadowSlot);
 
 
 private:

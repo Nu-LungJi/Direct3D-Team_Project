@@ -419,7 +419,9 @@ namespace Engine
 		uint32_t iSkinBoneOffset = 0;
 		uint32_t iVertexCount = 0;
 		uint32_t iSkinBoneCount = 0;
-		uint32_t iPadding1 = 0;
+		/*----------- 광윤 추가 -----------*/
+		uint32_t iBonePaletteStride = 0;
+		/*---------------------------------*/
 	}GPU_SKIN_MESH_CONSTANTS;
 
 

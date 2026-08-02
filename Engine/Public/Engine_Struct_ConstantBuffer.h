@@ -66,7 +66,8 @@ namespace Engine
 	typedef struct tagConstantBufferShadow
 	{
 		uint32_t	CurrentShadowLightIndex{};
-		_float3		ShadowPadding{};
+		uint32_t	CurrentPointFaceIndex{};
+		_float2		ShadowPadding{};
 	} CB_SHADOW;
 	static_assert(sizeof(CB_SHADOW) % 16 == 0);
 

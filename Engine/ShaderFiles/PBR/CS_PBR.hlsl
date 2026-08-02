@@ -24,12 +24,12 @@ Texture2DArray<float>	DynamicShadowMaps	  : register(t10);		// Directional Dynam
 TextureCubeArray<float> StaticShadowCubeMaps  : register(t11);		// Point Static
 TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
 
-static const float		ShadowSmoothness		= 1.5f;
-static const float		ShadowBrightness		= 0.05f;
+static const float		ShadowSmoothness		= 2.5f;
+static const float		ShadowBrightness		= 0.00f;
 static const float		ShadowStrength			= 1.05f;
 
-static const float		EnviromentIntensity		= 1.f;				// 환경광 밝기
-static const float		FillLightBrightness		= 0.75f;			// 등지는 영역의 밝기
+static const float		EnviromentIntensity		= 0.8f;				// 환경광 밝기
+static const float		FillLightBrightness		= 0.5f;			// 등지는 영역의 밝기
 static const float		DirectLightBrightness	= 1.f;				// 빛받는 영역의 밝기
 
 static const float2		PoissonDisk_EightTab[8] =
@@ -40,6 +40,17 @@ static const float2		PoissonDisk_EightTab[8] =
 static const float2		PoissonDisk_FourTab[4] =
 {
 	float2(-0.326, -0.406), float2(-0.840, 0.074), float2(-0.696, 0.457), float2(-0.203, 0.621)
+};
+static const float2 RandomRotationCS[8] =
+{
+	float2(1.00000000f, 0.00000000f),
+    float2(0.70710678f, 0.70710678f),
+    float2(0.00000000f, 1.00000000f),
+    float2(-0.70710678f, 0.70710678f),
+    float2(-1.00000000f, 0.00000000f),
+    float2(-0.70710678f, -0.70710678f),
+    float2(0.00000000f, -1.00000000f),
+    float2(0.70710678f, -0.70710678f)
 };
 
 cbuffer CB_EFFECT_LIGHT : register(b11)
@@ -54,16 +65,25 @@ float Get_GradientNoise(float2 _PixelPos)
 {
     return frac(sin(dot(_PixelPos, float2(12.9898, 78.233))) * 43758.5453123);
 }
-
-float2x2 Get_RandomNoise(float2 _PixelPos)
+uint Hash_ShadowPixel(uint2 PixelPos)
 {
-	float RandomNoise = Get_GradientNoise(_PixelPos);
-	float RandomAngle = RandomNoise * 2.f * PI;
+	uint Hash = PixelPos.x * 0x8DA6B343u;
+	Hash ^= PixelPos.y * 0xD8163841u;
 
-	float SinAngle = sin(RandomAngle);
-	float CosAngle = cos(RandomAngle);
-	
-	return float2x2(CosAngle, -SinAngle, SinAngle, CosAngle);
+	Hash ^= Hash >> 16;
+	Hash *= 0x7FEB352Du;
+	Hash ^= Hash >> 15;
+
+	return Hash;
+}
+
+float2x2 Get_RandomNoise(uint2 _PixelPos)
+{
+	uint RotationIndex = Hash_ShadowPixel(_PixelPos) & 7u;
+
+	float2 CosSin = RandomRotationCS[RotationIndex];
+
+	return float2x2(CosSin.x, -CosSin.y, CosSin.y, CosSin.x);
 }
 
 float DistributionGGX(float3 N, float3 H, float _Roughness)
@@ -98,17 +118,11 @@ float3 FresnelSchlick(float CTH, float3 MBR)
 }
 float MergeShadowMap(int _ShadowSlot, float2 _SamplerUV, float _CurrentPixelDepth)
 {
-	float StaticShadow	= StaticShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);
-	float DynamicShadow = DynamicShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);
-	
-	return min(StaticShadow, DynamicShadow);
+	return DynamicShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);
 }
 float MergeShadowCubeMap(int _ShadowSlot, float3 _SamplerUV, float _CurrentPixelDepth)
 {
-	float StaticShadow	= StaticShadowCubeMaps.SampleCmpLevelZero(ShadowSampler, float4(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);
-	float DynamicShadow = DynamicShadowCubeMaps.SampleCmpLevelZero(ShadowSampler, float4(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);
-	
-	return min(StaticShadow, DynamicShadow);
+	return DynamicShadowCubeMaps.SampleCmpLevelZero(ShadowSampler, float4(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);
 }
 float Attenuate_ShadowStrength(float _ShadowFactor, float _Distance, uint _LightIndex)
 {
@@ -124,7 +138,7 @@ float Attenuate_ShadowStrength(float _ShadowFactor, float _Distance, uint _Light
 float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _SamplingRange, int _ShadowSlot, uint _LightIndex)
 {
 	float4 LightPos = mul(float4(_WorldPos.xyz, 1.f), AffectedLight[_LightIndex].g_LightViewProj[0]);
-			
+	
     float2 ShadowMapUV;
     ShadowMapUV.x = (LightPos.x / LightPos.w) * +0.5f + 0.5f;
     ShadowMapUV.y = (LightPos.y / LightPos.w) * -0.5f + 0.5f;
@@ -133,7 +147,7 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 	
 	[branch]
 	if (LightNDC.x < -1.f || LightNDC.x > 1.f ||
-	 	LightNDC.y < -1.f || LightNDC.y > 1.f || 
+	 	LightNDC.y < -1.f || LightNDC.y > 1.f ||
 		LightNDC.z <  0.f || LightNDC.z > 1.f)
 	{
 		//return (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL) ? ShadowBrightness : 1.f;
@@ -153,24 +167,22 @@ float Compute_SmoothShadow( float4 _WorldPos, float2x2 _RandomRotMat, float2 _Sa
 		float2 SampleUV = ShadowMapUV + (RotatedOffset * _SamplingRange);
 		
 		ShadowFactor += MergeShadowMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
-        // SampleCmpLevelZero : Texture2D(ShadowMap)의 깊이와 CompareValue(CurrentPixelDepth) 를 비교했을 때
-        // CompareValue가 크면 1, 아니면 0 반환.(x값에 결과값 저장)
-		//FinalShadowFactor += FinalShadowMap[_LightIndex].SampleCmpLevelZero(ShadowSampler, SampleUV, CurrentPixelDepth).x;
 	}
-	float FilteredShadow = lerp(ShadowBrightness, 1.f, ShadowFactor / POISSON_COUNT);
-	float Darkness = 1.f - FilteredShadow;
-	float NormalShadowFactor = saturate(1.f - Darkness * ShadowStrength);
+	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
 	
-	if (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL)
-	{
-		return NormalShadowFactor;
-	}
+	float BlockerDepth = DynamicShadowMaps.SampleLevel(PointClamp, float3(ShadowMapUV, _ShadowSlot), 0.f).r;
 	
-	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
-	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
-	// FinalShadowFactor  : 감쇄O 그림자 (거리기반 밝기 감쇄 그림자)
+	float DepthGap = max(0.f, CurrentPixelDepth - BlockerDepth);
 	
-	return FinalShadowFactor;
+	float ContactFactor = 1.f - smoothstep(0.001f, 0.03f, DepthGap);
+	
+	float ShadowOpacity = lerp(0.25f, 1.f, ContactFactor);
+	
+	float ContactShadowFactor = lerp(1.f, NormalShadowFactor, ShadowOpacity);
+	
+	if (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL) return ContactShadowFactor;
+
+	return Attenuate_ShadowStrength(ContactShadowFactor, length(_WorldPos.xyz - AffectedLight[_LightIndex].Position), _LightIndex);
 }
 
 float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowSlot, uint _LightIndex)
@@ -200,16 +212,12 @@ float Compute_PointShadow(float4 _WorldPos, float2x2 _RandomRotMat, int _ShadowS
         float3 Offset3D = (TangentX * RotatedOffset.x + TangentY * RotatedOffset.y) * FilterRadius;
         
 		float3 SampleUV = Direction + Offset3D;
-			
+		
 		ShadowFactor += MergeShadowCubeMap(_ShadowSlot, SampleUV, CurrentPixelDepth);
 	}
-	float FilteredShadow = lerp(ShadowBrightness, 1.f, ShadowFactor / POISSON_COUNT);
-	float Darkness = 1.f - FilteredShadow;
-	float NormalShadowFactor = saturate(1.f - Darkness * ShadowStrength);
 	
+	float NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
 	float FinalShadowFactor = Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
-	// NormalShadowFactor : 감쇄X 그림자 (지속적으로 같은 밝기의 그림자)
-	// FinalShadowFactor : 감쇄O 그림자  (거리기반 밝기 감쇄 그림자)
 	
 	return FinalShadowFactor;
 }
@@ -286,7 +294,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	
     float3	LightAccumulation = float3(0.f, 0.f, 0.f);
 	
-	float2x2 RandomNoiseMatrix = Get_RandomNoise(float2(ID.xy));
+	float2x2 RandomNoiseMatrix = Get_RandomNoise(ID.xy);
 	
 	float2	SamplingRange = 1.f / float2(POINTLIGHT_RESOLUTION, POINTLIGHT_RESOLUTION) * ShadowSmoothness;
 	
@@ -423,7 +431,7 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 	
 	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
 	
-	float2x2 RandomNoiseMatrix = Get_RandomNoise(float2(ID.xy));
+	float2x2 RandomNoiseMatrix = Get_RandomNoise(ID.xy);
 	
 	float2 SamplingRange = 1.f / float2(POINTLIGHT_RESOLUTION, POINTLIGHT_RESOLUTION) * ShadowSmoothness;
 	
