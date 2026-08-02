@@ -45,6 +45,9 @@ CLevelTerrain::~CLevelTerrain()
 HRESULT CLevelTerrain::Initialize()
 {
 	Engine::CGameInstance::Get().GameObjectAllReset();
+
+	GET_SINGLE(UIManager)->CreateFadeOut();
+
 	std::array<CHandle, 6> hOilBarrels{};
 	if (FAILED(
 		CGameInstance::Get().

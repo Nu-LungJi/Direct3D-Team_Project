@@ -117,6 +117,7 @@ private:
 	void CreateMonsterHP();
 	void SetMonsterHPBool(_bool isHP) { m_bMonsterHP = isHP; }
 	void SetMonsterHPNull() { m_MonsterHP = std::nullopt; }
+	void UpdateMonsterHP();
 
 	/**********모션************/
 	void PlayScaleAlphaDownDelete(CHandle pHandle);

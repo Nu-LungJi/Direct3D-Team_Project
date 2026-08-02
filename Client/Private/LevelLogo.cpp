@@ -132,6 +132,7 @@ HRESULT CLevelLogo::Initialize()
 
 	}
 
+	GET_SINGLE(UIManager)->CreateFadeOut();
 
 	return S_OK;
 }
@@ -143,12 +144,13 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 		m_Video = GET_SINGLE(UIManager)->LoadPrefab("LogoVideo").front();
 		static_cast<CVideoObject*>(SafeGetOBJ(m_Video))->SetPath(L"./Resources/SampleClient/Textures/UI/Video/CIN_HL.avi");
 
-		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-		PlayFadeOutDelete(hBG);
+		//CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+		//PlayFadeOutDelete(hBG);
+		
 
 		m_Logo = GET_SINGLE(UIManager)->LoadPrefab("Logo").front();
 		SafeGetOBJ(m_Logo)->SetAlpha(0.f);
-		PlayFadeIn(m_Logo, 7.f, 5.f);
+		PlayFadeInSacleUp(m_Logo, 7.f, 5.f);
 
 		m_VideoQue = true;
 	}
@@ -217,6 +219,22 @@ void CLevelLogo::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 }
 
 void CLevelLogo::PlayFadeIn(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+	_float scaleRatio = pBtn->GetScaleRatio();
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void CLevelLogo::PlayFadeInSacleUp(CHandle pHandle, float delay, float playtime)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();

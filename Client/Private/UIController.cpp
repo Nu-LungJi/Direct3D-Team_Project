@@ -51,7 +51,7 @@ HRESULT CUIController::Initialize(void* pArg)
 		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
 
 		/****페이드인*****/
-		PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
+		//PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
 	}
 
 	return S_OK;
@@ -65,27 +65,26 @@ void CUIController::Update(E::_float fTimeDelta)
 {
 	if (!CursorCreate)
 	{
-		//auto clientSize = CGameInstance::Get().GetClientScreenSize();
-		//std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
-		//
-		//CCursor::UIOBJECT_DESC Desc{};
-		//
-		//Desc.sObjectTag = "Cursor";
-		//Desc.Name = "Cursor";
-		//Desc.fSizeX = 64.f;
-		//Desc.fSizeY = 64.f;
-		//Desc.fX = clientSize.x * 0.5f;
-		//Desc.fY = clientSize.y * 0.5f;
-		//Desc.fAlpha = 1.f;
-		//Desc.UIType = ETOUI(UI_TYPE::CURSOR);
-		//Desc.ResWeight = 1000;
-		//
-		//m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
-		//
-		///****페이드인*****/
-		//PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
 
-		CursorCreate = true;
+		/*auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+		
+		CCursor::UIOBJECT_DESC Desc{};
+		
+		Desc.sObjectTag = "Cursor";
+		Desc.Name = "Cursor";
+		Desc.fSizeX = 64.f;
+		Desc.fSizeY = 64.f;
+		Desc.fX = clientSize.x * 0.5f;
+		Desc.fY = clientSize.y * 0.5f;
+		Desc.fAlpha = 1.f;
+		Desc.UIType = ETOUI(UI_TYPE::CURSOR);
+		Desc.ResWeight = 1000;
+		
+		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
+
+		CursorCreate = true;*/
+
 	}
 
 	// ************** 플레이어 HP
@@ -156,13 +155,6 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 	}
 
-	// 몬스터 HP 생성
-	if (m_bMonsterHP)
-	{
-		CreateMonsterHP();
-		m_bMonsterHP = false;
-	}
-
 	// 몬스터 HP 감송
 	if (E::CGameInstance::Get().KeyDown(DIK_6))
 		AddMonsterHP(-30.f);
@@ -170,6 +162,15 @@ void CUIController::Update(E::_float fTimeDelta)
 	// 죽는 화면
 	//if (E::CGameInstance::Get().KeyDown(DIK_0))
 	//	CreateDeathScene();
+
+	/****************필수********************/
+	if (m_bMonsterHP)
+	{
+		CreateMonsterHP();
+		m_bMonsterHP = false;
+	}
+
+	UpdateMonsterHP();
 }
 
 void CUIController::LateUpdate(E::_float fTimeDelta)
@@ -492,12 +493,28 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
-
+	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
+	{
+		PlayMonsterHPDelete(*m_MonsterHP);
+		m_MonsterHP = monsterHandle;
+	}
+	else
+	{
+		m_bMonsterHP = true;
+	}
 }
 
 void CUIController::CreateMonsterHP()
 {
 	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
+}
+
+void CUIController::UpdateMonsterHP()
+{
+	if (m_MonsterHP != std::nullopt && nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	{
+
+	}
 }
 
 void CUIController::AddMonsterHP(_float fill)
