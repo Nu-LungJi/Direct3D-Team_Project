@@ -12,6 +12,8 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "Player_Magic_Bullet.h"
+#include "UIManager.h"
+#include "UIController.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -425,7 +427,20 @@ _bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
 		return false;
 
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
 		++m_iNormalHitCnt;
+
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+
+		if (hUIController.has_value())
+		{
+			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+			{
+				pUIController->AddFinisher(2.f);
+			}
+		}
+	}
+		
 	if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
 	{
 		if (m_iNormalHitCnt >= 6)

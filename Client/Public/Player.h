@@ -192,8 +192,8 @@ private:
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
 	_float m_fSprintDirectionResponse{ 4.5f };
-	int32_t m_iHp{ 1000 };
-	int32_t m_iMaxHp{ 1000 };
+	int32_t m_iHp{ 100 };
+	int32_t m_iMaxHp{ 100 };
 	_float3 m_vLastHitPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };
