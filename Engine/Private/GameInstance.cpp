@@ -102,7 +102,9 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	m_pNvClothManager = CNvClothManager::Create(
-		ppDevice.Get(), ppContext.Get());
+		ppDevice.Get(),
+		ppContext.Get(),
+		EngineDesc.eNvClothBackend);
 	if (!m_pNvClothManager)
 	{
 		return E_FAIL;

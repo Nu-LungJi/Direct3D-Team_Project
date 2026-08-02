@@ -532,6 +532,10 @@ struct CNvClothManager::IMPLEMENTATION
 		ID3D11Buffer* pGpuParticleBuffer{};
 		uint32_t iGpuParticleOffset{};
 		ComPtr<ID3D11ShaderResourceView> pGpuParticleSRV{};
+		ComPtr<ID3D11Buffer> pCpuParticleBuffer{};
+		ComPtr<ID3D11ShaderResourceView> pCpuParticleSRV{};
+		uint32_t iCpuParticleCapacity{};
+		_bool bCpuParticleBufferDirty{ true };
 		std::vector<_float3> vecDebugPositions{};
 		std::vector<float> vecInverseMasses{};
 		std::vector<uint32_t> vecIndices{};
@@ -553,8 +557,11 @@ struct CNvClothManager::IMPLEMENTATION
 	CNvClothErrorCallback ErrorCallback{};
 	CNvClothAssertHandler AssertHandler{};
 	std::unique_ptr<CNvClothDxContext> pDxContext{};
+	ComPtr<ID3D11Device> pDevice{};
+	ComPtr<ID3D11DeviceContext> pContext{};
 	nv::cloth::Factory* pFactory{};
 	nv::cloth::Solver* pSolver{};
+	NVCLOTH_BACKEND eBackend{ NVCLOTH_BACKEND::DX11 };
 	mutable std::mutex StateMutex{};
 	std::unordered_map<
 		uint64_t,
@@ -608,12 +615,16 @@ CNvClothManager::~CNvClothManager()
 
 HRESULT CNvClothManager::Initialize(
 	ID3D11Device* pDevice,
-	ID3D11DeviceContext* pContext)
+	ID3D11DeviceContext* pContext,
+	NVCLOTH_BACKEND eBackend)
 {
 	if (!pDevice || !pContext)
 		return E_INVALIDARG;
 
 	m_pImpl = std::make_unique<IMPLEMENTATION>();
+	m_pImpl->pDevice = pDevice;
+	m_pImpl->pContext = pContext;
+	m_pImpl->eBackend = eBackend;
 
 	nv::cloth::InitializeNvCloth(
 		&m_pImpl->Allocator,
@@ -621,23 +632,36 @@ HRESULT CNvClothManager::Initialize(
 		&m_pImpl->AssertHandler,
 		nullptr);
 
-	if (!NvClothCompiledWithDxSupport())
+	if (eBackend == NVCLOTH_BACKEND::DX11)
 	{
-		OutputDebugStringA(
-			"[NvCloth] The loaded library has no DX11 support.\n");
-		return E_FAIL;
+		if (!NvClothCompiledWithDxSupport())
+		{
+			OutputDebugStringA(
+				"[NvCloth] The loaded library has no DX11 support.\n");
+			return E_FAIL;
+		}
+
+		m_pImpl->pDxContext =
+			std::make_unique<CNvClothDxContext>(
+				pDevice,
+				pContext);
+		m_pImpl->pFactory =
+			NvClothCreateFactoryDX11(
+				m_pImpl->pDxContext.get());
+	}
+	else
+	{
+		m_pImpl->pFactory = NvClothCreateFactoryCPU();
 	}
 
-	m_pImpl->pDxContext =
-		std::make_unique<CNvClothDxContext>(pDevice, pContext);
-	m_pImpl->pFactory =
-		NvClothCreateFactoryDX11(m_pImpl->pDxContext.get());
-
 	if (!m_pImpl->pFactory ||
-		m_pImpl->pFactory->getPlatform() != nv::cloth::Platform::DX11)
+		m_pImpl->pFactory->getPlatform() !=
+			(eBackend == NVCLOTH_BACKEND::DX11 ?
+				nv::cloth::Platform::DX11 :
+				nv::cloth::Platform::CPU))
 	{
 		OutputDebugStringA(
-			"[NvCloth] Failed to create the DX11 factory.\n");
+			"[NvCloth] Failed to create the requested factory.\n");
 		return E_FAIL;
 	}
 
@@ -645,7 +669,7 @@ HRESULT CNvClothManager::Initialize(
 	if (!m_pImpl->pSolver)
 	{
 		OutputDebugStringA(
-			"[NvCloth] Failed to create the DX11 solver.\n");
+			"[NvCloth] Failed to create the requested solver.\n");
 		return E_FAIL;
 	}
 
@@ -654,8 +678,10 @@ HRESULT CNvClothManager::Initialize(
 	if (!m_pCollisionEditor)
 		return E_FAIL;
 
-	DEBUG_LOG("[NvCloth] DX11 factory initialized.\n");
-	DEBUG_LOG("[NvCloth] DX11 solver initialized.\n");
+	DEBUG_LOG(
+		eBackend == NVCLOTH_BACKEND::DX11 ?
+			"[NvCloth] DX11 backend initialized.\n" :
+			"[NvCloth] CPU backend initialized.\n");
 
 #ifdef _DEBUG
 	NVCLOTH_FABRIC_DESC TestFabricDesc{};
@@ -720,6 +746,13 @@ HRESULT CNvClothManager::Initialize(
 _bool CNvClothManager::IsInitialized() const
 {
 	return m_pImpl && m_pImpl->pFactory;
+}
+
+NVCLOTH_BACKEND CNvClothManager::GetBackend() const
+{
+	return m_pImpl ?
+		m_pImpl->eBackend :
+		NVCLOTH_BACKEND::DX11;
 }
 
 HRESULT CNvClothManager::CreateFabric(
@@ -1091,14 +1124,17 @@ _bool CNvClothManager::GetClothParticles(
 	return true;
 }
 
-_bool CNvClothManager::GetClothGpuParticleView(
+_bool CNvClothManager::GetClothRenderParticleView(
 	NVCLOTH_CLOTH_HANDLE Handle,
-	NVCLOTH_GPU_PARTICLE_VIEW& OutView)
+	NVCLOTH_RENDER_PARTICLE_VIEW& OutView)
 {
-	ZoneScopedN("NvCloth_GetGpuParticleView");
+	ZoneScopedN("NvCloth_GetRenderParticleView");
 
 	OutView = {};
-	if (!m_pImpl || !Handle || !m_pImpl->pDxContext)
+	if (!m_pImpl ||
+		!Handle ||
+		!m_pImpl->pDevice ||
+		!m_pImpl->pContext)
 		return false;
 
 	std::scoped_lock Lock{ m_pImpl->StateMutex };
@@ -1111,6 +1147,111 @@ _bool CNvClothManager::GetClothGpuParticleView(
 	}
 
 	auto& Record = *Iter->second;
+	const auto iParticleCount =
+		Record.pCloth->getNumParticles();
+	if (iParticleCount == 0)
+		return false;
+
+	if (m_pImpl->eBackend == NVCLOTH_BACKEND::CPU)
+	{
+		if (!Record.pCpuParticleBuffer ||
+			!Record.pCpuParticleSRV ||
+			Record.iCpuParticleCapacity !=
+				iParticleCount)
+		{
+			Record.pCpuParticleSRV.Reset();
+			Record.pCpuParticleBuffer.Reset();
+			Record.iCpuParticleCapacity = 0;
+
+			D3D11_BUFFER_DESC BufferDesc{};
+			BufferDesc.ByteWidth =
+				iParticleCount *
+				static_cast<uint32_t>(
+					sizeof(physx::PxVec4));
+			BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+			BufferDesc.BindFlags =
+				D3D11_BIND_SHADER_RESOURCE;
+			BufferDesc.CPUAccessFlags =
+				D3D11_CPU_ACCESS_WRITE;
+			BufferDesc.MiscFlags =
+				D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+			if (FAILED(m_pImpl->pDevice->CreateBuffer(
+				&BufferDesc,
+				nullptr,
+				Record.pCpuParticleBuffer.GetAddressOf())))
+			{
+				return false;
+			}
+
+			D3D11_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
+			SrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			SrvDesc.ViewDimension =
+				D3D11_SRV_DIMENSION_BUFFEREX;
+			SrvDesc.BufferEx.FirstElement = 0;
+			SrvDesc.BufferEx.NumElements =
+				BufferDesc.ByteWidth /
+				sizeof(uint32_t);
+			SrvDesc.BufferEx.Flags =
+				D3D11_BUFFEREX_SRV_FLAG_RAW;
+			if (FAILED(
+				m_pImpl->pDevice->CreateShaderResourceView(
+					Record.pCpuParticleBuffer.Get(),
+					&SrvDesc,
+					Record.pCpuParticleSRV.GetAddressOf())))
+			{
+				Record.pCpuParticleBuffer.Reset();
+				return false;
+			}
+
+			Record.iCpuParticleCapacity =
+				iParticleCount;
+			Record.bCpuParticleBufferDirty = true;
+		}
+
+		if (Record.bCpuParticleBufferDirty)
+		{
+			const auto& Cloth =
+				static_cast<const nv::cloth::Cloth&>(
+					*Record.pCloth);
+			const auto Particles =
+				Cloth.getCurrentParticles();
+			if (Particles.size() != iParticleCount)
+				return false;
+
+			D3D11_MAPPED_SUBRESOURCE Mapped{};
+			if (FAILED(m_pImpl->pContext->Map(
+				Record.pCpuParticleBuffer.Get(),
+				0,
+				D3D11_MAP_WRITE_DISCARD,
+				0,
+				&Mapped)))
+			{
+				return false;
+			}
+
+			auto* pDestination =
+				static_cast<physx::PxVec4*>(
+					Mapped.pData);
+			for (uint32_t i = 0;
+				i < iParticleCount;
+				++i)
+			{
+				pDestination[i] = Particles[i];
+			}
+			m_pImpl->pContext->Unmap(
+				Record.pCpuParticleBuffer.Get(),
+				0);
+			Record.bCpuParticleBufferDirty = false;
+		}
+
+		OutView.pSRV = Record.pCpuParticleSRV.Get();
+		OutView.iParticleCount = iParticleCount;
+		return OutView.pSRV != nullptr;
+	}
+
+	if (!m_pImpl->pDxContext)
+		return false;
+
 	const auto GpuParticles =
 		Record.pCloth->getGpuParticles();
 	if (!GpuParticles.mBuffer)
@@ -1131,9 +1272,6 @@ _bool CNvClothManager::GetClothGpuParticleView(
 		static_cast<uint32_t>(
 			iParticleOffsetBytes /
 			sizeof(physx::PxVec4));
-	const auto iParticleCount =
-		Record.pCloth->getNumParticles();
-
 	D3D11_BUFFER_DESC BufferDesc{};
 	GpuParticles.mBuffer->GetDesc(&BufferDesc);
 	const uint64_t iRequiredBytes =
@@ -1651,6 +1789,16 @@ void CNvClothManager::StepSimulation(
 		m_pImpl->pSolver->endSimulation();
 	}
 
+	if (m_pImpl->eBackend == NVCLOTH_BACKEND::CPU)
+	{
+		for (auto& [iHandle, pRecord] :
+			m_pImpl->Cloths)
+		{
+			if (pRecord)
+				pRecord->bCpuParticleBufferDirty = true;
+		}
+	}
+
 	if (m_pImpl->pSolver->hasError())
 	{
 		if (!m_pImpl->bSolverErrorLogged)
@@ -1860,14 +2008,18 @@ void CNvClothManager::UpdateGUI()
 	const _bool bInitialized =
 		m_pImpl->pFactory &&
 		m_pImpl->pSolver &&
-		m_pImpl->pDxContext;
+		(m_pImpl->eBackend == NVCLOTH_BACKEND::CPU ||
+			m_pImpl->pDxContext);
 	ImGui::TextColored(
 		bInitialized ?
 			ImVec4{ 0.35f, 0.9f, 0.45f, 1.f } :
 			ImVec4{ 0.95f, 0.35f, 0.3f, 1.f },
 		bInitialized ? "Initialized" : "Not Initialized");
 	ImGui::SameLine();
-	ImGui::TextDisabled("| DX11 Backend");
+	ImGui::TextDisabled(
+		m_pImpl->eBackend == NVCLOTH_BACKEND::DX11 ?
+			"| DX11 Backend" :
+			"| CPU Backend");
 	ImGui::SameLine();
 	ImGui::Checkbox("Debug Draw Cloth", &m_pImpl->bDebugDraw);
 
@@ -2016,8 +2168,8 @@ void CNvClothManager::UpdateGUI()
 			ImGui::TableSetupColumn("Triangles");
 			ImGui::TableSetupColumn("Spheres");
 			ImGui::TableSetupColumn("Capsules");
-			ImGui::TableSetupColumn("GPU SRV");
-			ImGui::TableSetupColumn("GPU Offset");
+			ImGui::TableSetupColumn("Render SRV");
+			ImGui::TableSetupColumn("Particle Offset");
 			ImGui::TableHeadersRow();
 
 			std::vector<uint64_t> ClothHandles{};
@@ -2081,8 +2233,15 @@ void CNvClothManager::UpdateGUI()
 					Record.vecCollisionCapsules.size() /
 						2);
 				ImGui::TableSetColumnIndex(7);
+				const _bool bRenderViewReady =
+					m_pImpl->eBackend ==
+						NVCLOTH_BACKEND::DX11 ?
+						static_cast<_bool>(
+							Record.pGpuParticleSRV) :
+						static_cast<_bool>(
+							Record.pCpuParticleSRV);
 				ImGui::TextColored(
-					Record.pGpuParticleSRV ?
+					bRenderViewReady ?
 						ImVec4{
 							0.35f,
 							0.9f,
@@ -2093,12 +2252,15 @@ void CNvClothManager::UpdateGUI()
 							0.8f,
 							0.8f,
 							1.f },
-					Record.pGpuParticleSRV ?
+					bRenderViewReady ?
 						"Ready" : "Not Created");
 				ImGui::TableSetColumnIndex(8);
 				ImGui::Text(
 					"%u",
-					Record.iGpuParticleOffset);
+					m_pImpl->eBackend ==
+						NVCLOTH_BACKEND::DX11 ?
+						Record.iGpuParticleOffset :
+						0u);
 			}
 
 			ImGui::EndTable();
@@ -2110,10 +2272,14 @@ void CNvClothManager::UpdateGUI()
 
 UPtr<CNvClothManager> CNvClothManager::Create(
 	ID3D11Device* pDevice,
-	ID3D11DeviceContext* pContext)
+	ID3D11DeviceContext* pContext,
+	NVCLOTH_BACKEND eBackend)
 {
 	auto pInstance = ToUPtr(new CNvClothManager{});
-	if (FAILED(pInstance->Initialize(pDevice, pContext)))
+	if (FAILED(pInstance->Initialize(
+		pDevice,
+		pContext,
+		eBackend)))
 		return nullptr;
 
 	return pInstance;

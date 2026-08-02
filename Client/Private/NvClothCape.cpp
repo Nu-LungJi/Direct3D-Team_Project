@@ -1346,8 +1346,8 @@ HRESULT CNvClothCape::Render(
 		return E_FAIL;
 	}
 
-	NVCLOTH_GPU_PARTICLE_VIEW ParticleView{};
-	if (!m_pComNvCloth->GetGpuParticleView(
+	NVCLOTH_RENDER_PARTICLE_VIEW ParticleView{};
+	if (!m_pComNvCloth->GetRenderParticleView(
 		ParticleView) ||
 		ParticleView.iParticleCount !=
 			m_pClothMesh->GetParticleCount())
@@ -1465,8 +1465,8 @@ HRESULT CNvClothCape::Render_Shadow(
 		return E_FAIL;
 	}
 
-	NVCLOTH_GPU_PARTICLE_VIEW ParticleView{};
-	if (!m_pComNvCloth->GetGpuParticleView(
+	NVCLOTH_RENDER_PARTICLE_VIEW ParticleView{};
+	if (!m_pComNvCloth->GetRenderParticleView(
 		ParticleView) ||
 		ParticleView.iParticleCount !=
 			m_pClothMesh->GetParticleCount())
