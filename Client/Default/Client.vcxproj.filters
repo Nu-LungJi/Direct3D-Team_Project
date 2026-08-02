@@ -576,6 +576,9 @@
     <ClInclude Include="..\Public\Cursor.h">
       <Filter>GameObject\UI\Cursor</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ClientEvents.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">

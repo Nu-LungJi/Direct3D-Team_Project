@@ -467,6 +467,7 @@ public:
 	_bool IsDebugBoundsEnabled();
 	void SetDebugBoundsEnabled(_bool bEnabled);
 	void ClearMapMeshTextureCache();
+	void EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model);
 #pragma endregion
 
 #pragma region EVENT_MANAGER
