@@ -795,8 +795,8 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			if (FAILED(SaveMap(path)))
 				return E_FAIL;
 
-			// Migration only needs the objects temporarily. Restore the same
-			// metadata-only state used by an ordinary streamed map load.
+			// 마이그레이션에는 해당 객체가 일시적으로만 필요
+			// 일반적인 스트리밍 맵 로드 시 사용되는 것과 동일한, 메타데이터 전용 상태로 복원
 			CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
 			m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 			QueueAllChunkModelReleases();
@@ -838,8 +838,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 
 	int version = rootJson["version"];
 
-	std::unordered_map<MAPCHUNK_COORD, std::vector<MAP_MESH_OBJECT_LOAD_DESC>, tagMapChunkCoordHash>
-		legacyObjectsByChunk;
+	std::unordered_map<MAPCHUNK_COORD, std::vector<MAP_MESH_OBJECT_LOAD_DESC>, tagMapChunkCoordHash> legacyObjectsByChunk;
 	for (const auto& objectJson : rootJson["objects"])
 	{
 		if (auto desc = MakeMapMeshLoadDesc(objectJson))
@@ -1459,10 +1458,7 @@ void CMapManager::ProcessLoadedChunkResults()
 	}
 }
 
-HRESULT CMapManager::ContinueApplyLoadedChunkResult(
-	PENDING_CHUNK_APPLY_STATE& state,
-	const std::chrono::steady_clock::time_point& deadline,
-	_bool& completed)
+HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& state, const std::chrono::steady_clock::time_point& deadline, _bool& completed)
 {
 	completed = false;
 	if (state.result.mapGeneration != m_MapGeneration.load(std::memory_order_acquire))
