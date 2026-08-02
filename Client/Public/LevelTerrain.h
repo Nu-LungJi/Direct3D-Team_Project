@@ -51,6 +51,7 @@ private:
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
+	_float m_fTombBossBulletSpawnYawDegrees{};
 
 private:
 	HRESULT InitializeMyMagicSquareStep();

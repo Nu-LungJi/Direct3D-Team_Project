@@ -25,6 +25,7 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPosition{};
+		_float4 vInitialRotation{ 0.f, 0.f, 0.f, 1.f };
 		CHandle hTarget{};
 		_float3 vTargetOffset{ 0.f, 1.5f, 0.f };
 		_float fArcMoveSpeed{ 10.f };

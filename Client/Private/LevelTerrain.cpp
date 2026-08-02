@@ -250,6 +250,12 @@ HRESULT CLevelTerrain::InitializeTombBossBulletTest(CHandle hPlayer)
 	CTombBossBullet::DESC Desc{};
 	Desc.sObjectTag = "TombBossBullet_PathTest";
 	Desc.vInitialPosition = { 5.f, 10.f, 10.f };
+	XMStoreFloat4(
+		&Desc.vInitialRotation,
+		XMQuaternionRotationAxis(
+			XMVectorSet(0.f, 1.f, 0.f, 0.f),
+			XMConvertToRadians(
+				m_fTombBossBulletSpawnYawDegrees)));
 	Desc.hTarget = hPlayer;
 	Desc.fArcMoveSpeed = 68.f;
 	Desc.fArcHeight = 2.f;
@@ -842,6 +848,13 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	ImGui::DragFloat(
+		"Tomb Boss Bullet Spawn Yaw",
+		&m_fTombBossBulletSpawnYawDegrees,
+		1.f,
+		-180.f,
+		180.f,
+		"%.1f deg");
 	if (ImGui::Button("Spawn Tomb Boss Bullet"))
 	{
 		if (!CGameInstance::Get().GetGameObjectByHandle(m_hPlayer) ||

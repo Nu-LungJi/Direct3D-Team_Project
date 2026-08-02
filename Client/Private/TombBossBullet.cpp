@@ -64,6 +64,7 @@ HRESULT CTombBossBullet::Initialize(void* pArg)
 	m_eMoveState = MOVE_STATE::PATH_PLAYBACK;
 
 	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().SetQuaternion(pDesc->vInitialRotation);
 	GetTransform().Update();
 
 	CComPathPlayback::DESC PathDesc{};
