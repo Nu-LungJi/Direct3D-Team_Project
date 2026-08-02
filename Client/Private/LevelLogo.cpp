@@ -148,7 +148,7 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 
 		m_Logo = GET_SINGLE(UIManager)->LoadPrefab("Logo").front();
 		SafeGetOBJ(m_Logo)->SetAlpha(0.f);
-		PlayFadeIn(m_Logo, 5.f, 5.f);
+		PlayFadeIn(m_Logo, 7.f, 5.f);
 
 		m_VideoQue = true;
 	}
@@ -156,7 +156,7 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 	if(!m_ChangeScene)
 		m_SceneChangeTimer += fTimeDelta;
 
-	if (!m_isLogoDelete && m_SceneChangeTimer > 12.f)
+	if (!m_isLogoDelete && m_SceneChangeTimer > 13.f)
 	{
 		PlayFadeOutDelete(m_Logo, 0.f, 3.f);
 		m_isLogoDelete = true;
@@ -170,7 +170,7 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 		PlayFadeInChange(hBG);
 		m_ChangeScene = true;
 	}
-	else if (!m_ChangeScene && m_SceneChangeTimer > 12.f)
+	else if (!m_ChangeScene && m_SceneChangeTimer > 13.f)
 	{
 		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
 		GetSafeUI(hBG)->SetAlpha(0.f);
@@ -224,6 +224,16 @@ void CLevelLogo::PlayFadeIn(CHandle pHandle, float delay, float playtime)
 	pBtn->SetInputLcok(true);
 
 	_float Alpah = pBtn->GetAlpha();
+	_float scaleRatio = pBtn->GetScaleRatio();
+
+	pTween->PlayTween(0.8f, scaleRatio, playtime,
+		[pHandle](float currentValue) {
+			if (auto pObj = GetSafeUI(pHandle))
+			{
+				pObj->SetScaleRatio(currentValue);
+				pObj->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad, delay);
 
 	pTween->PlayTween(0.f, 1.f, playtime,
 		[pBtn](float currentValue) {
