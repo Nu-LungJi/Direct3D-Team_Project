@@ -41,6 +41,7 @@ public:
 	virtual void ClearByOwner(uint32_t ownerID) = 0;
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData);
+	void TransformPendingOwner(uint32_t ownerId, const _float4x4& deltaMatrixData);
 public:
 	virtual void SetPosition(const _float3& pos) {}
 	virtual void SetVelocity(const _float3& vel) {}

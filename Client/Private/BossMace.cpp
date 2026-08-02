@@ -8,6 +8,7 @@
 #include "ComBeHavior.h"
 #include "ComModelInstance.h"
 #include "Trail_CPU.h"
+#include "BossTMB.h"
 
 NS_USING(Client)
 
@@ -47,7 +48,7 @@ HRESULT CBossMace::Initialize(void* pArg)
 		return E_FAIL;
 
 	m_vEmissive = _float3(0.213f, 0.243f, 0.5f);
-	m_fEmissiveIntensity = 50.f;
+	m_fMaxEmissiveIntensity = 50.f;
 	m_fTime = 15.f;
 	return S_OK;
 }
@@ -66,13 +67,13 @@ void CBossMace::Update(E::_float fTimeDelta)
 
 void CBossMace::LateUpdate(E::_float fTimeDelta)
 {
-	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+	if (auto iter = CGameInstance::Get().GetGameObjectByHandleT<CBossTMB>(m_ParentHandle))
 	{
 		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
-			if (!pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
+			
+			if (!pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW))|| iter->Get_CurSkillName() != "MorningStarAfterEffect")
 			{
 				m_bEmissive = false;
-
 				return;
 			}
 		m_bEmissive = true;

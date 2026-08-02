@@ -54,8 +54,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 
 				if (!m_bActiveSkill)
 				{
-					Active_Skill();
-					m_bActiveSkill = true;
+					m_bActiveSkill = Active_Skill();
 				}
 				Gravity();
 				_bool bFinished = pAnimator->GetFinish();

@@ -163,12 +163,13 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 	return Out;
 
 }
-PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET			
+PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET
 {
 	PS_OUT Out = (PS_OUT) 0;
+
 	float2 uv = In.vUV;
 	uv.x += g_fAccumulationTime * 3.33f;
-	float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(uv.x , uv.y *3));
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, float2(uv.x, uv.y * 3));
 	float4 distortionTex = g_DistortionTexture.Sample(LinearWrap, float2(uv.x * 2, uv.y));
         
 	if (all(tex.rgb < 0.1f))
@@ -195,10 +196,9 @@ PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET
 	color.rgb += In.vEmissive.rgb * In.vEmissive.a * In.vColor.a;
 	color.a *= In.vColor.a;
 
-   Out.vDiffuse = color;
+	Out.vDiffuse = color;
 	return Out;
 }
-
 PS_OUT PSPlayerDash1(VS_OUT In) : SV_TARGET
 {
 

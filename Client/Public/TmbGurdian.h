@@ -45,7 +45,6 @@ private:
 	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
-	ATTMON						m_eLastSkillTable{};
 public:
 	static E::UPtr<CTmbGurdian> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

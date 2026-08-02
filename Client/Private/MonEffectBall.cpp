@@ -44,14 +44,15 @@ HRESULT CMonEffectBall::Initialize(void* pArg)
 	m_tQueryFilter = pDesc->tQueryFilter;
 	m_fDamage = pDesc->fDamage;
 	GetTransform().Update();
-	m_iEffectID = CGameInstance::Get().PlayEffect("Boss_StarBurst_A", *GetTransform().GetWorldMatrix(), _vector{},
+	m_iEffectID = CGameInstance::Get().PlayEffect("BossRingAttack", *GetTransform().GetWorldMatrix(), _vector{},
 		[h = GetHandle()](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
 		{
 			if (auto pOBJ = CGameInstance::Get().GetGameObjectByHandleT<CMonEffectBall>(h)) {
 				pOBJ->m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 			}
 		});
-
+	m_fDeadTime = 0.f;
+	XMStoreFloat4x4(&m_Offsetmat, XMMatrixIdentity());
 	return S_OK;
 }
 
@@ -61,14 +62,13 @@ void CMonEffectBall::PriorityUpdate(E::_float fTimeDelta)
 
 void CMonEffectBall::FixedUpdate(E::_float fTimeDelta)
 {
-	Chase(fTimeDelta);
 }
 
 void CMonEffectBall::Update(E::_float fTimeDelta)
 {
 
 	OverlapTest();
-	if (m_bHit || m_iEffectID == INVALID_EFFECT_INSTANCE_ID) {
+	if (m_bHit || m_iEffectID == INVALID_EFFECT_INSTANCE_ID || m_fDeadTime > 1.f) {
 		SetPendingDestroy();
 		return;
 	}
@@ -77,6 +77,8 @@ void CMonEffectBall::Update(E::_float fTimeDelta)
 
 void CMonEffectBall::LateUpdate(E::_float fTimeDelta)
 {
+	Chase(fTimeDelta);
+
 	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
 	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 	CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
@@ -133,15 +135,16 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 	{
 		if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
 		{
+			const auto& boneMatrices = pModel->Get_CombinedBoneMatrices();
 
-			if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneIndex)
+			if (m_iBoneIndex < boneMatrices.size())
 			{
-				_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneIndex]);
+				_matrix Par = XMLoadFloat4x4(&boneMatrices[m_iBoneIndex]);
+
 				for (uint32_t i = 0; i < 3; ++i)
-				{
 					Par.r[i] = XMVector3Normalize(Par.r[i]);
-				}
-				XMStoreFloat4x4(&m_CurWorldmat, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+
+				XMStoreFloat4x4(&m_CurWorldmat,Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
 				if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
 				{
 					if (!pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
@@ -158,27 +161,23 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 						
 						XMStoreFloat3(&m_vEndLook, XMVector3Normalize(vSrcPos - vDestPos));
 						XMStoreFloat3(&m_vStartLook, XMVector3Normalize(XMLoadFloat3(&m_vStartLook)));
-				
+					
 					}
 					else if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
 					{
-						_matrix matWorld = XMLoadFloat4x4(&m_CurWorldmat);
 
-						_float3 vScale = _float3(XMVectorGetX(XMVector3Length(matWorld.r[0])), XMVectorGetX(XMVector3Length(matWorld.r[1])),
-							XMVectorGetX(XMVector3Length(matWorld.r[2])));
+						m_fDeadTime += fTimeDelta;
+						_float3 vPos = {};
+						memcpy(&vPos, reinterpret_cast<_float*>(&m_Offsetmat.m[3]), sizeof _float3);
 
-						_vector vCurrentLook = XMVectorLerp(XMLoadFloat3(&m_vStartLook), XMLoadFloat3(&m_vEndLook), 0.5f);
+						vPos.y -= 100.f * fTimeDelta;
+						memcpy(reinterpret_cast<_float*>(&m_Offsetmat.m[3]),&vPos, sizeof _float3);
 
-						_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0.f, 1.f, 0.f,0.f), vCurrentLook));
-						_vector vUp    = XMVector3Normalize(XMVector3Cross(vCurrentLook, vRight));
-
-						matWorld.r[0] = vRight * vScale.x;
-						matWorld.r[1] = vUp * vScale.y;
-						matWorld.r[2] = vCurrentLook * vScale.z;
-						
-						matWorld.r[3] = matWorld.r[3] * 10.f *fTimeDelta;
-						XMStoreFloat4x4(&m_CurWorldmat, matWorld);
+						XMStoreFloat4x4(&m_CurWorldmat,  XMLoadFloat4x4(&m_CurWorldmat) * XMLoadFloat4x4(&m_Offsetmat));
 					}
+
+					if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+						m_bHit = true;
 				}
 				
 				

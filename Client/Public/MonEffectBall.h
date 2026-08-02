@@ -38,15 +38,16 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
+	void		Reset_Active() { m_bHit = false; }
 private:
 	void		OverlapTest();
 	void		Chase(_float fTimeDelta);
 private:
-	_float		m_fDamage{};
+	_float		m_fDamage{}, m_fDeadTime{};
 	_float3		m_vStartLook{}, m_vEndLook{}, m_vPos{};
 
 
-	_float4x4 m_CurWorldmat{};
+	_float4x4 m_CurWorldmat{}, m_Offsetmat{};
 	uint32_t m_iBoneIndex{}, m_iEffectID{};
 	CHandle m_hParent{}, m_hTarget{};
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
