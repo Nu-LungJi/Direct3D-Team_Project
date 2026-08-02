@@ -33,6 +33,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_RepairoSkill_State.h"
+#include "Monster.h"
 
 #ifdef _DEBUG
 namespace
@@ -547,130 +548,45 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
 	{
-		{
-			//CGameInstance::Get().GetPhysXManager()->RayCast()
-
-		//if(false)
-		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
-		//{
-		//	std::vector< PX_RAYCAST_RESULT> results{};
-		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
-
-		//	//CGameInstance::Get().GetDbgLineRender()->AddRay()
-
-		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-		//	CGameInstance::Get().GetDbgLineRender()->AddRay(
-		//		ori,
-		//		dir,
-		//		100.f);
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-
-		//	if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = dir, .fMaxDistance = 100.f,
-		//	.tFilter = {.hIgnoreGameObject = GetHandle() } }, results))
-		//	{
-		//		for (const auto& result : results)
-		//		{
-		//			const auto hit = result.vHitpos;
-		//			const auto normalEnd = _float3{
-		//				hit.x + result.vHitNormal.x,
-		//				hit.y + result.vHitNormal.y,
-		//				hit.z + result.vHitNormal.z
-		//			};
-		//			//CGameInstance::Get().GetDbgLineRender()->AddLine(
-		//			//	hit,
-		//			//	normalEnd,
-		//			//	{ 0.f, 1.f, 0.f, 1.f });
-
-
-		//		}
-		//	}
-		//}
-
-
-		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
-		//{
-		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
-		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-		//	CGameInstance::Get().GetDbgLineRender()->AddSphere(10.f, XMMatrixTranslation(ori.x, ori.y, ori.z));
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-
-		//	std::vector<PX_OVERLAP_RESULT> results{};
-		//	if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 10.f}, .tPose = {.vPosition = ori} }, results))
-		//	{
-		//		for (const auto& result : results)
-		//		{
-		//		}
-		//	}
-		//}
-		}
-		
+		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		//  가까이 있는거 한번 더 감지 
 			auto ori = m_pComTransform->GetPosition();
-		if (false) {
-			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-		}
 
 
 		std::vector<PX_OVERLAP_RESULT> results{};
 		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 		{
 			const auto& result = results.front();
+			m_hPrevAutoTarget = m_hAutoTarget;
 			m_hAutoTarget = result.pGameObject->GetHandle();
+		}
+		else
+		{
+			m_hPrevAutoTarget = m_hAutoTarget;
+			m_hAutoTarget = CHandle{};
+			pUIController->DeleteMonsterHP();
+			
 		}
 	}
 	else {
+		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
-				auto ori = m_pComTransform->GetPosition();
-			if (false) {
-				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-				CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
-				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-
-			}
+			auto ori = m_pComTransform->GetPosition();
+		
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 				const auto& result = results.front();
+				m_hPrevAutoTarget = m_hAutoTarget;
 				m_hAutoTarget = result.pGameObject->GetHandle();
 			}
 		}
 
 		if (pTarget) {
 			auto ori = m_pComTransform->GetPosition();
-			if (false) {
-				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-
-				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
-				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(40.f, matrix);
-				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-			}
 
 
 			std::vector<PX_OVERLAP_RESULT> results{};
@@ -681,11 +597,25 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 			if (!bTargetStillInRange)
 			{
+				m_hPrevAutoTarget = m_hAutoTarget;
 				m_hAutoTarget = CHandle{};
+				pUIController->DeleteMonsterHP();
 			}
 		}
 	}
 
+	// 충돌/타겟 판정은 그대로 두고, 감지 상태가 바뀌는 순간에만 UI를 토글한다.
+	if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		const _bool bMonsterDetected = nullptr != CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+
+		if ((bMonsterDetected != m_bMonsterHPDetected && m_hAutoTarget != CHandle{}) )
+		{
+			pUIController->TargetMonsterHP(m_hAutoTarget);
+	
+			m_bMonsterHPDetected = bMonsterDetected;
+		}
+	}
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
 	{

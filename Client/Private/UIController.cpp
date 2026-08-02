@@ -525,6 +525,17 @@ void CUIController::UpdateMonsterHP()
 	}
 }
 
+void CUIController::DeleteMonsterHP()
+{
+	if(m_MonsterHP != std::nullopt && E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	{
+		const CHandle hMonsterHP = *m_MonsterHP;
+		m_bMonsterHP = false;
+		m_MonsterHP = std::nullopt;
+		PlayMonsterHPDelete(hMonsterHP);
+	}
+}
+
 void CUIController::AddMonsterHP(_float fill)
 {
 	if (std::nullopt == m_MonsterHP || nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
@@ -650,10 +661,8 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 			pBtn->CalcUICoord();
-		}, [pHandle, this]() {
+		}, [pHandle]() {
 			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			this->SetMonsterHPBool(true);
-			this->SetMonsterHPNull();
 			}, EEaseType::EaseOutQuad);
 }
 
