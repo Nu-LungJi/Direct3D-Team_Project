@@ -562,8 +562,8 @@ void CGameInstance::SetMouseFix(_bool mousefix)
 {
 	m_bMouseFix = mousefix;
 
-	if(m_bMouseFix)
-		ShowCursor(FALSE);
+	//if(m_bMouseFix)
+	//	ShowCursor(FALSE);
 }
 
 
