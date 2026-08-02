@@ -91,7 +91,7 @@ namespace Client
 	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO,END};
 	enum class MONSTER_TYPE{NORMAL,ELITE, BOSS};
 
-enum class PARTES { WEAPON, END };
+enum class PARTES { WEAPON,EFFECT, END };
 }
 
 template <>

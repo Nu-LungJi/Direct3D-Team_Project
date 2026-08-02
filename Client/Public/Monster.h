@@ -106,6 +106,8 @@ public:
 	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 
+
+	virtual void						Skill_Finished();
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 protected:
@@ -147,14 +149,14 @@ protected:
 	int32_t								m_iHp{}, m_iMaxHp{};
 	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};
 	_string								m_SocketName{}, m_CurEffectName{};
-	ATTMON								m_eAttType{};
+	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };
 
 	_bool								m_bPending{ false };
 	MON_HIT_INFO						m_PendingMonTable{};
 
 	_bool								m_bActiveHit{ false };
 	MON_HIT_INFO						m_ActiveMonTable{};
-
+	
 	MONSTER_TYPE						m_eMonType{ MONSTER_TYPE::NORMAL };
 	std::vector<E::SPAWN_COMMAND>		m_Effects[ETOUI(ATTMON::END)];
 	CHandle								m_TargetHandle{};

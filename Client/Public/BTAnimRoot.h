@@ -29,9 +29,9 @@ public:
 	void					Abort() override;
 	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
-	
+
+	_bool				Active_Skill();
 protected:
-	void				Active_Skill();
 	void				EventFlagToRatio(_float fRatio);
 	void				Gravity();
 	
