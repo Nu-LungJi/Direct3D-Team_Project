@@ -40,6 +40,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 	}
 
+	//GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
+
 	auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 	{
