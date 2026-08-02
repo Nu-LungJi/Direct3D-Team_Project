@@ -46,7 +46,7 @@
 
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
-#include "Mon_Weapon.h"
+#include "GurdianWeapon.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
@@ -68,7 +68,10 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			{
 				return false;
 			}
-
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Bridge/SK_Bridge.bin"))) {
 
@@ -455,14 +458,14 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Model_Resource_TMBGurdian");
+				MSG_BOX("CHARLES_ROOKWOOD Failed Model_Resource_TMBGurdian");
 				return E_FAIL;
 			}
 		}
 
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
 		{
-			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
+			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TMBGurdian");
 			return E_FAIL;
 		}
 
@@ -482,14 +485,14 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 
 				if (FAILED(res->Load(pDesc)))
 				{
-					MSG_BOX("LEVEL_CREATURE Failed Static_Med_Debris");
+					MSG_BOX("CHARLES_ROOKWOOD Failed Static_Med_Debris");
 				}
 			}
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(
 			LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
 		{
-			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
+			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TmbGurdianDead");
 			return E_FAIL;
 		}
 	}
@@ -504,7 +507,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Static_Axe_Model_Resource");
+				MSG_BOX("CHARLES_ROOKWOOD Failed Static_Axe_Model_Resource");
 				return E_FAIL;
 			}
 		}
@@ -516,7 +519,7 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Static_Sword_Model_Resource");
+				MSG_BOX("CHARLES_ROOKWOOD Failed Static_Sword_Model_Resource");
 				return E_FAIL;
 			}
 		}
@@ -528,23 +531,23 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("LEVEL_CREATURE Failed Static_Mace_Model_Resource");
+				MSG_BOX("CHARLES_ROOKWOOD Failed Static_Mace_Model_Resource");
 				return E_FAIL;
 			}
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CMon_Weapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CGurdianWeapon::Create())))
 		{
-			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Axe");
+			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Axe");
 			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CGurdianWeapon::Create())))
 		{
-			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
+			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Sword");
 			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CGurdianWeapon::Create())))
 		{
-			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
+			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Mace");
 			return E_FAIL;
 		}
 	}

@@ -34,6 +34,7 @@ protected:
 	void				Active_Skill();
 	void				EventFlagToRatio(_float fRatio);
 	void				Gravity();
+	
 protected:
 	void				Reset_CheckFlag();
 private:

@@ -33,20 +33,6 @@ HRESULT CUIController::Initialize(void* pArg)
 	ActivePlayScreen = true;
 	
 	{
-
-	}
-
-	return S_OK;
-}
-
-void CUIController::PriorityUpdate(E::_float fTimeDelta)
-{	
-}
-
-void CUIController::Update(E::_float fTimeDelta)
-{
-	if (!CursorCreate)
-	{
 		auto clientSize = CGameInstance::Get().GetClientScreenSize();
 		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
@@ -63,6 +49,41 @@ void CUIController::Update(E::_float fTimeDelta)
 		Desc.ResWeight = 1000;
 
 		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
+
+		/****페이드인*****/
+		PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
+	}
+
+	return S_OK;
+}
+
+void CUIController::PriorityUpdate(E::_float fTimeDelta)
+{	
+}
+
+void CUIController::Update(E::_float fTimeDelta)
+{
+	if (!CursorCreate)
+	{
+		//auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		//std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+		//
+		//CCursor::UIOBJECT_DESC Desc{};
+		//
+		//Desc.sObjectTag = "Cursor";
+		//Desc.Name = "Cursor";
+		//Desc.fSizeX = 64.f;
+		//Desc.fSizeY = 64.f;
+		//Desc.fX = clientSize.x * 0.5f;
+		//Desc.fY = clientSize.y * 0.5f;
+		//Desc.fAlpha = 1.f;
+		//Desc.UIType = ETOUI(UI_TYPE::CURSOR);
+		//Desc.ResWeight = 1000;
+		//
+		//m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
+		//
+		///****페이드인*****/
+		//PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
 
 		CursorCreate = true;
 	}
@@ -107,7 +128,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		UsePotion();
 	}
 	// ************** 스펠슬롯
-	if (E::CGameInstance::Get().KeyDown(DIK_B))
+	if (E::CGameInstance::Get().KeyDown(DIK_B) && E::CGameInstance::Get().KeyPressing(DIK_LCONTROL))
 	{
 		ActiveShortCutSlot ? ActiveShortCutSlot = false : ActiveShortCutSlot = true;
 		if (ActiveShortCutSlot)
@@ -164,8 +185,8 @@ void CUIController::CreatePlayScreen()
 {
 	/*******플레이어 체력*******/
 	m_PlayerHP = GET_SINGLE(UIManager)->LoadPrefab("PlayerHP").front();
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(1000.f);
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(1000.f);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(100.f);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(100.f);
 	/*******피니셔*******/
 	m_Finisher[0] = GET_SINGLE(UIManager)->LoadPrefab("Finisher1").front();
 	m_Finisher[1] = GET_SINGLE(UIManager)->LoadPrefab("Finisher2").front();
@@ -324,6 +345,7 @@ void CUIController::SetHPMax(_float maxHP)
 		static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(maxHP);
 	}
 }
+
 
 void CUIController::AddHP(_float amoutFill)
 {
@@ -536,7 +558,7 @@ void CUIController::PlayScaleAlphaDownDelete(CHandle pHandle)
 			}, nullptr, EEaseType::EaseOutQuad);
 }
 
-void CUIController::PlayFadeOutDelete(CHandle pHandle)
+void CUIController::PlayFadeOutDelete(CHandle pHandle, float delaytime, float playtime)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();
@@ -545,12 +567,12 @@ void CUIController::PlayFadeOutDelete(CHandle pHandle)
 
 	_float Alpah = pBtn->GetAlpha();
 
-	pTween->PlayTween(1.f, 0.f, 0.3f,
+	pTween->PlayTween(1.f, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			}, EEaseType::EaseOutQuad);
+			}, EEaseType::EaseOutQuad, delaytime);
 }
 
 void CUIController::PlayFadeOutOnly(CHandle pHandle)

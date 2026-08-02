@@ -7,7 +7,8 @@ class  ENGINE_DLL CComBeHavior : public CComponent
 public:		
 	typedef struct tagbehaviordesc : public CComponent::DESC
 	{
-		_string OwnerName{}, LoadPath{};
+		_string OwnerName{}, LoadPath{}, resBeHaviorMajor{}, resBeHaviorMinor{};
+	
 	}BEHAVIOR_DESC;
 public:
 	DECLARE_DERIVED_TYPE(CComBeHavior, CComponent)
@@ -27,6 +28,7 @@ private:
 public:
 	HRESULT					Save_Data(const _string& filePath);
 	HRESULT					Load_Data(const _string& filePath);
+	HRESULT					Load_DataByResource(const _string& restagMajor, const _string& restagMinor);
 public:
 	void					Update(_float fTimeDelta);					
 	void					UpdateGUI()	override;

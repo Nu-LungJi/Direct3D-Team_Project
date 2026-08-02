@@ -29,6 +29,11 @@ HRESULT CModel_Instance_Manager::Initialize()
 	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
 	if (!m_pResSkinMeshCBuffer)		return E_FAIL;
 
+	m_ShadowFilteredInstances.reserve(MAX_INSTANCE_COUNT);
+	m_ShadowVisibleSourceIndices.reserve(MAX_INSTANCE_COUNT);
+
+	m_ShadowBonePaletteScratch.resize(static_cast<size_t>(MAX_INSTANCE_COUNT) * MAX_BONE_COUNT);
+
 	return S_OK;
 }
 
@@ -57,15 +62,10 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 		return;
 
 	GPU_ANIM_INSTANCE_DATA InstanceData{};
-
 	InstanceData.WorldMatrix = WorldMatrix;
-
 	InstanceData.iAnimIndex = iAnimIndex;
-
 	InstanceData.iFlags = iFlags;
-
 	InstanceData.fTrackPosition = AnimState.fTrackPosition;
-
 	InstanceData.iRootBoneIndex = pAnimator->GetRootBoneIndex();
 	
 	if (pAnimator->IsBlending())
@@ -78,11 +78,10 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	}
 
 	const auto eAnimatorMode = pAnimator->GetEvaluationMode();
-	// CPU 단독 모드는 구현 보존용이다. 소환·배치는 CPU+GPU 스키닝 경로로 정규화한다.
 	const uint32_t iEvaluationMode = static_cast<uint32_t>(eAnimatorMode == CComAnimator::EVALUATION_MODE::CPU? CComAnimator::EVALUATION_MODE::CPU_GPU: eAnimatorMode);
+	
 	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, false, iEvaluationMode);
-	if (!pBatch)
-		return;
+	if (!pBatch) return;
 
 	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
 	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
@@ -91,6 +90,20 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 
 	pBatch->Instances.push_back(InstanceData);
 	pBatch->CombinedBoneMatrices.push_back(pModelInstance->Get_CombinedBoneMatrices());
+
+	/*----------- 광윤 추가 -----------*/
+	std::optional<BoundingBox>	ShadowBounds;
+
+	if (CGameObject* pObject = pModelInstance->GetGameObject()) {
+		BoundingBox Bounds{};
+
+		if (pObject->GetShadowBounds(Bounds))
+			ShadowBounds = Bounds;
+	}
+
+	pBatch->ShadowBounds.push_back(ShadowBounds);
+	/*---------------------------------*/
+
 	++m_iTotalInstanceCount;
 	if (!pBatch->bActiveThisFrame)
 	{
@@ -315,7 +328,9 @@ MODEL_INSTANCE_BATCH* CModel_Instance_Manager::Find_Or_Create_Batch(CComStaticMo
 	// ?몄뒪??�뒪 媛쒖???????�?�?
 	pBatch->Instances.reserve(16);
 	pBatch->CombinedBoneMatrices.reserve(16);
-
+	/*----------- 광윤 추가 -----------*/
+	pBatch->ShadowBounds.reserve(16);
+	/*---------------------------------*/
 	MODEL_INSTANCE_BATCH* pBatchRaw = pBatch.get();
 
 	m_InstanceBatches.emplace(Key, std::move(pBatch));
@@ -332,7 +347,9 @@ void CModel_Instance_Manager::Clear_Frame()
 		pBatch->Instances.clear();
 		pBatch->PartInstances.clear();
 		pBatch->CombinedBoneMatrices.clear();
-
+		/*----------- 광윤 추가 -----------*/
+		pBatch->ShadowBounds.clear();
+		/*---------------------------------*/
 		pBatch->bActiveThisFrame = false;
 	}
 
@@ -430,18 +447,44 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 }
 
 /*----------- 광윤 추가 -----------*/
-HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, _bool bStaticBatch){
+HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch){
 	
+	if (!_LightHandle)	return E_FAIL;
+
+	auto pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(_LightHandle.value());
+	if (nullptr == pLight) return E_FAIL;
+
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
-		if (!pBatch ||
-			pBatch->Instances.empty() ||
-			pBatch->bModelStatic != bStaticBatch ||
-			pBatch->bGPUSkinned)
-			continue;
+		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != _bStaticBatch || pBatch->bGPUSkinned) continue;
+
+		m_ShadowFilteredInstances.clear();
+		m_ShadowVisibleSourceIndices.clear();
+
+		const size_t InstanceCount = pBatch->Instances.size();
+
+		for (size_t i = 0; i < InstanceCount; ++i) {
+			_bool bVisibleToLight = true;
+			if (i < pBatch->ShadowBounds.size()) {
+				const auto& Bounds = pBatch->ShadowBounds[i];
+
+				if (Bounds.has_value())	bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
+			}
+
+			if (!bVisibleToLight)	continue;
+
+			if (m_ShadowFilteredInstances.size() >= MAX_INSTANCE_COUNT)	return E_FAIL;
+
+			m_ShadowFilteredInstances.push_back(pBatch->Instances[i]);
+
+			m_ShadowVisibleSourceIndices.push_back(static_cast<uint32_t>(i));
+
+		}
+
+		if (m_ShadowFilteredInstances.empty())	continue;
 
 		if (FAILED(Render_ShadowBatch(pContext, *pBatch))) {
-			ID3D11ShaderResourceView* pNullSRVs[3]{ };
-			pContext->VSSetShaderResources(6, 3, pNullSRVs);
+			ID3D11ShaderResourceView* NullSRVs[3]{};
+			pContext->VSSetShaderResources(6, 3, NullSRVs);
 
 			return E_FAIL;
 		}
@@ -450,24 +493,25 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 	return S_OK;
 }
 HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch){
-	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
-	if (iInstanceCount == 0 || iInstanceCount > MAX_INSTANCE_COUNT || Batch.CombinedBoneMatrices.size() != iInstanceCount)	return E_FAIL;
-
-	//if (Batch.CombinedBoneMatrices.size() != 512)	return E_FAIL;
+	const uint32_t iInstanceCount = static_cast<uint32_t>(m_ShadowFilteredInstances.size());
+	if (iInstanceCount == 0 || iInstanceCount > MAX_INSTANCE_COUNT || m_ShadowVisibleSourceIndices.size() != iInstanceCount)	return E_FAIL;
 
 	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
 	if (nullptr == pModel) return E_FAIL;
 
-	if (FAILED(Update_ShadowInstanceBuffer(pContext, Batch)))	return E_FAIL;
+	const uint32_t BoneStride = static_cast<uint32_t>(pModel->GetBones().size());
 
-	if (FAILED(Update_BonePaletteBuffer(pContext, Batch)))		return E_FAIL;
+	if (BoneStride == 0 || BoneStride > MAX_BONE_COUNT)	return E_FAIL;
 
-	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
-	{
+	if (FAILED(Update_ShadowInstanceBuffer(pContext)))	return E_FAIL;
+
+	if (FAILED(Update_BonePaletteBuffer(pContext, Batch, BoneStride)))		return E_FAIL;
+
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex) {
 		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
 		if (nullptr == mesh)	continue;
 
-		if (FAILED(Bind_SkinMeshConstantBuffer(pContext, pModel, iMeshIndex)))	return E_FAIL;
+		if (FAILED(Bind_SkinMeshConstantBuffer(pContext, pModel, iMeshIndex, BoneStride)))	return E_FAIL;
 
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
@@ -485,65 +529,72 @@ HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContex
 	return S_OK;
 }
 
-HRESULT CModel_Instance_Manager::Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch) {
-	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
-	if (iInstanceCount == 0 || iInstanceCount > MAX_INSTANCE_COUNT || Batch.CombinedBoneMatrices.size() != iInstanceCount)	return E_FAIL;
+HRESULT CModel_Instance_Manager::Update_BonePaletteBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch, uint32_t BoneStride) {
+	const uint32_t InstanceCount = static_cast<uint32_t>(m_ShadowFilteredInstances.size());
+	if (InstanceCount == 0 || InstanceCount > MAX_INSTANCE_COUNT || m_ShadowVisibleSourceIndices.size() != InstanceCount)	return E_FAIL;
 
 	auto pBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
 	if (!pBonePaletteBuffer)		return E_FAIL;
 
-	_float4x4 Identity{};
-	XMStoreFloat4x4(&Identity, XMMatrixIdentity());
+	const size_t RequiredMatrixCount = static_cast<size_t>(InstanceCount) * BoneStride;
 
-	std::vector<_float4x4> CombinedPalette(static_cast<size_t>(iInstanceCount) * MAX_BONE_COUNT, Identity);
+	if (RequiredMatrixCount > m_ShadowBonePaletteScratch.size())	return E_FAIL;
 
-	for (uint32_t iInstanceIndex = 0; iInstanceIndex < iInstanceCount; ++iInstanceIndex) {
-		const auto& CombinedMatrixList = Batch.CombinedBoneMatrices[iInstanceIndex];
+	for (uint32_t FilteredIndex = 0; FilteredIndex < InstanceCount; ++FilteredIndex) {
+		const uint32_t iSourceIndex = m_ShadowVisibleSourceIndices[FilteredIndex];
+		if (iSourceIndex >= Batch.CombinedBoneMatrices.size())	return E_FAIL;
 
-		if (CombinedMatrixList.empty() || CombinedMatrixList.size() > MAX_BONE_COUNT)	return S_OK;
+		const auto& CombinedMatrixList = Batch.CombinedBoneMatrices[iSourceIndex];
 
-		const size_t iPaletteOffset = static_cast<size_t>(iInstanceIndex) * MAX_BONE_COUNT;
+		if (CombinedMatrixList.size() != BoneStride) return E_FAIL;
 
-		for (uint32_t iBoneIndex = 0; iBoneIndex < CombinedMatrixList.size(); ++iBoneIndex) {
-			XMStoreFloat4x4(&CombinedPalette[iPaletteOffset + iBoneIndex], XMMatrixTranspose(XMLoadFloat4x4(&CombinedMatrixList[iBoneIndex])));
-		}
+		const size_t PaletteOffset = static_cast<size_t>(FilteredIndex) * BoneStride;
+
+		for (uint32_t iBoneIndex = 0; iBoneIndex < CombinedMatrixList.size(); ++iBoneIndex) 
+			XMStoreFloat4x4(&m_ShadowBonePaletteScratch[PaletteOffset + iBoneIndex], XMMatrixTranspose(XMLoadFloat4x4(&CombinedMatrixList[iBoneIndex])));
 	}
-	ID3D11ShaderResourceView* nullSRV = nullptr;
-	pContext->VSSetShaderResources(7, 1, &nullSRV);
+	{
+		ID3D11ShaderResourceView* NullSRV = nullptr;
+		pContext->VSSetShaderResources(7, 1, &NullSRV);
 
-	if (FAILED(pBonePaletteBuffer->UpdateData(CombinedPalette.data(), static_cast<uint32_t>(CombinedPalette.size() * sizeof(_float4x4)))))		return E_FAIL;
+		const uint32_t ByteSize = static_cast<uint32_t>(RequiredMatrixCount * sizeof(_float4x4));
 
-	ComPtr<ID3D11ShaderResourceView> pBonePaletteSRV = pBonePaletteBuffer->GetSRV();
-	if (nullptr == pBonePaletteSRV)	return E_FAIL;
+		if (FAILED(pBonePaletteBuffer->UpdateData(m_ShadowBonePaletteScratch.data(), static_cast<uint32_t>(ByteSize))))		return E_FAIL;
 
-	pContext->VSSetShaderResources(7, 1, pBonePaletteSRV.GetAddressOf());
+		ComPtr<ID3D11ShaderResourceView> pBonePaletteSRV = pBonePaletteBuffer->GetSRV();
+		if (nullptr == pBonePaletteSRV)	return E_FAIL;
 
+		pContext->VSSetShaderResources(7, 1, pBonePaletteSRV.GetAddressOf());
+	}
+	
 	return S_OK;
 }
 
-HRESULT CModel_Instance_Manager::Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch) {
-
-	if (Batch.Instances.empty() || Batch.Instances.size() > MAX_INSTANCE_COUNT)	return E_FAIL;
+HRESULT CModel_Instance_Manager::Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext) {
+	const size_t InstanceCount = m_ShadowFilteredInstances.size();
+	if (InstanceCount == 0 || InstanceCount > MAX_INSTANCE_COUNT)	return E_FAIL;
 
 	auto Buffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 	if (nullptr == Buffer || nullptr == Buffer->GetBuffer())	return E_FAIL;
+	
+	const uint32_t ByteSize = sizeof(GPU_ANIM_INSTANCE_DATA) * static_cast<uint32_t>(InstanceCount);
 
-	const uint32_t ByteSize = sizeof(GPU_ANIM_INSTANCE_DATA) * static_cast<uint32_t>(Batch.Instances.size());
+	{
+		ComPtr<ID3D11ShaderResourceView> NullSRV = nullptr;
+		pContext->VSSetShaderResources(6, 1, NullSRV.GetAddressOf());
 
-	ID3D11ShaderResourceView* nullSRV = nullptr;
-	pContext->VSSetShaderResources(6, 1, &nullSRV);
+		if (FAILED(Buffer->UpdateData(m_ShadowFilteredInstances.data(), ByteSize)))	return E_FAIL;
 
-	if (FAILED(Buffer->UpdateData(Batch.Instances.data(), ByteSize))) return E_FAIL;
+		ComPtr<ID3D11ShaderResourceView> SRV = Buffer->GetSRV();
+		if (nullptr == SRV)	return E_FAIL;
 
-	ComPtr<ID3D11ShaderResourceView> SRV = Buffer->GetSRV();
-	if (nullptr == SRV) return E_FAIL;
-
-	pContext->VSSetShaderResources(6, 1, SRV.GetAddressOf());
-
+		pContext->VSSetShaderResources(6, 1, SRV.GetAddressOf());
+	}
+	
 	return S_OK;
 }
 
-HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex) {
+HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<CResModel>& Model, uint32_t MeshIndex, uint32_t BoneStride) {
 	if (MeshIndex >= Model->Get_NumMeshes())	return E_FAIL;
 
 	const auto& mesh = Model->GetMeshes()[MeshIndex];
@@ -553,11 +604,13 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 	if (skinRange.iSkinBoneCount == 0)
 		return E_FAIL;
 
+	if (BoneStride == 0 || BoneStride > MAX_BONE_COUNT)	return E_FAIL;
+
 	E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
 	skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 	skinningConstants.iVertexCount = mesh->GetNumVertices();
 	skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
-
+	skinningConstants.iBonePaletteStride = BoneStride;
 	auto SKM_CB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 	if (!SKM_CB) return E_FAIL;
 
@@ -567,6 +620,7 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 		memcpy(MRES.pData, &skinningConstants, sizeof(skinningConstants));
 		pContext->Unmap(SKM_CB, 0);
 	}
+	else { return E_FAIL; }
 	pContext->VSSetConstantBuffers(5, 1, &SKM_CB);
 
 	ID3D11ShaderResourceView* pSkinBonesSRV = Model->Get_GPUSkinBoneSRV();
@@ -576,6 +630,17 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 	pContext->VSSetShaderResources(8, 1, &pSkinBonesSRV);
 
 	return S_OK;
+}
+_bool CModel_Instance_Manager::Has_ActiveDynamicShadowBatch() {
+	for (const MODEL_INSTANCE_BATCH* Batch : m_ActiveBatches)
+	{
+		if (nullptr == Batch || Batch->Instances.empty() || Batch->bModelStatic || Batch->bGPUSkinned)
+			continue;
+
+		return true;
+	}
+
+	return false;
 }
 /*---------------------------------*/
 
