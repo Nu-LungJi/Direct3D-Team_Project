@@ -163,6 +163,12 @@
     <Filter Include="Loader\Level\Terrain">
       <UniqueIdentifier>{92f95264-506b-47ea-a584-f48e1d691bb5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\UIEditor">
+      <UniqueIdentifier>{b377960a-c4f6-48a8-83fd-a3fdb9bb8213}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\UIEditor">
+      <UniqueIdentifier>{b94e8845-2a15-4b9d-869d-7866fb4f5a41}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Terrain">
       <UniqueIdentifier>{84ffd718-2e24-44f4-bdb5-089cd24097d1}</UniqueIdentifier>
     </Filter>
@@ -473,6 +479,12 @@
     </ClInclude>
     <ClInclude Include="..\public\LevelTerrainLoader.h">
       <Filter>Loader\Level\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditor.h">
+      <Filter>Level\UIEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\LevelUIEditorLoader.h">
+      <Filter>Loader\Level\UIEditor</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ResTerrainVIBuffer.h">
       <Filter>Resources\Buffer</Filter>
@@ -791,6 +803,12 @@
     </ClCompile>
     <ClCompile Include="..\private\LevelTerrainLoader.cpp">
       <Filter>Loader\Level\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelUIEditor.cpp">
+      <Filter>Level\UIEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\LevelUIEditorLoader.cpp">
+      <Filter>Loader\Level\UIEditor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp">
       <Filter>Resources\Buffer</Filter>

@@ -17,6 +17,9 @@
 #include "LevelTerrain.h"
 #include "LevelTerrainLoader.h"
 
+#include "LevelUIEditor.h"
+#include "LevelUIEditorLoader.h"
+
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -45,6 +48,8 @@ HRESULT CLevelLoading::Initialize()
 		m_ePreviousLevelIndex = static_cast<LEVEL>(iCurrentLevelID);
 
 	Engine::CGameInstance::Get().GameObjectAllReset();
+
+	//GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -212,6 +217,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::TERRAIN:
 		pNewLevel = CLevelTerrain::Create();
 		break;
+	case LEVEL::UIEDITOR:
+		pNewLevel = CLevelUIEditor::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -245,6 +253,9 @@ void CLevelLoading::StartUnload()
 		break;
 	case LEVEL::TERRAIN:
 		m_futUnloadFinish = CLevelTerrainLoader::UnLoad();
+		break;
+	case LEVEL::UIEDITOR:
+		m_futUnloadFinish = CLevelUIEditorLoader::UnLoad();
 		break;
 	default:
 		StartLoad();
@@ -286,6 +297,9 @@ void CLevelLoading::StartLoad()
 		break;
 	case LEVEL::TERRAIN:
 		m_futLoadFinish = CLevelTerrainLoader::Load();
+		break;
+	case LEVEL::UIEDITOR:
+		m_futLoadFinish = CLevelUIEditorLoader::Load();
 		break;
 	default:
 		m_ePhase = PHASE::COMPLETE;

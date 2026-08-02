@@ -253,6 +253,8 @@
     <ClInclude Include="..\public\LevelCharlesRookwoodLoader.h" />
     <ClInclude Include="..\public\LevelTerrain.h" />
     <ClInclude Include="..\public\LevelTerrainLoader.h" />
+    <ClInclude Include="..\Public\LevelUIEditor.h" />
+    <ClInclude Include="..\Public\LevelUIEditorLoader.h" />
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
@@ -363,6 +365,8 @@
     <ClCompile Include="..\private\LevelCharlesRookwoodLoader.cpp" />
     <ClCompile Include="..\private\LevelTerrain.cpp" />
     <ClCompile Include="..\private\LevelTerrainLoader.cpp" />
+    <ClCompile Include="..\Private\LevelUIEditor.cpp" />
+    <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />

@@ -120,7 +120,7 @@ private:
 
 	/**********모션************/
 	void PlayScaleAlphaDownDelete(CHandle pHandle);
-	void PlayFadeOutDelete(CHandle pHandle);
+	void PlayFadeOutDelete(CHandle pHandle, float delaytime = 0.f, float playtime = 0.3f);
 	void PlayFadeOutOnly(CHandle pHandle);
 	void PlayFadeInOnly(CHandle pHandle);
 	void PlayMonsterHPDelete(CHandle pHandle);

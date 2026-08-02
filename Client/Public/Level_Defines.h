@@ -10,5 +10,6 @@ namespace Client
 		TERRAIN,
 		CHARLES_ROOKWOOD,
 		BOSS_CHARLES_ROOKWOOD,
+		UIEDITOR,
 	};
 }

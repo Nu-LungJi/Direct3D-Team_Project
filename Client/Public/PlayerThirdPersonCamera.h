@@ -74,6 +74,9 @@ private:
 private:
 	_float CAMERA_TARGET_OFFSET_Y = 1.5f;
 
+public:
+	CHandle GetTargetHandle() const { return m_hTarget; }
+
 private:
 	_float CAMERA_COLLISION_RADIUS = 0.3f;
 	_float CAMERA_COLLISION_PADDING = 0.05f;
