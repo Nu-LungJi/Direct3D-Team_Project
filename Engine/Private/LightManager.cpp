@@ -346,6 +346,8 @@ VOID CLightManager::Update(_float fTimeDelta) {
 HRESULT CLightManager::Capture_ShadowMap() {
 	ZoneScopedN("Capture_ShadowMap");
 	{
+		++m_iShadowFrameIndex;
+
 		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
 		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
 		
@@ -399,6 +401,10 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RENDER_CTX RCTX{};
 			RCTX.pass = RENDERPASS::SHADOW;
 
+			const _bool bForceDynamicUpdate = LightOBJ->Is_StaticDirty();
+			const _bool bUpdateDynamicThisFrame = bForceDynamicUpdate ||
+				((m_iShadowFrameIndex + static_cast<uint64_t>(ShadowSlot)) % 2ull == 0ull);
+
 			if (LightOBJ->Is_StaticDirty()) {
 				auto StaticDIRDSV = m_pStaticPointShadowList.DSVList[ShadowSlot];
 				if (StaticDIRDSV) {
@@ -413,7 +419,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				}
 			}
 
-			if (LightOBJ->Is_DynamicDirty()) {
+			if (LightOBJ->Is_DynamicDirty() && bUpdateDynamicThisFrame) {
 				auto DynamicDIRDSV = m_pDynamicPointShadowList.DSVList[ShadowSlot];
 				if (DynamicDIRDSV) {
 					m_pContext->ClearDepthStencilView(DynamicDIRDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
@@ -1381,39 +1387,64 @@ VOID	CLightManager::Update_LightData() {
 }
 
 VOID	CLightManager::Allocate_ShadowSlot(){
-	auto IsActiveShadowLight = [this](const std::optional<CHandle>& _Handle) {
-		return std::ranges::any_of(
-			m_pActiveShadowLightList, [&_Handle](const std::optional<CHandle>& _ActiveHandle) {
-				return _ActiveHandle && _ActiveHandle == _Handle;
+	constexpr uint32_t MAX_ACTIVE_POINT_SHADOWS = 2;
+	constexpr uint32_t MAX_ACTIVE_2D_SHADOWS = 3;
+	std::vector<std::optional<CHandle>> ShadowCandidates;
+	ShadowCandidates.reserve(MAX_ACTIVE_POINT_SHADOWS + MAX_ACTIVE_2D_SHADOWS);
+
+	uint32_t PointShadowCount = 0;
+	uint32_t Shadow2DCount = 0;
+
+	for (const auto& LightHandle : m_pActiveShadowLightList)
+	{
+		if (!LightHandle)	continue;
+
+		CLight* LightOBJ =CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+
+		if (!LightOBJ || !LightOBJ->Get_LightActivateState() || !LightOBJ->Get_LightShadowCast())	continue;
+
+
+		if (LightOBJ->Get_LightType() == LIGHT_TYPE::POINT) {
+			if (PointShadowCount >=	MAX_ACTIVE_POINT_SHADOWS)	continue;
+			++PointShadowCount;
+		}
+		else {
+			if (Shadow2DCount >= MAX_ACTIVE_2D_SHADOWS)			continue;
+			++Shadow2DCount;
+		}
+
+		ShadowCandidates.push_back(LightHandle);
+	}
+	auto IsShadowCandidate = [&ShadowCandidates](const std::optional<CHandle>& Handle) {
+			return std::find(ShadowCandidates.begin(), ShadowCandidates.end(), Handle) != ShadowCandidates.end();
+		};
+	auto ReleaseInvalidOwners = [this, &IsShadowCandidate](std::array<std::optional<CHandle>, MAX_SHADOW_LIGHT_COUNT>& Owners, _bool bPointSlot) {
+		for (uint32_t Slot = 0; Slot < MAX_SHADOW_LIGHT_COUNT; ++Slot) {
+			auto& Owner = Owners[Slot];
+
+			if (!Owner)	continue;
+
+			CLight* LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(Owner.value());
+
+			if (!LightOBJ) {
+				Owner.reset(); continue;
 			}
-		); };
 
-	auto ReleaseInvalidOwners = [this, &IsActiveShadowLight](std::array<std::optional<CHandle>, MAX_SHADOW_LIGHT_COUNT>& _Owners, _bool _PointSlot) {
-		for (uint32_t slot = 0; slot < MAX_SHADOW_LIGHT_COUNT; ++slot) {
-			auto& Owner = _Owners[slot];
-			if (!Owner) continue;
+			const _bool bCorrectType = bPointSlot ? LightOBJ->Get_LightType() == LIGHT_TYPE::POINT : LightOBJ->Get_LightType() != LIGHT_TYPE::POINT;
+			const _bool bKeepSlot = LightOBJ->Get_LightActivateState() && LightOBJ->Get_LightShadowCast() && bCorrectType && IsShadowCandidate(Owner);
 
-			auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(Owner.value());
-			if (nullptr == LightOBJ) { Owner.reset(); continue; }
+			if (bKeepSlot)	continue;
 
-			const _bool CorrectType = LightOBJ && (_PointSlot ? LightOBJ->Get_LightType() == LIGHT_TYPE::POINT : LightOBJ->Get_LightType() != LIGHT_TYPE::POINT);
-
-			const _bool Keep = LightOBJ->Get_LightActivateState() && LightOBJ->Get_LightShadowCast() &&
-				CorrectType && IsActiveShadowLight(Owner);
-
-			if (Keep) continue;
-
-			if (LightOBJ->Get_ShadowSlotNumb() == static_cast<int32_t>(slot))
-				LightOBJ->Set_ShadowSlotNumb(-1);
+			if (LightOBJ->Get_ShadowSlotNumb() == static_cast<int32_t>(Slot))	LightOBJ->Set_ShadowSlotNumb(-1);
 
 			Owner.reset();
-		}};
+		}
+	};
 
 	ReleaseInvalidOwners(m_PointShadowSlotOwners, true);
-
 	ReleaseInvalidOwners(m_2DShadowSlotOwners, false);
 
-	for (const auto& LightHandle : m_pActiveShadowLightList) {
+	for (const auto& LightHandle : ShadowCandidates) {
 		if (!LightHandle) continue;
 
 		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
@@ -1458,17 +1489,6 @@ VOID CLightManager::Invalidate_DynamicShadowMaps(){
 		LightOBJ->Set_DynamicDirty(true);
 	}
 }
-
-//VOID CLightManager::ReleaseInvalidPointShadowSlots()
-//{
-//
-//}
-//
-//VOID CLightManager::ReleaseInvalid2DShadowSlots()
-//{
-//
-//}
-
 
 UPtr<CLightManager> CLightManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) {
 	auto pInstance = ToUPtr(new CLightManager{ pDevice, pContext });

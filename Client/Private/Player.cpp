@@ -10,6 +10,7 @@
 #include "ComSocket.h"
 #include "DebugPlayer.h"
 #include "Collider.h"
+#include "CollBox.h"
 #include "ComPxRigidBody.h"
 #include "ComPxBoxCollider.h"
 #include "ComPxSphereCollider.h"
@@ -1422,6 +1423,27 @@ void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 }
+
+/*----------- 광윤 추가 -----------*/
+bool CPlayer::GetShadowBounds(BoundingBox& OutBounds) const
+{
+	if (!m_pComCollider || !m_pComCollider->Get())	return false;
+
+	CCollider* pCollider = m_pComCollider->Get();
+
+	if (pCollider->GetCollType() != CollType::Box)	return false;
+
+	const auto* pBox = static_cast<const CCollBox*>(pCollider);
+
+	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	OutBounds.Extents.x *= 1.25f;
+	OutBounds.Extents.y *= 1.25f;
+	OutBounds.Extents.z *= 1.25f;
+
+	return true;
+}
+/*---------------------------------*/
 
 E::UPtr<CPlayer> CPlayer::Create()
 {

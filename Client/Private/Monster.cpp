@@ -361,8 +361,6 @@ bool CMonster::GetShadowBounds(BoundingBox& OutBounds) const
 
 	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
 
-	// 애니메이션으로 팔·무기가 Bounds 밖으로
-	// 나가는 것을 막기 위한 보수적 확장
 	OutBounds.Extents.x *= 1.25f;
 	OutBounds.Extents.y *= 1.25f;
 	OutBounds.Extents.z *= 1.25f;

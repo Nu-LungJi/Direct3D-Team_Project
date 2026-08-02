@@ -1272,27 +1272,27 @@ HRESULT CGameInstanceInitLoader::LoadTexture()
 {
 	// 텍스쳐 없는 경우 대비, 대체 텍스쳐
 	{
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Diffuse.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Diffuse.dds")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Normal.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Normal.dds")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_SMRO.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_SMRO.dds")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Emissive.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_Emissive.dds")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultTex_White.dds")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}
-		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultNoise.png")))
+		if (auto res = E::CGameInstance::Get().AddResource("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/DefaultNoise.dds")))
 		{
 			if (FAILED(res->Load()))return E_FAIL;
 		}

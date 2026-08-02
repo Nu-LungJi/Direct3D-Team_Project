@@ -144,8 +144,6 @@ private:
 	SPtr<CResViewPort>					m_pDirectionalShadowViewPort{};
 	SPtr<CResViewPort>					m_pPointShadowViewPort{};
 
-	std::unordered_map<CHandle, BoundingBox> m_PreviousDynamicShadowBounds;
-
 	std::vector<IRenderable*>			m_pRenderable_StaticObjectList{};
 	std::vector<IRenderable*>			m_pRenderable_DynamicObjectList{};
 
@@ -166,6 +164,8 @@ private:
 
 	SHADOW_ARRAY_CUBE					m_pStaticPointShadowList{};
 	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
+
+	uint64_t m_iShadowFrameIndex{};
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

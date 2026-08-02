@@ -29,6 +29,11 @@ HRESULT CModel_Instance_Manager::Initialize()
 	m_pResSkinMeshCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH");
 	if (!m_pResSkinMeshCBuffer)		return E_FAIL;
 
+	m_ShadowFilteredInstances.reserve(MAX_INSTANCE_COUNT);
+	m_ShadowVisibleSourceIndices.reserve(MAX_INSTANCE_COUNT);
+
+	m_ShadowBonePaletteScratch.resize(static_cast<size_t>(MAX_INSTANCE_COUNT) * MAX_BONE_COUNT);
+
 	return S_OK;
 }
 
@@ -57,15 +62,10 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 		return;
 
 	GPU_ANIM_INSTANCE_DATA InstanceData{};
-
 	InstanceData.WorldMatrix = WorldMatrix;
-
 	InstanceData.iAnimIndex = iAnimIndex;
-
 	InstanceData.iFlags = iFlags;
-
 	InstanceData.fTrackPosition = AnimState.fTrackPosition;
-
 	InstanceData.iRootBoneIndex = pAnimator->GetRootBoneIndex();
 	
 	if (pAnimator->IsBlending())
@@ -78,11 +78,10 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	}
 
 	const auto eAnimatorMode = pAnimator->GetEvaluationMode();
-	// CPU 단독 모드는 구현 보존용이다. 소환·배치는 CPU+GPU 스키닝 경로로 정규화한다.
 	const uint32_t iEvaluationMode = static_cast<uint32_t>(eAnimatorMode == CComAnimator::EVALUATION_MODE::CPU? CComAnimator::EVALUATION_MODE::CPU_GPU: eAnimatorMode);
+	
 	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, false, iEvaluationMode);
-	if (!pBatch)
-		return;
+	if (!pBatch) return;
 
 	pBatch->ObjectHandle = pModelInstance->GetGameObject()->GetHandle();
 	const uint32_t iBatchInstanceIndex = static_cast<uint32_t>(pBatch->Instances.size());
@@ -450,9 +449,32 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 /*----------- 광윤 추가 -----------*/
 HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch){
 	
+	if (!_LightHandle)	return E_FAIL;
+
+	auto pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(_LightHandle.value());
+	if (nullptr == pLight) return E_FAIL;
+
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
 		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != _bStaticBatch || pBatch->bGPUSkinned)
 			continue;
+
+		m_ShadowFilteredInstances.clear();
+		m_ShadowVisibleSourceIndices.clear();
+
+		const size_t InstanceCount = pBatch->Instances.size();
+
+		for (size_t i = 0; i < InstanceCount; ++i) {
+			bool bVisibleToLight = true;
+			if (i < pBatch->ShadowBounds.size()) {
+				const auto& Bounds = pBatch->ShadowBounds[i];
+
+				if (Bounds.has_value())	bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
+			}
+
+			if (!bVisibleToLight)	continue;
+		}
+
+
 
 		MODEL_INSTANCE_BATCH FilteredBatch{};
 		FilteredBatch.Key = pBatch->Key;
@@ -479,17 +501,22 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 				}
 			}
 
-			if (!bVisibleToLight)
-				continue;
+			if (!bVisibleToLight)	continue;
 
-			FilteredBatch.Instances.push_back(pBatch->Instances[i]);
+			if (m_ShadowFilteredInstances.size() >= MAX_INSTANCE_COUNT)	return E_FAIL;
 
-
-			if (i < pBatch->CombinedBoneMatrices.size())
-			{
-				FilteredBatch.CombinedBoneMatrices.push_back(pBatch->CombinedBoneMatrices[i]);
-			}
+			m_ShadowFilteredInstances.push_back(pBatch->Instances[i]);
+			m_ShadowVisibleSourceIndices.push_back(static_cast<uint32_t>(i));
 		}
+
+		FilteredBatch.Instances.push_back(pBatch->Instances[i]);
+
+
+		if (i < pBatch->CombinedBoneMatrices.size())
+		{
+			FilteredBatch.CombinedBoneMatrices.push_back(pBatch->CombinedBoneMatrices[i]);
+		}
+		
 
 		if (FilteredBatch.Instances.empty())
 			continue;
@@ -515,7 +542,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContex
 	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
 	if (nullptr == pModel) return E_FAIL;
 
-	if (FAILED(Update_ShadowInstanceBuffer(pContext, Batch)))	return E_FAIL;
+	if (FAILED(Update_ShadowInstanceBuffer(pContext)))	return E_FAIL;
 
 	if (FAILED(Update_BonePaletteBuffer(pContext, Batch)))		return E_FAIL;
 
@@ -557,7 +584,7 @@ HRESULT CModel_Instance_Manager::Update_BonePaletteBuffer(ID3D11DeviceContext* p
 	for (uint32_t iInstanceIndex = 0; iInstanceIndex < iInstanceCount; ++iInstanceIndex) {
 		const auto& CombinedMatrixList = Batch.CombinedBoneMatrices[iInstanceIndex];
 
-		if (CombinedMatrixList.empty() || CombinedMatrixList.size() > MAX_BONE_COUNT)	return S_OK;
+		if (CombinedMatrixList.empty() || CombinedMatrixList.size() > MAX_BONE_COUNT)	return E_FAIL;
 
 		const size_t iPaletteOffset = static_cast<size_t>(iInstanceIndex) * MAX_BONE_COUNT;
 
@@ -578,24 +605,23 @@ HRESULT CModel_Instance_Manager::Update_BonePaletteBuffer(ID3D11DeviceContext* p
 	return S_OK;
 }
 
-HRESULT CModel_Instance_Manager::Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch) {
+HRESULT CModel_Instance_Manager::Update_ShadowInstanceBuffer(ID3D11DeviceContext* pContext) {
+	const size_t InstanceCount = m_ShadowFilteredInstances.size();
 
-	if (Batch.Instances.empty() || Batch.Instances.size() > MAX_INSTANCE_COUNT)	return E_FAIL;
+	if (InstanceCount == 0 || InstanceCount > MAX_INSTANCE_COUNT)	return E_FAIL;
 
 	auto Buffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 	if (nullptr == Buffer || nullptr == Buffer->GetBuffer())	return E_FAIL;
-
-	const uint32_t ByteSize = sizeof(GPU_ANIM_INSTANCE_DATA) * static_cast<uint32_t>(Batch.Instances.size());
-
-	ID3D11ShaderResourceView* nullSRV = nullptr;
-	pContext->VSSetShaderResources(6, 1, &nullSRV);
-
-	if (FAILED(Buffer->UpdateData(Batch.Instances.data(), ByteSize))) return E_FAIL;
+	
+	const uint32_t ByteSize = sizeof(GPU_ANIM_INSTANCE_DATA) * static_cast<uint32_t>(InstanceCount);
+	
+	if (FAILED(Buffer->UpdateData(m_ShadowFilteredInstances.data(), ByteSize))) return E_FAIL;
 
 	ComPtr<ID3D11ShaderResourceView> SRV = Buffer->GetSRV();
 	if (nullptr == SRV) return E_FAIL;
 
-	pContext->VSSetShaderResources(6, 1, SRV.GetAddressOf());
+	ID3D11ShaderResourceView* nullSRV = nullptr;
+	pContext->VSSetShaderResources(6, 1, &nullSRV);
 
 	return S_OK;
 }

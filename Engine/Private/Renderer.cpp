@@ -334,7 +334,7 @@ HRESULT CRenderer::InitializePostProcess() {
 	}
 
 	// LUT Texture Create
-	if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.png", nullptr, m_pLUTTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.dds", nullptr, m_pLUTTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create LUT Texture File.");
 		return E_FAIL;
 	}
@@ -437,7 +437,7 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 
 	m_pResDynTexUAVVolumetric = Generate_UnorderedAccessView("UAV_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 
-	if (FAILED(CreateWICTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.png", nullptr, BlueNoiseTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.dds", nullptr, BlueNoiseTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create BlueNoise Texture File.");
 		return E_FAIL;
 	}

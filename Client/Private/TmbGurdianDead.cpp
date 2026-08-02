@@ -276,6 +276,10 @@ void CTmbGurdianDead::LateUpdate(E::_float fTimeDelta)
 		UpdatePhysicData();
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+
+	/*----------- 광윤 추가 -----------*/
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+	/*---------------------------------*/
 }
 
 HRESULT CTmbGurdianDead::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -335,13 +339,15 @@ HRESULT CTmbGurdianDead::Render(ID3D11DeviceContext* pContext, const E::RENDER_C
 HRESULT CTmbGurdianDead::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject)
 		return E_FAIL;
+	{
+		E::CB_PER_OBJECT cbPerObject{};
+		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
 
-	E::CB_PER_OBJECT cbPerObject{};
-	cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
-	XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
-	if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return E_FAIL;
-	pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-	pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+		pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	}
 
 	const auto model = m_pComModelInstance->GetModel();
 	if (!model)	return E_FAIL;
@@ -352,16 +358,24 @@ HRESULT CTmbGurdianDead::Render_Shadow(ID3D11DeviceContext* pContext, const E::R
 		ID3D11Buffer* vertexBuffer = viBuffer->GetVertexBuffer().Get();
 		const uint32_t stride = viBuffer->GetVertexStride();
 		const uint32_t offset = 0;
+
 		pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType()); 
+		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
 
-	ID3D11ShaderResourceView* pSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
-	pContext->PSSetShaderResources(0, 4, pSRVs);
-
 	return S_OK;
+}
+bool CTmbGurdianDead::GetShadowBounds(BoundingBox& OutBounds) const {
+	if (m_pComModelInstance == nullptr)	return false;
+
+	const auto& Model = m_pComModelInstance->GetModel();
+	if (Model == nullptr || !Model->HasLocalBounds())		return false;
+
+	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
 }
 /*---------------------------------*/
 
