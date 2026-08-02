@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "TriggerCRW_DeSpawnStep2.h"
 #include "MyMagicSquareStepController.h"
+#include "Player.h"
+#include "TmbGurdian.h"
 NS_USING(Client)
 
 HRESULT CTriggerCRW_DeSpawnStep2::Initialize(void* pArg)
@@ -14,46 +16,95 @@ void CTriggerCRW_DeSpawnStep2::OnTriggerEnter(
 	DEBUG_LOG_STR(std::string("[PX][CTriggerCRW_DeSpawnStep2] Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 
-	if (!m_bSpawned)
+	if (auto pPlayer = Cast<CPlayer>(pObj))
 	{
-		m_bSpawned = true;
-
-		auto pvec = CGameInstance::Get().GetGameObjectLayer("22_MyMagicSquareStepController");
-		if (!(pvec || pvec->empty()))
+		if (!m_bSpawned)
 		{
-			return;
-		}
+			m_bSpawned = true;
 
-		if (auto pController = CGameInstance::Get().GetGameObjectByHandleT<CMyMagicSquareStepController>(pvec->front()))
-		{
-			const StringID GroupID{ "MagicSquareGrid2" };
-			pController->DeleteGroup(GroupID);
-			//CMyMagicSquareStepController::RISE_PATTERN_DESC RiseDesc{};
-			////RiseDesc.fStartTargetY = -227.f;
-			//RiseDesc.fStartTargetY = -214.f;
-			//RiseDesc.fEndTargetY = -214.f;
-			//RiseDesc.fMoveSpeed = 15.f;
-			//RiseDesc.fBounceHeight = 0.3f;
-			//RiseDesc.fBounceSettleSpeed = 1.f;
-			//RiseDesc.fLineInterval = 0.05f;
-			//RiseDesc.fStepInterval = 0.02f;
-			//RiseDesc.fStepTimingCurve = 0.55f;
-			//RiseDesc.fStepTimingJitter = 1.01f;
-			//RiseDesc.eFillMode =
-			//	CMyMagicSquareStepController::
-			//	RISE_FILL_MODE::Z;
-			//RiseDesc.eHeightAxis =
-			//	CMyMagicSquareStepController::
-			//	FILL_AXIS::Z;
-			//RiseDesc.eDirection =
-			//	CMyMagicSquareStepController::
-			//	FILL_DIRECTION::REVERSE;
-			//if (!pController->StartRisePattern(GroupID, RiseDesc))
-			//{
-			//	return;
-			//}
+			auto pvec = CGameInstance::Get().GetGameObjectLayer("22_MyMagicSquareStepController");
+			if (!(pvec || pvec->empty()))
+			{
+				return;
+			}
+
+			if (auto pController = CGameInstance::Get().GetGameObjectByHandleT<CMyMagicSquareStepController>(pvec->front()))
+			{
+				const StringID GroupID{ "MagicSquareGrid2" };
+				pController->DeleteGroup(GroupID);
+				//CMyMagicSquareStepController::RISE_PATTERN_DESC RiseDesc{};
+				////RiseDesc.fStartTargetY = -227.f;
+				//RiseDesc.fStartTargetY = -214.f;
+				//RiseDesc.fEndTargetY = -214.f;
+				//RiseDesc.fMoveSpeed = 15.f;
+				//RiseDesc.fBounceHeight = 0.3f;
+				//RiseDesc.fBounceSettleSpeed = 1.f;
+				//RiseDesc.fLineInterval = 0.05f;
+				//RiseDesc.fStepInterval = 0.02f;
+				//RiseDesc.fStepTimingCurve = 0.55f;
+				//RiseDesc.fStepTimingJitter = 1.01f;
+				//RiseDesc.eFillMode =
+				//	CMyMagicSquareStepController::
+				//	RISE_FILL_MODE::Z;
+				//RiseDesc.eHeightAxis =
+				//	CMyMagicSquareStepController::
+				//	FILL_AXIS::Z;
+				//RiseDesc.eDirection =
+				//	CMyMagicSquareStepController::
+				//	FILL_DIRECTION::REVERSE;
+				//if (!pController->StartRisePattern(GroupID, RiseDesc))
+				//{
+				//	return;
+				//}
+			}
+
+
+
+			{
+				CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+				TmbGurdianDesc.sObjectTag = "TmbGurdian";
+				TmbGurdianDesc.TargetHandle = pPlayer->GetHandle();
+				TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+				TmbGurdianDesc.vPos = _float3(-244.f, -230.3f, -121.f);
+				TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+				TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+				TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+				TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+				TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
+
+				XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+				auto NormalTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+				if (!NormalTmb)
+				{
+					MSG_BOX("Create TmbGurdian Failed in Terrain");
+					return;
+				}
+			}
+			{
+				CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+				TmbGurdianDesc.sObjectTag = "TmbGurdian";
+				TmbGurdianDesc.TargetHandle = pPlayer->GetHandle();
+				TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+				TmbGurdianDesc.vPos = _float3(-258.f, -230.3f, -121.f);
+				TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+				TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDian3.json";
+				TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Axe);
+				TmbGurdianDesc.WeaponResourceName = "Model_Resource_Axe";
+				TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
+
+				XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+				auto NormalTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+
+				if (!NormalTmb)
+				{
+					MSG_BOX("Create TmbGurdian Failed in Terrain");
+					return;
+				}
+			}
 		}
 	}
+	
 }
 
 void CTriggerCRW_DeSpawnStep2::OnTriggerExit(

@@ -31,6 +31,7 @@ private:
 	HRESULT SpawnLightPlacement();
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
+	HRESULT SpawnPlayerCape(CHandle hPlayer);
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };

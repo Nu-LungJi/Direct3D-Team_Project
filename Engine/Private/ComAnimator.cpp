@@ -1149,7 +1149,7 @@ _vector CComAnimator::RemoveYRotation(_vector qRotation) const
 
 void CComAnimator::Blend_Anim(_float fTimeDelta)
 {
-	if (!m_bBlending)
+	if (!m_bBlending || m_BlendStartLocalMatrices.empty())
 		return;
 
 

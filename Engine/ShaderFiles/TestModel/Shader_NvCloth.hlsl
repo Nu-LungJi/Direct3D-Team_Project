@@ -103,6 +103,102 @@ VS_OUT VSMain(VS_IN In)
     return Out;
 }
 
+struct VS_SHADOW_OUT
+{
+    float4 vPosition : SV_POSITION;
+    float4 vWorldPos : POSITION;
+};
+
+VS_SHADOW_OUT VSShadow(VS_IN In)
+{
+    VS_SHADOW_OUT Out;
+    const float3 p0 =
+        LoadNvClothParticle(In.vParticleIndices.x);
+    const float3 p1 =
+        LoadNvClothParticle(In.vParticleIndices.y);
+    const float3 p2 =
+        LoadNvClothParticle(In.vParticleIndices.z);
+
+    const float3 vEdge0 = p1 - p0;
+    const float3 vEdge1 = p2 - p0;
+    const float3 vFrameTangent =
+        vEdge0 * rsqrt(max(dot(vEdge0, vEdge0), 1.e-12f));
+    const float3 vRawNormal =
+        cross(vEdge0, vEdge1);
+    const float3 vFrameNormal =
+        vRawNormal *
+        rsqrt(max(dot(vRawNormal, vRawNormal), 1.e-12f));
+    const float3 vRawBinormal =
+        cross(vFrameNormal, vFrameTangent);
+    const float3 vFrameBinormal =
+        vRawBinormal *
+        rsqrt(max(dot(vRawBinormal, vRawBinormal), 1.e-12f));
+
+    const float3 vSurfacePosition =
+        p0 * In.vBarycentric.x +
+        p1 * In.vBarycentric.y +
+        p2 * In.vBarycentric.z;
+    const float3 vClothPosition =
+        vSurfacePosition +
+        vFrameTangent * In.vPositionOffset.x +
+        vFrameBinormal * In.vPositionOffset.y +
+        vFrameNormal * In.vPositionOffset.z;
+
+    Out.vWorldPos = mul(
+        float4(vClothPosition, 1.f),
+        g_matWorld);
+    Out.vPosition = mul(
+        Out.vWorldPos,
+        mul(g_matView, g_matProj));
+    return Out;
+}
+
+struct VS_POINT_SHADOW_OUT
+{
+    float4 vWorldPos : POSITION;
+};
+
+VS_POINT_SHADOW_OUT VSPointShadow(VS_IN In)
+{
+    VS_POINT_SHADOW_OUT Out;
+    const float3 p0 =
+        LoadNvClothParticle(In.vParticleIndices.x);
+    const float3 p1 =
+        LoadNvClothParticle(In.vParticleIndices.y);
+    const float3 p2 =
+        LoadNvClothParticle(In.vParticleIndices.z);
+
+    const float3 vEdge0 = p1 - p0;
+    const float3 vEdge1 = p2 - p0;
+    const float3 vFrameTangent =
+        vEdge0 * rsqrt(max(dot(vEdge0, vEdge0), 1.e-12f));
+    const float3 vRawNormal =
+        cross(vEdge0, vEdge1);
+    const float3 vFrameNormal =
+        vRawNormal *
+        rsqrt(max(dot(vRawNormal, vRawNormal), 1.e-12f));
+    const float3 vRawBinormal =
+        cross(vFrameNormal, vFrameTangent);
+    const float3 vFrameBinormal =
+        vRawBinormal *
+        rsqrt(max(dot(vRawBinormal, vRawBinormal), 1.e-12f));
+
+    const float3 vSurfacePosition =
+        p0 * In.vBarycentric.x +
+        p1 * In.vBarycentric.y +
+        p2 * In.vBarycentric.z;
+    const float3 vClothPosition =
+        vSurfacePosition +
+        vFrameTangent * In.vPositionOffset.x +
+        vFrameBinormal * In.vPositionOffset.y +
+        vFrameNormal * In.vPositionOffset.z;
+
+    Out.vWorldPos = mul(
+        float4(vClothPosition, 1.f),
+        g_matWorld);
+    return Out;
+}
+
 struct PS_IN
 {
     float4 vPosition : SV_POSITION;

@@ -65,6 +65,10 @@ CNvClothCape::CNvClothCape(
 	const CNvClothCape& Prototype)
 	: CGameObject{ Prototype },
 	  m_pVertexShader{ Prototype.m_pVertexShader },
+	  m_pShadowVertexShader{
+		  Prototype.m_pShadowVertexShader },
+	  m_pPointShadowVertexShader{
+		  Prototype.m_pPointShadowVertexShader },
 	  m_pPixelShader{ Prototype.m_pPixelShader }
 {
 	XMStoreFloat4x4(
@@ -88,7 +92,20 @@ HRESULT CNvClothCape::InitializePrototype(void*)
 		GetResourceFirst<CResPixelShader>(
 			TAG_RES_GRP_PERMANENT_SHADER,
 			"PS_NvCloth");
-	return m_pVertexShader && m_pPixelShader ?
+	m_pShadowVertexShader =
+		CGameInstance::Get().
+		GetResourceFirst<CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvClothShadow");
+	m_pPointShadowVertexShader =
+		CGameInstance::Get().
+		GetResourceFirst<CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_NvClothPointShadow");
+	return m_pVertexShader &&
+		m_pShadowVertexShader &&
+		m_pPointShadowVertexShader &&
+		m_pPixelShader ?
 		S_OK : E_FAIL;
 }
 
@@ -259,6 +276,9 @@ void CNvClothCape::LateUpdate(_float)
 	{
 		CGameInstance::Get().AddRenderObject(
 			RENDERGROUP::NONBLEND,
+			this);
+		CGameInstance::Get().AddShadowRenderGroup(
+			ACTORTYPE::DYNAMIC,
 			this);
 	}
 }
@@ -1428,6 +1448,128 @@ HRESULT CNvClothCape::Render(
 		9,
 		1,
 		&pNullSRV);
+	return S_OK;
+}
+
+HRESULT CNvClothCape::Render_Shadow(
+	ID3D11DeviceContext* pContext,
+	const RENDER_CTX& Context)
+{
+	if (!pContext ||
+		!m_pComCBufferPerObject ||
+		!m_pComNvCloth ||
+		!m_pClothMesh ||
+		!m_pShadowVertexShader ||
+		!m_pPointShadowVertexShader)
+	{
+		return E_FAIL;
+	}
+
+	NVCLOTH_GPU_PARTICLE_VIEW ParticleView{};
+	if (!m_pComNvCloth->GetGpuParticleView(
+		ParticleView) ||
+		ParticleView.iParticleCount !=
+			m_pClothMesh->GetParticleCount())
+	{
+		return E_FAIL;
+	}
+
+	CB_PER_OBJECT PerObject{};
+	PerObject.matWorld =
+		*GetTransform().GetCombinedWorldMatrix();
+	XMStoreFloat4x4(
+		&PerObject.matWVP,
+		GetTransform().GetLoadedCombinedWorldMatrix() *
+			Context.matViewProj);
+	if (FAILED(m_pComCBufferPerObject->MapDiscard(
+		pContext,
+		&PerObject,
+		sizeof(PerObject))))
+	{
+		return E_FAIL;
+	}
+
+	ComPtr<ID3D11InputLayout> pPreviousInputLayout{};
+	ComPtr<ID3D11VertexShader> pPreviousVertexShader{};
+	ComPtr<ID3D11GeometryShader> pPreviousGeometryShader{};
+	ComPtr<ID3D11ShaderResourceView>
+		pPreviousParticleSRV{};
+	pContext->IAGetInputLayout(
+		pPreviousInputLayout.GetAddressOf());
+	pContext->VSGetShader(
+		pPreviousVertexShader.GetAddressOf(),
+		nullptr,
+		nullptr);
+	pContext->GSGetShader(
+		pPreviousGeometryShader.GetAddressOf(),
+		nullptr,
+		nullptr);
+	pContext->VSGetShaderResources(
+		9,
+		1,
+		pPreviousParticleSRV.GetAddressOf());
+
+	pContext->VSSetConstantBuffers(
+		ETOUI(B_SLOTNUMBER::PER_OBJECT),
+		1,
+		m_pComCBufferPerObject->GetAdressOfBuffer());
+	// Point Shadow는 LightManager의 GS가 월드 좌표를 큐브맵 6면으로 확장한다.
+	// GS가 없는 Directional/Spot Shadow는 기존 SV_POSITION 출력 VS를 사용한다.
+	const auto& pShadowVertexShader =
+		pPreviousGeometryShader ?
+		m_pPointShadowVertexShader :
+		m_pShadowVertexShader;
+	pContext->IASetInputLayout(
+		pShadowVertexShader->GetInputLayout().Get());
+	pContext->VSSetShader(
+		pShadowVertexShader->GetVertexShader().Get(),
+		nullptr,
+		0);
+	pContext->VSSetShaderResources(
+		9,
+		1,
+		&ParticleView.pSRV);
+
+	for (const auto& Section :
+		m_pClothMesh->GetSections())
+	{
+		if (!Section.pVIBuffer)
+			continue;
+
+		ID3D11Buffer* pVertexBuffer =
+			Section.pVIBuffer->
+				GetVertexBuffer().Get();
+		const uint32_t iVertexStride =
+			Section.pVIBuffer->GetVertexStride();
+		const uint32_t iOffset{};
+		pContext->IASetVertexBuffers(
+			0,
+			1,
+			&pVertexBuffer,
+			&iVertexStride,
+			&iOffset);
+		pContext->IASetIndexBuffer(
+			Section.pVIBuffer->GetIndexBuffer().Get(),
+			Section.pVIBuffer->GetIndexFormat(),
+			0);
+		pContext->IASetPrimitiveTopology(
+			Section.pVIBuffer->GetPrimitiveType());
+		pContext->DrawIndexed(
+			Section.pVIBuffer->GetNumIndices(),
+			0,
+			0);
+	}
+
+	pContext->VSSetShaderResources(
+		9,
+		1,
+		pPreviousParticleSRV.GetAddressOf());
+	pContext->IASetInputLayout(
+		pPreviousInputLayout.Get());
+	pContext->VSSetShader(
+		pPreviousVertexShader.Get(),
+		nullptr,
+		0);
 	return S_OK;
 }
 

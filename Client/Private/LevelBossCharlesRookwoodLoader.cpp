@@ -15,6 +15,9 @@
 #include "SpellMeter.h"
 #include "HPBar.h"
 #include "MiniMap.h"
+#include "GameOverMask.h"
+#include "VideoObject.h"
+#include "Cursor.h"
 
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
@@ -23,6 +26,8 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "NvClothCape.h"
+#include "ResNvClothMesh.h"
 #include "BossTMB.h"
 NS_USING(Client)
 
@@ -66,6 +71,9 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 					return false;
 				}
 			}
+			if (FAILED(LoadPlayerCape()))
+				return false;
+
 
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin"))) {
 
@@ -113,9 +121,64 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 		});
 }
 
+HRESULT CLevelBossCharlesRookwoodLoader::LoadPlayerCape()
+{
+	constexpr char CAPE_MODEL_PATH[] =
+		"./Resources/SampleClient/Models/Skeleton/clothes/SK_clothes.bin";
+	const _matrix CapePreTransform =
+		XMMatrixScaling(3.f, 3.f, 3.f) *
+		XMMatrixRotationY(XMConvertToRadians(180.f)) *
+		XMMatrixTranslation(0.f, -1.5f, 0.f);
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResModel>(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		"PLAYER_CAPE_MODEL_RESOURCE",
+		CResModel::Create(CAPE_MODEL_PATH)))
+	{
+		CResModel::DESC Desc{};
+		Desc.PreTransformMatrix = CapePreTransform;
+		if (FAILED(res->Load(Desc)))
+		{
+			MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed PLAYER_CAPE_MODEL_RESOURCE");
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResNvClothMesh>(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		"PLAYER_CAPE_CLOTH_RESOURCE",
+		CResNvClothMesh::Create(CAPE_MODEL_PATH)))
+	{
+		CResNvClothMesh::DESC Desc{};
+		Desc.PreTransformMatrix = CapePreTransform;
+		Desc.sSimulationAnchorBone = "Spine3";
+		Desc.iSimulationMeshIndex = 0;
+		Desc.iRenderMeshIndex = 1;
+		Desc.fWeldTolerance = 1.e-5f;
+		Desc.fFixedTopRatio = 0.1f;
+		if (FAILED(res->Load(Desc)))
+		{
+			MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed PLAYER_CAPE_CLOTH_RESOURCE");
+			return E_FAIL;
+		}
+	}
+
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::BOSS_CHARLES_ROOKWOOD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
+		CNvClothCape::Create())))
+	{
+		MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_NvClothCape");
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
 std::future<bool> CLevelBossCharlesRookwoodLoader::UnLoad()
 {
 	LOG_MEMORY("start");
+	E::CGameInstance::Get().ClearAllRunningEffect();
 
 	E::CGameInstance::Get().ClearAllChunk();
 	E::CGameInstance::Get().GetNavMeshManager()->Clear();
@@ -174,7 +237,8 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
-				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene"
+				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
 			};
 
 			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
@@ -229,6 +293,18 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_VideoObject", CVideoObject::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_Cursor", CCursor::Create())))
 		{
 			return false;
 		}

@@ -21,22 +21,30 @@ Texture2D g_BackgroundTex : register(t7);
 
 struct VS_IN
 {
+    // Per-Vertex - 쿼드 메쉬 로컬 좌표 (-0.5~0.5), UV
 	float3 vPosition : POSITION;
 	float2 vTexcoord : TEXCOORD0;
+
+    // Per-Instance - VTX_PARTICLE_INSTANCED_DATA와 바이트 레이아웃 일치.
+    // "INSTANCE_" 접두사가 있어야 CResVertexShader::Load()의 리플렉션이
+    // 이 필드들을 슬롯 1(인스턴스 버퍼)로 인식한다.
 	float4 vWorld0 : INSTANCE_WORLD0;
 	float4 vWorld1 : INSTANCE_WORLD1;
 	float4 vWorld2 : INSTANCE_WORLD2;
 	float4 vWorld3 : INSTANCE_WORLD3;
 	float4 vColor : INSTANCE_COLOR0;
-	float4 vInstEmissive : INSTANCE_EMISSIVE;
-	float4 vInstEndEmissive : INSTANCE_EMISSIVE1;
-	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE2;
+	float4 vInstOriginalEmissive : INSTANCE_EMISSIVE0;
+	float4 vInstEmissive : INSTANCE_EMISSIVE1;
+	float4 vInstEndEmissive : INSTANCE_EMISSIVE2;
 	float2 uvOffset : INSTANCE_UVOFFSET;
 	float2 uvSize : INSTANCE_UVSIZE;
-	float life : INSTANCE_LIFE;
-	float maxLife : INSTANCE_MAXLIFE;
+	float life : INSTANCE_LIFE; // 추가 
+	float maxLife : INSTANCE_MAXLIFE; // 추가
 	uint iBehaviorType : INSTANCE_BEHAVIORTYPE;
 };
+
+
+
 
 struct VS_OUT
 {
@@ -55,7 +63,7 @@ struct VS_OUT
 	float life : TEXCOORD9;
 	float maxLife : TEXCOORD10;
 };
-
+    
 
 struct PS_OUT
 {
@@ -217,12 +225,12 @@ PS_OUT PSMain_RChannel(VS_OUT In)
 			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
 		}
 
-		Out.vDiffuse = float4(FinalColor.rrr / 2.f + Emissive.rgb, FinalColor.r * In.vColor.a);
+		Out.vDiffuse = float4(FinalColor.rrr / 2.f + Emissive.rgb * Emissive.a, FinalColor.r * In.vColor.a);
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.rrr / 2.f + Emissive.rgb, vFinalColor.r * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.rrr / 2.f + Emissive.rgb * Emissive.a, vFinalColor.r * In.vColor.a);
 	}
 	
 	return Out;
@@ -286,15 +294,18 @@ PS_OUT PSMain_GChannel(VS_OUT In)
 		if (DissolveProgress > 0.001f && (FinalColor.g - DissolveProgress < EdgeWidth))
 		{
 			float EdgeGlow = 1.0f - saturate((FinalColor.g - DissolveProgress) / EdgeWidth);
-			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
+			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;	
 		}
 
-		Out.vDiffuse = float4(FinalColor.ggg / 2.f + Emissive.rgb * EmissiveIntensity, FinalColor.g * In.vColor.a);
+		Out.vDiffuse = float4(FinalColor.ggg / 2.f + Emissive.rgb * In.vEmissive.a, FinalColor.g * In.vColor.a);
+
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.ggg / 2.f + Emissive.rgb * EmissiveIntensity, vFinalColor.g * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.ggg / 2.f + Emissive.rgb * In.vEmissive.a, vFinalColor.g * In.vColor.a);
+		
+		
 	}
  
 	return Out;
@@ -362,12 +373,12 @@ PS_OUT PSMain_BChannel(VS_OUT In)
 			FinalColor.rgb += EdgeColor.rgb * EdgeGlow * 12.0f;
 		}
 
-		Out.vDiffuse = float4(FinalColor.bbb / 2.f + Emissive.rgb * EmissiveIntensity, FinalColor.b * In.vColor.a);
+		Out.vDiffuse = float4(FinalColor.bbb / 2.f + Emissive.rgb * In.vEmissive.a, FinalColor.b * In.vColor.a);
 	}
 	else
 	{
 		float4 vFinalColor = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
-		Out.vDiffuse = float4(vFinalColor.bbb / 2.f + Emissive.rgb * EmissiveIntensity, vFinalColor.b * In.vColor.a);
+		Out.vDiffuse = float4(vFinalColor.bbb / 2.f + Emissive.rgb * In.vEmissive.a, vFinalColor.b * In.vColor.a);
 	}
  
 	return Out;

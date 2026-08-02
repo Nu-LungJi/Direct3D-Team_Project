@@ -240,36 +240,38 @@ void CMapManager::Update(_float fTimeDelta)
 	if (pFrustumCollider == nullptr)
 		return;
 
-	const auto neededChunks = GetNeededChunksAroundCamera(pCamera);
+	const auto loadChunks = GetChunksAroundCamera(pCamera, STREAM_LOAD_RADIUS);
+	const auto retainedChunks = GetChunksAroundCamera(pCamera, STREAM_UNLOAD_RADIUS);
 	const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
 
-	CullLoadedChunksByCameraFrustum(neededChunks, boundingFrustum);
+	CullLoadedChunksByCameraFrustum(retainedChunks, boundingFrustum);
 
 	if (m_bChunkStreaming && !m_sMapRootPath.empty())
 	{
-		UnloadChunksOutsideRange(neededChunks);
-		RequestNeededChunkLoads(neededChunks);
+		UnloadChunksOutsideRange(retainedChunks);
+		RequestNeededChunkLoads(loadChunks);
 	}
 }
 
-std::vector<MAPCHUNK_COORD> CMapManager::GetNeededChunksAroundCamera(const CCameraObject* pCamera) const
+std::vector<MAPCHUNK_COORD> CMapManager::GetChunksAroundCamera(
+	const CCameraObject* pCamera, int64_t radius) const
 {
 
 	const auto& pos = pCamera->GetTransform().GetPosition();
 	const MAPCHUNK_COORD cameraChunkCoord = WorldToChunkCoord(pos);
 
-	std::vector<MAPCHUNK_COORD> neededChunks;
-	neededChunks.reserve(27);
+	const size_t diameter = static_cast<size_t>(radius * 2 + 1);
+	std::vector<MAPCHUNK_COORD> chunks;
+	chunks.reserve(diameter * diameter * diameter);
 
-	// 카메라가 속한 Chunk 주변의 3*3*3 Chunk들
-	// 카메라가 속한 Chunk 주변의 5*5*5 Chunk들
-	for (int64_t y = -2; y <= 2; ++y)
+	// radius 2 = 5x5x5 load range, radius 3 = 7x7x7 retention range.
+	for (int64_t y = -radius; y <= radius; ++y)
 	{
-		for (int64_t z = -2; z <= 2; ++z)
+		for (int64_t z = -radius; z <= radius; ++z)
 		{
-			for (int64_t x = -2; x <= 2; ++x)
+			for (int64_t x = -radius; x <= radius; ++x)
 			{
-				neededChunks.push_back(
+				chunks.push_back(
 					MAPCHUNK_COORD
 					{
 						cameraChunkCoord.x + x,
@@ -280,7 +282,7 @@ std::vector<MAPCHUNK_COORD> CMapManager::GetNeededChunksAroundCamera(const CCame
 		}
 	}
 
-	return neededChunks;
+	return chunks;
 }
 
 void CMapManager::UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks)
@@ -1151,9 +1153,10 @@ _bool CMapManager::IsChunkInStreamingRange(const MAPCHUNK_COORD& coord)
 	const int64_t dy = std::llabs(cameraCoord.y - coord.y);
 	const int64_t dz = std::llabs(cameraCoord.z - coord.z);
 
-	// -1, 0, 1 // 현재 카메라 기준 3*3*3 범위
-	// -2, -1, 0, 1, 2 // 현재 카메라 기준 5*5*5 범위
-	return dx <= 2 && dy <= 2 && dz <= 2;
+	// Discard an async result if it arrived after leaving the load range.
+	return dx <= STREAM_LOAD_RADIUS
+		&& dy <= STREAM_LOAD_RADIUS
+		&& dz <= STREAM_LOAD_RADIUS;
 }
 
 UPtr<CMapManager> CMapManager::Create()
