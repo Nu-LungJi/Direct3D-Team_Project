@@ -4,6 +4,8 @@
 
 NS_BEGIN(Engine)
 
+inline constexpr int PATH_PLAYBACK_DATA_VERSION = 2;
+
 enum class PATH_PLAYBACK_STATE : uint8_t
 {
 	IDLE,
@@ -137,7 +139,7 @@ struct PATH_PLAYBACK_CLIP final : public ISerializable
 
 struct PATH_PLAYBACK_DATA final : public ISerializable
 {
-	int iVersion{ 2 };
+	int iVersion{ PATH_PLAYBACK_DATA_VERSION };
 	std::vector<PATH_PLAYBACK_CLIP> Clips{};
 
 	void SortKeyframes()

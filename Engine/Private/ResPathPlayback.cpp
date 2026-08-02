@@ -6,7 +6,22 @@
 NS_USING(Engine)
 
 static constexpr _float RES_PATH_PLAYBACK_EPSILON = 0.0001f;
+static constexpr _float RES_PATH_PLAYBACK_QUATERNION_EPSILON = 1.e-8f;
 static constexpr const char* RES_PATH_PLAYBACK_ROOT = "PathPlayback";
+
+static void ResPathPlaybackAddValidationError(
+	std::vector<std::string>* pOutErrors,
+	std::string Error)
+{
+	if (pOutErrors)
+		pOutErrors->push_back(std::move(Error));
+}
+
+template <typename TEnum>
+static _bool ResPathPlaybackIsValidEnum(TEnum Value)
+{
+	return !magic_enum::enum_name(Value).empty();
+}
 
 static _bool ResPathPlaybackIsFinite(const _float3& Value)
 {
@@ -82,7 +97,7 @@ HRESULT CResPathPlayback::Unload(const std::any& arg)
 
 HRESULT CResPathPlayback::SetData(PATH_PLAYBACK_DATA Data)
 {
-	if (!ValidateAndBuildLookup(Data))
+	if (!ValidateAndNormalizeData(Data) || !BuildLookup(Data))
 		return E_INVALIDARG;
 
 	m_Data = std::move(Data);
@@ -115,30 +130,128 @@ _float CResPathPlayback::GetClipDuration(const StringID& sClipID) const
 		pClip->Keyframes.front().fTime;
 }
 
-_bool CResPathPlayback::ValidateAndBuildLookup(PATH_PLAYBACK_DATA& Data)
+_bool CResPathPlayback::ValidateAndNormalizeData(
+	PATH_PLAYBACK_DATA& Data,
+	std::vector<std::string>* pOutErrors)
 {
-	Data.SortKeyframes();
+	if (pOutErrors)
+		pOutErrors->clear();
 
-	std::unordered_map<StringID, size_t> NewLookup{};
-	NewLookup.reserve(Data.Clips.size());
+	Data.SortKeyframes();
+	_bool bValid = true;
+
+	if (Data.iVersion != PATH_PLAYBACK_DATA_VERSION)
+	{
+		ResPathPlaybackAddValidationError(
+			pOutErrors,
+			"Unsupported PathPlayback version. Expected " +
+			std::to_string(PATH_PLAYBACK_DATA_VERSION) +
+			", received " + std::to_string(Data.iVersion) + ".");
+		bValid = false;
+	}
+
+	if (Data.Clips.empty())
+	{
+		ResPathPlaybackAddValidationError(
+			pOutErrors,
+			"PathPlayback data must contain at least one clip.");
+		return false;
+	}
+
+	std::unordered_set<StringID> ClipIDs{};
+	ClipIDs.reserve(Data.Clips.size());
 	for (size_t iClip = 0; iClip < Data.Clips.size(); ++iClip)
 	{
-		const auto& Clip = Data.Clips[iClip];
-		if (Clip.sClipID.hash == 0 || Clip.Keyframes.size() < 2 ||
-			!NewLookup.emplace(Clip.sClipID, iClip).second)
+		auto& Clip = Data.Clips[iClip];
+		const std::string ClipLabel =
+			"Clip[" + std::to_string(iClip) + "]";
+
+		if (Clip.sClipID.hash == 0)
 		{
-			return false;
+			ResPathPlaybackAddValidationError(
+				pOutErrors, ClipLabel + " has an empty ClipID.");
+			bValid = false;
+		}
+		else if (!ClipIDs.emplace(Clip.sClipID).second)
+		{
+			ResPathPlaybackAddValidationError(
+				pOutErrors,
+				ClipLabel + " has a duplicated ClipID: " +
+				Clip.sClipID.GetDbgStr() + ".");
+			bValid = false;
+		}
+
+		if (!ResPathPlaybackIsValidEnum(Clip.eCoordinateSpace) ||
+			!ResPathPlaybackIsValidEnum(Clip.eRotationMode) ||
+			!ResPathPlaybackIsValidEnum(Clip.ePlayMode) ||
+			!ResPathPlaybackIsValidEnum(Clip.eFinishBehavior))
+		{
+			ResPathPlaybackAddValidationError(
+				pOutErrors, ClipLabel + " contains an invalid enum value.");
+			bValid = false;
+		}
+
+		if (Clip.Keyframes.size() < 2)
+		{
+			ResPathPlaybackAddValidationError(
+				pOutErrors,
+				ClipLabel + " must contain at least two keyframes.");
+			bValid = false;
 		}
 
 		for (size_t iKeyframe = 0;
 			iKeyframe < Clip.Keyframes.size(); ++iKeyframe)
 		{
-			const auto& Keyframe = Clip.Keyframes[iKeyframe];
+			auto& Keyframe = Clip.Keyframes[iKeyframe];
+			const std::string KeyframeLabel =
+				ClipLabel + ".Keyframe[" +
+				std::to_string(iKeyframe) + "]";
 			if (!std::isfinite(Keyframe.fTime) ||
 				!ResPathPlaybackIsFinite(Keyframe.vPosition) ||
 				!ResPathPlaybackIsFinite(Keyframe.vRotation))
 			{
-				return false;
+				ResPathPlaybackAddValidationError(
+					pOutErrors,
+					KeyframeLabel + " contains a non-finite value.");
+				bValid = false;
+				continue;
+			}
+
+			if (Keyframe.fTime < 0.f)
+			{
+				ResPathPlaybackAddValidationError(
+					pOutErrors,
+					KeyframeLabel + " has a negative time.");
+				bValid = false;
+			}
+
+			if (!ResPathPlaybackIsValidEnum(
+					Keyframe.ePositionInterpolation) ||
+				!ResPathPlaybackIsValidEnum(Keyframe.eEasing))
+			{
+				ResPathPlaybackAddValidationError(
+					pOutErrors,
+					KeyframeLabel + " contains an invalid enum value.");
+				bValid = false;
+			}
+
+			const _vector Rotation =
+				XMLoadFloat4(&Keyframe.vRotation);
+			const _float fRotationLengthSq =
+				XMVectorGetX(XMQuaternionLengthSq(Rotation));
+			if (fRotationLengthSq <=
+				RES_PATH_PLAYBACK_QUATERNION_EPSILON)
+			{
+				ResPathPlaybackAddValidationError(
+					pOutErrors,
+					KeyframeLabel + " has a zero-length rotation.");
+				bValid = false;
+			}
+			else
+			{
+				XMStoreFloat4(
+					&Keyframe.vRotation,
+					XMQuaternionNormalize(Rotation));
 			}
 
 			if (iKeyframe > 0 &&
@@ -146,13 +259,27 @@ _bool CResPathPlayback::ValidateAndBuildLookup(PATH_PLAYBACK_DATA& Data)
 					Clip.Keyframes[iKeyframe - 1].fTime <=
 				RES_PATH_PLAYBACK_EPSILON)
 			{
-				return false;
+				ResPathPlaybackAddValidationError(
+					pOutErrors,
+					KeyframeLabel +
+					" overlaps the previous keyframe time.");
+				bValid = false;
 			}
 		}
 	}
 
-	if (Data.Clips.empty())
-		return false;
+	return bValid;
+}
+
+_bool CResPathPlayback::BuildLookup(const PATH_PLAYBACK_DATA& Data)
+{
+	std::unordered_map<StringID, size_t> NewLookup{};
+	NewLookup.reserve(Data.Clips.size());
+	for (size_t iClip = 0; iClip < Data.Clips.size(); ++iClip)
+	{
+		if (!NewLookup.emplace(Data.Clips[iClip].sClipID, iClip).second)
+			return false;
+	}
 
 	m_ClipLookup = std::move(NewLookup);
 	return true;

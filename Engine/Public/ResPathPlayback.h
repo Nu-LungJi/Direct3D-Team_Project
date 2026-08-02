@@ -23,9 +23,12 @@ public:
 	const PATH_PLAYBACK_CLIP* FindClip(const StringID& sClipID) const;
 	std::optional<size_t> FindClipIndex(const StringID& sClipID) const;
 	_float GetClipDuration(const StringID& sClipID) const;
+	static _bool ValidateAndNormalizeData(
+		PATH_PLAYBACK_DATA& Data,
+		std::vector<std::string>* pOutErrors = nullptr);
 
 private:
-	_bool ValidateAndBuildLookup(PATH_PLAYBACK_DATA& Data);
+	_bool BuildLookup(const PATH_PLAYBACK_DATA& Data);
 
 private:
 	PATH_PLAYBACK_DATA m_Data{};
