@@ -9,6 +9,10 @@ class CComConstantBuffer;
 class CResPixelShader;
 class CResTexture2D;
 class CResVertexShader;
+class CResPhysXMaterial;
+class CResPhysXTriMeshGeometry;
+class CComPxRigidBody;
+class CComPxTriMeshCollider;
 
 // CTerrain
 // ├─ 전체 지형 원본 정점 / 인덱스 보관
@@ -39,6 +43,7 @@ public:
 		_float heightScale = 0.1f;
 		// 청크별 텍스처 Blend Mask의 가로·세로 해상도
 		uint32_t maskResolution = 256;
+		PX_FILTER_DESC tPhysicsFilter{};
 	};
 
 private:
@@ -65,6 +70,9 @@ public:
 	uint32_t GetVisibleChunkCount() const { return static_cast<uint32_t>(m_VisibleChunks.size()); }
 	uint32_t GetChunkQuadCount() const { return m_iChunkQuadCount; }
 	_float GetVertexSpacing() const { return m_fVertexSpacing; }
+	uint32_t GetPhysicsEnabledChunkCount() const;
+	_bool IsChunkPhysicsEnabled(uint32_t chunkX, uint32_t chunkZ) const;
+	HRESULT SetChunkPhysicsEnabled(uint32_t chunkX, uint32_t chunkZ, _bool enabled);
 
 	_float GetVertexHeight(uint32_t x, uint32_t z) const;
 	bool TryGetLocalHeight(_float localX, _float localZ, _float& outHeight) const;
@@ -79,9 +87,10 @@ public:
 	HRESULT AddChunkNegativeX();
 	HRESULT AddChunkNegativeZ();
 	HRESULT SaveTerrain(const _string& metadataPath) const;
-	HRESULT LoadTerrain(const _string& metadataPath);
-
+	HRESULT LoadTerrain(const _string& metadataPath, std::optional<CHandle> physicsTarget = std::nullopt);
+	void SetPhysicsTarget(std::optional<CHandle> target);
 private:
+	std::optional<TERRAIN_CHUNK_COORD> GetChunkCoordFromLocalPosition(const _float3& localPosition) const;
 	HRESULT LoadHeightMap(const DESC& desc);
 	HRESULT CreateFlatTerrain(const DESC& desc);
 	void BuildGridIndices();
@@ -97,6 +106,8 @@ private:
 	void ExpandBoundsForRegion(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
 	void UpdateChunkVisibility();
 	HRESULT UpdateChunks(uint32_t minX, uint32_t minZ, uint32_t maxX, uint32_t maxZ);
+	void UpdateChunkPhysX();
+	void ClearPhysicsChunks();
 
 private:
 	// --------------------렌더링----------------------
@@ -131,6 +142,26 @@ private:
 
 	// 청크 좌표로 빠르게 TerrainChunk검색
 	std::unordered_map<uint64_t, CTerrainChunk*> m_ChunkLookup{};
+
+	// Terrain GameObject가 하나의 static actor를 소유하고, 활성 청크마다 TriMesh shape를 붙인다.
+	CComPxRigidBody* m_pTerrainRigidBody{};
+	SPtr<CResPhysXMaterial> m_pTerrainPhysicsMaterial{};
+	PX_FILTER_DESC m_tTerrainPhysicsFilter{};
+	// Physics 스트리밍 기준 타겟 (플레이어), 없으면 PhysX 리소스 로드 X
+	std::optional<CHandle> m_PhysicsTarget{};
+	TERRAIN_CHUNK_COORD m_CurrentPhysicsCenter{ -1,-1 };
+	// 처음맵로드엔 경로만 저장해둠
+	std::unordered_map<uint64_t, _string> m_PhysicsCookedPaths{};
+
+	// PhysX 활성 청크 런타임 데이터
+	struct TERRAIN_PHYSICS_RUNTIME
+	{
+		TERRAIN_CHUNK_COORD coord{};
+		SPtr<CResPhysXTriMeshGeometry> mesh{};
+		CComPxTriMeshCollider* collider{};
+		_string componentTag{};
+	};
+	std::unordered_map<uint64_t, TERRAIN_PHYSICS_RUNTIME> m_ActivePhysicsChunks{};
 
 	// 전체 터레인 감싸는 로컬공간 바운딩박스
 	BoundingBox m_LocalBounds{};
