@@ -37,9 +37,19 @@ HRESULT CGraphicDevice::Initialize(ComPtr<ID3D11Device>& ppDevice, ComPtr<ID3D11
 	ppContext = m_pDeviceContext;
 	ID3D11InfoQueue* pInfoQueue = nullptr;
 
+	// ppDevice가 ID3D11Device 포인터라고 가정
 	if (SUCCEEDED(ppDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue))))
 	{
+		// 1. 에러(ERROR) 발생 시 무조건 브레이크 (가장 중요)
+		pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, TRUE);
+
+		// 2. 심각한 메모리 오염/손상(CORRUPTION) 발생 시 브레이크
+		pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+
+		// 3. 경고(WARNING) 시 브레이크 (선택 사항: 사소한 경고에도 멈추므로 귀찮으면 FALSE로 끄셔도 됩니다)
 		pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE);
+
+		// 스마트 포인터(ComPtr)를 쓰지 않는다면 다 쓴 후 반드시 Release 해주어야 메모리 누수가 없습니다.
 		pInfoQueue->Release();
 	}
 	return S_OK;
