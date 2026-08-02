@@ -216,7 +216,7 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		XMStoreFloat4x4(&impactWorldData, impactWorld);
 		CGameInstance::Get().PlayEffect("PlayerAttackSpread", impactWorldData);
 	}
-	if (Cast<CTmbGurdian>(tHit.pGameObject))
+	if (auto pTmbGurdian= Cast<CTmbGurdian>(tHit.pGameObject))
 	{
 		static constexpr const char* HIT_SOUND_PATHS[] =
 		{
@@ -246,28 +246,8 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		{
 			MSG_BOX("INVALID_SOUND_ID");
 		}
-		//auto id = m_pComSound->PlaySlot3D(
-		//	TEST_SLOT,
-		//	"./Resources/SampleClient/Sound/avada.wav",
-		//	SOUND_3D_DESC{
-		//		.vPosition = GetTransform().GetPosition(),
-		//		.fMinDistance = SOUND_MIN_DISTANCE,
-		//		.fMaxDistance = 30.f,
-		//		.eRolloff = SOUND_3D_ROLLOFF::LINEAR
-		//	},
-		//	SOUND_PLAY_DESC{
-		//		.sBusID = SOUND_BUS::VOICE,
-		//		.fVolume = 1.f,
-		//		.fPitch = 1.f,
-		//		.iPriority = 64,
-		//		.bLoop = false
-		//	});
 
-		//if (id == INVALID_SOUND_ID)
-		//{
-		//	MSG_BOX("INVALID_SOUND_ID");
-		//}
-
+		pTmbGurdian->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 
 	SetPendingDestroy();

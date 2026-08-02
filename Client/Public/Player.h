@@ -81,6 +81,12 @@ public:
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
 public:
 	HRESULT Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISION_DATA& info);
+	_bool OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition);
+	_bool OnQueryHit(int32_t iDamage,const _float3& vHitPosition);
+	_bool OnQueryHit(int32_t iDamage);
+	int32_t GetCurrentHp() const { return m_iHp; }
+	int32_t GetMaxHp() const { return m_iMaxHp; }
+	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
 public:
 	void Attack_Magic_Bullet();
 public:
@@ -189,6 +195,9 @@ private:
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
 	_float m_fSprintDirectionResponse{ 4.5f };
+	int32_t m_iHp{ 100 };
+	int32_t m_iMaxHp{ 100 };
+	_float3 m_vLastHitPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };
 	_float m_fGroundFollowProbeRadius{ 0.2f };
