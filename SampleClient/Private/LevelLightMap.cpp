@@ -114,8 +114,8 @@ HRESULT CLevelLightMap::Initialize()
 	}	// 이펙트용 라이트 풀 생성
 
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 1.f);
-	CGameInstance::Get().Add_PointLight({ 15.2f, 4.f, 5.2f }, { 1.f, 1.f, 1.f }, 100.f, 50.f);
-	CGameInstance::Get().Add_SpotLight({ 8.2f, 4.f, 8.2f }, { 1.f, 1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
+	//CGameInstance::Get().Add_PointLight({ 15.2f, 4.f, 5.2f }, { 1.f, 1.f, 1.f }, 100.f, 50.f);
+	//CGameInstance::Get().Add_SpotLight({ 8.2f, 4.f, 8.2f }, { 1.f, 1.f, 1.f }, 100.f, 20.f, 50.f, 60.f);
 	return S_OK;
 }
 

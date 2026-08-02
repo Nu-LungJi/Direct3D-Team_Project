@@ -74,6 +74,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::TERRAIN));
 		});
 
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_UIEditor", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::UIEDITOR));
+		});
+
 	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
 	CGameInstance::Get().UpdateTimeProvider();
 

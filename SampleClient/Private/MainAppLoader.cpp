@@ -351,7 +351,7 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			}
 		}
 	}
-
+	
 	{
 		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
 		CGameInstance::Get().Load_ParticleJsonPackage(k);

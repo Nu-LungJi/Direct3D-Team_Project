@@ -5,7 +5,9 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "TestPathPlaybackObject.h"
 #include "RagdollTest.h"
+#include "TombBossBullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 
@@ -15,7 +17,7 @@
 #include "Player_Magic_Bullet.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
-#include "Mon_Weapon.h"
+#include "GurdianWeapon.h"
 #include "BossTMB.h"
 #include "StarBurst.h"
 
@@ -76,6 +78,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 				CRagdollTest::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_RagdollTest");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_TestPathPlayback,
+				CTestPathPlaybackObject::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_TestPathPlayback");
 				return false;
 			}
 
@@ -241,6 +252,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_BossStarBurst");
 				return false;
 			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_TombBossBullet,
+				CTombBossBullet::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_TombBossBullet");
+				return false;
+			}
 			//TombGurDian
 			{
 				if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_TMBGurdian",
@@ -310,12 +330,12 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 					}
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CMon_Weapon::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CGurdianWeapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Mace");
 					return false;
 				}
-				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CMon_Weapon::Create())))
+				if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CGurdianWeapon::Create())))
 				{
 					MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_Sword");
 					return false;

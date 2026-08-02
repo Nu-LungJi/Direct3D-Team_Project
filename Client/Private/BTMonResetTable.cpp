@@ -40,8 +40,7 @@ EVALUATE CBTMonResetTable::Evaluate(_float fTimeDelta)
 			if (!pMonster->Is_ActiveHit())
 				return m_eDebug = EVALUATE::FAILED;
 
-			pMonster->Clear_PendingHit();
-			pMonster->Clear_ActiveHit();
+			pMonster->ReActiveTable();
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 	}

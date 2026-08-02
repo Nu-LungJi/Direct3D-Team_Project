@@ -852,17 +852,32 @@ _float CEffectManager::DispatchLight(EFFECT_INSTANCE& instance,const EFFECT_LIGH
 	if (!m_pLightManager)
 		return 0.f;
 
-	const _float3 worldPosition =TransformPosition(command.vLocalPosition,instance.matWorld);
+	const _float3 worldPosition =
+		TransformPosition(command.vLocalPosition, instance.matWorld);
+
+	const float speed = XMVectorGetX(
+		XMVector3Length(XMLoadFloat3(&command.vVelocity)));
+
+	_float3 worldVelocity =
+		TransformDirection(command.vVelocity, instance.matWorld);
+
+	XMStoreFloat3(
+		&worldVelocity,
+		XMLoadFloat3(&worldVelocity) * speed);
 
 	auto lightHandle =
 		m_pLightManager->Allocate_EffectLight(
-			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z,1.f),
+			XMVectorSet(
+				worldPosition.x,
+				worldPosition.y,
+				worldPosition.z,
+				1.f),
 			command.fIntensity,
 			command.vColor,
 			command.fInnerAtt,
 			command.fOuterAtt,
 			command.fDuration,
-			command.vVelocity);
+			worldVelocity);
 
 	//핸들을 현재 재생대기중인 instance에 추가.
 	if (lightHandle)

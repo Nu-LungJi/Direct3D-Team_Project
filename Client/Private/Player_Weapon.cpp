@@ -209,6 +209,16 @@ HRESULT CPlayer_Weapon::Render_Shadow(ID3D11DeviceContext* pContext, const E::RE
 
 	return S_OK;
 }
+bool CPlayer_Weapon::GetShadowBounds(BoundingBox& OutBounds) const {
+	if (m_pComModelInstance == nullptr)	return false;
+
+	const auto& Model = m_pComModelInstance->GetModel();
+	if (Model == nullptr || !Model->HasLocalBounds())		return false;
+
+	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
+
+	return true;
+}
 /*---------------------------------*/
 
 _float4x4 CPlayer_Weapon::GetSpawnWorldMatrix() const

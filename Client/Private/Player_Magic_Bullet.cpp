@@ -193,18 +193,30 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		(tHit.pGameObject ?
 			std::string{ tHit.pGameObject->GetObjectTag() } :
 			"null") + "\n");
-
 	_float4x4 tImpactWorld{};
-	XMStoreFloat4x4(
-		&tImpactWorld,
-		XMMatrixTranslation(
-			tHit.vHitpos.x,
-			tHit.vHitpos.y,
-			tHit.vHitpos.z));
-	CGameInstance::Get().PlayEffect(
-		"PlayerAttackSpread", tImpactWorld);
-
-	if (auto pTmbGurdian = Cast<CTmbGurdian>(tHit.pGameObject))
+	auto camera = CGameInstance::Get().GetActiveCamera();
+	if (camera)
+	{
+		const XMVECTOR hitPosition = XMLoadFloat3(&tHit.vHitpos);
+		const XMVECTOR cameraPosition = camera->GetTransform().GetLoadedPostion();
+		const XMVECTOR look = XMVector3Normalize(cameraPosition - hitPosition);
+		XMVECTOR up = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		XMVECTOR right = XMVector3Cross(up, look);
+		if (XMVectorGetX(XMVector3LengthSq(right)) < 0.0001f)
+			right = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+		else
+			right = XMVector3Normalize(right);
+		up = XMVector3Normalize(XMVector3Cross(look, right));
+		XMMATRIX impactWorld = XMMatrixIdentity();
+		impactWorld.r[0] = right;
+		impactWorld.r[1] = up;
+		impactWorld.r[2] = look;
+		impactWorld.r[3] = XMVectorSetW(hitPosition, 1.f);
+		_float4x4 impactWorldData{};
+		XMStoreFloat4x4(&impactWorldData, impactWorld);
+		CGameInstance::Get().PlayEffect("PlayerAttackSpread", impactWorldData);
+	}
+	if (auto pTmbGurdian= Cast<CTmbGurdian>(tHit.pGameObject))
 	{
 		static constexpr const char* HIT_SOUND_PATHS[] =
 		{

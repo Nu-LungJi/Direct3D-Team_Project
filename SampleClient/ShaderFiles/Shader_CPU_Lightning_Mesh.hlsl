@@ -122,7 +122,7 @@ PS_OUT PSMain(VS_OUT In)
 	if (AlphaMask < 0.01f)
 		clip(-1);
 	
-	float3 CurrentEmissive = lerp(In.vEmissive, In.vEndEmissive, Ratio).rgb;
+	float4 CurrentEmissive = lerp(In.vEmissive, In.vEndEmissive, Ratio);
 	
 	float  CoreFactor = pow(saturate(1.f - DistanceFromCenter / max(CurrentWidth, 0.001f)), CoreThickness);
 	
@@ -132,6 +132,6 @@ PS_OUT PSMain(VS_OUT In)
 	float3 FinalColor = lerp(GlowDiffuse, CoreDiffuse, CoreFactor);
 	FinalColor *= FlickerinfFactor * AlphaMask;
 	
-	Out.vDiffuse = float4(FinalColor, AlphaMask);
+	Out.vDiffuse = float4(FinalColor + CurrentEmissive.rgb * CurrentEmissive.a, AlphaMask);
 	return Out;
 }
