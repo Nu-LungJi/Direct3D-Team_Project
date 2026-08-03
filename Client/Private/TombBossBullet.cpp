@@ -147,6 +147,7 @@ void CTombBossBullet::LateUpdate(_float fTimeDelta)
 		GetTransform().GetLoadedWorldMatrix());
 	pDebug->SetColor(PreviousColor);
 	pDebug->SetDepthMode(PreviousDepth);
+
 }
 
 void CTombBossBullet::UpdateGUI()

@@ -109,6 +109,11 @@ void CPlayer::UpdateGUI()
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
 
+	
+	ImGui::Text("HP : %d", m_iHp);
+
+	ImGui::DragInt("HP : ",&m_iHp,0.1f,0,100000);
+
 	if (m_pRagdollController)
 		m_pRagdollController->UpdateGUI();
 

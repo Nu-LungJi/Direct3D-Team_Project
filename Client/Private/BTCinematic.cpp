@@ -33,6 +33,10 @@ HRESULT CBTCinematic::Initalize(void* pArg)
 
 EVALUATE CBTCinematic::Evaluate(_float fTimeDelta)
 {
+	FCinematicPlayOptions option{};
+	option.eReturnMode = ECinematicReturnMode::Blend;
+	option.fReturnBlendDuration = 1.5f;
+	CGameInstance::Get().PlayCinematic("TombBossIntro", m_Handle, option);
 	return m_eDebug = EVALUATE::SUCCESS;
 }
 void CBTCinematic::Update_Gui()

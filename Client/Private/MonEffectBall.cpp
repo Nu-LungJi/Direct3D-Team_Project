@@ -102,7 +102,7 @@ void CMonEffectBall::OverlapTest()
 	PX_OVERLAP_RESULT pxOverLapResult{};
 
 	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
-	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 2.f };
+	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 1.2f };
 	pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = vPos };
 
 	auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
@@ -111,7 +111,7 @@ void CMonEffectBall::OverlapTest()
 	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
 	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
 	pDbgLineRender->SetDepthTest(true);
-	pDbgLineRender->AddSphere(2.f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+	pDbgLineRender->AddSphere(1.2f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 
