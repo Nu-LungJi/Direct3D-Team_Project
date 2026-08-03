@@ -820,19 +820,44 @@ void CLightPlacementEditor::DrawDebugLight(
 		const _float range = std::max(
 			light.Get_LightRange(),
 			LightPlacementEditorDetail::MIN_RANGE);
-		const _float halfAngle = XMConvertToRadians(
-			std::clamp(
-				light.Get_LightOuterAttenuation(),
-				0.1f,
-				75.f));
-		const _float radius = std::tan(halfAngle) * range;
-		debug.AddCone(
-			radius,
-			range,
+		const _float outerAngle = std::clamp(
+			light.Get_LightOuterAttenuation(),
+			0.1f,
+			75.f);
+		const _float innerAngle = std::clamp(
+			light.Get_LightInnerAttenuation(),
+			0.f,
+			outerAngle);
+		const _float outerHalfAngle =
+			XMConvertToRadians(outerAngle);
+		const _float innerHalfAngle =
+			XMConvertToRadians(innerAngle);
+		const _matrix coneWorld =
 			LightPlacementEditorDetail::MakeSpotConeWorld(
 				position,
 				direction,
-				range));
+				range);
+
+		if (innerHalfAngle > 0.f)
+		{
+			debug.SetColor(
+				bSelected
+				? _float4{ 1.f, 1.f, 1.f, 1.f }
+				: _float4{ 0.2f, 1.f, 0.45f, 1.f });
+			debug.AddCone(
+				std::tan(innerHalfAngle) * range,
+				range,
+				coneWorld);
+		}
+
+		debug.SetColor(
+			bSelected
+			? _float4{ 1.f, 0.9f, 0.1f, 1.f }
+			: _float4{ 0.1f, 0.9f, 0.8f, 1.f });
+		debug.AddCone(
+			std::tan(outerHalfAngle) * range,
+			range,
+			coneWorld);
 	}
 }
 

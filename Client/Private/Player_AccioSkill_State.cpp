@@ -99,8 +99,8 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 				//const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 				//_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
-
-				_vector monstervPos = XMVectorSetW(XMLoadFloat3(&pMonster->GetTransform().GetPosition()), 1.f);
+			
+				_vector monstervPos = XMVectorSetW(XMLoadFloat3(&pMonster->GetHurtBoxPosition()), 1.f);
 				m_iAccioEffectID = CGameInstance::Get().PlayEffect("Accio", spawnWorld, monstervPos,
 					[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
 					{
@@ -173,9 +173,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				m_bPulling = false;
 				break;
 			}
-
-			_vector targetPos = Target->GetTransform().GetState(STATE::POSITION);
-
+	
+			//_vector targetPos = XMVectorSetW(
+			//	XMLoadFloat3(&Target->GetHurtBoxPosition()), 1.f);
+		
+			_vector targetPos = XMVectorSetW(
+				XMLoadFloat3(&Target->GetTransform().GetPosition()), 1.f);
 			const _vector playerPos = pPlayer->GetTransform().GetState(STATE::POSITION);
 
 			const _vector playerLook = XMVector3Normalize(XMVectorSetY(pPlayer->GetTransform().GetState(STATE::LOOK), 0.f));

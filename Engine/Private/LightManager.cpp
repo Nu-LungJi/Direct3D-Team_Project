@@ -1356,16 +1356,32 @@ void CLightManager::DrawDebugEffectLights()
 
 		const _float3 position =
 			light->Get_LightPosition();
+		const _float innerRange = std::max(
+			light->Get_PointLightInnerAttenuation(),
+			0.f);
+		const _float outerRange = std::max(
+			light->Get_PointLightOuterAttenuation(),
+			0.02f);
+		const _matrix world = XMMatrixTranslation(
+			position.x,
+			position.y,
+			position.z);
 
 		debug->AddCross(position, 0.2f);
+		if (innerRange > 0.f)
+		{
+			debug->SetColor(
+				{ 1.f, 0.85f, 0.1f, 1.f });
+			debug->AddSphere(
+				std::min(innerRange, outerRange),
+				world);
+		}
+
+		debug->SetColor(
+			{ 1.f, 0.f, 1.f, 1.f });
 		debug->AddSphere(
-			std::max(
-				light->Get_PointLightOuterAttenuation(),
-				0.02f),
-			XMMatrixTranslation(
-				position.x,
-				position.y,
-				position.z));
+			outerRange,
+			world);
 	}
 
 	debug->SetColor(previousColor);

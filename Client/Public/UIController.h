@@ -93,6 +93,7 @@ private: // ************ 계속 바뀌는 유아이 ******************* //
 	std::vector<CHandle> m_DeathTxt{};
 	CHandle m_BeathButton[3] = {};
 	CHandle m_GameOverMask{};
+	_bool m_isCreateDeathScene{ false };
 
 	/***********커서*************/
 	std::optional<CHandle> m_Cursor{};

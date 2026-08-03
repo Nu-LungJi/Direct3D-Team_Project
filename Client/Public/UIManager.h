@@ -41,7 +41,7 @@ public:
 	/*******페이드 인아웃******/
 	void CreateFadeIn(float delay = 0.f, float playtime = 0.5f);
 	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f);
-	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f);
+	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f, LEVEL level = LEVEL::LOGO);
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -75,7 +75,7 @@ private:
 	}
 	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
-	void PlayFadeInChange(CHandle pHandle, float delay = 0.f, float playtime = 3.f);
+	void PlayFadeInChange(CHandle pHandle, LEVEL level, float delay = 0.f, float playtime = 3.f);
 
 private:
 	std::string g_BasePath = "./Resources/Client/UIData/Prefabs/";

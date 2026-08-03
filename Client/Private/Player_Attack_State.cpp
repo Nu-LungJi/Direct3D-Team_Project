@@ -181,25 +181,31 @@ CPlayer_Attack_State::ResolveAttackDirection(const CPlayer& player) const
 {
 	auto* camera =
 		CGameInstance::Get().GetActiveCamera("PlayerCamera");
+
 	if (!camera)
 		return ATTACK_DIRECTION::FWD;
 
-	_vector vPlayerLook = XMVectorSetY(player.GetTransform().GetState(STATE::LOOK),0.f);
-	_vector vPlayerRight = XMVectorSetY(player.GetTransform().GetState(STATE::RIGHT),0.f);
-	//_vector vAttackDirection = XMVectorSetY(camera->GetTransform().GetState(STATE::LOOK),0.f);
+	_vector vPlayerLook =
+		XMVectorSetY(player.GetTransform().GetState(STATE::LOOK), 0.f);
+	_vector vPlayerRight =
+		XMVectorSetY(player.GetTransform().GetState(STATE::RIGHT), 0.f);
 
-	_vector vAttackDirection{};
+	_vector vAttackDirection =
+		XMVectorSetY(camera->GetTransform().GetState(STATE::LOOK), 0.f);
 
-	if (pTarget) {
-		if (!pTarget->GetPendingDestroy())
-		{
-			const _vector vPlayerPosition = player.GetTransform().GetState(STATE::POSITION);
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
+		player.GetTargetHandle());
 
-			const _vector vTargetPosition = pTarget->GetTransform().GetState(STATE::POSITION);
+	if (pTarget && !pTarget->GetPendingDestroy())
+	{
+		const _vector vPlayerPosition =
+			player.GetTransform().GetState(STATE::POSITION);
 
-			// 타겟 방향
-			vAttackDirection = XMVectorSetY(vTargetPosition - vPlayerPosition, 0.f);
-		}
+		const _vector vTargetPosition =
+			pTarget->GetTransform().GetState(STATE::POSITION);
+
+		vAttackDirection =
+			XMVectorSetY(vTargetPosition - vPlayerPosition, 0.f);
 	}
 	
 	else

@@ -157,9 +157,26 @@ void UIManager::InitializeActions()
 			_float scaleRatio = pCaller->GetScaleRatio();
 
 			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
-				[handle](float currentValue) {
+				[handle, bSoundPlayed = false](float currentValue) mutable {
 					if (auto pObj = GetSafeUI(handle))
 					{
+						if (!bSoundPlayed)
+						{
+							E::CGameInstance::Get()
+								.GetSoundManager()
+								->Play2D(
+									"./Resources/SampleClient/Sound/UI/Paper.wav",
+									SOUND_PLAY_DESC{
+										.sBusID = SOUND_BUS::UI,
+										.fVolume = 0.3f,
+										.fPitch = 1.f,
+										.iPriority = 64,
+										.bLoop = false
+									});
+
+							bSoundPlayed = true;
+						}
+
 						pObj->SetScaleRatio(currentValue);
 						pObj->CalcUICoord();
 					}
@@ -185,6 +202,7 @@ void UIManager::InitializeActions()
 			pCaller->SetActive(true);
 			CHandle handle = pCaller->GetHandle();
 			_float scaleRatio = pCaller->GetScaleRatio();
+
 
 			pTween->PlayTween(0.5f, scaleRatio, 0.2f,
 				[handle](float currentValue) {
@@ -1116,19 +1134,19 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 void UIManager::CreateFadeIn(float delay, float playtime)
 {
 	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-	PlayFadeIn(hBG);
+	PlayFadeIn(hBG, delay, playtime);
 }
 
 void UIManager::CreateFadeOut(float delay, float playtime)
 {
 	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-	PlayFadeOutDelete(hBG);
+	PlayFadeOutDelete(hBG, delay, playtime);
 }
 
-void UIManager::CreateFadeInSceneChange(float delay, float playtime)
+void UIManager::CreateFadeInSceneChange(float delay, float playtime, LEVEL level)
 {
 	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-	PlayFadeInChange(hBG);
+	PlayFadeInChange(hBG, level, delay, playtime);
 }
 
 std::optional<CHandle> UIManager::RootUIPicking()
@@ -1546,7 +1564,7 @@ void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)
 		}, nullptr, EEaseType::EaseOutQuad, delay);
 }
 
-void UIManager::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
+void UIManager::PlayFadeInChange(CHandle pHandle, LEVEL level, float delay, float playtime)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();
@@ -1558,9 +1576,9 @@ void UIManager::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
 	pTween->PlayTween(0.f, 1.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
-		}, [pHandle]() {
+		}, [pHandle, level]() {
 			Engine::CGameInstance::Get().ChangeLevel(
-				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::BOSS_CHARLES_ROOKWOOD));
+				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), level));
 			}, EEaseType::EaseOutQuad, delay);
 }
 
