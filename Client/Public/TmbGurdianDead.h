@@ -61,6 +61,7 @@ public:
 	/*---------------------------------*/
 private:
 	void				Boom(_float fTimeDelta);
+	void				Dead_Sound(_float3 vPos);
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
 	CComPxRigidBody* m_pComPxRigidBody{};
@@ -68,6 +69,7 @@ private:
 	_bool m_bActivated{};
 	_bool m_bSocketAttached{};
 	_bool m_bRenderEnabled{};
+	_bool m_bSound{true};
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
@@ -77,6 +79,7 @@ private:
 	_float3				m_fTestEmissive{1.f,1.f,1.f};
 	_float				m_fTick{};
 	_float				m_DissolveIntensive{}, m_EmissiveIntensive{};
+
 public:
 	static E::UPtr<CTmbGurdianDead> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

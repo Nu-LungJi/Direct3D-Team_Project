@@ -868,7 +868,7 @@ void CTmbGurdian::ReadySound()
 	m_SoundTable["TmbSlash6"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash6.wav", };
 
 	m_SoundTable["TmbBeforeHit"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/BeforeHit.wav", };
-
+	m_SoundTable["TombEliteSpawn"] = { "./Resources/SampleClient/Sound/PensiveKnight/TombEliteSpawn.wav", };
 }
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
