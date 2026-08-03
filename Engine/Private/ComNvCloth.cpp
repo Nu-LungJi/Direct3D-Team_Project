@@ -104,8 +104,8 @@ _bool CComNvCloth::GetParticles(
 			OutParticles);
 }
 
-_bool CComNvCloth::GetGpuParticleView(
-	NVCLOTH_GPU_PARTICLE_VIEW& OutView) const
+_bool CComNvCloth::GetRenderParticleView(
+	NVCLOTH_RENDER_PARTICLE_VIEW& OutView) const
 {
 	OutView = {};
 	if (!m_hCloth)
@@ -114,7 +114,7 @@ _bool CComNvCloth::GetGpuParticleView(
 	auto* pManager =
 		CGameInstance::Get().GetNvClothManager();
 	return pManager &&
-		pManager->GetClothGpuParticleView(
+		pManager->GetClothRenderParticleView(
 			m_hCloth,
 			OutView);
 }

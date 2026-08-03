@@ -17,10 +17,14 @@ private:
 	CNvClothManager();
 	~CNvClothManager() override;
 
-	HRESULT Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
+	HRESULT Initialize(
+		ID3D11Device* pDevice,
+		ID3D11DeviceContext* pContext,
+		NVCLOTH_BACKEND eBackend);
 
 public:
 	_bool IsInitialized() const;
+	NVCLOTH_BACKEND GetBackend() const;
 	HRESULT CreateFabric(
 		const NVCLOTH_FABRIC_DESC& Desc,
 		NVCLOTH_FABRIC_HANDLE& OutHandle,
@@ -36,9 +40,9 @@ public:
 	_bool GetClothParticles(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		std::vector<_float3>& OutPositions) const;
-	_bool GetClothGpuParticleView(
+	_bool GetClothRenderParticleView(
 		NVCLOTH_CLOTH_HANDLE Handle,
-		NVCLOTH_GPU_PARTICLE_VIEW& OutView);
+		NVCLOTH_RENDER_PARTICLE_VIEW& OutView);
 	_bool SetClothTransform(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const _float3& vTranslation,
@@ -59,7 +63,9 @@ public:
 
 	static UPtr<CNvClothManager> Create(
 		ID3D11Device* pDevice,
-		ID3D11DeviceContext* pContext);
+		ID3D11DeviceContext* pContext,
+		NVCLOTH_BACKEND eBackend =
+			NVCLOTH_BACKEND::DX11);
 
 private:
 	std::unique_ptr<IMPLEMENTATION> m_pImpl{};

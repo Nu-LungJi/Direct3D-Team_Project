@@ -3,6 +3,7 @@
 namespace Engine
 {
 	enum class WINMODE { FULL, WIN };
+	enum class NVCLOTH_BACKEND { CPU, DX11 };
 	enum class MOUSEKEYSTATE { LB, RB, MB, END };
 	enum class MOUSEMOVESTATE { X, Y, Z, END };
 	enum class RENDERGROUP { PRIORITY, NONBLEND_INSTANCED, NONBLEND, BLEND, LIGHT, EFFECT, SKYBOX, COLLIDER, UI3D, UI, END };

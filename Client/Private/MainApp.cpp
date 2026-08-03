@@ -25,6 +25,8 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.eWinMode = Engine::WINMODE::WIN;
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
+	// NvCloth A/B test switch. Change to DX11 to compare the same cape.
+	EngineDesc.eNvClothBackend = Engine::NVCLOTH_BACKEND::CPU;
 
 	GET_SINGLE(UIManager)->InitializeActions();
 	GET_SINGLE(UIManager)->InitializeFunc();
