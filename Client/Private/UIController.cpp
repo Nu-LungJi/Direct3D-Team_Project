@@ -126,6 +126,13 @@ void CUIController::Update(E::_float fTimeDelta)
 	if (E::CGameInstance::Get().KeyDown(DIK_NEXT))
 	{
 		UsePotion();
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Potion.wav", SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 	}
 	// ************** 스펠슬롯
 	if (E::CGameInstance::Get().KeyDown(DIK_B) && E::CGameInstance::Get().KeyPressing(DIK_LCONTROL))
@@ -161,8 +168,20 @@ void CUIController::Update(E::_float fTimeDelta)
 		AddMonsterHP(-30.f);
 
 	// 죽는 화면
-	//if (E::CGameInstance::Get().KeyDown(DIK_0))
-	//	CreateDeathScene();
+	if (E::CGameInstance::Get().KeyDown(DIK_0) && !m_isCreateDeathScene)
+	{
+		m_isCreateDeathScene = true;
+
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 0.5f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+			});
+		CreateDeathScene();
+	}
+	
 
 	/****************필수********************/
 	if (m_bMonsterHP)
@@ -508,6 +527,10 @@ void CUIController::TargetMonsterHP(CHandle monsterHandle)
 void CUIController::CreateMonsterHP()
 {
 	m_TargetHandle = m_ReserveTargetHandle;
+
+	if (m_TargetHandle == std::nullopt || E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
+		return;
+
 	auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
 	if (std::nullopt == m_TargetHandle || nullptr == pMonster)
 		return;
@@ -573,7 +596,8 @@ void CUIController::ClearDeathScene()
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
 	PlayFadeInOnly(m_PotionCount);
 	PlayFadeOutDelete(m_GameOverMask);
-	E::CGameInstance::Get().SetMouseFix(true);
+	m_isCreateDeathScene = false;
+	//E::CGameInstance::Get().SetMouseFix(true);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)

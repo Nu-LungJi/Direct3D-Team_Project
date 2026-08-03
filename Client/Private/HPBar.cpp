@@ -242,6 +242,14 @@ void CHPBar::PlayEffect(uint32_t uiState)
 			ClearEffectTweens();
 			OnHoverEnter(this);
 		}
+
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/ButtonSelect.wav", SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::UI,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
 	}
 
 	if (uiState & ETOUI(UI_STATE::EXIT))
