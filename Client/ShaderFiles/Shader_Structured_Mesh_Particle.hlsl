@@ -198,7 +198,7 @@ PS_OUT PSMaceSphere(VS_OUT In)
 	darkMask = smoothstep(0.15f, 0.5f, darkMask);
 
 	float2 distortion = patternSample.rg * 2.0f - 1.0f;
-	distortion *= 0.12f * fade * lerp(0.4f, 1.0f, surfaceNoise);
+	distortion *= 0.23f * fade * lerp(0.4f, 1.0f, surfaceNoise);
 
 	float3 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
 
