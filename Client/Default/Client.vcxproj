@@ -204,6 +204,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\public\BossMace.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
     <ClInclude Include="..\public\BossTMB.h" />
@@ -246,6 +247,8 @@
     <ClInclude Include="..\Public\HPBar.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwood.h" />
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h" />
+    <ClInclude Include="..\public\LevelHogwartWorld.h" />
+    <ClInclude Include="..\public\LevelHogwartWorldLoader.h" />
     <ClInclude Include="..\Public\LevelLoading.h" />
     <ClInclude Include="..\Public\LevelLogo.h" />
     <ClInclude Include="..\public\LevelLogoLoader.h" />
@@ -271,6 +274,7 @@
 	<ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\PlayerRagdollController.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
@@ -322,6 +326,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />
     <ClCompile Include="..\Private\BTAnimation.cpp" />
@@ -360,6 +365,8 @@
     <ClCompile Include="..\Private\HPBar.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwood.cpp" />
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp" />
+    <ClCompile Include="..\private\LevelHogwartWorld.cpp" />
+    <ClCompile Include="..\private\LevelHogwartWorldLoader.cpp" />
     <ClCompile Include="..\Private\LevelLoading.cpp" />
     <ClCompile Include="..\Private\LevelLogo.cpp" />
     <ClCompile Include="..\private\LevelLogoLoader.cpp" />
@@ -383,6 +390,7 @@
     <ClCompile Include="..\private\RagdollTest.cpp" />
 	<ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
@@ -438,6 +446,7 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl" />

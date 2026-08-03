@@ -87,8 +87,8 @@ float3 LUT_Filtering(float3 _Color)
     TexCoordB.x = (AdjustTile02 + LUT_UVOffset.x) / LUT_Size;
     TexCoordB.y = LUT_UVOffset.y;
     
-    float3 LUT_ColorA = LUT_Texture.SampleLevel(LinearClamp, TexCoordA, 0.f).rgb;
-    float3 LUT_ColorB = LUT_Texture.SampleLevel(LinearClamp, TexCoordB, 0.f).rgb;
+	float3 LUT_ColorA = LUT_Texture.SampleLevel(LinearClamp, TexCoordA, 0.f).rgb;
+	float3 LUT_ColorB = LUT_Texture.SampleLevel(LinearClamp, TexCoordB, 0.f).rgb;
     
     //float3 LUT_Mapping = _Color * ((LUT_Size - 1.f) / LUT_Size) + (0.5f / LUT_Size);
     //return LUT_Texture.Sample(SamplerClamp, LUT_Mapping);
@@ -206,10 +206,10 @@ float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_T
     //FinalColor = ToneMap_AGXFilm(FinalColor); // 일단 사용X
     
     // LUT ColorGrading
-    FinalColor = LUT_Filtering(FinalColor);
+	//FinalColor = LUT_Filtering(FinalColor);
     
     // Vignette
-    FinalColor = Vignetting(FinalColor, TexCoord);
+	FinalColor = Vignetting(FinalColor, TexCoord);
 	
 	FinalColor = saturate(FinalColor);
 	// Gamma Correction

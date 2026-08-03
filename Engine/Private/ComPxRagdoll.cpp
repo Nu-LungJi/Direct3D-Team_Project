@@ -494,6 +494,24 @@ _bool CComPxRagdoll::ValidateDesc(
 	std::unordered_map<std::string, std::string> ParentByChild{};
 	for (const auto& tJoint : tDesc.Joints)
 	{
+		const _bool bInvalidTwistLimit =
+			tJoint.eTwistMotion ==
+				PX_RAGDOLL_D6_MOTION::LIMITED &&
+			(tJoint.fTwistLowerDegrees >
+				tJoint.fTwistUpperDegrees ||
+				tJoint.fTwistLowerDegrees < -179.9f ||
+				tJoint.fTwistUpperDegrees > 179.9f);
+		const _bool bInvalidSwingYLimit =
+			tJoint.eSwingYMotion ==
+				PX_RAGDOLL_D6_MOTION::LIMITED &&
+			(tJoint.fSwingYDegrees <= 0.f ||
+				tJoint.fSwingYDegrees > 179.9f);
+		const _bool bInvalidSwingZLimit =
+			tJoint.eSwingZMotion ==
+				PX_RAGDOLL_D6_MOTION::LIMITED &&
+			(tJoint.fSwingZDegrees <= 0.f ||
+				tJoint.fSwingZDegrees > 179.9f);
+
 		if (tJoint.sJointName.empty() ||
 			!JointNames.emplace(tJoint.sJointName).second ||
 			tJoint.sParentBodyName == tJoint.sChildBodyName ||
@@ -523,14 +541,9 @@ _bool CComPxRagdoll::ValidateDesc(
 			!IsFinite(tJoint.fInvMassScaleChild) ||
 			!IsFinite(tJoint.fInvInertiaScaleParent) ||
 			!IsFinite(tJoint.fInvInertiaScaleChild) ||
-			tJoint.fTwistLowerDegrees >
-				tJoint.fTwistUpperDegrees ||
-			tJoint.fTwistLowerDegrees < -179.9f ||
-			tJoint.fTwistUpperDegrees > 179.9f ||
-			tJoint.fSwingYDegrees <= 0.f ||
-			tJoint.fSwingYDegrees > 179.9f ||
-			tJoint.fSwingZDegrees <= 0.f ||
-			tJoint.fSwingZDegrees > 179.9f ||
+			bInvalidTwistLimit ||
+			bInvalidSwingYLimit ||
+			bInvalidSwingZLimit ||
 			tJoint.fLimitStiffness < 0.f ||
 			tJoint.fLimitDamping < 0.f ||
 			tJoint.fLimitRestitution < 0.f ||
@@ -985,6 +998,12 @@ HRESULT CComPxRagdoll::BuildRuntimeBodies()
 			tBody.fLinearDamping);
 		tRuntime.pActor->setAngularDamping(
 			tBody.fAngularDamping);
+		// Ragdoll은 여러 동적 바디가 관절 체인으로 연결되므로 기본
+		// 반복 횟수보다 높여 관절 꺾임과 순간적인 벌어짐을 줄인다.
+		tRuntime.pActor->setSolverIterationCounts(8, 2);
+		// 강한 충돌이나 한계각 보정에서 발생하는 비현실적인 고속
+		// 회전을 제한한다. 20 rad/s는 빠른 낙하 반응은 유지한다.
+		tRuntime.pActor->setMaxAngularVelocity(20.f);
 		tRuntime.pActor->setMaxDepenetrationVelocity(
 			tBody.fMaxDepenetrationVelocity);
 		tRuntime.pActor->setActorFlag(

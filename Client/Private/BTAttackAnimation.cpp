@@ -4,6 +4,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "Monster.h"
 #include "Player.h"
+#include "ClientEvents.h" 
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -51,11 +52,15 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 				pAnimator->SetPlay(true);
 				pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+				if (m_bStart)
+				{
+					m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
+					m_bStart = false;
+				}
 
 				if (!m_bActiveSkill)
 				{
-					Active_Skill();
-					m_bActiveSkill = true;
+					m_bActiveSkill = Active_Skill();
 				}
 				Gravity();
 				_bool bFinished = pAnimator->GetFinish();
@@ -66,14 +71,9 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				ShakeCam(fAnimRatio);
 				Rotation(pTransform, pMoveIntent, pTarget, fTimeDelta, fAnimRatio);
 				//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
+			
 				if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 				{
-					if (m_bStart)
-					{
-						m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
-						m_bStart = false;
-					}
-
 					m_fTime += fTimeDelta;
 
 					_float tt = (fAnimRatio - m_fRatio.x) / (m_fRatio.y - m_fRatio.x);
@@ -117,22 +117,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					}
 				}
 				if (m_bEarly && m_fEarlyRatio <= fAnimRatio)
-				{
-					Reset_CheckFlag();
-					Reset_Value();
-					m_bActiveSkill = false;
 					return m_eDebug = EVALUATE::SUCCESS;
-				}
 
 				if (m_bLoop || bFinished)
-				{
-					//Hit 종료는 애니매이션 끝나면
-					//Attack도 애니매이션 끝나면
-					m_bActiveSkill = false;
-					Reset_Value();
-					Reset_CheckFlag();
 					return m_eDebug = EVALUATE::SUCCESS;
-				}
+			
 			}
 		}
 	}
@@ -147,8 +136,12 @@ void CBTAttackAnimation::Update_Gui()
 	DragFloat("ShakeCamRatio", m_fCamShakeRatio);
 	ImGui::Text("RotRatio");
 	ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
+	ImGui::Text("AttcolRatio");
+	ImGui::DragFloat2("##AttcolRatio", reinterpret_cast<_float*>(&m_vAttCollRatio), 0.1f, 0.f, 1.f);
+	DragFloat("AttRadius", m_fAttRadius);
+	
+	
 	DragFloat("RotTime", m_Value.fTime);
-
 	if (ImGui::Button("Animation"))
 		m_bPopup = true;
 	if (m_bPopup)
@@ -187,68 +180,90 @@ void CBTAttackAnimation::Update_Gui()
 }
 void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio)
 {
-	PX_OVERLAP_DESC   pxOverLabDesc{};
-	PX_OVERLAP_RESULT pxOverLapResult{};
+	if (m_bAttRatio || (m_vAttCollRatio.x == 0.f && m_vAttCollRatio.y == 0.f))
+		return;
 
-	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
-	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 5.f };
-	pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = pSrcTransform->GetPosition() };
-
-	_float3 vPos = pxOverLabDesc.tPose.vPosition;
-	auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
-
-	const auto vPreviousColor = pDbgLineRender->GetColor();
-	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
-	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
-	pDbgLineRender->SetDepthTest(true);
-	pDbgLineRender->AddSphere(5.f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
-	pDbgLineRender->SetColor(vPreviousColor);
-	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
-
-	if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabDesc, pxOverLapResult))
+	if (m_vAttCollRatio.y >= fRotRatio && fRotRatio >= m_vAttCollRatio.x)
 	{
-		if (pxOverLapResult.bHit)
-		{
-			//m_fDamage
-			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
-			_float MonDamange = pMon->Get_Damage();
+		PX_OVERLAP_DESC   pxOverLabDesc{};
+		PX_OVERLAP_RESULT pxOverLapResult{};
 
+		pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
+		pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = m_fAttRadius };
+		pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = pSrcTransform->GetPosition() };
+
+		_float3 vPos = pxOverLabDesc.tPose.vPosition;
+		auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
+
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddSphere(5.f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+
+		if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabDesc, pxOverLapResult))
+		{
+			if (pxOverLapResult.bHit)
+			{
+				//m_fDamage
+				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
+				_float MonDamange = pMon->Get_Damage();
+		
+				m_bAttRatio = false;
+			}
 		}
 	}
+	
 
 }
 void CBTAttackAnimation::ShakeCam(_float fRotRatio)
 {
+	if (m_fCamShakeRatio == 0.f)
+		return;
 	if (m_bCamShake && fRotRatio > m_fCamShakeRatio)
 	{
 		//카메라 쉐킷
+		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+			{
+			   1.f, // 강도 0 ~ 1
+			   1.f, // 지속시간
+			   15.f, // 초당 진동횟수
+			});
 		m_bCamShake = false;
 	}
 }
 void CBTAttackAnimation::Abort()
 {
-	__super::Abort();
-	Reset_Value();
-
+	Reset_CheckFlag();
 }
 nlohmann::json CBTAttackAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
+	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "AttColRatio", m_vAttCollRatio);
+
 	SaveJsonValue(j, "Intensive", m_fIntensive);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	SaveJsonValue(j, "AttRadius", m_fAttRadius);
+	
 	return j;
 }
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
+	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "AttColRatio", m_vAttCollRatio);
 	LoadJsonValue(j, "Intensive", m_fIntensive);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	LoadJsonValue(j, "AttRadius", m_fAttRadius);
+
+
 	return S_OK;
 }
 
@@ -264,11 +279,19 @@ void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIn
 	
 
 }
-void CBTAttackAnimation::Reset_Value()
+
+void CBTAttackAnimation::OnEnter()
 {
+	__super::OnEnter();
+	m_bAttRatio = m_bActiveSkill = false;
 	m_bCamShake = true;
-	m_bStart = true;
 	m_fTime = 0.f;
+
+
+
+}
+void CBTAttackAnimation::OnExit(EVALUATE eResult)
+{
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()
 {

@@ -32,6 +32,14 @@ HRESULT CBTReactiveSelector::Initalize(void* pArg)
 	return S_OK;
 }
 
+void CBTReactiveSelector::OnEnter()
+{
+}
+
+void CBTReactiveSelector::OnExit(EVALUATE eResult)
+{
+}
+
 EVALUATE CBTReactiveSelector::Evaluate(_float fTimeDelta)
 {
 	int32_t iIndex = 0;
@@ -41,28 +49,41 @@ EVALUATE CBTReactiveSelector::Evaluate(_float fTimeDelta)
 		if (nullptr == m_Actions[i])
 			continue;
 
-		EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
+		EVALUATE eValuate = m_Actions[i]->Execute(fTimeDelta);
 		if (eValuate == EVALUATE::SUCCESS)
 		{
+			if (m_iRunningIndex != -1 &&
+				m_iRunningIndex != static_cast<int32_t>(i))
+			{
+				m_Actions[m_iRunningIndex]->AbortExecute();
+			}
+
+			m_iRunningIndex = -1;
 			return m_eDebug = EVALUATE::SUCCESS;
 		}
 		else if (eValuate == EVALUATE::RUN)
 		{
+			if (m_iRunningIndex != -1 && m_iRunningIndex != static_cast<int32_t>(i))
+			{
+				m_Actions[m_iRunningIndex]->AbortExecute();
+			}
+			m_iRunningIndex = static_cast<int32_t>(i);
 			return m_eDebug = EVALUATE::RUN;
 		}
 
-
+		if (m_iRunningIndex == static_cast<int32_t>(i))
+			m_iRunningIndex = -1;
 	}
+	m_iRunningIndex= - 1;
 	return m_eDebug = EVALUATE::FAILED;
 }
 
 void CBTReactiveSelector::Abort()
 {
-	for (size_t i = 0; i < m_Actions.size(); ++i)
-	{
-		if (nullptr != m_Actions[i])
-			m_Actions[i]->Abort();
-	}
+	if (m_iRunningIndex >= 0 &&static_cast<size_t>(m_iRunningIndex) < m_Actions.size() &&m_Actions[m_iRunningIndex])
+		m_Actions[m_iRunningIndex]->AbortExecute();
+
+	m_iRunningIndex = -1;
 
 }
 

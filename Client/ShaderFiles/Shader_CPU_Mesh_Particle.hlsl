@@ -299,10 +299,11 @@ PS_OUT PSAccio(VS_OUT In)
 
 	if (all(texColor.rgb < 0.2f))
 		discard;
+	texColor.rgb = pow(texColor.rgb, 2.5f);
 	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
 
-	float3 finalRGB = texColor.rgb * In.vColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 finalRGB = texColor.rgb * In.vColor.rgb * lerpedEmissive.rgb * lerpedEmissive.a;
 	
-	Out.vDiffuse = float4(finalRGB, texColor.a * In.vColor.a);
+	Out.vDiffuse = float4(finalRGB,   In.vColor.a);
 	return Out;
 }

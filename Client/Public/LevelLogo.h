@@ -2,7 +2,6 @@
 #include "Client_Defines.h"
 #include "Level.h"
 #include "UIObject.h"
-
 NS_BEGIN(Client)
 
 class CLevelLogo final : public Engine::CLevel
@@ -40,6 +39,7 @@ private:
 	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayFadeInChange(CHandle pHandle, float delay = 0.f, float playtime = 3.f);
+	void PlayFadeInSacleUp(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 
 	_float m_SceneChangeTimer = 0.f;
 

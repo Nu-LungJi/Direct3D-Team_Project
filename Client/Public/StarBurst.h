@@ -16,6 +16,7 @@ public:
 		_float  fSpeed{ 10.f };
 		_float fRadius{ 0.5f };
 		CHandle	pTargetHandle{};
+		CHandle hOwner{};
 		PX_QUERY_FILTER_DESC tQueryFilter{
 			.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX),
 			.bQueryStatic = false,
@@ -44,8 +45,10 @@ public:
 	void Translate_Attacking(_float fTimeDelta);
 	_bool MoveWithSweep(const _float3& vNextPosition);
 	_bool HandleSweepHit(const PX_SWEEP_RESULT& tHit);
-
 private:
+	void		Dead_Check();
+private:
+	_bool  m_bDead{ false };
 	_float m_fSpeed{ 10.f };
 	_float m_fRadius{ 0.5f };
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
@@ -54,7 +57,7 @@ private:
 	_float	m_fEffectLifeTime{};
 	_float	m_fEffectSpawnTimer{};
 
-	CHandle	m_pTargetHandle{};
+	CHandle	m_pTargetHandle{}, m_hOwner{};
 	XMVECTOR m_vDirection{};
 
 	EFFECT_INSTANCE_ID	m_pLightEffectID{};

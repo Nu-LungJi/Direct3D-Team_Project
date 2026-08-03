@@ -392,6 +392,11 @@ void CTmbGurdianDead::Boom(_float fTimeDelta)
 	m_DissolveIntensive = 0.f + (1.f - 0.f) * t *0.3f;
 	m_EmissiveIntensive = 0.f + (10.f - 0.f) * t;
 
+	if (t >= 3.f)
+	{
+		SetPendingDestroyCascade();
+	}
+
 }
 /*---------------------------------*/
 

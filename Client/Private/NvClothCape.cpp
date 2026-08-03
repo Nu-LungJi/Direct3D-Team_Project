@@ -1565,10 +1565,19 @@ HRESULT CNvClothCape::Render_Shadow(
 		m_pComCBufferPerObject->GetAdressOfBuffer());
 	// Point Shadow는 LightManager의 GS가 월드 좌표를 큐브맵 6면으로 확장한다.
 	// GS가 없는 Directional/Spot Shadow는 기존 SV_POSITION 출력 VS를 사용한다.
+	//const auto& pShadowVertexShader =
+	//	pPreviousGeometryShader ?
+	//	m_pPointShadowVertexShader :
+	//	m_pShadowVertexShader;
+	/*----------- 광윤 추가 -----------*/	// 기존 로직 변경되어서 아래 코드로 변경
+	const bool IsPointFaceShadow =
+		Context.PointShadowFaceIndex >= 0;
+
 	const auto& pShadowVertexShader =
-		pPreviousGeometryShader ?
-		m_pPointShadowVertexShader :
-		m_pShadowVertexShader;
+		IsPointFaceShadow
+		? m_pPointShadowVertexShader
+		: m_pShadowVertexShader;
+	/*---------------------------------*/
 	pContext->IASetInputLayout(
 		pShadowVertexShader->GetInputLayout().Get());
 	pContext->VSSetShader(
@@ -1621,6 +1630,25 @@ HRESULT CNvClothCape::Render_Shadow(
 		nullptr,
 		0);
 	return S_OK;
+}
+
+bool CNvClothCape::GetShadowBounds(BoundingBox& OutBounds) const {
+	CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hTarget);
+
+	if (pTarget == nullptr)	return false;
+
+	if (pTarget->GetShadowBounds(OutBounds))	{
+		OutBounds.Extents.x += 0.5f;
+		OutBounds.Extents.y += 0.25f;
+		OutBounds.Extents.z += 1.0f;
+
+		return true;
+	}
+
+	OutBounds.Center =pTarget->GetTransform().GetPosition();
+	OutBounds.Extents = { 1.75f, 2.0f, 2.0f };
+
+	return true;
 }
 
 UPtr<CNvClothCape> CNvClothCape::Create()

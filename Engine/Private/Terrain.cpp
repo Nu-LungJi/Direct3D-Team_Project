@@ -2,8 +2,11 @@
 #include "Terrain.h"
 
 #include "ComConstantBuffer.h"
+#include "ComPxRigidBody.h"
+#include "ComPxTriMeshCollider.h"
 #include "GameInstance.h"
 #include "Resources.h"
+#include "ResPhysXRTTriMeshGeometry.h"
 #include <nlohmann/json.hpp>
 
 NS_USING(Engine)
@@ -43,6 +46,7 @@ HRESULT CTerrain::Initialize(void* pArg)
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
+	m_tTerrainPhysicsFilter = desc->tPhysicsFilter;
 
 	m_pTerrainTextures[0] = CGameInstance::Get().GetResourceFirst<CResTexture2D>(desc->textureGroup, desc->textureTag);
 	for (uint32_t layer = 1; layer < m_pTerrainTextures.size(); ++layer)
@@ -91,6 +95,32 @@ HRESULT CTerrain::SetTileTexture(uint32_t layer, SPtr<CResTexture2D> texture)
 
 	m_pTerrainTextures[layer] = std::move(texture);
 
+	return S_OK;
+}
+
+uint32_t CTerrain::GetPhysicsEnabledChunkCount() const
+{
+	return static_cast<uint32_t>(std::count_if(m_Chunks.begin(), m_Chunks.end(),
+		[](const UPtr<CTerrainChunk>& chunk)
+		{
+			return chunk && chunk->IsPhysicsEnabled();
+		}));
+}
+
+_bool CTerrain::IsChunkPhysicsEnabled(uint32_t chunkX, uint32_t chunkZ) const
+{
+	const auto* chunk = FindChunk(chunkX, chunkZ);
+	return chunk && chunk->IsPhysicsEnabled();
+}
+
+HRESULT CTerrain::SetChunkPhysicsEnabled(
+	uint32_t chunkX, uint32_t chunkZ, _bool enabled)
+{
+	auto* chunk = FindChunk(chunkX, chunkZ);
+	if (!chunk)
+		return E_INVALIDARG;
+
+	chunk->SetPhysicsEnabled(enabled);
 	return S_OK;
 }
 
@@ -243,6 +273,33 @@ HRESULT CTerrain::SaveTerrain(const _string& metadataPath) const
 				{ "x", coord.x }, { "z", coord.z },
 				{ "file", (maskDirectory.filename() / fileName).generic_string() } });
 		}
+
+		json["physicsChunks"] = nlohmann::ordered_json::array();
+		const std::filesystem::path physicsDirectory =
+			directory / (jsonPath.stem().string() + "_physics");
+		// 런타임 스트리밍을 위해 모든 TerrainChunk를 개별 TriMesh로 미리 Cook한다.
+		for (const auto& chunk : m_Chunks)
+		{
+			if (!chunk)
+				continue;
+
+			std::filesystem::create_directories(physicsDirectory);
+			const auto& coord = chunk->GetCoord();
+			const std::string fileName = "Chunk_" + std::to_string(coord.x) + "_" +
+				std::to_string(coord.z) + ".pxtrimesh";
+			const std::filesystem::path cookedPath = physicsDirectory / fileName;
+			const auto triMeshDesc = CResPhysXRTTriMeshGeometry::MakeDesc(
+				chunk->GetVertices(), chunk->GetIndices(), offsetof(VTX_NORMAL_TEX, pos));
+			if (FAILED(CResPhysXRTTriMeshGeometry::CookToFile(
+				triMeshDesc, cookedPath.generic_string())))
+			{
+				return E_FAIL;
+			}
+
+			json["physicsChunks"].push_back({
+				{ "x", coord.x }, { "z", coord.z },
+				{ "file", (physicsDirectory.filename() / fileName).generic_string() } });
+		}
 		std::ofstream jsonFile(jsonPath, std::ios::trunc);
 
 		if (!jsonFile) 
@@ -258,9 +315,14 @@ HRESULT CTerrain::SaveTerrain(const _string& metadataPath) const
 	}
 }
 
-HRESULT CTerrain::LoadTerrain(const _string& metadataPath)
+HRESULT CTerrain::LoadTerrain(const _string& metadataPath, std::optional<CHandle> physicsTarget)
 {
 	if (metadataPath.empty()) return E_INVALIDARG;
+	ClearPhysicsChunks();
+	m_PhysicsCookedPaths.clear();
+	m_PhysicsTarget = physicsTarget;
+	m_CurrentPhysicsCenter = { -1, -1 };
+
 	try
 	{
 		const std::filesystem::path jsonPath = metadataPath;
@@ -395,6 +457,33 @@ HRESULT CTerrain::LoadTerrain(const _string& metadataPath)
 			GetTransform().SetScale(_float3{ scale[0].get<float>(), scale[1].get<float>(), scale[2].get<float>() });
 			GetTransform().Update();
 		}
+
+
+		if (json.contains("physicsChunks") && json["physicsChunks"].is_array())
+		{
+			for (const auto& physicsJson : json["physicsChunks"])
+			{
+				const TERRAIN_CHUNK_COORD coord{
+					physicsJson.at("x").get<int64_t>(),
+					physicsJson.at("z").get<int64_t>() };
+				if (coord.x < 0 || coord.z < 0 ||
+					coord.x > std::numeric_limits<uint32_t>::max() ||
+					coord.z > std::numeric_limits<uint32_t>::max())
+				{
+					return E_FAIL;
+				}
+
+				auto* chunk = FindChunk(static_cast<uint32_t>(coord.x), static_cast<uint32_t>(coord.z));
+				if (!chunk)
+					return E_FAIL;
+
+				const std::filesystem::path cookedPath = jsonPath.parent_path() / physicsJson.at("file").get<std::string>();
+
+				// 경로만 저장
+				const uint64_t key = (static_cast<uint64_t>((static_cast<uint64_t>(coord.x) << 32) | static_cast<uint64_t>(coord.z)));
+				m_PhysicsCookedPaths[key] = cookedPath.generic_string();
+			}
+		}
 		UpdateChunkVisibility();
 		return S_OK;
 	}
@@ -402,6 +491,191 @@ HRESULT CTerrain::LoadTerrain(const _string& metadataPath)
 	{
 		return E_FAIL;
 	}
+}
+
+void CTerrain::SetPhysicsTarget(std::optional<CHandle> target)
+{
+	if (m_PhysicsTarget == target)
+		return;
+
+	ClearPhysicsChunks();
+	m_PhysicsTarget = target;
+	m_CurrentPhysicsCenter = { -1, -1 };
+}
+
+void CTerrain::UpdateChunkPhysX()
+{
+	if (!m_PhysicsTarget)
+	{
+		ClearPhysicsChunks();
+		m_CurrentPhysicsCenter = { -1, -1 };
+		return;
+	}
+
+	auto* target = CGameInstance::Get().GetGameObjectByHandle(*m_PhysicsTarget);
+	if (!target)
+	{
+		ClearPhysicsChunks();
+		m_CurrentPhysicsCenter = { -1, -1 };
+		return;
+	}
+
+	const _matrix inversTerrain = XMMatrixInverse(nullptr, GetTransform().GetLoadedCombinedWorldMatrix());
+	
+	// 타겟(플레이어)의 월드좌표 -> 터레인의 로컬공간으로 변환
+	_float3 localPosition{};
+	XMStoreFloat3(&localPosition, XMVector3TransformCoord(target->GetTransform().GetLoadedPostion(), inversTerrain));
+	
+	const auto coord = GetChunkCoordFromLocalPosition(localPosition);
+	if (!coord)
+	{
+		ClearPhysicsChunks();
+		m_CurrentPhysicsCenter = { -1, -1 };
+		return;
+	}
+
+	if (*coord == m_CurrentPhysicsCenter)
+		return;
+
+	std::unordered_set<uint64_t> desiredKeys;
+	for (int64_t dz = -1; dz <= 1; ++dz)
+	{
+		for (int64_t dx = -1; dx <= 1; ++dx)
+		{
+			const int64_t x = coord->x + dx;
+			const int64_t z = coord->z + dz;
+
+			if (x < 0 || z < 0)
+				continue;
+
+			const uint64_t key = static_cast<uint64_t>((static_cast<uint64_t>(x) << 32) | static_cast<uint64_t>(z));
+			if (m_PhysicsCookedPaths.contains(key))
+				desiredKeys.insert(key);
+		}
+	}
+
+	// m_ActivePhysicsChunks에는 있지만 desiredKeys에 없는 청크 PhysX제거
+	for (auto it = m_ActivePhysicsChunks.begin(); it != m_ActivePhysicsChunks.end();)
+	{
+		if (desiredKeys.contains(it->first))
+		{
+			++it;
+			continue;
+		}
+
+		if (!it->second.componentTag.empty())
+			DelComponent(it->second.componentTag);
+
+		it = m_ActivePhysicsChunks.erase(it);
+	}
+
+	// Static Actor와 Material은 최초 한 번만 생성
+	if (!desiredKeys.empty() && !m_pTerrainRigidBody)
+	{
+		const auto& scale = GetTransform().GetScale();
+		if (scale.x <= 0.f || scale.y <= 0.f || scale.z <= 0.f)
+			return;
+
+		CComPxRigidBody::DESC rigidBodyDesc{};
+		rigidBodyDesc.eType = CComPxRigidBody::TYPE::STATIC;
+		rigidBodyDesc.vPosition = GetTransform().GetPosition();
+		rigidBodyDesc.vRotation = GetTransform().GetQuaternion();
+
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::
+			Prototype_Component_ComPxRigidBody,
+			"ComPxTerrainRigidBody",
+			&rigidBodyDesc,
+			&m_pTerrainRigidBody)))
+		{
+			return;
+		}
+
+		m_pTerrainPhysicsMaterial = CResPhysXMaterial::CreateAndLoad({});
+
+		if (!m_pTerrainPhysicsMaterial)
+		{
+			DelComponent("ComPxTerrainRigidBody");
+			m_pTerrainRigidBody = nullptr;
+			return;
+		}
+	}
+
+	// desiredKeys에는 있지만 m_ActivePhysicsChunks에는 없는 청크 PhysX로드
+	for (const uint64_t key : desiredKeys)
+	{
+		if (m_ActivePhysicsChunks.contains(key))
+			continue;
+
+		const auto pathIt = m_PhysicsCookedPaths.find(key);
+		if (pathIt == m_PhysicsCookedPaths.end())
+			continue;
+
+
+		const uint32_t chunkX = static_cast<uint32_t>(key >> 32);
+		const uint32_t chunkZ = static_cast<uint32_t>(key);
+
+		auto mesh = CResPhysXTriMeshGeometry::CreateAndLoad(pathIt->second);
+
+		if (!mesh)
+			return;
+
+
+		const _string componentTag = "ComPxTerrainChunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkZ);
+
+		CComPxTriMeshCollider::DESC colliderDesc{};
+		colliderDesc.pComPxRigidBody = m_pTerrainRigidBody;
+		colliderDesc.pResTriMesh = mesh;
+		colliderDesc.pResMaterial = m_pTerrainPhysicsMaterial;
+		colliderDesc.vScale = GetTransform().GetScale();
+		colliderDesc.tFilter = m_tTerrainPhysicsFilter;
+
+		CComPxTriMeshCollider* collider{};
+
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::
+			Prototype_Component_ComPxTriMeshCollider,
+			componentTag,
+			&colliderDesc,
+			&collider)))
+		{
+			return;
+		}
+
+		TERRAIN_PHYSICS_RUNTIME runtime{};
+		runtime.coord = {
+			static_cast<int64_t>(chunkX),
+			static_cast<int64_t>(chunkZ)
+		};
+		runtime.mesh = std::move(mesh);
+		runtime.collider = collider;
+		runtime.componentTag = componentTag;
+
+		m_ActivePhysicsChunks.emplace(key, std::move(runtime));
+	}
+
+
+	m_CurrentPhysicsCenter = *coord;
+
+}
+
+void CTerrain::ClearPhysicsChunks()
+{
+	for (auto& [key, runtime] : m_ActivePhysicsChunks)
+	{
+		if (!runtime.componentTag.empty())
+			DelComponent(runtime.componentTag);
+	}
+
+	m_ActivePhysicsChunks.clear();
+
+	if (m_pTerrainRigidBody)
+		DelComponent("ComPxTerrainRigidBody");
+
+	m_pTerrainRigidBody = nullptr;
+	m_pTerrainPhysicsMaterial.reset();
 }
 
 HRESULT CTerrain::PrependTerrain(bool negativeX)
@@ -638,6 +912,7 @@ void CTerrain::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
 	UpdateChunkVisibility();
+	UpdateChunkPhysX();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
@@ -721,6 +996,29 @@ bool CTerrain::GetOcclusionBounds(BoundingBox& outBounds) const
 		return false;
 	m_LocalBounds.Transform(outBounds, GetTransform().GetLoadedCombinedWorldMatrix());
 	return true;
+}
+
+std::optional<TERRAIN_CHUNK_COORD> CTerrain::GetChunkCoordFromLocalPosition(const _float3& localPosition) const
+{
+	if (m_iChunkQuadCount == 0 ||
+		m_fVertexSpacing <= 0.f ||
+		localPosition.x < 0.f ||
+		localPosition.z < 0.f)
+	{
+		return std::nullopt;
+	}
+
+	const float chunkSize = static_cast<float>(m_iChunkQuadCount) * m_fVertexSpacing;
+
+	const uint32_t chunkX = static_cast<uint32_t>(std::floor(localPosition.x / chunkSize));
+
+	const uint32_t chunkZ = static_cast<uint32_t>(std::floor(localPosition.z / chunkSize));
+
+	const auto* chunk = FindChunk(chunkX, chunkZ);
+	if (!chunk)
+		return std::nullopt;
+
+	return chunk->GetCoord();
 }
 
 HRESULT CTerrain::LoadHeightMap(const DESC& desc)

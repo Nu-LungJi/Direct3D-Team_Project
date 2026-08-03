@@ -1100,11 +1100,22 @@ void CPhysXManager::SyncPhysicsToComponents()
 
     for (physx::PxU32 i = 0; i < nbActiveActors; ++i)
     {
-        auto actor = static_cast<physx::PxRigidActor*>(activeActors[i]);
-        if (!actor)
-        {
-            continue;
-        }
+		auto actor = static_cast<physx::PxRigidActor*>(activeActors[i]);
+		if (!actor)
+		{
+			continue;
+		}
+
+		const auto tActorUserData =
+			FindActorUserData(actor);
+		if (!tActorUserData ||
+			tActorUserData->eType !=
+				PX_ACTOR_TYPE::RIGID_BODY)
+		{
+			// CCT, Ragdoll Bone, Articulation Link는 각 전용
+			// 컴포넌트가 Transform/Bone 동기화를 담당한다.
+			continue;
+		}
 
 		auto* pObj = FindGameObject(actor);
         if (!pObj)

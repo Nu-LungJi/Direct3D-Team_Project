@@ -65,7 +65,7 @@ public:
 	VOID	Bind_ShadowResource();
 	VOID	UnBind_ShadowResource();
 
-	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch);
+	HRESULT Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex = -1);
 
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
@@ -75,6 +75,9 @@ public:
 	
 	//VOID	ReleaseInvalidPointShadowSlots();
 	//VOID	ReleaseInvalid2DShadowSlots();
+
+	VOID	Build_StaticShadowCasterList(std::optional<CHandle> _LightHandle);	
+	VOID	Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds);
 
 public:		// Effect Light Fuction
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
@@ -116,6 +119,10 @@ private:
 
 	HRESULT Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t _ShadowSlot);
 
+private:
+	SPtr<CResVertexShader>				m_pPointFaceVS{};
+	SPtr<CResVertexShader>				m_pInstancedPointFaceVS{};
+	SPtr<CResPixelShader>				m_pPointFacePS{};
 
 private:
 	ComPtr<ID3D11Device>				m_pDevice = { nullptr };
@@ -168,7 +175,9 @@ private:
 	SHADOW_ARRAY_CUBE					m_pStaticPointShadowList{};
 	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
 
-	uint64_t m_iShadowFrameIndex{};
+	uint64_t							m_iShadowFrameIndex{};
+
+	std::vector<IRenderable*>			m_pStaticShadowCasterScratch{};
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

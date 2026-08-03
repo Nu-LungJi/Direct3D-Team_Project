@@ -17,11 +17,17 @@ private:
 	~CBTRandSelector() override;
 	HRESULT	InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
+
+	void OnEnter() override;
+	void OnExit(EVALUATE eResult) override;
 public:
 	virtual EVALUATE		Evaluate(_float fTimeDelta) override;
 	void					Abort() override;
 	nlohmann::json			Save_Node() override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
+private:
+
+	uint32_t				m_iPreindex{};
 public:
 	static  UPtr<CBTRandSelector> Create(void* pArg);
 	UPtr<CPrototype>Clone(void* pArg)override;

@@ -76,6 +76,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::TERRAIN));
 		});
 
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_HOGWART_WORLD", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::HOGWART_WORLD));
+		});
+
 	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_UIEditor", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::UIEDITOR));

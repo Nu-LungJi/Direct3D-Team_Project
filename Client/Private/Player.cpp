@@ -18,6 +18,7 @@
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "PlayerRagdollController.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
@@ -33,6 +34,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_RepairoSkill_State.h"
+#include "Monster.h"
 
 #ifdef _DEBUG
 namespace
@@ -107,6 +109,8 @@ void CPlayer::UpdateGUI()
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
 
+	if (m_pRagdollController)
+		m_pRagdollController->UpdateGUI();
 
 	//ImGui::ColorEdit4("Color", &weaponColor.x);
 	//ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
@@ -122,6 +126,16 @@ void CPlayer::UpdateGUI()
 
 CPlayer::CPlayer()
 	: CAnimationObject{}
+{
+}
+
+CPlayer::CPlayer(const CPlayer& Prototype)
+	: CAnimationObject{ Prototype }
+	, m_pResPixelShader{ Prototype.m_pResPixelShader }
+	, m_pResVertexCPUSkinningInstancedShader{
+		Prototype.m_pResVertexCPUSkinningInstancedShader }
+	, m_pResSkinMeshCBuffer{
+		Prototype.m_pResSkinMeshCBuffer }
 {
 }
 
@@ -164,6 +178,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().Update();
 	m_LevelTag = pDesc->LevelTag;
 	m_vInitialPosition = pDesc->vInitialPosition;
 	{
@@ -228,8 +244,14 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
+		Desc.fHeight = pDesc->fCCTHeight;
+		Desc.fRadius = pDesc->fCCTRadius;
+		Desc.fStepOffset = pDesc->fCCTStepOffset;
 		Desc.tFilter = pDesc->tFilter;
-		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.vPosition = {
+			pDesc->vInitialPosition.x + pDesc->vCCTCenterOffset.x,
+			pDesc->vInitialPosition.y + pDesc->vCCTCenterOffset.y,
+			pDesc->vInitialPosition.z + pDesc->vCCTCenterOffset.z };
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
@@ -253,6 +275,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.pCharacterController = m_pComCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.fJumpVelocity = 7.f;
+		Desc.vControllerCenterOffset = pDesc->vCCTCenterOffset;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PERMANENT,ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,"ComCharacterMotor", &Desc, &m_pComCharacterMotor)))
@@ -353,6 +376,14 @@ HRESULT CPlayer::Initialize(void* pArg)
 		}
 	}//Spine1
 
+	// 초기 State가 재생할 애니메이션을 선택한 뒤 0초 포즈를 만든다.
+	// 이 포즈로 키네마틱 랙돌을 첫 PhysX 스텝 전부터 본에 맞춘다.
+	if (FAILED(m_pModelAnimator->Update(0.f)) ||
+		FAILED(InitializeRagdoll()))
+	{
+		return E_FAIL;
+	}
+
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
 	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
@@ -390,13 +421,72 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51/255.f, 77 / 255.f, 126 / 255.f, 4.f));
 		}
 	}
+
+	m_hAutoTarget = CHandle{};
 	return S_OK;
 
 }
 
+#pragma region RAGDOLL
+HRESULT CPlayer::InitializeRagdoll()
+{
+	// [LSY] 플레이어별 런타임 상태를 공유하지 않도록 Clone 초기화 단계에서 새로 생성한다.
+	m_pRagdollController = CPlayerRagdollController::Create(*this);
+	return m_pRagdollController ? S_OK : E_FAIL;
+}
+
+_bool CPlayer::RequestRagdollActivation(
+	const _float3& vLinearVelocity, const _float3& vAngularVelocityRadians)
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->RequestActivation(vLinearVelocity, vAngularVelocityRadians);
+}
+
+_bool CPlayer::ResetRagdoll()
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->Reset();
+}
+
+_bool CPlayer::IsRagdollActive() const
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->IsActive();
+}
+
+_bool CPlayer::TryGetRagdollFollowPosition(_float3& OutPosition) const
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->TryGetFollowPosition(OutPosition);
+}
+
+_bool CPlayer::IsRagdollTransitioning() const
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->IsTransitioning();
+}
+#pragma endregion
+
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	// [LSY] 랙돌 전환 중에는 입력과 상태 머신이 새로운 이동 명령을 만들지 않게 한다.
+	if (m_pRagdollController)
+	{
+		if (m_pRagdollController->PrePriorityUpdate())
+			return;
+	}
+
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
 
@@ -547,130 +637,52 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
 	{
-		{
-			//CGameInstance::Get().GetPhysXManager()->RayCast()
-
-		//if(false)
-		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
-		//{
-		//	std::vector< PX_RAYCAST_RESULT> results{};
-		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
-
-		//	//CGameInstance::Get().GetDbgLineRender()->AddRay()
-
-		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-		//	CGameInstance::Get().GetDbgLineRender()->AddRay(
-		//		ori,
-		//		dir,
-		//		100.f);
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-
-		//	if (CGameInstance::Get().GetPhysXManager()->RayCastMultiple({ .vOrigin = ori, .vDirection = dir, .fMaxDistance = 100.f,
-		//	.tFilter = {.hIgnoreGameObject = GetHandle() } }, results))
-		//	{
-		//		for (const auto& result : results)
-		//		{
-		//			const auto hit = result.vHitpos;
-		//			const auto normalEnd = _float3{
-		//				hit.x + result.vHitNormal.x,
-		//				hit.y + result.vHitNormal.y,
-		//				hit.z + result.vHitNormal.z
-		//			};
-		//			//CGameInstance::Get().GetDbgLineRender()->AddLine(
-		//			//	hit,
-		//			//	normalEnd,
-		//			//	{ 0.f, 1.f, 0.f, 1.f });
-
-
-		//		}
-		//	}
-		//}
-
-
-		//if (auto pPlayerCamera = CGameInstance::Get().GetCamera("FLY"))
-		//{
-		//	const auto& [ori, dir] = pPlayerCamera->GetRay();
-		//	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-		//	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-		//	CGameInstance::Get().GetDbgLineRender()->AddSphere(10.f, XMMatrixTranslation(ori.x, ori.y, ori.z));
-		//	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-		//	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-
-		//	std::vector<PX_OVERLAP_RESULT> results{};
-		//	if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 10.f}, .tPose = {.vPosition = ori} }, results))
-		//	{
-		//		for (const auto& result : results)
-		//		{
-		//		}
-		//	}
-		//}
-		}
-		
 		//  가까이 있는거 한번 더 감지 
-			auto ori = m_pComTransform->GetPosition();
-		if (false) {
-			auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-			auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-			auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-			CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 1.f, 0.f, 1.f });
-			CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-			CGameInstance::Get().GetDbgLineRender()->AddSphere(25.f, matrix);
-			CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-			CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-		}
+		auto ori = m_pComTransform->GetPosition();
 
 
 		std::vector<PX_OVERLAP_RESULT> results{};
 		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 		{
 			const auto& result = results.front();
-			m_hAutoTarget = result.pGameObject->GetHandle();
+			const CHandle hDetectedTarget = result.pGameObject->GetHandle();
+			if (!(hDetectedTarget == m_hAutoTarget)) {
+				m_hPrevAutoTarget = m_hAutoTarget;
+				m_hAutoTarget = hDetectedTarget;
+			}
+			
+		}
+		else
+		{
+			//m_hPrevAutoTarget = m_hAutoTarget;
+			//m_hAutoTarget = CHandle{};
+			
 		}
 	}
 	else {
+		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
-				auto ori = m_pComTransform->GetPosition();
-			if (false) {
-				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-				CGameInstance::Get().GetDbgLineRender()->SetColor({ 0.f, 1.f, 0.f, 1.f });
-				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(15.f, matrix);
-				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-
-			}
+			auto ori = m_pComTransform->GetPosition();
+		
 
 			std::vector<PX_OVERLAP_RESULT> results{};
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
+
 				const auto& result = results.front();
-				m_hAutoTarget = result.pGameObject->GetHandle();
+				const CHandle hDetectedTarget = result.pGameObject->GetHandle();
+
+				if (!(hDetectedTarget == m_hAutoTarget)) {
+					m_hPrevAutoTarget = m_hAutoTarget;
+					m_hAutoTarget = hDetectedTarget;
+				}
 			}
 		}
 
 		if (pTarget) {
 			auto ori = m_pComTransform->GetPosition();
-			if (false) {
-				auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-
-				auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-				auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-				CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
-				CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-				CGameInstance::Get().GetDbgLineRender()->AddSphere(40.f, matrix);
-				CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-				CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
-			}
 
 
 			std::vector<PX_OVERLAP_RESULT> results{};
@@ -681,12 +693,33 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 			if (!bTargetStillInRange)
 			{
+				m_hPrevAutoTarget = m_hAutoTarget;
 				m_hAutoTarget = CHandle{};
+				m_bDistanceUI = false;
+		
 			}
 		}
 	}
 
+	// 충돌/타겟 판정은 그대로 두고, 감지 상태가 바뀌는 순간에만 UI를 토글한다.
+	if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	{
+		CHandle hDetectedTarget{};
 
+		if (CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget))
+			hDetectedTarget = m_hAutoTarget;
+
+		// 감지 여부뿐 아니라 실제 대상 핸들이 바뀌었는지 검사한다.
+		if (hDetectedTarget != m_hMonsterHPUITarget)
+		{
+			if (CGameInstance::Get().GetGameObjectByHandleT<CMonster>(hDetectedTarget))
+				pUIController->TargetMonsterHP(hDetectedTarget);
+			else
+				pUIController->DeleteMonsterHP();
+
+			m_hMonsterHPUITarget = hDetectedTarget;
+		}
+	}
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
 	{
 		m_fControlHoldTime = 0.f;
@@ -720,6 +753,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyDown(DIK_X) &&
 		CPlayer_SkillStateBase::HasValidTarget(*this))
 	{
+		if (auto* pUIController =
+			CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+		{
+			pUIController->AddFinisher(-100.f / 3.f);
+		}
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 
@@ -856,6 +894,13 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
 {
+	// [LSY] 랙돌 전환 중에는 CCT와 캐릭터 모터의 일반 물리 갱신을 중단한다.
+	if (m_pRagdollController)
+	{
+		if (m_pRagdollController->PreFixedUpdate())
+			return;
+	}
+
 	if (m_bMovementLocked)
 	{
 		m_pComMoveIntent->ClearMoveIntent();
@@ -913,6 +958,9 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 			m_pComCharacterController->GetPosition(),
 			GetTransform().GetQuaternion());
 	}
+
+	if (m_pRagdollController)
+		m_pRagdollController->PostFixedUpdate();
 
 #ifdef _DEBUG
 	UpdateStandingGameObjectDebugLog();
@@ -1202,7 +1250,9 @@ void CPlayer::Update(E::_float fTimeDelta)
 		++iter;
 	}
 
-	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
+	//const _bool bRagdollActiveAtUpdateStart = IsRagdollActive();
+	if (!IsRagdollActive() &&
+		m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
 		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
@@ -1225,12 +1275,15 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	// Animator를 먼저 진행해야 Locomotion State가 현재 프레임의
 	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
-	if (m_pStateMachine)
+	if (m_pStateMachine &&
+		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
-	if (bApplyRootMotionTranslation && m_pComMoveIntent)
+	if (bApplyRootMotionTranslation &&
+		m_pComMoveIntent &&
+		!IsRagdollTransitioning())
 	{
 		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
 		const _vector vWorldDelta = XMVector3Rotate(
@@ -1243,11 +1296,19 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
 
+	// [LSY] FixedUpdate에서 변경된 CCT 위치와 Update에서 적용한 회전을
+	// [LSY] 최신 World 행렬에 반영한 뒤 랙돌 포즈를 교환한다.
+	GetTransform().Update();
+
+	if (m_pRagdollController)
+		m_pRagdollController->UpdatePoseBridge();
+
 }
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
-	if (m_pStateMachine)
+	if (m_pStateMachine &&
+		!IsRagdollTransitioning())
 		m_pStateMachine->LateUpdate(fTimeDelta);
 
 
@@ -1291,7 +1352,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel)
 		return;
-
+	DelayFinish(fTimeDelta);
 	if (!pModel->GetAnimations().empty())
 	{
 		CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
@@ -1299,7 +1360,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	}
 
 	/// 이펙트 위치 갱신
-
+	
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
@@ -1565,11 +1626,21 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 
 
 
+	if (m_iHp <= 0)
+	{
+		if (m_pRagdollController)
+			m_pRagdollController->RequestFromCurrentMotion();
+	}
+	else if (m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+
 	return true;
 }
 
 _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 {
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
@@ -1580,13 +1651,21 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 	{
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
-	if (m_pStateMachine)
+	if (m_iHp <= 0)
+	{
+		if (m_pRagdollController)
+			m_pRagdollController->RequestFromCurrentMotion();
+	}
+	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
 }
 
 _bool CPlayer::OnQueryHit(int32_t iDamage)
 {
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
+
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
 	
@@ -1596,7 +1675,12 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 	{
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
-	if (m_pStateMachine)
+	if (m_iHp <= 0)
+	{
+		if (m_pRagdollController)
+			m_pRagdollController->RequestFromCurrentMotion();
+	}
+	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
 }
@@ -1687,23 +1771,32 @@ void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 /*----------- 광윤 추가 -----------*/
 bool CPlayer::GetShadowBounds(BoundingBox& OutBounds) const
 {
-	if (!m_pComCollider || !m_pComCollider->Get())	return false;
+	if (nullptr == m_pComCharacterController)	return false;
 
-	CCollider* pCollider = m_pComCollider->Get();
-
-	if (pCollider->GetCollType() != CollType::Box)	return false;
-
-	const auto* pBox = static_cast<const CCollBox*>(pCollider);
-
-	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
-
-	OutBounds.Extents.x *= 1.25f;
-	OutBounds.Extents.y *= 1.25f;
-	OutBounds.Extents.z *= 1.25f;
+	const auto PlayerPosition = m_pComCharacterController->GetPosition();
+	OutBounds.Center = PlayerPosition;
+	OutBounds.Extents = { 1.25f, 1.6f, 1.0f };
 
 	return true;
 }
 /*---------------------------------*/
+
+void CPlayer::DelayFinish(_float fTimeDelta)
+{
+	
+
+	if(m_iHp <= 0){
+		m_fDelayTime += fTimeDelta;
+		if (m_fDelayTime >= 3.18f)
+		{
+			//[LSY] 3.18초 후에 게임 종료 처리
+			m_fDelayTime = -1.f;
+			auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+
+			pUIController->CreateDeathScene();
+		}
+	}
+}
 
 E::UPtr<CPlayer> CPlayer::Create()
 {

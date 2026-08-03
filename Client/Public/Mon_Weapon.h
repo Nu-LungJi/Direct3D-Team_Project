@@ -63,7 +63,7 @@ protected:
 	CHandle				m_ParentHandle{};
 	int32_t				m_iBoneSocketIndex{ -1 };
 	_float				m_fAngle{ 0 }, m_fTick{}, m_fDissolveintensity{ 0 }, m_fEmissiveIntensity{ 0 }, m_fMaxEmissiveIntensity{ 0 };
-	_bool				m_bThrow{ false }, m_bDissolve{ false }, m_bEmissive{ false };
+	_bool				m_bThrow{ false }, m_bDissolve{ false }, m_bEmissive{ false }, m_bDead{false};
 
 public:
 	static E::UPtr<CMon_Weapon> Create();

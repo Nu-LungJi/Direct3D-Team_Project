@@ -33,17 +33,14 @@ HRESULT CBTDecorator::Initalize(void* pArg)
 EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 {
 	if (m_pDecorator != nullptr)
-	{
-		EVALUATE  eType = m_pDecorator->Evaluate(fTimeDelta);
-		return m_eDebug = eType;
-	}
-   
+		return m_eDebug = m_pDecorator->Execute(fTimeDelta);
+
     return 	m_eDebug = EVALUATE::FAILED;
 }
 void CBTDecorator::Abort()
 {
 	if (m_pDecorator)
-		m_pDecorator->Abort();
+		m_pDecorator->AbortExecute();
 }
 void CBTDecorator::ResetDebug()
 {

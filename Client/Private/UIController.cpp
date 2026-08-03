@@ -6,6 +6,7 @@
 #include "TextBox.h"
 #include "Button.h"
 #include "Cursor.h"
+#include "Monster.h"
 
 NS_USING(Client)
 
@@ -51,7 +52,7 @@ HRESULT CUIController::Initialize(void* pArg)
 		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
 
 		/****페이드인*****/
-		PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
+		//PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
 	}
 
 	return S_OK;
@@ -65,27 +66,26 @@ void CUIController::Update(E::_float fTimeDelta)
 {
 	if (!CursorCreate)
 	{
-		//auto clientSize = CGameInstance::Get().GetClientScreenSize();
-		//std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
-		//
-		//CCursor::UIOBJECT_DESC Desc{};
-		//
-		//Desc.sObjectTag = "Cursor";
-		//Desc.Name = "Cursor";
-		//Desc.fSizeX = 64.f;
-		//Desc.fSizeY = 64.f;
-		//Desc.fX = clientSize.x * 0.5f;
-		//Desc.fY = clientSize.y * 0.5f;
-		//Desc.fAlpha = 1.f;
-		//Desc.UIType = ETOUI(UI_TYPE::CURSOR);
-		//Desc.ResWeight = 1000;
-		//
-		//m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
-		//
-		///****페이드인*****/
-		//PlayFadeOutDelete(GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front(), 1.f, 2.f);
 
-		CursorCreate = true;
+		/*auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+		
+		CCursor::UIOBJECT_DESC Desc{};
+		
+		Desc.sObjectTag = "Cursor";
+		Desc.Name = "Cursor";
+		Desc.fSizeX = 64.f;
+		Desc.fSizeY = 64.f;
+		Desc.fX = clientSize.x * 0.5f;
+		Desc.fY = clientSize.y * 0.5f;
+		Desc.fAlpha = 1.f;
+		Desc.UIType = ETOUI(UI_TYPE::CURSOR);
+		Desc.ResWeight = 1000;
+		
+		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
+
+		CursorCreate = true;*/
+
 	}
 
 	// ************** 플레이어 HP
@@ -156,13 +156,6 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 	}
 
-	// 몬스터 HP 생성
-	if (m_bMonsterHP)
-	{
-		CreateMonsterHP();
-		m_bMonsterHP = false;
-	}
-
 	// 몬스터 HP 감송
 	if (E::CGameInstance::Get().KeyDown(DIK_6))
 		AddMonsterHP(-30.f);
@@ -170,6 +163,15 @@ void CUIController::Update(E::_float fTimeDelta)
 	// 죽는 화면
 	//if (E::CGameInstance::Get().KeyDown(DIK_0))
 	//	CreateDeathScene();
+
+	/****************필수********************/
+	if (m_bMonsterHP)
+	{
+		CreateMonsterHP();
+		m_bMonsterHP = false;
+	}
+
+	UpdateMonsterHP();
 }
 
 void CUIController::LateUpdate(E::_float fTimeDelta)
@@ -492,12 +494,61 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
-
+	m_ReserveTargetHandle = monsterHandle;
+	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
+	{
+		PlayMonsterHPDeleteCreate(*m_MonsterHP);
+	}
+	else
+	{
+		m_bMonsterHP = true;
+	}
 }
 
 void CUIController::CreateMonsterHP()
 {
+	m_TargetHandle = m_ReserveTargetHandle;
+	auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
+	if (std::nullopt == m_TargetHandle || nullptr == pMonster)
+		return;
+
+	if (pMonster->Get_CurrentHp() <= 0.f)
+		return;
+
 	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
+}
+
+void CUIController::UpdateMonsterHP()
+{
+	if (m_TargetHandle != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
+	{
+		auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
+		
+		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		{
+			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(pMonster->Get_MaxHp()));
+			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(pMonster->Get_CurrentHp()));
+		}
+
+	}
+	else {
+		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		{	
+			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(100.f));
+			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(0.f));
+		}
+	}
+}
+
+void CUIController::DeleteMonsterHP()
+{
+	if(m_MonsterHP != std::nullopt && E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	{
+		const CHandle hMonsterHP = *m_MonsterHP;
+		m_bMonsterHP = false;
+		m_MonsterHP = std::nullopt;
+		PlayMonsterHPDelete(hMonsterHP);
+	}
 }
 
 void CUIController::AddMonsterHP(_float fill)
@@ -611,7 +662,6 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 	auto pTween = pBtn->GetTweenCom();
 
 	pBtn->SetInputLcok(true);
-
 	_float scaleRatio = pBtn->GetScaleRatio();
 	_float Alpah = pBtn->GetAlpha();
 
@@ -627,8 +677,31 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 			pBtn->CalcUICoord();
 		}, [pHandle, this]() {
 			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			this->SetMonsterHPBool(true);
-			this->SetMonsterHPNull();
+			}, EEaseType::EaseOutQuad);
+}
+
+void CUIController::PlayMonsterHPDeleteCreate(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+	_float scaleRatio = pBtn->GetScaleRatio();
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(scaleRatio, 0.5f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetScaleRatio(currentValue);
+			pBtn->CalcUICoord();
+		}, nullptr, EEaseType::EaseOutQuad);
+
+	pTween->PlayTween(Alpah, 0.f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+			pBtn->CalcUICoord();
+		}, [pHandle, this]() {
+			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			m_bMonsterHP = true;
 			}, EEaseType::EaseOutQuad);
 }
 

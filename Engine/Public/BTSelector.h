@@ -17,6 +17,9 @@ private:
 	~CBTSelector() override;
 	HRESULT	InitializePrototype(void* pArg = nullptr);
 	HRESULT Initalize(void* pArg) override;
+
+	void OnEnter() override;
+	void OnExit(EVALUATE eResult) override;
 public:					
 	virtual EVALUATE		Evaluate(_float fTimeDelta) override;
 	void					Abort() override;
