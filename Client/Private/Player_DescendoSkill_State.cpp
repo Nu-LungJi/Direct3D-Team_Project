@@ -51,6 +51,8 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	CGameInstance::Get().PlayEffect("Descendo", *pPlayer->GetTransform().GetWorldMatrix());
+
 }
 
 void CPlayer_DescendoSkill_State::CacheAnimationIndices(const CPlayer& player)

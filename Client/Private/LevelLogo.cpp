@@ -153,15 +153,15 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 
 		m_VideoQue = true;
 
-		//{
-		//	m_SoundId = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Hedwings.mp3", SOUND_PLAY_DESC{
-		//			.sBusID = SOUND_BUS::UI,
-		//			.fVolume = 0.3f,
-		//			.fPitch = 1.f,
-		//			.iPriority = 64,
-		//			.bLoop = false
-		//		});
-		//}
+		{
+			m_SoundId = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Hedwings.mp3", SOUND_PLAY_DESC{
+					.sBusID = SOUND_BUS::UI,
+					.fVolume = 0.3f,
+					.fPitch = 1.f,
+					.iPriority = 64,
+					.bLoop = false
+				});
+		}
 	}
 
 	if(!m_ChangeScene)
@@ -288,8 +288,19 @@ void CLevelLogo::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
 		}, [pHandle, this]() {
 			Engine::CGameInstance::Get().ChangeLevel(
 				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::CHARLES_ROOKWOOD));
-			E::CGameInstance::Get().GetSoundManager()->Stop(m_SoundId);
 			}, EEaseType::EaseOutQuad, delay);
+}
+
+HRESULT CLevelLogo::StopBGM()
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (pSoundManager == nullptr ||
+		!pSoundManager->FadeOutAndStop(m_SoundId, 1.f))
+		return E_FAIL;
+
+	m_SoundId = INVALID_SOUND_ID;
+
+	return S_OK;
 }
 
 Engine::UPtr<CLevelLogo> CLevelLogo::Create()
@@ -301,5 +312,6 @@ Engine::UPtr<CLevelLogo> CLevelLogo::Create()
 
 void CLevelLogo::Free()
 {
+	StopBGM();
 	CLevel::Free();
 }

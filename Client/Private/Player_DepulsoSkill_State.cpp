@@ -56,6 +56,8 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_fPreviousAnimRatio = 0.f;
+	CGameInstance::Get().PlayEffect("Depulso", *pPlayer->GetTransform().GetWorldMatrix());
+
 }
 
 void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)

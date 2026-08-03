@@ -1817,6 +1817,27 @@ void CPlayer::Attack_Magic_Bullet()
 		return;
 	if (m_pComSound)
 	{
+		static constexpr const char* BASIC_ATTACK_VOICES[] =
+		{
+			"./Resources/SampleClient/Sound/Player/Voice/Attack/Player_AttackVoice_01.wav",
+			"./Resources/SampleClient/Sound/Player/Voice/Attack/Player_AttackVoice_02.wav",
+
+		};
+
+		const int iVoiceIndex = Engine::RandInt(
+			0, static_cast<int>(std::size(BASIC_ATTACK_VOICES)) - 1);
+		m_pComSound->PlaySlot2D(
+			E::StringID{ "PLAYER_BASIC_ATTACK_VOICE" },
+			BASIC_ATTACK_VOICES[iVoiceIndex],
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 0.12f,
+				.fPitch = 1.05f,
+				.iPriority = 80,
+				.bLoop = false
+			},
+			SOUND_SLOT_PLAY_MODE::OVERLAP);
+
 		static constexpr const char* BASIC_ATTACK_SOUNDS[] =
 		{
 			"./Resources/SampleClient/Sound/Player/SkillEffect/"

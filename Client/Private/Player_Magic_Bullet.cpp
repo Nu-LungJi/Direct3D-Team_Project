@@ -7,6 +7,8 @@
 
 #include "Monster.h"
 #include "BossTMB.h"
+
+#include "ComSound.h"
 NS_USING(Client)
 
 CPlayer_Magic_Bullet::CPlayer_Magic_Bullet()
@@ -16,6 +18,8 @@ CPlayer_Magic_Bullet::CPlayer_Magic_Bullet()
 
 CPlayer_Magic_Bullet::~CPlayer_Magic_Bullet()
 {
+	StopFlightSound();
+
 	if (!m_hPointLight)
 		return;
 
@@ -63,6 +67,33 @@ HRESULT CPlayer_Magic_Bullet::Initialize(void* pArg)
 
 	GetTransform().SetPosition(m_Splines.front());
 	GetTransform().Update();
+
+	CComSound::DESC tSoundDesc{};
+	if (FAILED(AddComponentFromProto(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComSound,
+		"Com_Sound",
+		&tSoundDesc,
+		&m_pComSound)))
+		return E_FAIL;
+
+	m_pComSound->PlaySlot3D(
+		E::StringID{ "PLAYER_MAGIC_BULLET_FLIGHT" },
+		"./Resources/SampleClient/Sound/Player/SkillEffect/BasicAttack/BasicAttack_Projectile_01.wav",
+		SOUND_3D_DESC{
+			.vPosition = GetTransform().GetPosition(),
+			.fMinDistance = 1.f,
+			.fMaxDistance = 18.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.1f,
+			.fPitch = 1.f,
+			.iPriority = 72,
+			.bLoop = true
+		});
+
 	m_hPointLight = CGameInstance::Get().Allocate_EffectLight(
 		GetTransform().GetLoadedPostion(),
 		80.f,
@@ -136,7 +167,10 @@ void CPlayer_Magic_Bullet::FixedUpdate(E::_float fTimeDelta)
 	}
 
 	if (m_iSplineIndex >= m_Splines.size() - 1)
+	{
+		StopFlightSound();
 		SetPendingDestroy();
+	}
 }
 
 void CPlayer_Magic_Bullet::UpdatePointLight()
@@ -158,6 +192,13 @@ void CPlayer_Magic_Bullet::UpdatePointLight()
 void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 {
 	UpdatePointLight();
+	if (m_pComSound)
+	{
+		m_pComSound->SetSlot3DAttributes(
+			E::StringID{ "PLAYER_MAGIC_BULLET_FLIGHT" },
+			GetTransform().GetPosition());
+		m_pComSound->Update();
+	}
 
 	{
 		_float3 vstart, vend;
@@ -223,6 +264,7 @@ _bool CPlayer_Magic_Bullet::SweepSegment(
 void CPlayer_Magic_Bullet::HandleSweepHit(
 	const PX_SWEEP_RESULT& tHit)
 {
+	StopFlightSound();
 	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Sweep Hit : ") +
 		(tHit.pGameObject ?
 			std::string{ tHit.pGameObject->GetObjectTag() } :
@@ -285,6 +327,12 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 	}
 
 	SetPendingDestroy();
+}
+
+void CPlayer_Magic_Bullet::StopFlightSound()
+{
+	if (m_pComSound)
+		m_pComSound->StopSlot(E::StringID{ "PLAYER_MAGIC_BULLET_FLIGHT" });
 }
 
 void CPlayer_Magic_Bullet::BuildSpline(_float fCurveHeight, uint32_t iSampleCount)

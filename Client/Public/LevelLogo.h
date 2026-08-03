@@ -44,6 +44,9 @@ private:
 	_float m_SceneChangeTimer = 0.f;
 
 	SOUND_ID m_SoundId{};
+
+private:
+	HRESULT StopBGM();
 private:
 	void Free() override;
 };
