@@ -37,6 +37,8 @@ private:
 	HRESULT SpawnBridge();
 	HRESULT SpawnMyMagicStepController();
 
+	HRESULT SpawnSkyBox();
+
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 

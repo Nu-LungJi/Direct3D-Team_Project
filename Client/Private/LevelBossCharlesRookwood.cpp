@@ -73,14 +73,10 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(SpawnLightPlacement()))
 		return E_FAIL;
 
-	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
-
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
-	skyDesc.sObjectTag = "SkyCloudyCube";
-	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
-	{
+	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
-	}
+
+	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -249,6 +245,18 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
 		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
 		"03_Player",
 		&Desc))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnSkyBox()
+{
+	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	skyDesc.sObjectTag = "SkyCloudyCube";
+	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{
 		return E_FAIL;
 	}
