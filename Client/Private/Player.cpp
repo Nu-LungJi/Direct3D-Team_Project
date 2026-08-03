@@ -441,6 +441,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
 	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
+	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
 
 	

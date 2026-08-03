@@ -7,6 +7,8 @@
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Trail_CPU.h"
+
+#include "ComSound.h"
 NS_USING(Client)
 
 void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
@@ -57,6 +59,19 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 	m_fScaleTime = 0.f;
 	m_fDashElapsed = 0.f;
 
+	if (auto* pSound = pPlayer->GetSound())
+	{
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_SKILL_DASH" },
+			"./Resources/SampleClient/Sound/Player/SkillEffect/Dash/Dash.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.4f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 	auto k = pPlayer->GetTransform().GetWorldMatrix();
 	m_iDashBodyEffectID = CGameInstance::Get().PlayEffect("PlayerBodyDash", *pPlayer->GetTransform().GetWorldMatrix(), _vector{},
 		[this, pPlayer](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
