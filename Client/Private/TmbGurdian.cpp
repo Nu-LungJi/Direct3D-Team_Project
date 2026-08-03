@@ -341,7 +341,7 @@ const _float CTmbGurdian::Get_Damage()
 	//TOMB_SKILL::JUMP_END, TOMB_SKILL::SLASH
 	uint32_t SkillID = Find_SkillNum(m_eAttType);
 
-	if(SkillID == ETOUI(TOMB_SKILL::END))
+	if(SkillID == ETOUI(TOMB_SKILL::JUMP_END))
 	{
 		m_fDamage = 25.f;
 	}

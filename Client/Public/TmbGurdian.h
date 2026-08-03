@@ -30,10 +30,10 @@ public:
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 
-	virtual void Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
-	_string Get_SkillName(ATTMON SkillNode)override;
+	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
+	_string						Get_SkillName(ATTMON SkillNode)override;
 	const _float				Get_Damage() override;
-	_bool					Check_Table(PLAYER_SKILL_TYPE eType) override;
+	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
 	
 private:
 	void						Damaged(PLAYER_SKILL_TYPE eType) override;
