@@ -392,6 +392,10 @@ void CUIController::CreateDeathScene()
 			.iPriority = 64,
 			.bLoop = false
 		});
+
+	/*********텍스트 안보이게**********/
+	if (std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		PlayFadeOutOnly(*m_MonsterHP);
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -630,8 +634,12 @@ void CUIController::ClearDeathScene()
 	
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
 	PlayFadeInOnly(m_PotionCount);
+
 	PlayFadeOutDelete(m_GameOverMask);
 	m_isCreateDeathScene = false;
+
+	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		PlayFadeInOnly(*m_MonsterHP);
 	//E::CGameInstance::Get().SetMouseFix(true);
 }
 
