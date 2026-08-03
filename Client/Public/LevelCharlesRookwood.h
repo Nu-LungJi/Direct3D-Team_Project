@@ -37,6 +37,14 @@ private:
 	HRESULT SpawnBridge();
 	HRESULT SpawnMyMagicStepController();
 
+	HRESULT SpawnSkyBox();
+
+private:
+	HRESULT PlayBGM();
+	HRESULT StopBGM();
+private:
+	SOUND_ID m_bmgID;
+
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 

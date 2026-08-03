@@ -35,6 +35,7 @@
 #include "Player_DescendoSkill_State.h"
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
+#include "ComSound.h"
 
 #ifdef _DEBUG
 namespace
@@ -184,6 +185,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().SetRotationEuler(pDesc->vInitialRotation);
 	GetTransform().Update();
 	m_LevelTag = pDesc->LevelTag;
 	m_vInitialPosition = pDesc->vInitialPosition;
@@ -424,6 +426,20 @@ HRESULT CPlayer::Initialize(void* pArg)
 			auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(67/255.f, 97 / 255.f, 174 / 255.f, 1.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51/255.f, 77 / 255.f, 126 / 255.f, 4.f));
+		}
+	}
+
+	{
+		CComSound::DESC Desc{};
+
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComSound,
+			"Com_Sound",
+			&Desc,
+			&m_pComSound)))
+		{
+			return E_FAIL;
 		}
 	}
 
@@ -1404,7 +1420,8 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	}
 
 	/// 이펙트 위치 갱신
-	
+	if (m_pComSound)
+		m_pComSound->Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 

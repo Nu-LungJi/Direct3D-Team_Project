@@ -24,7 +24,7 @@ class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
-
+class CComSound;
 NS_END
 
 NS_BEGIN(Client)
@@ -51,6 +51,7 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPosition{ 50.f, 50.f, 10.f };
+		_float3 vInitialRotation{};
 		// PhysX capsule height는 양 끝 반구를 제외한 원통 부분의 높이다.
 		_float fCCTHeight{ 3.6f };
 		_float fCCTRadius{ 0.6f };
@@ -274,6 +275,10 @@ private:
 	_bool  m_bDistanceUI = false;
 	CHandle m_hUI;
 
+private:
+	CComSound* m_pComSound{};
+public:
+	CComSound* GetSound() const { return m_pComSound; }
 public:
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
