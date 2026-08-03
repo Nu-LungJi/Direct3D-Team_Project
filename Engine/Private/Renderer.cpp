@@ -2290,7 +2290,7 @@ VOID CRenderer::Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Inten
 	m_fFogInfo.g_fFogIntensity		= _Intensity;
 	m_fFogInfo.g_fFogHeight			= _Height;
 	m_fFogInfo.g_fFogStartPos		= _StartPos;
-	m_fFogInfo.g_fFogEndPos			= _StartPos;
+	m_fFogInfo.g_fFogEndPos			= _EndPos;
 	m_fFogInfo.g_fFogDensity		= _Density;
 }
 
