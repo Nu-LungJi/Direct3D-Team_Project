@@ -262,12 +262,20 @@ void CHPBar::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::CLICK))
 	{
-
+		
 		if (OnClicked) {
+			if (m_UIINFO.Restag == "TEX_UI_T_MenuTextButtonBorder_4K" && m_bDeleteClick)
+				return;
+
 			ClearEffectTweens();
 			OnClicked(this);
+
+			if (m_UIINFO.Restag == "TEX_UI_T_MenuTextButtonBorder_4K")
+				m_bDeleteClick = true;
 		}
 		if (OnClickedAction) OnClickedAction(m_UIINFO.Restag);
+
+
 	}
 }
 

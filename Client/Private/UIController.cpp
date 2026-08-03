@@ -356,7 +356,7 @@ void CUIController::CreateDeathScene()
 
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
-	E::CGameInstance::Get().SetMouseFix(false);
+	//E::CGameInstance::Get().SetMouseFix(false);
 }
 
 void CUIController::SetHPMax(_float maxHP)
