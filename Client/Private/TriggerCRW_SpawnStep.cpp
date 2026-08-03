@@ -159,7 +159,7 @@ void CTriggerCRW_SpawnStep::OnTriggerEnter(
 								);
 							};
 
-						auto tmp = Event.iLineIndex % 3;
+						auto tmp = Event.iLineIndex % 6;
 						if (tmp == 0)
 						{
 							E::CTimer soundTimer;
