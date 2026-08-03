@@ -295,7 +295,7 @@
     <ClInclude Include="..\Public\StarBurst.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
-    <ClInclude Include="..\public\TombBossBullet.h" />
+    <ClInclude Include="..\Public\TombBossBullet.h" />
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h" />
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
@@ -411,7 +411,7 @@
     <ClCompile Include="..\Private\StarBurst.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
-    <ClCompile Include="..\private\TombBossBullet.cpp" />
+    <ClCompile Include="..\Private\TombBossBullet.cpp" />
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />

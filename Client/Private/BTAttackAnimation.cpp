@@ -66,7 +66,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				_bool bFinished = pAnimator->GetFinish();
 				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 				//살려주세요 살려주세요!!!
-				Att(pOwner, pTransform, pTarget, fAnimRatio);
+				Att(pOwner, pTransform, pTarget, fAnimRatio,fTimeDelta);
 				EventFlagToRatio(fAnimRatio);
 				ShakeCam(fAnimRatio);
 				Rotation(pTransform, pMoveIntent, pTarget, fTimeDelta, fAnimRatio);
@@ -131,75 +131,92 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 void CBTAttackAnimation::Update_Gui()
 {
 	__super::Update_Gui();
-	DragFloat("Move Speed", m_Value.fSpeed);
-	DragFloat("Intensive", m_fIntensive);
-	DragFloat("ShakeCamRatio", m_fCamShakeRatio);
-	ImGui::Text("RotRatio");
-	ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
-	ImGui::Text("AttcolRatio");
-	ImGui::DragFloat2("##AttcolRatio", reinterpret_cast<_float*>(&m_vAttCollRatio), 0.1f, 0.f, 1.f);
-	DragFloat("AttRadius", m_fAttRadius);
-	
-	
-	DragFloat("RotTime", m_Value.fTime);
-	if (ImGui::Button("Animation"))
-		m_bPopup = true;
-	if (m_bPopup)
+	if (ImGui::TreeNode("Attanim"))
 	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
-		if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
-			m_bPopup = false;
-		int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
+		DragFloat("Move Speed", m_Value.fSpeed);
+		DragFloat("Intensive", m_fIntensive);
+		DragFloat("ShakeCamRatio", m_fCamShakeRatio);
+		ImGui::Text("RotRatio");
+		ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
+		ImGui::Text("OverLabRatio");
+		ImGui::DragFloat2("##OverLabRatio", reinterpret_cast<_float*>(&m_vOverlabRatio), 0.1f, 0.f, 1.f);
+		DragFloat("AttRadius", m_fAttRadius);
 
-		if (-1 != iIndex)
+		BoolButton("overlabLoop", m_bOverLabLoop);
+		BoolButton("overlabMove", m_bOverLabMove);
+		DragFloat("overlabSpeed", m_fOverLabSpeed);
+		DragFloat("RotTime", m_Value.fTime);
+		if (ImGui::Button("Animation"))
+			m_bPopup = true;
+		if (m_bPopup)
 		{
-			m_bPopup = false;
-			m_Value.iAnimIndex = iIndex;
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
+			if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
+				m_bPopup = false;
+			int32_t iIndex = CGameInstance::Get().GetAnimIndex(m_Handle);
+
+			if (-1 != iIndex)
+			{
+				m_bPopup = false;
+				m_Value.iAnimIndex = iIndex;
+			}
+			ImGui::PopStyleColor();
 		}
-		ImGui::PopStyleColor();
-	}
 #define X(name)#name,
-	const _char* pMoveType[] = { MOVE_M "NONE" };
+		const _char* pMoveType[] = { MOVE_M "NONE" };
 #undef X
-	ImGui::Text("Move Selector");
-	if (ImGui::BeginCombo("##Move Seletor", pMoveType[(ETOUI(m_eMove))]))
-	{
-		for (uint32_t i = 0; i < ETOUI(MOVE::END) + 1; ++i)
+		ImGui::Text("Move Selector");
+		if (ImGui::BeginCombo("##Move Seletor", pMoveType[(ETOUI(m_eMove))]))
 		{
-			_bool bSelect = static_cast<int32_t>(m_eMove) == i;
+			for (uint32_t i = 0; i < ETOUI(MOVE::END) + 1; ++i)
+			{
+				_bool bSelect = static_cast<int32_t>(m_eMove) == i;
 
-			if (ImGui::Selectable(pMoveType[i]))
-				m_eMove = static_cast<MOVE>(i);
+				if (ImGui::Selectable(pMoveType[i]))
+					m_eMove = static_cast<MOVE>(i);
 
-			if (bSelect)
-				ImGui::SetItemDefaultFocus();
+				if (bSelect)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
 		}
-		ImGui::EndCombo();
+		ImGui::TreePop();
 	}
 
 }
-void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio)
+void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio,_float fTimeDelta)
 {
-	if (m_bAttRatio || (m_vAttCollRatio.x == 0.f && m_vAttCollRatio.y == 0.f))
+	if (m_bAttRatio || (m_vOverlabRatio.x == 0.f && m_vOverlabRatio.y == 0.f))
 		return;
 
-	if (m_vAttCollRatio.y >= fRotRatio && fRotRatio >= m_vAttCollRatio.x)
+	if (m_vOverlabRatio.y >= fRotRatio && fRotRatio >= m_vOverlabRatio.x)
 	{
+		_float3 vPos = pSrcTransform->GetPosition();
+		if (m_bOverLabLoop)
+		{
+			m_fCurOverLabSpeed += m_fOverLabSpeed * fTimeDelta;
+		}
+		
 		PX_OVERLAP_DESC   pxOverLabDesc{};
 		PX_OVERLAP_RESULT pxOverLapResult{};
 
 		pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
-		pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = m_fAttRadius };
-		pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = pSrcTransform->GetPosition() };
+		pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = m_fCurOverLabSpeed };
+		pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = vPos };
 
-		_float3 vPos = pxOverLabDesc.tPose.vPosition;
+		vPos = pxOverLabDesc.tPose.vPosition;
+		if (m_bOverLabMove)
+		{
+			XMStoreFloat3(&m_vLastPos, XMLoadFloat3(&m_vLastPos) + XMLoadFloat3(&m_vLastDir) * m_fOverLabSpeed * fTimeDelta);
+			XMStoreFloat3(&vPos , XMLoadFloat3(&m_vLastPos));
+		}
 		auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
 
 		const auto vPreviousColor = pDbgLineRender->GetColor();
 		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
 		pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
 		pDbgLineRender->SetDepthTest(true);
-		pDbgLineRender->AddSphere(5.f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+		pDbgLineRender->AddSphere(m_fCurOverLabSpeed, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
 		pDbgLineRender->SetColor(vPreviousColor);
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 
@@ -242,13 +259,16 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "AttColRatio", m_vAttCollRatio);
+	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "AttColRatio", m_vOverlabRatio);
 
+	SaveJsonValue(j, "overlabLoop", m_bOverLabLoop);
+	SaveJsonValue(j, "overlabSpeed", m_fOverLabSpeed);
 	SaveJsonValue(j, "Intensive", m_fIntensive);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
 	SaveJsonValue(j, "AttRadius", m_fAttRadius);
+	SaveJsonValue(j, "OverlabMove", m_bOverLabMove);
 	
 	return j;
 }
@@ -256,13 +276,16 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "AttColRatio", m_vAttCollRatio);
+	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "AttColRatio", m_vOverlabRatio);
+
+	LoadJsonValue(j, "overlabLoop", m_bOverLabLoop);
+	LoadJsonValue(j, "overlabSpeed", m_fOverLabSpeed);
 	LoadJsonValue(j, "Intensive", m_fIntensive);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
 	LoadJsonValue(j, "AttRadius", m_fAttRadius);
-
+	LoadJsonValue(j, "OverlabMove", m_bOverLabMove);
 
 	return S_OK;
 }
@@ -286,8 +309,19 @@ void CBTAttackAnimation::OnEnter()
 	m_bAttRatio = m_bActiveSkill = false;
 	m_bCamShake = true;
 	m_fTime = 0.f;
+	m_fCurOverLabSpeed = m_fAttRadius;
 
-
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pOwner = pBT->GetGameObject())
+		{
+			if (auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform")))
+			{
+				XMStoreFloat3(&m_vLastDir,pTransform->GetState(STATE::LOOK));
+				m_vLastPos = pTransform->GetPosition();
+			}
+		}
+	}
 
 }
 void CBTAttackAnimation::OnExit(EVALUATE eResult)

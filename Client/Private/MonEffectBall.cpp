@@ -145,6 +145,7 @@ void CMonEffectBall::OverlapTest()
 
 void CMonEffectBall::Chase(_float fTimeDelta)
 {
+	if (m_bHit) return;
 	auto Owner = CGameInstance::Get().GetGameObjectByHandle(m_hParent);
 	if (!Owner) return;
 
