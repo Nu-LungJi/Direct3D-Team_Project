@@ -212,7 +212,7 @@ private:
 private:
 	CHandle m_hAutoTarget;
 	CHandle m_hPrevAutoTarget;
-	_bool m_bMonsterHPDetected{ false };
+	CHandle m_hMonsterHPUITarget{};
 	StringID m_LevelTag;
 private:
 	CHandle m_UIHandle;
@@ -239,6 +239,7 @@ private:
 
 private:
 	_bool  m_bUI = false;
+	_bool  m_bDistanceUI = false;
 	CHandle m_hUI;
 
 public:

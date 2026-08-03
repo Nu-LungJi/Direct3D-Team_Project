@@ -497,7 +497,7 @@ void CUIController::TargetMonsterHP(CHandle monsterHandle)
 	m_ReserveTargetHandle = monsterHandle;
 	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
 	{
-		PlayMonsterHPDelete(*m_MonsterHP);
+		PlayMonsterHPDeleteCreate(*m_MonsterHP);
 	}
 	else
 	{
@@ -526,7 +526,8 @@ void CUIController::UpdateMonsterHP()
 	}
 	else {
 		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
-		{
+		{	
+			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(100.f));
 			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(0.f));
 		}
 	}
@@ -654,7 +655,6 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 	auto pTween = pBtn->GetTweenCom();
 
 	pBtn->SetInputLcok(true);
-
 	_float scaleRatio = pBtn->GetScaleRatio();
 	_float Alpah = pBtn->GetAlpha();
 
@@ -668,8 +668,33 @@ void CUIController::PlayMonsterHPDelete(CHandle pHandle)
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 			pBtn->CalcUICoord();
-		}, [pHandle]() {
+		}, [pHandle, this]() {
 			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad);
+}
+
+void CUIController::PlayMonsterHPDeleteCreate(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+	_float scaleRatio = pBtn->GetScaleRatio();
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(scaleRatio, 0.5f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetScaleRatio(currentValue);
+			pBtn->CalcUICoord();
+		}, nullptr, EEaseType::EaseOutQuad);
+
+	pTween->PlayTween(Alpah, 0.f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+			pBtn->CalcUICoord();
+		}, [pHandle, this]() {
+			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			m_bMonsterHP = true;
 			}, EEaseType::EaseOutQuad);
 }
 
