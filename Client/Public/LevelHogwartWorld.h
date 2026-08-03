@@ -27,6 +27,7 @@ private:
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
 	HRESULT SpawnPlayerCamera(CHandle hPlayer);
+	HRESULT SpawnSkyBox();
 
 public:
 	static UPtr<CLevelHogwartWorld> Create();
