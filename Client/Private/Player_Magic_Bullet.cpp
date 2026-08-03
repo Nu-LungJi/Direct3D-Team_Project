@@ -3,6 +3,7 @@
 #include "Client_Resources.h"
 #include "Trail_CPU.h"
 #include "PhysXManager.h"
+#include "Light.h"
 
 #include "Monster.h"
 #include "BossTMB.h"
@@ -15,6 +16,13 @@ CPlayer_Magic_Bullet::CPlayer_Magic_Bullet()
 
 CPlayer_Magic_Bullet::~CPlayer_Magic_Bullet()
 {
+	if (!m_hPointLight)
+		return;
+
+	auto* pPointLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(
+		m_hPointLight.value());
+	if (pPointLight)
+		pPointLight->Reset_Light();
 }
 
 void CPlayer_Magic_Bullet::UpdateGUI()
@@ -55,6 +63,14 @@ HRESULT CPlayer_Magic_Bullet::Initialize(void* pArg)
 
 	GetTransform().SetPosition(m_Splines.front());
 	GetTransform().Update();
+	m_hPointLight = CGameInstance::Get().Allocate_EffectLight(
+		GetTransform().GetLoadedPostion(),
+		80.f,
+		{ 0.35f, 0.65f, 1.f },
+		4.6f,
+		6.f,
+		99999.f,
+		{ 0.f, 0.f, 0.f });
 	return S_OK;
 }
 
@@ -123,8 +139,26 @@ void CPlayer_Magic_Bullet::FixedUpdate(E::_float fTimeDelta)
 		SetPendingDestroy();
 }
 
+void CPlayer_Magic_Bullet::UpdatePointLight()
+{
+	if (!m_hPointLight)
+		return;
+
+	auto* pPointLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(
+		m_hPointLight.value());
+	if (nullptr == pPointLight)
+	{
+		m_hPointLight.reset();
+		return;
+	}
+
+	pPointLight->Set_LightPosition(GetTransform().GetLoadedPostion());
+}
+
 void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 {
+	UpdatePointLight();
+
 	{
 		_float3 vstart, vend;
 
