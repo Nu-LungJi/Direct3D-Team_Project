@@ -33,12 +33,17 @@ private:
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
 	HRESULT SpawnSkyBox();
-	HRESULT SpawnAmbientSound();
-	void FadeOutAmbientSound();
+
+private:
+	HRESULT PlayBGM();
+	HRESULT StopBGM(_float fDuration = 1.f);
+	void SubscribePlayerDeath(const CHandle& hPlayer);
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };
-	CHandle m_hAmbientSound{};
+	SOUND_ID m_bmgID{ INVALID_SOUND_ID };
+	CHandle m_hPlayer{};
+	uint64_t m_iPlayerDeathListenerID{};
 
 private:
 	void Free() override;
