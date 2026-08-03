@@ -1480,17 +1480,15 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 		ID3D11RenderTargetView* NullRTV[1] = { nullptr }; 
 		m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
 
-		const auto& cs = m_pVolumetricComputeShader;
-
-		m_pContext->CSSetShader(cs->GetComputeShader().Get(), nullptr, 0);
-
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+		m_pContext->CSSetShader(m_pVolumetricComputeShader->GetComputeShader().Get(), nullptr, 0);
 	}
 	{
 		ID3D11ShaderResourceView* pSRVs[5] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
-			m_pResDynTexTargetShadow->GetSRV().Get(),
+			m_pResDynTexTargetDepth->GetSRV().Get(),
+			 nullptr,
 			BlueNoiseTexture.Get(),
 			VolumeTexture.Get()
 		};
@@ -1550,7 +1548,7 @@ HRESULT CRenderer::Render_OffScreen() {
 		
 		// Bind Shader Resource
 		{
-			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetEffect->GetSRV() };
+			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPreviousRenderView->GetSRV() };
 			m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
 		}
 
@@ -1558,7 +1556,7 @@ HRESULT CRenderer::Render_OffScreen() {
 		m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
 		Unbind_Resources();
-		m_pContext->Flush();
+
 		m_pResDynTexTargetPreviousRenderView = m_pOffScreenTex2D;
 	}
 

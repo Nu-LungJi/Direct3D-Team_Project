@@ -15,12 +15,13 @@ const static int    FogMaxStep          = { 32 };
 //const static float  FogDensity          = { 0.01f };
 
 const static float4x4 FogVolumeInvWorld;
-const static float FogIntensity;
-const static float3 FogColor;
-const static float FogMaxHeight;
-const static float FogStartPos;
-const static float FogEndPos;
-const static float FogDensity;
+static const float3 FogColor = float3(120.f / 255.f, 255.f / 255.f, 255.f / 255.f);
+static const float  FogIntensity	= 0.05f;
+				    
+static const float  FogMaxHeight	= 120.f;
+static const float  FogStartPos		= 150.f;
+static const float  FogEndPos		= 300.f;
+static const float  FogDensity		= 0.0005f;
 
 float GetVolumeFogDensity(float3 _Point)    
 {
@@ -28,15 +29,16 @@ float GetVolumeFogDensity(float3 _Point)
     float FogHeight = max(0.0f, FogMaxHeight - _Point.y);
     
     float DistanceFromCam = length(_Point - g_vCamPos);
-    
-    float NearFadeFactor = saturate((DistanceFromCam - FogStartPos) / (FogEndPos - FogStartPos));
+	
+	float FadeRange = max(FogEndPos - FogStartPos, 0.001f);
+	float NearFadeFactor = saturate((DistanceFromCam - FogStartPos) / FadeRange);
     
     float4 NoiseSet = VolumeTexture.SampleLevel(LinearWrap, _Point * 0.03f, 0.f);
     
     float MainNoise = NoiseSet.r;
     float SubNoise = NoiseSet.g * 0.6f + NoiseSet.b * 0.3f + NoiseSet.a * 0.1f;
     float FinalNoise = saturate(MainNoise * SubNoise * 1.5f);
-    FinalNoise = 1.f;
+
     return FogHeight * FinalNoise * FogDensity * NearFadeFactor;
 }
 
@@ -92,10 +94,10 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
     float3 RayDirection = normalize(RayVector);
     float  RayLength    = length(RayVector);
     
-    [branch]
-    if (Depth == 0.f) RayLength = 50.f;             // 빈 공간 (> Camera Far) 최대 길이로 설정
+    //[branch]
+    //if (Depth == 0.f) RayLength = 50.f;             // 빈 공간 (> Camera Far) 최대 길이로 설정
     
-    float RayStepSize = RayLength / FogMaxStep;     // StepSize = 1 Step Distance
+	float RayStepSize = RayLength / min(FogMaxStep, RayLength); // StepSize = 1 Step Distance
     
     // BlueNoise : Jittering
     float2  NoiseTexCoord = float2(ID.xy) / NoiseResolution;
@@ -120,10 +122,10 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
         [branch]
         if (VolumeDensity > 0.f)
         {
-            float ShadowBrightness = Compute_ShadowBrightness(float4(CurrentPosition, 1.f));
-        
-            float3 Scattering = VolumeDensity * ShadowBrightness; // 빛 산란도 ((밀도 * 색상) * 그림자 Factor)
-            float  Extinction = VolumeDensity;                                                 // 빛 흡수도 (밀도)
+            //float ShadowBrightness = Compute_ShadowBrightness(float4(CurrentPosition, 1.f));
+			float ShadowBrightness = 1.f;
+            float3 Scattering = FogColor * VolumeDensity * ShadowBrightness;					// 빛 산란도 ((밀도 * 색상) * 그림자 Factor)
+            float  Extinction = VolumeDensity;													// 빛 흡수도 (밀도)
         
             float   SampledTransmittance = exp(-Extinction * RayStepSize);                      // SampledTransmittance : 이번 칸을 지나며 살아남은 빛의 비율 (0.f ~ 1.f)
         
