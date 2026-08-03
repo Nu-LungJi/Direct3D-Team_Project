@@ -52,7 +52,7 @@ HRESULT CLevelLoading::Initialize()
 
 	Engine::CGameInstance::Get().GameObjectAllReset();
 
-	GET_SINGLE(UIManager)->CreateFadeOut();
+	GET_SINGLE(UIManager)->CreateFadeOut(1.f, 2.f);
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -165,6 +165,10 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 			break;
 		case LEVEL::HOGWART_WORLD:
 			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			m_bLoadUiResource = true;
+			break;
+		default:
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon2");
 			m_bLoadUiResource = true;
 			break;
 		}
