@@ -2124,7 +2124,7 @@ VOID	CRenderer::VolumetricFogGUI() {
 	if (ImGui::DragFloat3("CenterPos", CenterPos)) {
 		m_fFogInfo.g_fFogCenterPos.x = CenterPos[0], m_fFogInfo.g_fFogCenterPos.y = CenterPos[1], m_fFogInfo.g_fFogCenterPos.z = CenterPos[2];
 	}
-	ImGui::SliderFloat("Intensity", &m_fFogInfo.g_fFogIntensity, 0.f, 0.01f, "%.2f");
+	ImGui::DragFloat("Intensity", &m_fFogInfo.g_fFogIntensity, 0.1f, 0.f, 100.f, "%.1f");
 	if (ImGui::ColorEdit3("Color", (float*)&m_fFogInfo.g_fFogColor))
 	{
 		if (m_fFogInfo.g_fFogColor.x < 0.f) m_fFogInfo.g_fFogColor.x = 0.f;
