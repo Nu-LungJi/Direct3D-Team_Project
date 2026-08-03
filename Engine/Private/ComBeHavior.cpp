@@ -75,7 +75,7 @@ void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
 void CComBeHavior::ResetNode(CBTRoot* pNode)
 {
 	BEHAVIOR eType = pNode->Get_GuiNodeInfo().eMyType;
-	pNode->Abort();
+	pNode->AbortExecute();
 	if (eType == BEHAVIOR::SECQUNCE || eType == BEHAVIOR::SELECTOR || eType == BEHAVIOR::RAND_SELECTOR)
 	{
 		auto& pSrc = *static_cast<CBTComposite*>(pNode)->Get_Nodes();

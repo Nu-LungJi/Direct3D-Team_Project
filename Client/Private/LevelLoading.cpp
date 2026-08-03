@@ -9,6 +9,8 @@
 
 #include "LevelBossCharlesRookwood.h"
 #include "LevelBossCharlesRookwoodLoader.h"
+#include "LevelHogwartWorld.h"
+#include "LevelHogwartWorldLoader.h"
 
 #include "UIManager.h"
 #include "UICamera.h"
@@ -161,6 +163,10 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon2");
 			m_bLoadUiResource = true;
 			break;
+		case LEVEL::HOGWART_WORLD:
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			m_bLoadUiResource = true;
+			break;
 		}
 	}
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
@@ -218,6 +224,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::TERRAIN:
 		pNewLevel = CLevelTerrain::Create();
 		break;
+	case LEVEL::HOGWART_WORLD:
+		pNewLevel = CLevelHogwartWorld::Create();
+		break;
 	case LEVEL::UIEDITOR:
 		pNewLevel = CLevelUIEditor::Create();
 		break;
@@ -254,6 +263,9 @@ void CLevelLoading::StartUnload()
 		break;
 	case LEVEL::TERRAIN:
 		m_futUnloadFinish = CLevelTerrainLoader::UnLoad();
+		break;
+	case LEVEL::HOGWART_WORLD:
+		m_futUnloadFinish = CLevelHogwartWorldLoader::UnLoad();
 		break;
 	case LEVEL::UIEDITOR:
 		m_futUnloadFinish = CLevelUIEditorLoader::UnLoad();
@@ -298,6 +310,9 @@ void CLevelLoading::StartLoad()
 		break;
 	case LEVEL::TERRAIN:
 		m_futLoadFinish = CLevelTerrainLoader::Load();
+		break;
+	case LEVEL::HOGWART_WORLD:
+		m_futLoadFinish = CLevelHogwartWorldLoader::Load();
 		break;
 	case LEVEL::UIEDITOR:
 		m_futLoadFinish = CLevelUIEditorLoader::Load();

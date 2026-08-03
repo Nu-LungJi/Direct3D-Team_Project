@@ -88,28 +88,27 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			if (!PlayRandomTargetAttack(*pPlayer))
 				RequestLocomotion(pStateMachine);
 			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
-				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+				auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
 
-				if (flag) {
+				if (!pWeapon)
+					return;
+				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+				_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+				CGameInstance::Get().Render_ChromaticRing(weaPonPos, 0.5f, 100);
+				// 무기 발사 위치
 
-					auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+				//const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+				//_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+			
+				_vector monstervPos = XMVectorSetW(XMLoadFloat3(&pMonster->GetHurtBoxPosition()), 1.f);
+				m_iAccioEffectID = CGameInstance::Get().PlayEffect("Accio", spawnWorld, monstervPos,
+					[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+					{
+						if (effectId != m_iAccioEffectID)
+							return;
 
-					if (!pWeapon)
-						return;
-
-					// 무기 발사 위치
-					const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
-
-					_vector monstervPos = XMVectorSetW(XMLoadFloat3(&pMonster->GetTransform().GetPosition()), 1.f);
-					m_iAccioEffectID = CGameInstance::Get().PlayEffect("Accio", spawnWorld, monstervPos,
-						[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
-						{
-							if (effectId != m_iAccioEffectID)
-								return;
-
-							m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
-						});
-				}
+						m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
+					});
 
 			}
 		}
@@ -126,6 +125,15 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			//}
 		
 			// 끌어 오기 시작
+
+			auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+			if (!pWeapon)
+				return;
+			//const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+			//_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+			//CGameInstance::Get().Render_ChromaticRing(weaPonPos, 0.5f, 100);
+
 			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle())->GetSpawnWorldMatrix();
 
 			m_ePhase = PHASE::PULL;
@@ -165,9 +173,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 				m_bPulling = false;
 				break;
 			}
-
-			_vector targetPos = Target->GetTransform().GetState(STATE::POSITION);
-
+	
+			//_vector targetPos = XMVectorSetW(
+			//	XMLoadFloat3(&Target->GetHurtBoxPosition()), 1.f);
+		
+			_vector targetPos = XMVectorSetW(
+				XMLoadFloat3(&Target->GetTransform().GetPosition()), 1.f);
 			const _vector playerPos = pPlayer->GetTransform().GetState(STATE::POSITION);
 
 			const _vector playerLook = XMVector3Normalize(XMVectorSetY(pPlayer->GetTransform().GetState(STATE::LOOK), 0.f));
@@ -200,22 +211,17 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			}
 
 			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle())) {
-				_bool flag = pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+				auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
 
-				if (flag) {
+				if (!pWeapon)
+					return;
 
-					auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+				// 무기 발사 위치
+				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 
-					if (!pWeapon)
-						return;
+				_float3 spawnPos = _float3(spawnWorld._41, spawnWorld._42, spawnWorld._43);
 
-					// 무기 발사 위치
-					const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
-
-					_float3 spawnPos = _float3(spawnWorld._41, spawnWorld._42, spawnWorld._43);
-
-					CGameInstance::Get().SetBeamPositionsByOwner(m_iAccioEffectID, spawnPos, pMonster->GetTransform().GetPosition());
-				}
+				CGameInstance::Get().SetBeamPositionsByOwner(m_iAccioEffectID, spawnPos, pMonster->GetTransform().GetPosition());
 			}
 
 		}

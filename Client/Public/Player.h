@@ -29,6 +29,7 @@ NS_END
 
 NS_BEGIN(Client)
 class CPlayer_StateMachine;
+class CPlayerRagdollController;
 
 class CPlayer final : public CAnimationObject
 {
@@ -50,10 +51,20 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPosition{ 50.f, 50.f, 10.f };
+		// PhysX capsule height는 양 끝 반구를 제외한 원통 부분의 높이다.
+		_float fCCTHeight{ 3.6f };
+		_float fCCTRadius{ 0.6f };
+		_float fCCTStepOffset{ 0.1f };
+		_float3 vCCTCenterOffset{ 0.f, 0.9f, 0.f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
-			.iQueryMask = PX_ALL_LAYERS
+			// [LSY] 적 CCT와는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
+			.iQueryMask =
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 		StringID LevelTag;
 		CHandle  UIHandle;
@@ -61,6 +72,7 @@ public:
 
 private:
 	CPlayer();
+	CPlayer(const CPlayer& Prototype);
 	~CPlayer() override;
 
 
@@ -218,6 +230,22 @@ private:
 	CHandle m_UIHandle;
 	_bool m_bSkillSlotUIInitialized{ false };
 
+#pragma region RAGDOLL
+	friend class CPlayerRagdollController;
+public:
+	_bool RequestRagdollActivation(
+		const _float3& vLinearVelocity = {},
+		const _float3& vAngularVelocityRadians = {});
+	_bool ResetRagdoll();
+	_bool IsRagdollActive() const;
+	_bool TryGetRagdollFollowPosition(_float3& OutPosition) const;
+private:
+	HRESULT InitializeRagdoll();
+	_bool IsRagdollTransitioning() const;
+private:
+	UPtr<CPlayerRagdollController> m_pRagdollController{};
+#pragma endregion
+
 private:
 	PLAYER_SKILL_TYPE m_eSkill_Type;
 private:
@@ -237,6 +265,10 @@ private:
 	_float m_fCoolTime_Num4{ 0.f };
 	_bool m_bCoolTime_Num4{ false };
 
+private:
+	void DelayFinish(_float fTimeDelta);
+private:
+	_float m_fDelayTime{ 0.f };
 private:
 	_bool  m_bUI = false;
 	_bool  m_bDistanceUI = false;

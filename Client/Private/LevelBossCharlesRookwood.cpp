@@ -75,6 +75,13 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
+	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	skyDesc.sObjectTag = "SkyCloudyCube";
+	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
+	{
+		return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -209,7 +216,8 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	.iSimulationMask = PX_ALL_LAYERS,
 	.iQueryMask =
 		ETOUI(COLLISION_LAYER::WORLD_STATIC) |
-		ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+		ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+		ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::BOSS_CHARLES_ROOKWOOD,

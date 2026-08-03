@@ -361,6 +361,7 @@ HRESULT CRenderer::InitializePostProcess() {
 		m_fScreenPosition = { 0.5f, 0.5f };
 		m_fExpandDuration = 10.f;
 		m_fCurrentLifeTime = 0.f;
+		m_fChromaticRingAlpha = 0.25f;
 	}
 
 	return S_OK;
@@ -1068,7 +1069,7 @@ HRESULT CRenderer::Draw() {
 	m_pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 
 
-	if (FAILED(Render_Shadow()))	return E_FAIL;
+	if (FAILED(Render_Shadow()))		 return E_FAIL;
 
 	// DepthMap
 	if (FAILED(Render_DepthMap()))       return E_FAIL;
@@ -1092,7 +1093,7 @@ HRESULT CRenderer::Draw() {
 	if (FAILED(Render_Effect()))		 return E_FAIL;
 
 	// Volumetric
-	//if (FAILED(Render_VolumetricEffect())) return E_FAIL;
+	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
 
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
@@ -1505,7 +1506,7 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 		UINT GroupZ = 1;
 		m_pContext->Dispatch(GroupX, GroupY, GroupZ);
 	}
-
+	 
 	Unbind_Resources();
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexUAVVolumetric;
@@ -1613,7 +1614,7 @@ HRESULT CRenderer::Render_PostProcess_LensFlare(){
 			cbLensFlare.RingStartScale			= 0.3f;
 			cbLensFlare.RingEndScale			= m_fScale;
 			cbLensFlare.AspectRatio				= ScreenSize.x / ScreenSize.y;
-			cbLensFlare.RingBaseAlpha			= 1.f;
+			cbLensFlare.RingBaseAlpha			= m_fChromaticRingAlpha;
 			cbLensFlare.RainbowSaturation		= 0.5f;
 			cbLensFlare.FlareEnabled			= 1.f;
 			cbLensFlare.TextureSize				= { ScreenSize.x, ScreenSize.y };

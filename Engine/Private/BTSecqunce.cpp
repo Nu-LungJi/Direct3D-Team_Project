@@ -29,6 +29,12 @@ HRESULT CBTSecqunce::Initalize(void* pArg)
 
 	return S_OK;
 }
+void CBTSecqunce::OnEnter()
+{
+}
+void CBTSecqunce::OnExit(EVALUATE eResult)
+{
+}
 EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
 {
     int32_t iIndex = 0;
@@ -41,7 +47,7 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
         if (nullptr == m_Actions[i])
             continue;
 
-        EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
+        EVALUATE eValuate = m_Actions[i]->Execute(fTimeDelta);
 		if (eValuate == EVALUATE::RUN)
         {
             m_NodeValue.bCur = true;
@@ -63,6 +69,12 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
 
 void CBTSecqunce::Abort()
 {
+	if (m_NodeValue.iPreSecquenceIndex < m_Actions.size() &&
+		m_Actions[m_NodeValue.iPreSecquenceIndex])
+	{
+		m_Actions[m_NodeValue.iPreSecquenceIndex]->AbortExecute();
+	}
+
 	m_NodeValue.bCur = false;
 	m_NodeValue.iPreSecquenceIndex = 0;
 }

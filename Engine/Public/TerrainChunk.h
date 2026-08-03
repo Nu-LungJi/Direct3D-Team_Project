@@ -63,6 +63,8 @@ public:
 	uint32_t GetMaskResolution() const { return m_iMaskResolution; }
 	ID3D11ShaderResourceView* GetBlendMaskSRV() const { return m_pBlendMaskSRV.Get(); }
 	const std::vector<uint8_t>& GetBlendMask() const { return m_BlendMask; }
+	_bool IsPhysicsEnabled() const { return m_bPhysicsEnabled; }
+	void SetPhysicsEnabled(_bool enabled) { m_bPhysicsEnabled = enabled; }
 
 public:
 	HRESULT UpdateVertices(const std::vector<VTX_NORMAL_TEX>& vertices);
@@ -98,6 +100,9 @@ private:
 	// 전체 Terrain에서 복사한 청크 범위의 CPU Mesh 데이터
 	std::vector<VTX_NORMAL_TEX> m_Vertices{};
 	std::vector<uint32_t> m_Indices{};
+
+private:
+	_bool m_bPhysicsEnabled = false;
 
 public:
 	static UPtr<CTerrainChunk> Create(const TERRAIN_CHUNK_DESC& desc);

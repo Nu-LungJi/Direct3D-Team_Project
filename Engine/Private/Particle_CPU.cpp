@@ -1012,30 +1012,33 @@ void CParticle_CPU::TranslateOwner(uint32_t ownerId,const _float3& delta)
 }
 void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
 {
-    const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
+	TransformPendingOwner(ownerId, deltaMatrixData);
 
-    XMVECTOR scale, deltaRotation, translation;
-    if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
-        return;
+	const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
 
-    XMFLOAT4X4 rotationMatrix;
-    XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
+	XMVECTOR scale{};
+	XMVECTOR deltaRotation{};
+	XMVECTOR translation{};
 
-    const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
+	if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
+		return;
 
-    for (auto& particle : m_Particles)
-    {
-		auto  a = particle.rotation.y;
+	XMFLOAT4X4 rotationMatrix{};
+	XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
 
-        if (!particle.bAlive || particle.ownerID != ownerId)
-            continue;
+	const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
 
-        XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
-        XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
+	for (auto& particle : m_Particles)
+	{
+		if (!particle.bAlive || particle.ownerID != ownerId)
+			continue;
 
-        XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
-        XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
+		XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
+		XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
 
-        particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
-    }
+		XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
+		XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
+
+		particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
+	}
 }

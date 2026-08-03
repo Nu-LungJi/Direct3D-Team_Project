@@ -115,3 +115,28 @@ void CParticle::TranslateOwner(uint32_t ownerId, const _float3& delta) {
 void CParticle::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) {
 
 }
+void CParticle::TransformPendingOwner(uint32_t ownerId, const _float4x4& deltaMatrixData)
+{
+	const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
+
+	XMVECTOR scale{};
+	XMVECTOR rotation{};
+	XMVECTOR translation{};
+
+	if (!XMMatrixDecompose(&scale, &rotation, &translation, deltaMatrix))
+		return;
+
+	for (PENDING_SPAWN& pending : m_PendingSpawns)
+	{
+		PARTICLE_SPAWN_DATA& data = pending.data;
+
+		if (data.ownerID != ownerId)
+			continue;
+
+		XMStoreFloat3(&data.position, XMVector3TransformCoord(XMLoadFloat3(&data.position), deltaMatrix));
+		XMStoreFloat3(&data.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&data.originalPosition), deltaMatrix));
+
+		XMStoreFloat3(&data.velocity, XMVector3Rotate(XMLoadFloat3(&data.velocity), rotation));
+		XMStoreFloat3(&data.originalVelocity, XMVector3Rotate(XMLoadFloat3(&data.originalVelocity), rotation));
+	}
+}

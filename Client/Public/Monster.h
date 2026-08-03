@@ -52,6 +52,11 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+		// 모델 로컬 크기이며 생성 시 vScale을 적용해 CCT 월드 크기로 변환한다.
+		_float fCCTHeight{ 2.1f };
+		_float fCCTRadius{ 0.45f };
+		_float fCCTStepOffset{ 0.1f };
+		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
 
 		_float3 vWeaponScale{ 1.f,1.f,1.f };
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
@@ -62,7 +67,13 @@ public:
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
-			.iQueryMask = PX_ALL_LAYERS
+			// [LSY] 캐릭터 CCT끼리는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
+			.iQueryMask =
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::PLAYER_BODY) |
+				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 
 
@@ -89,7 +100,9 @@ public:
 public:
 	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
 public:
-	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
+	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
+
+	void						Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
 	virtual const _float		Get_Damage() { return 0.f; }
@@ -100,28 +113,38 @@ public:
 	_bool						Is_PendingHit() { return m_bPending; }
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						ReActiveTable();
-	_bool						Check_Table(PLAYER_SKILL_TYPE eType);
 	_bool						Is_Grounded();
 	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
 	uint32_t					GetHitCnt() { return m_iHitCnt; }
 	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 
+
+	virtual void				Skill_Finished();
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 protected:
+
 	uint32_t					Find_SkillNum(ATTMON eType);
 	_bool						Check_Flag(uint32_t iFlag);
+	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
+	void						Update_HurtBox();
 private:
-	void						Damaged(PLAYER_SKILL_TYPE eType);
 	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
+// 민수 추가 ----------------------------------------------------------
+public:
+	const _float3& GetHurtBoxPosition() const {return m_vHurtBoxPosition;}
+
+
+protected:
+	_float3 m_vHurtBoxPosition{};
+// 민수 추가 ----------------------------------------------------------
 protected:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
-	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
@@ -145,17 +168,17 @@ protected:
 	_float2								m_fSkillRatio{ };
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{}, m_iPreSkill{}, m_iCurSkill{};
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{};
-	int32_t								m_iHp{}, m_iMaxHp{};
+	int32_t								m_iHp{}, m_iMaxHp{},m_iColliderBoneIndex{};;
 	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};
 	_string								m_SocketName{}, m_CurEffectName{};
-	ATTMON								m_eAttType{};
-
+	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };
+	
 	_bool								m_bPending{ false };
 	MON_HIT_INFO						m_PendingMonTable{};
 
 	_bool								m_bActiveHit{ false };
 	MON_HIT_INFO						m_ActiveMonTable{};
-
+	
 	MONSTER_TYPE						m_eMonType{ MONSTER_TYPE::NORMAL };
 	std::vector<E::SPAWN_COMMAND>		m_Effects[ETOUI(ATTMON::END)];
 	CHandle								m_TargetHandle{};

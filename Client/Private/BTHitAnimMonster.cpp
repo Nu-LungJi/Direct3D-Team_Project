@@ -42,7 +42,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr)
 			return m_eDebug = EVALUATE::FAILED;
 
-
+		
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
 			if (m_bStart)
@@ -52,10 +52,8 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 				if (false == HitType())
 					return m_eDebug = EVALUATE::FAILED;
 				m_bStart = false;
-
-				if (m_bResetAnimTime)
-					pAnimator->GetCurAnimState().fTrackPosition = 0.f;
 			}
+
 
 			if (m_iHitCnt != pSrc->GetHitCnt())
 			{
@@ -71,7 +69,6 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		//현재 애니매이션 유지할건지
 		if (!m_bUseCurAnim)
 		{
-
 			pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
 
 		}
@@ -243,6 +240,13 @@ HRESULT CBTHitAnimMonster::Load_json(const nlohmann::json& j)
 		}
 	}
 	return S_OK;
+}
+void CBTHitAnimMonster::OnEnter()
+{
+	__super::OnEnter();
+}
+void CBTHitAnimMonster::OnExit(EVALUATE eResult)
+{
 }
 _bool CBTHitAnimMonster::HitType()
 {

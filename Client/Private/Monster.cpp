@@ -16,6 +16,9 @@
 #include "CollBox.h"
 #include "UIManager.h"
 #include "UIController.h"
+
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -122,11 +125,9 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 	
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
-	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
-	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
 	
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)))
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)| ETOUI(CBTRoot::BTFLAG::DEAD) | ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 		m_pCharacterMotor->SetUseGravity(true);
 	else m_pCharacterMotor->SetUseGravity(false);
 		
@@ -144,6 +145,7 @@ void CMonster::Update(E::_float fTimeDelta)
 
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
+	Update_HurtBox();
 }
 
 void CMonster::LateUpdate(E::_float fTimeDelta)
@@ -420,70 +422,13 @@ _bool CMonster::Activate_PendingHit()
 
 void CMonster::ReActiveTable()
 {
-
 	m_PendingMonTable = {};
 	m_bPending = false;
 
 	m_ActiveMonTable = {}; 
 	m_bActiveHit = false;
-
 	m_iHitCnt = 0;
-	m_pBeHavior->Set_Flag(ETOUI( ETOUI(CBTRoot::BTFLAG::HIT)), FLAGTYPE::DEL);
-}
-
-
-_bool CMonster::Check_Table(PLAYER_SKILL_TYPE eType)
-{
-
-	Damaged(eType);
-	if (eType == PLAYER_SKILL_TYPE::ATTACK && m_ActiveMonTable.eHitType == PLAYER_SKILL_TYPE::DESCENDO)
-		return false;
-
-	if (eType == PLAYER_SKILL_TYPE::ATTACK)
-	{
-		++m_iNormalHitCnt;
-
-		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
-
-		if (hUIController.has_value())
-		{
-			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
-			{
-				pUIController->AddFinisher(2.f);
-			}
-		}
-	}
-		
-	if (m_iNormalHitCnt >= 3 && eType == PLAYER_SKILL_TYPE::ATTACK)
-	{
-		if (m_iNormalHitCnt >= 6)
-		{
-			m_iNormalHitCnt = 0;
-			m_bSkipAtt = false;
-			return false;
-		}
-		m_bSkipAtt = true;
-		
-		return false;
-	}
-
-	if (ETOUI(m_eMonType) > ETOUI(MONSTER_TYPE::NORMAL) && eType == PLAYER_SKILL_TYPE::ATTACK)
-		return false;
-	
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
-		return false;
-
-	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return false;
-
-	MON_HIT_INFO HitInfo{};
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
-	HitInfo.eAttType = m_eAttType;
-	HitInfo.eHitType = eType;
-	m_PendingMonTable = HitInfo;
-	m_bPending = true;
-
-	return true;
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::DEL);
 }
 
 _bool CMonster::Is_Grounded()
@@ -504,6 +449,14 @@ uint32_t CMonster::Find_SkillNum(ATTMON eType)
 _bool CMonster::Check_Flag(uint32_t iFlag)
 {
 	return m_pBeHavior->Check_Flag(iFlag);
+}
+
+void CMonster::Skill_Finished()
+{
+	m_eAttType = ATTMON::END;
+	m_CurEffectName.clear();
+	m_eLastSkillTable = ATTMON::END;
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT) | ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) |ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
 }
 
 
@@ -532,6 +485,60 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	}
 }
 
+void CMonster::Update_HurtBox()
+{
+	_bool bHurtBoxUpdated{ false };
+
+	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
+	{
+		const auto& CombinedBones =m_pComModelInstance->Get_CombinedBoneMatrices();
+
+		const size_t iBoneIndex =
+			static_cast<size_t>(m_iColliderBoneIndex);
+
+		if (iBoneIndex < CombinedBones.size())
+		{
+			const _matrix HurtBoxWorld =
+				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
+
+			_vector vScale{};
+			_vector vRotation{};
+			_vector vTranslation{};
+
+			if (XMMatrixDecompose(
+				&vScale,
+				&vRotation,
+				&vTranslation,
+				HurtBoxWorld))
+			{
+				_float4 vHurtBoxRotation{};
+
+				// 계산한 위치를 멤버에 저장
+				XMStoreFloat3(
+					&m_vHurtBoxPosition,
+					vTranslation);
+
+				XMStoreFloat4(
+					&vHurtBoxRotation,
+					XMQuaternionNormalize(vRotation));
+
+				bHurtBoxUpdated = m_pComRigidBody->SetKinematicTarget(m_vHurtBoxPosition,vHurtBoxRotation);
+			}
+		}
+	}
+
+	if (!bHurtBoxUpdated)
+	{
+		m_vHurtBoxPosition =
+			m_pCharacterController->GetPosition();
+
+		m_pComRigidBody->SetKinematicTarget(
+			m_vHurtBoxPosition,
+			GetTransform().GetQuaternion());
+	}
+}
+
 void CMonster::Flag_Check(_float fTimeDelta)
 {
 	//이미시브
@@ -549,11 +556,7 @@ void CMonster::Flag_Check(_float fTimeDelta)
 		m_fIntensive = 0;
 
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-	{
-		m_eAttType = ATTMON::END;
-		m_CurEffectName.clear();
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) | ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
-	}
+		Skill_Finished();
 
 	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)) && m_bSkillLoop)
 	{
@@ -582,4 +585,7 @@ void CMonster::EmissiveFadeOut(_float fTimeDelta)
 	}
 
 }
+
+
+
 

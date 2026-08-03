@@ -161,6 +161,10 @@ namespace
 		newObjTransform.SetQuaternion(_float4{ rot[0], rot[1], rot[2], rot[3] });
 		newObjTransform.SetScale(_float3{ scale[0], scale[1], scale[2] });
 
+		/*----------- 광윤 추가 -----------*/
+		newObjTransform.Update();
+		/*---------------------------------*/
+
 		return hObject;
 	}
 
@@ -1059,6 +1063,15 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	{
 		chunk.octreeNode->BuildOctree(chunk.hObjects);
 	}
+
+	/*----------- 광윤 추가 -----------*/
+	if (!chunk.hObjects.empty())
+	{
+		const BoundingBox& ChangedBounds = chunk.octreeNode ? chunk.octreeNode->GetCullingBoundingBox() : chunk.bounds;
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
+	}
+	/*---------------------------------*/
+
 	return S_OK;
 }
 
@@ -1076,6 +1089,13 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 		return E_FAIL;
 	}
 
+
+	/*----------- 광윤 추가 -----------*/
+	const _bool bHadObjects = !chunk.hObjects.empty();
+	const BoundingBox RemovedBounds = chunk.octreeNode ? chunk.octreeNode->GetCullingBoundingBox() : chunk.bounds;
+	/*---------------------------------*/
+
+
 	chunk.loadState = EChunkLoadState::Unloading;
 
 	for (const auto& handle : chunk.hObjects)
@@ -1090,6 +1110,11 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 	chunk.hObjects.clear();
 	chunk.octreeNode.reset();
 	chunk.loadState = EChunkLoadState::Unloaded;
+
+	/*----------- 광윤 추가 -----------*/
+	if (bHadObjects)	CGameInstance::Get().Notify_StaticShadowSceneChanged(RemovedBounds);
+	/*---------------------------------*/
+
 
 	return S_OK;
 }
@@ -1218,6 +1243,10 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 		return E_FAIL;
 	}
 
+	/*----------- 광윤 추가 -----------*/
+	pObj->GetTransform().Update();
+	/*---------------------------------*/
+
 	const MAPCHUNK_COORD coord = WorldToChunkCoord(pObj->GetTransform().GetPosition());
 	auto& chunk = m_Chunks[coord];
 
@@ -1243,6 +1272,18 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 
 	pObj->SetRenderEnable(true);
 
+	
+
+	/*----------- 광윤 추가 -----------*/
+	BoundingBox ChangedBounds{};
+
+	if (pObj->GetShadowBounds(ChangedBounds)) {
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
+	}
+	else {
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(chunk.bounds);
+	}
+	/*---------------------------------*/
 	return S_OK;
 }
 
@@ -1638,6 +1679,14 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		chunk.octreeNode->BuildOctree(chunk.hObjects);
 	}
 
+
+	/*----------- 광윤 추가 -----------*/
+	if (!chunk.hObjects.empty()) {
+		const BoundingBox& ChangedBounds = chunk.octreeNode? chunk.octreeNode->GetCullingBoundingBox() : chunk.bounds;
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
+	}
+	/*---------------------------------*/
+	
 	return S_OK;
 }
 

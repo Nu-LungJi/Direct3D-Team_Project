@@ -4,6 +4,7 @@
 #include "GameInstance.h"
 #include "Client_Defines.h"
 #include "ClientEvents.h"
+#include "Player.h"
 
 NS_USING(Client)
 
@@ -92,7 +93,15 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 	if (!pTarget)
 		return;
 
-	const _float3 vTargetPosition = pTarget->GetTransform().GetPosition();
+	_float3 vTargetPosition = pTarget->GetTransform().GetPosition();
+	if (auto* pPlayer = Cast<CPlayer>(pTarget))
+	{
+		// [LSY] 랙돌 중에는 고정된 Player Transform 대신 물리 Hips 위치를 추적한다.
+		_float3 vRagdollFollowPosition{};
+		if (pPlayer->TryGetRagdollFollowPosition(vRagdollFollowPosition))
+			vTargetPosition = vRagdollFollowPosition;
+	}
+
 	const _float3 vPlayerFocus{
 		vTargetPosition.x,
 		vTargetPosition.y + CAMERA_TARGET_OFFSET_Y,
