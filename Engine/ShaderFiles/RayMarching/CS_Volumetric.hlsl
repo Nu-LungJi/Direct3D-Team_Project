@@ -1,38 +1,39 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
 
-Texture2D<float4>    SceneColorTexture : register(t0);
+Texture2D<float4>		SceneColorTexture : register(t0);
+										  
+Texture2D<float>		DepthTexture      : register(t1);
+Texture2D<float>		ShadowMapTexture  : register(t2);
+Texture2D<float>		BlueNoiseTexture  : register(t3);
+Texture3D<float4>		VolumeTexture     : register(t4);
+										  
+RWTexture2D<float4>		OUTPUT            : register(u0);
 
-Texture2D<float>    DepthTexture     : register(t1);
-Texture2D<float>    ShadowMapTexture : register(t2);
-Texture2D<float>    BlueNoiseTexture : register(t3);
-Texture3D<float4>   VolumeTexture    : register(t4);
-
-RWTexture2D<float4> OUTPUT           : register(u0);
-
-const static float2 ScreenResolution    = { 1280.f, 720.f };
-const static float2 NoiseResolution     = { 256.f, 256.f };
-const static int    FogMaxStep          = { 32 };
-//const static float  FogDensity          = { 0.01f };
-
+const static float2		ScreenResolution    = { 1280.f, 720.f };
+const static float2		NoiseResolution     = { 256.f, 256.f };
+const static uint		FogMaxStep          = { 32 };
 
 cbuffer CB_VLFOG : register(b11)
 {
-	float3 FogColor	= float3(120.f / 255.f, 255.f / 255.f, 255.f / 255.f);
+	float3	FogColor	= float3(120.f / 255.f, 255.f / 255.f, 255.f / 255.f);
 	float	FogIntensity = 0.05f;
 	   
-	float	FogMaxHeight = 120.f;
+	float3	FogCenterPos;
+	float	FogHeight = 120.f;
+	
 	float	FogStartPos	= 0.f;
 	float	FogEndPos	= 300.f;
 	float	FogDensity	= 0.0005f;
+	float	FogPadding;
 };
 
 
 float GetVolumeFogDensity(float3 _Point)    
 {
     //float FogHeight = exp(-_Point.y * 0.05f);
-    float FogHeight = max(0.0f, FogMaxHeight - _Point.y);
+    float FogMaxHeight = max(0.0f, FogHeight - _Point.y);
     
-    float DistanceFromCam = length(_Point - g_vCamPos);
+	float DistanceFromCam = length(_Point - FogCenterPos);
 	
 	float FadeRange = max(FogEndPos - FogStartPos, 0.001f);
 	float NearFadeFactor = saturate((DistanceFromCam - FogStartPos) / FadeRange);
@@ -43,7 +44,7 @@ float GetVolumeFogDensity(float3 _Point)
     float SubNoise = NoiseSet.g * 0.6f + NoiseSet.b * 0.3f + NoiseSet.a * 0.1f;
     float FinalNoise = saturate(MainNoise * SubNoise * 1.5f);
 
-    return FogHeight * FinalNoise * FogDensity * NearFadeFactor;
+	return FogMaxHeight * FinalNoise * FogDensity * NearFadeFactor;
 }
 
 float Compute_ShadowBrightness(float4 _Position)

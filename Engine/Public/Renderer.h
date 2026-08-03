@@ -75,6 +75,8 @@ public:
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID	Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
 
+	VOID	Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density);
+
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
 
@@ -290,13 +292,7 @@ private:
 
 	_float			TimeAccumulation{};
 
-	_float3 m_fFogCenterPos{};
-	_float	m_fFogIntensity{};
-	_float3	m_fFogColor{ 1.f, 1.f, 1.f };
-	_float	m_fFogMaxHeight{};
-	_float	m_fFogStartPos{};
-	_float	m_fFogEndPos{};
-	_float	m_fFogDensity{};
+	CB_VLFOG		m_fFogInfo{};
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

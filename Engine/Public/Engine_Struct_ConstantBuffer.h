@@ -197,10 +197,13 @@ namespace Engine
 		_float3 g_fFogColor;
 		_float	g_fFogIntensity;
 
-		_float  g_fFogMaxHeight;
+		_float3 g_fFogCenterPos;
+		_float  g_fFogHeight;
+
 		_float	g_fFogStartPos;
 		_float	g_fFogEndPos;
 		_float	g_fFogDensity;
+		_float	FogPadding;
 	};
 	static_assert(sizeof(CB_VLFOG) % 16 == 0);
 
