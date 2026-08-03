@@ -302,7 +302,7 @@ void CUIController::CreateSpellType()
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellOpen.wav", SOUND_PLAY_DESC{
 		.sBusID = SOUND_BUS::UI,
-		.fVolume = 0.3f,
+		.fVolume = 0.5f,
 		.fPitch = 1.f,
 		.iPriority = 64,
 		.bLoop = false
