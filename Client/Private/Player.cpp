@@ -660,6 +660,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (CGameInstance::Get().KeyDown(DIK_X) &&
 		CPlayer_SkillStateBase::HasValidTarget(*this))
 	{
+		if (auto* pUIController =
+			CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+		{
+			pUIController->AddFinisher(-100.f / 3.f);
+		}
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 
