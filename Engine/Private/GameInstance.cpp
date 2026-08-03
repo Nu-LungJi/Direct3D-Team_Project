@@ -1166,6 +1166,11 @@ VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Durati
 	m_pRenderer->Render_ChromaticRing(_WorldPosition, _Duration, _Scale);
 }
 VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
+
+VOID	CGameInstance::Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density) {
+	m_pRenderer->Set_VolumetricFog(_Center, _Color, _Intensity, _Height, _StartPos, _EndPos, _Density);
+}
+
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER

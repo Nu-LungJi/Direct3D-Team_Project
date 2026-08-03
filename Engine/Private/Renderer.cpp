@@ -1437,14 +1437,18 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 		if (SUCCEEDED(m_pContext->Map(m_pVolumetricCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
 			CB_VLFOG cbVLFog{};
-			cbVLFog.g_fFogIntensity = m_fFogIntensity;
-			cbVLFog.g_fFogColor = m_fFogColor;
-			cbVLFog.g_fFogMaxHeight = m_fFogMaxHeight;
-			cbVLFog.g_fFogStartPos = m_fFogStartPos;
-			cbVLFog.g_fFogEndPos = m_fFogEndPos;
-			cbVLFog.g_fFogDensity = m_fFogDensity;
 
-			memcpy(MRES.pData, &cbVLFog, sizeof(cbVLFog));
+			cbVLFog.g_fFogIntensity = m_fFogInfo.g_fFogIntensity;
+			cbVLFog.g_fFogColor = m_fFogInfo.g_fFogColor;
+
+			cbVLFog.g_fFogCenterPos = m_fFogInfo.g_fFogCenterPos;
+			cbVLFog.g_fFogHeight = m_fFogInfo.g_fFogHeight;
+
+			cbVLFog.g_fFogStartPos = m_fFogInfo.g_fFogStartPos;
+			cbVLFog.g_fFogEndPos = m_fFogInfo.g_fFogEndPos;
+			cbVLFog.g_fFogDensity = m_fFogInfo.g_fFogIntensity;
+
+			memcpy(MRES.pData, &cbVLFog, sizeof(CB_VLFOG));
 			m_pContext->Unmap(m_pVolumetricCBuffer->GetCBuffer().Get(), 0);
 		}
 		m_pContext->CSSetConstantBuffers(11, 1, m_pVolumetricCBuffer->GetCBuffer().GetAddressOf());
@@ -2116,32 +2120,32 @@ VOID	CRenderer::PostProcessGUI() {
 VOID	CRenderer::VolumetricFogGUI() {
 	ImGui::Begin("VolumetricFog");
 
-	_float CenterPos[3] = { m_fFogCenterPos.x, m_fFogCenterPos.y, m_fFogCenterPos.z };
+	_float CenterPos[3] = { m_fFogInfo.g_fFogCenterPos.x, m_fFogInfo.g_fFogCenterPos.y, m_fFogInfo.g_fFogCenterPos.z };
 	if (ImGui::DragFloat3("CenterPos", CenterPos)) {
-		m_fFogCenterPos.x = CenterPos[0], m_fFogCenterPos.y = CenterPos[1], m_fFogCenterPos.z = CenterPos[2];
+		m_fFogInfo.g_fFogCenterPos.x = CenterPos[0], m_fFogInfo.g_fFogCenterPos.y = CenterPos[1], m_fFogInfo.g_fFogCenterPos.z = CenterPos[2];
 	}
-	ImGui::SliderFloat("Intensity", &m_fFogIntensity, 0.f, 1.f, "%.2f");
-	if (ImGui::ColorEdit3("Color", (float*)&m_fFogColor))
+	ImGui::SliderFloat("Intensity", &m_fFogInfo.g_fFogIntensity, 0.f, 0.01f, "%.2f");
+	if (ImGui::ColorEdit3("Color", (float*)&m_fFogInfo.g_fFogColor))
 	{
-		if (m_fFogColor.x < 0.f) m_fFogColor.x = 0.f;
-		if (m_fFogColor.x > 1.f) m_fFogColor.x = 1.f;
+		if (m_fFogInfo.g_fFogColor.x < 0.f) m_fFogInfo.g_fFogColor.x = 0.f;
+		if (m_fFogInfo.g_fFogColor.x > 1.f) m_fFogInfo.g_fFogColor.x = 1.f;
 
-		if (m_fFogColor.y < 0.f) m_fFogColor.y = 0.f;
-		if (m_fFogColor.y > 1.f) m_fFogColor.y = 1.f;
+		if (m_fFogInfo.g_fFogColor.y < 0.f) m_fFogInfo.g_fFogColor.y = 0.f;
+		if (m_fFogInfo.g_fFogColor.y > 1.f) m_fFogInfo.g_fFogColor.y = 1.f;
 
-		if (m_fFogColor.z < 0.f) m_fFogColor.z = 0.f;
-		if (m_fFogColor.z > 1.f) m_fFogColor.z = 1.f;
+		if (m_fFogInfo.g_fFogColor.z < 0.f) m_fFogInfo.g_fFogColor.z = 0.f;
+		if (m_fFogInfo.g_fFogColor.z > 1.f) m_fFogInfo.g_fFogColor.z = 1.f;
 	}
 
 	ImGui::Separator();
 
-	ImGui::DragFloat("Start Distance", &m_fFogStartPos, 1.f, 0.f, 100.f, "%.1f");
-	ImGui::DragFloat("End Distance", &m_fFogEndPos, 1.f, m_fFogStartPos, 500.f, "%.1f");
+	ImGui::DragFloat("Start Distance", &m_fFogInfo.g_fFogStartPos, 1.f, 0.f, 100.f, "%.1f");
+	ImGui::DragFloat("End Distance", &m_fFogInfo.g_fFogEndPos, 1.f, m_fFogInfo.g_fFogStartPos, 500.f, "%.1f");
 
 	ImGui::Separator();
 
-	ImGui::DragFloat("Max Height", &m_fFogMaxHeight, 0.5f, -30.f, 30.f, "%.1f");
-	ImGui::DragFloat("Density", &m_fFogDensity, 0.0001f, 0.f, 0.1f, "%.4f");
+	ImGui::DragFloat("Height", &m_fFogInfo.g_fFogHeight, 0.25f, -300.f, 300.f, "%.1f");
+	ImGui::DragFloat("Density", &m_fFogInfo.g_fFogDensity, 0.0001f, 0.f, 0.01f, "%.4f");
 
 	ImGui::End();
 }
@@ -2278,6 +2282,16 @@ VOID CRenderer::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, 
 	m_fExpandDuration = _Duration;
 	m_fCurrentLifeTime = 0.f;
 	m_fScale = _Scale;
+}
+
+VOID CRenderer::Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density){
+	m_fFogInfo.g_fFogCenterPos		= _Center;
+	m_fFogInfo.g_fFogColor			= _Color;
+	m_fFogInfo.g_fFogIntensity		= _Intensity;
+	m_fFogInfo.g_fFogHeight			= _Height;
+	m_fFogInfo.g_fFogStartPos		= _StartPos;
+	m_fFogInfo.g_fFogEndPos			= _EndPos;
+	m_fFogInfo.g_fFogDensity		= _Density;
 }
 
 #pragma region BLOOMHELPER

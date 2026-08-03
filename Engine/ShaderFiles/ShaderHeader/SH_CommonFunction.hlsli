@@ -46,10 +46,11 @@ float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNor
 
 bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 L, out float3 Radiance)
 {
-	float3 NormalizedDirection = normalize(Light.LightDirection.xyz);
+
     [branch]
     if (Light.LightType == LIGHT_DIRECTIONAL)   // Directional Light PBR
     {
+		float3	NormalizedDirection = normalize(Light.LightDirection.xyz);
 		L = -NormalizedDirection;
         Radiance = Light.LightColor * Light.LightIntensity;
     }
@@ -64,17 +65,17 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
 		[branch]
 		if (DistanceSQ >= OuterRangeSQ)	return false; // 빛이 안 닿는 구역
 		
-		float InvDistance = rsqrt(max(DistanceSQ, 0.00001f));
-		float Distance = DistanceSQ * InvDistance;
+		float	InvDistance = rsqrt(max(DistanceSQ, 0.00001f));
+		float	Distance = DistanceSQ * InvDistance;
 		
 		L = LightVector * InvDistance;
 		
-		float InnerRange = clamp(Light.InnerAttanuation, 0.f, OuterRange);
-		float FadeRatio =saturate((Distance - InnerRange) / max(OuterRange - InnerRange, 0.001f));
+		float	InnerRange = clamp(Light.InnerAttanuation, 0.f, OuterRange);
+		float	FadeRatio =saturate((Distance - InnerRange) / max(OuterRange - InnerRange, 0.001f));
 		
-		float DistanceRatio = DistanceSQ / OuterRangeSQ;
+		float	DistanceRatio = DistanceSQ / OuterRangeSQ;
 		
-		float RangeFade = 1.f - smoothstep(0.f, 1.f, FadeRatio);
+		float	RangeFade = 1.f - smoothstep(0.f, 1.f, FadeRatio);
 		RangeFade *= RangeFade;
 		
 		//float Attenuation = RangeFade / max(DistanceSQ + 1.f, 1.f);
@@ -100,9 +101,10 @@ bool Compute_DynamicLight(float3 _WorldPosition, DynamicLight Light, out float3 
 		L = LightVector * InvDistance;
 		
         // Decrease By Distance
-		float DistanceFade = 1.f - smoothstep(0.f, 1.f, DistanceRatio);
-		float CosAngle = dot(-L, NormalizedDirection);
-		float ConeFade = smoothstep(Light.OuterAttanuation, Light.InnerAttanuation, CosAngle);
+		float3	NormalizedDirection = normalize(Light.LightDirection.xyz);
+		float	DistanceFade = 1.f - smoothstep(0.f, 1.f, DistanceRatio);
+		float	CosAngle = dot(-L, NormalizedDirection);
+		float	ConeFade = smoothstep(Light.OuterAttanuation, Light.InnerAttanuation, CosAngle);
 	
         Radiance = Light.LightColor * Light.LightIntensity * DistanceFade * ConeFade;
     }

@@ -52,19 +52,20 @@ struct LIGHT_PLACEMENT_ENTRY final : public ISerializable
 	_float fInnerAttenuation{ 20.f };
 	_float fOuterAttenuation{ 30.f };
 	_bool bActive{ true };
+	_bool bCastShadow{ true };
 
 	void Serialize(ISerializer& serializer) const override
 	{
 		WRITE_ALL(serializer, sName, sAlias, eType, vPosition, vDirection,
 			vColor, fIntensity, fRange, fInnerAttenuation,
-			fOuterAttenuation, bActive);
+			fOuterAttenuation, bActive, bCastShadow);
 	}
 
 	void Deserialize(IDeserializer& deserializer) override
 	{
 		READ_ALL(deserializer, sName, sAlias, eType, vPosition, vDirection,
 			vColor, fIntensity, fRange, fInnerAttenuation,
-			fOuterAttenuation, bActive);
+			fOuterAttenuation, bActive, bCastShadow);
 	}
 };
 
