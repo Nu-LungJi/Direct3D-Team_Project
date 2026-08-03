@@ -364,7 +364,7 @@ SOUND_ID CComSound::PlayInternal(const _string& sPath, const SOUND_3D_DESC& t3DD
 	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
 	if (pSoundManager == nullptr)
 		return INVALID_SOUND_ID;
-
+		
 	const SOUND_ID iSoundID = pSoundManager->Play3D(sPath, t3DDesc, tPlayDesc, eLoadType);
 	if (iSoundID != INVALID_SOUND_ID)
 		m_PlayingSounds.emplace(iSoundID);

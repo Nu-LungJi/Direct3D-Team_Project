@@ -804,18 +804,18 @@ void CTmbGurdian::Damaged(PLAYER_SKILL_TYPE eType)
 }
 void CTmbGurdian::Active_Skill()
 {
-	if (m_eAttType == ATTMON::END)
-		return;
-
-	if (m_iCurSkill == m_iPreSkill)
-		return;
-
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)))
 	{
 		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
 		m_bSkillLoop = true;
 	}
+	if (m_eAttType == ATTMON::END)
+		return;
+
+	if (m_iCurSkill == m_iPreSkill)
+		return;
+
 
 	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
