@@ -17,6 +17,8 @@
 #include "StarBurst.h"
 #include "MonEffectBall.h"
 #include "BossMace.h"
+#include "UIController.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -48,12 +50,25 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 100;
+	m_iHp = m_iMaxHp = 2000;
 
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.vPosition = MonDesc->vPos;
+		const _float fHorizontalScale =
+			std::max(std::abs(MonDesc->vScale.x), std::abs(MonDesc->vScale.z));
+		const _float fVerticalScale = std::abs(MonDesc->vScale.y);
+		const _float3 vCenterOffset{
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * fVerticalScale,
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
+		Desc.fHeight = MonDesc->fCCTHeight * fVerticalScale;
+		Desc.fRadius = MonDesc->fCCTRadius * fHorizontalScale;
+		Desc.fStepOffset = MonDesc->fCCTStepOffset;
+		Desc.vPosition = {
+			MonDesc->vPos.x + vCenterOffset.x,
+			MonDesc->vPos.y + vCenterOffset.y,
+			MonDesc->vPos.z + vCenterOffset.z };
 		Desc.tFilter = MonDesc->tFilter;
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PHYSX,
@@ -111,6 +126,10 @@ HRESULT CBossTMB::Initialize(void* pArg)
 		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
+		Desc.vControllerCenterOffset = {
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * std::abs(MonDesc->vScale.y),
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(
@@ -204,7 +223,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] = "BossAoeBlustStart";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "MorningStarAfterEffect";
-	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttackAfterEffect";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttack";
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
@@ -220,6 +239,8 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_fEMissiveColor = { 0.75f,0.9f,1.f};
 
+
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
 	return S_OK;
 }
 
@@ -230,7 +251,6 @@ void CBossTMB::Active_Skill()
 		return;
 	if (Find_SkillNum(m_eAttType) == ETOUI(BOSSTOMB_SKILL::BALL) || Find_SkillNum(m_eAttType) == ETOUI(BOSSTOMB_SKILL::SMESH))
 		return;
-
 	if (m_iCurSkill == m_iPreSkill)
 		return;
 
@@ -265,6 +285,7 @@ void CBossTMB::Active_Skill()
 void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
+
 	Active_Skill();
 	Active_Dynamic_Effect();
 }
@@ -273,24 +294,11 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bDonMove)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
-
-	_float3 vPos = m_pCharacterController->GetPosition();
-	_float4 vRot = m_pComTransform->GetQuaternion();
-	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
 }
 
 void CBossTMB::Update(E::_float fTimeDelta)
 {
-	
 	__super::Update(fTimeDelta);
-	
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-	{
-		if (auto pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CBossMace>(m_Partes[ETOUI(PARTES::WEAPON)]))
-			pWeapon->Reset_Active();
-	}
-
-		
 }
 
 void CBossTMB::LateUpdate(E::_float fTimeDelta)
@@ -331,38 +339,94 @@ _string CBossTMB::Get_SkillName(ATTMON SkillNode)
 	return MagicEnumToStringView(static_cast<BOSSTOMB_SKILL>(pValue->second)).data();
 }
 
+void CBossTMB::Skill_Finished()
+{
+	__super::Skill_Finished();
+	m_bStar = false;
+
+	if (auto pWeapon =
+		CGameInstance::Get().GetGameObjectByHandleT<CBossMace>(
+			m_Partes[ETOUI(PARTES::WEAPON)]))
+	{
+		pWeapon->Reset_Active();
+	}
+}
+
+_bool CBossTMB::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+	
+	Damaged(eType);
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		++m_iNormalHitCnt;
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+	
+		if (hUIController.has_value())
+		{
+			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+			{
+				pUIController->AddFinisher(2.f);
+			}
+		}
+	}
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+		return false;
+
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
+
+	MON_HIT_INFO HitInfo{};
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+	HitInfo.eAttType = m_eAttType;
+	HitInfo.eHitType = eType;
+	m_PendingMonTable = HitInfo;
+	m_bPending = true;
+
+	return true;
+}
+
 void CBossTMB::Active_Dynamic_Effect()
 {
-	if (m_CurEffectName == "Boss_GroundCrash" && m_bStar) {
-		
-		CBoss_StarBurst::STARBURST_DESC desc{};
-		desc.fSpeed = 140.f;
-		desc.pTargetHandle = m_TargetHandle;
-		desc.vStartPosition = { GetTransform().GetPosition() };
-		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, "BossStarBurst", &desc);
-		m_bStar = false;
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
+		return;
+
+	_float fRatio = m_pModelAnimator->GetPlayAnimRatio();
+	if (m_CurEffectName == "Boss_GroundCrash" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
+
+		if (m_fSkillRatio.x <= fRatio)
+		{
+			CBoss_StarBurst::STARBURST_DESC desc{};
+			desc.fSpeed = 140.f;
+			desc.pTargetHandle = m_TargetHandle;
+			desc.vStartPosition = { GetTransform().GetPosition() };
+			CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossStarBurst, "BossStarBurst", &desc);
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);	
+		}
 	}
-	if (m_CurEffectName == "MorningStarAfterEffect" && m_bStar) {
+	else if (m_CurEffectName == "MorningStarAfterEffect" && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
 		
-		_float fRatio = m_pModelAnimator->GetPlayAnimRatio();
 		if (m_fSkillRatio.x <= fRatio)
 		{
 			if (auto pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CBossMace>(m_Partes[ETOUI(PARTES::WEAPON)]))
 			{
 				pWeapon->Active_Effect(m_CurEffectName);
-				m_bStar = false;
+				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);
 			}
 		}
 
 	}
-	if (m_CurEffectName == "BossRingAttackAfterEffect" && m_bStar) {
+	if (m_CurEffectName == m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] && Check_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT))) {
 		CMonEffectBall::MON_BALL desc{};
 		desc.fDamage = 50.f;
 		desc.hTarget = m_TargetHandle;
 		desc.hOwner = GetHandle();
 		desc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHand");
-		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, "BossRingAttackAfterEffect", &desc);
-		m_bStar = false;
+		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)], &desc);
+
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);
 	}
 }
 

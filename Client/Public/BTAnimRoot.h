@@ -29,14 +29,17 @@ public:
 	void					Abort() override;
 	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
-	
+
+	_bool				Active_Skill();
 protected:
-	void				Active_Skill();
 	void				EventFlagToRatio(_float fRatio);
 	void				Gravity();
 	
 protected:
 	void				Reset_CheckFlag();
+
+	virtual void		OnEnter() override;
+	virtual void		OnExit(EVALUATE eResult) override;
 private:
 	//GUi
 	void				Combo(const _char* pName,uint32_t& iFlag);

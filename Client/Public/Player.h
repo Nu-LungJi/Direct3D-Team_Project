@@ -50,10 +50,20 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPosition{ 50.f, 50.f, 10.f };
+		// PhysX capsule height는 양 끝 반구를 제외한 원통 부분의 높이다.
+		_float fCCTHeight{ 3.6f };
+		_float fCCTRadius{ 0.6f };
+		_float fCCTStepOffset{ 0.1f };
+		_float3 vCCTCenterOffset{ 0.f, 0.9f, 0.f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
-			.iQueryMask = PX_ALL_LAYERS
+			// [LSY] 적 CCT와는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
+			.iQueryMask =
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 		StringID LevelTag;
 		CHandle  UIHandle;

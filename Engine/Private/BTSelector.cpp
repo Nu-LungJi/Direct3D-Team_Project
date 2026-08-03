@@ -29,6 +29,14 @@ HRESULT CBTSelector::Initalize(void* pArg)
 	return S_OK;
 }
 
+void CBTSelector::OnEnter()
+{
+}
+
+void CBTSelector::OnExit(EVALUATE eResult)
+{
+}
+
 EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 {
 	int32_t iIndex = 0;
@@ -41,7 +49,7 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
         if (nullptr == m_Actions[i])
             continue;
 
-        EVALUATE eValuate = m_Actions[i]->Evaluate(fTimeDelta);
+        EVALUATE eValuate = m_Actions[i]->Execute(fTimeDelta);
         if (eValuate == EVALUATE::SUCCESS)
         {
 			m_NodeValue.bCur = false;
@@ -65,12 +73,15 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 
 void CBTSelector::Abort()
 {
-	for (size_t i = 0; i < m_Actions.size(); ++i)
+
+	if (m_NodeValue.iPreSecquenceIndex < m_Actions.size() &&
+		m_Actions[m_NodeValue.iPreSecquenceIndex])
 	{
-		if(nullptr != m_Actions[i])
-			m_Actions[i]->Abort();
+		m_Actions[m_NodeValue.iPreSecquenceIndex]->AbortExecute();
 	}
-		
+
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
 }
 
 nlohmann::json CBTSelector::Save_Node()

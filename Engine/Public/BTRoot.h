@@ -31,6 +31,9 @@ protected:
 
 	HRESULT						InitializePrototype(void* pArg = nullptr) override;
 	virtual HRESULT				Initalize(void* pArg);
+
+	virtual						void OnEnter() {};
+	virtual						void OnExit(EVALUATE eResult) {};
 public:
 	GUINODE&					Get_GuiNodeInfo() { return m_GuiNode; }
 	GUINODE_LINK&				Get_GuiNodeLink() { return m_GuiLink; }
@@ -39,12 +42,15 @@ public:
 	virtual void				ResetDebug() { m_eDebug = EVALUATE::END; }
 	EVALUATE					GetDebugType() const {return m_eDebug;}
 
+
 public:
 	virtual nlohmann::json		Save_Node();
 	virtual HRESULT				Load_json(const nlohmann::json& j);
 public:
 	virtual EVALUATE			Evaluate(_float fTimeDelta) PURE;
 	virtual void				Abort() PURE;
+	void						AbortExecute();
+	EVALUATE					Execute(_float fTimeDelta);
 	void						Set_OwnerName(const _string& strOwnerName) { m_OwnerName = strOwnerName; }
 	class CComBeHavior*			Get_ComBT();
 	_bool						Check_Flag(uint32_t iFlag);
@@ -56,7 +62,7 @@ protected:
 	CHandle								m_Handle{};
 	_string								m_MasterName{}, m_OwnerName{};
 	NODEGROUP							m_eGroup{};
-
+	_bool								m_bEntered{ false };
 	EVALUATE							m_eDebug{};
 public:
 	template<typename T1> 
