@@ -159,7 +159,11 @@ namespace Engine
 	X(_float3, fVelocity, _float3(0,0,0))\
     X(_float4, color, _float4(1,1,1,1)) \
     X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, startIntensity, 0.f) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+	X(_float, endIntensity, 0.f) \
     X(_float, fYOffset, 0.f)\
+    X(_bool, bStand, false)\
    COMMON_PATTERN_FIELDS(X)
 
 #define CIRCLE_SPREAD_FIELDS(X) \
@@ -175,7 +179,7 @@ namespace Engine
     X(_float, startIntensity, 0.f) \
     X(_float4, endEmissive, _float4(0,0,0,0)) \
     X(_float, endIntensity, 0.f) \
-    X(_float, fYOffset, 0.f)\
+    X(_float, fSpawnDelay, 0.f)\
    COMMON_PATTERN_FIELDS(X)
 
 #define SPIRAL_FIELDS(X) \

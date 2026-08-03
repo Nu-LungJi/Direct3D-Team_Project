@@ -131,21 +131,31 @@ bool Compute_DynamicLight(DynamicLight _Light, float3 _WorldPosition, inout floa
         Radiance = _Light.LightColor * _Light.LightIntensity;
         return true;
     }
-    else if (_Light.LightType == LIGHT_POINT)
-    {
-        float3 LightVector = _Light.Position - _WorldPosition;
-        float Distance = length(LightVector);
-        if (Distance > _Light.LightRange)
-            return false;
+	else if (_Light.LightType == LIGHT_POINT)
+	{
+		float3 LightVector = _Light.Position - _WorldPosition;
+		float DistanceSQ = dot(LightVector, LightVector);
 
-        float Attenuation = 1.f / max(Distance * Distance, 0.0001f);
-        float DistanceByRange = Distance / _Light.LightRange;
-        float Window = clamp(1.f - pow(DistanceByRange, 4.f), 0.f, 1.f);
+		float OuterRange = max(_Light.OuterAttanuation, 0.001f);
+		float OuterRangeSQ = OuterRange * OuterRange;
 
-        L = normalize(LightVector);
-        Radiance = _Light.LightColor * _Light.LightIntensity * (Attenuation * Window * Window);
-        return true;
-    }
+		if (DistanceSQ >= OuterRangeSQ)
+			return false;
+
+		float InvDistance = rsqrt(max(DistanceSQ, 0.00001f));
+		float Distance = DistanceSQ * InvDistance;
+
+		L = LightVector * InvDistance;
+
+		float InnerRange = clamp(_Light.InnerAttanuation, 0.f, OuterRange);
+		float FadeRatio = saturate((Distance - InnerRange) / max(OuterRange - InnerRange, 0.001f));
+
+		float RangeFade = 1.f - smoothstep(0.f, 1.f, FadeRatio);
+		RangeFade *= RangeFade;
+
+		Radiance = _Light.LightColor * _Light.LightIntensity * RangeFade;
+		return true;
+	}
     else if (_Light.LightType == LIGHT_SPOTLIGHT)
     {
         float3 LightVector = _Light.Position - _WorldPosition;

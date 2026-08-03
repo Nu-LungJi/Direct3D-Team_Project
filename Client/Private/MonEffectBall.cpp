@@ -72,6 +72,16 @@ void CMonEffectBall::Update(E::_float fTimeDelta)
 	OverlapTest();
 	if (m_bHit || m_iEffectID == INVALID_EFFECT_INSTANCE_ID || m_fDeadTime > 1.f) {
 
+		_float4x4 mat = *GetTransform().GetWorldMatrix();
+		const _matrix effectWorld =
+			XMMatrixTranslation(
+				m_CurWorldmat._41,
+				m_CurWorldmat._42,
+				m_CurWorldmat._43);
+		_float4x4 effectMat;
+		XMStoreFloat4x4(&effectMat, effectWorld);
+
+		CGameInstance::Get().PlayEffect("BossRingAttackAfterEffect", effectMat, _vector{});
 		SetPendingDestroy();
 		return;
 	}
@@ -127,6 +137,7 @@ void CMonEffectBall::OverlapTest()
 			CGameInstance::Get().StopEffect(m_iEffectID);
 			m_bHit = true;
 			pTarget->OnQueryHit(m_iDamage);
+
 
 		}
 	}
@@ -190,12 +201,41 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 			XMStoreFloat4x4(&m_CurWorldmat,matBall);
 	}
 
-		if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN) | ETOUI(CBTRoot::BTFLAG::GROGY) | ETOUI(CBTRoot::BTFLAG::DEAD)))
-		{
-			CGameInstance::Get().StopEffect(m_iEffectID);
-			m_bHit = true;
+	if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN) | ETOUI(CBTRoot::BTFLAG::GROGY) | ETOUI(CBTRoot::BTFLAG::DEAD)))
+	{
+		CGameInstance::Get().StopEffect(m_iEffectID);
+		m_bHit = true;
+		auto pCamera = CGameInstance::Get().GetActiveCamera();
+
+		if (!pCamera)
 			return;
-		}
+		_matrix currentWorld = XMLoadFloat4x4(&m_CurWorldmat);
+		_vector effectPosition = currentWorld.r[3];
+
+		_matrix cameraWorld = XMMatrixInverse(nullptr, pCamera->GetView());
+
+		_vector cameraRight = XMVector3Normalize(cameraWorld.r[0]);
+		_vector cameraUp = XMVector3Normalize(cameraWorld.r[1]);
+		_vector cameraLook = XMVector3Normalize(cameraWorld.r[2]);
+
+		_matrix effectMatrix = XMMatrixIdentity();
+		effectMatrix.r[0] = XMVectorSetW(cameraRight, 0.f);
+		effectMatrix.r[1] = XMVectorSetW(cameraUp, 0.f);
+		effectMatrix.r[2] = XMVectorSetW(cameraLook, 0.f);
+		effectMatrix.r[3] = XMVectorSetW(effectPosition, 1.f);
+
+		_float4x4 effectWorld{};
+		XMStoreFloat4x4(&effectWorld, effectMatrix);
+
+		CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
+		CGameInstance::Get().Render_ChromaticRing(effectPosition, 0.5f, 100);
+		CGameInstance::Get().PlayEffect(
+			"TombBossPatternBlockEffect",
+			effectWorld,
+			_vector{});
+
+		return;
+	}
 
 		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, m_CurWorldmat);

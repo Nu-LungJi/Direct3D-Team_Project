@@ -34,11 +34,21 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 	{
 		PARTICLE_SPAWN_DATA& s = spawnList[i];
 		_float fAngle = fAngleStep * (_float)i;
-		s.position = _float3(
-			param.vCenter.x + cosf(fAngle) * param.fRadius,
-			param.vCenter.y + param.fYOffset,
-			param.vCenter.z + sinf(fAngle) * param.fRadius
-		);
+		if (param.bStand) {
+			s.position = _float3(
+				param.vCenter.x + cosf(fAngle) * param.fRadius,
+				param.vCenter.y + sinf(fAngle) * param.fRadius,
+				0
+			);
+		}
+		else {
+			s.position = _float3(
+				param.vCenter.x + cosf(fAngle) * param.fRadius,
+				param.vCenter.y + param.fYOffset,
+				param.vCenter.z + sinf(fAngle) * param.fRadius
+			);
+		}
+	
 
 		if (param.bRandomVel) {
 			s.velocity = _float3(E::Randf(param.fVelMin.x, param.fVelMax.x), E::Randf(param.fVelMin.y, param.fVelMax.y), E::Randf(param.fVelMin.z, param.fVelMax.z));
@@ -67,7 +77,8 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 		s.fSize = param.fSize;
 		s.fEndSize = param.fEndSize;
 		s.color = param.color;
-		s.emissive = param.emissive;
+		s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
+		s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
 		s.iBehaviorType = param.iBehaviorType;
 		
 		uint32_t degree = 360 / param.iCount;
@@ -100,6 +111,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCir
 		s.iBehaviorType = param.iBehaviorType;
 		s.originalEmissive = param.emissive;
 		s.originalPosition = param.vCenter;
+		s.spawnDelay = param.fSpawnDelay;
 		uint32_t degree = 360 / param.iCount;
 	}
 	return spawnList;
