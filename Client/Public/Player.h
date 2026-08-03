@@ -256,6 +256,10 @@ private:
 	_bool m_bCoolTime_Num4{ false };
 
 private:
+	void DelayFinish(_float fTimeDelta);
+private:
+	_float m_fDelayTime{ 0.f };
+private:
 	_bool  m_bUI = false;
 	_bool  m_bDistanceUI = false;
 	CHandle m_hUI;

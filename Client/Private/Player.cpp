@@ -1345,7 +1345,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel)
 		return;
-
+	DelayFinish(fTimeDelta);
 	if (!pModel->GetAnimations().empty())
 	{
 		CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
@@ -1353,7 +1353,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	}
 
 	/// 이펙트 위치 갱신
-
+	
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 }
 
@@ -1781,6 +1781,23 @@ bool CPlayer::GetShadowBounds(BoundingBox& OutBounds) const
 	return true;
 }
 /*---------------------------------*/
+
+void CPlayer::DelayFinish(_float fTimeDelta)
+{
+	
+
+	if(m_iHp <= 0){
+		m_fDelayTime += fTimeDelta;
+		if (m_fDelayTime >= 3.18f)
+		{
+			//[LSY] 3.18초 후에 게임 종료 처리
+			m_fDelayTime = -1.f;
+			auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+
+			pUIController->CreateDeathScene();
+		}
+	}
+}
 
 E::UPtr<CPlayer> CPlayer::Create()
 {

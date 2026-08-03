@@ -681,9 +681,6 @@
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
       <Filter>GameObject\DebugPlayer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Player.cpp">
-      <Filter>GameObject\Player</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
       <Filter>GameObject\Player\Camera</Filter>
     </ClCompile>
@@ -927,6 +924,9 @@
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp">
       <Filter>GameObject\Player\Player_RagdollController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
