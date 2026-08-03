@@ -13,9 +13,6 @@
 
 NS_BEGIN(Engine)
 
-#define	SCREENX 1280
-#define SCREENY	720
-
 class ENGINE_DLL CLight final : public CGameObject {
 private:
 	CLight();
@@ -31,10 +28,10 @@ public:
 public:
 	HRESULT			InitializePrototype(VOID* pArg) override;
 	HRESULT			Initialize(VOID* pArg) override;
-	VOID			PriorityUpdate(E::_float _DT) override;
+	VOID			PriorityUpdate(E::_float _DT) override {};
 	VOID			Update(E::_float _DT) override;
-	VOID			LateUpdate(E::_float _DT) override;
-	HRESULT			Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
+	VOID			LateUpdate(E::_float _DT) override {};
+	HRESULT			Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) { return S_OK; };
 
 	VOID			Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext);
 	VOID			Update_EffectLight(const _float& _DT);
@@ -45,8 +42,6 @@ public:
 	VOID			Update_DirectionalShadowMatrices();
 
 public:
-	const DYNAMIC_LIGHT& Get_LightData() { return m_pDynamicLight; }
-
 	HRESULT 		Set_LightType(LIGHT_TYPE _LTYPE);
 	LIGHT_TYPE		Get_LightType() { return static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType); }
 
