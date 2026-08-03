@@ -75,6 +75,7 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnSkyBox()))
+		return E_FAIL;
 
 	if (FAILED(SpawnAmbientSound()))
 		return E_FAIL;
@@ -260,7 +261,7 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
 HRESULT CLevelBossCharlesRookwood::SpawnAmbientSound()
 {
 	CAmbientSound2DObject::DESC desc{};
-	desc.sObjectTag = "Ambient_Wind";
+ 	desc.sObjectTag = "Ambient_Wind";
 
 	desc.tSoundData.sBusID = SOUND_BUS::BGM;
 	desc.tSoundData.eLoadType = SOUND_LOAD_TYPE::STREAM;
