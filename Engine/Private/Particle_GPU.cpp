@@ -499,9 +499,10 @@ HRESULT CParticle_GPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->PSSetConstantBuffers(11, 1, m_pComCBuffer->GetCBuffer().GetAddressOf());
     const auto& vs = m_pResVertexShader; // 인스턴싱용 신규 VS 필요
     const auto& ps = m_pResPixelShader;
-    pContext->IASetInputLayout(vs->GetInputLayout().Get());
-    pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-    pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	m_pComModelInstance->Bind_Materials(pContext, { 0.f, 0.f, 0.f }, 0.f, { 0.f, 0.f, 0.f }, 0.f, 1.f);
 
 
 

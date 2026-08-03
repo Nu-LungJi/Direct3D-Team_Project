@@ -144,7 +144,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstSpeed = 1.f;
+		m_waveCb.g_fBurstSpeed = 1.5f;
 		m_waveCb.g_fFlowSpeed = 2.5f;
 		m_waveCb.g_fWaveAmplitude = 2.f;
 		m_waveCb.g_fWaveFrequency = 0.5f;
@@ -684,6 +684,7 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	m_pComModelInstance->Bind_Materials(pContext, { 0.f, 0.f, 0.f }, 0.f, { 0.f, 0.f, 0.f }, 0.f, 1.f);
 
 	if (m_pHdrPositionTexture)
 	{

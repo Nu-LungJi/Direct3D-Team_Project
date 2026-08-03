@@ -192,6 +192,18 @@ namespace Engine
 	};
 	static_assert(sizeof(CB_BLOOM) % 16 == 0);
 
+	struct CB_VLFOG
+	{
+		_float3 g_fFogColor;
+		_float	g_fFogIntensity;
+
+		_float  g_fFogMaxHeight;
+		_float	g_fFogStartPos;
+		_float	g_fFogEndPos;
+		_float	g_fFogDensity;
+	};
+	static_assert(sizeof(CB_VLFOG) % 16 == 0);
+
 	struct CB_LENSFLARE
 	{
 		_float2	FlareCenterUV;
