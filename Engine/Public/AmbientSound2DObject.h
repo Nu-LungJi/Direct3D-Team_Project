@@ -31,6 +31,8 @@ public:
 public:
 	SOUND_ID Play();
 	_bool Stop();
+	_bool FadeOutAndStop();
+	_bool FadeOutAndDetach();
 	_bool ApplyData(const AMBIENT_SOUND_2D_DATA& tData);
 	void SetEnabled(_bool bEnabled);
 
