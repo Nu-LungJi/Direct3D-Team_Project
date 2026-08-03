@@ -14,6 +14,7 @@
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
 #include "TmbGurdianDead.h"
+#include "GurdianWeapon.h"
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 NS_USING(Client)
@@ -556,13 +557,14 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	CMon_Weapon::WEAPON_DESC WeaponDesc{};
+	CGurdianWeapon::DESC WeaponDesc{};
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = MonDesc->WeaponResourceName; 
 	WeaponDesc.LevelTag = MonDesc->LevelTag;
 	WeaponDesc.vScale = MonDesc->vWeaponScale;
+	WeaponDesc.vOwnerScale = MonDesc->vScale;
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
@@ -743,6 +745,14 @@ void CTmbGurdian::Update(E::_float fTimeDelta)
 
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 	{
+		// [LSY] 본체가 플래그를 지우기 전에 무기에 직접 전달해 업데이트 순서 의존성을 제거한다.
+		if (auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CGurdianWeapon>(
+			m_Partes[ETOUI(PARTES::WEAPON)]))
+		{
+			if (!pWeapon->ActivateDebrisPhysics())
+				DEBUG_LOG("[TmbGurdian] Failed to activate weapon debris physics.\n");
+		}
+
 		ActivateDeadDebrisPhysics();
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS), FLAGTYPE::DEL);
 	}
