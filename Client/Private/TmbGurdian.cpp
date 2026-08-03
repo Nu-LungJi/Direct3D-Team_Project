@@ -17,6 +17,7 @@
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 #include "UIController.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 namespace
@@ -336,7 +337,26 @@ _string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
 
 const _float CTmbGurdian::Get_Damage()
 {
-	m_fDamage = 5.f;
+	//TOMB_SKILL::JUMP_END, TOMB_SKILL::SLASH
+	uint32_t SkillID = Find_SkillNum(m_eAttType);
+
+	if(SkillID == ETOUI(TOMB_SKILL::END))
+	{
+		m_fDamage = 25.f;
+	}
+	else if (SkillID == ETOUI(TOMB_SKILL::SLASH))
+	{
+		m_fDamage = 5.f;
+	}
+	else if (SkillID == ETOUI(TOMB_SKILL::SMASH))
+	{
+		m_fDamage = 15.f;
+	}
+	else if (SkillID == ETOUI(TOMB_SKILL::STING))
+	{
+		m_fDamage = 10.f;
+	}
+	
 	return m_fDamage;
 }
 
@@ -344,19 +364,29 @@ _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 
 	Damaged(eType);
-	//if (eType == PLAYER_SKILL_TYPE::ATTACK)
-	//{
-	//	++m_iNormalHitCnt;
-	//	const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
-	//
-	//	if (hUIController.has_value())
-	//	{
-	//		if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
-	//		{
-	//			pUIController->AddFinisher(2.f);
-	//		}
-	//	}
-	//}
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		++m_iNormalHitCnt;
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+	
+		if (hUIController.has_value())
+		{
+			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+			{
+				pUIController->AddFinisher(2.f);
+			}
+		}
+	}
+
+	if (m_eMonType == MONSTER_TYPE::NORMAL)
+	{
+		uint32_t iIndex = Find_SkillNum(m_eAttType);
+		if (iIndex != ETOUI(TOMB_SKILL::HIT_ACCIO))
+		{
+			Skill_Finished();
+		}
+	}
+
 	if (eType == PLAYER_SKILL_TYPE::ATTACK && Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)))
 		return false;
 
@@ -726,7 +756,9 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		m_iHp = m_iMaxHp = 100;
 	else if (m_eMonType == MONSTER_TYPE::ELITE)
 		m_iHp = m_iMaxHp = 300;
-
+	
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Spine1");
+	
 	m_pModelAnimator->Play_Anim(0, false);
 	return S_OK;
 }
@@ -767,6 +799,7 @@ void CTmbGurdian::Active_Skill()
 
 
 }
+
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
@@ -775,9 +808,7 @@ void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 {
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
-	_float3 vPos = m_pCharacterController->GetPosition();
-	_float4 vRot = m_pComTransform->GetQuaternion();
-	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
+	
 }
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
@@ -798,6 +829,7 @@ void CTmbGurdian::LateUpdate(E::_float fTimeDelta)
 {
 	if (m_bDeadDebrisPhysicsActivated)
 		return;
+
 	__super::LateUpdate(fTimeDelta);
 }
 

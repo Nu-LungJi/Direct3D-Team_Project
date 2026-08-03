@@ -18,6 +18,7 @@
 #include "MonEffectBall.h"
 #include "BossMace.h"
 #include "UIController.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -49,7 +50,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 100;
+	m_iHp = m_iMaxHp = 2000;
 
 	{
 		CComPxCharacterController::DESC Desc{};
@@ -221,6 +222,8 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_fEMissiveColor = { 0.75f,0.9f,1.f};
 
+
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
 	return S_OK;
 }
 
@@ -274,10 +277,6 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bDonMove)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
-
-	_float3 vPos = m_pCharacterController->GetPosition();
-	_float4 vRot = m_pComTransform->GetQuaternion();
-	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
 }
 
 void CBossTMB::Update(E::_float fTimeDelta)
@@ -340,19 +339,19 @@ _bool CBossTMB::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 	
 	Damaged(eType);
-	//if (eType == PLAYER_SKILL_TYPE::ATTACK)
-	//{
-	//	++m_iNormalHitCnt;
-	//	const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
-	//
-	//	if (hUIController.has_value())
-	//	{
-	//		if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
-	//		{
-	//			pUIController->AddFinisher(2.f);
-	//		}
-	//	}
-	//}
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		++m_iNormalHitCnt;
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+	
+		if (hUIController.has_value())
+		{
+			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+			{
+				pUIController->AddFinisher(2.f);
+			}
+		}
+	}
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
 

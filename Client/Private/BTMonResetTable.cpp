@@ -37,6 +37,12 @@ EVALUATE CBTMonResetTable::Evaluate(_float fTimeDelta)
 	{
 		if (auto pMonster = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
+			if (m_bHardReset)
+			{
+				pMonster->ReActiveTable();
+				return m_eDebug = EVALUATE::SUCCESS;
+			}
+				
 			if (!pMonster->Is_ActiveHit())
 				return m_eDebug = EVALUATE::FAILED;
 
@@ -49,20 +55,20 @@ EVALUATE CBTMonResetTable::Evaluate(_float fTimeDelta)
 }
 void CBTMonResetTable::Update_Gui()
 {
-	ImGui::Text("IsActive : %s" ,m_bIsActive == true ? "TRUE" : "FALSE");
+	ImGui::Text("HardReset : %s" , m_bHardReset == true ? "TRUE" : "FALSE");
 	if (ImGui::Button("Active"))
-		m_bIsActive = !m_bIsActive;
+		m_bHardReset = !m_bHardReset;
 }
 nlohmann::json CBTMonResetTable::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
-	SaveJsonValue(j, "IsActive", m_bIsActive);
+	SaveJsonValue(j, "HardReset", m_bHardReset);
 	return j;
 }
 HRESULT CBTMonResetTable::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	LoadJsonValue(j, "IsActive", m_bIsActive);
+	LoadJsonValue(j, "HardReset", m_bHardReset);
 	return S_OK;
 }
 E::UPtr<CBTMonResetTable> CBTMonResetTable::Create()

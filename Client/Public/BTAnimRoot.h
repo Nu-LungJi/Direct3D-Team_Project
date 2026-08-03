@@ -38,8 +38,8 @@ protected:
 protected:
 	void				Reset_CheckFlag();
 
-	virtual void		OnEnter() {};
-	virtual void		OnExit(EVALUATE eResult) {};
+	virtual void		OnEnter() override;
+	virtual void		OnExit(EVALUATE eResult) override;
 private:
 	//GUi
 	void				Combo(const _char* pName,uint32_t& iFlag);

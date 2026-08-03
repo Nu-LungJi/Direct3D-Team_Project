@@ -33,9 +33,9 @@ private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 
 	_float3				m_vEmissiveColor{};
-	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{};
-	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fCamShakeRatio{};
-	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bCamShake{ true }, m_bCamEnable{false};
+	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{}, m_vAttCollRatio{0.f,0.f};
+	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fCamShakeRatio{}, m_fAttRadius{5.f};
+	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bCamShake{ true }, m_bAttRatio{false};
 public:
 	static UPtr<CBTAttackAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

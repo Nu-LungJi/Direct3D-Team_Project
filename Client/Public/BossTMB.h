@@ -40,6 +40,7 @@ private:
 private:
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
 	_bool			m_bStar{ true };
+	uint32_t		m_iColliderBoneIndex{UINT32_MAX};
 public:
 	static E::UPtr<CBossTMB> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

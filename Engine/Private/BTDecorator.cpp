@@ -40,7 +40,7 @@ EVALUATE CBTDecorator::Evaluate(_float fTimeDelta)
 void CBTDecorator::Abort()
 {
 	if (m_pDecorator)
-		m_pDecorator->Abort();
+		m_pDecorator->AbortExecute();
 }
 void CBTDecorator::ResetDebug()
 {

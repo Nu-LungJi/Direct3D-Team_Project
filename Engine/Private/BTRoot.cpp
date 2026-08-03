@@ -87,10 +87,10 @@ void CBTRoot::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
 }
 void CBTRoot::AbortExecute()
 {
-	Abort(); // 기존 각 노드의 Abort 로직 유지
-
+	 // 기존 각 노드의 Abort 로직 유지
 	if (m_bEntered)
 	{
+		Abort();
 		OnExit(EVALUATE::FAILED);
 		m_bEntered = false;
 	}

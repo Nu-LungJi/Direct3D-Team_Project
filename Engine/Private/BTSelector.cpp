@@ -73,12 +73,15 @@ EVALUATE CBTSelector::Evaluate(_float fTimeDelta)
 
 void CBTSelector::Abort()
 {
-	for (size_t i = 0; i < m_Actions.size(); ++i)
+
+	if (m_NodeValue.iPreSecquenceIndex < m_Actions.size() &&
+		m_Actions[m_NodeValue.iPreSecquenceIndex])
 	{
-		if(nullptr != m_Actions[i])
-			m_Actions[i]->Abort();
+		m_Actions[m_NodeValue.iPreSecquenceIndex]->AbortExecute();
 	}
-		
+
+	m_NodeValue.bCur = false;
+	m_NodeValue.iPreSecquenceIndex = 0;
 }
 
 nlohmann::json CBTSelector::Save_Node()

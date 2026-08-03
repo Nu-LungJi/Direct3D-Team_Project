@@ -74,48 +74,50 @@ void CGurdianWeapon::Update(E::_float fTimeDelta)
 
 void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 {
-	if (m_bDead)
-		return;
-	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+	if (!m_bDead)
 	{
-		if (!m_bThrow)
+		if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 		{
-			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
+			if (!m_bThrow)
 			{
-				if (pModel->Get_CombinedBoneMatrices().size() > m_iBoneSocketIndex)
+				if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
 				{
-					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
-					for (uint32_t i = 0; i < 3; ++i)
+					if (pModel->Get_CombinedBoneMatrices().size() > m_iBoneSocketIndex)
 					{
-						Par.r[i] = XMVector3Normalize(Par.r[i]);
+						_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
+						for (uint32_t i = 0; i < 3; ++i)
+						{
+							Par.r[i] = XMVector3Normalize(Par.r[i]);
+						}
+						XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
 					}
-					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+				}
+			}
+			if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
+			{
+				if (!m_bThrow && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
+				{
+					m_bThrow = true;
+					XMStoreFloat3(&m_vLook, pBT->GetGameObject()->GetTransform().GetState(STATE::LOOK));
+					XMStoreFloat4x4(&m_ParentMatrix, (XMLoadFloat4x4(&m_ParentMatrix)));
+				}
+				else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
+					m_bThrow = false;
+
+				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+				{
+					m_bDead = true;
+
+				}
+				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
+				{
+					Weapon_CallBack();
+					pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
 				}
 			}
 		}
-		if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
-		{
-			if (!m_bThrow && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-			{
-				m_bThrow = true;
-				XMStoreFloat3(&m_vLook, pBT->GetGameObject()->GetTransform().GetState(STATE::LOOK));
-				XMStoreFloat4x4(&m_ParentMatrix, (XMLoadFloat4x4(&m_ParentMatrix)));
-			}
-			else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-				m_bThrow = false;
-
-			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
-			{
-				m_bDead = true;
-				
-			}
-			if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
-			{
-				Weapon_CallBack();
-				pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
-			}
-		}
 	}
+	
 
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
@@ -133,7 +135,7 @@ void CGurdianWeapon::Dead_Parent(_float fTimeDelta)
 {
 	m_fTick += fTimeDelta;
 	_float t = m_fTick / 3.f;
-	m_fDissolveintensity = 1 + (0 - 1) * t;
+	m_fDissolveintensity = 0 + (1 - 0) * t;
 	if (t >= 1.f)
 	{
 		m_fDissolveintensity = 0.f;

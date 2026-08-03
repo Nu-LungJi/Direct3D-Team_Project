@@ -69,6 +69,12 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
 
 void CBTSecqunce::Abort()
 {
+	if (m_NodeValue.iPreSecquenceIndex < m_Actions.size() &&
+		m_Actions[m_NodeValue.iPreSecquenceIndex])
+	{
+		m_Actions[m_NodeValue.iPreSecquenceIndex]->AbortExecute();
+	}
+
 	m_NodeValue.bCur = false;
 	m_NodeValue.iPreSecquenceIndex = 0;
 }

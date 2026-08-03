@@ -46,7 +46,7 @@ private:
 	_float		m_fDamage{}, m_fDeadTime{};
 	_float3		m_vDir{}, m_vEndLook{}, m_vPos{};
 
-	_float		m_fSpeed{100.f}, m_fPower{8.f};
+	_float		m_fSpeed{50.f}, m_fPower{8.f};
 	_float4x4 m_CurWorldmat{}, m_Offsetmat{};
 	uint32_t m_iBoneIndex{}, m_iEffectID{};
 	CHandle m_hParent{}, m_hTarget{};

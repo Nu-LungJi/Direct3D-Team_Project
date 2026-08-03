@@ -3,7 +3,7 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
-enum class TOMB_SKILL { JUMP_START, JUMP_END,SLASH,SMASH,SKIP,HIT_ACCIO, END };
+enum class TOMB_SKILL { JUMP_START, JUMP_END,SLASH,SMASH,SKIP,HIT_ACCIO, STING,END };
 class CTmbGurdian final : public CMonster
 {
 public:
@@ -34,7 +34,7 @@ public:
 	_string Get_SkillName(ATTMON SkillNode)override;
 	const _float				Get_Damage() override;
 	_bool					Check_Table(PLAYER_SKILL_TYPE eType) override;
-
+	
 private:
 	void						Active_Skill();
 private:
@@ -44,6 +44,7 @@ private:
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
 
+	uint32_t		m_iColliderBoneIndex{};
 	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};

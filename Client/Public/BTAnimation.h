@@ -22,6 +22,9 @@ public:
 	void					Abort()override;
 	virtual nlohmann::json	Save_Node()override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
+
+	virtual void		OnEnter() override;
+	virtual void		OnExit(EVALUATE eResult) override;
 private:
 	
 public:

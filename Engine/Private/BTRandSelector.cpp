@@ -41,11 +41,11 @@ EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
 {
 	uint32_t iRand = rand() % m_Actions.size();
 
-	if (m_NodeValue.bCur)
-		iRand = m_NodeValue.iPreSecquenceIndex;
-
 	if (iRand >= m_Actions.size())
 		return 	m_eDebug = EVALUATE::FAILED;
+
+	if (m_NodeValue.bCur)
+		iRand = m_NodeValue.iPreSecquenceIndex;
 
 	if (m_Actions.empty() || nullptr == m_Actions[iRand])
 		return 	m_eDebug = EVALUATE::FAILED;
@@ -71,7 +71,7 @@ void CBTRandSelector::Abort()
 	for (size_t i = 0; i < m_Actions.size(); ++i)
 	{
 		if (nullptr != m_Actions[i])
-			m_Actions[i]->Abort();
+			m_Actions[i]->AbortExecute();
 	}
 	m_NodeValue.bCur = false;
 }
