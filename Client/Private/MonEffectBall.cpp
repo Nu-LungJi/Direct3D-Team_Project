@@ -71,6 +71,7 @@ void CMonEffectBall::Update(E::_float fTimeDelta)
 
 	OverlapTest();
 	if (m_bHit || m_iEffectID == INVALID_EFFECT_INSTANCE_ID || m_fDeadTime > 1.f) {
+
 		SetPendingDestroy();
 		return;
 	}
@@ -133,6 +134,7 @@ void CMonEffectBall::OverlapTest()
 
 void CMonEffectBall::Chase(_float fTimeDelta)
 {
+	if (m_bHit) return;
 	auto Owner = CGameInstance::Get().GetGameObjectByHandle(m_hParent);
 	if (!Owner) return;
 
