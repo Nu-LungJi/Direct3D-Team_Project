@@ -185,6 +185,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().SetRotationEuler(pDesc->vInitialRotation);
 	GetTransform().Update();
 	m_LevelTag = pDesc->LevelTag;
 	m_vInitialPosition = pDesc->vInitialPosition;
