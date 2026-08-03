@@ -2,6 +2,13 @@
 
 #include "GameObject.h"
 
+#include <functional>
+#include <unordered_set>
+
+NS_BEGIN(Engine)
+class CComSound;
+NS_END
+
 NS_BEGIN(Client)
 
 class CMyMagicSquareStepController final : public CGameObject
@@ -43,6 +50,33 @@ public:
 		RECT,
 		FILLED_CIRCLE
 	};
+
+	enum class PATTERN_TYPE
+	{
+		RISE,
+		WAVE
+	};
+
+	enum class PATTERN_EVENT
+	{
+		STARTED,
+		LINE_ISSUED,
+		COMPLETED,
+		FAILED
+	};
+
+	struct PATTERN_EVENT_DATA
+	{
+		StringID GroupID{};
+		PATTERN_TYPE ePatternType{ PATTERN_TYPE::RISE };
+		PATTERN_EVENT eEvent{ PATTERN_EVENT::STARTED };
+		_float3 vPosition{};
+		uint32_t iLineIndex{ UINT32_MAX };
+		CHandle hStep{};
+	};
+
+	using PATTERN_EVENT_CALLBACK =
+		std::function<void(const PATTERN_EVENT_DATA&)>;
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
@@ -86,6 +120,7 @@ public:
 		FILL_AXIS eHeightAxis{ FILL_AXIS::X };
 		FILL_DIRECTION eDirection{
 			FILL_DIRECTION::FORWARD };
+		PATTERN_EVENT_CALLBACK fnEventCallback{};
 	};
 
 	struct WAVE_PATTERN_DESC
@@ -96,6 +131,7 @@ public:
 		FILL_AXIS eAxis{ FILL_AXIS::X };
 		FILL_DIRECTION eDirection{
 			FILL_DIRECTION::FORWARD };
+		PATTERN_EVENT_CALLBACK fnEventCallback{};
 	};
 
 	struct LAYOUT_POINT
@@ -140,6 +176,7 @@ public:
 		std::optional<WAVE_PATTERN_DESC> oWavePattern{};
 		_float fPatternElapsed{};
 		size_t iIssuedStepCount{};
+		std::unordered_set<uint32_t> setIssuedLineEvents{};
 	};
 
 private:
@@ -153,6 +190,12 @@ private:
 		_float fNormalizedZ{};
 		_float fRadialDistance{};
 		_float fNormalizedRadius{};
+	};
+
+	struct PENDING_PATTERN_EVENT
+	{
+		PATTERN_EVENT_CALLBACK Callback{};
+		PATTERN_EVENT_DATA Data{};
 	};
 
 private:
@@ -187,6 +230,7 @@ public:
 		StringID GroupID) const;
 	const std::vector<STEP_DATA>* GetGroupSteps(
 		StringID GroupID) const;
+	CComSound* GetSound() const { return m_pComSound; }
 
 public:
 	static UPtr<CMyMagicSquareStepController> Create();
@@ -195,19 +239,43 @@ public:
 private:
 	_bool SpawnOne(const SPAWN_DATA& Data);
 	void UpdateRisePattern(
+		StringID GroupID,
 		GROUP& Group,
 		_float fTimeDelta);
 	_bool IssueRiseStep(
+		StringID GroupID,
 		GROUP& Group,
 		STEP_DATA& StepData);
 	void UpdateWavePattern(
+		StringID GroupID,
 		GROUP& Group,
 		_float fTimeDelta);
+	void SetGroupFailed(
+		StringID GroupID,
+		GROUP& Group);
+	void QueuePatternEvent(
+		StringID GroupID,
+		GROUP& Group,
+		PATTERN_TYPE ePatternType,
+		PATTERN_EVENT eEvent,
+		const _float3& vPosition,
+		uint32_t iLineIndex = UINT32_MAX,
+		CHandle hStep = {});
+	void DispatchPendingPatternEvents();
+	_float3 CalculateGroupCenter(
+		const GROUP& Group) const;
+	uint32_t CalculateRiseLineIndex(
+		const GROUP& Group,
+		const STEP_DATA& StepData,
+		const RISE_PATTERN_DESC& Desc) const;
 
 private:
 	std::unordered_map<StringID, GROUP> m_mapGroup{};
 	std::queue<SPAWN_DATA> m_qSpawn{};
 	uint32_t m_iMaxSpawnPerFrame{ 50 };
+	std::vector<PENDING_PATTERN_EVENT>
+		m_vecPendingPatternEvents{};
+	CComSound* m_pComSound{};
 
 private:
 	_float m_fGUIStartTargetY{ -214.f };

@@ -24,6 +24,7 @@
 #include "BridgeCRW.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
+#include "ClientEvents.h"
 
 NS_USING(Client)
 
@@ -89,6 +90,8 @@ HRESULT CLevelCharlesRookwood::Initialize()
 
 	if (FAILED(PlayBGM()))
 		return E_FAIL;
+
+	SubscribePlayerDeath(*hPlayer);
 	
 
 	return S_OK;
@@ -506,16 +509,33 @@ HRESULT CLevelCharlesRookwood::PlayBGM()
 	return S_OK;
 }
 
-HRESULT CLevelCharlesRookwood::StopBGM()
+HRESULT CLevelCharlesRookwood::StopBGM(_float fDuration)
 {
+	if (m_bmgID == INVALID_SOUND_ID)
+		return S_OK;
+
 	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
 	if (pSoundManager == nullptr ||
-		!pSoundManager->FadeOutAndStop(m_bmgID, 1.f))
+		!pSoundManager->FadeOutAndStop(m_bmgID, fDuration))
 		return E_FAIL;
 
 	m_bmgID = INVALID_SOUND_ID;
 
 	return S_OK;
+}
+
+void CLevelCharlesRookwood::SubscribePlayerDeath(const CHandle& hPlayer)
+{
+	m_hPlayer = hPlayer;
+	m_iPlayerDeathListenerID = CGameInstance::Get().EventSubscribe<FPlayerDied>(
+		m_hPlayer,
+		[this](const FPlayerDied& Event)
+		{
+			if (Event.hPlayer != m_hPlayer)
+				return;
+
+			StopBGM(Event.fLevelBgmFadeDuration);
+		});
 }
 
 HRESULT CLevelCharlesRookwood::SpawnBridge()
@@ -538,6 +558,12 @@ HRESULT CLevelCharlesRookwood::SpawnBridge()
 
 void CLevelCharlesRookwood::Free()
 {
+	if (m_iPlayerDeathListenerID != 0)
+	{
+		CGameInstance::Get().EventUnsubscribe<FPlayerDied>(m_iPlayerDeathListenerID);
+		m_iPlayerDeathListenerID = 0;
+	}
+
 	StopBGM();
 	CLevel::Free();
 }

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MyMagicSquareStepController.h"
 
+#include "ComSound.h"
 #include "GameInstance.h"
 #include "MyMagicSquareStep.h"
 
@@ -27,6 +28,18 @@ HRESULT CMyMagicSquareStepController::Initialize(void* pArg)
 	m_ResMinorTag = pDesc->ResMinorTag;
 
 	m_iMaxSpawnPerFrame = pDesc->iMaxSpawnPerFrame;
+
+	CComSound::DESC SoundDesc{};
+	if (FAILED(AddComponentFromProto(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComSound,
+		"Com_Sound",
+		&SoundDesc,
+		&m_pComSound)))
+	{
+		return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -43,11 +56,20 @@ void CMyMagicSquareStepController::PriorityUpdate(
 			Group.eState = GROUP_STATE::PATTERN_RUNNING;
 			Group.fPatternElapsed = 0.f;
 			Group.iIssuedStepCount = 0;
+			Group.setIssuedLineEvents.clear();
+			QueuePatternEvent(
+				GroupID,
+				Group,
+				PATTERN_TYPE::RISE,
+				PATTERN_EVENT::STARTED,
+				CalculateGroupCenter(Group));
 		}
 
 		if (Group.eState == GROUP_STATE::PATTERN_RUNNING)
-			UpdateRisePattern(Group, fTimeDelta);
+			UpdateRisePattern(GroupID, Group, fTimeDelta);
 	}
+
+	DispatchPendingPatternEvents();
 }
 
 void CMyMagicSquareStepController::FixedUpdate(
@@ -60,10 +82,13 @@ void CMyMagicSquareStepController::FixedUpdate(
 			Group.oWavePattern)
 		{
 			UpdateWavePattern(
+				GroupID,
 				Group,
 				fTimeDelta);
 		}
 	}
+
+	DispatchPendingPatternEvents();
 }
 
 void CMyMagicSquareStepController::Update(_float)
@@ -82,8 +107,13 @@ void CMyMagicSquareStepController::Update(_float)
 			continue;
 
 		if (!SpawnOne(Data))
-			iter->second.eState = GROUP_STATE::FAILED;
+			SetGroupFailed(Data.GroupID, iter->second);
 	}
+
+	if (m_pComSound)
+		m_pComSound->Update();
+
+	DispatchPendingPatternEvents();
 }
 
 void CMyMagicSquareStepController::UpdateGUI()
@@ -651,6 +681,7 @@ _bool CMyMagicSquareStepController::StartRisePattern(
 	Group.oWavePattern.reset();
 	Group.fPatternElapsed = 0.f;
 	Group.iIssuedStepCount = 0;
+	Group.setIssuedLineEvents.clear();
 	for (STEP_DATA& StepData : Group.vecSteps)
 		StepData.bRiseIssued = false;
 
@@ -695,7 +726,14 @@ _bool CMyMagicSquareStepController::StartWavePattern(
 	Group.oRisePattern.reset();
 	Group.oWavePattern = Desc;
 	Group.fPatternElapsed = 0.f;
+	Group.setIssuedLineEvents.clear();
 	Group.eState = GROUP_STATE::PATTERN_RUNNING;
+	QueuePatternEvent(
+		GroupID,
+		Group,
+		PATTERN_TYPE::WAVE,
+		PATTERN_EVENT::STARTED,
+		CalculateGroupCenter(Group));
 	return true;
 }
 
@@ -764,6 +802,7 @@ _bool CMyMagicSquareStepController::SpawnOne(
 }
 
 void CMyMagicSquareStepController::UpdateRisePattern(
+	StringID GroupID,
 	GROUP& Group,
 	_float fTimeDelta)
 {
@@ -863,9 +902,9 @@ void CMyMagicSquareStepController::UpdateRisePattern(
 			fStartDelay)
 			continue;
 
-		if (!IssueRiseStep(Group, StepData))
+		if (!IssueRiseStep(GroupID, Group, StepData))
 		{
-			Group.eState = GROUP_STATE::FAILED;
+			SetGroupFailed(GroupID, Group);
 			return;
 		}
 
@@ -886,7 +925,7 @@ void CMyMagicSquareStepController::UpdateRisePattern(
 				StepData.hStep);
 		if (!pStep)
 		{
-			Group.eState = GROUP_STATE::FAILED;
+			SetGroupFailed(GroupID, Group);
 			return;
 		}
 
@@ -895,11 +934,18 @@ void CMyMagicSquareStepController::UpdateRisePattern(
 			return;
 	}
 
+	QueuePatternEvent(
+		GroupID,
+		Group,
+		PATTERN_TYPE::RISE,
+		PATTERN_EVENT::COMPLETED,
+		CalculateGroupCenter(Group));
 	Group.eState = GROUP_STATE::PATTERN_COMPLETE;
 	Group.oRisePattern.reset();
 }
 
 _bool CMyMagicSquareStepController::IssueRiseStep(
+	StringID GroupID,
 	GROUP& Group,
 	STEP_DATA& StepData)
 {
@@ -939,10 +985,29 @@ _bool CMyMagicSquareStepController::IssueRiseStep(
 			XMLoadFloat3(&vTarget));
 	}
 
+	const uint32_t iLineIndex =
+		CalculateRiseLineIndex(
+			Group,
+			StepData,
+			Desc);
+	if (Group.setIssuedLineEvents.insert(
+		iLineIndex).second)
+	{
+		QueuePatternEvent(
+			GroupID,
+			Group,
+			PATTERN_TYPE::RISE,
+			PATTERN_EVENT::LINE_ISSUED,
+			StepData.vSpawnPosition,
+			iLineIndex,
+			StepData.hStep);
+	}
+
 	return true;
 }
 
 void CMyMagicSquareStepController::UpdateWavePattern(
+	StringID GroupID,
 	GROUP& Group,
 	_float fTimeDelta)
 {
@@ -969,7 +1034,7 @@ void CMyMagicSquareStepController::UpdateWavePattern(
 				StepData.hStep);
 		if (!pStep)
 		{
-			Group.eState = GROUP_STATE::FAILED;
+			SetGroupFailed(GroupID, Group);
 			return;
 		}
 
@@ -988,6 +1053,20 @@ void CMyMagicSquareStepController::UpdateWavePattern(
 			Group.fPatternElapsed -
 			static_cast<_float>(iLineIndex) *
 			Desc.fLineInterval;
+		if (fLocalTime > 0.f &&
+			Group.setIssuedLineEvents.insert(
+				iLineIndex).second)
+		{
+			QueuePatternEvent(
+				GroupID,
+				Group,
+				PATTERN_TYPE::WAVE,
+				PATTERN_EVENT::LINE_ISSUED,
+				StepData.vPatternBasePosition,
+				iLineIndex,
+				StepData.hStep);
+		}
+
 		_float fOffsetY{};
 		if (fLocalTime > 0.f &&
 			fLocalTime < Desc.fWaveDuration)
@@ -1009,8 +1088,195 @@ void CMyMagicSquareStepController::UpdateWavePattern(
 	if (Group.fPatternElapsed < fTotalDuration)
 		return;
 
+	QueuePatternEvent(
+		GroupID,
+		Group,
+		PATTERN_TYPE::WAVE,
+		PATTERN_EVENT::COMPLETED,
+		CalculateGroupCenter(Group));
 	Group.eState = GROUP_STATE::PATTERN_COMPLETE;
 	Group.oWavePattern.reset();
+}
+
+void CMyMagicSquareStepController::SetGroupFailed(
+	StringID GroupID,
+	GROUP& Group)
+{
+	if (Group.eState == GROUP_STATE::FAILED)
+		return;
+
+	if (Group.oRisePattern)
+	{
+		QueuePatternEvent(
+			GroupID,
+			Group,
+			PATTERN_TYPE::RISE,
+			PATTERN_EVENT::FAILED,
+			CalculateGroupCenter(Group));
+	}
+	else if (Group.oWavePattern)
+	{
+		QueuePatternEvent(
+			GroupID,
+			Group,
+			PATTERN_TYPE::WAVE,
+			PATTERN_EVENT::FAILED,
+			CalculateGroupCenter(Group));
+	}
+
+	Group.eState = GROUP_STATE::FAILED;
+}
+
+void CMyMagicSquareStepController::QueuePatternEvent(
+	StringID GroupID,
+	GROUP& Group,
+	PATTERN_TYPE ePatternType,
+	PATTERN_EVENT eEvent,
+	const _float3& vPosition,
+	uint32_t iLineIndex,
+	CHandle hStep)
+{
+	const PATTERN_EVENT_CALLBACK* pCallback{};
+	if (ePatternType == PATTERN_TYPE::RISE &&
+		Group.oRisePattern)
+	{
+		pCallback =
+			&Group.oRisePattern->fnEventCallback;
+	}
+	else if (ePatternType == PATTERN_TYPE::WAVE &&
+		Group.oWavePattern)
+	{
+		pCallback =
+			&Group.oWavePattern->fnEventCallback;
+	}
+
+	if (!pCallback || !*pCallback)
+		return;
+
+	m_vecPendingPatternEvents.push_back({
+		.Callback = *pCallback,
+		.Data = {
+			.GroupID = GroupID,
+			.ePatternType = ePatternType,
+			.eEvent = eEvent,
+			.vPosition = vPosition,
+			.iLineIndex = iLineIndex,
+			.hStep = hStep
+		}
+		});
+}
+
+void CMyMagicSquareStepController::
+DispatchPendingPatternEvents()
+{
+	if (m_vecPendingPatternEvents.empty())
+		return;
+
+	auto PendingEvents =
+		std::move(m_vecPendingPatternEvents);
+	m_vecPendingPatternEvents.clear();
+
+	for (const auto& PendingEvent : PendingEvents)
+	{
+		if (!PendingEvent.Callback ||
+			m_mapGroup.find(
+				PendingEvent.Data.GroupID) ==
+			m_mapGroup.end())
+		{
+			continue;
+		}
+
+		PendingEvent.Callback(PendingEvent.Data);
+	}
+}
+
+_float3 CMyMagicSquareStepController::CalculateGroupCenter(
+	const GROUP& Group) const
+{
+	_float3 vCenter{};
+	if (!Group.vecSteps.empty())
+	{
+		for (const STEP_DATA& StepData : Group.vecSteps)
+		{
+			vCenter.x += StepData.vPatternBasePosition.x;
+			vCenter.y += StepData.vPatternBasePosition.y;
+			vCenter.z += StepData.vPatternBasePosition.z;
+		}
+
+		const _float fInverseCount =
+			1.f / static_cast<_float>(
+				Group.vecSteps.size());
+		vCenter.x *= fInverseCount;
+		vCenter.y *= fInverseCount;
+		vCenter.z *= fInverseCount;
+		return vCenter;
+	}
+
+	if (Group.vecLayoutPoints.empty())
+		return vCenter;
+
+	for (const LAYOUT_POINT& Point :
+		Group.vecLayoutPoints)
+	{
+		vCenter.x += Point.vPosition.x;
+		vCenter.y += Point.vPosition.y;
+		vCenter.z += Point.vPosition.z;
+	}
+
+	const _float fInverseCount =
+		1.f / static_cast<_float>(
+			Group.vecLayoutPoints.size());
+	vCenter.x *= fInverseCount;
+	vCenter.y *= fInverseCount;
+	vCenter.z *= fInverseCount;
+	return vCenter;
+}
+
+uint32_t CMyMagicSquareStepController::
+CalculateRiseLineIndex(
+	const GROUP& Group,
+	const STEP_DATA& StepData,
+	const RISE_PATTERN_DESC& Desc) const
+{
+	if (Desc.eFillMode == RISE_FILL_MODE::RADIAL)
+	{
+		const uint32_t iMaxLine =
+			static_cast<uint32_t>(std::ceil(
+				std::max(0.f,
+					Group.fMaxRadialDistance)));
+		uint32_t iLineIndex =
+			static_cast<uint32_t>(std::floor(
+				std::max(0.f,
+					StepData.fRadialDistance)));
+		iLineIndex = std::min(
+			iLineIndex,
+			iMaxLine);
+		if (Desc.eDirection ==
+			FILL_DIRECTION::REVERSE)
+		{
+			iLineIndex = iMaxLine - iLineIndex;
+		}
+		return iLineIndex;
+	}
+
+	const _bool bFillX =
+		Desc.eFillMode == RISE_FILL_MODE::X;
+	const uint32_t iLineCount =
+		bFillX ?
+		Group.iGridCountX :
+		Group.iGridCountZ;
+	uint32_t iLineIndex =
+		bFillX ?
+		StepData.iIndexX :
+		StepData.iIndexZ;
+	if (Desc.eDirection ==
+		FILL_DIRECTION::REVERSE &&
+		iLineCount > 0)
+	{
+		iLineIndex =
+			iLineCount - 1 - iLineIndex;
+	}
+	return iLineIndex;
 }
 
 UPtr<CMyMagicSquareStepController>
