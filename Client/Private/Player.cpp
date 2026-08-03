@@ -647,12 +647,13 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		else
 		{
-			m_hPrevAutoTarget = m_hAutoTarget;
-			m_hAutoTarget = CHandle{};
+			//m_hPrevAutoTarget = m_hAutoTarget;
+			//m_hAutoTarget = CHandle{};
 			
 		}
 	}
 	else {
+		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
@@ -687,6 +688,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			{
 				m_hPrevAutoTarget = m_hAutoTarget;
 				m_hAutoTarget = CHandle{};
+				m_bDistanceUI = false;
+		
 			}
 		}
 	}
@@ -694,19 +697,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	// 충돌/타겟 판정은 그대로 두고, 감지 상태가 바뀌는 순간에만 UI를 토글한다.
 	if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{
-		const _bool bMonsterDetected = nullptr != CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+		CHandle hDetectedTarget{};
 
-		if (bMonsterDetected != m_bMonsterHPDetected)
+		if (CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget))
+			hDetectedTarget = m_hAutoTarget;
+
+		// 감지 여부뿐 아니라 실제 대상 핸들이 바뀌었는지 검사한다.
+		if (hDetectedTarget != m_hMonsterHPUITarget)
 		{
-			if (bMonsterDetected)
-				pUIController->TargetMonsterHP(m_hAutoTarget);
+			if (CGameInstance::Get().GetGameObjectByHandleT<CMonster>(hDetectedTarget))
+				pUIController->TargetMonsterHP(hDetectedTarget);
 			else
 				pUIController->DeleteMonsterHP();
 
-			m_bMonsterHPDetected = bMonsterDetected;
+			m_hMonsterHPUITarget = hDetectedTarget;
 		}
 	}
-
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
 	{
 		m_fControlHoldTime = 0.f;

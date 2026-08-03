@@ -130,6 +130,7 @@ private:
 	void PlayFadeOutOnly(CHandle pHandle);
 	void PlayFadeInOnly(CHandle pHandle);
 	void PlayMonsterHPDelete(CHandle pHandle);
+	void PlayMonsterHPDeleteCreate(CHandle pHandle);
 	void PlayDividerUPWidth(CHandle pHandle);
 	void PlayAlphaUP(CHandle pHandle, float delaytime = 2.f, float playTime = 1.f);
 public:

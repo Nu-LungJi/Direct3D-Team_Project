@@ -276,7 +276,7 @@ void UIManager::InitializeActions()
 		};
 	m_vEventNames.push_back("ScaleDown0.6");
 
-	m_EventMap["DisappearScaleDown"] = [](CUIObject* pCaller)
+	m_EventMap["DisappearScaleDown"] = [this](CUIObject* pCaller)
 	{
 		if (!pCaller) return;
 		auto pTween = pCaller->GetTweenCom();
@@ -291,7 +291,9 @@ void UIManager::InitializeActions()
 					pObj->SetScaleRatio(currentValue);
 					pObj->CalcUICoord();
 				}
-			}, nullptr, EEaseType::EaseOutQuad);
+			}, [handle, this]() {
+				if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
+				}, EEaseType::EaseOutQuad);
 	};
 	m_vEventNames.push_back("DisappearScaleDown");
 
@@ -312,7 +314,7 @@ void UIManager::InitializeActions()
 				}
 			}, nullptr, EEaseType::EaseOutQuad);
 
-		pTween->PlayTween(2.f, 0.f, 0.2f,
+		pTween->PlayTween(1.f, 0.f, 0.1f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle))
 				{
@@ -324,7 +326,7 @@ void UIManager::InitializeActions()
 				}
 			}, [handle, this]() {
 				if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
-			}, EEaseType::EaseOutQuad);
+			}, EEaseType::EaseOutQuad, 0.1f);
 	};
 	m_vEventNames.push_back("DisappearScaleDown_D");
 
