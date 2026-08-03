@@ -36,18 +36,12 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 	}
 	if (auto* pSound = pPlayer->GetSound())
 	{
-		pSound->PlaySlot3D(
+		pSound->PlaySlot2D(
 			E::StringID{ "PLAYER_VOICE_ACCIO" },
 			"./Resources/SampleClient/Sound/Player/Spell/Accio/Accio_Man.wav",
-			SOUND_3D_DESC{
-				.vPosition = pPlayer->GetTransform().GetPosition(),
-				.fMinDistance = 3.f,
-				.fMaxDistance = 30.f,
-				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
-			},
 			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::VOICE,
-				.fVolume = 1.f,
+				.fVolume = 2.f,
 				.fPitch = 1.f,
 				.iPriority = 64,
 				.bLoop = false
@@ -114,6 +108,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 					return;
 				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 				_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+				CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
 				CGameInstance::Get().Render_ChromaticRing(weaPonPos, 0.5f, 100);
 				// 무기 발사 위치
 

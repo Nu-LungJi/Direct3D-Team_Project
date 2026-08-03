@@ -160,22 +160,22 @@ void UIManager::InitializeActions()
 				[handle, bSoundPlayed = false](float currentValue) mutable {
 					if (auto pObj = GetSafeUI(handle))
 					{
-						if (!bSoundPlayed)
-						{
-							E::CGameInstance::Get()
-								.GetSoundManager()
-								->Play2D(
-									"./Resources/SampleClient/Sound/UI/Paper.wav",
-									SOUND_PLAY_DESC{
-										.sBusID = SOUND_BUS::UI,
-										.fVolume = 0.3f,
-										.fPitch = 1.f,
-										.iPriority = 64,
-										.bLoop = false
-									});
-
-							bSoundPlayed = true;
-						}
+						//if (!bSoundPlayed)
+						//{
+						//	E::CGameInstance::Get()
+						//		.GetSoundManager()
+						//		->Play2D(
+						//			"./Resources/SampleClient/Sound/UI/Paper.wav",
+						//			SOUND_PLAY_DESC{
+						//				.sBusID = SOUND_BUS::UI,
+						//				.fVolume = 0.3f,
+						//				.fPitch = 1.f,
+						//				.iPriority = 64,
+						//				.bLoop = false
+						//			});
+						//
+						//	bSoundPlayed = true;
+						//}
 
 						pObj->SetScaleRatio(currentValue);
 						pObj->CalcUICoord();
@@ -1531,12 +1531,12 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 
 	_float Alpah = pBtn->GetAlpha();
 
-	pTween->PlayTween(1.f, 0.f, 5.f,
+	pTween->PlayTween(1.f, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
-			}, EEaseType::EaseOutQuad, 1.f);
+			}, EEaseType::EaseOutQuad, delay);
 }
 
 void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)

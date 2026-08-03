@@ -20,6 +20,7 @@ class CComSocket;
 
 class CComPxRigidBody;
 class CComPxBoxCollider;
+class CComPxSphereCollider;
 class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
@@ -41,6 +42,8 @@ public:
 	{
 		CCT_CAPSULE = 0,
 		PLAYER_SHAPE_HURTBOX,
+		PLAYER_LEFT_FOOT,
+		PLAYER_RIGHT_FOOT,
 		END
 	};
 
@@ -109,6 +112,7 @@ public:
 	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
+	void PlayFootstepSound(PLAYER_COLLISIONS eFoot);
 
 	CComCharacterMoveIntent* GetMoveIntent() const { return m_pComMoveIntent; }
 	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
@@ -187,7 +191,12 @@ private:
 
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
+	CComPxSphereCollider* m_pComPxLeftFootCollider{};
+	CComPxSphereCollider* m_pComPxRightFootCollider{};
 	int32_t m_iHurtBoxBoneIndex{ -1 };
+	int32_t m_iLeftFootBoneIndex{ -1 };
+	int32_t m_iRightFootBoneIndex{ -1 };
+	_float m_fFootstepSoundCooldown{};
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};

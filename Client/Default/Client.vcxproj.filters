@@ -271,11 +271,11 @@
     <Filter Include="GameObject\Monster\00.Parents">
       <UniqueIdentifier>{abad3cbf-f984-44ce-8798-0e9150fa9f2b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Monster\TombBoss\TombBossBullet">
-      <UniqueIdentifier>{892b8ca5-2abf-46df-8ece-4f0e6b29d275}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Player\Player_RagdollController">
       <UniqueIdentifier>{7f570a9d-bd7f-4bf3-9da7-61d49c14c612}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\TombBoss\SYChild">
+      <UniqueIdentifier>{a9756926-9808-484b-aed0-22a449e37832}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -603,9 +603,6 @@
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\TombBossBullet.h">
-      <Filter>GameObject\Monster\TombBoss\TombBossBullet</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\StarBurst.h">
       <Filter>GameObject\Monster\TombBoss</Filter>
     </ClInclude>
@@ -644,6 +641,9 @@
     </ClInclude>
     <ClInclude Include="..\public\BTCinematic.h">
       <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\TombBossBullet.h">
+      <Filter>GameObject\Monster\TombBoss\SYChild</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -933,9 +933,6 @@
     <ClCompile Include="..\Private\Monster.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\TombBossBullet.cpp">
-      <Filter>GameObject\Monster\TombBoss\TombBossBullet</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\StarBurst.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>
     </ClCompile>
@@ -967,6 +964,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTCinematic.cpp">
       <Filter>GameObject\AI\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TombBossBullet.cpp">
+      <Filter>GameObject\Monster\TombBoss\SYChild</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

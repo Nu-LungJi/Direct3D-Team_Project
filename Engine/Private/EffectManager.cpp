@@ -892,7 +892,7 @@ void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_
 {
 	if (!m_pSoundManager)
 		return;
-
+		
 	const _float3 worldPosition =TransformPosition(command.vLocalPosition,instance.matWorld);
 
 	SOUND_PLAY_DESC playDesc{};

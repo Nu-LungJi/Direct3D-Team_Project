@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "ComAnimator.h"
+#include "ComSound.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Monster.h"
 NS_USING(Client)
@@ -27,6 +28,20 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 	{
 		RequestLocomotion(pStateMachine);
 		return;
+	}
+
+	if (auto* pSound = pPlayer->GetSound())
+	{
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_VOICE_DESCENDO" },
+			"./Resources/SampleClient/Sound/Player/Spell/Descendo/Descendo_Man.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 2.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
 	}
 
 	CacheAnimationIndices(*pPlayer);

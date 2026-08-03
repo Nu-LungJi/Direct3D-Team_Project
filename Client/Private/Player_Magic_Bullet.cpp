@@ -252,7 +252,7 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 	}
 	if (auto pTmbGurdian= Cast<CMonster>(tHit.pGameObject))
 	{
-		static constexpr const char* HIT_SOUND_PATHS[] =
+	/*	static constexpr const char* HIT_SOUND_PATHS[] =
 		{
 			"./Resources/SampleClient/Sound/avada.wav",
 	
@@ -275,11 +275,11 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 				.iPriority = 64,
 				.bLoop = false
 			}
-		);
-		if (id == INVALID_SOUND_ID)
-		{
-			MSG_BOX("INVALID_SOUND_ID");
-		}
+		);*/
+		//if (id == INVALID_SOUND_ID)
+		//{
+		//	MSG_BOX("INVALID_SOUND_ID");
+		//}
 
 		pTmbGurdian->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
