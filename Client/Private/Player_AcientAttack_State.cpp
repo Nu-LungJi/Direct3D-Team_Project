@@ -105,7 +105,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			false,
 			0.24f);
 
-	
+		CGameInstance::Get().PlayEffect("LightningSound", *pPlayer->GetTransform().GetWorldMatrix());
 		// 스킬 컷신 재생
 		{
 			FCinematicPlayOptions options{};
