@@ -397,7 +397,7 @@ _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 	if(eType != PLAYER_SKILL_TYPE::ATTACK)
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN), FLAGTYPE::DEL);
 
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)) && eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
 
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
@@ -529,7 +529,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 		};
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 5.f });
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
 		if (!Desc.pResMaterial ||
 			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
 				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
@@ -780,6 +780,15 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	
 	m_pModelAnimator->Play_Anim(0, false);
 	return S_OK;
+}
+
+void CTmbGurdian::Damaged(PLAYER_SKILL_TYPE eType)
+{
+	__super::Damaged(eType);
+
+	if (eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING)
+		m_iHp = 0.f;
+
 }
 void CTmbGurdian::Active_Skill()
 {

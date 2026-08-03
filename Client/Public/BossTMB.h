@@ -45,7 +45,7 @@ private:
 	std::optional<CHandle> AdditionalLightHandle{};
 	/*---------------------------------*/
 
-	uint32_t		m_iColliderBoneIndex{UINT32_MAX};
+
 public:
 	static E::UPtr<CBossTMB> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
