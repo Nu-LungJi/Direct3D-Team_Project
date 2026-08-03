@@ -169,6 +169,22 @@ _bool CBridgeCRW::RequestBring()
 	m_eState = STATE::DESCENDING;
 	m_pModelAnimator->Play_Anim(
 		static_cast<int32_t>(STATE::DESCENDING), false, 0.1f);
+
+	CGameInstance::Get().GetSoundManager()->Play3D(
+		"./Resources/SampleClient/Sound/Bridge/Bridge_Start.wav",
+		SOUND_3D_DESC{
+			.vPosition = GetTransform().GetPosition(),
+			.fMinDistance = 5.f,
+			.fMaxDistance = 60.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 	return true;
 }
 
@@ -180,6 +196,22 @@ _bool CBridgeCRW::RequestFix()
 	m_eState = STATE::FIXING;
 	m_pModelAnimator->Play_Anim(
 		static_cast<int32_t>(STATE::FIXING), false, 0.1f);
+
+	CGameInstance::Get().GetSoundManager()->Play3D(
+		"./Resources/SampleClient/Sound/Bridge/Bridge_Bind.wav",
+		SOUND_3D_DESC{
+			.vPosition = GetTransform().GetPosition(),
+			.fMinDistance = 5.f,
+			.fMaxDistance = 60.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 	return true;
 }
 
