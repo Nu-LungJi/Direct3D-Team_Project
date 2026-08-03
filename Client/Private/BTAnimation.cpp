@@ -36,8 +36,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 		return m_eDebug = EVALUATE::FAILED;
 	if (m_bStart)
 		pAnimator->SetPlay(true);
-
-	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+	if (!m_bUseCurAnim)
+		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
 	_bool bFinished = pAnimator->GetFinish();
 	Gravity();
 	
@@ -55,6 +55,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 }
 void CBTAnimation::Update_Gui()
 {
+
+	BoolButton("UseCurAnim : ", m_bUseCurAnim);
 	__super::Update_Gui();
 	if (ImGui::Button("Abort : ")) 
 		m_GuiNode.bAbort = !m_GuiNode.bAbort;
@@ -85,11 +87,15 @@ void CBTAnimation::Abort()
 nlohmann::json CBTAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
+
+	SaveJsonValue(j, "UseCurAnim", m_bUseCurAnim);
 	return j;
 }
 HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
+
+	LoadJsonValue(j, "UseCurAnim", m_bUseCurAnim);
 	return S_OK;
 }
 void CBTAnimation::OnEnter()
