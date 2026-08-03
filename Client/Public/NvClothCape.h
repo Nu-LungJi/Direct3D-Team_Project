@@ -89,9 +89,12 @@ private:
 	};
 
 private:
-	_bool UpdateAttachment(_bool bUpdateSimulation);
+	_bool UpdateAttachment(
+		_bool bUpdateSimulation,
+		_bool bForceTeleport = false);
 	_bool ResolveAttachment();
 	_bool UpdateBodyCollisions();
+	_bool ResetSimulationToAnimationPose();
 	_bool BuildBodyCollisionsFromRig(
 		CComModelInstance& ModelInstance,
 		_fmatrix TargetWorld,
@@ -118,6 +121,7 @@ private:
 	_bool m_bAttachmentInitialized{};
 	_bool m_bSimulationTransformInitialized{};
 	_bool m_bAnimationConstraintInitialized{};
+	_bool m_bOwnerRenderSuppressed{};
 	std::vector<int32_t>
 		m_ResolvedSkinBoneIndices{};
 	std::vector<_float4x4>

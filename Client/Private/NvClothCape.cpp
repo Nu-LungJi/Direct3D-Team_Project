@@ -263,8 +263,37 @@ void CNvClothCape::PriorityUpdate(_float)
 
 void CNvClothCape::FixedUpdate(_float)
 {
-	if (UpdateAttachment(true))
-		UpdateBodyCollisions();
+	auto* pTarget =
+		CGameInstance::Get().
+		GetGameObjectByHandle(m_hTarget);
+	auto* pPlayer = Cast<CPlayer>(pTarget);
+	const _bool bOwnerRenderSuppressed =
+		pPlayer && pPlayer->GetRenderInfluence();
+	const _bool bSuppressionChanged =
+		bOwnerRenderSuppressed !=
+		m_bOwnerRenderSuppressed;
+
+	// [LSY] 대시 중에는 망토가 보이지 않으므로 이동 관성을 누적하지 않는다.
+	// 종료 시에는 현재 애니메이션 자세로 복원한 뒤 다시 표시한다.
+	if (!UpdateAttachment(
+			true,
+			bOwnerRenderSuppressed ||
+				bSuppressionChanged))
+	{
+		return;
+	}
+
+	if (bSuppressionChanged &&
+		!ResetSimulationToAnimationPose())
+	{
+		return;
+	}
+
+	if (!UpdateBodyCollisions())
+		return;
+
+	m_bOwnerRenderSuppressed =
+		bOwnerRenderSuppressed;
 }
 
 void CNvClothCape::Update(_float)
@@ -273,7 +302,8 @@ void CNvClothCape::Update(_float)
 
 void CNvClothCape::LateUpdate(_float)
 {
-	if (!m_bRenderCape)
+	if (!m_bRenderCape ||
+		m_bOwnerRenderSuppressed)
 		return;
 
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hTarget);
@@ -1203,8 +1233,22 @@ _bool CNvClothCape::UpdateBodyCollisions()
 	return true;
 }
 
+_bool CNvClothCape::ResetSimulationToAnimationPose()
+{
+	if (!m_pComNvCloth ||
+		m_AnimationConstraintDesc.
+			vecTargetPositions.empty())
+	{
+		return false;
+	}
+
+	return m_pComNvCloth->ResetParticlesToPositions(
+		m_AnimationConstraintDesc.vecTargetPositions);
+}
+
 _bool CNvClothCape::UpdateAttachment(
-	_bool bUpdateSimulation)
+	_bool bUpdateSimulation,
+	_bool bForceTeleport)
 {
 	auto* pTarget =
 		CGameInstance::Get().
@@ -1312,6 +1356,7 @@ _bool CNvClothCape::UpdateAttachment(
 			XMLoadFloat3(
 				&m_vPreviousAttachPosition)));
 	const _bool bTeleport =
+		bForceTeleport ||
 		!m_bSimulationTransformInitialized ||
 		fDistance > m_fTeleportDistance;
 	if (!m_pComNvCloth->SetSimulationTransform(
