@@ -396,7 +396,7 @@ _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 	if(eType != PLAYER_SKILL_TYPE::ATTACK)
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN), FLAGTYPE::DEL);
 
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)) && eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
 
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)

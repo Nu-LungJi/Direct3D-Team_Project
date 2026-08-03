@@ -615,6 +615,9 @@
     <ClInclude Include="..\Public\StarBurst.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTCinematic.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -918,6 +921,9 @@
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTCinematic.cpp">
+      <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

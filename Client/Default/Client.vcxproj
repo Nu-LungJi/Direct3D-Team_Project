@@ -210,6 +210,7 @@
     <ClInclude Include="..\Public\BTAnimation.h" />
     <ClInclude Include="..\Public\BTAnimRoot.h" />
     <ClInclude Include="..\Public\BTAttackAnimation.h" />
+    <ClInclude Include="..\public\BTCinematic.h" />
     <ClInclude Include="..\Public\BTCreatureFlag.h" />
     <ClInclude Include="..\Public\BTDecFlag.h" />
     <ClInclude Include="..\Public\BTDecHitCnt.h" />
@@ -268,7 +269,7 @@
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
-	<ClInclude Include="..\public\TestPathPlaybackObject.h" />
+    <ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
@@ -327,6 +328,7 @@
     <ClCompile Include="..\Private\BTAnimation.cpp" />
     <ClCompile Include="..\Private\BTAnimRoot.cpp" />
     <ClCompile Include="..\Private\BTAttackAnimation.cpp" />
+    <ClCompile Include="..\private\BTCinematic.cpp" />
     <ClCompile Include="..\Private\BTCreatureFlag.cpp" />
     <ClCompile Include="..\Private\BTDecFlag.cpp" />
     <ClCompile Include="..\Private\BTDecHitCnt.cpp" />
@@ -381,7 +383,7 @@
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
-	<ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
+    <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
