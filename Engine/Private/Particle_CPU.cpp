@@ -144,7 +144,7 @@ HRESULT CParticle_CPU::Initialize(void* pArg)
     }
 
 	{
-		m_waveCb.g_fBurstSpeed = 1.f;
+		m_waveCb.g_fBurstSpeed = 1.5f;
 		m_waveCb.g_fFlowSpeed = 2.5f;
 		m_waveCb.g_fWaveAmplitude = 2.f;
 		m_waveCb.g_fWaveFrequency = 0.5f;

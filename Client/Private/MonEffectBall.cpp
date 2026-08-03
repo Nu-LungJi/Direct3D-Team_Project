@@ -125,6 +125,7 @@ void CMonEffectBall::OverlapTest()
 			_float MonDamange = m_fDamage;
 			m_bHit = true;
 
+
 		}
 	}
 }
@@ -186,12 +187,50 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 			XMStoreFloat4x4(&m_CurWorldmat,matBall);
 	}
 
-		if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN) | ETOUI(CBTRoot::BTFLAG::GROGY) | ETOUI(CBTRoot::BTFLAG::DEAD)))
-		{
-			CGameInstance::Get().StopEffect(m_iEffectID);
-			m_bHit = true;
+	if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN) | ETOUI(CBTRoot::BTFLAG::GROGY) | ETOUI(CBTRoot::BTFLAG::DEAD)))
+	{
+		CGameInstance::Get().StopEffect(m_iEffectID);
+		m_bHit = true;
+
+		auto pCamera = CGameInstance::Get().GetActiveCamera();
+
+		if (!pCamera)
 			return;
-		}
+
+		_matrix currentWorld = XMLoadFloat4x4(&m_CurWorldmat);
+		_vector handPosition = currentWorld.r[3];
+		_vector cameraPosition = pCamera->GetTransform().GetLoadedPostion();
+
+		_vector look = cameraPosition - handPosition;
+
+		if (XMVectorGetX(XMVector3LengthSq(look)) < 0.000001f)
+			return;
+
+		look = XMVector3Normalize(look);
+
+		_vector worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		_vector right = XMVector3Cross(worldUp, look);
+
+		if (XMVectorGetX(XMVector3LengthSq(right)) < 0.000001f)
+			right = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+		else
+			right = XMVector3Normalize(right);
+
+		_vector up = XMVector3Normalize(XMVector3Cross(look, right));
+
+		_matrix effectMatrix = XMMatrixIdentity();
+		effectMatrix.r[0] = XMVectorSetW(right, 0.f);
+		effectMatrix.r[1] = XMVectorSetW(up, 0.f);
+		effectMatrix.r[2] = XMVectorSetW(look, 0.f);
+		effectMatrix.r[3] = XMVectorSetW(handPosition, 1.f);
+
+		_float4x4 effectWorld{};
+		XMStoreFloat4x4(&effectWorld, effectMatrix);
+
+		CGameInstance::Get().PlayEffect("TombBossPatternBlockEffect", effectWorld, _vector{});
+
+		return;
+	}
 
 		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, m_CurWorldmat);

@@ -475,3 +475,49 @@ PS_OUT PSSphereShield(VS_OUT In)
 
 	return Out;
 }
+PS_OUT BlindFlare(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float4 flareTex = g_DiffuseTexture.Sample(LinearClamp, In.vTexcoord);
+
+	float2 centeredUV = In.vTexcoord * 2.0f - 1.0f;
+	float distanceToCenter = length(centeredUV);
+	float angle = atan2(centeredUV.y, centeredUV.x);
+
+	float flareMask = dot(flareTex.rgb, float3(0.299f, 0.587f, 0.114f));
+	flareMask = saturate(flareMask);
+
+	float angleNoise = sin(angle * 7.0f + 0.5f);
+	angleNoise += sin(angle * 13.0f - 1.7f) * 0.5f;
+	angleNoise = angleNoise * 0.5f + 0.5f;
+	angleNoise = smoothstep(0.25f, 0.85f, angleNoise);
+
+	float radialFade = saturate(1.0f - distanceToCenter);
+	float rayMask = angleNoise * radialFade;
+	rayMask *= smoothstep(1.0f, 0.05f, distanceToCenter);
+
+	float hue = angle / 6.283185f + 0.5f;
+	float3 chromaColor;
+	chromaColor.r = sin(hue * 6.283185f) * 0.5f + 0.5f;
+	chromaColor.g = sin(hue * 6.283185f + 2.094f) * 0.5f + 0.5f;
+	chromaColor.b = sin(hue * 6.283185f + 4.188f) * 0.5f + 0.5f;
+
+	float3 warmColor = float3(1.0f, 0.42f, 0.08f);
+	float3 rayColor = lerp(warmColor, chromaColor, 0.25f);
+
+	float ratio = saturate( In.life / max(In.maxLife, 0.0001f));
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float intensity = lerpedEmissive.a;
+
+	float coreMask = pow(saturate(1.0f - distanceToCenter), 4.0f);
+	float3 softFlare = warmColor * flareMask * intensity;
+	float3 coloredRays = rayColor * rayMask * intensity * 0.7f;
+	float3 whiteCore = float3(1.0f, 0.9f, 0.75f) * coreMask * intensity * 1.5f;
+
+	float3 finalColor = (softFlare + coloredRays + whiteCore) * In.vColor.rgb;
+	float finalAlpha = saturate(max(flareMask, rayMask) * In.vColor.a);
+
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
