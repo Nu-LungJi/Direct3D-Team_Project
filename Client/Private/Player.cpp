@@ -1242,7 +1242,9 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
-
+	if (CGameInstance::Get().KeyDown(DIK_I)) {
+		CGameInstance::Get().Render_ChromaticRing(GetTransform().GetLoadedPostion(), 0.25f, 3.f);
+	}
 }
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)

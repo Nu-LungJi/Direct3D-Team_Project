@@ -175,25 +175,9 @@ private:
 	SHADOW_ARRAY_CUBE					m_pStaticPointShadowList{};
 	SHADOW_ARRAY_CUBE					m_pDynamicPointShadowList{};
 
-	uint64_t m_iShadowFrameIndex{};
+	uint64_t							m_iShadowFrameIndex{};
 
-	std::vector<IRenderable*> m_pStaticShadowCasterScratch{};
-
-#ifdef _DEBUG
-	public:
-		uint32_t Get_StaticShadowPassCount() const {
-			return m_iStaticShadowPassCount;
-		}
-
-		uint32_t Get_DynamicShadowPassCount() const {
-			return m_iDynamicShadowPassCount;
-		}
-
-private:
-	uint32_t m_iStaticShadowPassCount{};
-	uint32_t m_iDynamicShadowPassCount{};
-#endif
-
+	std::vector<IRenderable*>			m_pStaticShadowCasterScratch{};
 
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

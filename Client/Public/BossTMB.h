@@ -37,6 +37,11 @@ private:
 	ATTMON			m_eLastSkillTable{ATTMON::END};
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
 	_bool			m_bStar{ true };
+
+	/*----------- 광윤 추가 -----------*/
+	std::optional<CHandle> AdditionalLightHandle{};
+	/*---------------------------------*/
+
 public:
 	static E::UPtr<CBossTMB> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

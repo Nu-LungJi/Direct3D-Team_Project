@@ -5,30 +5,31 @@
 RWTexture2D<float4> OUTPUT : register(u0);
 
 // Base Texture
-Texture2D<float4>	AlbedoMap		: register(t0);
-Texture2D<float4>	NormalMap		: register(t1);
-Texture2D<float4>	SMROMap			: register(t2);
-Texture2D<float4>	EmissiveMap		: register(t3);
-Texture2D<float4>	AmbientMap		: register(t4);
-Texture2D<float>	DepthMap		: register(t5);
+Texture2D<float4>		AlbedoMap				: register(t0);
+Texture2D<float4>		NormalMap				: register(t1);
+Texture2D<float4>		SMROMap					: register(t2);
+Texture2D<float4>		EmissiveMap				: register(t3);
+Texture2D<float4>		AmbientMap				: register(t4);
+Texture2D<float>		DepthMap				: register(t5);
 
 // Image Based Lighting
-TextureCube			IrridianceMap	: register(t6);					// Enviroment Light
-TextureCube			PreFilterMap	: register(t7);					
-Texture2D<float4>	LookUpTableMap	: register(t8);					// BRDF LUT
+TextureCube				IrridianceMap			: register(t6);		// Enviroment Light
+TextureCube				PreFilterMap			: register(t7);					
+Texture2D<float4>		LookUpTableMap			: register(t8);		// BRDF LUT
 
 // Shadow Texture
-Texture2DArray<float>	StaticShadowMaps	  : register(t9);		// Directional Static
-Texture2DArray<float>	DynamicShadowMaps	  : register(t10);		// Directional Dynamic
+Texture2DArray<float>	StaticShadowMaps		: register(t9);		// Directional Static
+Texture2DArray<float>	DynamicShadowMaps		: register(t10);	// Directional Dynamic
 
-TextureCubeArray<float> StaticShadowCubeMaps  : register(t11);		// Point Static
-TextureCubeArray<float> DynamicShadowCubeMaps : register(t12);		// Point Dynamic
+TextureCubeArray<float> StaticShadowCubeMaps	: register(t11);	// Point Static
+TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);	// Point Dynamic
 
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.f;
+static const float		ShadowDepthBias			= 0.002f;
 
-static const float		EnviromentIntensity		= 1.00f;			// 환경광 밝기
-static const float		FillLightBrightness		= 0.20f;			// 등지는 영역의 밝기
+static const float		EnviromentIntensity		= 0.00f;			// 환경광 밝기
+static const float		FillLightBrightness		= 0.25f;			// 등지는 영역의 밝기
 static const float		DirectLightBrightness	= 0.60f;			// 빛받는 영역의 밝기
 
 static const float		NormalBiasWorld			= 0.01f;
@@ -152,22 +153,9 @@ float Compute_SmoothShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rand
 	if (LightNDC.x < -1.f || LightNDC.x > 1.f ||
 	 	LightNDC.y < -1.f || LightNDC.y > 1.f ||
 		LightNDC.z < 0.f || LightNDC.z > 1.f)		return 1.f;
+	
 
-	float3 N = normalize(_WorldNormal);
-	float3 L;
-	
-	if (AffectedLight[_LightIndex].LightType == LIGHT_DIRECTIONAL)	{
-		L = normalize(-AffectedLight[_LightIndex].LightDirection);
-	}
-	else {
-		L = normalize(AffectedLight[_LightIndex].Position - _WorldPos.xyz);
-	}
-	
-	float NdotL = saturate(dot(N, L));
-	float DepthBias = max(0.0002f, 0.0020f * (1.f - NdotL));
-	
-	//float CurrentPixelDepth = saturate(LightNDC.z - DepthBias);
-	float CurrentPixelDepth = saturate(LightNDC.z - 0.0001f);
+	float CurrentPixelDepth = saturate(LightNDC.z - ShadowDepthBias);
 	float ShadowFactor = 0.f;
 	
     [unroll]
@@ -186,9 +174,9 @@ float Compute_SmoothShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rand
 		return NormalShadowFactor;
 	}
 	
-	//float Distance = length(_WorldPos.xyz - AffectedLight[_LightIndex].Position);
-	//return Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
+	float  Distance = length(_WorldPos.xyz - AffectedLight[_LightIndex].Position);
 	return NormalShadowFactor;
+	return Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
 }
 
 float Compute_PointShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _RandomRotMat, int _ShadowSlot, uint _LightIndex)
@@ -197,7 +185,7 @@ float Compute_PointShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rando
 	float Distance = length(LightToPixel);
 	
 	float CurrentPixelDepth = Distance / max(0.02f, AffectedLight[_LightIndex].OuterAttanuation);
-	CurrentPixelDepth -= 0.001f; // Depth Bias
+	CurrentPixelDepth -= ShadowDepthBias;
 	
 	float InvDistance = 1.0f / max(Distance, 0.0001f);
 	float3 Direction = LightToPixel * InvDistance;
@@ -224,9 +212,8 @@ float Compute_PointShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rando
 	
 	float	NormalShadowFactor = lerp(ShadowBrightness, 1.f, saturate(ShadowFactor / POISSON_COUNT));
 	
-	//return	Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
 	return NormalShadowFactor;
-
+	return Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
 }
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughness, float _Metallic, float3 MBR)

@@ -126,6 +126,7 @@ void COilBarrel::PriorityUpdate(E::_float fTimeDelta)
 
 void COilBarrel::Update(E::_float fTimeDelta)
 {
+
 }
 
 void COilBarrel::LateUpdate(E::_float fTimeDelta)

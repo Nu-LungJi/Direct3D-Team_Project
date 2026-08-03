@@ -362,12 +362,6 @@ VOID CLightManager::Update(_float fTimeDelta) {
 HRESULT CLightManager::Capture_ShadowMap() {
 	ZoneScopedN("Capture_ShadowMap");
 	{
-#ifdef  _DEBUG
-		m_iStaticShadowPassCount = 0;
-		m_iDynamicShadowPassCount = 0;
-#endif
-
-
 		++m_iShadowFrameIndex;
 
 		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
@@ -447,10 +441,6 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], true, static_cast<int32_t>(Face)))) { UnBind_ShadowResource();  return E_FAIL; }
 				}
 				LightOBJ->Set_StaticDirty(false);
-
-#ifdef  _DEBUG
-				++m_iStaticShadowPassCount;
-#endif
 			}
 
 			const _bool bFinalShadowDirty = bStaticWasDirty || LightOBJ->Is_DynamicDirty();
@@ -471,10 +461,6 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], false, static_cast<int32_t>(Face)))) { UnBind_ShadowResource();  return E_FAIL; }
 				}
 				LightOBJ->Set_DynamicDirty(false);
-
-#ifdef  _DEBUG
-				++m_iDynamicShadowPassCount;
-#endif
 			}
 			
 			m_pContext->GSSetShader(nullptr, nullptr, 0);
@@ -518,9 +504,6 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], true)))				 { UnBind_ShadowResource();  return E_FAIL; }
 	
 					LightOBJ->Set_StaticDirty(false);
-#ifdef  _DEBUG
-					++m_iStaticShadowPassCount;
-#endif
 				}
 			}
 
@@ -536,10 +519,6 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], false))) { UnBind_ShadowResource();  return E_FAIL; }
 					
 					LightOBJ->Set_DynamicDirty(false);
-
-#ifdef  _DEBUG
-					++m_iDynamicShadowPassCount;
-#endif
 				}
 			}
 		}
@@ -1381,7 +1360,7 @@ void CLightManager::DrawDebugEffectLights()
 		debug->AddCross(position, 0.2f);
 		debug->AddSphere(
 			std::max(
-				light->Get_LightRange(),
+				light->Get_PointLightOuterAttenuation(),
 				0.02f),
 			XMMatrixTranslation(
 				position.x,

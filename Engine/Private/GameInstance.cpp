@@ -1161,7 +1161,7 @@ HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _Sha
 VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale) {
 	m_pRenderer->Render_ChromaticRing(_WorldPosition, _Duration, _Scale);
 }
-
+VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER
