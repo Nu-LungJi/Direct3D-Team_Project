@@ -200,6 +200,7 @@ HRESULT CLevelCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 	Desc.fFar = 1000.f;
 	Desc.sObjectTag = "PlayerCamera";
 	Desc.hTarget = hPlayer.value();
+	Desc.fYaw = -90.f;
 
 	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::CHARLES_ROOKWOOD,
@@ -220,6 +221,7 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -6.f, -215.f, 156.f };
+	PlayerDesc.vInitialRotation = { 0.f, -90.f, 0.f };
 	PlayerDesc.LevelTag = LEVEL::CHARLES_ROOKWOOD;
 	PlayerDesc.tFilter = PX_FILTER_DESC{
 		 .iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
