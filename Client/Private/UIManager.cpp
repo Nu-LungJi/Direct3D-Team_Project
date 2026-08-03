@@ -90,6 +90,8 @@ void UIManager::InitializeActions()
 		auto pTween = pCaller->GetTweenCom();
 		if (!pTween) return;
 
+		//pCaller->SetInputLcok(true);
+
 		pCaller->SetActive(true);
 		CHandle handle = pCaller->GetHandle();
 		_float scaleRatio = pCaller->GetScaleRatio();
@@ -274,7 +276,7 @@ void UIManager::InitializeActions()
 		};
 	m_vEventNames.push_back("ScaleDown0.6");
 
-	m_EventMap["DisappearScaleDown"] = [](CUIObject* pCaller)
+	m_EventMap["DisappearScaleDown"] = [this](CUIObject* pCaller)
 	{
 		if (!pCaller) return;
 		auto pTween = pCaller->GetTweenCom();
@@ -289,7 +291,9 @@ void UIManager::InitializeActions()
 					pObj->SetScaleRatio(currentValue);
 					pObj->CalcUICoord();
 				}
-			}, nullptr, EEaseType::EaseOutQuad);
+			}, [handle, this]() {
+				if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
+				}, EEaseType::EaseOutQuad);
 	};
 	m_vEventNames.push_back("DisappearScaleDown");
 
@@ -310,7 +314,7 @@ void UIManager::InitializeActions()
 				}
 			}, nullptr, EEaseType::EaseOutQuad);
 
-		pTween->PlayTween(2.f, 0.f, 0.2f,
+		pTween->PlayTween(1.f, 0.f, 0.1f,
 			[handle](float currentValue) {
 				if (auto pObj = GetSafeUI(handle))
 				{
@@ -322,7 +326,7 @@ void UIManager::InitializeActions()
 				}
 			}, [handle, this]() {
 				if (auto pObj = GetSafeUI(handle)) DeleteUIRecursive(handle);
-			}, EEaseType::EaseOutQuad);
+			}, EEaseType::EaseOutQuad, 0.1f);
 	};
 	m_vEventNames.push_back("DisappearScaleDown_D");
 
@@ -1109,6 +1113,24 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 	return [](std::string text) {};
 }
 
+void UIManager::CreateFadeIn(float delay, float playtime)
+{
+	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+	PlayFadeIn(hBG);
+}
+
+void UIManager::CreateFadeOut(float delay, float playtime)
+{
+	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+	PlayFadeOutDelete(hBG);
+}
+
+void UIManager::CreateFadeInSceneChange(float delay, float playtime)
+{
+	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+	PlayFadeInChange(hBG);
+}
+
 std::optional<CHandle> UIManager::RootUIPicking()
 {
 	std::optional<CHandle> targetHandle = std::nullopt;
@@ -1481,3 +1503,64 @@ void UIManager::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 
 	return;
 }
+
+void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(1.f, 0.f, 5.f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, [pHandle]() {
+			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad, 1.f);
+}
+
+void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+	_float scaleRatio = pBtn->GetScaleRatio();
+
+	pTween->PlayTween(0.8f, scaleRatio, playtime,
+		[pHandle](float currentValue) {
+			if (auto pObj = GetSafeUI(pHandle))
+			{
+				pObj->SetScaleRatio(currentValue);
+				pObj->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void UIManager::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, [pHandle]() {
+			Engine::CGameInstance::Get().ChangeLevel(
+				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::BOSS_CHARLES_ROOKWOOD));
+			}, EEaseType::EaseOutQuad, delay);
+}
+

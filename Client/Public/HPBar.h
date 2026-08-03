@@ -2,6 +2,7 @@
 #include "UITex.h"
 #include "Client_Defines.h"
 #include <algorithm>
+#include "UIObject.h"
 
 NS_BEGIN(Engine)
 class CComConstantBuffer;
@@ -46,13 +47,22 @@ public:
 	void SetMaxFill(_float maxfill) { m_fMaxFill = maxfill; UpdateFill();}
 	void SetCurrentFill(_float currentfill) { m_fcurrentFill = currentfill; m_fcurrentFill = std::clamp(m_fcurrentFill, 0.0f, m_fMaxFill);  UpdateFill(); }
 	void AddFill(_float addFill) { m_fcurrentFill += addFill; m_fcurrentFill = std::clamp(m_fcurrentFill, 0.0f, m_fMaxFill); UpdateFill(); }
-	void SetAmount(_float amount) { m_fCurrentAmount = 0.f; }
+	void SetAmount(_float amount) { m_fCurrentAmount = amount; m_fcurrentFill = m_fMaxFill * amount; UpdateFill(); }
 	_float GetAmount() { return m_fCurrentAmount; };
 
 
 private:
 	CComConstantBuffer* m_pComCBufferPerUI = nullptr;
 	CButtonComponent* m_pComCButton = nullptr;
+
+	void PlayMonsterHPDelete(CHandle pHandle);
+
+private:
+	CUIObject* SafeGetOBJ(CHandle pHandle)
+	{
+		if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
+			return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
+	}
 
 public:
 	static E::UPtr<CHPBar> Create();

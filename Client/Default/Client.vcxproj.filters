@@ -262,6 +262,9 @@
     <Filter Include="GameObject\Monster\TombBoss\TombBossBullet">
       <UniqueIdentifier>{892b8ca5-2abf-46df-8ece-4f0e6b29d275}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_RagdollController">
+      <UniqueIdentifier>{7f570a9d-bd7f-4bf3-9da7-61d49c14c612}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -615,6 +618,9 @@
     <ClInclude Include="..\Public\StarBurst.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\PlayerRagdollController.h">
+      <Filter>GameObject\Player\Player_RagdollController</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -674,9 +680,6 @@
     </ClCompile>
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
       <Filter>GameObject\DebugPlayer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player.cpp">
-      <Filter>GameObject\Player</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
       <Filter>GameObject\Player\Camera</Filter>
@@ -918,6 +921,13 @@
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossMace.cpp" />
+    <ClCompile Include="..\Private\PlayerRagdollController.cpp">
+      <Filter>GameObject\Player\Player_RagdollController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
