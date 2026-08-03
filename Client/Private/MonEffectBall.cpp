@@ -71,6 +71,17 @@ void CMonEffectBall::Update(E::_float fTimeDelta)
 
 	OverlapTest();
 	if (m_bHit || m_iEffectID == INVALID_EFFECT_INSTANCE_ID || m_fDeadTime > 1.f) {
+
+		_float4x4 mat = *GetTransform().GetWorldMatrix();
+		const _matrix effectWorld =
+			XMMatrixTranslation(
+				m_CurWorldmat._41,
+				m_CurWorldmat._42,
+				m_CurWorldmat._43);
+		_float4x4 effectMat;
+		XMStoreFloat4x4(&effectMat, effectWorld);
+
+		CGameInstance::Get().PlayEffect("BossRingAttackAfterEffect", effectMat, _vector{});
 		SetPendingDestroy();
 		return;
 	}
@@ -215,6 +226,8 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 		_float4x4 effectWorld{};
 		XMStoreFloat4x4(&effectWorld, effectMatrix);
 
+		CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
+		CGameInstance::Get().Render_ChromaticRing(effectPosition, 0.5f, 100);
 		CGameInstance::Get().PlayEffect(
 			"TombBossPatternBlockEffect",
 			effectWorld,

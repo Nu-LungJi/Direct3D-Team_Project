@@ -94,6 +94,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 					return;
 				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 				_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+				CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
 				CGameInstance::Get().Render_ChromaticRing(weaPonPos, 0.5f, 100);
 				// 무기 발사 위치
 
