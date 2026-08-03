@@ -784,13 +784,14 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_fEMissiveColor = { 1.f,1.f,1.f};
 	m_eMonType = MonDesc->MonType;
 	if (m_eMonType == MONSTER_TYPE::NORMAL)
-		m_iHp = m_iMaxHp = 100;
+		m_iHp = m_iMaxHp = 200;
 	else if (m_eMonType == MONSTER_TYPE::ELITE)
 		m_iHp = m_iMaxHp = 300;
 	
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Spine1");
 	
 	m_pModelAnimator->Play_Anim(0, false);
+	ReadySound();
 	return S_OK;
 }
 
@@ -816,6 +817,7 @@ void CTmbGurdian::Active_Skill()
 	if (m_iCurSkill == m_iPreSkill)
 		return;
 
+	
 
 	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 
@@ -838,6 +840,35 @@ void CTmbGurdian::Active_Skill()
 	}
 
 
+}
+
+void CTmbGurdian::ReadySound()
+{
+	m_SoundTable["TmbWalk"] = { "./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk1.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk2.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk3.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk4.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk5.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk6.wav",
+
+	};
+	m_SoundTable["TmbTurn"] = { "./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn1.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn2.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn3.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn4.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn5.wav",
+								"./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn6.wav",
+
+	};
+	m_SoundTable["TmbSlash1"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash1.wav",};
+	m_SoundTable["TmbSlash2"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash2.wav", };
+	m_SoundTable["TmbSlash3"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash3.wav", };
+	m_SoundTable["TmbSlash4"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash4.wav", };
+	m_SoundTable["TmbSlash5"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash5.wav", };
+	m_SoundTable["TmbSlash6"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash6.wav", };
+
+	m_SoundTable["TmbBeforeHit"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/BeforeHit.wav", };
+	m_SoundTable["TombEliteSpawn"] = { "./Resources/SampleClient/Sound/PensiveKnight/TombEliteSpawn.wav", };
 }
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)

@@ -216,7 +216,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(BOSSTOMB_SKILL::BALL);
 	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(BOSSTOMB_SKILL::BALL_BREAK);
 	m_MonSkillLists[ATTMON::SLOT6] = ETOUI(BOSSTOMB_SKILL::SMESH);
-
+	m_MonSkillLists[ATTMON::SLOT7] = ETOUI(BOSSTOMB_SKILL::DEAD);
 
 	m_MonSkillLists[ATTMON::SKIP] = ETOUI(BOSSTOMB_SKILL::SKIP);
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SPAWN)] = "Boss_Appear";
@@ -225,6 +225,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)] = "BossAoeBlustEnd";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::SMESH)] = "MorningStarAfterEffect";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttack";
+	m_EffectNames[ETOUI(BOSSTOMB_SKILL::DEAD)] = "Boss_Dead";
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();

@@ -63,6 +63,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					m_bActiveSkill = Active_Skill();
 				}
 				Gravity();
+				Play_Sound(fTimeDelta);
 				_bool bFinished = pAnimator->GetFinish();
 				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 				//살려주세요 살려주세요!!!
@@ -253,6 +254,7 @@ void CBTAttackAnimation::ShakeCam(_float fRotRatio)
 }
 void CBTAttackAnimation::Abort()
 {
+	__super::Abort();
 	Reset_CheckFlag();
 }
 nlohmann::json CBTAttackAnimation::Save_Node()

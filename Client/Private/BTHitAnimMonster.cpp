@@ -76,6 +76,7 @@ EVALUATE CBTHitAnimMonster::Evaluate(_float fTimeDelta)
 		_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 		_bool bFinished = pAnimator->GetFinish();
 
+		Play_Sound(fTimeDelta);
 		//애니매이션 진행시간에 맞춰서 이동량 제어하기 m_bRatio true일 경우에만
 		if (m_bRatio && m_fRatio.x <= fAnimRatio && m_fRatio.y >= fAnimRatio)
 		{

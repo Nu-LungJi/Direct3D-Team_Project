@@ -93,14 +93,12 @@ void CBTAnimRoot::Update_Gui()
 		m_AddFlag.fRatio = 0;
 		m_AddFlag.iFlag = 0;
 	}
-
 	if (ImGui::Button("Add To End Flag"))
 	{
 		m_EndFlags.push_back(m_AddFlag);
 		m_AddFlag.fRatio = 0;
 		m_AddFlag.iFlag = 0;
 	}
-
 	if (ImGui::TreeNode("Show Start Flag"))
 	{
 		uint32_t iNumIndex{ 0 };
@@ -161,7 +159,18 @@ void CBTAnimRoot::Update_Gui()
 		}
 		ImGui::TreePop();
 	}
-
+	if (ImGui::TreeNode("SoundTableHelpme"))
+	{
+		AddSound();
+		
+		if (ImGui::TreeNode("SoundsValue"))
+		{
+			SoundTableValueList();
+			ImGui::TreePop();
+		}
+		ImGui::TreePop();
+		
+	}
 
 }
 void CBTAnimRoot::Abort()
@@ -169,6 +178,19 @@ void CBTAnimRoot::Abort()
 	m_bStart = true;
 	m_iLoopCnt = 0;
 	Reset_CheckFlag();
+	auto pSoundManager = CGameInstance::Get().GetSoundManager();
+	for (auto& iter : m_Sounds)
+	{
+		iter.fCurRatioTime = 0.f;
+		iter.bPlayed = false;
+
+		if (iter.SoundPlay.bLoop && iter.iSoundID != INVALID_SOUND_ID && pSoundManager->IsValidSound(iter.iSoundID))
+		{
+			pSoundManager->Stop(iter.iSoundID);
+			iter.iSoundID = INVALID_SOUND_ID;
+		}
+	}
+		
 }
 nlohmann::json CBTAnimRoot::Save_Node()
 {
@@ -216,6 +238,24 @@ nlohmann::json CBTAnimRoot::Save_Node()
 			SaveJsonEnum(j,  FlagTypeName,  m_EndFlags[i].eType);
 			SaveJsonValue(j, FlagRatioName, m_EndFlags[i].fRatio);
 			SaveJsonValue(j, FlagValue,     m_EndFlags[i].iFlag);
+		}
+	}
+	
+	if (!m_Sounds.empty())
+	{
+		uint32_t iMaxSize = m_Sounds.size();
+		SaveJsonValue(j, "SoundTableSize", iMaxSize);
+		for (size_t i=0; i< m_Sounds.size(); ++i)
+		{
+
+			JsonSaveLoadManager::SaveJsonTypeString(j, "SoundKey" + std::to_string(i), m_Sounds[i].SoundKey);
+			SaveJsonValue(j, "PlaySoundRatio" + std::to_string(i), m_Sounds[i].fPlayRatio);
+			SaveJsonValue(j, "3DSoundfMinDist" + std::to_string(i), m_Sounds[i].str3DSound.fMinDistance);
+			SaveJsonValue(j, "3DSoundfMaxDist" + std::to_string(i), m_Sounds[i].str3DSound.fMaxDistance);
+			SaveJsonValue(j, "SoundPlayVolume" + std::to_string(i), m_Sounds[i].SoundPlay.fVolume);
+			SaveJsonValue(j, "SoundPlayPitch" + std::to_string(i), m_Sounds[i].SoundPlay.fPitch);
+			SaveJsonValue(j, "SoundPlayLoop" + std::to_string(i), m_Sounds[i].SoundPlay.bLoop);
+			SaveJsonValue(j, "PlaySoundOne" + std::to_string(i), m_Sounds[i].bOnlyOne);
 		}
 	}
 
@@ -267,6 +307,30 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 			LoadJsonValue(j, FlagValue, m_EndFlags[i].iFlag);
 		}
 	}
+	iMaxSize = {};
+	if (LoadJsonValue(j, "SoundTableSize", iMaxSize))
+	{
+		m_Sounds.resize(iMaxSize);
+		MONSOUND MonSound{};
+		MonSound.str3DSound = SOUND_3D_DESC{ .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		MonSound.SoundPlay = SOUND_PLAY_DESC{ .sBusID = SOUND_BUS::SFX ,.iPriority = 64, };
+
+		for (size_t i = 0; i < m_Sounds.size(); ++i)
+		{
+			JsonSaveLoadManager::LoadJsonTypeString(j, "SoundKey" + std::to_string(i), m_Sounds[i].SoundKey);
+			LoadJsonValue(j, "PlaySoundRatio" + std::to_string(i), m_Sounds[i].fPlayRatio);
+			LoadJsonValue(j, "3DSoundfMinDist" + std::to_string(i), m_Sounds[i].str3DSound.fMinDistance);
+			LoadJsonValue(j, "3DSoundfMaxDist" + std::to_string(i), m_Sounds[i].str3DSound.fMaxDistance);
+			LoadJsonValue(j, "SoundPlayVolume" + std::to_string(i), m_Sounds[i].SoundPlay.fVolume);
+			LoadJsonValue(j, "SoundPlayPitch" + std::to_string(i), m_Sounds[i].SoundPlay.fPitch);
+			LoadJsonValue(j, "SoundPlayLoop" + std::to_string(i), m_Sounds[i].SoundPlay.bLoop);
+			LoadJsonValue(j, "PlaySoundOne" + std::to_string(i), m_Sounds[i].bOnlyOne);
+			m_Sounds[i].str3DSound.eRolloff = SOUND_3D_ROLLOFF::LINEAR;
+			m_Sounds[i].SoundPlay.sBusID = SOUND_BUS::SFX;
+			m_Sounds[i].SoundPlay.iPriority = 64;
+		}
+	}
+
 	return S_OK;
 }
 _bool CBTAnimRoot::Active_Skill()
@@ -349,6 +413,21 @@ void CBTAnimRoot::Reset_CheckFlag()
 
 void CBTAnimRoot::OnEnter()
 {
+	m_bStart = true;
+	m_iLoopCnt = 0;
+	Reset_CheckFlag();
+	auto pSoundManager = CGameInstance::Get().GetSoundManager();
+	for (auto& iter : m_Sounds)
+	{
+		iter.bPlayed = false;
+		iter.fCurRatioTime = 0.f;
+		if (iter.iSoundID != INVALID_SOUND_ID &&
+			!pSoundManager->IsValidSound(iter.iSoundID))
+		{
+			iter.iSoundID = INVALID_SOUND_ID;
+		}
+	}
+		
 	auto pBT = Get_ComBT();
 
 	if (!pBT) return;
@@ -362,14 +441,24 @@ void CBTAnimRoot::OnEnter()
 	if (!pAnimator) return;
 
 	auto& animState = pAnimator->GetCurAnimState();
-	m_bStart = true;
-	m_iLoopCnt = 0;
-	Reset_CheckFlag();
+	
 
 }
 
 void CBTAnimRoot::OnExit(EVALUATE eResult)
 {
+	auto pSoundManager = CGameInstance::Get().GetSoundManager();
+
+	for (auto& iter : m_Sounds)
+	{
+		if (iter.SoundPlay.bLoop &&
+			iter.iSoundID != INVALID_SOUND_ID &&
+			pSoundManager->IsValidSound(iter.iSoundID))
+		{
+			pSoundManager->Stop(iter.iSoundID);
+			iter.iSoundID = INVALID_SOUND_ID;
+		}
+	}
 }
 
 
@@ -425,6 +514,86 @@ void CBTAnimRoot::Combo2(const _char* pName, FLAGTYPE& eType)
 	}
 }
 
+void CBTAnimRoot::AddSound()
+{
+	if (ImGui::Button("Add Table"))
+	{
+		MONSOUND MonSound{};
+		MonSound.fPlayRatio = 0.0f;
+		MonSound.SoundKey = "";
+		MonSound.str3DSound = SOUND_3D_DESC{ .fMinDistance = 10.f, .fMaxDistance = 30.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		MonSound.SoundPlay = SOUND_PLAY_DESC{ .sBusID = SOUND_BUS::SFX ,.fVolume = 0.5f,.fPitch = 1.f,.iPriority = 64,.bLoop = false };
+		m_Sounds.push_back(MonSound);
+	}
+}
+
+void CBTAnimRoot::SoundTableValueList()
+{
+	if (auto pBT = Get_ComBT())
+	{
+		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
+		{
+			int32_t iPopIndex{ 0 };
+			for (auto iter = m_Sounds.begin(); iter != m_Sounds.end(); ++iter)
+			{
+				
+				ImGui::PushID(iPopIndex);
+
+				if (ImGui::Button((*iter).SoundKey == "" ? "NONAME" : (*iter).SoundKey.c_str()))
+				{
+					ImGui::OpenPopup("SoundPopup");
+				}
+
+				SoundPopUp((*iter),pSrc);
+
+				ImGui::SameLine();
+				if (ImGui::Button("Del"))
+				{
+					m_Sounds.erase(iter);
+					ImGui::PopID();
+					break;
+				}
+
+				ImGui::PopID();
+				++iPopIndex;
+			}
+			
+		}
+	}
+
+
+}
+
+void CBTAnimRoot::SoundPopUp(MONSOUND& Sound, CMonster* Monster)
+{
+	if (!ImGui::BeginPopup("SoundPopup"))
+		return;
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
+	Monster->Get_SoundKey(Sound.SoundKey);
+	DragFloat("Interval Ratio", Sound.fPlayRatio);
+	if (ImGui::Button("PlayOnlyOne : "))
+		Sound.bOnlyOne = !Sound.bOnlyOne;
+	ImGui::SameLine();
+	ImGui::Text(Sound.bOnlyOne == true ? "TRUE" : "FALSE");
+
+
+	ImGui::Separator();
+	DragFloat("Sound_3D_DESC_fMinDist : ", Sound.str3DSound.fMinDistance);
+	DragFloat("Sound_3D_DESC_fMaxDist : ", Sound.str3DSound.fMaxDistance);
+	ImGui::Separator();
+	
+	DragFloat("SOUND_PLAY_DESC_Volume", Sound.SoundPlay.fVolume);
+	DragFloat("SOUND_PLAY_DESC_Pitch", Sound.SoundPlay.fPitch);
+	if (ImGui::Button("SOUND_PLAY_DESC_LOOP : "))
+		Sound.SoundPlay.bLoop = !Sound.SoundPlay.bLoop;
+	ImGui::SameLine();
+	ImGui::Text(Sound.SoundPlay.bLoop == true ? "TRUE" : "FALSE");
+	if (ImGui::Button("Close"))
+		ImGui::CloseCurrentPopup();
+	ImGui::PopStyleColor();
+	ImGui::EndPopup();
+}
+
 void CBTAnimRoot::DragFloat(const _char* pName, _float& fValue)
 {
 	_string Name = "##" + _string(pName);
@@ -437,6 +606,40 @@ void CBTAnimRoot::BoolButton(const _char* pName, _bool& bButton)
 		bButton = !bButton;
 	ImGui::SameLine();
 	ImGui::Text(bButton == true ? "TRUE" : "FALSE");
+}
+void CBTAnimRoot::Play_Sound(_float fTimeDelta)
+{
+	if (m_Sounds.empty())
+		return;
+
+	auto pBT = Get_ComBT();
+
+	if (!pBT) return;
+
+	auto pOwner = static_cast<CMonster*>(pBT->GetGameObject());
+
+	if (!pOwner) return;
+	auto pSoundManager = CGameInstance::Get().GetSoundManager();
+	for (auto& iter : m_Sounds)
+	{
+		iter.fCurRatioTime += fTimeDelta;
+		const _bool bPlaying = iter.iSoundID != INVALID_SOUND_ID && pSoundManager->IsValidSound(iter.iSoundID) &&
+			pSoundManager->IsPlaying(iter.iSoundID);
+	
+		if (bPlaying)
+			continue;
+		if (iter.bOnlyOne &&iter.bPlayed)
+			continue;
+		if (iter.fPlayRatio > 0.f && iter.fCurRatioTime < iter.fPlayRatio)
+			continue;
+		
+		iter.iSoundID  = pOwner->Play_Sound(iter);
+			if (iter.iSoundID != INVALID_SOUND_ID)
+			{
+				iter.bPlayed = true;
+				iter.fCurRatioTime = 0.f;
+			}
+	}
 }
 E::UPtr<CBTAnimRoot> CBTAnimRoot::Create()
 {

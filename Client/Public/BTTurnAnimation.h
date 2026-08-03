@@ -27,6 +27,9 @@ public:
 private:
 	_bool						SelectAngle(_float fAngle);
 	void						Turn(_float fTimeDelta);
+
+	virtual void		OnEnter() override;
+	virtual void		OnExit(EVALUATE eResult) override;
 private:
 	_bool						m_bTurn{ false };
 	_float						m_fAngle{};
