@@ -7,6 +7,10 @@
 #include "GameInstance.h"
 #include "ComBeHavior.h"
 #include "ComModelInstance.h"
+#include "ComPxConvexCollider.h"
+#include "ComPxRigidBody.h"
+#include "ResPhysXConvexGeometry.h"
+#include "ResPhysXMaterial.h"
 #include "Trail_CPU.h"
 
 NS_USING(Client)
@@ -42,7 +46,14 @@ HRESULT CGurdianWeapon::InitializePrototype(void* pArg)
 
 HRESULT CGurdianWeapon::Initialize(void* pArg)
 {
+	if (!pArg)
+		return E_INVALIDARG;
+
+	const auto* pDesc = static_cast<DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
+		return E_FAIL;
+
+	if (FAILED(InitializeDebrisPhysics(*pDesc)))
 		return E_FAIL;
 
 	return S_OK;
@@ -104,23 +115,34 @@ void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 				else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
 					m_bThrow = false;
 
-				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
-				{
-					m_bDead = true;
-
-				}
 				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 				{
-					Weapon_CallBack();
-					pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
+					if (Weapon_CallBack())
+					{
+						pBT->Set_Flag(
+							ETOUI(CBTRoot::BTFLAG::DISSOLVE),
+							FLAGTYPE::DEL);
+					}
 				}
 			}
 		}
+
+
+	}
+
+	if (m_bDebrisPhysicsActivated)
+	{
+		UpdatePhysicData();
+		GetTransform().Update();
+	}
+	else
+	{
+		GetTransform().SetParentWorldMatrix(m_ParentMatrix);
+		GetTransform().Update();
 	}
 	
 
-	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
-	GetTransform().Update();
+
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
 	/*----------- 광윤 추가 -----------*/
@@ -130,6 +152,69 @@ void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 
 void CGurdianWeapon::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
+}
+
+_bool CGurdianWeapon::ActivateDebrisPhysics()
+{
+	if (m_bDebrisPhysicsActivated)
+		return true;
+
+	if (!m_pComPxRigidBody || !m_pComPxConvexCollider)
+		return false;
+
+	// [LSY] DEBRIS 프레임의 최신 손 소켓 자세를 확정한 뒤 월드 자세를 캡처한다.
+	if (!m_bThrow && !UpdateSocketParentMatrix())
+		return false;
+
+	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
+	GetTransform().Update();
+
+	_vector vWorldScale{};
+	_vector vWorldRotation{};
+	_vector vWorldPosition{};
+	if (!XMMatrixDecompose(
+		&vWorldScale,
+		&vWorldRotation,
+		&vWorldPosition,
+		GetTransform().GetLoadedCombinedWorldMatrix()))
+	{
+		return false;
+	}
+
+	_float3 vPosition{};
+	_float4 vRotation{};
+	_float3 vScale{};
+	XMStoreFloat3(&vPosition, vWorldPosition);
+	XMStoreFloat4(&vRotation, XMQuaternionNormalize(vWorldRotation));
+	XMStoreFloat3(&vScale, vWorldScale);
+
+	if (!m_pComPxRigidBody->SetPose(vPosition, vRotation) ||
+		!m_pComPxRigidBody->SetLinearVelocity({}) ||
+		!m_pComPxRigidBody->SetAngularVelocity({}) ||
+		!m_pComPxConvexCollider->SetSimulationEnabled(true) ||
+		!m_pComPxConvexCollider->SetQueryEnabled(true) ||
+		!m_pComPxRigidBody->SetGravityEnabled(true) ||
+		!m_pComPxRigidBody->WakeUp())
+	{
+		m_pComPxConvexCollider->SetSimulationEnabled(false);
+		m_pComPxConvexCollider->SetQueryEnabled(false);
+		m_pComPxRigidBody->SetGravityEnabled(false);
+		m_pComPxRigidBody->PutToSleep();
+		return false;
+	}
+
+	// [LSY] 이후에는 소켓 Parent가 아니라 PhysX 월드 자세만 적용한다.
+	GetTransform().SetParentWorldMatrix(std::nullopt);
+	GetTransform().SetPosition(vPosition);
+	GetTransform().SetQuaternion(vRotation);
+	GetTransform().SetScale(vScale);
+	GetTransform().Update();
+
+	m_bThrow = false;
+	m_bDebrisPhysicsActivated = true;
+	m_bDead = true;
+	m_fTick = 0.f;
+	return true;
 }
 void CGurdianWeapon::Dead_Parent(_float fTimeDelta)
 {
@@ -144,10 +229,132 @@ void CGurdianWeapon::Dead_Parent(_float fTimeDelta)
 	
 	}
 }
+
+HRESULT CGurdianWeapon::InitializeDebrisPhysics(const DESC& Desc)
+{
+	const char* pConvexPath = ResolveConvexPath(Desc.WeaponName);
+	if (!pConvexPath || !m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return E_FAIL;
+
+	{
+		CComPxRigidBody::DESC RigidBodyDesc{};
+		RigidBodyDesc.eType = CComPxRigidBody::TYPE::DYNAMIC;
+		RigidBodyDesc.fMass = std::max(Desc.fMass, 0.001f);
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody,
+			"ComPxRigidBody",
+			&RigidBodyDesc,
+			&m_pComPxRigidBody)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	auto pConvexResource = CGameInstance::Get()
+		.GetOrCreateResourceByPath<CResPhysXConvexGeometry>(
+			pConvexPath,
+			[pConvexPath]()
+			{
+				return CResPhysXConvexGeometry::CreateAndLoad(pConvexPath);
+			});
+	if (!pConvexResource)
+		return E_FAIL;
+
+	_vector vPreScale{};
+	_vector vPreRotation{};
+	_vector vPrePosition{};
+	if (!XMMatrixDecompose(
+		&vPreScale,
+		&vPreRotation,
+		&vPrePosition,
+		XMLoadFloat4x4(&m_pComModelInstance->GetModel()->Get_PreTransformMatrix())))
+	{
+		return E_FAIL;
+	}
+
+	_float3 vModelPreScale{};
+	XMStoreFloat3(&vModelPreScale, vPreScale);
+	CComPxConvexCollider::DESC ColliderDesc{};
+	ColliderDesc.pComPxRigidBody = m_pComPxRigidBody;
+	ColliderDesc.pResConvex = std::move(pConvexResource);
+	ColliderDesc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+	ColliderDesc.vScale = {
+		std::max(std::abs(vModelPreScale.x * Desc.vScale.x * Desc.vOwnerScale.x), 0.001f),
+		std::max(std::abs(vModelPreScale.y * Desc.vScale.y * Desc.vOwnerScale.y), 0.001f),
+		std::max(std::abs(vModelPreScale.z * Desc.vScale.z * Desc.vOwnerScale.z), 0.001f)
+	};
+	ColliderDesc.tFilter = Desc.tFilter;
+	if (!ColliderDesc.pResMaterial || FAILED(AddComponentFromProto(
+		ES_EngineProtoMajorType::PHYSX,
+		ES_EngineProtoPhysXComponent::Prototype_Component_ComPxConvexCollider,
+		"ComPxConvexCollider",
+		&ColliderDesc,
+		&m_pComPxConvexCollider)))
+	{
+		return E_FAIL;
+	}
+
+	if (!m_pComPxConvexCollider->SetSimulationEnabled(false) ||
+		!m_pComPxConvexCollider->SetQueryEnabled(false) ||
+		!m_pComPxRigidBody->SetGravityEnabled(false) ||
+		!m_pComPxRigidBody->SetLinearDamping(0.1f) ||
+		!m_pComPxRigidBody->SetAngularDamping(0.5f) ||
+		!m_pComPxRigidBody->SetMaxDepenetrationVelocity(3.f) ||
+		!m_pComPxRigidBody->PutToSleep())
+	{
+		return E_FAIL;
+	}
+
+	m_bDebrisPhysicsActivated = false;
+	return S_OK;
+}
+
+_bool CGurdianWeapon::UpdateSocketParentMatrix()
+{
+	auto* pParent = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle);
+	if (!pParent || m_iBoneSocketIndex < 0)
+		return false;
+
+	auto* pModel = pParent->GetComponent<CComModelInstance>("ComCModelIntance");
+	if (!pModel)
+		return false;
+
+	const auto& CombinedBoneMatrices = pModel->Get_CombinedBoneMatrices();
+	const size_t iBoneIndex = static_cast<size_t>(m_iBoneSocketIndex);
+	if (iBoneIndex >= CombinedBoneMatrices.size())
+		return false;
+
+	_matrix matSocket = XMLoadFloat4x4(&CombinedBoneMatrices[iBoneIndex]);
+	for (uint32_t i = 0; i < 3; ++i)
+	{
+		const _float fLengthSq = XMVectorGetX(XMVector3LengthSq(matSocket.r[i]));
+		if (fLengthSq <= std::numeric_limits<_float>::epsilon())
+			return false;
+		matSocket.r[i] = XMVector3Normalize(matSocket.r[i]);
+	}
+
+	XMStoreFloat4x4(
+		&m_ParentMatrix,
+		matSocket * pParent->GetTransform().GetLoadedWorldMatrix());
+	return true;
+}
+
+const char* CGurdianWeapon::ResolveConvexPath(std::string_view sWeaponName)
+{
+	if (sWeaponName == "Model_Resource_Axe")
+		return "./Resources/PhysX/Cooked/SM_Tomb_Axe.pxconvex";
+	if (sWeaponName == "Model_Resource_Mace")
+		return "./Resources/PhysX/Cooked/SM_Tomb_Mace.pxconvex";
+	if (sWeaponName == "Model_Resource_Sword")
+		return "./Resources/PhysX/Cooked/SM_Tomb_Sword.pxconvex";
+	return nullptr;
+}
+
 /*---------------------------------*/
 void CGurdianWeapon::Weapon_Throw(_float fTimeDelta)
 {
-	if (!m_bThrow)
+	if (!m_bThrow || m_bDebrisPhysicsActivated)
 		return;
 	m_fAngle = 30.f;
 	_vector vTargetLook = XMVector3Normalize(XMLoadFloat3(&m_vLook));

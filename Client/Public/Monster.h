@@ -52,6 +52,11 @@ public:
 		_bool	bDonMove{ false };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
+		// 모델 로컬 크기이며 생성 시 vScale을 적용해 CCT 월드 크기로 변환한다.
+		_float fCCTHeight{ 2.1f };
+		_float fCCTRadius{ 0.45f };
+		_float fCCTStepOffset{ 0.1f };
+		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
 
 		_float3 vWeaponScale{ 1.f,1.f,1.f };
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
@@ -62,7 +67,13 @@ public:
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
-			.iQueryMask = PX_ALL_LAYERS
+			// [LSY] 캐릭터 CCT끼리는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
+			.iQueryMask =
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::PLAYER_BODY) |
+				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 
 

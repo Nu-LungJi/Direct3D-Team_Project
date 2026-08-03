@@ -39,6 +39,8 @@ HRESULT CLevelUIEditor::Initialize()
 
 	E::CGameInstance::Get().GameObjectAllReset();
 
+	GET_SINGLE(UIManager)->CreateFadeOut();
+
 	Target_UI = std::nullopt;
 	m_iEditorMode = 1;
 	m_iButtonMode = 0;
@@ -2223,13 +2225,8 @@ void CLevelUIEditor::ClearUI()
 
 Engine::UPtr<CLevelUIEditor> CLevelUIEditor::Create()
 {
-	auto	pInstance = Engine::UPtr<CLevelUIEditor>(new CLevelUIEditor{});
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevelUIEditor");
-	}
-
+	auto pInstance = Engine::UPtr<CLevelUIEditor>(new CLevelUIEditor{});
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 

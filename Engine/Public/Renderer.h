@@ -73,6 +73,7 @@ public:
 	HRESULT Generate_CubeMapFace(ID3D11RenderTargetView** _RTV, ID3D11Texture2D* _Texture, uint32_t _FaceIndex, uint32_t _MipLevel);
 
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
+	VOID	Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
 
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
@@ -249,6 +250,7 @@ private:
 	ComPtr<ID3D11ShaderResourceView>	VolumeTexture = { nullptr };
 	ComPtr<ID3D11UnorderedAccessView>	VolumeUAV = { nullptr };
 
+	_float								m_fChromaticRingAlpha{};
 private:
 	HRESULT RenderPriority();
 	HRESULT RenderNonBlend();

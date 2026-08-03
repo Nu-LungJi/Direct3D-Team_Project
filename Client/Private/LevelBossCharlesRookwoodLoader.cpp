@@ -53,6 +53,10 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 			{
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("TombBossIntro")))
+			{
+				return false;
+			}
 
 			// 디버그 플레이어 프로토타입 등록
 			if (FAILED(E::CGameInstance::Get().AddPrototype(

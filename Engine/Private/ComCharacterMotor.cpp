@@ -15,6 +15,7 @@ CComCharacterMotor::CComCharacterMotor(const CComCharacterMotor& rhs)
 	, m_fGravity{ rhs.m_fGravity }
 	, m_fJumpVelocity{ rhs.m_fJumpVelocity }
 	, m_fMinMoveDistance{ rhs.m_fMinMoveDistance }
+	, m_vControllerCenterOffset{ rhs.m_vControllerCenterOffset }
 	, m_bUseGravity{ rhs.m_bUseGravity }
 	, m_bSyncTransform{ rhs.m_bSyncTransform }
 {
@@ -42,6 +43,7 @@ HRESULT CComCharacterMotor::Initialize(void* pArg)
 	m_fGravity = pDesc->fGravity;
 	m_fJumpVelocity = pDesc->fJumpVelocity;
 	m_fMinMoveDistance = std::max(0.f, pDesc->fMinMoveDistance);
+	m_vControllerCenterOffset = pDesc->vControllerCenterOffset;
 	m_bUseGravity = pDesc->bUseGravity;
 	m_bSyncTransform = pDesc->bSyncTransform;
 	m_bGrounded = m_pCharacterController->IsGrounded();
@@ -57,8 +59,13 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 	_float3 vWarpPosition{};
 	if (m_pMoveIntent->ConsumeWarpRequest(vWarpPosition))
 	{
+		const _float3 vControllerPosition{
+			vWarpPosition.x + m_vControllerCenterOffset.x,
+			vWarpPosition.y + m_vControllerCenterOffset.y,
+			vWarpPosition.z + m_vControllerCenterOffset.z };
+
 		m_pMoveIntent->ClearExternalDisplacement();
-		m_pCharacterController->SetPosition(vWarpPosition);
+		m_pCharacterController->SetPosition(vControllerPosition);
 		m_vVelocity = {};
 		m_bGrounded = false;
 		m_eLastCollisionFlag = PX_CCT_COLLISION_FLAG::NONE;
@@ -128,7 +135,15 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 		m_vVelocity.y = 0.f;
 
 	if (m_bSyncTransform && m_pGameObject)
-		m_pGameObject->GetTransform().SetPosition(m_pCharacterController->GetPosition());
+	{
+		const _float3 vControllerPosition =
+			m_pCharacterController->GetPosition();
+		const _float3 vGameObjectPosition{
+			vControllerPosition.x - m_vControllerCenterOffset.x,
+			vControllerPosition.y - m_vControllerCenterOffset.y,
+			vControllerPosition.z - m_vControllerCenterOffset.z };
+		m_pGameObject->GetTransform().SetPosition(vGameObjectPosition);
+	}
 
 	if (tOutput.bFacingRequested && m_pGameObject)
 	{
@@ -169,6 +184,10 @@ void CComCharacterMotor::UpdateGUI()
 	ImGui::Text("Grounded: %s", m_bGrounded ? "true" : "false");
 	ImGui::DragFloat("Gravity", &m_fGravity, 0.1f);
 	ImGui::DragFloat("Jump Velocity", &m_fJumpVelocity, 0.1f, 0.f);
+	ImGui::DragFloat3(
+		"Controller Center Offset",
+		reinterpret_cast<_float*>(&m_vControllerCenterOffset),
+		0.01f);
 	ImGui::Checkbox("Use Gravity", &m_bUseGravity);
 	ImGui::Checkbox("Sync Transform", &m_bSyncTransform);
 }

@@ -102,7 +102,9 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	m_pNvClothManager = CNvClothManager::Create(
-		ppDevice.Get(), ppContext.Get());
+		ppDevice.Get(),
+		ppContext.Get(),
+		EngineDesc.eNvClothBackend);
 	if (!m_pNvClothManager)
 	{
 		return E_FAIL;
@@ -1161,7 +1163,7 @@ HRESULT CGameInstance::Generate_ShadowMapOutput(ID3D11UnorderedAccessView** _Sha
 VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale) {
 	m_pRenderer->Render_ChromaticRing(_WorldPosition, _Duration, _Scale);
 }
-
+VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
 #pragma endregion
 
 #pragma region ANIMEDIT_MANAGER
@@ -1285,6 +1287,9 @@ std::optional<CHandle> CGameInstance::Allocate_EffectLight(XMVECTOR _WorldPos, _
 HRESULT	CGameInstance::Capture_ShadowMap() {
 	return m_pLightManager->Capture_ShadowMap();
 }
+VOID	CGameInstance::Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds) {
+	m_pLightManager->Notify_StaticShadowSceneChanged(ChangedBounds);
+}
 #pragma endregion
 #pragma endregion
 
@@ -1364,8 +1369,8 @@ void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, c
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
-HRESULT CGameInstance::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch) {
-	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext.Get(), _LightHandle, _bStaticBatch);
+HRESULT CGameInstance::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex) {
+	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext.Get(), _LightHandle, _bStaticBatch, _PointFaceIndex);
 }
 _bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
 	return m_pModel_Instance_Manager->Has_ActiveDynamicShadowBatch();

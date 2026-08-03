@@ -152,12 +152,18 @@ VS_SHADOW_OUT VSShadow(VS_IN In)
         mul(g_matView, g_matProj));
     return Out;
 }
+/*----------- 광윤 수정 -----------*/
+//struct VS_POINT_SHADOW_OUT
+//{
+//    float4 vWorldPos : POSITION;
+//};
 
 struct VS_POINT_SHADOW_OUT
 {
-    float4 vWorldPos : POSITION;
+	float4 Position : SV_POSITION;
+	float3 WorldPos : TEXCOORD0;
 };
-
+/*---------------------------------*/
 VS_POINT_SHADOW_OUT VSPointShadow(VS_IN In)
 {
     VS_POINT_SHADOW_OUT Out;
@@ -193,9 +199,19 @@ VS_POINT_SHADOW_OUT VSPointShadow(VS_IN In)
         vFrameBinormal * In.vPositionOffset.y +
         vFrameNormal * In.vPositionOffset.z;
 
-    Out.vWorldPos = mul(
-        float4(vClothPosition, 1.f),
-        g_matWorld);
+	const float4 LocalPosition = float4(vClothPosition, 1.f);
+
+	const float4 WorldPosition = mul(LocalPosition, g_matWorld);
+	
+	/*----------- 광윤 수정 -----------*/
+	Out.Position = mul(LocalPosition, g_matWVP);
+	Out.WorldPos = WorldPosition.xyz;
+	
+    //Out.vWorldPos = mul(
+    //    float4(vClothPosition, 1.f),
+    //    g_matWorld);
+	/*---------------------------------*/
+	
     return Out;
 }
 

@@ -6,6 +6,7 @@
 #include "GameInstance.h"
 #include "MapMeshGpuCuller.h"
 #include "Resources.h"
+#include "CollBox.h"
 
 NS_USING(Engine)
 
@@ -83,10 +84,6 @@ HRESULT CMapMeshObject::Initialize(void* pArg)
 void CMapMeshObject::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
-
-	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::STATIC, this);
-	/*---------------------------------*/
 
 	// 컬링된 애면 렌더러 등록x
 	if (m_bRenderEnable == false)
@@ -228,6 +225,10 @@ HRESULT CMapMeshObject::Render_Shadow(ID3D11DeviceContext* pContext, const E::RE
 	pContext->PSSetShaderResources(0, 4, pSRVs);
 
 	return S_OK;
+}
+
+bool CMapMeshObject::GetShadowBounds(BoundingBox& OutBounds) const {
+	return GetOcclusionBounds(OutBounds);
 }
 /*---------------------------------*/
 

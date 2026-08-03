@@ -77,7 +77,9 @@ private: // ************ 계속 바뀌는 유아이 ******************* //
 	CHandle m_PotionCount{};
 	std::vector<CHandle> m_PlaySceneStatic{};
 
-	std::optional<CHandle> m_MonsterHP{std::nullopt};
+	std::optional<CHandle> m_MonsterHP{ std::nullopt };
+	std::optional<CHandle> m_TargetHandle{ std::nullopt };
+	std::optional<CHandle> m_ReserveTargetHandle{std::nullopt};
 
 	/*****************스펠 슬롯 유아이********************/
 	CHandle m_SpellShortCutKeySlot[4] = {};
@@ -114,16 +116,21 @@ private:
 	CUIObject* SafeGetOBJ(CHandle pHandle);
 
 	/******몬스터 hp********/
+	public:
 	void CreateMonsterHP();
+	void DeleteMonsterHP();
 	void SetMonsterHPBool(_bool isHP) { m_bMonsterHP = isHP; }
 	void SetMonsterHPNull() { m_MonsterHP = std::nullopt; }
+	void UpdateMonsterHP();
 
 	/**********모션************/
+	private:
 	void PlayScaleAlphaDownDelete(CHandle pHandle);
 	void PlayFadeOutDelete(CHandle pHandle, float delaytime = 0.f, float playtime = 0.3f);
 	void PlayFadeOutOnly(CHandle pHandle);
 	void PlayFadeInOnly(CHandle pHandle);
 	void PlayMonsterHPDelete(CHandle pHandle);
+	void PlayMonsterHPDeleteCreate(CHandle pHandle);
 	void PlayDividerUPWidth(CHandle pHandle);
 	void PlayAlphaUP(CHandle pHandle, float delaytime = 2.f, float playTime = 1.f);
 public:

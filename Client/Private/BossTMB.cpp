@@ -55,7 +55,20 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.vPosition = MonDesc->vPos;
+		const _float fHorizontalScale =
+			std::max(std::abs(MonDesc->vScale.x), std::abs(MonDesc->vScale.z));
+		const _float fVerticalScale = std::abs(MonDesc->vScale.y);
+		const _float3 vCenterOffset{
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * fVerticalScale,
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
+		Desc.fHeight = MonDesc->fCCTHeight * fVerticalScale;
+		Desc.fRadius = MonDesc->fCCTRadius * fHorizontalScale;
+		Desc.fStepOffset = MonDesc->fCCTStepOffset;
+		Desc.vPosition = {
+			MonDesc->vPos.x + vCenterOffset.x,
+			MonDesc->vPos.y + vCenterOffset.y,
+			MonDesc->vPos.z + vCenterOffset.z };
 		Desc.tFilter = MonDesc->tFilter;
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PHYSX,
@@ -113,6 +126,10 @@ HRESULT CBossTMB::Initialize(void* pArg)
 		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
+		Desc.vControllerCenterOffset = {
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * std::abs(MonDesc->vScale.y),
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(
@@ -222,6 +239,11 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_fEMissiveColor = { 0.75f,0.9f,1.f};
 
+	/*----------- 광윤 추가 -----------*/
+	// 보스가 빛을 등지면 너무 어두워져서 전면만 추가 라이트 설치
+	AdditionalLightHandle = CGameInstance::Get().Allocate_EffectLight(GetTransform().GetLoadedPostion(), 500.f, { 0.47f, 1.f, 1.f }, 15.f, 20.f, 99999.f, { 0.f, 0.f, 0.f });
+	/*---------------------------------*/
+
 
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
 	return S_OK;
@@ -243,7 +265,7 @@ void CBossTMB::Active_Skill()
 			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
 		m_bSkillLoop = true;
 	}
-
+		
 	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 	
 	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
@@ -261,9 +283,7 @@ void CBossTMB::Active_Skill()
 		
 		m_iPreSkill = m_iCurSkill;
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
-
 	}
-	
 }
 void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -277,6 +297,17 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bDonMove)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	/*----------- 광윤 추가 -----------*/
+	auto AdditionalLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(AdditionalLightHandle.value());
+	if (nullptr == AdditionalLight) return;
+	
+	XMVECTOR LookVec = GetTransform().GetState(STATE::LOOK);
+	XMVECTOR PosVec = GetTransform().GetState(STATE::POSITION);
+	
+	_float3	 LightOffset = { 0.f, 10.f, 0.f };
+	
+	AdditionalLight->Set_LightPosition(PosVec + LookVec * 12.f + XMLoadFloat3(&LightOffset));
+	/*---------------------------------*/
 }
 
 void CBossTMB::Update(E::_float fTimeDelta)

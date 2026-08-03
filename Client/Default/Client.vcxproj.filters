@@ -58,6 +58,12 @@
     <Filter Include="Loader\Level\BossCharlesRookwood">
       <UniqueIdentifier>{135bdbd6-2572-49c2-9ed7-a4bfc53cfd5c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level\HogwartWorld">
+      <UniqueIdentifier>{c50fcdfd-c5a3-461f-b18b-14cdd0c9ba77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\HogwartWorld">
+      <UniqueIdentifier>{d1dc4bfa-494a-4672-8455-dc79591979fb}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\DebugPlayer">
       <UniqueIdentifier>{18bf3c9f-aaf9-4b4c-8f7d-28b960f8e56a}</UniqueIdentifier>
     </Filter>
@@ -256,11 +262,20 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
       <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\SkyBox">
+      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\SkyBox">
+      <UniqueIdentifier>{dcc79b65-c72c-402f-b79c-9a171f399c82}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Monster\00.Parents">
       <UniqueIdentifier>{abad3cbf-f984-44ce-8798-0e9150fa9f2b}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\Monster\TombBoss\TombBossBullet">
       <UniqueIdentifier>{892b8ca5-2abf-46df-8ece-4f0e6b29d275}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_RagdollController">
+      <UniqueIdentifier>{7f570a9d-bd7f-4bf3-9da7-61d49c14c612}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -320,6 +335,12 @@
     </ClInclude>
     <ClInclude Include="..\public\LevelBossCharlesRookwoodLoader.h">
       <Filter>Loader\Level\BossCharlesRookwood</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelHogwartWorld.h">
+      <Filter>Level\HogwartWorld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelHogwartWorldLoader.h">
+      <Filter>Loader\Level\HogwartWorld</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Client_Function.h">
       <Filter>99.Defines</Filter>
@@ -600,6 +621,9 @@
     <ClInclude Include="..\Public\ClientEvents.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\SkyCloudyCube.h">
+      <Filter>GameObject\SkyBox</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Monster.h">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClInclude>
@@ -614,6 +638,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\StarBurst.h">
       <Filter>GameObject\Monster\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\PlayerRagdollController.h">
+      <Filter>GameObject\Player\Player_RagdollController</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTCinematic.h">
       <Filter>GameObject\AI\Action</Filter>
@@ -672,14 +699,17 @@
     <ClCompile Include="..\private\LevelBossCharlesRookwoodLoader.cpp">
       <Filter>Loader\Level\BossCharlesRookwood</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LevelHogwartWorld.cpp">
+      <Filter>Level\HogwartWorld</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelHogwartWorldLoader.cpp">
+      <Filter>Loader\Level\HogwartWorld</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\DebugPlayer.cpp">
       <Filter>GameObject\DebugPlayer</Filter>
     </ClCompile>
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp">
       <Filter>GameObject\DebugPlayer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player.cpp">
-      <Filter>GameObject\Player</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp">
       <Filter>GameObject\Player\Camera</Filter>
@@ -922,6 +952,19 @@
     <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BossMace.cpp" />
+    <ClCompile Include="..\Private\PlayerRagdollController.cpp">
+      <Filter>GameObject\Player\Player_RagdollController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\SkyCloudyCube.cpp">
+      <Filter>GameObject\SkyBox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossMace.cpp">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\BTCinematic.cpp">
       <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
@@ -1005,5 +1048,8 @@
     <ClCompile Include="..\Private\VideoObject.cpp">
       <Filter>GameObject\UI\VideoObject</Filter>
     </ClCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl">
+      <Filter>ShaderFiles\SkyBox</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
