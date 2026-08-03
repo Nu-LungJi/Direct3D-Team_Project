@@ -17,6 +17,7 @@ class CComCharacterMoveIntent;
 class CComCharacterMotor;
 class CComPxRigidBody;
 class CComPxSphereCollider;
+class CComSound;
 NS_END
 
 
@@ -34,6 +35,19 @@ typedef struct HitTable
 	_float						fBlend{ 0.1f };
 
 }HITTABLE;
+
+typedef struct monsound
+{
+	SOUND_3D_DESC	 str3DSound{};
+	SOUND_PLAY_DESC  SoundPlay{};
+	_string			 SoundKey{};
+	_float			 fCurRatioTime{};
+	_float			 fPlayRatio{};
+
+	_bool			 bOnlyOne{ false };
+	_bool			 bPlayed{};
+	SOUND_ID iSoundID{ INVALID_SOUND_ID };
+}MONSOUND;
 
 typedef struct MonsterHitInfo
 {
@@ -86,13 +100,14 @@ public:
 	void UpdateGUI();
 	HRESULT InitializePrototype(void* pArg);
 	HRESULT Initialize(void* pArg) override;
+
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
-
+		
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	bool	GetShadowBounds(BoundingBox& OutBounds) const override;
@@ -119,10 +134,12 @@ public:
 	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 
-
+	SOUND_ID 						Play_Sound(const MONSOUND& MonSound);
 	virtual void				Skill_Finished();
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
+	void						Get_SoundKey(_string& CursoundName);
+
 protected:
 
 	uint32_t					Find_SkillNum(ATTMON eType);
@@ -150,7 +167,7 @@ protected:
 	CComCharacterMotor* m_pCharacterMotor{};
 	CComPxRigidBody* m_pComRigidBody{};
 	CComPxSphereCollider* m_pComSphereCol{};
-
+	CComSound* m_pComSound{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 	
@@ -182,6 +199,7 @@ protected:
 	MONSTER_TYPE						m_eMonType{ MONSTER_TYPE::NORMAL };
 	std::vector<E::SPAWN_COMMAND>		m_Effects[ETOUI(ATTMON::END)];
 	CHandle								m_TargetHandle{};
+	std::unordered_map<_string, std::vector<_string>> m_SoundTable;
 
 	std::map<ATTMON, uint32_t>			m_MonSkillLists;
 	//파티클 재설정용
