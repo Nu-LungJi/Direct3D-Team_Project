@@ -115,16 +115,14 @@ void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 				else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
 					m_bThrow = false;
 
-				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
-				{
-					m_bDead = true;
-					m_bDebrisPhysicsActivated = true;
-
-				}
 				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
 				{
-					Weapon_CallBack();
-					pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
+					if (Weapon_CallBack())
+					{
+						pBT->Set_Flag(
+							ETOUI(CBTRoot::BTFLAG::DISSOLVE),
+							FLAGTYPE::DEL);
+					}
 				}
 			}
 		}
@@ -132,7 +130,7 @@ void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 
 	}
 
-	if (m_bDead && m_bDebrisPhysicsActivated)
+	if (m_bDebrisPhysicsActivated)
 	{
 		UpdatePhysicData();
 		GetTransform().Update();
@@ -214,6 +212,8 @@ _bool CGurdianWeapon::ActivateDebrisPhysics()
 
 	m_bThrow = false;
 	m_bDebrisPhysicsActivated = true;
+	m_bDead = true;
+	m_fTick = 0.f;
 	return true;
 }
 void CGurdianWeapon::Dead_Parent(_float fTimeDelta)
