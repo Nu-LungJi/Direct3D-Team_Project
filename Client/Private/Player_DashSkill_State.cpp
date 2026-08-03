@@ -72,6 +72,7 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 				.bLoop = false
 			});
 	}
+	pPlayer->SetInvincible(true);
 	auto k = pPlayer->GetTransform().GetWorldMatrix();
 	m_iDashBodyEffectID = CGameInstance::Get().PlayEffect("PlayerBodyDash", *pPlayer->GetTransform().GetWorldMatrix(), _vector{},
 		[this, pPlayer](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
@@ -296,7 +297,7 @@ void CPlayer_DashSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 		pPlayer->GetTransform().SetScale(_float3{ 1.f, 1.f, 1.f });
 	}
-
+	pPlayer->SetInvincible(false);
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_vDashDirection = {};

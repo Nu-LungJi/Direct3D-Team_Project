@@ -51,7 +51,7 @@ void CPlayer_Roll_State::Enter(CStateMachine* pStateMachine)
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
 	}
-
+	player->SetInvincible(true);
 	animator->Play_Anim(m_iRollAnimation, false, 0.1f);
 	m_fPreviousAnimRatio = 0.f;
 }
@@ -65,7 +65,7 @@ void CPlayer_Roll_State::Exit(CStateMachine* pStateMachine)
 	player->SetRootMotionTranslationActive(false);
 	player->SetRootMotionRotationActive(false);
 	player->SetMovementLocked(false);
-
+	player->SetInvincible(false);
 	if (auto* moveIntent = player->GetMoveIntent())
 		moveIntent->ClearMoveIntent();
 
