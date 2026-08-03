@@ -50,6 +50,10 @@ public:
 		SOUND_LOAD_TYPE eLoadType = SOUND_LOAD_TYPE::SAMPLE);
 
 	_bool StopSlot(const StringID& sSlotID);
+	_bool FadeSlotTo(const StringID& sSlotID, _float fTargetVolume,
+		_float fDuration);
+	_bool FadeOutAndStopSlot(const StringID& sSlotID, _float fDuration);
+	_bool FadeOutAndDetachSlot(const StringID& sSlotID, _float fDuration);
 	void StopAll();
 	_bool SetSlotPaused(const StringID& sSlotID, _bool bPaused);
 	_bool SetSlotVolume(const StringID& sSlotID, _float fVolume);

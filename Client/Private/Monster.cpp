@@ -19,6 +19,7 @@
 
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
+#include "ClientEvents.h"
 #include "ComSound.h"
 NS_USING(Client)
 
@@ -29,6 +30,8 @@ CMonster::CMonster()
 
 CMonster::~CMonster()
 {
+	// 구독해제
+	// CGameInstance::Get().EventUnsubscribeAll(GetHandle());
 }
 
 void CMonster::UpdateGUI()
@@ -116,6 +119,9 @@ HRESULT CMonster::Initialize(void* pArg)
 	}
 	{
 		CComSound::DESC Desc{};
+
+	// 모든 몬스터들이 고대마법에 공격캔슬하도록 구독
+	// CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { CancelAttack(); });
 
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,

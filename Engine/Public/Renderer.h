@@ -75,6 +75,8 @@ public:
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID	Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
 
+	VOID	Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density);
+
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
 
@@ -265,9 +267,9 @@ private:
 	HRESULT RenderUI();
 
 private:
-	_bool			ApplyFilter		= { false };		// 필터 적용 ON-OFF
-	_bool			ApplyVolumetric = { false };		// 볼류메트릭 효과 ON-OFF
-	_bool			ApplyShadow		= { false };		// 그림자 ON-OFF
+	_bool			ApplyFilter		= { true };		// 필터 적용 ON-OFF
+	_bool			ApplyVolumetric = { true };		// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyShadow		= { true };		// 그림자 ON-OFF
 
 	RENDER_CTX		RenderContext = {};
 	XMMATRIX		ShadowLightVP{};
@@ -290,13 +292,7 @@ private:
 
 	_float			TimeAccumulation{};
 
-	_float3 m_fFogCenterPos{};
-	_float	m_fFogIntensity{};
-	_float3	m_fFogColor{ 1.f, 1.f, 1.f };
-	_float	m_fFogMaxHeight{};
-	_float	m_fFogStartPos{};
-	_float	m_fFogEndPos{};
-	_float	m_fFogDensity{};
+	CB_VLFOG		m_fFogInfo{};
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

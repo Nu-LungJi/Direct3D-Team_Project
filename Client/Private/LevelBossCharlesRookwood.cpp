@@ -82,6 +82,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
+	CGameInstance::Get().Set_VolumetricFog({-28.f, 15.f, 7.f }, { 120.f / 255.f, 255.f / 255.f, 255.f / 255.f }, 0.05f, 120.f, 250.f, 1000.f, 0.0005f);
+
 	return S_OK;
 }
 
@@ -268,18 +270,33 @@ HRESULT CLevelBossCharlesRookwood::SpawnAmbientSound()
 	desc.tSoundData.sName = "Bgm";
 	desc.tSoundData.sSoundPath = "./Resources/SampleClient/Sound/BossCharlesRookwood/Ambient/Guardians_Awaken.wav";
 	desc.tSoundData.fVolume = 0.8f;
+	desc.tSoundData.fFadeInDuration = 1.f;
+	desc.tSoundData.fFadeOutDuration = 1.f;
 	desc.tSoundData.bLoop = true;
 	desc.tSoundData.bAutoPlay = true;
-	auto h = CGameInstance::Get().AddGameObjectToLayer(
+	const auto hAmbientSound = CGameInstance::Get().AddGameObjectToLayer(
 		ES_EngineProtoMajorType::PERMANENT,
 		ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
 		"Layer_AmbientSound",
 		&desc);
-	if (!h)
+	if (!hAmbientSound)
 	{
 		return E_FAIL;
 	}
+
+	m_hAmbientSound = *hAmbientSound;
 	return S_OK;
+}
+
+void CLevelBossCharlesRookwood::FadeOutAmbientSound()
+{
+	if (auto* pAmbientSound = CGameInstance::Get().
+		GetGameObjectByHandleT<CAmbientSound2DObject>(m_hAmbientSound))
+	{
+		pAmbientSound->FadeOutAndDetach();
+	}
+
+	m_hAmbientSound = {};
 }
 
 HRESULT CLevelBossCharlesRookwood::SpawnSkyBox()
@@ -314,7 +331,7 @@ HRESULT CLevelBossCharlesRookwood::SpawnLightPlacement()
 	desc.sObjectTag =
 		"BossCharlesRookwoodLightPlacement";
 	desc.sLightFileName =
-		"Level_BossCharlesRookwood";
+		"BossStage_LightProtoType_A";
 
 	return CGameInstance::Get().
 		AddGameObjectToLayer(
@@ -357,5 +374,6 @@ HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 
 void CLevelBossCharlesRookwood::Free()
 {
+	FadeOutAmbientSound();
 	CLevel::Free();
 }

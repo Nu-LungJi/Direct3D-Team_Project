@@ -38,7 +38,7 @@ void CPlayer_RepairoSkill_State::Enter(CStateMachine* pStateMachine)
 			"./Resources/SampleClient/Sound/Player/Spell/Reparo/Reparo_Man.wav",
 			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::VOICE,
-				.fVolume = 0.1f,
+				.fVolume = 2.f,
 				.fPitch = 1.f,
 				.iPriority = 64,
 				.bLoop = false

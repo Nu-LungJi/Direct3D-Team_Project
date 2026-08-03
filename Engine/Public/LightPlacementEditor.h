@@ -63,7 +63,7 @@ private:
 	_bool m_bShowAllLights{};
 	_bool m_bShowInfluenceRange{ true };
 	_bool m_bShowDirection{ true };
-	_bool m_bShowEffectLights{ true };
+	_bool m_bShowEffectLights{ };
 	_bool m_bEffectLightDepthTest{ true };
 	_bool m_bSnapEnabled{};
 	_bool m_bManualFileNameInput{};

@@ -37,7 +37,7 @@ private:
 	std::unordered_map<StringID, std::vector<const CCollider*>> m_Colliders{};
 	std::unordered_map<const CCollider*, _float4> m_DbgColor{};
 
-	_bool m_bRender{ true };
+	_bool m_bRender{ };
 	std::unordered_map<StringID, _bool> m_DbgRenders{};
 
 

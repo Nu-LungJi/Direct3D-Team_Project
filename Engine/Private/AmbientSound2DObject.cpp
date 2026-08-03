@@ -74,6 +74,9 @@ void CAmbientSound2DObject::UpdateGUI()
 	ImGui::SameLine();
 	if (ImGui::Button("Stop Ambient 2D"))
 		Stop();
+	ImGui::SameLine();
+	if (ImGui::Button("Fade Out Ambient 2D"))
+		FadeOutAndStop();
 }
 
 SOUND_ID CAmbientSound2DObject::Play()
@@ -92,6 +95,7 @@ SOUND_ID CAmbientSound2DObject::Play()
 			.sBusID = m_tSoundData.sBusID,
 			.fVolume = m_tSoundData.fVolume,
 			.fPitch = m_tSoundData.fPitch,
+			.fFadeInDuration = m_tSoundData.fFadeInDuration,
 			.iPriority = m_tSoundData.iPriority,
 			.bLoop = m_tSoundData.bLoop,
 			.bStartPaused = false
@@ -110,6 +114,28 @@ _bool CAmbientSound2DObject::Stop()
 	const _bool bStopped = m_pComSound->StopSlot(GetAmbientSlotID());
 	m_iSoundID = INVALID_SOUND_ID;
 	return bStopped;
+}
+
+_bool CAmbientSound2DObject::FadeOutAndStop()
+{
+	if (m_pComSound == nullptr)
+		return false;
+
+	return m_pComSound->FadeOutAndStopSlot(
+		GetAmbientSlotID(), m_tSoundData.fFadeOutDuration);
+}
+
+_bool CAmbientSound2DObject::FadeOutAndDetach()
+{
+	if (m_pComSound == nullptr)
+		return false;
+
+	const _bool bScheduled = m_pComSound->FadeOutAndDetachSlot(
+		GetAmbientSlotID(), m_tSoundData.fFadeOutDuration);
+	if (bScheduled)
+		m_iSoundID = INVALID_SOUND_ID;
+
+	return bScheduled;
 }
 
 _bool CAmbientSound2DObject::ApplyData(
@@ -139,7 +165,10 @@ void CAmbientSound2DObject::SetEnabled(_bool bEnabled)
 	m_tSoundData.bEnabled = bEnabled;
 	if (!bEnabled)
 	{
-		Stop();
+		if (m_tSoundData.fFadeOutDuration > 0.f)
+			FadeOutAndStop();
+		else
+			Stop();
 		return;
 	}
 
@@ -183,6 +212,8 @@ void CAmbientSound2DObject::SanitizeData(
 {
 	tData.fVolume = std::max(tData.fVolume, 0.f);
 	tData.fPitch = std::max(tData.fPitch, 0.01f);
+	tData.fFadeInDuration = std::max(tData.fFadeInDuration, 0.f);
+	tData.fFadeOutDuration = std::max(tData.fFadeOutDuration, 0.f);
 	tData.iPriority = std::clamp(tData.iPriority, 0, 256);
 	if (tData.sBusID.hash == 0)
 		tData.sBusID = SOUND_MASTER_BUS_ID;

@@ -241,7 +241,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		CComPxSphereCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 0.4f });
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 0.16f });
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_LEFT_FOOT);
 		Desc.bIsTrigger = true;
@@ -260,7 +260,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		CComPxSphereCollider::DESC Desc{};
 		Desc.pComPxRigidBody = m_pComPxRigidBody;
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 0.4f });
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 0.16f });
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_RIGHT_FOOT);
 		Desc.bIsTrigger = true;
@@ -440,7 +440,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
 	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
-	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
+	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
 
 	
@@ -997,6 +998,9 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
 {
+	m_fFootstepSoundCooldown =
+		std::max(0.f, m_fFootstepSoundCooldown - fTimeDelta);
+
 	// [LSY] 랙돌 전환 중에는 CCT와 캐릭터 모터의 일반 물리 갱신을 중단한다.
 	if (m_pRagdollController)
 	{
@@ -1034,7 +1038,8 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 			XMMatrixInverse(nullptr, PlayerPhysicsWorld);
 
 		const auto UpdateColliderLocalPose =
-			[&](CComPxCollider* pCollider, int32_t iBoneIndex)
+			[&](CComPxCollider* pCollider, int32_t iBoneIndex,
+				_float fVerticalOffset = 0.f)
 		{
 			if (!pCollider || iBoneIndex < 0 ||
 				static_cast<size_t>(iBoneIndex) >= CombinedBones.size())
@@ -1058,6 +1063,7 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 				_float3 vLocalPosition{};
 				_float4 vLocalRotation{};
 				XMStoreFloat3(&vLocalPosition, vTranslation);
+				vLocalPosition.y += fVerticalOffset;
 				XMStoreFloat4(&vLocalRotation,
 					XMQuaternionNormalize(vRotation));
 				pCollider->SetLocalPosition(vLocalPosition);
@@ -1066,8 +1072,10 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 		};
 
 		UpdateColliderLocalPose(m_pComPxBoxCollider, m_iHurtBoxBoneIndex);
-		UpdateColliderLocalPose(m_pComPxLeftFootCollider, m_iLeftFootBoneIndex);
-		UpdateColliderLocalPose(m_pComPxRightFootCollider, m_iRightFootBoneIndex);
+		UpdateColliderLocalPose(
+			m_pComPxLeftFootCollider, m_iLeftFootBoneIndex, -0.12f);
+		UpdateColliderLocalPose(
+			m_pComPxRightFootCollider, m_iRightFootBoneIndex, -0.12f);
 	}
 
 	if (m_pRagdollController)
@@ -1775,7 +1783,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 
 _bool CPlayer::OnQueryHit(int32_t iDamage)
 {
-	if (iDamage <= 0 || m_iHp <= 0)
+	if (iDamage <= 0 || m_iHp <= 0 || m_bInvincible)
 		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
@@ -1807,7 +1815,33 @@ void CPlayer::Attack_Magic_Bullet()
 
 	if (!pWeapon)
 		return;
+	if (m_pComSound)
+	{
+		static constexpr const char* BASIC_ATTACK_SOUNDS[] =
+		{
+			"./Resources/SampleClient/Sound/Player/SkillEffect/"
+			"BasicAttack/BasicAttack_SpellShot_01.wav",
 
+		};
+
+		constexpr int SOUND_COUNT =
+			static_cast<int>(std::size(BASIC_ATTACK_SOUNDS));
+
+		const int iSoundIndex =
+			Engine::RandInt(0, SOUND_COUNT - 1);
+
+		m_pComSound->PlaySlot2D(
+			E::StringID{ "PLAYER_BASIC_ATTACK" },
+			BASIC_ATTACK_SOUNDS[iSoundIndex],
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.15f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			},
+			SOUND_SLOT_PLAY_MODE::OVERLAP);
+	}
 	// 무기 발사 위치
 	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 
@@ -1872,12 +1906,74 @@ void CPlayer::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+
+	if (!info.bSelfIsTrigger)
+		return;
+
+	const auto ePlayerCollision =
+		static_cast<PLAYER_COLLISIONS>(info.iSelfShapeSubIndex);
+	if (ePlayerCollision == PLAYER_COLLISIONS::PLAYER_LEFT_FOOT ||
+		ePlayerCollision == PLAYER_COLLISIONS::PLAYER_RIGHT_FOOT)
+	{
+		PlayFootstepSound(ePlayerCollision);
+	}
 }
 
 void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 	DEBUG_LOG_STR(std::string("[PX][Character] Trigger Exit : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
+}
+
+void CPlayer::PlayFootstepSound(PLAYER_COLLISIONS eFoot)
+{
+	if (!m_pComSound || !m_pComCharacterMotor || !m_pComMoveIntent ||
+		m_fFootstepSoundCooldown > 0.f ||
+		!m_pComCharacterMotor->IsGrounded() ||
+		(eFoot != PLAYER_COLLISIONS::PLAYER_LEFT_FOOT &&
+		 eFoot != PLAYER_COLLISIONS::PLAYER_RIGHT_FOOT))
+		return;
+
+	const auto& tMoveOutput = m_pComMoveIntent->GetOutput();
+	if (!tMoveOutput.bMoveRequested ||
+		tMoveOutput.fMoveSpeed <= std::numeric_limits<_float>::epsilon())
+		return;
+
+	const _float fPitch = 1.f;
+
+	const CComPxCollider* pFootCollider =
+		eFoot == PLAYER_COLLISIONS::PLAYER_LEFT_FOOT
+		? static_cast<CComPxCollider*>(m_pComPxLeftFootCollider)
+		: static_cast<CComPxCollider*>(m_pComPxRightFootCollider);
+	_float3 vSoundPosition = GetTransform().GetPosition();
+	if (pFootCollider)
+	{
+		const _float3 vLocalPosition = pFootCollider->GetLocalPosition();
+		_vector vWorldPosition = XMVector3Rotate(
+			XMLoadFloat3(&vLocalPosition),
+			GetTransform().GetLoadedQuaternion());
+		vWorldPosition += XMLoadFloat3(&vSoundPosition);
+		XMStoreFloat3(&vSoundPosition, vWorldPosition);
+	}
+
+	const SOUND_ID iSoundID = m_pComSound->Play3D(
+		"./Resources/SampleClient/Sound/Player/StepSound/Step_01.wav",
+		SOUND_3D_DESC{
+			.vPosition = vSoundPosition,
+			.fMinDistance = 2.f,
+			.fMaxDistance = 15.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.25f,
+			.fPitch = fPitch,
+			.iPriority = 96,
+			.bLoop = false
+		});
+
+	if (iSoundID != INVALID_SOUND_ID)
+		m_fFootstepSoundCooldown = 0.12f;
 }
 
 /*----------- 광윤 추가 -----------*/

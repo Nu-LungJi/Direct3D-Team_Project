@@ -70,6 +70,8 @@ void CSoundManager::UpdateGUI()
 	std::optional<SOUND_BUS_ID> sStopBusID{};
 	std::optional<SOUND_BUS_ID> sRemoveBusID{};
 	_bool bClearAll{};
+	static _float fFadeTestTargetVolume{ 1.f };
+	static _float fFadeTestDuration{ 1.f };
 
 	if (!ImGui::Begin("SoundManager"))
 	{
@@ -85,6 +87,17 @@ void CSoundManager::UpdateGUI()
 	ImGui::Checkbox(
 		"Draw 3D Sound Ranges",
 		&m_b3DDebugRenderEnabled);
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Fade Test Settings");
+	ImGui::DragFloat(
+		"Target Volume##SoundFadeTest",
+		&fFadeTestTargetVolume, 0.01f, 0.f, 2.f, "%.2f");
+	ImGui::DragFloat(
+		"Duration##SoundFadeTest",
+		&fFadeTestDuration, 0.05f, 0.f, 10.f, "%.2f sec");
+	fFadeTestTargetVolume = std::max(0.f, fFadeTestTargetVolume);
+	fFadeTestDuration = std::max(0.f, fFadeTestDuration);
 
 	if (ImGui::TreeNode("Buses"))
 	{
@@ -124,6 +137,15 @@ void CSoundManager::UpdateGUI()
 
 				if (ImGui::DragFloat("Volume", &fVolume, 0.01f, 0.f, 2.f, "%.2f"))
 					SetBusVolume(sBusID, fVolume);
+
+				if (ImGui::Button("Fade In Bus Test"))
+				{
+					if (SetBusVolume(sBusID, 0.f))
+						FadeBusTo(sBusID, fFadeTestTargetVolume, fFadeTestDuration);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Fade Bus To Target"))
+					FadeBusTo(sBusID, fFadeTestTargetVolume, fFadeTestDuration);
 
 				_bool bMutedValue = bMuted != false;
 				if (ImGui::Checkbox("Muted", &bMutedValue))
@@ -181,6 +203,18 @@ void CSoundManager::UpdateGUI()
 
 				if (ImGui::DragFloat("Pitch", &fPitch, 0.01f, 0.01f, 4.f, "%.2f"))
 					SetPitch(iSoundID, fPitch);
+
+				if (ImGui::Button("Fade In Test"))
+				{
+					if (SetVolume(iSoundID, 0.f))
+						FadeTo(iSoundID, fFadeTestTargetVolume, fFadeTestDuration);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Fade To Target"))
+					FadeTo(iSoundID, fFadeTestTargetVolume, fFadeTestDuration);
+				ImGui::SameLine();
+				if (ImGui::Button("Fade Out + Stop"))
+					FadeOutAndStop(iSoundID, fFadeTestDuration);
 
 				if (tSound.b3D)
 				{
@@ -244,6 +278,13 @@ HRESULT CSoundManager::Initialize()
 
 	if (FMOD_System_Init(m_pSystem, SOUND_MAX_CHANNELS, FMOD_INIT_NORMAL, nullptr) != FMOD_OK)
 		return E_FAIL;
+
+	if (FMOD_System_GetSoftwareFormat(
+		m_pSystem, &m_iSoftwareSampleRate, nullptr, nullptr) != FMOD_OK ||
+		m_iSoftwareSampleRate <= 0)
+	{
+		return E_FAIL;
+	}
 
 	if (FMOD_System_Set3DNumListeners(m_pSystem, 1) != FMOD_OK)
 		return E_FAIL;
@@ -395,7 +436,14 @@ SOUND_ID CSoundManager::PlayInternal(const SPtr<CResFmodSound>& pSound, const SO
 	if (FMOD_Channel_SetMode(pChannel, eMode) != FMOD_OK)
 		return FailPlay();
 
-	if (FMOD_Channel_SetVolume(pChannel, std::max(0.f, tDesc.fVolume)) != FMOD_OK)
+	const _float fTargetVolume = std::isfinite(tDesc.fVolume)
+		? std::max(0.f, tDesc.fVolume)
+		: 1.f;
+	const _bool bFadeIn = !tDesc.bStartPaused &&
+		std::isfinite(tDesc.fFadeInDuration) &&
+		tDesc.fFadeInDuration > 0.f;
+
+	if (FMOD_Channel_SetVolume(pChannel, bFadeIn ? 0.f : fTargetVolume) != FMOD_OK)
 		return FailPlay();
 
 	if (FMOD_Channel_SetPitch(pChannel, std::max(0.01f, tDesc.fPitch)) != FMOD_OK)
@@ -442,6 +490,12 @@ SOUND_ID CSoundManager::PlayInternal(const SPtr<CResFmodSound>& pSound, const SO
 		return FailPlay();
 	}
 
+	if (bFadeIn && !FadeTo(iSoundID, fTargetVolume, tDesc.fFadeInDuration))
+	{
+		m_mapPlayingSounds.erase(iSoundID);
+		return FailPlay();
+	}
+
 	return iSoundID;
 }
 
@@ -465,7 +519,42 @@ _bool CSoundManager::SetPaused(SOUND_ID iSoundID, _bool bPaused)
 _bool CSoundManager::SetVolume(SOUND_ID iSoundID, _float fVolume)
 {
 	const auto iter = m_mapPlayingSounds.find(iSoundID);
-	return iter != m_mapPlayingSounds.end() && FMOD_Channel_SetVolume(iter->second.pChannel, std::max(0.f, fVolume)) == FMOD_OK;
+	if (iter == m_mapPlayingSounds.end() || !std::isfinite(fVolume))
+		return false;
+
+	FMOD_CHANNEL* pChannel = iter->second.pChannel;
+	FMOD_Channel_RemoveFadePoints(
+		pChannel, 0, std::numeric_limits<unsigned long long>::max());
+	FMOD_Channel_SetDelay(pChannel, 0, 0, false);
+	return FMOD_Channel_SetVolume(pChannel, std::max(0.f, fVolume)) == FMOD_OK;
+}
+
+_bool CSoundManager::FadeTo(
+	SOUND_ID iSoundID, _float fTargetVolume, _float fDuration)
+{
+	if (!std::isfinite(fTargetVolume) || !std::isfinite(fDuration))
+		return false;
+
+	if (fDuration <= 0.f)
+		return SetVolume(iSoundID, fTargetVolume);
+
+	const auto iter = m_mapPlayingSounds.find(iSoundID);
+	return iter != m_mapPlayingSounds.end() &&
+		ScheduleChannelFade(
+			iter->second.pChannel, fTargetVolume, fDuration, false);
+}
+
+_bool CSoundManager::FadeOutAndStop(SOUND_ID iSoundID, _float fDuration)
+{
+	if (!std::isfinite(fDuration))
+		return false;
+
+	if (fDuration <= 0.f)
+		return Stop(iSoundID);
+
+	const auto iter = m_mapPlayingSounds.find(iSoundID);
+	return iter != m_mapPlayingSounds.end() &&
+		ScheduleChannelFade(iter->second.pChannel, 0.f, fDuration, true);
 }
 
 _bool CSoundManager::SetPitch(SOUND_ID iSoundID, _float fPitch)
@@ -600,7 +689,25 @@ _bool CSoundManager::RemoveBus(const SOUND_BUS_ID& sBusID)
 _bool CSoundManager::SetBusVolume(const SOUND_BUS_ID& sBusID, _float fVolume)
 {
 	FMOD_CHANNELGROUP* pBus = GetBus(sBusID);
-	return pBus != nullptr && FMOD_ChannelGroup_SetVolume(pBus, std::max(0.f, fVolume)) == FMOD_OK;
+	if (pBus == nullptr || !std::isfinite(fVolume))
+		return false;
+
+	FMOD_ChannelGroup_RemoveFadePoints(
+		pBus, 0, std::numeric_limits<unsigned long long>::max());
+	return FMOD_ChannelGroup_SetVolume(pBus, std::max(0.f, fVolume)) == FMOD_OK;
+}
+
+_bool CSoundManager::FadeBusTo(
+	const SOUND_BUS_ID& sBusID, _float fTargetVolume, _float fDuration)
+{
+	if (!std::isfinite(fTargetVolume) || !std::isfinite(fDuration))
+		return false;
+
+	if (fDuration <= 0.f)
+		return SetBusVolume(sBusID, fTargetVolume);
+
+	return ScheduleBusFade(
+		GetBus(sBusID), fTargetVolume, fDuration);
 }
 
 _bool CSoundManager::SetBusMuted(const SOUND_BUS_ID& sBusID, _bool bMuted)
@@ -767,6 +874,212 @@ void CSoundManager::Draw3DSoundDebug()
 
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+}
+
+_bool CSoundManager::ScheduleChannelFade(
+	FMOD_CHANNEL* pChannel, _float fTargetVolume,
+	_float fDuration, _bool bStopAtEnd)
+{
+	if (pChannel == nullptr || m_iSoftwareSampleRate <= 0 ||
+		!std::isfinite(fTargetVolume) || !std::isfinite(fDuration) ||
+		fDuration <= 0.f)
+	{
+		return false;
+	}
+
+	unsigned long long iDSPClock{};
+	unsigned long long iParentClock{};
+	if (FMOD_Channel_GetDSPClock(
+		pChannel, &iDSPClock, &iParentClock) != FMOD_OK)
+	{
+		return false;
+	}
+
+	UNREFERENCED_PARAMETER(iDSPClock);
+	const auto iDurationTicks = static_cast<unsigned long long>(
+		std::max(1.0,
+			std::ceil(static_cast<double>(fDuration) *
+				static_cast<double>(m_iSoftwareSampleRate))));
+	const auto iMaxClock = std::numeric_limits<unsigned long long>::max();
+	const auto iEndClock = iDurationTicks > iMaxClock - iParentClock
+		? iMaxClock
+		: iParentClock + iDurationTicks;
+
+	_float fBaseVolume{ 1.f };
+	if (FMOD_Channel_GetVolume(pChannel, &fBaseVolume) != FMOD_OK)
+		return false;
+
+	_float fFadeVolume{ 1.f };
+	unsigned int iFadePointCount{};
+	if (FMOD_Channel_GetFadePoints(
+		pChannel, &iFadePointCount, nullptr, nullptr) != FMOD_OK)
+	{
+		return false;
+	}
+
+	if (iFadePointCount > 0)
+	{
+		std::vector<unsigned long long> fadeClocks(iFadePointCount);
+		std::vector<_float> fadeVolumes(iFadePointCount);
+		if (FMOD_Channel_GetFadePoints(
+			pChannel, &iFadePointCount,
+			fadeClocks.data(), fadeVolumes.data()) != FMOD_OK)
+		{
+			return false;
+		}
+
+		if (iParentClock <= fadeClocks.front())
+		{
+			fFadeVolume = fadeVolumes.front();
+		}
+		else if (iParentClock >= fadeClocks[iFadePointCount - 1])
+		{
+			fFadeVolume = fadeVolumes[iFadePointCount - 1];
+		}
+		else
+		{
+			for (unsigned int i = 1; i < iFadePointCount; ++i)
+			{
+				if (iParentClock > fadeClocks[i])
+					continue;
+
+				const auto iStartClock = fadeClocks[i - 1];
+				const auto iClockRange = fadeClocks[i] - iStartClock;
+				const _float fRatio = iClockRange == 0
+					? 1.f
+					: static_cast<_float>(iParentClock - iStartClock) /
+						static_cast<_float>(iClockRange);
+				fFadeVolume = std::lerp(
+					fadeVolumes[i - 1], fadeVolumes[i], fRatio);
+				break;
+			}
+		}
+	}
+
+	const _float fCurrentOutputVolume =
+		std::max(0.f, fBaseVolume * fFadeVolume);
+	auto RestoreCurrentVolume = [pChannel, iMaxClock, fCurrentOutputVolume]()
+	{
+		FMOD_Channel_RemoveFadePoints(pChannel, 0, iMaxClock);
+		FMOD_Channel_SetDelay(pChannel, 0, 0, false);
+		FMOD_Channel_SetVolume(pChannel, fCurrentOutputVolume);
+		return false;
+	};
+
+	if (FMOD_Channel_RemoveFadePoints(pChannel, 0, iMaxClock) != FMOD_OK ||
+		FMOD_Channel_SetDelay(pChannel, 0, 0, false) != FMOD_OK ||
+		FMOD_Channel_SetVolume(pChannel, 1.f) != FMOD_OK ||
+		FMOD_Channel_AddFadePoint(
+			pChannel, iParentClock, fCurrentOutputVolume) != FMOD_OK ||
+		FMOD_Channel_AddFadePoint(
+			pChannel, iEndClock, std::max(0.f, fTargetVolume)) != FMOD_OK)
+	{
+		return RestoreCurrentVolume();
+	}
+
+	if (bStopAtEnd &&
+		FMOD_Channel_SetDelay(pChannel, 0, iEndClock, true) != FMOD_OK)
+	{
+		return RestoreCurrentVolume();
+	}
+
+	return true;
+}
+
+_bool CSoundManager::ScheduleBusFade(
+	FMOD_CHANNELGROUP* pBus, _float fTargetVolume, _float fDuration)
+{
+	if (pBus == nullptr || m_iSoftwareSampleRate <= 0 ||
+		!std::isfinite(fTargetVolume) || !std::isfinite(fDuration) ||
+		fDuration <= 0.f)
+	{
+		return false;
+	}
+
+	unsigned long long iDSPClock{};
+	unsigned long long iParentClock{};
+	if (FMOD_ChannelGroup_GetDSPClock(
+		pBus, &iDSPClock, &iParentClock) != FMOD_OK)
+	{
+		return false;
+	}
+
+	UNREFERENCED_PARAMETER(iDSPClock);
+	const auto iDurationTicks = static_cast<unsigned long long>(
+		std::max(1.0,
+			std::ceil(static_cast<double>(fDuration) *
+				static_cast<double>(m_iSoftwareSampleRate))));
+	const auto iMaxClock = std::numeric_limits<unsigned long long>::max();
+	const auto iEndClock = iDurationTicks > iMaxClock - iParentClock
+		? iMaxClock
+		: iParentClock + iDurationTicks;
+
+	_float fBaseVolume{ 1.f };
+	if (FMOD_ChannelGroup_GetVolume(pBus, &fBaseVolume) != FMOD_OK)
+		return false;
+
+	_float fFadeVolume{ 1.f };
+	unsigned int iFadePointCount{};
+	if (FMOD_ChannelGroup_GetFadePoints(
+		pBus, &iFadePointCount, nullptr, nullptr) != FMOD_OK)
+	{
+		return false;
+	}
+
+	if (iFadePointCount > 0)
+	{
+		std::vector<unsigned long long> fadeClocks(iFadePointCount);
+		std::vector<_float> fadeVolumes(iFadePointCount);
+		if (FMOD_ChannelGroup_GetFadePoints(
+			pBus, &iFadePointCount,
+			fadeClocks.data(), fadeVolumes.data()) != FMOD_OK)
+		{
+			return false;
+		}
+
+		if (iParentClock <= fadeClocks.front())
+		{
+			fFadeVolume = fadeVolumes.front();
+		}
+		else if (iParentClock >= fadeClocks[iFadePointCount - 1])
+		{
+			fFadeVolume = fadeVolumes[iFadePointCount - 1];
+		}
+		else
+		{
+			for (unsigned int i = 1; i < iFadePointCount; ++i)
+			{
+				if (iParentClock > fadeClocks[i])
+					continue;
+
+				const auto iStartClock = fadeClocks[i - 1];
+				const auto iClockRange = fadeClocks[i] - iStartClock;
+				const _float fRatio = iClockRange == 0
+					? 1.f
+					: static_cast<_float>(iParentClock - iStartClock) /
+						static_cast<_float>(iClockRange);
+				fFadeVolume = std::lerp(
+					fadeVolumes[i - 1], fadeVolumes[i], fRatio);
+				break;
+			}
+		}
+	}
+
+	const _float fCurrentOutputVolume =
+		std::max(0.f, fBaseVolume * fFadeVolume);
+	if (FMOD_ChannelGroup_RemoveFadePoints(pBus, 0, iMaxClock) != FMOD_OK ||
+		FMOD_ChannelGroup_SetVolume(pBus, 1.f) != FMOD_OK ||
+		FMOD_ChannelGroup_AddFadePoint(
+			pBus, iParentClock, fCurrentOutputVolume) != FMOD_OK ||
+		FMOD_ChannelGroup_AddFadePoint(
+			pBus, iEndClock, std::max(0.f, fTargetVolume)) != FMOD_OK)
+	{
+		FMOD_ChannelGroup_RemoveFadePoints(pBus, 0, iMaxClock);
+		FMOD_ChannelGroup_SetVolume(pBus, fCurrentOutputVolume);
+		return false;
+	}
+
+	return true;
 }
 
 FMOD_RESULT F_CALL SSoundCallbackBridge::ChannelCallback(

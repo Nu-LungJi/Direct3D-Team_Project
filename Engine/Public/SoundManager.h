@@ -40,6 +40,7 @@ struct SOUND_PLAY_DESC
 	SOUND_BUS_ID sBusID{ SOUND_MASTER_BUS_ID };
 	_float fVolume{ 1.f };
 	_float fPitch{ 1.f };
+	_float fFadeInDuration{};
 	int32_t iPriority{ 128 };
 	_bool bLoop{};
 	_bool bStartPaused{};
@@ -104,6 +105,8 @@ public:
 	_bool Stop(SOUND_ID iSoundID);
 	_bool SetPaused(SOUND_ID iSoundID, _bool bPaused);
 	_bool SetVolume(SOUND_ID iSoundID, _float fVolume);
+	_bool FadeTo(SOUND_ID iSoundID, _float fTargetVolume, _float fDuration);
+	_bool FadeOutAndStop(SOUND_ID iSoundID, _float fDuration);
 	_bool SetPitch(SOUND_ID iSoundID, _float fPitch);
 	_bool Set3DAttributes(SOUND_ID iSoundID, const _float3& vPosition, const _float3& vVelocity = {});
 	_bool Set3DMinMaxDistance(SOUND_ID iSoundID, _float fMinDistance, _float fMaxDistance);
@@ -118,6 +121,7 @@ public:
 	_bool RemoveBus(const SOUND_BUS_ID& sBusID);
 	_bool SetListenerAttributes(uint32_t iListenerIndex, const SOUND_LISTENER_DESC& tDesc);
 	_bool SetBusVolume(const SOUND_BUS_ID& sBusID, _float fVolume);
+	_bool FadeBusTo(const SOUND_BUS_ID& sBusID, _float fTargetVolume, _float fDuration);
 	_bool SetBusMuted(const SOUND_BUS_ID& sBusID, _bool bMuted);
 	_bool SetBusPaused(const SOUND_BUS_ID& sBusID, _bool bPaused);
 	_bool StopBus(const SOUND_BUS_ID& sBusID);
@@ -134,6 +138,10 @@ private:
 	void EnqueueCompletedSound(SOUND_ID iSoundID);
 	void FlushCompletedSounds();
 	void Draw3DSoundDebug();
+	_bool ScheduleChannelFade(FMOD_CHANNEL* pChannel, _float fTargetVolume,
+		_float fDuration, _bool bStopAtEnd);
+	_bool ScheduleBusFade(FMOD_CHANNELGROUP* pBus, _float fTargetVolume,
+		_float fDuration);
 
 private:
 	std::mutex m_SoundResourceRegistrationMutex{};
@@ -146,6 +154,7 @@ private:
 	std::queue<SOUND_ID> m_CompletedSounds{};
 
 	FMOD_SYSTEM* m_pSystem{};
+	int m_iSoftwareSampleRate{};
 	_bool m_b3DDebugRenderEnabled{};
 
 public:
