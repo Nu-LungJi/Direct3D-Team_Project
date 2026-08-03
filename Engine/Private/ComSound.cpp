@@ -88,6 +88,74 @@ _bool CComSound::StopSlot(const StringID& sSlotID)
 	return bStoppedAny;
 }
 
+_bool CComSound::FadeSlotTo(
+	const StringID& sSlotID, _float fTargetVolume, _float fDuration)
+{
+	const auto iter = m_Slots.find(sSlotID);
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (iter == m_Slots.end() || pSoundManager == nullptr)
+		return false;
+
+	_bool bSucceeded{ true };
+	for (const SOUND_ID iSoundID : iter->second)
+	{
+		bSucceeded &= pSoundManager->FadeTo(
+			iSoundID, fTargetVolume, fDuration);
+	}
+
+	return bSucceeded;
+}
+
+_bool CComSound::FadeOutAndStopSlot(
+	const StringID& sSlotID, _float fDuration)
+{
+	const auto iter = m_Slots.find(sSlotID);
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (iter == m_Slots.end() || pSoundManager == nullptr)
+		return false;
+
+	_bool bSucceeded{ true };
+	for (const SOUND_ID iSoundID : iter->second)
+	{
+		bSucceeded &= pSoundManager->FadeOutAndStop(
+			iSoundID, fDuration);
+	}
+
+	return bSucceeded;
+}
+
+_bool CComSound::FadeOutAndDetachSlot(
+	const StringID& sSlotID, _float fDuration)
+{
+	const auto iter = m_Slots.find(sSlotID);
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (iter == m_Slots.end() || pSoundManager == nullptr)
+		return false;
+
+	const auto soundIDs = iter->second;
+	std::vector<SOUND_ID> failedSoundIDs{};
+	failedSoundIDs.reserve(soundIDs.size());
+
+	for (const SOUND_ID iSoundID : soundIDs)
+	{
+		if (pSoundManager->FadeOutAndStop(iSoundID, fDuration))
+		{
+			m_PlayingSounds.erase(iSoundID);
+			continue;
+		}
+
+		failedSoundIDs.push_back(iSoundID);
+	}
+
+	const _bool bAllScheduled = failedSoundIDs.empty();
+	if (bAllScheduled)
+		m_Slots.erase(iter);
+	else
+		iter->second = std::move(failedSoundIDs);
+
+	return !soundIDs.empty() && bAllScheduled;
+}
+
 void CComSound::StopAll()
 {
 	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
