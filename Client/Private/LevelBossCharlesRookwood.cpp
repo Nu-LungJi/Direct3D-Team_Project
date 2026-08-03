@@ -75,13 +75,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnSkyBox()))
-	if (FAILED(SpawnAmbientSound()))
-		return E_FAIL;
 
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
-	skyDesc.sObjectTag = "SkyCloudyCube";
-	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
-	{
+	if (FAILED(SpawnAmbientSound()))
 		return E_FAIL;
 
 	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
