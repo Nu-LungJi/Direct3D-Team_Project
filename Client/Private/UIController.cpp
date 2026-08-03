@@ -151,17 +151,17 @@ void CUIController::Update(E::_float fTimeDelta)
 			
 	}
 	//************** 몬스터hp
-	if (E::CGameInstance::Get().KeyDown(DIK_5))
-	{
-		if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
-		{
-			PlayMonsterHPDelete(*m_MonsterHP);
-		}
-		else
-		{
-			m_bMonsterHP = true;
-		}
-	}
+	//if (E::CGameInstance::Get().KeyDown(DIK_5))
+	//{
+	//	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
+	//	{
+	//		PlayMonsterHPDelete(*m_MonsterHP);
+	//	}
+	//	else
+	//	{
+	//		m_bMonsterHP = true;
+	//	}
+	//}
 
 	// 몬스터 HP 감송
 	if (E::CGameInstance::Get().KeyDown(DIK_6))

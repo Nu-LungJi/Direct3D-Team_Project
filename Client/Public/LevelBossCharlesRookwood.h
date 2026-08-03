@@ -34,9 +34,11 @@ private:
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
 	HRESULT SpawnSkyBox();
 	HRESULT SpawnAmbientSound();
+	void FadeOutAmbientSound();
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };
+	CHandle m_hAmbientSound{};
 
 private:
 	void Free() override;

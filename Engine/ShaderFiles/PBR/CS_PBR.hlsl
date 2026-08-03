@@ -322,7 +322,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				int ShadowSlot = AffectedLight[i].ShadowSlot;
 				
 				[branch]
-				if (ShadowSlot >= 0 && ShadowSlot < MAX_LIGHT_COUNT)
+				if (ShadowSlot >= 0 && ShadowSlot < MAX_SHADOW_LIGHT_COUNT)
 				{
 					[branch]
 					if (AffectedLight[i].LightType == LIGHT_POINT)

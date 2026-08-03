@@ -205,16 +205,6 @@ _bool CBoss_StarBurst::MoveWithSweep(
 		m_pLightEffectID,
 		vNextPosition);
 
-	if (auto pPlayer = Cast<CPlayer>(tHit.pGameObject))
-	{
-		pPlayer->OnQueryHit(m_iDamage, tHit.vHitpos);
-
-		CGameInstance::Get().StopEffect(m_pLightEffectID);
-
-		// 기존 피격 이펙트 코드
-		SetPendingDestroy();
-		return true;
-	}
 	return true;
 }
 
@@ -255,7 +245,16 @@ _bool CBoss_StarBurst::HandleSweepHit(
 
 		XMFLOAT4X4 WorldMatrix{};
 		XMStoreFloat4x4(&WorldMatrix, ScaleMatrix * RotationMatrix * PositionMat);
+		if (auto pPlayer = Cast<CPlayer>(tHit.pGameObject))
+		{
+			pPlayer->OnQueryHit(m_iDamage, tHit.vHitpos);
 
+			CGameInstance::Get().StopEffect(m_pLightEffectID);
+
+			// 기존 피격 이펙트 코드
+			SetPendingDestroy();
+			return true;
+		}
 		auto EffectID = CGameInstance::Get().PlayEffect("Boss_HitSplash", WorldMatrix, XMVECTOR{});
 		CGameInstance::Get().SetEffectPosition(EffectID, EffectPosition);
 		SetPendingDestroy();

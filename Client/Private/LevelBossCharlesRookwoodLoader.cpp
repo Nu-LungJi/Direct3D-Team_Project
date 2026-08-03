@@ -89,7 +89,7 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin"))) {
 
 				E::CResStaticModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				pDesc.PreTransformMatrix = XMMatrixRotationX(XMConvertToRadians(-90.f)) * XMMatrixScaling(1.f, 1.f, 1.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
 					return false;

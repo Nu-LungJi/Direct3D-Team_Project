@@ -84,6 +84,9 @@ void CAmbientSound3DObject::UpdateGUI()
 	ImGui::SameLine();
 	if (ImGui::Button("Stop Ambient 3D"))
 		Stop();
+	ImGui::SameLine();
+	if (ImGui::Button("Fade Out Ambient 3D"))
+		FadeOutAndStop();
 }
 
 SOUND_ID CAmbientSound3DObject::Play()
@@ -111,6 +114,7 @@ SOUND_ID CAmbientSound3DObject::Play()
 			.sBusID = m_tSoundData.sBusID,
 			.fVolume = m_tSoundData.fVolume,
 			.fPitch = m_tSoundData.fPitch,
+			.fFadeInDuration = m_tSoundData.fFadeInDuration,
 			.iPriority = m_tSoundData.iPriority,
 			.bLoop = m_tSoundData.bLoop,
 			.bStartPaused = false
@@ -129,6 +133,15 @@ _bool CAmbientSound3DObject::Stop()
 	const _bool bStopped = m_pComSound->StopSlot(GetAmbientSlotID());
 	m_iSoundID = INVALID_SOUND_ID;
 	return bStopped;
+}
+
+_bool CAmbientSound3DObject::FadeOutAndStop()
+{
+	if (m_pComSound == nullptr)
+		return false;
+
+	return m_pComSound->FadeOutAndStopSlot(
+		GetAmbientSlotID(), m_tSoundData.fFadeOutDuration);
 }
 
 _bool CAmbientSound3DObject::ApplyData(const AMBIENT_SOUND_3D_DATA& tData)
@@ -166,7 +179,10 @@ void CAmbientSound3DObject::SetEnabled(_bool bEnabled)
 	m_tSoundData.bEnabled = bEnabled;
 	if (!bEnabled)
 	{
-		Stop();
+		if (m_tSoundData.fFadeOutDuration > 0.f)
+			FadeOutAndStop();
+		else
+			Stop();
 		return;
 	}
 
@@ -213,6 +229,8 @@ void CAmbientSound3DObject::SanitizeData(AMBIENT_SOUND_3D_DATA& tData)
 		tData.fMinDistance + 0.01f);
 	tData.fVolume = std::max(tData.fVolume, 0.f);
 	tData.fPitch = std::max(tData.fPitch, 0.01f);
+	tData.fFadeInDuration = std::max(tData.fFadeInDuration, 0.f);
+	tData.fFadeOutDuration = std::max(tData.fFadeOutDuration, 0.f);
 	tData.iPriority = std::clamp(tData.iPriority, 0, 256);
 	if (tData.sBusID.hash == 0)
 		tData.sBusID = SOUND_MASTER_BUS_ID;

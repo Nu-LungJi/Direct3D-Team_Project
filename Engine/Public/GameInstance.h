@@ -296,6 +296,8 @@ public:
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID	Set_ChromaticRingOpacity(_float _Opacity);
 
+	VOID	Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density);
+
 #pragma endregion
 
 

@@ -74,32 +74,17 @@ HRESULT CLight::Initialize(VOID* pArg)
 	return S_OK;
 }
 
-VOID CLight::PriorityUpdate(E::_float _DT) {
-
-}
-
 VOID CLight::Update(E::_float _DT) {
 	if (m_bActivate_State == false) return;
 
 	if (m_bEffectLightFlag) 
 		Update_EffectLight(_DT);
 
-	if (m_pComTransform->Update()) {
+	if (m_pComTransform->Update()) 
 		InvalidateAllShadow();
-	}
 
 	if (m_bCullBoundsDirty && SUCCEEDED(Update_Collider()))
-	{
-		;
 		m_bCullBoundsDirty = false;
-	}
-}
-VOID CLight::LateUpdate(E::_float _DT) {
-
-}
-HRESULT CLight::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
-
-	return S_OK;
 }
 
 VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
@@ -122,21 +107,6 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 
 		const _float OuterRange = std::max(m_fPointLightOuterAttenuation, 0.02f);
 		LightProjMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, OuterRange);
-	}
-	{
-		E::CB_PER_OBJECT cbPerObject{};
-
-		XMMATRIX WorldViewProj = XMMatrixMultiply(XMMatrixMultiply(LightWorldMatrix, LightViewMatrix), LightProjMatrix);
-
-		XMStoreFloat4x4(&cbPerObject.matWVP, WorldViewProj);
-
-		cbPerObject.matWorld = *m_pComTransform->GetWorldMatrix();
-
-		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))	return;
-
-		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
 	}
 	{
 		E::CB_PER_PASS pCbPerPass{};
@@ -224,7 +194,7 @@ VOID CLight::Update_SpotShadowMatrices() {
 	_float		FOVAngle = m_pDynamicLight.OuterAttanuation * 2.f * 1.02f;
 	if (FOVAngle > 150.f) FOVAngle = 150.f;
 
-	XMStoreFloat4x4(&LightView, E::MakeSafeLookToLH(LightPosition, XMLoadFloat3(&m_pDynamicLight.LightDirection), WorldUp));
+	XMStoreFloat4x4(&LightView, MakeSafeLookToLH(LightPosition, XMLoadFloat3(&m_pDynamicLight.LightDirection), WorldUp));
 	XMStoreFloat4x4(&LightProj, XMMatrixPerspectiveFovLH(XMConvertToRadians(FOVAngle), 1.f, fNearZ, m_pDynamicLight.LightRange));
 	XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
 }
@@ -375,6 +345,9 @@ HRESULT	CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
 	m_bCullBoundsDirty = true;
 	m_bStaticShadowDirty = true;
 	m_bDynamicShadowDirty = true;
+
+	m_fPointLightInnerAttenuation = 0.f;
+	m_fPointLightOuterAttenuation = 0.02f;
 
 	return S_OK;
 }

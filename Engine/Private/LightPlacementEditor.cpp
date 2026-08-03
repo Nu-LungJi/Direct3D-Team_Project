@@ -498,6 +498,10 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 	if (ImGui::Checkbox("Active", &active))
 		light->Set_LightActivateState(active);
 
+	_bool castShadow = light->Get_LightShadowCast();
+	if (ImGui::Checkbox("Cast Shadow", &castShadow))
+		light->Set_LightShadowCast(castShadow);
+
 	_float3 position = light->Get_LightPosition();
 	if (ImGui::DragFloat3(
 		"Position",
@@ -1093,6 +1097,7 @@ std::optional<CHandle> CLightPlacementEditor::CreateLight(
 			LightPlacementEditorDetail::NormalizeDirection(
 				data.vDirection));
 		light->Set_LightActivateState(data.bActive);
+		light->Set_LightShadowCast(data.bCastShadow);
 	}
 
 	return handle;
@@ -1131,6 +1136,7 @@ CLightPlacementEditor::BuildFileData() const
 		entry.vDirection = light->Get_LightDirection();
 		entry.vColor = light->Get_LightColor();
 		entry.fIntensity = light->Get_LightIntensity();
+		entry.bCastShadow = light->Get_LightShadowCast();
 		if (entry.eType == LIGHT_TYPE::POINT)
 		{
 			entry.fInnerAttenuation =

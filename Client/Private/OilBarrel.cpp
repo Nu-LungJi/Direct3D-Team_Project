@@ -138,7 +138,7 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 		return;
 
 	/*----------- 광윤 추가 -----------*/
-	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::STATIC, this);
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 	/*---------------------------------*/
 
 	if (!CGameInstance::Get().IsInstancingEnabled())

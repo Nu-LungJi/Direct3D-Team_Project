@@ -122,7 +122,7 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 			"./Resources/SampleClient/Models/Static/SM_Wand.bin")))
 	{
 		E::CResStaticModel::DESC desc{};
-		desc.PreTransformMatrix = XMMatrixIdentity();
+		desc.PreTransformMatrix = XMMatrixRotationX(XMConvertToRadians(-90.f)) * XMMatrixIdentity();
 		if (FAILED(weapon->Load(desc)))
 			return E_FAIL;
 	}

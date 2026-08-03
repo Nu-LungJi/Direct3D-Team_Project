@@ -43,7 +43,7 @@ private:
 	HRESULT PlayBGM();
 	HRESULT StopBGM();
 private:
-	SOUND_ID m_bmgID;
+	SOUND_ID m_bmgID{ INVALID_SOUND_ID };
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };

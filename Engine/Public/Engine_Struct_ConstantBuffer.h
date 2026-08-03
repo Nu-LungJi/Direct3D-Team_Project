@@ -46,7 +46,7 @@ namespace Engine
 
 	typedef struct tagConstantBufferLight
 	{
-		DYNAMIC_LIGHT	AffectedLight[MAX_SHADOW_LIGHT_COUNT];
+		DYNAMIC_LIGHT	AffectedLight[MAX_LIGHT_COUNT];
 
 		XMFLOAT4X4		g_InvViewProj{};
 		uint32_t		LightCount{};
@@ -191,6 +191,21 @@ namespace Engine
 		_float2	g_padding;
 	};
 	static_assert(sizeof(CB_BLOOM) % 16 == 0);
+
+	struct CB_VLFOG
+	{
+		_float3 g_fFogColor;
+		_float	g_fFogIntensity;
+
+		_float3 g_fFogCenterPos;
+		_float  g_fFogHeight;
+
+		_float	g_fFogStartPos;
+		_float	g_fFogEndPos;
+		_float	g_fFogDensity;
+		_float	FogPadding;
+	};
+	static_assert(sizeof(CB_VLFOG) % 16 == 0);
 
 	struct CB_LENSFLARE
 	{

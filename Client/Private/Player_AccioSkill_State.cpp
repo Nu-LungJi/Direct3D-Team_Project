@@ -41,7 +41,7 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 			"./Resources/SampleClient/Sound/Player/Spell/Accio/Accio_Man.wav",
 			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::VOICE,
-				.fVolume = 0.1f,
+				.fVolume = 2.f,
 				.fPitch = 1.f,
 				.iPriority = 64,
 				.bLoop = false
@@ -108,6 +108,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 					return;
 				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 				_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+				CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
 				CGameInstance::Get().Render_ChromaticRing(weaPonPos, 0.5f, 100);
 				// 무기 발사 위치
 
