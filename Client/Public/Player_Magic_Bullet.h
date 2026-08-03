@@ -54,11 +54,13 @@ private:
 	size_t  m_iSplineIndex{};
 	CHandle m_hOwner{};
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
+	std::optional<CHandle> m_hPointLight{};
 
 	std::vector<_float3> m_Splines;
 
 private:
 	void BuildSpline(_float fCurveHeight, uint32_t iSampleCount);
+	void UpdatePointLight();
 	_bool SweepSegment(
 		const _float3& vStart,
 		const _float3& vEnd,

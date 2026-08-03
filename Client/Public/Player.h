@@ -20,11 +20,12 @@ class CComSocket;
 
 class CComPxRigidBody;
 class CComPxBoxCollider;
+class CComPxSphereCollider;
 class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
-
+class CComSound;
 NS_END
 
 NS_BEGIN(Client)
@@ -41,6 +42,8 @@ public:
 	{
 		CCT_CAPSULE = 0,
 		PLAYER_SHAPE_HURTBOX,
+		PLAYER_LEFT_FOOT,
+		PLAYER_RIGHT_FOOT,
 		END
 	};
 
@@ -51,6 +54,7 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float3 vInitialPosition{ 50.f, 50.f, 10.f };
+		_float3 vInitialRotation{};
 		// PhysX capsule height는 양 끝 반구를 제외한 원통 부분의 높이다.
 		_float fCCTHeight{ 3.6f };
 		_float fCCTRadius{ 0.6f };
@@ -186,7 +190,11 @@ private:
 
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
+	CComPxSphereCollider* m_pComPxLeftFootCollider{};
+	CComPxSphereCollider* m_pComPxRightFootCollider{};
 	int32_t m_iHurtBoxBoneIndex{ -1 };
+	int32_t m_iLeftFootBoneIndex{ -1 };
+	int32_t m_iRightFootBoneIndex{ -1 };
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
@@ -274,6 +282,10 @@ private:
 	_bool  m_bDistanceUI = false;
 	CHandle m_hUI;
 
+private:
+	CComSound* m_pComSound{};
+public:
+	CComSound* GetSound() const { return m_pComSound; }
 public:
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
