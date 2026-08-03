@@ -135,7 +135,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		});
 	}
 	// ************** 스펠슬롯
-	if (E::CGameInstance::Get().KeyDown(DIK_B) && E::CGameInstance::Get().KeyPressing(DIK_LCONTROL))
+	if (E::CGameInstance::Get().KeyDown(DIK_B))
 	{
 		ActiveShortCutSlot ? ActiveShortCutSlot = false : ActiveShortCutSlot = true;
 		if (ActiveShortCutSlot)
@@ -150,18 +150,6 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 			
 	}
-	//************** 몬스터hp
-	//if (E::CGameInstance::Get().KeyDown(DIK_5))
-	//{
-	//	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
-	//	{
-	//		PlayMonsterHPDelete(*m_MonsterHP);
-	//	}
-	//	else
-	//	{
-	//		m_bMonsterHP = true;
-	//	}
-	//}
 
 	// 몬스터 HP 감송
 	if (E::CGameInstance::Get().KeyDown(DIK_6))
@@ -257,12 +245,26 @@ void CUIController::CreateSpellType()
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetResTag("TEX_UI_T_spellmeter_Imperio_Overlay");
 
 	/*********비디오 패스**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_ArrestoMomentum.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[1]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Glacius.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[2]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Levioso.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[3]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Transformation.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[4]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Accio.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Depulso.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Descendo.avi");
-	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Reparo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[7]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Flipendo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[8]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Confringo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[9]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Diffindo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[10]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Expelliarmus.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Bombarda.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[12]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Incendio.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[13]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Disillusionment.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[14]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Lumos.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Reparo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[16]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_WingardiumLeviosa.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_AvadaKedavra.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Crucio.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Imperio.avi");
 
 	/*********디스크립션 json 이름**********/
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetDescJsonname("AristoDesc");
