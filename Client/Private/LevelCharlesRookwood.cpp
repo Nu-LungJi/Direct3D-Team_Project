@@ -344,7 +344,7 @@ HRESULT CLevelCharlesRookwood::SpawnLightPlacement()
 	desc.sObjectTag =
 		"CharlesRookwoodLightPlacement";
 	desc.sLightFileName =
-		"Level_CharlesRookwood";
+		"RookWoodStage_LightProtoType_A";
 
 	return CGameInstance::Get().
 		AddGameObjectToLayer(
