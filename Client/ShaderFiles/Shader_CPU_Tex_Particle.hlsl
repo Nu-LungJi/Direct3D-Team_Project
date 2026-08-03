@@ -521,3 +521,47 @@ PS_OUT BlindFlare(VS_OUT In)
 	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
 }
+PS_OUT PSPortal(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 flowUV1 = In.vTexcoord + float2(g_fAccumulationTime * 0.04f, -g_fAccumulationTime * 0.03f);
+	float2 flowUV2 = In.vTexcoord * 1.4f + float2(-g_fAccumulationTime * 0.025f, g_fAccumulationTime * 0.035f);
+
+	float2 flow1 = g_DistortionTexture.Sample(LinearWrap, flowUV1).rg * 2.0f - 1.0f;
+	float2 flow2 = g_DistortionTexture.Sample(LinearWrap, flowUV2).rg * 2.0f - 1.0f;
+	float2 flowDirection = (flow1 + flow2 * 0.5f) / 1.5f;
+
+	float flowStrength = 1.06f; 
+	float2 distortedUV = In.vTexcoord + flowDirection * flowStrength;
+
+	float4 colorTex = g_DiffuseTexture.Sample(LinearWrap, distortedUV);
+	float circleMask = g_AnyTexture.Sample(LinearClamp, In.vTexcoord).r;
+	circleMask = smoothstep(0.05f, 0.2f, circleMask);
+
+	float2 centeredUV = In.vTexcoord * 2.0f - 1.0f;
+	float distanceToCenter = length(centeredUV);
+
+
+	float luminance = dot(colorTex.rgb, float3(0.299f, 0.587f, 0.114f));
+
+	float3 originalColor = colorTex.rgb;
+	float3 saturatedColor = lerp(luminance.xxx, originalColor, 1.35f);
+	float3 portalColor = max(saturatedColor, 0.0f);
+
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 emissiveColor = lerpedEmissive.rgb * lerpedEmissive.a;
+
+	float3 finalColor = portalColor * In.vColor.rgb;
+	finalColor += originalColor * emissiveColor * circleMask;
+	finalColor *= circleMask;
+
+	float finalAlpha = circleMask * In.vColor.a * ObjectAlpha;
+
+	clip(finalAlpha - 0.01f);
+
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
