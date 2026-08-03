@@ -731,6 +731,18 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			Desc.vInitialQuaternion = vInitialQuaternion;
 			Desc.vInitialScale = vInitialScale;
 			Desc.vConvexScale = vInitialScale;
+			Desc.tFilter = PX_FILTER_DESC{
+				.iLayer = ETOUI(COLLISION_LAYER::DEBRIS),
+				.iSimulationMask =
+					ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+					ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+					ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+					ETOUI(COLLISION_LAYER::DEBRIS),
+				.iQueryMask =
+					ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+					ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+					ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+			};
 			auto debris = E::CGameInstance::Get().AddGameObjectToLayer(
 				MonDesc->LevelTag,
 				PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead,
