@@ -34,6 +34,8 @@ HRESULT CMonEffectBall::Initialize(void* pArg)
 	if (nullptr == pArg)
 		return E_FAIL;
 
+	//뎀지
+	m_iDamage = 30.f;
 	const auto pDesc = static_cast<const MON_BALL*>(pArg);
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
@@ -42,7 +44,7 @@ HRESULT CMonEffectBall::Initialize(void* pArg)
 	m_hTarget = pDesc->hTarget;
 	m_iBoneIndex = pDesc->iBoneIndex;
 	m_tQueryFilter = pDesc->tQueryFilter;
-	m_fDamage = pDesc->fDamage;
+	m_iDamage = pDesc->fDamage;
 	GetTransform().Update();
 	m_iEffectID = CGameInstance::Get().PlayEffect("BossRingAttack", *GetTransform().GetWorldMatrix(), _vector{},
 		[h = GetHandle()](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
@@ -122,8 +124,8 @@ void CMonEffectBall::OverlapTest()
 			//m_fDamage
 			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
 			CGameInstance::Get().StopEffect(m_iEffectID);
-			_float MonDamange = m_fDamage;
 			m_bHit = true;
+			pTarget->OnQueryHit(m_iDamage);
 
 		}
 	}

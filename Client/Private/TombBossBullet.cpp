@@ -6,6 +6,7 @@
 #include "PhysXManager.h"
 #include "ResPathPlayback.h"
 
+#include "Player.h"
 NS_USING(Client)
 
 static PATH_PLAYBACK_KEYFRAME TombBossBulletMakePathKeyframe(
@@ -47,7 +48,7 @@ HRESULT CTombBossBullet::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-
+	m_iDamage = 30;
 	if (pDesc->fArcMoveSpeed <= 0.f ||
 		pDesc->fArcHeight < 0.f ||
 		pDesc->fArcLifeTime <= 0.f ||
@@ -388,7 +389,10 @@ void CTombBossBullet::FinishByHit(const PX_SWEEP_RESULT& Hit)
 			XMLoadFloat3(&vCurrentPosition) +
 			XMVector3Normalize(Direction) * Hit.fDistance);
 	}
-
+	if (auto pPlayer = Cast<CPlayer>(Hit.pGameObject))
+	{
+		pPlayer->OnQueryHit(m_iDamage, Hit.vHitpos);
+	}
 	GetTransform().SetPosition(vFinalPosition);
 	GetTransform().Update();
 	UpdateEffectTransform();

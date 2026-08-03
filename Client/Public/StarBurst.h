@@ -62,6 +62,7 @@ private:
 
 	EFFECT_INSTANCE_ID	m_pLightEffectID{};
 
+	int32_t				m_iDamage{30};
 	_float m_pLavaFlame_SpawnInterval{};
 	_float m_pLavaFlame_CastingTime{};
 	_float m_pLavaFlame_StayTime{};

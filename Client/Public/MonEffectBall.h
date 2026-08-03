@@ -43,7 +43,8 @@ private:
 	void		OverlapTest();
 	void		Chase(_float fTimeDelta);
 private:
-	_float		m_fDamage{}, m_fDeadTime{};
+	int32_t		m_iDamage{};
+	_float		m_fDeadTime{};
 	_float3		m_vDir{}, m_vEndLook{}, m_vPos{};
 
 	_float		m_fSpeed{50.f}, m_fPower{8.f};
