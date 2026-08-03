@@ -6,6 +6,7 @@
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_Weapon.h"
 #include "Monster.h"
+#include "ClientEvents.h"
 
 NS_USING(Client)
 
@@ -182,6 +183,13 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
 				pMonster->Check_Table(PLAYER_SKILL_TYPE::ACIENT_LIGHTNING);
 			m_bOnceLastLighting = true;
+		
+			//CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+			//	{
+			//	   1.f, // 강도 0 ~ 1
+			//	   1.f, // 지속시간
+			//	   15.f, // 초당 진동횟수
+			//	});
 		}
 		
 		break;
