@@ -38,6 +38,7 @@ public:
 private:
 	void						Damaged(PLAYER_SKILL_TYPE eType) override;
 	void						Active_Skill();
+	void						ReadySound();
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};

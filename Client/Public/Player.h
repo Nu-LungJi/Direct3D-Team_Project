@@ -129,10 +129,7 @@ public:
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
 	void ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta);
-	void ApplyDirectionalMovement(
-		const _float3& vDirection,
-		_float fSpeed,
-		_float fTimeDelta);
+	void ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta);
 	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
 	void InitializeSkillSlotUI();
@@ -150,6 +147,10 @@ public:
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
+
+
+	_bool GetInvincible() const { return m_bInvincible; }
+	void SetInvincible(_bool bInvincible) { m_bInvincible = bInvincible; }
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -226,6 +227,7 @@ private:
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };
 	_float m_fGroundFollowProbeRadius{ 0.2f };
+	_bool  m_bInvincible{ false };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.

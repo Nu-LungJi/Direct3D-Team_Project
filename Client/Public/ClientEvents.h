@@ -21,5 +21,6 @@ struct FPlayerDied
 	_float fLevelBgmFadeDuration{ 1.f };
 };
 
+struct FAcientMagicStart {};
 
 NS_END

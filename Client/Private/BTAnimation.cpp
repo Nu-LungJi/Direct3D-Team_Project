@@ -40,7 +40,8 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 		pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
 	_bool bFinished = pAnimator->GetFinish();
 	Gravity();
-	
+
+	Play_Sound(fTimeDelta);
 	EventFlagToRatio(pAnimator->GetPlayAnimRatio());
 	if (m_bEarly && m_fEarlyRatio <= pAnimator->GetPlayAnimRatio() || bFinished)
 	{

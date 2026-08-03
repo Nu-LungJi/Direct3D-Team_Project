@@ -49,7 +49,8 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_fAcientElapsed = 0.f;
 
-	
+	// 고대마법 발동 이벤트 발행
+	CGameInstance::Get().EventPublish<FAcientMagicStart>();
 }
 
 void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
@@ -105,7 +106,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			false,
 			0.24f);
 
-	
+		CGameInstance::Get().PlayEffect("LightningSound", *pPlayer->GetTransform().GetWorldMatrix());
 		// 스킬 컷신 재생
 		{
 			FCinematicPlayOptions options{};
