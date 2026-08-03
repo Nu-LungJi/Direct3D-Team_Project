@@ -26,7 +26,7 @@ public:
 	virtual void		OnEnter() override;
 	virtual void		OnExit(EVALUATE eResult) override;
 private:
-	
+	_bool			m_bUseCurAnim{ false };
 public:
 	static UPtr<CBTAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

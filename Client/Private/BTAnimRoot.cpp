@@ -365,12 +365,7 @@ void CBTAnimRoot::OnEnter()
 	m_bStart = true;
 	m_iLoopCnt = 0;
 	Reset_CheckFlag();
-	if (animState.iAnimIndex == m_Value.iAnimIndex)
-	{
-		animState.bFinished = false;
-		pAnimator->SetTrackPosition(0.f);
-		pAnimator->SetPlay(true);
-	}
+
 }
 
 void CBTAnimRoot::OnExit(EVALUATE eResult)
