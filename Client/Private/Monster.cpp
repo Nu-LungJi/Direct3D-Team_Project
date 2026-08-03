@@ -19,6 +19,7 @@
 
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
+#include "ClientEvents.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -28,6 +29,8 @@ CMonster::CMonster()
 
 CMonster::~CMonster()
 {
+	// 구독해제
+	// CGameInstance::Get().EventUnsubscribeAll(GetHandle());
 }
 
 void CMonster::UpdateGUI()
@@ -113,6 +116,9 @@ HRESULT CMonster::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+
+	// 모든 몬스터들이 고대마법에 공격캔슬하도록 구독
+	// CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { CancelAttack(); });
 
 	return S_OK;
 }
@@ -458,7 +464,6 @@ void CMonster::Skill_Finished()
 	m_eLastSkillTable = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT) | ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) |ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
 }
-
 
 void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 {
