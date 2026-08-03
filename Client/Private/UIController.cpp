@@ -265,9 +265,26 @@ void CUIController::CreateSpellType()
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_AvadaKedavra.avi");
 
 	/*********디스크립션 json 이름**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetDescJsonname("AristoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[1]))->SetDescJsonname("GlaciusDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[2]))->SetDescJsonname("LeviosoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[3]))->SetDescJsonname("TransformDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[4]))->SetDescJsonname("AssioDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetDescJsonname("DepulsoDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetDescJsonname("DescendoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[7]))->SetDescJsonname("FlipendoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[8]))->SetDescJsonname("ConfringoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[9]))->SetDescJsonname("DiffindoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[10]))->SetDescJsonname("ExpelliarmusDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetDescJsonname("BombardaDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[12]))->SetDescJsonname("IncendioDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[13]))->SetDescJsonname("DisillDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[14]))->SetDescJsonname("LumosDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetDescJsonname("ReparoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[16]))->SetDescJsonname("WingardiumDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetDescJsonname("AvadaKedavraDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetDescJsonname("CrucioDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetDescJsonname("ImperioDesc"); 
 
 	/********단축키슬롯**********/
 	m_SpellShortCutKeySlot[0] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut1").front();
@@ -282,6 +299,14 @@ void CUIController::CreateSpellType()
 	//static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellShortCutKeySlot[0]))->SetSpellType(ETOUI(SPELL_TYPE::B_BOMBARDA));
 
 	m_SpellSlotStatic = GET_SINGLE(UIManager)->LoadPrefab("SpellSlotStatic");
+
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellOpen.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 0.3f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+		});
 
 	E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
@@ -311,6 +336,14 @@ void CUIController::DeleteSpellType()
 
 	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
+
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
+	.sBusID = SOUND_BUS::UI,
+	.fVolume = 0.3f,
+	.fPitch = 1.f,
+	.iPriority = 64,
+	.bLoop = false
+		});
 }
 
 void CUIController::CreateDeathScene()
