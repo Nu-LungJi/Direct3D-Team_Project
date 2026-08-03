@@ -20,6 +20,7 @@ class CComSocket;
 
 class CComPxRigidBody;
 class CComPxBoxCollider;
+class CComPxSphereCollider;
 class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
@@ -41,6 +42,8 @@ public:
 	{
 		CCT_CAPSULE = 0,
 		PLAYER_SHAPE_HURTBOX,
+		PLAYER_LEFT_FOOT,
+		PLAYER_RIGHT_FOOT,
 		END
 	};
 
@@ -187,7 +190,11 @@ private:
 
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
+	CComPxSphereCollider* m_pComPxLeftFootCollider{};
+	CComPxSphereCollider* m_pComPxRightFootCollider{};
 	int32_t m_iHurtBoxBoneIndex{ -1 };
+	int32_t m_iLeftFootBoneIndex{ -1 };
+	int32_t m_iRightFootBoneIndex{ -1 };
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
