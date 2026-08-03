@@ -172,15 +172,15 @@ void CPlayer_Magic_Bullet::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
 
-	auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
+	//auto matrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
 
-	auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
-	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
-	CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
-	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-	CGameInstance::Get().GetDbgLineRender()->AddSphere(m_fRadius, matrix);
-	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
-	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
+	//auto cachedCol = CGameInstance::Get().GetDbgLineRender()->GetColor();
+	//auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
+	//CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
+	//CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
+	//CGameInstance::Get().GetDbgLineRender()->AddSphere(m_fRadius, matrix);
+	//CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
+	//CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 }
 
 HRESULT CPlayer_Magic_Bullet::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

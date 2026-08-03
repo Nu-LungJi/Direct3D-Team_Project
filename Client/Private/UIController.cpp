@@ -528,7 +528,7 @@ void CUIController::CreateMonsterHP()
 {
 	m_TargetHandle = m_ReserveTargetHandle;
 
-	if (m_TargetHandle == std::nullopt || E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
+	if (m_TargetHandle == std::nullopt || nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
 		return;
 
 	auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
