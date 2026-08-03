@@ -112,6 +112,7 @@ public:
 	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 	void OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
+	void PlayFootstepSound(PLAYER_COLLISIONS eFoot);
 
 	CComCharacterMoveIntent* GetMoveIntent() const { return m_pComMoveIntent; }
 	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
@@ -195,6 +196,7 @@ private:
 	int32_t m_iHurtBoxBoneIndex{ -1 };
 	int32_t m_iLeftFootBoneIndex{ -1 };
 	int32_t m_iRightFootBoneIndex{ -1 };
+	_float m_fFootstepSoundCooldown{};
 	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
