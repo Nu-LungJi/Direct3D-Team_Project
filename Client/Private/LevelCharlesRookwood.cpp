@@ -87,6 +87,10 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
 
+	if (FAILED(PlayBGM()))
+		return E_FAIL;
+	
+
 	return S_OK;
 }
 
@@ -473,6 +477,36 @@ HRESULT CLevelCharlesRookwood::SpawnSkyBox()
 	return S_OK;
 }
 
+HRESULT CLevelCharlesRookwood::PlayBGM()
+{
+	const _string sSoundPath = "./Resources/SampleClient/Sound/CharlesRookwood/CharlesRookwoodBgm.wav";
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (pSoundManager == nullptr || !pSoundManager->Preload(sSoundPath))
+		return E_FAIL;
+
+	m_bmgID = pSoundManager->Play2D(sSoundPath,
+		E::SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::BGM,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = true
+		});
+	if (m_bmgID == INVALID_SOUND_ID)
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelCharlesRookwood::StopBGM()
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (!pSoundManager->Stop(m_bmgID))
+		return E_FAIL;
+
+	return S_OK;
+}
+
 HRESULT CLevelCharlesRookwood::SpawnBridge()
 {
 
@@ -493,5 +527,6 @@ HRESULT CLevelCharlesRookwood::SpawnBridge()
 
 void CLevelCharlesRookwood::Free()
 {
+	StopBGM();
 	CLevel::Free();
 }
