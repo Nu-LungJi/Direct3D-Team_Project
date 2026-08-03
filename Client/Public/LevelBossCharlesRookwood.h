@@ -32,6 +32,8 @@ private:
 	HRESULT SpawnPlayerCamera(std::optional<CHandle> hPlayer);
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
+	HRESULT SpawnSkyBox();
+	HRESULT SpawnAmbientSound();
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };

@@ -21,6 +21,7 @@
 #include "UIController.h"
 
 #include "LightPlacementObject.h"
+#include "AmbientSound2DObject.h"
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -36,7 +37,7 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 
-	GET_SINGLE(UIManager)->CreateFadeOut();
+	GET_SINGLE(UIManager)->CreateFadeOut(2.f, 3.f);
 
 	if (FAILED(CGameInstance::Get().Initialize_EffectLight(15)))
 	{
@@ -73,14 +74,13 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(SpawnLightPlacement()))
 		return E_FAIL;
 
-	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
-
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
-	skyDesc.sObjectTag = "SkyCloudyCube";
-	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
-	{
+	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
-	}
+
+	if (FAILED(SpawnAmbientSound()))
+		return E_FAIL;
+
+	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }
@@ -190,6 +190,7 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCamera(std::optional<CHandle> hPla
 	Desc.fFar = 1000.f;
 	Desc.sObjectTag = "PlayerCamera";
 	Desc.hTarget = hPlayer.value();
+	Desc.fYaw = 90.f;
 
 	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::BOSS_CHARLES_ROOKWOOD,
@@ -210,6 +211,7 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
 	PlayerDesc.vInitialPosition = { -80.f, 20.f, 10.f };
+	PlayerDesc.vInitialRotation = { 0.f, 90.f, 0.f };
 	PlayerDesc.LevelTag = LEVEL::BOSS_CHARLES_ROOKWOOD;
 	PlayerDesc.tFilter = PX_FILTER_DESC{
 	 .iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
@@ -249,6 +251,42 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
 		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
 		"03_Player",
 		&Desc))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnAmbientSound()
+{
+	CAmbientSound2DObject::DESC desc{};
+ 	desc.sObjectTag = "Ambient_Wind";
+
+	desc.tSoundData.sBusID = SOUND_BUS::BGM;
+	desc.tSoundData.eLoadType = SOUND_LOAD_TYPE::STREAM;
+	desc.tSoundData.sName = "Bgm";
+	desc.tSoundData.sSoundPath = "./Resources/SampleClient/Sound/BossCharlesRookwood/Ambient/Guardians_Awaken.wav";
+	desc.tSoundData.fVolume = 0.8f;
+	desc.tSoundData.bLoop = true;
+	desc.tSoundData.bAutoPlay = true;
+	auto h = CGameInstance::Get().AddGameObjectToLayer(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
+		"Layer_AmbientSound",
+		&desc);
+	if (!h)
+	{
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnSkyBox()
+{
+	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	skyDesc.sObjectTag = "SkyCloudyCube";
+	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{
 		return E_FAIL;
 	}

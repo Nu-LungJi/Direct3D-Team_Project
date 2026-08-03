@@ -171,14 +171,6 @@ void CUIController::Update(E::_float fTimeDelta)
 	if (E::CGameInstance::Get().KeyDown(DIK_0) && !m_isCreateDeathScene)
 	{
 		m_isCreateDeathScene = true;
-
-		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
-		.sBusID = SOUND_BUS::UI,
-		.fVolume = 0.5f,
-		.fPitch = 1.f,
-		.iPriority = 64,
-		.bLoop = false
-			});
 		CreateDeathScene();
 	}
 	
@@ -323,6 +315,8 @@ void CUIController::DeleteSpellType()
 
 void CUIController::CreateDeathScene()
 {
+	m_isCreateDeathScene = true;
+
 	m_Desolve = GET_SINGLE(UIManager)->LoadPrefab("Desolve").front();
 	m_DeathDivider = GET_SINGLE(UIManager)->LoadPrefab("DeathDivider").front();
 	m_DeathTxt = GET_SINGLE(UIManager)->LoadPrefab("DeathSceneTxt");
@@ -357,6 +351,14 @@ void CUIController::CreateDeathScene()
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
 	//E::CGameInstance::Get().SetMouseFix(false);
+
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 0.5f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -528,7 +530,7 @@ void CUIController::CreateMonsterHP()
 {
 	m_TargetHandle = m_ReserveTargetHandle;
 
-	if (m_TargetHandle == std::nullopt || E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
+	if (m_TargetHandle == std::nullopt || nullptr == E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
 		return;
 
 	auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);

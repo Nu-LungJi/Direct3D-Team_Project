@@ -41,6 +41,7 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 		return E_FAIL;
 
 	m_hTarget = pDesc->hTarget;
+	m_fYaw = pDesc->fYaw;
 	m_fPitch = std::clamp(
 		pDesc->fPitch,
 		pDesc->fMinPitch,
