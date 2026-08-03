@@ -37,7 +37,7 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 
-	GET_SINGLE(UIManager)->CreateFadeOut();
+	GET_SINGLE(UIManager)->CreateFadeOut(2.f, 3.f);
 
 	if (FAILED(CGameInstance::Get().Initialize_EffectLight(15)))
 	{

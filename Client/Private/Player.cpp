@@ -1897,9 +1897,9 @@ void CPlayer::DelayFinish(_float fTimeDelta)
 {
 	
 
-	if(m_iHp <= 0){
+	if(m_iHp <= 0 && m_fDelayTime != -1.f){
 		m_fDelayTime += fTimeDelta;
-		if (m_fDelayTime >= 3.18f || m_fDelayTime != -1.f)
+		if (m_fDelayTime >= 3.18f )
 		{
 			//[LSY] 3.18초 후에 게임 종료 처리
 			m_fDelayTime = -1.f;
