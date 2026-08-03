@@ -434,20 +434,27 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 
 	m_pResDynTexTargetVolumetric = Generate_RenderTarget("DynTex2D_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 
-	m_pVolumetricComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric");
+	m_pVolumetricComputeShader	 = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric");
+								 
+	m_pResDynTexUAVVolumetric	 = Generate_UnorderedAccessView("UAV_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 
-	m_pResDynTexUAVVolumetric = Generate_UnorderedAccessView("UAV_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
-
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.dds", nullptr, BlueNoiseTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.dds", nullptr, m_pBlueNoiseTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create BlueNoise Texture File.");
 		return E_FAIL;
 	}
 
-	VolumeTexture = Create_Texture3D(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, 32, 32, 32);
-	//if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture.dds", nullptr, VolumeTexture.GetAddressOf()))) {
-	//	MSG_BOX("Cannot Create BlueNoise Texture File.");
-	//	return E_FAIL;
-	//}
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture.dds", nullptr, m_pVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Volume Texture File.");
+		return E_FAIL;
+	}
+
+	m_pVolumetricCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_VLFog", E::CResCBuffer::Create());
+	if (nullptr == m_pVolumetricCBuffer) return E_FAIL;
+
+	if (FAILED(m_pVolumetricCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_VLFOG) })))    return E_FAIL;
+
+	m_pVolumeTexture = Create_Texture3D(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, 32, 32, 32);
+
 	return S_OK;
 }
 HRESULT CRenderer::InitializeUI3D()
@@ -1019,29 +1026,6 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	return S_OK;
 }
 
-HRESULT CRenderer::Bind_VolumetricFog() {
-	//auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FOG");
-	//D3D11_MAPPED_SUBRESOURCE mappedSubResource;
-	//if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
-	//{
-	//	CB_FOG cbFog{};
-	//	cbFog.FogIntensity = m_fFogIntensity;
-	//	cbFog.FogColor = m_fFogColor;
-	//	cbFog.FogMaxHeight = m_fFogMaxHeight; 
-	//	cbFog.FogStartPos = m_fFogStartPos;
-	//	cbFog.FogEndPos = m_fFogEndPos;
-	//	cbFog.FogDensity = m_fFogDensity;
-	//
-	//	memcpy(mappedSubResource.pData, &cbFog, sizeof(cbFog));
-	//	m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
-	//}
-	//m_pContext->VSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	//m_pContext->PSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-	//m_pContext->CSSetConstantBuffers(6, 1, pCbPerPass->GetCBuffer().GetAddressOf());
-
-	return S_OK;
-}
-
 HRESULT CRenderer::Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam) {
 	if (_ActiveCam == nullptr) return E_FAIL;
 
@@ -1129,54 +1113,8 @@ void CRenderer::FrameEnd()
 }
 
 HRESULT CRenderer::Render_Shadow() {
-	//{
-	//	ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
-	//	m_pContext->PSSetShaderResources(6, 1, pNullSRV); // 6번 슬롯을 NULL로 청소
-	//}
-	//{
-	//	ID3D11DepthStencilState* pDSS = nullptr;
-	//	m_pContext->OMSetDepthStencilState(pDSS, 0);
-
-	//	SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
-	//	m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
-
-	//	m_pContext->ClearDepthStencilView(m_pResDynTexTargetShadow->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	//}
-
-	//// RenderTarget/DepthStencil Setting + ViewPort Setting
-	//{
-	//	ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-	//	m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetShadow->GetDSV().Get());
-	//	m_pContext->RSSetViewports(1, &m_pShadowViewPort->GetViewPort());
-
-	//	m_pContext->IASetInputLayout(m_pDebugVertexShader->GetInputLayout().Get());
-	//	m_pContext->VSSetShader(m_pDebugVertexShader->GetVertexShader().Get(), nullptr, 0);
-	//	m_pContext->PSSetShader(nullptr, nullptr, 0);
-
-	//	ID3D11Buffer* vertexBuffers[] = { m_pDebugBuffer->GetVertexBuffer().Get() };
-	//	uint32_t strides[] = { m_pDebugBuffer->GetVertexStride() };
-	//	uint32_t offsets[] = { 0 };
-
-	//	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-	//	m_pContext->IASetIndexBuffer(m_pDebugBuffer->GetIndexBuffer().Get(), m_pDebugBuffer->GetIndexFormat(), 0);
-	//	m_pContext->IASetPrimitiveTopology(m_pDebugBuffer->GetPrimitiveType());
-	//}
-	//{
-	//	auto pShadowCamera = CGameInstance::Get().GetCamera("Shadow");
-	//	if (nullptr == pShadowCamera)										{ Unbind_Resources(); return S_OK; }
-
-	//	if (FAILED(Reset_RenderContext(RENDERPASS::SHADOW, pShadowCamera))) { Unbind_Resources(); return S_OK; }
-
-	//	if (FAILED(Bind_CameraAttribute(pShadowCamera)))					{ Unbind_Resources(); return S_OK; }
-
-	//	if (FAILED(RenderNonBlend()))										{ Unbind_Resources(); return S_OK; }
-	//}
-	//// UnBind RenderTargets / ShaderResource / Shader
-	//{
-	//	ID3D11RenderTargetView* pRTVs[1] = { nullptr };
-	//	m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-	//}
 	if (!ApplyShadow)	return S_OK;
+
 	if (FAILED(CGameInstance::Get().Capture_ShadowMap()))
 	{
 		MSG_BOX("Cannot Generate Shadow");
@@ -1489,20 +1427,34 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
 			 nullptr,
-			BlueNoiseTexture.Get(),
-			VolumeTexture.Get()
+			m_pBlueNoiseTexture.Get(),
+			m_pVolumeTexture.Get()
 		};
-		Bind_VolumetricFog();
 		m_pContext->CSSetShaderResources(0, 5, pSRVs);
+	}
+	{
+		D3D11_MAPPED_SUBRESOURCE MRES{};
+		if (SUCCEEDED(m_pContext->Map(m_pVolumetricCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+		{
+			CB_VLFOG cbVLFog{};
+			cbVLFog.g_fFogIntensity = m_fFogIntensity;
+			cbVLFog.g_fFogColor = m_fFogColor;
+			cbVLFog.g_fFogMaxHeight = m_fFogMaxHeight;
+			cbVLFog.g_fFogStartPos = m_fFogStartPos;
+			cbVLFog.g_fFogEndPos = m_fFogEndPos;
+			cbVLFog.g_fFogDensity = m_fFogDensity;
+
+			memcpy(MRES.pData, &cbVLFog, sizeof(cbVLFog));
+			m_pContext->Unmap(m_pVolumetricCBuffer->GetCBuffer().Get(), 0);
+		}
+		m_pContext->CSSetConstantBuffers(11, 1, m_pVolumetricCBuffer->GetCBuffer().GetAddressOf());
+
 	}
 	{
 		uint32_t ScreenResolutionX = { 1280 };
 		uint32_t ScreenResolutionY = { 720 };
 
-		UINT GroupX = (ScreenResolutionX + 15) / 16;
-		UINT GroupY = (ScreenResolutionY + 15) / 16;
-		UINT GroupZ = 1;
-		m_pContext->Dispatch(GroupX, GroupY, GroupZ);
+		m_pContext->Dispatch((ScreenResolutionX + 15) / 16, (ScreenResolutionY + 15) / 16, 1);
 	}
 	 
 	Unbind_Resources();
@@ -2111,6 +2063,10 @@ VOID	CRenderer::PostProcessGUI() {
 VOID	CRenderer::VolumetricFogGUI() {
 	ImGui::Begin("VolumetricFog");
 
+	_float CenterPos[3] = { m_fFogCenterPos.x, m_fFogCenterPos.y, m_fFogCenterPos.z };
+	if (ImGui::DragFloat3("CenterPos", CenterPos)) {
+		m_fFogCenterPos.x = CenterPos[0], m_fFogCenterPos.y = CenterPos[1], m_fFogCenterPos.z = CenterPos[2];
+	}
 	ImGui::SliderFloat("Intensity", &m_fFogIntensity, 0.f, 1.f, "%.2f");
 	if (ImGui::ColorEdit3("Color", (float*)&m_fFogColor))
 	{

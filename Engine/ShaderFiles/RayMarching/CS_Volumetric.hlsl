@@ -14,14 +14,18 @@ const static float2 NoiseResolution     = { 256.f, 256.f };
 const static int    FogMaxStep          = { 32 };
 //const static float  FogDensity          = { 0.01f };
 
-const static float4x4 FogVolumeInvWorld;
-static const float3 FogColor = float3(120.f / 255.f, 255.f / 255.f, 255.f / 255.f);
-static const float  FogIntensity	= 0.05f;
-				    
-static const float  FogMaxHeight	= 120.f;
-static const float  FogStartPos		= 150.f;
-static const float  FogEndPos		= 300.f;
-static const float  FogDensity		= 0.0005f;
+
+cbuffer CB_VLFOG : register(b11)
+{
+	float3 FogColor	= float3(120.f / 255.f, 255.f / 255.f, 255.f / 255.f);
+	float	FogIntensity = 0.05f;
+	   
+	float	FogMaxHeight = 120.f;
+	float	FogStartPos	= 0.f;
+	float	FogEndPos	= 300.f;
+	float	FogDensity	= 0.0005f;
+};
+
 
 float GetVolumeFogDensity(float3 _Point)    
 {
