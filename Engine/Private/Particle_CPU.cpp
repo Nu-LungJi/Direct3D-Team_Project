@@ -684,6 +684,7 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
 	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	m_pComModelInstance->Bind_Materials(pContext, { 0.f, 0.f, 0.f }, 0.f, { 0.f, 0.f, 0.f }, 0.f, 1.f);
 
 	if (m_pHdrPositionTexture)
 	{

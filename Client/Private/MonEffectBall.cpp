@@ -191,43 +191,32 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 	{
 		CGameInstance::Get().StopEffect(m_iEffectID);
 		m_bHit = true;
-
 		auto pCamera = CGameInstance::Get().GetActiveCamera();
 
 		if (!pCamera)
 			return;
-
 		_matrix currentWorld = XMLoadFloat4x4(&m_CurWorldmat);
-		_vector handPosition = currentWorld.r[3];
-		_vector cameraPosition = pCamera->GetTransform().GetLoadedPostion();
+		_vector effectPosition = currentWorld.r[3];
 
-		_vector look = cameraPosition - handPosition;
+		_matrix cameraWorld = XMMatrixInverse(nullptr, pCamera->GetView());
 
-		if (XMVectorGetX(XMVector3LengthSq(look)) < 0.000001f)
-			return;
-
-		look = XMVector3Normalize(look);
-
-		_vector worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
-		_vector right = XMVector3Cross(worldUp, look);
-
-		if (XMVectorGetX(XMVector3LengthSq(right)) < 0.000001f)
-			right = XMVectorSet(1.f, 0.f, 0.f, 0.f);
-		else
-			right = XMVector3Normalize(right);
-
-		_vector up = XMVector3Normalize(XMVector3Cross(look, right));
+		_vector cameraRight = XMVector3Normalize(cameraWorld.r[0]);
+		_vector cameraUp = XMVector3Normalize(cameraWorld.r[1]);
+		_vector cameraLook = XMVector3Normalize(cameraWorld.r[2]);
 
 		_matrix effectMatrix = XMMatrixIdentity();
-		effectMatrix.r[0] = XMVectorSetW(right, 0.f);
-		effectMatrix.r[1] = XMVectorSetW(up, 0.f);
-		effectMatrix.r[2] = XMVectorSetW(look, 0.f);
-		effectMatrix.r[3] = XMVectorSetW(handPosition, 1.f);
+		effectMatrix.r[0] = XMVectorSetW(cameraRight, 0.f);
+		effectMatrix.r[1] = XMVectorSetW(cameraUp, 0.f);
+		effectMatrix.r[2] = XMVectorSetW(cameraLook, 0.f);
+		effectMatrix.r[3] = XMVectorSetW(effectPosition, 1.f);
 
 		_float4x4 effectWorld{};
 		XMStoreFloat4x4(&effectWorld, effectMatrix);
 
-		CGameInstance::Get().PlayEffect("TombBossPatternBlockEffect", effectWorld, _vector{});
+		CGameInstance::Get().PlayEffect(
+			"TombBossPatternBlockEffect",
+			effectWorld,
+			_vector{});
 
 		return;
 	}
