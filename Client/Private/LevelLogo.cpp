@@ -153,15 +153,15 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 
 		m_VideoQue = true;
 
-		{
-			m_SoundId = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Hedwings.mp3", SOUND_PLAY_DESC{
-					.sBusID = SOUND_BUS::UI,
-					.fVolume = 0.3f,
-					.fPitch = 1.f,
-					.iPriority = 64,
-					.bLoop = false
-				});
-		}
+		//{
+		//	m_SoundId = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Hedwings.mp3", SOUND_PLAY_DESC{
+		//			.sBusID = SOUND_BUS::UI,
+		//			.fVolume = 0.3f,
+		//			.fPitch = 1.f,
+		//			.iPriority = 64,
+		//			.bLoop = false
+		//		});
+		//}
 	}
 
 	if(!m_ChangeScene)
