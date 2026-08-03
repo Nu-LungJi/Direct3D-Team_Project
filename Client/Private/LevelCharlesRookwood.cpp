@@ -81,6 +81,14 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(SpawnLightPlacement()))
 		return E_FAIL;
 
+	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	skyDesc.sObjectTag = "SkyCloudyCube";
+	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
+	{
+		return E_FAIL;
+	}
+
+
 	return S_OK;
 }
 
