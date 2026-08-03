@@ -40,7 +40,7 @@ HRESULT CLevelCharlesRookwood::Initialize()
 {
 	E::CGameInstance::Get().GameObjectAllReset();
 
-	GET_SINGLE(UIManager)->CreateFadeOut();
+	GET_SINGLE(UIManager)->CreateFadeOut(2.f, 3.f);
 
 	if (FAILED(
 		CGameInstance::Get().
@@ -110,6 +110,11 @@ void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 	}
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+
+	if (E::CGameInstance::Get().KeyDown(DIK_SPACE))
+	{
+		//GET_SINGLE(UIManager)->CreateFadeInSceneChange(float delay = 0.f, float playtime = 5.f, LEVEL level = LEVEL::LOGO);
+	}
 }
 
 HRESULT CLevelCharlesRookwood::Render()

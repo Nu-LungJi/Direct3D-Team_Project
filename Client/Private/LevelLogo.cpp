@@ -132,7 +132,7 @@ HRESULT CLevelLogo::Initialize()
 
 	}
 
-	GET_SINGLE(UIManager)->CreateFadeOut();
+	GET_SINGLE(UIManager)->CreateFadeOut(1.f, 5.f);
 
 	return S_OK;
 }
@@ -146,19 +146,28 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 
 		//CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
 		//PlayFadeOutDelete(hBG);
-		
 
 		m_Logo = GET_SINGLE(UIManager)->LoadPrefab("Logo").front();
 		SafeGetOBJ(m_Logo)->SetAlpha(0.f);
-		PlayFadeInSacleUp(m_Logo, 7.f, 5.f);
+		PlayFadeInSacleUp(m_Logo, 9.f, 5.f);
 
 		m_VideoQue = true;
+
+		{
+			m_SoundId = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Hedwings.mp3", SOUND_PLAY_DESC{
+					.sBusID = SOUND_BUS::UI,
+					.fVolume = 0.3f,
+					.fPitch = 1.f,
+					.iPriority = 64,
+					.bLoop = false
+				});
+		}
 	}
 
 	if(!m_ChangeScene)
 		m_SceneChangeTimer += fTimeDelta;
 
-	if (!m_isLogoDelete && m_SceneChangeTimer > 15.f)
+	if (!m_isLogoDelete && m_SceneChangeTimer > 17.f)
 	{
 		PlayFadeOutDelete(m_Logo, 0.f, 3.f);
 		m_isLogoDelete = true;
@@ -172,12 +181,12 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 		PlayFadeInChange(hBG);
 		m_ChangeScene = true;
 	}
-	else if (!m_ChangeScene && m_SceneChangeTimer > 15.f)
+	else if (!m_ChangeScene && m_SceneChangeTimer > 17.8f)
 	{
 		CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
 		GetSafeUI(hBG)->SetAlpha(0.f);
 		PlayFadeInChange(hBG);
-		
+
 		m_SceneChangeTimer = 0.f;
 		m_ChangeScene = true;
 	}
@@ -273,13 +282,14 @@ void CLevelLogo::PlayFadeInChange(CHandle pHandle, float delay, float playtime)
 			pBtn->SetAlpha(currentValue);
 		}, nullptr, EEaseType::EaseOutQuad, delay);
 
-	//pTween->PlayTween(0.f, 1.f, playtime,
-	//	[pBtn](float currentValue) {
-	//		pBtn->SetAlpha(currentValue);
-	//	}, [pHandle]() {
-	//		Engine::CGameInstance::Get().ChangeLevel(
-	//			CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::BOSS_CHARLES_ROOKWOOD));
-	//		}, EEaseType::EaseOutQuad, delay);
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, [pHandle, this]() {
+			Engine::CGameInstance::Get().ChangeLevel(
+				CLevelLoading::Create(E::CGameInstance::Get().GetGraphicDevice(), E::CGameInstance::Get().GetGraphicDeviceContext(), LEVEL::CHARLES_ROOKWOOD));
+			E::CGameInstance::Get().GetSoundManager()->Stop(m_SoundId);
+			}, EEaseType::EaseOutQuad, delay);
 }
 
 Engine::UPtr<CLevelLogo> CLevelLogo::Create()
