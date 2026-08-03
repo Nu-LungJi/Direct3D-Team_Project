@@ -209,6 +209,10 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 		m_iHurtBoxBoneIndex =
 			m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
+		m_iLeftFootBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("LeftFoot");
+		m_iRightFootBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("RightFoot");
 	}
 
 	{
@@ -227,10 +231,49 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		CComPxRigidBody::DESC Desc{};
 		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		Desc.vPosition = pDesc->vInitialPosition;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComHitboxRigidbody", &Desc, &m_pComPxRigidBody)))
 		{
 			return E_FAIL;
 		};
+	}
+
+	{
+		CComPxSphereCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 0.4f });
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_LEFT_FOOT);
+		Desc.bIsTrigger = true;
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::SENSOR);
+		Desc.tFilter.iQueryMask = 0;
+		Desc.tFilter.iSimulationMask =
+			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::MOVING_PLATFORM);
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, "ComPxLeftFootCollider", &Desc, &m_pComPxLeftFootCollider)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		CComPxSphereCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComPxRigidBody;
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 0.4f });
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_RIGHT_FOOT);
+		Desc.bIsTrigger = true;
+		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::SENSOR);
+		Desc.tFilter.iQueryMask = 0;
+		Desc.tFilter.iSimulationMask =
+			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::MOVING_PLATFORM);
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider, "ComPxRightFootCollider", &Desc, &m_pComPxRightFootCollider)))
+		{
+			return E_FAIL;
+		}
 	}
 
 	{
@@ -973,20 +1016,35 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 	ApplyGroundFollow(fTimeDelta);
 	m_pComCharacterMotor->FixedUpdate(fTimeDelta);
+	// Motor가 갱신한 루트 위치를 본 월드 행렬과 동일한 프레임으로 맞춘다.
+	GetTransform().Update();
 
-	_bool bHurtBoxUpdated = false;
-	if (m_iHurtBoxBoneIndex >= 0 && m_pComModelInstance)
+	const _float3 vPlayerPosition = GetTransform().GetPosition();
+	const _float4 vPlayerRotation = GetTransform().GetQuaternion();
+	m_pComPxRigidBody->SetKinematicTarget(vPlayerPosition, vPlayerRotation);
+
+	if (m_pComModelInstance)
 	{
 		const auto& CombinedBones =
 			m_pComModelInstance->Get_CombinedBoneMatrices();
-		const size_t iBoneIndex =
-			static_cast<size_t>(m_iHurtBoxBoneIndex);
+		const _matrix PlayerPhysicsWorld =
+			XMMatrixRotationQuaternion(XMLoadFloat4(&vPlayerRotation)) *
+			XMMatrixTranslation(vPlayerPosition.x, vPlayerPosition.y, vPlayerPosition.z);
+		const _matrix InversePlayerPhysicsWorld =
+			XMMatrixInverse(nullptr, PlayerPhysicsWorld);
 
-		if (iBoneIndex < CombinedBones.size())
+		const auto UpdateColliderLocalPose =
+			[&](CComPxCollider* pCollider, int32_t iBoneIndex)
 		{
-			const _matrix HurtBoxWorld =
-				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
+			if (!pCollider || iBoneIndex < 0 ||
+				static_cast<size_t>(iBoneIndex) >= CombinedBones.size())
+				return;
+
+			const _matrix ColliderWorld =
+				XMLoadFloat4x4(&CombinedBones[static_cast<size_t>(iBoneIndex)]) *
 				GetTransform().GetLoadedCombinedWorldMatrix();
+			const _matrix ColliderLocal =
+				ColliderWorld * InversePlayerPhysicsWorld;
 
 			_vector vScale{};
 			_vector vRotation{};
@@ -995,28 +1053,21 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 				&vScale,
 				&vRotation,
 				&vTranslation,
-				HurtBoxWorld))
+				ColliderLocal))
 			{
-				_float3 vHurtBoxPosition{};
-				_float4 vHurtBoxRotation{};
-				XMStoreFloat3(&vHurtBoxPosition, vTranslation);
-				XMStoreFloat4(
-					&vHurtBoxRotation,
+				_float3 vLocalPosition{};
+				_float4 vLocalRotation{};
+				XMStoreFloat3(&vLocalPosition, vTranslation);
+				XMStoreFloat4(&vLocalRotation,
 					XMQuaternionNormalize(vRotation));
-
-				bHurtBoxUpdated =
-					m_pComPxRigidBody->SetKinematicTarget(
-						vHurtBoxPosition,
-						vHurtBoxRotation);
+				pCollider->SetLocalPosition(vLocalPosition);
+				pCollider->SetLocalRotation(vLocalRotation);
 			}
-		}
-	}
+		};
 
-	if (!bHurtBoxUpdated)
-	{
-		m_pComPxRigidBody->SetKinematicTarget(
-			m_pComCharacterController->GetPosition(),
-			GetTransform().GetQuaternion());
+		UpdateColliderLocalPose(m_pComPxBoxCollider, m_iHurtBoxBoneIndex);
+		UpdateColliderLocalPose(m_pComPxLeftFootCollider, m_iLeftFootBoneIndex);
+		UpdateColliderLocalPose(m_pComPxRightFootCollider, m_iRightFootBoneIndex);
 	}
 
 	if (m_pRagdollController)
@@ -1848,7 +1899,7 @@ void CPlayer::DelayFinish(_float fTimeDelta)
 
 	if(m_iHp <= 0){
 		m_fDelayTime += fTimeDelta;
-		if (m_fDelayTime >= 3.18f)
+		if (m_fDelayTime >= 3.18f || m_fDelayTime != -1.f)
 		{
 			//[LSY] 3.18초 후에 게임 종료 처리
 			m_fDelayTime = -1.f;

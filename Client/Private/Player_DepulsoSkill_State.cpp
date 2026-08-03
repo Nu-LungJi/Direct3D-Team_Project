@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "ComAnimator.h"
+#include "ComSound.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Monster.h"
 NS_USING(Client)
@@ -27,6 +28,20 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	{
 		RequestLocomotion(pStateMachine);
 		return;
+	}
+
+	if (auto* pSound = pPlayer->GetSound())
+	{
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_VOICE_DEPULSO" },
+			"./Resources/SampleClient/Sound/Player/Spell/Depulso/Depulso_Man.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 0.1f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
 	}
 
 	CacheAnimationIndices(*pPlayer);
