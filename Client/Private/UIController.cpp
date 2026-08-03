@@ -67,7 +67,7 @@ void CUIController::Update(E::_float fTimeDelta)
 	if (!CursorCreate)
 	{
 
-		/*auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		auto clientSize = CGameInstance::Get().GetClientScreenSize();
 		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 		
 		CCursor::UIOBJECT_DESC Desc{};
@@ -84,7 +84,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		
 		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
 
-		CursorCreate = true;*/
+		CursorCreate = true;
 
 	}
 
@@ -310,7 +310,7 @@ void CUIController::CreateSpellType()
 		.bLoop = false
 		});
 
-	E::CGameInstance::Get().SetMouseFix(false);
+	//E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 }
 
@@ -336,7 +336,7 @@ void CUIController::DeleteSpellType()
 		PlayScaleAlphaDownDelete(m_SpellShortCutKeySlot[i]);
 	}
 
-	E::CGameInstance::Get().SetMouseFix(true);
+	//E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
