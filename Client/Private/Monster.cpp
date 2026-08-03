@@ -16,6 +16,9 @@
 #include "CollBox.h"
 #include "UIManager.h"
 #include "UIController.h"
+
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -122,8 +125,6 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 	
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
-	CGameInstance::Get().AddColliderGroup("CollMonster", m_pComCollider->Get());
-	m_pComCollider->Get()->Transform(GetTransform().GetLoadedCombinedWorldMatrix());
 	__super::PriorityUpdate(fTimeDelta);
 	
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)| ETOUI(CBTRoot::BTFLAG::DEAD) | ETOUI(CBTRoot::BTFLAG::DEBRIS)))
@@ -144,6 +145,7 @@ void CMonster::Update(E::_float fTimeDelta)
 
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
+	Update_HurtBox();
 }
 
 void CMonster::LateUpdate(E::_float fTimeDelta)
@@ -483,6 +485,60 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	}
 }
 
+void CMonster::Update_HurtBox()
+{
+	_bool bHurtBoxUpdated{ false };
+
+	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
+	{
+		const auto& CombinedBones =m_pComModelInstance->Get_CombinedBoneMatrices();
+
+		const size_t iBoneIndex =
+			static_cast<size_t>(m_iColliderBoneIndex);
+
+		if (iBoneIndex < CombinedBones.size())
+		{
+			const _matrix HurtBoxWorld =
+				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
+
+			_vector vScale{};
+			_vector vRotation{};
+			_vector vTranslation{};
+
+			if (XMMatrixDecompose(
+				&vScale,
+				&vRotation,
+				&vTranslation,
+				HurtBoxWorld))
+			{
+				_float4 vHurtBoxRotation{};
+
+				// 계산한 위치를 멤버에 저장
+				XMStoreFloat3(
+					&m_vHurtBoxPosition,
+					vTranslation);
+
+				XMStoreFloat4(
+					&vHurtBoxRotation,
+					XMQuaternionNormalize(vRotation));
+
+				bHurtBoxUpdated = m_pComRigidBody->SetKinematicTarget(m_vHurtBoxPosition,vHurtBoxRotation);
+			}
+		}
+	}
+
+	if (!bHurtBoxUpdated)
+	{
+		m_vHurtBoxPosition =
+			m_pCharacterController->GetPosition();
+
+		m_pComRigidBody->SetKinematicTarget(
+			m_vHurtBoxPosition,
+			GetTransform().GetQuaternion());
+	}
+}
+
 void CMonster::Flag_Check(_float fTimeDelta)
 {
 	//이미시브
@@ -529,4 +585,7 @@ void CMonster::EmissiveFadeOut(_float fTimeDelta)
 	}
 
 }
+
+
+
 

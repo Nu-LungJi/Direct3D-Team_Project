@@ -102,7 +102,7 @@ public:
 public:
 	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
 
-	void Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
+	void						Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
 	virtual const _float		Get_Damage() { return 0.f; }
@@ -124,18 +124,27 @@ public:
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 protected:
+
 	uint32_t					Find_SkillNum(ATTMON eType);
 	_bool						Check_Flag(uint32_t iFlag);
-	void						Damaged(PLAYER_SKILL_TYPE eType);
+	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
+	void						Update_HurtBox();
 private:
 	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
+// 민수 추가 ----------------------------------------------------------
+public:
+	const _float3& GetHurtBoxPosition() const {return m_vHurtBoxPosition;}
+
+
+protected:
+	_float3 m_vHurtBoxPosition{};
+// 민수 추가 ----------------------------------------------------------
 protected:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
 	CComBeHavior* m_pBeHavior;
-	CComCollider* m_pComCollider{};
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
@@ -159,11 +168,11 @@ protected:
 	_float2								m_fSkillRatio{ };
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{}, m_iPreSkill{}, m_iCurSkill{};
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{};
-	int32_t								m_iHp{}, m_iMaxHp{};
+	int32_t								m_iHp{}, m_iMaxHp{},m_iColliderBoneIndex{};;
 	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };
-
+	
 	_bool								m_bPending{ false };
 	MON_HIT_INFO						m_PendingMonTable{};
 

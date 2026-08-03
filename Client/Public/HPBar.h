@@ -63,6 +63,7 @@ private:
 		if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
 			return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
 	}
+	_bool m_bDeleteClick{ false };
 
 public:
 	static E::UPtr<CHPBar> Create();

@@ -153,9 +153,8 @@ HRESULT CBTDecTimer::Load_json(const nlohmann::json& j)
 }
 void		CBTDecTimer::Update_Gui()
 {
-	_float MaxTime = m_fWaitTime + m_fAddTime;
 	ImGui::Text("TimerTick Cnt");
-	ImGui::DragFloat("##Timer1", &MaxTime, 0, 100);
+	ImGui::DragFloat("##Timer1", &m_fWaitTime, 0, 100);
 
 	ImGui::Text("Current Tick %2.f : ", m_fTick);
 
