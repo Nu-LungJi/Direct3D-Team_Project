@@ -644,13 +644,52 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		std::vector<PX_OVERLAP_RESULT> results{};
 		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 		{
-			const auto& result = results.front();
-			const CHandle hDetectedTarget = result.pGameObject->GetHandle();
-			if (!(hDetectedTarget == m_hAutoTarget)) {
-				m_hPrevAutoTarget = m_hAutoTarget;
-				m_hAutoTarget = hDetectedTarget;
+			auto* pCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
+			CGameObject* pBestTarget = nullptr;
+			_float fBestAlignment = -1.f;
+
+			if (pCamera)
+			{
+				const _vector vCameraPosition =
+					pCamera->GetTransform().GetState(STATE::POSITION);
+				const _vector vCameraLook = XMVector3Normalize(
+					pCamera->GetTransform().GetState(STATE::LOOK));
+
+				for (const auto& result : results)
+				{
+					auto* pCandidate = result.pGameObject;
+					if (!pCandidate || pCandidate->GetPendingDestroy() ||
+						!Cast<CMonster>(pCandidate))
+						continue;
+
+					_vector vToTarget =
+						pCandidate->GetTransform().GetState(STATE::POSITION) -
+						vCameraPosition;
+					if (XMVectorGetX(XMVector3LengthSq(vToTarget)) <=
+						std::numeric_limits<_float>::epsilon())
+						continue;
+
+					vToTarget = XMVector3Normalize(vToTarget);
+					const _float fAlignment = XMVectorGetX(
+						XMVector3Dot(vCameraLook, vToTarget));
+
+					if (fAlignment > fBestAlignment)
+					{
+						fBestAlignment = fAlignment;
+						pBestTarget = pCandidate;
+					}
+				}
 			}
-			
+
+			if (pBestTarget)
+			{
+				const CHandle hDetectedTarget = pBestTarget->GetHandle();
+				if (!(hDetectedTarget == m_hAutoTarget))
+				{
+					m_hPrevAutoTarget = m_hAutoTarget;
+					m_hAutoTarget = hDetectedTarget;
+				}
+			}
 		}
 		else
 		{
@@ -1702,12 +1741,12 @@ void CPlayer::Attack_Magic_Bullet()
 	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
 	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43 };
 	
-	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
 
 	if (pTarget)
 	{
+		desc.vEndPosition = pTarget->GetHurtBoxPosition();
 		// 타깃이 있으면 타깃을 향해 발사
-		XMStoreFloat3(&desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
 	}
 	else
 	{

@@ -14,6 +14,7 @@
 #include "BTCreatureFlag.h"// 개별 플래그 세팅용
 #include "BTMonAttType.h" // 몬스터 전용
 #include "BTMonResetTable.h"
+#include "BTCinematic.h"
 
 #include "BTDecIsGround.h"
 #include "BTDecHp.h"
