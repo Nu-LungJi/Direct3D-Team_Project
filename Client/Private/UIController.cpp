@@ -508,6 +508,13 @@ void CUIController::TargetMonsterHP(CHandle monsterHandle)
 void CUIController::CreateMonsterHP()
 {
 	m_TargetHandle = m_ReserveTargetHandle;
+	auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
+	if (std::nullopt == m_TargetHandle || nullptr == pMonster)
+		return;
+
+	if (pMonster->Get_CurrentHp() <= 0.f)
+		return;
+
 	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
 }
 
