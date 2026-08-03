@@ -14,8 +14,11 @@
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
 #include "TmbGurdianDead.h"
+#include "GurdianWeapon.h"
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
+#include "UIController.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 namespace
@@ -335,8 +338,80 @@ _string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
 
 const _float CTmbGurdian::Get_Damage()
 {
-	m_fDamage = 5.f;
+	//TOMB_SKILL::JUMP_END, TOMB_SKILL::SLASH
+	uint32_t SkillID = Find_SkillNum(m_eAttType);
+
+	if(SkillID == ETOUI(TOMB_SKILL::END))
+	{
+		m_fDamage = 25.f;
+	}
+	else if (SkillID == ETOUI(TOMB_SKILL::SLASH))
+	{
+		m_fDamage = 5.f;
+	}
+	else if (SkillID == ETOUI(TOMB_SKILL::SMASH))
+	{
+		m_fDamage = 15.f;
+	}
+	else if (SkillID == ETOUI(TOMB_SKILL::STING))
+	{
+		m_fDamage = 10.f;
+	}
+	
 	return m_fDamage;
+}
+
+_bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+
+	Damaged(eType);
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		++m_iNormalHitCnt;
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+	
+		if (hUIController.has_value())
+		{
+			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+			{
+				pUIController->AddFinisher(2.f);
+			}
+		}
+	}
+
+	if (m_eMonType == MONSTER_TYPE::NORMAL)
+	{
+		uint32_t iIndex = Find_SkillNum(m_eAttType);
+		if (iIndex != ETOUI(TOMB_SKILL::HIT_ACCIO))
+		{
+			Skill_Finished();
+		}
+	}
+
+	if (eType == PLAYER_SKILL_TYPE::ATTACK && Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)))
+		return false;
+
+	if (ETOUI(m_eMonType) == ETOUI(MONSTER_TYPE::ELITE) && eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
+	
+	if(eType != PLAYER_SKILL_TYPE::ATTACK)
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN), FLAGTYPE::DEL);
+
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)))
+		return false;
+
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
+
+	MON_HIT_INFO HitInfo{};
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);
+
+	HitInfo.eAttType = m_eAttType;
+	HitInfo.eHitType = eType;
+	m_PendingMonTable = HitInfo;
+	m_bPending = true;
+
+	return true;
 }
 
 void CTmbGurdian::UpdateGUI()
@@ -439,7 +514,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
 			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
 		{
-			MSG_BOX("Create Failed ComPxRigidBody TombGurdian");
+			MSG_BOX("Create Failed ComPxRigidBody TmbBoss");
 			return E_FAIL;
 		}
 	}
@@ -459,7 +534,7 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
 				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
 		{
-			MSG_BOX("Create Failed ComPxSphereCollider TmbGurdian");
+			MSG_BOX("Create Failed ComPxSphereCollider TmbBoss");
 			return E_FAIL;
 		}
 		if (!m_pComSphereCol->SetQueryEnabled(false))
@@ -470,7 +545,20 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.vPosition = MonDesc->vPos;
+		const _float fHorizontalScale =
+			std::max(std::abs(MonDesc->vScale.x), std::abs(MonDesc->vScale.z));
+		const _float fVerticalScale = std::abs(MonDesc->vScale.y);
+		const _float3 vCenterOffset{
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * fVerticalScale,
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
+		Desc.fHeight = MonDesc->fCCTHeight * fVerticalScale;
+		Desc.fRadius = MonDesc->fCCTRadius * fHorizontalScale;
+		Desc.fStepOffset = MonDesc->fCCTStepOffset;
+		Desc.vPosition = {
+			MonDesc->vPos.x + vCenterOffset.x,
+			MonDesc->vPos.y + vCenterOffset.y,
+			MonDesc->vPos.z + vCenterOffset.z };
 		Desc.tFilter = MonDesc->tFilter;
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PHYSX,
@@ -497,6 +585,10 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
+		Desc.vControllerCenterOffset = {
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * std::abs(MonDesc->vScale.y),
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(
@@ -556,13 +648,14 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	CMon_Weapon::WEAPON_DESC WeaponDesc{};
+	CGurdianWeapon::DESC WeaponDesc{};
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.ParentHandle = GetHandle();
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHandSocket");
 	WeaponDesc.WeaponName = MonDesc->WeaponResourceName; 
 	WeaponDesc.LevelTag = MonDesc->LevelTag;
 	WeaponDesc.vScale = MonDesc->vWeaponScale;
+	WeaponDesc.vOwnerScale = MonDesc->vScale;
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
 	if (!Weapon.has_value())
 	{
@@ -682,7 +775,9 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 		m_iHp = m_iMaxHp = 100;
 	else if (m_eMonType == MONSTER_TYPE::ELITE)
 		m_iHp = m_iMaxHp = 300;
-
+	
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Spine1");
+	
 	m_pModelAnimator->Play_Anim(0, false);
 	return S_OK;
 }
@@ -723,6 +818,7 @@ void CTmbGurdian::Active_Skill()
 
 
 }
+
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
@@ -731,9 +827,7 @@ void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 {
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
-	_float3 vPos = m_pCharacterController->GetPosition();
-	_float4 vRot = m_pComTransform->GetQuaternion();
-	m_pComRigidBody->SetKinematicTarget(vPos, vRot);
+	
 }
 
 void CTmbGurdian::Update(E::_float fTimeDelta)
@@ -743,8 +837,18 @@ void CTmbGurdian::Update(E::_float fTimeDelta)
 
 	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS)))
 	{
+		// [LSY] 본체가 플래그를 지우기 전에 무기에 직접 전달해 업데이트 순서 의존성을 제거한다.
+		if (auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CGurdianWeapon>(
+			m_Partes[ETOUI(PARTES::WEAPON)]))
+		{
+			if (!pWeapon->ActivateDebrisPhysics())
+				DEBUG_LOG("[TmbGurdian] Failed to activate weapon debris physics.\n");
+		}
+
 		ActivateDeadDebrisPhysics();
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEBRIS), FLAGTYPE::DEL);
+
+		SetPendingDestroy();
 	}
 }
 
@@ -752,6 +856,7 @@ void CTmbGurdian::LateUpdate(E::_float fTimeDelta)
 {
 	if (m_bDeadDebrisPhysicsActivated)
 		return;
+
 	__super::LateUpdate(fTimeDelta);
 }
 

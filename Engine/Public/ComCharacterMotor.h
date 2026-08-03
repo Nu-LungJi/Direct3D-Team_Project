@@ -17,6 +17,8 @@ public:
 		_float fGravity{ -9.81f };
 		_float fJumpVelocity{ 5.f };
 		_float fMinMoveDistance{};
+		// GameObject 원점에서 CCT 중심까지의 월드 축 기준 오프셋.
+		_float3 vControllerCenterOffset{};
 		_bool bUseGravity{ true };
 		_bool bSyncTransform{ true };
 	};
@@ -52,6 +54,7 @@ private:
 	_float m_fGravity{ -9.81f };
 	_float m_fJumpVelocity{ 5.f };
 	_float m_fMinMoveDistance{};
+	_float3 m_vControllerCenterOffset{};
 	_bool m_bUseGravity{ true };
 	_bool m_bSyncTransform{ true };
 	_bool m_bGrounded{};

@@ -80,17 +80,24 @@ void CHPBar::Update(E::_float fTimeDelta)
 
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
+	//if (E::CGameInstance::Get().KeyDown(DIK_6))
+	//{
+	//	m_fcurrentFill -= 40.f;
+	//	UpdateFill();
+	//}
+
 	if (m_UIINFO.UIType == ETOUI(UI_TYPE::HPFILL) &&
 		m_fcurrentFill <= 0.f && !m_bDead)
 	{
 		m_bDead = true;
-		m_pComCButton->SetDisappear(true);
+		PlayMonsterHPDelete(GetHandle());
+		//m_pComCButton->SetDisappear(true);
 
-		for (auto child : m_vChildren)
-		{
-			CUIObject* pUi = CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(child);
-			pUi->GetComponent<CButtonComponent>("Com_Button")->SetDisappear(true);
-		}
+		//for (auto child : m_vChildren)
+		//{
+		//	CUIObject* pUi = CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(child);
+		//	pUi->GetComponent<CButtonComponent>("Com_Button")->SetDisappear(true);
+		//}
 	}
 
 	m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
@@ -108,6 +115,7 @@ void CHPBar::Update(E::_float fTimeDelta)
 
 void CHPBar::LateUpdate(E::_float fTimeDelta)
 {
+	m_fcurrentFill;
 	if (!m_isActive)
 		return;
 
@@ -257,7 +265,7 @@ void CHPBar::PlayEffect(uint32_t uiState)
 
 void CHPBar::UpdateFill()
 {
-	if (m_fMaxFill <= 0.f) return;
+	if (m_fMaxFill <= 0.f && m_bDead) return;
 
 	float targetAmount = m_fcurrentFill / m_fMaxFill;
 
@@ -273,7 +281,7 @@ void CHPBar::UpdateFill()
 	if (m_fCurrentAmount == targetAmount)
 		return;
 
-	pTween->ClearTweens();
+	//pTween->ClearTweens();
 	pTween->PlayTween(m_fCurrentAmount, targetAmount, 0.1f, 
 		[this](float currentValue) {
 			m_fCurrentAmount = currentValue;
@@ -285,6 +293,31 @@ void CHPBar::UpdateFill()
 			0.0f,
 			false
 			);
+}
+
+void CHPBar::PlayMonsterHPDelete(CHandle pHandle)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float scaleRatio = pBtn->GetScaleRatio();
+	_float Alpah = pBtn->GetAlpha();
+
+	pTween->PlayTween(scaleRatio, 0.5f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetScaleRatio(currentValue);
+			pBtn->CalcUICoord();
+		}, nullptr, EEaseType::EaseOutQuad);
+
+	pTween->PlayTween(Alpah, 0.f, 0.2f,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+			pBtn->CalcUICoord();
+		}, [pHandle]() {
+			GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+			}, EEaseType::EaseOutQuad);
 }
 
 E::UPtr<CHPBar> CHPBar::Create()

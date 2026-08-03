@@ -30,11 +30,14 @@ public:
 
 	void				Set_AttTable(ATTMON eType, _float2 fSkillRatio)override;
 	_string				Get_SkillName(ATTMON SkillNode)override;
+	const _string		Get_CurSkillName() { return m_CurEffectName; }
+	void				Skill_Finished() override;
+	_bool				Check_Table(PLAYER_SKILL_TYPE eType)override;
+
 private:
 	void				Active_Skill();
 	void				Active_Dynamic_Effect();
 private:
-	ATTMON			m_eLastSkillTable{ATTMON::END};
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
 	_bool			m_bStar{ true };
 
@@ -42,6 +45,7 @@ private:
 	std::optional<CHandle> AdditionalLightHandle{};
 	/*---------------------------------*/
 
+	uint32_t		m_iColliderBoneIndex{UINT32_MAX};
 public:
 	static E::UPtr<CBossTMB> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

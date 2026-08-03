@@ -165,6 +165,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 				CGameInstance::Get().PlayEffect("Player_Lightning", *Target->GetTransform().GetWorldMatrix());
 				pAnimator->Play_Anim(m_AcientEnd_Animations[ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING)], false, 0.25f);
 				pAnimator->GetCurAnimState().fSpeed = 1.f;
+
 			}
 		
 		}
@@ -176,6 +177,13 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 	
 			RequestLocomotion(pStateMachine);
 		}
+		
+		if (m_fAnimRatio >= ACIENT_LIGHTENING_LAST_ATTACK && !m_bOnceLastLighting) {
+			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
+				pMonster->Check_Table(PLAYER_SKILL_TYPE::ACIENT_LIGHTNING);
+			m_bOnceLastLighting = true;
+		}
+		
 		break;
 	}
 }
@@ -185,6 +193,7 @@ void CPlayer_AcientAttack_State::Exit(CStateMachine* pStateMachine)
 	if (auto* pPlayer = GetPlayer(pStateMachine))
 		ResetSkillControl(*pPlayer);
 	m_bOnceLighting = false;
+	m_bOnceLastLighting = false;
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_fAcientElapsed = 0.f;

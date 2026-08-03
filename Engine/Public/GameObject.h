@@ -184,7 +184,8 @@ public:
 	}
 	PX_CCT_BEHAVIOR GetCCTControllerBehavior(CGameObject* pGameObject) const override
 	{
-		return PX_CCT_BEHAVIOR::NONE;
+		// [LSY] CCT가 다른 CCT 위에 멈추지 않고 캡슐 표면을 따라 미끄러지게 한다.
+		return PX_CCT_BEHAVIOR::SLIDE;
 	}
 	PX_CCT_BEHAVIOR GetCCTObstacleBehavior(const void* pUserData) const override
 	{

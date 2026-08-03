@@ -25,6 +25,8 @@ HRESULT CMainApp::Initialize()
 	EngineDesc.eWinMode = Engine::WINMODE::WIN;
 	EngineDesc.iWinSizeX = g_iWinSizeX;
 	EngineDesc.iWinSizeY = g_iWinSizeY;
+	// NvCloth A/B test switch. Change to DX11 to compare the same cape.
+	EngineDesc.eNvClothBackend = Engine::NVCLOTH_BACKEND::CPU;
 
 	GET_SINGLE(UIManager)->InitializeActions();
 	GET_SINGLE(UIManager)->InitializeFunc();
@@ -72,6 +74,11 @@ HRESULT CMainApp::Initialize()
 	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_TERRAIN", [=]() {
 		Engine::CGameInstance::Get().ChangeLevel(
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::TERRAIN));
+		});
+
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_HOGWART_WORLD", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::HOGWART_WORLD));
 		});
 
 	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_UIEditor", [=]() {

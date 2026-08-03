@@ -12,6 +12,7 @@ namespace Engine
 		WINMODE eWinMode;
 		uint32_t iWinSizeX, iWinSizeY;
 		uint32_t		iNumLevels;
+		NVCLOTH_BACKEND eNvClothBackend{ NVCLOTH_BACKEND::DX11 };
 	} ENGINE_DESC;
 
 
