@@ -8,6 +8,7 @@
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
+#include "ComSound.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
 
@@ -51,6 +52,27 @@ void CPlayer_Jump_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::START;
 	moveIntent->RequestJump();
+	if (auto* pSound = player->GetSound())
+	{
+		static constexpr const char* JUMP_VOICES[] =
+		{
+			"./Resources/SampleClient/Sound/Player/Movement/Jump/Player_JumpVoice_01.wav",
+			"./Resources/SampleClient/Sound/Player/Movement/Jump/Player_JumpVoice_02.wav",
+		};
+		const int iSoundIndex = Engine::RandInt(
+			0, static_cast<int>(std::size(JUMP_VOICES)) - 1);
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_JUMP_VOICE" },
+			JUMP_VOICES[iSoundIndex],
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 0.1f,
+				.fPitch = 1.05f,
+				.iPriority = 80,
+				.bLoop = false
+			},
+			SOUND_SLOT_PLAY_MODE::OVERLAP);
+	}
 	if (m_StartAnimations[(size_t)JUMP_STATE::IDLE] >= 0)
 	{
 
@@ -188,6 +210,29 @@ void CPlayer_Jump_State::PlayFall(CPlayer& player)
 void CPlayer_Jump_State::PlayLand(CPlayer& player)
 {
 	m_ePhase = PHASE::LAND;
+	if (auto* pSound = player.GetSound())
+	{
+		static constexpr const char* LAND_SOUNDS[] =
+		{
+			"./Resources/SampleClient/Sound/Player/Movement/Jump/Player_Land_01.wav",
+			"./Resources/SampleClient/Sound/Player/Movement/Jump/Player_Land_02.wav",
+			"./Resources/SampleClient/Sound/Player/Movement/Jump/Player_Land_03.wav",
+			"./Resources/SampleClient/Sound/Player/Movement/Jump/Player_Land_Body.wav",
+		};
+		const int iSoundIndex = Engine::RandInt(
+			0, static_cast<int>(std::size(LAND_SOUNDS)) - 1);
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_LAND" },
+			LAND_SOUNDS[iSoundIndex],
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.18f,
+				.fPitch = 1.f,
+				.iPriority = 72,
+				.bLoop = false
+			},
+			SOUND_SLOT_PLAY_MODE::OVERLAP);
+	}
 
 	auto* animator = player.GetAnimator();
 

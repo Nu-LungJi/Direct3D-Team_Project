@@ -903,7 +903,7 @@ void CEffectManager::DispatchSound(EFFECT_INSTANCE& instance,const EFFECT_SOUND_
 	desc3D.fMinDistance = command.fMinDistance;
 	desc3D.fMaxDistance = command.fMaxDistance;
 	desc3D.vPosition = worldPosition;
-	
+	desc3D.eRolloff = SOUND_3D_ROLLOFF::LINEAR;
 	const SOUND_ID soundId = m_pSoundManager->Play3D(command.sSoundPath, desc3D,playDesc);
 
 	if (soundId != INVALID_SOUND_ID)

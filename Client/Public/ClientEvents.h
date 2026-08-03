@@ -15,5 +15,6 @@ struct FRequestPlayerCameraShake
 	_float fFrequency{ 18.f };
 };
 
+struct FAcientMagicStart {};
 
 NS_END

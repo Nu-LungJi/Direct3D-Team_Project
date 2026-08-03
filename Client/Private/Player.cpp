@@ -441,6 +441,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
 	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
+	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
 
 	
@@ -1782,7 +1783,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 
 _bool CPlayer::OnQueryHit(int32_t iDamage)
 {
-	if (iDamage <= 0 || m_iHp <= 0)
+	if (iDamage <= 0 || m_iHp <= 0 || m_bInvincible)
 		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
@@ -1814,7 +1815,54 @@ void CPlayer::Attack_Magic_Bullet()
 
 	if (!pWeapon)
 		return;
+	if (m_pComSound)
+	{
+		static constexpr const char* BASIC_ATTACK_VOICES[] =
+		{
+			"./Resources/SampleClient/Sound/Player/Voice/Attack/Player_AttackVoice_01.wav",
+			"./Resources/SampleClient/Sound/Player/Voice/Attack/Player_AttackVoice_02.wav",
 
+		};
+
+		const int iVoiceIndex = Engine::RandInt(
+			0, static_cast<int>(std::size(BASIC_ATTACK_VOICES)) - 1);
+		m_pComSound->PlaySlot2D(
+			E::StringID{ "PLAYER_BASIC_ATTACK_VOICE" },
+			BASIC_ATTACK_VOICES[iVoiceIndex],
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 0.12f,
+				.fPitch = 1.05f,
+				.iPriority = 80,
+				.bLoop = false
+			},
+			SOUND_SLOT_PLAY_MODE::OVERLAP);
+
+		static constexpr const char* BASIC_ATTACK_SOUNDS[] =
+		{
+			"./Resources/SampleClient/Sound/Player/SkillEffect/"
+			"BasicAttack/BasicAttack_SpellShot_01.wav",
+
+		};
+
+		constexpr int SOUND_COUNT =
+			static_cast<int>(std::size(BASIC_ATTACK_SOUNDS));
+
+		const int iSoundIndex =
+			Engine::RandInt(0, SOUND_COUNT - 1);
+
+		m_pComSound->PlaySlot2D(
+			E::StringID{ "PLAYER_BASIC_ATTACK" },
+			BASIC_ATTACK_SOUNDS[iSoundIndex],
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.15f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			},
+			SOUND_SLOT_PLAY_MODE::OVERLAP);
+	}
 	// 무기 발사 위치
 	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 

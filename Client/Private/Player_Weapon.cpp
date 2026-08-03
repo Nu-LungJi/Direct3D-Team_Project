@@ -46,6 +46,7 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 
 	auto pDesc = static_cast<WEAPON_DESC*>(pArg);
 	m_iBoneSocketIndex = pDesc->iBoneIndex;
+	m_iSpawnBoneIndex = pDesc->iSpawnBoneIndex;
 	m_ParentHandle = pDesc->ParentHandle;
 
 	if (FAILED(CGameObject::Initialize(pArg)))
@@ -223,16 +224,26 @@ bool CPlayer_Weapon::GetShadowBounds(BoundingBox& OutBounds) const {
 
 _float4x4 CPlayer_Weapon::GetSpawnWorldMatrix() const
 {
-	_matrix spawnMatrix =
-		XMMatrixTranslation(
-			m_vSpawnLocalOffset.x,
-			m_vSpawnLocalOffset.y,
-			m_vSpawnLocalOffset.z)
-		* GetTransform().GetLoadedCombinedWorldMatrix();
+	if (auto pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+	{
+		if (auto pModel = pPlayer->GetComponent<CComModelInstance>("ComCModelIntance"))
+		{
+			const auto& combinedBoneMatrices = pModel->Get_CombinedBoneMatrices();
+			if (m_iSpawnBoneIndex >= 0 &&
+				static_cast<size_t>(m_iSpawnBoneIndex) < combinedBoneMatrices.size())
+			{
+				_matrix spawnWorld =
+					XMLoadFloat4x4(&combinedBoneMatrices[m_iSpawnBoneIndex]) *
+					pPlayer->GetTransform().GetLoadedWorldMatrix();
 
-	_float4x4 result{};
-	XMStoreFloat4x4(&result, spawnMatrix);
-	return result;
+				_float4x4 result{};
+				XMStoreFloat4x4(&result, spawnWorld);
+				return result;
+			}
+		}
+	}
+
+	return *GetTransform().GetCombinedWorldMatrix();
 }
 
 E::UPtr<CPlayer_Weapon> CPlayer_Weapon::Create()
