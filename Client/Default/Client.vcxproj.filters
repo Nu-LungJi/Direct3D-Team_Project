@@ -642,6 +642,9 @@
     <ClInclude Include="..\Public\PlayerRagdollController.h">
       <Filter>GameObject\Player\Player_RagdollController</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTCinematic.h">
+      <Filter>GameObject\AI\Action</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -961,6 +964,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BossMace.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTCinematic.cpp">
+      <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

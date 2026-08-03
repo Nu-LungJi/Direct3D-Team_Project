@@ -99,7 +99,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
 		};
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 5.f });
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
 		if (!Desc.pResMaterial ||
 			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
 				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))

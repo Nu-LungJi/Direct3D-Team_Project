@@ -21,6 +21,7 @@
 #include "UIController.h"
 
 #include "LightPlacementObject.h"
+#include "AmbientSound2DObject.h"
 NS_USING(Client)
 
 CLevelBossCharlesRookwood::CLevelBossCharlesRookwood()
@@ -73,7 +74,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(SpawnLightPlacement()))
 		return E_FAIL;
 
-	//CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	if (FAILED(SpawnAmbientSound()))
+		return E_FAIL;
 
 	CGameObject::GAMEOBJECT_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
@@ -253,6 +255,30 @@ HRESULT CLevelBossCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
 		return E_FAIL;
 	}
 
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::SpawnAmbientSound()
+{
+	CAmbientSound2DObject::DESC desc{};
+	desc.sObjectTag = "Ambient_Wind";
+
+	desc.tSoundData.sBusID = SOUND_BUS::BGM;
+	desc.tSoundData.eLoadType = SOUND_LOAD_TYPE::STREAM;
+	desc.tSoundData.sName = "Bgm";
+	desc.tSoundData.sSoundPath = "./Resources/SampleClient/Sound/BossCharlesRookwood/Ambient/Guardians_Awaken.wav";
+	desc.tSoundData.fVolume = 0.8f;
+	desc.tSoundData.bLoop = true;
+	desc.tSoundData.bAutoPlay = true;
+	auto h = CGameInstance::Get().AddGameObjectToLayer(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoGameObject::Prototype_GameObject_AmbientSound2D,
+		"Layer_AmbientSound",
+		&desc);
+	if (!h)
+	{
+		return E_FAIL;
+	}
 	return S_OK;
 }
 

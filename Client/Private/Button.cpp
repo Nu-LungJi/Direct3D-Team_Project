@@ -233,6 +233,14 @@ void CButton::PlayEffect(uint32_t uiState)
 
 			static_cast<CVideoObject*>(SafeGetOBJ(SafeGetOBJ(m_SpellPaper)->GetChildren()[0]))->SetPath(m_VideoPath);
 		}
+
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/ButtonSelect.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 1.f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+			});
 	}
 
 	if (uiState & ETOUI(UI_STATE::EXIT))

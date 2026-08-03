@@ -82,6 +82,8 @@ private:
 	_float m_fArcLifeTime{ 3.f };
 	_float m_fArcElapsedTime{};
 	_float m_fRadius{ 0.5f };
+
+	int32_t m_iDamage{ 30 };
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
 	EFFECT_INSTANCE_ID m_iEffectID{ INVALID_EFFECT_INSTANCE_ID };
 

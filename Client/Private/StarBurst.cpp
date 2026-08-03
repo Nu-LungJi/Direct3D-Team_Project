@@ -31,7 +31,7 @@ HRESULT CBoss_StarBurst::Initialize(void* pArg) {
 	const auto pDesc = static_cast<const STARBURST_DESC*>(pArg);
 	if (pDesc->fSpeed <= 0.f || pDesc->fRadius <= 0.f)
 		return E_INVALIDARG;
-
+	m_iDamage = 30.f;
 	m_pTargetHandle = pDesc->pTargetHandle;
 	m_fSpeed = pDesc->fSpeed;
 	m_fRadius = pDesc->fRadius;
@@ -131,6 +131,7 @@ void CBoss_StarBurst::Translate_Casting(_float fRatio){
 		CurrentPosition.x + DeltaMovementValue * LocalDestination.x, 
 		CurrentPosition.y + DeltaMovementValue * LocalDestination.y,
 		CurrentPosition.z + DeltaMovementValue * LocalDestination.z));
+
 }
 
 void CBoss_StarBurst::Translate_Attacking(_float fTimeDelta) {
@@ -203,6 +204,17 @@ _bool CBoss_StarBurst::MoveWithSweep(
 	CGameInstance::Get().SetEffectPosition(
 		m_pLightEffectID,
 		vNextPosition);
+
+	if (auto pPlayer = Cast<CPlayer>(tHit.pGameObject))
+	{
+		pPlayer->OnQueryHit(m_iDamage, tHit.vHitpos);
+
+		CGameInstance::Get().StopEffect(m_pLightEffectID);
+
+		// 기존 피격 이펙트 코드
+		SetPendingDestroy();
+		return true;
+	}
 	return true;
 }
 

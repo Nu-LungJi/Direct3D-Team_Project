@@ -36,6 +36,7 @@ public:
 	_bool					Check_Table(PLAYER_SKILL_TYPE eType) override;
 	
 private:
+	void						Damaged(PLAYER_SKILL_TYPE eType) override;
 	void						Active_Skill();
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
@@ -43,8 +44,6 @@ private:
 	std::vector<_float4x4> m_vecDeadInverseBindMatrices{};
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
-
-	uint32_t		m_iColliderBoneIndex{};
 	
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
