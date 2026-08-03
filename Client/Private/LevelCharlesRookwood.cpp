@@ -491,6 +491,7 @@ HRESULT CLevelCharlesRookwood::PlayBGM()
 			.sBusID = SOUND_BUS::BGM,
 			.fVolume = 1.f,
 			.fPitch = 1.f,
+			.fFadeInDuration = 1.f,
 			.iPriority = 64,
 			.bLoop = true
 		});
@@ -503,8 +504,11 @@ HRESULT CLevelCharlesRookwood::PlayBGM()
 HRESULT CLevelCharlesRookwood::StopBGM()
 {
 	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
-	if (!pSoundManager->Stop(m_bmgID))
+	if (pSoundManager == nullptr ||
+		!pSoundManager->FadeOutAndStop(m_bmgID, 1.f))
 		return E_FAIL;
+
+	m_bmgID = INVALID_SOUND_ID;
 
 	return S_OK;
 }
