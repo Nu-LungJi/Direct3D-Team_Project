@@ -760,7 +760,11 @@ VOID	CLightManager::Update_ActiveLights() {
 			constexpr _float ActiveRetentionRatio = 0.85f;
 			DistanceSQ *= ActiveRetentionRatio;
 		}
-
+		if (LightOBJ->Get_LightShadowCast() && LightOBJ->Get_ShadowSlotNumb() >= 0)
+		{
+			constexpr _float ShadowSlotRetentionRatio = 0.70f;
+			DistanceSQ *= ShadowSlotRetentionRatio;
+		}
 		  
 		CullingLight.push_back({ LightHandle, DistanceSQ });
 	}

@@ -9,8 +9,11 @@ const static float MetallicIntensity = 1.f;
 const static float AmbientIntensity = 1.f;
 const static float SpecularIntensity = 1.f;
 
-#define MAX_LIGHT_COUNT     8
+#define MAX_LIGHT_COUNT				16
+#define MAX_SHADOW_LIGHT_COUNT      8
+
 #define MAX_LIGHT_MAPCOUNT  6
+
 #define LIGHT_DIRECTIONAL   0
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
