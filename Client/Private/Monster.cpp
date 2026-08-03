@@ -18,6 +18,7 @@
 #include "UIController.h"
 
 #include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -487,48 +488,55 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 void CMonster::Update_HurtBox()
 {
 	_bool bHurtBoxUpdated{ false };
-		if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
+
+	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
+	{
+		const auto& CombinedBones =m_pComModelInstance->Get_CombinedBoneMatrices();
+
+		const size_t iBoneIndex =
+			static_cast<size_t>(m_iColliderBoneIndex);
+
+		if (iBoneIndex < CombinedBones.size())
 		{
-			const auto& CombinedBones =
-				m_pComModelInstance->Get_CombinedBoneMatrices();
-			const size_t iBoneIndex =
-				static_cast<size_t>(m_iColliderBoneIndex);
+			const _matrix HurtBoxWorld =
+				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
 
-			if (iBoneIndex < CombinedBones.size())
+			_vector vScale{};
+			_vector vRotation{};
+			_vector vTranslation{};
+
+			if (XMMatrixDecompose(
+				&vScale,
+				&vRotation,
+				&vTranslation,
+				HurtBoxWorld))
 			{
-				const _matrix HurtBoxWorld =
-					XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
-					GetTransform().GetLoadedCombinedWorldMatrix();
+				_float4 vHurtBoxRotation{};
 
-				_vector vScale{};
-				_vector vRotation{};
-				_vector vTranslation{};
-				if (XMMatrixDecompose(
-					&vScale,
-					&vRotation,
-					&vTranslation,
-					HurtBoxWorld))
-				{
-					_float3 vHurtBoxPosition{};
-					_float4 vHurtBoxRotation{};
-					XMStoreFloat3(&vHurtBoxPosition, vTranslation);
-					XMStoreFloat4(
-						&vHurtBoxRotation,
-						XMQuaternionNormalize(vRotation));
+				// 계산한 위치를 멤버에 저장
+				XMStoreFloat3(
+					&m_vHurtBoxPosition,
+					vTranslation);
 
-					bHurtBoxUpdated =
-						m_pComRigidBody->SetKinematicTarget(
-							vHurtBoxPosition,
-							vHurtBoxRotation);
-				}
+				XMStoreFloat4(
+					&vHurtBoxRotation,
+					XMQuaternionNormalize(vRotation));
+
+				bHurtBoxUpdated = m_pComRigidBody->SetKinematicTarget(m_vHurtBoxPosition,vHurtBoxRotation);
 			}
 		}
-		if (!bHurtBoxUpdated)
-		{
-			m_pComRigidBody->SetKinematicTarget(
-				m_pCharacterController->GetPosition(),
-				GetTransform().GetQuaternion());
-		}
+	}
+
+	if (!bHurtBoxUpdated)
+	{
+		m_vHurtBoxPosition =
+			m_pCharacterController->GetPosition();
+
+		m_pComRigidBody->SetKinematicTarget(
+			m_vHurtBoxPosition,
+			GetTransform().GetQuaternion());
+	}
 }
 
 void CMonster::Flag_Check(_float fTimeDelta)
@@ -577,4 +585,7 @@ void CMonster::EmissiveFadeOut(_float fTimeDelta)
 	}
 
 }
+
+
+
 

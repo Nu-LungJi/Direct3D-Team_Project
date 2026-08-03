@@ -1707,12 +1707,12 @@ void CPlayer::Attack_Magic_Bullet()
 	CPlayer_Magic_Bullet::MAGIC_BULLET_DESC desc{};
 	desc.vStartPosition = { spawnWorld._41, spawnWorld._42, spawnWorld._43 };
 	
-	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
 
 	if (pTarget)
 	{
+		desc.vEndPosition = pTarget->GetHurtBoxPosition();
 		// 타깃이 있으면 타깃을 향해 발사
-		XMStoreFloat3(&desc.vEndPosition, pTarget->GetTransform().GetState(STATE::POSITION));
 	}
 	else
 	{

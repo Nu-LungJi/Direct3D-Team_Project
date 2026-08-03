@@ -133,6 +133,14 @@ private:
 	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
+// 민수 추가 ----------------------------------------------------------
+public:
+	const _float3& GetHurtBoxPosition() const {return m_vHurtBoxPosition;}
+
+
+protected:
+	_float3 m_vHurtBoxPosition{};
+// 민수 추가 ----------------------------------------------------------
 protected:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
