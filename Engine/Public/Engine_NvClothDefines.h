@@ -143,11 +143,11 @@ namespace Engine
 		float fFriction{ 0.2f };
 	};
 
-	struct NVCLOTH_GPU_PARTICLE_VIEW
+	struct NVCLOTH_RENDER_PARTICLE_VIEW
 	{
-		// Borrowed SRV. It remains valid while the cloth handle is alive.
-		// The view starts at the cloth's current-particle slice, so shaders
-		// can read particle i from byte offset i * 16.
+		// Borrowed render SRV. DX11 Cloth exposes its native particle
+		// buffer; CPU Cloth is uploaded once per simulation step.
+		// Shaders read particle i from byte offset i * 16.
 		ID3D11ShaderResourceView* pSRV{};
 		uint32_t iParticleCount{};
 	};

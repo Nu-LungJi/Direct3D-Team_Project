@@ -31,8 +31,8 @@ public:
 	NVCLOTH_CLOTH_HANDLE GetClothHandle() const;
 	size_t GetParticleCount() const;
 	_bool GetParticles(std::vector<_float3>& OutParticles) const;
-	_bool GetGpuParticleView(
-		NVCLOTH_GPU_PARTICLE_VIEW& OutView) const;
+	_bool GetRenderParticleView(
+		NVCLOTH_RENDER_PARTICLE_VIEW& OutView) const;
 	_bool SetSimulationTransform(
 		const _float3& vTranslation,
 		const _float4& vRotation,
