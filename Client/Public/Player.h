@@ -24,7 +24,7 @@ class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
-
+class CComSound;
 NS_END
 
 NS_BEGIN(Client)
@@ -274,6 +274,10 @@ private:
 	_bool  m_bDistanceUI = false;
 	CHandle m_hUI;
 
+private:
+	CComSound* m_pComSound{};
+public:
+	CComSound* GetSound() const { return m_pComSound; }
 public:
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

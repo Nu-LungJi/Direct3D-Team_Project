@@ -9,6 +9,8 @@
 
 #include "Monster.h"
 #include "Player_Weapon.h"
+
+#include "ComSound.h"
 NS_USING(Client)
 
 void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
@@ -32,7 +34,25 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 		RequestLocomotion(pStateMachine);
 		return;
 	}
-
+	if (auto* pSound = pPlayer->GetSound())
+	{
+		pSound->PlaySlot3D(
+			E::StringID{ "PLAYER_VOICE_ACCIO" },
+			"./Resources/SampleClient/Sound/Player/Spell/Accio/Accio_Man.wav",
+			SOUND_3D_DESC{
+				.vPosition = pPlayer->GetTransform().GetPosition(),
+				.fMinDistance = 3.f,
+				.fMaxDistance = 30.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
