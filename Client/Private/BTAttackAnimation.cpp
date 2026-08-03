@@ -211,7 +211,7 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
 				_float MonDamange = pMon->Get_Damage();
 				pTarget->OnQueryHit(MonDamange);
-				m_bAttRatio = false;
+				m_bAttRatio = true;
 			}
 		}
 	}
