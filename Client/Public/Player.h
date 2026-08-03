@@ -29,6 +29,7 @@ NS_END
 
 NS_BEGIN(Client)
 class CPlayer_StateMachine;
+class CPlayerRagdollController;
 
 class CPlayer final : public CAnimationObject
 {
@@ -61,6 +62,7 @@ public:
 
 private:
 	CPlayer();
+	CPlayer(const CPlayer& Prototype);
 	~CPlayer() override;
 
 
@@ -217,6 +219,22 @@ private:
 private:
 	CHandle m_UIHandle;
 	_bool m_bSkillSlotUIInitialized{ false };
+
+#pragma region RAGDOLL
+	friend class CPlayerRagdollController;
+public:
+	_bool RequestRagdollActivation(
+		const _float3& vLinearVelocity = {},
+		const _float3& vAngularVelocityRadians = {});
+	_bool ResetRagdoll();
+	_bool IsRagdollActive() const;
+	_bool TryGetRagdollFollowPosition(_float3& OutPosition) const;
+private:
+	HRESULT InitializeRagdoll();
+	_bool IsRagdollTransitioning() const;
+private:
+	UPtr<CPlayerRagdollController> m_pRagdollController{};
+#pragma endregion
 
 private:
 	PLAYER_SKILL_TYPE m_eSkill_Type;

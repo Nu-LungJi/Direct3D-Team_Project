@@ -866,15 +866,17 @@ ConfigureAnatomicalHinge(
 	JointIter->eTwistMotion =
 		PX_RAGDOLL_D6_MOTION::LIMITED;
 	JointIter->eSwingYMotion =
-		PX_RAGDOLL_D6_MOTION::LIMITED;
+		PX_RAGDOLL_D6_MOTION::LOCKED;
 	JointIter->eSwingZMotion =
-		PX_RAGDOLL_D6_MOTION::LIMITED;
+		PX_RAGDOLL_D6_MOTION::LOCKED;
 	JointIter->fTwistLowerDegrees =
 		fTwistLowerDegrees;
 	JointIter->fTwistUpperDegrees =
 		fTwistUpperDegrees;
-	JointIter->fSwingYDegrees = 5.f;
-	JointIter->fSwingZDegrees = 5.f;
-	JointIter->fLimitDamping = 2.f;
+	JointIter->fSwingYDegrees = 0.f;
+	JointIter->fSwingZDegrees = 0.f;
+	// 팔꿈치와 무릎은 단단한 한계각을 사용하는 단일 축 힌지다.
+	JointIter->fLimitStiffness = 0.f;
+	JointIter->fLimitDamping = 0.f;
 	return true;
 }

@@ -3360,19 +3360,19 @@ GenerateHumanoidPreset()
 	const JOINT_PRESET JointPresets[] = {
 		{ "HipsToSpine", "Hips", "Spine", 15.f, 20.f, 20.f },
 		{ "SpineToSpine3", "Spine", "Spine3", 20.f, 25.f, 20.f },
-		{ "Spine3ToHead", "Spine3", "Head", 30.f, 30.f, 25.f },
-		{ "Spine3ToLeftArm", "Spine3", "LeftArm", 45.f, 70.f, 60.f },
+		{ "Spine3ToHead", "Spine3", "Head", 25.f, 25.f, 20.f },
+		{ "Spine3ToLeftArm", "Spine3", "LeftArm", 35.f, 55.f, 45.f },
 		{ "LeftArmToLeftForeArm", "LeftArm", "LeftForeArm", 60.f, 60.f, 60.f },
-		{ "LeftForeArmToLeftHand", "LeftForeArm", "LeftHand", 35.f, 30.f, 30.f },
-		{ "Spine3ToRightArm", "Spine3", "RightArm", 45.f, 70.f, 60.f },
+		{ "LeftForeArmToLeftHand", "LeftForeArm", "LeftHand", 25.f, 20.f, 20.f },
+		{ "Spine3ToRightArm", "Spine3", "RightArm", 35.f, 55.f, 45.f },
 		{ "RightArmToRightForeArm", "RightArm", "RightForeArm", 60.f, 60.f, 60.f },
-		{ "RightForeArmToRightHand", "RightForeArm", "RightHand", 35.f, 30.f, 30.f },
-		{ "HipsToLeftUpLeg", "Hips", "LeftUpLeg", 45.f, 50.f, 45.f },
+		{ "RightForeArmToRightHand", "RightForeArm", "RightHand", 25.f, 20.f, 20.f },
+		{ "HipsToLeftUpLeg", "Hips", "LeftUpLeg", 35.f, 40.f, 35.f },
 		{ "LeftUpLegToLeftLeg", "LeftUpLeg", "LeftLeg", 60.f, 60.f, 60.f },
-		{ "LeftLegToLeftFoot", "LeftLeg", "LeftFoot", 30.f, 30.f, 30.f },
-		{ "HipsToRightUpLeg", "Hips", "RightUpLeg", 45.f, 50.f, 45.f },
+		{ "LeftLegToLeftFoot", "LeftLeg", "LeftFoot", 20.f, 20.f, 20.f },
+		{ "HipsToRightUpLeg", "Hips", "RightUpLeg", 35.f, 40.f, 35.f },
 		{ "RightUpLegToRightLeg", "RightUpLeg", "RightLeg", 60.f, 60.f, 60.f },
-		{ "RightLegToRightFoot", "RightLeg", "RightFoot", 30.f, 30.f, 30.f }
+		{ "RightLegToRightFoot", "RightLeg", "RightFoot", 20.f, 20.f, 20.f }
 	};
 	for (const auto& Preset :
 		JointPresets)
@@ -3403,7 +3403,7 @@ GenerateHumanoidPreset()
 				"LeftHand",
 				{ 0.f, -1.f, 0.f },
 				-5.f,
-				135.f) ||
+				120.f) ||
 		!m_Authoring.
 			ConfigureAnatomicalHinge(
 				Generated,
@@ -3412,7 +3412,7 @@ GenerateHumanoidPreset()
 				"RightHand",
 				{ 0.f, -1.f, 0.f },
 				-5.f,
-				135.f) ||
+				120.f) ||
 		!m_Authoring.
 			ConfigureAnatomicalHinge(
 				Generated,
@@ -3420,8 +3420,8 @@ GenerateHumanoidPreset()
 				"LeftLeg",
 				"LeftFoot",
 				{ 0.f, 0.f, 1.f },
-				-5.f,
-				130.f) ||
+				-120.f,
+				5.f) ||
 		!m_Authoring.
 			ConfigureAnatomicalHinge(
 				Generated,
@@ -3429,8 +3429,8 @@ GenerateHumanoidPreset()
 				"RightLeg",
 				"RightFoot",
 				{ 0.f, 0.f, 1.f },
-				-5.f,
-				130.f))
+				-120.f,
+				5.f))
 	{
 		m_sStatus =
 			"Humanoid hinge generation failed.";

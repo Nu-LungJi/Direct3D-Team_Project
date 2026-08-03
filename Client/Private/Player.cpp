@@ -18,6 +18,7 @@
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "PlayerRagdollController.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
@@ -108,6 +109,8 @@ void CPlayer::UpdateGUI()
 		ImVec2(-1.f, 0.f),
 		"Dash Hold");
 
+	if (m_pRagdollController)
+		m_pRagdollController->UpdateGUI();
 
 	//ImGui::ColorEdit4("Color", &weaponColor.x);
 	//ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
@@ -123,6 +126,16 @@ void CPlayer::UpdateGUI()
 
 CPlayer::CPlayer()
 	: CAnimationObject{}
+{
+}
+
+CPlayer::CPlayer(const CPlayer& Prototype)
+	: CAnimationObject{ Prototype }
+	, m_pResPixelShader{ Prototype.m_pResPixelShader }
+	, m_pResVertexCPUSkinningInstancedShader{
+		Prototype.m_pResVertexCPUSkinningInstancedShader }
+	, m_pResSkinMeshCBuffer{
+		Prototype.m_pResSkinMeshCBuffer }
 {
 }
 
@@ -165,6 +178,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+	GetTransform().SetPosition(pDesc->vInitialPosition);
+	GetTransform().Update();
 	m_LevelTag = pDesc->LevelTag;
 	m_vInitialPosition = pDesc->vInitialPosition;
 	{
@@ -354,6 +369,14 @@ HRESULT CPlayer::Initialize(void* pArg)
 		}
 	}//Spine1
 
+	// 초기 State가 재생할 애니메이션을 선택한 뒤 0초 포즈를 만든다.
+	// 이 포즈로 키네마틱 랙돌을 첫 PhysX 스텝 전부터 본에 맞춘다.
+	if (FAILED(m_pModelAnimator->Update(0.f)) ||
+		FAILED(InitializeRagdoll()))
+	{
+		return E_FAIL;
+	}
+
 	m_pComMoveIntent->RequestWarp(pDesc->vInitialPosition);
 
 	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
@@ -397,9 +420,66 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 }
 
+#pragma region RAGDOLL
+HRESULT CPlayer::InitializeRagdoll()
+{
+	// [LSY] 플레이어별 런타임 상태를 공유하지 않도록 Clone 초기화 단계에서 새로 생성한다.
+	m_pRagdollController = CPlayerRagdollController::Create(*this);
+	return m_pRagdollController ? S_OK : E_FAIL;
+}
+
+_bool CPlayer::RequestRagdollActivation(
+	const _float3& vLinearVelocity, const _float3& vAngularVelocityRadians)
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->RequestActivation(vLinearVelocity, vAngularVelocityRadians);
+}
+
+_bool CPlayer::ResetRagdoll()
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->Reset();
+}
+
+_bool CPlayer::IsRagdollActive() const
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->IsActive();
+}
+
+_bool CPlayer::TryGetRagdollFollowPosition(_float3& OutPosition) const
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->TryGetFollowPosition(OutPosition);
+}
+
+_bool CPlayer::IsRagdollTransitioning() const
+{
+	if (!m_pRagdollController)
+		return false;
+
+	return m_pRagdollController->IsTransitioning();
+}
+#pragma endregion
+
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	// [LSY] 랙돌 전환 중에는 입력과 상태 머신이 새로운 이동 명령을 만들지 않게 한다.
+	if (m_pRagdollController)
+	{
+		if (m_pRagdollController->PrePriorityUpdate())
+			return;
+	}
+
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
 
@@ -801,6 +881,13 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
 {
+	// [LSY] 랙돌 전환 중에는 CCT와 캐릭터 모터의 일반 물리 갱신을 중단한다.
+	if (m_pRagdollController)
+	{
+		if (m_pRagdollController->PreFixedUpdate())
+			return;
+	}
+
 	if (m_bMovementLocked)
 	{
 		m_pComMoveIntent->ClearMoveIntent();
@@ -858,6 +945,9 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 			m_pComCharacterController->GetPosition(),
 			GetTransform().GetQuaternion());
 	}
+
+	if (m_pRagdollController)
+		m_pRagdollController->PostFixedUpdate();
 
 #ifdef _DEBUG
 	UpdateStandingGameObjectDebugLog();
@@ -1147,7 +1237,9 @@ void CPlayer::Update(E::_float fTimeDelta)
 		++iter;
 	}
 
-	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
+	//const _bool bRagdollActiveAtUpdateStart = IsRagdollActive();
+	if (!IsRagdollActive() &&
+		m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
 		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
@@ -1170,12 +1262,15 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	// Animator를 먼저 진행해야 Locomotion State가 현재 프레임의
 	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
-	if (m_pStateMachine)
+	if (m_pStateMachine &&
+		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
-	if (bApplyRootMotionTranslation && m_pComMoveIntent)
+	if (bApplyRootMotionTranslation &&
+		m_pComMoveIntent &&
+		!IsRagdollTransitioning())
 	{
 		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
 		const _vector vWorldDelta = XMVector3Rotate(
@@ -1188,11 +1283,19 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
 
+	// [LSY] FixedUpdate에서 변경된 CCT 위치와 Update에서 적용한 회전을
+	// [LSY] 최신 World 행렬에 반영한 뒤 랙돌 포즈를 교환한다.
+	GetTransform().Update();
+
+	if (m_pRagdollController)
+		m_pRagdollController->UpdatePoseBridge();
+
 }
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
-	if (m_pStateMachine)
+	if (m_pStateMachine &&
+		!IsRagdollTransitioning())
 		m_pStateMachine->LateUpdate(fTimeDelta);
 
 
@@ -1510,11 +1613,21 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 
 
 
+	if (m_iHp <= 0)
+	{
+		if (m_pRagdollController)
+			m_pRagdollController->RequestFromCurrentMotion();
+	}
+	else if (m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+
 	return true;
 }
 
 _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 {
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
@@ -1525,13 +1638,21 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 	{
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
-	if (m_pStateMachine)
+	if (m_iHp <= 0)
+	{
+		if (m_pRagdollController)
+			m_pRagdollController->RequestFromCurrentMotion();
+	}
+	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
 }
 
 _bool CPlayer::OnQueryHit(int32_t iDamage)
 {
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
+
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
 	
@@ -1541,7 +1662,12 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 	{
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
-	if (m_pStateMachine)
+	if (m_iHp <= 0)
+	{
+		if (m_pRagdollController)
+			m_pRagdollController->RequestFromCurrentMotion();
+	}
+	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
 }
